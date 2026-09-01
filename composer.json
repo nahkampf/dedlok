@@ -1,0 +1,37 @@
+{
+    "name": "nahkampf/cyberpunk",
+    "description": "Cyberpunk browser game",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Nahkampf\\Cyberpunk\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Nahkampf\\Cyberpunk\\Tests\\": "tests/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Sebastian Utbult",
+            "email": "kreuzweg@gmail.com"
+        }
+    ],
+    "require": {
+        "vlucas/phpdotenv": "^5.6",
+        "doctrine/dbal": "^4.3.4",
+        "monolog/monolog": "^3.8"
+    },
+    "require-dev": {
+        "roave/security-advisories": "dev-latest",
+        "phpstan/phpstan": "^2.1",
+        "squizlabs/php_codesniffer": "^3.11",
+        "phpunit/phpunit": "^13.3"
+    },
+    "scripts": {
+        "phpstan": "phpstan analyse src",
+        "phpcs": "phpcs --standard=PSR12 src",
+        "test": "phpunit"
+    }
+}

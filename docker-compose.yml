@@ -1,0 +1,57 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyberpunk
+    ports:
+      - "8088:80"
+    volumes:
+      # Mount the entire root directory so /src and /vendor are available in the container
+      - ./:/var/www/cyberpunk
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+      - ./docker/apache/vhost.conf:/etc/apache2/sites-available/000-default.conf
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=cyberpunk_db
+      - MYSQL_USER=cyberpunk_user
+      - MYSQL_PASSWORD=cyberpunk_password
+    depends_on:
+      - db
+    networks:
+      - cyberpunk-network
+
+  cyberpunk-composer:
+    image: composer:latest
+    container_name: cyberpunk-composer
+    volumes:
+      - ./:/var/www/cyberpunk
+    working_dir: /var/www/cyberpunk
+    networks:
+      - cyberpunk-network
+    # Use sh -c and sequential execution (&&) without trailing & to prevent the container from exiting immediately
+    command: sh -c "git config --global --add safe.directory /var/www/cyberpunk && composer install"
+
+  db:
+    image: mysql:8.4
+    container_name: cyberpunk-db
+    restart: always
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_DATABASE: cyberpunk_db
+      MYSQL_USER: cyberpunk_user
+      MYSQL_PASSWORD: cyberpunk_password
+      MYSQL_ROOT_PASSWORD: cyberpunk_root_password
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - cyberpunk-network
+
+networks:
+  cyberpunk-network:
+    driver: bridge
+
+volumes:
+  db-data:
+    driver: local
