@@ -337,6 +337,31 @@ information.
 Rank maps onto the kit's `t1`–`t5` accents, since ranks are 1, 2, 4, 8, 16 and
 the tiers already mean "how costly is this".
 
+### What happens to time past the target
+
+An entry stops at its target level **only when something else is queued**. The
+surplus has somewhere better to be, and `completeEntry` hands the successor the
+exact completion moment so none of it is lost in the handover.
+
+With an **empty queue behind it**, the segment runs to the end of the minute the
+threshold fell in, and no further. The minute a player is part-way through is
+credited whole — they trained all of it — and the minutes after it are not,
+because by then nothing was queued to train.
+
+That distinction is invisible while deposits run every minute: the crossing
+minute is the current one. It is the whole behaviour on a **catch-up run**,
+where `now` can be hours past the threshold and must not become hours of
+training for a queue that emptied in its first minute.
+
+**The rank's level-5 cap bounds it either way**, and that is enforced on the
+award (`min($award, $cap - $points)`) rather than by computing the moment the
+cap is reached — a rate change inside the segment would let such a moment drift
+off the real ceiling.
+
+Note the asymmetry this creates, because it is deliberate: queueing two skills
+trains the second one with the surplus, while queueing one trains the first one
+further. Neither wastes the time; they just spend it differently.
+
 ### The training queue
 
 **A queue entry is a (skill, target level) pair, not a skill.** The same skill

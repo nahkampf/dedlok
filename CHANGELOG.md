@@ -14,6 +14,14 @@ change the database schema. Every entry that needs one says so under
 
 ### Changed
 
+- **The minute a skill crosses its target level is credited whole.** An entry
+  used to stop dead on the threshold: a character who trained two minutes for a
+  level that arrived in 1.4 was credited for 1.4. The crossing minute now banks
+  its excess into the same skill — but only that minute, so a catch-up run
+  hours after an outage does not credit hours to a queue that emptied in its
+  first. With a successor waiting the surplus still goes to the next skill,
+  which was always the better use of it. The rank's level-5 cap bounds both
+  paths, enforced on the award rather than as a precomputed moment.
 - **Reflex is a physical attribute**, not a mental one. `config/stats.php`
   derives the `physical`/`mental` tag from `Character::PHYSICAL_ATTRIBUTES`, and
   no formula reads those tags, so no derived stat changed value — only the

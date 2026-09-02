@@ -199,7 +199,25 @@ final class TrainingDeposit
 
     /**
      * Where this segment ends: whichever comes first of now, the moment the
-     * entry completes, and the next change in rate.
+     * entry hands over, and the next change in rate.
+     *
+     * Reaching the target only ends the segment on the threshold itself when
+     * there is SOMETHING ELSE TO TRAIN. With a successor waiting that is the
+     * point — the surplus belongs to the next skill, and completeEntry hands
+     * it the exact moment so none of it is lost.
+     *
+     * With an empty queue behind it the segment runs to the END OF THE MINUTE
+     * THE THRESHOLD FELL IN, and no further. The minute a player is part-way
+     * through is credited whole, so they are not paid for less time than they
+     * trained; the minutes after it are not, because by then there was nothing
+     * queued to train. That distinction is invisible while deposits run every
+     * minute — the crossing minute IS the current one — and is the whole
+     * behaviour during a catch-up run after an outage, where `now` may be
+     * hours past the threshold.
+     *
+     * The rank's level-5 cap bounds it either way, enforced on the award
+     * rather than as a moment computed here: a rate change inside the segment
+     * would let such a moment drift off the real ceiling.
      */
     private function segmentEnd(
         Character $character,
@@ -217,8 +235,14 @@ final class TrainingDeposit
         if ($needed > 0) {
             $completesAt = $cursor->addMicroseconds((int) ceil(($needed / $perMinute) * self::MICROSECONDS_PER_MINUTE));
 
+            // Only look at the queue when the answer could differ: an entry
+            // that does not finish inside this window ends at `now` either
+            // way, and the query would be wasted on every run of every
+            // character still working toward a level.
             if ($completesAt < $end) {
-                $end = $completesAt;
+                $end = $this->hasSuccessor($character, $entry)
+                    ? $completesAt                          // hand over on the threshold
+                    : min($end, $completesAt->ceilMinute()); // finish the minute, then stop
             }
         }
 
@@ -229,6 +253,14 @@ final class TrainingDeposit
         }
 
         return $end;
+    }
+
+    /** Is anything queued behind this entry? */
+    private function hasSuccessor(Character $character, TrainingQueueEntry $entry): bool
+    {
+        return $character->trainingQueue()
+            ->whereKeyNot($entry->getKey())
+            ->exists();
     }
 
     /**
