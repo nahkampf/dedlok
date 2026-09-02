@@ -12,6 +12,19 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-09-02
+
+### Added
+
+- **A skill tree at `/skills`**, one lane per category, built from the skills
+  table by `App\Skills\SkillTree`. The prerequisite graph is a DAG rather than
+  a tree — a skill may require several others — so a skill hangs under the
+  prerequisite that gates it *last* and every other requirement is named on the
+  row. Each skill appears exactly once; a prerequisite in another category
+  leaves the skill at its own lane's root; a cycle renders as unreachable
+  instead of hanging. Composed entirely from existing UI kit classes, so
+  nothing was added to `ui-kit.css`.
+
 ## [0.2.0] — 2026-09-02
 
 ### Removed
@@ -120,7 +133,8 @@ Two, both additive and safe to run forward:
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/nahkampf/dedlok/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/nahkampf/dedlok/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/nahkampf/dedlok/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nahkampf/dedlok/releases/tag/v0.1.0

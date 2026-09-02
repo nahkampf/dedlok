@@ -392,10 +392,17 @@ release tooling and none is wanted — `standard-version`, `changesets` and
 Composer's `version` field is deliberately absent too: for an application it is a second
 number to forget.
 
-SemVer, and **pre-1.0 is meant literally**. While the major is 0, a minor bump may change
-the database schema. A "breaking change" here usually means *needs a migration you cannot
-casually undo*, not an API signature — remember `migrate:fresh` is forbidden against the
-remote.
+SemVer, and **pre-1.0 is meant literally**. While the major is 0, the line is the schema:
+
+- **Minor** — the release changes the database. Anyone deploying it has to run a migration
+  before serving, and pre-1.0 that is the only kind of breakage worth a version number of
+  its own. A "breaking change" here means *needs a migration you cannot casually undo*,
+  not an API signature — remember `migrate:fresh` is forbidden against the remote.
+- **Patch** — everything else, however large. A new page, a new screen, a font moved
+  in-house: if a deploy is `git pull` and nothing more, it is a patch.
+
+That is why 0.1.1 (self-hosting Plex) and 0.2.1 (the skill tree) are patches despite
+adding things, while 0.2.0 was a minor for two migrations.
 
 Three places carry the number, and they are bumped together:
 

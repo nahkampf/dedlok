@@ -28,6 +28,7 @@ return [
         'nav' => [
             'run' => 'Run',
             'stash' => 'Stash',
+            'skills' => 'Skills',
             'contracts' => 'Contracts',
             'profile' => 'Profile',
         ],
@@ -190,6 +191,30 @@ return [
         'damage' => ':count damage',
         'enemies' => ['zero' => 'The street is empty', 'one' => 'One hostile', 'many' => ':count hostiles'],
         'log' => ':attacker hits :target for :damage.',
+    ],
+
+    'skills' => [
+
+        'title' => 'Skill tree',
+        'lede' => 'Every skill in the game, one lane per category. A skill sits under the prerequisite that gates it last; anything else it needs is named on the row.',
+
+        'rank' => 'Rank :rank',
+        'governed_by' => ':primary / :secondary',
+        'from_level' => 'from level :level',
+        'also_requires' => ':skill :level',
+
+        // A skill inside a prerequisite cycle: nothing can ever learn it, and
+        // skills:validate is what explains why.
+        'unreachable' => 'unreachable',
+        'unreachable_hint' => 'Inside a prerequisite cycle — run skills:validate.',
+
+        // A prerequisite in another category cannot be a parent without the
+        // skill hanging in two lanes at once, so it is named instead.
+        'from_elsewhere' => 'needs :skill :level, from :category',
+
+        'empty' => 'No skills in the database yet.',
+        'count' => ['zero' => 'empty', 'one' => ':count skill', 'many' => ':count skills'],
+        'deepest' => 'depth :levels',
     ],
 
     'errors' => [
