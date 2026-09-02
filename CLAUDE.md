@@ -332,6 +332,11 @@ the password-reset request.
   per (character, item) with a `quantity`, not one row per object. Item definitions are in
   the **database, not config**: the second documented exception to the config-plus-lang
   rule, taken for the same reasons skills were. `config/items.php` does not exist.
+- **`ItemSeeder` seeds no items.** It generates one skillbook per skill and nothing
+  else. A hardcoded catalogue in PHP would be a second source for content the items
+  table already owns — and the one that wins on a re-seed, so an item deleted in the
+  admin editor would come back. Author items in the editor; the only rows a seeder
+  may write are ones *derived* from another table, like the books.
 - **`container` is a property of the item, never a player choice.** `physical` and `data`
   are the two inventories; a row cannot disagree with its definition because nothing
   stores the container on the row. `Character::inventoryIn()` filters through the item.
