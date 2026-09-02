@@ -1725,7 +1725,13 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
 /* Not yours yet. Half-lit until you point at it — the same device .slot--locked
    and a disabled .card--select already use for "not available to you". Pairs
    with .ticked, which marks the ones that are. */
-.unlit { opacity: .5; transition: opacity var(--t-fast) var(--ease); }
+.unlit {
+  opacity: .5;
+  transition: opacity var(--t-fast) var(--ease);
+  /* It lights up under the pointer, so it reads as something you point AT.
+     An I-beam would offer to select the text instead. */
+  cursor: default;
+}
 .unlit:hover,
 .unlit:focus-within { opacity: 1; }
 

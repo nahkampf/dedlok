@@ -13,25 +13,27 @@
             </div>
         </div>
     @else
-        {{-- One lane per category. The floor is capped so a lane never demands
-             more width than a 320px screen has. --}}
-        <div class="grid" style="margin-top:var(--s-5);grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))">
+        {{-- One section per category, each collapsible. The kit's accordion
+             draws its own hairlines, so it needs no panel around it — and a
+             full-width section gives a deep tree more room than a grid column
+             did, which matters most on a phone. --}}
+        <div class="accordion" style="margin-top:var(--s-5)">
             @foreach ($categories as $category => $roots)
-                <div class="panel" style="min-width:0">
-                    <div class="panel__hd">
-                        <span class="micro">{{ $category }}</span>
+                <details @if ($loop->first) open @endif>
+                    <summary>
+                        {{ $category }}
                         <div class="spacer"></div>
                         <span class="micro num">
                             {{ Text::plural('skills.count', collect($roots)->sum(fn ($root) => $root->descendantCount())) }}
                         </span>
-                    </div>
+                    </summary>
 
                     <div>
                         @foreach ($roots as $root)
                             <x-skill-node :node="$root" :levels="$levels" />
                         @endforeach
                     </div>
-                </div>
+                </details>
             @endforeach
         </div>
     @endif

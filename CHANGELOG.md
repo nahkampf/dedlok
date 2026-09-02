@@ -12,6 +12,9 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+- **Each category on the skill tree is a collapsible section** rather than a
+  column in a grid, with the first open. A full-width section also gives a deep
+  tree more room than a grid column did.
 - **The skill tree marks what you have.** A signed-in player gets a green corner
   tick on every skill they have injected and a five-segment meter of the levels
   they have attained — lit green, the rest the kit's grey. It is an overlay

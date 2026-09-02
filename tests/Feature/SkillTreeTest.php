@@ -61,6 +61,25 @@ class SkillTreeTest extends TestCase
         $this->assertSame(['Combat', 'Cybernetics', 'Systems'], array_keys($this->tree()));
     }
 
+    public function test_each_category_is_a_collapsible_section(): void
+    {
+        $this->skill('Cyberdecks', 'Systems');
+        $this->skill('Neural Interfacing', 'Cybernetics');
+        $this->skill('Knives', 'Combat');
+
+        $html = $this->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertSame(3, substr_count($html, '<details'), 'one section per category');
+
+        // Only the first opens, so the page is scannable without being a wall.
+        $this->assertSame(1, substr_count($html, 'open'));
+
+        // And every skill is inside one, closed or not.
+        foreach (['Cyberdecks', 'Neural Interfacing', 'Knives'] as $title) {
+            $this->assertStringContainsString($title, $html);
+        }
+    }
+
     public function test_a_skill_with_no_prerequisites_is_a_root(): void
     {
         $this->skill('Cyberdecks');

@@ -311,8 +311,10 @@ is the only thing holding those invariants, so nothing else will notice.
 
 ### Drawing the graph
 
-`/skills` renders the whole catalogue as one tree per category, from
-`App\Skills\SkillTree`.
+`/skills` renders the whole catalogue as one collapsible section per category,
+from `App\Skills\SkillTree`. Only the first opens: a page that starts as a wall
+of every skill in the game is not scannable, and a full-width section gives a
+deep tree more room than a grid column did — which matters most on a phone.
 
 **It is not a tree and the arrangement has to lie a little.** Prerequisites
 form a DAG: a skill may require several others, and the seeded catalogue
