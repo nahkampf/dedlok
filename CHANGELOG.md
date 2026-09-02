@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-02
+
+### Changed
+
+- Change tiers to T1 & T2 only (c978030)
+- Updated the release script so we can do our work with main checked out, it
+  branches automatically to a feature and does all the magic when called
+
+### Migrations
+
+- `2026_09_02_180000_narrow_item_tiers_to_two`
+
+
 ## [0.3.0] — 2026-09-02
 
 ### Added
@@ -92,7 +105,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/nahkampf/dedlok/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/nahkampf/dedlok/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/nahkampf/dedlok/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/nahkampf/dedlok/compare/v0.2.1...v0.2.2

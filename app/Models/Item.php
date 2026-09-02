@@ -46,7 +46,14 @@ class Item extends Model
     /** @var list<string> */
     public const USE_OPS = [self::USE_INJECT_SKILL];
 
-    public const MAX_TIER = 5;
+    /**
+     * Two tiers, and the scale is deliberately short.
+     *
+     * It was five, named Standard through Anomalous, which drew a
+     * distinction no mechanic has ever asked about. Widen it when
+     * something reads it for more than a colour.
+     */
+    public const MAX_TIER = 2;
 
     protected function casts(): array
     {
@@ -170,7 +177,12 @@ class Item extends Model
         return Text::get("items.tiers.{$this->tier}");
     }
 
-    /** The UI kit's tier class: t1..t5. Tier, not rarity — see App\Market\Rarity. */
+    /**
+     * The UI kit's tier class: t1 or t2. Tier, not rarity — see App\Market\Rarity.
+     *
+     * The kit's accent ramp still runs to .t5; the game only reaches the
+     * first two steps of it.
+     */
     public function tierClass(): string
     {
         return 't'.$this->tier;

@@ -35,7 +35,9 @@ class ItemSeeder extends Seeder
             $attributes = [
                 'container' => Item::CONTAINER_DATA,
                 // Rank is a training-time multiplier, so a book for a
-                // slower skill is a rarer find. Ranks are 1,2,4,8,16.
+                // slower skill is the better article. Ranks are 1,2,4,8,16,
+                // and the scale is two steps: the quickest skill's book is
+                // Tier One, everything slower is Tier Two.
                 'tier' => min(Item::MAX_TIER, (int) log($skill->rank, 2) + 1),
                 'rarity' => $this->rarityForRank($skill->rank),
                 'stackable' => true,
@@ -110,21 +112,21 @@ class ItemSeeder extends Seeder
                 'name' => 'Sandevistan MK.V',
                 'flavor' => 'Pulled from a Militech cadaver. Still warm when they found it.',
                 'container' => Item::CONTAINER_PHYSICAL,
-                'tier' => 5, 'weight' => 1, 'base_cost' => 48_000,
+                'tier' => 2, 'weight' => 1, 'base_cost' => 48_000,
                 'rarity' => Rarity::UltraRare, 'seed_quantity' => 2,
             ],
             'kiroshi_optics' => [
                 'name' => 'Kiroshi Optics',
                 'flavor' => 'Sees more than you want it to.',
                 'container' => Item::CONTAINER_PHYSICAL,
-                'tier' => 4, 'weight' => 1, 'base_cost' => 21_500,
+                'tier' => 2, 'weight' => 1, 'base_cost' => 21_500,
                 'rarity' => Rarity::Rare, 'seed_quantity' => 5,
             ],
             'ballistic_coprocessor' => [
                 'name' => 'Ballistic Coprocessor',
                 'flavor' => 'Does the maths so your hands do not have to.',
                 'container' => Item::CONTAINER_PHYSICAL,
-                'tier' => 3, 'weight' => 2, 'base_cost' => 9_800,
+                'tier' => 2, 'weight' => 2, 'base_cost' => 9_800,
                 'rarity' => Rarity::Uncommon, 'seed_quantity' => 12,
             ],
             /*

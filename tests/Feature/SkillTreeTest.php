@@ -210,9 +210,10 @@ class SkillTreeTest extends TestCase
 
     public function test_no_row_carries_a_tier_accent(): void
     {
-        // .item-row paints border-left from --tier, and the rank tiers include
-        // jade — which IS --ok, what the tick means. Rank belongs in the meta
-        // column as ×N, not as a colour that says "you have this".
+        // .item-row paints border-left from --tier, and .t2 is jade — which IS
+        // --ok, what the tick means. Rank belongs in the meta column as ×N,
+        // not as a colour that says "you have this". The whole ramp is checked,
+        // not just the two an item can be: the kit still defines all five.
         $this->skill('Cyberdecks', rank: 2);
 
         $html = $this->get(route('skills.index'))->assertOk()->getContent();
