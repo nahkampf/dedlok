@@ -370,6 +370,45 @@ Blade. `layouts/app.blade.php` is the signed-in chrome, `layouts/guest.blade.php
 centred panel used by auth. Both set `<html lang>` and `dir` from the active locale.
 Views compose UI kit classes; they do not define their own CSS.
 
+## Versioning and releases
+
+**Git tags are the source of truth; `CHANGELOG.md` is the human record.** There is no
+release tooling and none is wanted — `standard-version`, `changesets` and
+`semantic-release` are all npm, and this project has no `package.json` on purpose.
+Composer's `version` field is deliberately absent too: for an application it is a second
+number to forget.
+
+SemVer, and **pre-1.0 is meant literally**. While the major is 0, a minor bump may change
+the database schema. A "breaking change" here usually means *needs a migration you cannot
+casually undo*, not an API signature — remember `migrate:fresh` is forbidden against the
+remote.
+
+Three places carry the number, and they are bumped together:
+
+| Where | What it is for |
+| --- | --- |
+| `git tag -a vX.Y.Z` | the source of truth |
+| `CHANGELOG.md` heading | what changed and why |
+| `config/version.php` | what a *running* container can report, via `config('version.app')` |
+
+The last one exists because a deployed instance has no tags. It is the only copy that can
+drift, so bump it in the same commit as the changelog heading.
+
+### Cutting a release
+
+1. Write the `CHANGELOG.md` entry under a new version heading, moving anything from
+   `[Unreleased]`. Keep the **Migrations** note: migrations are run by hand here, and the
+   person deploying needs to know whether there are any before they pull.
+2. Bump `config/version.php`.
+3. Commit both together (`docs: release X.Y.Z`), merge to `main` with `--no-ff`.
+4. Tag on `main`, never on a feature branch — a tag on a branch that later gets squashed
+   points at a commit that no longer exists:
+   ```bash
+   git tag -a v0.1.0 -m "0.1.0"
+   git push origin main --follow-tags
+   ```
+5. Run the migrations the changelog named, then any seeder they need.
+
 ## Constraints imposed by php.ini
 
 `docker/php/php.ini` is hardened, and several settings will actively break otherwise
