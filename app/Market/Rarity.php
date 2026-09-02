@@ -11,12 +11,12 @@ use Illuminate\Support\Facades\Config;
  * How hard an item is to find on the market.
  *
  * Not the same axis as `items.tier`, which is easy to mistake for it. Tier is
- * what a thing IS — Standard through Anomalous — and it is what the UI kit
- * colours. Rarity is how often the market has one, and it is the only thing
- * that decides whether a restock pass delivers anything at all.
+ * what a thing IS — Tier One or Tier Two — and it is what the UI kit colours.
+ * Rarity is how often the market has one, and it is the only thing that
+ * decides whether a restock pass delivers anything at all.
  *
- * The two are free to disagree: milspec ammunition is common, and a tuned
- * bike part nobody makes any more is not.
+ * The two are free to disagree: standard-issue ammunition is common, and a
+ * tuned bike part nobody makes any more is not.
  *
  * An enum rather than a lookup table because the set is closed by design —
  * the seeding curve has four steps in it, and a fifth would be a balance

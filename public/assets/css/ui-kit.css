@@ -1598,8 +1598,10 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
    INVENTORY
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* Rarity tiers stay inside the palette — no rainbow. Each tier is a
-   custom property so tiles, tooltips and list rows all agree. */
+/* A graded accent ramp, all inside the palette — no rainbow. Each step is a
+   custom property so tiles, tooltips and list rows all agree. Item tiers are
+   the first two steps; the rest of the ramp is unclaimed and stays here for
+   whatever next wants a graded accent. */
 .t1 { --tier: var(--ink-2); }
 .t2 { --tier: var(--jade); }
 .t3 { --tier: var(--steel); }

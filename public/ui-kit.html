@@ -794,17 +794,17 @@ public/assets/
 
   <section id="inventory">
     <div class="sec__hd"><h2 class="h1">Inventory</h2>
-      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Five rarity tiers, all inside the palette — no rainbow. Each tier is a class that sets <code class="inl">--tier</code>, so slots, list rows and tooltips agree without repeating a colour anywhere.</p>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">A five-step accent ramp, all inside the palette — no rainbow. Each step is a class that sets <code class="inl">--tier</code>, so slots, list rows and tooltips agree without repeating a colour anywhere. The game spends the first two of them: item tiers are <code class="inl">.t1</code> and <code class="inl">.t2</code>, and the rest of the ramp is here for whatever needs a graded accent next.</p>
     </div>
     <div class="demo">
-      <div class="demo__hd"><h3 class="h3">Tiers</h3></div>
+      <div class="demo__hd"><h3 class="h3">Tiers</h3><p>The two an item can actually be, then the three steps nothing claims yet. The ramp is a colour vocabulary, not a list of names — anything using a step beyond the second labels it itself.</p></div>
       <template class="demo-src">
         <div class="row row--wrap" style="--gap:var(--s-4)">
-          <div class="t1 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Standard</span></div>
-          <div class="t2 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Tuned</span></div>
-          <div class="t3 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Milspec</span></div>
-          <div class="t4 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Prototype</span></div>
-          <div class="t5 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Anomalous</span></div>
+          <div class="t1 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Tier One</span></div>
+          <div class="t2 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Tier Two</span></div>
+          <div class="t3 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">.t3</span></div>
+          <div class="t4 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">.t4</span></div>
+          <div class="t5 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">.t5</span></div>
         </div>
       </template>
     </div>
@@ -842,10 +842,10 @@ public/assets/
       <div class="demo__hd"><h3 class="h3">Item card &amp; rows</h3></div>
       <template class="demo-src">
         <div class="row row--wrap" style="--gap:var(--s-5);align-items:flex-start">
-          <div class="item-card t5">
+          <div class="item-card t2">
             <div class="item-card__hd">
               <div class="item-card__name">Sandevistan MK.V</div>
-              <div class="item-card__tier">Anomalous · Operating system</div>
+              <div class="item-card__tier">Tier Two · Operating system</div>
             </div>
             <div class="item-card__stats">
               <div class="item-card__stat"><span>Time dilation</span><b>−78%</b></div>
@@ -858,10 +858,10 @@ public/assets/
           <div class="panel" style="flex:1;min-width:min(280px,100%)">
             <div class="panel__hd"><span class="micro">Recent pickups</span></div>
             <div>
-              <div class="item-row t4"><span class="slot__icon">⌬</span><span class="item-row__name">Kiroshi optics</span><span class="item-row__meta">Prototype</span></div>
-              <div class="item-row t3"><span class="slot__icon">⌖</span><span class="item-row__name">Ballistic coprocessor</span><span class="item-row__meta">Milspec</span></div>
-              <div class="item-row t2"><span class="slot__icon">◈</span><span class="item-row__name">Bounce-back MK.II</span><span class="item-row__meta">Tuned</span></div>
-              <div class="item-row t1"><span class="slot__icon">▤</span><span class="item-row__name">Scrap alloy</span><span class="item-row__meta">Standard</span></div>
+              <div class="item-row t2"><span class="slot__icon">⌬</span><span class="item-row__name">Kiroshi optics</span><span class="item-row__meta">Tier Two</span></div>
+              <div class="item-row t2"><span class="slot__icon">⌖</span><span class="item-row__name">Ballistic coprocessor</span><span class="item-row__meta">Tier Two</span></div>
+              <div class="item-row t1"><span class="slot__icon">◈</span><span class="item-row__name">Bounce-back MK.II</span><span class="item-row__meta">Tier One</span></div>
+              <div class="item-row t1"><span class="slot__icon">▤</span><span class="item-row__name">Scrap alloy</span><span class="item-row__meta">Tier One</span></div>
             </div>
           </div>
         </div>
@@ -912,7 +912,7 @@ public/assets/
 
   <section id="screen">
     <div class="sec__hd"><h2 class="h1">Full screen</h2>
-      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Everything above, composed the way an actual game view would use it. Note how little ember there is: an active nav marker, one heat bar, one alert, one tier-5 item.</p>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Everything above, composed the way an actual game view would use it. Note how little ember there is: an active nav marker, one heat bar, one alert, one <code class="inl">.t5</code> slot.</p>
     </div>
     <div class="demo">
       <template class="demo-src">

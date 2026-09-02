@@ -285,12 +285,14 @@ return [
     | What is left is the vocabulary shared across every item.
     */
     'items' => [
+        /*
+        | Two tiers, and they say only which step of the scale a thing is on.
+        | The old five carried flavour names — Standard through Anomalous —
+        | for a hierarchy nothing mechanical ever read.
+        */
         'tiers' => [
-            1 => 'Standard',
-            2 => 'Tuned',
-            3 => 'Milspec',
-            4 => 'Prototype',
-            5 => 'Anomalous',
+            1 => 'Tier One',
+            2 => 'Tier Two',
         ],
 
         /*

@@ -21,7 +21,7 @@ class HomePageTest extends TestCase
 
     public function test_the_showcase_comes_from_the_items_table(): void
     {
-        Item::factory()->physical()->tier(5)->create([
+        Item::factory()->physical()->tier(2)->create([
             'slug' => 'sandevistan_mk5',
             'name' => 'Sandevistan MK.V',
         ]);
@@ -30,15 +30,18 @@ class HomePageTest extends TestCase
             ->assertOk()
             // The name is on the row; only the tier word is still shared.
             ->assertSee('Sandevistan MK.V')
-            ->assertSee(Text::get('items.tiers.5'))
-            ->assertSee('item-card t5', false);
+            ->assertSee(Text::get('items.tiers.2'))
+            ->assertSee('item-card t2', false);
     }
 
-    public function test_it_shows_the_three_rarest_and_no_more(): void
+    public function test_it_shows_the_three_highest_tiers_and_no_more(): void
     {
-        foreach ([1, 2, 3, 4, 5] as $tier) {
-            Item::factory()->physical()->tier($tier)->create(['slug' => "gear_{$tier}"]);
-        }
+        // Two tiers means the showcase is mostly deciding ties, so the slug
+        // order inside a tier is as much of the contract as the tier order.
+        Item::factory()->physical()->tier(2)->create(['slug' => 'gear_b', 'name' => 'Gear B']);
+        Item::factory()->physical()->tier(2)->create(['slug' => 'gear_a', 'name' => 'Gear A']);
+        Item::factory()->physical()->tier(1)->create(['slug' => 'gear_c', 'name' => 'Gear C']);
+        Item::factory()->physical()->tier(1)->create(['slug' => 'gear_d', 'name' => 'Gear D']);
 
         $html = $this->get(route('home'))->assertOk()->getContent();
 
@@ -46,21 +49,28 @@ class HomePageTest extends TestCase
         // which all share the item-card prefix.
         $this->assertSame(3, substr_count($html, 'class="item-card t'));
 
-        foreach (['t5', 't4', 't3'] as $shown) {
-            $this->assertStringContainsString('item-card '.$shown, $html);
+        foreach (['Gear A', 'Gear B', 'Gear C'] as $shown) {
+            $this->assertStringContainsString($shown, $html);
         }
 
-        foreach (['t2', 't1'] as $hidden) {
-            $this->assertStringNotContainsString('item-card '.$hidden, $html);
-        }
+        $this->assertStringNotContainsString('Gear D', $html);
+    }
+
+    public function test_the_tier_scale_is_two_steps_and_the_words_match_it(): void
+    {
+        // A tier with no word renders its own key, and a word with no tier is
+        // a name for a step nothing can be on. Widening the scale means
+        // widening both, so this is the test that says so out loud.
+        $this->assertSame([1, 2], array_keys(config('strings.items.tiers')));
+        $this->assertSame(2, Item::MAX_TIER);
     }
 
     public function test_skillbooks_stay_off_the_landing_page(): void
     {
         $skill = Skill::factory()->create(['slug' => 'hacking', 'title' => 'Hacking']);
 
-        // Tier 5, so ordering alone would put it first if it were eligible.
-        Item::factory()->skillbookFor($skill)->tier(5)->create();
+        // Top tier, so ordering alone would put it first if it were eligible.
+        Item::factory()->skillbookFor($skill)->tier(2)->create();
         Item::factory()->physical()->tier(1)->create([
             'slug' => 'scrap_alloy',
             'name' => 'Scrap Alloy',

@@ -196,7 +196,7 @@ class InventoryTest extends TestCase
 
     public function test_the_stash_lists_both_inventories(): void
     {
-        $rifle = Item::factory()->physical()->create(['slug' => 'rail_rifle', 'tier' => 3]);
+        $rifle = Item::factory()->physical()->create(['slug' => 'rail_rifle', 'tier' => 2]);
         $this->give($rifle);
         $this->give($this->book);
 
@@ -206,7 +206,7 @@ class InventoryTest extends TestCase
         $response->assertSee(Text::get('inventory.physical'));
         $response->assertSee(Text::get('inventory.data'));
         $response->assertSee(Text::get('items.skillbook.name', ['skill' => 'Hacking']));
-        $response->assertSee(Text::get('items.tiers.3'));
+        $response->assertSee(Text::get('items.tiers.2'));
     }
 
     public function test_only_skillbooks_offer_an_inject_button(): void

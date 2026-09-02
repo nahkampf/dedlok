@@ -378,8 +378,9 @@ the password-reset request.
 **The market restocks itself; nothing sells anything yet.** There is no price paid, no
 transaction and no money — what exists is the half a storefront will be built on top of.
 
-- **`rarity` is not `tier`.** Tier is what an item IS (Standard…Anomalous), it colours
-  the card, and it carries no mechanics. Rarity — `common`, `uncommon`, `rare`,
+- **`rarity` is not `tier`.** Tier is what an item IS — Tier One or Tier Two, narrowed
+  from five named steps that nothing mechanical read — it colours the card through the
+  kit's `.t1`/`.t2`, and it carries no mechanics. Rarity — `common`, `uncommon`, `rare`,
   `ultra_rare` — is how often the market has one, and it is the only thing that decides
   whether a restock pass delivers. They are free to disagree.
 - **An item is stocked only with `on_market` AND `seed_quantity > 0`.** The default shelf
@@ -451,9 +452,14 @@ drift, so bump it in the same commit as the changelog heading.
 
 ### Cutting a release
 
-**`bin/release X.Y.Z` does all of it.** It drafts the changelog entry from the commits
-since the last tag, opens `$EDITOR` (nano by default) so you can rewrite that draft into
-something a person would read, and only then commits, merges and tags.
+**Work on `main`. Branching is the release script's job.** Commit to `main` as you go;
+`bin/release` is what puts the work on a feature branch, and it does so after the fact —
+so nobody has to decide what a change was going to be called before writing it.
+
+**`bin/release X.Y.Z` does all of it.** It moves the commits since the last tag onto a
+feature branch, drafts the changelog entry from them, opens `$EDITOR` (nano by default)
+so you can rewrite that draft into something a person would read, and only then commits,
+merges and tags.
 
 ```bash
 bin/release                  # asks which version, showing the latest tag
@@ -463,11 +469,26 @@ git push origin main --follow-tags
 
 Run with no version it reports the branch, the latest tag, how many commits are in the
 release and whether any of them add a migration — then proposes the version that follows
-from the schema rule and lets you press Enter to accept it or type your own. `--no-tests`
-skips the suite, `--no-merge` commits and tags where you are.
+from the schema rule and lets you press Enter to accept it or type your own. Next it asks
+what to call the branch. `--branch NAME` answers that up front, `--no-branch` releases
+where you stand, `--no-tests` skips the suite, and `--no-merge` commits and tags where you
+are (which implies `--no-branch`).
 
 What it does for you, and why:
 
+- **Branches the work for you, backwards.** The commits since the tag become a feature
+  branch, `main` rewinds to the tag, and the release comes back as a `--no-ff` merge. The
+  history reads as though the work had been branched from the start; the workflow does not
+  ask anyone to have known that in advance. Run it from a branch that is not `main` and
+  nothing moves — it cuts the release it always did.
+- **Suggests the branch name from the commits.** The commonest conventional-commit scope
+  wins (three `feat(market)` commits suggest `feature/market`), falling back to the words
+  of the earliest `feat` when nothing carries a scope. It is a suggestion; Enter accepts it.
+- **Refuses to rewind a `main` that has been pushed.** Moving commits that are already on
+  `origin/main` would need a force push, so it stops and names `--no-branch` instead. The
+  check reads the last fetch, so `git fetch` first if that could be stale.
+- **Deletes the branch it made**, after merging it — the merge commit is the record. A
+  branch you made yourself still gets the old "delete it?" prompt.
 - **Drafts, never writes.** Commit subjects say what changed to someone reading the
   history; a changelog says what changed to someone deciding whether to pull. The draft
   is grouped `feat`→Added, `fix`→Fixed, everything else→Changed, and carries a DRAFT
@@ -475,10 +496,11 @@ What it does for you, and why:
 - **Enforces the schema rule.** New migrations since the last tag are listed under
   **Migrations** automatically, and a release that adds one while bumping only the patch
   has to be confirmed.
-- **Tags on `main`**, after a `--no-ff` merge, never on a feature branch — a tag on a
-  branch that later gets squashed points at a commit that no longer exists.
-- **Restores the tree on any exit that is not a successful commit**, including an editor
-  that quits non-zero or a failing suite. Nothing half-released is left behind.
+- **Tags on `main`**, after the merge, never on a feature branch — a tag on a branch that
+  later gets squashed points at a commit that no longer exists.
+- **Restores the tree *and the branches* on any exit that is not a successful commit**,
+  including an editor that quits non-zero or a failing suite. An abort puts the work back
+  on `main` and deletes the branch it made. Nothing half-released is left behind.
 - **Never pushes.** It prints the command; pushing stays a decision.
 
 Afterwards, run the migrations the changelog named and any seeder they need.

@@ -339,7 +339,7 @@ the one costing indentation a phone does not have.
 
 **Rank is text, not colour.** It reads as `×4` in the meta column. Mapping it
 onto the kit's `t1`–`t5` accents was tried and reverted: `.item-row` paints its
-left border from `--tier`, tier 2 is `--jade`, and `--ok` IS `--jade` — so a
+left border from `--tier`, `.t2` is `--jade`, and `--ok` IS `--jade` — so a
 rank-2 skill drew a green stripe exactly where the overlay's green means "you
 have this", in the place the eye reads the rail.
 
@@ -570,18 +570,26 @@ were:
 there will be hundreds, the market has to query them, and a skillbook has to
 point at a skill row. `config/items.php` does not exist and is not planned.
 
-1. An `items` row: `slug`, `container` (`physical` or `data`), `tier` 1–5, and
+1. An `items` row: `slug`, `container` (`physical` or `data`), `tier` 1 or 2, and
    whatever mechanical values apply. `database/seeders/ItemSeeder.php` is where
    the catalogue is kept.
 2. Its `name`, and `flavor` if it has any — columns on the same row. Tier names
-   are shared (`strings.items.tiers.1`–`5`) and never repeated per item.
+   are shared (`strings.items.tiers.1`–`2`) and never repeated per item.
 3. If the market sells it: `rarity` and `seed_quantity` — see below.
 
 **Tier is not rarity.** They are two axes and it is worth keeping them apart:
-`tier` is what the thing IS (Standard, Tuned, Milspec, Prototype, Anomalous),
-it colours the card through `.t1`–`.t5`, and it carries no mechanics.
-`rarity` is how often the market has one. Milspec ammunition is common; a tuned
-bike part nobody makes any more is not.
+`tier` is what the thing IS — Tier One or Tier Two, and no finer than that —
+it colours the card through `.t1` and `.t2`, and it carries no mechanics.
+`rarity` is how often the market has one. Standard-issue ammunition is common;
+a tuned bike part nobody makes any more is not.
+
+**The scale was five and is now two.** Standard, Tuned, Milspec, Prototype and
+Anomalous named a hierarchy nothing mechanical ever read, and the rows that
+carried it were clamped (1 stays 1, everything above became 2) rather than
+rescaled — there was no number to preserve. The UI kit still defines the full
+`.t1`–`.t5` accent ramp; the game reaches the first two steps of it. Widening
+the scale again means widening `Item::MAX_TIER`, the check constraint on
+`items.tier`, and `strings.items.tiers` together.
 
 **An item is stocked when it has both `on_market` and a `seed_quantity` above
 zero.** They answer different questions — whether the thing is sold at all, and
