@@ -12,6 +12,8 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-09-02
+
 ### Changed
 
 - **IBM Plex is self-hosted**, the way Overpass already was. Nine faces (three
@@ -78,5 +80,6 @@ Two, both additive and safe to run forward:
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/nahkampf/dedlok/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nahkampf/dedlok/releases/tag/v0.1.0
