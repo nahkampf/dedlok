@@ -23,10 +23,17 @@
 
     @auth
         <nav class="nav" style="margin-left:var(--s-4)">
-            <a class="nav__item" href="{{ route('home') }}" @current(request()->routeIs('home'))>
+            {{-- @current is not a Blade directive; it rendered as literal text
+                 in the markup. The kit marks the active item with aria-current,
+                 which .nav__item[aria-current] already styles. --}}
+            <a class="nav__item" href="{{ route('home') }}"
+               @if (request()->routeIs('home')) aria-current="page" @endif>
                 {{ __('ui.nav.run') }}
             </a>
-            <a class="nav__item" href="{{ route('home') }}">{{ __('ui.nav.stash') }}</a>
+            <a class="nav__item" href="{{ route('inventory.index') }}"
+               @if (request()->routeIs('inventory.*')) aria-current="page" @endif>
+                {{ __('ui.nav.stash') }}
+            </a>
             <a class="nav__item" href="{{ route('home') }}">{{ __('ui.nav.contracts') }}</a>
         </nav>
     @endauth
@@ -48,6 +55,12 @@
 @if (session('status'))
     <div style="max-width:1100px;margin:var(--s-4) auto 0;padding-inline:var(--s-4)">
         <div class="callout callout--ok">{{ session('status') }}</div>
+    </div>
+@endif
+
+@if (session('error'))
+    <div style="max-width:1100px;margin:var(--s-4) auto 0;padding-inline:var(--s-4)">
+        <div class="callout callout--crit">{{ session('error') }}</div>
     </div>
 @endif
 

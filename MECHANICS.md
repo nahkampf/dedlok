@@ -22,7 +22,10 @@ down so the implementation has something to be checked against.
 | Display-only perks | one kept deliberately as the documented example; the rest removed |
 | `hitpoints_max` and `synaptic_integrity_max` as stats | **built**, formulas in `config/stats.php` |
 | `ModifierSource` + `ArchetypePerks` | **built** |
-| `lang/en/items.php` | **built** as an i18n demo — lang entries only, no config definitions and no `items` table |
+| `items` + `inventory_items` tables, two containers | **built**, with constraints |
+| Skillbooks and injection (`App\Inventory\SkillInjector`) | **built**, the only writer of a new `character_skills` row |
+| Containers — items holding items (`App\Inventory\ItemPlacer`) | **built**, one level deep, capacity enforced |
+| `lang/en/items.php` | **built** — tier names, the shared skillbook name, and the demo items |
 | Character creation point pool | **built** |
 | `Modifier`, `Op`, `Target`, `Stat`, `StatRegistry`, `Resolver` (`app/Stats/`) | **built** — pure, no DB, 38 unit tests |
 | `config/stats.php` — the 10 attributes, tagged and bounded | **built** |
@@ -35,7 +38,9 @@ down so the implementation has something to be checked against.
 | `SkillLevelReached` / `TrainingEntryCompleted` events | **built**, dispatched; no listeners yet |
 | `skill_effects` and skills as a `ModifierSource` | **specified only** |
 | `character_modifiers` table | **specified only** |
-| Items, skills, implants, drugs, injuries | **specified only** |
+| Item *modifiers* — items that change a stat | **specified only**; items exist, none of them alter a number yet |
+| Implants, drugs, injuries | **specified only** |
+| Inventory capacity — an overall limit per inventory | **specified only**; `weight` is stored and unenforced |
 
 Do not describe anything below as working until it appears in the table above.
 
@@ -259,7 +264,8 @@ split the rest of the project already uses.
 | What | Where |
 | --- | --- |
 | Stat definitions: ids, tags, formula, clamps, rounding | `config/stats.php` |
-| Item / implant / drug / skill definitions | `config/items.php`, `config/implants.php`, … |
+| Implant / drug / effect definitions | `config/implants.php`, `config/effects.php`, … |
+| **Item and skill definitions** | the `items` and `skills` tables — the documented exception, see below |
 | Every player-visible name and description | `lang/<locale>/…` |
 | What a given character actually has | `character_modifiers` table |
 
@@ -425,7 +431,51 @@ The rest of the contract:
 Every recipe below is config plus lang. **If adding content requires new PHP,
 the design has leaked and the op set needs revisiting instead.**
 
+### Add an item
+
+**Item definitions live in the database, not in config.** They are the second
+exception to the config-plus-lang rule, taken for the same reasons skills were:
+there will be hundreds, the market has to query them, and a skillbook has to
+point at a skill row. `config/items.php` does not exist and is not planned.
+
+1. An `items` row: `slug`, `container` (`physical` or `data`), `tier` 1–5, and
+   whatever mechanical values apply. `database/seeders/ItemSeeder.php` is where
+   the catalogue is kept.
+2. `lang/en/items.php` — `name` and any `flavor`, keyed by the same slug. Tier
+   names are shared (`items.tiers.1`–`5`), not repeated per item.
+3. Copy the lang entry into every other locale, then `php artisan i18n:check`.
+
+**An item that holds other items** needs two more values on the row:
+`capacity` (how much it holds; 0 means it is not a container) and `accepts`
+(which `container` kind may go in it). A memory shard is `physical` with
+`accepts: data` — matter that holds bits. The pair is constrained in both
+directions, so an item cannot claim capacity without a kind or a kind
+without capacity. Depth is capped at one: containers do not nest.
+
+**Skillbooks need neither step.** There is exactly one book per skill, so
+`ItemSeeder` generates them from the skills table and their name composes from
+the skill's own title through `items.skillbook.name`. Adding a skill adds its
+book; no lang entry, in any locale.
+
+### Skillbooks and the training gate
+
+A skill cannot be trained until its book has been owned and spent.
+
+- A `character_skills` row means **this skill has been injected**, and
+  `App\Inventory\SkillInjector` is the only thing that creates one. Injecting
+  consumes one copy of the book and writes the row at 0 points, level 0, in a
+  single transaction.
+- **Level 0 is a real state**: injected, not yet trained. That is why the gate
+  is a row-exists check and never a level check.
+- Injecting a skill already on the sheet is **refused**, not repeated — it
+  would either wipe the points or do nothing, and the player keeps the book.
+- `TrainingDeposit` will **not** create the row. A queue entry naming an
+  uninjected skill is a data error: the deposit refuses and logs it, the queue
+  validator reports it, and `skills:validate` fails on it.
+
 ### Add an item that changes stats
+
+Items carry no modifiers yet — this is the shape they will take.
 
 1. `config/items.php` — add the definition:
 

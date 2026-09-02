@@ -1,5 +1,6 @@
 @extends('layouts.app')
 @section('title', config('app.name'))
+@use('Illuminate\Support\Number')
 
 @section('content')
     <h1 class="display">{{ __('ui.nav.run') }}</h1>
@@ -24,21 +25,35 @@
         </table>
     </div></div>
 
-    <div class="rule"><span class="micro">Content from lang files</span></div>
+    <div class="rule"><span class="micro">Rows from the items table, words from lang</span></div>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
-        @foreach ($items as $item)
-            <div class="item-card {{ $item['tier_class'] }}" style="width:100%">
+        {{-- Every word here is a lookup: the row carries a slug, a tier number
+             and its mechanical values, and nothing a player reads. --}}
+        @forelse ($items as $item)
+            <div class="item-card {{ $item->tierClass() }}" style="width:100%">
                 <div class="item-card__hd">
-                    <div class="item-card__name">{{ __("items.{$item['slug']}.name") }}</div>
-                    <div class="item-card__tier">{{ __("items.{$item['slug']}.tier") }}</div>
+                    <div class="item-card__name">{{ $item->displayName() }}</div>
+                    <div class="item-card__tier">{{ $item->tierName() }}</div>
                 </div>
                 <div class="item-card__stats">
-                    <div class="item-card__stat"><span>Damage</span><b class="num">{{ $item['damage'] }}</b></div>
-                    <div class="item-card__stat"><span>Weight</span><b class="num">{{ $item['weight'] }}</b></div>
+                    <div class="item-card__stat">
+                        <span>{{ __('items.stat.weight') }}</span>
+                        <b class="num">{{ Number::format((float) $item->weight, locale: $icu) }}</b>
+                    </div>
+                    <div class="item-card__stat">
+                        <span>{{ __('items.stat.cost') }}</span>
+                        <b class="num">{{ Number::format($item->base_cost, locale: $icu) }}</b>
+                    </div>
                 </div>
-                <div class="item-card__flavor">{{ __("items.{$item['slug']}.flavor") }}</div>
+                {{-- Flavour is optional, and a missing key would otherwise
+                     render as the key itself. --}}
+                @if ($flavor = $item->displayFlavor())
+                    <div class="item-card__flavor">{{ $flavor }}</div>
+                @endif
             </div>
-        @endforeach
+        @empty
+            <p class="muted" style="font-size:var(--fs-sm)">{{ __('items.catalogue_empty') }}</p>
+        @endforelse
     </div>
 
     <div class="rule"><span class="micro">Locale-aware formatting (ext-intl)</span></div>

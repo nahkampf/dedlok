@@ -9,6 +9,7 @@ use App\Models\TrainingQueueEntry;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Tests\Concerns\InjectsSkills;
 use Tests\TestCase;
 
 /**
@@ -17,7 +18,7 @@ use Tests\TestCase;
  */
 class DepositTrainingCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use InjectsSkills, RefreshDatabase;
 
     private Skill $hacking;
 
@@ -36,6 +37,9 @@ class DepositTrainingCommandTest extends TestCase
             array_fill_keys(Character::ATTRIBUTES, 10),
             ['archetype' => 3],
         ));
+
+        // The book has been spent; that is what makes the skill trainable.
+        $this->inject($character, $this->hacking);
 
         TrainingQueueEntry::create([
             'character_id' => $character->id,
@@ -167,6 +171,8 @@ class DepositTrainingCommandTest extends TestCase
             array_fill_keys(Character::ATTRIBUTES, 0),
             ['archetype' => 3],
         ));
+
+        $this->inject($useless, $this->hacking);
 
         TrainingQueueEntry::create([
             'character_id' => $useless->id,

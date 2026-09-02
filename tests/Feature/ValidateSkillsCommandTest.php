@@ -8,6 +8,7 @@ use App\Models\SkillPrerequisite;
 use App\Models\TrainingQueueEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Concerns\InjectsSkills;
 use Tests\TestCase;
 
 /**
@@ -17,7 +18,7 @@ use Tests\TestCase;
  */
 class ValidateSkillsCommandTest extends TestCase
 {
-    use RefreshDatabase;
+    use InjectsSkills, RefreshDatabase;
 
     private function character(): Character
     {
@@ -158,15 +159,37 @@ class ValidateSkillsCommandTest extends TestCase
         $character = $this->character();
 
         foreach ([1, 2, 3] as $position) {
+            $skill = Skill::factory()->create();
+
+            // Each book spent, each skill on the sheet at level 0. A queue
+            // entry for a skill that skipped this is what the next test is.
+            $this->inject($character, $skill);
+
             TrainingQueueEntry::create([
                 'character_id' => $character->id,
-                'skill_id' => Skill::factory()->create()->id,
+                'skill_id' => $skill->id,
                 'target_level' => 1,
                 'position' => $position,
             ]);
         }
 
         $this->artisan('skills:validate')->assertSuccessful();
+    }
+
+    public function test_it_catches_training_queued_for_a_skill_never_injected(): void
+    {
+        $character = $this->character();
+
+        TrainingQueueEntry::create([
+            'character_id' => $character->id,
+            'skill_id' => Skill::factory()->create(['slug' => 'unlearned'])->id,
+            'target_level' => 1,
+            'position' => 1,
+        ]);
+
+        $this->artisan('skills:validate')
+            ->expectsOutputToContain('never been injected')
+            ->assertFailed();
     }
 
     public function test_it_catches_an_invalid_rank_written_past_the_constraint(): void

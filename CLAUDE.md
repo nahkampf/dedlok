@@ -308,6 +308,55 @@ the password-reset request.
   Cap in a developer's `.env` cannot leak into the suite. Tests that want it on set the
   config themselves.
 
+### Inventory and skillbooks
+
+**Two inventories, and one gate in front of every skill in the game.**
+
+- `items` holds definitions, `inventory_items` holds what a character carries — one row
+  per (character, item) with a `quantity`, not one row per object. Item definitions are in
+  the **database, not config**: the second documented exception to the config-plus-lang
+  rule, taken for the same reasons skills were. `config/items.php` does not exist.
+- **`container` is a property of the item, never a player choice.** `physical` and `data`
+  are the two inventories; a row cannot disagree with its definition because nothing
+  stores the container on the row. `Character::inventoryIn()` filters through the item.
+- **A `character_skills` row means the skill has been injected**, and
+  `App\Inventory\SkillInjector` is the only thing that creates one. Injecting consumes one
+  copy of the skillbook and writes the row at 0 points, level 0, in one transaction.
+- **`TrainingDeposit` does not create that row** — it refuses and logs. Owning and
+  spending the book is therefore a hard gate: nothing can be trained without it, including
+  through a queue row written directly. `skills:validate` and the queue validator both
+  report an uninjected skill.
+- **Level 0 is a real state** (injected, untrained), so the gate is a row-exists check —
+  `Character::hasInjected()` — and never a level check. `hasSkillAtLevel()` answers a
+  different question.
+- Injecting a skill already known is **refused**, and the player keeps the book.
+- **Skillbooks need no lang entry.** There is one book per skill, so `ItemSeeder` generates
+  them from the skills table and the name composes from the skill's own title via
+  `items.skillbook.name`. Adding a skill adds its book, in every locale, for free.
+- **Items can hold items.** An item with `capacity > 0` and an `accepts` kind is a
+  container — the memory shard is a `physical` object that `accepts` `data`, which is the
+  case `container` alone could not express. `container` still says what *kind* of thing an
+  item is; `inventory_items.parent_id` says where a row actually sits.
+- **`parent_id` null means loose.** Every listing that means "the player's inventory"
+  needs `InventoryItem::scopeLoose()`, or a book on a card shows up twice — once on the
+  card and once on a deck it was never on. `Character::inventoryIn()` already does.
+- **Depth is capped at one.** A container cannot go inside a container, so the structure
+  cannot contain a cycle and nothing has to walk a tree defensively. `App\Inventory\ItemPlacer`
+  is the only thing that moves rows between containers, and it enforces every rule:
+  ownership, kind, capacity, and the depth cap.
+- **Destroying a container destroys its contents** — `parent_id` cascades on delete. That
+  is the fiction (crush the shard, lose the data) and it is also what stops orphan rows.
+- **Two copies of an item are no longer interchangeable.** The old unique key on
+  (`character_id`, `item_id`) said they were, which a card with a book on it disproves.
+  It is gone, replaced by a nullable unique `stack_key`: null for unstackable items — both
+  MySQL and SQLite treat nulls in a unique index as distinct, so each object gets its own
+  row — and `character:item:parent` for stackable ones, so two piles of the same thing in
+  the same place still collide. **It is derived on every save by the model, never set by
+  hand.** A generated column would be better and is not available: `stackable` lives on
+  `items`, and a generated column can only read its own row.
+- `size` is enforced, but only as what a container's contents cost against its capacity.
+  `weight` is still stored and unenforced, and neither inventory has an overall capacity.
+
 ### Events
 
 Nothing custom yet, but the wiring is standard Laravel: `Event::dispatch()`, listeners
@@ -320,6 +369,45 @@ request path. See TODO.md, which covers the switch and the worker it requires.
 Blade. `layouts/app.blade.php` is the signed-in chrome, `layouts/guest.blade.php` the
 centred panel used by auth. Both set `<html lang>` and `dir` from the active locale.
 Views compose UI kit classes; they do not define their own CSS.
+
+## Versioning and releases
+
+**Git tags are the source of truth; `CHANGELOG.md` is the human record.** There is no
+release tooling and none is wanted — `standard-version`, `changesets` and
+`semantic-release` are all npm, and this project has no `package.json` on purpose.
+Composer's `version` field is deliberately absent too: for an application it is a second
+number to forget.
+
+SemVer, and **pre-1.0 is meant literally**. While the major is 0, a minor bump may change
+the database schema. A "breaking change" here usually means *needs a migration you cannot
+casually undo*, not an API signature — remember `migrate:fresh` is forbidden against the
+remote.
+
+Three places carry the number, and they are bumped together:
+
+| Where | What it is for |
+| --- | --- |
+| `git tag -a vX.Y.Z` | the source of truth |
+| `CHANGELOG.md` heading | what changed and why |
+| `config/version.php` | what a *running* container can report, via `config('version.app')` |
+
+The last one exists because a deployed instance has no tags. It is the only copy that can
+drift, so bump it in the same commit as the changelog heading.
+
+### Cutting a release
+
+1. Write the `CHANGELOG.md` entry under a new version heading, moving anything from
+   `[Unreleased]`. Keep the **Migrations** note: migrations are run by hand here, and the
+   person deploying needs to know whether there are any before they pull.
+2. Bump `config/version.php`.
+3. Commit both together (`docs: release X.Y.Z`), merge to `main` with `--no-ff`.
+4. Tag on `main`, never on a feature branch — a tag on a branch that later gets squashed
+   points at a commit that no longer exists:
+   ```bash
+   git tag -a v0.1.0 -m "0.1.0"
+   git push origin main --follow-tags
+   ```
+5. Run the migrations the changelog named, then any seeder they need.
 
 ## Constraints imposed by php.ini
 

@@ -92,18 +92,6 @@ Nothing breaks if this is never done — every stack falls back to system faces.
 
 ---
 
-## Replace the hardcoded item list
-
-**Status:** `HomeController` carries a literal array standing in for the items table.
-
-The chosen content model is: database holds `slug` plus mechanical stats, `lang/*/items.php`
-holds every player-visible string. The lang side exists; the table does not. Needs an
-`items` migration, an `Item` model, and a factory. Keep the slug as the join between the
-row and its translations, and add new items to **both** places — `php artisan i18n:check`
-will not catch a row whose slug has no lang entry.
-
----
-
 ## Housekeeping
 
 - **`php artisan storage:link` will fail** — `symlink` is in `disable_functions` and that

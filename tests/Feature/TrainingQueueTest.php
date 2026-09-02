@@ -3,13 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Character;
-use App\Models\CharacterSkill;
 use App\Models\Skill;
 use App\Models\SkillPrerequisite;
 use App\Models\TrainingQueueEntry;
 use App\Skills\TrainingQueueValidator;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\InjectsSkills;
 use Tests\TestCase;
 
 /**
@@ -18,7 +18,7 @@ use Tests\TestCase;
  */
 class TrainingQueueTest extends TestCase
 {
-    use RefreshDatabase;
+    use InjectsSkills, RefreshDatabase;
 
     private Character $character;
 
@@ -56,17 +56,37 @@ class TrainingQueueTest extends TestCase
 
     private function knows(Skill $skill, int $level): void
     {
-        CharacterSkill::create([
-            'character_id' => $this->character->id,
-            'skill_id' => $skill->id,
-            'skill_points' => $skill->pointsForLevel($level),
-            'attained_level' => $level,
-        ]);
+        $this->inject($this->character, $skill, $skill->pointsForLevel($level), $level);
     }
 
-    /** @param  list<array{0: Skill, 1: int}>  $entries */
-    private function queue(array $entries): void
+    /**
+     * Injected but untrained: level 0, no points.
+     *
+     * The state every skill starts in once its book is spent, and the state a
+     * queue entry needs before it may name that skill at all.
+     */
+    private function injected(Skill ...$skills): void
     {
+        foreach ($skills as $skill) {
+            if (! $this->character->fresh()->hasInjected($skill)) {
+                $this->inject($this->character, $skill);
+            }
+        }
+    }
+
+    /**
+     * @param  list<array{0: Skill, 1: int}>  $entries
+     *
+     * Injects every skill named, unless the test is specifically about the
+     * uninjected case — building a queue for a skill with no book spent is
+     * exactly what the validator now refuses.
+     */
+    private function queue(array $entries, bool $inject = true): void
+    {
+        if ($inject) {
+            $this->injected(...array_column($entries, 0));
+        }
+
         foreach ($entries as $position => [$skill, $level]) {
             TrainingQueueEntry::create([
                 'character_id' => $this->character->id,
