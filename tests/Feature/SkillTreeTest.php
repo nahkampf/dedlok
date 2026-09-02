@@ -88,33 +88,28 @@ class SkillTreeTest extends TestCase
 
         $this->assertCount(1, $nodes);
         $this->assertTrue($nodes[0]->isOpen());
-        $this->assertSame(0, $nodes[0]->depth);
         $this->assertSame([], $nodes[0]->requirements);
     }
 
-    public function test_a_skill_sits_below_what_it_requires(): void
+    public function test_a_skill_names_what_it_requires(): void
     {
-        // Order carries what the indentation used to: reading a section top to
-        // bottom is reading the order things unlock in.
         $profiling = $this->skill('System Profiling');
         $decks = $this->skill('Cyberdecks');
         $this->gate($profiling, $decks, 3);
 
-        $nodes = $this->tree()['Systems'];
+        $node = collect($this->tree()['Systems'])
+            ->firstWhere(fn (SkillTreeNode $n): bool => $n->skill->title === 'System Profiling');
 
-        $this->assertSame(
-            ['Cyberdecks', 'System Profiling'],
-            array_map(fn (SkillTreeNode $n): string => $n->skill->title, $nodes),
-            'a skill listed above the one it needs'
-        );
-
-        $this->assertSame(1, $nodes[1]->depth);
-        $this->assertSame('Cyberdecks', $nodes[1]->requirements[0]['skill']->title);
-        $this->assertSame(3, $nodes[1]->requirements[0]['level']);
+        $this->assertFalse($node->isOpen());
+        $this->assertSame('Cyberdecks', $node->requirements[0]['skill']->title);
+        $this->assertSame(3, $node->requirements[0]['level']);
     }
 
-    public function test_skills_that_unlock_together_are_ordered_by_title(): void
+    public function test_a_section_is_alphabetical_whatever_the_graph_says(): void
     {
+        // Zero Day needs Cyberdecks, so a dependency order would put it last.
+        // A section is a place to look a skill up, and looking one up wants
+        // its name where you expect it.
         $decks = $this->skill('Cyberdecks');
         foreach (['Zero Day', 'Anonymity', 'Network Topology'] as $title) {
             $this->gate($this->skill($title), $decks);
@@ -125,8 +120,7 @@ class SkillTreeTest extends TestCase
             $this->tree()['Systems'],
         );
 
-        // Depth first, then title — Cyberdecks opens all three.
-        $this->assertSame(['Cyberdecks', 'Anonymity', 'Network Topology', 'Zero Day'], $titles);
+        $this->assertSame(['Anonymity', 'Cyberdecks', 'Network Topology', 'Zero Day'], $titles);
     }
 
     // ---- where a tree cannot describe the graph -----------------------------
@@ -153,7 +147,6 @@ class SkillTreeTest extends TestCase
         $node = collect($this->tree()['Systems'])
             ->firstWhere(fn (SkillTreeNode $n): bool => $n->skill->title === 'Advanced Profiling');
 
-        $this->assertSame(2, $node->depth, 'it unlocks last');
         $this->assertSame(
             ['Cyberdecks' => 5, 'System Profiling' => 5],
             collect($node->requirements)->mapWithKeys(

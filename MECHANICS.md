@@ -324,10 +324,10 @@ the one costing indentation a phone does not have.
 
 - Every skill states **all** of its prerequisites, each in its own box. A box
   can be repeated; an edge cannot.
-- **Order carries what the indentation did.** A skill sits below everything it
-  needs, because depth — the longest chain of prerequisites behind it — sorts
-  ahead of the title. Reading a section top to bottom is reading the order
-  things unlock in.
+- **A section is alphabetical.** It is a place to look a skill up, and looking
+  one up wants its name where you expect it. Depth is still walked while
+  building — that walk is what catches a cycle — but it orders nothing and is
+  not carried on the node.
 - A prerequisite in **another category** is named with the category on it, and
   moves nothing: the skill stays in its own section.
 - A **cycle** makes every skill in it unreachable. The builder refuses to walk

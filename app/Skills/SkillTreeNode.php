@@ -11,19 +11,18 @@ use App\Models\Skill;
  *
  * There is no nesting any more — the categories are collapsible sections, and
  * a section IS the grouping the indentation used to draw. What is left of the
- * graph is what a player actually needs from it: what this skill wants before
- * they can learn it, and where it sits in the order things unlock.
+ * graph is the only part a player needs from it: what this skill wants before
+ * they can learn it.
  *
- * `depth` is the longest chain of prerequisites behind the skill, not how many
- * it has. It orders the list rather than indenting it: a skill appears below
- * everything it needs.
+ * The list is alphabetical. Depth is still computed while building, because
+ * that walk is what catches a prerequisite cycle, but it no longer orders
+ * anything and so is not carried here.
  */
 final class SkillTreeNode
 {
     /** @param  list<array{skill: Skill, level: int}>  $requirements */
     public function __construct(
         public readonly Skill $skill,
-        public readonly int $depth,
         public readonly array $requirements = [],
         public readonly bool $unreachable = false,
     ) {}

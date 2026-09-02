@@ -17,10 +17,9 @@ use Illuminate\Support\Collection;
  * so a skill with two of them is no longer a shape the layout has to
  * apologise for.
  *
- * ORDER carries what the indentation used to. A skill sits below everything it
- * needs, because depth — the longest chain of prerequisites behind it — sorts
- * ahead of the title. Reading a section top to bottom is reading the order
- * things unlock in.
+ * The list is ALPHABETICAL. Depth is still walked, because that walk is what
+ * catches a cycle, but it orders nothing: a section is a place to look a skill
+ * up, and looking one up wants its name where you expect it.
  *
  * Cycles are a data error that `skills:validate` catches, but this must not
  * hang on one, so depth resolution refuses to walk a skill it is already
@@ -56,7 +55,7 @@ final class SkillTree
     }
 
     /**
-     * Every category, in name order, each holding its skills in unlock order.
+     * Every category in name order, each holding its skills in title order.
      *
      * @return array<string, list<SkillTreeNode>>
      */
@@ -67,14 +66,13 @@ final class SkillTree
         foreach ($this->skills as $id => $skill) {
             $categories[$skill->category][] = new SkillTreeNode(
                 skill: $skill,
-                depth: $this->depth($id) ?? 0,
                 requirements: $this->requirementsFor($id),
                 unreachable: $this->depth($id) === null,
             );
         }
 
         foreach ($categories as &$nodes) {
-            usort($nodes, fn (SkillTreeNode $a, SkillTreeNode $b): int => [$a->depth, $a->skill->title] <=> [$b->depth, $b->skill->title]);
+            usort($nodes, fn (SkillTreeNode $a, SkillTreeNode $b): int => $a->skill->title <=> $b->skill->title);
         }
 
         unset($nodes);
