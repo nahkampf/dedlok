@@ -28,7 +28,7 @@
 
                     <div>
                         @foreach ($roots as $root)
-                            <x-skill-node :node="$root" />
+                            <x-skill-node :node="$root" :levels="$levels" />
                         @endforeach
                     </div>
                 </div>

@@ -337,6 +337,16 @@ information.
 Rank maps onto the kit's `t1`–`t5` accents, since ranks are 1, 2, 4, 8, 16 and
 the tiers already mean "how costly is this".
 
+**What a signed-in player has is laid over the top**, never built into the tree:
+a corner tick on skills they have injected and a five-segment meter of levels
+attained. It arrives as one `skill_id => level` map, so the arrangement cannot
+depend on who is reading it — two players must not see different shapes for the
+same catalogue. A guest sees the catalogue with no overlay at all.
+
+**The tick keys off presence in that map, never the level.** Level 0 is a real
+state — injected, untrained — and reading the level to decide would hide a
+skill the moment it was learned.
+
 ### What happens to time past the target
 
 An entry stops at its target level **only when something else is queued**. The

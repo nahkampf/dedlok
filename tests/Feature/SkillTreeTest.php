@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Character;
+use App\Models\CharacterSkill;
 use App\Models\Skill;
 use App\Models\SkillPrerequisite;
 use App\Models\User;
@@ -304,17 +306,103 @@ class SkillTreeTest extends TestCase
         $this->assertSame(3, substr_count($html, 'margin-inline-start'), 'the offset stops after three');
     }
 
-    public function test_the_page_is_public_and_reads_no_character(): void
+    public function test_a_guest_sees_the_catalogue_and_no_overlay(): void
     {
         $this->skill('Cyberdecks');
 
-        $this->get(route('skills.index'))->assertOk();
+        $html = $this->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('Cyberdecks', $html);
+        $this->assertStringNotContainsString('ticked', $html, 'a guest has injected nothing');
+        $this->assertStringNotContainsString('meter--seg', $html);
 
         // A signed-in user without a character is still sent to creation by
         // RequireCharacter; that is the middleware's job, not this page's.
         $this->actingAs(User::factory()->create())
             ->get(route('skills.index'))
             ->assertRedirect(route('character.create'));
+    }
+
+    // ---- what the viewer has ------------------------------------------------
+
+    private function player(): Character
+    {
+        return Character::factory()->create(array_merge(
+            array_fill_keys(Character::ATTRIBUTES, 10),
+            ['archetype' => 1],
+        ));
+    }
+
+    private function inject(Character $character, Skill $skill, int $level = 0): void
+    {
+        CharacterSkill::create([
+            'character_id' => $character->id,
+            'skill_id' => $skill->id,
+            'skill_points' => $level === 0 ? 0 : $skill->pointsForLevel($level),
+            'attained_level' => $level,
+        ]);
+    }
+
+    public function test_an_injected_skill_is_ticked_and_metered(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $player = $this->player();
+        $this->inject($player, $decks, 2);
+
+        $html = $this->actingAs($player->user)
+            ->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('ticked', $html);
+        $this->assertStringContainsString('--tick:var(--ok)', $html);
+
+        // Two of five levels lit, the rest left as the kit's grey.
+        $this->assertStringContainsString('--segs:5;--v:0.4', $html);
+    }
+
+    public function test_an_untrained_injection_is_still_ticked(): void
+    {
+        // Level 0 is a real state — injected, untrained — so presence in the
+        // map marks the skill, never the level.
+        $decks = $this->skill('Cyberdecks');
+        $player = $this->player();
+        $this->inject($player, $decks, 0);
+
+        $html = $this->actingAs($player->user)
+            ->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('ticked', $html);
+        $this->assertStringContainsString('--segs:5;--v:0', $html);
+    }
+
+    public function test_a_skill_the_player_lacks_is_not_marked(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $this->skill('Network Topology');
+        $player = $this->player();
+        $this->inject($player, $decks, 1);
+
+        $html = $this->actingAs($player->user)
+            ->get(route('skills.index'))->assertOk()->getContent();
+
+        // One row ticked, one not — the overlay is per skill, not per page.
+        $this->assertSame(1, substr_count($html, 'ticked'));
+    }
+
+    public function test_the_tree_shape_does_not_depend_on_the_viewer(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $profiling = $this->skill('System Profiling');
+        $this->gate($profiling, $decks, 3);
+
+        $player = $this->player();
+        $this->inject($player, $profiling, 1);
+
+        $guest = $this->get(route('skills.index'))->getContent();
+        $mine = $this->actingAs($player->user)->get(route('skills.index'))->getContent();
+
+        $strip = fn (string $html): int => substr_count($html, 'class="item-row');
+
+        $this->assertSame($strip($guest), $strip($mine), 'the catalogue changed shape per viewer');
     }
 
     public function test_an_empty_database_says_so(): void

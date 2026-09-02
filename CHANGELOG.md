@@ -12,6 +12,16 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+- **The skill tree marks what you have.** A signed-in player gets a green corner
+  tick on every skill they have injected and a five-segment meter of the levels
+  they have attained — lit green, the rest the kit's grey. It is an overlay
+  driven by one `skill_id => level` map, so the tree's shape never depends on
+  who is reading it, and a guest still sees the plain catalogue.
+- **`.ticked` is a new UI kit utility**, generalising the corner tick that
+  `.card--select` and `.slot--filled` already drew for themselves. It marks a
+  box and touches nothing else — no border colour, no background. Demoed in the
+  gallery.
+
 ### Changed
 
 - **The minute a skill crosses its target level is credited whole.** An entry

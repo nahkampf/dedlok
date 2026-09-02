@@ -218,6 +218,10 @@ return [
         'empty' => 'No skills in the database yet.',
         'count' => ['zero' => 'empty', 'one' => ':count skill', 'many' => ':count skills'],
         'deepest' => 'depth :levels',
+
+        // The overlay a signed-in player sees on top of the catalogue.
+        'injected' => 'On your sheet',
+        'level_meter' => 'Level :level of :max',
     ],
 
     'errors' => [

@@ -118,7 +118,9 @@ pattern, so the docs cannot drift from the code.
    is the single exception: it means *begin*, not *succeeded*, and is likewise limited to
    one per screen — never beside another filled button competing for the same click.
 3. **Geometry is machined.** Radius stays 0–3px. Character comes from the notched corner
-   (`.cut`), never from rounding.
+   (`.cut`), never from rounding. The corner *tick* (`.ticked`, and the same device inside
+   `.card--select` and `.slot--filled`) is the other half of that vocabulary: it marks a
+   box as one you have, and marks nothing else — no border colour, no fill.
 
 Dark mode only. There is no light theme and none is planned — do not add one, and do not
 add `prefers-color-scheme` blocks.

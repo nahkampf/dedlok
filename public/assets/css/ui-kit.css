@@ -1702,6 +1702,19 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
 
 /* ── UTILITIES ─────────────────────────────────────────────────────────── */
 
+/* The corner tick. This is the third place the device appears — .card--select
+   marks a chosen option with it and .slot--filled an occupied socket — so it is
+   a modifier rather than a fourth copy. It marks a box as one you HAVE, and
+   touches nothing else: no border colour, no background, no layout. --tick sets
+   the colour and --tick-size the leg. */
+.ticked { position: relative; }
+.ticked::after {
+  content: ""; position: absolute; top: 0; right: 0;
+  width: 0; height: 0;
+  border-top: var(--tick-size, 10px) solid var(--tick, var(--ok));
+  border-left: var(--tick-size, 10px) solid transparent;
+}
+
 .stack   { display: flex; flex-direction: column; gap: var(--gap, var(--s-3)); }
 .row     { display: flex; align-items: center; gap: var(--gap, var(--s-3)); }
 .row--wrap { flex-wrap: wrap; }
