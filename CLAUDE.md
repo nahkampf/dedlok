@@ -419,18 +419,31 @@ drift, so bump it in the same commit as the changelog heading.
 
 ### Cutting a release
 
-1. Write the `CHANGELOG.md` entry under a new version heading, moving anything from
-   `[Unreleased]`. Keep the **Migrations** note: migrations are run by hand here, and the
-   person deploying needs to know whether there are any before they pull.
-2. Bump `config/version.php`.
-3. Commit both together (`docs: release X.Y.Z`), merge to `main` with `--no-ff`.
-4. Tag on `main`, never on a feature branch — a tag on a branch that later gets squashed
-   points at a commit that no longer exists:
-   ```bash
-   git tag -a v0.1.0 -m "0.1.0"
-   git push origin main --follow-tags
-   ```
-5. Run the migrations the changelog named, then any seeder they need.
+**`bin/release X.Y.Z` does all of it.** It drafts the changelog entry from the commits
+since the last tag, opens `$EDITOR` (nano by default) so you can rewrite that draft into
+something a person would read, and only then commits, merges and tags.
+
+```bash
+bin/release 0.2.3            # --no-tests to skip the suite, --no-merge to stay put
+git push origin main --follow-tags
+```
+
+What it does for you, and why:
+
+- **Drafts, never writes.** Commit subjects say what changed to someone reading the
+  history; a changelog says what changed to someone deciding whether to pull. The draft
+  is grouped `feat`→Added, `fix`→Fixed, everything else→Changed, and carries a DRAFT
+  marker the script refuses to proceed past — so the entry cannot ship un-rewritten.
+- **Enforces the schema rule.** New migrations since the last tag are listed under
+  **Migrations** automatically, and a release that adds one while bumping only the patch
+  has to be confirmed.
+- **Tags on `main`**, after a `--no-ff` merge, never on a feature branch — a tag on a
+  branch that later gets squashed points at a commit that no longer exists.
+- **Restores the tree on any exit that is not a successful commit**, including an editor
+  that quits non-zero or a failing suite. Nothing half-released is left behind.
+- **Never pushes.** It prints the command; pushing stays a decision.
+
+Afterwards, run the migrations the changelog named and any seeder they need.
 
 ## Constraints imposed by php.ini
 
