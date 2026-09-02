@@ -35,29 +35,34 @@ return [
         'flavor' => 'Compressed instruction set. One read, then it is gone.',
     ],
 
+    // Column labels, not item words: one entry each rather than one per item.
+    'stat' => [
+        'weight' => 'Weight',
+        'cost' => 'Cost',
+    ],
+
+    // The catalogue is seeded, so this only shows on a database that has not
+    // had ItemSeeder run against it.
+    'catalogue_empty' => 'No items in the catalogue yet.',
+
     'sandevistan_mk5' => [
         'name' => 'Sandevistan MK.V',
-        'tier' => 'Anomalous',
         'flavor' => 'Pulled from a Militech cadaver. Still warm when they found it.',
     ],
     'kiroshi_optics' => [
         'name' => 'Kiroshi Optics',
-        'tier' => 'Prototype',
         'flavor' => 'Sees more than you want it to.',
     ],
     'ballistic_coprocessor' => [
         'name' => 'Ballistic Coprocessor',
-        'tier' => 'Milspec',
         'flavor' => 'Does the maths so your hands do not have to.',
     ],
     'memory_shard' => [
         'name' => 'Memory Shard',
-        'tier' => 'Tuned',
         'flavor' => 'Sixty-four gig of nothing until you put something on it.',
     ],
     'scrap_alloy' => [
         'name' => 'Scrap Alloy',
-        'tier' => 'Standard',
         'flavor' => 'Worth almost nothing. Almost.',
     ],
 ];
