@@ -313,25 +313,23 @@ is the only thing holding those invariants, so nothing else will notice.
 
 `/skills` renders the whole catalogue as one collapsible section per category,
 from `App\Skills\SkillTree`. Only the first opens: a page that starts as a wall
-of every skill in the game is not scannable, and a full-width section gives a
-deep tree more room than a grid column did — which matters most on a phone.
+of every skill in the game is not scannable.
 
-**It is not a tree and the arrangement has to lie a little.** Prerequisites
-form a DAG: a skill may require several others, and the seeded catalogue
-already has one that requires two. A tree gives every node one parent, so
-something must give — and what gives is the extra *edges*, never the
-information.
+**It stopped being a tree, and it is better for it.** Prerequisites form a DAG,
+not a tree — a skill may require several others, and the seeded catalogue
+already has one that requires two. Nesting could draw only one of those edges
+and had to explain the rest in words. Once the categories became sections, the
+nesting and the section were saying the same thing anyway, and the nesting was
+the one costing indentation a phone does not have.
 
-- A skill hangs under its **deepest** prerequisite: the one that gates it
-  last, and so the branch it genuinely extends. Depth is the longest chain
-  behind a skill, not how many parents it has.
-- **Every requirement is named on the row**, including the one the tree did
-  draw — "Cyberdecks 3" in a box says more than "from level 3", and says it
-  the same way as the requirements no edge could show. Each skill appears
-  **exactly once**, in its own category.
-- A prerequisite in **another category** cannot be a parent — a node cannot
-  hang in two lanes — so the skill stays a root in its own lane and says what
-  it is waiting on.
+- Every skill states **all** of its prerequisites, each in its own box. A box
+  can be repeated; an edge cannot.
+- **Order carries what the indentation did.** A skill sits below everything it
+  needs, because depth — the longest chain of prerequisites behind it — sorts
+  ahead of the title. Reading a section top to bottom is reading the order
+  things unlock in.
+- A prerequisite in **another category** is named with the category on it, and
+  moves nothing: the skill stays in its own section.
 - A **cycle** makes every skill in it unreachable. The builder refuses to walk
   a skill it is already walking, marks what it finds, and renders the rest;
   `skills:validate` is what explains it.

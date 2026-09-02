@@ -13,24 +13,24 @@
             </div>
         </div>
     @else
-        {{-- One section per category, each collapsible. The kit's accordion
-             draws its own hairlines, so it needs no panel around it — and a
-             full-width section gives a deep tree more room than a grid column
-             did, which matters most on a phone. --}}
+        {{-- One section per category, each collapsible and each a flat list.
+             The section IS the grouping, so nothing is nested inside it: a
+             skill states what it needs in boxes, which an edge could not do
+             more than once anyway. --}}
         <div class="accordion" style="margin-top:var(--s-5)">
-            @foreach ($categories as $category => $roots)
+            @foreach ($categories as $category => $nodes)
                 <details @if ($loop->first) open @endif>
                     <summary>
                         {{ $category }}
                         <div class="spacer"></div>
                         <span class="micro num">
-                            {{ Text::plural('skills.count', collect($roots)->sum(fn ($root) => $root->descendantCount())) }}
+                            {{ Text::plural('skills.count', count($nodes)) }}
                         </span>
                     </summary>
 
                     <div>
-                        @foreach ($roots as $root)
-                            <x-skill-node :node="$root" :levels="$levels" />
+                        @foreach ($nodes as $node)
+                            <x-skill-node :node="$node" :levels="$levels" />
                         @endforeach
                     </div>
                 </details>

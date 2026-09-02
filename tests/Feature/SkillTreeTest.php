@@ -80,36 +80,40 @@ class SkillTreeTest extends TestCase
         }
     }
 
-    public function test_a_skill_with_no_prerequisites_is_a_root(): void
+    public function test_a_skill_with_no_prerequisites_is_open(): void
     {
         $this->skill('Cyberdecks');
 
-        $roots = $this->tree()['Systems'];
+        $nodes = $this->tree()['Systems'];
 
-        $this->assertCount(1, $roots);
-        $this->assertTrue($roots[0]->isRoot());
-        $this->assertSame(0, $roots[0]->depth);
-        $this->assertNull($roots[0]->requiredLevel);
+        $this->assertCount(1, $nodes);
+        $this->assertTrue($nodes[0]->isOpen());
+        $this->assertSame(0, $nodes[0]->depth);
+        $this->assertSame([], $nodes[0]->requirements);
     }
 
-    public function test_a_requiring_skill_hangs_under_what_it_requires(): void
+    public function test_a_skill_sits_below_what_it_requires(): void
     {
-        $decks = $this->skill('Cyberdecks');
+        // Order carries what the indentation used to: reading a section top to
+        // bottom is reading the order things unlock in.
         $profiling = $this->skill('System Profiling');
+        $decks = $this->skill('Cyberdecks');
         $this->gate($profiling, $decks, 3);
 
-        $roots = $this->tree()['Systems'];
+        $nodes = $this->tree()['Systems'];
 
-        $this->assertCount(1, $roots, 'the child must not also be a root');
-        $this->assertSame('Cyberdecks', $roots[0]->skill->title);
+        $this->assertSame(
+            ['Cyberdecks', 'System Profiling'],
+            array_map(fn (SkillTreeNode $n): string => $n->skill->title, $nodes),
+            'a skill listed above the one it needs'
+        );
 
-        $child = $roots[0]->children[0];
-        $this->assertSame('System Profiling', $child->skill->title);
-        $this->assertSame(3, $child->requiredLevel);
-        $this->assertSame(1, $child->depth);
+        $this->assertSame(1, $nodes[1]->depth);
+        $this->assertSame('Cyberdecks', $nodes[1]->requirements[0]['skill']->title);
+        $this->assertSame(3, $nodes[1]->requirements[0]['level']);
     }
 
-    public function test_children_are_ordered_by_title(): void
+    public function test_skills_that_unlock_together_are_ordered_by_title(): void
     {
         $decks = $this->skill('Cyberdecks');
         foreach (['Zero Day', 'Anonymity', 'Network Topology'] as $title) {
@@ -118,59 +122,26 @@ class SkillTreeTest extends TestCase
 
         $titles = array_map(
             fn (SkillTreeNode $node): string => $node->skill->title,
-            $this->tree()['Systems'][0]->children,
+            $this->tree()['Systems'],
         );
 
-        $this->assertSame(['Anonymity', 'Network Topology', 'Zero Day'], $titles);
+        // Depth first, then title — Cyberdecks opens all three.
+        $this->assertSame(['Cyberdecks', 'Anonymity', 'Network Topology', 'Zero Day'], $titles);
     }
 
     // ---- where a tree cannot describe the graph -----------------------------
 
-    public function test_a_node_lists_the_edge_it_hangs_under_alongside_the_rest(): void
-    {
-        $decks = $this->skill('Cyberdecks');
-        $profiling = $this->skill('System Profiling');
-        $this->gate($profiling, $decks, 3);
-
-        $node = $this->tree()['Systems'][0]->children[0];
-        $requirements = $node->requirements();
-
-        $this->assertCount(1, $requirements);
-        $this->assertSame('Cyberdecks', $requirements[0]['skill']->title);
-        $this->assertSame(3, $requirements[0]['level']);
-        $this->assertSame('Cyberdecks', $node->requiredSkill->title);
-    }
-
-    public function test_requirements_lead_with_the_drawn_edge(): void
-    {
-        $decks = $this->skill('Cyberdecks');
-        $profiling = $this->skill('System Profiling');
-        $advanced = $this->skill('Advanced Profiling');
-        $this->gate($profiling, $decks, 3);
-        $this->gate($advanced, $decks, 5);
-        $this->gate($advanced, $profiling, 5);
-
-        $node = $this->tree()['Systems'][0]->children[0]->children[0];
-
-        $this->assertSame(
-            ['System Profiling', 'Cyberdecks'],
-            array_map(fn (array $r): string => $r['skill']->title, $node->requirements()),
-            'the one it hangs under comes first'
-        );
-    }
-
-    public function test_a_root_lists_no_requirements(): void
+    public function test_an_open_skill_lists_no_requirements(): void
     {
         $this->skill('Cyberdecks');
 
-        $this->assertSame([], $this->tree()['Systems'][0]->requirements());
+        $this->assertSame([], $this->tree()['Systems'][0]->requirements);
     }
 
-    public function test_a_skill_with_two_parents_hangs_under_the_deeper_one(): void
+    public function test_a_skill_states_every_prerequisite_it_has(): void
     {
-        // Advanced needs both Cyberdecks (depth 0) and Profiling (depth 1).
-        // It becomes reachable only after the deeper chain, so that is where
-        // it belongs; the other requirement is carried on the node.
+        // Advanced needs BOTH. A tree had to draw one edge and explain the
+        // other; a list of boxes just says both.
         $decks = $this->skill('Cyberdecks');
         $profiling = $this->skill('System Profiling');
         $advanced = $this->skill('Advanced Profiling');
@@ -179,15 +150,16 @@ class SkillTreeTest extends TestCase
         $this->gate($advanced, $decks, 5);
         $this->gate($advanced, $profiling, 5);
 
-        $node = $this->tree()['Systems'][0]->children[0]->children[0];
+        $node = collect($this->tree()['Systems'])
+            ->firstWhere(fn (SkillTreeNode $n): bool => $n->skill->title === 'Advanced Profiling');
 
-        $this->assertSame('Advanced Profiling', $node->skill->title);
-        $this->assertSame(2, $node->depth);
-        $this->assertSame(5, $node->requiredLevel);
-
-        $this->assertCount(1, $node->alsoRequires);
-        $this->assertSame('Cyberdecks', $node->alsoRequires[0]['skill']->title);
-        $this->assertSame(5, $node->alsoRequires[0]['level']);
+        $this->assertSame(2, $node->depth, 'it unlocks last');
+        $this->assertSame(
+            ['Cyberdecks' => 5, 'System Profiling' => 5],
+            collect($node->requirements)->mapWithKeys(
+                fn (array $r): array => [$r['skill']->title => $r['level']]
+            )->all()
+        );
     }
 
     public function test_every_skill_appears_exactly_once(): void
@@ -199,17 +171,10 @@ class SkillTreeTest extends TestCase
         $this->gate($advanced, $decks);
         $this->gate($advanced, $profiling);
 
-        $seen = [];
-        $walk = function (SkillTreeNode $node) use (&$walk, &$seen): void {
-            $seen[] = $node->skill->title;
-            foreach ($node->children as $child) {
-                $walk($child);
-            }
-        };
-
-        foreach ($this->tree()['Systems'] as $root) {
-            $walk($root);
-        }
+        $seen = array_map(
+            fn (SkillTreeNode $node): string => $node->skill->title,
+            $this->tree()['Systems'],
+        );
 
         sort($seen);
         $this->assertSame(['Advanced Profiling', 'Cyberdecks', 'System Profiling'], $seen);
@@ -229,9 +194,8 @@ class SkillTreeTest extends TestCase
         $node = $tree['Systems'][0];
 
         $this->assertSame('Cyberdecks', $node->skill->title);
-        $this->assertTrue($node->isRoot());
-        $this->assertCount(1, $node->alsoRequires);
-        $this->assertSame('Neural Interfacing', $node->alsoRequires[0]['skill']->title);
+        $this->assertCount(1, $node->requirements);
+        $this->assertSame('Neural Interfacing', $node->requirements[0]['skill']->title);
     }
 
     public function test_a_cycle_is_reported_rather_than_hung_on(): void
@@ -241,10 +205,10 @@ class SkillTreeTest extends TestCase
         $this->gate($a, $b);
         $this->gate($b, $a);
 
-        $roots = $this->tree()['Systems'];
+        $nodes = $this->tree()['Systems'];
 
-        $this->assertCount(2, $roots);
-        foreach ($roots as $node) {
+        $this->assertCount(2, $nodes);
+        foreach ($nodes as $node) {
             $this->assertTrue($node->unreachable, "{$node->skill->title} should be unreachable");
         }
     }
@@ -265,19 +229,19 @@ class SkillTreeTest extends TestCase
         }
     }
 
-    public function test_a_lane_counts_everything_in_it(): void
+    public function test_a_section_holds_every_skill_in_its_category(): void
     {
         $decks = $this->skill('Cyberdecks');
         $profiling = $this->skill('System Profiling');
         $this->gate($profiling, $decks);
         $this->gate($this->skill('Advanced Profiling'), $profiling);
 
-        $this->assertSame(3, $this->tree()['Systems'][0]->descendantCount());
+        $this->assertCount(3, $this->tree()['Systems']);
     }
 
     // ---- the page -----------------------------------------------------------
 
-    public function test_the_page_draws_the_tree(): void
+    public function test_the_page_lists_every_skill_with_what_it_needs(): void
     {
         $decks = $this->skill('Cyberdecks');
         $profiling = $this->skill('System Profiling');
@@ -291,13 +255,10 @@ class SkillTreeTest extends TestCase
         $response->assertSee('Systems');
         $response->assertSee('Cyberdecks');
 
-        // The edge the tree DID draw is still stated in a box: "Cyberdecks 3"
-        // says more than "from level 3", and says it the same way as the rest.
+        // Both prerequisites are stated, in the same kind of box.
         $response->assertSee(Text::get('skills.requires', [
             'skill' => 'Cyberdecks', 'level' => 3,
         ]));
-
-        // And so is the second parent, which the tree could not draw.
         $response->assertSee(Text::get('skills.requires', [
             'skill' => 'System Profiling', 'level' => 5,
         ]));
@@ -305,29 +266,6 @@ class SkillTreeTest extends TestCase
         // A rank is a multiplier, so it reads as one: ×4, not "Rank 4".
         $response->assertSee(Text::get('skills.rank', ['rank' => 4]));
         $response->assertSee('×4');
-    }
-
-    /**
-     * Indentation compounds, so it has to stop.
-     *
-     * A 320px screen has about 238px inside a panel; five levels of indent
-     * would eat a third of it and the rows would wrap to nothing. The rail
-     * still runs at every depth — only the offset stops.
-     */
-    public function test_the_indent_stops_compounding_but_the_rail_does_not(): void
-    {
-        $previous = $this->skill('Level 0');
-
-        foreach (range(1, 5) as $level) {
-            $current = $this->skill("Level {$level}");
-            $this->gate($current, $previous);
-            $previous = $current;
-        }
-
-        $html = $this->get(route('skills.index'))->assertOk()->getContent();
-
-        $this->assertSame(5, substr_count($html, 'border-left:var(--hair)'), 'every level keeps its rail');
-        $this->assertSame(3, substr_count($html, 'margin-inline-start'), 'the offset stops after three');
     }
 
     public function test_a_guest_sees_the_catalogue_and_no_overlay(): void

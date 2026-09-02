@@ -12,9 +12,12 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
-- **Each category on the skill tree is a collapsible section** rather than a
-  column in a grid, with the first open. A full-width section also gives a deep
-  tree more room than a grid column did.
+- **Each category on the skill tree is a collapsible section**, holding a flat
+  list rather than a nested one. The nesting and the section were saying the
+  same thing, and the nesting was the one costing indentation a phone does not
+  have. A skill now states *all* of its prerequisites as boxes — a box can be
+  repeated where an edge could not — and order carries what the indentation
+  did: a skill sits below everything it needs.
 - **The skill tree marks what you have.** A signed-in player gets a green corner
   tick on every skill they have injected and a five-segment meter of the levels
   they have attained — lit green, the rest the kit's grey. It is an overlay

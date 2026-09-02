@@ -196,7 +196,7 @@ return [
     'skills' => [
 
         'title' => 'Skill tree',
-        'lede' => 'Every skill in the game, grouped by category. A skill sits under the prerequisite that gates it last; anything else it needs is named on the row.',
+        'lede' => 'Every skill in the game, grouped by category and listed in the order they unlock. Each one names what it needs first.',
 
         // The multiplication sign, matching inventory.quantity: a rank is a
         // training-time multiplier, not an ordinal.

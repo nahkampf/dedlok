@@ -8,18 +8,19 @@ use App\Models\Skill;
 use Illuminate\Support\Collection;
 
 /**
- * The skill graph, arranged as one tree per category.
+ * The skill graph, grouped into one list per category.
  *
- * IT IS NOT ACTUALLY A TREE, and that is the whole problem this class exists
- * to solve. Prerequisites form a directed acyclic graph: a skill may require
- * several others, and `advancedsystemprofiling` already requires two. A tree
- * gives every node one parent, so something has to give.
+ * It stopped drawing a tree when the categories became collapsible sections:
+ * the nesting and the section were saying the same thing, and the nesting was
+ * the one that cost indentation a phone does not have. What survives is the
+ * part a tree was never needed for — every skill states its own prerequisites,
+ * so a skill with two of them is no longer a shape the layout has to
+ * apologise for.
  *
- * What gives is the *extra* parents, not the information. A skill hangs under
- * its DEEPEST prerequisite — the one that gates it last, and so the one whose
- * branch it genuinely extends — and every other requirement is carried on the
- * node as `alsoRequires`, for the view to state outright. Nothing is hidden and
- * nothing is duplicated: each skill appears exactly once, in its own category.
+ * ORDER carries what the indentation used to. A skill sits below everything it
+ * needs, because depth — the longest chain of prerequisites behind it — sorts
+ * ahead of the title. Reading a section top to bottom is reading the order
+ * things unlock in.
  *
  * Cycles are a data error that `skills:validate` catches, but this must not
  * hang on one, so depth resolution refuses to walk a skill it is already
@@ -55,47 +56,28 @@ final class SkillTree
     }
 
     /**
-     * Every category, in name order, each with its roots.
+     * Every category, in name order, each holding its skills in unlock order.
      *
      * @return array<string, list<SkillTreeNode>>
      */
     public function categories(): array
     {
-        $nodes = [];
-        $childrenOf = [];
-        $roots = [];
-
-        foreach ($this->skills as $id => $skill) {
-            $parent = $this->primaryParent($id);
-
-            $nodes[$id] = new SkillTreeNode(
-                skill: $skill,
-                depth: $this->depth($id) ?? 0,
-                requiredLevel: $parent['level'] ?? null,
-                requiredSkill: isset($parent['id']) ? $this->skills[$parent['id']] : null,
-                alsoRequires: $this->alsoRequires($id, $parent['id'] ?? null),
-                unreachable: $this->depth($id) === null,
-            );
-
-            if ($parent === null) {
-                $roots[] = $id;
-            } else {
-                $childrenOf[$parent['id']][] = $id;
-            }
-        }
-
-        foreach ($nodes as $id => $node) {
-            $node->children = array_map(
-                fn (int $childId): SkillTreeNode => $nodes[$childId],
-                $this->sorted($childrenOf[$id] ?? []),
-            );
-        }
-
         $categories = [];
 
-        foreach ($this->sorted($roots) as $id) {
-            $categories[$this->skills[$id]->category][] = $nodes[$id];
+        foreach ($this->skills as $id => $skill) {
+            $categories[$skill->category][] = new SkillTreeNode(
+                skill: $skill,
+                depth: $this->depth($id) ?? 0,
+                requirements: $this->requirementsFor($id),
+                unreachable: $this->depth($id) === null,
+            );
         }
+
+        foreach ($categories as &$nodes) {
+            usort($nodes, fn (SkillTreeNode $a, SkillTreeNode $b): int => [$a->depth, $a->skill->title] <=> [$b->depth, $b->skill->title]);
+        }
+
+        unset($nodes);
 
         ksort($categories);
 
@@ -103,70 +85,38 @@ final class SkillTree
     }
 
     /**
-     * The prerequisite this skill hangs under, or null if it hangs under none.
+     * What this skill wants first, in title order.
      *
-     * Deepest first, so the node lands at the end of the longest chain gating
-     * it. Ties break on the higher required level and then on title, which is
-     * arbitrary but stable — a tree that reorders itself between page loads is
-     * worse than one that picks a side.
-     *
-     * A prerequisite in ANOTHER CATEGORY cannot be a parent: lanes are the
-     * point of the layout, and a node cannot hang in two of them. Those become
-     * `alsoRequires` too, and the skill sits at its own lane's root.
-     *
-     * @return array{id: int, level: int}|null
-     */
-    private function primaryParent(int $id): ?array
-    {
-        $category = $this->skills[$id]->category;
-
-        $candidates = array_values(array_filter(
-            $this->requirements[$id],
-            fn (array $requirement): bool => isset($this->skills[$requirement['id']])
-                && $this->skills[$requirement['id']]->category === $category
-                && $this->depth($requirement['id']) !== null,
-        ));
-
-        if ($candidates === []) {
-            return null;
-        }
-
-        usort($candidates, fn (array $a, array $b): int => [$this->depth($b['id']), $b['level'], $this->skills[$a['id']]->title]
-            <=> [$this->depth($a['id']), $a['level'], $this->skills[$b['id']]->title]);
-
-        return $candidates[0];
-    }
-
-    /**
-     * Every requirement that is not the one it hangs under.
+     * A requirement naming a skill that is not loaded is dropped rather than
+     * rendered as a hole: `skills:validate` is what reports it.
      *
      * @return list<array{skill: Skill, level: int}>
      */
-    private function alsoRequires(int $id, ?int $parentId): array
+    private function requirementsFor(int $id): array
     {
-        $extra = [];
+        $requirements = [];
 
         foreach ($this->requirements[$id] as $requirement) {
-            if ($requirement['id'] === $parentId || ! isset($this->skills[$requirement['id']])) {
+            if (! isset($this->skills[$requirement['id']])) {
                 continue;
             }
 
-            $extra[] = [
+            $requirements[] = [
                 'skill' => $this->skills[$requirement['id']],
                 'level' => $requirement['level'],
             ];
         }
 
-        usort($extra, fn (array $a, array $b): int => $a['skill']->title <=> $b['skill']->title);
+        usort($requirements, fn (array $a, array $b): int => $a['skill']->title <=> $b['skill']->title);
 
-        return $extra;
+        return $requirements;
     }
 
     /**
      * How long the longest chain behind this skill is, or null inside a cycle.
      *
      * Memoised, because a wide graph asks for the same answer repeatedly, and
-     * guarded, because a cycle would otherwise recurse until the stack runs
+     * guarded, because a cycle would otherwise recurse until the stack ran
      * out. skills:validate is what reports the cycle; this only has to survive
      * one long enough to render the rest.
      */
@@ -203,16 +153,5 @@ final class SkillTree
         unset($this->walking[$id]);
 
         return $this->depths[$id] = $deepest + 1;
-    }
-
-    /**
-     * @param  list<int>  $ids
-     * @return list<int>
-     */
-    private function sorted(array $ids): array
-    {
-        usort($ids, fn (int $a, int $b): int => $this->skills[$a]->title <=> $this->skills[$b]->title);
-
-        return $ids;
     }
 }

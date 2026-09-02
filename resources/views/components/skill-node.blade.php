@@ -20,28 +20,20 @@
     ]);
 @endphp
 
-{{-- One skill, and everything hanging off it.
+{{-- One skill, flat. Nesting used to say "this needs that", and the boxes said
+     it too; now that a category is a section of its own, only the boxes do —
+     and unlike an edge they can say it more than once, which the graph needs.
 
-     The component recurses, so the nesting IS the indentation: each level
-     wraps its children in a rail carrying a hairline down the left. The
-     hairline goes on at every depth, but the indent STOPS after three — it
-     compounds, and on a 320px screen a fourth step costs more width than the
-     structure it buys. The rail and the row's own glyph still say "child"
-     without it. --}}
-{{-- No tier accent here. .item-row paints border-left from --tier, and the
-     rank tiers include jade — which IS --ok, the colour the tick uses for
-     "you have this". A rank-2 skill was drawing a green stripe that read as
-     state it did not mean, right where the eye looks for the rail. Rank is
-     already stated as ×N in the meta column. --}}
-{{-- A skill you do not have is half-lit until you point at it, so the ones
-     you do have carry the page. --}}
+     No tier accent: .item-row paints border-left from --tier, and the rank
+     tiers include jade, which IS --ok. A rank-2 skill drew a green stripe that
+     read as state it did not mean. Rank is the ×N in the meta column. --}}
 <div @class(['item-row', 'ticked' => $known, 'unlit' => $viewing && ! $known])
      @if ($known) style="--tick:var(--ok)" @endif>
     @if ($known)
         <span class="tick" title="{{ Text::get('skills.injected') }}"></span>
     @endif
 
-    <span class="slot__icon" aria-hidden="true">{{ $node->isRoot() ? '◆' : '└' }}</span>
+    <span class="slot__icon" aria-hidden="true">◆</span>
 
     <span class="stack" style="--gap:2px;min-width:0">
         <span class="item-row__name">{{ $node->skill->title }}</span>
@@ -65,16 +57,13 @@
                     'secondary' => $node->skill->secondary_attribute,
                 ]) }}
             </span>
-
         </span>
 
-        {{-- Every requirement, in the same box whether the tree drew the edge
-             or not. The one it hangs under comes first; the rest are the ones
-             a tree cannot show, and hiding those would be the only real lie
-             this layout could tell. --}}
-        @if ($node->requirements() !== [] || $node->unreachable)
+        {{-- Everything this skill wants first. A skill may want several, which
+             is the whole reason these are boxes and not lines. --}}
+        @if ($node->requirements !== [] || $node->unreachable)
             <span class="row row--wrap" style="--gap:var(--s-2);margin-top:2px">
-                @foreach ($node->requirements() as $requirement)
+                @foreach ($node->requirements as $requirement)
                     <span class="tag">
                         @if ($requirement['skill']->category !== $node->skill->category)
                             {{ Text::get('skills.from_elsewhere', [
@@ -102,15 +91,3 @@
 
     <span class="item-row__meta">{{ Text::get('skills.rank', ['rank' => $node->skill->rank]) }}</span>
 </div>
-
-@if ($node->children !== [])
-    <div @style([
-        'border-left:var(--hair) solid var(--line-0)',
-        'margin-inline-start:var(--s-3)' => $node->depth < 3,
-        'padding-inline-start:var(--s-2)' => $node->depth < 3,
-    ])>
-        @foreach ($node->children as $child)
-            <x-skill-node :node="$child" :levels="$levels" />
-        @endforeach
-    </div>
-@endif
