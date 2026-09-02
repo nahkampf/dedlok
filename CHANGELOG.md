@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-02
+
+### Changed
+
+- Initial admin tools (items, skills) (aadd96f)
+
+### Migrations
+
+- `2026_09_02_190000_add_admin_flag_to_users_table`
+
+
 ## [0.4.0] — 2026-09-02
 
 ### Changed
@@ -105,7 +116,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/nahkampf/dedlok/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/nahkampf/dedlok/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/nahkampf/dedlok/compare/v0.2.3...v0.3.0
 [0.2.3]: https://github.com/nahkampf/dedlok/compare/v0.2.2...v0.2.3
