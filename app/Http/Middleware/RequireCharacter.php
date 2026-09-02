@@ -38,6 +38,9 @@ class RequireCharacter
         'logout',
     ];
 
+    /** Every route name under the admin tools. */
+    private const ADMIN_PREFIX = 'admin.';
+
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
@@ -72,6 +75,18 @@ class RequireCharacter
     {
         $name = $request->route()?->getName();
 
-        return $name !== null && in_array($name, self::ALLOWED_ROUTES, true);
+        if ($name === null) {
+            return false;
+        }
+
+        // The admin tools edit the game, not a character, so requiring one to
+        // reach them would be a rule about the wrong subject — and it would
+        // trap an admin account that has never played behind a creation form.
+        // `can:admin` on the route group is what actually guards them.
+        if (str_starts_with($name, self::ADMIN_PREFIX)) {
+            return true;
+        }
+
+        return in_array($name, self::ALLOWED_ROUTES, true);
     }
 }

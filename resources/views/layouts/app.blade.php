@@ -37,6 +37,15 @@
                 {{ Text::get('ui.nav.skills') }}
             </a>
             <a class="nav__item" href="{{ route('home') }}">{{ Text::get('ui.nav.contracts') }}</a>
+
+            {{-- Only ever rendered for an admin. The gate is the guard; this
+                 is just the door being visible to the people who have one. --}}
+            @can('admin')
+                <a class="nav__item" href="{{ route('admin.index') }}"
+                   @if (request()->routeIs('admin.*')) aria-current="page" @endif>
+                    {{ Text::get('admin.nav') }}
+                </a>
+            @endcan
         </nav>
     @endauth
 

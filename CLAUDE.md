@@ -406,6 +406,69 @@ transaction and no money — what exists is the half a storefront will be built 
 - **The roll is injected** (`MarketSeeder::fromConfig(fn () => …)`), so tests pin the dice.
   A probabilistic pass tested against real randomness is a test that passes 95% of the time.
 
+### Admin tools
+
+**Two content editors — items and skills — behind one gate.** Content lives in the
+database, which is the documented exception to the config rule; these screens are what
+replaces the protection config content gets from tests and code review.
+
+- **`users.is_admin` is the whole authorisation model.** One `Gate::define('admin', …)`
+  in `AppServiceProvider`, read as `can:admin` on the route group and `@can('admin')` in
+  Blade. A role table for a set of size two would be a framework standing in for an `if`.
+- **The flag is outside `User`'s `#[Fillable]`, deliberately.** There is no HTTP path to
+  it at all. `php artisan admin:grant <email>` (`--revoke` to reverse) is the only writer,
+  and it uses `forceFill` — which is also the only way the *first* admin could be made.
+- **`RequireCharacter` lets `admin.*` through by name prefix.** The tools edit the game,
+  not a character, so demanding one would be a rule about the wrong subject — and it would
+  trap an admin account that has never played behind the creation form. The gate, not the
+  middleware, is what guards them.
+- **No `show` route on either resource.** The edit form *is* the detail view; a read-only
+  copy would be a second place to add every new column.
+- **A slug is permanent and the request says so.** `slug` is `prohibited` on update rather
+  than merely absent, so a hand-crafted POST is refused instead of silently ignored.
+
+**The form requests are the substantive part.** `App\Http\Requests\Admin\ItemRequest`
+and `SkillRequest` mirror every CHECK constraint on the tables — the constraints are the
+guarantee, these are the explanation, because what the database returns is a 500 and a
+constraint name. Three rules have **no** counterpart in the schema, because SQL cannot
+express them against a single row:
+
+- **One book per skill.** `items.use_skill_id` is unique, or `Skillbook::forSkill()` is
+  ambiguous and a skill has two names.
+- **A container cannot stack.** `InventoryItem` derives `stack_key` from
+  (character, item, parent), so two stackable containers merge into one row and the
+  second one's contents are gone.
+- **No prerequisite cycles.** Nothing about "A needs B" and "B needs A" is wrong on
+  either row; together they are two skills nobody can ever learn.
+
+**`App\Skills\PrerequisiteGraph` is the one graph walk.** Pure — it holds ids, never
+models — so the editor can ask what *would* happen if a set of edges were saved without
+saving them first (`->with($id, $requires)->cycleThrough($id)`). `skills:validate` uses
+the same class, so the check that runs in CI and the check that runs in the form cannot
+disagree.
+
+**`App\Inventory\Skillbook` is the one derivation.** Creating a skill creates its book,
+because "exactly one book per skill" is what makes a book nameless and what makes the
+injection gate meaningful — a skill made in the UI with no book is a skill nobody can
+learn. `ItemSeeder` calls the same class, so the two cannot drift. What follows the skill
+afterwards is deliberately narrow: **`base_cost` and `on_market` are kept in step on every
+save; `tier`, `rarity` and `seed_quantity` are derived from rank once, at creation, and
+belong to the item editor from then on** — the seeder's rule that a tuned value is not a
+value to overwrite holds here too.
+
+**Deletes are real and unguarded, and the confirmation is the only brake.** There is no
+soft delete and no undo. `App\Admin\DeletionImpact` counts what a delete would reach —
+inventory rows, copies players carry, shelf stock, purchase history, container contents,
+character progress, queued training, requirements naming it — and the dialog spends that
+count before the button is offered. It is a description, never a guard. To retire content
+instead, unlist it: `on_market = false` is what that boolean is for.
+
+**A skill's book must be deleted first.** `items.use_skill_id` is `restrictOnDelete`, so
+the database refuses a skill something still points at rather than cascading. The
+controller drops the book inside the same transaction; everything else
+(`character_skills`, `training_queue`, both directions of `skill_prerequisites`) cascades
+on its own.
+
 ### Events
 
 Nothing custom yet, but the wiring is standard Laravel: `Event::dispatch()`, listeners

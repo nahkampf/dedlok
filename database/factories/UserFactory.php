@@ -41,4 +41,10 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /** An account that may edit the game's content. */
+    public function admin(): static
+    {
+        return $this->state(['is_admin' => true]);
+    }
 }

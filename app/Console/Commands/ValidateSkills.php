@@ -8,6 +8,7 @@ use App\Models\Character;
 use App\Models\CharacterSkill;
 use App\Models\Skill;
 use App\Models\SkillPrerequisite;
+use App\Skills\PrerequisiteGraph;
 use App\Skills\SkillProgression;
 use App\Skills\TrainingQueueValidator;
 use Illuminate\Console\Command;
@@ -103,53 +104,25 @@ class ValidateSkills extends Command
 
     /**
      * A cycle is a skill nobody can ever learn, and no single row looks wrong.
-     * Depth-first search with a colouring, so it names the actual cycle rather
-     * than just reporting that one exists.
+     * The graph walk lives in App\Skills\PrerequisiteGraph because the admin
+     * editor asks the same question before it writes an edge; this only has to
+     * turn the ids it names back into slugs.
      */
     private function checkPrerequisiteCycles(): void
     {
         $this->section('Prerequisite graph');
 
-        $edges = [];
-
-        foreach (SkillPrerequisite::all() as $prerequisite) {
-            $edges[$prerequisite->skill_id][] = $prerequisite->required_skill_id;
-        }
+        $graph = PrerequisiteGraph::fromRows(
+            SkillPrerequisite::all(['skill_id', 'required_skill_id'])->toArray()
+        );
 
         $slugs = Skill::pluck('slug', 'id');
-        $state = [];   // 0 unvisited, 1 in progress, 2 done
-        $stack = [];
 
-        $visit = function (int $id) use (&$visit, &$state, &$stack, $edges, $slugs): void {
-            if (($state[$id] ?? 0) === 2) {
-                return;
-            }
-
-            if (($state[$id] ?? 0) === 1) {
-                $cycle = array_slice($stack, array_search($id, $stack, true));
-                $cycle[] = $id;
-
-                $this->problem('cycle: '.implode(' -> ', array_map(
-                    fn (int $node): string => $slugs[$node] ?? "#{$node}",
-                    $cycle
-                )));
-
-                return;
-            }
-
-            $state[$id] = 1;
-            $stack[] = $id;
-
-            foreach ($edges[$id] ?? [] as $next) {
-                $visit($next);
-            }
-
-            array_pop($stack);
-            $state[$id] = 2;
-        };
-
-        foreach (array_keys($slugs->all()) as $id) {
-            $visit((int) $id);
+        foreach ($graph->cycles() as $cycle) {
+            $this->problem('cycle: '.implode(' -> ', array_map(
+                fn (int $node): string => $slugs[$node] ?? "#{$node}",
+                $cycle
+            )));
         }
     }
 
