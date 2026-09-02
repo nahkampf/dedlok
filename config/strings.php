@@ -328,4 +328,233 @@ return [
         'handle_length' => 'Handles may be at most :max characters long.',
     ],
 
+    /*
+    | The admin tools. Not player-visible, but the same rule applies: a string
+    | that is not attached to a row lives here, so the Blade stays markup.
+    |
+    | Item and skill NAMES are still columns — these are the words around them.
+    */
+    'admin' => [
+
+        'nav' => 'Admin',
+        'title' => 'Admin tools',
+        'lede' => 'Content lives in the database, so it gets none of the protection config content gets from tests and review. These screens are that protection.',
+
+        'actions' => [
+            'save' => 'Save changes',
+            'create' => 'Create',
+            'cancel' => 'Cancel',
+            'delete' => 'Delete',
+            'search' => 'Search',
+            'apply' => 'Apply',
+            'clear' => 'Clear',
+            'new_item' => 'New item',
+            'new_skill' => 'New skill',
+            'add_requirement' => 'Add requirement',
+            'remove' => 'Remove',
+        ],
+
+        'items' => [
+            'title' => 'Items',
+            'lede' => 'Every item definition. A slug is permanent once it exists — retire an item with :off, never by renaming it.',
+            'new' => 'New item',
+            'editing' => 'Editing :item',
+            'created' => ':item created.',
+            'updated' => ':item saved.',
+            'deleted' => ':item deleted, and :rows related rows with it.',
+            'empty' => 'No items match.',
+            'search_hint' => 'Slug or name',
+
+            'containers' => [
+                'any' => 'Both inventories',
+                'physical' => 'Physical — carried',
+                'data' => 'Data — on the deck',
+            ],
+
+            'market' => [
+                'any' => 'Listed and unlisted',
+                'on' => 'Listed only',
+                'off' => 'Unlisted only',
+            ],
+
+            'fields' => [
+                'slug' => 'Slug',
+                'slug_hint' => 'Permanent. Lower case, digits and underscores.',
+                'slug_locked' => 'Permanent — inventory rows reference it.',
+                'name' => 'Name',
+                'name_book' => 'A skillbook has no name of its own: it reads from the skill it teaches.',
+                'flavor' => 'Flavour',
+                'flavor_hint' => 'One or two lines. Shown under the name on the card.',
+                'container' => 'Kind',
+                'container_hint' => 'Which of the two inventories it belongs to. A property of the item, never a player choice.',
+                'tier' => 'Tier',
+                'tier_hint' => 'What the thing is. Colours the card and carries no mechanics.',
+                'rarity' => 'Rarity',
+                'rarity_hint' => 'How often the market has one. Not the tier — the two are free to disagree.',
+                'stackable' => 'Stackable',
+                'stackable_hint' => 'Whether two of them share one inventory row.',
+                'use_op' => 'Use',
+                'use_op_hint' => 'What using it does. Most items do nothing.',
+                'use_op_none' => 'Nothing',
+                'use_skill' => 'Teaches',
+                'use_skill_hint' => 'The skill this book injects. One book per skill.',
+                'weight' => 'Weight',
+                'weight_hint' => 'Stored and not yet enforced.',
+                'size' => 'Size',
+                'size_hint' => 'What one costs against a container it is stored in.',
+                'capacity' => 'Capacity',
+                'capacity_hint' => 'Above zero makes it a container. Zero is almost everything.',
+                'accepts' => 'Accepts',
+                'accepts_hint' => 'Which kind it holds. Required exactly when capacity is above zero.',
+                'accepts_none' => 'Nothing',
+                'base_cost' => 'Cost',
+                'on_market' => 'Listed on the market',
+                'on_market_hint' => 'Unlist to retire an item without deleting it.',
+                'seed_quantity' => 'Full shelf',
+                'seed_quantity_hint' => 'How many a restock tops up to. Zero means the market never stocks it.',
+            ],
+
+            'sections' => [
+                'identity' => 'Identity',
+                'classification' => 'Classification',
+                'use' => 'Use',
+                'physical' => 'Bulk and containment',
+                'market' => 'Market',
+            ],
+
+            'columns' => [
+                'slug' => 'Slug',
+                'name' => 'Name',
+                'kind' => 'Kind',
+                'tier' => 'Tier',
+                'rarity' => 'Rarity',
+                'cost' => 'Cost',
+                'stock' => 'Stock',
+            ],
+
+            'teaches' => 'teaches :skill',
+            'unlisted' => 'Unlisted',
+            'container_of' => 'holds :accepts',
+        ],
+
+        'skills' => [
+            'title' => 'Skills',
+            'lede' => 'Every skill, and what it requires first. Creating one also creates the book that teaches it — there is exactly one book per skill, and nothing can be learned without it.',
+            'new' => 'New skill',
+            'editing' => 'Editing :skill',
+            'created' => ':skill created, along with its book :book.',
+            'updated' => ':skill saved.',
+            'deleted' => ':skill deleted, and :rows related rows with it.',
+            'empty' => 'No skills match.',
+            'search_hint' => 'Slug or title',
+            'all_categories' => 'Every category',
+            'without_books' => [
+                'one' => ':count skill has no book.',
+                'many' => ':count skills have no book.',
+            ],
+
+            'fields' => [
+                'slug' => 'Slug',
+                'slug_hint' => 'Permanent. Lower case, digits and underscores. The book is named from it.',
+                'slug_locked' => 'Permanent — saved progress references it.',
+                'title' => 'Title',
+                'title_hint' => 'What a player reads. The book reads from it too.',
+                'description' => 'Description',
+                'category' => 'Category',
+                'category_hint' => 'The lane it hangs in on the skill tree. Reuse an existing one to group it.',
+                'rank' => 'Rank',
+                'rank_hint' => 'A training-time multiplier, not a cost: rank 2 needs twice the points for the same level.',
+                'primary_attribute' => 'Primary attribute',
+                'secondary_attribute' => 'Secondary attribute',
+                'attribute_hint' => 'Together these decide skill points per minute. They should differ.',
+                'base_cost' => 'Cost',
+                'base_cost_hint' => 'What the book sells for. Kept in step with it on every save.',
+                'on_market' => 'Book listed on the market',
+            ],
+
+            'sections' => [
+                'identity' => 'Identity',
+                'training' => 'Training',
+                'market' => 'Market',
+                'prerequisites' => 'Requirements',
+                'book' => 'Skillbook',
+            ],
+
+            'columns' => [
+                'slug' => 'Slug',
+                'title' => 'Title',
+                'category' => 'Category',
+                'rank' => 'Rank',
+                'requires' => 'Requires',
+                'unlocks' => 'Unlocks',
+                'book' => 'Book',
+            ],
+
+            'prerequisites' => [
+                'help' => 'What must be trained first. A requirement that closes a loop is refused — nobody could ever learn either skill.',
+                'skill' => 'Skill',
+                'level' => 'At level',
+                'none' => 'No requirements. This skill can be trained from the start.',
+            ],
+
+            'book' => [
+                'present' => 'Its book is :book.',
+                'edit' => 'Edit the book',
+                'missing' => 'This skill has no book, so nobody can learn it. It was deleted, or the skill predates the editor.',
+                'derived' => 'Cost and listing follow the skill. Tier, rarity and shelf size were set from its rank when the book was made, and are the item editor\'s from then on.',
+                'yes' => 'Yes',
+                'no' => 'Missing',
+            ],
+        ],
+
+        /*
+        | What a delete would destroy, counted at the moment it is asked. Every
+        | one of these is a cascade the schema performs on its own, except a
+        | skill's book, which the controller deletes first because the foreign
+        | key restricts rather than cascades.
+        */
+        'impact' => [
+            'title' => 'This also destroys',
+            'nothing' => 'Nothing else points at it.',
+            'irreversible' => 'There is no undo, and no soft delete. To retire content instead, unlist it.',
+            'confirm' => 'Delete :name?',
+            'keep' => 'Keep it',
+            'destroy' => 'Delete for good',
+
+            'inventory_rows' => ['one' => ':count inventory row', 'many' => ':count inventory rows'],
+            'copies' => ['one' => ':count copy players are carrying', 'many' => ':count copies players are carrying'],
+            'shelf' => ['one' => ':count on the market shelf', 'many' => ':count on the market shelf'],
+            'purchases' => ['one' => ':count purchase record', 'many' => ':count purchase records'],
+            'contents' => ['one' => ':count row stored inside one', 'many' => ':count rows stored inside them'],
+            'orphans_skill' => ['one' => 'the skill it teaches becomes unlearnable', 'many' => 'the skill it teaches becomes unlearnable'],
+
+            'characters' => ['one' => ':count character\'s progress in it', 'many' => ':count characters\' progress in it'],
+            'queue_entries' => ['one' => ':count queued training entry', 'many' => ':count queued training entries'],
+            'dependents' => ['one' => ':count skill that requires it', 'many' => ':count skills that require it'],
+            'own_prerequisites' => ['one' => ':count requirement of its own', 'many' => ':count requirements of its own'],
+            'books' => ['one' => 'its skillbook', 'many' => 'its skillbook'],
+            'book_copies' => ['one' => ':count copy of the book players hold', 'many' => ':count copies of the book players hold'],
+        ],
+
+        /*
+        | Only the rules the framework would explain badly. Everything else
+        | keeps Laravel's own message, which is already about the right field.
+        */
+        'validation' => [
+            'slug' => 'Use lower case letters, digits and underscores only.',
+            'slug_immutable' => 'A slug is permanent and cannot be changed.',
+            'name_required' => 'Give it a name. Only a skillbook may go without one.',
+            'container_stacks' => 'A container cannot stack: two of them would merge into one row and the contents of the second would be lost. Untick stackable.',
+            'book_needs_skill' => 'A book that teaches nothing is not a book. Choose the skill it injects.',
+            'skill_without_book' => 'Only an injecting item may name a skill.',
+            'skill_has_a_book' => 'That skill already has a book. There is exactly one per skill.',
+            'capacity_needs_kind' => 'A container has to say what it holds.',
+            'kind_needs_capacity' => 'This holds nothing, so it cannot name a kind. Give it a capacity first.',
+            'same_attribute' => 'Pick two different attributes, or the skill earns points from one of them twice.',
+            'requires_itself' => 'A skill cannot require itself.',
+            'requires_twice' => 'That skill is already named. One requirement per skill.',
+            'cycle' => 'That closes a loop — :path — and nobody could ever learn either skill.',
+        ],
+    ],
+
 ];

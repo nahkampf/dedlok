@@ -34,6 +34,18 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    /**
+     * May this account edit the game's content?
+     *
+     * Deliberately not in #[Fillable]: no request can grant it however the
+     * payload is shaped. `php artisan admin:grant` is the only writer.
+     */
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
     }
 }

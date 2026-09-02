@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * A skill definition.
@@ -35,6 +36,21 @@ class Skill extends Model
             'base_cost' => 'integer',
             'on_market' => 'boolean',
         ];
+    }
+
+    /**
+     * The one book that teaches this skill.
+     *
+     * A relation rather than a lookup because it is the shape of the
+     * invariant: exactly one book per skill, which is what lets a book have
+     * no name of its own. The use_op filter is what makes it "the book"
+     * rather than "an item that happens to point here" — use_skill_id is
+     * only ever set alongside inject_skill, and the schema says so.
+     */
+    public function skillbook(): HasOne
+    {
+        return $this->hasOne(Item::class, 'use_skill_id')
+            ->where('use_op', Item::USE_INJECT_SKILL);
     }
 
     /** What this skill requires before it can be learned. */

@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ItemController as AdminItemController;
+use App\Http\Controllers\Admin\SkillController as AdminSkillController;
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\HomeController;
@@ -42,3 +45,25 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/place', [InventoryController::class, 'place'])
         ->name('inventory.place');
 });
+
+/*
+ * The admin tools: the item editor and the skill editor.
+ *
+ * `can:admin` is the whole gate — one Gate rather than a role table, because
+ * there are two kinds of account and a permissions system for a set of size
+ * two would be a framework standing in for an if. RequireCharacter lets these
+ * through by name prefix: they edit the game, not a character, so demanding
+ * one would be a rule about the wrong subject.
+ *
+ * No `show` route on either resource. The edit form IS the detail view, and a
+ * read-only copy of it would be a second place to add every new column.
+ */
+Route::middleware(['auth', 'can:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/', DashboardController::class)->name('index');
+
+        Route::resource('items', AdminItemController::class)->except(['show']);
+        Route::resource('skills', AdminSkillController::class)->except(['show']);
+    });

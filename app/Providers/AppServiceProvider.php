@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use App\Stats\Resolver;
 use App\Stats\StatRegistry;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,6 +26,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        /*
+         * The only authorisation the game has.
+         *
+         * One gate rather than a role table: there are two kinds of account,
+         * and a permissions system for a set of size two would be a framework
+         * standing in for an if. Routes read it as `can:admin`, views as
+         * @can('admin').
+         */
+        Gate::define('admin', fn (User $user): bool => $user->isAdmin());
     }
 }
