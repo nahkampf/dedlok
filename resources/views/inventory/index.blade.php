@@ -18,11 +18,11 @@
         </div>
 
         <div class="tabpanel" data-panel="physical">
-            <x-inventory-list :rows="$physical" :hint="__('inventory.physical_hint')" />
+            <x-inventory-list :rows="$physical" :hint="__('inventory.physical_hint')" :containers="$containers" />
         </div>
 
         <div class="tabpanel" data-panel="data" hidden>
-            <x-inventory-list :rows="$data" :hint="__('inventory.data_hint')" />
+            <x-inventory-list :rows="$data" :hint="__('inventory.data_hint')" :containers="$containers" />
         </div>
     </div>
 @endsection

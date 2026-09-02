@@ -50,6 +50,11 @@ return [
         'tier' => 'Milspec',
         'flavor' => 'Does the maths so your hands do not have to.',
     ],
+    'memory_shard' => [
+        'name' => 'Memory Shard',
+        'tier' => 'Tuned',
+        'flavor' => 'Sixty-four gig of nothing until you put something on it.',
+    ],
     'scrap_alloy' => [
         'name' => 'Scrap Alloy',
         'tier' => 'Standard',

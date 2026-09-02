@@ -35,4 +35,10 @@ Route::middleware('auth')->group(function () {
     // with a confirmation in front of it.
     Route::post('/inventory/{entry}/inject', [InventoryController::class, 'inject'])
         ->name('inventory.inject');
+
+    // Moving a row into a container, or back out of one. One route for both
+    // directions: an absent `parent` means the loose pile, which is the same
+    // operation with a null target.
+    Route::post('/inventory/{entry}/place', [InventoryController::class, 'place'])
+        ->name('inventory.place');
 });

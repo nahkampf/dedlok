@@ -333,7 +333,29 @@ the password-reset request.
 - **Skillbooks need no lang entry.** There is one book per skill, so `ItemSeeder` generates
   them from the skills table and the name composes from the skill's own title via
   `items.skillbook.name`. Adding a skill adds its book, in every locale, for free.
-- Neither inventory has a capacity yet. `weight` and `size` are stored and unenforced.
+- **Items can hold items.** An item with `capacity > 0` and an `accepts` kind is a
+  container — the memory shard is a `physical` object that `accepts` `data`, which is the
+  case `container` alone could not express. `container` still says what *kind* of thing an
+  item is; `inventory_items.parent_id` says where a row actually sits.
+- **`parent_id` null means loose.** Every listing that means "the player's inventory"
+  needs `InventoryItem::scopeLoose()`, or a book on a card shows up twice — once on the
+  card and once on a deck it was never on. `Character::inventoryIn()` already does.
+- **Depth is capped at one.** A container cannot go inside a container, so the structure
+  cannot contain a cycle and nothing has to walk a tree defensively. `App\Inventory\ItemPlacer`
+  is the only thing that moves rows between containers, and it enforces every rule:
+  ownership, kind, capacity, and the depth cap.
+- **Destroying a container destroys its contents** — `parent_id` cascades on delete. That
+  is the fiction (crush the shard, lose the data) and it is also what stops orphan rows.
+- **Two copies of an item are no longer interchangeable.** The old unique key on
+  (`character_id`, `item_id`) said they were, which a card with a book on it disproves.
+  It is gone, replaced by a nullable unique `stack_key`: null for unstackable items — both
+  MySQL and SQLite treat nulls in a unique index as distinct, so each object gets its own
+  row — and `character:item:parent` for stackable ones, so two piles of the same thing in
+  the same place still collide. **It is derived on every save by the model, never set by
+  hand.** A generated column would be better and is not available: `stackable` lives on
+  `items`, and a generated column can only read its own row.
+- `size` is enforced, but only as what a container's contents cost against its capacity.
+  `weight` is still stored and unenforced, and neither inventory has an overall capacity.
 
 ### Events
 

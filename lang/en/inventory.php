@@ -28,6 +28,23 @@ return [
 
     'teaches' => 'Teaches :skill',
 
+    // What is inside a container, and why something would not go in.
+    'contents' => 'On this',
+    'contents_free' => ':free of :capacity free',
+    'store' => 'Store',
+    'store_in' => 'Store on :container',
+    'eject' => 'Take out',
+    'stored' => ':item is on :container.',
+    'ejected' => ':item is loose again.',
+
+    'placement' => [
+        'not_owned' => 'You are not carrying that.',
+        'not_a_container' => 'That does not hold anything.',
+        'wrong_kind' => 'That will not go on there.',
+        'no_room' => 'There is no room left on it.',
+        'containers_do_not_nest' => 'That already holds things. It cannot go inside something else.',
+    ],
+
     'refused' => [
         'not_a_skillbook' => 'That is not something you can inject.',
         'not_owned' => 'You are not carrying that.',

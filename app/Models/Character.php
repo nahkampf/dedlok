@@ -237,12 +237,17 @@ class Character extends Model
      * Which container a row belongs to is a fact about the item, not about the
      * row, so this filters through the definition rather than a column here.
      *
+     * Loose rows only. What is inside a memory card belongs to the card and
+     * comes back on it, not beside it — a skillbook written to a card is not
+     * also sitting on the deck.
+     *
      * @return Collection<int, InventoryItem>
      */
     public function inventoryIn(string $container): Collection
     {
         return $this->inventory()
-            ->with('item.useSkill')
+            ->with(['item.useSkill', 'children.item.useSkill'])
+            ->loose()
             ->inContainer($container)
             ->get()
             ->sortBy([
@@ -252,6 +257,25 @@ class Character extends Model
             ->values();
     }
 
+    /**
+     * Every container this character carries that could hold $item.
+     *
+     * Ordered by what is emptiest, so the obvious place to put something is
+     * the first one offered.
+     *
+     * @return Collection<int, InventoryItem>
+     */
+    public function containersFor(Item $item): Collection
+    {
+        return $this->inventory()
+            ->with(['item', 'children.item'])
+            ->loose()
+            ->get()
+            ->filter(fn (InventoryItem $row) => $row->item->canHold($item)
+                && $row->remainingCapacity() >= $item->size)
+            ->sortByDesc(fn (InventoryItem $row) => $row->remainingCapacity())
+            ->values();
+    }
 
     /**
      * Has this skill been injected?

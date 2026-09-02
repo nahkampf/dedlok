@@ -24,6 +24,7 @@ down so the implementation has something to be checked against.
 | `ModifierSource` + `ArchetypePerks` | **built** |
 | `items` + `inventory_items` tables, two containers | **built**, with constraints |
 | Skillbooks and injection (`App\Inventory\SkillInjector`) | **built**, the only writer of a new `character_skills` row |
+| Containers — items holding items (`App\Inventory\ItemPlacer`) | **built**, one level deep, capacity enforced |
 | `lang/en/items.php` | **built** — tier names, the shared skillbook name, and the demo items |
 | Character creation point pool | **built** |
 | `Modifier`, `Op`, `Target`, `Stat`, `StatRegistry`, `Resolver` (`app/Stats/`) | **built** — pure, no DB, 38 unit tests |
@@ -39,7 +40,7 @@ down so the implementation has something to be checked against.
 | `character_modifiers` table | **specified only** |
 | Item *modifiers* — items that change a stat | **specified only**; items exist, none of them alter a number yet |
 | Implants, drugs, injuries | **specified only** |
-| Inventory capacity — weight, storage | **specified only**; `weight` and `size` are stored and unenforced |
+| Inventory capacity — an overall limit per inventory | **specified only**; `weight` is stored and unenforced |
 
 Do not describe anything below as working until it appears in the table above.
 
@@ -443,6 +444,13 @@ point at a skill row. `config/items.php` does not exist and is not planned.
 2. `lang/en/items.php` — `name` and any `flavor`, keyed by the same slug. Tier
    names are shared (`items.tiers.1`–`5`), not repeated per item.
 3. Copy the lang entry into every other locale, then `php artisan i18n:check`.
+
+**An item that holds other items** needs two more values on the row:
+`capacity` (how much it holds; 0 means it is not a container) and `accepts`
+(which `container` kind may go in it). A memory shard is `physical` with
+`accepts: data` — matter that holds bits. The pair is constrained in both
+directions, so an item cannot claim capacity without a kind or a kind
+without capacity. Depth is capped at one: containers do not nest.
 
 **Skillbooks need neither step.** There is exactly one book per skill, so
 `ItemSeeder` generates them from the skills table and their name composes from

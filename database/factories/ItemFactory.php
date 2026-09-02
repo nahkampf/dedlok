@@ -26,6 +26,8 @@ class ItemFactory extends Factory
             'use_skill_id' => null,
             'weight' => fake()->randomFloat(2, 0, 20),
             'size' => fake()->numberBetween(0, 512),
+            'capacity' => 0,
+            'accepts' => null,
             'base_cost' => fake()->numberBetween(10, 50_000),
             'on_market' => true,
         ];
@@ -44,6 +46,27 @@ class ItemFactory extends Factory
     public function tier(int $tier): static
     {
         return $this->state(['tier' => $tier]);
+    }
+
+    /**
+     * A container: something other items go inside.
+     *
+     * Unstackable by default, because two of them are two objects the moment
+     * either has anything on it — which is the whole reason nesting forced
+     * per-instance rows in the first place.
+     */
+    public function holds(string $accepts, int $capacity = 64): static
+    {
+        return $this->state([
+            'capacity' => $capacity,
+            'accepts' => $accepts,
+            'stackable' => false,
+        ]);
+    }
+
+    public function size(int $size): static
+    {
+        return $this->state(['size' => $size]);
     }
 
     public function unstackable(): static

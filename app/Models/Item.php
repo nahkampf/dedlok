@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'slug', 'container', 'tier', 'stackable', 'use_op', 'use_skill_id',
-    'weight', 'size', 'base_cost', 'on_market',
+    'weight', 'size', 'capacity', 'accepts', 'base_cost', 'on_market',
 ])]
 class Item extends Model
 {
@@ -50,6 +50,7 @@ class Item extends Model
             'stackable' => 'boolean',
             'weight' => 'decimal:2',
             'size' => 'integer',
+            'capacity' => 'integer',
             'base_cost' => 'integer',
             'on_market' => 'boolean',
         ];
@@ -80,6 +81,33 @@ class Item extends Model
     {
         return $this->container === self::CONTAINER_DATA;
     }
+
+    /**
+     * Does this item hold other items?
+     *
+     * A memory card does; a rifle does not. Being a container is the
+     * exception, so this is a capacity above zero rather than a flag: the
+     * number was going to have to exist anyway, and a second boolean agreeing
+     * with it would only be a thing to get wrong.
+     */
+    public function isContainer(): bool
+    {
+        return $this->capacity > 0;
+    }
+
+    /**
+     * May $item go inside this one?
+     *
+     * `accepts` is compared against the other item's `container` — the kind of
+     * thing it is. That is the whole reason `container` survived the arrival
+     * of nesting: a skillbook is data whether it is loose on a deck or written
+     * to a card in someone's coat pocket.
+     */
+    public function canHold(Item $item): bool
+    {
+        return $this->isContainer() && $this->accepts === $item->container;
+    }
+
     /**
      * The name a player sees.
      *

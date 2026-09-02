@@ -1,4 +1,6 @@
-@props(['rows', 'hint'])
+@props(['rows', 'hint', 'containers' => null])
+
+@php($containers = $containers ?? collect())
 
 {{-- One inventory's rows. Identical markup for both containers on purpose:
      they differ in what they hold, not in how they read. --}}
@@ -17,62 +19,42 @@
         <div>
             @foreach ($rows as $entry)
                 @php($item = $entry->item)
-                <div class="item-row {{ $item->tierClass() }}">
-                    {{-- Both glyphs are from the set the gallery already proves
-                         renders in the kit's font stack. U+2317 does not. --}}
-                    <span class="slot__icon">{{ $item->isSkillbook() ? '◈' : '▤' }}</span>
 
-                    <span class="stack" style="--gap:2px;min-width:0">
-                        <span class="item-row__name">{{ $item->displayName() }}</span>
-                        @if ($item->isSkillbook() && $item->useSkill)
-                            <span class="micro" style="color:var(--ink-3)">
-                                {{ __('inventory.teaches', ['skill' => $item->useSkill->title]) }}
-                            </span>
-                        @endif
-                    </span>
+                {{-- Where this row could be put away. Filtered in memory: the
+                     controller loaded every container with its contents, so
+                     asking each one what fits costs no queries. --}}
+                @php($fits = $containers->filter(
+                    fn ($c) => $c->id !== $entry->id
+                        && $c->item->canHold($item)
+                        && $c->remainingCapacity() >= $item->size
+                ))
 
-                    {{-- Meta and action wrap together: at 320px the name column
-                         keeps its minmax(0,1fr) and this stacks instead of
-                         pushing the row sideways. --}}
-                    <span class="row row--wrap" style="--gap:var(--s-2);justify-content:flex-end">
-                        @if ($entry->quantity > 1)
-                            <span class="micro num" style="color:var(--ink-2)">
-                                {{ __('inventory.quantity', ['count' => $entry->quantity]) }}
-                            </span>
-                        @endif
+                <x-inventory-row :entry="$entry" :fits="$fits" />
 
-                        <span class="item-row__meta">{{ $item->tierName() }}</span>
-
-                        @if ($item->isSkillbook() && $item->useSkill)
-                            <button type="button" class="btn btn--sm cut"
-                                    data-open="#inject-{{ $entry->id }}">
-                                {{ __('inventory.inject') }}
-                            </button>
-                        @endif
-                    </span>
-                </div>
-
-                @if ($item->isSkillbook() && $item->useSkill)
-                    {{-- Spending a book is destructive and cannot be undone, so
-                         it gets a confirmation rather than a bare submit. --}}
-                    <dialog class="modal" id="inject-{{ $entry->id }}">
-                        <div class="panel__hd">
-                            <span class="micro">{{ __('inventory.inject') }}</span>
+                @if ($item->isContainer())
+                    {{-- What is on it. A step up in background rather than a
+                         border or a shadow: inside is elevation, and the kit
+                         spells elevation --bg-0 through --bg-4. --}}
+                    <div style="background:var(--bg-1);padding-inline-start:var(--s-4)">
+                        <div class="row row--wrap" style="--gap:var(--s-2);padding:var(--s-2) var(--s-3)">
+                            <span class="micro" style="color:var(--ink-3)">{{ __('inventory.contents') }}</span>
                             <div class="spacer"></div>
-                            <button class="btn btn--sm btn--ghost" data-close>✕</button>
+                            <span class="micro num" style="color:var(--ink-3)">
+                                {{ __('inventory.contents_free', [
+                                    'free' => $entry->remainingCapacity(),
+                                    'capacity' => $item->capacity,
+                                ]) }}
+                            </span>
                         </div>
-                        <div class="panel__bd stack" style="--gap:var(--s-4)">
-                            <p style="font-size:var(--fs-sm);margin:0">
-                                {{ __('inventory.inject_confirm', ['skill' => $item->useSkill->title]) }}
+
+                        @forelse ($entry->children as $child)
+                            <x-inventory-row :entry="$child" :fits="collect()" />
+                        @empty
+                            <p class="muted" style="font-size:var(--fs-sm);padding:0 var(--s-3) var(--s-2);margin:0">
+                                {{ __('inventory.empty') }}
                             </p>
-                            <form method="POST" action="{{ route('inventory.inject', $entry) }}">
-                                @csrf
-                                <button type="submit" class="btn btn--primary btn--block cut">
-                                    {{ __('inventory.inject') }}
-                                </button>
-                            </form>
-                        </div>
-                    </dialog>
+                        @endforelse
+                    </div>
                 @endif
             @endforeach
         </div>

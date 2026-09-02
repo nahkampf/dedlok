@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Inventory\ItemPlacer;
 use App\Inventory\SkillInjector;
 use App\Models\Character;
 use App\Models\InventoryItem;
@@ -26,10 +27,15 @@ class InventoryController extends Controller
     {
         $character = $this->character($request);
 
+        $physical = $character->inventoryIn(Item::CONTAINER_PHYSICAL);
+
         return view('inventory.index', [
             'character' => $character,
-            'physical' => $character->inventoryIn(Item::CONTAINER_PHYSICAL),
+            'physical' => $physical,
             'data' => $character->inventoryIn(Item::CONTAINER_DATA),
+            // Somewhere to put things. Already loaded with their contents, so
+            // the views can ask what fits without a query per row.
+            'containers' => $physical->filter(fn ($row) => $row->item->isContainer())->values(),
         ]);
     }
 
@@ -53,6 +59,42 @@ class InventoryController extends Controller
         return back()->with('status', __('inventory.injected', ['skill' => $skillTitle]));
     }
 
+    /**
+     * Put a row on a container, or take it back off.
+     *
+     * The container arrives as an id rather than a route binding so that
+     * "nowhere" — the loose pile — is expressible as its absence. ItemPlacer
+     * re-checks ownership of both rows; this only has to find them.
+     */
+    public function place(Request $request, InventoryItem $entry, ItemPlacer $placer): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $validated = $request->validate([
+            'parent' => ['nullable', 'integer'],
+        ]);
+
+        $into = isset($validated['parent'])
+            ? InventoryItem::find($validated['parent'])
+            : null;
+
+        $itemName = $entry->item?->displayName();
+
+        $result = $placer->place($character, $entry, $into);
+
+        if (! $result->succeeded()) {
+            return back()->with('error', $result->refusal->message());
+        }
+
+        return back()->with('status', $into === null
+            ? __('inventory.ejected', ['item' => $itemName])
+            : __('inventory.stored', [
+                'item' => $itemName,
+                'container' => $into->item->displayName(),
+            ]));
+    }
 
     private function character(Request $request): Character
     {

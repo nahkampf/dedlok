@@ -67,6 +67,19 @@ class ItemSeeder extends Seeder
                 'container' => Item::CONTAINER_PHYSICAL,
                 'tier' => 3, 'weight' => 2, 'base_cost' => 9_800,
             ],
+            /*
+             * The first container in the game, and the reason inventory rows
+             * can nest at all: a PHYSICAL object that carries DATA. It is
+             * carried, so it lists in the stash beside the gear; what is on it
+             * belongs to it rather than to the deck.
+             */
+            'memory_shard' => [
+                'container' => Item::CONTAINER_PHYSICAL,
+                'tier' => 2, 'weight' => 0.1,
+                // Room for eight of the 8-unit skillbooks below.
+                'capacity' => 64, 'accepts' => Item::CONTAINER_DATA,
+                'base_cost' => 450,
+            ],
             'scrap_alloy' => [
                 'container' => Item::CONTAINER_PHYSICAL,
                 'tier' => 1, 'weight' => 0.5, 'base_cost' => 12,

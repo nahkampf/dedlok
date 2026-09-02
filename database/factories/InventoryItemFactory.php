@@ -39,4 +39,13 @@ class InventoryItemFactory extends Factory
     {
         return $this->state(['quantity' => $quantity]);
     }
+
+    /** Written to a container rather than carried loose. */
+    public function inside(InventoryItem $parent): static
+    {
+        return $this->state([
+            'parent_id' => $parent->id,
+            'character_id' => $parent->character_id,
+        ]);
+    }
 }
