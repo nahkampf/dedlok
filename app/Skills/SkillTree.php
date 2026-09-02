@@ -72,6 +72,7 @@ final class SkillTree
                 skill: $skill,
                 depth: $this->depth($id) ?? 0,
                 requiredLevel: $parent['level'] ?? null,
+                requiredSkill: isset($parent['id']) ? $this->skills[$parent['id']] : null,
                 alsoRequires: $this->alsoRequires($id, $parent['id'] ?? null),
                 unreachable: $this->depth($id) === null,
             );

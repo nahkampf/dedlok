@@ -323,8 +323,10 @@ information.
 - A skill hangs under its **deepest** prerequisite: the one that gates it
   last, and so the branch it genuinely extends. Depth is the longest chain
   behind a skill, not how many parents it has.
-- Every other requirement is named on the row instead of drawn. Each skill
-  appears **exactly once**, in its own category.
+- **Every requirement is named on the row**, including the one the tree did
+  draw — "Cyberdecks 3" in a box says more than "from level 3", and says it
+  the same way as the requirements no edge could show. Each skill appears
+  **exactly once**, in its own category.
 - A prerequisite in **another category** cannot be a parent — a node cannot
   hang in two lanes — so the skill stays a root in its own lane and says what
   it is waiting on.

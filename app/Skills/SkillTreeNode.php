@@ -23,10 +23,29 @@ final class SkillTreeNode
         public readonly Skill $skill,
         public readonly int $depth,
         public readonly ?int $requiredLevel,
+        public readonly ?Skill $requiredSkill = null,
         public array $children = [],
         public readonly array $alsoRequires = [],
         public readonly bool $unreachable = false,
     ) {}
+
+    /**
+     * Every requirement, the drawn one first.
+     *
+     * The edge to a node's parent is a requirement like any other, and reads
+     * as one: "Cyberdecks 3" says more than "from level 3" does, and says it
+     * the same way the requirements a tree could NOT draw already say it.
+     *
+     * @return list<array{skill: Skill, level: int}>
+     */
+    public function requirements(): array
+    {
+        $parent = $this->requiredSkill === null || $this->requiredLevel === null
+            ? []
+            : [['skill' => $this->requiredSkill, 'level' => $this->requiredLevel]];
+
+        return [...$parent, ...$this->alsoRequires];
+    }
 
     /** This skill plus everything hanging off it. */
     public function descendantCount(): int

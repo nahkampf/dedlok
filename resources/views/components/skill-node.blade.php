@@ -23,30 +23,26 @@
                 ]) }}
             </span>
 
-            @if ($node->requiredLevel !== null)
-                <span class="micro num" style="color:var(--ink-3)">
-                    {{ Text::get('skills.from_level', ['level' => $node->requiredLevel]) }}
-                </span>
-            @endif
         </span>
 
-        {{-- Every requirement the tree could not draw as an edge. Stated
-             rather than hidden: the graph has skills with two parents, and a
-             tree can only show one of them. --}}
-        @if ($node->alsoRequires !== [] || $node->unreachable)
+        {{-- Every requirement, in the same box whether the tree drew the edge
+             or not. The one it hangs under comes first; the rest are the ones
+             a tree cannot show, and hiding those would be the only real lie
+             this layout could tell. --}}
+        @if ($node->requirements() !== [] || $node->unreachable)
             <span class="row row--wrap" style="--gap:var(--s-2);margin-top:2px">
-                @foreach ($node->alsoRequires as $extra)
+                @foreach ($node->requirements() as $requirement)
                     <span class="tag">
-                        @if ($extra['skill']->category !== $node->skill->category)
+                        @if ($requirement['skill']->category !== $node->skill->category)
                             {{ Text::get('skills.from_elsewhere', [
-                                'skill' => $extra['skill']->title,
-                                'level' => $extra['level'],
-                                'category' => $extra['skill']->category,
+                                'skill' => $requirement['skill']->title,
+                                'level' => $requirement['level'],
+                                'category' => $requirement['skill']->category,
                             ]) }}
                         @else
-                            {{ Text::get('skills.also_requires', [
-                                'skill' => $extra['skill']->title,
-                                'level' => $extra['level'],
+                            {{ Text::get('skills.requires', [
+                                'skill' => $requirement['skill']->title,
+                                'level' => $requirement['level'],
                             ]) }}
                         @endif
                     </span>

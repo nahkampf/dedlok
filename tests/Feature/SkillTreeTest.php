@@ -105,6 +105,46 @@ class SkillTreeTest extends TestCase
 
     // ---- where a tree cannot describe the graph -----------------------------
 
+    public function test_a_node_lists_the_edge_it_hangs_under_alongside_the_rest(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $profiling = $this->skill('System Profiling');
+        $this->gate($profiling, $decks, 3);
+
+        $node = $this->tree()['Systems'][0]->children[0];
+        $requirements = $node->requirements();
+
+        $this->assertCount(1, $requirements);
+        $this->assertSame('Cyberdecks', $requirements[0]['skill']->title);
+        $this->assertSame(3, $requirements[0]['level']);
+        $this->assertSame('Cyberdecks', $node->requiredSkill->title);
+    }
+
+    public function test_requirements_lead_with_the_drawn_edge(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $profiling = $this->skill('System Profiling');
+        $advanced = $this->skill('Advanced Profiling');
+        $this->gate($profiling, $decks, 3);
+        $this->gate($advanced, $decks, 5);
+        $this->gate($advanced, $profiling, 5);
+
+        $node = $this->tree()['Systems'][0]->children[0]->children[0];
+
+        $this->assertSame(
+            ['System Profiling', 'Cyberdecks'],
+            array_map(fn (array $r): string => $r['skill']->title, $node->requirements()),
+            'the one it hangs under comes first'
+        );
+    }
+
+    public function test_a_root_lists_no_requirements(): void
+    {
+        $this->skill('Cyberdecks');
+
+        $this->assertSame([], $this->tree()['Systems'][0]->requirements());
+    }
+
     public function test_a_skill_with_two_parents_hangs_under_the_deeper_one(): void
     {
         // Advanced needs both Cyberdecks (depth 0) and Profiling (depth 1).
@@ -215,7 +255,7 @@ class SkillTreeTest extends TestCase
     {
         $decks = $this->skill('Cyberdecks');
         $profiling = $this->skill('System Profiling');
-        $advanced = $this->skill('Advanced Profiling');
+        $advanced = $this->skill('Advanced Profiling', rank: 4);
         $this->gate($profiling, $decks, 3);
         $this->gate($advanced, $decks, 5);
         $this->gate($advanced, $profiling, 5);
@@ -224,12 +264,21 @@ class SkillTreeTest extends TestCase
 
         $response->assertSee('Systems');
         $response->assertSee('Cyberdecks');
-        $response->assertSee(Text::get('skills.from_level', ['level' => 3]));
 
-        // The second parent is stated, since the tree could not draw it.
-        $response->assertSee(Text::get('skills.also_requires', [
-            'skill' => 'Cyberdecks', 'level' => 5,
+        // The edge the tree DID draw is still stated in a box: "Cyberdecks 3"
+        // says more than "from level 3", and says it the same way as the rest.
+        $response->assertSee(Text::get('skills.requires', [
+            'skill' => 'Cyberdecks', 'level' => 3,
         ]));
+
+        // And so is the second parent, which the tree could not draw.
+        $response->assertSee(Text::get('skills.requires', [
+            'skill' => 'System Profiling', 'level' => 5,
+        ]));
+
+        // A rank is a multiplier, so it reads as one: ×4, not "Rank 4".
+        $response->assertSee(Text::get('skills.rank', ['rank' => 4]));
+        $response->assertSee('×4');
     }
 
     /**

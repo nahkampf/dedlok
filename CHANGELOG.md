@@ -12,6 +12,18 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+### Changed
+
+- **Reflex is a physical attribute**, not a mental one. `config/stats.php`
+  derives the `physical`/`mental` tag from `Character::PHYSICAL_ATTRIBUTES`, and
+  no formula reads those tags, so no derived stat changed value — only the
+  grouping and the creation screen's two columns.
+- **A skill's rank reads as the multiplier it is** — `×4`, not `Rank 4`,
+  matching how a stack already reads in the inventory.
+- **A skill states every prerequisite in the same box**, the drawn edge
+  included. It was "from level 3" for the one the tree could draw and a tag for
+  the ones it could not; now both are tags, the drawn one first.
+
 ## [0.2.1] — 2026-09-02
 
 ### Added

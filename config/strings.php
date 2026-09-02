@@ -140,6 +140,7 @@ return [
 
         'descriptions' => [
             // Physical
+            'reflex' => 'The gap between something happening and you responding. Governs who moves first, which is usually who walks away.',
             'meat' => 'Raw bodily resilience. How much punishment the flesh absorbs before it stops doing what you tell it.',
             'motor' => 'Fine control and coordination. Steady hands on a lockpick, a scalpel, or a trigger, while everything around you is going wrong.',
             'senses' => 'Acuity of sight, hearing and whatever you have had installed since. Sets how much signal reaches you before you have to guess.',
@@ -149,7 +150,6 @@ return [
             'intellect' => 'Analysis and problem solving. Reading the shape of a system fast enough to act on it while it is still true.',
             'memory' => 'Recall and retention. How much you carry without a deck, and how much of it survives a bad night.',
             'perception' => 'Noticing what other people miss. The tell, the tail, the one detail in the room that does not belong.',
-            'reflex' => 'The gap between something happening and you responding. Governs who moves first, which is usually who walks away.',
             'focus' => 'Sustained attention under load. Holding a thread while the room, the feed and your own chrome all compete for it.',
             'social' => 'Reading people and steering them. Leverage that does not require breaking anything.',
         ],
@@ -198,10 +198,13 @@ return [
         'title' => 'Skill tree',
         'lede' => 'Every skill in the game, one lane per category. A skill sits under the prerequisite that gates it last; anything else it needs is named on the row.',
 
-        'rank' => 'Rank :rank',
+        // The multiplication sign, matching inventory.quantity: a rank is a
+        // training-time multiplier, not an ordinal.
+        'rank' => '×:rank',
         'governed_by' => ':primary / :secondary',
-        'from_level' => 'from level :level',
-        'also_requires' => ':skill :level',
+        // Every requirement reads the same way, whether the tree could draw
+        // the edge or not.
+        'requires' => ':skill :level',
 
         // A skill inside a prerequisite cycle: nothing can ever learn it, and
         // skills:validate is what explains why.
@@ -210,7 +213,7 @@ return [
 
         // A prerequisite in another category cannot be a parent without the
         // skill hanging in two lanes at once, so it is named instead.
-        'from_elsewhere' => 'needs :skill :level, from :category',
+        'from_elsewhere' => ':skill :level · :category',
 
         'empty' => 'No skills in the database yet.',
         'count' => ['zero' => 'empty', 'one' => ':count skill', 'many' => ':count skills'],
