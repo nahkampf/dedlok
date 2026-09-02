@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\CharacterCreationController;
+use App\Models\Archetype;
+use App\Models\ArchetypePerk;
 use App\Models\Character;
 use App\Models\Setting;
 use App\Models\SuggestedHandle;
@@ -103,9 +105,9 @@ class CharacterCreationTest extends TestCase
     {
         $response = $this->actingAs(User::factory()->create())->get(route('character.create'));
 
-        foreach (config('archetypes.list') as $id => $archetype) {
-            $response->assertSee($archetype['name']);
-            $response->assertSee('value="'.$id.'"', false);
+        foreach (Archetype::roster() as $archetype) {
+            $response->assertSee($archetype->name);
+            $response->assertSee('value="'.$archetype->id.'"', false);
         }
 
         foreach (Character::ATTRIBUTES as $attribute) {
@@ -467,6 +469,12 @@ class CharacterCreationTest extends TestCase
 
     // ---- archetype perks -------------------------------------------------
 
+    /** The label is on the perk's row; nothing else knows it. */
+    private function perkLabel(string $key): string
+    {
+        return ArchetypePerk::query()->where('key', $key)->value('label');
+    }
+
     public function test_the_cards_show_the_perks_that_exist(): void
     {
         $response = $this->actingAs(User::factory()->create())->get(route('character.create'));
@@ -474,21 +482,20 @@ class CharacterCreationTest extends TestCase
         $response->assertSee('card__stat', false);
 
         // Live perks: label on the left, effect generated from the modifier.
-        $response->assertSee(config('archetypes.perk_labels.grey_matter'));
+        $response->assertSee($this->perkLabel('grey_matter'));
         $response->assertSee('+5% '.Text::get('character.names.synaptic_integrity_max'), false);
-        $response->assertSee(config('archetypes.perk_labels.scar_tissue'));
+        $response->assertSee($this->perkLabel('scar_tissue'));
         $response->assertSee('+5% '.Text::get('character.names.hitpoints_max'), false);
 
         // The retained display-only example still renders, from its legacy pair.
-        $response->assertSee(config('archetypes.perk_labels.damage_taken'));
+        $response->assertSee($this->perkLabel('damage_taken'));
         $response->assertSee('−15%', false);
     }
 
     public function test_archetypes_without_perks_render_no_stat_rows(): void
     {
-        $withoutPerks = array_filter(
-            config('archetypes.list'),
-            fn (array $archetype): bool => ($archetype['perks'] ?? []) === [],
+        $withoutPerks = Archetype::roster()->filter(
+            fn (Archetype $archetype): bool => $archetype->perks->isEmpty(),
         );
 
         $this->assertNotEmpty($withoutPerks, 'expected at least one archetype with no perks');
@@ -506,26 +513,26 @@ class CharacterCreationTest extends TestCase
      * comparing the two caught it; now that every archetype is one entry,
      * counting distinct slugs is what is left to catch it with.
      */
-    public function test_every_archetype_has_its_own_id_and_slug(): void
+    /**
+     * The roster is inserted by its own migration, with ids that character
+     * rows already reference. What this guards is that it arrived whole.
+     */
+    public function test_the_seeded_roster_is_whole(): void
     {
-        $list = config('archetypes.list');
-        $slugs = array_column($list, 'slug');
+        $roster = Archetype::roster();
 
+        $this->assertCount(7, $roster, 'the roster changed size');
         $this->assertSame(
-            count($slugs),
-            count(array_unique($slugs)),
+            $roster->count(),
+            $roster->pluck('slug')->unique()->count(),
             'two archetypes share a slug'
         );
 
-        // Every id is a key, so duplicates are already gone by the time this
-        // runs: what it proves is that none went missing that way.
-        $this->assertCount(7, $list, 'the roster changed size — was an id reused?');
-
-        foreach ($list as $id => $archetype) {
-            $this->assertIsInt($id);
-            foreach (['slug', 'name', 'role', 'description'] as $key) {
-                $this->assertArrayHasKey($key, $archetype, "archetype {$id} has no {$key}");
-            }
+        foreach ($roster as $id => $archetype) {
+            $this->assertSame($id, $archetype->id);
+            $this->assertNotSame('', $archetype->name);
+            $this->assertNotSame('', $archetype->role);
+            $this->assertNotSame('', $archetype->description);
         }
     }
 
@@ -533,37 +540,26 @@ class CharacterCreationTest extends TestCase
     {
         $registry = StatRegistry::fromConfig();
 
-        foreach (config('archetypes.list') as $archetype) {
-            foreach ($archetype['perks'] ?? [] as $perk) {
-                if (isset($perk['modifiers'])) {
-                    $this->assertIsString(
-                        config("archetypes.perk_labels.{$perk['key']}"),
-                        "missing label for perk [{$perk['key']}]"
-                    );
+        foreach (Archetype::roster() as $archetype) {
+            foreach ($archetype->perks as $perk) {
+                $this->assertNotSame('', $perk->displayLabel(), "perk [{$perk->key}] has no label");
 
-                    foreach ($perk['modifiers'] as $definition) {
+                if ($perk->isLive()) {
+                    foreach ($perk->modifiers as $definition) {
                         // Throws on an unknown op, unknown key or bad target.
                         $modifier = Modifier::fromArray($definition);
 
                         $this->assertNotSame(
                             [],
                             $registry->matching($modifier->target),
-                            "perk [{$perk['key']}] targets nothing in config/stats.php"
+                            "perk [{$perk->key}] targets nothing in config/stats.php"
                         );
                     }
 
                     continue;
                 }
 
-                // An attribute perk borrows the attribute's own name; anything
-                // else needs a label of its own beside the archetype.
-                $this->assertTrue(
-                    $perk['unit'] === 'attribute'
-                        ? Text::has("character.names.{$perk['key']}")
-                        : is_string(config("archetypes.perk_labels.{$perk['key']}")),
-                    "missing label for perk [{$perk['key']}]"
-                );
-                $this->assertContains($perk['unit'], ['percent', 'flat', 'attribute']);
+                $this->assertContains($perk->display_unit, ['percent', 'flat', 'attribute']);
             }
         }
     }

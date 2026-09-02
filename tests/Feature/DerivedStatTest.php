@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Archetype;
 use App\Models\Character;
 use App\Models\User;
 use App\Stats\Op;
@@ -114,7 +115,7 @@ class DerivedStatTest extends TestCase
         $derived = Character::derivedStats();
         $checked = 0;
 
-        foreach (array_keys((array) config('archetypes.list')) as $id) {
+        foreach (Archetype::roster()->keys() as $id) {
             foreach ((new ArchetypePerks((int) $id))->modifiers() as $modifier) {
                 foreach ($registry->matching($modifier->target) as $statId) {
                     if (! in_array($statId, $derived, true)) {

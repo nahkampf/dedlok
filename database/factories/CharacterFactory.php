@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Models\Archetype;
 use App\Models\Character;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -31,7 +32,10 @@ class CharacterFactory extends Factory
             // Handles are unique and capped at 24 characters, so the generator
             // has to respect both rather than using a plain word list.
             'handle' => mb_substr(fake()->unique()->userName(), 0, 24),
-            'archetype' => fake()->numberBetween(0, 7),
+            // Was numberBetween(0, 7), which could produce 0 — an id no
+            // archetype ever had. The foreign key refuses it now, so this
+            // picks from the roster that actually exists.
+            'archetype' => Archetype::roster()->keys()->random(),
         ]);
     }
 

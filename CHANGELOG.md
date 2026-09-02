@@ -33,10 +33,22 @@ change the database schema. Every entry that needs one says so under
 - `config/app.php` keeps `locale` and `fallback_locale`: the framework's own
   validation and auth messages still come from vendor lang files keyed by them.
 
+- **Archetypes are rows.** `archetypes` and `archetype_perks` replace
+  `config/archetypes.php`. `characters.archetype` was a foreign key in
+  everything but name — an id pointing into an array, which nothing could
+  enforce — and is now a real one. A perk's two shapes are columns the database
+  polices: live perks carry `modifiers` as JSON, display-only ones carry
+  `display_modifier` and `display_unit`, and a row may not be both or neither.
+
 ### Migrations
 
 - `2026_09_02_150000_remove_the_translation_layer` — adds `name` and `flavor`
   to `items` (backfilled for the seeded catalogue), drops `users.locale`.
+- `2026_09_02_160000_create_archetypes_tables` — creates both tables and
+  **inserts the roster**, ids preserved. Reference data whose ids are
+  load-bearing has to exist the moment the schema does, so it is not a seeder.
+  Clears any `characters.archetype` that names no archetype before adding the
+  constraint; such a row was already broken and granted no perks.
 
 ## [0.1.1] — 2026-09-02
 

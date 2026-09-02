@@ -259,8 +259,10 @@ Details worth knowing:
   wrong label on screen beats a 500, and is just as visible.
 - **A skillbook has no name of its own.** There is one book per skill, so its name
   composes from the skill it teaches through `items.skillbook.name`.
-- **Archetypes carry their own strings** in `config/archetypes.php`, beside their ids and
-  perks, because there is no archetypes table for them to sit on.
+- **Archetypes carry their own strings on their rows**, in the `archetypes` table, beside
+  their ids and their perks. Perk labels live on `archetype_perks`, except where a perk
+  borrows an attribute's own name — those have a null label and read
+  `character.names.<key>`, so renaming "Reflex" is still one edit.
 - **Framework strings that reach a player** are still swapped in by the exception
   renderers in `bootstrap/app.php`, now from `strings.errors.*`. Laravel throws a raw
   English literal for rate limiting (`'Too Many Attempts.'` in

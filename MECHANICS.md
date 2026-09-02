@@ -17,7 +17,7 @@ down so the implementation has something to be checked against.
 | --- | --- |
 | Attributes on `characters` (10 columns, 0–100 in the DB) | **built** |
 | Attribute clamping on save | **built**, at the lifetime cap of 100 |
-| Archetypes + perks as structured data (`config/archetypes.php`) | **built** |
+| Archetypes + perks as rows (`archetypes`, `archetype_perks`) | **built**; `characters.archetype` is a real foreign key |
 | Live perks routed through the resolver — Netrunner's "Grey matter", Solo's "Scar tissue" | **built** |
 | Display-only perks | one kept deliberately as the documented example; the rest removed |
 | `hitpoints_max` and `synaptic_integrity_max` as stats | **built**, formulas in `config/stats.php` |
@@ -277,7 +277,8 @@ values (a rolled quality, a remaining charge).
 **Definition keys are permanent.** Rows in the database reference them, so a
 deleted key orphans live data. Retire a definition with a `retired => true`
 flag; never remove or renumber one. The same rule already applies to archetype
-ids.
+ids — and is now enforced, since `characters.archetype` is a foreign key into
+`archetypes`.
 
 ---
 
@@ -541,23 +542,29 @@ character every second.
 Perks exist in two shapes while the migration runs, and the shape decides
 whether the perk does anything:
 
-**Live** — carries a `modifiers` array, produces real `Modifier` objects, and
-its card text is generated from them so display cannot drift from behaviour:
+A perk is a row in `archetype_perks` pointing at an `archetypes` row. The
+database refuses one that is both shapes or neither.
+
+**Live** — carries `modifiers` (a JSON list), produces real `Modifier` objects,
+and its card text is generated from them so display cannot drift from
+behaviour:
 
 ```php
-[
+ArchetypePerk::create([
+    'archetype_id' => 2,
     'key' => 'scar_tissue',
+    'label' => 'Scar tissue',
     'modifiers' => [
         ['op' => 'percentage_of_base', 'amount' => 5, 'target' => ['id' => 'hitpoints_max']],
     ],
-],
+]);
 ```
 
-**Display-only** — the older `modifier` / `unit` pair. Renders on the card and
-**changes nothing**:
+**Display-only** — the older shape, now `display_modifier` / `display_unit`.
+Renders on the card and **changes nothing**:
 
 ```php
-['key' => 'damage_taken', 'modifier' => -15, 'unit' => 'percent'],
+['key' => 'damage_taken', 'display_modifier' => -15, 'display_unit' => 'percent']
 ```
 
 Two perks are live: Netrunner's **Grey matter** (`+5% synaptic_integrity_max`)
@@ -571,9 +578,16 @@ there is no reason to write a display-only perk now that the resolver exists.
 `CharacterCreationTest::test_every_archetype_perk_is_valid_and_labelled`
 checks both shapes and fails if a live perk targets a stat that is not declared.
 
-Either way the label goes in `config/archetypes.php` under `perk_labels`,
-beside the archetypes themselves. See CLAUDE.md for the display rules (signed
-values, U+2212 minus, neutral colour).
+Either way the label goes in the perk's own `label` column — except a perk
+whose `display_unit` is `attribute`, which leaves it null and borrows the
+attribute's name from `character.names.<key>`. See CLAUDE.md for the display
+rules (signed values, U+2212 minus, neutral colour).
+
+**The roster is inserted by its migration, not a seeder.** Its ids are written
+into character rows, so it has to exist the moment the schema does — including
+in a freshly migrated test database. `Archetype::roster()` reads it once per
+request and caches it, because stat resolution asks for a character's perks
+every time it runs; any write to either table drops that cache.
 
 ### Add an attribute
 
