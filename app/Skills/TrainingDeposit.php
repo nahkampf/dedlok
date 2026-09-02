@@ -12,6 +12,7 @@ use App\Models\TrainingQueueEntry;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Credits training time to a character's queue.
@@ -130,6 +131,22 @@ final class TrainingDeposit
         }
 
         $progress = $this->progressRow($character, $entry);
+
+        if ($progress === null) {
+            // Queued but never injected. skills:validate reports this and the
+            // queue validator refuses to accept it, so reaching here means the
+            // row was written around both — refuse rather than quietly grant
+            // the skill by creating its progress row.
+            Log::warning('Training queued for a skill that was never injected.', [
+                'character' => $character->id,
+                'skill' => $skill->slug,
+            ]);
+
+            $result->uninjected = true;
+
+            return false;
+        }
+
         $cap = $this->progression->cap($skill->rank);
 
         if ($progress->skill_points >= $cap) {
@@ -229,12 +246,21 @@ final class TrainingDeposit
         return [];
     }
 
-    private function progressRow(Character $character, TrainingQueueEntry $entry): CharacterSkill
+    /**
+     * The character's progress row for this entry's skill, or null.
+     *
+     * It does NOT create one. A character_skills row means "this skill has
+     * been injected", and the only thing allowed to create that is
+     * App\Inventory\SkillInjector — spending the skillbook is the gate in
+     * front of training. A deposit that created the row on demand would let
+     * anything that can write a queue entry skip the book entirely.
+     */
+    private function progressRow(Character $character, TrainingQueueEntry $entry): ?CharacterSkill
     {
-        return CharacterSkill::firstOrCreate(
-            ['character_id' => $character->id, 'skill_id' => $entry->skill_id],
-            ['skill_points' => 0, 'attained_level' => 0],
-        );
+        return CharacterSkill::query()
+            ->where('character_id', $character->id)
+            ->where('skill_id', $entry->skill_id)
+            ->first();
     }
 
     /**

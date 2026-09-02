@@ -14,6 +14,7 @@ use App\Skills\TrainingDeposit;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Tests\Concerns\InjectsSkills;
 use Tests\TestCase;
 
 /**
@@ -24,7 +25,7 @@ use Tests\TestCase;
  */
 class TrainingDepositTest extends TestCase
 {
-    use RefreshDatabase;
+    use InjectsSkills, RefreshDatabase;
 
     /** Rate at attributes 10/10: 60 * (0.121 * 10 + 0.0762 * 10). */
     private const RATE = 118.32;
@@ -89,8 +90,16 @@ class TrainingDepositTest extends TestCase
 
     private function queueRow(Skill $skill, int $level, int $position, ?CarbonImmutable $clock, ?Character $character): TrainingQueueEntry
     {
+        $character ??= $this->character;
+
+        // Queuing presupposes the skill was injected — the deposit will not
+        // create a progress row, and refuses outright without one.
+        if (! $character->fresh()->hasInjected($skill)) {
+            $this->inject($character, $skill);
+        }
+
         return TrainingQueueEntry::create([
-            'character_id' => ($character ?? $this->character)->id,
+            'character_id' => $character->id,
             'skill_id' => $skill->id,
             'target_level' => $level,
             'position' => $position,
@@ -319,12 +328,7 @@ class TrainingDepositTest extends TestCase
     {
         $cap = $this->hacking->pointsCap();
 
-        CharacterSkill::create([
-            'character_id' => $this->character->id,
-            'skill_id' => $this->hacking->id,
-            'skill_points' => $cap - 100,
-            'attained_level' => 4,
-        ]);
+        $this->inject($this->character, $this->hacking, $cap - 100, 4);
 
         $this->queue($this->hacking, 5);
 

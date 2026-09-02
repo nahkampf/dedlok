@@ -308,6 +308,33 @@ the password-reset request.
   Cap in a developer's `.env` cannot leak into the suite. Tests that want it on set the
   config themselves.
 
+### Inventory and skillbooks
+
+**Two inventories, and one gate in front of every skill in the game.**
+
+- `items` holds definitions, `inventory_items` holds what a character carries — one row
+  per (character, item) with a `quantity`, not one row per object. Item definitions are in
+  the **database, not config**: the second documented exception to the config-plus-lang
+  rule, taken for the same reasons skills were. `config/items.php` does not exist.
+- **`container` is a property of the item, never a player choice.** `physical` and `data`
+  are the two inventories; a row cannot disagree with its definition because nothing
+  stores the container on the row. `Character::inventoryIn()` filters through the item.
+- **A `character_skills` row means the skill has been injected**, and
+  `App\Inventory\SkillInjector` is the only thing that creates one. Injecting consumes one
+  copy of the skillbook and writes the row at 0 points, level 0, in one transaction.
+- **`TrainingDeposit` does not create that row** — it refuses and logs. Owning and
+  spending the book is therefore a hard gate: nothing can be trained without it, including
+  through a queue row written directly. `skills:validate` and the queue validator both
+  report an uninjected skill.
+- **Level 0 is a real state** (injected, untrained), so the gate is a row-exists check —
+  `Character::hasInjected()` — and never a level check. `hasSkillAtLevel()` answers a
+  different question.
+- Injecting a skill already known is **refused**, and the player keeps the book.
+- **Skillbooks need no lang entry.** There is one book per skill, so `ItemSeeder` generates
+  them from the skills table and the name composes from the skill's own title via
+  `items.skillbook.name`. Adding a skill adds its book, in every locale, for free.
+- Neither inventory has a capacity yet. `weight` and `size` are stored and unenforced.
+
 ### Events
 
 Nothing custom yet, but the wiring is standard Laravel: `Event::dispatch()`, listeners

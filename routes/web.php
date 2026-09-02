@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LocaleController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,4 +26,13 @@ Route::get('/handles/available', AvailableHandlesController::class)
 Route::middleware('auth')->group(function () {
     Route::get('/character/create', [CharacterCreationController::class, 'create'])->name('character.create');
     Route::post('/character', [CharacterCreationController::class, 'store'])->name('character.store');
+
+    // The stash. RequireCharacter has already sent anyone without a character
+    // to the creation screen, so these can assume one exists.
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+
+    // Spending a skillbook is destructive and not idempotent, so it is a POST
+    // with a confirmation in front of it.
+    Route::post('/inventory/{entry}/inject', [InventoryController::class, 'inject'])
+        ->name('inventory.inject');
 });

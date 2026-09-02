@@ -35,11 +35,24 @@ final class TrainingQueueValidator
             ->map(fn ($level): int => (int) $level)
             ->all();
 
+        // A character_skills row exists only because a skillbook was injected,
+        // so the keys of that map are exactly the skills this character is
+        // allowed to train. Level 0 is a real state here — injected, untrained
+        // — which is why this is a key check and not a level check.
+        $injected = array_keys($levels);
+
         foreach ($entries as $entry) {
             $skill = $entry->skill;
 
             if ($skill === null) {
                 $problems[] = "position {$entry->position} refers to a skill that no longer exists";
+
+                continue;
+            }
+
+            if (! in_array($skill->id, $injected, true)) {
+                $problems[] = "position {$entry->position} trains [{$skill->slug}] but it has never been ".
+                    'injected — the skillbook has to be used first';
 
                 continue;
             }

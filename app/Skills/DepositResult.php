@@ -18,6 +18,15 @@ final class DepositResult
     /** True when training cannot progress — every governing attribute is zero. */
     public bool $stalled = false;
 
+    /**
+     * True when the active entry names a skill that was never injected.
+     *
+     * Kept apart from $stalled because the fix is different: a stall wants an
+     * implant, this wants the skillbook spent, and it should never happen at
+     * all through the normal path.
+     */
+    public bool $uninjected = false;
+
     public function didSomething(): bool
     {
         return $this->pointsAwarded > 0 || $this->entriesCompleted !== [];

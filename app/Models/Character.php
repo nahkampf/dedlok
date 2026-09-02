@@ -11,6 +11,7 @@ use App\Stats\Resolver;
 use App\Stats\Sources\ArchetypePerks;
 use Database\Factories\CharacterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -222,6 +223,46 @@ class Character extends Model
     public function characterSkills(): HasMany
     {
         return $this->hasMany(CharacterSkill::class);
+    }
+
+    /** Everything this character is carrying, both inventories. */
+    public function inventory(): HasMany
+    {
+        return $this->hasMany(InventoryItem::class);
+    }
+
+    /**
+     * One inventory's worth of rows, ready to render.
+     *
+     * Which container a row belongs to is a fact about the item, not about the
+     * row, so this filters through the definition rather than a column here.
+     *
+     * @return Collection<int, InventoryItem>
+     */
+    public function inventoryIn(string $container): Collection
+    {
+        return $this->inventory()
+            ->with('item.useSkill')
+            ->inContainer($container)
+            ->get()
+            ->sortBy([
+                fn (InventoryItem $row) => -$row->item->tier,
+                fn (InventoryItem $row) => $row->item->displayName(),
+            ])
+            ->values();
+    }
+
+
+    /**
+     * Has this skill been injected?
+     *
+     * Distinct from hasSkillAtLevel(): a freshly injected skill sits at level
+     * 0, so "knows it at all" and "has any level in it" are different
+     * questions. Training needs the first one.
+     */
+    public function hasInjected(Skill $skill): bool
+    {
+        return $this->characterSkills()->where('skill_id', $skill->id)->exists();
     }
 
     /** The ordered training queue: (skill, target level) pairs. */

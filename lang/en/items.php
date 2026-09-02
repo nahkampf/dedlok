@@ -12,6 +12,29 @@ declare(strict_types=1);
 */
 
 return [
+
+    // Rarity names, shared by every item. The tier is a number on the row; this
+    // is the single place it becomes a word, so a rename lands everywhere at
+    // once instead of once per item.
+    'tiers' => [
+        1 => 'Standard',
+        2 => 'Tuned',
+        3 => 'Milspec',
+        4 => 'Prototype',
+        5 => 'Anomalous',
+    ],
+
+    /*
+    | Skillbooks are named from the skill they teach rather than one entry
+    | each. There is a book per skill, so an entry each would mean adding a
+    | skill also means editing every locale — and skills keep their title in
+    | the database, the documented i18n exception, so the name composes.
+    */
+    'skillbook' => [
+        'name' => 'Skillbook: :skill',
+        'flavor' => 'Compressed instruction set. One read, then it is gone.',
+    ],
+
     'sandevistan_mk5' => [
         'name' => 'Sandevistan MK.V',
         'tier' => 'Anomalous',
