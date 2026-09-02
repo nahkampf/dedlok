@@ -1337,15 +1337,18 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
 .meter--lg { --h: 10px; }
 .meter--sm { --h: 3px; }
 
-/* Segmented: mask the whole bar into --segs cells. Reads as hardware. */
+/* Segmented: mask the whole bar into --segs cells. Reads as hardware.
+
+   The mask belongs to the BAR and not to the fill. .meter__fill is scaleX'd
+   by --v, and a mask on a transformed element scales with it — so masking
+   the fill drew --segs cells squeezed into --v of the width: five narrow
+   blocks at 40%, rather than two of five lit. Masking the container leaves
+   the cells where they are and lets the fill light them. */
 .meter--seg {
   --segs: 12;
   border: 0;
   background: none;
   height: var(--h);
-}
-.meter--seg .meter__fill,
-.meter--seg::before {
   -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 calc(100% / var(--segs) - 3px), transparent calc(100% / var(--segs) - 3px) calc(100% / var(--segs)));
   mask-image: repeating-linear-gradient(90deg, #000 0 calc(100% / var(--segs) - 3px), transparent calc(100% / var(--segs) - 3px) calc(100% / var(--segs)));
 }
@@ -1701,6 +1704,36 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
 .loadout__slot { width: 48px; height: 48px; }
 
 /* ── UTILITIES ─────────────────────────────────────────────────────────── */
+
+/* The corner tick. This is the third place the device appears — .card--select
+   marks a chosen option with it and .slot--filled an occupied socket — so it is
+   a modifier rather than a fourth copy. It marks a box as one you HAVE, and
+   touches nothing else: no border colour, no background, no layout. --tick sets
+   the colour and --tick-size the leg. */
+.ticked { position: relative; }
+
+/* A real element, not a pseudo: a pseudo-element cannot carry a title, and a
+   mark this small is worth explaining on hover. Its borders ARE its box, so
+   the whole corner square is the hit area. */
+.tick {
+  position: absolute; top: 0; right: 0;
+  width: 0; height: 0;
+  border-top: var(--tick-size, 12px) solid var(--tick, var(--ok));
+  border-left: var(--tick-size, 12px) solid transparent;
+}
+
+/* Not yours yet. Half-lit until you point at it — the same device .slot--locked
+   and a disabled .card--select already use for "not available to you". Pairs
+   with .ticked, which marks the ones that are. */
+.unlit {
+  opacity: .5;
+  transition: opacity var(--t-fast) var(--ease);
+  /* It lights up under the pointer, so it reads as something you point AT.
+     An I-beam would offer to select the text instead. */
+  cursor: default;
+}
+.unlit:hover,
+.unlit:focus-within { opacity: 1; }
 
 .stack   { display: flex; flex-direction: column; gap: var(--gap, var(--s-3)); }
 .row     { display: flex; align-items: center; gap: var(--gap, var(--s-3)); }

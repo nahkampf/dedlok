@@ -311,29 +311,75 @@ is the only thing holding those invariants, so nothing else will notice.
 
 ### Drawing the graph
 
-`/skills` renders the whole catalogue as one tree per category, from
-`App\Skills\SkillTree`.
+`/skills` renders the whole catalogue as one collapsible section per category,
+from `App\Skills\SkillTree`. Only the first opens: a page that starts as a wall
+of every skill in the game is not scannable.
 
-**It is not a tree and the arrangement has to lie a little.** Prerequisites
-form a DAG: a skill may require several others, and the seeded catalogue
-already has one that requires two. A tree gives every node one parent, so
-something must give — and what gives is the extra *edges*, never the
-information.
+**It stopped being a tree, and it is better for it.** Prerequisites form a DAG,
+not a tree — a skill may require several others, and the seeded catalogue
+already has one that requires two. Nesting could draw only one of those edges
+and had to explain the rest in words. Once the categories became sections, the
+nesting and the section were saying the same thing anyway, and the nesting was
+the one costing indentation a phone does not have.
 
-- A skill hangs under its **deepest** prerequisite: the one that gates it
-  last, and so the branch it genuinely extends. Depth is the longest chain
-  behind a skill, not how many parents it has.
-- Every other requirement is named on the row instead of drawn. Each skill
-  appears **exactly once**, in its own category.
-- A prerequisite in **another category** cannot be a parent — a node cannot
-  hang in two lanes — so the skill stays a root in its own lane and says what
-  it is waiting on.
+- Every skill states **all** of its prerequisites, each in its own box. A box
+  can be repeated; an edge cannot.
+- **A section is alphabetical.** It is a place to look a skill up, and looking
+  one up wants its name where you expect it. Depth is still walked while
+  building — that walk is what catches a cycle — but it orders nothing and is
+  not carried on the node.
+- A prerequisite in **another category** is named with the category on it, and
+  moves nothing: the skill stays in its own section.
 - A **cycle** makes every skill in it unreachable. The builder refuses to walk
   a skill it is already walking, marks what it finds, and renders the rest;
   `skills:validate` is what explains it.
 
-Rank maps onto the kit's `t1`–`t5` accents, since ranks are 1, 2, 4, 8, 16 and
-the tiers already mean "how costly is this".
+**Rank is text, not colour.** It reads as `×4` in the meta column. Mapping it
+onto the kit's `t1`–`t5` accents was tried and reverted: `.item-row` paints its
+left border from `--tier`, tier 2 is `--jade`, and `--ok` IS `--jade` — so a
+rank-2 skill drew a green stripe exactly where the overlay's green means "you
+have this", in the place the eye reads the rail.
+
+**What a signed-in player has is laid over the top**, never built into the tree:
+a corner tick on skills they have injected and a five-segment meter of levels
+attained. It arrives as one `skill_id => level` map, so the arrangement cannot
+depend on who is reading it — two players must not see different shapes for the
+same catalogue. A guest sees the catalogue with no overlay at all.
+
+**The tick keys off presence in that map, never the level.** Level 0 is a real
+state — injected, untrained — and reading the level to decide would hide a
+skill the moment it was learned.
+
+Skills the player does not have are **half-lit until pointed at**, so the ones
+they do have carry the page. Dimming is half of the overlay and needs a viewer:
+a guest sees the catalogue at full strength, because "you do not have this"
+means nothing without a you. A signed-in player who has injected nothing does
+see every row dimmed — that is the same statement, and it is true.
+
+### What happens to time past the target
+
+An entry stops at its target level **only when something else is queued**. The
+surplus has somewhere better to be, and `completeEntry` hands the successor the
+exact completion moment so none of it is lost in the handover.
+
+With an **empty queue behind it**, the segment runs to the end of the minute the
+threshold fell in, and no further. The minute a player is part-way through is
+credited whole — they trained all of it — and the minutes after it are not,
+because by then nothing was queued to train.
+
+That distinction is invisible while deposits run every minute: the crossing
+minute is the current one. It is the whole behaviour on a **catch-up run**,
+where `now` can be hours past the threshold and must not become hours of
+training for a queue that emptied in its first minute.
+
+**The rank's level-5 cap bounds it either way**, and that is enforced on the
+award (`min($award, $cap - $points)`) rather than by computing the moment the
+cap is reached — a rate change inside the segment would let such a moment drift
+off the real ceiling.
+
+Note the asymmetry this creates, because it is deliberate: queueing two skills
+trains the second one with the surplus, while queueing one trains the first one
+further. Neither wastes the time; they just spend it differently.
 
 ### The training queue
 

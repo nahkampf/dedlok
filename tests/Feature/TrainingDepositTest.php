@@ -306,6 +306,72 @@ class TrainingDepositTest extends TestCase
         );
     }
 
+    public function test_a_lone_entry_banks_the_minute_it_crossed_in(): void
+    {
+        // The threshold falls part-way through a minute. That minute is
+        // credited whole rather than truncated on the threshold, because the
+        // player trained all of it.
+        $this->queue($this->hacking, 1);
+
+        $needed = $this->hacking->pointsForLevel(1);
+        $crossingMinute = (int) ceil($needed / self::RATE);
+
+        $this->advance($crossingMinute);
+
+        $this->assertGreaterThan($needed, $this->points(), 'the surplus was thrown away');
+        $this->assertSame((int) floor($crossingMinute * self::RATE), $this->points());
+        $this->assertSame(0, $this->character->trainingQueue()->count(), 'the entry still completes');
+    }
+
+    public function test_the_surplus_stops_at_the_crossing_minute(): void
+    {
+        // The distinction is invisible minute by minute and is everything on a
+        // catch-up run: an hour of `now` past the threshold must not become an
+        // hour of training for a queue that emptied in its first minute.
+        $this->queue($this->hacking, 1);
+
+        $needed = $this->hacking->pointsForLevel(1);
+        $crossingMinute = (int) ceil($needed / self::RATE);
+
+        $this->advance($crossingMinute + 60);
+
+        $this->assertSame(
+            (int) floor($crossingMinute * self::RATE),
+            $this->points(),
+            'the hour after the queue emptied was credited'
+        );
+    }
+
+    public function test_a_successor_still_takes_the_surplus_rather_than_the_finished_skill(): void
+    {
+        // The complement of the test above: with something else to train,
+        // stopping dead on the threshold IS the point.
+        $this->queue($this->hacking, 1, 1);
+        $this->queueUnstarted($this->cryptography, 1, 2);
+
+        $needed = $this->hacking->pointsForLevel(1);
+        $this->advance((int) ceil($needed / self::RATE) + 5);
+
+        $this->assertSame($needed, $this->points(), 'the finished skill took more than it needed');
+        $this->assertGreaterThan(0, $this->points($this->cryptography));
+    }
+
+    public function test_the_crossing_minute_never_carries_a_skill_past_its_cap(): void
+    {
+        // Level 5 IS the cap, so this is the one target whose crossing minute
+        // would spill over it. It must land exactly on the ceiling.
+        $this->queue($this->hacking, 5);
+
+        $cap = $this->hacking->pointsCap();
+        $this->advance((int) ceil($cap / self::RATE) + 10);
+
+        $this->assertSame($cap, $this->points(), 'the crossing minute spilled past the cap');
+        $this->assertSame(5, (int) CharacterSkill::query()
+            ->where('character_id', $this->character->id)
+            ->where('skill_id', $this->hacking->id)
+            ->value('attained_level'));
+    }
+
     public function test_the_last_entry_reports_an_empty_queue(): void
     {
         Event::fake([TrainingEntryCompleted::class]);

@@ -868,6 +868,33 @@ public/assets/
       </template>
     </div>
     <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Corner tick &amp; unlit</h3><p><code class="inl">.ticked</code> marks a box as one you already have, and touches nothing else — no border colour, no background, no layout. It is the same device <code class="inl">.card--select</code> uses for a chosen option and <code class="inl">.slot--filled</code> for an occupied socket, which is why it is a modifier rather than a fourth copy of it. The mark itself is <code class="inl">.tick</code>, a real element rather than a pseudo so it can carry a <code class="inl">title</code>; <code class="inl">--tick</code> sets the colour and <code class="inl">--tick-size</code> the leg, defaulting to <code class="inl">--ok</code> since what it says is "you have this". Its opposite is <code class="inl">.unlit</code>, which half-lights a row you do not have until you point at it. Pair either with <code class="inl">.meter--seg</code> to show how far along the thing is — the segments are cells of the bar, so <code class="inl">--segs:5</code> is always five blocks whatever <code class="inl">--v</code> lights.</p></div>
+      <template class="demo-src">
+        <div class="panel" style="max-width:420px">
+          <div class="panel__hd"><span class="micro">Skills</span></div>
+          <div>
+            <div class="item-row ticked">
+              <span class="tick" title="Skill injected"></span>
+              <span class="slot__icon">◆</span>
+              <span class="stack" style="--gap:4px;min-width:0">
+                <span class="item-row__name">Cyberdecks</span>
+                <div class="meter meter--seg" style="--segs:5;--v:.4;--fill:var(--ok);width:min(140px,100%)" title="Level 2 of 5 · 1,306 SP"><div class="meter__fill"></div></div>
+              </span>
+              <span class="item-row__meta">×1</span>
+            </div>
+            <div class="item-row unlit">
+              <span class="slot__icon">└</span>
+              <span class="stack" style="--gap:4px;min-width:0">
+                <span class="item-row__name">Network Topology</span>
+                <span class="tag">Cyberdecks 3</span>
+              </span>
+              <span class="item-row__meta">×2</span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
       <div class="demo__hd"><h3 class="h3">Loadout</h3></div>
       <template class="demo-src">
         <div class="panel" style="max-width:380px">

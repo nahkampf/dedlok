@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Character;
+use App\Models\CharacterSkill;
 use App\Models\Skill;
 use App\Models\SkillPrerequisite;
 use App\Models\User;
@@ -59,37 +61,55 @@ class SkillTreeTest extends TestCase
         $this->assertSame(['Combat', 'Cybernetics', 'Systems'], array_keys($this->tree()));
     }
 
-    public function test_a_skill_with_no_prerequisites_is_a_root(): void
+    public function test_each_category_is_a_collapsible_section(): void
+    {
+        $this->skill('Cyberdecks', 'Systems');
+        $this->skill('Neural Interfacing', 'Cybernetics');
+        $this->skill('Knives', 'Combat');
+
+        $html = $this->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertSame(3, substr_count($html, '<details'), 'one section per category');
+
+        // Only the first opens, so the page is scannable without being a wall.
+        $this->assertSame(1, substr_count($html, 'open'));
+
+        // And every skill is inside one, closed or not.
+        foreach (['Cyberdecks', 'Neural Interfacing', 'Knives'] as $title) {
+            $this->assertStringContainsString($title, $html);
+        }
+    }
+
+    public function test_a_skill_with_no_prerequisites_is_open(): void
     {
         $this->skill('Cyberdecks');
 
-        $roots = $this->tree()['Systems'];
+        $nodes = $this->tree()['Systems'];
 
-        $this->assertCount(1, $roots);
-        $this->assertTrue($roots[0]->isRoot());
-        $this->assertSame(0, $roots[0]->depth);
-        $this->assertNull($roots[0]->requiredLevel);
+        $this->assertCount(1, $nodes);
+        $this->assertTrue($nodes[0]->isOpen());
+        $this->assertSame([], $nodes[0]->requirements);
     }
 
-    public function test_a_requiring_skill_hangs_under_what_it_requires(): void
+    public function test_a_skill_names_what_it_requires(): void
     {
-        $decks = $this->skill('Cyberdecks');
         $profiling = $this->skill('System Profiling');
+        $decks = $this->skill('Cyberdecks');
         $this->gate($profiling, $decks, 3);
 
-        $roots = $this->tree()['Systems'];
+        $node = collect($this->tree()['Systems'])
+            ->firstWhere(fn (SkillTreeNode $n): bool => $n->skill->title === 'System Profiling');
 
-        $this->assertCount(1, $roots, 'the child must not also be a root');
-        $this->assertSame('Cyberdecks', $roots[0]->skill->title);
-
-        $child = $roots[0]->children[0];
-        $this->assertSame('System Profiling', $child->skill->title);
-        $this->assertSame(3, $child->requiredLevel);
-        $this->assertSame(1, $child->depth);
+        $this->assertFalse($node->isOpen());
+        $this->assertSame('Cyberdecks', $node->requirements[0]['skill']->title);
+        $this->assertSame(3, $node->requirements[0]['level']);
     }
 
-    public function test_children_are_ordered_by_title(): void
+    public function test_a_section_is_alphabetical_whatever_the_graph_says(): void
     {
+        // Zero Day needs Cyberdecks, so a dependency order would put it last.
+        // A section is a place to look a skill up, and looking one up wants
+        // its name where you expect it.
         $decks = $this->skill('Cyberdecks');
         foreach (['Zero Day', 'Anonymity', 'Network Topology'] as $title) {
             $this->gate($this->skill($title), $decks);
@@ -97,19 +117,25 @@ class SkillTreeTest extends TestCase
 
         $titles = array_map(
             fn (SkillTreeNode $node): string => $node->skill->title,
-            $this->tree()['Systems'][0]->children,
+            $this->tree()['Systems'],
         );
 
-        $this->assertSame(['Anonymity', 'Network Topology', 'Zero Day'], $titles);
+        $this->assertSame(['Anonymity', 'Cyberdecks', 'Network Topology', 'Zero Day'], $titles);
     }
 
     // ---- where a tree cannot describe the graph -----------------------------
 
-    public function test_a_skill_with_two_parents_hangs_under_the_deeper_one(): void
+    public function test_an_open_skill_lists_no_requirements(): void
     {
-        // Advanced needs both Cyberdecks (depth 0) and Profiling (depth 1).
-        // It becomes reachable only after the deeper chain, so that is where
-        // it belongs; the other requirement is carried on the node.
+        $this->skill('Cyberdecks');
+
+        $this->assertSame([], $this->tree()['Systems'][0]->requirements);
+    }
+
+    public function test_a_skill_states_every_prerequisite_it_has(): void
+    {
+        // Advanced needs BOTH. A tree had to draw one edge and explain the
+        // other; a list of boxes just says both.
         $decks = $this->skill('Cyberdecks');
         $profiling = $this->skill('System Profiling');
         $advanced = $this->skill('Advanced Profiling');
@@ -118,15 +144,15 @@ class SkillTreeTest extends TestCase
         $this->gate($advanced, $decks, 5);
         $this->gate($advanced, $profiling, 5);
 
-        $node = $this->tree()['Systems'][0]->children[0]->children[0];
+        $node = collect($this->tree()['Systems'])
+            ->firstWhere(fn (SkillTreeNode $n): bool => $n->skill->title === 'Advanced Profiling');
 
-        $this->assertSame('Advanced Profiling', $node->skill->title);
-        $this->assertSame(2, $node->depth);
-        $this->assertSame(5, $node->requiredLevel);
-
-        $this->assertCount(1, $node->alsoRequires);
-        $this->assertSame('Cyberdecks', $node->alsoRequires[0]['skill']->title);
-        $this->assertSame(5, $node->alsoRequires[0]['level']);
+        $this->assertSame(
+            ['Cyberdecks' => 5, 'System Profiling' => 5],
+            collect($node->requirements)->mapWithKeys(
+                fn (array $r): array => [$r['skill']->title => $r['level']]
+            )->all()
+        );
     }
 
     public function test_every_skill_appears_exactly_once(): void
@@ -138,17 +164,10 @@ class SkillTreeTest extends TestCase
         $this->gate($advanced, $decks);
         $this->gate($advanced, $profiling);
 
-        $seen = [];
-        $walk = function (SkillTreeNode $node) use (&$walk, &$seen): void {
-            $seen[] = $node->skill->title;
-            foreach ($node->children as $child) {
-                $walk($child);
-            }
-        };
-
-        foreach ($this->tree()['Systems'] as $root) {
-            $walk($root);
-        }
+        $seen = array_map(
+            fn (SkillTreeNode $node): string => $node->skill->title,
+            $this->tree()['Systems'],
+        );
 
         sort($seen);
         $this->assertSame(['Advanced Profiling', 'Cyberdecks', 'System Profiling'], $seen);
@@ -168,9 +187,8 @@ class SkillTreeTest extends TestCase
         $node = $tree['Systems'][0];
 
         $this->assertSame('Cyberdecks', $node->skill->title);
-        $this->assertTrue($node->isRoot());
-        $this->assertCount(1, $node->alsoRequires);
-        $this->assertSame('Neural Interfacing', $node->alsoRequires[0]['skill']->title);
+        $this->assertCount(1, $node->requirements);
+        $this->assertSame('Neural Interfacing', $node->requirements[0]['skill']->title);
     }
 
     public function test_a_cycle_is_reported_rather_than_hung_on(): void
@@ -180,42 +198,47 @@ class SkillTreeTest extends TestCase
         $this->gate($a, $b);
         $this->gate($b, $a);
 
-        $roots = $this->tree()['Systems'];
+        $nodes = $this->tree()['Systems'];
 
-        $this->assertCount(2, $roots);
-        foreach ($roots as $node) {
+        $this->assertCount(2, $nodes);
+        foreach ($nodes as $node) {
             $this->assertTrue($node->unreachable, "{$node->skill->title} should be unreachable");
         }
     }
 
     // ---- presentation -------------------------------------------------------
 
-    public function test_rank_maps_onto_the_kits_five_tiers(): void
+    public function test_no_row_carries_a_tier_accent(): void
     {
-        foreach ([1 => 't1', 2 => 't2', 4 => 't3', 8 => 't4', 16 => 't5'] as $rank => $tier) {
-            $node = new SkillTreeNode(Skill::factory()->make(['rank' => $rank]), 0, null);
+        // .item-row paints border-left from --tier, and the rank tiers include
+        // jade — which IS --ok, what the tick means. Rank belongs in the meta
+        // column as ×N, not as a colour that says "you have this".
+        $this->skill('Cyberdecks', rank: 2);
 
-            $this->assertSame($tier, $node->tierClass(), "rank {$rank}");
+        $html = $this->get(route('skills.index'))->assertOk()->getContent();
+
+        foreach (['t1', 't2', 't3', 't4', 't5'] as $tier) {
+            $this->assertStringNotContainsString("item-row {$tier}", $html);
         }
     }
 
-    public function test_a_lane_counts_everything_in_it(): void
+    public function test_a_section_holds_every_skill_in_its_category(): void
     {
         $decks = $this->skill('Cyberdecks');
         $profiling = $this->skill('System Profiling');
         $this->gate($profiling, $decks);
         $this->gate($this->skill('Advanced Profiling'), $profiling);
 
-        $this->assertSame(3, $this->tree()['Systems'][0]->descendantCount());
+        $this->assertCount(3, $this->tree()['Systems']);
     }
 
     // ---- the page -----------------------------------------------------------
 
-    public function test_the_page_draws_the_tree(): void
+    public function test_the_page_lists_every_skill_with_what_it_needs(): void
     {
         $decks = $this->skill('Cyberdecks');
         $profiling = $this->skill('System Profiling');
-        $advanced = $this->skill('Advanced Profiling');
+        $advanced = $this->skill('Advanced Profiling', rank: 4);
         $this->gate($profiling, $decks, 3);
         $this->gate($advanced, $decks, 5);
         $this->gate($advanced, $profiling, 5);
@@ -224,48 +247,183 @@ class SkillTreeTest extends TestCase
 
         $response->assertSee('Systems');
         $response->assertSee('Cyberdecks');
-        $response->assertSee(Text::get('skills.from_level', ['level' => 3]));
 
-        // The second parent is stated, since the tree could not draw it.
-        $response->assertSee(Text::get('skills.also_requires', [
-            'skill' => 'Cyberdecks', 'level' => 5,
+        // Both prerequisites are stated, in the same kind of box.
+        $response->assertSee(Text::get('skills.requires', [
+            'skill' => 'Cyberdecks', 'level' => 3,
         ]));
+        $response->assertSee(Text::get('skills.requires', [
+            'skill' => 'System Profiling', 'level' => 5,
+        ]));
+
+        // A rank is a multiplier, so it reads as one: ×4, not "Rank 4".
+        $response->assertSee(Text::get('skills.rank', ['rank' => 4]));
+        $response->assertSee('×4');
     }
 
-    /**
-     * Indentation compounds, so it has to stop.
-     *
-     * A 320px screen has about 238px inside a panel; five levels of indent
-     * would eat a third of it and the rows would wrap to nothing. The rail
-     * still runs at every depth — only the offset stops.
-     */
-    public function test_the_indent_stops_compounding_but_the_rail_does_not(): void
-    {
-        $previous = $this->skill('Level 0');
-
-        foreach (range(1, 5) as $level) {
-            $current = $this->skill("Level {$level}");
-            $this->gate($current, $previous);
-            $previous = $current;
-        }
-
-        $html = $this->get(route('skills.index'))->assertOk()->getContent();
-
-        $this->assertSame(5, substr_count($html, 'border-left:var(--hair)'), 'every level keeps its rail');
-        $this->assertSame(3, substr_count($html, 'margin-inline-start'), 'the offset stops after three');
-    }
-
-    public function test_the_page_is_public_and_reads_no_character(): void
+    public function test_a_guest_sees_the_catalogue_and_no_overlay(): void
     {
         $this->skill('Cyberdecks');
 
-        $this->get(route('skills.index'))->assertOk();
+        $html = $this->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('Cyberdecks', $html);
+        $this->assertStringNotContainsString('ticked', $html, 'a guest has injected nothing');
+        $this->assertStringNotContainsString('meter--seg', $html);
 
         // A signed-in user without a character is still sent to creation by
         // RequireCharacter; that is the middleware's job, not this page's.
         $this->actingAs(User::factory()->create())
             ->get(route('skills.index'))
             ->assertRedirect(route('character.create'));
+    }
+
+    // ---- what the viewer has ------------------------------------------------
+
+    private function player(): Character
+    {
+        return Character::factory()->create(array_merge(
+            array_fill_keys(Character::ATTRIBUTES, 10),
+            ['archetype' => 1],
+        ));
+    }
+
+    private function inject(Character $character, Skill $skill, int $level = 0, ?int $points = null): void
+    {
+        CharacterSkill::create([
+            'character_id' => $character->id,
+            'skill_id' => $skill->id,
+            'skill_points' => $points ?? ($level === 0 ? 0 : $skill->pointsForLevel($level)),
+            'attained_level' => $level,
+        ]);
+    }
+
+    public function test_an_injected_skill_is_ticked_and_metered(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $player = $this->player();
+        $this->inject($player, $decks, 2);
+
+        $html = $this->actingAs($player->user)
+            ->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('ticked', $html);
+        $this->assertStringContainsString('--tick:var(--ok)', $html);
+
+        // Two of five levels lit, the rest left as the kit's grey. Five cells
+        // whatever is lit — the segments belong to the bar, not to the fill.
+        $this->assertStringContainsString('--segs:5;--v:0.4', $html);
+    }
+
+    public function test_the_tick_says_what_it_means(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $player = $this->player();
+        $this->inject($player, $decks, 1);
+
+        $this->actingAs($player->user)
+            ->get(route('skills.index'))
+            ->assertOk()
+            ->assertSee('<span class="tick" title="'.Text::get('skills.injected').'">', false);
+    }
+
+    public function test_the_meter_reports_the_level_and_the_points_banked(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $player = $this->player();
+        $this->inject($player, $decks, 2, points: 1306);
+
+        $this->actingAs($player->user)
+            ->get(route('skills.index'))
+            ->assertOk()
+            // Thousands separated: it is a number a player reads, not an id.
+            ->assertSee(Text::get('skills.level_meter', [
+                'level' => 2, 'max' => 5, 'points' => '1,306',
+            ]), false);
+    }
+
+    public function test_a_skill_you_lack_is_dimmed_and_one_you_have_is_not(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $this->skill('Network Topology');
+        $player = $this->player();
+        $this->inject($player, $decks, 1);
+
+        $html = $this->actingAs($player->user)
+            ->get(route('skills.index'))->assertOk()->getContent();
+
+        // One of the two rows is half-lit, and it is not the one with the tick.
+        $this->assertSame(1, substr_count($html, 'item-row unlit'));
+        $this->assertStringNotContainsString('ticked unlit', $html);
+    }
+
+    public function test_a_guest_sees_nothing_dimmed(): void
+    {
+        // Dimming says "you do not have this", which needs a you. A guest gets
+        // the catalogue at full strength rather than a page that looks broken.
+        $this->skill('Cyberdecks');
+        $this->skill('Network Topology');
+
+        $html = $this->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('unlit', $html);
+    }
+
+    public function test_a_player_who_has_injected_nothing_sees_every_row_dimmed(): void
+    {
+        $this->skill('Cyberdecks');
+        $this->skill('Network Topology');
+
+        $html = $this->actingAs($this->player()->user)
+            ->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertSame(2, substr_count($html, 'item-row unlit'));
+    }
+
+    public function test_an_untrained_injection_is_still_ticked(): void
+    {
+        // Level 0 is a real state — injected, untrained — so presence in the
+        // map marks the skill, never the level.
+        $decks = $this->skill('Cyberdecks');
+        $player = $this->player();
+        $this->inject($player, $decks, 0);
+
+        $html = $this->actingAs($player->user)
+            ->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('ticked', $html);
+        $this->assertStringContainsString('--segs:5;--v:0', $html);
+    }
+
+    public function test_a_skill_the_player_lacks_is_not_marked(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $this->skill('Network Topology');
+        $player = $this->player();
+        $this->inject($player, $decks, 1);
+
+        $html = $this->actingAs($player->user)
+            ->get(route('skills.index'))->assertOk()->getContent();
+
+        // One row ticked, one not — the overlay is per skill, not per page.
+        $this->assertSame(1, substr_count($html, 'ticked'));
+    }
+
+    public function test_the_tree_shape_does_not_depend_on_the_viewer(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $profiling = $this->skill('System Profiling');
+        $this->gate($profiling, $decks, 3);
+
+        $player = $this->player();
+        $this->inject($player, $profiling, 1);
+
+        $guest = $this->get(route('skills.index'))->getContent();
+        $mine = $this->actingAs($player->user)->get(route('skills.index'))->getContent();
+
+        $strip = fn (string $html): int => substr_count($html, 'class="item-row');
+
+        $this->assertSame($strip($guest), $strip($mine), 'the catalogue changed shape per viewer');
     }
 
     public function test_an_empty_database_says_so(): void

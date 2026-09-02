@@ -54,14 +54,16 @@ class Character extends Model
      * The two groups the creation screen presents. Their union must equal
      * ATTRIBUTES — CharacterTest asserts it, so adding an attribute without
      * filing it under a group fails loudly rather than silently vanishing
-     * from the UI.
+     * from the UI. Each group also keeps ATTRIBUTES' own order, because
+     * StatConfigTest compares them against the tagged stats in that order;
+     * that is why Reflex leads the physical group rather than trailing it.
      *
      * @var list<string>
      */
-    public const PHYSICAL_ATTRIBUTES = ['meat', 'motor', 'senses', 'muscle'];
+    public const PHYSICAL_ATTRIBUTES = ['reflex', 'meat', 'motor', 'senses', 'muscle'];
 
     /** @var list<string> */
-    public const MENTAL_ATTRIBUTES = ['intellect', 'memory', 'perception', 'reflex', 'focus', 'social'];
+    public const MENTAL_ATTRIBUTES = ['intellect', 'memory', 'perception', 'focus', 'social'];
 
     /**
      * Stored resources, mapped to the derived stat that bounds each one.

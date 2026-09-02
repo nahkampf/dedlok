@@ -12,6 +12,58 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-09-02
+
+### Added
+
+- **The skill tree marks what you have.** A signed-in player gets a green corner
+  tick on every skill they have injected and a five-segment meter of the levels
+  attained — lit green, the rest the kit's grey — with the tick reading "Skill
+  injected" and the meter reporting the level and the points banked. It is an
+  overlay driven by one `skill_id => level` map, so the page's shape never
+  depends on who is reading it, and a guest sees the plain catalogue.
+- **`.ticked`/`.tick` and `.unlit` are new UI kit utilities.** The tick
+  generalises the corner mark `.card--select` and `.slot--filled` already drew
+  for themselves, and is a real element rather than a pseudo so it can carry a
+  tooltip. `.unlit` half-lights a box until hovered, with a `default` cursor
+  while it does. Both demoed in the gallery.
+
+### Changed
+
+- **Each category on the skill tree is a collapsible section** holding a flat,
+  alphabetical list. The nesting and the section were saying the same thing, and
+  the nesting was the one costing indentation a phone does not have. A skill now
+  states *all* of its prerequisites as boxes — a box can be repeated where an
+  edge could not — which is what let the tree go.
+- **The minute a skill crosses its target level is credited whole.** An entry
+  used to stop dead on the threshold: a character who trained two minutes for a
+  level that arrived in 1.4 was credited for 1.4. The crossing minute now banks
+  its excess into the same skill — but only that minute, so a catch-up run
+  hours after an outage does not credit hours to a queue that emptied in its
+  first. With a successor waiting the surplus still goes to the next skill,
+  which was always the better use of it. The rank's level-5 cap bounds both
+  paths, enforced on the award rather than as a precomputed moment.
+- **Reflex is a physical attribute**, not a mental one. `config/stats.php`
+  derives the `physical`/`mental` tag from `Character::PHYSICAL_ATTRIBUTES`, and
+  no formula reads those tags, so no derived stat changed value — only the
+  grouping and the creation screen's two columns.
+- **A skill's rank reads as the multiplier it is** — `×4`, not `Rank 4`,
+  matching how a stack already reads in the inventory.
+- **Skill rows carry no rank accent.** Rank was briefly mapped onto the kit's
+  `t1`–`t5` tiers, which paint `.item-row`'s left border. Tier 2 is `--jade` and
+  `--ok` *is* `--jade`, so a rank-2 skill drew a green stripe meaning "costly"
+  on the same page where green means "you have this" — and drew it where the eye
+  reads the rail between rows.
+
+### Fixed
+
+- **`.meter--seg` never drew `--segs` blocks.** The mask sat on `.meter__fill`,
+  which is `scaleX(var(--v))`, and a mask on a transformed element scales with
+  it — so a 5-segment meter at 40% drew five narrow blocks squeezed into 40% of
+  the bar instead of two of five lit. The mask belongs to the bar; the fill
+  lights the cells. This affected every segmented meter, the gallery's own
+  full-screen demo included.
+
 ## [0.2.1] — 2026-09-02
 
 ### Added
@@ -133,7 +185,8 @@ Two, both additive and safe to run forward:
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/nahkampf/dedlok/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/nahkampf/dedlok/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/nahkampf/dedlok/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/nahkampf/dedlok/compare/v0.1.0...v0.1.1

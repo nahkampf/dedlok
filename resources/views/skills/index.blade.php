@@ -13,25 +13,27 @@
             </div>
         </div>
     @else
-        {{-- One lane per category. The floor is capped so a lane never demands
-             more width than a 320px screen has. --}}
-        <div class="grid" style="margin-top:var(--s-5);grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))">
-            @foreach ($categories as $category => $roots)
-                <div class="panel" style="min-width:0">
-                    <div class="panel__hd">
-                        <span class="micro">{{ $category }}</span>
+        {{-- One section per category, each collapsible and each a flat list.
+             The section IS the grouping, so nothing is nested inside it: a
+             skill states what it needs in boxes, which an edge could not do
+             more than once anyway. --}}
+        <div class="accordion" style="margin-top:var(--s-5)">
+            @foreach ($categories as $category => $nodes)
+                <details @if ($loop->first) open @endif>
+                    <summary>
+                        {{ $category }}
                         <div class="spacer"></div>
                         <span class="micro num">
-                            {{ Text::plural('skills.count', collect($roots)->sum(fn ($root) => $root->descendantCount())) }}
+                            {{ Text::plural('skills.count', count($nodes)) }}
                         </span>
-                    </div>
+                    </summary>
 
                     <div>
-                        @foreach ($roots as $root)
-                            <x-skill-node :node="$root" />
+                        @foreach ($nodes as $node)
+                            <x-skill-node :node="$node" :levels="$levels" />
                         @endforeach
                     </div>
-                </div>
+                </details>
             @endforeach
         </div>
     @endif
