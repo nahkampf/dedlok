@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Market\Rarity;
 use App\Models\Item;
 use App\Models\Skill;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -23,6 +24,10 @@ class ItemFactory extends Factory
             'flavor' => null,
             'container' => fake()->randomElement(Item::CONTAINERS),
             'tier' => fake()->numberBetween(1, Item::MAX_TIER),
+            // Not randomised, unlike tier. Rarity decides whether a restock
+            // pass delivers anything, so a random one would make any test
+            // that touches the market roll dice it never asked to roll.
+            'rarity' => Rarity::Common,
             'stackable' => true,
             'use_op' => null,
             'use_skill_id' => null,
@@ -32,6 +37,9 @@ class ItemFactory extends Factory
             'accepts' => null,
             'base_cost' => fake()->numberBetween(10, 50_000),
             'on_market' => true,
+            // Nothing the market stocks unless a test says so, matching the
+            // column default: an item is listed before it is stocked.
+            'seed_quantity' => 0,
         ];
     }
 
@@ -48,6 +56,22 @@ class ItemFactory extends Factory
     public function tier(int $tier): static
     {
         return $this->state(['tier' => $tier]);
+    }
+
+    public function rarity(Rarity $rarity): static
+    {
+        return $this->state(['rarity' => $rarity]);
+    }
+
+    /** Something the market carries, and how many a full shelf is. */
+    public function restocks(int $seedQuantity): static
+    {
+        return $this->state(['seed_quantity' => $seedQuantity, 'on_market' => true]);
+    }
+
+    public function offMarket(): static
+    {
+        return $this->state(['on_market' => false]);
     }
 
     /**

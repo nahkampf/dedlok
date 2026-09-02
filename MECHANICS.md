@@ -40,6 +40,8 @@ down so the implementation has something to be checked against.
 | `character_modifiers` table | **specified only** |
 | Item *modifiers* — items that change a stat | **specified only**; items exist, none of them alter a number yet |
 | Implants, drugs, injuries | **specified only** |
+| The market's supply — `items.rarity`, `items.seed_quantity`, `market_stock`, `market_purchases` | **built**, with `market:seed` on an eight-hour schedule |
+| The market itself — a storefront, a price, a transaction | **not built**; nothing spends money yet |
 | Inventory capacity — an overall limit per inventory | **specified only**; `weight` is stored and unenforced |
 
 Do not describe anything below as working until it appears in the table above.
@@ -267,6 +269,7 @@ thing they describe already lives — on the row if it has one, in
 | Stat definitions: ids, tags, formula, clamps, rounding | `config/stats.php` |
 | Implant / drug / effect definitions | `config/implants.php`, `config/effects.php`, … |
 | **Item and skill definitions** | the `items` and `skills` tables — the documented exception, see below |
+| Market restock maths — rarity chances, the demand window and curve | `config/market.php` |
 | Player-visible words with no row of their own | `config/strings.php` |
 | What a given character actually has | `character_modifiers` table |
 
@@ -499,6 +502,60 @@ The rest of the contract:
 - **A re-run inside the same minute is a no-op**, which is what makes the
   schedule safe to retry.
 
+## The market
+
+Only the supply side exists: what the market carries, and how it decides to
+carry more of it. Nothing sells anything yet — there is no price paid, no
+transaction, no money.
+
+Two columns on `items` and two tables:
+
+| What | Where | Means |
+| --- | --- | --- |
+| `items.rarity` | `common`, `uncommon`, `rare`, `ultra_rare` | how often the market gets a delivery |
+| `items.seed_quantity` | 0 by default | how many a full shelf is; 0 means never stocked |
+| `market_stock` | one row per item | what is on the shelf now |
+| `market_purchases` | one row per purchase, forever | demand |
+
+`App\Market\MarketSeeder` runs every eight hours (`market:seed`, scheduled in
+`routes/console.php`) and, for each item that is `on_market` with a
+`seed_quantity` above zero:
+
+```
+demand     = units bought in the last 7 days           (market_purchases)
+ratio      = demand / seed_quantity
+target     = ratio < 0.5
+               ? seed_quantity
+               : seed_quantity * min(ratio / 0.5, 4)
+added      = roll(1..100) <= chance(rarity)
+               ? max(0, target - stock)
+               : 0
+```
+
+with `chance` being 100, 70, 20 and 5 percent for the four rarities. Everything
+above the item's own two columns is in `config/market.php`.
+
+The properties that matter:
+
+- **It tops up, it does not add.** Stock the players did not buy still counts,
+  so an unpopular item cannot pile up pass after pass.
+- **The demand branches meet at the threshold.** `ratio / threshold` rather
+  than `ratio` is what makes the multiplier exactly 1 at the moment demand
+  becomes interesting. Using `ratio` directly would put a step in the middle of
+  the curve, where one extra sale in a week doubles the shelf.
+- **The multiplier is capped**, because a run on an item otherwise feeds
+  itself: a deeper shelf is bought out harder, which is more demand.
+- **The rarity roll is all or nothing.** A failed roll adds *nothing*, rather
+  than adding less. Scarcity a player can feel is a shelf that is usually
+  empty, not a shelf that is always slightly short.
+- **A pass is not idempotent and is not caught up.** Unlike the training
+  deposit there is no stored clock to advance from: a missed pass is simply a
+  shelf that stays as it is, and a pass run twice is two deliveries. That is
+  what `withoutOverlapping()` on the schedule is protecting.
+- **Nothing is transactional across items.** Each item reads the shelf it
+  finds, so a pass that dies half way leaves a coherent market and the next one
+  finishes the job.
+
 ## Recipes
 
 Every recipe below is data — a config entry, or a row. **If adding content
@@ -518,6 +575,18 @@ point at a skill row. `config/items.php` does not exist and is not planned.
    the catalogue is kept.
 2. Its `name`, and `flavor` if it has any — columns on the same row. Tier names
    are shared (`strings.items.tiers.1`–`5`) and never repeated per item.
+3. If the market sells it: `rarity` and `seed_quantity` — see below.
+
+**Tier is not rarity.** They are two axes and it is worth keeping them apart:
+`tier` is what the thing IS (Standard, Tuned, Milspec, Prototype, Anomalous),
+it colours the card through `.t1`–`.t5`, and it carries no mechanics.
+`rarity` is how often the market has one. Milspec ammunition is common; a tuned
+bike part nobody makes any more is not.
+
+**An item is stocked when it has both `on_market` and a `seed_quantity` above
+zero.** They answer different questions — whether the thing is sold at all, and
+how many of it a full shelf is — and the default shelf size is 0, so nothing
+reaches the market by being forgotten.
 
 **An item that holds other items** needs two more values on the row:
 `capacity` (how much it holds; 0 means it is not a container) and `accepts`

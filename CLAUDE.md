@@ -373,6 +373,38 @@ the password-reset request.
 - `size` is enforced, but only as what a container's contents cost against its capacity.
   `weight` is still stored and unenforced, and neither inventory has an overall capacity.
 
+### The market's supply side
+
+**The market restocks itself; nothing sells anything yet.** There is no price paid, no
+transaction and no money — what exists is the half a storefront will be built on top of.
+
+- **`rarity` is not `tier`.** Tier is what an item IS (Standard…Anomalous), it colours
+  the card, and it carries no mechanics. Rarity — `common`, `uncommon`, `rare`,
+  `ultra_rare` — is how often the market has one, and it is the only thing that decides
+  whether a restock pass delivers. They are free to disagree.
+- **An item is stocked only with `on_market` AND `seed_quantity > 0`.** The default shelf
+  size is 0, so nothing reaches the market by being forgotten. `Item::restockable()` is
+  the scope that means both.
+- **`market_stock` is one row per item, and a missing row is a shelf of zero**, not an
+  error: rows are created by the first delivery that lands. Anything reading stock has to
+  treat absent and empty alike — `Item::stockOnHand()` does.
+- **`market_purchases` is demand, not just a receipt.** Every purchase, one immutable row,
+  no `timestamps()` — `purchased_at` is the moment. `App\Market\MarketSeeder` sums a
+  seven-day window of it per item and stocks more of what is selling.
+- **The pass tops up TO a target, it does not add.** Leftover stock counts, so an item
+  nobody buys never piles up. Demand above half a shelf scales the target with the ratio,
+  capped at 4× so a run on an item cannot feed itself. `config/market.php` has the formula
+  and the reasoning; MECHANICS.md has it in context.
+- **The rarity roll is all or nothing** — one roll per item per pass. A failed roll adds
+  nothing rather than adding less, because scarcity a player can feel is a shelf that is
+  usually empty.
+- **`market:seed` runs every eight hours** (`0 */8`, in `routes/console.php`) and is
+  **not** the training heartbeat: there is no stored clock, a missed pass is never made up,
+  and a pass run twice is two deliveries. That is what `withoutOverlapping()` is for.
+  `--dry-run` prints the whole decision table and writes nothing.
+- **The roll is injected** (`MarketSeeder::fromConfig(fn () => …)`), so tests pin the dice.
+  A probabilistic pass tested against real randomness is a test that passes 95% of the time.
+
 ### Events
 
 Nothing custom yet, but the wiring is standard Laravel: `Event::dispatch()`, listeners

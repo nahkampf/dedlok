@@ -85,7 +85,7 @@ class HomePageTest extends TestCase
         // that belongs to ONE item belongs on its row, and a per-slug entry
         // here would be a second source of truth for a word the row already has.
         $this->assertSame(
-            ['tiers', 'skillbook', 'stat', 'catalogue_empty'],
+            ['tiers', 'rarities', 'skillbook', 'stat', 'catalogue_empty'],
             array_keys(config('strings.items'))
         );
     }

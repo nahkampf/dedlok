@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Market\Rarity;
 use App\Support\Text;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * An item definition.
@@ -23,8 +25,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * the price of being translatable.
  */
 #[Fillable([
-    'slug', 'name', 'flavor', 'container', 'tier', 'stackable', 'use_op', 'use_skill_id',
-    'weight', 'size', 'capacity', 'accepts', 'base_cost', 'on_market',
+    'slug', 'name', 'flavor', 'container', 'tier', 'rarity', 'stackable', 'use_op', 'use_skill_id',
+    'weight', 'size', 'capacity', 'accepts', 'base_cost', 'on_market', 'seed_quantity',
 ])]
 class Item extends Model
 {
@@ -50,12 +52,14 @@ class Item extends Model
     {
         return [
             'tier' => 'integer',
+            'rarity' => Rarity::class,
             'stackable' => 'boolean',
             'weight' => 'decimal:2',
             'size' => 'integer',
             'capacity' => 'integer',
             'base_cost' => 'integer',
             'on_market' => 'boolean',
+            'seed_quantity' => 'integer',
         ];
     }
 
@@ -68,6 +72,23 @@ class Item extends Model
     public function inventoryEntries(): HasMany
     {
         return $this->hasMany(InventoryItem::class);
+    }
+
+    /** What the market is holding of this item. Absent means none. */
+    public function marketStock(): HasOne
+    {
+        return $this->hasOne(MarketStock::class);
+    }
+
+    public function purchases(): HasMany
+    {
+        return $this->hasMany(MarketPurchase::class);
+    }
+
+    /** How many are on the shelf right now. A missing stock row is zero. */
+    public function stockOnHand(): int
+    {
+        return (int) ($this->marketStock?->quantity ?? 0);
     }
 
     public function isUsable(): bool
@@ -139,12 +160,17 @@ class Item extends Model
         return $this->flavor;
     }
 
+    public function rarityName(): string
+    {
+        return $this->rarity->label();
+    }
+
     public function tierName(): string
     {
         return Text::get("items.tiers.{$this->tier}");
     }
 
-    /** The UI kit's rarity class: t1..t5. */
+    /** The UI kit's tier class: t1..t5. Tier, not rarity — see App\Market\Rarity. */
     public function tierClass(): string
     {
         return 't'.$this->tier;
@@ -160,5 +186,21 @@ class Item extends Model
     public function scopeOnMarket(Builder $query): void
     {
         $query->where('on_market', true);
+    }
+
+    /**
+     * Items the market restocks: sold there, and with a shelf size set.
+     *
+     * `on_market` and `seed_quantity` answer different questions — the first
+     * is whether the thing is sold at all, the second how many of it a full
+     * shelf is — and a restock needs both to be true. An item with a shelf
+     * size of zero is not a mistake: it is how something is listed without
+     * ever being in stock.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeRestockable(Builder $query): void
+    {
+        $query->onMarket()->where('seed_quantity', '>', 0);
     }
 }

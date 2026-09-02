@@ -33,3 +33,24 @@ Artisan::command('inspire', function () {
 Schedule::command('training:deposit --quiet-when-idle')
     ->everyMinute()
     ->withoutOverlapping();
+
+/*
+ * The market's delivery run, every eight hours.
+ *
+ * A cron expression rather than a frequency helper because the framework does
+ * not have an everyEightHours(): its helpers stop at six. The expression is
+ * the same schedule the helper would have built — midnight, 08:00 and 16:00.
+ *
+ * withoutOverlapping() matters more here than on the heartbeat. The training
+ * deposit is idempotent inside a minute; a restock is not idempotent at all,
+ * because each pass rolls once per item against its rarity. Two overlapping
+ * passes are two deliveries, and the rare things are exactly the ones that
+ * would get them.
+ *
+ * A missed pass is not made up, and nothing tries to: there is no stored clock
+ * to catch up from, and a shelf that goes unstocked for another eight hours is
+ * indistinguishable from a run of failed rolls.
+ */
+Schedule::command('market:seed')
+    ->cron('0 */8 * * *')
+    ->withoutOverlapping();
