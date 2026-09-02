@@ -293,6 +293,17 @@ return [
             5 => 'Anomalous',
         ],
 
+        /*
+        | How hard a thing is to come by, which is NOT the tier above. Tier is
+        | what the thing is; rarity is how often the market has one.
+        */
+        'rarities' => [
+            'common' => 'Common',
+            'uncommon' => 'Uncommon',
+            'rare' => 'Rare',
+            'ultra_rare' => 'Ultra-Rare',
+        ],
+
         'skillbook' => [
             'name' => 'Skillbook: :skill',
             'flavor' => 'Compressed instruction set. One read, then it is gone.',
