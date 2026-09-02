@@ -350,6 +350,12 @@ same catalogue. A guest sees the catalogue with no overlay at all.
 state — injected, untrained — and reading the level to decide would hide a
 skill the moment it was learned.
 
+Skills the player does not have are **half-lit until pointed at**, so the ones
+they do have carry the page. Dimming is half of the overlay and needs a viewer:
+a guest sees the catalogue at full strength, because "you do not have this"
+means nothing without a you. A signed-in player who has injected nothing does
+see every row dimmed — that is the same statement, and it is true.
+
 ### What happens to time past the target
 
 An entry stops at its target level **only when something else is queued**. The

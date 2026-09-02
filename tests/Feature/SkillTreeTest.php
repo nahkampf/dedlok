@@ -338,12 +338,12 @@ class SkillTreeTest extends TestCase
         ));
     }
 
-    private function inject(Character $character, Skill $skill, int $level = 0): void
+    private function inject(Character $character, Skill $skill, int $level = 0, ?int $points = null): void
     {
         CharacterSkill::create([
             'character_id' => $character->id,
             'skill_id' => $skill->id,
-            'skill_points' => $level === 0 ? 0 : $skill->pointsForLevel($level),
+            'skill_points' => $points ?? ($level === 0 ? 0 : $skill->pointsForLevel($level)),
             'attained_level' => $level,
         ]);
     }
@@ -360,8 +360,74 @@ class SkillTreeTest extends TestCase
         $this->assertStringContainsString('ticked', $html);
         $this->assertStringContainsString('--tick:var(--ok)', $html);
 
-        // Two of five levels lit, the rest left as the kit's grey.
+        // Two of five levels lit, the rest left as the kit's grey. Five cells
+        // whatever is lit — the segments belong to the bar, not to the fill.
         $this->assertStringContainsString('--segs:5;--v:0.4', $html);
+    }
+
+    public function test_the_tick_says_what_it_means(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $player = $this->player();
+        $this->inject($player, $decks, 1);
+
+        $this->actingAs($player->user)
+            ->get(route('skills.index'))
+            ->assertOk()
+            ->assertSee('<span class="tick" title="'.Text::get('skills.injected').'">', false);
+    }
+
+    public function test_the_meter_reports_the_level_and_the_points_banked(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $player = $this->player();
+        $this->inject($player, $decks, 2, points: 1306);
+
+        $this->actingAs($player->user)
+            ->get(route('skills.index'))
+            ->assertOk()
+            // Thousands separated: it is a number a player reads, not an id.
+            ->assertSee(Text::get('skills.level_meter', [
+                'level' => 2, 'max' => 5, 'points' => '1,306',
+            ]), false);
+    }
+
+    public function test_a_skill_you_lack_is_dimmed_and_one_you_have_is_not(): void
+    {
+        $decks = $this->skill('Cyberdecks');
+        $this->skill('Network Topology');
+        $player = $this->player();
+        $this->inject($player, $decks, 1);
+
+        $html = $this->actingAs($player->user)
+            ->get(route('skills.index'))->assertOk()->getContent();
+
+        // One of the two rows is half-lit, and it is not the one with the tick.
+        $this->assertSame(1, substr_count($html, 'item-row unlit'));
+        $this->assertStringNotContainsString('ticked unlit', $html);
+    }
+
+    public function test_a_guest_sees_nothing_dimmed(): void
+    {
+        // Dimming says "you do not have this", which needs a you. A guest gets
+        // the catalogue at full strength rather than a page that looks broken.
+        $this->skill('Cyberdecks');
+        $this->skill('Network Topology');
+
+        $html = $this->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('unlit', $html);
+    }
+
+    public function test_a_player_who_has_injected_nothing_sees_every_row_dimmed(): void
+    {
+        $this->skill('Cyberdecks');
+        $this->skill('Network Topology');
+
+        $html = $this->actingAs($this->player()->user)
+            ->get(route('skills.index'))->assertOk()->getContent();
+
+        $this->assertSame(2, substr_count($html, 'item-row unlit'));
     }
 
     public function test_an_untrained_injection_is_still_ticked(): void

@@ -1,11 +1,23 @@
 @use('App\Support\Text')
-@props(['node', 'levels' => []])
+@use('Illuminate\Support\Number')
+@props(['node', 'levels' => null])
 
 @php
+    // Null levels means nobody is signed in: no ticks, and nothing dimmed
+    // either, because there is no "you" for a row to be missing from.
+    $viewing = $levels !== null;
+
     // Presence is what marks a skill as known: level 0 is a real state, so
     // reading the level to decide would hide a freshly injected skill.
-    $known = array_key_exists($node->skill->id, $levels);
-    $level = $levels[$node->skill->id] ?? 0;
+    $known = $viewing && array_key_exists($node->skill->id, $levels);
+    $level = $levels[$node->skill->id]['level'] ?? 0;
+    $points = $levels[$node->skill->id]['points'] ?? 0;
+
+    $meterLabel = Text::get('skills.level_meter', [
+        'level' => $level,
+        'max' => 5,
+        'points' => Number::format($points),
+    ]);
 @endphp
 
 {{-- One skill, and everything hanging off it.
@@ -21,8 +33,14 @@
      "you have this". A rank-2 skill was drawing a green stripe that read as
      state it did not mean, right where the eye looks for the rail. Rank is
      already stated as ×N in the meta column. --}}
-<div @class(['item-row', 'ticked' => $known])
-     @if ($known) style="--tick:var(--ok)" title="{{ Text::get('skills.injected') }}" @endif>
+{{-- A skill you do not have is half-lit until you point at it, so the ones
+     you do have carry the page. --}}
+<div @class(['item-row', 'ticked' => $known, 'unlit' => $viewing && ! $known])
+     @if ($known) style="--tick:var(--ok)" @endif>
+    @if ($known)
+        <span class="tick" title="{{ Text::get('skills.injected') }}"></span>
+    @endif
+
     <span class="slot__icon" aria-hidden="true">{{ $node->isRoot() ? '◆' : '└' }}</span>
 
     <span class="stack" style="--gap:2px;min-width:0">
@@ -34,8 +52,8 @@
             <div class="meter meter--seg"
                  style="--segs:5;--v:{{ $level / 5 }};--fill:var(--ok);width:min(140px,100%);margin-block:2px"
                  role="img"
-                 aria-label="{{ Text::get('skills.level_meter', ['level' => $level, 'max' => 5]) }}"
-                 title="{{ Text::get('skills.level_meter', ['level' => $level, 'max' => 5]) }}">
+                 aria-label="{{ $meterLabel }}"
+                 title="{{ $meterLabel }}">
                 <div class="meter__fill"></div>
             </div>
         @endif

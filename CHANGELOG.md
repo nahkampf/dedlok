@@ -22,10 +22,16 @@ change the database schema. Every entry that needs one says so under
   `--ok` *is* `--jade`, so a rank-2 skill drew a green stripe meaning "costly"
   on the same page where green means "you have this" — and drew it where the eye
   reads the rail. Rank is text (`×4`) and the only green left says one thing.
-- **`.ticked` is a new UI kit utility**, generalising the corner tick that
-  `.card--select` and `.slot--filled` already drew for themselves. It marks a
-  box and touches nothing else — no border colour, no background. Demoed in the
-  gallery.
+- **`.ticked`/`.tick` and `.unlit` are new UI kit utilities.** The tick
+  generalises the corner mark `.card--select` and `.slot--filled` already drew
+  for themselves, and is a real element rather than a pseudo so it can carry a
+  tooltip. `.unlit` half-lights a box until hovered. Both demoed in the gallery.
+- **Fixed `.meter--seg`: it never drew `--segs` blocks.** The mask sat on
+  `.meter__fill`, which is `scaleX(var(--v))`, and a mask on a transformed
+  element scales with it — so a 5-segment meter at 40% drew five narrow blocks
+  squeezed into 40% of the bar instead of two of five lit. The mask belongs to
+  the bar; the fill lights the cells. This affected every segmented meter,
+  including the one in the gallery's full-screen demo.
 
 ### Changed
 

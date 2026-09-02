@@ -220,8 +220,8 @@ return [
         'deepest' => 'depth :levels',
 
         // The overlay a signed-in player sees on top of the catalogue.
-        'injected' => 'On your sheet',
-        'level_meter' => 'Level :level of :max',
+        'injected' => 'Skill injected',
+        'level_meter' => 'Level :level of :max · :points SP',
     ],
 
     'errors' => [

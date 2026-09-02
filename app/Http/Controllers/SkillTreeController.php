@@ -39,24 +39,35 @@ class SkillTreeController extends Controller
     }
 
     /**
-     * What the viewer has injected, and how far they have taken it.
+     * What the viewer has injected, how far they have taken it, and what they
+     * have banked toward the next level.
      *
      * Level 0 is a real state — injected, untrained — so a key being PRESENT
      * is what marks a skill as known. Never read the level for that.
      *
-     * @return array<int, int>
+     * Null when nobody is signed in, which is NOT the same as an empty map: a
+     * player who has injected nothing sees every row dimmed, and a guest sees
+     * a plain catalogue. Dimming is half of the overlay, and an overlay needs
+     * someone to be overlaid on.
+     *
+     * @return array<int, array{level: int, points: int}>|null
      */
-    private function attainedLevels(Request $request): array
+    private function attainedLevels(Request $request): ?array
     {
         $character = $request->user()?->character()->first();
 
         if ($character === null) {
-            return [];
+            return null;
         }
 
         return $character->characterSkills()
-            ->pluck('attained_level', 'skill_id')
-            ->map(fn ($level): int => (int) $level)
+            ->get(['skill_id', 'attained_level', 'skill_points'])
+            ->mapWithKeys(fn ($row): array => [
+                (int) $row->skill_id => [
+                    'level' => (int) $row->attained_level,
+                    'points' => (int) $row->skill_points,
+                ],
+            ])
             ->all();
     }
 }
