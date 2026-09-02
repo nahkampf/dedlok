@@ -6,9 +6,13 @@ use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\SkillTreeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+
+// The skill catalogue. Public: it describes the game, not a character.
+Route::get('/skills', SkillTreeController::class)->name('skills.index');
 
 // The whole pool in one response; the client randomises locally so repeated
 // presses cost no requests at all. Read-only, so GET and no CSRF. Still

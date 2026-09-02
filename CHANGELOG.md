@@ -12,6 +12,17 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+### Added
+
+- **A skill tree at `/skills`**, one lane per category, built from the skills
+  table by `App\Skills\SkillTree`. The prerequisite graph is a DAG rather than
+  a tree — a skill may require several others — so a skill hangs under the
+  prerequisite that gates it *last* and every other requirement is named on the
+  row. Each skill appears exactly once; a prerequisite in another category
+  leaves the skill at its own lane's root; a cycle renders as unreachable
+  instead of hanging. Composed entirely from existing UI kit classes, so
+  nothing was added to `ui-kit.css`.
+
 ## [0.2.0] — 2026-09-02
 
 ### Removed

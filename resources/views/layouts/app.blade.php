@@ -32,6 +32,10 @@
                @if (request()->routeIs('inventory.*')) aria-current="page" @endif>
                 {{ Text::get('ui.nav.stash') }}
             </a>
+            <a class="nav__item" href="{{ route('skills.index') }}"
+               @if (request()->routeIs('skills.*')) aria-current="page" @endif>
+                {{ Text::get('ui.nav.skills') }}
+            </a>
             <a class="nav__item" href="{{ route('home') }}">{{ Text::get('ui.nav.contracts') }}</a>
         </nav>
     @endauth

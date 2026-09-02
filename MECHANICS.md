@@ -309,6 +309,32 @@ replacement is two-layered.
 cap, gapped training queues. Run it in CI and after any bulk edit: the database
 is the only thing holding those invariants, so nothing else will notice.
 
+### Drawing the graph
+
+`/skills` renders the whole catalogue as one tree per category, from
+`App\Skills\SkillTree`.
+
+**It is not a tree and the arrangement has to lie a little.** Prerequisites
+form a DAG: a skill may require several others, and the seeded catalogue
+already has one that requires two. A tree gives every node one parent, so
+something must give — and what gives is the extra *edges*, never the
+information.
+
+- A skill hangs under its **deepest** prerequisite: the one that gates it
+  last, and so the branch it genuinely extends. Depth is the longest chain
+  behind a skill, not how many parents it has.
+- Every other requirement is named on the row instead of drawn. Each skill
+  appears **exactly once**, in its own category.
+- A prerequisite in **another category** cannot be a parent — a node cannot
+  hang in two lanes — so the skill stays a root in its own lane and says what
+  it is waiting on.
+- A **cycle** makes every skill in it unreachable. The builder refuses to walk
+  a skill it is already walking, marks what it finds, and renders the rest;
+  `skills:validate` is what explains it.
+
+Rank maps onto the kit's `t1`–`t5` accents, since ranks are 1, 2, 4, 8, 16 and
+the tiers already mean "how costly is this".
+
 ### The training queue
 
 **A queue entry is a (skill, target level) pair, not a skill.** The same skill
