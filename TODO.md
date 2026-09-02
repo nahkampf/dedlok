@@ -79,19 +79,6 @@ clear error, so keep them commented until the screens are written.
 
 ---
 
-## Self-host IBM Plex
-
-**Status:** Overpass is self-hosted; Plex still loads from Google Fonts.
-
-Two remote requests on every page, a third-party dependency in the render path, and a
-privacy consideration if the game ever serves the EU. Mirror what was done for Overpass:
-drop the `woff2` files in `public/assets/fonts/`, add `@font-face` blocks to
-`ui-kit.css`, and delete the `<link>` from both Blade layouts.
-
-Nothing breaks if this is never done — every stack falls back to system faces.
-
----
-
 ## Housekeeping
 
 - **`php artisan storage:link` will fail** — `symlink` is in `disable_functions` and that

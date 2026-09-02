@@ -12,6 +12,16 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-09-02
+
+### Changed
+
+- **IBM Plex is self-hosted**, the way Overpass already was. Nine faces (three
+  weights each of Sans, Sans Condensed and Mono), split into `latin` and
+  `latin-ext` by `unicode-range`, declared in `ui-kit.css`. The Google Fonts
+  `<link>` and both `preconnect` hints are gone from every layout and from the
+  kit gallery, so no request in the render path leaves the origin.
+
 ## [0.1.0] — 2026-09-02
 
 First tagged version. Everything before this was two untagged commits on `main`.
@@ -70,5 +80,6 @@ Two, both additive and safe to run forward:
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/nahkampf/dedlok/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nahkampf/dedlok/releases/tag/v0.1.0
