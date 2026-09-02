@@ -12,6 +12,8 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-09-02
+
 ### Added
 
 - **A skill tree at `/skills`**, one lane per category, built from the skills
@@ -131,7 +133,8 @@ Two, both additive and safe to run forward:
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/nahkampf/dedlok/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/nahkampf/dedlok/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/nahkampf/dedlok/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nahkampf/dedlok/releases/tag/v0.1.0
