@@ -95,5 +95,3 @@ clear error, so keep them commented until the screens are written.
 - **Enable "block headless browsers" on the Cap site key** before launch. It is off on
   the local key because it breaks agent/QA browsers, and it is one of the two settings
   (with instrumentation, already on) that do most of the work against real bots.
-- **Add `i18n:check` to CI.** A missing translation key renders as the raw key on screen
-  rather than throwing, so drift is invisible until a player sees `items.foo.name`.

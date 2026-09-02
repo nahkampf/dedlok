@@ -1,3 +1,4 @@
+@use('App\Support\Text')
 {{-- Cap's mount point.
 
      Deliberately a bare class: public/assets/js/ui-kit.js upgrades every
@@ -12,7 +13,7 @@
      login form. --}}
 @if (config('cap.enabled'))
     <div class="field">
-        <span class="field__label">{{ __('captcha.label') }}</span>
+        <span class="field__label">{{ Text::get('captcha.label') }}</span>
         <div class="captcha"></div>
     </div>
 @endif

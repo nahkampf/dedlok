@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Stats\Op;
 use App\Stats\Sources\ArchetypePerks;
 use App\Stats\StatRegistry;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -78,9 +79,9 @@ class DerivedStatTest extends TestCase
         $response = $this->actingAs(User::factory()->create())->get(route('character.create'));
 
         $response->assertOk()
-            ->assertSee(__('character.derived.section'))
-            ->assertSee(__('character.derived_names.hitpoints_max').' ('.__('character.abbreviations.hitpoints_max').')')
-            ->assertSee(__('character.derived_names.synaptic_integrity_max').' ('.__('character.abbreviations.synaptic_integrity_max').')')
+            ->assertSee(Text::get('character.derived.section'))
+            ->assertSee(Text::get('character.derived_names.hitpoints_max').' ('.Text::get('character.abbreviations.hitpoints_max').')')
+            ->assertSee(Text::get('character.derived_names.synaptic_integrity_max').' ('.Text::get('character.abbreviations.synaptic_integrity_max').')')
             ->assertSee('id="derived-hitpoints_max"', false)
             ->assertSee('id="derived-synaptic_integrity_max"', false);
     }

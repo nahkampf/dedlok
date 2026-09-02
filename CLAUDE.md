@@ -81,14 +81,15 @@ asserts this and will fail if anyone repoints the test connection — leave it i
   rewrites work if you move to a front controller.
 - `app/` is the PHP codebase, PSR-4 autoloaded under `App\` (the old `src/` +
   `Nahkampf\Cyberpunk\` namespace is gone). Standard Laravel layout: `app/`,
-  `bootstrap/`, `config/`, `database/`, `lang/`, `resources/`, `routes/`, `storage/`.
+  `bootstrap/`, `config/`, `database/`, `resources/`, `routes/`, `storage/`. There is no
+  `lang/` — see *Player-visible strings*.
 - `public/assets/` holds the frontend: `css/`, `js/`, `fonts/`. Served directly, no build
   step and no bundler — see *Frontend: the Ash & Ember UI kit*.
 - `docker/` holds `php/php.ini` and `apache/vhost.conf`, both bind-mounted over the
   container's config. Editing them needs only a container restart, not a rebuild.
 - Code style is **Laravel Pint** (`composer fix` to apply, `composer lint` to check).
   PHPStan and PHPCS are still installed and now point at `app/`. Run Pint before
-  committing — it reformats `lang/` array alignment, which is easy to get wrong by hand.
+  committing — it reformats `config/` array alignment, which is easy to get wrong by hand.
 
 ## Frontend: the Ash & Ember UI kit
 
@@ -185,8 +186,9 @@ attributes, hit points, damage, skill checks, and everything that modifies them
 
 Read it before adding an item, a skill or an effect. The short version:
 
-- Every modifier is data (`config/`) plus strings (`lang/`), never PHP. If a new
-  piece of content needs new PHP, the design has leaked — fix the op set instead.
+- Every modifier is data, never PHP — a `config/` entry, or a row where the thing
+  already has one. If a new piece of content needs new PHP, the design has leaked; fix
+  the op set instead.
 - One pure resolver does all the arithmetic, with a fixed layer order:
   `add` → `percentage_of_base` → `multiplier` → `override` → clamp → round.
 - `percentage_of_base` applies to **base + flat**, and all percentages are
@@ -230,44 +232,45 @@ owned by root and can neither be edited nor deleted without `sudo`. The image al
   autoload-dump time. This is why `open_basedir` had to move off the CLI — see
   *Constraints imposed by php.ini*.
 
-### Internationalization
+### Player-visible strings
 
-The game is translatable and this is load-bearing, not a later concern. **Never put a
-player-visible string in a Blade template, a controller, or a model.**
+**The game speaks English and only English.** Translation was removed: there is no
+`lang/` directory, no locale to resolve, negotiate or switch, and `__()` and
+`trans_choice()` are not used anywhere in this codebase. Do not reintroduce them.
 
-- **All content lives in `lang/`.** Not just UI chrome — item names, tiers, flavour text,
-  quest briefs. The database stores a `slug` plus mechanical stats; every word is looked
-  up as `__("items.{$item->slug}.name")`. Adding an item is a row *and* a lang entry.
-- **Keys name the role, never the English text**, so a copy change never forces a rename
-  across every locale. `ui.action.jack_in`, not `ui.action.jack_in_now`.
-- **Anything counted goes through `trans_choice()`**, never string concatenation.
-  English has two plural forms; Polish has three and Arabic six, and the extra branches
-  live in that locale's file without touching the call site.
-- **`config/i18n.php` is the source of truth** for supported locales. **Only `en` is
-  configured today**; the file carries a commented `sv` block as a worked example of the
-  shape. Each entry needs an `icu` key (`en` → `en_GB`, and e.g. `sv` → `sv_SE`): hand the
-  ICU code to `intl`, never the short Laravel code, or dates and numbers silently format
-  against the root locale.
-- **The locale switcher hides itself while only one language is configured.** It is in
-  `resources/views/components/locale-switcher.blade.php` and reappears on its own as soon
-  as `config/i18n.php` lists a second entry — nothing to re-enable.
-- **Locale resolution is `App\Http\Middleware\SetLocale`**, registered on the web group.
-  Order: account preference → session → `Accept-Language` → fallback. **There is no locale
-  segment in URLs** — do not add route prefixes; switching is a POST to `locale.update`.
-- **Framework strings that are not translation keys** live in `lang/en/errors.php` and
-  are swapped in by exception renderers in `bootstrap/app.php`. Laravel throws a raw
+Every string a player reads lives in exactly one of two places, and which one is not a
+matter of taste:
+
+- **On the row, if the thing has a row.** An item's `name` and `flavor` are columns; a
+  skill's `title` always was. A definition that is half in the database and half in a
+  file is two things to keep in step, and the file half is the one that gets forgotten.
+- **In `config/strings.php` otherwise.** UI chrome, auth screens, refusal messages,
+  captcha labels, the tier vocabulary shared by every item. Read it through
+  `App\Support\Text`, which is a config lookup plus `:placeholder` substitution and
+  nothing else.
+
+Details worth knowing:
+
+- **Keys still name the role, not the text** — `ui.action.jack_in`, not
+  `ui.action.jack_in_now`. Rewording copy stays a one-line change.
+- **Counted strings** are `{zero, one, many}` groups read by `Text::plural()`. English
+  has two forms; that is now the only case there is.
+- **`Text::get()` returns the key** when it is missing, the way the translator did: a
+  wrong label on screen beats a 500, and is just as visible.
+- **A skillbook has no name of its own.** There is one book per skill, so its name
+  composes from the skill it teaches through `items.skillbook.name`.
+- **Archetypes carry their own strings** in `config/archetypes.php`, beside their ids and
+  perks, because there is no archetypes table for them to sit on.
+- **Framework strings that reach a player** are still swapped in by the exception
+  renderers in `bootstrap/app.php`, now from `strings.errors.*`. Laravel throws a raw
   English literal for rate limiting (`'Too Many Attempts.'` in
-  `Illuminate\Routing\Middleware\ThrottleRequests`), and vendor code cannot be edited —
+  `Illuminate\Routing\Middleware\ThrottleRequests`) and vendor code cannot be edited —
   `composer install` reverts it. Re-render the exception instead, and **carry the original
   headers through**: `Retry-After` and `X-RateLimit-*` are the machine-readable half of a
-  429. Same pattern for any other hardcoded framework string that reaches a player.
-- **Run `php artisan i18n:check`** after touching `lang/`. It fails when locales drift.
-  A missing key renders as the raw key on screen rather than throwing, so drift is
-  invisible until a player sees `items.foo.name`. This belongs in CI.
-- **Adding a locale** is four steps, no code changes: uncomment or add an entry in
-  `config/i18n.php`, `cp -r lang/en lang/<code>`, translate the values (never the keys),
-  and run `php artisan i18n:check`. The switcher, `<html lang>`, `dir`, ICU formatting and
-  `Accept-Language` negotiation all pick it up from the config entry alone.
+  429.
+- **`config/app.php` still sets `locale` and `fallback_locale`, and they stay.** The
+  framework's own validation and auth messages come from vendor lang files keyed by
+  them — that is the one translator that is still in play, and it is not ours.
 
 ### Auth
 

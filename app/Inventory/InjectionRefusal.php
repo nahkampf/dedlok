@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Inventory;
 
+use App\Support\Text;
+
 /**
  * Why an injection did not happen.
  *
@@ -29,6 +31,6 @@ enum InjectionRefusal: string
     /** The lang key describing this to a player. */
     public function message(): string
     {
-        return __("inventory.refused.{$this->value}");
+        return Text::get("inventory.refused.{$this->value}");
     }
 }

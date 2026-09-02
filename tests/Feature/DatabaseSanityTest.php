@@ -15,8 +15,8 @@ class DatabaseSanityTest extends TestCase
         $this->assertSame('sqlite', config('database.default'));
         $this->assertSame(':memory:', config('database.connections.sqlite.database'));
 
-        $user = User::factory()->create(['locale' => 'en']);
+        $user = User::factory()->create();
 
-        $this->assertDatabaseHas('users', ['id' => $user->id, 'locale' => 'en']);
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'email' => $user->email]);
     }
 }

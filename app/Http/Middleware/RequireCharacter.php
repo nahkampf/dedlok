@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Support\Text;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -59,7 +60,7 @@ class RequireCharacter
         // lose the payload and the player would see a silent no-op.
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => __('character.create.title'),
+                'message' => Text::get('character.create.title'),
                 'redirect' => route('character.create'),
             ], 409);
         }

@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Lang;
 use Tests\TestCase;
 
 class ThrottleMessageTest extends TestCase
@@ -59,27 +59,7 @@ class ThrottleMessageTest extends TestCase
 
         $this->get(route('handles.available'))
             ->assertStatus(429)
-            ->assertSee(__('errors.throttle.title'))
+            ->assertSee(Text::get('errors.throttle.title'))
             ->assertSee('Too many requests. Try again in 60 seconds.');
-    }
-
-    public function test_the_message_follows_the_active_locale(): void
-    {
-        // A locale the app does not ship, registered at runtime: if the string
-        // were still the framework's hardcoded literal this could not change.
-        config(['i18n.locales.xx' => [
-            'name' => 'Test', 'native' => 'Test', 'icu' => 'en_GB', 'dir' => 'ltr',
-        ]]);
-        Lang::addLines([
-            'errors.throttle.body' => 'Lugn nu. Försök igen om :seconds sekunder.',
-        ], 'xx');
-
-        $this->withSession(['locale' => 'xx']);
-        $this->exhaustLimiter();
-
-        $this->withSession(['locale' => 'xx'])
-            ->getJson(route('handles.available'))
-            ->assertStatus(429)
-            ->assertJsonPath('message', 'Lugn nu. Försök igen om 60 sekunder.');
     }
 }

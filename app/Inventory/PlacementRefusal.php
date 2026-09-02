@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Inventory;
 
+use App\Support\Text;
+
 /**
  * Why an item did not go where it was asked to go.
  *
@@ -36,6 +38,6 @@ enum PlacementRefusal: string
     /** The lang key describing this to a player. */
     public function message(): string
     {
-        return __("inventory.placement.{$this->value}");
+        return Text::get("inventory.placement.{$this->value}");
     }
 }

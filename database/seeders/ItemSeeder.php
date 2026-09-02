@@ -19,8 +19,8 @@ class ItemSeeder extends Seeder
      *
      * A skillbook per skill is generated rather than listed: there is exactly
      * one book per skill by definition, so listing them would be a second
-     * place to forget when a skill is added. Their names come from the skill,
-     * so no lang entry is needed either.
+     * place to forget when a skill is added. They carry no name of their own — it
+     * composes from the skill they teach.
      */
     public function run(): void
     {
@@ -48,7 +48,7 @@ class ItemSeeder extends Seeder
     }
 
     /**
-     * The demo items the landing page already names in lang/en/items.php.
+     * The demo items the landing page shows.
      *
      * @return array<string, array<string, mixed>>
      */
@@ -56,14 +56,20 @@ class ItemSeeder extends Seeder
     {
         return [
             'sandevistan_mk5' => [
+                'name' => 'Sandevistan MK.V',
+                'flavor' => 'Pulled from a Militech cadaver. Still warm when they found it.',
                 'container' => Item::CONTAINER_PHYSICAL,
                 'tier' => 5, 'weight' => 1, 'base_cost' => 48_000,
             ],
             'kiroshi_optics' => [
+                'name' => 'Kiroshi Optics',
+                'flavor' => 'Sees more than you want it to.',
                 'container' => Item::CONTAINER_PHYSICAL,
                 'tier' => 4, 'weight' => 1, 'base_cost' => 21_500,
             ],
             'ballistic_coprocessor' => [
+                'name' => 'Ballistic Coprocessor',
+                'flavor' => 'Does the maths so your hands do not have to.',
                 'container' => Item::CONTAINER_PHYSICAL,
                 'tier' => 3, 'weight' => 2, 'base_cost' => 9_800,
             ],
@@ -74,6 +80,8 @@ class ItemSeeder extends Seeder
              * belongs to it rather than to the deck.
              */
             'memory_shard' => [
+                'name' => 'Memory Shard',
+                'flavor' => 'Sixty-four gig of nothing until you put something on it.',
                 'container' => Item::CONTAINER_PHYSICAL,
                 'tier' => 2, 'weight' => 0.1,
                 // Room for eight of the 8-unit skillbooks below.
@@ -81,6 +89,8 @@ class ItemSeeder extends Seeder
                 'base_cost' => 450,
             ],
             'scrap_alloy' => [
+                'name' => 'Scrap Alloy',
+                'flavor' => 'Worth almost nothing. Almost.',
                 'container' => Item::CONTAINER_PHYSICAL,
                 'tier' => 1, 'weight' => 0.5, 'base_cost' => 12,
             ],

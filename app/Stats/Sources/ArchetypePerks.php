@@ -38,7 +38,7 @@ final readonly class ArchetypePerks implements ModifierSource
                 continue;   // display-only, not yet migrated
             }
 
-            $label = __("archetypes.perks.{$perk['key']}");
+            $label = config("archetypes.perk_labels.{$perk['key']}");
 
             foreach ($perk['modifiers'] as $definition) {
                 $modifiers[] = Modifier::fromArray($definition + ['source' => $label]);

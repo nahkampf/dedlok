@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\Text;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,11 +17,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * An item definition.
  *
  * In the database rather than config, for the reasons the migration gives.
- * Mechanical values live on the row; every player-visible word is looked up by
- * slug from lang/<locale>/items.php.
+ * The row carries the whole definition — mechanical values and the words both.
+ * It did not always: the words were looked up by slug from lang/en/items.php
+ * until translation was removed, and a row that only held half of itself was
+ * the price of being translatable.
  */
 #[Fillable([
-    'slug', 'container', 'tier', 'stackable', 'use_op', 'use_skill_id',
+    'slug', 'name', 'flavor', 'container', 'tier', 'stackable', 'use_op', 'use_skill_id',
     'weight', 'size', 'capacity', 'accepts', 'base_cost', 'on_market',
 ])]
 class Item extends Model
@@ -111,35 +114,34 @@ class Item extends Model
     /**
      * The name a player sees.
      *
-     * A skillbook's name is built from the skill it teaches rather than stored
-     * per slug, because there is one book per skill: a lang entry each would
-     * mean adding a skill also means editing every locale. Skills carry their
-     * own title in the database — the documented i18n exception — so the name
-     * composes without a second lookup.
+     * A skillbook has none of its own: there is exactly one book per skill, so
+     * storing a name per book would be a second copy of the skill's title
+     * waiting to disagree with it. The slug is the last resort — visible and
+     * wrong beats blank and mysterious.
      */
     public function displayName(): string
     {
-        return $this->isSkillbook()
-            ? __('items.skillbook.name', ['skill' => $this->useSkill?->title ?? $this->slug])
-            : __("items.{$this->slug}.name");
+        if ($this->isSkillbook()) {
+            return Text::get('items.skillbook.name', [
+                'skill' => $this->useSkill?->title ?? $this->slug,
+            ]);
+        }
+
+        return $this->name ?? $this->slug;
     }
 
     public function displayFlavor(): ?string
     {
         if ($this->isSkillbook()) {
-            return __('items.skillbook.flavor');
+            return Text::get('items.skillbook.flavor');
         }
 
-        $key = "items.{$this->slug}.flavor";
-
-        // A missing key renders as the key itself, which is worse than nothing
-        // in a flavour line that is decoration.
-        return __($key) === $key ? null : __($key);
+        return $this->flavor;
     }
 
     public function tierName(): string
     {
-        return __("items.tiers.{$this->tier}");
+        return Text::get("items.tiers.{$this->tier}");
     }
 
     /** The UI kit's rarity class: t1..t5. */

@@ -9,6 +9,7 @@ use App\Models\CharacterSkill;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Skill;
+use App\Support\Text;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -202,10 +203,10 @@ class InventoryTest extends TestCase
         $response = $this->actingAs($this->character->user)->get(route('inventory.index'));
 
         $response->assertOk();
-        $response->assertSee(__('inventory.physical'));
-        $response->assertSee(__('inventory.data'));
-        $response->assertSee(__('items.skillbook.name', ['skill' => 'Hacking']));
-        $response->assertSee(__('items.tiers.3'));
+        $response->assertSee(Text::get('inventory.physical'));
+        $response->assertSee(Text::get('inventory.data'));
+        $response->assertSee(Text::get('items.skillbook.name', ['skill' => 'Hacking']));
+        $response->assertSee(Text::get('items.tiers.3'));
     }
 
     public function test_only_skillbooks_offer_an_inject_button(): void
@@ -246,7 +247,7 @@ class InventoryTest extends TestCase
         $this->actingAs($this->character->user)
             ->post(route('inventory.inject', $second))
             ->assertRedirect()
-            ->assertSessionHas('error', __('inventory.refused.already_known'));
+            ->assertSessionHas('error', Text::get('inventory.refused.already_known'));
     }
 
     public function test_someone_elses_row_is_not_found_rather_than_refused(): void
@@ -273,14 +274,17 @@ class InventoryTest extends TestCase
         // One lang entry covers every book, so adding a skill never means
         // editing a locale.
         $this->assertSame('Skillbook: Hacking', $this->book->displayName());
-        $this->assertSame(__('items.skillbook.flavor'), $this->book->displayFlavor());
+        $this->assertSame(Text::get('items.skillbook.flavor'), $this->book->displayFlavor());
     }
 
-    public function test_an_ordinary_item_is_named_by_its_slug(): void
+    public function test_an_ordinary_item_is_named_by_its_row(): void
     {
-        $item = Item::factory()->physical()->create(['slug' => 'kiroshi_optics']);
+        $item = Item::factory()->physical()->create([
+            'slug' => 'kiroshi_optics',
+            'name' => 'Kiroshi Optics',
+        ]);
 
-        $this->assertSame(__('items.kiroshi_optics.name'), $item->displayName());
+        $this->assertSame('Kiroshi Optics', $item->displayName());
     }
 
     public function test_an_item_with_no_flavour_entry_renders_nothing_rather_than_a_key(): void

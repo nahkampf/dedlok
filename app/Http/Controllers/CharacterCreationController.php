@@ -12,6 +12,7 @@ use App\Stats\Modifier;
 use App\Stats\Op;
 use App\Stats\Sources\ArchetypePerks;
 use App\Stats\StatRegistry;
+use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -78,9 +79,9 @@ class CharacterCreationController extends Controller
         ]);
 
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules, [
-            'handle.unique' => __('auth.handle_taken'),
-            'archetype.required' => __('character.archetype.required'),
-            'archetype.in' => __('character.archetype.required'),
+            'handle.unique' => Text::get('auth.handle_taken'),
+            'archetype.required' => Text::get('character.archetype.required'),
+            'archetype.in' => Text::get('character.archetype.required'),
         ]);
 
         /*
@@ -103,7 +104,7 @@ class CharacterCreationController extends Controller
             }
 
             if ($spent !== $points) {
-                $validator->errors()->add('attributes', __('character.attributes.must_balance', [
+                $validator->errors()->add('attributes', Text::get('character.attributes.must_balance', [
                     'total' => $points,
                 ]));
             }
@@ -130,8 +131,8 @@ class CharacterCreationController extends Controller
 
             $spec[] = [
                 'id' => $statId,
-                'label' => __("character.derived_names.{$statId}"),
-                'abbr' => __("character.abbreviations.{$statId}"),
+                'label' => Text::get("character.derived_names.{$statId}"),
+                'abbr' => Text::get("character.abbreviations.{$statId}"),
                 'terms' => $formula,
                 'min' => $stat->min,
                 'max' => $stat->max,
@@ -204,9 +205,9 @@ class CharacterCreationController extends Controller
             $archetypes[] = [
                 'id' => (int) $id,
                 'slug' => $slug,
-                'name' => __("archetypes.{$slug}.name"),
-                'role' => __("archetypes.{$slug}.role"),
-                'description' => __("archetypes.{$slug}.description"),
+                'name' => $archetype['name'],
+                'role' => $archetype['role'],
+                'description' => $archetype['description'],
                 'perks' => array_map(
                     fn (array $perk): array => [
                         'label' => $this->perkLabel($perk),
@@ -229,12 +230,12 @@ class CharacterCreationController extends Controller
     private function perkLabel(array $perk): string
     {
         if (isset($perk['modifiers'])) {
-            return __("archetypes.perks.{$perk['key']}");
+            return config("archetypes.perk_labels.{$perk['key']}");
         }
 
         return $perk['unit'] === 'attribute'
-            ? __("character.names.{$perk['key']}")
-            : __("archetypes.perks.{$perk['key']}");
+            ? Text::get("character.names.{$perk['key']}")
+            : config("archetypes.perk_labels.{$perk['key']}");
     }
 
     /**
@@ -278,7 +279,7 @@ class CharacterCreationController extends Controller
             return $amount.' '.$modifier->target->describe();
         }
 
-        $name = __("character.names.{$target}");
+        $name = Text::get("character.names.{$target}");
 
         return $name === "character.names.{$target}" ? $amount : $amount.' '.$name;
     }

@@ -2,7 +2,7 @@
 
 use App\Http\Middleware\EnsureCaptchaIsSolved;
 use App\Http\Middleware\RequireCharacter;
-use App\Http\Middleware\SetLocale;
+use App\Support\Text;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,14 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Every web request resolves a locale before anything renders.
         $middleware->web(append: [
-            SetLocale::class,
             // Runs after the session is available, so $request->user() is set.
             RequireCharacter::class,
             // Guards the routes named in config/cap.php; a no-op elsewhere.
-            // After SetLocale, so a rejection is worded in the player's
-            // language rather than the fallback.
             EnsureCaptchaIsSolved::class,
         ]);
     })
@@ -49,7 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             $headers = $e->getHeaders();
             $seconds = (int) ($headers['Retry-After'] ?? 60);
 
-            $message = __('errors.throttle.body', ['seconds' => $seconds]);
+            $message = Text::get('errors.throttle.body', ['seconds' => $seconds]);
 
             if ($request->expectsJson()) {
                 return response()->json(['message' => $message], 429, $headers);

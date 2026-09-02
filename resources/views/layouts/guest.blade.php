@@ -1,6 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
-      dir="{{ config('i18n.locales.'.app()->getLocale().'.dir', 'ltr') }}">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,7 +11,6 @@
 <div style="width:min(400px,100%)">
     <div class="row" style="justify-content:space-between;margin-bottom:var(--s-4)">
         <span class="brand"><span class="brand__mark"></span> {{ config('app.name') }}</span>
-        <x-locale-switcher />
     </div>
 
     <div class="panel cut" style="--cut:14px">

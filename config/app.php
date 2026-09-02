@@ -72,9 +72,10 @@ return [
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
-    | The application locale determines the default locale that will be used
-    | by Laravel's translation / localization methods. This option can be
-    | set to any locale for which you plan to have translation strings.
+    | The game is not translated: player-visible strings live in
+    | config/strings.php and on database rows, not in lang files. These stay
+    | because the FRAMEWORK still uses them — validation and auth messages come
+    | from vendor lang files keyed by this locale. Leave them on 'en'.
     |
     */
 

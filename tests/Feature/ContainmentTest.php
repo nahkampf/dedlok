@@ -9,6 +9,7 @@ use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Skill;
+use App\Support\Text;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -271,9 +272,9 @@ class ContainmentTest extends TestCase
         $this->actingAs($this->character->user)
             ->get(route('inventory.index'))
             ->assertOk()
-            ->assertSee(__('inventory.contents'))
+            ->assertSee(Text::get('inventory.contents'))
             // 16 units of capacity, one 8-unit book on it.
-            ->assertSee(__('inventory.contents_free', ['free' => 8, 'capacity' => 16]));
+            ->assertSee(Text::get('inventory.contents_free', ['free' => 8, 'capacity' => 16]));
     }
 
     public function test_storing_and_ejecting_over_http(): void

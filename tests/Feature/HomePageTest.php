@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Item;
 use App\Models\Skill;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -20,13 +21,16 @@ class HomePageTest extends TestCase
 
     public function test_the_showcase_comes_from_the_items_table(): void
     {
-        Item::factory()->physical()->tier(5)->create(['slug' => 'sandevistan_mk5']);
+        Item::factory()->physical()->tier(5)->create([
+            'slug' => 'sandevistan_mk5',
+            'name' => 'Sandevistan MK.V',
+        ]);
 
         $this->get(route('home'))
             ->assertOk()
-            // The name and the tier word are both lang lookups keyed off the row.
-            ->assertSee(__('items.sandevistan_mk5.name'))
-            ->assertSee(__('items.tiers.5'))
+            // The name is on the row; only the tier word is still shared.
+            ->assertSee('Sandevistan MK.V')
+            ->assertSee(Text::get('items.tiers.5'))
             ->assertSee('item-card t5', false);
     }
 
@@ -57,29 +61,32 @@ class HomePageTest extends TestCase
 
         // Tier 5, so ordering alone would put it first if it were eligible.
         Item::factory()->skillbookFor($skill)->tier(5)->create();
-        Item::factory()->physical()->tier(1)->create(['slug' => 'scrap_alloy']);
+        Item::factory()->physical()->tier(1)->create([
+            'slug' => 'scrap_alloy',
+            'name' => 'Scrap Alloy',
+        ]);
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertDontSee(__('items.skillbook.name', ['skill' => $skill->title]))
-            ->assertSee(__('items.scrap_alloy.name'));
+            ->assertDontSee(Text::get('items.skillbook.name', ['skill' => $skill->title]))
+            ->assertSee('Scrap Alloy');
     }
 
     public function test_an_unseeded_catalogue_says_so_instead_of_rendering_nothing(): void
     {
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee(__('items.catalogue_empty'));
+            ->assertSee(Text::get('items.catalogue_empty'));
     }
 
-    public function test_no_item_carries_its_own_tier_name(): void
+    public function test_the_shared_item_vocabulary_holds_nothing_per_item(): void
     {
-        // The tier number on the row decides the word. A per-item 'tier' key
-        // would be a second source of truth, and this is what deletes it.
-        foreach (require lang_path('en/items.php') as $key => $value) {
-            if (is_array($value) && $key !== 'tiers') {
-                $this->assertArrayNotHasKey('tier', $value, "items.{$key} still names its own tier");
-            }
-        }
+        // What is left in config is the vocabulary every item shares. Anything
+        // that belongs to ONE item belongs on its row, and a per-slug entry
+        // here would be a second source of truth for a word the row already has.
+        $this->assertSame(
+            ['tiers', 'skillbook', 'stat', 'catalogue_empty'],
+            array_keys(config('strings.items'))
+        );
     }
 }

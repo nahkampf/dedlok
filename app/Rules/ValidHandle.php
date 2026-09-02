@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Rules;
 
+use App\Support\Text;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Normalizer;
@@ -94,7 +95,7 @@ class ValidHandle implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (! is_string($value) || $value === '') {
-            $fail('validation.handle_characters')->translate(['symbols' => self::ALLOWED_SYMBOLS]);
+            $fail(Text::get('validation.handle_characters', ['symbols' => self::ALLOWED_SYMBOLS]));
 
             return;
         }
@@ -104,13 +105,13 @@ class ValidHandle implements ValidationRule
         // Reported separately: "too long" and "bad character" are different
         // problems, and a single message covering both helps with neither.
         if (! self::withinLength($normalized)) {
-            $fail('validation.handle_length')->translate(['max' => self::MAX_LENGTH]);
+            $fail(Text::get('validation.handle_length', ['max' => self::MAX_LENGTH]));
 
             return;
         }
 
         if (! self::matchesCharacterSet($normalized)) {
-            $fail('validation.handle_characters')->translate(['symbols' => self::ALLOWED_SYMBOLS]);
+            $fail(Text::get('validation.handle_characters', ['symbols' => self::ALLOWED_SYMBOLS]));
         }
     }
 }

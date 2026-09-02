@@ -12,6 +12,32 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+### Removed
+
+- **Translation.** The game speaks English and only English: no `lang/`
+  directory, no `config/i18n.php`, no `SetLocale` middleware, no locale
+  switcher, no `locale.update` route and no `i18n:check` command. `__()` and
+  `trans_choice()` are gone from the codebase — 132 call sites across 25 files.
+  The `users.locale` column is dropped.
+
+### Changed
+
+- **Player-visible strings live in one of two places now.** On the row if the
+  thing has one — `items.name` and `items.flavor` are columns, joining the
+  `title` skills always carried — and in `config/strings.php` otherwise, read
+  through `App\Support\Text`. Archetype names, roles and descriptions moved
+  into `config/archetypes.php` beside their ids and perks.
+- Counted strings are `{zero, one, many}` groups instead of ICU pipe syntax.
+- The landing page loses its plurals table and its locale-aware formatting
+  panel; both existed only to demonstrate translation. The item showcase stays.
+- `config/app.php` keeps `locale` and `fallback_locale`: the framework's own
+  validation and auth messages still come from vendor lang files keyed by them.
+
+### Migrations
+
+- `2026_09_02_150000_remove_the_translation_layer` — adds `name` and `flavor`
+  to `items` (backfilled for the seeded catalogue), drops `users.locale`.
+
 ## [0.1.1] — 2026-09-02
 
 ### Changed

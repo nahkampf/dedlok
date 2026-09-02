@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Item;
-use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class HomeController extends Controller
@@ -23,16 +22,8 @@ class HomeController extends Controller
             ->limit(3)
             ->get();
 
-        $icu = config('i18n.locales.'.app()->getLocale().'.icu', app()->getLocale());
-
         return view('home', [
             'items' => $items,
-            'icu' => $icu,
-            'formatted' => [
-                'date' => \IntlDateFormatter::formatObject(now(), \IntlDateFormatter::LONG, $icu),
-                'number' => (new \NumberFormatter($icu, \NumberFormatter::DECIMAL))->format(48210.5),
-                'relative' => Carbon::now()->subHours(3)->diffForHumans(),
-            ],
         ]);
     }
 }
