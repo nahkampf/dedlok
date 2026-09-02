@@ -424,9 +424,15 @@ since the last tag, opens `$EDITOR` (nano by default) so you can rewrite that dr
 something a person would read, and only then commits, merges and tags.
 
 ```bash
-bin/release 0.2.3            # --no-tests to skip the suite, --no-merge to stay put
+bin/release                  # asks which version, showing the latest tag
+bin/release 0.2.3            # or say so outright
 git push origin main --follow-tags
 ```
+
+Run with no version it reports the branch, the latest tag, how many commits are in the
+release and whether any of them add a migration — then proposes the version that follows
+from the schema rule and lets you press Enter to accept it or type your own. `--no-tests`
+skips the suite, `--no-merge` commits and tags where you are.
 
 What it does for you, and why:
 
