@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ash &amp; Ember — UI Kit</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="/assets/css/ui-kit.css">
 <style>
   /* Page chrome for the gallery itself — not part of the kit. */
@@ -127,11 +124,10 @@
 
     <div class="rule"><span class="micro">Install</span></div>
     <div class="demo">
-      <div class="demo__hd"><p>Two files plus a font directory, no build step. Drop them into any PHP template — every component is plain markup plus custom properties, so server-rendered HTML needs no JavaScript glue. Overpass is self-hosted from <code class="inl">public/assets/fonts/</code> and declared inside the stylesheet, so headings need no <code class="inl">&lt;link&gt;</code> at all. IBM Plex still comes from Google Fonts; that line is optional, since every stack falls back to system faces. Self-host Plex the same way before launch.</p></div>
+      <div class="demo__hd"><p>Two files plus a font directory, no build step. Drop them into any PHP template — every component is plain markup plus custom properties, so server-rendered HTML needs no JavaScript glue. Every face is self-hosted from <code class="inl">public/assets/fonts/</code> and declared inside the stylesheet, so a page needs no font <code class="inl">&lt;link&gt;</code> at all and nothing in the render path leaves this origin. Overpass ships as one variable file per subset, Plex as static instances — three weights per family, split into latin and latin-ext.</p></div>
       <details class="demo__code" open>
         <summary>markup</summary>
-<pre>&lt;!-- Overpass ships in public/assets/fonts/ and is declared in the stylesheet --&gt;
-&lt;link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&amp;family=IBM+Plex+Sans+Condensed:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap"&gt;
+<pre>&lt;!-- Every face ships in public/assets/fonts/ and is declared in the stylesheet --&gt;
 &lt;link rel="stylesheet" href="/assets/css/ui-kit.css"&gt;
 &lt;script src="/assets/js/ui-kit.js" defer&gt;&lt;/script&gt;
 

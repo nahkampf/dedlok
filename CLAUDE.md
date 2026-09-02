@@ -99,7 +99,7 @@ Do not invent components, colours, spacing or type — compose what is already t
 | --- | --- |
 | `public/assets/css/ui-kit.css` | The whole system: tokens, then components. No build step. |
 | `public/assets/js/ui-kit.js` | Behaviours, data-attribute driven. Exposes `window.UI`. |
-| `public/assets/fonts/` | Overpass, self-hosted (SIL OFL). |
+| `public/assets/fonts/` | Overpass and IBM Plex, self-hosted (both SIL OFL). |
 | `public/ui-kit.html` | Live gallery of every component with copyable markup. |
 
 The gallery at http://localhost:8088/ui-kit.html is the reference. **Open it (or read its
@@ -163,10 +163,19 @@ calling it done. There is no browser in this environment, so this is done by rea
 player-supplied must go through `UI.esc()` first. The same applies to any markup you build
 by string concatenation.
 
-### Before launch
+### Fonts
 
-Overpass is self-hosted; **IBM Plex is still loaded from Google Fonts** and should be
-self-hosted the same way. Neither is required — every stack falls back to system faces.
+**Every face is self-hosted and declared in `ui-kit.css`.** No font request leaves the
+origin, so the layouts carry no `<link>` and nothing to preconnect to — do not add one
+back. Overpass is one variable file per subset; IBM Plex is static instances, because
+that is how Google Fonts serves it and only three weights per family are in use. Each
+face is split into `latin` and `latin-ext` by `unicode-range`, so a page with no accented
+characters never fetches the second file.
+
+Both families are SIL OFL and the licences sit beside the files. **Adding a weight means
+adding a file and an `@font-face` block** — there is no build step to generate either, so
+keep the set as small as the design actually needs. Nothing is required: every stack falls
+back to system faces.
 
 ## Game mechanics
 

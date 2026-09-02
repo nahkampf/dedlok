@@ -7,10 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('app.name'))</title>
 
-    {{-- Overpass is self-hosted and declared inside ui-kit.css; only Plex is remote. --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    {{-- Every face is self-hosted and declared inside ui-kit.css. No font request
+         leaves this origin, so there is nothing to preconnect to. --}}
     <link rel="stylesheet" href="{{ asset('assets/css/ui-kit.css') }}">
     @stack('head')
 </head>

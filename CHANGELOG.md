@@ -12,6 +12,14 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+### Changed
+
+- **IBM Plex is self-hosted**, the way Overpass already was. Nine faces (three
+  weights each of Sans, Sans Condensed and Mono), split into `latin` and
+  `latin-ext` by `unicode-range`, declared in `ui-kit.css`. The Google Fonts
+  `<link>` and both `preconnect` hints are gone from every layout and from the
+  kit gallery, so no request in the render path leaves the origin.
+
 ## [0.1.0] — 2026-09-02
 
 First tagged version. Everything before this was two untagged commits on `main`.
