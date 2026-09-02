@@ -19,6 +19,8 @@ class ItemFactory extends Factory
     {
         return [
             'slug' => fake()->unique()->slug(2),
+            'name' => fake()->words(2, true),
+            'flavor' => null,
             'container' => fake()->randomElement(Item::CONTAINERS),
             'tier' => fake()->numberBetween(1, Item::MAX_TIER),
             'stackable' => true,

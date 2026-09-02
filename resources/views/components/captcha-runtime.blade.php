@@ -1,3 +1,4 @@
+@use('App\Support\Text')
 {{-- Everything the .captcha class needs to work, emitted once per page.
 
      The inline block runs during parsing, so the globals exist before the
@@ -16,7 +17,7 @@
 @if (config('cap.enabled') && $endpoint)
     <script>
         window.CAP_ENDPOINT = @js($endpoint);
-        window.CAP_I18N = @js(__('captcha.widget'));
+        window.CAP_I18N = @js(Text::group('captcha.widget'));
         window.CAP_CUSTOM_WASM_URL = @js(\App\Captcha\Cap::wasmUrl());
     </script>
     <script src="{{ \App\Captcha\Cap::widgetScript() }}" defer></script>

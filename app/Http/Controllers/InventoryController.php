@@ -9,6 +9,7 @@ use App\Inventory\SkillInjector;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -56,7 +57,7 @@ class InventoryController extends Controller
             return back()->with('error', $result->refusal->message());
         }
 
-        return back()->with('status', __('inventory.injected', ['skill' => $skillTitle]));
+        return back()->with('status', Text::get('inventory.injected', ['skill' => $skillTitle]));
     }
 
     /**
@@ -89,8 +90,8 @@ class InventoryController extends Controller
         }
 
         return back()->with('status', $into === null
-            ? __('inventory.ejected', ['item' => $itemName])
-            : __('inventory.stored', [
+            ? Text::get('inventory.ejected', ['item' => $itemName])
+            : Text::get('inventory.stored', [
                 'item' => $itemName,
                 'container' => $into->item->displayName(),
             ]));

@@ -1,6 +1,6 @@
+@use('App\Support\Text')
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
-      dir="{{ config('i18n.locales.'.app()->getLocale().'.dir', 'ltr') }}">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -26,27 +26,25 @@
                  which .nav__item[aria-current] already styles. --}}
             <a class="nav__item" href="{{ route('home') }}"
                @if (request()->routeIs('home')) aria-current="page" @endif>
-                {{ __('ui.nav.run') }}
+                {{ Text::get('ui.nav.run') }}
             </a>
             <a class="nav__item" href="{{ route('inventory.index') }}"
                @if (request()->routeIs('inventory.*')) aria-current="page" @endif>
-                {{ __('ui.nav.stash') }}
+                {{ Text::get('ui.nav.stash') }}
             </a>
-            <a class="nav__item" href="{{ route('home') }}">{{ __('ui.nav.contracts') }}</a>
+            <a class="nav__item" href="{{ route('home') }}">{{ Text::get('ui.nav.contracts') }}</a>
         </nav>
     @endauth
 
     <div class="spacer"></div>
 
-    <x-locale-switcher />
-
     @auth
         <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" class="btn btn--sm btn--ghost">{{ __('auth.logout') }}</button>
+            <button type="submit" class="btn btn--sm btn--ghost">{{ Text::get('auth.logout') }}</button>
         </form>
     @else
-        <a class="btn btn--sm" href="{{ route('login') }}">{{ __('auth.login') }}</a>
+        <a class="btn btn--sm" href="{{ route('login') }}">{{ Text::get('auth.login') }}</a>
     @endauth
 </header>
 

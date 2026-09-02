@@ -1,5 +1,6 @@
+@use('App\Support\Text')
 @extends('layouts.app')
-@section('title', __('character.create.title'))
+@section('title', Text::get('character.create.title'))
 
 @php
     use App\Models\Character;
@@ -15,20 +16,20 @@
     // Same one-line constraint applies to @json, so the script's strings are
     // assembled here. Placeholders are left intact for the client to fill.
     $poolStrings = [
-        'spent' => __('character.attributes.spent', ['spent' => ':spent', 'total' => ':total']),
-        'balanced' => __('character.attributes.balanced'),
-        'remaining' => __('character.attributes.remaining', ['count' => ':count']),
-        'overspent' => __('character.attributes.overspent', ['count' => ':count']),
-        'needHandle' => __('character.handle.required'),
-        'needArchetype' => __('character.archetype.required'),
+        'spent' => Text::get('character.attributes.spent', ['spent' => ':spent', 'total' => ':total']),
+        'balanced' => Text::get('character.attributes.balanced'),
+        'remaining' => Text::get('character.attributes.remaining', ['count' => ':count']),
+        'overspent' => Text::get('character.attributes.overspent', ['count' => ':count']),
+        'needHandle' => Text::get('character.handle.required'),
+        'needArchetype' => Text::get('character.archetype.required'),
     ];
 
     $derivedSpec = $derived;
     $derivedEffects = $archetypeEffects;
 
     $handleStrings = [
-        'failed' => __('auth.suggest_handle_failed'),
-        'empty' => __('auth.suggest_handle_empty'),
+        'failed' => Text::get('auth.suggest_handle_failed'),
+        'empty' => Text::get('auth.suggest_handle_empty'),
     ];
 @endphp
 
@@ -47,14 +48,14 @@
 @endpush
 
 @section('content')
-    <h1 class="display">{{ __('character.create.title') }}</h1>
-    <p class="lede" style="margin-top:var(--s-3);max-width:60ch">{{ __('character.create.lede') }}</p>
+    <h1 class="display">{{ Text::get('character.create.title') }}</h1>
+    <p class="lede" style="margin-top:var(--s-3);max-width:60ch">{{ Text::get('character.create.lede') }}</p>
 
     <x-auth-errors />
 
     @unless ($satisfiable)
         <div class="callout callout--crit" style="margin-top:var(--s-4)">
-            {{ __('character.attributes.pool_impossible', [
+            {{ Text::get('character.attributes.pool_impossible', [
                 'points' => $points,
                 'min' => \App\Models\Character::CREATION_ATTRIBUTE_MIN * count(\App\Models\Character::ATTRIBUTES),
                 'max' => \App\Models\Character::CREATION_ATTRIBUTE_MAX * count(\App\Models\Character::ATTRIBUTES),
@@ -68,27 +69,27 @@
 
         {{-- Handle ------------------------------------------------------ --}}
         <section>
-            <div class="rule"><span class="micro">{{ __('character.handle.section') }}</span></div>
+            <div class="rule"><span class="micro">{{ Text::get('character.handle.section') }}</span></div>
 
             <div class="field" style="max-width:420px">
-                <label class="field__label" for="handle">{{ __('character.handle.label') }}</label>
+                <label class="field__label" for="handle">{{ Text::get('character.handle.label') }}</label>
                 <div class="input-group">
                     <input class="input" id="handle" name="handle" type="text"
                            value="{{ old('handle') }}" required autofocus autocomplete="nickname"
                            maxlength="{{ ValidHandle::MAX_LENGTH }}">
                     <button type="button" class="btn" id="suggest-handle"
-                            data-tip="{{ __('auth.suggest_handle') }}"
-                            aria-label="{{ __('auth.suggest_handle') }}">↺</button>
+                            data-tip="{{ Text::get('auth.suggest_handle') }}"
+                            aria-label="{{ Text::get('auth.suggest_handle') }}">↺</button>
                 </div>
-                <span class="field__hint">{{ __('character.handle.hint', ['max' => ValidHandle::MAX_LENGTH]) }}</span>
+                <span class="field__hint">{{ Text::get('character.handle.hint', ['max' => ValidHandle::MAX_LENGTH]) }}</span>
                 <span class="field__error" id="suggest-handle-error" hidden></span>
             </div>
         </section>
 
         {{-- Archetype --------------------------------------------------- --}}
         <section>
-            <div class="rule"><span class="micro">{{ __('character.archetype.section') }}</span></div>
-            <p class="muted" style="font-size:var(--fs-sm);margin-bottom:var(--s-3)">{{ __('character.archetype.help') }}</p>
+            <div class="rule"><span class="micro">{{ Text::get('character.archetype.section') }}</span></div>
+            <p class="muted" style="font-size:var(--fs-sm);margin-bottom:var(--s-3)">{{ Text::get('character.archetype.help') }}</p>
 
             <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
                 @foreach ($archetypes as $archetype)
@@ -117,23 +118,23 @@
 
         {{-- Points pool ------------------------------------------------- --}}
         <section class="pool-sticky">
-            <div class="rule"><span class="micro">{{ __('character.attributes.pool') }}</span></div>
+            <div class="rule"><span class="micro">{{ Text::get('character.attributes.pool') }}</span></div>
 
             <div class="panel"><div class="panel__bd">
                 <div class="row row--wrap" style="--gap:var(--s-6);align-items:flex-end">
                     <div class="readout">
-                        <span class="readout__label">{{ __('character.attributes.pool') }}</span>
+                        <span class="readout__label">{{ Text::get('character.attributes.pool') }}</span>
                         <span class="readout__value num" id="pool-remaining">{{ $points }}</span>
                         <span class="readout__delta" id="pool-state"></span>
                     </div>
                     <div style="flex:1;min-width:min(220px,100%)">
                         <div class="row" style="--gap:var(--s-3);margin-bottom:4px">
-                            <span class="micro">{{ __('character.attributes.start', ['each' => reset($starting)]) }}</span>
+                            <span class="micro">{{ Text::get('character.attributes.start', ['each' => reset($starting)]) }}</span>
                             <div class="spacer"></div>
                             <button type="button" class="btn btn--sm" id="pool-reset"
                                     data-each="{{ reset($starting) }}"
-                                    data-tip="{{ __('character.attributes.reset_hint', ['each' => reset($starting)]) }}">
-                                {{ __('character.attributes.reset') }}
+                                    data-tip="{{ Text::get('character.attributes.reset_hint', ['each' => reset($starting)]) }}">
+                                {{ Text::get('character.attributes.reset') }}
                             </button>
                         </div>
                         <div class="micro" id="pool-spent" style="margin-bottom:6px"></div>
@@ -147,8 +148,8 @@
 
         {{-- Derived values ----------------------------------------------- --}}
         <section>
-            <div class="rule"><span class="micro">{{ __('character.derived.section') }}</span></div>
-            <p class="muted" style="font-size:var(--fs-sm);margin-bottom:var(--s-3)">{{ __('character.derived.help') }}</p>
+            <div class="rule"><span class="micro">{{ Text::get('character.derived.section') }}</span></div>
+            <p class="muted" style="font-size:var(--fs-sm);margin-bottom:var(--s-3)">{{ Text::get('character.derived.help') }}</p>
 
             <div class="panel"><div class="panel__bd">
                 <div class="row row--wrap" style="--gap:var(--s-7)">
@@ -166,7 +167,7 @@
         {{-- Attributes -------------------------------------------------- --}}
         @foreach ($groups as $heading => $group)
             <section>
-                <div class="rule"><span class="micro">{{ __($heading) }}</span></div>
+                <div class="rule"><span class="micro">{{ Text::get($heading) }}</span></div>
 
                 <div class="panel"><div class="panel__bd">
                     <div class="vitals">
@@ -179,12 +180,12 @@
                                         style="text-align:left"
                                         data-open="#attribute-info"
                                         data-attr="{{ $attribute }}"
-                                        title="{{ __('character.info.open', ['attribute' => __("character.names.{$attribute}")]) }}">
-                                    {{ __("character.names.{$attribute}") }}
+                                        title="{{ Text::get('character.info.open', ['attribute' => Text::get("character.names.{$attribute}")]) }}">
+                                    {{ Text::get("character.names.{$attribute}") }}
                                 </button>
                                 <input class="range" type="range" id="attr-{{ $attribute }}"
                                        name="{{ $attribute }}" data-attribute
-                                       aria-label="{{ __("character.names.{$attribute}") }}"
+                                       aria-label="{{ Text::get("character.names.{$attribute}") }}"
                                        min="{{ Character::CREATION_ATTRIBUTE_MIN }}"
                                        max="{{ Character::CREATION_ATTRIBUTE_MAX }}"
                                        value="{{ old($attribute, $starting[$attribute]) }}">
@@ -199,7 +200,7 @@
 
         <div class="row" style="--gap:var(--s-3)">
             <button type="submit" class="btn btn--go btn--lg cut" id="character-submit" disabled>
-                {{ __('character.create.submit') }}
+                {{ Text::get('character.create.submit') }}
             </button>
             <span class="micro" id="submit-hint"></span>
         </div>
@@ -210,25 +211,25 @@
          rest without closing and reopening. --}}
     <dialog class="modal" id="attribute-info" style="width:min(560px,calc(100vw - 32px))">
         <div class="panel__hd">
-            <span class="micro">{{ __('character.info.title') }}</span>
+            <span class="micro">{{ Text::get('character.info.title') }}</span>
             <div class="spacer"></div>
             <button class="btn btn--sm btn--ghost" data-close
-                    aria-label="{{ __('character.info.close') }}">✕</button>
+                    aria-label="{{ Text::get('character.info.close') }}">✕</button>
         </div>
 
         <div class="panel__bd" id="attribute-info-body">
             <p class="muted" style="font-size:var(--fs-sm)">
-                {{ __('character.info.lede', ['min' => \App\Models\Character::CREATION_ATTRIBUTE_MIN, 'max' => \App\Models\Character::CREATION_ATTRIBUTE_MAX]) }}
+                {{ Text::get('character.info.lede', ['min' => \App\Models\Character::CREATION_ATTRIBUTE_MIN, 'max' => \App\Models\Character::CREATION_ATTRIBUTE_MAX]) }}
             </p>
 
             @foreach ($groups as $heading => $group)
-                <div class="rule"><span class="micro">{{ __($heading) }}</span></div>
+                <div class="rule"><span class="micro">{{ Text::get($heading) }}</span></div>
                 <dl class="stack" style="--gap:var(--s-4)">
                     @foreach ($group as $attribute)
                         <div id="info-{{ $attribute }}" class="attr-info">
-                            <dt class="h3">{{ __("character.names.{$attribute}") }}</dt>
+                            <dt class="h3">{{ Text::get("character.names.{$attribute}") }}</dt>
                             <dd style="margin:4px 0 0;font-size:var(--fs-sm);color:var(--ink-2)">
-                                {{ __("character.descriptions.{$attribute}") }}
+                                {{ Text::get("character.descriptions.{$attribute}") }}
                             </dd>
                         </div>
                     @endforeach
@@ -238,7 +239,7 @@
 
         <div class="panel__ft">
             <div class="spacer"></div>
-            <button class="btn btn--sm" data-close>{{ __('character.info.close') }}</button>
+            <button class="btn btn--sm" data-close>{{ Text::get('character.info.close') }}</button>
         </div>
     </dialog>
 @endsection

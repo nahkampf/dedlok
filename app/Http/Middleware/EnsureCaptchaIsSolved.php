@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Captcha\Cap;
+use App\Support\Text;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -42,13 +43,13 @@ class EnsureCaptchaIsSolved
         // behave like one with no captcha at all.
         if (! Cap::usable()) {
             throw ValidationException::withMessages([
-                $field => __('captcha.unavailable'),
+                $field => Text::get('captcha.unavailable'),
             ]);
         }
 
         if (! Cap::verify($request->input($field))) {
             throw ValidationException::withMessages([
-                $field => __('captcha.failed'),
+                $field => Text::get('captcha.failed'),
             ]);
         }
 

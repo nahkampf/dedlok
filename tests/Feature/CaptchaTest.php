@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Captcha\Cap;
 use App\Models\User;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
@@ -145,11 +146,11 @@ class CaptchaTest extends TestCase
      * Every label the widget shows is a lang key, so the widget translates
      * with the rest of the screen instead of staying in English.
      */
-    public function test_the_widget_labels_come_from_lang_not_from_cap(): void
+    public function test_the_widget_labels_come_from_config_not_from_cap(): void
     {
         $this->enableCap();
 
-        $labels = __('captcha.widget');
+        $labels = Text::group('captcha.widget');
 
         $this->get('login')->assertSee(
             'window.CAP_I18N = '.$this->asEmitted($labels),
@@ -223,8 +224,10 @@ class CaptchaTest extends TestCase
         $this->enableCap();
         Http::fake();
 
-        // Not in config('cap.protect'), so it must not grow a captcha.
-        $this->post(route('locale.update'), ['locale' => 'en'])
+        // Not in config('cap.protect'), so it must not grow a captcha. Auth
+        // turns this away long before anything reads a token, which is the
+        // point: the middleware is not in the way.
+        $this->post(route('character.store'), [])
             ->assertSessionDoesntHaveErrors('cap-token');
 
         Http::assertNothingSent();

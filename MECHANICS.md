@@ -17,7 +17,7 @@ down so the implementation has something to be checked against.
 | --- | --- |
 | Attributes on `characters` (10 columns, 0–100 in the DB) | **built** |
 | Attribute clamping on save | **built**, at the lifetime cap of 100 |
-| Archetypes + perks as structured data (`config/archetypes.php`) | **built** |
+| Archetypes + perks as rows (`archetypes`, `archetype_perks`) | **built**; `characters.archetype` is a real foreign key |
 | Live perks routed through the resolver — Netrunner's "Grey matter", Solo's "Scar tissue" | **built** |
 | Display-only perks | one kept deliberately as the documented example; the rest removed |
 | `hitpoints_max` and `synaptic_integrity_max` as stats | **built**, formulas in `config/stats.php` |
@@ -25,7 +25,7 @@ down so the implementation has something to be checked against.
 | `items` + `inventory_items` tables, two containers | **built**, with constraints |
 | Skillbooks and injection (`App\Inventory\SkillInjector`) | **built**, the only writer of a new `character_skills` row |
 | Containers — items holding items (`App\Inventory\ItemPlacer`) | **built**, one level deep, capacity enforced |
-| `lang/en/items.php` | **built** — tier names, the shared skillbook name, and the demo items |
+| Item names and flavour | **built** — columns on `items`; the shared vocabulary is in `config/strings.php` |
 | Character creation point pool | **built** |
 | `Modifier`, `Op`, `Target`, `Stat`, `StatRegistry`, `Resolver` (`app/Stats/`) | **built** — pure, no DB, 38 unit tests |
 | `config/stats.php` — the 10 attributes, tagged and bounded | **built** |
@@ -258,15 +258,16 @@ add a condition to something that could be unconditional.
 
 ## Where things live
 
-Mechanics in `config/`, words in `lang/`, instances in the database. Same
-split the rest of the project already uses.
+Mechanics in `config/`, instances in the database, and words wherever the
+thing they describe already lives — on the row if it has one, in
+`config/strings.php` if it does not. Same split the rest of the project uses.
 
 | What | Where |
 | --- | --- |
 | Stat definitions: ids, tags, formula, clamps, rounding | `config/stats.php` |
 | Implant / drug / effect definitions | `config/implants.php`, `config/effects.php`, … |
 | **Item and skill definitions** | the `items` and `skills` tables — the documented exception, see below |
-| Every player-visible name and description | `lang/<locale>/…` |
+| Player-visible words with no row of their own | `config/strings.php` |
 | What a given character actually has | `character_modifiers` table |
 
 `character_modifiers` holds `character_id`, `definition_key`, `source_type`,
@@ -276,15 +277,15 @@ values (a rolled quality, a remaining charge).
 **Definition keys are permanent.** Rows in the database reference them, so a
 deleted key orphans live data. Retire a definition with a `retired => true`
 flag; never remove or renumber one. The same rule already applies to archetype
-ids.
+ids — and is now enforced, since `characters.archetype` is a foreign key into
+`archetypes`.
 
 ---
 
 ## Skills
 
-Skills are the **one exception** to "mechanics in config, words in lang": their
-definitions live in the database, rows and all, including `title` and
-`description`. There will be hundreds of them, the market has to query them,
+Skills are the **one exception** to "mechanics in config": their definitions
+live in the database, rows and all, including `title` and `description`. There will be hundreds of them, the market has to query them,
 and prerequisites are a graph.
 
 That exception has a price, and it is worth being explicit about: in config a
@@ -305,8 +306,8 @@ replacement is two-layered.
 
 **What it cannot is `php artisan skills:validate`:** prerequisite cycles, an
 `attained_level` that disagrees with `skill_points`, points above the rank's
-cap, gapped training queues. Run it in CI and after any bulk edit — it is to
-skills what `i18n:check` is to translations.
+cap, gapped training queues. Run it in CI and after any bulk edit: the database
+is the only thing holding those invariants, so nothing else will notice.
 
 ### The training queue
 
@@ -428,22 +429,23 @@ The rest of the contract:
 
 ## Recipes
 
-Every recipe below is config plus lang. **If adding content requires new PHP,
-the design has leaked and the op set needs revisiting instead.**
+Every recipe below is data — a config entry, or a row. **If adding content
+requires new PHP, the design has leaked and the op set needs revisiting
+instead.**
 
 ### Add an item
 
 **Item definitions live in the database, not in config.** They are the second
-exception to the config-plus-lang rule, taken for the same reasons skills were:
+exception to the mechanics-in-config rule, taken for the same reasons skills
+were:
 there will be hundreds, the market has to query them, and a skillbook has to
 point at a skill row. `config/items.php` does not exist and is not planned.
 
 1. An `items` row: `slug`, `container` (`physical` or `data`), `tier` 1–5, and
    whatever mechanical values apply. `database/seeders/ItemSeeder.php` is where
    the catalogue is kept.
-2. `lang/en/items.php` — `name` and any `flavor`, keyed by the same slug. Tier
-   names are shared (`items.tiers.1`–`5`), not repeated per item.
-3. Copy the lang entry into every other locale, then `php artisan i18n:check`.
+2. Its `name`, and `flavor` if it has any — columns on the same row. Tier names
+   are shared (`strings.items.tiers.1`–`5`) and never repeated per item.
 
 **An item that holds other items** needs two more values on the row:
 `capacity` (how much it holds; 0 means it is not a container) and `accepts`
@@ -454,8 +456,8 @@ without capacity. Depth is capped at one: containers do not nest.
 
 **Skillbooks need neither step.** There is exactly one book per skill, so
 `ItemSeeder` generates them from the skills table and their name composes from
-the skill's own title through `items.skillbook.name`. Adding a skill adds its
-book; no lang entry, in any locale.
+the skill's own title through `strings.items.skillbook.name`. Adding a skill
+adds its book, named for free.
 
 ### Skillbooks and the training gate
 
@@ -491,12 +493,7 @@ Items carry no modifiers yet — this is the shape they will take.
    ],
    ```
 
-2. `lang/en/items.php` — add `name`, `description` and any flavour text, keyed
-   by the same slug. This file **already exists**: it holds the demo items used
-   by the i18n example on the landing page, which have lang entries but no
-   config definitions yet. New items go alongside them.
-3. Copy the lang entry into every other locale.
-4. `php artisan i18n:check`.
+2. `name`, and `flavor` if it has any, on the same row.
 
 ### Add a skill
 
@@ -507,7 +504,8 @@ A skill is both a **stat** (the character has a level in it) and potentially a
 2. `config/stats.php` — declare the check it feeds, e.g.
    `check.intrusion = skill.hacking + attribute.intellect`, tagged
    `['check', 'mental', 'intrusion']`.
-3. `lang/en/skills.php` — name and description.
+3. The skill's own row carries its `title` and `description` — there is no
+   file to add them to.
 4. If ranks grant more than their level, add `modifiers` to the skill
    definition the same way an item does.
 
@@ -531,8 +529,8 @@ is compared against a difficulty. There is no separate skill-check maths.
    ],
    ```
 
-2. `lang/en/effects.php` — name, description, and the message shown when it
-   expires.
+2. `config/strings.php` under `effects` — name, description, and the message
+   shown when it expires. An effect has no row of its own to carry them.
 3. Applying it inserts a `character_modifiers` row with `expires_at`.
 
 Expiry is **lazy**: rows are filtered on read by `expires_at > now()`. A
@@ -544,23 +542,29 @@ character every second.
 Perks exist in two shapes while the migration runs, and the shape decides
 whether the perk does anything:
 
-**Live** — carries a `modifiers` array, produces real `Modifier` objects, and
-its card text is generated from them so display cannot drift from behaviour:
+A perk is a row in `archetype_perks` pointing at an `archetypes` row. The
+database refuses one that is both shapes or neither.
+
+**Live** — carries `modifiers` (a JSON list), produces real `Modifier` objects,
+and its card text is generated from them so display cannot drift from
+behaviour:
 
 ```php
-[
+ArchetypePerk::create([
+    'archetype_id' => 2,
     'key' => 'scar_tissue',
+    'label' => 'Scar tissue',
     'modifiers' => [
         ['op' => 'percentage_of_base', 'amount' => 5, 'target' => ['id' => 'hitpoints_max']],
     ],
-],
+]);
 ```
 
-**Display-only** — the older `modifier` / `unit` pair. Renders on the card and
-**changes nothing**:
+**Display-only** — the older shape, now `display_modifier` / `display_unit`.
+Renders on the card and **changes nothing**:
 
 ```php
-['key' => 'damage_taken', 'modifier' => -15, 'unit' => 'percent'],
+['key' => 'damage_taken', 'display_modifier' => -15, 'display_unit' => 'percent']
 ```
 
 Two perks are live: Netrunner's **Grey matter** (`+5% synaptic_integrity_max`)
@@ -571,27 +575,35 @@ covered by tests. Delete it once every perk is live.
 The other four archetypes have no perks at all. Add new ones as **live**;
 there is no reason to write a display-only perk now that the resolver exists.
 
-`CharacterCreationTest::test_every_archetype_perk_is_valid_and_translated`
+`CharacterCreationTest::test_every_archetype_perk_is_valid_and_labelled`
 checks both shapes and fails if a live perk targets a stat that is not declared.
 
-Either way the label goes in `lang/en/archetypes.php`. See CLAUDE.md for the
-display rules (signed values, U+2212 minus, neutral colour).
+Either way the label goes in the perk's own `label` column — except a perk
+whose `display_unit` is `attribute`, which leaves it null and borrows the
+attribute's name from `character.names.<key>`. See CLAUDE.md for the display
+rules (signed values, U+2212 minus, neutral colour).
+
+**The roster is inserted by its migration, not a seeder.** Its ids are written
+into character rows, so it has to exist the moment the schema does — including
+in a freshly migrated test database. `Archetype::roster()` reads it once per
+request and caches it, because stat resolution asks for a character's perks
+every time it runs; any write to either table drops that cache.
 
 ### Add an attribute
 
 1. `Character::ATTRIBUTES` and the relevant group constant.
 2. A migration adding the column **and** its `CHECK (<= 100)` constraint.
 3. `config/stats.php` — id, tags, clamps.
-4. `lang/en/character.php` — `names.<attribute>` and
-   `descriptions.<attribute>`.
+4. `config/strings.php` — `character.names.<attribute>` and
+   `character.descriptions.<attribute>`.
 5. `php artisan test`. Existing tests cover three of the four steps and will
    fail if any is missed:
    - `CharacterTest::test_the_model_and_the_schema_agree_on_the_attribute_list`
      (model vs migration)
    - `CharacterCreationTest::test_every_attribute_has_a_description_string`
-     (lang `descriptions`)
+     (`character.descriptions`)
    - `CharacterCreationTest::test_it_shows_every_archetype_and_attribute`
-     (lang `names`)
+     (`character.names`)
 
    Nothing yet checks `config/stats.php`, because it does not exist. Add that
    assertion when it does.

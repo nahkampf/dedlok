@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\SuggestedHandle;
 use App\Models\User;
 use App\Rules\ValidHandle;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -141,10 +143,23 @@ class HandleValidationTest extends TestCase
             ->assertJson(['handles' => [], 'count' => 0]);
     }
 
-    /** MERGE CHECK: our validation.php must not shadow the framework's messages. */
-    public function test_app_validation_messages_do_not_shadow_framework_ones(): void
+    /**
+     * The two halves of a validation message now come from two places.
+     *
+     * Nothing publishes a lang/en/validation.php any more, so the framework's
+     * own messages are the only ones the validator knows — and ours are plain
+     * strings handed to $fail(), not keys it could shadow.
+     */
+    public function test_framework_messages_are_the_frameworks_and_ours_are_ours(): void
     {
-        $this->assertSame('The name field is required.', __('validation.required', ['attribute' => 'name']));
-        $this->assertStringContainsString('letters and digits', __('validation.handle_characters', ['symbols' => '']));
+        $this->assertSame(
+            'The name field is required.',
+            Validator::make([], ['name' => 'required'])->errors()->first('name')
+        );
+
+        $this->assertStringContainsString(
+            'letters and digits',
+            Text::get('validation.handle_characters', ['symbols' => ''])
+        );
     }
 }

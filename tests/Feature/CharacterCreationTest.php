@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\CharacterCreationController;
+use App\Models\Archetype;
+use App\Models\ArchetypePerk;
 use App\Models\Character;
 use App\Models\Setting;
 use App\Models\SuggestedHandle;
@@ -10,6 +12,7 @@ use App\Models\User;
 use App\Rules\ValidHandle;
 use App\Stats\Modifier;
 use App\Stats\StatRegistry;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -102,18 +105,18 @@ class CharacterCreationTest extends TestCase
     {
         $response = $this->actingAs(User::factory()->create())->get(route('character.create'));
 
-        foreach (config('archetypes.list') as $id => $archetype) {
-            $response->assertSee(__("archetypes.{$archetype['slug']}.name"));
-            $response->assertSee('value="'.$id.'"', false);
+        foreach (Archetype::roster() as $archetype) {
+            $response->assertSee($archetype->name);
+            $response->assertSee('value="'.$archetype->id.'"', false);
         }
 
         foreach (Character::ATTRIBUTES as $attribute) {
             $response->assertSee('name="'.$attribute.'"', false);
-            $response->assertSee(__("character.names.{$attribute}"));
+            $response->assertSee(Text::get("character.names.{$attribute}"));
         }
 
-        $response->assertSee(__('character.attributes.physical'));
-        $response->assertSee(__('character.attributes.mental'));
+        $response->assertSee(Text::get('character.attributes.physical'));
+        $response->assertSee(Text::get('character.attributes.mental'));
     }
 
     public function test_the_pool_comes_from_the_setting(): void
@@ -346,9 +349,9 @@ class CharacterCreationTest extends TestCase
     {
         $response = $this->actingAs(User::factory()->create())->get(route('character.create'));
 
-        $response->assertSee(__('character.handle.required'));
-        $response->assertSee(__('character.archetype.required'));
-        $response->assertSee(__('character.attributes.balanced'));
+        $response->assertSee(Text::get('character.handle.required'));
+        $response->assertSee(Text::get('character.archetype.required'));
+        $response->assertSee(Text::get('character.attributes.balanced'));
 
         // The three branches must all be present in the shipped script.
         $response->assertSee('needArchetype', false);
@@ -371,7 +374,7 @@ class CharacterCreationTest extends TestCase
             ->assertOk()
             ->assertSee('id="pool-reset"', false)
             ->assertSee('data-each="15"', false)
-            ->assertSee(__('character.attributes.reset'));
+            ->assertSee(Text::get('character.attributes.reset'));
     }
 
     /**
@@ -435,18 +438,19 @@ class CharacterCreationTest extends TestCase
         $response = $this->actingAs(User::factory()->create())->get(route('character.create'));
 
         foreach (Character::ATTRIBUTES as $attribute) {
-            $response->assertSee(__("character.descriptions.{$attribute}"));
+            $response->assertSee(Text::get("character.descriptions.{$attribute}"));
         }
 
-        $response->assertSee(__('character.info.title'));
+        $response->assertSee(Text::get('character.info.title'));
     }
 
     public function test_every_attribute_has_a_description_string(): void
     {
         foreach (Character::ATTRIBUTES as $attribute) {
-            $key = "character.descriptions.{$attribute}";
-
-            $this->assertNotSame($key, __($key), "missing description for [{$attribute}]");
+            $this->assertTrue(
+                Text::has("character.descriptions.{$attribute}"),
+                "missing description for [{$attribute}]"
+            );
         }
     }
 
@@ -459,11 +463,17 @@ class CharacterCreationTest extends TestCase
         $response = $this->actingAs(User::factory()->create())->get(route('character.create'));
 
         foreach (Character::ATTRIBUTES as $attribute) {
-            $response->assertSee('aria-label="'.__("character.names.{$attribute}").'"', false);
+            $response->assertSee('aria-label="'.Text::get("character.names.{$attribute}").'"', false);
         }
     }
 
     // ---- archetype perks -------------------------------------------------
+
+    /** The label is on the perk's row; nothing else knows it. */
+    private function perkLabel(string $key): string
+    {
+        return ArchetypePerk::query()->where('key', $key)->value('label');
+    }
 
     public function test_the_cards_show_the_perks_that_exist(): void
     {
@@ -472,21 +482,20 @@ class CharacterCreationTest extends TestCase
         $response->assertSee('card__stat', false);
 
         // Live perks: label on the left, effect generated from the modifier.
-        $response->assertSee(__('archetypes.perks.grey_matter'));
-        $response->assertSee('+5% '.__('character.names.synaptic_integrity_max'), false);
-        $response->assertSee(__('archetypes.perks.scar_tissue'));
-        $response->assertSee('+5% '.__('character.names.hitpoints_max'), false);
+        $response->assertSee($this->perkLabel('grey_matter'));
+        $response->assertSee('+5% '.Text::get('character.names.synaptic_integrity_max'), false);
+        $response->assertSee($this->perkLabel('scar_tissue'));
+        $response->assertSee('+5% '.Text::get('character.names.hitpoints_max'), false);
 
         // The retained display-only example still renders, from its legacy pair.
-        $response->assertSee(__('archetypes.perks.damage_taken'));
+        $response->assertSee($this->perkLabel('damage_taken'));
         $response->assertSee('−15%', false);
     }
 
     public function test_archetypes_without_perks_render_no_stat_rows(): void
     {
-        $withoutPerks = array_filter(
-            config('archetypes.list'),
-            fn (array $archetype): bool => ($archetype['perks'] ?? []) === [],
+        $withoutPerks = Archetype::roster()->filter(
+            fn (Archetype $archetype): bool => $archetype->perks->isEmpty(),
         );
 
         $this->assertNotEmpty($withoutPerks, 'expected at least one archetype with no perks');
@@ -499,56 +508,58 @@ class CharacterCreationTest extends TestCase
 
     /**
      * PHP array literals silently keep the last of two identical keys, so a
-     * duplicated id does not fail to parse — it deletes an archetype. One id
-     * per translated slug is the check that catches it.
+     * duplicated id does not fail to parse — it DELETES an archetype. The
+     * roster used to be spread across a config file and a lang file, and
+     * comparing the two caught it; now that every archetype is one entry,
+     * counting distinct slugs is what is left to catch it with.
      */
-    public function test_every_translated_archetype_has_its_own_id(): void
+    /**
+     * The roster is inserted by its own migration, with ids that character
+     * rows already reference. What this guards is that it arrived whole.
+     */
+    public function test_the_seeded_roster_is_whole(): void
     {
-        $slugs = array_column(config('archetypes.list'), 'slug');
+        $roster = Archetype::roster();
 
-        // The lang file is keyed by slug, with the perk labels alongside them.
-        $translated = array_diff(array_keys(__('archetypes')), ['perks']);
-
-        sort($slugs);
-        sort($translated);
-
+        $this->assertCount(7, $roster, 'the roster changed size');
         $this->assertSame(
-            $translated,
-            $slugs,
-            'config/archetypes.php and lang/en/archetypes.php disagree on the roster'
+            $roster->count(),
+            $roster->pluck('slug')->unique()->count(),
+            'two archetypes share a slug'
         );
+
+        foreach ($roster as $id => $archetype) {
+            $this->assertSame($id, $archetype->id);
+            $this->assertNotSame('', $archetype->name);
+            $this->assertNotSame('', $archetype->role);
+            $this->assertNotSame('', $archetype->description);
+        }
     }
 
-    public function test_every_archetype_perk_is_valid_and_translated(): void
+    public function test_every_archetype_perk_is_valid_and_labelled(): void
     {
         $registry = StatRegistry::fromConfig();
 
-        foreach (config('archetypes.list') as $archetype) {
-            foreach ($archetype['perks'] ?? [] as $perk) {
-                if (isset($perk['modifiers'])) {
-                    $key = "archetypes.perks.{$perk['key']}";
-                    $this->assertNotSame($key, __($key), "missing translation for [{$key}]");
+        foreach (Archetype::roster() as $archetype) {
+            foreach ($archetype->perks as $perk) {
+                $this->assertNotSame('', $perk->displayLabel(), "perk [{$perk->key}] has no label");
 
-                    foreach ($perk['modifiers'] as $definition) {
+                if ($perk->isLive()) {
+                    foreach ($perk->modifiers as $definition) {
                         // Throws on an unknown op, unknown key or bad target.
                         $modifier = Modifier::fromArray($definition);
 
                         $this->assertNotSame(
                             [],
                             $registry->matching($modifier->target),
-                            "perk [{$perk['key']}] targets nothing in config/stats.php"
+                            "perk [{$perk->key}] targets nothing in config/stats.php"
                         );
                     }
 
                     continue;
                 }
 
-                $key = $perk['unit'] === 'attribute'
-                    ? "character.names.{$perk['key']}"
-                    : "archetypes.perks.{$perk['key']}";
-
-                $this->assertNotSame($key, __($key), "missing translation for [{$key}]");
-                $this->assertContains($perk['unit'], ['percent', 'flat', 'attribute']);
+                $this->assertContains($perk->display_unit, ['percent', 'flat', 'attribute']);
             }
         }
     }
@@ -566,7 +577,7 @@ class CharacterCreationTest extends TestCase
 
         $this->actingAs(User::factory()->create())
             ->post(route('character.store'), $this->payload())
-            ->assertSessionHasErrors(['handle' => __('auth.handle_taken')]);
+            ->assertSessionHasErrors(['handle' => Text::get('auth.handle_taken')]);
     }
 
     public function test_an_invalid_handle_is_rejected(): void

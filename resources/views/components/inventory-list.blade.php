@@ -1,3 +1,4 @@
+@use('App\Support\Text')
 @props(['rows', 'hint', 'containers' => null])
 
 @php($containers = $containers ?? collect())
@@ -8,12 +9,12 @@
     <div class="panel__hd">
         <span class="micro">{{ $hint }}</span>
         <div class="spacer"></div>
-        <span class="micro num">{{ trans_choice('inventory.count', $rows->sum('quantity')) }}</span>
+        <span class="micro num">{{ Text::plural('inventory.count', $rows->sum('quantity')) }}</span>
     </div>
 
     @if ($rows->isEmpty())
         <div class="panel__bd">
-            <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ __('inventory.empty') }}</p>
+            <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('inventory.empty') }}</p>
         </div>
     @else
         <div>
@@ -37,10 +38,10 @@
                          spells elevation --bg-0 through --bg-4. --}}
                     <div style="background:var(--bg-1);padding-inline-start:var(--s-4)">
                         <div class="row row--wrap" style="--gap:var(--s-2);padding:var(--s-2) var(--s-3)">
-                            <span class="micro" style="color:var(--ink-3)">{{ __('inventory.contents') }}</span>
+                            <span class="micro" style="color:var(--ink-3)">{{ Text::get('inventory.contents') }}</span>
                             <div class="spacer"></div>
                             <span class="micro num" style="color:var(--ink-3)">
-                                {{ __('inventory.contents_free', [
+                                {{ Text::get('inventory.contents_free', [
                                     'free' => $entry->remainingCapacity(),
                                     'capacity' => $item->capacity,
                                 ]) }}
@@ -51,7 +52,7 @@
                             <x-inventory-row :entry="$child" :fits="collect()" />
                         @empty
                             <p class="muted" style="font-size:var(--fs-sm);padding:0 var(--s-3) var(--s-2);margin:0">
-                                {{ __('inventory.empty') }}
+                                {{ Text::get('inventory.empty') }}
                             </p>
                         @endforelse
                     </div>

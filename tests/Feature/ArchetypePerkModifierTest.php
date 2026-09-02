@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Archetype;
+use App\Models\ArchetypePerk;
 use App\Models\Character;
 use App\Models\User;
 use App\Stats\Op;
 use App\Stats\Sources\ArchetypePerks;
 use App\Stats\StatRegistry;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,6 +27,12 @@ class ArchetypePerkModifierTest extends TestCase
 
     private const NETRUNNER = 1;
 
+    /** The label is on the perk's row; nothing else knows it. */
+    private function perkLabel(string $key): string
+    {
+        return ArchetypePerk::query()->where('key', $key)->value('label');
+    }
+
     public function test_the_perk_produces_a_real_modifier(): void
     {
         $modifiers = (new ArchetypePerks(self::SOLO))->modifiers();
@@ -34,16 +43,17 @@ class ArchetypePerkModifierTest extends TestCase
         $this->assertSame(Op::PercentageOfBase, $modifier->op);
         $this->assertSame(5.0, $modifier->amount);
         $this->assertSame('hitpoints_max', $modifier->target->id);
-        $this->assertSame(__('archetypes.perks.scar_tissue'), $modifier->source);
+        $this->assertSame($this->perkLabel('scar_tissue'), $modifier->source);
     }
 
     public function test_display_only_perks_contribute_nothing(): void
     {
         // Solo carries two perks: scar_tissue is live, damage_taken is the
         // retained display-only example. Only one reaches the resolver.
-        $perks = config('archetypes.list.'.self::SOLO.'.perks');
+        $perks = Archetype::fromRoster(self::SOLO)->perks;
 
         $this->assertCount(2, $perks);
+        $this->assertCount(1, $perks->filter->isLive());
         $this->assertCount(1, (new ArchetypePerks(self::SOLO))->modifiers());
     }
 
@@ -58,7 +68,7 @@ class ArchetypePerkModifierTest extends TestCase
 
         $this->assertCount(1, $modifiers);
         $this->assertSame('synaptic_integrity_max', $modifiers[0]->target->id);
-        $this->assertSame(__('archetypes.perks.grey_matter'), $modifiers[0]->source);
+        $this->assertSame($this->perkLabel('grey_matter'), $modifiers[0]->source);
     }
 
     public function test_grey_matter_raises_synaptic_integrity_by_five_percent(): void
@@ -72,7 +82,7 @@ class ArchetypePerkModifierTest extends TestCase
 
         $this->assertSame(40.0, $si->base);
         $this->assertSame(42.0, $si->value);
-        $this->assertSame([__('archetypes.perks.grey_matter')], $si->steps[0]->sources);
+        $this->assertSame([$this->perkLabel('grey_matter')], $si->steps[0]->sources);
     }
 
     public function test_each_live_perk_affects_only_its_own_stat(): void
@@ -148,7 +158,7 @@ class ArchetypePerkModifierTest extends TestCase
         $steps = $solo->stat('hitpoints_max')->steps;
 
         $this->assertSame('percentage_of_base', $steps[0]->op);
-        $this->assertSame([__('archetypes.perks.scar_tissue')], $steps[0]->sources);
+        $this->assertSame([$this->perkLabel('scar_tissue')], $steps[0]->sources);
     }
 
     public function test_the_perk_scales_with_the_base_it_modifies(): void
@@ -177,7 +187,7 @@ class ArchetypePerkModifierTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('character.create'))
             ->assertOk()
-            ->assertSee(__('archetypes.perks.scar_tissue'))
-            ->assertSee('+5% '.__('character.names.hitpoints_max'), false);
+            ->assertSee($this->perkLabel('scar_tissue'))
+            ->assertSee('+5% '.Text::get('character.names.hitpoints_max'), false);
     }
 }

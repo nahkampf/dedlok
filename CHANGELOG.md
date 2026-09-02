@@ -12,6 +12,46 @@ change the database schema. Every entry that needs one says so under
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-09-02
+
+### Removed
+
+- **Translation.** The game speaks English and only English: no `lang/`
+  directory, no `config/i18n.php`, no `SetLocale` middleware, no locale
+  switcher, no `locale.update` route and no `i18n:check` command. `__()` and
+  `trans_choice()` are gone from the codebase — 132 call sites across 25 files.
+  The `users.locale` column is dropped.
+
+### Changed
+
+- **Player-visible strings live in one of two places now.** On the row if the
+  thing has one — `items.name` and `items.flavor` are columns, joining the
+  `title` skills always carried — and in `config/strings.php` otherwise, read
+  through `App\Support\Text`. Archetype names, roles and descriptions moved
+  into `config/archetypes.php` beside their ids and perks.
+- Counted strings are `{zero, one, many}` groups instead of ICU pipe syntax.
+- The landing page loses its plurals table and its locale-aware formatting
+  panel; both existed only to demonstrate translation. The item showcase stays.
+- `config/app.php` keeps `locale` and `fallback_locale`: the framework's own
+  validation and auth messages still come from vendor lang files keyed by them.
+
+- **Archetypes are rows.** `archetypes` and `archetype_perks` replace
+  `config/archetypes.php`. `characters.archetype` was a foreign key in
+  everything but name — an id pointing into an array, which nothing could
+  enforce — and is now a real one. A perk's two shapes are columns the database
+  polices: live perks carry `modifiers` as JSON, display-only ones carry
+  `display_modifier` and `display_unit`, and a row may not be both or neither.
+
+### Migrations
+
+- `2026_09_02_150000_remove_the_translation_layer` — adds `name` and `flavor`
+  to `items` (backfilled for the seeded catalogue), drops `users.locale`.
+- `2026_09_02_160000_create_archetypes_tables` — creates both tables and
+  **inserts the roster**, ids preserved. Reference data whose ids are
+  load-bearing has to exist the moment the schema does, so it is not a seeder.
+  Clears any `characters.archetype` that names no archetype before adding the
+  constraint; such a row was already broken and granted no perks.
+
 ## [0.1.1] — 2026-09-02
 
 ### Changed
@@ -80,6 +120,7 @@ Two, both additive and safe to run forward:
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/nahkampf/dedlok/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/nahkampf/dedlok/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/nahkampf/dedlok/releases/tag/v0.1.0

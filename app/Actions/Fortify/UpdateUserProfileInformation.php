@@ -5,6 +5,7 @@ namespace App\Actions\Fortify;
 use App\Models\Character;
 use App\Models\User;
 use App\Rules\ValidHandle;
+use App\Support\Text;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -37,7 +38,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
                 Rule::unique(User::class)->ignore($user->id),
             ],
         ], [
-            'handle.unique' => __('auth.handle_taken'),
+            'handle.unique' => Text::get('auth.handle_taken'),
         ])->validateWithBag('updateProfileInformation');
 
         DB::transaction(function () use ($user, $input): void {
