@@ -1,0 +1,63 @@
+<?php
+
+use App\Http\Middleware\EnsureCaptchaIsSolved;
+use App\Http\Middleware\RequireCharacter;
+use App\Http\Middleware\SetLocale;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Request;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware): void {
+        // Every web request resolves a locale before anything renders.
+        $middleware->web(append: [
+            SetLocale::class,
+            // Runs after the session is available, so $request->user() is set.
+            RequireCharacter::class,
+            // Guards the routes named in config/cap.php; a no-op elsewhere.
+            // After SetLocale, so a rejection is worded in the player's
+            // language rather than the fallback.
+            EnsureCaptchaIsSolved::class,
+        ]);
+    })
+    ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+        );
+
+        /*
+         * Translate the rate-limit message.
+         *
+         * Illuminate\Routing\Middleware\ThrottleRequests throws a raw English
+         * literal ('Too Many Attempts.') rather than a translation key, and it
+         * lives in vendor/, so it cannot be edited — composer install would
+         * revert it. Re-rendering the exception here is the supported seam, and
+         * it covers every throttled route at once rather than one limiter.
+         *
+         * The original headers must be carried through: Retry-After and the
+         * X-RateLimit-* pair are the machine-readable half of a 429, and
+         * dropping them would break any client that backs off politely.
+         */
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            $headers = $e->getHeaders();
+            $seconds = (int) ($headers['Retry-After'] ?? 60);
+
+            $message = __('errors.throttle.body', ['seconds' => $seconds]);
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 429, $headers);
+            }
+
+            return response()->view('errors.429', [
+                'message' => $message,
+                'seconds' => $seconds,
+            ], 429, $headers);
+        });
+    })->create();

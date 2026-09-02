@@ -2,20 +2,46 @@
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
-         cacheDirectory=".phpunit.cache"
          colors="true"
-         failOnRisky="true"
-         failOnWarning="true"
-         beStrictAboutOutputDuringTests="true">
+>
     <testsuites>
-        <testsuite name="cyberpunk">
-            <directory>tests</directory>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
         </testsuite>
     </testsuites>
-
     <source>
         <include>
-            <directory>src</directory>
+            <directory>app</directory>
         </include>
     </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="array"/>
+        <!-- Cap is pinned off, and its endpoints blanked, for the same reason
+             the database is pinned to sqlite: a developer with a working Cap
+             in their .env would otherwise have every auth test post through a
+             live captcha, and CaptchaTest's Http::fake would miss a real URL
+             it never expected. Tests that want it on turn it on themselves. -->
+        <env name="CAP_ENABLED" value="false"/>
+        <env name="CAP_ENDPOINT" value=""/>
+        <env name="CAP_VERIFY_ENDPOINT" value=""/>
+        <env name="CAP_SECRET" value=""/>
+        <env name="CAP_WIDGET_SCRIPT" value=""/>
+        <env name="CAP_WASM_URL" value=""/>
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_URL" value=""/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+    </php>
 </phpunit>

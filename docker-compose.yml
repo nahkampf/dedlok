@@ -21,6 +21,25 @@ services:
     networks:
       - cyberpunk-network
 
+  # Laravel's scheduler. Deliberately its own container: a heartbeat that only
+  # runs while the web server is handling a request is not a heartbeat.
+  # Training deposits are idempotent and catch up from their own stored clock,
+  # so a missed minute -- or a scheduler that is down for hours -- is harmless.
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyberpunk-scheduler
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/cyberpunk
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    command: cron -f -L 2
+    depends_on:
+      - web
+    networks:
+      - cyberpunk-network
+
   cyberpunk-composer:
     image: composer:latest
     container_name: cyberpunk-composer
@@ -48,10 +67,58 @@ services:
     networks:
       - cyberpunk-network
 
+  # Cap (trycap.dev) — the CAPTCHA that guards login, registration and the
+  # password-reset request. Self-hosted on purpose: no Google, no telemetry,
+  # and no third-party script in the render path.
+  #
+  # Unlike every other service here, this one must be reachable FROM THE
+  # PLAYER'S BROWSER, not just from the web container: the widget talks to it
+  # directly and then this app verifies the token server-side. On a real
+  # deployment that means a public hostname and TLS in front of it; locally,
+  # http://localhost:3010 is enough because the browser is on this machine.
+  #
+  # Log in at :3010 with ADMIN_KEY, create a site key, then put its endpoint
+  # and secret in .env as CAP_ENDPOINT / CAP_SECRET.
+  cap:
+    image: tiago2/cap:latest
+    container_name: cyberpunk-cap
+    restart: unless-stopped
+    ports:
+      - "3010:3000"
+    environment:
+      # Dashboard login. Override in .env for anything but local work --
+      # Cap's own docs ask for at least 32 characters.
+      ADMIN_KEY: ${CAP_ADMIN_KEY:-change_me_before_anyone_can_reach_this}
+      REDIS_URL: redis://cap-valkey:6379
+    depends_on:
+      cap-valkey:
+        condition: service_healthy
+    networks:
+      - cyberpunk-network
+
+  # Cap's own store: challenges in flight and spent tokens. Separate from the
+  # game's data by design, and safe to lose -- worst case, challenges being
+  # solved at that moment fail and the player retries.
+  cap-valkey:
+    image: valkey/valkey:9-alpine
+    container_name: cyberpunk-cap-valkey
+    restart: unless-stopped
+    command: valkey-server --save 60 1 --loglevel warning --maxmemory-policy noeviction
+    volumes:
+      - cap-data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - cyberpunk-network
+
 networks:
   cyberpunk-network:
     driver: bridge
 
 volumes:
   db-data:
+  cap-data:
     driver: local

@@ -1,19 +1,20 @@
 <?php
 
-declare(strict_types=1);
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 
-// load our codebase + composer packages
-require __DIR__ . '/../vendor/autoload.php';
+define('LARAVEL_START', microtime(true));
 
-// read the env
-$dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->safeLoad();
+// Determine if the application is in maintenance mode...
+if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
+    require $maintenance;
+}
 
-// set up logging
-$logger = new \Monolog\Logger('cyberpunk');
-$logger->pushHandler(
-    new \Monolog\Handler\StreamHandler('php://stdout', \Monolog\Level::Debug)
-);
-$logger->info('Application started.');
+// Register the Composer autoloader...
+require __DIR__.'/../vendor/autoload.php';
 
-echo 'cyberpunk: online';
+// Bootstrap Laravel and handle the request...
+/** @var Application $app */
+$app = require_once __DIR__.'/../bootstrap/app.php';
+
+$app->handleRequest(Request::capture());

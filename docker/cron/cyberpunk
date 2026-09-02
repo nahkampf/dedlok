@@ -1,0 +1,24 @@
+# Laravel's scheduler. One entry, every minute — Laravel decides from
+# routes/console.php what actually runs.
+#
+# The job is declared for root and drops to www-data with su, rather than being
+# declared for www-data directly. Both halves of that matter:
+#
+#   - Artisan must not run as root. The repo root is bind-mounted, so the logs
+#     and caches it writes would land on the host owned by root.
+#   - The redirect must run as root. /proc/1/fd/1 is the container's stdout,
+#     which belongs to PID 1 (cron, root). A www-data shell cannot open it, and
+#     the shell sets the redirect up BEFORE running the command, so the whole
+#     job dies with "cannot create /proc/1/fd/1: Permission denied" and the
+#     heartbeat never beats. It fails silently: cron reports it to a mail spool
+#     nobody reads, not to the container log.
+#
+# What reaches the log through this redirect is the scheduler's own framing and
+# any failure it raises, NOT the deposit's report — a scheduled command's stdout
+# is a pipe Symfony opens to capture it, so that report goes to the application
+# log instead. See routes/console.php.
+#
+# A cron.d file needs the user field and a trailing newline. Do not also install
+# it with `crontab` — a user crontab has no user field, so cron would read
+# "www-data" as the command and fail every minute alongside this one.
+* * * * * root cd /var/www/cyberpunk && su -s /bin/sh www-data -c "/usr/local/bin/php artisan schedule:run" >> /proc/1/fd/1 2>&1

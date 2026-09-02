@@ -1,0 +1,1067 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ash &amp; Ember — UI Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/assets/css/ui-kit.css">
+<style>
+  /* Page chrome for the gallery itself — not part of the kit. */
+  .doc { --doc-pad: var(--s-5); display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: var(--s-7); max-width: 1240px; margin: 0 auto; padding: var(--s-6) var(--doc-pad) var(--s-8); }
+  .doc__nav { position: sticky; top: 76px; align-self: start; max-height: calc(100vh - 96px); overflow-y: auto; }
+  .doc__nav .micro { padding: var(--s-3) var(--s-3) var(--s-2); }
+  section[id] { scroll-margin-top: 72px; padding-top: var(--s-6); }
+  .sec__hd { margin-bottom: var(--s-5); padding-bottom: var(--s-3); border-bottom: var(--hair) solid var(--line-1); }
+  .demo { margin-bottom: var(--s-6); }
+  .demo__hd { margin-bottom: var(--s-3); }
+  .demo__hd p { font-size: var(--fs-sm); color: var(--ink-2); margin-top: 4px; max-width: 68ch; }
+  .demo__stage { padding: var(--s-5); background: var(--bg-2); border: var(--hair) solid var(--line-1); border-radius: var(--r-2) var(--r-2) 0 0; }
+  .demo__code { border: var(--hair) solid var(--line-1); border-top: 0; border-radius: 0 0 var(--r-2) var(--r-2); background: var(--bg-1); }
+  .demo__code summary { display: flex; align-items: center; gap: var(--s-2); padding: 6px var(--s-3); cursor: pointer; list-style: none; font: 600 var(--fs-xs)/1 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .demo__code summary::-webkit-details-marker { display: none; }
+  .demo__code summary:hover { color: var(--ink-1); }
+  .demo__code[open] summary { border-bottom: var(--hair) solid var(--line-0); color: var(--ink-2); }
+  .demo__code pre { margin: 0; padding: var(--s-3) var(--s-4); overflow-x: auto; font: var(--fs-xs)/1.7 var(--font-mono); color: var(--ink-1); tab-size: 2; }
+  .demo__copy { margin-left: auto; font: inherit; background: none; border: 0; color: var(--ink-3); cursor: pointer; letter-spacing: .12em; }
+  .demo__copy:hover { color: var(--ember); }
+  .tok { color: var(--steel); }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(148px, 100%), 1fr)); gap: var(--s-2); }
+  .sw { border: var(--hair) solid var(--line-1); border-radius: var(--r-1); overflow: hidden; }
+  .sw__chip { height: 52px; }
+  .sw__meta { padding: 6px 8px; background: var(--bg-1); }
+  .sw__name { font: 600 var(--fs-xs)/1.4 var(--font-mono); color: var(--ink-1); }
+  .sw__hex { font: var(--fs-xs)/1.4 var(--font-mono); color: var(--ink-3); }
+  code.inl { font: var(--fs-xs) var(--font-mono); background: var(--bg-1); border: var(--hair) solid var(--line-1); padding: 1px 5px; border-radius: var(--r-1); color: var(--ember); }
+  main { min-width: 0; }
+
+  .screen-split { grid-template-columns: minmax(0, 1fr) 220px; }
+  @media (max-width: 700px) { .screen-split { grid-template-columns: minmax(0, 1fr); } }
+
+  @media (max-width: 860px) {
+    /* minmax(0,1fr), never plain 1fr: `1fr` is minmax(auto,1fr), so a single
+       over-wide demo would stretch the track and shove the page sideways. */
+    .doc { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+    .doc__nav {
+      position: static; max-height: none;
+      /* full-bleed strip: the pull must track .doc's padding exactly,
+         or it hangs off the edge at the next breakpoint. */
+      margin: 0 calc(var(--doc-pad) * -1);
+      padding: 0 var(--doc-pad);
+      border-bottom: var(--hair) solid var(--line-1);
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .doc__nav::-webkit-scrollbar { display: none; }
+    .doc__nav .micro { display: none; }
+    .doc__nav .rail { flex-direction: row; gap: var(--s-1); }
+    .doc__nav .rail__item {
+      border-left: 0; border-bottom: 2px solid transparent;
+      white-space: nowrap; padding: var(--s-2) var(--s-3);
+    }
+    .doc__nav .rail__item[aria-current] {
+      border-left: 0; border-bottom-color: var(--ember); background: none;
+    }
+  }
+  @media (max-width: 560px) {
+    .doc { --doc-pad: var(--s-3); padding: var(--s-4) var(--doc-pad) var(--s-7); }
+    .demo__stage { padding: var(--s-3); }
+    .demo__code pre { padding: var(--s-3); }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar" style="position:sticky;top:0;z-index:var(--z-nav)">
+  <div class="brand"><span class="brand__mark"></span> Ash &amp; Ember</div>
+  <span class="tag">v0.1</span>
+  <div class="spacer"></div>
+  <span class="micro">Dark only</span>
+  <span class="row" style="--gap:6px"><span class="dot dot--live"></span><span class="micro">Live</span></span>
+</header>
+
+<div class="doc">
+
+  <nav class="doc__nav">
+    <div class="micro">Contents</div>
+    <div class="rail">
+      <a class="rail__item" href="#use">Using the kit</a>
+      <a class="rail__item" href="#color">Colour</a>
+      <a class="rail__item" href="#type">Type</a>
+      <a class="rail__item" href="#geometry">Geometry</a>
+      <a class="rail__item" href="#buttons">Buttons</a>
+      <a class="rail__item" href="#forms">Forms</a>
+      <a class="rail__item" href="#surfaces">Surfaces</a>
+      <a class="rail__item" href="#data">Data</a>
+      <a class="rail__item" href="#feedback">Feedback</a>
+      <a class="rail__item" href="#hud">Game HUD</a>
+      <a class="rail__item" href="#terminal">Terminal</a>
+      <a class="rail__item" href="#inventory">Inventory</a>
+      <a class="rail__item" href="#screen">Full screen</a>
+    </div>
+  </nav>
+
+  <main>
+
+  <section id="use">
+    <div class="sec__hd">
+      <h1 class="display">Ash &amp; Ember</h1>
+      <p class="lede" style="margin-top:var(--s-3);max-width:64ch">A dark-only component kit for the cyberpunk client. Graphite and bone do the work; the ember accent is rationed.</p>
+    </div>
+
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));--gap:var(--s-3)">
+      <div class="panel"><div class="panel__bd">
+        <div class="micro micro--ember">Rule 01</div>
+        <p style="margin-top:var(--s-2);font-size:var(--fs-sm)">Hairlines carry the structure. Borders separate things, not shadows and not fills. Elevation is a step in <code class="inl">--bg-*</code>, never a glow.</p>
+      </div></div>
+      <div class="panel"><div class="panel__bd">
+        <div class="micro micro--ember">Rule 02</div>
+        <p style="margin-top:var(--s-2);font-size:var(--fs-sm)">Bone is the ink; ember is rationed. Primary buttons are <em>white</em>. Ember means live, critical or destructive — aim for about 2% of lit pixels.</p>
+      </div></div>
+      <div class="panel"><div class="panel__bd">
+        <div class="micro micro--ember">Rule 03</div>
+        <p style="margin-top:var(--s-2);font-size:var(--fs-sm)">Geometry is machined. Radius stays at 0–3px. Character comes from the notched corner (<code class="inl">.cut</code>), never from rounding.</p>
+      </div></div>
+    </div>
+
+    <div class="rule"><span class="micro">Install</span></div>
+    <div class="demo">
+      <div class="demo__hd"><p>Two files plus a font directory, no build step. Drop them into any PHP template — every component is plain markup plus custom properties, so server-rendered HTML needs no JavaScript glue. Overpass is self-hosted from <code class="inl">public/assets/fonts/</code> and declared inside the stylesheet, so headings need no <code class="inl">&lt;link&gt;</code> at all. IBM Plex still comes from Google Fonts; that line is optional, since every stack falls back to system faces. Self-host Plex the same way before launch.</p></div>
+      <details class="demo__code" open>
+        <summary>markup</summary>
+<pre>&lt;!-- Overpass ships in public/assets/fonts/ and is declared in the stylesheet --&gt;
+&lt;link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&amp;family=IBM+Plex+Sans+Condensed:wght@500;600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap"&gt;
+&lt;link rel="stylesheet" href="/assets/css/ui-kit.css"&gt;
+&lt;script src="/assets/js/ui-kit.js" defer&gt;&lt;/script&gt;
+
+public/assets/
+  css/ui-kit.css
+  js/ui-kit.js
+  fonts/overpass-v19-latin-var.woff2
+        overpass-v19-latin-ext-var.woff2
+        OFL-Overpass.txt</pre>
+      </details>
+    </div>
+
+    <div class="demo">
+      <div class="demo__hd">
+        <h3 class="h3">Re-skinning</h3>
+        <p>Every component reads from tokens, so you never override a component rule — you override a property, either globally or on one element. A faction, a zone, or a "hacked" state can restyle the whole tree from one selector.</p>
+      </div>
+      <details class="demo__code">
+        <summary>markup</summary>
+<pre>/* Whole app: a colder faction palette */
+:root { --ember: #7FA6D9; --ember-2: #4E6E9E; }
+
+/* One subtree: corporate gold */
+.zone-arasaka { --ember: #C9A227; --bg-2: #17150F; }
+
+/* Swap the heading face without touching a component rule */
+:root { --font-head: "Oswald", var(--font-label); }
+
+/* One element: a jade health bar at 72% */
+&lt;div class="meter" style="--v:.72; --fill:var(--jade)"&gt;
+  &lt;div class="meter__fill"&gt;&lt;/div&gt;
+&lt;/div&gt;</pre>
+      </details>
+    </div>
+  </section>
+
+  <section id="color">
+    <div class="sec__hd"><h2 class="h1">Colour</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Nine greys and four signals. The greys are cool and nearly neutral so the ember never has to compete with a coloured ground.</p>
+    </div>
+
+    <div class="micro" style="margin-bottom:var(--s-2)">Surfaces &amp; lines</div>
+    <div class="swatches" data-swatches="--bg-0,--bg-1,--bg-2,--bg-3,--bg-4,--line-0,--line-1,--line-2"></div>
+
+    <div class="micro" style="margin:var(--s-5) 0 var(--s-2)">Ink</div>
+    <div class="swatches" data-swatches="--ink-0,--ink-1,--ink-2,--ink-3"></div>
+
+    <div class="micro" style="margin:var(--s-5) 0 var(--s-2)">Signal — use the semantic aliases <code class="inl">--ok --warn --crit --info</code> in app code</div>
+    <div class="swatches" data-swatches="--ember,--ember-2,--jade,--brass,--steel"></div>
+
+    <div class="callout callout--warn" style="margin-top:var(--s-5)">
+      <span>Ember and brass both read as "attention". If a screen needs more than one warning level, use brass for <em>degrading</em> and ember for <em>failed</em> — never both for the same severity.</span>
+    </div>
+  </section>
+
+  <section id="type">
+    <div class="sec__hd"><h2 class="h1">Type</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Overpass on headings, IBM Plex for everything else. Plex Condensed carries the tracked uppercase labels, the regular sans carries prose, and mono carries anything the machine produced — timestamps, IDs, live values. Overpass descends from Highway Gothic, which keeps headings in the same signage register as the rest of the kit. It ships as a variable font, so the heading scale steps down in weight as well as size.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Headings</h3><p>Bare <code class="inl">&lt;h1&gt;</code>–<code class="inl">&lt;h6&gt;</code> are styled directly, so server-rendered markup needs no classes. The <code class="inl">.display</code> / <code class="inl">.h1</code> / <code class="inl">.h2</code> / <code class="inl">.h3</code> classes give the same steps when the element has to stay semantically neutral. The scale drops from 700 to 600 as it descends, so hierarchy survives even where two steps sit close in size.</p></div>
+      <template class="demo-src">
+        <div class="stack" style="--gap:var(--s-3)">
+          <h1>Night City 2077</h1>
+          <h2>Kabuki relay</h2>
+          <h3>Intrusion countermeasures</h3>
+          <h4>Extraction routes</h4>
+          <h5>Known exploits</h5>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Weight axis</h3><p>Overpass is shipped as a variable font, so every weight between 100 and 900 costs nothing extra once the file has loaded. Useful for a heading that has to sit quietly, or one that has to shout.</p></div>
+      <template class="demo-src">
+        <div class="stack" style="--gap:var(--s-2)">
+          <div style="font-family:var(--font-head);font-size:var(--fs-xl);font-weight:200;letter-spacing:-0.02em">200 · Thin — ambient screen titles</div>
+          <div style="font-family:var(--font-head);font-size:var(--fs-xl);font-weight:400;letter-spacing:-0.02em">400 · Regular</div>
+          <div style="font-family:var(--font-head);font-size:var(--fs-xl);font-weight:600;letter-spacing:-0.02em">600 · Semibold — the default</div>
+          <div style="font-family:var(--font-head);font-size:var(--fs-xl);font-weight:700;letter-spacing:-0.02em">700 · Bold — h1 and h2</div>
+          <div style="font-family:var(--font-head);font-size:var(--fs-xl);font-weight:900;letter-spacing:-0.02em">900 · Black — alert headers only</div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Scale</h3></div>
+      <template class="demo-src">
+        <div class="stack" style="--gap:var(--s-4)">
+          <div class="display">Night City 2077</div>
+          <div class="h1">Section heading</div>
+          <div class="h2">Panel heading</div>
+          <p>Body copy sits at 15px with a 1.55 line height. Long-form text is rare in a game client, so the body size is tuned for readability in short paragraphs rather than for essays.</p>
+          <p class="muted" style="font-size:var(--fs-sm)">Secondary text drops to 13px and to <code class="inl">--ink-2</code>.</p>
+          <div class="micro">Micro label · uppercase · tracked</div>
+          <div class="num" style="font-size:var(--fs-xl)">1 284 / 2 000 <span class="muted" style="font-size:var(--fs-sm)">tabular numerals never jitter</span></div>
+          <div class="row"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">J</span></div>
+          <p style="font-size:var(--fs-sm)">A <button type="button" class="link">link-styled button</button> sits inside running text without a button box — for triggers that open a definition or a modal, where an <code class="inl">&lt;a href="#"&gt;</code> would be a lie.</p>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="geometry">
+    <div class="sec__hd"><h2 class="h1">Geometry</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">The notch is the kit's signature. A clip-path would eat the border, so <code class="inl">.cut</code> stacks two clipped pseudo-elements: one for the line, one for the fill inset by 1px.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">.cut</h3><p>Add <code class="inl">.cut</code> to any box. Tune with <code class="inl">--cut</code> (depth), <code class="inl">--cut-line</code> and <code class="inl">--cut-fill</code>, or the <code class="inl">--alt</code> / <code class="inl">--tl</code> modifiers to move the corners.</p></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-4)">
+          <div class="cut" style="padding:var(--s-4) var(--s-5)">Default notch</div>
+          <div class="cut cut--alt" style="padding:var(--s-4) var(--s-5)">.cut--alt</div>
+          <div class="cut cut--tl" style="padding:var(--s-4) var(--s-5)">.cut--tl</div>
+          <div class="cut cut--lg" style="padding:var(--s-4) var(--s-5);--cut-line:var(--ember-2)">--cut-lg + ember line</div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">.cut--clip</h3><p>A child with its own background will paint over the notched corners and square them off. Add <code class="inl">.cut--clip</code> to clip the element itself so children follow the shape. It is not the default because it clips the focus outline too — leave it off on anything focusable.</p></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-4)">
+          <div class="cut" style="width:180px">
+            <div style="background:var(--bg-4);padding:var(--s-3)">Child bg, no clip</div>
+          </div>
+          <div class="cut cut--clip" style="width:180px">
+            <div style="background:var(--bg-4);padding:var(--s-3)">Child bg + .cut--clip</div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Brackets &amp; texture</h3><p>Corner brackets overlay a box without touching its border, so they compose with anything. The grid and scanline utilities are deliberately near-invisible — they should register as texture, not pattern.</p></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-4)">
+          <div class="frame brackets" style="width:min(180px,100%);height:110px">
+            <span class="frame__label">Sector 04</span>
+            <div class="bg-grid" style="position:absolute;inset:0"></div>
+          </div>
+          <div class="frame scanlines" style="width:min(180px,100%);height:110px">
+            <span class="frame__label">Cam 12</span>
+            <div class="bg-grid" style="position:absolute;inset:0"></div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="buttons">
+    <div class="sec__hd"><h2 class="h1">Buttons</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">The primary button is bone, not ember. A white-hot fill on near-black is already the loudest thing on screen, which frees the accent for danger and for live state. <code class="inl">.btn--go</code> is the one green button — it means <em>begin</em>, not <em>succeeded</em>, and like ember it is rationed to one per screen. <code class="inl">.btn</code> works on <code class="inl">&lt;a&gt;</code> as well as <code class="inl">&lt;button&gt;</code>; the notched row below uses both.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Hierarchy</h3></div>
+      <template class="demo-src">
+        <div class="row row--wrap">
+          <button class="btn btn--primary">Confirm</button>
+          <button class="btn">Default</button>
+          <button class="btn btn--danger">Purge deck</button>
+          <button class="btn btn--go">Start playing!</button>
+          <button class="btn btn--ghost">Cancel</button>
+          <button class="btn" disabled>Disabled</button>
+          <button class="btn" data-loading>Working</button>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Notched</h3><p>Adding <code class="inl">.cut</code> to a button marks it as a commit — the one action on the screen that changes the world.</p></div>
+      <template class="demo-src">
+        <div class="row row--wrap">
+          <button class="btn btn--primary btn--lg cut">Jack in</button>
+          <button class="btn btn--lg cut">Stand by</button>
+          <button class="btn btn--danger btn--lg cut">Flatline</button>
+          <a href="#buttons" class="btn btn--go btn--lg cut">Start playing!</a>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Sizes, icons, groups</h3></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-5)">
+          <div class="row">
+            <button class="btn btn--sm">Small</button>
+            <button class="btn">Medium</button>
+            <button class="btn btn--lg">Large</button>
+          </div>
+          <div class="row">
+            <button class="btn btn--icon" data-tip="Scan">◎</button>
+            <button class="btn btn--icon btn--ghost" data-tip="Settings">⚙</button>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn--sm" aria-pressed="true">Grid</button>
+            <button class="btn btn--sm" aria-pressed="false">List</button>
+            <button class="btn btn--sm" aria-pressed="false">Map</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="forms">
+    <div class="sec__hd"><h2 class="h1">Forms</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Inputs are sunken (<code class="inl">--bg-1</code>) against raised panels, so a form reads as a recess in the hardware. Focus is the one place ember appears on every screen.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Text inputs</h3></div>
+      <template class="demo-src">
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr))">
+          <div class="field">
+            <label class="field__label" for="f1">Handle</label>
+            <input class="input" id="f1" placeholder="v_silverhand">
+            <span class="field__hint">3–24 characters, no spaces.</span>
+          </div>
+          <div class="field">
+            <label class="field__label" for="f2">Access key <span class="field__req">*</span></label>
+            <div class="input-group">
+              <span class="input-group__addon">0x</span>
+              <input class="input input--mono" id="f2" value="9F2A-C0DE-4B71">
+            </div>
+          </div>
+          <div class="field" data-invalid>
+            <label class="field__label" for="f3">Uplink port</label>
+            <input class="input" id="f3" value="99999">
+            <span class="field__error">Port must be below 65536.</span>
+          </div>
+          <div class="field">
+            <label class="field__label" for="f4">District</label>
+            <select class="select" id="f4">
+              <option>Watson</option><option>Westbrook</option><option>Pacifica</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label class="field__label" for="f5">Contract notes</label>
+            <textarea class="textarea" id="f5" placeholder="Leave a dead drop…"></textarea>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Controls</h3><p>The switch is the one control that fills with ember by default — a switch that is on <em>is</em> live state.</p></div>
+      <template class="demo-src">
+        <div class="stack" style="--gap:var(--s-4);max-width:420px">
+          <label class="check"><input type="checkbox" checked><span class="check__box"></span><span>Mask ICE signature</span></label>
+          <label class="check"><input type="checkbox"><span class="check__box"></span><span>Auto-eject on trace</span></label>
+          <div class="row" style="--gap:var(--s-5)">
+            <label class="check check--radio"><input type="radio" name="mode" checked><span class="check__box"></span><span>Stealth</span></label>
+            <label class="check check--radio"><input type="radio" name="mode"><span class="check__box"></span><span>Assault</span></label>
+          </div>
+          <label class="switch"><input type="checkbox" checked><span class="switch__track"></span><span>Combat overlay</span></label>
+          <label class="switch"><input type="checkbox"><span class="switch__track"></span><span>Share telemetry</span></label>
+          <div class="field">
+            <label class="field__label" for="f6">Buffer allocation</label>
+            <input class="range" id="f6" type="range" value="64">
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Captcha</h3><p>A bare <code class="inl">&lt;div class="captcha"&gt;&lt;/div&gt;</code>. <code class="inl">ui-kit.js</code> upgrades it into Cap's <code class="inl">&lt;cap-widget&gt;</code> (<a href="https://trycap.dev" class="link">trycap.dev</a>), reading the endpoint from <code class="inl">window.CAP_ENDPOINT</code> and the labels from <code class="inl">window.CAP_I18N</code> — so a protected form repeats neither. Inside a <code class="inl">&lt;form&gt;</code> the widget injects its own hidden <code class="inl">cap-token</code> input, which is what posts. It renders nothing here: no endpoint is configured on this page, and that is the deliberate quiet failure. The widget lives in an open shadow root, so it is styled only through the <code class="inl">--cap-*</code> variables mapped onto kit tokens in <code class="inl">ui-kit.css</code>. <strong>A solved widget proves nothing on its own</strong> — the server has to verify the token, which is <code class="inl">App\Captcha\Cap</code> and the <code class="inl">EnsureCaptchaIsSolved</code> middleware.</p></div>
+      <template class="demo-src">
+        <div class="stack" style="--gap:var(--s-4)">
+          <div class="field">
+            <label class="field__label" for="f7">Email</label>
+            <input class="input" id="f7" type="email" value="v@arasaka.net">
+          </div>
+          <div class="field">
+            <span class="field__label">Human check</span>
+            <div class="captcha"></div>
+          </div>
+          <button type="button" class="btn btn--primary btn--block cut">Jack in</button>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="surfaces">
+    <div class="sec__hd"><h2 class="h1">Surfaces</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Panel for anything with a header, well for a recessed sub-region. Panels nest at most two deep — past that, use a rule instead of another border.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Panel</h3></div>
+      <template class="demo-src">
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))">
+          <div class="panel">
+            <div class="panel__hd">
+              <span class="micro">Deck status</span>
+              <span class="tag tag--ok">Nominal</span>
+            </div>
+            <div class="panel__bd">
+              <p style="font-size:var(--fs-sm);color:var(--ink-1)">All subsystems responding. Last handshake 14 seconds ago.</p>
+              <div class="well" style="margin-top:var(--s-3)">
+                <div class="micro">Recessed well</div>
+                <div class="num" style="margin-top:4px">192.168.4.22:7331</div>
+              </div>
+            </div>
+            <div class="panel__ft">
+              <span class="micro">Auto-refresh 30s</span>
+              <div class="spacer"></div>
+              <button class="btn btn--sm">Refresh</button>
+            </div>
+          </div>
+          <div class="panel cut" style="--cut:16px">
+            <div class="panel__hd"><span class="micro">Notched panel</span></div>
+            <div class="panel__bd">
+              <p style="font-size:var(--fs-sm);color:var(--ink-1)">Same panel with <code class="inl">.cut</code>. Reserve it for the primary panel on a screen — if everything is notched, nothing is.</p>
+              <div class="rule"><span class="micro">Labelled rule</span></div>
+              <p style="font-size:var(--fs-sm);color:var(--ink-2)">A rule is the cheap way to section a dense panel without another border.</p>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Card</h3><p>The general-purpose surface. <code class="inl">.item-card</code> is the loot-specific one; this is for a choice or a summary. <code class="inl">.card--select</code> turns it into a radio option — wrap it in a <code class="inl">&lt;label&gt;</code> with a hidden radio inside and the whole card becomes the hit target, with a corner tick when chosen. <code class="inl">.card__stat</code> rows put a label left and a value right, for effects and modifiers.</p></div>
+      <template class="demo-src">
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
+          <label class="card card--select">
+            <input type="radio" name="demo-archetype" checked>
+            <div class="card__hd">
+              <div class="card__title">Netrunner</div>
+              <div class="card__meta">Intrusion</div>
+            </div>
+            <div class="card__bd">You go where the data is and take it. Ice is a puzzle until it is a coffin.</div>
+            <div class="card__stats">
+              <div class="card__stat"><span>ICE trace speed</span><b>&minus;10%</b></div>
+              <div class="card__stat"><span>Daemon slots</span><b>+2</b></div>
+              <div class="card__stat"><span>Intellect</span><b>+5</b></div>
+            </div>
+          </label>
+          <label class="card card--select">
+            <input type="radio" name="demo-archetype">
+            <div class="card__hd">
+              <div class="card__title">Solo</div>
+              <div class="card__meta">Combat</div>
+            </div>
+            <div class="card__bd">Muscle and chrome, rented by the hour. You are what happens when talking stops.</div>
+            <div class="card__stats">
+              <div class="card__stat"><span>Damage taken</span><b>&minus;15%</b></div>
+              <div class="card__stat"><span>Muscle</span><b>+5</b></div>
+            </div>
+          </label>
+          <div class="card">
+            <div class="card__hd">
+              <div class="card__title">Plain card</div>
+              <div class="card__meta">Not selectable</div>
+            </div>
+            <div class="card__bd">Without <code class="inl">.card--select</code> it is just a panel with a title block.</div>
+            <div class="card__ft"><span class="micro">Footer</span></div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Tabs, breadcrumb, pagination</h3></div>
+      <template class="demo-src">
+        <div class="stack" style="--gap:var(--s-5)">
+          <ol class="breadcrumb">
+            <li><a href="#">Network</a></li>
+            <li><a href="#">Watson</a></li>
+            <li aria-current="page">Kabuki relay</li>
+          </ol>
+          <div>
+            <div class="tabs" role="tablist">
+              <button class="tab" role="tab" aria-selected="true" data-tab="p1">Overview</button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="p2">Daemons</button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="p3">History</button>
+            </div>
+            <div class="tabpanel" data-panel="p1">Relay is holding at 62% throughput.</div>
+            <div class="tabpanel" data-panel="p2" hidden>Four daemons resident, one quarantined.</div>
+            <div class="tabpanel" data-panel="p3" hidden>Twelve intrusions logged this cycle.</div>
+          </div>
+          <div class="pager">
+            <button class="pager__item">‹</button>
+            <button class="pager__item" aria-current="page">1</button>
+            <button class="pager__item">2</button>
+            <button class="pager__item">3</button>
+            <span class="dim">…</span>
+            <button class="pager__item">18</button>
+            <button class="pager__item">›</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="data">
+    <div class="sec__hd"><h2 class="h1">Data</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Row separators use <code class="inl">--line-0</code>, one step fainter than the panel border, so the table reads as one object rather than a stack of boxes. Headers are clickable — sorting is wired in <code class="inl">ui-kit.js</code>.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Table</h3></div>
+      <template class="demo-src">
+        <div class="panel">
+          <div class="panel__hd"><span class="micro">Contracts</span><span class="tag">6</span></div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr>
+                <th data-sort="text" aria-sort="none">Job</th>
+                <th data-sort="text" aria-sort="none">Fixer</th>
+                <th>Status</th>
+                <th class="t-right" data-sort="num" aria-sort="none">Payout</th>
+              </tr></thead>
+              <tbody>
+                <tr aria-selected="true"><td>Kabuki relay tap</td><td class="muted">Wakako</td><td><span class="tag tag--crit">Hot</span></td><td class="t-right num">14 200</td></tr>
+                <tr><td>Convoy intercept</td><td class="muted">Regina</td><td><span class="tag tag--ok">Ready</span></td><td class="t-right num">8 750</td></tr>
+                <tr><td>Ghost the auditor</td><td class="muted">Dakota</td><td><span class="tag tag--warn">Stale</span></td><td class="t-right num">21 000</td></tr>
+                <tr><td>Wipe the black wall log</td><td class="muted">Mr. Hands</td><td><span class="tag tag--info">Queued</span></td><td class="t-right num">63 400</td></tr>
+                <tr><td>Retrieve chrome shipment</td><td class="muted">Padre</td><td><span class="tag">Idle</span></td><td class="t-right num">4 100</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel__ft"><span class="micro">5 of 6 shown</span></div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Tags, dots, counts, avatars</h3></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-3)">
+          <span class="tag">Neutral</span>
+          <span class="tag tag--ok">Online</span>
+          <span class="tag tag--warn">Degrading</span>
+          <span class="tag tag--crit">Traced</span>
+          <span class="tag tag--info">Queued</span>
+          <span class="tag tag--solid">Owned</span>
+          <span class="row" style="--gap:6px"><span class="dot dot--live"></span><span class="micro">Recording</span></span>
+          <span class="count">7</span>
+          <span class="avatar">V</span>
+          <span class="avatar" style="border-color:var(--ember);color:var(--ember)">JS</span>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Accordion &amp; empty state</h3></div>
+      <template class="demo-src">
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))">
+          <div class="accordion">
+            <details open><summary>Intrusion countermeasures</summary><div>Three layers of ICE. The outer layer rotates its signature every 90 seconds.</div></details>
+            <details><summary>Known exploits</summary><div>Two unpatched buffer faults in the auth handshake.</div></details>
+            <details><summary>Extraction routes</summary><div>Service tunnel, roof, or the freight elevator if you can spoof a maintenance badge.</div></details>
+          </div>
+          <div class="empty">
+            <div style="font-size:22px;color:var(--ink-3)">◇</div>
+            <div><div class="h3" style="color:var(--ink-1)">No contracts</div>
+            <p class="muted" style="font-size:var(--fs-sm);margin-top:4px">Fixers will reach out once your street cred clears 200.</p></div>
+            <button class="btn btn--sm">Browse board</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="feedback">
+    <div class="sec__hd"><h2 class="h1">Feedback</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Callouts are inline and permanent; toasts are transient and stack bottom-right. A modal is a <code class="inl">&lt;dialog&gt;</code> — no overlay plumbing, no scroll locking to write.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Callouts</h3></div>
+      <template class="demo-src">
+        <div class="stack">
+          <div class="callout">Connection is unencrypted. Traffic to the relay is visible to anyone on the segment.</div>
+          <div class="callout callout--ok">Payload delivered. The daemon is resident and reporting.</div>
+          <div class="callout callout--warn">Buffer at 88%. Flush before the next injection or you will drop frames.</div>
+          <div class="callout callout--crit">Trace complete in 00:12. Disconnect now.</div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Progress, spinners, skeletons</h3></div>
+      <template class="demo-src">
+        <div class="stack" style="--gap:var(--s-4);max-width:420px">
+          <div>
+            <div class="row" style="margin-bottom:6px"><span class="micro">Upload</span><div class="spacer"></div><span class="num" style="font-size:var(--fs-xs)">62%</span></div>
+            <div class="progress"><div class="progress__bar" style="--v:.62"></div></div>
+          </div>
+          <div><div class="micro" style="margin-bottom:6px">Indeterminate</div><div class="progress progress--indet"><div class="progress__bar"></div></div></div>
+          <div class="row"><span class="spinner"></span><span class="muted" style="font-size:var(--fs-sm)">Negotiating handshake…</span></div>
+          <div class="stack" style="--gap:8px">
+            <div class="skeleton" style="width:60%"></div>
+            <div class="skeleton" style="width:90%"></div>
+            <div class="skeleton" style="width:40%"></div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Modal, toasts, tooltip</h3><p>Buttons here are live — the dialog and toast handlers ship in <code class="inl">ui-kit.js</code>.</p></div>
+      <template class="demo-src">
+        <div class="row row--wrap">
+          <button class="btn" data-open="#demo-modal">Open dialog</button>
+          <button class="btn" onclick="UI.toast('Daemon uploaded to the relay.', {title:'Payload delivered', level:'ok'})">Toast: success</button>
+          <button class="btn btn--danger" onclick="UI.toast('Trace completed. Connection dropped.', {title:'Flatlined', level:'crit'})">Toast: critical</button>
+          <button class="btn btn--ghost" data-tip="Tooltips are pure CSS — [data-tip]">Hover me</button>
+
+          <button class="btn" data-open="#demo-modal-tall">Open a long dialog</button>
+
+          <dialog class="modal" id="demo-modal-tall">
+            <div class="panel__hd"><span class="micro">Attributes</span><div class="spacer"></div><button class="btn btn--sm btn--ghost" data-close>✕</button></div>
+            <div class="panel__bd">
+              <p class="muted" style="font-size:var(--fs-sm)">A modal taller than the viewport scrolls its own body, so the footer stays reachable. No extra class needed.</p>
+              <div class="rule"><span class="micro">Section 1</span></div>
+              <p style="font-size:var(--fs-sm);color:var(--ink-2)">Filler paragraph 1, here to push the dialog past its height cap so the body has something to scroll.</p>
+              <div class="rule"><span class="micro">Section 2</span></div>
+              <p style="font-size:var(--fs-sm);color:var(--ink-2)">Filler paragraph 2, here to push the dialog past its height cap so the body has something to scroll.</p>
+              <div class="rule"><span class="micro">Section 3</span></div>
+              <p style="font-size:var(--fs-sm);color:var(--ink-2)">Filler paragraph 3, here to push the dialog past its height cap so the body has something to scroll.</p>
+              <div class="rule"><span class="micro">Section 4</span></div>
+              <p style="font-size:var(--fs-sm);color:var(--ink-2)">Filler paragraph 4, here to push the dialog past its height cap so the body has something to scroll.</p>
+              <div class="rule"><span class="micro">Section 5</span></div>
+              <p style="font-size:var(--fs-sm);color:var(--ink-2)">Filler paragraph 5, here to push the dialog past its height cap so the body has something to scroll.</p>
+              <div class="rule"><span class="micro">Section 6</span></div>
+              <p style="font-size:var(--fs-sm);color:var(--ink-2)">Filler paragraph 6, here to push the dialog past its height cap so the body has something to scroll.</p>
+            </div>
+            <div class="panel__ft"><div class="spacer"></div><button class="btn btn--sm" data-close>Close</button></div>
+          </dialog>
+
+          <dialog class="modal" id="demo-modal">
+            <div class="panel__hd"><span class="micro">Confirm</span><div class="spacer"></div><button class="btn btn--sm btn--ghost" data-close>✕</button></div>
+            <div class="panel__bd">
+              <div class="h2">Purge the deck?</div>
+              <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Every resident daemon and cached exploit is destroyed. Installed chrome is unaffected. This cannot be undone.</p>
+            </div>
+            <div class="panel__ft">
+              <div class="spacer"></div>
+              <button class="btn btn--ghost" data-close>Cancel</button>
+              <button class="btn btn--danger" data-close>Purge</button>
+            </div>
+          </dialog>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="hud">
+    <div class="sec__hd"><h2 class="h1">Game HUD</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Meters are driven by two custom properties and nothing else: <code class="inl">--v</code> (a 0–1 ratio, applied as a transform so it animates cheaply) and <code class="inl">--fill</code>. PHP can render the value straight into the style attribute.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Meters</h3></div>
+      <template class="demo-src">
+        <div class="stack" style="--gap:var(--s-5);max-width:460px">
+          <div class="vitals">
+            <div class="vital">
+              <span class="vital__label">Health</span>
+              <div class="meter meter--lg" style="--v:.78;--fill:var(--jade)"><div class="meter__fill"></div></div>
+              <span class="vital__value">78/100</span>
+            </div>
+            <div class="vital">
+              <span class="vital__label">Stamina</span>
+              <div class="meter meter--lg" style="--v:.42;--fill:var(--brass)"><div class="meter__fill"></div></div>
+              <span class="vital__value">42/100</span>
+            </div>
+            <div class="vital">
+              <span class="vital__label">Heat</span>
+              <div class="meter meter--lg meter--hot" style="--v:.91"><div class="meter__fill"></div></div>
+              <span class="vital__value">91/100</span>
+            </div>
+          </div>
+          <div>
+            <div class="micro" style="margin-bottom:6px">Segmented — RAM 8 / 12</div>
+            <div class="meter meter--seg meter--lg" style="--v:.667;--segs:12"><div class="meter__fill"></div></div>
+          </div>
+          <div>
+            <div class="micro" style="margin-bottom:6px">Thin — ambient / background values</div>
+            <div class="meter meter--sm" style="--v:.33;--fill:var(--steel)"><div class="meter__fill"></div></div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Readouts &amp; cooldowns</h3><p>Cooldowns are a conic gradient driven by <code class="inl">--p</code> (0–100); add <code class="inl">data-ready</code> when the ability comes back up.</p></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-6)">
+          <div class="readout">
+            <span class="readout__label">Eddies</span>
+            <span class="readout__value">48 210</span>
+            <span class="readout__delta" data-dir="up">▲ 2 400 today</span>
+          </div>
+          <div class="readout">
+            <span class="readout__label">Street cred</span>
+            <span class="readout__value">312</span>
+            <span class="readout__delta" data-dir="down">▼ 18 this cycle</span>
+          </div>
+          <div class="row">
+            <div class="cooldown" style="--p:72"><span class="cooldown__t">4.2</span></div>
+            <div class="cooldown" style="--p:35"><span class="cooldown__t">9.8</span></div>
+            <div class="cooldown" data-ready style="--p:100"><span class="cooldown__t">RDY</span></div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Status effects</h3></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-2)">
+          <span class="status status--buff">Overclock <span class="status__stack">×3</span><i class="status__drain" style="--v:.7"></i></span>
+          <span class="status status--buff">Regen<i class="status__drain" style="--v:.45"></i></span>
+          <span class="status status--neutral">Marked<i class="status__drain" style="--v:.9"></i></span>
+          <span class="status status--debuff">Bleeding <span class="status__stack">×2</span><i class="status__drain" style="--v:.25"></i></span>
+          <span class="status status--debuff">ICE burn<i class="status__drain" style="--v:.6"></i></span>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Alerts &amp; ticker</h3><p>The alert banner breathes. It is the loudest thing the kit can do — one per screen, and only when a timer is running against the player. The ticker needs its three-part structure: the tag sits outside the scrolling viewport, and the track holds <em>two identical copies</em> of the feed — the animation shifts it by exactly half its width, so a single copy would scroll off and leave a gap.</p></div>
+      <template class="demo-src">
+        <div class="stack">
+          <div class="hud-alert">
+            <span class="hud-alert__code">ICE-07</span>
+            <span>Black ICE engaged. Trace completes in <b class="num">00:12</b>.</span>
+            <div class="spacer"></div>
+            <button class="btn btn--sm btn--danger">Disconnect</button>
+          </div>
+          <div class="ticker">
+            <span class="ticker__tag">NCPD</span>
+            <div class="ticker__viewport">
+              <div class="ticker__track">
+                <span>02:14 — Shots fired, Kabuki market · 02:11 — Convoy rerouted through Watson · 02:07 — Militech sweep in progress · 02:02 — Cyberpsycho sighting, Northside</span>
+                <span aria-hidden="true">02:14 — Shots fired, Kabuki market · 02:11 — Convoy rerouted through Watson · 02:07 — Militech sweep in progress · 02:02 — Cyberpsycho sighting, Northside</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="terminal">
+    <div class="sec__hd"><h2 class="h1">Terminal</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Log lines are timestamp / level / message. The scrollback fades at the top instead of ending on a hard cut. Pressing Enter in the prompt emits a <code class="inl">ui:command</code> event on the <code class="inl">.term</code> element — wire that to your PHP endpoint.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Log feed</h3><p>The demo below is live: <code class="inl">UI.log()</code> appends lines and type anything into the prompt.</p></div>
+      <template class="demo-src">
+        <div class="term" id="demo-term" style="--term-h:220px">
+          <div class="term__hd"><span>relay · kabuki</span><div class="spacer"></div><span class="dot dot--live"></span></div>
+          <div class="term__out">
+            <div class="term__line" data-lvl="sys"><span class="term__ts">02:14:07</span><span class="term__lvl">SYS</span><span>handshake accepted — <em>node_4f21</em></span></div>
+            <div class="term__line" data-lvl="info"><span class="term__ts">02:14:07</span><span class="term__lvl">INFO</span><span>mapping subnet 192.168.4.0/24</span></div>
+            <div class="term__line" data-lvl="ok"><span class="term__ts">02:14:09</span><span class="term__lvl">OK</span><span>6 hosts resolved, 2 responsive</span></div>
+            <div class="term__rule"></div>
+            <div class="term__line" data-lvl="warn"><span class="term__ts">02:14:11</span><span class="term__lvl">WARN</span><span>ICE signature rotated mid-scan</span></div>
+            <div class="term__line" data-lvl="err"><span class="term__ts">02:14:12</span><span class="term__lvl">ERR</span><span>buffer overflow in auth handler — trace initiated</span></div>
+          </div>
+          <div class="term__prompt">
+            <span class="term__sigil">&gt;</span>
+            <input class="term__input" placeholder="type a command and press enter…">
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Typed reveal</h3><p><code class="inl">UI.type(el, text)</code> types character by character and resolves a promise, so you can chain dialogue beats. The pure-CSS <code class="inl">.typewriter</code> variant needs no JS if the string is fixed.</p></div>
+      <template class="demo-src">
+        <div class="well">
+          <div class="micro" style="margin-bottom:var(--s-2)">Incoming · Johnny</div>
+          <div class="mono" id="demo-type" style="min-height:1.6em;color:var(--ink-0)"></div>
+          <div class="row" style="margin-top:var(--s-3)">
+            <button class="btn btn--sm" onclick="UI.type(document.getElementById('demo-type'), 'Wake up, samurai. We have a city to burn.')">Replay</button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="inventory">
+    <div class="sec__hd"><h2 class="h1">Inventory</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Five rarity tiers, all inside the palette — no rainbow. Each tier is a class that sets <code class="inl">--tier</code>, so slots, list rows and tooltips agree without repeating a colour anywhere.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Tiers</h3></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-4)">
+          <div class="t1 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Standard</span></div>
+          <div class="t2 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Tuned</span></div>
+          <div class="t3 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Milspec</span></div>
+          <div class="t4 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Prototype</span></div>
+          <div class="t5 stack" style="--gap:6px;align-items:center"><div class="slot slot--filled" style="width:52px"><span class="slot__icon">▤</span></div><span class="micro" style="color:var(--tier)">Anomalous</span></div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Slot grid</h3><p>Slot states: empty, filled, selected, locked, and drop-target. Quantity and durability sit inside the slot so the grid stays square at any column count.</p></div>
+      <template class="demo-src">
+        <div class="panel" style="max-width:440px">
+          <div class="panel__hd"><span class="micro">Stash</span><div class="spacer"></div><span class="micro num">14 / 24</span></div>
+          <div class="panel__bd">
+            <div class="slots slots--fluid" style="--slot-min:52px">
+              <div class="slot slot--filled t5" aria-selected="true"><span class="slot__icon">✦</span><span class="slot__qty">1</span><span class="slot__dur"><i style="--v:.9"></i></span></div>
+              <div class="slot slot--filled t4"><span class="slot__icon">⌬</span><span class="slot__qty">3</span></div>
+              <div class="slot slot--filled t3"><span class="slot__icon">⌖</span><span class="slot__dur" data-low><i style="--v:.18"></i></span></div>
+              <div class="slot slot--filled t2"><span class="slot__icon">◈</span><span class="slot__qty">12</span></div>
+              <div class="slot slot--filled t1"><span class="slot__icon">▤</span><span class="slot__qty">99</span></div>
+              <div class="slot slot--drop"></div>
+              <div class="slot slot--filled t1"><span class="slot__icon">◍</span><span class="slot__qty">7</span></div>
+              <div class="slot slot--filled t2"><span class="slot__icon">⎔</span></div>
+              <div class="slot slot--empty"></div>
+              <div class="slot slot--empty"></div>
+              <div class="slot slot--empty"></div>
+              <div class="slot slot--empty"></div>
+              <div class="slot slot--locked"></div>
+              <div class="slot slot--locked"></div>
+              <div class="slot slot--locked"></div>
+              <div class="slot slot--locked"></div>
+              <div class="slot slot--locked"></div>
+              <div class="slot slot--locked"></div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Item card &amp; rows</h3></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-5);align-items:flex-start">
+          <div class="item-card t5">
+            <div class="item-card__hd">
+              <div class="item-card__name">Sandevistan MK.V</div>
+              <div class="item-card__tier">Anomalous · Operating system</div>
+            </div>
+            <div class="item-card__stats">
+              <div class="item-card__stat"><span>Time dilation</span><b>−78%</b></div>
+              <div class="item-card__stat"><span>Duration</span><b>16 s</b></div>
+              <div class="item-card__stat"><span>Cooldown</span><b>30 s</b></div>
+              <div class="item-card__stat"><span>Heat / use</span><b>+42</b></div>
+            </div>
+            <div class="item-card__flavor">Pulled from a Militech cadaver. Still warm when they found it.</div>
+          </div>
+          <div class="panel" style="flex:1;min-width:min(280px,100%)">
+            <div class="panel__hd"><span class="micro">Recent pickups</span></div>
+            <div>
+              <div class="item-row t4"><span class="slot__icon">⌬</span><span class="item-row__name">Kiroshi optics</span><span class="item-row__meta">Prototype</span></div>
+              <div class="item-row t3"><span class="slot__icon">⌖</span><span class="item-row__name">Ballistic coprocessor</span><span class="item-row__meta">Milspec</span></div>
+              <div class="item-row t2"><span class="slot__icon">◈</span><span class="item-row__name">Bounce-back MK.II</span><span class="item-row__meta">Tuned</span></div>
+              <div class="item-row t1"><span class="slot__icon">▤</span><span class="item-row__name">Scrap alloy</span><span class="item-row__meta">Standard</span></div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Loadout</h3></div>
+      <template class="demo-src">
+        <div class="panel" style="max-width:380px">
+          <div class="panel__hd"><span class="micro">Loadout</span><div class="spacer"></div><span class="tag tag--ok">Synced</span></div>
+          <div class="panel__bd loadout">
+            <div class="loadout__row"><span class="micro">Frontal cortex</span><div class="slot slot--filled t5 loadout__slot"><span class="slot__icon">✦</span></div><span style="font-size:var(--fs-sm)">Sandevistan MK.V</span></div>
+            <div class="loadout__row"><span class="micro">Ocular</span><div class="slot slot--filled t4 loadout__slot"><span class="slot__icon">⌬</span></div><span style="font-size:var(--fs-sm)">Kiroshi optics</span></div>
+            <div class="loadout__row"><span class="micro">Arms</span><div class="slot slot--empty loadout__slot"></div><span class="dim" style="font-size:var(--fs-sm)">Empty</span></div>
+            <div class="loadout__row"><span class="micro">Skeleton</span><div class="slot slot--locked loadout__slot"></div><span class="dim" style="font-size:var(--fs-sm)">Requires body 8</span></div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="screen">
+    <div class="sec__hd"><h2 class="h1">Full screen</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">Everything above, composed the way an actual game view would use it. Note how little ember there is: an active nav marker, one heat bar, one alert, one tier-5 item.</p>
+    </div>
+    <div class="demo">
+      <template class="demo-src">
+        <div class="panel cut cut--clip" style="--cut:18px">
+          <div class="panel__hd" style="background:var(--bg-1)">
+            <span class="brand" style="font-size:var(--fs-xs)"><span class="brand__mark"></span> Deck</span>
+            <nav class="nav" style="margin-left:var(--s-4)">
+              <a class="nav__item" href="#screen" aria-current="page">Run</a>
+              <a class="nav__item" href="#screen">Stash</a>
+              <a class="nav__item" href="#screen">Contracts</a>
+            </nav>
+            <div class="spacer"></div>
+            <span class="num" style="font-size:var(--fs-xs);color:var(--ink-2)">€$ 48 210</span>
+            <span class="avatar" style="width:24px;height:24px;font-size:9px">V</span>
+          </div>
+          <div class="panel__bd" style="background:var(--bg-0)">
+            <div class="hud-alert" style="margin-bottom:var(--s-4)">
+              <span class="hud-alert__code">ICE-07</span>
+              <span>Trace completes in <b class="num">00:12</b></span>
+              <div class="spacer"></div>
+              <button class="btn btn--sm btn--danger">Disconnect</button>
+            </div>
+            <div class="grid screen-split" style="--gap:var(--s-4)">
+              <div class="stack">
+                <div class="term" style="--term-h:150px">
+                  <div class="term__hd"><span>relay · kabuki</span><div class="spacer"></div><span class="dot dot--live"></span></div>
+                  <div class="term__out">
+                    <div class="term__line" data-lvl="ok"><span class="term__ts">02:14:09</span><span class="term__lvl">OK</span><span>6 hosts resolved</span></div>
+                    <div class="term__line" data-lvl="warn"><span class="term__ts">02:14:11</span><span class="term__lvl">WARN</span><span>ICE signature rotated</span></div>
+                    <div class="term__line" data-lvl="err"><span class="term__ts">02:14:12</span><span class="term__lvl">ERR</span><span>trace initiated</span></div>
+                  </div>
+                </div>
+                <div class="slots slots--fluid" style="--slot-min:44px">
+                  <div class="slot slot--filled t5"><span class="slot__icon">✦</span></div>
+                  <div class="slot slot--filled t3"><span class="slot__icon">⌖</span></div>
+                  <div class="slot slot--filled t2"><span class="slot__icon">◈</span><span class="slot__qty">4</span></div>
+                  <div class="slot slot--filled t1"><span class="slot__icon">▤</span><span class="slot__qty">21</span></div>
+                  <div class="slot slot--empty"></div><div class="slot slot--empty"></div>
+                  <div class="slot slot--locked"></div><div class="slot slot--locked"></div>
+                </div>
+              </div>
+              <div class="stack">
+                <div class="frame brackets" style="height:96px">
+                  <span class="frame__label">Sector 04</span>
+                  <div class="bg-grid" style="position:absolute;inset:0"></div>
+                  <span class="frame__hud micro num">62%</span>
+                </div>
+                <div class="vitals">
+                  <div class="vital vital--tight">
+                    <span class="vital__label">HP</span>
+                    <div class="meter" style="--v:.78;--fill:var(--jade)"><div class="meter__fill"></div></div>
+                    <span class="vital__value">78</span>
+                  </div>
+                  <div class="vital vital--tight">
+                    <span class="vital__label">Heat</span>
+                    <div class="meter meter--hot" style="--v:.91"><div class="meter__fill"></div></div>
+                    <span class="vital__value">91</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="micro" style="margin-bottom:6px">RAM 8 / 12</div>
+                  <div class="meter meter--seg" style="--v:.667;--segs:12"><div class="meter__fill"></div></div>
+                </div>
+                <div class="row" style="--gap:6px">
+                  <span class="status status--buff">Overclock<i class="status__drain" style="--v:.7"></i></span>
+                  <span class="status status--debuff">ICE burn<i class="status__drain" style="--v:.3"></i></span>
+                </div>
+                <button class="btn btn--primary btn--block cut">Jack out</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<script src="/assets/js/ui-kit.js" defer></script>
+<script>
+/* Gallery scaffolding — renders each <template class="demo-src"> twice:
+   once live, once as escaped source, so the docs can never drift. */
+document.addEventListener("DOMContentLoaded", function () {
+
+  function dedent(src) {
+    var lines = src.replace(/\t/g, "  ").split("\n");
+    while (lines.length && !lines[0].trim()) lines.shift();
+    while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+    var pad = Math.min.apply(null, lines.filter(function (l) { return l.trim(); })
+      .map(function (l) { return l.match(/^ */)[0].length; }));
+    return lines.map(function (l) { return l.slice(pad); }).join("\n");
+  }
+
+  document.querySelectorAll("template.demo-src").forEach(function (tpl) {
+    var source = dedent(tpl.innerHTML);
+
+    var stage = document.createElement("div");
+    stage.className = "demo__stage";
+    stage.appendChild(tpl.content.cloneNode(true));
+
+    var details = document.createElement("details");
+    details.className = "demo__code";
+    var pre = document.createElement("pre");
+    pre.textContent = source;
+    details.innerHTML = '<summary>markup <button class="demo__copy">copy</button></summary>';
+    details.appendChild(pre);
+    details.querySelector(".demo__copy").addEventListener("click", function (e) {
+      e.preventDefault();
+      navigator.clipboard.writeText(source);
+      e.target.textContent = "copied";
+      setTimeout(function () { e.target.textContent = "copy"; }, 1200);
+    });
+
+    tpl.replaceWith(stage, details);
+  });
+
+  /* Colour swatches, read from the live cascade so they can never go stale. */
+  var cs = getComputedStyle(document.documentElement);
+  document.querySelectorAll("[data-swatches]").forEach(function (host) {
+    host.innerHTML = host.dataset.swatches.split(",").map(function (name) {
+      var v = cs.getPropertyValue(name).trim();
+      return '<div class="sw"><div class="sw__chip" style="background:' + v + '"></div>' +
+             '<div class="sw__meta"><div class="sw__name">' + name + '</div>' +
+             '<div class="sw__hex">' + v + "</div></div></div>";
+    }).join("");
+  });
+
+  /* Live terminal demo */
+  var term = document.getElementById("demo-term");
+  if (term) {
+    var chatter = [
+      ["scanning port 7331", "info"], ["daemon injected", "ok"],
+      ["latency spike 340ms", "warn"], ["packet dropped", "err"],
+      ["rerouting through node_9c", "sys"], ["subnet map refreshed", "info"]
+    ];
+    var i = 0;
+    setInterval(function () {
+      var c = chatter[i++ % chatter.length];
+      UI.log(term, c[0], c[1]);
+    }, 2600);
+    term.addEventListener("ui:command", function (e) {
+      UI.log(term, "unknown command: " + UI.esc(e.detail.value), "err");
+    });
+  }
+
+  /* Typed reveal demo */
+  var typeEl = document.getElementById("demo-type");
+  if (typeEl) UI.type(typeEl, "Wake up, samurai. We have a city to burn.");
+
+  /* Cooldowns actually counting down */
+  document.querySelectorAll(".cooldown:not([data-ready])").forEach(function (cd) {
+    var p = parseFloat(cd.style.getPropertyValue("--p")) || 0;
+    setInterval(function () {
+      p = p <= 0 ? 100 : p - 1;
+      cd.style.setProperty("--p", p);
+      cd.querySelector(".cooldown__t").textContent = (p / 100 * 12).toFixed(1);
+    }, 220);
+  });
+
+  /* Scrollspy for the sidebar */
+  var links = [].slice.call(document.querySelectorAll(".doc__nav .rail__item"));
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      links.forEach(function (l) {
+        l.toggleAttribute("aria-current", l.getAttribute("href") === "#" + en.target.id);
+      });
+    });
+  }, { rootMargin: "-72px 0px -70% 0px" });
+  document.querySelectorAll("section[id]").forEach(function (s) { obs.observe(s); });
+});
+</script>
+</body>
+</html>
