@@ -334,8 +334,11 @@ information.
   a skill it is already walking, marks what it finds, and renders the rest;
   `skills:validate` is what explains it.
 
-Rank maps onto the kit's `t1`–`t5` accents, since ranks are 1, 2, 4, 8, 16 and
-the tiers already mean "how costly is this".
+**Rank is text, not colour.** It reads as `×4` in the meta column. Mapping it
+onto the kit's `t1`–`t5` accents was tried and reverted: `.item-row` paints its
+left border from `--tier`, tier 2 is `--jade`, and `--ok` IS `--jade` — so a
+rank-2 skill drew a green stripe exactly where the overlay's green means "you
+have this", in the place the eye reads the rail.
 
 **What a signed-in player has is laid over the top**, never built into the tree:
 a corner tick on skills they have injected and a five-segment meter of levels

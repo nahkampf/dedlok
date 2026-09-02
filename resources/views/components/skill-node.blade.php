@@ -16,7 +16,12 @@
      compounds, and on a 320px screen a fourth step costs more width than the
      structure it buys. The rail and the row's own glyph still say "child"
      without it. --}}
-<div @class(['item-row', $node->tierClass(), 'ticked' => $known])
+{{-- No tier accent here. .item-row paints border-left from --tier, and the
+     rank tiers include jade — which IS --ok, the colour the tick uses for
+     "you have this". A rank-2 skill was drawing a green stripe that read as
+     state it did not mean, right where the eye looks for the rail. Rank is
+     already stated as ×N in the meta column. --}}
+<div @class(['item-row', 'ticked' => $known])
      @if ($known) style="--tick:var(--ok)" title="{{ Text::get('skills.injected') }}" @endif>
     <span class="slot__icon" aria-hidden="true">{{ $node->isRoot() ? '◆' : '└' }}</span>
 

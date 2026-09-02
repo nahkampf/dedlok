@@ -17,6 +17,11 @@ change the database schema. Every entry that needs one says so under
   they have attained — lit green, the rest the kit's grey. It is an overlay
   driven by one `skill_id => level` map, so the tree's shape never depends on
   who is reading it, and a guest still sees the plain catalogue.
+- **Skill rows carry no rank accent.** Rank was briefly mapped onto the kit's
+  `t1`–`t5` tiers, which paint `.item-row`'s left border. Tier 2 is `--jade` and
+  `--ok` *is* `--jade`, so a rank-2 skill drew a green stripe meaning "costly"
+  on the same page where green means "you have this" — and drew it where the eye
+  reads the rail. Rank is text (`×4`) and the only green left says one thing.
 - **`.ticked` is a new UI kit utility**, generalising the corner tick that
   `.card--select` and `.slot--filled` already drew for themselves. It marks a
   box and touches nothing else — no border colour, no background. Demoed in the

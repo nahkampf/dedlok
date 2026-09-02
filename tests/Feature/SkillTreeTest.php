@@ -232,12 +232,17 @@ class SkillTreeTest extends TestCase
 
     // ---- presentation -------------------------------------------------------
 
-    public function test_rank_maps_onto_the_kits_five_tiers(): void
+    public function test_no_row_carries_a_tier_accent(): void
     {
-        foreach ([1 => 't1', 2 => 't2', 4 => 't3', 8 => 't4', 16 => 't5'] as $rank => $tier) {
-            $node = new SkillTreeNode(Skill::factory()->make(['rank' => $rank]), 0, null);
+        // .item-row paints border-left from --tier, and the rank tiers include
+        // jade — which IS --ok, what the tick means. Rank belongs in the meta
+        // column as ×N, not as a colour that says "you have this".
+        $this->skill('Cyberdecks', rank: 2);
 
-            $this->assertSame($tier, $node->tierClass(), "rank {$rank}");
+        $html = $this->get(route('skills.index'))->assertOk()->getContent();
+
+        foreach (['t1', 't2', 't3', 't4', 't5'] as $tier) {
+            $this->assertStringNotContainsString("item-row {$tier}", $html);
         }
     }
 
