@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+#
+# Cut a release: draft the changelog from the commits, hand it to you to
+# rewrite, then commit, merge and tag.
+#
+#   bin/release            # asks, showing the latest tag and what it suggests
+#   bin/release 0.2.3      # or say so outright
+#
+# The draft is a starting point, not the entry. Commit subjects say what
+# changed to someone reading the history; a changelog says what changed to
+# someone deciding whether to pull. Those are different sentences, which is
+# why this stops and opens an editor instead of committing what it generated.
+#
+# Nothing is committed until after you save. Quit the editor without removing
+# the DRAFT marker and the script backs out, leaving the working tree as it
+# found it.
+#
+# Flags:
+#   --no-tests   skip the suite (it is run in the web container when one is up)
+#   --no-merge   commit and tag on the current branch, do not merge to main
+#
+set -euo pipefail
+
+CHANGELOG="CHANGELOG.md"
+VERSION_FILE="config/version.php"
+MAIN_BRANCH="main"
+DRAFT_MARKER="<!-- DRAFT: rewrite the entries below, then delete this line. -->"
+
+die() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+note() { printf '\033[36m%s\033[0m\n' "$*"; }
+warn() { printf '\033[33mwarning:\033[0m %s\n' "$*"; }
+
+confirm() {
+    local reply
+    read -r -p "$1 [y/N] " reply
+    [[ $reply == [yY] ]]
+}
+
+# ---- arguments -------------------------------------------------------------
+
+VERSION=""
+RUN_TESTS=1
+DO_MERGE=1
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --no-tests) RUN_TESTS=0 ;;
+        --no-merge) DO_MERGE=0 ;;
+        -h|--help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -*) die "unknown flag: $1" ;;
+        *) [[ -n $VERSION ]] && die "give exactly one version"; VERSION="$1" ;;
+    esac
+    shift
+done
+
+# ---- preflight -------------------------------------------------------------
+
+git rev-parse --git-dir >/dev/null 2>&1 || die "not a git repository"
+cd "$(git rev-parse --show-toplevel)"
+
+[[ -f $CHANGELOG ]] || die "no $CHANGELOG here"
+[[ -f $VERSION_FILE ]] || die "no $VERSION_FILE here"
+
+# The release commit must contain the changelog and the version bump and
+# nothing else, so anything already modified has to be dealt with first.
+[[ -z $(git status --porcelain) ]] || die "working tree is dirty — commit or stash first"
+
+BRANCH=$(git branch --show-current)
+[[ -n $BRANCH ]] || die "detached HEAD — check out a branch"
+
+PREVIOUS=$(git describe --tags --abbrev=0 2>/dev/null || true)
+if [[ -n $PREVIOUS ]]; then
+    RANGE="$PREVIOUS..HEAD"
+else
+    RANGE="HEAD"
+fi
+
+COMMITS=$(git log --no-merges --pretty='%h%x09%s' "$RANGE")
+[[ -n $COMMITS ]] || die "no commits since ${PREVIOUS:-the beginning} — nothing to release"
+
+# Pre-1.0 the line is the schema: a release needing a migration is a minor,
+# everything else is a patch. See CLAUDE.md, "Versioning and releases".
+MIGRATIONS=$(git diff --name-only --diff-filter=A "$RANGE" -- database/migrations 2>/dev/null || true)
+
+# ---- which version is this --------------------------------------------------
+
+suggest() {   # the version this release looks like, by the project's own rule
+    [[ -z $PREVIOUS ]] && { echo "0.1.0"; return; }
+
+    local n=${PREVIOUS#v}
+    local major=${n%%.*} rest=${n#*.} minor patch
+    minor=${rest%%.*}
+    patch=${rest#*.}
+
+    if [[ -n $MIGRATIONS ]]; then
+        echo "$major.$((minor + 1)).0"
+    else
+        echo "$major.$minor.$((patch + 1))"
+    fi
+}
+
+if [[ -z $VERSION ]]; then
+    [[ -t 0 ]] || die "usage: bin/release <version>   (or run it interactively)"
+
+    SUGGESTED=$(suggest)
+    printf '\n'
+    note "Branch:     $BRANCH"
+    note "Latest tag: ${PREVIOUS:-none yet}"
+    note "Commits:    $(wc -l <<<"$COMMITS") since ${PREVIOUS:-the beginning}"
+
+    if [[ -n $MIGRATIONS ]]; then
+        note "Migrations: $(wc -l <<<"$MIGRATIONS") — a minor, by the schema rule"
+        printf '  %s\n' $MIGRATIONS
+    else
+        note "Migrations: none — a patch, by the schema rule"
+    fi
+
+    printf '\n'
+    while :; do
+        read -r -p "Version for this release [$SUGGESTED]: " VERSION
+        VERSION=${VERSION:-$SUGGESTED}
+
+        [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+            || { warn "'$VERSION' is not a X.Y.Z version"; VERSION=""; continue; }
+
+        git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null \
+            && { warn "v$VERSION already exists"; VERSION=""; continue; }
+
+        break
+    done
+fi
+
+[[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "'$VERSION' is not a X.Y.Z version"
+
+TAG="v$VERSION"
+git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && die "$TAG already exists"
+
+note "Releasing $TAG — changes since ${PREVIOUS:-the beginning} on '$BRANCH'."
+
+# A version chosen against the rule is allowed, but not silently.
+if [[ -n $PREVIOUS && -n $MIGRATIONS ]]; then
+    PREV_NUM=${PREVIOUS#v}
+    if [[ ${VERSION%.*} == "${PREV_NUM%.*}" ]]; then
+        warn "this release adds migrations but only bumps the patch:"
+        printf '  %s\n' $MIGRATIONS
+        confirm "cut it as $VERSION anyway?" || die "aborted"
+    fi
+fi
+
+# ---- draft -----------------------------------------------------------------
+
+added=$(   grep -P '\t(feat)' <<<"$COMMITS" || true)
+fixed=$(   grep -P '\t(fix)'  <<<"$COMMITS" || true)
+changed=$( grep -Pv '\t(feat|fix)' <<<"$COMMITS" || true)
+
+bullets() {   # hash<TAB>subject  ->  "- subject (hash)"
+    [[ -z $1 ]] && return 0
+    printf '%s\n' "$1" | awk -F'\t' '{ printf "- %s (%s)\n", $2, $1 }'
+}
+
+# From here on the working tree gets modified, so any exit that is not a
+# successful commit has to put it back — an editor that quits non-zero, a
+# failed test run, a Ctrl-C. Nothing half-released is left behind.
+DRAFT=$(mktemp)
+MODIFIED=0
+COMMITTED=0
+
+cleanup() {
+    rm -f "$DRAFT" "$CHANGELOG.tmp"
+    if [[ $MODIFIED == 1 && $COMMITTED == 0 ]]; then
+        git checkout -- "$CHANGELOG" "$VERSION_FILE" 2>/dev/null || true
+        warn "nothing was committed; working tree restored"
+    fi
+}
+trap cleanup EXIT INT TERM
+
+{
+    echo "## [$VERSION] — $(date +%Y-%m-%d)"
+    echo "$DRAFT_MARKER"
+    for section in Added:"$added" Changed:"$changed" Fixed:"$fixed"; do
+        body=${section#*:}
+        [[ -z $body ]] && continue
+        echo
+        echo "### ${section%%:*}"
+        echo
+        bullets "$body"
+    done
+    if [[ -n $MIGRATIONS ]]; then
+        echo
+        echo "### Migrations"
+        echo
+        printf '%s\n' $MIGRATIONS | sed 's#database/migrations/#- `#; s#\.php$#`#'
+    fi
+    echo
+} > "$DRAFT"
+
+# Slot it in under [Unreleased], which stays where it is and stays empty.
+awk -v draft="$DRAFT" '
+    { print }
+    /^## \[Unreleased\]$/ && !done {
+        print ""
+        while ((getline line < draft) > 0) print line
+        done = 1
+    }
+' "$CHANGELOG" > "$CHANGELOG.tmp" && mv "$CHANGELOG.tmp" "$CHANGELOG"
+
+# Compare links, derived from the remote rather than hardcoded.
+REMOTE=$(git remote get-url origin 2>/dev/null || true)
+REPO=$(sed -E 's#^git@([^:]+):#https://\1/#; s#\.git$##' <<<"$REMOTE")
+
+# Only if the remote is a URL. A clone from a local path has an origin that is
+# a filesystem path, and a compare link built from one is worse than none.
+if [[ $REPO == http* && -n $PREVIOUS ]]; then
+    sed -i "s#^\[Unreleased\]: .*#[Unreleased]: $REPO/compare/$TAG...HEAD\n[$VERSION]: $REPO/compare/$PREVIOUS...$TAG#" "$CHANGELOG"
+elif [[ -n $PREVIOUS ]]; then
+    warn "origin is not an http remote; add the compare links by hand"
+fi
+
+sed -i -E "s/('app' => ')[0-9]+\.[0-9]+\.[0-9]+(')/\1$VERSION\2/" "$VERSION_FILE"
+MODIFIED=1
+
+grep -q "'$VERSION'" "$VERSION_FILE" || die "could not bump $VERSION_FILE — check its shape"
+
+# ---- your turn -------------------------------------------------------------
+
+note "Opening $CHANGELOG. Rewrite the draft, delete the DRAFT line, save and quit."
+"${EDITOR:-nano}" "$CHANGELOG" || die "editor exited non-zero"
+
+grep -qF "$DRAFT_MARKER" "$CHANGELOG" && die "the DRAFT marker is still there"
+grep -q "^## \[$VERSION\]" "$CHANGELOG" || die "no '## [$VERSION]' heading left in $CHANGELOG"
+
+# ---- verify ----------------------------------------------------------------
+
+if [[ $RUN_TESTS == 1 ]]; then
+    if docker compose ps --status running --services 2>/dev/null | grep -qx web; then
+        note "Running the suite..."
+        docker compose exec -u www-data -T web php artisan test >/dev/null \
+            || die "tests failed"
+    else
+        warn "web container is not running; skipping the suite"
+    fi
+fi
+
+# ---- commit, merge, tag ----------------------------------------------------
+
+git --no-pager diff --stat -- "$CHANGELOG" "$VERSION_FILE"
+confirm "Commit and tag $TAG?" || die "aborted"
+
+git add "$CHANGELOG" "$VERSION_FILE"
+git commit -q -m "docs: release $VERSION"
+COMMITTED=1
+
+if [[ $DO_MERGE == 1 && $BRANCH != "$MAIN_BRANCH" ]]; then
+    note "Merging '$BRANCH' into $MAIN_BRANCH..."
+    git checkout -q "$MAIN_BRANCH"
+    git merge --no-ff -q -m "Merge branch '$BRANCH' into $MAIN_BRANCH" "$BRANCH"
+fi
+
+# Tag wherever we ended up: on main after a merge, which is the point of
+# merging first — a tag on a branch that later gets squashed points at a
+# commit that no longer exists.
+git tag -a "$TAG" -m "$VERSION"
+
+if [[ $DO_MERGE == 1 && $BRANCH != "$MAIN_BRANCH" ]]; then
+    if confirm "Delete branch '$BRANCH'?"; then
+        git branch -d "$BRANCH"
+    fi
+fi
+
+note "$TAG is on $(git branch --show-current). Push it yourself when ready:"
+echo "  git push origin $(git branch --show-current) --follow-tags"
