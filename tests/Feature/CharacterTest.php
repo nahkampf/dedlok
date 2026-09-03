@@ -38,6 +38,10 @@ class CharacterTest extends TestCase
             'id', 'user_id', 'handle', 'archetype',
             ...Character::ATTRIBUTES,
             ...array_keys(Character::RESOURCES),
+            // Money, named on its own because it is neither: stored and
+            // mutable like a resource, but with no derived maximum to clamp
+            // against. See the Character docblock.
+            'creds',
             'created_at', 'updated_at',
         ];
 

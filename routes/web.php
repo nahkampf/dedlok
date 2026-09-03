@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\ArchetypeController as AdminArchetypeController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\SkillTreeController;
+use App\Http\Middleware\ForbidSecondCharacter;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -27,8 +29,18 @@ Route::get('/handles/available', AvailableHandlesController::class)
 // Character creation. RequireCharacter sends every signed-in player here until
 // they have one, so these two must stay reachable without a character.
 Route::middleware('auth')->group(function () {
-    Route::get('/character/create', [CharacterCreationController::class, 'create'])->name('character.create');
-    Route::post('/character', [CharacterCreationController::class, 'store'])->name('character.store');
+    /*
+     * Character creation, and the one place ForbidSecondCharacter applies. It
+     * is the mirror of RequireCharacter, which runs globally and lets these two
+     * through: a player without a character may go nowhere else, and a player
+     * with one may not come back here. The POST is guarded as well as the form
+     * — characters.user_id is unique, so an unguarded second submission is a
+     * 500 rather than a refusal.
+     */
+    Route::middleware(ForbidSecondCharacter::class)->group(function () {
+        Route::get('/character/create', [CharacterCreationController::class, 'create'])->name('character.create');
+        Route::post('/character', [CharacterCreationController::class, 'store'])->name('character.store');
+    });
 
     // The stash. RequireCharacter has already sent anyone without a character
     // to the creation screen, so these can assume one exists.
@@ -66,4 +78,13 @@ Route::middleware(['auth', 'can:admin'])
 
         Route::resource('items', AdminItemController::class)->except(['show']);
         Route::resource('skills', AdminSkillController::class)->except(['show']);
+
+        /*
+         * Archetypes are edited, never created or destroyed. Their ids are
+         * written into character rows and are permanent, so the roster arrives
+         * by migration and this screen tunes what it hands out — see
+         * App\Http\Controllers\Admin\ArchetypeController.
+         */
+        Route::resource('archetypes', AdminArchetypeController::class)
+            ->only(['index', 'edit', 'update']);
     });

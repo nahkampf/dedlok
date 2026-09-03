@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-09-03
+
+### Changed
+
+- Archetype starting items/skills/cash (6d60b66)
+
+### Migrations
+
+- `2026_09_03_140000_create_archetype_loadouts`
+- `2026_09_03_160000_narrow_the_roster_to_the_deck_jockey`
+
+
 ## [0.6.1] — 2026-09-03
 
 ### Changed
@@ -149,7 +161,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/nahkampf/dedlok/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/nahkampf/dedlok/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/nahkampf/dedlok/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/nahkampf/dedlok/compare/v0.5.0...v0.5.1

@@ -24,6 +24,10 @@ class ArchetypeFactory extends Factory
             'name' => fake()->words(2, true),
             'role' => fake()->word(),
             'description' => fake()->sentence(),
+            // The column defaults to false — nothing reaches a player by being
+            // forgotten — but an archetype a test went to the trouble of
+            // making is one it means to offer.
+            'playable' => true,
         ];
     }
 }

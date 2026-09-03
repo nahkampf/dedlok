@@ -100,6 +100,14 @@ return [
             'title' => 'Create your character',
             'lede' => 'This is who you are on the street. The handle is permanent; spend your points carefully.',
             'submit' => 'Jack in',
+            // One character per user, so coming back to this screen with one
+            // already made is a dead end rather than a second chance.
+            'already' => 'You already have a character. There is only one of you.',
+            // The admin's read-only view of the same screen. They maintain
+            // what is on it — the archetype cards, the loadouts, the pool —
+            // and looking at it is the only way to see that work.
+            'preview' => 'Preview. You already have a character, so this screen cannot be submitted — it is here so you can see what a new player sees.',
+            'preview_hint' => 'Read-only preview.',
         ],
         'handle' => [
             'section' => 'Handle',
@@ -109,8 +117,29 @@ return [
         ],
         'archetype' => [
             'section' => 'Archetype',
-            'help' => 'Pick one. It sets your starting role in the city.',
+            'help' => 'Pick one. It sets your starting role in the city, and what you walk out with. The greyed-out roles are written but not built yet.',
             'required' => 'Choose an archetype.',
+            // On a card nobody can select. The role still reads, because a
+            // roster that hides what is coming looks shorter than it is.
+            'unavailable' => 'Not yet',
+        ],
+
+        /*
+        | What an archetype hands a character at creation. The heading is on
+        | the card's second stat block; the perks above it are what the
+        | archetype CHANGES, these are what it GIVES.
+        */
+        'loadout' => [
+            'section' => 'You start with',
+            'creds' => 'Creds',
+            // The label on the segmented meter, which is what the card shows
+            // instead of a number — read out by a screen reader and shown on
+            // hover, so it carries the number the segments imply.
+            'level' => 'Level :level of :max',
+            // Level 0 is a real state: the skill is on the sheet, untrained.
+            // An empty meter says it; this says what the empty meter means.
+            'injected' => 'Injected, untrained',
+            'quantity' => '×:count',
         ],
         'attributes' => [
             'physical' => 'Physical attributes',
@@ -186,6 +215,17 @@ return [
     | with the translation layer. Kept because it is real game copy and the
     | combat log will want it.
     */
+    /*
+    | Money. One number on the character row, and no transaction anywhere yet:
+    | the market has a supply side and no storefront, so the only thing that
+    | writes it is the archetype grant at creation.
+    */
+    'creds' => [
+        'name' => 'Creds',
+        'amount' => ':amount cr',
+        'hint' => 'What you have to spend. Nothing sells anything yet.',
+    ],
+
     'combat' => [
         'hits' => ['zero' => 'No hits', 'one' => ':count hit', 'many' => ':count hits'],
         'damage' => ':count damage',
@@ -437,6 +477,8 @@ return [
             'new_item' => 'New item',
             'new_skill' => 'New skill',
             'add_requirement' => 'Add requirement',
+            'add_skill' => 'Add starting skill',
+            'add_item' => 'Add starting item',
             'remove' => 'Remove',
         ],
 
@@ -624,6 +666,93 @@ return [
             ],
         ],
 
+        'archetypes' => [
+            'title' => 'Archetypes',
+            'lede' => 'The seven starting roles, and what each one hands a character on the way in. An archetype cannot be created or deleted here: ids are permanent because every character row stores one.',
+            'editing' => 'Editing :archetype',
+            'updated' => ':archetype saved.',
+            'empty' => 'No archetypes.',
+            'without_loadout' => [
+                'one' => ':count hands out nothing',
+                'many' => ':count hand out nothing',
+            ],
+
+            'fields' => [
+                'slug' => 'Slug',
+                'slug_locked' => 'Permanent — character rows reference the id, and the slug names it.',
+                'name' => 'Name',
+                'name_hint' => 'What a player picks off the creation screen.',
+                'role' => 'Role',
+                'role_hint' => 'The line under the name. A few words, not a sentence.',
+                'description' => 'Description',
+                'description_hint' => 'Second person, present tense. This is the pitch.',
+                'starting_creds' => 'Starting creds',
+                'starting_creds_hint' => 'Cash in hand at creation. Nothing spends it yet.',
+                'playable' => 'Offered to new characters',
+                'playable_hint' => 'Off keeps the archetype on the creation screen but greys it out. It is how a role is withdrawn — never by deleting it, since every character who chose it points at the id.',
+            ],
+
+            'sections' => [
+                'identity' => 'Identity',
+                'loadout' => 'Starting loadout',
+                'skills' => 'Starting skills',
+                'items' => 'Starting items',
+                'perks' => 'Perks',
+            ],
+
+            'columns' => [
+                'slug' => 'Slug',
+                'name' => 'Name',
+                'role' => 'Role',
+                'creds' => 'Creds',
+                'skills' => 'Skills',
+                'items' => 'Items',
+                'perks' => 'Perks',
+                'playable' => 'Offered',
+            ],
+
+            'offered' => [
+                'yes' => 'Yes',
+                'no' => 'Withdrawn',
+            ],
+
+            'skills' => [
+                'help' => 'Skills the character already has. Level 0 is what a skillbook buys — on the sheet, untrained; anything above it is training that happened before the game started. A skill granted here is granted whole: no book is spent, and the points are seeded to exactly that level.',
+                'skill' => 'Skill',
+                'level' => 'At level',
+                'level_zero' => 'Injected, untrained',
+                'none' => 'No starting skills. This archetype begins with nothing on the sheet.',
+                'empty_catalogue' => 'There are no skills to grant yet.',
+            ],
+
+            'items' => [
+                'help' => 'Items in the character\'s inventory at creation, loose rather than inside anything. Which inventory each lands in comes from the item itself.',
+                'item' => 'Item',
+                'quantity' => 'How many',
+                'none' => 'No starting items.',
+                'empty_catalogue' => 'There are no items to grant yet.',
+
+                /*
+                | The optgroups the item list is offered in. Deck hardware
+                | names itself through App\Decks\Hardware::label(); these are
+                | the buckets for everything else, and the books get their own
+                | because there is one per skill.
+                */
+                'groups' => [
+                    'physical' => 'Carried',
+                    'data' => 'On the deck',
+                    'skillbooks' => 'Skillbooks',
+                ],
+            ],
+
+            'perks' => [
+                'help' => 'What the archetype CHANGES, as opposed to what it gives. Perks are not edited here yet — a live perk is a list of modifiers, which is an editor of its own.',
+                'none' => 'No perks.',
+                'live' => 'Live',
+                'display_only' => 'Display only',
+            ],
+        ],
+
         /*
         | What a delete would destroy, counted at the moment it is asked. Every
         | one of these is a cascade the schema performs on its own, except a
@@ -651,6 +780,10 @@ return [
             'own_prerequisites' => ['one' => ':count requirement of its own', 'many' => ':count requirements of its own'],
             'books' => ['one' => 'its skillbook', 'many' => 'its skillbook'],
             'book_copies' => ['one' => ':count copy of the book players hold', 'many' => ':count copies of the book players hold'],
+            'archetype_loadouts' => [
+                'one' => ':count archetype stops handing it to new characters',
+                'many' => ':count archetypes stop handing it to new characters',
+            ],
         ],
 
         /*
@@ -681,6 +814,9 @@ return [
             'requires_itself' => 'A skill cannot require itself.',
             'requires_twice' => 'That skill is already named. One requirement per skill.',
             'cycle' => 'That closes a loop — :path — and nobody could ever learn either skill.',
+
+            'granted_twice' => 'That is already in the loadout. One grant per skill or item.',
+            'grant_needs_prerequisite' => 'Starting at level :level in :skill is a state training could never produce: it requires :requires at level :required, which this archetype does not grant. Grant that too, or start the skill at level 0.',
         ],
     ],
 

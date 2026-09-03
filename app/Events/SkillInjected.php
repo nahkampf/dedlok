@@ -11,11 +11,17 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * A skillbook was spent and the skill is now on the sheet at 0 points.
+ * A skill is now on the sheet.
  *
  * The moment a skill becomes trainable at all, so anything that reacts to a
  * character gaining access to something hangs here rather than off the first
  * deposit.
+ *
+ * `book` is the copy that was spent, and it is null when there was none: an
+ * archetype's starting skills are granted at creation rather than bought, and
+ * a listener that cares which it was can ask. `points` is where the skill
+ * starts — 0 for an injection, and whatever the granted level costs for a
+ * loadout, which is the other thing the two origins do not share.
  */
 class SkillInjected
 {
@@ -24,6 +30,7 @@ class SkillInjected
     public function __construct(
         public readonly Character $character,
         public readonly Skill $skill,
-        public readonly Item $book,
+        public readonly ?Item $book = null,
+        public readonly int $points = 0,
     ) {}
 }

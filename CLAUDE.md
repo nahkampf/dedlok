@@ -283,6 +283,32 @@ that is why no starter kit was installed. Two-factor and passkeys are **disabled
 `config/fortify.php` because their screens do not exist yet; the columns and tables are
 already migrated, so enabling them is a matter of writing the Blade and uncommenting.
 
+**One character per user, and two middlewares say so.** Registration creates only the
+user, so the pair is what makes the rule true in practice rather than by convention:
+
+- **`RequireCharacter`** runs on every web request. A signed-in player without a
+  character goes to the creation screen whatever they asked for — except the routes it
+  names (the creation form, logout, the handle pool) and anything under `admin.`, which
+  edits the game rather than a character.
+- **`ForbidSecondCharacter`** is the mirror, and applies to those two creation routes
+  only: a player who already has a character is sent back to the run screen. **It guards
+  the POST as well as the form.** `characters.user_id` is unique, so an unguarded second
+  submission is a 500 with an integrity error rather than a refusal — and a stale tab or
+  a back button reaches `character.store` without ever loading the form again. A safe
+  request is redirected silently; a write says why, because silence after a submitted
+  form reads as the form having done nothing.
+- **An admin may still *look* at the creation screen**, with a character or without one.
+  It is a screen they maintain — the archetype cards and their loadouts, the size of the
+  point pool — and opening it is the only way to see that work. The exception is a read
+  and nothing more: the POST is refused for everyone who already has a character. The
+  middleware marks the request (`ForbidSecondCharacter::PREVIEW`) rather than making the
+  controller ask the same question again, and the view then renders a notice and **no
+  submit button at all** — a disabled one would be re-enabled by the pool updater the
+  moment the form validated.
+
+Both answer a JSON caller with **409** and the URL to go to, rather than a redirect a
+fetch() would follow into HTML.
+
 ### Captcha
 
 **Cap** ([trycap.dev](https://trycap.dev)), self-hosted in the `cap` service. No Google,
@@ -380,8 +406,10 @@ the password-reset request.
 
 ### The market's supply side
 
-**The market restocks itself; nothing sells anything yet.** There is no price paid, no
-transaction and no money — what exists is the half a storefront will be built on top of.
+**The market restocks itself; nothing sells anything yet.** There is no price paid and
+no transaction — what exists is the half a storefront will be built on top of. Money
+exists now (`characters.creds`, see *Archetypes and what they hand out*) and nothing
+spends it.
 
 - **`rarity` is not `tier`.** Tier is what an item IS — Tier One or Tier Two, narrowed
   from five named steps that nothing mechanical read — it colours the card through the
@@ -466,11 +494,76 @@ says which, and two tables carry what a bare `items` row cannot.
   "fix" one, and do not add a bigger supply to make one fit — over-commitment
   is the player's decision to balance, and skills are meant to cut draw.
 
+### Archetypes and what they hand out
+
+**An archetype is a role, a set of perks, and a loadout.** The perks say what it
+*changes*; the loadout says what it *gives* — cash, skills and items, granted
+once, at character creation.
+
+- **`archetypes.playable` is what a new character may be, and only the Deck Jockey is.**
+  The other six are written but not built, so they are **withdrawn, never deleted** —
+  `characters.archetype` is a foreign key, and the roster still has to resolve a name
+  and a perk set for anyone who already chose one. Same shape and same reasoning as
+  `items.on_market`, and the column defaults to **false** for the reason
+  `seed_quantity` defaults to 0: nothing reaches a player by being forgotten.
+- **`Archetype::playable()` is the menu; `Archetype::roster()` is the truth.** Anything
+  asking "what can be chosen" wants the first; anything resolving a character that
+  already exists wants the second. The creation validator uses `playable()`, so a
+  hand-rolled POST cannot mint a role with nothing behind it — the disabled cards are
+  the courtesy, not the guard.
+- **A withdrawn archetype still renders**, greyed out by the kit's own device (a
+  `.card--select` holding a disabled radio half-lights itself) with a *Not yet* tag.
+  Hiding them would make the roster look shorter than it is.
+
+- **`archetypes.starting_creds` is a column; the other two are tables.** Cash is
+  one number. Skills and items are sets, so `archetype_skills` and
+  `archetype_items` are rows pointing at the definition — a foreign key the
+  database enforces, rather than a slug nothing checks until a character is made.
+- **`characters.creds` is the first money in the game**, and nothing spends it.
+  Stored and mutable like the two resources beside it, but with no derived
+  maximum, which is why it is not in `Character::RESOURCES` and is not a stat:
+  nothing targets it, so nothing resolves it.
+- **A starting skill is granted, not sold.** No book is spent, because none is
+  owned. `App\Inventory\SkillInjector::grant()` is the second door into
+  `character_skills` and deliberately sits on the same class as `inject()`, so
+  the training gate stays one place to read.
+- **A granted level seeds the points that level costs.** `attained_level` and
+  the level `skill_points` implies must agree, or `skills:validate` reports
+  drift on a character that has done nothing yet.
+- **Level 0 is the ordinary grant** and means what injecting a book means: on
+  the sheet, untrained. It is also why level 0 is exempt from the prerequisite
+  rule below — injection has never checked prerequisites, only training does.
+- **A grant above level 0 must be reachable.** Every prerequisite of a skill
+  granted at level 1 or more has to be granted too, at least as far.
+  `ArchetypeRequest` refuses the rest: the archetype would otherwise mint a
+  character in a state their own training queue could never have produced.
+- **Items land loose, never inside a container.** Putting a grant in a container
+  would mean granting the container as well and ordering the two, and a loadout
+  is a set. An unstackable item becomes one row per copy — two decks are two
+  objects.
+- **`App\Archetypes\LoadoutGranter` runs at creation and nowhere else**, inside
+  the transaction that writes the character. Editing a loadout changes what the
+  NEXT character gets; it never reaches back. What was granted is the player's
+  from then on — theirs to spend, sell or lose.
+- **`App\Archetypes\LoadoutEditor` is the only writer of the two tables**, and
+  it replaces both wholesale, like skill prerequisites and deck sockets. Same
+  caveat as those: **when a grant row acquires anything worth preserving, that
+  has to become a diff.**
+- **A granted level is drawn, not spelled out.** The archetype card shows the kit's
+  segmented meter — `.meter--seg` with `--segs` from `SkillProgression::maxLevel()` —
+  the same device the skill tree uses for a level, so the two screens read alike. An
+  empty meter is a skill granted and untrained, which is not the same as no skill; the
+  number lives in the meter's `title` and `aria-label`.
+- **The roster cache stays lean.** `Archetype::roster()` is read on nearly every
+  request by stat resolution and holds perks only; `Archetype::withLoadout()` is
+  the uncached read for the two screens that need the grants.
+
 ### Admin tools
 
-**Two content editors — items and skills — behind one gate.** Content lives in the
-database, which is the documented exception to the config rule; these screens are what
-replaces the protection config content gets from tests and code review.
+**Three content editors — items, skills and archetypes — behind one gate.** Content
+lives in the database, which is the documented exception to the config rule; these
+screens are what replaces the protection config content gets from tests and code
+review.
 
 - **`users.is_admin` is the whole authorisation model.** One `Gate::define('admin', …)`
   in `AppServiceProvider`, read as `can:admin` on the route group and `@can('admin')` in
@@ -482,8 +575,20 @@ replaces the protection config content gets from tests and code review.
   not a character, so demanding one would be a rule about the wrong subject — and it would
   trap an admin account that has never played behind the creation form. The gate, not the
   middleware, is what guards them.
-- **No `show` route on either resource.** The edit form *is* the detail view; a read-only
-  copy would be a second place to add every new column.
+- **No `show` route on any of the three.** The edit form *is* the detail view; a
+  read-only copy would be a second place to add every new column.
+- **Both loadout dropdowns are grouped**, because a flat list of every skillbook in
+  the game is a scroll rather than a choice. Skills group by their `category`, shown
+  raw the way the skill tree shows it; items group by their own vocabulary — deck
+  hardware by `items.hardware` (labelled by `App\Decks\Hardware::label()`), then the
+  two inventories, then skillbooks last. The grouping is decided in the controller and
+  `<x-grouped-options>` renders it, so the four selects that need the identical list
+  (a row and a template each, for skills and items) share one copy of it.
+- **The archetype editor has no `create` and no `destroy` either.** An archetype id is
+  written into every character row that chose it, so the roster arrives by migration and
+  leaves the same way; the editor tunes what it hands out. Perks are displayed there and
+  edited nowhere — a live perk is a list of modifiers with a target shape of its own,
+  which is an editor in its own right.
 - **A slug is permanent and the request says so.** `slug` is `prohibited` on update rather
   than merely absent, so a hand-crafted POST is refused instead of silently ignored.
 
@@ -493,11 +598,11 @@ module — see *Cyberdecks and modules*. `ItemController` wraps both writes in a
 transaction and delegates the decision of which tables those are to
 `App\Decks\HardwareEditor`.
 
-**The form requests are the substantive part.** `App\Http\Requests\Admin\ItemRequest`
-and `SkillRequest` mirror every CHECK constraint on the tables — the constraints are the
-guarantee, these are the explanation, because what the database returns is a 500 and a
-constraint name. Four rules have **no** counterpart in the schema, because SQL cannot
-express them against a single row:
+**The form requests are the substantive part.** `App\Http\Requests\Admin\ItemRequest`,
+`SkillRequest` and `ArchetypeRequest` mirror every CHECK constraint on the tables — the
+constraints are the guarantee, these are the explanation, because what the database
+returns is a 500 and a constraint name. Five rules have **no** counterpart in the
+schema, because SQL cannot express them against a single row:
 
 - **One book per skill.** `items.use_skill_id` is unique, or `Skillbook::forSkill()` is
   ambiguous and a skill has two names.
@@ -509,6 +614,10 @@ express them against a single row:
   either row; together they are two skills nobody can ever learn.
 - **A deck's socket counts.** Five expansion slots and a CPU socket to fill are
   facts about a set of `deck_slots` rows, and a CHECK sees one row at a time.
+- **A granted skill level must be reachable.** An archetype starting a character at
+  level 2 in a skill whose prerequisite it does not grant describes progress the
+  training queue would have refused to make. That is a walk of the prerequisite graph,
+  not a fact about one row.
 
 **`App\Skills\PrerequisiteGraph` is the one graph walk.** Pure — it holds ids, never
 models — so the editor can ask what *would* happen if a set of edges were saved without
