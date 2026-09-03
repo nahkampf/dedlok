@@ -1,5 +1,6 @@
 @use('App\Support\Text')
 @use('App\Models\Item')
+@use('App\Decks\Hardware')
 @extends('layouts.app')
 @section('title', Text::get('admin.items.title'))
 
@@ -35,6 +36,18 @@
                         @foreach (Item::CONTAINERS as $container)
                             <option value="{{ $container }}" @selected(($filters['container'] ?? '') === $container)>
                                 {{ Text::get("admin.items.containers.{$container}") }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="field" style="flex:1 1 min(180px, 100%)">
+                    <label class="field__label" for="hardware">{{ Text::get('admin.items.hardware.filter') }}</label>
+                    <select class="select" id="hardware" name="hardware">
+                        <option value="">{{ Text::get('admin.items.hardware.any') }}</option>
+                        @foreach (Hardware::cases() as $kind)
+                            <option value="{{ $kind->value }}" @selected(($filters['hardware'] ?? '') === $kind->value)>
+                                {{ $kind->label() }}
                             </option>
                         @endforeach
                     </select>
@@ -94,6 +107,15 @@
                                         <div class="micro">{{ Text::get('admin.items.teaches', ['skill' => $item->useSkill?->slug ?? '—']) }}</div>
                                     @elseif ($item->isContainer())
                                         <div class="micro">{{ Text::get('admin.items.container_of', ['accepts' => $item->accepts]) }}</div>
+                                    @endif
+
+                                    {{-- The spec line: a deck's sockets, or a
+                                         module's numbers. Nothing at all for
+                                         an item that is neither. --}}
+                                    @if ($item->hardware)
+                                        <div class="micro" style="color:var(--ink-3)">
+                                            {{ $item->hardware->label() }}@if ($item->hardwareSummary()) — {{ $item->hardwareSummary() }}@endif
+                                        </div>
                                     @endif
                                 </td>
                                 <td class="muted">{{ Text::get("admin.items.containers.{$item->container}") }}</td>

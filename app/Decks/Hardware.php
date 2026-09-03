@@ -1,0 +1,120 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Decks;
+
+use App\Support\Text;
+
+/**
+ * What a deck-hardware item IS: the deck itself, or a module of one kind.
+ *
+ * Stored on `items.hardware`, and NULL there for everything that is not deck
+ * hardware — which is most of the catalogue. It is the only place the kind is
+ * written: `deck_modules` carries the numbers and not the word, so a row can
+ * never disagree with its item about being a CPU.
+ */
+enum Hardware: string
+{
+    case Deck = 'deck';
+
+    case Cpu = 'cpu';
+
+    case Npu = 'npu';
+
+    case Ram = 'ram';
+
+    case Nic = 'nic';
+
+    case Expansion = 'expansion';
+
+    case Psu = 'psu';
+
+    /** @return list<self> */
+    public static function modules(): array
+    {
+        return array_values(array_filter(
+            self::cases(),
+            static fn (self $hardware): bool => $hardware !== self::Deck,
+        ));
+    }
+
+    public function isDeck(): bool
+    {
+        return $this === self::Deck;
+    }
+
+    public function isModule(): bool
+    {
+        return $this !== self::Deck;
+    }
+
+    /** The kind of socket this module goes in. Null for the deck itself. */
+    public function socket(): ?SlotKind
+    {
+        return match ($this) {
+            self::Deck => null,
+            self::Cpu => SlotKind::Cpu,
+            self::Npu => SlotKind::Npu,
+            self::Ram => SlotKind::Ram,
+            self::Nic => SlotKind::Nic,
+            self::Expansion => SlotKind::Expansion,
+            self::Psu => SlotKind::Psu,
+        };
+    }
+
+    /**
+     * The sub-types a module of this kind comes in. Empty means it has none
+     * and its `variant` column stays null.
+     *
+     * Narrower than the socket it fits, by one value: a RAM socket may be
+     * `universal`, a stick of RAM may not.
+     *
+     * @return list<Variant>
+     */
+    public function variants(): array
+    {
+        return match ($this) {
+            self::Cpu => [Variant::SocketG, Variant::SocketK, Variant::SocketZ],
+            self::Ram => [Variant::Opto, Variant::QDram],
+            self::Expansion => [Variant::XGate, Variant::Pei, Variant::Horizon],
+            default => [],
+        };
+    }
+
+    /**
+     * The one column on `deck_modules` this kind fills, or null for a kind
+     * that fills none.
+     *
+     * An expansion card is the null: what an expansion card does is not
+     * decided, and inventing a number for it now would be a number to migrate
+     * away from once it is. The CHECK constraint allows at most one measure
+     * for exactly this reason.
+     */
+    public function measure(): ?string
+    {
+        return match ($this) {
+            self::Cpu, self::Npu => 'qflops',
+            self::Ram => 'quantabits',
+            self::Nic => 'bandwidth',
+            self::Psu => 'watts',
+            self::Deck, self::Expansion => null,
+        };
+    }
+
+    /**
+     * Does a module of this kind draw power?
+     *
+     * Everything but the supply does. A PSU's number is what it gives, and
+     * the schema refuses a row that claims both.
+     */
+    public function draws(): bool
+    {
+        return $this !== self::Deck && $this !== self::Psu;
+    }
+
+    public function label(): string
+    {
+        return Text::get("decks.hardware.{$this->value}");
+    }
+}

@@ -248,7 +248,12 @@ class Character extends Model
     public function inventoryIn(string $container): Collection
     {
         return $this->inventory()
-            ->with(['item.useSkill', 'children.item.useSkill'])
+            // The deck hardware comes along because the row renders its spec
+            // line: without it, a stash of modules is a query per module.
+            ->with([
+                'item.useSkill', 'item.deckSlots', 'item.deckModule',
+                'children.item.useSkill', 'children.item.deckSlots', 'children.item.deckModule',
+            ])
             ->loose()
             ->inContainer($container)
             ->get()

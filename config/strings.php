@@ -320,6 +320,88 @@ return [
     ],
 
     /*
+    | Cyberdecks, the modules that go in them, and the sockets in between.
+    |
+    | The vocabulary only — what a socket is called, what unit a number is in.
+    | Which sockets a particular deck HAS is rows in `deck_slots`, and what a
+    | particular module is worth is a row in `deck_modules`: this is the half
+    | that is shared by every deck in the game, so it is the half that has no
+    | row of its own.
+    */
+    'decks' => [
+
+        // What an item IS, hardware-wise. `items.hardware` holds these.
+        'hardware' => [
+            'deck' => 'Cyberdeck',
+            'cpu' => 'CPU',
+            'npu' => 'NPU',
+            'ram' => 'RAM',
+            'nic' => 'NIC',
+            'expansion' => 'Expansion card',
+            'psu' => 'Power supply',
+        ],
+
+        // What a deck PRESENTS. Six seat a module; the IO ports seat a person.
+        'slots' => [
+            'cpu' => 'CPU',
+            'npu' => 'NPU',
+            'ram' => 'RAM',
+            'nic' => 'NIC',
+            'expansion' => 'Expansion',
+            'psu' => 'Power',
+            'io' => 'IO port',
+        ],
+
+        // The sub-types, short enough to sit in a spec line.
+        'variants' => [
+            'socket_g' => 'Socket G',
+            'socket_k' => 'Socket K',
+            'socket_z' => 'Socket Z',
+            'opto' => 'Opto-electrical',
+            'qdram' => 'QDRAM',
+            'universal' => 'Universal',
+            'xgate' => 'XGate',
+            'pei' => 'PEI',
+            'horizon' => 'Horizon',
+            'electrode' => 'Electrode',
+            'neuralink' => 'NeuraLink',
+        ],
+
+        /*
+        | The half-sentence the editor shows under a socket's name. Optional
+        | by design — Variant::note() renders nothing for a variant with no
+        | entry here, so adding one is never a requirement.
+        */
+        'notes' => [
+            'socket_g' => '448-pin',
+            'socket_k' => '624-pin',
+            'socket_z' => '962-pin',
+            'opto' => 'Opto-electrical',
+            'qdram' => 'Quantum-entangled dynamic RAM',
+            'universal' => 'Takes either kind of stick',
+            'pei' => 'Peripheral Extension Interface',
+            'npu' => 'Neural processing — required by some AI programs',
+        ],
+
+        // Made-up units, spelled one way. :value arrives already grouped.
+        'units' => [
+            'qflops' => ':value qFLOPS',
+            'quantabits' => ':value QB',
+            'bandwidth' => ':value QB/s',
+            'watts' => ':value W',
+            'draw' => ':value W draw',
+        ],
+
+        'summary' => [
+            'times' => ':count× :label',
+            // A middle dot, so a spec line reads as one line rather than a list.
+            'separator' => ' · ',
+        ],
+
+        'no_slots' => 'No sockets yet.',
+    ],
+
+    /*
     | Merged over the framework's own validation messages by the validator, so
     | only the custom rules belong here.
     */
@@ -412,6 +494,22 @@ return [
                 'on_market_hint' => 'Unlist to retire an item without deleting it.',
                 'seed_quantity' => 'Full shelf',
                 'seed_quantity_hint' => 'How many a restock tops up to. Zero means the market never stocks it.',
+
+                'hardware' => 'Deck hardware',
+                'hardware_hint' => 'Whether this is a cyberdeck, a module that goes in one, or neither. Neither is most of the catalogue.',
+                'hardware_none' => 'Not deck hardware',
+                'socket' => 'Socket',
+                'socket_hint' => 'Which socket it fits. A deck with no socket of that type cannot take it.',
+                'power_draw' => 'Power draw',
+                'power_draw_hint' => 'Watts off the deck\'s supply. A power supply draws none.',
+                'qflops' => 'Compute',
+                'qflops_hint' => 'Raw throughput, in qFLOPS.',
+                'quantabits' => 'Memory',
+                'quantabits_hint' => 'Capacity, in quantabits.',
+                'bandwidth' => 'Bandwidth',
+                'bandwidth_hint' => 'Cyberspace throughput, in QB per second.',
+                'watts' => 'Rating',
+                'watts_hint' => 'What the supply delivers, in watts.',
             ],
 
             'sections' => [
@@ -420,6 +518,9 @@ return [
                 'use' => 'Use',
                 'physical' => 'Bulk and containment',
                 'market' => 'Market',
+                'hardware' => 'Deck hardware',
+                'sockets' => 'Sockets',
+                'module' => 'Module specification',
             ],
 
             'columns' => [
@@ -435,6 +536,18 @@ return [
             'teaches' => 'teaches :skill',
             'unlisted' => 'Unlisted',
             'container_of' => 'holds :accepts',
+
+            'hardware' => [
+                'any' => 'Any hardware, and none',
+                'none' => 'Not deck hardware',
+                'filter' => 'Hardware',
+            ],
+
+            'sockets' => [
+                'help' => 'How many of each socket this deck presents. A deck needs somewhere to put a CPU and somewhere to draw power; everything else is optional. Sockets are what a module is fitted into, so the numbers here are the deck.',
+                'none' => 'No sockets. This deck cannot be built yet.',
+                'total' => ['one' => ':count socket', 'many' => ':count sockets'],
+            ],
         ],
 
         'skills' => [
@@ -550,6 +663,16 @@ return [
             'skill_has_a_book' => 'That skill already has a book. There is exactly one per skill.',
             'capacity_needs_kind' => 'A container has to say what it holds.',
             'kind_needs_capacity' => 'This holds nothing, so it cannot name a kind. Give it a capacity first.',
+            'deck_stacks' => 'A cyberdeck cannot stack: two of them would merge into one row, and only one of them could carry what is fitted in it. Untick stackable.',
+            'hardware_is_physical' => 'Deck hardware is matter. A cyberdeck and every module that goes in one is carried, never stored on a deck.',
+            'deck_needs_slots' => 'A cyberdeck with no sockets is a case. Give it at least a CPU socket and a power socket.',
+            'slots_need_a_deck' => 'Only a cyberdeck has sockets. Set the hardware to Cyberdeck first.',
+            'deck_needs_kind' => 'A cyberdeck needs at least one :kind socket.',
+            'too_many_slots' => 'A cyberdeck may present at most :max :kind sockets, counting every type of them together.',
+            'module_needs_variant' => 'Say which socket it fits. A module that fits nothing cannot be installed.',
+            'variant_needs_a_kind' => 'This kind of item has no socket to name.',
+            'module_needs_power' => 'Say what it draws. Zero is a valid answer; blank is not.',
+            'no_power_draw' => 'This draws no power. A supply gives it, and nothing else here has a budget to spend.',
             'same_attribute' => 'Pick two different attributes, or the skill earns points from one of them twice.',
             'requires_itself' => 'A skill cannot require itself.',
             'requires_twice' => 'That skill is already named. One requirement per skill.',

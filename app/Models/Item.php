@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Decks\Hardware;
+use App\Decks\SlotLayout;
 use App\Market\Rarity;
 use App\Support\Text;
 use Database\Factories\ItemFactory;
@@ -26,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 #[Fillable([
     'slug', 'name', 'flavor', 'container', 'tier', 'rarity', 'stackable', 'use_op', 'use_skill_id',
-    'weight', 'size', 'capacity', 'accepts', 'base_cost', 'on_market', 'seed_quantity',
+    'weight', 'size', 'capacity', 'accepts', 'hardware', 'base_cost', 'on_market', 'seed_quantity',
 ])]
 class Item extends Model
 {
@@ -64,6 +66,7 @@ class Item extends Model
             'weight' => 'decimal:2',
             'size' => 'integer',
             'capacity' => 'integer',
+            'hardware' => Hardware::class,
             'base_cost' => 'integer',
             'on_market' => 'boolean',
             'seed_quantity' => 'integer',
@@ -79,6 +82,23 @@ class Item extends Model
     public function inventoryEntries(): HasMany
     {
         return $this->hasMany(InventoryItem::class);
+    }
+
+    /**
+     * The sockets this deck presents. Empty for everything that is not one.
+     *
+     * Ordered here rather than at every call site: a deck's sockets are a
+     * list a player reads, and id order after an edit is not that list.
+     */
+    public function deckSlots(): HasMany
+    {
+        return $this->hasMany(DeckSlot::class)->orderBy('position');
+    }
+
+    /** What this module is worth. Null for everything that is not one. */
+    public function deckModule(): HasOne
+    {
+        return $this->hasOne(DeckModule::class);
     }
 
     /** What the market is holding of this item. Absent means none. */
@@ -106,6 +126,53 @@ class Item extends Model
     public function isSkillbook(): bool
     {
         return $this->use_op === self::USE_INJECT_SKILL;
+    }
+
+    public function isCyberdeck(): bool
+    {
+        return $this->hardware === Hardware::Deck;
+    }
+
+    /** A module of some kind — a CPU, a stick of RAM, a power supply. */
+    public function isModule(): bool
+    {
+        return $this->hardware?->isModule() ?? false;
+    }
+
+    /**
+     * This deck's sockets, counted by type.
+     *
+     * The layout is the deck's specification; the rows are how it is stored.
+     * A non-deck has an empty one rather than none, so a caller that asks
+     * gets an answer it can use instead of a null to defend against.
+     */
+    public function slotLayout(): SlotLayout
+    {
+        return SlotLayout::fromTypes(
+            $this->deckSlots->map(fn (DeckSlot $slot) => $slot->type())
+        );
+    }
+
+    /**
+     * The one-line spec: a deck's sockets, or a module's numbers.
+     *
+     * Null for anything that is not deck hardware, which is most of the
+     * catalogue — so a caller can render it or not without asking what kind
+     * of thing it is holding.
+     */
+    public function hardwareSummary(): ?string
+    {
+        if ($this->hardware === null) {
+            return null;
+        }
+
+        if ($this->hardware->isDeck()) {
+            $layout = $this->slotLayout();
+
+            return $layout->isEmpty() ? null : $layout->summary();
+        }
+
+        return $this->deckModule?->summary($this->hardware);
     }
 
     public function isData(): bool

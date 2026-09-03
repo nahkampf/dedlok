@@ -411,6 +411,52 @@ transaction and no money — what exists is the half a storefront will be built 
 - **The roll is injected** (`MarketSeeder::fromConfig(fn () => …)`), so tests pin the dice.
   A probabilistic pass tested against real randomness is a test that passes 95% of the time.
 
+### Cyberdecks and modules
+
+**A cyberdeck is an item, and so is every module that goes in one.** One column
+says which, and two tables carry what a bare `items` row cannot.
+
+- **`items.hardware` is the only place the kind is written down** — `deck`,
+  `cpu`, `npu`, `ram`, `nic`, `expansion`, `psu`, or NULL for the rest of the
+  catalogue. `deck_modules` carries the numbers and *not* the word, so a row
+  can never disagree with its item about being a CPU.
+- **`deck_slots` is one row per socket, not a count per kind.** A socket is a
+  place: a module fitted into a deck will point at the one it went into, and a
+  count cannot be pointed at. `App\Decks\SlotLayout` is the same set seen as
+  counts, which is what the editor and every spec line actually want — and it
+  is pure, because the editor needs a layout for a deck that has not been saved
+  yet exactly as much as for one that has.
+- **`App\Decks\SlotType` is the whole vocabulary**: fourteen (kind, variant)
+  pairs. The editor renders one counter per type, the request validates against
+  the same list, and the layout counts by it, so a fifteenth socket is an enum
+  case and a label and nothing else.
+- **A cap belongs to the kind, not to each variant.** Five expansion slots
+  means five altogether. That is why it is not a CHECK constraint — a deck's
+  sockets are separate rows, and no constraint on one can count the others.
+  `ItemRequest::withValidator()` holds it, along with "a deck needs a CPU
+  socket" and "a deck needs a power socket".
+- **`universal` is a socket and never a module.** A RAM slot may take either
+  kind of stick; no stick is both. The two sides are validated against separate
+  lists for that reason, and fit is `Variant::accepts()` rather than `===`.
+- **An IO port seats nothing.** The electrode and neuralink ports are rows like
+  any other socket rather than two booleans, so "what does this deck present"
+  stays one question with one shape of answer.
+- **At most one measure per module**, enforced by `chk_deck_modules_one_measure`:
+  qFLOPS, quantabits, QB/s and watts do not convert into one another. An
+  expansion card fills none of them — what one *does* is undecided, and a
+  made-up number now is a number to migrate away from later.
+- **A supply gives power and draws none** (`chk_deck_modules_supply`). The
+  budget that would spend it does not exist yet, because nothing is fitted into
+  anything yet.
+- **`App\Decks\HardwareEditor` is the only writer**, and it always clears the
+  side an item stopped being: a deck re-saved as a CPU loses its sockets, and a
+  CPU re-saved as a NIC loses its qFLOPS. It replaces a deck's sockets
+  wholesale, like skill prerequisites — **when a socket can be occupied, that
+  has to become a diff.**
+- **Nothing a deck stores does anything yet.** The numbers are validated and
+  read by no stat, check or modifier. Do not describe a deck as making its
+  owner better at anything.
+
 ### Admin tools
 
 **Two content editors — items and skills — behind one gate.** Content lives in the
@@ -432,19 +478,28 @@ replaces the protection config content gets from tests and code review.
 - **A slug is permanent and the request says so.** `slug` is `prohibited` on update rather
   than merely absent, so a hand-crafted POST is refused instead of silently ignored.
 
+**The item editor writes three tables.** An item is a row, plus a socket each
+in `deck_slots` if it is a cyberdeck, plus a row in `deck_modules` if it is a
+module — see *Cyberdecks and modules*. `ItemController` wraps both writes in a
+transaction and delegates the decision of which tables those are to
+`App\Decks\HardwareEditor`.
+
 **The form requests are the substantive part.** `App\Http\Requests\Admin\ItemRequest`
 and `SkillRequest` mirror every CHECK constraint on the tables — the constraints are the
 guarantee, these are the explanation, because what the database returns is a 500 and a
-constraint name. Three rules have **no** counterpart in the schema, because SQL cannot
+constraint name. Four rules have **no** counterpart in the schema, because SQL cannot
 express them against a single row:
 
 - **One book per skill.** `items.use_skill_id` is unique, or `Skillbook::forSkill()` is
   ambiguous and a skill has two names.
-- **A container cannot stack.** `InventoryItem` derives `stack_key` from
-  (character, item, parent), so two stackable containers merge into one row and the
-  second one's contents are gone.
+- **A container cannot stack**, and neither does a cyberdeck. `InventoryItem` derives
+  `stack_key` from (character, item, parent), so two stackable containers merge into one
+  row and the second one's contents are gone. A deck is the same case one step ahead of
+  itself: its sockets are what will be filled per object.
 - **No prerequisite cycles.** Nothing about "A needs B" and "B needs A" is wrong on
   either row; together they are two skills nobody can ever learn.
+- **A deck's socket counts.** Five expansion slots and a CPU socket to fill are
+  facts about a set of `deck_slots` rows, and a CHECK sees one row at a time.
 
 **`App\Skills\PrerequisiteGraph` is the one graph walk.** Pure — it holds ids, never
 models — so the editor can ask what *would* happen if a set of edges were saved without
