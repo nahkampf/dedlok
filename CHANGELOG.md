@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-09-03
+
+### Changed
+
+- Inventory view - list items + mousover modal with info
+- Move top menu to a sidemenu, clear out unused stuff
+- Introduce a fixed topbar containing cash, hp, si
+
+
 ## [0.7.0] — 2026-09-03
 
 ### Changed
@@ -161,7 +170,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/nahkampf/dedlok/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/nahkampf/dedlok/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/nahkampf/dedlok/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/nahkampf/dedlok/compare/v0.5.1...v0.6.0

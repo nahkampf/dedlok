@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Decks\Hardware;
+use App\Decks\Variant;
 use App\Inventory\InjectionRefusal;
 use App\Inventory\SkillInjector;
 use App\Models\Character;
@@ -207,6 +209,52 @@ class InventoryTest extends TestCase
         $response->assertSee(Text::get('inventory.data'));
         $response->assertSee(Text::get('items.skillbook.name', ['skill' => 'Hacking']));
         $response->assertSee(Text::get('items.tiers.2'));
+    }
+
+    public function test_every_row_is_a_slot_with_its_detail_beside_it(): void
+    {
+        $rifle = Item::factory()->physical()->create(['slug' => 'rail_rifle', 'tier' => 2]);
+        $entry = $this->give($rifle);
+
+        $response = $this->actingAs($this->character->user)->get(route('inventory.index'));
+
+        // The slot and the template it names. The detail is rendered once, in
+        // the template, and cloned by ui-kit.js into the hover layer and the
+        // modal both — so a detail missing from the source is missing from
+        // everywhere, which is what this asserts.
+        $response->assertSee('data-inspect="#detail-'.$entry->id.'"', false);
+        $response->assertSee('<template id="detail-'.$entry->id.'">', false);
+    }
+
+    public function test_the_detail_carries_what_the_slot_cannot_show(): void
+    {
+        $rifle = Item::factory()->physical()->create([
+            'slug' => 'rail_rifle',
+            'name' => 'Rail rifle',
+            'flavor' => 'Still has someone else\'s serial on it.',
+            'tier' => 2,
+            'size' => 6,
+        ]);
+        $this->give($rifle, 2);
+
+        $this->actingAs($this->character->user)
+            ->get(route('inventory.index'))
+            ->assertSee('Still has someone else\'s serial on it.')
+            ->assertSee(Text::get('inventory.stats.size'))
+            ->assertSee(Text::get('inventory.stats.quantity'));
+    }
+
+    public function test_the_detail_names_the_kind_of_hardware_it_is(): void
+    {
+        $ram = Item::factory()->module(Hardware::Ram, Variant::Opto, measure: 16, draw: 34)
+            ->create(['slug' => 'veritas_os16', 'name' => 'Veritas OS-16']);
+        $this->give($ram);
+
+        $this->actingAs($this->character->user)
+            ->get(route('inventory.index'))
+            // The spec line carries the numbers; only this says what it is.
+            ->assertSee(Hardware::Ram->label())
+            ->assertSee('16 QB');
     }
 
     public function test_only_skillbooks_offer_an_inject_button(): void

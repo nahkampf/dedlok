@@ -480,6 +480,60 @@ public/assets/
       </template>
     </div>
     <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Dock &amp; gauges</h3><p>The page frame. <code class="inl">.dock</code> is a vertical rail of icons that opens to icon + label — on hover where there is a pointer, and on the <code class="inl">data-dock-toggle</code> button everywhere else, which is the only way in on a phone. The icon column stays <code class="inl">--dock-w</code> wide in both states, so opening it never moves an icon sideways, and the label fades with <code class="inl">opacity</code> rather than <code class="inl">display</code> so it stays the icon's accessible name while the rail is shut. On its own <code class="inl">.dock</code> is an ordinary column, as below; it is <code class="inl">.shell--docked</code> that pins it to the viewport, where opening has to overlay the page rather than reflow it. <code class="inl">.gauge</code> is one resource small enough for a bar that is always on screen — label and value on a row, the meter spanning both underneath. Drop the meter and it is a labelled number, which is what money is.</p></div>
+      <template class="demo-src">
+        <div class="row" style="--gap:0;align-items:stretch;border:var(--hair) solid var(--line-1)">
+          <nav class="dock" style="height:260px" aria-label="Sections">
+            <button type="button" class="dock__item" data-dock-toggle aria-expanded="false">
+              <span class="dock__icon" aria-hidden="true">&#9776;</span>
+              <span class="dock__label">Menu</span>
+            </button>
+            <a class="dock__item" href="#surfaces" aria-current="page">
+              <span class="dock__icon" aria-hidden="true">&#9654;</span>
+              <span class="dock__label">Run</span>
+            </a>
+            <a class="dock__item" href="#surfaces">
+              <span class="dock__icon" aria-hidden="true">&#9636;</span>
+              <span class="dock__label">Stash</span>
+            </a>
+            <a class="dock__item" href="#surfaces">
+              <span class="dock__icon" aria-hidden="true">&#10022;</span>
+              <span class="dock__label">Skills</span>
+            </a>
+            <div class="spacer"></div>
+            <div class="dock__sep"></div>
+            <a class="dock__item" href="#surfaces">
+              <span class="dock__icon" aria-hidden="true">&#9211;&#65038;</span>
+              <span class="dock__label">Jack out</span>
+            </a>
+          </nav>
+          <div style="flex:1;min-width:0">
+            <header class="topbar">
+              <span class="brand"><span class="brand__mark"></span><span class="brand__name">Ash &amp; Ember</span></span>
+              <div class="gauge">
+                <span class="gauge__label" aria-hidden="true">HP</span>
+                <span class="gauge__value num" aria-hidden="true">42 / 58</span>
+                <div class="meter" role="meter" data-hot-low style="--v:.72;--fill:var(--ok)" aria-label="HP 42 of 58"><div class="meter__fill"></div></div>
+              </div>
+              <div class="gauge">
+                <span class="gauge__label" aria-hidden="true">SI</span>
+                <span class="gauge__value num" aria-hidden="true">9 / 60</span>
+                <div class="meter" role="meter" data-hot-low style="--v:.15;--fill:var(--ok)" aria-label="SI 9 of 60"><div class="meter__fill"></div></div>
+              </div>
+              <div class="gauge">
+                <span class="gauge__label">Creds</span>
+                <span class="gauge__value num">48 210</span>
+              </div>
+              <div class="spacer"></div>
+            </header>
+            <div class="panel__bd">
+              <p class="muted" style="font-size:var(--fs-sm);margin:0">Point at the rail, or press the ☰. The SI bar is under the threshold, so <code class="inl">data-hot-low</code> has turned it critical — the number that decides that lives in <code class="inl">ui-kit.js</code>, not in the markup.</p>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
       <div class="demo__hd"><h3 class="h3">Tabs, breadcrumb, pagination</h3></div>
       <template class="demo-src">
         <div class="stack" style="--gap:var(--s-5)">
@@ -836,6 +890,77 @@ public/assets/
             </div>
           </div>
         </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Inspector</h3><p>A slot that carries <code class="inl">data-inspect="#id"</code> floats the <code class="inl">&lt;template&gt;</code> it names beside it on hover or focus, and opens the same content in a modal when clicked. The detail is written once and cloned on both paths, so the two presentations cannot drift. Anything inside marked <code class="inl">data-act</code> appears only in the modal — a hover layer is not somewhere a click can land, because the pointer has to cross the gap to reach a button and the layer is gone by then. That split is also what makes it work on a phone, where there is no hover at all: tapping is the whole interaction. Set <code class="inl">--item-card-w</code> to let the card fill a wider shell.</p></div>
+      <template class="demo-src">
+        <div class="slots slots--fluid" style="--slot-min:56px;max-width:260px">
+          <button type="button" class="slot slot--filled t2" data-inspect="#demo-card" aria-haspopup="dialog" aria-label="Memory shard — Details">
+            <span class="slot__icon" aria-hidden="true">◍</span>
+            <span class="slot__dur"><i style="--v:.5"></i></span>
+          </button>
+          <button type="button" class="slot slot--filled t1" data-inspect="#demo-book" aria-haspopup="dialog" aria-label="Hacking, injectable — Details">
+            <span class="slot__icon" aria-hidden="true">◈</span>
+            <span class="slot__qty">3</span>
+          </button>
+        </div>
+
+        <template id="demo-card">
+          <div class="item-card t2">
+            <div class="item-card__hd">
+              <div class="row" style="--gap:var(--s-2);align-items:flex-start">
+                <span class="stack" style="--gap:2px;min-width:0">
+                  <span class="item-card__name">Memory shard</span>
+                  <span class="item-card__tier">Tier Two · Physical</span>
+                </span>
+                <div class="spacer"></div>
+                <button type="button" class="btn btn--sm btn--ghost" data-act data-close aria-label="Close">✕</button>
+              </div>
+            </div>
+            <div class="item-card__stats">
+              <div class="item-card__stat"><span>Weight</span><b>0.1</b></div>
+              <div class="item-card__stat"><span>Capacity</span><b>8 / 16</b></div>
+            </div>
+            <div class="item-card__flavor">Someone scratched a name off the casing.</div>
+            <div class="item-card__contents">
+              <span class="micro">On this · 8 of 16 free</span>
+              <div class="item-row t1">
+                <span class="slot__icon">◈</span>
+                <span class="item-row__name">Hacking, injectable</span>
+                <span class="row row--wrap" style="--gap:var(--s-2);justify-content:flex-end">
+                  <span class="item-row__meta">Tier One</span>
+                  <button class="btn btn--sm btn--ghost cut" data-act>Take out</button>
+                </span>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template id="demo-book">
+          <div class="item-card t1">
+            <div class="item-card__hd">
+              <div class="row" style="--gap:var(--s-2);align-items:flex-start">
+                <span class="stack" style="--gap:2px;min-width:0">
+                  <span class="item-card__name">Hacking, injectable</span>
+                  <span class="item-card__tier">Tier One · Data</span>
+                </span>
+                <div class="spacer"></div>
+                <button type="button" class="btn btn--sm btn--ghost" data-act data-close aria-label="Close">✕</button>
+              </div>
+              <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">Teaches Hacking</div>
+            </div>
+            <div class="item-card__stats">
+              <div class="item-card__stat"><span>Quantity</span><b>3</b></div>
+              <div class="item-card__stat"><span>Size</span><b>4</b></div>
+            </div>
+            <p class="item-card__note" data-act>Injecting Hacking destroys the book. It cannot be undone.</p>
+            <div class="item-card__actions" data-act>
+              <button class="btn btn--sm btn--primary cut">Inject</button>
+              <button class="btn btn--sm cut">Store on Memory shard</button>
+            </div>
+          </div>
+        </template>
       </template>
     </div>
     <div class="demo">

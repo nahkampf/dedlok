@@ -31,6 +31,19 @@ return [
             'skills' => 'Skills',
             'contracts' => 'Contracts',
             'profile' => 'Profile',
+
+            // The rail itself: what it is called to a screen reader, and the
+            // control that opens it where there is no pointer to hover with.
+            'sections' => 'Sections',
+            'menu' => 'Menu',
+        ],
+
+        // The bar that is always on screen. Two resources and the money, and
+        // nothing that is not a number you need at a glance.
+        'hud' => [
+            'ratio' => ':current / :max',
+            // The same pair in words, for anything that cannot see the bar.
+            'aria' => ':label :current of :max',
         ],
         'action' => [
             'jack_in' => 'Jack in',
@@ -291,9 +304,30 @@ return [
 
         'inject' => 'Inject',
         'inject_confirm' => 'Injecting :skill destroys the book. It cannot be undone.',
+        // The same sentence with no skill named, for a list of books rather
+        // than one: the contents of a card say it once, not once each.
+        'inject_confirm_any' => 'Injecting a book destroys it. It cannot be undone.',
         'injected' => ':skill is on your sheet. Queue it to start training.',
 
         'teaches' => 'Teaches :skill',
+
+        // The detail card behind every slot. Pointing at one floats it;
+        // tapping one opens the same card as a modal, which is the only
+        // place the actions appear — see .inspector in ui-kit.css.
+        'inspect' => 'Details',
+        'inspect_hint' => 'Point at a slot for details, or tap it.',
+        'close' => 'Close',
+
+        'stats' => [
+            'quantity' => 'Quantity',
+            'weight' => 'Weight',
+            'size' => 'Size',
+            'capacity' => 'Capacity',
+        ],
+
+        // Two of a container's numbers, said two ways: the card wants what is
+        // spent, the contents header wants what is left.
+        'capacity_used' => ':used / :capacity',
 
         // What is inside a container, and why something would not go in.
         'contents' => 'On this',
@@ -325,6 +359,17 @@ return [
     | What is left is the vocabulary shared across every item.
     */
     'items' => [
+        /*
+        | What kind of thing an item is, as its card says it. Not the inventory
+        | names ("Carried", "Deck"): those are places, and this is the item.
+        | Deck hardware answers the same question with its own word — see
+        | App\Models\Item::kindName() and strings.decks.hardware.
+        */
+        'kinds' => [
+            'physical' => 'Physical',
+            'data' => 'Data',
+        ],
+
         /*
         | Two tiers, and they say only which step of the scale a thing is on.
         | The old five carried flavour names — Standard through Anomalous —

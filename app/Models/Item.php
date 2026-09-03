@@ -239,6 +239,20 @@ class Item extends Model
         return $this->rarity->label();
     }
 
+    /**
+     * What kind of thing this is, in the words the card uses.
+     *
+     * Deck hardware answers with the piece it is: a stick of RAM is RAM first
+     * and a physical object second, and which of the two inventories it lives
+     * in has already been answered by the tab it was found under. Everything
+     * else falls back to that inventory, which is the only kind it has.
+     */
+    public function kindName(): string
+    {
+        return $this->hardware?->label()
+            ?? Text::get("items.kinds.{$this->container}");
+    }
+
     public function tierName(): string
     {
         return Text::get("items.tiers.{$this->tier}");
@@ -253,6 +267,24 @@ class Item extends Model
     public function tierClass(): string
     {
         return 't'.$this->tier;
+    }
+
+    /**
+     * The glyph a slot shows. View mapping, like tierClass() beside it.
+     *
+     * Every one of these is from the set the kit's gallery already proves
+     * renders in the font stack — U+2317, the obvious choice for a card,
+     * does not. Adding a kind means proving its glyph there first.
+     */
+    public function glyph(): string
+    {
+        return match (true) {
+            $this->isSkillbook() => "\u{25C8}",
+            $this->isCyberdeck() => "\u{2394}",
+            $this->isModule() => "\u{232C}",
+            $this->isContainer() => "\u{25CD}",
+            default => "\u{25A4}",
+        };
     }
 
     /** @param  Builder<self>  $query */
