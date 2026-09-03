@@ -348,7 +348,11 @@ return [
             'ram' => 'RAM',
             'nic' => 'NIC',
             'expansion' => 'Expansion',
-            'psu' => 'Power',
+            // An initialism like its siblings, and deliberately not "Power":
+            // every field on a deck is a socket, and a lone noun among the
+            // initialisms reads as an attribute the deck has rather than as a
+            // socket it presents. The module that goes in it is a Power supply.
+            'psu' => 'PSU',
             'io' => 'IO port',
         ],
 

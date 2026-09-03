@@ -120,7 +120,7 @@ class DeckHardwareTest extends TestCase
         ])->create();
 
         $this->assertSame(
-            '2× Socket K · 4× QDRAM · Power · NeuraLink',
+            '2× Socket K · 4× QDRAM · PSU · NeuraLink',
             $deck->fresh()->hardwareSummary(),
         );
 

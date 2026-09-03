@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-09-03
+
+### Changed
+
+- docs: deck numbers are bases, and one deck is equipped (de94e66)
+
+### Fixed
+
+- fix(decks): label the PSU socket PSU, not Power (600a359)
+
+### Added
+- content: a bunch of modules and decks added
+
 ## [0.6.0] — 2026-09-03
 
 ### Changed
@@ -136,7 +149,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/nahkampf/dedlok/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/nahkampf/dedlok/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/nahkampf/dedlok/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/nahkampf/dedlok/compare/v0.4.0...v0.5.0
