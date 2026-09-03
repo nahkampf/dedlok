@@ -35,6 +35,25 @@
 
         <div class="card">
             <div class="card__hd">
+                <div class="card__title">{{ Text::get('admin.archetypes.title') }}</div>
+                <div class="card__meta">{{ $archetypes }}</div>
+            </div>
+            <div class="card__bd">{{ Text::get('admin.archetypes.lede') }}</div>
+            @if ($archetypesWithoutLoadout > 0)
+                <div class="card__stats">
+                    <div class="card__stat">
+                        <span>{{ Text::get('admin.archetypes.sections.loadout') }}</span>
+                        <b>{{ Text::plural('admin.archetypes.without_loadout', $archetypesWithoutLoadout) }}</b>
+                    </div>
+                </div>
+            @endif
+            <div class="card__ft">
+                <a class="btn btn--sm" href="{{ route('admin.archetypes.index') }}">{{ Text::get('admin.archetypes.title') }}</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__hd">
                 <div class="card__title">{{ Text::get('admin.skills.title') }}</div>
                 <div class="card__meta">{{ $skills }}</div>
             </div>

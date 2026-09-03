@@ -25,9 +25,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * on purpose: CHECK constraints in MySQL, clamping here, and validation rules
  * for anything arriving from a request. The database is the only one that
  * cannot be bypassed, the model is the one that catches ordinary code.
+ *
+ * `creds` is money, and the one saved number here that is neither an attribute
+ * nor a resource: stored and mutable like the two resources, but with no
+ * derived maximum to clamp against, which is why it is not in RESOURCES. It is
+ * not a stat either — nothing targets it, so nothing resolves it. Nothing
+ * spends it yet either: the market has a supply side and no storefront, so the
+ * only writer today is App\Archetypes\LoadoutGranter at character creation.
  */
 #[Fillable([
-    'user_id', 'handle', 'archetype',
+    'user_id', 'handle', 'archetype', 'creds',
     'current_hitpoints', 'current_synaptic_integrity',
     'intellect', 'memory', 'perception', 'reflex', 'focus',
     'social', 'meat', 'motor', 'senses', 'muscle',
@@ -121,7 +128,7 @@ class Character extends Model
         return array_merge(
             array_fill_keys(self::ATTRIBUTES, 'integer'),
             array_fill_keys(array_keys(self::RESOURCES), 'integer'),
-            ['archetype' => 'integer'],
+            ['archetype' => 'integer', 'creds' => 'integer'],
         );
     }
 

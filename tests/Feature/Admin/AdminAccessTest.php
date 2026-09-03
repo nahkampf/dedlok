@@ -31,6 +31,11 @@ class AdminAccessTest extends TestCase
             'new item' => ['get', '/admin/items/create'],
             'skill list' => ['get', '/admin/skills'],
             'new skill' => ['get', '/admin/skills/create'],
+            // Archetype 1 is inserted by the migration, so this path exists in
+            // every environment the schema does. There is no create route:
+            // archetype ids are permanent and the roster arrives by migration.
+            'archetype list' => ['get', '/admin/archetypes'],
+            'edit archetype' => ['get', '/admin/archetypes/1/edit'],
         ];
     }
 

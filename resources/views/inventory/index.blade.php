@@ -3,7 +3,18 @@
 @section('title', Text::get('inventory.title'))
 
 @section('content')
-    <h1>{{ Text::get('inventory.title') }}</h1>
+    <div class="row row--wrap" style="align-items:flex-end">
+        <h1>{{ Text::get('inventory.title') }}</h1>
+        <div class="spacer"></div>
+
+        {{-- The balance. It lives here rather than in the topbar because this
+             is the screen about what you have; nothing spends it yet, so the
+             readout carries no delta. --}}
+        <div class="readout">
+            <span class="readout__label">{{ Text::get('creds.name') }}</span>
+            <span class="readout__value num">{{ number_format($character->creds, 0, '.', ' ') }}</span>
+        </div>
+    </div>
 
     {{-- Two inventories, one screen. The split is a property of the item, so a
          row can never appear in the wrong tab: Character::inventoryIn() filters

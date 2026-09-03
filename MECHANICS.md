@@ -41,6 +41,9 @@ down so the implementation has something to be checked against.
 | Item *modifiers* — items that change a stat | **specified only**; items exist, none of them alter a number yet |
 | Implants, drugs, injuries | **specified only** |
 | The market's supply — `items.rarity`, `items.seed_quantity`, `market_stock`, `market_purchases` | **built**, with `market:seed` on an eight-hour schedule |
+| Archetype loadouts — `archetypes.starting_creds`, `archetype_skills`, `archetype_items` | **built**, granted at creation by `App\Archetypes\LoadoutGranter`, edited in the archetype editor |
+| `archetypes.playable` — which roles are on offer | **built**; only the Deck Jockey is offered, the other six are withdrawn rather than deleted |
+| `characters.creds` — money | **built** as a balance only: granted at creation, spent by nothing |
 | The market itself — a storefront, a price, a transaction | **not built**; nothing spends money yet |
 | Cyberdeck hardware — `items.hardware`, `deck_slots`, `deck_modules` | **built**, with constraints and the item editor |
 | Fitting a module into a deck a player owns | **not built**; nothing is installed anywhere yet |
@@ -508,8 +511,9 @@ The rest of the contract:
 ## The market
 
 Only the supply side exists: what the market carries, and how it decides to
-carry more of it. Nothing sells anything yet — there is no price paid, no
-transaction, no money.
+carry more of it. Nothing sells anything yet — there is no price paid and no
+transaction. There is now money (`characters.creds`, granted by an archetype at
+creation), and nothing whatsoever spends it.
 
 Two columns on `items` and two tables:
 
@@ -880,6 +884,37 @@ into character rows, so it has to exist the moment the schema does — including
 in a freshly migrated test database. `Archetype::roster()` reads it once per
 request and caches it, because stat resolution asks for a character's perks
 every time it runs; any write to either table drops that cache.
+
+### Give an archetype a loadout
+
+What an archetype hands a character at creation: cash, skills, items. Edited in
+the archetype editor (`/admin/archetypes`), or written directly:
+
+```php
+Archetype::whereKey(1)->update(['starting_creds' => 1500]);
+
+ArchetypeSkill::create(['archetype_id' => 1, 'skill_id' => $skill->id, 'level' => 1]);
+ArchetypeItem::create(['archetype_id' => 1, 'item_id' => $deck->id, 'quantity' => 1]);
+```
+
+Three things worth knowing before you write one:
+
+- **Level 0 is the ordinary grant.** It means what injecting a skillbook means:
+  on the sheet, untrained. A level above 0 says the training happened before the
+  game started, and `SkillInjector::grant()` seeds `skill_points` to exactly
+  that level's threshold so the stored level and the points agree.
+- **A grant above level 0 must be reachable.** Everything the skill requires has
+  to be granted too, at least as far, or the character starts in a state their
+  own training queue would have refused to produce. The editor refuses it;
+  writing rows by hand does not, so do not.
+- **A grant is write-once.** It runs inside the transaction that creates the
+  character and never again. Editing a loadout changes what the next character
+  gets, never what an existing one has.
+
+`characters.creds` is the balance it lands in — the first money in the game, and
+still the only writer of it. It is not a stat and not a resource: nothing
+targets it, so nothing resolves it, and it has no derived maximum to clamp
+against.
 
 ### Add an attribute
 

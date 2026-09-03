@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Admin;
 
 use App\Inventory\Skillbook;
+use App\Models\ArchetypeItem;
+use App\Models\ArchetypeSkill;
 use App\Models\CharacterSkill;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -36,6 +38,10 @@ final class DeletionImpact
      * If it is a container, the rows INSIDE every copy of it go too:
      * inventory_items.parent_id cascades, which is the fiction (crush the
      * shard, lose the data) and is also what stops orphan rows.
+     *
+     * An archetype handing it out silently stops doing so. Nobody who already
+     * has one loses it — those rows are counted above — but every character
+     * made afterwards is short a thing the card promised.
      */
     public static function forItem(Item $item): self
     {
@@ -46,6 +52,7 @@ final class DeletionImpact
             'copies' => (int) (clone $rows)->sum('quantity'),
             'shelf' => $item->stockOnHand(),
             'purchases' => MarketPurchase::where('item_id', $item->id)->count(),
+            'archetype_loadouts' => ArchetypeItem::where('item_id', $item->id)->count(),
         ];
 
         if ($item->isContainer()) {
@@ -89,6 +96,10 @@ final class DeletionImpact
             'book_copies' => $book === null
                 ? 0
                 : (int) InventoryItem::where('item_id', $book->id)->sum('quantity'),
+            // Both halves of the loadout: the skill itself, and the book for
+            // it that an archetype might hand out instead.
+            'archetype_loadouts' => ArchetypeSkill::where('skill_id', $skill->id)->count()
+                + ($book === null ? 0 : ArchetypeItem::where('item_id', $book->id)->count()),
         ];
 
         return new self(array_filter($counts, static fn (int $n): bool => $n > 0));

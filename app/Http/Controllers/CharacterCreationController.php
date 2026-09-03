@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Archetypes\LoadoutGranter;
+use App\Http\Middleware\ForbidSecondCharacter;
 use App\Models\Archetype;
+use App\Models\ArchetypeItem;
 use App\Models\ArchetypePerk;
+use App\Models\ArchetypeSkill;
 use App\Models\Character;
 use App\Models\Setting;
 use App\Models\SuggestedHandle;
 use App\Rules\ValidHandle;
+use App\Skills\SkillProgression;
 use App\Stats\Modifier;
 use App\Stats\Op;
 use App\Stats\Sources\ArchetypePerks;
@@ -34,16 +39,26 @@ class CharacterCreationController extends Controller
         $points = $this->attributePoints();
 
         return view('character.create', [
+            // Set by ForbidSecondCharacter when it lets an admin look at a
+            // screen their own character already disqualifies them from. The
+            // middleware has answered the question; asking the database again
+            // here would be a second answer to keep in step with the first.
+            'preview' => (bool) $request->attributes->get(ForbidSecondCharacter::PREVIEW, false),
             'points' => $points,
             'starting' => Character::startingAttributes($points),
             'satisfiable' => Character::poolIsSatisfiable($points),
             'archetypes' => $this->archetypes(),
+            // The denominator of the loadout meters: five segments, because
+            // five is where a skill tops out. Read from the progression rather
+            // than written into the markup, so the meter cannot outlive the
+            // curve it draws.
+            'maxLevel' => SkillProgression::fromConfig()->maxLevel(),
             'derived' => $this->derivedSpec(),
             'archetypeEffects' => $this->archetypeEffects(),
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, LoadoutGranter $granter): RedirectResponse
     {
         $points = $this->attributePoints();
 
@@ -52,11 +67,19 @@ class CharacterCreationController extends Controller
 
         $handle = ValidHandle::normalize($validated['handle']);
 
-        DB::transaction(function () use ($request, $validated, $handle): void {
-            $request->user()->character()->create(array_merge(
+        DB::transaction(function () use ($request, $validated, $handle, $granter): void {
+            $archetype = Archetype::withLoadout()->get((int) $validated['archetype']);
+
+            $character = $request->user()->character()->create(array_merge(
                 array_intersect_key($validated, array_flip(Character::ATTRIBUTES)),
                 ['handle' => $handle, 'archetype' => (int) $validated['archetype']],
             ));
+
+            // Inside the transaction with the character: a character that
+            // exists without the cash, skills and gear their archetype
+            // promised is worse than no character at all, and nothing would
+            // ever notice the difference.
+            $granter->grant($character, $archetype);
 
             SuggestedHandle::whereKey($handle)->first()?->update(['in_use' => true]);
         });
@@ -73,10 +96,16 @@ class CharacterCreationController extends Controller
                 new ValidHandle,
                 Rule::unique(Character::class, 'handle'),
             ],
+            /*
+             * A playable archetype, not merely an existing one. The cards
+             * disable the rest, but the browser is not a security boundary —
+             * a hand-rolled POST would otherwise mint a character as a role
+             * that has no loadout, no perks and nothing built behind it.
+             */
             'archetype' => [
                 'required',
                 'integer',
-                Rule::in(Archetype::roster()->keys()->all()),
+                Rule::in(Archetype::playable()->keys()->all()),
             ],
         ]);
 
@@ -196,12 +225,26 @@ class CharacterCreationController extends Controller
         return (int) (Setting::get(self::POINTS_SETTING) ?? self::DEFAULT_ATTRIBUTE_POINTS);
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * The cards: who each archetype is, what it changes, and what it hands you.
+     *
+     * Read through withLoadout() rather than the memoised roster, because this
+     * is one of the two screens that needs the loadout rows and the roster is
+     * deliberately kept to perks — see Archetype::withLoadout().
+     *
+     * @return list<array<string, mixed>>
+     */
     private function archetypes(): array
     {
         $archetypes = [];
 
-        foreach (Archetype::roster() as $archetype) {
+        // Offered first, withdrawn after — a menu opens with what can be
+        // ordered. Within each half the roster's own order holds, because
+        // archetype ids are the order they were written in.
+        $roster = Archetype::withLoadout()
+            ->sortByDesc(fn (Archetype $archetype): bool => (bool) $archetype->playable);
+
+        foreach ($roster as $archetype) {
             $archetypes[] = [
                 'id' => $archetype->id,
                 'slug' => $archetype->slug,
@@ -214,10 +257,58 @@ class CharacterCreationController extends Controller
                         'effect' => $this->perkEffect($perk),
                     ])
                     ->all(),
+                'playable' => (bool) $archetype->playable,
+                'creds' => (int) $archetype->starting_creds,
+                'skills' => $this->startingSkills($archetype),
+                'items' => $this->startingItems($archetype),
             ];
         }
 
         return $archetypes;
+    }
+
+    /**
+     * An archetype's starting skills, sorted the way a player reads them.
+     *
+     * By title rather than by id: the loadout is a list on a card, and
+     * insertion order is a fact about the editor rather than about the
+     * character. A grant whose skill has been deleted is skipped — the row
+     * cascades with it, so this only sees one mid-delete.
+     *
+     * @return list<array{title: string, level: int}>
+     */
+    private function startingSkills(Archetype $archetype): array
+    {
+        return $archetype->startingSkills
+            ->filter(fn (ArchetypeSkill $grant): bool => $grant->skill !== null)
+            ->sortBy(fn (ArchetypeSkill $grant): string => $grant->skill->title)
+            ->map(fn (ArchetypeSkill $grant): array => [
+                'title' => $grant->skill->title,
+                'level' => $grant->level,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * An archetype's starting items, by display name.
+     *
+     * displayName() rather than the column, so a skillbook in a loadout reads
+     * as the skill it teaches instead of as a blank.
+     *
+     * @return list<array{name: string, quantity: int}>
+     */
+    private function startingItems(Archetype $archetype): array
+    {
+        return $archetype->startingItems
+            ->filter(fn (ArchetypeItem $grant): bool => $grant->item !== null)
+            ->sortBy(fn (ArchetypeItem $grant): string => $grant->item->displayName())
+            ->map(fn (ArchetypeItem $grant): array => [
+                'name' => $grant->item->displayName(),
+                'quantity' => $grant->quantity,
+            ])
+            ->values()
+            ->all();
     }
 
     /**

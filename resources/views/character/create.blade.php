@@ -53,6 +53,16 @@
 
     <x-auth-errors />
 
+    {{-- An admin looking at a screen their own character disqualifies them
+         from. The middleware refuses the POST whatever this says; the notice
+         and the missing button are so the page does not offer something it
+         will not do. --}}
+    @if ($preview)
+        <div class="callout callout--warn" style="margin-top:var(--s-4)">
+            {{ Text::get('character.create.preview') }}
+        </div>
+    @endif
+
     @unless ($satisfiable)
         <div class="callout callout--crit" style="margin-top:var(--s-4)">
             {{ Text::get('character.attributes.pool_impossible', [
@@ -93,12 +103,23 @@
 
             <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
                 @foreach ($archetypes as $archetype)
+                    {{-- An archetype that is not offered yet stays on the page,
+                         disabled. The kit half-lights a .card--select holding a
+                         disabled radio, which is the whole treatment: a role
+                         nobody can pick is still worth reading, and hiding it
+                         would make the roster look shorter than it is. --}}
                     <label class="card card--select">
                         <input type="radio" name="archetype" value="{{ $archetype['id'] }}"
-                               @checked((int) old('archetype') === $archetype['id'])>
+                               @checked($archetype['playable'] && (int) old('archetype') === $archetype['id'])
+                               @disabled(! $archetype['playable'])>
                         <div class="card__hd">
                             <div class="card__title">{{ $archetype['name'] }}</div>
                             <div class="card__meta">{{ $archetype['role'] }}</div>
+                            @unless ($archetype['playable'])
+                                <div class="row" style="margin-top:var(--s-2)">
+                                    <span class="tag">{{ Text::get('character.archetype.unavailable') }}</span>
+                                </div>
+                            @endunless
                         </div>
                         <div class="card__bd">{{ $archetype['description'] }}</div>
                         @if ($archetype['perks'])
@@ -107,6 +128,59 @@
                                     <div class="card__stat">
                                         <span>{{ $perk['label'] }}</span>
                                         <b>{{ $perk['effect'] }}</b>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        {{-- The loadout: what the archetype GIVES, under what it
+                             changes. Rendered only when there is something to
+                             render — a headed block saying "nothing" on every
+                             card is noise, and an archetype with an empty
+                             loadout is a normal thing for one to be. --}}
+                        @if ($archetype['creds'] > 0 || $archetype['skills'] || $archetype['items'])
+                            <div class="card__stats">
+                                <div class="micro">{{ Text::get('character.loadout.section') }}</div>
+
+                                @if ($archetype['creds'] > 0)
+                                    <div class="card__stat">
+                                        <span>{{ Text::get('character.loadout.creds') }}</span>
+                                        <b>{{ number_format($archetype['creds'], 0, '.', ' ') }}</b>
+                                    </div>
+                                @endif
+
+                                @foreach ($archetype['skills'] as $skill)
+                                    @php
+                                        // What the segments say, for the people
+                                        // who cannot see them. An empty meter is
+                                        // a granted skill nobody has trained yet,
+                                        // which is not the same as no skill.
+                                        $meterLabel = $skill['level'] === 0
+                                            ? Text::get('character.loadout.injected')
+                                            : Text::get('character.loadout.level', [
+                                                'level' => $skill['level'],
+                                                'max' => $maxLevel,
+                                            ]);
+                                    @endphp
+                                    <div class="card__stat">
+                                        <span>{{ $skill['title'] }}</span>
+                                        {{-- Levels attained out of five, the same
+                                             segmented meter the skill tree draws.
+                                             Only what the archetype grants is lit. --}}
+                                        <div class="meter meter--seg"
+                                             style="--segs:{{ $maxLevel }};--v:{{ $skill['level'] / $maxLevel }};--fill:var(--ok);width:min(84px,45%);flex:0 0 auto;align-self:center"
+                                             role="img"
+                                             aria-label="{{ $meterLabel }}"
+                                             title="{{ $meterLabel }}">
+                                            <div class="meter__fill"></div>
+                                        </div>
+                                    </div>
+                                @endforeach
+
+                                @foreach ($archetype['items'] as $item)
+                                    <div class="card__stat">
+                                        <span>{{ $item['name'] }}</span>
+                                        <b>{{ Text::get('character.loadout.quantity', ['count' => $item['quantity']]) }}</b>
                                     </div>
                                 @endforeach
                             </div>
@@ -198,11 +272,17 @@
             </section>
         @endforeach
 
-        <div class="row" style="--gap:var(--s-3)">
-            <button type="submit" class="btn btn--go btn--lg cut" id="character-submit" disabled>
-                {{ Text::get('character.create.submit') }}
-            </button>
-            <span class="micro" id="submit-hint"></span>
+        <div class="row row--wrap" style="--gap:var(--s-3)">
+            {{-- Not rendered at all in a preview, rather than rendered
+                 disabled: the pool updater re-enables it the moment the form
+                 is valid, and a button that comes back to life on a screen
+                 that cannot save is worse than no button. --}}
+            @unless ($preview)
+                <button type="submit" class="btn btn--go btn--lg cut" id="character-submit" disabled>
+                    {{ Text::get('character.create.submit') }}
+                </button>
+            @endunless
+            <span class="micro" id="submit-hint">{{ $preview ? Text::get('character.create.preview_hint') : '' }}</span>
         </div>
     </form>
 
@@ -345,8 +425,12 @@ document.addEventListener('DOMContentLoaded', function () {
             blocker = T.needHandle;
         }
 
-        submit.disabled = blocker !== null;
-        hint.textContent = blocker || '';
+        // Absent in a preview, where there is nothing to enable and the hint
+        // already says why.
+        if (submit) {
+            submit.disabled = blocker !== null;
+            hint.textContent = blocker || '';
+        }
 
         // The readout tracks the pool only; it must not claim readiness while
         // something else is still outstanding.

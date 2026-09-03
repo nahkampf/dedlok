@@ -616,6 +616,189 @@ class CharacterCreationTest extends TestCase
         $this->actingAs($user->fresh())->get(route('home'))->assertOk();
     }
 
+    // ---- which archetypes are on offer -----------------------------------
+
+    public function test_only_the_deck_jockey_is_offered(): void
+    {
+        // The roster is seven and the menu is one. The rest are written but
+        // not built, so they are withdrawn rather than deleted — every
+        // character who ever chose one still points at the id.
+        $this->assertSame(['deckjockey'], Archetype::playable()->pluck('slug')->all());
+        $this->assertCount(7, Archetype::roster());
+    }
+
+    public function test_a_withdrawn_archetype_is_shown_but_cannot_be_chosen(): void
+    {
+        $response = $this->actingAs(User::factory()->create())->get(route('character.create'));
+
+        $response->assertOk();
+
+        // Still on the page, in full: a role nobody can pick yet is worth
+        // reading, and hiding it would make the roster look shorter than it is.
+        $response->assertSee('Crim');
+        $response->assertSee(Text::get('character.archetype.unavailable'));
+        $response->assertSee('value="2"', false);
+
+        // The kit half-lights a .card--select holding a disabled radio.
+        $this->assertStringContainsString(
+            'value="2"',
+            $this->radioMarkup($response->getContent(), 2),
+        );
+        $this->assertStringContainsString('disabled', $this->radioMarkup($response->getContent(), 2));
+        $this->assertStringNotContainsString('disabled', $this->radioMarkup($response->getContent(), 1));
+    }
+
+    public function test_the_server_refuses_a_withdrawn_archetype(): void
+    {
+        // The cards disable it; the browser is not a security boundary.
+        $this->actingAs(User::factory()->create())
+            ->post(route('character.store'), $this->payload(['archetype' => 2]))
+            ->assertSessionHasErrors('archetype');
+
+        $this->assertDatabaseCount('characters', 0);
+    }
+
+    public function test_offering_an_archetype_again_is_one_column(): void
+    {
+        Archetype::whereKey(2)->update(['playable' => true]);
+        Archetype::forgetRoster();
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('character.store'), $this->payload(['archetype' => 2]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(2, Character::firstOrFail()->archetype);
+    }
+
+    public function test_a_character_of_a_withdrawn_archetype_still_resolves(): void
+    {
+        // Withdrawing is not deleting: the perks, the name and the role all
+        // still have to work for whoever already chose it.
+        $character = Character::factory()->create(['archetype' => 2]);
+
+        $this->assertSame('Crim', Archetype::fromRoster(2)?->name);
+        $this->assertNotEmpty($character->modifiers());
+        $this->assertGreaterThan(0, $character->stat('hitpoints_max')->value);
+    }
+
+    /** The one archetype radio, so a test can ask whether it is disabled. */
+    private function radioMarkup(string $html, int $id): string
+    {
+        preg_match('/<input type="radio" name="archetype" value="'.$id.'".*?>/s', $html, $matches);
+
+        return $matches[0] ?? '';
+    }
+
+    // ---- the gate in the other direction ---------------------------------
+
+    public function test_a_player_with_a_character_cannot_reach_the_creation_screen(): void
+    {
+        $user = User::factory()->create();
+        Character::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->get(route('character.create'))
+            ->assertRedirect(route('home'));
+    }
+
+    public function test_a_player_with_a_character_cannot_create_a_second(): void
+    {
+        $user = User::factory()->create();
+        Character::factory()->create(['user_id' => $user->id, 'handle' => 'first']);
+
+        // Without the guard this is not a refusal but a 500: characters.user_id
+        // is unique, so the insert fails on an integrity error.
+        $this->actingAs($user)
+            ->post(route('character.store'), $this->payload())
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('error', Text::get('character.create.already'));
+
+        $this->assertDatabaseCount('characters', 1);
+        $this->assertSame('first', $user->fresh()->character->handle);
+    }
+
+    public function test_a_json_caller_with_a_character_gets_a_conflict(): void
+    {
+        $user = User::factory()->create();
+        Character::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->postJson(route('character.store'), $this->payload())
+            ->assertStatus(409)
+            ->assertJson(['redirect' => route('home')]);
+    }
+
+    public function test_an_admin_with_a_character_may_still_look_at_the_screen(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Character::factory()->create(['user_id' => $admin->id]);
+
+        $response = $this->actingAs($admin)->get(route('character.create'));
+
+        $response->assertOk();
+        $response->assertSee(Text::get('character.create.preview'));
+
+        // Looking, not saving: the button is not rendered at all, because the
+        // pool updater would re-enable a disabled one.
+        $response->assertDontSee('id="character-submit"', false);
+    }
+
+    public function test_an_admin_with_a_character_still_cannot_create_a_second(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Character::factory()->create(['user_id' => $admin->id, 'handle' => 'first']);
+
+        $this->actingAs($admin)
+            ->post(route('character.store'), $this->payload())
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('error', Text::get('character.create.already'));
+
+        $this->assertDatabaseCount('characters', 1);
+        $this->assertSame('first', $admin->fresh()->character->handle);
+    }
+
+    public function test_an_admin_without_a_character_gets_the_ordinary_form(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('character.create'))
+            ->assertOk()
+            ->assertSee('id="character-submit"', false)
+            ->assertDontSee(Text::get('character.create.preview'));
+
+        $this->actingAs($admin)
+            ->post(route('character.store'), $this->payload())
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('characters', 1);
+    }
+
+    public function test_the_exception_is_a_read_and_belongs_to_admins_only(): void
+    {
+        // The same request from a player with a character is still bounced —
+        // the preview is a screen an admin maintains, not a screen anyone may
+        // revisit.
+        $user = User::factory()->create();
+        Character::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->get(route('character.create'))
+            ->assertRedirect(route('home'));
+    }
+
+    public function test_the_guard_does_not_touch_a_player_who_has_no_character(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get(route('character.create'))->assertOk();
+        $this->actingAs($user)->post(route('character.store'), $this->payload())
+            ->assertRedirect(route('home'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('characters', 1);
+    }
+
     public function test_max_length_handle_is_accepted_here(): void
     {
         $user = User::factory()->create();
