@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-09-03
+
+### Changed
+
+- Decks and modules (4bab64a). There are now cyberdecks and modules, decks
+  have slots for various types of hardware, and hardware have various 
+  properties.
+
+### Migrations
+
+- `2026_09_03_090000_create_cyberdeck_hardware`
+
+
 ## [0.5.1] — 2026-09-03
 
 ### Changed
@@ -123,7 +136,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/nahkampf/dedlok/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/nahkampf/dedlok/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/nahkampf/dedlok/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/nahkampf/dedlok/compare/v0.3.0...v0.4.0
