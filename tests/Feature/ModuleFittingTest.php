@@ -536,6 +536,26 @@ class ModuleFittingTest extends TestCase
         $this->assertSame(0, DeckFitting::count());
     }
 
+    public function test_the_rail_resolves_which_deck_you_mean(): void
+    {
+        $deck = $this->own($this->deckItem());
+        (new DeckEquipper)->equip($this->character, $deck);
+
+        $this->actingAs($this->character->user)
+            ->get(route('deck.index'))
+            ->assertRedirect(route('deck.show', $deck));
+    }
+
+    public function test_the_rail_says_so_when_there_is_no_deck_to_go_to(): void
+    {
+        // Sent to the stash, which is where a deck gets equipped — rather
+        // than to a screen that cannot exist, or a menu item that vanished.
+        $this->actingAs($this->character->user)
+            ->get(route('deck.index'))
+            ->assertRedirect(route('inventory.index'))
+            ->assertSessionHas('error', FittingRefusal::NotEquipped->message());
+    }
+
     public function test_the_screen_offers_the_way_in_and_the_way_out(): void
     {
         [$deck] = $this->loadedDeck();

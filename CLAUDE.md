@@ -172,7 +172,11 @@ by string concatenation.
 point.
 
 - **The rail (`.dock`) holds everywhere you can go**, plus the one thing you can do to
-  your session. Icons at rest; it opens to icon + label on hover where there is a
+  your session. **A rail item never points at a row id.** *Deck* links to
+  `deck.index`, which resolves which deck you mean and redirects — or sends you
+  to the stash saying you have equipped none. A nav item that appears and
+  disappears with your loadout is one nobody trusts, and the nav is the wrong
+  place to encode "you do not have one of these". Icons at rest; it opens to icon + label on hover where there is a
   pointer (`@media (hover: hover)`, so a touch device cannot leave `:hover` stuck on)
   and on the `data-dock-toggle` button everywhere else — which is the only way in on a
   phone. It opens on `:focus-within` too, so closing it has to **take the focus out with
@@ -465,16 +469,23 @@ the password-reset request.
   somewhere a click can land, and a phone has no hover at all. **A row inside a
   container gets no slot**, so its inject and eject buttons live on the
   container's card — the only place it is reachable.
-- **Every row has a right-click menu**, on the stash grid, on the equipped
-  deck's "in use" row, and on a fitted module on the board. `data-menu="#id"`
-  names a `<template>` and one handler covers all three ways in — right-click,
-  long-press on Android, and the menu key — because browsers fire `contextmenu`
-  for all of them. Cloned into one floating `.menu` host, the way `.inspector`
-  is, which is what lets a row carry a real form with a real CSRF token.
-- **A menu row that does nothing yet says so with a `.tag`** rather than being
-  absent. A menu that grows rows as features land is a menu nobody learns.
-  *Show on market* and *Disassemble* are those; *Detailed info*, *Fit to deck*,
-  *Take out of deck* and *Destroy* are real.
+- **An item's actions live on its card**, in `<x-item-detail>`, which is the
+  thing you already have open. **Do not put them behind a right-click.** They
+  were there once: a right-click has no mobile story, nothing on screen says it
+  exists, and a browser extension can eat `contextmenu` before the page ever
+  sees it — three separate ways for a feature to be invisible, and all three
+  happened.
+- **An action that does nothing yet says so with a `.tag`** rather than being
+  absent. A card that grows buttons as features land is a card nobody learns.
+  *Show on market* and *Disassemble* are those; *Fit to deck*, *Take out of
+  deck*, *Board*, *Inject*, *Store* and *Destroy* are real.
+- **Every surface that lists an item needs a route to its card**, since the
+  card is where the actions are: the stash grid has the slot itself, the
+  equipped deck's "in use" row has a Details button, and a filled socket on the
+  board has one in its dialog. All three go through `data-inspect-open`.
+- **The destroy confirmation is rendered beside the listing, never inside the
+  card** — `<x-item-destroy>`. The card is cloned into a shared modal, and a
+  `<dialog>` cloned with it would be a second copy of itself in the top layer.
 - **Destroying is real, irreversible, and the confirmation is the only brake** —
   the same decision the admin item editor took. The dialog spends what the
   delete reaches before offering the button: contents cascade with a container,

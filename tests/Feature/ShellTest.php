@@ -40,9 +40,13 @@ class ShellTest extends TestCase
         // Three destinations, and only three. Run and Contracts were a link to
         // the landing page and a link to nothing; the mark in the bar still
         // goes home, so removing the first cost no way of getting there.
-        foreach (['stash', 'skills'] as $section) {
+        foreach (['stash', 'deck', 'skills'] as $section) {
             $response->assertSee(Text::get("ui.nav.{$section}"));
         }
+
+        // The rail links to deck.index and never to a row: a nav item that
+        // appears and disappears with your loadout is one nobody trusts.
+        $response->assertSee(route('deck.index'), false);
 
         $response->assertDontSee(Text::get('ui.nav.contracts'));
 

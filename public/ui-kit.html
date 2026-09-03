@@ -667,25 +667,6 @@ public/assets/
       </template>
     </div>
     <div class="demo">
-      <div class="demo__hd"><h3 class="h3">Context menu</h3><p>Right-click the box below. <code class="inl">data-menu="#id"</code> names a <code class="inl">&lt;template&gt;</code>, and one handler covers all three ways in — a right-click, a long-press on Android, and the menu key or Shift+F10, since browsers fire <code class="inl">contextmenu</code> for every one of them. The content is cloned into a single floating <code class="inl">.menu</code> host, the way <code class="inl">.inspector</code> is, which is what lets a row carry a real form with a real CSRF token. It is positioned against the pointer and flipped back inside the viewport rather than off the edge of it; anything that is not using it — a click, a scroll, Escape — closes it. A row that does nothing yet says so with a <code class="inl">.tag</code> instead of being absent, because a menu that grows rows as features land is a menu nobody learns. <code class="inl">.menu__item--danger</code> is for the destructive one, which is one of the three things the accent is for.</p></div>
-      <template class="demo-src">
-        <div class="frame" style="display:grid;place-items:center;width:min(280px,100%);height:96px" data-menu="#demo-menu">
-          <span class="micro">Right-click me</span>
-        </div>
-
-        <template id="demo-menu">
-          <div class="menu" role="menu" aria-label="Item actions">
-            <button type="button" class="menu__item" role="menuitem">Detailed info</button>
-            <button type="button" class="menu__item" role="menuitem" disabled>Show on market <span class="tag">Not yet</span></button>
-            <button type="button" class="menu__item" role="menuitem">Fit to deck</button>
-            <div class="menu__sep"></div>
-            <button type="button" class="menu__item" role="menuitem" disabled>Disassemble <span class="tag">Not yet</span></button>
-            <button type="button" class="menu__item menu__item--danger" role="menuitem">Destroy…</button>
-          </div>
-        </template>
-      </template>
-    </div>
-    <div class="demo">
       <div class="demo__hd"><h3 class="h3">Modal, toasts, tooltip</h3><p>Buttons here are live — the dialog and toast handlers ship in <code class="inl">ui-kit.js</code>.</p></div>
       <template class="demo-src">
         <div class="row row--wrap">
@@ -931,7 +912,7 @@ public/assets/
               <div class="row" style="--gap:var(--s-2);align-items:flex-start">
                 <span class="stack" style="--gap:2px;min-width:0">
                   <span class="item-card__name">Memory shard</span>
-                  <span class="item-card__tier">Tier Two · Physical</span>
+                  <span class="row row--wrap" style="--gap:var(--s-2)"><span class="tag tag--warn">Physical</span><span class="item-card__tier">Tier Two</span></span>
                 </span>
                 <div class="spacer"></div>
                 <button type="button" class="btn btn--sm btn--ghost" data-act data-close aria-label="Close">✕</button>
@@ -962,7 +943,7 @@ public/assets/
               <div class="row" style="--gap:var(--s-2);align-items:flex-start">
                 <span class="stack" style="--gap:2px;min-width:0">
                   <span class="item-card__name">Hacking, injectable</span>
-                  <span class="item-card__tier">Tier One · Data</span>
+                  <span class="row row--wrap" style="--gap:var(--s-2)"><span class="tag tag--warn">Data</span><span class="item-card__tier">Tier One</span></span>
                 </span>
                 <div class="spacer"></div>
                 <button type="button" class="btn btn--sm btn--ghost" data-act data-close aria-label="Close">✕</button>

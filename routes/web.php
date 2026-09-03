@@ -47,6 +47,17 @@ Route::middleware('auth')->group(function () {
     // to the creation screen, so these can assume one exists.
     Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
 
+    /*
+     * The deck, without having to know which one.
+     *
+     * What the rail links to: a player thinks "my deck", not "inventory row
+     * 3", and only the character knows which row that is. Resolving it here
+     * rather than in the nav means the answer — including "you have not
+     * equipped one" — is given once, in a place that can explain it, instead
+     * of being encoded in whether a menu item is there.
+     */
+    Route::get('/deck', [DeckController::class, 'index'])->name('deck.index');
+
     // A deck you own, as the thing rather than as a spec line. The row and
     // not the item: two players holding the same model will have different
     // modules in them once fitting exists, and only the row can say so.

@@ -40,6 +40,14 @@
                 <span class="dock__label">{{ Text::get('ui.nav.stash') }}</span>
             </a>
 
+            {{-- Not a row id: the player thinks "my deck", and deck.index is
+                 what turns that into one — or explains that there is none. --}}
+            <a class="dock__item" href="{{ route('deck.index') }}"
+               @if (request()->routeIs('deck.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#9108;</span>
+                <span class="dock__label">{{ Text::get('ui.nav.deck') }}</span>
+            </a>
+
             <a class="dock__item" href="{{ route('skills.index') }}"
                @if (request()->routeIs('skills.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#10022;</span>

@@ -912,11 +912,11 @@ Readiness is computed from the RESOLVED totals, so a skill that cuts draw brings
 an over-committed deck into spec without `DeckRequirement` knowing that skills
 exist.
 
-### What the item menu promises and does not do
+### What an item's card promises and does not do
 
-The right-click menu is where a row's verbs live, and three of them are doors
-with nothing behind them yet. They are shown, tagged "Not yet", rather than
-hidden — a menu that grows rows as features land is a menu nobody learns.
+An item's card is where its verbs live, and three of them are doors with
+nothing behind them yet. They are shown, tagged "Not yet", rather than hidden —
+a card that grows buttons as features land is a card nobody learns.
 
 - **Show on market** needs a storefront. The market has a supply side and
   nothing that sells; see *The market's supply side*.

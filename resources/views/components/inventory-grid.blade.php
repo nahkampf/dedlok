@@ -43,7 +43,6 @@
                     <button type="button"
                         class="slot slot--filled {{ $item->tierClass() }}"
                         data-inspect="#detail-{{ $entry->id }}"
-                        data-menu="#menu-{{ $entry->id }}"
                         aria-haspopup="dialog"
                         {{-- No title attribute: the browser's own tooltip
                              would sit on top of the inspector saying half of
@@ -71,14 +70,11 @@
                         <x-item-detail :entry="$entry" :fits="$fits" />
                     </template>
 
-                    <x-item-menu :entry="$entry" />
+                    <x-item-destroy :entry="$entry" />
                 @endforeach
             </div>
 
-            <p class="micro" style="color:var(--ink-3);margin:0">
-                {{ Text::get('inventory.inspect_hint') }}
-                {{ Text::get('inventory.menu.hint') }}
-            </p>
+            <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('inventory.inspect_hint') }}</p>
         </div>
     @endif
 </div>

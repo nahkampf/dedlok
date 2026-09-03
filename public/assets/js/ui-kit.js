@@ -74,68 +74,6 @@
     document.querySelectorAll(".dock[data-expanded]").forEach((dock) => setDock(dock, false));
   });
 
-  /* --- Context menu -----------------------------------------------------
-     <button data-menu="#menu-7">…</button>
-     <template id="menu-7"><div class="menu">…</div></template>
-
-     One handler covers all three ways in: a right-click, a long-press on
-     Android, and the menu key or Shift+F10 — browsers fire `contextmenu` for
-     every one of them, so none of them needs code of its own.
-
-     The content is cloned from the template, like the inspector, so it exists
-     once in the document and can carry real forms with real CSRF tokens. */
-  let menuHost = null;
-
-  function closeMenu() {
-    if (menuHost) menuHost.hidden = true;
-  }
-
-  on("contextmenu", "[data-menu]", (e, el) => {
-    const tpl = document.querySelector(el.dataset.menu);
-    if (!tpl || !tpl.content) return;
-
-    e.preventDefault();
-
-    if (!menuHost) {
-      menuHost = document.createElement("div");
-      menuHost.hidden = true;
-      document.body.appendChild(menuHost);
-    }
-
-    menuHost.replaceChildren(tpl.content.cloneNode(true));
-    menuHost.hidden = false;
-
-    const menu = menuHost.firstElementChild;
-    if (!menu) return closeMenu();
-
-    // Against the pointer, flipped back inside the viewport rather than off
-    // the edge of it. The menu key fires with no coordinates, so fall back to
-    // the element it came from.
-    const r = menu.getBoundingClientRect();
-    const anchor = el.getBoundingClientRect();
-    const x = e.clientX || anchor.left;
-    const y = e.clientY || anchor.bottom;
-    const GAP = 4;
-
-    menu.style.transform =
-      "translate(" +
-      Math.round(Math.max(GAP, Math.min(x, innerWidth - r.width - GAP))) + "px," +
-      Math.round(Math.max(GAP, Math.min(y, innerHeight - r.height - GAP))) + "px)";
-
-    const first = menu.querySelector(".menu__item:not(:disabled)");
-    if (first) first.focus();
-  });
-
-  /* Anything that is not using the menu closes it. Registered after the
-     [data-open] handler above, so a menu item that opens a dialog has already
-     opened it by the time this runs. */
-  document.addEventListener("click", closeMenu);
-  addEventListener("scroll", closeMenu, true);
-  addEventListener("resize", closeMenu);
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeMenu();
-  });
-
   /* Open an item's detail modal from somewhere that is not the item — a menu
      row, say. The same template the inspector uses, without the hover layer
      that would otherwise follow the pointer across the menu. */
