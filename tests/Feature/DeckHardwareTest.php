@@ -11,6 +11,7 @@ use App\Decks\Variant;
 use App\Models\DeckModule;
 use App\Models\DeckSlot;
 use App\Models\Item;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -135,6 +136,22 @@ class DeckHardwareTest extends TestCase
         // Everything that is not deck hardware says nothing at all, so a
         // caller can render the line without asking what it is holding.
         $this->assertNull(Item::factory()->create()->hardwareSummary());
+    }
+
+    public function test_a_module_says_which_piece_it_is_not_which_inventory(): void
+    {
+        // The spec line gives a module's numbers and never its kind, so
+        // without this a stick of RAM introduced itself as "Physical".
+        $ram = Item::factory()->module(Hardware::Ram, Variant::Opto, measure: 16, draw: 34)->create();
+
+        $this->assertSame('RAM', $ram->fresh()->kindName());
+        $this->assertSame('Cyberdeck', Item::factory()->cyberdeck()->create()->kindName());
+
+        // Everything else has only the inventory it lives in to go on.
+        $this->assertSame(
+            Text::get('items.kinds.physical'),
+            Item::factory()->physical()->create()->kindName(),
+        );
     }
 
     public function test_becoming_a_module_takes_the_sockets_away(): void

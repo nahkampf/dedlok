@@ -166,6 +166,58 @@ calling it done. There is no browser in this environment, so this is done by rea
 player-supplied must go through `UI.esc()` first. The same applies to any markup you build
 by string concatenation.
 
+### The page frame: rail left, numbers on top
+
+`layouts/app.blade.php` is a `.shell`, and the split between its two halves is the
+point.
+
+- **The rail (`.dock`) holds everywhere you can go**, plus the one thing you can do to
+  your session. Icons at rest; it opens to icon + label on hover where there is a
+  pointer (`@media (hover: hover)`, so a touch device cannot leave `:hover` stuck on)
+  and on the `data-dock-toggle` button everywhere else — which is the only way in on a
+  phone. It opens on `:focus-within` too, so closing it has to **take the focus out with
+  it** or the press that shut it holds it open.
+- **It overlays, never reflows.** `.shell--docked` is what pins it to the viewport;
+  a bare `.dock` is an ordinary column, which is what makes it demonstrable in the
+  gallery. Widening a rail that is in flow would reflow the whole page on hover.
+- **The icon column stays `--dock-w` wide in both states**, and the active marker is a
+  pseudo-element rather than a border, so nothing moves sideways when the rail opens or
+  the page changes.
+- **The bar is the mark and three numbers** — HP, SI, creds. Nothing else: that is what
+  makes them fit across a 320px phone, and it is why *Jack out* sits in the rail. The
+  wordmark is `.brand__name`, its own element rather than a bare text node so CSS can
+  drop it below 560px while the mark stays. It is
+  `.topbar--stuck`: **sticky, not fixed**, so it stays in flow and nothing below has to
+  reserve a matching strip of padding — the number that is still 52px on the day the bar
+  wraps to two rows.
+- **`creds` has no bar because it has no maximum.** The two resources come from
+  `Character::RESOURCES`, whose maxima are derived and resolved per request;
+  `Character::resourceRatio()` is the meter's `--v`. Money is in neither, for the reason
+  it is not in `RESOURCES`.
+- **What counts as "low" lives in `ui-kit.js`, not in a template.** A server-rendered bar
+  carries `data-hot-low` and its `--v`; the kit runs the same test over it on load, so
+  the threshold is one number in one place. `.meter--hot` paints the fill element and not
+  only `--fill`, because a colour set inline out-specifies a custom property and a
+  critical bar would otherwise sit there green.
+- **Every glyph in the rail is from the set proved to render** in the kit's font stack,
+  the same discipline as `Item::glyph()`. Measure a candidate against the stack before
+  using it; the ones that come back at the notdef width are missing.
+
+### Cache busting
+
+**Both layouts load the kit through `App\Support\Asset::url()`, never bare `asset()`.**
+It appends the file's own mtime as `?v=`. There is no bundler, so nothing renames a file
+when its contents change, and Apache sends no `Cache-Control` for `public/assets` — which
+leaves a browser free to hold `ui-kit.js` for as long as it likes without asking whether
+it is still current. That is invisible while a file is stable and then costs an afternoon:
+the markup arrives new, the behaviour driving it is a week old, and the screen does
+nothing. The stamp is the mtime rather than a hand-kept number, because a version someone
+has to remember to bump is wrong exactly when it matters. `tests/Feature/AssetVersionTest.php`
+holds the rule.
+
+`public/ui-kit.html` is static and still links the assets bare. It is a developer's page
+and a reload fixes it; a query string written into the file by hand would go stale.
+
 ### Fonts
 
 **Every face is self-hosted and declared in `ui-kit.css`.** No font request leaves the
@@ -401,6 +453,18 @@ the password-reset request.
   the same place still collide. **It is derived on every save by the model, never set by
   hand.** A generated column would be better and is not available: `stackable` lives on
   `items`, and a generated column can only read its own row.
+- **The stash is a slot grid, and the detail card is the only place words are.**
+  One `.slot` per *loose* row — the grid is deliberately unpadded, because
+  neither inventory has a capacity and a run of empty slots would draw a limit
+  that does not exist. Everything a slot cannot show (flavour, numbers, a
+  container's contents, and every action) lives in one `<x-item-detail>`,
+  rendered once into a `<template>` beside the slot. The kit's `data-inspect`
+  behaviour clones it into the floating `.inspector` on hover and into a modal
+  on click, so hover and tap show the same card and neither can drift.
+  `[data-act]` marks what appears only in the modal: a hover layer is not
+  somewhere a click can land, and a phone has no hover at all. **A row inside a
+  container gets no slot**, so its inject and eject buttons live on the
+  container's card — the only place it is reachable.
 - `size` is enforced, but only as what a container's contents cost against its capacity.
   `weight` is still stored and unenforced, and neither inventory has an overall capacity.
 
@@ -481,6 +545,11 @@ says which, and two tables carry what a bare `items` row cannot.
   CPU re-saved as a NIC loses its qFLOPS. It replaces a deck's sockets
   wholesale, like skill prerequisites — **when a socket can be occupied, that
   has to become a diff.**
+- **A module's spec line never says what it is.** `hardwareSummary()` gives the
+  numbers — `Opto-electrical · 16 QB · 34 W draw` — and the word RAM appears
+  nowhere in it. `Item::kindName()` is what answers that, and it is what the
+  detail card puts beside the tier: deck hardware says which piece it is, and
+  everything else falls back to the inventory it lives in (`items.kinds.*`).
 - **Nothing a deck stores does anything yet.** The numbers are validated and
   read by no stat, check or modifier. Do not describe a deck as making its
   owner better at anything.

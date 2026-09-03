@@ -41,6 +41,133 @@
     if (dlg) dlg.close();
   });
 
+  /* --- Dock -------------------------------------------------------------
+     <nav class="dock">
+       <button class="dock__item" data-dock-toggle aria-expanded="false">…
+     Hover opens the rail on a pointer device; this is the way in everywhere
+     else, and the way to pin it open on a desktop. */
+  function setDock(dock, open) {
+    dock.toggleAttribute("data-expanded", open);
+    dock.querySelectorAll("[data-dock-toggle]").forEach((b) =>
+      b.setAttribute("aria-expanded", String(open))
+    );
+    // Closing has to take the focus out with it. The rail also opens on
+    // :focus-within — which is what a keyboard user needs — so leaving focus
+    // on the toggle would hold it open against the very press that shut it.
+    if (!open && dock.contains(document.activeElement)) document.activeElement.blur();
+  }
+
+  on("click", "[data-dock-toggle]", (e, btn) => {
+    const dock = btn.closest(".dock");
+    if (dock) setDock(dock, !dock.hasAttribute("data-expanded"));
+  });
+
+  // A rail left open over the page is in the way, so anything that is not the
+  // rail closes it: tapping the page, or Escape.
+  document.addEventListener("click", (e) => {
+    document.querySelectorAll(".dock[data-expanded]").forEach((dock) => {
+      if (!dock.contains(e.target)) setDock(dock, false);
+    });
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    document.querySelectorAll(".dock[data-expanded]").forEach((dock) => setDock(dock, false));
+  });
+
+  /* --- Inspector --------------------------------------------------------
+     <button class="slot" data-inspect="#detail-7">…</button>
+     <template id="detail-7"><div class="item-card">…</div></template>
+
+     Pointing at a thing floats its detail beside it; clicking or tapping opens
+     the same detail in a modal, where the actions live. Both paths clone the
+     one <template>, so the detail is written once and the two presentations
+     cannot drift. Hover on its own would leave a phone with no way to read it
+     at all, which is the whole reason the click path exists. */
+  const GAP = 8;
+  let layer = null;
+  let sheet = null;
+
+  function detail(el) {
+    const tpl = document.querySelector(el.dataset.inspect);
+    return tpl && tpl.content ? tpl.content.cloneNode(true) : null;
+  }
+
+  function place(anchorEl) {
+    const a = anchorEl.getBoundingClientRect();
+    const r = layer.getBoundingClientRect();
+    // Above by preference, below when there is no room — the top row of a
+    // stash grid has nothing above it.
+    let top = a.top - r.height - GAP;
+    if (top < GAP) top = Math.min(a.bottom + GAP, innerHeight - r.height - GAP);
+    let left = a.left + a.width / 2 - r.width / 2;
+    left = Math.max(GAP, Math.min(left, innerWidth - r.width - GAP));
+    layer.style.transform =
+      "translate(" + Math.round(left) + "px," + Math.round(Math.max(GAP, top)) + "px)";
+  }
+
+  function inspect(el) {
+    const body = detail(el);
+    if (!body) return;
+    if (!layer) {
+      layer = document.createElement("div");
+      layer.className = "inspector";
+      layer.setAttribute("role", "tooltip");
+      document.body.appendChild(layer);
+    }
+    layer.replaceChildren(body);
+    layer.hidden = false;
+    place(el);
+    layer.setAttribute("data-shown", "");
+  }
+
+  function uninspect() {
+    if (!layer) return;
+    layer.removeAttribute("data-shown");
+    layer.hidden = true;
+  }
+
+  // pointerover/out rather than enter/leave: only the bubbling pair reaches a
+  // document-level listener. Touch is skipped — it would fire alongside the
+  // click that opens the modal.
+  on("pointerover", "[data-inspect]", (e, el) => {
+    if (e.pointerType !== "touch") inspect(el);
+  });
+  on("pointerout", "[data-inspect]", (e, el) => {
+    if (!el.contains(e.relatedTarget)) uninspect();
+  });
+  // :focus-visible, not plain focus: closing the modal returns focus to the
+  // slot, and a mouse user would otherwise be left holding the layer open.
+  on("focusin", "[data-inspect]", (e, el) => {
+    if (el.matches(":focus-visible")) inspect(el);
+  });
+  on("focusout", "[data-inspect]", () => uninspect());
+
+  // Fixed positioning is measured once, so anything that moves the anchor
+  // invalidates it. Cheaper to drop the layer than to follow the scroll.
+  addEventListener("scroll", uninspect, true);
+  addEventListener("resize", uninspect);
+
+  on("click", "[data-inspect]", (e, el) => {
+    const body = detail(el);
+    if (!body) return;
+    uninspect();
+    if (!sheet) {
+      sheet = document.createElement("dialog");
+      sheet.className = "modal modal--inspect";
+      // A click on the backdrop lands on the dialog itself, never on the card.
+      sheet.addEventListener("click", (ev) => {
+        if (ev.target === sheet) sheet.close();
+      });
+      document.body.appendChild(sheet);
+    }
+    sheet.replaceChildren(body);
+    // showModal() where there is one, show() where there is not: a card that
+    // opens without a backdrop still says what the item is, and the same guard
+    // is what [data-open] above already does.
+    if (sheet.showModal) sheet.showModal();
+    else if (sheet.show) sheet.show();
+  });
+
   /* --- Sortable tables --------------------------------------------------
      <th aria-sort="none" data-sort="num|text">                           */
   on("click", "th[data-sort]", (e, th) => {
@@ -98,7 +225,11 @@
   function meter(el, ratio) {
     const v = Math.max(0, Math.min(1, ratio));
     el.style.setProperty("--v", v);
+    // role="meter" is only meaningful with its bounds, and setting them here
+    // means no template has to remember two attributes that never vary.
     el.setAttribute("aria-valuenow", Math.round(v * 100));
+    el.setAttribute("aria-valuemin", "0");
+    el.setAttribute("aria-valuemax", "100");
     // data-hot-high: heat/overload bars. data-hot-low: health/ammo bars.
     var hot =
       (el.dataset.hotHigh !== undefined && v > 0.85) ||
@@ -203,6 +334,23 @@
   }
 
   document.querySelectorAll(".captcha").forEach(captcha);
+
+  /* A server-rendered bar already carries --v in its style attribute. Run the
+     same hot test over it, so "low" means one number in one place rather than
+     a copy of it in every template that draws a bar.
+
+     Twice, and idempotently: once now for the ordinary deferred case, and
+     again at DOMContentLoaded for bars that something else put in the document
+     after this file ran — which is exactly what the gallery does when it
+     clones a demo out of its <template>. */
+  function hotMeters() {
+    document.querySelectorAll(".meter[data-hot-low], .meter[data-hot-high]").forEach((el) => {
+      meter(el, parseFloat(getComputedStyle(el).getPropertyValue("--v")) || 0);
+    });
+  }
+
+  hotMeters();
+  document.addEventListener("DOMContentLoaded", hotMeters);
 
   window.UI = { toast, meter, log, type, esc, captcha };
 })();

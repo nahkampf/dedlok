@@ -277,6 +277,22 @@ class ContainmentTest extends TestCase
             ->assertSee(Text::get('inventory.contents_free', ['free' => 8, 'capacity' => 16]));
     }
 
+    public function test_a_stored_row_gets_no_slot_of_its_own_but_keeps_both_actions(): void
+    {
+        $card = $this->give($this->card);
+        $stored = $this->give($this->book, inside: $card);
+
+        $response = $this->actingAs($this->character->user)->get(route('inventory.index'));
+
+        // The grid shows loose rows only, so a book on a card is reachable
+        // only through the card's detail — which is therefore where its two
+        // actions have to be, or ejecting it becomes impossible from the UI.
+        $response->assertSee('data-inspect="#detail-'.$card->id.'"', false);
+        $response->assertDontSee('data-inspect="#detail-'.$stored->id.'"', false);
+        $response->assertSee(route('inventory.place', $stored), false);
+        $response->assertSee(route('inventory.inject', $stored), false);
+    }
+
     public function test_storing_and_ejecting_over_http(): void
     {
         $card = $this->give($this->card);

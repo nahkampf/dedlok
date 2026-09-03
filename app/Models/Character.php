@@ -453,6 +453,24 @@ class Character extends Model
     }
 
     /**
+     * How full a resource is, as a 0-1 ratio for a meter's --v.
+     *
+     * Zero when the maximum is zero rather than a division by it: a character
+     * whose ceiling has been driven to nothing reads as empty, which is what
+     * an empty bar already means.
+     */
+    public function resourceRatio(string $resource): float
+    {
+        $max = $this->maximumFor($resource);
+
+        if ($max <= 0) {
+            return 0.0;
+        }
+
+        return max(0.0, min(1.0, (int) $this->getAttribute($resource) / $max));
+    }
+
+    /**
      * Bring every resource inside its current maximum.
      *
      * Clamps DOWN and never scales: losing the implant that granted +20 max HP

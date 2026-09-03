@@ -1,10 +1,11 @@
+@use('App\Support\Asset')
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', config('app.name'))</title>
-    <link rel="stylesheet" href="{{ asset('assets/css/ui-kit.css') }}">
+    <link rel="stylesheet" href="{{ Asset::url('assets/css/ui-kit.css') }}">
 </head>
 <body class="bg-grid" style="min-height:100vh;display:grid;place-items:center;padding:var(--s-4)">
 
@@ -22,7 +23,7 @@
 </div>
 
 <x-captcha-runtime />
-<script src="{{ asset('assets/js/ui-kit.js') }}" defer></script>
+<script src="{{ Asset::url('assets/js/ui-kit.js') }}" defer></script>
 @stack('scripts')
 </body>
 </html>
