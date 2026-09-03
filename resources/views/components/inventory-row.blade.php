@@ -17,6 +17,10 @@
             <span class="micro" style="color:var(--ink-3)">
                 {{ Text::get('inventory.teaches', ['skill' => $item->useSkill->title]) }}
             </span>
+        @elseif ($item->hardwareSummary())
+            {{-- A deck's sockets or a module's numbers. It is what the item
+                 IS, so it reads where the skillbook's skill does. --}}
+            <span class="micro" style="color:var(--ink-3)">{{ $item->hardwareSummary() }}</span>
         @endif
     </span>
 

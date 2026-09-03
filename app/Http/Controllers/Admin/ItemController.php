@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Admin\DeletionImpact;
+use App\Decks\Hardware;
+use App\Decks\HardwareEditor;
+use App\Decks\SlotLayout;
+use App\Decks\SlotType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ItemRequest;
 use App\Market\Rarity;
@@ -13,6 +17,7 @@ use App\Models\Skill;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -23,6 +28,13 @@ use Illuminate\View\View;
  * and review. This screen is where that protection has to come from instead,
  * so the validation in App\Http\Requests\Admin\ItemRequest is the substantive
  * part and this class is mostly plumbing around it.
+ *
+ * An item is no longer always one row. A cyberdeck is a row plus a socket
+ * each in `deck_slots`; a module is a row plus its spec in `deck_modules`.
+ * Everything that writes more than one table does it in a transaction, and
+ * App\Decks\HardwareEditor is the only thing that decides which tables those
+ * are — an item cannot be a deck and a module at once, and clearing the side
+ * it stopped being is half of what saving one means.
  */
 class ItemController extends Controller
 {
@@ -32,10 +44,11 @@ class ItemController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
             'container' => ['nullable', 'string'],
             'market' => ['nullable', 'string'],
+            'hardware' => ['nullable', 'string'],
         ]);
 
         $items = Item::query()
-            ->with(['useSkill:id,slug,title', 'marketStock'])
+            ->with(['useSkill:id,slug,title', 'marketStock', 'deckSlots', 'deckModule'])
             ->when($filters['q'] ?? null, fn ($query, string $term) => $query->where(
                 fn ($inner) => $inner
                     ->where('slug', 'like', "%{$term}%")
@@ -44,6 +57,10 @@ class ItemController extends Controller
             ->when(
                 in_array($filters['container'] ?? null, Item::CONTAINERS, true),
                 fn ($query) => $query->inContainer($filters['container'])
+            )
+            ->when(
+                Hardware::tryFrom((string) ($filters['hardware'] ?? '')),
+                fn ($query, Hardware $hardware) => $query->where('hardware', $hardware->value)
             )
             ->when(($filters['market'] ?? null) === 'on', fn ($query) => $query->onMarket())
             ->when(($filters['market'] ?? null) === 'off', fn ($query) => $query->where('on_market', false))
@@ -64,7 +81,18 @@ class ItemController extends Controller
 
     public function store(ItemRequest $request): RedirectResponse
     {
-        $item = Item::create($request->columns());
+        $item = DB::transaction(function () use ($request): Item {
+            $item = Item::create($request->columns());
+
+            HardwareEditor::apply(
+                $item,
+                $request->hardware(),
+                $request->slotLayout(),
+                $request->moduleColumns(),
+            );
+
+            return $item;
+        });
 
         // To the editor rather than the list: the thing that was just made is
         // almost always the thing about to be adjusted.
@@ -80,7 +108,19 @@ class ItemController extends Controller
 
     public function update(ItemRequest $request, Item $item): RedirectResponse
     {
-        $item->update($request->columns());
+        DB::transaction(function () use ($request, $item): void {
+            $item->update($request->columns());
+
+            // Always, even for an item that is not hardware and never was:
+            // becoming nothing is a change too, and it is the one that has to
+            // take the old sockets with it.
+            HardwareEditor::apply(
+                $item,
+                $request->hardware(),
+                $request->slotLayout(),
+                $request->moduleColumns(),
+            );
+        });
 
         return back()->with('status', Text::get('admin.items.updated', ['item' => $item->slug]));
     }
@@ -122,6 +162,12 @@ class ItemController extends Controller
             // Every skill, so a book can be pointed at one. Small enough to
             // be a <select>; when it is not, this becomes a search field.
             'skills' => Skill::orderBy('title')->get(['id', 'slug', 'title']),
+            'hardwareKinds' => Hardware::cases(),
+            // Every socket a deck could present, which is what the counters
+            // in the form are: fourteen numbers, one per type.
+            'slotTypes' => SlotType::all(),
+            'layout' => $item?->slotLayout() ?? SlotLayout::empty(),
+            'module' => $item?->deckModule,
             'impact' => $item === null ? null : DeletionImpact::forItem($item),
         ];
     }

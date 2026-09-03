@@ -1,5 +1,6 @@
 @use('App\Support\Text')
 @use('App\Models\Item')
+@use('App\Decks\Hardware')
 @extends('layouts.app')
 @section('title', $item ? Text::get('admin.items.editing', ['item' => $item->slug]) : Text::get('admin.items.new'))
 
@@ -12,6 +13,18 @@
     // The column is cast to a Rarity, so the model side hands back an enum and
     // old() hands back the posted string. Normalise to the string once.
     $rarityValue = old('rarity', $item?->rarity?->value ?? 'common');
+
+    // The same normalisation for the hardware select: a stored enum on one
+    // side, a posted string on the other.
+    $hardwareValue = old('hardware', $item?->hardware?->value ?? '');
+    $variantValue = old('variant', $module?->variant?->value ?? '');
+    // Which panels start open. Everything they hide is enforced by the
+    // request, so this is disclosure and never a guarantee.
+    $isDeck = $hardwareValue === Hardware::Deck->value;
+    $isModule = $hardwareValue !== '' && ! $isDeck;
+    // A socket counter: what was typed, else what is stored, else none.
+    $slotCount = fn ($type) => (int) old('slots.'.$type->key(), $layout->count($type));
+    $moduleValue = fn (string $field) => old($field, $module?->{$field});
 @endphp
 
 @section('content')
@@ -205,6 +218,97 @@
         </div>
 
         <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.hardware') }}</span></div>
+            <div class="panel__bd">
+                <div class="field" @error('hardware') data-invalid @enderror>
+                    <label class="field__label" for="hardware">{{ Text::get('admin.items.fields.hardware') }}</label>
+                    <select class="select" id="hardware" name="hardware" data-hardware-control>
+                        <option value="">{{ Text::get('admin.items.fields.hardware_none') }}</option>
+                        @foreach ($hardwareKinds as $kind)
+                            <option value="{{ $kind->value }}" @selected($hardwareValue === $kind->value)>{{ $kind->label() }}</option>
+                        @endforeach
+                    </select>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.hardware_hint') }}</span>
+                    @error('hardware') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+            </div>
+        </div>
+
+        {{-- A deck's sockets. Thirteen counters, one per type, because that
+             is the whole vocabulary a deck can be specified in — see
+             App\Decks\SlotType. Zeroes are dropped on the way in, so the
+             counters a non-deck item posts are not a request for anything. --}}
+        <div class="panel" data-hardware="deck" @unless ($isDeck) hidden @endunless>
+            <div class="panel__hd">
+                <span class="micro">{{ Text::get('admin.items.sections.sockets') }}</span>
+                <div class="spacer"></div>
+                <span class="tag">{{ Text::plural('admin.items.sockets.total', $layout->total()) }}</span>
+            </div>
+            <div class="panel__bd stack" style="--gap:var(--s-4)">
+                <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('admin.items.sockets.help') }}</p>
+
+                @error('slots') <span class="field__error">{{ $message }}</span> @enderror
+
+                <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr))">
+                    @foreach ($slotTypes as $type)
+                        <div class="field" @error('slots.'.$type->key()) data-invalid @enderror>
+                            <label class="field__label" for="slot_{{ $type->key() }}">{{ $type->fullLabel() }}</label>
+                            <input class="input num" id="slot_{{ $type->key() }}"
+                                   name="slots[{{ $type->key() }}]" type="number"
+                                   min="0" max="{{ $type->max() }}" value="{{ $slotCount($type) }}">
+                            @if ($type->note())
+                                <span class="field__hint">{{ $type->note() }}</span>
+                            @endif
+                            @error('slots.'.$type->key()) <span class="field__error">{{ $message }}</span> @enderror
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
+        {{-- A module's own row. Which fields apply follows from the kind, and
+             every one that does not is prohibited rather than ignored — see
+             App\Http\Requests\Admin\ItemRequest::moduleRules(). --}}
+        <div class="panel" data-hardware="cpu npu ram nic expansion psu" @unless ($isModule) hidden @endunless>
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.module') }}</span></div>
+            <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr))">
+
+                <div class="field" data-hardware="cpu ram expansion" @error('variant') data-invalid @enderror>
+                    <label class="field__label" for="variant">{{ Text::get('admin.items.fields.socket') }}</label>
+                    <select class="select" id="variant" name="variant">
+                        <option value="">—</option>
+                        @foreach ($hardwareKinds as $kind)
+                            @foreach ($kind->variants() as $variant)
+                                <option value="{{ $variant->value }}" data-hardware="{{ $kind->value }}"
+                                        @selected($variantValue === $variant->value)>
+                                    {{ $variant->label() }}@if ($variant->note()) — {{ $variant->note() }}@endif
+                                </option>
+                            @endforeach
+                        @endforeach
+                    </select>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.socket_hint') }}</span>
+                    @error('variant') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+
+                @foreach ([
+                    'qflops' => 'cpu npu',
+                    'quantabits' => 'ram',
+                    'bandwidth' => 'nic',
+                    'watts' => 'psu',
+                    'power_draw' => 'cpu npu ram nic expansion',
+                ] as $field => $kinds)
+                    <div class="field" data-hardware="{{ $kinds }}" @error($field) data-invalid @enderror>
+                        <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
+                        <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0"
+                               value="{{ $moduleValue($field) }}">
+                        <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
+                        @error($field) <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.market') }}</span></div>
             <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr))">
 
@@ -273,5 +377,43 @@
             control.addEventListener('input', sync);
             sync();
         });
+
+        // The hardware kind decides which panels and which measures apply.
+        // One control, many targets, so it does not fit the pairwise wiring
+        // above. Every element carrying data-hardware lists the kinds it
+        // belongs to; a selection outside that list hides it.
+        (function () {
+            var kind = document.querySelector('[data-hardware-control]');
+            if (!kind) return;
+
+            var applies = function (el) {
+                return kind.value !== '' && el.dataset.hardware.split(' ').indexOf(kind.value) !== -1;
+            };
+
+            var sync = function () {
+                document.querySelectorAll('[data-hardware]').forEach(function (el) {
+                    if (el.tagName === 'OPTION') return;
+                    el.hidden = !applies(el);
+                });
+
+                // Socket options belong to one kind each. Hiding the ones that
+                // do not apply is not enough on its own: the selection has to
+                // leave with them, or a CPU keeps a QDRAM socket selected.
+                var socket = document.getElementById('variant');
+                if (!socket) return;
+
+                var first = null;
+                socket.querySelectorAll('option[data-hardware]').forEach(function (option) {
+                    option.hidden = !applies(option);
+                    if (!option.hidden && first === null) first = option.value;
+                });
+
+                var selected = socket.selectedOptions[0];
+                if (selected && selected.hidden) socket.value = first === null ? '' : first;
+            };
+
+            kind.addEventListener('change', sync);
+            sync();
+        })();
     </script>
 @endpush

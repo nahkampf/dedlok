@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Decks\Hardware;
+use App\Decks\HardwareEditor;
+use App\Decks\SlotLayout;
+use App\Decks\Variant;
 use App\Market\Rarity;
 use App\Models\Item;
 use App\Models\Skill;
@@ -35,6 +39,7 @@ class ItemFactory extends Factory
             'size' => fake()->numberBetween(0, 512),
             'capacity' => 0,
             'accepts' => null,
+            'hardware' => null,
             'base_cost' => fake()->numberBetween(10, 50_000),
             'on_market' => true,
             // Nothing the market stocks unless a test says so, matching the
@@ -88,6 +93,49 @@ class ItemFactory extends Factory
             'accepts' => $accepts,
             'stackable' => false,
         ]);
+    }
+
+    /**
+     * A cyberdeck, with the sockets $counts asks for — keyed the way the
+     * editor keys them, so a test reads like the form does.
+     *
+     * The sockets are written through App\Decks\HardwareEditor rather than
+     * inserted here, so a test is exercising the same writer the editor uses
+     * rather than a second one that agrees with it today.
+     *
+     * @param  array<string, int>  $counts
+     */
+    public function cyberdeck(array $counts = ['cpu_socket_k' => 1, 'psu' => 1]): static
+    {
+        return $this
+            ->state([
+                'hardware' => Hardware::Deck,
+                'container' => Item::CONTAINER_PHYSICAL,
+                // Two decks are two objects the moment either has anything
+                // fitted in it. Same reasoning as a container.
+                'stackable' => false,
+            ])
+            ->afterCreating(function (Item $item) use ($counts): void {
+                HardwareEditor::apply($item, Hardware::Deck, SlotLayout::fromCounts($counts));
+            });
+    }
+
+    /** A module: what it is, which socket it wants, and what it is worth. */
+    public function module(Hardware $kind, ?Variant $variant = null, int $measure = 100, int $draw = 10): static
+    {
+        return $this
+            ->state(['hardware' => $kind, 'container' => Item::CONTAINER_PHYSICAL])
+            ->afterCreating(function (Item $item) use ($kind, $variant, $measure, $draw): void {
+                $columns = ['variant' => $variant, 'power_draw' => $kind->draws() ? $draw : 0];
+
+                $column = $kind->measure();
+
+                if ($column !== null) {
+                    $columns[$column] = $measure;
+                }
+
+                HardwareEditor::apply($item, $kind, SlotLayout::empty(), $columns);
+            });
     }
 
     public function size(int $size): static

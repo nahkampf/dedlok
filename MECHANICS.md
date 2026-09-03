@@ -42,6 +42,9 @@ down so the implementation has something to be checked against.
 | Implants, drugs, injuries | **specified only** |
 | The market's supply — `items.rarity`, `items.seed_quantity`, `market_stock`, `market_purchases` | **built**, with `market:seed` on an eight-hour schedule |
 | The market itself — a storefront, a price, a transaction | **not built**; nothing spends money yet |
+| Cyberdeck hardware — `items.hardware`, `deck_slots`, `deck_modules` | **built**, with constraints and the item editor |
+| Fitting a module into a deck a player owns | **not built**; nothing is installed anywhere yet |
+| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, a power budget | **specified only**; the numbers are stored and read by nothing |
 | Inventory capacity — an overall limit per inventory | **specified only**; `weight` is stored and unenforced |
 
 Do not describe anything below as working until it appears in the table above.
@@ -555,6 +558,95 @@ The properties that matter:
 - **Nothing is transactional across items.** Each item reads the shelf it
   finds, so a pass that dies half way leaves a coherent market and the next one
   finishes the job.
+
+## Cyberdecks
+
+A cyberdeck is an item, and so is every module that goes in one. What makes
+them hardware is one column and two tables.
+
+| What | Where | Means |
+| --- | --- | --- |
+| `items.hardware` | `deck`, `cpu`, `npu`, `ram`, `nic`, `expansion`, `psu`, or NULL | what the item IS |
+| `deck_slots` | one row per socket on a deck | what a deck PRESENTS |
+| `deck_modules` | one row per module item | what a module is WORTH |
+
+`items.hardware` is the only place the kind is written down. `deck_modules`
+deliberately does not repeat it: a row that could disagree with its item about
+being a CPU is a row every reader has to defend against.
+
+### The sockets
+
+Fourteen (kind, variant) pairs are the whole vocabulary, and
+`App\Decks\SlotType` is where they are written down — the editor renders one
+counter per type, the request validates against the same list, and
+`App\Decks\SlotLayout` counts by it.
+
+| Kind | Variants | Cap per deck |
+| --- | --- | --- |
+| `cpu` | Socket G (448-pin), Socket K (624-pin), Socket Z (962-pin) | 4 |
+| `npu` | — | 4 |
+| `ram` | Opto-electrical, QDRAM, **Universal** | 8 |
+| `nic` | — | 4 |
+| `expansion` | XGate, PEI, Horizon | 5 |
+| `psu` | — | 2 |
+| `io` | Electrode, NeuraLink | 1 of each |
+
+**A cap is on the kind, not on each of its variants.** Five expansion slots
+means five altogether, not five of each — which is why it cannot be a CHECK
+constraint: a deck's sockets are separate rows, and no constraint on one of
+them can count the others. `ItemRequest::withValidator()` is where that,
+"a deck needs a CPU socket" and "a deck needs a power socket" live. The last
+two are game design rather than data integrity, and are a line each to remove.
+
+**`Universal` is a socket and never a module.** A RAM slot may take either kind
+of stick; no stick is both. That asymmetry is the reason a slot's variant and
+a module's variant are checked against separate lists, and the reason fit is
+`Variant::accepts()` rather than `===`.
+
+**An IO port seats nothing.** The electrode and neuralink ports are where the
+deck reaches the person using it. They are rows rather than two booleans on
+`items` because "what interfaces does this deck present" is one question, and
+answering half of it with rows and half with flags means every screen that
+lists a deck's hardware reads two shapes and joins them by hand.
+
+### The modules
+
+| Kind | Socket it wants | Measured by | Draws power |
+| --- | --- | --- | --- |
+| `cpu` | Socket G / K / Z | `qflops` | yes |
+| `npu` | the NPU socket | `qflops` | yes |
+| `ram` | Opto or QDRAM (or a Universal socket) | `quantabits` | yes |
+| `nic` | the NIC socket | `bandwidth`, in QB/s | yes |
+| `expansion` | XGate, PEI or Horizon | *nothing yet* | yes |
+| `psu` | the power socket | `watts` — what it SUPPLIES | no |
+
+**At most one measure per module, enforced by the schema.** They are four
+nullable columns rather than one generic `rating` because qFLOPS, QB, QB/s and
+watts do not convert into one another, and a single column would need a unit
+column beside it to mean anything. An expansion card fills none of them: what
+an expansion card does is undecided, and a made-up number now is a number to
+migrate away from later.
+
+**A supply gives power and draws none** — `chk_deck_modules_supply`. The other
+side of that sum, a deck's power budget, is not built: nothing is fitted into
+anything yet, so nothing has a budget to spend.
+
+### What is not built
+
+Fitting a module into a deck a player owns. That needs a row joining an
+inventory row to a `deck_slots` row, and it is the reason sockets are rows
+rather than counts — a count cannot be pointed at. Two things follow it when
+it arrives:
+
+- `App\Decks\HardwareEditor` replaces a deck's sockets wholesale, the way
+  skill prerequisites are replaced. Once a socket can be occupied, that has to
+  become a diff.
+- Decks are already refused permission to stack, for the same reason a
+  container is. Modules are not, and will have to be at the same time.
+
+None of the numbers mean anything yet. `qflops`, `quantabits` and `bandwidth`
+are stored, validated and read by nothing — no stat, no check, no modifier. A
+deck does not make its owner better at anything today.
 
 ## Recipes
 
