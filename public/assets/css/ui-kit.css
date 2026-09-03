@@ -1345,6 +1345,46 @@ cap-widget {
 [data-tip]:hover::after,
 [data-tip]:focus-visible::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* Context menu — right-click, long-press, or the menu key.
+   One floating host for the page, filled from a <template> beside whatever was
+   pointed at, the same way .inspector is. Fixed rather than absolute: it is
+   positioned against the pointer, and the pointer is in viewport coordinates. */
+.menu {
+  position: fixed; top: 0; left: 0;
+  z-index: var(--z-popover);
+  min-width: min(196px, calc(100vw - var(--s-4)));
+  max-width: calc(100vw - var(--s-4));
+  padding: var(--s-1) 0;
+  background: var(--bg-2);
+  border: var(--hair) solid var(--line-2);
+  border-radius: var(--r-1);
+  box-shadow: var(--shadow-2);
+}
+.menu[hidden] { display: none; }
+/* Forms are how a menu item that changes something posts. display:contents so
+   the wrapper does not become a row of its own. */
+.menu form { display: contents; }
+.menu__item {
+  display: flex; align-items: center; gap: var(--s-2);
+  width: 100%;
+  padding: 6px var(--s-3);
+  margin: 0; border: 0;
+  background: none;
+  font: inherit; font-size: var(--fs-sm); font-weight: 500;
+  text-align: left;
+  color: var(--ink-1);
+  cursor: pointer;
+}
+.menu__item:hover:not(:disabled) { background: var(--bg-3); color: var(--ink-0); }
+.menu__item:focus-visible { outline: 2px solid var(--ember); outline-offset: -2px; }
+.menu__item:disabled { color: var(--ink-3); cursor: not-allowed; }
+/* Destructive, which is one of the three things the accent is for. */
+.menu__item--danger { color: var(--crit); }
+.menu__item--danger:hover:not(:disabled) { background: var(--crit-a); color: var(--crit); }
+/* A tag on a menu item says why it does nothing — "Not yet", "No deck". */
+.menu__item .tag { margin-left: auto; }
+.menu__sep { height: var(--hair); margin: var(--s-1) 0; background: var(--line-0); }
+
 /* Modal — native <dialog> */
 dialog.modal {
   padding: 0;
@@ -1567,6 +1607,9 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
   color: var(--ink-2);
 }
 .frame__hud { position: absolute; bottom: 6px; right: 8px; z-index: 2; }
+/* The bracket owns the corner, so the label steps aside for it. The kit's own
+   demos show the two separately and never met this. */
+.frame.brackets > .frame__label { left: 22px; }
 
 /* Ticker — scrolling one-line feed */
 .ticker {
@@ -1773,6 +1816,36 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
   border-top: 7px solid var(--tier);
   border-left: 7px solid transparent;
 }
+/* A socket the deck is cooking.
+
+   Slow on purpose: this is a CONDITION and not an event, and a fast pulse
+   reads as something happening this second. --crit rather than the raw ember,
+   because what it says is that the thing is in danger — one of the three
+   meanings the accent is rationed for.
+
+   .slot--doomed is the same state past the point of no return: no longer a
+   risk but a certainty, so it stops asking for attention and simply looks
+   spent. It keeps the pulse to stay legible beside its neighbours. */
+.slot--hot {
+  border-color: var(--crit);
+  animation: slot-hot 2.4s ease-in-out infinite;
+}
+@keyframes slot-hot {
+  50% { box-shadow: 0 0 0 3px var(--crit-a); }
+}
+.slot--doomed {
+  background: var(--crit-a);
+  animation-duration: 1.2s;
+}
+.slot--doomed .slot__icon { opacity: .55; }
+
+/* The global reduced-motion rule up in section 2 already stops the pulse. What
+   it cannot do is leave anything in its place, so this holds the halo still —
+   a socket that was pulsing must not become a socket that looks fine. */
+@media (prefers-reduced-motion: reduce) {
+  .slot--hot { box-shadow: 0 0 0 2px var(--crit-a); }
+}
+
 .slot[aria-selected="true"] { border-color: var(--ink-0); box-shadow: 0 0 0 1px var(--ink-0); }
 .slot--drop { border-style: dashed; border-color: var(--ember); background: var(--crit-a); }
 
@@ -1874,6 +1947,83 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 .loadout { display: grid; gap: var(--s-2); }
 .loadout__row { display: grid; grid-template-columns: minmax(0, 88px) 48px minmax(0, 1fr); align-items: center; gap: var(--s-3); }
 .loadout__slot { width: 48px; height: 48px; }
+
+/* ── Board: a cyberdeck's sockets, arranged ────────────────────────────────
+   Nodes sit at percentage coordinates so the whole board scales with its
+   container, and they are SIZED in cqw so they scale with it rather than
+   against it. Below --board-min the sockets stop being legible, so the
+   wrapper scrolls instead of the board shrinking into a diagram of nothing. */
+.board-wrap { overflow-x: auto; }
+.board {
+  container-type: inline-size;
+  position: relative;
+  /* A board is an object, not a banner: stretched across a 1100px column it
+     becomes a poster with a diagram lost in the middle of it. */
+  max-width: min(720px, 100%);
+  min-width: 360px;
+  margin-inline: auto;
+  aspect-ratio: 4 / 3;
+}
+
+/* One SVG behind everything. Boxes carry their own background, so a wire
+   drawn centre-to-centre vanishes under the box it arrives at and nothing has
+   to work out where an edge is. */
+.board__wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.board__wire {
+  stroke: var(--line-1);
+  stroke-width: 1;
+  /* The viewBox is stretched to the board's aspect, so without this a wire
+     comes out thick one way and thin the other. */
+  vector-effect: non-scaling-stroke;
+}
+
+.board__node {
+  position: absolute;
+  z-index: 1;
+  /* Positioned by its CENTRE — the point every wire arrives at, and what
+     makes one coordinate mean the same thing for a one-socket node and a
+     six-socket one. */
+  transform: translate(-50%, -50%);
+}
+/* Out of the node's own box, so the node measures the sockets and nothing
+   else: a label under the box would drag the centre down with it. */
+.board__label {
+  position: absolute; top: calc(100% + 4px); left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-label); font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: var(--tracking-caps); text-transform: uppercase;
+  color: var(--ink-2); white-space: nowrap;
+  pointer-events: none;
+}
+.board__count { font-family: var(--font-mono); color: var(--ink-3); }
+
+/* More than one socket of a type gets the box, and the box is what the wire
+   attaches to — four sticks of RAM are not four wires saying the same thing. */
+.board__box {
+  /* An explicit column count rather than wrap: a bank of six is three and
+     three, not five and a straggler. --cols comes from BoardNode::columns(). */
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 1), auto);
+  gap: clamp(3px, 1cqw, 5px);
+  padding: clamp(3px, 1cqw, 6px);
+  background: var(--bg-1);
+  border: var(--hair) solid var(--line-1);
+  border-radius: var(--r-1);
+}
+.board__node--cpu .board__box { background: var(--bg-2); border-color: var(--line-2); }
+.board .slot { width: clamp(20px, 5.5cqw, 30px); }
+/* On a board an empty socket is a HOLE — somewhere a thing is missing from —
+   and a filled one is a thing. The kit's own .slot--filled tints by tier, and
+   at tier one that tint is grey on grey: at socket size the two states have to
+   differ in more than a shade. */
+.board .slot--empty { background: transparent; border-style: dashed; }
+.board .slot--filled .slot__icon { color: var(--ink-0); filter: none; }
+
+/* Editing. Nodes are focusable here and nowhere else, because dragging is the
+   only thing you can do to one and a pointer is not the only way to do it. */
+.board[data-board-edit] .board__node { cursor: grab; touch-action: none; }
+.board[data-board-edit] .board__node:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; }
+.board__node[data-dragging] { cursor: grabbing; z-index: 2; }
 
 /* ── UTILITIES ─────────────────────────────────────────────────────────── */
 

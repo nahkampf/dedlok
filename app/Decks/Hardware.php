@@ -30,6 +30,9 @@ enum Hardware: string
 
     case Psu = 'psu';
 
+    /** Takes heat away. The only kind whose measure is a subtraction. */
+    case Thermal = 'thermal';
+
     /** @return list<self> */
     public static function modules(): array
     {
@@ -60,6 +63,7 @@ enum Hardware: string
             self::Nic => SlotKind::Nic,
             self::Expansion => SlotKind::Expansion,
             self::Psu => SlotKind::Psu,
+            self::Thermal => SlotKind::Thermal,
         };
     }
 
@@ -98,6 +102,7 @@ enum Hardware: string
             self::Ram => 'quantabits',
             self::Nic => 'bandwidth',
             self::Psu => 'watts',
+            self::Thermal => 'cooling',
             self::Deck, self::Expansion => null,
         };
     }
@@ -105,12 +110,25 @@ enum Hardware: string
     /**
      * Does a module of this kind draw power?
      *
-     * Everything but the supply does. A PSU's number is what it gives, and
-     * the schema refuses a row that claims both.
+     * Everything but the supply does — a radiator has a fan, and the fan
+     * runs on the deck's power like anything else. A PSU's number is what it
+     * gives, and the schema refuses a row that claims both.
      */
     public function draws(): bool
     {
         return $this !== self::Deck && $this !== self::Psu;
+    }
+
+    /**
+     * Does a module of this kind MAKE heat?
+     *
+     * Everything but the thermal module, which takes it away. The exact mirror
+     * of draws() above, and the schema's chk_deck_modules_thermal is what
+     * makes it true of every row rather than most of them.
+     */
+    public function heats(): bool
+    {
+        return $this !== self::Deck && $this !== self::Thermal;
     }
 
     public function label(): string

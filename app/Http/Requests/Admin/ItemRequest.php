@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotKind;
 use App\Decks\SlotLayout;
@@ -49,7 +50,7 @@ class ItemRequest extends FormRequest
      *
      * @var list<string>
      */
-    private const MEASURES = ['qflops', 'quantabits', 'bandwidth', 'watts'];
+    private const MEASURES = ['qflops', 'quantabits', 'bandwidth', 'watts', 'cooling'];
 
     /** What an unsigned int column holds. A number above it is a typo. */
     private const MAX_MEASURE = 4_294_967_295;
@@ -87,13 +88,44 @@ class ItemRequest extends FormRequest
             'quantabits' => $this->numberOrNull('quantabits'),
             'bandwidth' => $this->numberOrNull('bandwidth'),
             'watts' => $this->numberOrNull('watts'),
+            'cooling' => $this->numberOrNull('cooling'),
+            'heat' => $this->numberOrNull('heat'),
+            'heat_level_warning' => $this->numberOrNull('heat_level_warning'),
+            'heat_level_limit' => $this->numberOrNull('heat_level_limit'),
             // The socket counters, with the empty ones dropped. The editor
             // renders all fourteen whatever kind of item is being edited, so
             // a form full of zeroes has to arrive as "no sockets asked for"
             // rather than as fourteen requests for none — otherwise a CPU
             // could never be saved, its slots being prohibited and present.
             'slots' => $this->positiveCounts(),
+            // The board arrives as one JSON string, because it is one document
+            // and fourteen pairs of number inputs is not a thing anyone would
+            // arrange by hand. Decoded here so the ordinary array rules below
+            // can read its shape; a string that is not an object stays a
+            // string and fails `array`, which is the message we want.
+            'board_layout' => $this->boardLayout(),
         ]);
+    }
+
+    /**
+     * The posted board, decoded, or null when the field is blank.
+     *
+     * Blank is "not arranged", which is a real state and the one every deck
+     * starts in — App\Decks\BoardLayout draws the automatic ring for it.
+     */
+    private function boardLayout(): mixed
+    {
+        $raw = $this->input('board_layout');
+
+        if (! is_string($raw) || trim($raw) === '') {
+            return null;
+        }
+
+        $decoded = json_decode($raw, true);
+
+        // Not decodable, or decodable to something that is not a map: hand it
+        // back as it came so `array` refuses it and says so.
+        return is_array($decoded) ? $decoded : $raw;
     }
 
     /**
@@ -133,7 +165,12 @@ class ItemRequest extends FormRequest
             // contents the moment a player owns two of them. A deck is the
             // same case one step ahead of itself — its sockets are what will
             // be filled per object, so two decks can never share a row.
-            'stackable' => $capacity > 0 || $hardware?->isDeck()
+            //
+            // A MODULE is the same case from the other end. A fitting points
+            // at an inventory row, and a row holding two sticks cannot be
+            // pointed at: fitting one of them would mean splitting the pile,
+            // and what came back would not be the object the player picked.
+            'stackable' => $capacity > 0 || $hardware !== null
                 ? ['boolean', 'declined']
                 : ['boolean'],
 
@@ -168,6 +205,15 @@ class ItemRequest extends FormRequest
             'slots' => $hardware?->isDeck()
                 ? ['required', 'array']
                 : ['prohibited'],
+
+            // A deck may have no arrangement — that is the ring — but only a
+            // deck may have one at all.
+            'board_layout' => $hardware?->isDeck()
+                ? ['nullable', 'array']
+                : ['prohibited'],
+            'board_layout.*' => ['array', 'size:2'],
+            'board_layout.*.0' => ['numeric', 'between:'.BoardLayout::MIN.','.BoardLayout::MAX],
+            'board_layout.*.1' => ['numeric', 'between:'.BoardLayout::MIN.','.BoardLayout::MAX],
         ], $this->slotCountRules(), $this->moduleRules($hardware));
     }
 
@@ -225,6 +271,28 @@ class ItemRequest extends FormRequest
             'power_draw' => $hardware?->draws()
                 ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
+
+            // And the mirror: a radiator takes heat away and makes none —
+            // chk_deck_modules_thermal. Zero is allowed on everything else,
+            // because most modules run cool and a required 1 would be a
+            // number invented to satisfy a rule.
+            'heat' => $hardware?->heats()
+                ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                : ['prohibited'],
+
+            /*
+             * What the module can stand. Nullable together — null is a part
+             * that does not care how hot the deck gets, which is a real answer
+             * and the one every module in the catalogue already gives. The
+             * pairing and the ordering are withValidator()'s, because neither
+             * rule can see the other field from here.
+             */
+            'heat_level_warning' => $hardware?->isModule()
+                ? ['nullable', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                : ['prohibited'],
+            'heat_level_limit' => $hardware?->isModule()
+                ? ['nullable', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                : ['prohibited'],
         ];
 
         $measure = $hardware?->measure();
@@ -263,10 +331,14 @@ class ItemRequest extends FormRequest
             'container.in' => Text::get('admin.validation.hardware_is_physical'),
             'slots.required' => Text::get('admin.validation.deck_needs_slots'),
             'slots.prohibited' => Text::get('admin.validation.slots_need_a_deck'),
+            'board_layout.prohibited' => Text::get('admin.validation.board_needs_a_deck'),
+            'board_layout.array' => Text::get('admin.validation.board_malformed'),
             'variant.required' => Text::get('admin.validation.module_needs_variant'),
             'variant.prohibited' => Text::get('admin.validation.variant_needs_a_kind'),
             'power_draw.prohibited' => Text::get('admin.validation.no_power_draw'),
             'power_draw.required' => Text::get('admin.validation.module_needs_power'),
+            'heat.prohibited' => Text::get('admin.validation.no_heat'),
+            'heat.required' => Text::get('admin.validation.module_needs_heat'),
         ];
     }
 
@@ -333,6 +405,30 @@ class ItemRequest extends FormRequest
                     ]));
                 }
             }
+
+            // Both heat levels or neither, and in that order. The schema's
+            // chk_deck_modules_heat_levels says the same; this is the half
+            // that explains itself, since what the database returns is a 500
+            // and a constraint name.
+            $warning = $this->input('heat_level_warning');
+            $limit = $this->input('heat_level_limit');
+
+            if (($warning === null) !== ($limit === null)) {
+                $validator->errors()->add('heat_level_limit', Text::get('admin.validation.heat_levels_pair'));
+            } elseif ($warning !== null && (int) $limit < (int) $warning) {
+                $validator->errors()->add('heat_level_limit', Text::get('admin.validation.heat_levels_order'));
+            }
+
+            // A board's keys are socket types. `board_layout.*` can say what
+            // a VALUE looks like and nothing about what a key is allowed to
+            // be, so this is the half the rule set cannot reach.
+            foreach (array_keys((array) $this->input('board_layout', [])) as $key) {
+                if (! is_string($key) || SlotType::fromKey($key) === null) {
+                    $validator->errors()->add('board_layout', Text::get('admin.validation.board_unknown_socket'));
+
+                    break;
+                }
+            }
         });
     }
 
@@ -371,7 +467,23 @@ class ItemRequest extends FormRequest
 
         // The hardware lives in two other tables. `hardware` itself stays —
         // it is the column on `items` that says which of them to look in.
-        unset($data['slots'], $data['variant'], $data['power_draw']);
+        unset(
+            $data['slots'], $data['variant'], $data['power_draw'], $data['heat'],
+            $data['heat_level_warning'], $data['heat_level_limit'],
+        );
+
+        // Always written, never merely omitted: an item that has stopped being
+        // a deck has to LOSE its board, and a key that is absent from an
+        // update leaves the old one sitting there. The same reason
+        // HardwareEditor clears the side an item stopped being.
+        //
+        // Cleaned on the way past as well. The validator has already refused
+        // the shapes that matter; this is what stops a coordinate a hair
+        // outside the frame, or a key for a socket the deck no longer has,
+        // from being stored as the truth.
+        $data['board_layout'] = ($this->hardware()?->isDeck() ?? false)
+            ? (BoardLayout::clean((array) ($data['board_layout'] ?? [])) ?: null)
+            : null;
 
         foreach (self::MEASURES as $column) {
             unset($data[$column]);
@@ -414,6 +526,11 @@ class ItemRequest extends FormRequest
         $columns = [
             'variant' => $data['variant'] ?? null,
             'power_draw' => (int) ($data['power_draw'] ?? 0),
+            // A radiator's is prohibited and therefore absent, which is the
+            // zero chk_deck_modules_thermal wants.
+            'heat' => (int) ($data['heat'] ?? 0),
+            'heat_level_warning' => $data['heat_level_warning'] ?? null,
+            'heat_level_limit' => $data['heat_level_limit'] ?? null,
         ];
 
         foreach (self::MEASURES as $column) {

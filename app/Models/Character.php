@@ -235,6 +235,27 @@ class Character extends Model
     }
 
     /** Everything this character is carrying, both inventories. */
+    /**
+     * The deck this character is carrying, if any.
+     *
+     * An equipped deck is NOT in the stash — scopeLoose() leaves it out, and
+     * unequipping is what puts it back. Nothing to do with jacking in, which
+     * is a session in cyberspace that an equipped deck sits through.
+     *
+     * NULL is a real state and the ordinary one — see the migration. Written
+     * only by App\Decks\DeckEquipper, and outside #[Fillable] deliberately:
+     * there is no request that should be able to set it by name.
+     */
+    public function equippedDeck(): BelongsTo
+    {
+        return $this->belongsTo(InventoryItem::class, 'equipped_deck_id');
+    }
+
+    public function hasEquipped(InventoryItem $deck): bool
+    {
+        return $this->equipped_deck_id === $deck->getKey();
+    }
+
     public function inventory(): HasMany
     {
         return $this->hasMany(InventoryItem::class);

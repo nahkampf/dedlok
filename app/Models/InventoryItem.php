@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * What a character is carrying: one row per (character, item), with a quantity.
@@ -86,6 +87,42 @@ class InventoryItem extends Model
     }
 
     /**
+     * The socket this row is installed in, if it is a module in a deck.
+     *
+     * A module is never "inside" a deck the way a book is inside a shard —
+     * see App\Decks\ModuleFitter. `parent_id` stays null for a fitted module;
+     * what takes it out of the player's hands is this relation.
+     */
+    public function fitting(): HasOne
+    {
+        return $this->hasOne(DeckFitting::class, 'module_id');
+    }
+
+    /** What is installed in this row, if it is a deck. */
+    public function fittings(): HasMany
+    {
+        return $this->hasMany(DeckFitting::class, 'deck_id');
+    }
+
+    /** Is this row installed in something? */
+    public function isFitted(): bool
+    {
+        return $this->fitting()->exists();
+    }
+
+    /**
+     * The character carrying this row as their equipped deck, if any.
+     *
+     * A hasOne through `characters.equipped_deck_id`. One column holds one
+     * value, so at most one character can be pointing at a given row — and
+     * only its owner ever can, which App\Decks\DeckEquipper enforces.
+     */
+    public function equippedBy(): HasOne
+    {
+        return $this->hasOne(Character::class, 'equipped_deck_id');
+    }
+
+    /**
      * How much of this container is spoken for.
      *
      * `size` is per object, so a stack of three 8-unit books occupies 24. This
@@ -121,17 +158,34 @@ class InventoryItem extends Model
     }
 
     /**
-     * Only rows sitting loose, not rows inside something.
+     * Only rows the player actually has to hand.
      *
-     * Every listing that means "the player's inventory" wants this. Without
-     * it a skillbook written to a card shows up twice: once on the card and
-     * once loose on the deck it was never on.
+     * Every listing that means "the player's inventory" wants this. Without it
+     * a skillbook written to a card shows up twice: once on the card and once
+     * loose on the deck it was never on.
+     *
+     * Three ways of not being to hand, and they are different things:
+     *
+     * - INSIDE something — a parent_id. Containment, which is about bulk.
+     * - FITTED into a deck. A module in a socket is not cargo, it is part of
+     *   the machine.
+     * - EQUIPPED. The deck you are carrying is not in the stash; unequipping
+     *   is what puts it back. (Not "jacked in" — that is a session in
+     *   cyberspace, and a deck stays equipped right through one.)
+     *
+     * All three belong here rather than at the call sites, so that a fourth
+     * way to be spoken for is one edit and not an audit of every screen. The
+     * third was added after the first two and cost nothing anywhere else,
+     * which is the whole argument for keeping them together.
      *
      * @param  Builder<self>  $query
      */
     public function scopeLoose(Builder $query): void
     {
-        $query->whereNull('parent_id');
+        $query
+            ->whereNull('parent_id')
+            ->whereDoesntHave('fitting')
+            ->whereDoesntHave('equippedBy');
     }
 
     /** @param  Builder<self>  $query */

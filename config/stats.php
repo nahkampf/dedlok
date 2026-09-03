@@ -69,6 +69,110 @@ return [
          * stored state, clamped down by these. Neither resource exists yet.
          * See MECHANICS.md, "Derived stats vs resources".
          */
+        /*
+         * A DECK'S MEASURES.
+         *
+         * One per column on `deck_modules`, because MECHANICS says every one
+         * of them is the base of a resolved stat rather than a number to read
+         * off the row: implants, skills, drugs and injuries are all expected
+         * to move them, and none of that may end up as a special case living
+         * in deck code.
+         *
+         * The BASE is not a formula over attributes — it is the sum of what is
+         * fitted, which App\Decks\DeckTotals computes. That sum is the
+         * resolver's INPUT and never a second implementation of it, so these
+         * stats deliberately have no entry under `formulas` below and
+         * Character::baseStat() is not the way in.
+         *
+         * A floor of 0 on all five: a debuff may take a measure to nothing but
+         * never below it, and negative compute is not a state the game has.
+         * Rounding down for the same reason max HP does — these are whole
+         * units of hardware.
+         */
+        'deck_qflops' => [
+            'tags' => ['deck', 'compute'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        'deck_quantabits' => [
+            'tags' => ['deck', 'memory'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        'deck_bandwidth' => [
+            'tags' => ['deck', 'link'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        /*
+         * The two halves of the power budget. Both are stats, because a skill
+         * that CUTS draw is how MECHANICS says an over-committed deck is meant
+         * to be solved — so draw has to be movable, not merely summed.
+         */
+        'deck_power_draw' => [
+            'tags' => ['deck', 'power'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        'deck_power_supply' => [
+            'tags' => ['deck', 'power'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        /*
+         * HEAT. What the deck makes, and what is taken back out of it. There
+         * is no third number for what a deck can stand: a deck stands any
+         * amount of heat, and what the heat does is done to the modules —
+         * each against its own thresholds, which are stats of their own below.
+         *
+         * Both are stats for the reason the others are: a skill that runs a
+         * deck cool is exactly the kind of thing this system exists for.
+         */
+        'deck_heat' => [
+            'tags' => ['deck', 'thermal'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        'deck_cooling' => [
+            'tags' => ['deck', 'thermal'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        /*
+         * A MODULE'S TOLERANCE. Not a deck total — these do not sum, because a
+         * deck's tolerance is its weakest part rather than the sum of its
+         * parts. They are stats for the reason the rest are: a perk that makes
+         * chrome run cooler moves them, and it should not need deck code to do
+         * it.
+         */
+        'deck_module_heat_warning' => [
+            'tags' => ['deck', 'thermal', 'tolerance'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        'deck_module_heat_limit' => [
+            'tags' => ['deck', 'thermal', 'tolerance'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'synaptic_integrity_max' => [
             'tags' => ['derived', 'vital'],
             'min' => 0,

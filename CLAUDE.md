@@ -465,6 +465,29 @@ the password-reset request.
   somewhere a click can land, and a phone has no hover at all. **A row inside a
   container gets no slot**, so its inject and eject buttons live on the
   container's card — the only place it is reachable.
+- **Every row has a right-click menu**, on the stash grid, on the equipped
+  deck's "in use" row, and on a fitted module on the board. `data-menu="#id"`
+  names a `<template>` and one handler covers all three ways in — right-click,
+  long-press on Android, and the menu key — because browsers fire `contextmenu`
+  for all of them. Cloned into one floating `.menu` host, the way `.inspector`
+  is, which is what lets a row carry a real form with a real CSRF token.
+- **A menu row that does nothing yet says so with a `.tag`** rather than being
+  absent. A menu that grows rows as features land is a menu nobody learns.
+  *Show on market* and *Disassemble* are those; *Detailed info*, *Fit to deck*,
+  *Take out of deck* and *Destroy* are real.
+- **Destroying is real, irreversible, and the confirmation is the only brake** —
+  the same decision the admin item editor took. The dialog spends what the
+  delete reaches before offering the button: contents cascade with a container,
+  a deck's modules do NOT and come back loose, and destroying the equipped deck
+  leaves you with none. It has no writer class of its own, unlike injecting or
+  placing: there is exactly one rule and the controller already checks it.
+- **`ModuleFitter::fitToDeck()` picks the socket**, since the menu's *Fit to
+  deck* is the player choosing the module and not the place. It tells "this
+  deck has no socket that takes it" apart from "every socket that takes it is
+  full", because one will never work and the other will. **There is no skill
+  check** — no module carries a requirement in any column or table. When one
+  does, that method is where it goes: it is the only place that knows the
+  character, the module and the deck at once.
 - `size` is enforced, but only as what a container's contents cost against its capacity.
   `weight` is still stored and unenforced, and neither inventory has an overall capacity.
 
@@ -550,9 +573,114 @@ says which, and two tables carry what a bare `items` row cannot.
   nowhere in it. `Item::kindName()` is what answers that, and it is what the
   detail card puts beside the tier: deck hardware says which piece it is, and
   everything else falls back to the inventory it lives in (`items.kinds.*`).
-- **Nothing a deck stores does anything yet.** The numbers are validated and
-  read by no stat, check or modifier. Do not describe a deck as making its
-  owner better at anything.
+- **A deck's board is a picture, and it lives on the item.** `items.board_layout`
+  is a JSON map from `SlotType::key()` to `[x, y]` percentages, and
+  `App\Decks\BoardLayout` turns it into nodes and wires. **A node is a type, not
+  a socket** — four QDRAM sockets are one box with one wire, so the coordinate
+  belongs to the pair and not to the rows; four rows carrying it are four
+  chances to disagree. **NULL means unarranged, not missing**: the automatic
+  ring draws it, so every deck renders without an author. Stored coordinates
+  are an **override on top of that ring**, never the whole answer, which is why
+  a partial arrangement is normal and a new socket lands somewhere sensible.
+  `<x-deck-board>` is the one renderer — the player's screen and the admin's
+  drag editor are the same component with `editable` flipped, because an editor
+  that draws the board differently from the screen is an editor that lies.
+- **A deck has no thermal rating and heat does not happen to it.** Power is
+  measured against the supplies fitted in the deck; heat is measured against
+  nothing at the deck level. A chassis cap would be a second verdict about one
+  thing, free to disagree with the per-module one — do not add one back. On the
+  screen that asymmetry is why power has a meter and heat is a bare figure.
+- **Every module makes heat** (`deck_modules.heat`, a default like
+  `power_draw`) and a **radiator takes it away** (`Hardware::Thermal` in a
+  `thermal` socket, measure `cooling`). A radiator cools and heats none — the
+  mirror of a supply, and a CHECK for the same reason — but it still draws,
+  because the fan runs on something.
+- **A module's heat tolerance is a pair of thresholds on the DECK'S heat**, not
+  on its own output: `heat_level_warning` and `heat_level_limit`, nullable
+  together (null = does not care), warning at or below limit. The same part is
+  safe in a cold deck and dying in a hot one — **a deck's tolerance is its
+  weakest part, not the sum of its parts**, which is why `App\Decks\HeatExposure`
+  is separate from `DeckTotals`. Both thresholds are resolved stats.
+- **The two warnings are deliberately different volumes.** Over the warning
+  level: an amber callout naming the parts. Past the limit: the kit's
+  `.hud-alert`, the only place the deck screen spends the accent, because it is
+  a certainty rather than a risk. `.slot--hot` pulses slowly on the board —
+  slow because it is a condition, not an event — and `.slot--doomed` adds the
+  crit fill.
+- **Destroying modules in an overheating deck is NOT built.** The algorithm is
+  undecided; `DeckTotals::isOverheating()` is the state it will read, and the
+  screen says the risk is specified rather than promising a mechanic that
+  cannot fire.
+- **A module goes into a socket, and `deck_fittings` is that row.** Three
+  references, because three things have to be named: `deck_id` (an inventory
+  row — WHICH deck), `deck_slot_id` (a definition row — WHICH socket), and
+  `module_id` (an inventory row — WHAT went in). **Only the pair is a place**:
+  a slot id alone is "the CPU socket of a Kurogane Explorer", shared by every
+  Explorer in the game. `App\Decks\ModuleFitter` is the only writer.
+- **Fitting is not containment and shares nothing with it.** A container asks
+  whether the bulk fits in what is left; a socket asks whether this is the
+  particular thing this particular place takes. `parent_id` stays NULL for a
+  fitted module — what takes it out of the player's hands is
+  `InventoryItem::scopeLoose()`, which now means *neither inside anything nor
+  fitted into anything*. One place decides, so no listing had to learn about
+  fittings.
+- **Destroying a deck frees its modules**, deliberately unlike a memory shard,
+  which destroys what is written on it. Stripping a deck for parts is what
+  anyone would do before letting go of it.
+- **`HardwareEditor` diffs sockets now, it does not replace them.** A wholesale
+  replace would empty every player's deck whenever an admin touched an
+  unrelated field. The diff is by type — one Socket K is indistinguishable from
+  another until something is in it — and when there are too many it drops the
+  EMPTY ones first. Removing an occupied socket is still allowed and returns
+  the module to its owner.
+- **Modules do not stack, for the reason decks do not.** A fitting points at an
+  inventory row, and a row holding two sticks cannot be pointed at.
+- **Equipping is not jacking in.** Jacking in and out is entering and leaving
+  cyberspace, a session an equipped deck sits right through; equipping is which
+  deck you are carrying. Never use one word for the other in a player-visible
+  string. (`auth.login`/`auth.logout` still say "Jack in"/"Jack out" for signing
+  in and out — pre-existing, and worth revisiting when a cyberspace session
+  exists.)
+- **An equipped deck is not in the stash**, and `scopeLoose()` is where that
+  lives — with rows inside a container and modules fitted into a deck, three
+  ways of being spoken for decided in one place. Unequipping puts it back. The
+  stash shows it in its own panel, which is the only route to its board.
+- **`characters.equipped_deck_id` is which deck is carried**, and NULL is the
+  ordinary state. A column rather than a flag on the inventory
+  row, so "only one at a time" is not a rule anybody enforces: one column holds
+  one value. `App\Decks\DeckEquipper` is the only writer, since the two rules
+  the database cannot reach across a table to check (it is yours, it is a deck)
+  have to live somewhere. Equipping a second deck swaps rather than refusing.
+- **Stripping destroys nothing**, so nothing confirms it — `ModuleFitter::strip()`
+  empties every socket and the modules go back to the stash. Unequipping DOES
+  ask, not because it is dangerous but because there are two right answers:
+  leave the deck built, or strip it on the way out. Stripping and equipping are
+  independent in both directions.
+- **`App\Decks\DeckTotals` is the ONE place a deck is totalled**, which
+  MECHANICS asks for by name — the stash renders it and the equipped deck will
+  render the same number once anything resolves, so no total is ever computed
+  twice. It sums by MEASURE, not by socket: qFLOPS comes from a CPU or an NPU,
+  so a deck with one of each has one compute figure.
+- **`App\Decks\DeckRequirement` says whether a deck will run** — compute (CPU
+  or NPU), memory, link, power, and draw within supply. One enum case plus one
+  `match` arm each, so a sixth requirement is two lines and a string. **Nothing
+  refuses a fitting because of it**, including one that pushes the deck over
+  budget: the screen names what is missing instead.
+- **A deck's measures are RESOLVED, not read off the row.** Five stat ids —
+  `deck_qflops`, `deck_quantabits`, `deck_bandwidth`, `deck_power_draw`,
+  `deck_power_supply`, all tagged `deck` — and `DeckTotals::resolvedWith()`
+  hands the summed base to `App\Stats\Resolver`. **The equipped deck resolves;
+  every other deck shows bases**, because modifiers belong to a character and
+  only one deck is theirs at a time. `DeckController::totals()` is the one place
+  that rule lives. No modifier moves a deck measure yet, so both paths render
+  the same numbers today — what is built is that the first one to do so is
+  picked up everywhere at once.
+- **Readiness gates jacking in, and nothing else.** `DeckTotals::isReady()` is
+  the whole check; jacking in is not built and must call it when it is. Fitting
+  and equipping are never refused for it — you build a deck while carrying it.
+- **Nothing a deck stores makes its owner better at anything yet.** No stat,
+  check or modifier reads a deck's totals in the other direction; the
+  `ModifierSource` over fitted hardware that MECHANICS names is still missing.
 - **Every stored measure is a BASE, not a value.** `qflops`, `quantabits`,
   `bandwidth`, `watts`, `power_draw` — implants and skills are all meant to
   move them, so when something finally reads one it resolves it through
@@ -660,6 +788,15 @@ review.
   which is an editor in its own right.
 - **A slug is permanent and the request says so.** `slug` is `prohibited` on update rather
   than merely absent, so a hand-crafted POST is refused instead of silently ignored.
+
+**The deck board is arranged by dragging, and by the arrow keys.** The editor
+renders `<x-deck-board editable>` and the nodes write every coordinate back into
+one hidden JSON field; `data-board-min`/`max` carry the clamp bounds from
+`BoardLayout` so the JS and PHP cannot disagree about where the edge is. It is
+arranged for the sockets **as saved**, not as the counters currently read — the
+ring that places a new socket lives in PHP, and a second copy of it in
+`ui-kit.js` would be a second answer to one question. Change the counts, save,
+then arrange.
 
 **The item editor writes three tables.** An item is a row, plus a socket each
 in `deck_slots` if it is a cyberdeck, plus a row in `deck_modules` if it is a

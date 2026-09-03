@@ -121,12 +121,35 @@ class ItemFactory extends Factory
     }
 
     /** A module: what it is, which socket it wants, and what it is worth. */
-    public function module(Hardware $kind, ?Variant $variant = null, int $measure = 100, int $draw = 10): static
-    {
+    public function module(
+        Hardware $kind,
+        ?Variant $variant = null,
+        int $measure = 100,
+        int $draw = 10,
+        int $heat = 0,
+        ?int $warnAt = null,
+        ?int $dieAt = null,
+    ): static {
         return $this
-            ->state(['hardware' => $kind, 'container' => Item::CONTAINER_PHYSICAL])
-            ->afterCreating(function (Item $item) use ($kind, $variant, $measure, $draw): void {
-                $columns = ['variant' => $variant, 'power_draw' => $kind->draws() ? $draw : 0];
+            ->state([
+                'hardware' => $kind,
+                'container' => Item::CONTAINER_PHYSICAL,
+                // A fitting points at an inventory ROW, and a row holding two
+                // sticks cannot be pointed at. Same rule as a cyberdeck, one
+                // step earlier — see App\Decks\ModuleFitter.
+                'stackable' => false,
+            ])
+            ->afterCreating(function (Item $item) use ($kind, $variant, $measure, $draw, $heat, $warnAt, $dieAt): void {
+                $columns = [
+                    'variant' => $variant,
+                    'power_draw' => $kind->draws() ? $draw : 0,
+                    // A radiator makes none, whatever a caller asks for —
+                    // chk_deck_modules_thermal.
+                    'heat' => $kind->heats() ? $heat : 0,
+                    // Nullable together: null is a module with no known limit.
+                    'heat_level_warning' => $dieAt === null ? null : $warnAt,
+                    'heat_level_limit' => $dieAt,
+                ];
 
                 $column = $kind->measure();
 

@@ -266,6 +266,47 @@
             </div>
         </div>
 
+        {{-- Where those sockets sit when someone looks at the deck. The same
+             component the player's screen renders, with the drag handles on —
+             an editor that draws the board differently from the screen is an
+             editor that lies. --}}
+        <div class="panel" data-hardware="deck" @unless ($isDeck) hidden @endunless>
+            <div class="panel__hd">
+                <span class="micro">{{ Text::get('admin.items.sections.board') }}</span>
+                <div class="spacer"></div>
+                @unless ($item?->board_layout)
+                    <span class="tag">{{ Text::get('admin.items.board.automatic') }}</span>
+                @endunless
+            </div>
+            <div class="panel__bd stack" style="--gap:var(--s-4)">
+                <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('admin.items.board.help') }}</p>
+
+                @error('board_layout') <span class="field__error">{{ $message }}</span> @enderror
+
+                @if ($isDeck && $item?->isCyberdeck())
+                    <x-deck-board :item="$item" editable field="#board_layout" />
+
+                    <div class="row row--wrap" style="--gap:var(--s-3)">
+                        <button type="button" class="btn btn--sm btn--ghost cut" data-board-reset="#board_layout">
+                            {{ Text::get('admin.items.board.reset') }}
+                        </button>
+                        <span class="field__hint">{{ Text::get('admin.items.board.reset_hint') }}</span>
+                    </div>
+
+                    {{-- The board is arranged for the sockets as SAVED, not as
+                         the counters above currently read: the ring that places
+                         a new socket lives in PHP, and a second copy of it here
+                         would be a second answer to one question. --}}
+                    <p class="field__hint" style="margin:0">{{ Text::get('admin.items.board.note') }}</p>
+                @else
+                    <p class="field__hint" style="margin:0">{{ Text::get('admin.items.board.note') }}</p>
+                @endif
+
+                <input type="hidden" id="board_layout" name="board_layout"
+                       value="{{ old('board_layout', $item?->board_layout ? json_encode($item->board_layout) : '') }}">
+            </div>
+        </div>
+
         {{-- A module's own row. Which fields apply follows from the kind, and
              every one that does not is prohibited rather than ignored — see
              App\Http\Requests\Admin\ItemRequest::moduleRules(). --}}
@@ -295,7 +336,15 @@
                     'quantabits' => 'ram',
                     'bandwidth' => 'nic',
                     'watts' => 'psu',
-                    'power_draw' => 'cpu npu ram nic expansion',
+                    'cooling' => 'thermal',
+                    'power_draw' => 'cpu npu ram nic expansion thermal',
+                    // Every module but the radiator, which takes heat away
+                    // rather than making it — chk_deck_modules_thermal.
+                    'heat' => 'cpu npu ram nic expansion psu',
+                    // Every module, radiators included: a radiator in a deck
+                    // hot enough will cook like anything else in it.
+                    'heat_level_warning' => 'cpu npu ram nic expansion psu thermal',
+                    'heat_level_limit' => 'cpu npu ram nic expansion psu thermal',
                 ] as $field => $kinds)
                     <div class="field" data-hardware="{{ $kinds }}" @error($field) data-invalid @enderror>
                         <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
