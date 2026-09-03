@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterCreationController;
+use App\Http\Controllers\DeckController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\SkillTreeController;
@@ -46,10 +47,43 @@ Route::middleware('auth')->group(function () {
     // to the creation screen, so these can assume one exists.
     Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
 
+    // A deck you own, as the thing rather than as a spec line. The row and
+    // not the item: two players holding the same model will have different
+    // modules in them once fitting exists, and only the row can say so.
+    Route::get('/deck/{entry}', [DeckController::class, 'show'])->name('deck.show');
+
+    // One route for both directions, the way inventory.place is: an absent
+    // `module` means empty the socket. Fitting and unfitting are the same
+    // question about the same socket, answered with a name or without one.
+    Route::post('/deck/{entry}/socket/{slot}', [DeckController::class, 'fit'])->name('deck.fit');
+
+    // Emptying every socket at once. Destroys nothing — the modules go back
+    // to the stash — so there is no confirmation in front of it.
+    Route::post('/deck/{entry}/strip', [DeckController::class, 'strip'])->name('deck.strip');
+
+    // Which deck is live. One route for both directions, like deck.fit: the
+    // absence of a deck to equip is a request to jack out.
+    Route::post('/deck/{entry}/equip', [DeckController::class, 'equip'])->name('deck.equip');
+    Route::post('/deck/unequip', [DeckController::class, 'unequip'])->name('deck.unequip');
+
     // Spending a skillbook is destructive and not idempotent, so it is a POST
     // with a confirmation in front of it.
     Route::post('/inventory/{entry}/inject', [InventoryController::class, 'inject'])
         ->name('inventory.inject');
+
+    /*
+     * Destroying something you own. Real and irreversible, and the
+     * confirmation in front of it is the only brake — the same decision the
+     * admin item editor took, for the same reason: an undo nobody built is
+     * worse than a delete that says what it costs.
+     */
+    Route::post('/inventory/{entry}/destroy', [InventoryController::class, 'destroy'])
+        ->name('inventory.destroy');
+
+    // Fit a module into the equipped deck, wherever it goes. The player picked
+    // the module and not the socket, so the fitter finds one.
+    Route::post('/inventory/{entry}/fit', [InventoryController::class, 'fit'])
+        ->name('inventory.fit');
 
     // Moving a row into a container, or back out of one. One route for both
     // directions: an absent `parent` means the loose pile, which is the same

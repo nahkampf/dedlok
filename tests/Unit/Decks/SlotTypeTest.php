@@ -113,10 +113,10 @@ class SlotTypeTest extends TestCase
         $this->assertNull(SlotType::fromKey('cpu_qdram'));
     }
 
-    public function test_the_fourteen_sockets_are_the_whole_vocabulary(): void
+    public function test_the_fifteen_sockets_are_the_whole_vocabulary(): void
     {
         // Named rather than counted, so adding one is a deliberate edit here
-        // as well as in the enum.
+        // as well as in the enum. The thermal exhaust arrived that way.
         $this->assertSame([
             'cpu_socket_g', 'cpu_socket_k', 'cpu_socket_z',
             'npu',
@@ -124,6 +124,7 @@ class SlotTypeTest extends TestCase
             'nic',
             'expansion_xgate', 'expansion_pei', 'expansion_horizon',
             'psu',
+            'thermal',
             'io_electrode', 'io_neuralink',
         ], array_map(static fn (SlotType $type): string => $type->key(), SlotType::all()));
     }
@@ -158,6 +159,7 @@ class SlotTypeTest extends TestCase
         $this->assertSame('quantabits', Hardware::Ram->measure());
         $this->assertSame('bandwidth', Hardware::Nic->measure());
         $this->assertSame('watts', Hardware::Psu->measure());
+        $this->assertSame('cooling', Hardware::Thermal->measure());
 
         // Undecided, and deliberately without a number to be wrong about.
         $this->assertNull(Hardware::Expansion->measure());
@@ -166,8 +168,14 @@ class SlotTypeTest extends TestCase
         $this->assertFalse(Hardware::Psu->draws());
         $this->assertTrue(Hardware::Cpu->draws());
 
+        // And the mirror: a radiator takes heat rather than making it. It
+        // still draws power, because the fan has to run on something.
+        $this->assertFalse(Hardware::Thermal->heats());
+        $this->assertTrue(Hardware::Thermal->draws());
+        $this->assertTrue(Hardware::Cpu->heats());
+
         $this->assertNull(Hardware::Deck->socket());
         $this->assertSame([Hardware::Cpu, Hardware::Npu, Hardware::Ram, Hardware::Nic,
-            Hardware::Expansion, Hardware::Psu], Hardware::modules());
+            Hardware::Expansion, Hardware::Psu, Hardware::Thermal], Hardware::modules());
     }
 }

@@ -30,6 +30,9 @@ enum SlotKind: string
 
     case Psu = 'psu';
 
+    /** Thermal exhaust. Seats a radiator; a deck may present none at all. */
+    case Thermal = 'thermal';
+
     /** Electrode and neuralink ports. Seats nothing. */
     case Io = 'io';
 
@@ -61,6 +64,7 @@ enum SlotKind: string
             self::Nic => Hardware::Nic,
             self::Expansion => Hardware::Expansion,
             self::Psu => Hardware::Psu,
+            self::Thermal => Hardware::Thermal,
             self::Io => null,
         };
     }
@@ -82,6 +86,9 @@ enum SlotKind: string
             self::Nic => 4,
             self::Expansion => 5,
             self::Psu => 2,
+            // A deck may present none, one, or several. Nothing requires an
+            // exhaust — a cold deck does not need one.
+            self::Thermal => 4,
             // One electrode port and one neuralink port. The per-variant cap
             // in App\Decks\SlotType is what makes that one of each.
             self::Io => 2,

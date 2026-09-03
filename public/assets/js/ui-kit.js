@@ -74,6 +74,173 @@
     document.querySelectorAll(".dock[data-expanded]").forEach((dock) => setDock(dock, false));
   });
 
+  /* --- Context menu -----------------------------------------------------
+     <button data-menu="#menu-7">…</button>
+     <template id="menu-7"><div class="menu">…</div></template>
+
+     One handler covers all three ways in: a right-click, a long-press on
+     Android, and the menu key or Shift+F10 — browsers fire `contextmenu` for
+     every one of them, so none of them needs code of its own.
+
+     The content is cloned from the template, like the inspector, so it exists
+     once in the document and can carry real forms with real CSRF tokens. */
+  let menuHost = null;
+
+  function closeMenu() {
+    if (menuHost) menuHost.hidden = true;
+  }
+
+  on("contextmenu", "[data-menu]", (e, el) => {
+    const tpl = document.querySelector(el.dataset.menu);
+    if (!tpl || !tpl.content) return;
+
+    e.preventDefault();
+
+    if (!menuHost) {
+      menuHost = document.createElement("div");
+      menuHost.hidden = true;
+      document.body.appendChild(menuHost);
+    }
+
+    menuHost.replaceChildren(tpl.content.cloneNode(true));
+    menuHost.hidden = false;
+
+    const menu = menuHost.firstElementChild;
+    if (!menu) return closeMenu();
+
+    // Against the pointer, flipped back inside the viewport rather than off
+    // the edge of it. The menu key fires with no coordinates, so fall back to
+    // the element it came from.
+    const r = menu.getBoundingClientRect();
+    const anchor = el.getBoundingClientRect();
+    const x = e.clientX || anchor.left;
+    const y = e.clientY || anchor.bottom;
+    const GAP = 4;
+
+    menu.style.transform =
+      "translate(" +
+      Math.round(Math.max(GAP, Math.min(x, innerWidth - r.width - GAP))) + "px," +
+      Math.round(Math.max(GAP, Math.min(y, innerHeight - r.height - GAP))) + "px)";
+
+    const first = menu.querySelector(".menu__item:not(:disabled)");
+    if (first) first.focus();
+  });
+
+  /* Anything that is not using the menu closes it. Registered after the
+     [data-open] handler above, so a menu item that opens a dialog has already
+     opened it by the time this runs. */
+  document.addEventListener("click", closeMenu);
+  addEventListener("scroll", closeMenu, true);
+  addEventListener("resize", closeMenu);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeMenu();
+  });
+
+  /* Open an item's detail modal from somewhere that is not the item — a menu
+     row, say. The same template the inspector uses, without the hover layer
+     that would otherwise follow the pointer across the menu. */
+  on("click", "[data-inspect-open]", (e, el) => {
+    const tpl = document.querySelector(el.dataset.inspectOpen);
+    if (tpl && tpl.content) openInspector(tpl.content.cloneNode(true));
+  });
+
+  /* --- Board editor -----------------------------------------------------
+     <div class="board" data-board-edit="#field" data-board-min data-board-max>
+       <div class="board__node" data-node="ram_qdram" style="left:22%;top:30%">
+
+     Drag a node, or focus one and use the arrows. Both write every node's
+     coordinate back into the named hidden field as JSON, which is the whole
+     of what gets saved — see App\Decks\BoardLayout.
+
+     The bounds come from the markup rather than from a constant here: PHP
+     clamps them on save, and a second copy of the number in this file is a
+     node that jumps the moment you press Save. */
+  const boardNodes = (board) => board.querySelectorAll(".board__node[data-node]");
+
+  function boardBound(board, name, fallback) {
+    const v = parseFloat(board.dataset[name]);
+    return isNaN(v) ? fallback : v;
+  }
+
+  function boardPlace(node, x, y) {
+    const board = node.closest(".board");
+    const lo = boardBound(board, "boardMin", 0);
+    const hi = boardBound(board, "boardMax", 100);
+    node.style.left = Math.round(Math.max(lo, Math.min(hi, x)) * 10) / 10 + "%";
+    node.style.top = Math.round(Math.max(lo, Math.min(hi, y)) * 10) / 10 + "%";
+    boardWires(board);
+  }
+
+  // Every wire runs to the hub, so redrawing is reading two numbers off each
+  // node. Cheap enough to do on every pointermove and impossible to get out
+  // of step with where the boxes actually are.
+  function boardWires(board) {
+    const hub = board.querySelector(".board__node[data-hub]");
+    if (!hub) return;
+    const hx = parseFloat(hub.style.left);
+    const hy = parseFloat(hub.style.top);
+
+    board.querySelectorAll(".board__wire[data-from]").forEach((wire) => {
+      const node = board.querySelector(
+        '.board__node[data-node="' + CSS.escape(wire.dataset.from) + '"]'
+      );
+      if (!node) return;
+      wire.setAttribute("x1", parseFloat(node.style.left));
+      wire.setAttribute("y1", parseFloat(node.style.top));
+      wire.setAttribute("x2", hx);
+      wire.setAttribute("y2", hy);
+    });
+  }
+
+  function boardSave(board) {
+    const field = board.dataset.boardEdit && document.querySelector(board.dataset.boardEdit);
+    if (!field) return;
+    const out = {};
+    boardNodes(board).forEach((node) => {
+      out[node.dataset.node] = [parseFloat(node.style.left), parseFloat(node.style.top)];
+    });
+    field.value = JSON.stringify(out);
+  }
+
+  on("pointerdown", ".board[data-board-edit] .board__node", (e, node) => {
+    node.setPointerCapture(e.pointerId);
+    node.setAttribute("data-dragging", "");
+    e.preventDefault();
+  });
+
+  document.addEventListener("pointermove", (e) => {
+    const node = document.querySelector(".board__node[data-dragging]");
+    if (!node) return;
+    const r = node.closest(".board").getBoundingClientRect();
+    boardPlace(node, ((e.clientX - r.left) / r.width) * 100, ((e.clientY - r.top) / r.height) * 100);
+  });
+
+  document.addEventListener("pointerup", () => {
+    const node = document.querySelector(".board__node[data-dragging]");
+    if (!node) return;
+    node.removeAttribute("data-dragging");
+    boardSave(node.closest(".board"));
+  });
+
+  // A pointer is not the only way to move a box. Shift for a bigger step.
+  const ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+
+  on("keydown", ".board[data-board-edit] .board__node", (e, node) => {
+    const step = ARROWS[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const by = e.shiftKey ? 5 : 1;
+    boardPlace(node, parseFloat(node.style.left) + step[0] * by, parseFloat(node.style.top) + step[1] * by);
+    boardSave(node.closest(".board"));
+  });
+
+  // Clearing the field is what "not arranged" is: the board falls back to the
+  // ring PHP draws, so there is nothing here to reset it TO.
+  on("click", "[data-board-reset]", (e, btn) => {
+    const field = document.querySelector(btn.dataset.boardReset);
+    if (field) field.value = "";
+  });
+
   /* --- Inspector --------------------------------------------------------
      <button class="slot" data-inspect="#detail-7">…</button>
      <template id="detail-7"><div class="item-card">…</div></template>
@@ -147,9 +314,7 @@
   addEventListener("scroll", uninspect, true);
   addEventListener("resize", uninspect);
 
-  on("click", "[data-inspect]", (e, el) => {
-    const body = detail(el);
-    if (!body) return;
+  function openInspector(body) {
     uninspect();
     if (!sheet) {
       sheet = document.createElement("dialog");
@@ -166,6 +331,11 @@
     // is what [data-open] above already does.
     if (sheet.showModal) sheet.showModal();
     else if (sheet.show) sheet.show();
+  }
+
+  on("click", "[data-inspect]", (e, el) => {
+    const body = detail(el);
+    if (body) openInspector(body);
   });
 
   /* --- Sortable tables --------------------------------------------------

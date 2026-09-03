@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * One socket on one cyberdeck definition.
@@ -43,6 +44,18 @@ class DeckSlot extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    /**
+     * Every fitting that occupies this socket, across every copy of the deck.
+     *
+     * A socket belongs to the DEFINITION, so "is it occupied" is a question
+     * about all the Kurogane Explorers in the world at once. That is exactly
+     * what App\Decks\HardwareEditor needs to know before it takes one away.
+     */
+    public function fittings(): HasMany
+    {
+        return $this->hasMany(DeckFitting::class, 'deck_slot_id');
     }
 
     /** The (kind, variant) pair this row is, which is what decides fit. */

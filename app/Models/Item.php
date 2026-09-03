@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotLayout;
 use App\Market\Rarity;
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 #[Fillable([
     'slug', 'name', 'flavor', 'container', 'tier', 'rarity', 'stackable', 'use_op', 'use_skill_id',
-    'weight', 'size', 'capacity', 'accepts', 'hardware', 'base_cost', 'on_market', 'seed_quantity',
+    'weight', 'size', 'capacity', 'accepts', 'hardware', 'board_layout', 'base_cost', 'on_market', 'seed_quantity',
 ])]
 class Item extends Model
 {
@@ -67,6 +68,7 @@ class Item extends Model
             'size' => 'integer',
             'capacity' => 'integer',
             'hardware' => Hardware::class,
+            'board_layout' => 'array',
             'base_cost' => 'integer',
             'on_market' => 'boolean',
             'seed_quantity' => 'integer',
@@ -151,6 +153,19 @@ class Item extends Model
         return SlotLayout::fromTypes(
             $this->deckSlots->map(fn (DeckSlot $slot) => $slot->type())
         );
+    }
+
+    /**
+     * This deck's sockets, arranged on its board.
+     *
+     * The stored coordinates are an override on top of an automatic ring, so
+     * a deck nobody has arranged still draws — and a deck arranged before it
+     * grew a NIC puts the NIC somewhere sensible rather than at the origin.
+     * A non-deck has an empty board rather than none, like slotLayout().
+     */
+    public function board(): BoardLayout
+    {
+        return BoardLayout::for($this->slotLayout(), $this->board_layout);
     }
 
     /**

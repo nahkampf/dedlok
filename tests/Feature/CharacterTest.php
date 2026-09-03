@@ -42,6 +42,11 @@ class CharacterTest extends TestCase
             // mutable like a resource, but with no derived maximum to clamp
             // against. See the Character docblock.
             'creds',
+            // Which deck is live. A column here rather than a flag on the
+            // inventory row, so "only one at a time" is not a rule anybody
+            // has to enforce — one column holds one value. NULL is jacked
+            // out, which is the ordinary state.
+            'equipped_deck_id',
             'created_at', 'updated_at',
         ];
 

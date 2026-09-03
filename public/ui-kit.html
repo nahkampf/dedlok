@@ -667,6 +667,25 @@ public/assets/
       </template>
     </div>
     <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Context menu</h3><p>Right-click the box below. <code class="inl">data-menu="#id"</code> names a <code class="inl">&lt;template&gt;</code>, and one handler covers all three ways in — a right-click, a long-press on Android, and the menu key or Shift+F10, since browsers fire <code class="inl">contextmenu</code> for every one of them. The content is cloned into a single floating <code class="inl">.menu</code> host, the way <code class="inl">.inspector</code> is, which is what lets a row carry a real form with a real CSRF token. It is positioned against the pointer and flipped back inside the viewport rather than off the edge of it; anything that is not using it — a click, a scroll, Escape — closes it. A row that does nothing yet says so with a <code class="inl">.tag</code> instead of being absent, because a menu that grows rows as features land is a menu nobody learns. <code class="inl">.menu__item--danger</code> is for the destructive one, which is one of the three things the accent is for.</p></div>
+      <template class="demo-src">
+        <div class="frame" style="display:grid;place-items:center;width:min(280px,100%);height:96px" data-menu="#demo-menu">
+          <span class="micro">Right-click me</span>
+        </div>
+
+        <template id="demo-menu">
+          <div class="menu" role="menu" aria-label="Item actions">
+            <button type="button" class="menu__item" role="menuitem">Detailed info</button>
+            <button type="button" class="menu__item" role="menuitem" disabled>Show on market <span class="tag">Not yet</span></button>
+            <button type="button" class="menu__item" role="menuitem">Fit to deck</button>
+            <div class="menu__sep"></div>
+            <button type="button" class="menu__item" role="menuitem" disabled>Disassemble <span class="tag">Not yet</span></button>
+            <button type="button" class="menu__item menu__item--danger" role="menuitem">Destroy…</button>
+          </div>
+        </template>
+      </template>
+    </div>
+    <div class="demo">
       <div class="demo__hd"><h3 class="h3">Modal, toasts, tooltip</h3><p>Buttons here are live — the dialog and toast handlers ship in <code class="inl">ui-kit.js</code>.</p></div>
       <template class="demo-src">
         <div class="row row--wrap">
@@ -961,6 +980,48 @@ public/assets/
             </div>
           </div>
         </template>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Deck board</h3><p>A cyberdeck's sockets as the object rather than as a spec line. Nodes sit at percentage coordinates inside a <code class="inl">.frame.scanlines</code>, so the whole board scales with its container — and they are sized in <code class="inl">cqw</code> so they scale <em>with</em> it rather than against it. Below <code class="inl">min-width</code> the wrapper scrolls instead of the board shrinking into a diagram of nothing. One socket of a type is drawn as the socket; more than one gets a <code class="inl">.board__box</code> with an explicit <code class="inl">--cols</code>, and the box is what the wire attaches to — four sticks of RAM are not four wires saying the same thing. The wires are a single SVG behind everything with <code class="inl">preserveAspectRatio="none"</code>, so an x of 50 is half way across whatever width the board is; boxes carry their own background, so a line drawn centre-to-centre vanishes under the box it arrives at. Add <code class="inl">data-board-edit="#field"</code> and the nodes become draggable (and arrow-key nudgeable), writing every coordinate back into that hidden field as JSON.</p></div>
+      <template class="demo-src">
+        <div class="board-wrap">
+          <div class="frame scanlines brackets board" role="img" aria-label="Kurogane Wayfarer — Socket K, 2× Opto-electrical, NIC, 2× XGate, PSU, Electrode">
+            <span class="frame__label">Board</span>
+            <svg class="board__wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <line class="board__wire" data-from="ram_opto" x1="50" y1="21" x2="50" y2="50"></line>
+              <line class="board__wire" data-from="nic" x1="80.4" y1="41" x2="50" y2="50"></line>
+              <line class="board__wire" data-from="expansion_xgate" x1="68.8" y1="73.6" x2="50" y2="50"></line>
+              <line class="board__wire" data-from="psu" x1="31.2" y1="73.6" x2="50" y2="50"></line>
+              <line class="board__wire" data-from="io_electrode" x1="19.6" y1="41" x2="50" y2="50"></line>
+            </svg>
+
+            <div class="board__node board__node--cpu" data-node="cpu_socket_k" data-hub style="left:50%;top:50%">
+              <span class="slot slot--empty"></span>
+              <span class="board__label">Socket K</span>
+            </div>
+            <div class="board__node" data-node="ram_opto" style="left:50%;top:21%">
+              <div class="board__box" style="--cols:2"><span class="slot slot--empty"></span><span class="slot slot--empty"></span></div>
+              <span class="board__label">Opto-electrical <span class="board__count">×2</span></span>
+            </div>
+            <div class="board__node" data-node="nic" style="left:80.4%;top:41%">
+              <span class="slot slot--empty"></span>
+              <span class="board__label">NIC</span>
+            </div>
+            <div class="board__node" data-node="expansion_xgate" style="left:68.8%;top:73.6%">
+              <div class="board__box" style="--cols:2"><span class="slot slot--empty"></span><span class="slot slot--empty"></span></div>
+              <span class="board__label">XGate <span class="board__count">×2</span></span>
+            </div>
+            <div class="board__node" data-node="psu" style="left:31.2%;top:73.6%">
+              <span class="slot slot--empty"></span>
+              <span class="board__label">PSU</span>
+            </div>
+            <div class="board__node" data-node="io_electrode" style="left:19.6%;top:41%">
+              <span class="slot slot--empty"></span>
+              <span class="board__label">Electrode</span>
+            </div>
+          </div>
+        </div>
       </template>
     </div>
     <div class="demo">

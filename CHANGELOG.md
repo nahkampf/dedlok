@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-09-03
+
+### Added
+
+- Modules now create heat that has to be managed.
+- All Deck modules now have heat tolerances: one value for where
+  the module starts being at risk for melting, and a cutoff where
+  the module 100% gets destroyed.
+- We now have a new slot for Thermal Dissipators on decks.
+- New modules: Thermal Dissipators. These can be active or passive.
+
+### Migrations
+
+- `2026_09_03_170000_add_board_layout_to_items`
+- `2026_09_03_180000_create_deck_fittings`
+- `2026_09_03_190000_add_equipped_deck_to_characters`
+- `2026_09_03_200000_add_heat_to_cyberdecks`
+- `2026_09_03_210000_add_heat_tolerance_to_deck_modules`
+- `2026_09_03_220000_remove_deck_heat_capacity`
+
+
 ## [0.7.1] — 2026-09-03
 
 ### Changed
@@ -170,7 +191,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/nahkampf/dedlok/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/nahkampf/dedlok/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/nahkampf/dedlok/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/nahkampf/dedlok/compare/v0.6.0...v0.6.1

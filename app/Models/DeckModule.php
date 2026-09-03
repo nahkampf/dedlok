@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * They are not one generic `rating` because qFLOPS, QB, QB/s and watts do not
  * convert into one another.
  */
-#[Fillable(['item_id', 'variant', 'power_draw', 'qflops', 'quantabits', 'bandwidth', 'watts'])]
+#[Fillable(['item_id', 'variant', 'power_draw', 'heat', 'qflops', 'quantabits', 'bandwidth', 'watts', 'cooling', 'heat_level_warning', 'heat_level_limit'])]
 class DeckModule extends Model
 {
     /** @use HasFactory<DeckModuleFactory> */
@@ -39,10 +39,14 @@ class DeckModule extends Model
         return [
             'variant' => Variant::class,
             'power_draw' => 'integer',
+            'heat' => 'integer',
             'qflops' => 'integer',
             'quantabits' => 'integer',
             'bandwidth' => 'integer',
             'watts' => 'integer',
+            'cooling' => 'integer',
+            'heat_level_warning' => 'integer',
+            'heat_level_limit' => 'integer',
         ];
     }
 
@@ -80,6 +84,11 @@ class DeckModule extends Model
             $this->measureLabel($hardware),
             $hardware->draws() && $this->power_draw > 0
                 ? Text::get('decks.units.draw', ['value' => number_format($this->power_draw)])
+                : null,
+            // Only where there is any. Most modules run cool enough that a
+            // zero on the spec line would be noise.
+            $hardware->heats() && $this->heat > 0
+                ? Text::get('decks.units.heat', ['value' => number_format($this->heat)])
                 : null,
         ]);
 

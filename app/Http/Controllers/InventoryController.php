@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Decks\ModuleFitter;
 use App\Inventory\ItemPlacer;
 use App\Inventory\SkillInjector;
 use App\Models\Character;
@@ -30,8 +31,13 @@ class InventoryController extends Controller
 
         $physical = $character->inventoryIn(Item::CONTAINER_PHYSICAL);
 
+        // The equipped deck is not in either inventory, so the screen has to
+        // be handed it separately or there is no way through to its board.
+        $equipped = $character->equippedDeck()->with('item.deckSlots')->first();
+
         return view('inventory.index', [
             'character' => $character,
+            'equipped' => $equipped,
             'physical' => $physical,
             'data' => $character->inventoryIn(Item::CONTAINER_DATA),
             // Somewhere to put things. Already loaded with their contents, so
@@ -95,6 +101,60 @@ class InventoryController extends Controller
                 'item' => $itemName,
                 'container' => $into->item->displayName(),
             ]));
+    }
+
+    /**
+     * Destroy a row, and whatever the schema takes with it.
+     *
+     * No dedicated writer class, unlike injecting or placing: there is exactly
+     * one rule — it has to be yours — and the controller already checks that
+     * to decide between a 404 and an action. A class here would be ceremony
+     * around a delete.
+     *
+     * What it reaches is not a guard, it is a description: the confirmation
+     * spends the count before the button is offered, the way DeletionImpact
+     * does in the admin editor.
+     */
+    public function destroy(Request $request, InventoryItem $entry): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $name = $entry->item?->displayName() ?? '';
+
+        // Contents cascade with it; fittings cascade too, which frees the
+        // modules of a deck rather than destroying them.
+        $entry->delete();
+
+        return redirect()
+            ->route('inventory.index')
+            ->with('status', Text::get('inventory.destroyed', ['item' => $name]));
+    }
+
+    /**
+     * Fit this module into the equipped deck, wherever it goes.
+     *
+     * The socket is the fitter's to choose — see ModuleFitter::fitToDeck,
+     * which is also where a skill requirement would be checked if any module
+     * carried one.
+     */
+    public function fit(Request $request, InventoryItem $entry, ModuleFitter $fitter): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $result = $fitter->fitToDeck($character, $entry);
+
+        if (! $result->succeeded()) {
+            return back()->with('error', $result->refusal->message());
+        }
+
+        return back()->with('status', Text::get('decks.fitting.fitted', [
+            'module' => $entry->item->displayName(),
+            'socket' => $result->fitting->slot->type()->label(),
+        ]));
     }
 
     private function character(Request $request): Character

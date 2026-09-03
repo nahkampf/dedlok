@@ -127,8 +127,17 @@
         </p>
     @endif
 
-    @if ($item->isSkillbook() || $entry->parent_id !== null || $fits->isNotEmpty())
+    @if ($item->isSkillbook() || $item->isCyberdeck() || $entry->parent_id !== null || $fits->isNotEmpty())
         <div class="item-card__actions" data-act>
+            @if ($item->isCyberdeck())
+                {{-- The deck has a screen of its own: a board rather than a
+                     spec line. It is reached from the object you own, which is
+                     the only thing that knows WHICH deck. --}}
+                <a class="btn btn--sm cut" href="{{ route('deck.show', $entry) }}">
+                    {{ Text::get('decks.board.open') }}
+                </a>
+            @endif
+
             @if ($item->isSkillbook() && $item->useSkill)
                 <form method="POST" action="{{ route('inventory.inject', $entry) }}">
                     @csrf

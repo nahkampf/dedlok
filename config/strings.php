@@ -297,6 +297,41 @@ return [
 
         'empty' => 'Nothing here.',
 
+        // The equipped deck is not in either inventory — it is on you. This is
+        // the one place it appears, and the only way through to its board.
+        'in_use' => 'In use',
+
+        /*
+        | The right-click menu. Most of it is not built and says so with a tag
+        | rather than by being absent: a menu that grows items as features land
+        | is a menu nobody learns, and "Not yet" is a promise the roster of
+        | archetypes already makes the same way.
+        */
+        'menu' => [
+            'label' => 'Item actions',
+            'hint' => 'Right-click an item — or press and hold — for more.',
+            'details' => 'Detailed info',
+            'market' => 'Show on market',
+            'fit' => 'Fit to deck',
+            'unfit' => 'Take out of deck',
+            'disassemble' => 'Disassemble',
+            'destroy' => 'Destroy…',
+            'not_yet' => 'Not yet',
+        ],
+
+        // Destroying something. Real, irreversible, and confirmed once.
+        'destroy' => [
+            'title' => 'Destroy :item',
+            'warning' => 'This cannot be undone. :item is gone for good.',
+            'contents' => 'Everything on it goes too — :count of them.',
+            'fitted' => 'The modules in it come out first and stay in your stash.',
+            'equipped' => 'It is the deck you have equipped. Destroying it leaves you with none.',
+            'confirm' => 'Destroy it',
+            'cancel' => 'Keep it',
+        ],
+
+        'destroyed' => ':item is gone.',
+
         // Counted forms, picked by Text::plural(). English has two; that is now
         // the only case there is.
         'count' => ['zero' => 'empty', 'one' => ':count item', 'many' => ':count items'],
@@ -424,6 +459,7 @@ return [
             'nic' => 'NIC',
             'expansion' => 'Expansion card',
             'psu' => 'Power supply',
+            'thermal' => 'Radiator',
         ],
 
         // What a deck PRESENTS. Six seat a module; the IO ports seat a person.
@@ -438,6 +474,7 @@ return [
             // initialisms reads as an attribute the deck has rather than as a
             // socket it presents. The module that goes in it is a Power supply.
             'psu' => 'PSU',
+            'thermal' => 'Thermal exhaust',
             'io' => 'IO port',
         ],
 
@@ -470,6 +507,158 @@ return [
             'universal' => 'Takes either kind of stick',
             'pei' => 'Peripheral Extension Interface',
             'npu' => 'Neural processing — required by some AI programs',
+            'thermal' => 'Where the heat goes. A deck may present none at all.',
+        ],
+
+        // The board: a deck's sockets seen as the thing rather than as a
+        // spec line. Nothing is fitted into any of them yet, and the screen
+        // says so rather than implying a loadout that does not exist.
+        'board' => [
+            'label' => 'Board',
+            'title' => ':deck',
+            'lede' => 'Every socket this deck presents. Open one to fit a module, or to take one back out.',
+            'empty' => 'No sockets',
+            'count' => '×:count',
+            'aria' => ':deck — :sockets',
+            'spec' => 'Specification',
+            'open' => 'Board',
+            'close' => 'Close',
+        ],
+
+        // Putting a module in, and taking it back out.
+        'fitting' => [
+            'fit' => 'Fit',
+            'unfit' => 'Take out',
+            'empty_socket' => 'Empty',
+            'choose' => 'What goes in the :socket socket',
+            'nothing_fits' => 'You are carrying nothing that fits this socket.',
+            // An IO port seats nothing at all, which is a different sentence
+            // from "you happen to own nothing that fits".
+            'seats_nothing' => 'This is where the deck reaches you. Nothing is fitted into it.',
+            'fitted' => ':module is in the :socket socket.',
+            'removed' => 'Taken out. It is back in your stash.',
+
+            // Emptying every socket at once. Counted, because "3 modules" and
+            // "1 module" are the difference between a mistake and a decision.
+            'strip' => 'Strip modules',
+            'strip_hint' => 'Takes everything out and back into your stash. Nothing is destroyed.',
+            'stripped' => [
+                'zero' => 'That deck was already empty.',
+                'one' => ':count module is back in your stash.',
+                'many' => ':count modules are back in your stash.',
+            ],
+            'draw' => 'Draw',
+            'supply' => 'Supply',
+            'budget' => ':draw of :supply W',
+            'over_budget' => 'Drawing more than the supplies deliver. Nothing enforces it yet — see MECHANICS.',
+
+            // Refusals. Every one is an ordinary thing to try.
+            'not_owned' => 'That is not yours.',
+            'not_a_deck' => 'That is not a cyberdeck.',
+            'not_a_module' => 'That does not go in a deck.',
+            'wrong_deck' => 'That socket is on a different deck.',
+            'wrong_socket' => 'That will not go in this socket.',
+            'socket_occupied' => 'Something is already in that socket.',
+            'already_fitted' => 'That module is already in a deck.',
+            'not_fitted' => 'There is nothing in that socket.',
+            'not_equipped' => 'You have no deck equipped.',
+            'deck_has_no_socket' => 'Your deck has no socket that takes this.',
+            'no_free_socket' => 'Every socket that takes this is already full.',
+            'stowed' => 'That is packed away. Take it out of its container first.',
+        ],
+
+        /*
+        | What a deck adds up to, and whether it will run.
+        |
+        | The three readouts are the three measures a fitted module can carry,
+        | labelled by the MEASURE and not by the socket: qFLOPS comes from a
+        | CPU or an NPU, and a deck with one of each has one compute figure
+        | rather than two halves of one.
+        */
+        'ready' => [
+            'section' => 'Readiness',
+            'yes' => 'Ready to run',
+            'no' => 'Not ready',
+            'needs' => 'Still needs:',
+
+            'compute' => 'Compute',
+            'memory' => 'Memory',
+            'link' => 'Link',
+            'heat' => 'Heat',
+
+            'missing' => [
+                'compute' => 'A CPU or an NPU',
+                'memory' => 'A stick of RAM',
+                'link' => 'A NIC',
+                'power' => 'A power supply',
+                // Short on purpose: .tag is a fixed-height chip and cannot
+                // wrap, so a long one overflows its callout on a phone.
+                'budget' => 'Enough power',
+            ],
+        ],
+
+        /*
+        | Heat: the second budget, and not the same shape as the first.
+        |
+        | A deck over its POWER budget will not run, and readiness says so. A
+        | deck over its THERMAL budget runs perfectly well and risks cooking
+        | what is in it. So this warns rather than refusing, and it is not one
+        | of the readiness requirements.
+        */
+        'heat' => [
+            // No deck-level budget: a deck has no thermal rating and heat does
+            // not happen to it. What the number means is decided per module.
+            'cooled' => 'Cooled by :value TU',
+            'risk_not_built' => 'Nothing is destroyed yet — the risk is specified, not built.',
+
+            /*
+            | What the heat is doing to each thing fitted in it. A module's two
+            | thresholds are compared against the deck's NET heat, so the same
+            | part is safe in a cold deck and dying in a hot one.
+            */
+            'verdict' => [
+                'safe' => 'Within tolerance',
+                'at_risk' => 'Over its warning level',
+                'over_limit' => 'Past its limit',
+            ],
+
+            'at_risk' => 'Running over their warning level:',
+            'at_risk_note' => 'They can be destroyed while the deck runs this hot.',
+
+            // The hard limit. Not a risk — a certainty, and the loudest thing
+            // this screen has to say.
+            'over_limit_code' => 'THERMAL',
+            'over_limit' => 'This loadout destroys :modules the moment the deck runs.',
+            'over_limit_fix' => 'Fit a radiator, cut the heat, or use parts that tolerate more.',
+        ],
+
+        /*
+        | Which deck is in use. NOT jacking in and out — that is entering and
+        | leaving cyberspace, a session you are in rather than a thing you are
+        | carrying, and an equipped deck stays equipped through it. Equipping
+        | takes the deck out of the stash; unequipping puts it back.
+        */
+        'equip' => [
+            'equip' => 'Equip',
+            'unequip' => 'Unequip',
+            'equipped' => ':deck is equipped.',
+            'is_equipped' => 'Equipped',
+            'nothing_yet' => 'No number a deck holds is read by anything yet. Equipping decides which deck that will be.',
+            'unequipped' => 'Unequipped. It is back in your stash, still built.',
+            'unequipped_stripped' => [
+                'zero' => 'Unequipped. It is back in your stash.',
+                'one' => 'Unequipped, and :count module came out. Both are in your stash.',
+                'many' => 'Unequipped, and :count modules came out. All of it is in your stash.',
+            ],
+
+            // The choice on the way out. Both are ordinary, so neither is the
+            // dangerous one and neither gets the ember.
+            'confirm' => 'Unequipping',
+            'question' => 'Take the modules out, or leave the deck built?',
+            'leave' => 'Leave them in',
+            'leave_hint' => 'The deck goes back to your stash exactly as it is.',
+            'take' => 'Strip and unequip',
+            'take_hint' => 'Every module comes out, and the deck follows it into your stash.',
         ],
 
         // Made-up units, spelled one way. :value arrives already grouped.
@@ -479,6 +668,11 @@ return [
             'bandwidth' => ':value QB/s',
             'watts' => ':value W',
             'draw' => ':value W draw',
+            // Made-up units like the rest. Thermal units, not degrees:
+            // what a module makes and what a radiator takes away are the
+            // same quantity, and neither is a temperature.
+            'heat' => ':value TU',
+            'cooling' => ':value TU cooling',
         ],
 
         'summary' => [
@@ -593,6 +787,14 @@ return [
                 'socket_hint' => 'Which socket it fits. A deck with no socket of that type cannot take it.',
                 'power_draw' => 'Power draw',
                 'power_draw_hint' => 'Watts off the deck\'s supply. A power supply draws none.',
+                'heat' => 'Heat',
+                'heat_hint' => 'What it makes by running, in thermal units. Zero is fine; a radiator makes none.',
+                'cooling' => 'Cooling',
+                'cooling_hint' => 'What a radiator takes away, in thermal units.',
+                'heat_level_warning' => 'Warns at',
+                'heat_level_warning_hint' => 'Deck heat at which this part starts to be at risk. Leave both empty for a part that does not care.',
+                'heat_level_limit' => 'Destroyed at',
+                'heat_level_limit_hint' => 'Deck heat at which this part is gone. A hard limit, not a roll. Must not be below the warning.',
                 'qflops' => 'Compute',
                 'qflops_hint' => 'Raw throughput, in qFLOPS.',
                 'quantabits' => 'Memory',
@@ -611,6 +813,7 @@ return [
                 'market' => 'Market',
                 'hardware' => 'Deck hardware',
                 'sockets' => 'Sockets',
+                'board' => 'Board arrangement',
                 'module' => 'Module specification',
             ],
 
@@ -632,6 +835,14 @@ return [
                 'any' => 'Any hardware, and none',
                 'none' => 'Not deck hardware',
                 'filter' => 'Hardware',
+            ],
+
+            'board' => [
+                'help' => 'Drag the boxes, or focus one and use the arrow keys. Positions are percentages of the frame, so the board reads the same at any width. Every wire runs to the CPU.',
+                'note' => 'Arranged for the sockets as SAVED. Change the counts above, save, and come back to place the new ones.',
+                'reset' => 'Reset to automatic',
+                'reset_hint' => 'Clears the arrangement. The board falls back to a ring around the CPU.',
+                'automatic' => 'Not arranged — showing the automatic ring.',
             ],
 
             'sockets' => [
@@ -849,6 +1060,13 @@ return [
             'hardware_is_physical' => 'Deck hardware is matter. A cyberdeck and every module that goes in one is carried, never stored on a deck.',
             'deck_needs_slots' => 'A cyberdeck with no sockets is a case. Give it at least a CPU socket and a power socket.',
             'slots_need_a_deck' => 'Only a cyberdeck has sockets. Set the hardware to Cyberdeck first.',
+            'heat_levels_pair' => 'Give both heat levels or neither — a part with one and not the other has no meaning.',
+            'heat_levels_order' => 'A part cannot be destroyed before it is warned about. The limit must be at or above the warning.',
+            'no_heat' => 'A radiator takes heat away rather than making it. Leave this empty.',
+            'module_needs_heat' => 'Say how much heat this makes. Zero is a fine answer.',
+            'board_needs_a_deck' => 'Only a cyberdeck has a board. Set the hardware to Cyberdeck first.',
+            'board_malformed' => 'The board arrangement could not be read. Drag the boxes again, or reset it.',
+            'board_unknown_socket' => 'The board arrangement names a socket that does not exist.',
             'deck_needs_kind' => 'A cyberdeck needs at least one :kind socket.',
             'too_many_slots' => 'A cyberdeck may present at most :max :kind sockets, counting every type of them together.',
             'module_needs_variant' => 'Say which socket it fits. A module that fits nothing cannot be installed.',
