@@ -456,6 +456,15 @@ says which, and two tables carry what a bare `items` row cannot.
 - **Nothing a deck stores does anything yet.** The numbers are validated and
   read by no stat, check or modifier. Do not describe a deck as making its
   owner better at anything.
+- **Every stored measure is a BASE, not a value.** `qflops`, `quantabits`,
+  `bandwidth`, `watts`, `power_draw` — implants and skills are all meant to
+  move them, so when something finally reads one it resolves it through
+  `App\Stats\Resolver` rather than reading the column. A deck's totals are
+  therefore per character, and may never be cached on a row. See MECHANICS.md,
+  *Deck numbers are bases, not values*.
+- **A deck that cannot power every socket it presents is intentional.** Do not
+  "fix" one, and do not add a bigger supply to make one fit — over-commitment
+  is the player's decision to balance, and skills are meant to cut draw.
 
 ### Admin tools
 

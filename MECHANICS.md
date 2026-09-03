@@ -44,7 +44,7 @@ down so the implementation has something to be checked against.
 | The market itself — a storefront, a price, a transaction | **not built**; nothing spends money yet |
 | Cyberdeck hardware — `items.hardware`, `deck_slots`, `deck_modules` | **built**, with constraints and the item editor |
 | Fitting a module into a deck a player owns | **not built**; nothing is installed anywhere yet |
-| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, a power budget | **specified only**; the numbers are stored and read by nothing |
+| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, a power budget | **specified only**; stored as bases, read by nothing, and resolved rather than read when they are |
 | Inventory capacity — an overall limit per inventory | **specified only**; `weight` is stored and unenforced |
 
 Do not describe anything below as working until it appears in the table above.
@@ -631,6 +631,36 @@ migrate away from later.
 side of that sum, a deck's power budget, is not built: nothing is fitted into
 anything yet, so nothing has a budget to spend.
 
+### Deck numbers are bases, not values
+
+Nothing reads a deck's numbers yet. When something does, none of them is read
+straight off the row:
+
+- **Every measure is the base of a resolved stat** — `qflops`, `quantabits`,
+  `bandwidth`, `watts` and `power_draw` alike. Implants, skills, drugs and
+  injuries are all expected to move them, so each resolves through
+  `App\Stats\Resolver` with the stored column as the base and everything else
+  as ordinary modifiers, in the layer order the rest of the system uses. None
+  of it is a special case living in deck code.
+- **So is what a program costs to run.** Programs consume memory and compute,
+  and those figures are modified too — a character's training is as likely to
+  change what a program costs as what the deck provides. Supply and demand are
+  the same kind of number and go through the same resolver.
+- **Which makes a deck's totals per character, not per item.** The same deck in
+  two people's hands is two different sets of numbers. Nothing may cache a
+  total on `items`, on `deck_modules`, or on an inventory row — derived stats
+  are never stored, which is the rule the vitals already follow.
+- **A deck may present more sockets than its supplies can feed**, and several
+  do. Over-commitment is a choice the player balances, not a state the content
+  prevents: a deck whose maximal loadout exceeds two of the best supply is
+  working as intended and is not a row to correct. The Sturmlicht is the
+  deliberate case, one supply socket in front of a Socket Z. Skills that cut
+  draw are part of how that is meant to be solved.
+
+Two things it needs when it is built: a stat id per measure in
+`config/stats.php`, and a `ModifierSource` over the hardware a character has
+fitted — the shape `App\Stats\Sources\ArchetypePerks` already sets.
+
 ### What is not built
 
 Fitting a module into a deck a player owns. That needs a row joining an
@@ -643,6 +673,27 @@ it arrives:
   become a diff.
 - Decks are already refused permission to stack, for the same reason a
   container is. Modules are not, and will have to be at the same time.
+
+**One deck is equipped; the rest are luggage.** A character may own several
+decks and keep modules fitted in all of them, but only one is live at a time,
+and that is what decides which numbers get resolved:
+
+- **The equipped deck resolves.** Its totals go through the modifier system,
+  per character, as *Deck numbers are bases, not values* describes.
+- **Every other deck shows its base stats** — the plain sum of what is fitted
+  in it, with no modifiers applied. Nothing about a deck in the stash depends
+  on who owns it, so nothing about it needs the resolver.
+- The sum is therefore the resolver's INPUT, not a second implementation of
+  it: one function totals a deck's fitted modules, the stash renders that, and
+  the equipped deck renders the same number after it has been through the
+  resolver. There is no path where a total is computed twice by two different
+  pieces of code.
+- **"Equipped" wants to be a column on `characters`**, a nullable foreign key
+  to the inventory row, rather than a flag on `inventory_items`. One column
+  can only hold one value, so "only one deck at a time" stops being a rule
+  anybody has to enforce — and the alternative is not available anyway, since
+  the flag version needs a partial unique index and MySQL 8.0 has none. Null
+  means jacked out, which is a real state.
 
 None of the numbers mean anything yet. `qflops`, `quantabits` and `bandwidth`
 are stored, validated and read by nothing — no stat, no check, no modifier. A
