@@ -258,7 +258,61 @@ public/assets/
       </template>
     </div>
     <div class="demo">
-      <div class="demo__hd"><h3 class="h3">Brackets &amp; texture</h3><p>Corner brackets overlay a box without touching its border, so they compose with anything. The grid and scanline utilities are deliberately near-invisible — they should register as texture, not pattern.</p></div>
+      <div class="demo__hd"><h3 class="h3">Sheen &mdash; hover me</h3><p>A light reflection crossing the face of a button on hover: an 8px soft band at 45&deg;, alpha 0.6, crossing over 520ms &mdash; arriving from outside and leaving on the other side. <strong>On every button</strong>, and each variant tints its own light &mdash; the reflection off a green button is green. The <code class="inl">.sheen</code> class below is now a no-op, kept only so these demos read as the thing being demonstrated. It is a <em>background layer</em>, not a pseudo-element, because a notched button&rsquo;s face already <em>is</em> <code class="inl">::after</code> and its hairline <em>is</em> <code class="inl">::before</code>; a third overlay would simply not exist. Tune it per button with <code class="inl">--sheen</code>, <code class="inl">--sheen-w</code>, <code class="inl">--sheen-a</code> and <code class="inl">--sheen-t</code>.</p></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-3)">
+          <button class="btn sheen">White, 0.6</button>
+          <button class="btn btn--primary sheen cut">On bone</button>
+          <button class="btn btn--warn sheen cut">On brass</button>
+          <button class="btn btn--go sheen cut">On jade</button>
+          <button class="btn btn--danger sheen cut">On ember</button>
+        </div>
+
+        <div class="rule"><span class="micro">Colour variations</span></div>
+        <div class="row row--wrap" style="--gap:var(--s-3)">
+          <button class="btn sheen" style="--sheen:rgba(255,255,255,.35)">Softer, 0.35</button>
+          <button class="btn sheen" style="--sheen:rgba(232,184,75,.6)">Brass light</button>
+          <button class="btn sheen" style="--sheen:rgba(111,211,160,.6)">Jade light</button>
+          <button class="btn sheen" style="--sheen:rgba(110,140,181,.7)">Steel light</button>
+          <button class="btn sheen" style="--sheen:rgba(255,90,54,.6)">Ember light</button>
+        </div>
+
+        <div class="rule"><span class="micro">Width and angle</span></div>
+        <div class="row row--wrap" style="--gap:var(--s-3)">
+          <button class="btn sheen" style="--sheen-w:2px">Narrow, 4px</button>
+          <button class="btn sheen">Default, 8px</button>
+          <button class="btn sheen" style="--sheen-w:9px">Wide, 18px</button>
+          <button class="btn sheen" style="--sheen-a:115deg">Steeper lean</button>
+          <button class="btn sheen" style="--sheen-a:155deg">Shallower lean</button>
+          <button class="btn btn--lg sheen cut" style="--sheen-w:7px">Large, notched</button>
+        </div>
+
+        <div class="rule"><span class="micro">Speed</span></div>
+        <div class="row row--wrap" style="--gap:var(--s-3)">
+          <button class="btn" style="--sheen-t:240ms">Quick, 240ms</button>
+          <button class="btn" style="--sheen-t:360ms">Brisk, 360ms</button>
+          <button class="btn">Default, 520ms</button>
+          <button class="btn" style="--sheen-t:800ms">Languid, 800ms</button>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Entity image</h3><p>A picture of a thing, found by convention rather than stored on a row — <code class="inl">public/images/&lt;kind&gt;/&lt;id&gt;.jpg</code>, with <code class="inl">_default.jpg</code> beside it. Fixed 16:9 and cropped, because a grid of cards whose images are each a different height is a grid that never lines up. Click it for <code class="inl">&lt;id&gt;_full.jpg</code>, which has no shape of its own. A kind may be a path — <code class="inl">items/cpu</code>, one subdirectory per type of item — and only the default walks back up it. Where the card gets cloned into the inspector, the dialog is rendered beside the listing instead: a <code class="inl">&lt;dialog&gt;</code> cloned along with a card is a second copy of itself in the top layer.</p></div>
+      <template class="demo-src">
+        <div class="card" style="max-width:min(280px,100%)">
+          <button type="button" class="entity-image entity-image--open" aria-label="View Deck Jockey full size">
+            <img src="images/archetypes/_default.jpg" alt="Deck Jockey" width="640" height="360">
+          </button>
+          <div class="card__hd">
+            <div class="card__title">Deck Jockey</div>
+            <div class="card__meta">Intrusion specialist</div>
+          </div>
+          <div class="card__bd">Lives in other people's systems.</div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Brackets &amp; texture</h3><p>Corner brackets overlay a box without touching its border, so they compose with anything — including <code class="inl">.scanlines</code>, which they did not until both corners were moved onto one pseudo-element. Two utilities cannot each claim <code class="inl">::after</code>; the later one simply wins and the other vanishes without a word. The grid and scanline utilities are deliberately near-invisible — they should register as texture, not pattern.</p></div>
       <template class="demo-src">
         <div class="row row--wrap" style="--gap:var(--s-4)">
           <div class="frame brackets" style="width:min(180px,100%);height:110px">
@@ -276,7 +330,7 @@ public/assets/
 
   <section id="buttons">
     <div class="sec__hd"><h2 class="h1">Buttons</h2>
-      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">The primary button is bone, not ember. A white-hot fill on near-black is already the loudest thing on screen, which frees the accent for danger and for live state. <code class="inl">.btn--go</code> is the one green button — it means <em>begin</em>, not <em>succeeded</em>, and like ember it is rationed to one per screen. <code class="inl">.btn</code> works on <code class="inl">&lt;a&gt;</code> as well as <code class="inl">&lt;button&gt;</code>; the notched row below uses both.</p>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">The primary button is bone, not ember. A white-hot fill on near-black is already the loudest thing on screen, which frees the accent for danger and for live state. <code class="inl">.btn--go</code> is the one green button — it means <em>begin</em>, not <em>succeeded</em>, and like ember it is rationed to one per screen. <code class="inl">.btn--warn</code> is brass and filled, for the action that undoes real work without destroying anything: stripping a deck gives every module back and still leaves you to refit them. It is rationed like green rather than like ember, and it is filled for the same reason green is — this is a thing you choose, not a thing you are warned away from. (They sit in one row here because this is the gallery; on a real screen, only one of them.) All three filled buttons <strong>invert on hover</strong> — fill and ink trade places over <code class="inl">--t-invert</code>, 400ms, the one deliberately unhurried timing in the kit. The border and the notch line hold the colour throughout, so the shape stays put and only the inside turns over. <code class="inl">.btn</code> works on <code class="inl">&lt;a&gt;</code> as well as <code class="inl">&lt;button&gt;</code>; the notched row below uses both.</p>
     </div>
     <div class="demo">
       <div class="demo__hd"><h3 class="h3">Hierarchy</h3></div>
@@ -284,6 +338,7 @@ public/assets/
         <div class="row row--wrap">
           <button class="btn btn--primary">Confirm</button>
           <button class="btn">Default</button>
+          <button class="btn btn--warn">Strip modules</button>
           <button class="btn btn--danger">Purge deck</button>
           <button class="btn btn--go">Start playing!</button>
           <button class="btn btn--ghost">Cancel</button>
@@ -480,7 +535,7 @@ public/assets/
       </template>
     </div>
     <div class="demo">
-      <div class="demo__hd"><h3 class="h3">Dock &amp; gauges</h3><p>The page frame. <code class="inl">.dock</code> is a vertical rail of icons that opens to icon + label — on hover where there is a pointer, and on the <code class="inl">data-dock-toggle</code> button everywhere else, which is the only way in on a phone. The icon column stays <code class="inl">--dock-w</code> wide in both states, so opening it never moves an icon sideways, and the label fades with <code class="inl">opacity</code> rather than <code class="inl">display</code> so it stays the icon's accessible name while the rail is shut. On its own <code class="inl">.dock</code> is an ordinary column, as below; it is <code class="inl">.shell--docked</code> that pins it to the viewport, where opening has to overlay the page rather than reflow it. <code class="inl">.gauge</code> is one resource small enough for a bar that is always on screen — label and value on a row, the meter spanning both underneath. Drop the meter and it is a labelled number, which is what money is.</p></div>
+      <div class="demo__hd"><h3 class="h3">Dock &amp; gauges</h3><p>The page frame. <code class="inl">.dock</code> is a vertical rail of icons that opens to icon + label — on hover where there is a pointer, and on the <code class="inl">data-dock-toggle</code> button everywhere else, which is the only way in on a phone. The icon column stays <code class="inl">--dock-w</code> wide in both states, so opening it never moves an icon sideways, and the label fades with <code class="inl">opacity</code> rather than <code class="inl">display</code> so it stays the icon's accessible name while the rail is shut. On its own <code class="inl">.dock</code> is an ordinary column, as below; it is <code class="inl">.shell--docked</code> that pins it to the viewport, where opening has to overlay the page rather than reflow it. <code class="inl">.gauge</code> is one resource small enough for a bar that is always on screen — label and value on a row, the meter spanning both underneath. Drop the meter and it is a labelled number, which is what money is. <code class="inl">.dial</code> is the same number bent into a ring for where there is no room for a bar: same <code class="inl">--v</code>, same <code class="inl">--fill</code>, same <code class="inl">data-hot-low</code>, 40px instead of 104. <code class="inl">.chip-stat</code> is a glyph and a number, for the things that have no maximum and so get no meter of either shape.</p></div>
       <template class="demo-src">
         <div class="row" style="--gap:0;align-items:stretch;border:var(--hair) solid var(--line-1)">
           <nav class="dock" style="height:260px" aria-label="Sections">
@@ -510,24 +565,26 @@ public/assets/
           <div style="flex:1;min-width:0">
             <header class="topbar">
               <span class="brand"><span class="brand__mark"></span><span class="brand__name">Ash &amp; Ember</span></span>
-              <div class="gauge">
-                <span class="gauge__label" aria-hidden="true">HP</span>
-                <span class="gauge__value num" aria-hidden="true">42 / 58</span>
-                <div class="meter" role="meter" data-hot-low style="--v:.72;--fill:var(--ok)" aria-label="HP 42 of 58"><div class="meter__fill"></div></div>
+              <div class="dial" role="meter" data-hot-low style="--v:.72;--fill:var(--ok)" title="HP 42 / 58" aria-label="HP 42 of 58">
+                <span class="dial__in" aria-hidden="true"><span class="dial__label">HP</span><span class="dial__value">42</span></span>
               </div>
-              <div class="gauge">
-                <span class="gauge__label" aria-hidden="true">SI</span>
-                <span class="gauge__value num" aria-hidden="true">9 / 60</span>
-                <div class="meter" role="meter" data-hot-low style="--v:.15;--fill:var(--ok)" aria-label="SI 9 of 60"><div class="meter__fill"></div></div>
+              <div class="dial" role="meter" data-hot-low style="--v:.15;--fill:var(--ok)" title="SI 9 / 60" aria-label="SI 9 of 60">
+                <span class="dial__in" aria-hidden="true"><span class="dial__label">SI</span><span class="dial__value">9</span></span>
               </div>
-              <div class="gauge">
-                <span class="gauge__label">Creds</span>
-                <span class="gauge__value num">48 210</span>
-              </div>
+              <span class="chip-stat" title="Creds">
+                <span class="chip-stat__glyph" aria-hidden="true">&#164;</span>
+                <span class="num">48 210</span>
+                <span class="sr-only">Creds</span>
+              </span>
+              <button type="button" class="chip-stat" aria-haspopup="dialog" title="2 processes">
+                <span class="chip-stat__glyph" aria-hidden="true">&#9654;</span>
+                <span class="num">2</span>
+                <span class="sr-only">2 processes</span>
+              </button>
               <div class="spacer"></div>
             </header>
             <div class="panel__bd">
-              <p class="muted" style="font-size:var(--fs-sm);margin:0">Point at the rail, or press the ☰. The SI bar is under the threshold, so <code class="inl">data-hot-low</code> has turned it critical — the number that decides that lives in <code class="inl">ui-kit.js</code>, not in the markup.</p>
+              <p class="muted" style="font-size:var(--fs-sm);margin:0">Point at the rail, or press the ☰. The SI dial is under the threshold, so <code class="inl">data-hot-low</code> has turned it critical — the number that decides that lives in <code class="inl">ui-kit.js</code>, not in the markup, and a dial wears the same one a bar does.</p>
             </div>
           </div>
         </div>
@@ -614,8 +671,19 @@ public/assets/
       </template>
     </div>
     <div class="demo">
-      <div class="demo__hd"><h3 class="h3">Accordion &amp; empty state</h3></div>
+      <div class="demo__hd"><h3 class="h3">Accordion &amp; empty state</h3><p>A <code class="inl">details.panel</code> with a <code class="inl">summary.panel__hd</code> is a panel that folds — the header becomes the control, so the whole strip is the hit target and nothing new appears beside it. No script: <code class="inl">&lt;details&gt;</code> already knows how to do this, keyboard and screen reader included. Its marker is ink rather than the accordion's ember, because a disclosure triangle is not a warning and a panel header sits on screens that spend the accent on things that are actually live.</p></div>
       <template class="demo-src">
+        <details class="panel" open style="margin-bottom:var(--s-4)">
+          <summary class="panel__hd">
+            <span class="micro">Specs</span>
+            <div class="spacer"></div>
+            <span class="micro num">7 sockets</span>
+          </summary>
+          <div class="panel__bd">
+            <p style="font-size:var(--fs-sm);margin:0">Two Socket K, four QDRAM, one power. Fold it away once the deck is built.</p>
+          </div>
+        </details>
+
         <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))">
           <div class="accordion">
             <details open><summary>Intrusion countermeasures</summary><div>Three layers of ICE. The outer layer rotates its signature every 90 seconds.</div></details>

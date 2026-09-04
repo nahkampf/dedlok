@@ -114,9 +114,24 @@ pattern, so the docs cannot drift from the code.
    Elevation is a step in `--bg-0`→`--bg-4`, never a glow.
 2. **Bone is the ink; colour is rationed.** Primary buttons are `--ink-0` (white). The
    ember accent means *live, critical or destructive* only — aim for ~2% of lit pixels.
-   A screen with three ember elements on it has two too many. `.btn--go` (green, `--ok`)
-   is the single exception: it means *begin*, not *succeeded*, and is likewise limited to
-   one per screen — never beside another filled button competing for the same click.
+   A screen with three ember elements on it has two too many. Two filled signal buttons
+   are the exceptions, and both are rationed the same way — one per screen, never beside
+   another filled button competing for the same click: `.btn--go` (green, `--ok`) means
+   *begin*, not *succeeded*; `.btn--warn` (brass, `--warn`) means *this undoes real work
+   and destroys nothing* — stripping a deck is the case it was drawn for. Both are FILLED
+   because they are things you choose. Ember stays an outline that only fills on hover,
+   because filling it would put the accent on screen at rest. **Every button carries a sheen on
+   hover** — an 8px soft band at 45°, crossing the face over 520ms, tinted per variant
+   through `--sheen` so the reflection off a green button is green. It is a BACKGROUND
+   LAYER and never a pseudo-element, because a notched button's face already *is*
+   `::after` and its hairline *is* `::before`. **A state that recolours a button must
+   set `background-color`, not `background`** — the shorthand resets `background-image`
+   and takes the sheen with it, at exactly the moment it is meant to run. And **all
+   three filled variants invert on
+   hover** — fill and ink trade places over `--t-invert` (400ms), the one deliberately
+   unhurried timing in the kit, with the border and `--cut-line` holding the colour so
+   only the inside turns over. Declared once for the three of them, so a new filled
+   variant only has to say what its colour is.
 3. **Geometry is machined.** Radius stays 0–3px. Character comes from the notched corner
    (`.cut`), never from rounding. The corner *tick* (`.ticked`, and the same device inside
    `.card--select` and `.slot--filled`) is the other half of that vocabulary: it marks a
@@ -140,6 +155,12 @@ add `prefers-color-scheme` blocks.
 - **`.cut` is two clipped pseudo-elements**, because `clip-path` eats a real border. A
   child with its own background squares the corners off — that needs `.cut--clip`, which
   is opt-in because it also clips focus outlines.
+- **A new `.btn--*` variant needs a `.btn--*.cut` companion, always.** `.cut` paints the
+  face with `::after` and `--cut-fill`, and that pseudo-element sits *above* the
+  element's own background — so a variant that sets `background` and stops gets painted
+  over in `--bg-2` and renders as an ordinary button with tinted text. It fails silently,
+  and only where the notch is used, which is nearly everywhere. Set `--cut-line` and
+  `--cut-fill`; every existing variant already does.
 
 ### Responsive rules — these were all shipped broken once
 

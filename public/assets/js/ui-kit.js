@@ -33,6 +33,10 @@
   /* --- Dialogs ----------------------------------------------------------
      <button data-open="#confirm">  /  <button data-close>                */
   on("click", "[data-open]", (e, btn) => {
+    // A control that opens a dialog does nothing else. Without this, one that
+    // happens to sit inside a <label> would also activate the label's input —
+    // looking at a picture would pick the archetype it belongs to.
+    e.preventDefault();
     const dlg = document.querySelector(btn.dataset.open);
     if (dlg && dlg.showModal) dlg.showModal();
   });
@@ -342,7 +346,12 @@
     var hot =
       (el.dataset.hotHigh !== undefined && v > 0.85) ||
       (el.dataset.hotLow !== undefined && v < 0.2);
-    el.classList.toggle("meter--hot", hot);
+    // A dial is the same number drawn as a ring, so it wears the same
+    // threshold. One test, one place, two shapes.
+    el.classList.toggle(
+      el.classList.contains("dial") ? "dial--hot" : "meter--hot",
+      hot
+    );
   }
 
   /* --- Terminal ---------------------------------------------------------- */
@@ -452,9 +461,13 @@
      after this file ran — which is exactly what the gallery does when it
      clones a demo out of its <template>. */
   function hotMeters() {
-    document.querySelectorAll(".meter[data-hot-low], .meter[data-hot-high]").forEach((el) => {
-      meter(el, parseFloat(getComputedStyle(el).getPropertyValue("--v")) || 0);
-    });
+    document
+      .querySelectorAll(
+        ".meter[data-hot-low], .meter[data-hot-high], .dial[data-hot-low], .dial[data-hot-high]"
+      )
+      .forEach((el) => {
+        meter(el, parseFloat(getComputedStyle(el).getPropertyValue("--v")) || 0);
+      });
   }
 
   hotMeters();

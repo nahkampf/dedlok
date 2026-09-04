@@ -258,6 +258,7 @@
   --ink-on-bone: #0D0E11;
   --ink-on-ember: #140503;
   --ink-on-ok: #06170F;
+  --ink-on-warn: #1A1203;
 
   /* Signal — ember is the only saturated colour that gets to be loud */
   --ember:   #FF5A36;
@@ -323,6 +324,12 @@
   --t-fast: 90ms;
   --t-base: 140ms;
   --t-slow: 240ms;
+  /* The one deliberately unhurried timing in the kit. A filled button INVERTS
+     on hover — fill and ink trade places — and that is a bigger change than a
+     shade, so it is given long enough to read as one thing turning into
+     another rather than as a flicker. Still linear and mechanical; slow is not
+     the same as bouncy. */
+  --t-invert: 400ms;
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* Depth */
@@ -511,18 +518,31 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
 .cut--sm { --cut: 6px; }
 .cut--lg { --cut: 16px; }
 
-/* Corner brackets — an overlay, not a border. Frames portraits and maps. */
+/* Corner brackets — an overlay, not a border. Frames portraits and maps.
+
+   BOTH corners come out of ONE pseudo-element, drawn as four gradient arms,
+   and that is not cleverness for its own sake. The first version used ::before
+   for the top-left and ::after for the bottom-right, which meant .brackets
+   could not be combined with any other utility that wanted ::after — and
+   .scanlines wants ::after. Put them on the same element and the later rule
+   won: the deck board, and the kit's own demo of the deck board, shipped with
+   a single unexplained square in one corner and nothing in the other.
+
+   One pseudo-element is one claim. .brackets now composes with anything. */
 .brackets { position: relative; }
-.brackets::before,
-.brackets::after {
+.brackets::before {
   content: "";
   position: absolute;
-  width: 14px; height: 14px;
-  border: 2px solid var(--ember);
+  inset: -1px;
   pointer-events: none;
+  --arm: 14px;
+  --thick: 2px;
+  background:
+    linear-gradient(var(--ember), var(--ember)) 0 0 / var(--arm) var(--thick) no-repeat,
+    linear-gradient(var(--ember), var(--ember)) 0 0 / var(--thick) var(--arm) no-repeat,
+    linear-gradient(var(--ember), var(--ember)) 100% 100% / var(--arm) var(--thick) no-repeat,
+    linear-gradient(var(--ember), var(--ember)) 100% 100% / var(--thick) var(--arm) no-repeat;
 }
-.brackets::before { top: -1px; left: -1px;  border-right: 0; border-bottom: 0; }
-.brackets::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
 
 /* ── 5. TEXTURE ────────────────────────────────────────────────────────── */
 
@@ -572,8 +592,8 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
               color var(--t-fast) var(--ease),
               transform var(--t-fast) var(--ease);
 }
-.btn:hover  { background: var(--bg-3); border-color: var(--line-2); }
-.btn:active { transform: translateY(1px); background: var(--bg-4); }
+.btn:hover  { background-color: var(--bg-3); border-color: var(--line-2); }
+.btn:active { transform: translateY(1px); background-color: var(--bg-4); }
 
 .btn--primary {
   background: var(--ink-0);
@@ -581,8 +601,7 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   color: var(--ink-on-bone);
   font-weight: 650;
 }
-.btn--primary:hover  { background: #fff; border-color: #fff; }
-.btn--primary:active { background: var(--ink-1); border-color: var(--ink-1); }
+.btn--primary:active { background-color: var(--ink-1); border-color: var(--ink-1); }
 
 /* Destructive / commit-to-it. The one button that gets to be ember. */
 .btn--danger {
@@ -591,10 +610,31 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   color: var(--ember);
 }
 .btn--danger:hover {
-  background: var(--ember);
+  background-color: var(--ember);
   border-color: var(--ember);
   color: var(--ink-on-ember);
 }
+
+/* Reversible, but you will feel it. Brass is --warn, and it sits exactly where
+   it belongs on the scale: ember is for what cannot be undone, bone is for the
+   ordinary thing, and this is the button that undoes real work without
+   destroying anything. Stripping a deck is the case it was drawn for — every
+   module comes back, and you still have to put them all in again.
+
+   FILLED, like .btn--go and unlike .btn--danger, and for the same reason: this
+   is a thing you choose to do, not a thing you are warned away from. Ember
+   stays an outline that only fills on hover, because filling it would put the
+   accent on screen at rest, which rule 2 does not allow.
+
+   So it follows go's rationing rather than ember's: at most one per screen, and
+   never beside another filled button competing for the same click. */
+.btn--warn {
+  background: var(--warn);
+  border-color: var(--warn);
+  color: var(--ink-on-warn);
+  font-weight: 650;
+}
+.btn--warn:active { background-color: color-mix(in srgb, var(--warn) 88%, #000); }
 
 /* The go button. Green means "begin", not "succeeded" — it is the invitation
    into the game, and like ember it is rationed: at most one per screen, and
@@ -605,39 +645,171 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   color: var(--ink-on-ok);
   font-weight: 650;
 }
-.btn--go:hover {
-  background: color-mix(in srgb, var(--ok) 85%, #fff);
-  border-color: color-mix(in srgb, var(--ok) 85%, #fff);
-}
-.btn--go:active { background: color-mix(in srgb, var(--ok) 88%, #000); }
+.btn--go:active { background-color: color-mix(in srgb, var(--ok) 88%, #000); }
 
 .btn--ghost {
   background: transparent;
   border-color: transparent;
   color: var(--ink-2);
 }
-.btn--ghost:hover { background: var(--bg-2); color: var(--ink-0); border-color: transparent; }
+.btn--ghost:hover { background-color: var(--bg-2); color: var(--ink-0); border-color: transparent; }
 
 .btn--quiet { background: transparent; }
-.btn--quiet:hover { background: var(--bg-2); }
+.btn--quiet:hover { background-color: var(--bg-2); }
 
 .btn--sm { --btn-h: 26px; --btn-px: 10px; font-size: var(--fs-xs); }
 .btn--lg { --btn-h: 44px; --btn-px: 22px; font-size: var(--fs-md); }
 .btn--block { display: flex; width: 100%; }
 .btn--icon { --btn-px: 0; width: var(--btn-h); padding: 0; }
 
+/* ── SHEEN ─────────────────────────────────────────────────────────────
+   A light reflection crossing the face of a button on hover.
+
+   ON EVERY BUTTON. Each variant tints its own light: the reflection off a green
+   button is green, off a brass one brass, and off an ordinary one white. That
+   is what keeps it reading as a property of the surface rather than as a white
+   bar that visits every control in turn.
+
+   ONE TRAP, and it is the reason several rules below say `background-color`
+   rather than `background`: the shorthand resets background-image, which would
+   take the sheen away at exactly the moment it is meant to run. A state that
+   changes a button's colour changes its COLOUR.
+
+   IT IS A BACKGROUND LAYER, NOT A PSEUDO-ELEMENT, and that is the whole
+   design. A notched button's face IS ::after and its hairline IS ::before, so
+   an overlay drawn as a third pseudo-element does not exist — the same
+   collision that silently ate one of .brackets' two corners. Layering the
+   gradient onto the background that is already there works on both shapes with
+   one rule each, and cannot be eaten by anything.
+
+   Tunable per button, which is what the variations in the gallery are:
+     --sheen    the colour and its alpha
+     --sheen-w  half the band's width; 4px reads as about 8px of light
+     --sheen-a  the angle of the gradient. 135deg is a stripe at 45 degrees.
+     --sheen-t  how long the crossing takes. Its own token rather than one of
+                the shared timings: this is a distance travelled, not a state
+                changing, and it wants to be unhurried without dragging every
+                other transition out with it. */
+.btn {
+  --sheen: rgba(255, 255, 255, 0.6);
+  --sheen-w: 4px;
+  --sheen-a: 135deg;
+  --sheen-t: 520ms;
+}
+
+/* Each accent lights in its own colour.
+   The three filled variants INVERT on hover — they are dark by the time the
+   band has crossed — so the tint is what the button was, which is what a
+   reflection off it would be. Ember is the exception in the other direction:
+   .btn--danger fills on hover, so its light is the warm white that shows on a
+   bright ground. And the transparent ones stay faint, because there is little
+   there to reflect off. */
+.btn--go      { --sheen: rgba(111, 211, 160, 0.6); }
+.btn--warn    { --sheen: rgba(232, 184, 75, 0.6); }
+.btn--danger  { --sheen: rgba(255, 236, 228, 0.5); }
+.btn--primary { --sheen: rgba(232, 230, 225, 0.55); }
+.btn--ghost,
+.btn--quiet   { --sheen: rgba(255, 255, 255, 0.25); }
+
+/* The band is soft-edged rather than a hard bar: a reflection has no outline,
+   and a hard 8px rectangle reads as a graphic sliding past rather than as
+   light. The peak is at the centre and it fades to nothing --sheen-w either
+   side of it. */
+.btn,
+.btn.cut::after {
+  background-image: linear-gradient(
+    var(--sheen-a),
+    transparent calc(50% - var(--sheen-w)),
+    var(--sheen) 50%,
+    transparent calc(50% + var(--sheen-w))
+  );
+  background-repeat: no-repeat;
+  /* Wider than the button so the band starts and ends off the face — it has to
+     arrive from outside and leave, not appear in the middle and stop. */
+  background-size: 250% 100%;
+  background-position: 130% 0;
+  transition: background-position var(--sheen-t) var(--ease);
+}
+
+/* Left to right. Reverse the two positions to sweep the other way. */
+.btn:hover,
+.btn:focus-visible,
+.btn:hover.cut::after,
+.btn:focus-visible.cut::after {
+  background-position: -30% 0;
+}
+
+/* The global reduced-motion rule collapses the duration, which would make the
+   band jump across rather than not happen. Nothing is the right answer: this
+   is decoration, and decoration that cannot move should be absent. */
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .btn.cut::after { background-image: none; }
+}
+
 /* Notched primary — the "commit" button of the kit */
+/* EVERY .btn-- VARIANT NEEDS A .cut COMPANION BELOW, or it renders wrong.
+
+   .cut paints the button's face with ::after and --cut-fill, and that pseudo
+   sits ABOVE the element's own background — so a variant that sets `background`
+   and stops has its colour painted over in --bg-2 and comes out looking like an
+   ordinary button with tinted text. It fails silently and only where the notch
+   is used, which is most places. Set --cut-line and --cut-fill, not background.
+   ButtonCutCompanionTest is the guard. */
 .btn.cut { --cut: 8px; --cut-line: var(--line-1); --cut-fill: var(--bg-2); border: 0; background: transparent; }
 .btn.cut:hover { --cut-fill: var(--bg-3); --cut-line: var(--line-2); background: transparent; }
 .btn--primary.cut { --cut-line: var(--ink-0); --cut-fill: var(--ink-0); background: transparent; }
-.btn--primary.cut:hover { --cut-line: #fff; --cut-fill: #fff; }
 .btn--danger.cut { --cut-line: var(--ember-2); --cut-fill: var(--bg-0); }
 .btn--danger.cut:hover { --cut-line: var(--ember); --cut-fill: var(--ember); }
+.btn--warn.cut { --cut-line: var(--warn); --cut-fill: var(--warn); background: transparent; }
 .btn--go.cut { --cut-line: var(--ok); --cut-fill: var(--ok); background: transparent; }
-.btn--go.cut:hover {
-  --cut-line: color-mix(in srgb, var(--ok) 85%, #fff);
-  --cut-fill: color-mix(in srgb, var(--ok) 85%, #fff);
+
+/* FILLED BUTTONS INVERT ON HOVER.
+
+   Fill and ink trade places: black-on-brass becomes brass-on-black, and the
+   same for bone and for green. The border and the notch line hold the colour
+   throughout, so the button keeps its shape and only its inside turns over.
+
+   Applied here once for all three rather than in each variant, because it is
+   one behaviour: a variant only has to say what its colour IS.
+
+   The ground it inverts onto is --bg-0, the page, not `transparent`. These
+   buttons sit on panels as often as on the page, and a transparent hover would
+   make the same gesture read as two different colours depending on what was
+   behind it. */
+.btn--primary:hover,
+.btn--go:hover,
+.btn--warn:hover {
+  background-color: var(--bg-0);
 }
+.btn--primary, .btn--go, .btn--warn {
+  transition:
+    background var(--t-invert) var(--ease),
+    border-color var(--t-invert) var(--ease),
+    color var(--t-invert) var(--ease),
+    transform var(--t-fast) var(--ease);
+}
+
+/* A notched button's face is a PSEUDO-ELEMENT, so the fade has to be declared
+   on the pseudo-element. --cut-fill itself cannot be transitioned — a custom
+   property is not animatable without @property — but the `background` that
+   reads it is, and changing the property re-evaluates it.
+   --btn-fade carries the duration in, so the ordinary notched button keeps its
+   quick 90ms and only the three that INVERT take the long one. */
+.btn.cut { --btn-fade: var(--t-fast); }
+.btn.cut::before,
+.btn.cut::after { transition: background var(--btn-fade) var(--ease); }
+.btn--primary.cut, .btn--go.cut, .btn--warn.cut { --btn-fade: var(--t-invert); }
+.btn--primary:hover { color: var(--ink-0); border-color: var(--ink-0); }
+.btn--go:hover { color: var(--ok); border-color: var(--ok); }
+.btn--warn:hover { color: var(--warn); border-color: var(--warn); }
+
+/* The notched versions say the same thing through --cut-fill, since .cut paints
+   the face with a pseudo-element and the element's own background is not what
+   you see. --cut-line keeps the colour: the outline is what survives. */
+.btn--primary.cut:hover { --cut-fill: var(--bg-0); --cut-line: var(--ink-0); color: var(--ink-0); }
+.btn--go.cut:hover      { --cut-fill: var(--bg-0); --cut-line: var(--ok);    color: var(--ok); }
+.btn--warn.cut:hover    { --cut-fill: var(--bg-0); --cut-line: var(--warn);  color: var(--warn); }
 
 .btn:disabled,
 .btn[aria-disabled="true"] {
@@ -1230,6 +1402,135 @@ cap-widget {
 }
 .gauge > .meter { grid-column: 1 / -1; }
 
+/* Dial — a meter bent into a ring.
+
+   Same contract as .meter and driven the same way: --v is a 0–1 ratio, --fill
+   is the colour. A bar is the better shape wherever there is room for one; the
+   topbar is where there is not, and a ring spends 40px of width to say what a
+   bar needs 104px to say. The value lives inside it, which is the width the
+   ring bought back.
+
+   The fill is a conic-gradient rather than a transform, so unlike .meter it
+   does not animate. Deliberate: these are painted once per page load, and
+   registering --v with @property to animate them would change how every meter
+   on every screen inherits it. */
+.dial {
+  --v: 0;
+  --fill: var(--ok);
+  --d: 40px;
+  --ring: 3px;
+  position: relative;
+  flex: none;
+  width: var(--d); height: var(--d);
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--fill) calc(var(--v) * 360deg), var(--bg-1) 0);
+}
+/* The hole. Its background is the PAGE, not transparent, or the gradient shows
+   through the middle. */
+.dial::before {
+  content: "";
+  position: absolute; inset: var(--ring);
+  border-radius: 50%;
+  background: var(--bg-0);
+}
+/* Hairlines carry structure here as everywhere else — the ring is a value, the
+   border is the edge of the object. */
+.dial::after {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: var(--hair) solid var(--line-1);
+  pointer-events: none;
+}
+.dial__in { position: relative; display: grid; justify-items: center; gap: 1px; line-height: 1; }
+.dial__label {
+  font-family: var(--font-label); font-size: 9px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2);
+}
+.dial__value {
+  font-family: var(--font-mono); font-size: 12px;
+  font-variant-numeric: tabular-nums; color: var(--ink-0);
+}
+/* Set on the element by ui-kit.js, from the same threshold .meter--hot uses —
+   one number in one place. The value goes with it, because a ring this small
+   is read by its colour before its arc. */
+.dial--hot { --fill: var(--crit); }
+.dial--hot .dial__value { color: var(--crit); }
+
+/* Status chips — a glyph and a number, for the things with no maximum.
+   Money has none by design, and a count of running processes has none either,
+   so neither gets a meter of any shape. */
+.chip-stat {
+  display: inline-flex; align-items: center; gap: var(--s-1);
+  font-family: var(--font-mono); font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-0);
+  background: none; border: 0; padding: 0; margin: 0;
+  text-decoration: none;
+}
+.chip-stat__glyph { color: var(--ink-2); line-height: 1; flex: none; }
+button.chip-stat { cursor: pointer; }
+button.chip-stat:hover .chip-stat__glyph,
+button.chip-stat:focus-visible .chip-stat__glyph { color: var(--ink-0); }
+/* Nothing running is not a warning, it is the ordinary state — so it recedes
+   rather than colouring. */
+.chip-stat--idle { color: var(--ink-3); }
+.chip-stat--idle .chip-stat__glyph { color: var(--ink-3); }
+
+/* A picture of a thing — an archetype, an item, a system.
+
+   16:9 AND A FIXED SHAPE, which is the whole point: a grid of cards whose
+   images are each a different height is a grid that never lines up, and the
+   card is a slot the picture fills rather than the other way round. object-fit
+   crops; nothing is ever letterboxed or stretched.
+
+   The source wants to be about 640×360 — twice what the widest card shows, so
+   it is sharp on a dense screen and never scaled UP, which is the one thing a
+   too-small image cannot be forgiven. */
+.entity-image {
+  display: block;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--bg-1);
+  border: 0;
+  border-bottom: var(--hair) solid var(--line-1);
+  padding: 0; margin: 0;
+}
+.entity-image > img {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  /* Held back from full colour so a photograph cannot out-shout the interface
+     in front of it. Lifts on hover, which is also the affordance. */
+  filter: saturate(.85) contrast(1.02);
+  transition: filter var(--t-base) var(--ease), transform var(--t-slow) var(--ease);
+}
+/* Sitting at the top of a card, it inherits the card's corners. .card cannot
+   simply clip its overflow — .card--select's corner tick lives outside it. */
+.card > .entity-image { border-radius: var(--r-2) var(--r-2) 0 0; }
+
+.entity-image--open { cursor: zoom-in; }
+.entity-image--open:hover > img,
+.entity-image--open:focus-visible > img { filter: none; transform: scale(1.02); }
+.entity-image--open:focus-visible { outline: 2px solid var(--steel); outline-offset: -2px; }
+
+/* The full version has no shape of its own — it is the picture, not a slot —
+   so the dialog sizes to it and stops at the viewport. */
+dialog.modal--image {
+  padding: 0;
+  width: auto; max-width: min(1200px, calc(100vw - 32px));
+  background: var(--bg-0);
+}
+dialog.modal--image > img {
+  display: block;
+  max-width: 100%; max-height: calc(100vh - 32px);
+  width: auto; height: auto;
+}
+.modal--image__close { position: absolute; top: var(--s-2); right: var(--s-2); }
+
 .breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); font-size: var(--fs-xs); color: var(--ink-2); }
 .breadcrumb a { color: var(--ink-2); text-decoration: none; }
 .breadcrumb a:hover { color: var(--ink-0); }
@@ -1392,6 +1693,39 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
 @keyframes toast-in { from { opacity: 0; transform: translateX(12px); } }
 
 /* Accordion */
+/* A panel that folds.
+
+   <details class="panel" open>
+     <summary class="panel__hd">…</summary>
+     <div class="panel__bd">…</div>
+   </details>
+
+   The HEADER becomes the control, so the whole strip is the hit target and
+   nothing new appears beside it. No JavaScript: <details> already knows how to
+   do this, keyboard and screen reader included, and a kit that reimplements it
+   would be reimplementing it worse.
+
+   The marker is INK, not the ember the .accordion below uses, and the
+   difference is deliberate. An accordion is a standalone list where nothing
+   competes for attention; a panel header sits on screens that spend the accent
+   on things that are actually live — the deck screen's thermal alert is the
+   whole of its accent budget, and a disclosure triangle is not a warning. */
+details.panel > summary.panel__hd {
+  cursor: pointer;
+  list-style: none;
+}
+details.panel > summary.panel__hd::-webkit-details-marker { display: none; }
+details.panel > summary.panel__hd::after {
+  content: "+";
+  width: 14px; flex: none; text-align: center;
+  font-family: var(--font-mono); color: var(--ink-2);
+}
+details.panel[open] > summary.panel__hd::after { content: "\2212"; }
+details.panel > summary.panel__hd:hover::after { color: var(--ink-0); }
+details.panel > summary.panel__hd:focus-visible {
+  outline: 2px solid var(--steel); outline-offset: -2px;
+}
+
 .accordion { border-top: var(--hair) solid var(--line-1); }
 .accordion > details { border-bottom: var(--hair) solid var(--line-1); }
 .accordion summary {
@@ -1914,13 +2248,48 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
    against it. Below --board-min the sockets stop being legible, so the
    wrapper scrolls instead of the board shrinking into a diagram of nothing. */
 .board-wrap { overflow-x: auto; }
+/* The board with one panel beside it, matched in height.
+
+   The board is the object; the panel next to it is what the object is doing.
+   Putting them side by side is what makes that read as one thing rather than
+   two sections you scroll between — and the panel is the one that gives way:
+   the board sets the row's height and a long list scrolls inside rather than
+   stretching it.
+
+   ONE COLUMN BELOW THE BREAKPOINT, and that is not a fallback, it is the right
+   answer there. A 320px phone has no room for two columns, and a side panel
+   with a fixed height and its own scrollbar inside a page that already scrolls
+   is the worst thing you can do to a small screen. Below 900px it is simply a
+   panel under the board, which is where it started. */
+.board-split { display: grid; gap: var(--s-4); }
+
+@media (min-width: 900px) {
+  .board-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+    align-items: stretch;
+  }
+  /* min-height:0 in both places or the flex child refuses to shrink and the
+     panel grows the row instead of scrolling inside it. */
+  .board-split > details.panel {
+    display: flex; flex-direction: column;
+    min-height: 0;
+  }
+  .board-split > details.panel > .panel__bd {
+    overflow-y: auto;
+    min-height: 0;
+  }
+}
+
 .board {
   container-type: inline-size;
   position: relative;
   /* A board is an object, not a banner: stretched across a 1100px column it
      becomes a poster with a diagram lost in the middle of it. */
   max-width: min(720px, 100%);
-  min-width: 360px;
+  /* min(), not a bare 360px: min-width beats max-width, so a hard floor here
+     pushes the whole page sideways on a 320px phone. The kit's own responsive
+     rule, which this line predated. */
+  min-width: min(360px, 100%);
   margin-inline: auto;
   aspect-ratio: 4 / 3;
 }
@@ -1964,14 +2333,21 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
      three, not five and a straggler. --cols comes from BoardNode::columns(). */
   display: grid;
   grid-template-columns: repeat(var(--cols, 1), auto);
-  gap: clamp(3px, 1cqw, 5px);
-  padding: clamp(3px, 1cqw, 6px);
+  gap: clamp(4px, 1.4cqw, 7px);
+  padding: clamp(4px, 1.4cqw, 8px);
   background: var(--bg-1);
   border: var(--hair) solid var(--line-1);
   border-radius: var(--r-1);
 }
 .board__node--cpu .board__box { background: var(--bg-2); border-color: var(--line-2); }
-.board .slot { width: clamp(20px, 5.5cqw, 30px); }
+/* Sockets are the thing on this screen, so they are drawn at a size you can
+   read rather than a size that fits. Everything inside one scales with it — a
+   fixed 20px glyph in a 60px socket is a stamp in the middle of a box, and the
+   empty-socket marker has the same problem in reverse. All three are the same
+   container-query ramp, so they stay in proportion at every board width. */
+.board .slot { width: clamp(40px, 11cqw, 60px); }
+.board .slot__icon { font-size: clamp(20px, 5.5cqw, 30px); }
+.board .slot--empty::after { width: clamp(10px, 2.6cqw, 14px); height: clamp(10px, 2.6cqw, 14px); }
 /* On a board an empty socket is a HOLE — somewhere a thing is missing from —
    and a filled one is a thing. The kit's own .slot--filled tints by tier, and
    at tier one that tint is grey on grey: at socket size the two states have to
