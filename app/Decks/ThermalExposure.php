@@ -10,7 +10,7 @@ use App\Stats\Resolver;
 use Illuminate\Support\Collection;
 
 /**
- * What the deck's heat is doing to each thing fitted in it.
+ * What the deck's thermal load is doing to each thing fitted in it.
  *
  * One verdict per occupied socket, from two numbers on the module compared
  * against one number for the deck. Kept apart from App\Decks\DeckTotals
@@ -22,14 +22,14 @@ use Illuminate\Support\Collection;
  * perk that makes chrome run cooler moves them through the ordinary layer
  * order rather than as a special case living here.
  */
-final class HeatExposure
+final class ThermalExposure
 {
-    public const STAT_WARNING = 'deck_module_heat_warning';
+    public const STAT_WARNING = 'deck_module_thermal_warning';
 
-    public const STAT_LIMIT = 'deck_module_heat_limit';
+    public const STAT_LIMIT = 'deck_module_thermal_limit';
 
     /**
-     * @param  array<int, HeatVerdict>  $verdicts  keyed by deck_slot_id
+     * @param  array<int, ThermalVerdict>  $verdicts  keyed by deck_slot_id
      * @param  array<string, list<string>>  $names  module names per verdict value
      */
     private function __construct(
@@ -38,12 +38,12 @@ final class HeatExposure
     ) {}
 
     /**
-     * @param  int  $netHeat  what the deck actually runs at, after cooling
+     * @param  int  $netThermalLoad  what the deck actually runs at, after cooling
      * @param  Collection<int, DeckFitting>  $fittings
      * @param  iterable<Modifier>  $modifiers
      */
     public static function of(
-        int $netHeat,
+        int $netThermalLoad,
         Collection $fittings,
         iterable $modifiers,
         Resolver $resolver,
@@ -61,7 +61,7 @@ final class HeatExposure
                 continue;
             }
 
-            $verdict = self::verdictFor($netHeat, $module->heat_level_warning, $module->heat_level_limit, $modifiers, $resolver);
+            $verdict = self::verdictFor($netThermalLoad, $module->thermal_warning, $module->thermal_limit, $modifiers, $resolver);
 
             $verdicts[(int) $fitting->deck_slot_id] = $verdict;
 
@@ -83,61 +83,61 @@ final class HeatExposure
      * @param  list<Modifier>  $modifiers
      */
     private static function verdictFor(
-        int $netHeat,
+        int $netThermalLoad,
         ?int $warning,
         ?int $limit,
         array $modifiers,
         Resolver $resolver,
-    ): HeatVerdict {
+    ): ThermalVerdict {
         if ($warning === null || $limit === null) {
-            return HeatVerdict::Safe;
+            return ThermalVerdict::Safe;
         }
 
         $resolvedLimit = (int) $resolver->resolve(self::STAT_LIMIT, (float) $limit, $modifiers)->value;
 
         // The limit first: it is a certainty and the warning is only a
         // threshold, so a module past both is past the one that matters.
-        if ($netHeat >= $resolvedLimit) {
-            return HeatVerdict::OverLimit;
+        if ($netThermalLoad >= $resolvedLimit) {
+            return ThermalVerdict::OverLimit;
         }
 
         $resolvedWarning = (int) $resolver->resolve(self::STAT_WARNING, (float) $warning, $modifiers)->value;
 
-        return $netHeat >= $resolvedWarning ? HeatVerdict::AtRisk : HeatVerdict::Safe;
+        return $netThermalLoad >= $resolvedWarning ? ThermalVerdict::AtRisk : ThermalVerdict::Safe;
     }
 
     /** What the socket at this slot is faring. Empty sockets are Safe. */
-    public function verdict(?int $slotId): HeatVerdict
+    public function verdict(?int $slotId): ThermalVerdict
     {
-        return $this->verdicts[$slotId] ?? HeatVerdict::Safe;
+        return $this->verdicts[$slotId] ?? ThermalVerdict::Safe;
     }
 
     /** @return list<string> */
     public function atRisk(): array
     {
-        return $this->names[HeatVerdict::AtRisk->value] ?? [];
+        return $this->names[ThermalVerdict::AtRisk->value] ?? [];
     }
 
     /** @return list<string> */
     public function overLimit(): array
     {
-        return $this->names[HeatVerdict::OverLimit->value] ?? [];
+        return $this->names[ThermalVerdict::OverLimit->value] ?? [];
     }
 
     /**
      * The worst any one module is faring.
      *
-     * What the deck's heat MEANS, now that there is no chassis rating for it
+     * What the deck's thermal load MEANS, now that there is no chassis rating
      * to mean anything against: a number is only hot relative to the parts
      * standing in it.
      */
-    public function worst(): HeatVerdict
+    public function worst(): ThermalVerdict
     {
         if ($this->overLimit() !== []) {
-            return HeatVerdict::OverLimit;
+            return ThermalVerdict::OverLimit;
         }
 
-        return $this->atRisk() === [] ? HeatVerdict::Safe : HeatVerdict::AtRisk;
+        return $this->atRisk() === [] ? ThermalVerdict::Safe : ThermalVerdict::AtRisk;
     }
 
     /** Nothing in this deck is suffering. */

@@ -272,11 +272,11 @@ class ItemRequest extends FormRequest
                 ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
 
-            // And the mirror: a radiator takes heat away and makes none —
+            // And the mirror: a radiator takes load away and makes none —
             // chk_deck_modules_thermal. Zero is allowed on everything else,
             // because most modules run cool and a required 1 would be a
             // number invented to satisfy a rule.
-            'heat' => $hardware?->heats()
+            'thermal_load' => $hardware?->heats()
                 ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
 
@@ -287,12 +287,13 @@ class ItemRequest extends FormRequest
              * pairing and the ordering are withValidator()'s, because neither
              * rule can see the other field from here.
              */
-            'heat_level_warning' => $hardware?->isModule()
+            'thermal_warning' => $hardware?->isModule()
                 ? ['nullable', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
-            'heat_level_limit' => $hardware?->isModule()
+            'thermal_limit' => $hardware?->isModule()
                 ? ['nullable', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
+
         ];
 
         $measure = $hardware?->measure();

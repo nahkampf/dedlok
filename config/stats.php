@@ -130,15 +130,26 @@ return [
         ],
 
         /*
-         * HEAT. What the deck makes, and what is taken back out of it. There
-         * is no third number for what a deck can stand: a deck stands any
-         * amount of heat, and what the heat does is done to the modules —
-         * each against its own thresholds, which are stats of their own below.
+         * THERMAL LOAD. What the deck makes per turn while it is running, and
+         * what is taken back out of it. There is no third number for what a
+         * deck can stand: a deck stands any amount, and what the load does is
+         * done to the modules — each against its own thresholds, which are
+         * stats of their own below.
+         *
+         * NOT called heat: heat is what the world knows about a character, and
+         * a completed trace is what puts it there. One word for a wanted level
+         * and a temperature is one word too few.
+         *
+         * These are RATES. A deck at rest makes nothing; a running deck adds
+         * this much every turn and the radiators take `deck_cooling` back out,
+         * and it is the ACCUMULATED total that the tolerances below are tested
+         * against. The run simulator owns that total — it is per run, not per
+         * deck, and it resets when the run ends.
          *
          * Both are stats for the reason the others are: a skill that runs a
          * deck cool is exactly the kind of thing this system exists for.
          */
-        'deck_heat' => [
+        'deck_thermal_load' => [
             'tags' => ['deck', 'thermal'],
             'min' => 0,
             'max' => null,
@@ -159,27 +170,70 @@ return [
          * chrome run cooler moves them, and it should not need deck code to do
          * it.
          */
-        'deck_module_heat_warning' => [
+        'deck_module_thermal_warning' => [
             'tags' => ['deck', 'thermal', 'tolerance'],
             'min' => 0,
             'max' => null,
             'rounding' => 'floor',
         ],
 
-        'deck_module_heat_limit' => [
+        'deck_module_thermal_limit' => [
             'tags' => ['deck', 'thermal', 'tolerance'],
             'min' => 0,
             'max' => null,
             'rounding' => 'floor',
         ],
 
+        /*
+         * The floor of 1 is the same rule hitpoints_max has, and it is what
+         * makes FLATLINE survivable as a mechanic: an ICE program tagged
+         * flatline does PERMANENT damage to this ceiling, as an unexpiring
+         * modifier rather than a number written into a column. Without a floor,
+         * accumulated injury would end a character by arithmetic rather than by
+         * anything anyone decided. Only damage reaches 0.
+         *
+         * See CYBERSPACE.md, "Losing", and MECHANICS.md, "Flatline is a
+         * permanent stored modifier".
+         */
         'synaptic_integrity_max' => [
             'tags' => ['derived', 'vital'],
-            'min' => 0,
+            'min' => 1,
             'max' => null,
             'rounding' => 'floor',
         ],
 
+    ],
+
+    /*
+    |----------------------------------------------------------------------
+    | Checks
+    |----------------------------------------------------------------------
+    |
+    | Every skill implies a check — `check.<slug>` — and this is how one is
+    | built. There is no per-skill entry anywhere: a check reads the skill's
+    | OWN primary and secondary attributes, which the skills table already
+    | declares because training speed needed them, and its trained level.
+    |
+    |     check = primary * primary_weight
+    |           + secondary * secondary_weight
+    |           + level * level_weight
+    |
+    | Weights rather than the divisors `formulas` uses, because an attribute
+    | runs 0..100 and a level runs 0..5: summing them straight would give an
+    | attribute with a rounding error attached.
+    |
+    | Every input is RESOLVED before it gets here, so an implant that raises
+    | Perception raises every Perception-governed check with no further wiring.
+    |
+    | Expected to be tuned. With a mid-career runner — primary 40, secondary
+    | 30, level 3 — this gives 20 + 7.5 + 24 = 51. App\Stats\SkillStats is
+    | the only thing that reads it.
+    |
+    */
+    'checks' => [
+        'primary_weight' => 0.5,
+        'secondary_weight' => 0.25,
+        'level_weight' => 8.0,
     ],
 
     /*

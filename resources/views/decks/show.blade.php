@@ -81,10 +81,10 @@
                          figure is only hot in relation to what is standing
                          in it. --}}
                     <div class="readout">
-                        <span class="readout__label">{{ Text::get('decks.ready.heat') }}</span>
-                        <span class="readout__value" style="color:{{ $heat->worst()->inkToken() }}">
-                            {{ Text::get('decks.units.heat', [
-                                'value' => number_format($totals->netHeat(), 0, '.', ' '),
+                        <span class="readout__label">{{ Text::get('decks.ready.thermal') }}</span>
+                        <span class="readout__value" style="color:{{ $thermal->worst()->inkToken() }}">
+                            {{ Text::get('decks.units.thermal_load', [
+                                'value' => number_format($totals->netThermalLoad(), 0, '.', ' '),
                             ]) }}
                         </span>
                     </div>
@@ -112,7 +112,7 @@
                      the number means is decided per module, below. --}}
                 @if ($totals->cooling > 0)
                     <p class="muted" style="font-size:var(--fs-xs);margin:0">
-                        {{ Text::get('decks.heat.cooled', ['value' => $totals->cooling]) }}
+                        {{ Text::get('decks.thermal.cooled', ['value' => $totals->cooling]) }}
                     </p>
                 @endif
 
@@ -147,14 +147,14 @@
                      it is the loudest thing this screen has — the kit's own
                      "you should feel this" component, and the only place on
                      the deck screen that spends the accent. --}}
-                @if ($heat->overLimit() !== [])
+                @if ($thermal->overLimit() !== [])
                     <div class="hud-alert">
-                        <span class="hud-alert__code">{{ Text::get('decks.heat.over_limit_code') }}</span>
+                        <span class="hud-alert__code">{{ Text::get('decks.thermal.over_limit_code') }}</span>
                         <div class="stack" style="--gap:var(--s-1);min-width:0">
                             <span style="font-size:var(--fs-sm)">
-                                {{ Text::get('decks.heat.over_limit', ['modules' => implode(', ', $heat->overLimit())]) }}
+                                {{ Text::get('decks.thermal.over_limit', ['modules' => implode(', ', $thermal->overLimit())]) }}
                             </span>
-                            <span class="micro" style="color:var(--ink-2)">{{ Text::get('decks.heat.over_limit_fix') }}</span>
+                            <span class="micro" style="color:var(--ink-2)">{{ Text::get('decks.thermal.over_limit_fix') }}</span>
                         </div>
                     </div>
                 @endif
@@ -162,19 +162,19 @@
                 {{-- Over the warning level: where the risk of destruction
                      begins. The risk itself is not built, so this names the
                      parts rather than quoting odds it cannot compute. --}}
-                @if ($heat->atRisk() !== [])
+                @if ($thermal->atRisk() !== [])
                     <div class="callout callout--warn">
                         <span class="dot dot--warn" style="margin-top:6px"></span>
                         <div class="stack" style="--gap:var(--s-2);min-width:0">
                             <div class="row row--wrap" style="--gap:var(--s-2)">
-                                <span class="micro" style="color:var(--ink-2)">{{ Text::get('decks.heat.at_risk') }}</span>
-                                @foreach ($heat->atRisk() as $name)
+                                <span class="micro" style="color:var(--ink-2)">{{ Text::get('decks.thermal.at_risk') }}</span>
+                                @foreach ($thermal->atRisk() as $name)
                                     <span class="tag tag--warn">{{ $name }}</span>
                                 @endforeach
                             </div>
                             <span class="micro" style="color:var(--ink-3)">
-                                {{ Text::get('decks.heat.at_risk_note') }}
-                                {{ Text::get('decks.heat.risk_not_built') }}
+                                {{ Text::get('decks.thermal.at_risk_note') }}
+                                {{ Text::get('decks.thermal.risk_not_built') }}
                             </span>
                         </div>
                     </div>

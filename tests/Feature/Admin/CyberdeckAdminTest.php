@@ -65,7 +65,7 @@ class CyberdeckAdminTest extends TestCase
             'hardware' => '',
             'variant' => '',
             'power_draw' => '',
-            'heat' => '',
+            'thermal_load' => '',
             'qflops' => '',
             'quantabits' => '',
             'bandwidth' => '',
@@ -241,7 +241,7 @@ class CyberdeckAdminTest extends TestCase
                 'variant' => Variant::SocketK->value,
                 'qflops' => 1_200,
                 'power_draw' => 45,
-                'heat' => 20,
+                'thermal_load' => 20,
             ]))
             ->assertRedirect()
             ->assertSessionHasNoErrors();
@@ -261,7 +261,7 @@ class CyberdeckAdminTest extends TestCase
                 'hardware' => Hardware::Ram->value,
                 'quantabits' => 512,
                 'power_draw' => 8,
-                'heat' => 20,
+                'thermal_load' => 20,
             ]))
             ->assertSessionHasErrors('variant');
     }
@@ -274,7 +274,7 @@ class CyberdeckAdminTest extends TestCase
                 'variant' => Variant::SocketZ->value,
                 'quantabits' => 512,
                 'power_draw' => 8,
-                'heat' => 20,
+                'thermal_load' => 20,
             ]))
             ->assertSessionHasErrors('variant');
     }
@@ -288,7 +288,7 @@ class CyberdeckAdminTest extends TestCase
                 'variant' => Variant::Universal->value,
                 'quantabits' => 512,
                 'power_draw' => 8,
-                'heat' => 20,
+                'thermal_load' => 20,
             ]))
             ->assertSessionHasErrors('variant');
     }
@@ -301,7 +301,7 @@ class CyberdeckAdminTest extends TestCase
                 'variant' => Variant::SocketG->value,
                 'qflops' => 800,
                 'power_draw' => 30,
-                'heat' => 20,
+                'thermal_load' => 20,
             ]))
             ->assertSessionHasErrors('variant');
     }
@@ -317,7 +317,7 @@ class CyberdeckAdminTest extends TestCase
                 'qflops' => 900,
                 'watts' => 600,
                 'power_draw' => 40,
-                'heat' => 20,
+                'thermal_load' => 20,
             ]))
             ->assertSessionHasErrors('watts');
 
@@ -327,7 +327,7 @@ class CyberdeckAdminTest extends TestCase
                 'hardware' => Hardware::Cpu->value,
                 'variant' => Variant::SocketG->value,
                 'power_draw' => 40,
-                'heat' => 20,
+                'thermal_load' => 20,
             ]))
             ->assertSessionHasErrors('qflops');
     }
@@ -339,7 +339,7 @@ class CyberdeckAdminTest extends TestCase
                 'hardware' => Hardware::Psu->value,
                 'watts' => 600,
                 'power_draw' => 5,
-                'heat' => 20,
+                'thermal_load' => 20,
             ]))
             ->assertSessionHasErrors('power_draw');
 
@@ -348,7 +348,7 @@ class CyberdeckAdminTest extends TestCase
                 'slug' => 'aegis_600',
                 'hardware' => Hardware::Psu->value,
                 'watts' => 600,
-                'heat' => 12,
+                'thermal_load' => 12,
             ]))
             ->assertSessionHasNoErrors();
 
@@ -364,7 +364,7 @@ class CyberdeckAdminTest extends TestCase
                 'hardware' => Hardware::Expansion->value,
                 'variant' => Variant::Horizon->value,
                 'power_draw' => 6,
-                'heat' => 20,
+                'thermal_load' => 20,
             ]))
             ->assertSessionHasNoErrors();
 
@@ -402,7 +402,7 @@ class CyberdeckAdminTest extends TestCase
                 'hardware' => Hardware::Nic->value,
                 'bandwidth' => 4_096,
                 'power_draw' => 20,
-                'heat' => 20,
+                'thermal_load' => 20,
             ]))
             ->assertSessionHasNoErrors();
 
@@ -423,7 +423,7 @@ class CyberdeckAdminTest extends TestCase
                 'slug' => null,
                 'hardware' => Hardware::Psu->value,
                 'watts' => 400,
-                'heat' => 12,
+                'thermal_load' => 12,
             ]))
             ->assertSessionHasNoErrors();
 

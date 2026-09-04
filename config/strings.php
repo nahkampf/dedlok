@@ -512,7 +512,7 @@ return [
             'universal' => 'Takes either kind of stick',
             'pei' => 'Peripheral Extension Interface',
             'npu' => 'Neural processing — required by some AI programs',
-            'thermal' => 'Where the heat goes. A deck may present none at all.',
+            'thermal' => 'Where the load goes. A deck may present none at all.',
         ],
 
         // The board: a deck's sockets seen as the thing rather than as a
@@ -589,7 +589,7 @@ return [
             'compute' => 'Compute',
             'memory' => 'Memory',
             'link' => 'Link',
-            'heat' => 'Heat',
+            'thermal' => 'Thermal load',
 
             'missing' => [
                 'compute' => 'A CPU or an NPU',
@@ -603,22 +603,23 @@ return [
         ],
 
         /*
-        | Heat: the second budget, and not the same shape as the first.
+        | Thermal load: the second budget, and not the same shape as the first.
         |
         | A deck over its POWER budget will not run, and readiness says so. A
         | deck over its THERMAL budget runs perfectly well and risks cooking
         | what is in it. So this warns rather than refusing, and it is not one
         | of the readiness requirements.
         */
-        'heat' => [
-            // No deck-level budget: a deck has no thermal rating and heat does
-            // not happen to it. What the number means is decided per module.
+        'thermal' => [
+            // No deck-level budget: a deck has no thermal rating and thermal
+            // load does not happen TO it. What the number means is decided per
+            // module.
             'cooled' => 'Cooled by :value TU',
             'risk_not_built' => 'Nothing is destroyed yet — the risk is specified, not built.',
 
             /*
-            | What the heat is doing to each thing fitted in it. A module's two
-            | thresholds are compared against the deck's NET heat, so the same
+            | What the load is doing to each thing fitted in it. A module's two
+            | thresholds are compared against the deck's NET load, so the same
             | part is safe in a cold deck and dying in a hot one.
             */
             'verdict' => [
@@ -634,7 +635,7 @@ return [
             // this screen has to say.
             'over_limit_code' => 'THERMAL',
             'over_limit' => 'This loadout destroys :modules the moment the deck runs.',
-            'over_limit_fix' => 'Fit a radiator, cut the heat, or use parts that tolerate more.',
+            'over_limit_fix' => 'Fit a radiator, cut the load, or use parts that tolerate more.',
         ],
 
         /*

@@ -51,8 +51,9 @@ final class DeckTotals
         'bandwidth' => 'deck_bandwidth',
         'draw' => 'deck_power_draw',
         'supply' => 'deck_power_supply',
-        'heat' => 'deck_heat',
+        'thermalLoad' => 'deck_thermal_load',
         'cooling' => 'deck_cooling',
+        'storage' => 'deck_storage',
     ];
 
     /**
@@ -65,9 +66,11 @@ final class DeckTotals
         public readonly int $draw,
         public readonly int $supply,
         /** What the fitted modules MAKE, before anything takes it away. */
-        public readonly int $heat,
+        public readonly int $thermalLoad,
         /** What the thermal modules take away. */
         public readonly int $cooling,
+        /** Where files and unloaded programs live. Not memory — see Hardware. */
+        public readonly int $storage,
         private readonly array $counts,
     ) {}
 
@@ -76,7 +79,8 @@ final class DeckTotals
     {
         $sums = [
             'qflops' => 0, 'quantabits' => 0, 'bandwidth' => 0,
-            'watts' => 0, 'power_draw' => 0, 'heat' => 0, 'cooling' => 0,
+            'watts' => 0, 'power_draw' => 0, 'thermal_load' => 0, 'cooling' => 0,
+            'storage' => 0,
         ];
         $counts = [];
 
@@ -103,9 +107,10 @@ final class DeckTotals
             // A supply gives power and draws none; chk_deck_modules_supply is
             // what makes that true of every row rather than most of them.
             supply: $sums['watts'],
-            heat: $sums['heat'],
+            thermalLoad: $sums['thermal_load'],
             // And the mirror: a thermal module cools and heats none.
             cooling: $sums['cooling'],
+            storage: $sums['storage'],
             counts: $counts,
         );
     }
@@ -138,8 +143,9 @@ final class DeckTotals
             bandwidth: $resolved['bandwidth'],
             draw: $resolved['draw'],
             supply: $resolved['supply'],
-            heat: $resolved['heat'],
+            thermalLoad: $resolved['thermalLoad'],
             cooling: $resolved['cooling'],
+            storage: $resolved['storage'],
             counts: $this->counts,
         );
     }
@@ -157,19 +163,23 @@ final class DeckTotals
     }
 
     /**
-     * The heat a deck actually runs at: what it makes, less what is taken away.
+     * What a deck runs at per turn: what it makes, less what is bled off.
      *
      * Floored at zero. A deck cooled harder than it heats is a cold deck, not
-     * a deck with negative heat — there is nothing for the surplus to do.
+     * a deck with negative load — there is nothing for the surplus to do.
+     *
+     * This is a RATE, in thermal units per turn. What the thresholds test is
+     * the accumulated total over a run, which the run simulator owns; a deck
+     * that is not running makes nothing at all.
      *
      * There is nothing to compare this against here, and that is deliberate: a
-     * deck has no thermal rating and heat does not happen to it. What the
+     * deck has no thermal rating and thermal load does not happen to it. What
      * number means is decided per module, against thresholds each one carries
-     * — see App\Decks\HeatExposure.
+     * — see App\Decks\ThermalExposure.
      */
-    public function netHeat(): int
+    public function netThermalLoad(): int
     {
-        return max(0, $this->heat - $this->cooling);
+        return max(0, $this->thermalLoad - $this->cooling);
     }
 
     /** How full the power budget is, 0-1, for a meter's --v. */

@@ -8,11 +8,11 @@ use App\Decks\DeckTotals;
 use App\Decks\FittingRefusal;
 use App\Decks\Hardware;
 use App\Decks\HardwareEditor;
-use App\Decks\HeatExposure;
-use App\Decks\HeatVerdict;
 use App\Decks\ModuleFitter;
 use App\Decks\SlotKind;
 use App\Decks\SlotLayout;
+use App\Decks\ThermalExposure;
+use App\Decks\ThermalVerdict;
 use App\Decks\Variant;
 use App\Models\Character;
 use App\Models\DeckFitting;
@@ -577,7 +577,13 @@ class ModuleFittingTest extends TestCase
             ->assertSee(Text::get('decks.equip.take'));
     }
 
-    public function test_an_equipped_deck_leaves_the_stash_and_comes_back(): void
+    /**
+     * A carried deck is still a thing you have, so it stays in the stash and
+     * wears its tag there. Being equipped is NOT one of scopeLoose()'s ways of
+     * being spoken for — it used to be, and taking it out of the grid meant the
+     * stash needed a panel whose only job was to be the route back to it.
+     */
+    public function test_an_equipped_deck_stays_in_the_stash(): void
     {
         $deck = $this->own($this->deckItem());
         $equipper = new DeckEquipper;
@@ -587,27 +593,24 @@ class ModuleFittingTest extends TestCase
         $this->assertTrue($carried()->contains('id', $deck->id));
 
         $equipper->equip($this->character, $deck);
-
-        // Equipping takes it out of the stash — it is on you, not in the pile.
-        // Nothing but scopeLoose() had to learn that.
-        $this->assertFalse($carried()->contains('id', $deck->id));
+        $this->assertTrue($carried()->contains('id', $deck->id), 'it is on you, not elsewhere');
 
         $equipper->unequip($this->character->fresh(), strip: false, fitter: $this->fitter);
-
         $this->assertTrue($carried()->contains('id', $deck->id));
     }
 
-    public function test_the_stash_is_the_way_through_to_an_equipped_deck(): void
+    /** One listing, and the slot's own card is the route to the board. */
+    public function test_the_stash_lists_an_equipped_deck_like_anything_else(): void
     {
         $deck = $this->own($this->deckItem());
         (new DeckEquipper)->equip($this->character, $deck);
 
-        // It is out of the grid, so without this panel there is no route to
-        // its board at all.
         $this->actingAs($this->character->user)
             ->get(route('inventory.index'))
-            ->assertSee(Text::get('inventory.in_use'))
-            ->assertSee(route('deck.show', $deck), false);
+            ->assertSee(route('deck.show', $deck), false)
+            ->assertDontSee(Text::get('inventory.in_use'))
+            // Its card is what says it is the one being carried.
+            ->assertSee(Text::get('decks.equip.is_equipped'));
     }
 
     public function test_a_deck_stays_equipped_while_its_modules_change(): void
@@ -855,15 +858,15 @@ class ModuleFittingTest extends TestCase
         $deck = $this->own($deckItem);
 
         $this->fitter->fit($this->character, $deck, $this->socket($deckItem, 'cpu'),
-            $this->own(Item::factory()->module(Hardware::Cpu, Variant::SocketK, measure: 11, draw: 165, heat: 90)->create()));
+            $this->own(Item::factory()->module(Hardware::Cpu, Variant::SocketK, measure: 11, draw: 165, thermalLoad: 90)->create()));
         $this->fitter->fit($this->character, $deck, $this->socket($deckItem, 'psu'),
-            $this->own(Item::factory()->module(Hardware::Psu, measure: 300, heat: 10)->create()));
+            $this->own(Item::factory()->module(Hardware::Psu, measure: 300, thermalLoad: 10)->create()));
 
         $totals = $this->totals($deck);
 
-        $this->assertSame(100, $totals->heat);
+        $this->assertSame(100, $totals->thermalLoad);
         $this->assertSame(0, $totals->cooling);
-        $this->assertSame(100, $totals->netHeat());
+        $this->assertSame(100, $totals->netThermalLoad());
 
         // A radiator in the exhaust takes it back down.
         $this->fitter->fit($this->character, $deck, $this->socket($deckItem, 'thermal'),
@@ -872,16 +875,16 @@ class ModuleFittingTest extends TestCase
         $cooled = $this->totals($deck);
 
         $this->assertSame(40, $cooled->cooling);
-        $this->assertSame(60, $cooled->netHeat());
+        $this->assertSame(60, $cooled->netThermalLoad());
     }
 
     public function test_a_radiator_cools_and_heats_none(): void
     {
         // The mirror of a supply giving power and drawing none, and the
         // schema's chk_deck_modules_thermal says so too.
-        $radiator = Item::factory()->module(Hardware::Thermal, measure: 40, draw: 5, heat: 999)->create();
+        $radiator = Item::factory()->module(Hardware::Thermal, measure: 40, draw: 5, thermalLoad: 999)->create();
 
-        $this->assertSame(0, $radiator->deckModule->heat);
+        $this->assertSame(0, $radiator->deckModule->thermal_load);
         $this->assertSame(40, $radiator->deckModule->cooling);
         // It still draws: the fan runs on something.
         $this->assertSame(5, $radiator->deckModule->power_draw);
@@ -894,11 +897,11 @@ class ModuleFittingTest extends TestCase
         $deck = $this->own($deckItem);
 
         $this->fitter->fit($this->character, $deck, $this->socket($deckItem, 'cpu'),
-            $this->own(Item::factory()->module(Hardware::Cpu, Variant::SocketK, measure: 11, draw: 165, heat: 10)->create()));
+            $this->own(Item::factory()->module(Hardware::Cpu, Variant::SocketK, measure: 11, draw: 165, thermalLoad: 10)->create()));
         $this->fitter->fit($this->character, $deck, $this->socket($deckItem, 'thermal'),
             $this->own(Item::factory()->module(Hardware::Thermal, measure: 500, draw: 5)->create()));
 
-        $this->assertSame(0, $this->totals($deck)->netHeat());
+        $this->assertSame(0, $this->totals($deck)->netThermalLoad());
     }
 
     public function test_heat_never_refuses_a_fitting_and_never_blocks_readiness(): void
@@ -911,20 +914,20 @@ class ModuleFittingTest extends TestCase
             ['ram', Hardware::Ram, Variant::Opto, 16, 34, 10],
             ['nic', Hardware::Nic, null, 2, 18, 5],
             ['psu', Hardware::Psu, null, 600, 0, 20],
-        ] as [$kind, $hardware, $variant, $measure, $draw, $heat]) {
+        ] as [$kind, $hardware, $variant, $measure, $draw, $thermalLoad]) {
             // Nothing refuses a fitting for being hot. That is the player's
             // problem to solve, with a radiator or with a colder part.
             $this->assertTrue($this->fitter->fit($this->character, $deck, $this->socket($deckItem, $kind),
-                $this->own(Item::factory()->module($hardware, $variant, measure: $measure, draw: $draw, heat: $heat)->create()))->succeeded());
+                $this->own(Item::factory()->module($hardware, $variant, measure: $measure, draw: $draw, thermalLoad: $thermalLoad)->create()))->succeeded());
         }
 
         $totals = $this->totals($deck);
 
-        $this->assertSame(235, $totals->netHeat());
+        $this->assertSame(235, $totals->netThermalLoad());
 
         // A deck is indifferent to its own heat. There is nothing on DeckTotals
         // that says otherwise, and readiness never asks about it — what the
-        // number means is decided per module, by HeatExposure.
+        // number means is decided per module, by ThermalExposure.
         $this->assertTrue($totals->isReady());
         $this->assertSame([], $totals->unmet());
     }
@@ -962,7 +965,7 @@ class ModuleFittingTest extends TestCase
             ['psu', Hardware::Psu, null, 600, 0],
         ] as [$kind, $hardware, $variant, $measure, $draw]) {
             $this->fitter->fit($this->character, $deck, $this->socket($deckItem, $kind),
-                $this->own(Item::factory()->module($hardware, $variant, measure: $measure, draw: $draw, heat: 10)->create()));
+                $this->own(Item::factory()->module($hardware, $variant, measure: $measure, draw: $draw, thermalLoad: 10)->create()));
         }
 
         $this->assertTrue($this->totals($deck)->isReady());
@@ -973,19 +976,19 @@ class ModuleFittingTest extends TestCase
         [, $deck, $socket] = $this->deckAt(150, warnAt: 100, dieAt: 200);
 
         $base = $this->totals($deck);
-        $this->assertSame(150, $base->netHeat());
-        $this->assertSame(HeatVerdict::AtRisk, $this->exposure($deck, $base)->verdict($socket->id));
+        $this->assertSame(150, $base->netThermalLoad());
+        $this->assertSame(ThermalVerdict::AtRisk, $this->exposure($deck, $base)->verdict($socket->id));
 
         // Heat is a resolved stat like everything else a deck holds, so the
         // system that will one day carry a cooling-running skill already works
         // — and cooling the deck is what takes the module out of danger.
         $resolved = $base->resolvedWith(
-            $this->modifier('deck_heat', Op::PercentageOfBase, -40),
+            $this->modifier('deck_thermal_load', Op::PercentageOfBase, -40),
             app(Resolver::class),
         );
 
-        $this->assertSame(90, $resolved->netHeat());
-        $this->assertSame(HeatVerdict::Safe, $this->exposure($deck, $resolved)->verdict($socket->id));
+        $this->assertSame(90, $resolved->netThermalLoad());
+        $this->assertSame(ThermalVerdict::Safe, $this->exposure($deck, $resolved)->verdict($socket->id));
     }
 
     public function test_the_screen_shows_the_heat_without_a_ceiling_to_judge_it_by(): void
@@ -994,24 +997,24 @@ class ModuleFittingTest extends TestCase
 
         $response = $this->actingAs($this->character->user)->get(route('deck.show', $deck));
 
-        $response->assertSee(Text::get('decks.ready.heat'));
-        $response->assertSee(Text::get('decks.units.heat', ['value' => '200']));
+        $response->assertSee(Text::get('decks.ready.thermal'));
+        $response->assertSee(Text::get('decks.units.thermal_load', ['value' => '200']));
 
         // A deck is indifferent to heat, so nothing on the screen compares the
         // figure to a rating — there is no meter beside the power one, and no
         // "running hot" verdict about the deck itself. Only modules can be in
         // trouble, and this one carries no limits at all.
-        $response->assertDontSee('decks.heat.budget');
-        $response->assertDontSee(Text::get('decks.heat.at_risk'));
-        $response->assertDontSee(Text::get('decks.heat.over_limit_code'));
+        $response->assertDontSee('decks.thermal.budget');
+        $response->assertDontSee(Text::get('decks.thermal.at_risk'));
+        $response->assertDontSee(Text::get('decks.thermal.over_limit_code'));
     }
 
     // ---- what the heat does to each module -----------------------------------
 
-    private function exposure(InventoryItem $deck, DeckTotals $totals): HeatExposure
+    private function exposure(InventoryItem $deck, DeckTotals $totals): ThermalExposure
     {
-        return HeatExposure::of(
-            $totals->netHeat(),
+        return ThermalExposure::of(
+            $totals->netThermalLoad(),
             $deck->fresh()->fittings()->with(['slot', 'module.item.deckModule'])->get(),
             [],
             app(Resolver::class),
@@ -1019,11 +1022,12 @@ class ModuleFittingTest extends TestCase
     }
 
     /**
-     * A deck at $heat TU with one module in it that warns and dies where told.
+     * A deck at $thermalLoad TU per turn with one module in it that warns and
+     * dies where told.
      *
      * @return array{0: Item, 1: InventoryItem, 2: DeckSlot}
      */
-    private function deckAt(int $heat, ?int $warnAt, ?int $dieAt): array
+    private function deckAt(int $thermalLoad, ?int $warnAt, ?int $dieAt): array
     {
         $deckItem = Item::factory()->cyberdeck(['cpu_socket_k' => 1, 'psu' => 1])
             ->create();
@@ -1033,7 +1037,7 @@ class ModuleFittingTest extends TestCase
         $this->fitter->fit($this->character, $deck, $socket, $this->own(
             Item::factory()->module(
                 Hardware::Cpu, Variant::SocketK,
-                measure: 11, draw: 165, heat: $heat, warnAt: $warnAt, dieAt: $dieAt,
+                measure: 11, draw: 165, thermalLoad: $thermalLoad, warnAt: $warnAt, dieAt: $dieAt,
             )->create(['name' => 'Kurogane CX-1'])
         ));
 
@@ -1046,9 +1050,9 @@ class ModuleFittingTest extends TestCase
 
         $exposure = $this->exposure($deck, $this->totals($deck));
 
-        $this->assertSame(HeatVerdict::Safe, $exposure->verdict($socket->id));
+        $this->assertSame(ThermalVerdict::Safe, $exposure->verdict($socket->id));
         $this->assertTrue($exposure->isSafe());
-        $this->assertSame('', HeatVerdict::Safe->slotClass());
+        $this->assertSame('', ThermalVerdict::Safe->slotClass());
     }
 
     public function test_reaching_the_warning_level_puts_a_module_at_risk(): void
@@ -1058,10 +1062,10 @@ class ModuleFittingTest extends TestCase
 
         $exposure = $this->exposure($deck, $this->totals($deck));
 
-        $this->assertSame(HeatVerdict::AtRisk, $exposure->verdict($socket->id));
+        $this->assertSame(ThermalVerdict::AtRisk, $exposure->verdict($socket->id));
         $this->assertSame(['Kurogane CX-1'], $exposure->atRisk());
         $this->assertSame([], $exposure->overLimit());
-        $this->assertStringContainsString('slot--hot', HeatVerdict::AtRisk->slotClass());
+        $this->assertStringContainsString('slot--hot', ThermalVerdict::AtRisk->slotClass());
     }
 
     public function test_reaching_the_limit_is_a_certainty_and_not_a_risk(): void
@@ -1070,7 +1074,7 @@ class ModuleFittingTest extends TestCase
 
         $exposure = $this->exposure($deck, $this->totals($deck));
 
-        $this->assertSame(HeatVerdict::OverLimit, $exposure->verdict($socket->id));
+        $this->assertSame(ThermalVerdict::OverLimit, $exposure->verdict($socket->id));
         $this->assertSame(['Kurogane CX-1'], $exposure->overLimit());
         // Past both thresholds it reports the one that matters, not both.
         $this->assertSame([], $exposure->atRisk());
@@ -1082,7 +1086,7 @@ class ModuleFittingTest extends TestCase
         // already gives — not a limit of zero.
         [, $deck, $socket] = $this->deckAt(9_000, warnAt: null, dieAt: null);
 
-        $this->assertSame(HeatVerdict::Safe, $this->exposure($deck, $this->totals($deck))->verdict($socket->id));
+        $this->assertSame(ThermalVerdict::Safe, $this->exposure($deck, $this->totals($deck))->verdict($socket->id));
     }
 
     public function test_the_same_module_is_safe_in_a_cold_deck_and_dying_in_a_hot_one(): void
@@ -1092,8 +1096,8 @@ class ModuleFittingTest extends TestCase
         [, $cold, $coldSocket] = $this->deckAt(10, warnAt: 150, dieAt: 220);
         [, $hot, $hotSocket] = $this->deckAt(300, warnAt: 150, dieAt: 220);
 
-        $this->assertSame(HeatVerdict::Safe, $this->exposure($cold, $this->totals($cold))->verdict($coldSocket->id));
-        $this->assertSame(HeatVerdict::OverLimit, $this->exposure($hot, $this->totals($hot))->verdict($hotSocket->id));
+        $this->assertSame(ThermalVerdict::Safe, $this->exposure($cold, $this->totals($cold))->verdict($coldSocket->id));
+        $this->assertSame(ThermalVerdict::OverLimit, $this->exposure($hot, $this->totals($hot))->verdict($hotSocket->id));
     }
 
     public function test_cooling_saves_a_module_the_raw_heat_would_have_cooked(): void
@@ -1105,10 +1109,10 @@ class ModuleFittingTest extends TestCase
 
         $this->fitter->fit($this->character, $deck, $socket, $this->own(
             Item::factory()->module(Hardware::Cpu, Variant::SocketK,
-                measure: 11, draw: 165, heat: 240, warnAt: 150, dieAt: 220)->create()
+                measure: 11, draw: 165, thermalLoad: 240, warnAt: 150, dieAt: 220)->create()
         ));
 
-        $this->assertSame(HeatVerdict::OverLimit, $this->exposure($deck, $this->totals($deck))->verdict($socket->id));
+        $this->assertSame(ThermalVerdict::OverLimit, $this->exposure($deck, $this->totals($deck))->verdict($socket->id));
 
         // The balancing act: a radiator costs power and a socket, and buys the
         // module back.
@@ -1116,7 +1120,7 @@ class ModuleFittingTest extends TestCase
             Item::factory()->module(Hardware::Thermal, measure: 150, draw: 12)->create()
         ));
 
-        $this->assertSame(HeatVerdict::Safe, $this->exposure($deck, $this->totals($deck))->verdict($socket->id));
+        $this->assertSame(ThermalVerdict::Safe, $this->exposure($deck, $this->totals($deck))->verdict($socket->id));
     }
 
     public function test_a_deck_can_cook_one_module_while_another_shrugs(): void
@@ -1129,11 +1133,11 @@ class ModuleFittingTest extends TestCase
         $ramSocket = $this->socket($deckItem, 'ram');
 
         $this->fitter->fit($this->character, $deck, $cpuSocket, $this->own(
-            Item::factory()->module(Hardware::Cpu, Variant::SocketK, measure: 11, draw: 165, heat: 200,
+            Item::factory()->module(Hardware::Cpu, Variant::SocketK, measure: 11, draw: 165, thermalLoad: 200,
                 warnAt: 900, dieAt: 1_000)->create(['name' => 'Hardened CPU'])
         ));
         $this->fitter->fit($this->character, $deck, $ramSocket, $this->own(
-            Item::factory()->module(Hardware::Ram, Variant::Opto, measure: 16, draw: 34, heat: 0,
+            Item::factory()->module(Hardware::Ram, Variant::Opto, measure: 16, draw: 34, thermalLoad: 0,
                 warnAt: 100, dieAt: 150)->create(['name' => 'Fragile RAM'])
         ));
 
@@ -1141,8 +1145,8 @@ class ModuleFittingTest extends TestCase
 
         // 200 TU: fine for the hardened part, fatal for the fragile one. A
         // deck's tolerance is its weakest part, not the sum of its parts.
-        $this->assertSame(HeatVerdict::Safe, $exposure->verdict($cpuSocket->id));
-        $this->assertSame(HeatVerdict::OverLimit, $exposure->verdict($ramSocket->id));
+        $this->assertSame(ThermalVerdict::Safe, $exposure->verdict($cpuSocket->id));
+        $this->assertSame(ThermalVerdict::OverLimit, $exposure->verdict($ramSocket->id));
         $this->assertSame(['Fragile RAM'], $exposure->overLimit());
     }
 
@@ -1151,19 +1155,19 @@ class ModuleFittingTest extends TestCase
         [, $deck, $socket] = $this->deckAt(200, warnAt: 150, dieAt: 220);
         $totals = $this->totals($deck);
 
-        $hot = HeatExposure::of($totals->netHeat(), $deck->fresh()->fittings()->with(['slot', 'module.item.deckModule'])->get(), [], app(Resolver::class));
-        $this->assertSame(HeatVerdict::AtRisk, $hot->verdict($socket->id));
+        $hot = ThermalExposure::of($totals->netThermalLoad(), $deck->fresh()->fittings()->with(['slot', 'module.item.deckModule'])->get(), [], app(Resolver::class));
+        $this->assertSame(ThermalVerdict::AtRisk, $hot->verdict($socket->id));
 
         // Tolerance is a resolved stat like everything else, so a perk that
         // makes chrome run cooler works without deck code knowing about perks.
-        $hardened = HeatExposure::of(
-            $totals->netHeat(),
+        $hardened = ThermalExposure::of(
+            $totals->netThermalLoad(),
             $deck->fresh()->fittings()->with(['slot', 'module.item.deckModule'])->get(),
             [new Modifier(Op::PercentageOfBase, 50, Target::allOf(['tolerance']), 'a perk')],
             app(Resolver::class),
         );
 
-        $this->assertSame(HeatVerdict::Safe, $hardened->verdict($socket->id));
+        $this->assertSame(ThermalVerdict::Safe, $hardened->verdict($socket->id));
     }
 
     public function test_the_screen_names_what_is_at_risk_and_what_is_doomed(): void
@@ -1172,17 +1176,17 @@ class ModuleFittingTest extends TestCase
 
         $this->actingAs($this->character->user)
             ->get(route('deck.show', $deck))
-            ->assertSee(Text::get('decks.heat.at_risk'))
+            ->assertSee(Text::get('decks.thermal.at_risk'))
             ->assertSee('Kurogane CX-1')
             ->assertSee('slot--hot', false)
-            ->assertDontSee(Text::get('decks.heat.over_limit_code'));
+            ->assertDontSee(Text::get('decks.thermal.over_limit_code'));
 
         [, $doomed] = $this->deckAt(400, warnAt: 150, dieAt: 220);
 
         $this->actingAs($this->character->user)
             ->get(route('deck.show', $doomed))
-            ->assertSee(Text::get('decks.heat.over_limit_code'))
-            ->assertSee(Text::get('decks.heat.over_limit_fix'))
+            ->assertSee(Text::get('decks.thermal.over_limit_code'))
+            ->assertSee(Text::get('decks.thermal.over_limit_fix'))
             ->assertSee('slot--doomed', false);
     }
 

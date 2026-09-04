@@ -126,7 +126,7 @@ class ItemFactory extends Factory
         ?Variant $variant = null,
         int $measure = 100,
         int $draw = 10,
-        int $heat = 0,
+        int $thermalLoad = 0,
         ?int $warnAt = null,
         ?int $dieAt = null,
     ): static {
@@ -139,16 +139,16 @@ class ItemFactory extends Factory
                 // step earlier — see App\Decks\ModuleFitter.
                 'stackable' => false,
             ])
-            ->afterCreating(function (Item $item) use ($kind, $variant, $measure, $draw, $heat, $warnAt, $dieAt): void {
+            ->afterCreating(function (Item $item) use ($kind, $variant, $measure, $draw, $thermalLoad, $warnAt, $dieAt): void {
                 $columns = [
                     'variant' => $variant,
                     'power_draw' => $kind->draws() ? $draw : 0,
                     // A radiator makes none, whatever a caller asks for —
                     // chk_deck_modules_thermal.
-                    'heat' => $kind->heats() ? $heat : 0,
+                    'thermal_load' => $kind->heats() ? $thermalLoad : 0,
                     // Nullable together: null is a module with no known limit.
-                    'heat_level_warning' => $dieAt === null ? null : $warnAt,
-                    'heat_level_limit' => $dieAt,
+                    'thermal_warning' => $dieAt === null ? null : $warnAt,
+                    'thermal_limit' => $dieAt,
                 ];
 
                 $column = $kind->measure();

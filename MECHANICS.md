@@ -56,10 +56,20 @@ down so the implementation has something to be checked against.
 | Selling, disassembling, module skill requirements | **not built**; the menu rows say "Not yet" |
 | A deck's totals and whether it will run | **built** — `App\Decks\DeckTotals`, `DeckRequirement` |
 | A power budget that ENFORCES anything | **not built**; the sum is shown and nothing refuses |
-| Heat — module heat, thermal sockets, radiators, the budget | **built** |
-| Per-module heat tolerance, and showing what a loadout would cook | **built** |
+| Thermal load — module output, thermal sockets, radiators, the budget | **built** |
+| Per-module thermal tolerance, and showing what a loadout would cook | **built** |
+| The thermal rename — `heat` freed up for the character's wanted level | **done**; columns, stat ids, classes and strings all moved |
+| Thermal load as an accumulating total rather than a level | **not done**; a re-calibration of every module in the catalogue |
+| A floor of 1 on `synaptic_integrity_max` | **done**; `DerivedStatTest` pins both ceilings at 1 |
+| `characters.heat` — what the world knows about you | **specified only**; see CYBERSPACE.md |
+| A sixth deck measure — storage, to hold data and programs | **built** — `SlotKind::Storage`, `deck_modules.storage`, `deck_storage` |
+| Cyberspace — the grid, systems, intrusion | **specified only**; CYBERSPACE.md is the document |
+| Encryption skills — four, ranks 2/4/8/16, with books | **built** as rows; placeholder descriptions, nothing reads them |
+| `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
+| Routing, Advanced Routing — how long a chain may be | **built** as skill rows with prerequisites; nothing reads them |
+| Radiator cooling, recalibrated for accumulation | **done** as data — eight rows, 15–480 compressed to 90–520 |
 | Actually destroying a module | **not built**; running a deck is not built either |
-| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, a power budget | **specified only**; stored as bases, read by nothing, and resolved rather than read when they are |
+| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, storage, a power budget | **specified only**; stored as bases, read by nothing, and resolved rather than read when they are. All five have jobs waiting for them in CYBERSPACE.md |
 | Inventory capacity — an overall limit per inventory | **specified only**; `weight` is stored and unenforced |
 
 Do not describe anything below as working until it appears in the table above.
@@ -911,7 +921,7 @@ and the module comes back to hand.
   were refused this from the start; modules joined them, and existing piles
   were split by the migration.
 
-### Heat
+### Thermal load
 
 The second budget, and **deliberately not the same shape as the first**. That
 difference is the whole design:
@@ -919,16 +929,105 @@ difference is the whole design:
 | | Measured against | Over means |
 | --- | --- | --- |
 | **Power** | the supplies fitted in the deck | it will not run. A readiness requirement, and the screen says so. |
-| **Heat** | nothing, at the deck level | nothing to the deck. What it does, it does to each module against that module's own thresholds. |
+| **Thermal load** | nothing, at the deck level | nothing to the deck. What it does, it does to each module against that module's own thresholds. |
 
 That asymmetry shows on the screen: power has a meter because it has a
-denominator, and heat is a bare figure because it has none. The heat readout
+denominator, and thermal load is a bare figure because it has none. The readout
 takes its colour from the worst-off module rather than from a ceiling — a
 number is only hot in relation to what is standing in it.
 
-- **Every module makes heat** — `deck_modules.heat`, a default rather than a
-  nullable, because every module has one and it may be zero. The parallel of
-  `power_draw`, not of a measure.
+**Only a running deck is hot, and thermal load ACCUMULATES.** A deck makes no
+thermal load while it is idle. Once it is running, every turn of a run adds what
+the modules generate and subtracts what the radiators bleed off, and whatever is
+left over **stays**. The thresholds test the running total, not the rate.
+
+That is the difference between a rate and a level, and it is the whole mechanic:
+
+| | Unit | What it is |
+| --- | --- | --- |
+| `deck_modules.thermal_load` | TU per turn | what one module generates each turn |
+| `cooling` | TU per turn | what one radiator removes each turn |
+| net | TU per turn | generation less cooling — can be negative, which is a deck cooling down |
+| **accumulated** | TU | the running total, and the only thing the thresholds ever look at |
+
+**So a long run cooks a deck that a short one would not**, which ties thermal
+risk directly to how greedy the run plan was — more data on the wire is more
+turns, and more turns is more heat. It is the same clock as the trace.
+
+The deck screen therefore shows a **forecast**, not a condition: the worst-case
+generation with everything running, the cooling against it, and the net per
+turn. It has to say so, because a number that reads as a present state when it
+is a prediction is a number that lies.
+
+**Accumulated load resets when a run ends.** Heat belongs to a run, not to a
+session and not to a deck — so a deck is never tired, only a run is ever too
+long, and the simulation carries no state in from the last one.
+
+**A run is not the only thing that makes a deck work.** A decryption running in
+the background is the deck working too, and it accumulates on the same terms —
+with no run to end and therefore no reset. That makes it binary rather than
+risky: cooling covers a decryption and nothing ever happens, or it does not and
+the deck cooks its weakest module overnight. See CYBERSPACE.md, *Decryption*.
+
+**This changes the calibration of every module in the catalogue.** The authored
+figures read as levels — a module generating 40, a tolerance of 220 — and under
+accumulation those are a rate and a total, which are not the same kind of number
+and cannot both stay. The target is now known: **a run is 4 to 20 turns**
+(1–5 scanning, 2–10 fighting, a few extracting, scaled by the size of the haul
+and back down by the deck's bandwidth). So a module's tolerance has to be
+somewhere around ten to twenty times its net per-turn contribution — a short
+smash-and-grab safe, a long greedy run genuinely dangerous.
+
+**Half of that recalibration is done.** The generating side was left alone —
+46 rows, and its spread reads correctly as a per-turn rate. The **cooling** side
+was raised and compressed instead: eight rows, `15…480` → `90…520`, so a median
+build (≈207 TU generated) sits at roughly 37 TU net under a mid-range radiator,
+which is about 20 turns against a median tolerance of 750. The top radiator
+still zeroes anything but an extreme build, and the bottom one is no longer
+decorative.
+
+**Power draw was raised with it**, in a second pass, so radiators did not simply
+become better for free: `0…95 W` → `25…300 W`, at a deliberately worsening
+efficiency — 0.28 W per TU at the bottom of the ladder and 0.58 at the top. The
+four cheapest were drawing nothing at all, which contradicted this file's own
+rule that a radiator still draws because the fan runs on something.
+
+**The generating side was left alone.** Its 46 rows already read correctly as a
+per-turn rate, and moving three variables in one pass makes the result
+unreadable.
+
+#### The thermal rename
+
+All of this was called *heat*, and heat now means something else: a completed
+trace puts heat on a **character**, and that is a persistent property of a
+person rather than a temperature inside a machine. One word for a wanted level
+and for a thermal figure is one word too few, and the two will appear on
+adjacent screens.
+
+| Was | Becomes |
+| --- | --- |
+| `deck_modules.heat` | `deck_modules.thermal_load` |
+| `deck_modules.heat_level_warning` / `heat_level_limit` | `thermal_warning` / `thermal_limit` |
+| stat `deck_heat` | `deck_thermal_load` |
+| stat `deck_module_heat_warning` / `deck_module_heat_limit` | `deck_module_thermal_warning` / `deck_module_thermal_limit` |
+| `App\Decks\HeatExposure`, `HeatVerdict`, `NoHeatExposure` | `ThermalExposure`, `ThermalVerdict`, `NoThermalExposure` |
+| `chk_deck_modules_heat_levels` | `chk_deck_modules_thermal_levels` |
+
+Two things deliberately do **not** move. `deck_cooling` was never called heat
+and a radiator still cools. And `.slot--hot` / `.slot--doomed` stay, because
+they live on the deck board where hot can only mean temperature — as does
+`.meter--hot` / `data-hot-low`, which is an older and unrelated overload
+meaning *this resource is low*.
+
+**Do the rename before anything is built on top of it.** Stat ids are permanent
+the moment a stored modifier references one, and the whole of cyberspace is
+about to reference these.
+
+#### What a deck makes and what takes it away
+
+- **Every module makes thermal load** — `deck_modules.thermal_load`, a default
+  rather than a nullable, because every module has one and it may be zero. The
+  parallel of `power_draw`, not of a measure.
 - **A radiator takes it away.** `Hardware::Thermal` seats in a `thermal`
   socket, and its measure is `cooling` — the only measure that is a
   subtraction. **A radiator cools and heats none**, the exact mirror of a
@@ -940,26 +1039,26 @@ number is only hot in relation to what is standing in it.
   to disagree with the first. A deck could then call itself healthy while
   cooking the part that mattered, or call itself in trouble while every part
   was comfortable. There is one question and it is asked per module.
-- **Net heat is what it makes less what is taken away, floored at zero.** A
+- **Net load is what it makes less what is taken away, floored at zero.** A
   deck cooled harder than it heats is a cold deck, not a deck with negative
-  heat.
+  thermal load.
 - **A deck may present no thermal socket at all**, one, or several. Nothing
   requires an exhaust and readiness does not ask for one — a cold deck does not
   need one.
-- Both are resolved stats (`deck_heat`, `deck_cooling`, tagged `deck` and
-  `thermal`), so a skill that runs a deck cool works the day it is written —
-  and cooling the deck is what takes a module back out of danger.
+- Both are resolved stats (`deck_thermal_load`, `deck_cooling`, tagged `deck`
+  and `thermal`), so a skill that runs a deck cool works the day it is written
+  — and cooling the deck is what takes a module back out of danger.
 
-#### What the heat does to each module
+#### What it does to each module
 
-Two more columns, and they are **thresholds on the DECK'S heat rather than on
-the module's own output**: `deck_modules.heat_level_warning` and
-`heat_level_limit`. A module says "I start to suffer once the deck runs at 150,
-and I do not survive 220", so the same part is safe in a cold deck and dying in
-a hot one. That is the point — **a deck's tolerance is its weakest part, not
-the sum of its parts**, which is why this is not in `DeckTotals`.
+Two more columns, and they are **thresholds on the DECK'S load rather than on
+the module's own output**: `deck_modules.thermal_warning` and `thermal_limit`.
+A module says "I start to suffer once the deck runs at 150, and I do not
+survive 220", so the same part is safe in a cold deck and dying in a hot one.
+That is the point — **a deck's tolerance is its weakest part, not the sum of
+its parts**, which is why this is not in `DeckTotals`.
 
-| Deck net heat | Verdict | What it means |
+| Accumulated load | Verdict | What it means |
 | --- | --- | --- |
 | below the warning | `Safe` | nothing |
 | at or above the warning | `AtRisk` | where a risk of destruction begins |
@@ -967,12 +1066,11 @@ the sum of its parts**, which is why this is not in `DeckTotals`.
 
 - **Nullable, and nullable together.** NULL is a part that does not care how hot
   the deck gets — a real answer, and the honest one for every module already in
-  the catalogue. `chk_deck_modules_heat_levels` keeps the pair together and the
-  warning at or below the limit, the same shape as `chk_items_capacity_pair`.
-- **The thresholds are resolved stats** (`deck_module_heat_warning`,
-  `deck_module_heat_limit`, tagged `deck thermal tolerance`), so a perk that
-  hardens chrome moves them without deck code knowing perks exist.
-- **`App\Decks\HeatExposure` is the assessment** and `HeatVerdict` the answer.
+  the catalogue. The CHECK keeps the pair together and the warning at or below
+  the limit, the same shape as `chk_items_capacity_pair`.
+- **The thresholds are resolved stats**, so a perk that hardens chrome moves
+  them without deck code knowing perks exist.
+- **`ThermalExposure` is the assessment** and `ThermalVerdict` the answer.
   The board wears it: `.slot--hot` is a slowly pulsing crit border, and
   `.slot--doomed` adds a crit fill. Slow on purpose — this is a condition, not
   an event.
