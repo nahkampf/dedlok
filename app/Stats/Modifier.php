@@ -22,21 +22,26 @@ final readonly class Modifier
         public ?string $source = null,
         /** Only meaningful for Op::Override. */
         public int $priority = 0,
+        /**
+         * When this applies. Null is the ordinary case and the one to prefer:
+         * an unconditional modifier can be resolved once and cached, and a
+         * conditional one cannot. See App\Stats\Condition.
+         */
+        public ?Condition $condition = null,
     ) {}
 
     /**
      * Build from config data.
      *
-     * Unknown keys are rejected rather than ignored. Conditional modifiers are
-     * specified in MECHANICS.md but not implemented yet, so a 'condition' key
-     * written today fails loudly here instead of being silently dropped and
-     * quietly unbalancing the game.
+     * Unknown keys are rejected rather than ignored, and so is an unknown
+     * predicate inside a condition: a modifier that quietly does nothing is a
+     * balance bug with no symptom.
      *
      * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
-        $known = ['op', 'amount', 'target', 'source', 'priority'];
+        $known = ['op', 'amount', 'target', 'source', 'priority', 'condition'];
         $unknown = array_diff(array_keys($data), $known);
 
         if ($unknown !== []) {
@@ -67,11 +72,41 @@ final readonly class Modifier
             target: Target::fromArray($data['target']),
             source: $data['source'] ?? null,
             priority: (int) ($data['priority'] ?? 0),
+            condition: isset($data['condition']) ? Condition::fromArray((array) $data['condition']) : null,
         );
     }
 
     public function appliesTo(Stat $stat): bool
     {
         return $this->target->matches($stat);
+    }
+
+    /**
+     * Does this modifier depend on state that moves between reads?
+     *
+     * The split the whole caching story rests on: unconditional modifiers
+     * resolve once and can be held, conditional ones have to be judged at the
+     * moment of the check.
+     */
+    public function isConditional(): bool
+    {
+        return $this->condition !== null;
+    }
+
+    /**
+     * Is this modifier live, given what is true right now?
+     *
+     * A conditional modifier with NO context is not live. That is the
+     * deliberate direction: resolving without a context is asking for the
+     * context-free answer, and quietly folding in a bonus that is only
+     * sometimes earned would make that answer wrong in a way nothing reports.
+     */
+    public function isLiveIn(?Context $context): bool
+    {
+        if ($this->condition === null) {
+            return true;
+        }
+
+        return $context !== null && $this->condition->holds($context);
     }
 }

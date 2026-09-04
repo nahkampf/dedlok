@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Skills\TrainingRate;
+use App\Stats\Context;
 use App\Stats\Modifier;
 use App\Stats\ResolvedStat;
-use App\Stats\Resolver;
+use App\Stats\Sheet;
 use App\Stats\Sources\ArchetypePerks;
+use App\Stats\Sources\RunningPrograms;
 use Database\Factories\CharacterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -457,10 +459,30 @@ class Character extends Model
         return array_keys((array) config('stats.formulas', []));
     }
 
-    /** Resolve a stat for this character, with every active modifier applied. */
+    /**
+     * Resolve a stat for this character, with every active modifier applied.
+     *
+     * Goes through a Sheet, so a derived stat reads the RESOLVED values of its
+     * inputs rather than their columns. Each call builds one; hold the sheet
+     * yourself with `Character::sheet()` when reading several, or every stat on
+     * a screen re-resolves its own attributes.
+     */
     public function stat(string $statId): ResolvedStat
     {
-        return app(Resolver::class)->resolve($statId, $this->baseStat($statId), $this->modifiers());
+        return $this->sheet()->get($statId);
+    }
+
+    /**
+     * This character's stats, resolved together and memoised.
+     *
+     * Deliberately NOT cached on the model: a sheet is bound to the context it
+     * was built in — conditional modifiers are judged against Synaptic
+     * Integrity and the like, and those move. A stale sheet answers with the
+     * state the character used to be in.
+     */
+    public function sheet(?Context $context = null): Sheet
+    {
+        return Sheet::for($this, $context);
     }
 
     /** The resolved ceiling for a resource column. */

@@ -203,14 +203,55 @@ return [
     */
     'formulas' => [
 
-        // HP = Meat + half of Muscle + half of Focus
+        /*
+         * HP = Meat + half of Muscle + half of Focus.
+         *
+         * Hitpoints are the ability to endure physical punishment and pain.
+         *
+         *   meat    how tough and how big the body is. The whole of it, and
+         *           the only term at full weight.
+         *   muscle  strength and physique.
+         *   focus   concentration AND willpower. Focus stands for both, and
+         *           this formula draws on the second: someone with the will to
+         *           keep going endures a great deal more than someone without
+         *           it. It is not a mental attribute doing borrowed work — it
+         *           is one attribute with two faces, and the physical pool
+         *           reads the one the mental pool does not.
+         *
+         * Written down because it is the term nobody guesses. The willpower
+         * half is invisible from Focus's own description, which speaks only of
+         * sustained attention, so this looks like a copy-paste from the SI
+         * formula below until you know what the attribute actually covers.
+         */
         'hitpoints_max' => [
             'meat' => 1,
             'muscle' => 2,
             'focus' => 2,
         ],
 
-        // SI = half of Focus + half of Memory + half of Intellect + half of Meat
+        /*
+         * SI = half of Focus + half of Memory + half of Intellect + half of Meat.
+         *
+         * Synaptic Integrity is what holds together when a mind is exposed to
+         * something it was not built to see. Nothing at full weight: no single
+         * faculty carries it.
+         *
+         *   focus      holding together under exposure — the composure half of
+         *   intellect  the attribute, alongside the ability to make sense of
+         *              what is happening. Both keep a mind intact where panic
+         *              would not.
+         *   memory     experience to draw on, and how RESILIENT the mind is.
+         *              Having seen bad things before is part of surviving the
+         *              next one.
+         *   meat       the physical robustness of the brain and nervous system.
+         *              SI is damage to wetware, and wetware is meat.
+         *
+         * NOTE THE SYMMETRY, and that it is deliberate: each pool reaches
+         * across. Hitpoints take a mental term (Focus, as willpower); Synaptic
+         * Integrity takes a physical one (Meat, as the tissue doing the
+         * thinking). Neither list is the pure physical or pure mental set, and
+         * a change that "tidied" either into one would be removing the point.
+         */
         'synaptic_integrity_max' => [
             'focus' => 2,
             'memory' => 2,

@@ -30,16 +30,27 @@ final class Resolver
 
     /**
      * @param  iterable<Modifier>  $modifiers
+     * @param  Context|null  $context  what conditional modifiers are judged
+     *                                 against. Null asks for the context-free
+     *                                 answer, and conditional modifiers are
+     *                                 then left out rather than assumed.
      */
-    public function resolve(string $statId, float $base, iterable $modifiers = []): ResolvedStat
-    {
+    public function resolve(
+        string $statId,
+        float $base,
+        iterable $modifiers = [],
+        ?Context $context = null,
+    ): ResolvedStat {
         $stat = $this->stats->get($statId);
 
         /** @var array<int, list<Modifier>> $layers */
         $layers = [1 => [], 2 => [], 3 => [], 4 => []];
 
+        // Conditions are tested BEFORE the arithmetic and never inside it: a
+        // modifier is in the bag or it is not, and the layer order below stays
+        // the same three lines it has always been.
         foreach ($modifiers as $modifier) {
-            if ($modifier->appliesTo($stat)) {
+            if ($modifier->appliesTo($stat) && $modifier->isLiveIn($context)) {
                 $layers[$modifier->op->layer()][] = $modifier;
             }
         }
@@ -112,13 +123,13 @@ final class Resolver
      * @param  iterable<Modifier>  $modifiers
      * @return array<string, ResolvedStat>
      */
-    public function resolveAll(array $bases, iterable $modifiers = []): array
+    public function resolveAll(array $bases, iterable $modifiers = [], ?Context $context = null): array
     {
         $modifiers = is_array($modifiers) ? $modifiers : iterator_to_array($modifiers);
         $resolved = [];
 
         foreach ($bases as $statId => $base) {
-            $resolved[$statId] = $this->resolve($statId, (float) $base, $modifiers);
+            $resolved[$statId] = $this->resolve($statId, (float) $base, $modifiers, $context);
         }
 
         return $resolved;
