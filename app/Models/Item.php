@@ -8,6 +8,7 @@ use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotLayout;
 use App\Market\Rarity;
+use App\Programs\ProgramKind;
 use App\Support\Text;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -48,6 +49,15 @@ class Item extends Model
 
     /** @var list<string> */
     public const USE_OPS = [self::USE_INJECT_SKILL];
+
+    /** Where every item's picture lives, one subdirectory per type below it. */
+    public const IMAGE_ROOT = 'items';
+
+    /**
+     * The one image type that is not an enum case: a book is data on the card
+     * and a book in the filing cabinet, and every book looks the same.
+     */
+    public const IMAGE_SKILLBOOK = 'skillbook';
 
     /**
      * Two tiers, and the scale is deliberately short.
@@ -292,6 +302,62 @@ class Item extends Model
         return $this->hardware?->label()
             ?? $this->program?->kind->label()
             ?? Text::get("items.kinds.{$this->container}");
+    }
+
+    /**
+     * Which folder under public/images this item's picture is found in.
+     *
+     * One subdirectory per TYPE of item — `items/cpu`, `items/icebreaker`,
+     * `items/physical` — because one folder holding every item in the game is
+     * a folder nobody can find a file in. The vocabulary is the one the card
+     * already speaks (see kindName()), with two differences, both because this
+     * is a filing system rather than a sentence:
+     *
+     *  - a skillbook files itself, though it CALLS itself data: there is one
+     *    book per skill and they all look alike, so one picture in one folder
+     *    covers every book in the game;
+     *  - a container's kind is the inventory it lives in, which is the same
+     *    fallback kindName() ends on.
+     *
+     * `App\Support\Image` walks the default back up, so a type with no
+     * picture of its own falls to `items/_default.jpg` rather than to nothing.
+     */
+    public function imageKind(): string
+    {
+        return self::IMAGE_ROOT.'/'.$this->imageType();
+    }
+
+    /** The subdirectory alone: `cpu`, `daemon`, `skillbook`, `physical`. */
+    public function imageType(): string
+    {
+        if ($this->hardware !== null) {
+            return $this->hardware->value;
+        }
+
+        if ($this->program !== null) {
+            return $this->program->kind->value;
+        }
+
+        return $this->isSkillbook() ? self::IMAGE_SKILLBOOK : $this->container;
+    }
+
+    /**
+     * Every type there is, which is every subdirectory there should be.
+     *
+     * Composed from the three enums rather than written out, so a new kind of
+     * hardware or program arrives here on its own — a folder that has to be
+     * remembered is a folder that is missing on the day it is needed.
+     *
+     * @return list<string>
+     */
+    public static function imageTypes(): array
+    {
+        return [
+            ...array_column(Hardware::cases(), 'value'),
+            ...ProgramKind::values(),
+            self::IMAGE_SKILLBOOK,
+            ...self::CONTAINERS,
+        ];
     }
 
     /**

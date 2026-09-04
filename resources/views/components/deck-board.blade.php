@@ -123,6 +123,7 @@
             </template>
 
             <x-item-destroy :entry="$fitting->module" />
+            <x-item-image :entry="$fitting->module" />
         @endif
     @endforeach
 

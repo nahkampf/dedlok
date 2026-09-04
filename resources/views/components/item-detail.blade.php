@@ -20,6 +20,14 @@
      a click can land, because the pointer has to cross the gap to reach a
      button and the layer is gone by then. --}}
 <div class="item-card {{ $item->tierClass() }}">
+    {{-- What the thing looks like, found by convention: one subdirectory per
+         type of item under public/images/items. The enlarge dialog is rendered
+         beside the listing instead of here — <x-item-image> — because this card
+         is cloned into the inspector and into a modal, and a <dialog> cloned
+         with it would be a second copy of itself in the top layer. --}}
+    <x-entity-image :kind="$item->imageKind()" :id="$item->id" :alt="$item->displayName()"
+                    dialog="image-{{ $entry->id }}" />
+
     <div class="item-card__hd">
         <div class="row" style="--gap:var(--s-2);align-items:flex-start">
             <span class="stack" style="--gap:5px;min-width:0">

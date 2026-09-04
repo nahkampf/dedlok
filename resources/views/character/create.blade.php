@@ -112,6 +112,13 @@
                         <input type="radio" name="archetype" value="{{ $archetype['id'] }}"
                                @checked($archetype['playable'] && (int) old('archetype') === $archetype['id'])
                                @disabled(! $archetype['playable'])>
+
+                        {{-- Found by convention, not stored on the row: drop
+                             images/archetypes/<id>.jpg in and it appears. The
+                             <id>_full.jpg beside it is what the modal opens,
+                             and without one there is nothing to open. --}}
+                        <x-entity-image kind="archetypes" :id="$archetype['id']" :alt="$archetype['name']" />
+
                         <div class="card__hd">
                             <div class="card__title">{{ $archetype['name'] }}</div>
                             <div class="card__meta">{{ $archetype['role'] }}</div>

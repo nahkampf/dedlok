@@ -91,6 +91,7 @@
                     </template>
 
                     <x-item-destroy :entry="$entry" />
+                    <x-item-image :entry="$entry" />
                 @endforeach
             </div>
 

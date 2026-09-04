@@ -237,6 +237,59 @@ point.
   the same discipline as `Item::glyph()`. Measure a candidate against the stack before
   using it; the ones that come back at the notdef width are missing.
 
+### Images
+
+**Pictures are found by convention, never stored on a row.** `public/images/<kind>/`,
+one subdirectory per kind of thing, and inside it:
+
+| File | Is |
+| --- | --- |
+| `<id>.jpg` | what a card shows. **16:9**, and the source wants to be about **640×360** — twice the widest card, so it is sharp on a dense screen and never scaled UP. |
+| `<id>_full.jpg` | what the modal opens. **Any dimensions**: it is the picture itself rather than a slot to fill. |
+| `_default.jpg`, `_default_full.jpg` | the fallback, per kind. Ships with the folder. |
+
+Nothing is required: a thing with no picture, no type default and no default above it
+renders no image at all rather than a broken one.
+
+`App\Support\Image` resolves them and `<x-entity-image>` renders one. Dropping a file
+in makes the picture appear and deleting it brings the default back — no column, no
+upload, no seeder, and nothing that can disagree with the filesystem. **A missing full
+version means no modal at all**, which is why `card()` and `full()` are separate
+questions rather than one.
+
+- **Stamped through `Asset::url()`** like every other public asset, for the reason the
+  stylesheet is: nothing renames a file when its contents change.
+- **The card image is a fixed 16:9 and crops.** A grid of cards whose pictures are each
+  a different height is a grid that never lines up; the card is a slot the picture fills,
+  never the other way round.
+- **The id is validated as one path segment**, and so is every segment of the kind. They
+  come from the database rather than a request, so that is a belt rather than braces —
+  but a filename built by concatenation is exactly the shape that ends up reading
+  `../../.env`. One bad step refuses the whole path rather than the part before it.
+- **`data-open` calls `preventDefault()`**, because an opener can sit inside a `<label>`
+  — as it does on the archetype cards — and looking at a picture must not also pick the
+  thing it belongs to.
+- **A kind may be a path, and items are one subdirectory per TYPE** —
+  `public/images/items/cpu/`, `items/icebreaker/`, `items/skillbook/`, `items/physical/`.
+  One folder holding every item in the game is a folder nobody can find a file in.
+  `Item::imageType()` names it and `Item::imageTypes()` is the whole list, composed from
+  `Hardware`, `ProgramKind`, the book and the two inventories — so a new kind of hardware
+  or program brings its folder with it rather than needing one remembered.
+- **The type vocabulary is the card's, with one difference.** A skillbook CALLS itself
+  data and FILES itself as a book: there is one book per skill and they all look alike,
+  so one picture covers every book in the game.
+- **Only the default walks back up the path.** `items/_default.jpg` stands in for every
+  type nobody has drawn yet, and a type that draws its own overrides it by existing. An
+  item's own picture is looked for in its type's folder and nowhere else — a file one
+  level up is filed in the wrong place, not filed loosely.
+- **Where a card gets CLONED, the enlarge dialog is rendered beside the listing** —
+  `<x-item-image>`, the same shape as `<x-item-destroy>` and for the same reason: the
+  item card is cloned into the hover inspector and into a modal, and a `<dialog>` cloned
+  with it is a second copy of itself in the top layer. `<x-entity-image>` renders that
+  dialog inline (the archetype cards) unless a `dialog` id says it lives elsewhere; the
+  markup itself is written once, in `<x-entity-image-dialog>`. The id is keyed by the
+  inventory ROW, so two of the same thing are two dialogs rather than one duplicated id.
+
 ### Cache busting
 
 **Both layouts load the kit through `App\Support\Asset::url()`, never bare `asset()`.**
