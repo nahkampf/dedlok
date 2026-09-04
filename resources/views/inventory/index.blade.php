@@ -16,9 +16,7 @@
             <div class="panel__hd">
                 <span class="micro">{{ Text::get('inventory.in_use') }}</span>
             </div>
-            {{-- The menu belongs here too: an equipped deck is in no grid, so
-                 without it there is no way to destroy one at all. --}}
-            <div class="item-row {{ $equipped->item->tierClass() }}" data-menu="#menu-{{ $equipped->id }}">
+            <div class="item-row {{ $equipped->item->tierClass() }}">
                 <span class="slot__icon">{{ $equipped->item->glyph() }}</span>
                 <span class="stack" style="--gap:2px;min-width:0">
                     <span class="item-row__name">{{ $equipped->item->displayName() }}</span>
@@ -26,9 +24,17 @@
                         <span class="micro" style="color:var(--ink-3)">{{ $equipped->item->hardwareSummary() }}</span>
                     @endif
                 </span>
-                <a class="btn btn--sm cut" href="{{ route('deck.show', $equipped) }}">
-                    {{ Text::get('decks.board.open') }}
-                </a>
+                <span class="row row--wrap" style="--gap:var(--s-2);justify-content:flex-end">
+                    {{-- An equipped deck is in no grid, so this is the only way
+                         to its card — and the card is where every action is. --}}
+                    <button type="button" class="btn btn--sm btn--ghost cut"
+                            data-inspect-open="#detail-{{ $equipped->id }}">
+                        {{ Text::get('inventory.actions.details') }}
+                    </button>
+                    <a class="btn btn--sm cut" href="{{ route('deck.show', $equipped) }}">
+                        {{ Text::get('decks.board.open') }}
+                    </a>
+                </span>
             </div>
         </div>
 
@@ -36,7 +42,7 @@
             <x-item-detail :entry="$equipped" />
         </template>
 
-        <x-item-menu :entry="$equipped" />
+        <x-item-destroy :entry="$equipped" />
     @endif
 
     {{-- Two inventories, one screen. The split is a property of the item, so a

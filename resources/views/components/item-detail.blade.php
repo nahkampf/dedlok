@@ -1,6 +1,14 @@
 @use('App\Models\Item')
 @use('App\Support\Text')
-@props(['entry', 'fits' => null])
+@props([
+    'entry',
+    'fits' => null,
+    // Set only when this card is opened from a deck's board: the deck object
+    // and the socket the module is in, which is what "take it out" needs.
+    // `socket` and not `slot` — $slot is reserved in a Blade component.
+    'deck' => null,
+    'socket' => null,
+])
 
 @php($item = $entry->item)
 @php($fits = $fits ?? collect())
@@ -14,10 +22,24 @@
 <div class="item-card {{ $item->tierClass() }}">
     <div class="item-card__hd">
         <div class="row" style="--gap:var(--s-2);align-items:flex-start">
-            <span class="stack" style="--gap:2px;min-width:0">
+            <span class="stack" style="--gap:5px;min-width:0">
                 <span class="item-card__name">{{ $item->displayName() }}</span>
-                <span class="item-card__tier">
-                    {{ $item->tierName() }} · {{ $item->kindName() }}
+                {{-- Kind first: what the thing IS identifies it, and the tier
+                     qualifies that. "RAM, Tier One" is how you would say it.
+
+                     The kind is boxed and the tier is not: a tag reads as a
+                     classification, and two chips would compete to be the
+                     label.
+
+                     The tag is --warn rather than --ok so that it cannot
+                     collide with the tier beside it: --tier is jade on a Tier
+                     Two item, which is the same colour --ok is, and the two
+                     ran together into one green blob. Amber against jade or
+                     against grey stays two things, so the tier keeps its own
+                     colour. --}}
+                <span class="row row--wrap" style="--gap:var(--s-2)">
+                    <span class="tag tag--warn">{{ $item->kindName() }}</span>
+                    <span class="item-card__tier">{{ $item->tierName() }}</span>
                 </span>
             </span>
             <div class="spacer"></div>
@@ -127,8 +149,10 @@
         </p>
     @endif
 
-    @if ($item->isSkillbook() || $item->isCyberdeck() || $entry->parent_id !== null || $fits->isNotEmpty())
-        <div class="item-card__actions" data-act>
+    {{-- Everything you can do to this item, in the one place you already have
+         it open. There was a right-click menu here instead; it had no mobile
+         story and nothing on screen said it existed. --}}
+    <div class="item-card__actions" data-act>
             @if ($item->isCyberdeck())
                 {{-- The deck has a screen of its own: a board rather than a
                      spec line. It is reached from the object you own, which is
@@ -167,6 +191,48 @@
                     </form>
                 @endforeach
             @endif
+
+            @if ($deck && $socket)
+                {{-- Fitted, and this card was opened from the board. --}}
+                <form method="POST" action="{{ route('deck.fit', [$deck, $socket]) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm btn--ghost cut">
+                        {{ Text::get('inventory.actions.unfit') }}
+                    </button>
+                </form>
+            @elseif ($item->isModule())
+                {{-- Which socket is the fitter's to choose. Every way this can
+                     fail is a refusal with a sentence attached, so it is
+                     offered rather than hidden: "your deck has no socket for
+                     this" teaches more than an absent button. --}}
+                <form method="POST" action="{{ route('inventory.fit', $entry) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm cut">
+                        {{ Text::get('inventory.actions.fit') }}
+                    </button>
+                </form>
+            @endif
+
+            {{-- Doors with nothing behind them yet, shown tagged rather than
+                 hidden: a card that grows buttons as features land is a card
+                 nobody learns. --}}
+            <button type="button" class="btn btn--sm btn--ghost" disabled>
+                {{ Text::get('inventory.actions.market') }}
+                <span class="tag">{{ Text::get('inventory.actions.not_yet') }}</span>
+            </button>
+
+            <button type="button" class="btn btn--sm btn--ghost" disabled>
+                {{ Text::get('inventory.actions.disassemble') }}
+                <span class="tag">{{ Text::get('inventory.actions.not_yet') }}</span>
+            </button>
+
+            {{-- Destructive, which is one of the three things the accent is
+                 for. The confirmation lives outside this card, because the
+                 card is cloned into a modal and a dialog cloned with it would
+                 go wherever the clone goes. --}}
+            <button type="button" class="btn btn--sm btn--danger cut"
+                    data-open="#destroy-{{ $entry->id }}">
+                {{ Text::get('inventory.actions.destroy') }}
+            </button>
         </div>
-    @endif
 </div>

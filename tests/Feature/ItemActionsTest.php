@@ -17,14 +17,18 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * The right-click menu, and the two things on it that do anything.
+ * What you can do to an item, on the card you already have open.
  *
- * Most of the menu is a door with nothing behind it, and that is deliberate:
- * a menu that grows rows as features land is a menu nobody learns. What is
- * asserted here is that the rows which ARE built work, and that the ones which
- * are not say so rather than failing quietly.
+ * These lived in a right-click menu once. A right-click has no mobile story,
+ * nothing on screen says it exists, and an extension can eat the event before
+ * the page sees it — so the actions moved onto the card, which is the thing
+ * you were already looking at.
+ *
+ * Most of them are doors with nothing behind them, and that is deliberate.
+ * What is asserted here is that the ones which ARE built work, and that the
+ * ones which are not say so rather than failing quietly.
  */
-class ItemMenuTest extends TestCase
+class ItemActionsTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -60,18 +64,20 @@ class ItemMenuTest extends TestCase
 
     // ---- the menu itself ---------------------------------------------------
 
-    public function test_every_stash_row_carries_a_menu(): void
+    public function test_every_stash_row_carries_its_actions_on_its_card(): void
     {
         $entry = $this->own(Item::factory()->physical()->create());
 
         $response = $this->actingAs($this->character->user)->get(route('inventory.index'));
 
-        $response->assertSee('data-menu="#menu-'.$entry->id.'"', false);
-        $response->assertSee('<template id="menu-'.$entry->id.'">', false);
+        // The card is inside the slot's own template, so the actions travel
+        // with it wherever ui-kit.js clones it.
+        $response->assertSee('<template id="detail-'.$entry->id.'">', false);
+        $response->assertSee('data-open="#destroy-'.$entry->id.'"', false);
+        $response->assertSee('<dialog class="modal" id="destroy-'.$entry->id.'">', false);
 
-        // The row that opens the same card the slot itself opens.
-        $response->assertSee('data-inspect-open="#detail-'.$entry->id.'"', false);
-        $response->assertSee(Text::get('inventory.menu.details'));
+        // And nothing depends on a right-click any more.
+        $response->assertDontSee('data-menu', false);
     }
 
     public function test_what_is_not_built_says_so_rather_than_being_absent(): void
@@ -80,9 +86,9 @@ class ItemMenuTest extends TestCase
 
         $this->actingAs($this->character->user)
             ->get(route('inventory.index'))
-            ->assertSee(Text::get('inventory.menu.market'))
-            ->assertSee(Text::get('inventory.menu.disassemble'))
-            ->assertSee(Text::get('inventory.menu.not_yet'));
+            ->assertSee(Text::get('inventory.actions.market'))
+            ->assertSee(Text::get('inventory.actions.disassemble'))
+            ->assertSee(Text::get('inventory.actions.not_yet'));
     }
 
     public function test_only_a_module_is_offered_a_deck_to_go_in(): void
@@ -91,7 +97,7 @@ class ItemMenuTest extends TestCase
 
         $this->actingAs($this->character->user)
             ->get(route('inventory.index'))
-            ->assertDontSee(Text::get('inventory.menu.fit'));
+            ->assertDontSee(Text::get('inventory.actions.fit'));
 
         $module = $this->own($this->stick());
 
@@ -109,11 +115,27 @@ class ItemMenuTest extends TestCase
 
         $this->fitter->fit($this->character, $deck, $socket, $module);
 
-        $this->actingAs($this->character->user)
-            ->get(route('deck.show', $deck))
-            ->assertSee('data-menu="#menu-'.$module->id.'"', false)
-            ->assertSee(Text::get('inventory.menu.unfit'))
-            ->assertSee(route('deck.fit', [$deck, $socket]), false);
+        $response = $this->actingAs($this->character->user)->get(route('deck.show', $deck));
+
+        // The socket's dialog opens the module's card, and the card carries
+        // the way back out along with everything else.
+        $response->assertSee('data-inspect-open="#detail-'.$module->id.'"', false);
+        $response->assertSee(Text::get('inventory.actions.unfit'));
+        $response->assertSee(route('deck.fit', [$deck, $socket]), false);
+
+        /*
+         * The menu's form has to name the socket, and asserting the URL is
+         * present is not enough to know that it does — the socket's own dialog
+         * renders the identical URL, and did so while the menu was posting to
+         * a route with the parameter missing.
+         *
+         * `slot` is RESERVED in a Blade component: $slot is the default slot's
+         * contents, so a prop of that name is shadowed by an empty
+         * ComponentSlot. Truthy, so the form rendered; empty, so route() built
+         * "/deck/1/socket" and matched nothing. A bare /socket" in an action is
+         * the signature of that bug, whatever renders it.
+         */
+        $response->assertDontSee('/socket"', false);
     }
 
     // ---- fit to deck -------------------------------------------------------
@@ -303,10 +325,10 @@ class ItemMenuTest extends TestCase
         (new DeckEquipper)->equip($this->character, $deck);
 
         // An equipped deck is in no grid, so the stash's "in use" panel is
-        // where its menu — and its confirmation — has to live.
+        // the only way to its card — and its confirmation.
         $this->actingAs($this->character->user)
             ->get(route('inventory.index'))
-            ->assertSee('data-menu="#menu-'.$deck->id.'"', false)
+            ->assertSee('data-inspect-open="#detail-'.$deck->id.'"', false)
             ->assertSee(Text::get('inventory.destroy.fitted'))
             ->assertSee(Text::get('inventory.destroy.equipped'));
     }

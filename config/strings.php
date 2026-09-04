@@ -28,6 +28,7 @@ return [
         'nav' => [
             'run' => 'Run',
             'stash' => 'Stash',
+            'deck' => 'Deck',
             'skills' => 'Skills',
             'contracts' => 'Contracts',
             'profile' => 'Profile',
@@ -302,15 +303,19 @@ return [
         'in_use' => 'In use',
 
         /*
-        | The right-click menu. Most of it is not built and says so with a tag
-        | rather than by being absent: a menu that grows items as features land
-        | is a menu nobody learns, and "Not yet" is a promise the roster of
-        | archetypes already makes the same way.
+        | What you can do to an item, on the card you already have open.
+        |
+        | These were a right-click menu once. A right-click has no mobile
+        | story, nothing on screen says it exists, and an extension can eat the
+        | event before the page ever sees it — three ways for a feature to be
+        | invisible. The card was already the place you look at a thing.
+        |
+        | The ones that are not built say so with a tag rather than being
+        | absent: a card that grows buttons as features land is a card nobody
+        | learns, which is the promise the archetype roster already makes.
         */
-        'menu' => [
-            'label' => 'Item actions',
-            'hint' => 'Right-click an item — or press and hold — for more.',
-            'details' => 'Detailed info',
+        'actions' => [
+            'details' => 'Details',
             'market' => 'Show on market',
             'fit' => 'Fit to deck',
             'unfit' => 'Take out of deck',

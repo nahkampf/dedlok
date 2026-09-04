@@ -1345,46 +1345,6 @@ cap-widget {
 [data-tip]:hover::after,
 [data-tip]:focus-visible::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* Context menu — right-click, long-press, or the menu key.
-   One floating host for the page, filled from a <template> beside whatever was
-   pointed at, the same way .inspector is. Fixed rather than absolute: it is
-   positioned against the pointer, and the pointer is in viewport coordinates. */
-.menu {
-  position: fixed; top: 0; left: 0;
-  z-index: var(--z-popover);
-  min-width: min(196px, calc(100vw - var(--s-4)));
-  max-width: calc(100vw - var(--s-4));
-  padding: var(--s-1) 0;
-  background: var(--bg-2);
-  border: var(--hair) solid var(--line-2);
-  border-radius: var(--r-1);
-  box-shadow: var(--shadow-2);
-}
-.menu[hidden] { display: none; }
-/* Forms are how a menu item that changes something posts. display:contents so
-   the wrapper does not become a row of its own. */
-.menu form { display: contents; }
-.menu__item {
-  display: flex; align-items: center; gap: var(--s-2);
-  width: 100%;
-  padding: 6px var(--s-3);
-  margin: 0; border: 0;
-  background: none;
-  font: inherit; font-size: var(--fs-sm); font-weight: 500;
-  text-align: left;
-  color: var(--ink-1);
-  cursor: pointer;
-}
-.menu__item:hover:not(:disabled) { background: var(--bg-3); color: var(--ink-0); }
-.menu__item:focus-visible { outline: 2px solid var(--ember); outline-offset: -2px; }
-.menu__item:disabled { color: var(--ink-3); cursor: not-allowed; }
-/* Destructive, which is one of the three things the accent is for. */
-.menu__item--danger { color: var(--crit); }
-.menu__item--danger:hover:not(:disabled) { background: var(--crit-a); color: var(--crit); }
-/* A tag on a menu item says why it does nothing — "Not yet", "No deck". */
-.menu__item .tag { margin-left: auto; }
-.menu__sep { height: var(--hair); margin: var(--s-1) 0; background: var(--line-0); }
-
 /* Modal — native <dialog> */
 dialog.modal {
   padding: 0;

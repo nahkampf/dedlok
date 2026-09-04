@@ -32,6 +32,27 @@ use Illuminate\View\View;
  */
 class DeckController extends Controller
 {
+    /**
+     * The deck this character is carrying, whichever it is.
+     *
+     * The rail cannot link to a row it does not know, and a nav item that
+     * appears and disappears with your loadout is a nav item nobody trusts.
+     * So this resolves it, and says so when there is nothing to resolve —
+     * sending you to the stash, which is where a deck gets equipped.
+     */
+    public function index(Request $request): RedirectResponse
+    {
+        $deck = $this->character($request)->equippedDeck;
+
+        if ($deck === null) {
+            return redirect()
+                ->route('inventory.index')
+                ->with('error', FittingRefusal::NotEquipped->message());
+        }
+
+        return redirect()->route('deck.show', $deck);
+    }
+
     public function show(Request $request, InventoryItem $entry, Resolver $resolver): View
     {
         $character = $this->character($request);

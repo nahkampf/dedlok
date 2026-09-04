@@ -82,7 +82,6 @@
                                 <button type="button"
                                     class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$heat->verdict($socket->id)->slotClass() : 'slot--empty' }}"
                                     data-open="#socket-{{ $socket->id }}"
-                                    @if ($fitting) data-menu="#menu-{{ $fitting->module_id }}" @endif
                                     aria-haspopup="dialog"
                                     aria-label="{{ $node->label() }} — {{ $module?->displayName() ?? Text::get('decks.fitting.empty_socket') }}">
                                     @if ($module)
@@ -113,17 +112,17 @@
 </div>
 
 @if ($interactive)
-    {{-- The menu for each fitted module, and the detail card it opens. Both
-         live out here for the same reason the socket dialogs do: .board__node
-         carries a transform, and neither a modal nor a fixed menu wants a
+    {{-- The card for each fitted module, and the confirmation its Destroy
+         button opens. Out here for the same reason the socket dialogs are:
+         .board__node carries a transform, and a modal does not want a
          containing block that is not the viewport. --}}
     @foreach ($fitted as $fitting)
         @if ($fitting->module)
             <template id="detail-{{ $fitting->module_id }}">
-                <x-item-detail :entry="$fitting->module" />
+                <x-item-detail :entry="$fitting->module" :deck="$entry" :socket="$fitting->slot" />
             </template>
 
-            <x-item-menu :entry="$fitting->module" :deck="$entry" :slot="$fitting->slot" />
+            <x-item-destroy :entry="$fitting->module" />
         @endif
     @endforeach
 
@@ -161,12 +160,22 @@
                         <p class="item-card__note" style="padding:0">{{ $verdict->label() }}</p>
                     @endunless
 
-                    <form method="POST" action="{{ route('deck.fit', [$entry, $socket]) }}">
-                        @csrf
-                        <button type="submit" class="btn btn--block btn--ghost cut">
-                            {{ Text::get('decks.fitting.unfit') }}
+                    <div class="row row--wrap" style="--gap:var(--s-2)">
+                        <form method="POST" action="{{ route('deck.fit', [$entry, $socket]) }}">
+                            @csrf
+                            <button type="submit" class="btn btn--ghost cut">
+                                {{ Text::get('decks.fitting.unfit') }}
+                            </button>
+                        </form>
+
+                        {{-- Everything else you can do to it lives on its card,
+                             which is one button away rather than a second copy
+                             of the same list here. --}}
+                        <button type="button" class="btn btn--ghost cut"
+                                data-inspect-open="#detail-{{ $module->id }}">
+                            {{ Text::get('inventory.actions.details') }}
                         </button>
-                    </form>
+                    </div>
                 @elseif ($socket->kind->seats() === null)
                     {{-- An IO port is not an empty socket, it is a socket that
                          seats nothing. Saying "nothing you own fits" would
