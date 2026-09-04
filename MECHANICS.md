@@ -1222,6 +1222,123 @@ None of the numbers mean anything yet. `qflops`, `quantabits` and `bandwidth`
 are stored, validated and read by nothing — no stat, no check, no modifier. A
 deck does not make its owner better at anything today.
 
+## What cyberspace asks of this system
+
+CYBERSPACE.md is the design; this is the part of it that lands here, because it
+produces or alters numbers. None of it is built.
+
+### `characters.heat` is a column, not a stat
+
+A completed trace puts heat on a character: a persistent number saying how badly
+the world wants them. It is **stored and mutable with no derived maximum**, so
+it sits beside `creds` and outside `Character::RESOURCES` for exactly the reason
+money does — nothing bounds it, so there is nothing to clamp it against and no
+ceiling to resolve.
+
+**What resolves is not the heat, it is the gain.** How much heat a completed
+trace adds — and how fast it decays, if it does — is a check like any other, so
+a skill that keeps you quiet moves that number and never touches the column.
+Storing a resolved value here would be the same mistake as storing `hitpoints_max`.
+
+### Flatline is a permanent stored modifier
+
+An ICE program tagged *flatline* does permanent damage to a character's
+**maximum** Synaptic Integrity. Maximum SI is a derived stat and derived stats
+are never stored, so a flatline is emphatically **not** a subtraction written
+into a column. It is a row in `character_modifiers`:
+
+```php
+['op' => 'add', 'amount' => -6, 'target' => ['id' => 'synaptic_integrity_max']]
+```
+
+with no `expires_at`. That is the single cleanest justification the modifier
+system has been given so far: the injury is data, the ceiling recomputes, the
+resource clamps down on the next save because it always did, and the breakdown
+tooltip can say *why* the number is what it is.
+
+**Both consequences are decided.** `synaptic_integrity_max` gets a **floor of
+1**, exactly as `hitpoints_max` has one, so accumulated injury can never end a
+character by arithmetic — only damage reaches zero. `config/stats.php` still
+says `'min' => 0` and that is now a bug rather than a placeholder. And permanent
+damage to **both** maximum HP and maximum SI is **reversible**, by means not yet
+designed: a clinic, surgery, an implant. Mechanically that is a modifier that
+removes a modifier, which is a shape this system does not have yet and will
+need.
+
+The other defeat tags mostly do not touch this system. *Surge* and *erase*
+destroy items, which is the existing destroy path; *skim* takes creds; *drain*
+is ordinary damage to a resource; *bounty* is a mechanic that does not exist yet.
+
+**One is shelved precisely because it does touch it.** *Lobotomy* — stripping
+skill points from a random skill — is designed and deliberately not built,
+because losing points can lose a level, a lost level can invalidate a skill that
+required it and then a module or program that required that, and the player has
+to be told the whole cascade rather than find a dead deck later. That is a
+notification design as much as a mechanic. `skills:validate` already knows how
+to find the inconsistency; nothing knows how to explain it.
+
+### The sixth measure: storage
+
+Data has a size in QB, and a deck needs somewhere to put it. That is a new
+socket kind, a new column on `deck_modules`, and a **new stat id**
+(`deck_storage`, tagged `deck`), for one specific reason:
+
+**`DeckTotals` sums by MEASURE, not by socket.** That is what makes one CPU and
+one NPU add up to a single compute figure. If storage were measured in
+`quantabits` like RAM, the same rule would silently merge working memory with
+bulk storage into one meaningless number. They are different measures that share
+a unit, the way watts of draw and watts of supply do.
+
+It is also one more measure under `chk_deck_modules_one_measure` — a storage
+module carries storage and nothing else.
+
+### What the other measures finally do
+
+Three of the five have jobs now, and they were all waiting on cyberspace:
+
+| Measure | What it decides |
+| --- | --- |
+| `deck_bandwidth` | how fast stolen data transfers, which is how many turns you spend exposed |
+| `deck_quantabits` | how many programs you can hold loaded |
+| `deck_storage` | how much data you can carry out |
+| `deck_qflops` | how much compute a *running* program consumes — a deck without enough free qFLOPS cannot run it |
+
+**Memory and compute are two separate limits on the same loadout.** A program
+occupies quantabits to be loaded and spends qFLOPS to be running, so a deck can
+be full without being busy and busy without being full. Both figures are on the
+program, both are resolved rather than read, and a skill that makes a program
+cheaper to run is as ordinary as one that makes a deck faster.
+
+Together they are what makes a run plan a trade rather than a preference: a
+bigger haul is more turns on the wire, and more turns is more trace and more
+thermal load.
+
+### Encryption is a second skill-per-type gate
+
+Every file taken off a system is encrypted, and there is a skill per encryption
+type — the same shape as the skill-per-operating-system gate. Both are cheap at
+level 1 and worth training past it, and both are gated by owning the book rather
+than by the training time.
+
+Two gates of identical shape is a pattern, not a coincidence, and it should be
+built as one: a *skill that unlocks a class of content, whose levels then
+improve the outcome*. An encrypted file is worth much less than a broken one, so
+the level is margin rather than access.
+
+### Two combat engines, deliberately
+
+Physical combat and cyberspace combat are separate engines. They share a
+character, the resolver and the modifier system, and nothing else. Forcing one
+abstraction across both would make each of them worse — ICE has no position,
+no cover and no reload, and a firefight has no trace and no thermal budget.
+
+What they must share is the *shape*: each is a pure function over a plan, a
+snapshot and an injected source of randomness, returning a log and an outcome.
+That is the `MarketSeeder::fromConfig()` pattern, and it is what lets a
+probabilistic system be tested against pinned dice instead of against luck.
+
+---
+
 ## Recipes
 
 Every recipe below is data — a config entry, or a row. **If adding content
