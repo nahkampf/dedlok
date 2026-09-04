@@ -68,7 +68,7 @@ return [
     ],
 
     'auth' => [
-        'login' => 'Jack in',
+        'login' => 'Sign in',
         'register' => 'New identity',
         'handle' => 'Handle',
         'handle_hint' => 'Up to :max characters.',
@@ -79,11 +79,102 @@ return [
         'email' => 'Email',
         'password' => 'Password',
         'confirm_password' => 'Confirm password',
-        'remember' => 'Stay jacked in',
+        'remember' => 'Stay signed in',
         'forgot' => 'Lost your key?',
         'start_playing' => 'New account',
         'have_account' => 'Already have an identity?',
-        'logout' => 'Jack out',
+        'logout' => 'Sign out',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Programs
+    |--------------------------------------------------------------------------
+    |
+    | Software: the first items in the game that change a number. A program is
+    | running or it is not — there is no loading — and running splits into
+    | background, which happens while the owner is elsewhere, and active, which
+    | only means during a cyberspace run.
+    |
+    */
+    'programs' => [
+
+        'kinds' => [
+            'icebreaker' => 'Icebreaker',
+            'decryptor' => 'Decryptor',
+            'evasion' => 'Evasion',
+            'analyser' => 'Analyser',
+            'daemon' => 'Daemon',
+        ],
+
+        // The status readout. A count, because the number is the whole of what
+        // the bar has room to say; the modal says the rest.
+        'running' => 'Running',
+        'started' => ':program is running.',
+        'stopped' => ':program has stopped.',
+
+        // The deck screen's two tabs. Storage is split because a program and a
+        // file are two different things sharing an inventory: one is something
+        // you RUN, the other something you HOLD.
+        'tabs' => [
+            'running' => 'Running',
+            'storage' => 'Storage',
+        ],
+        'storage' => [
+            'programs' => 'Programs',
+            'data' => 'Data',
+            'programs_empty' => 'No software.',
+            'data_empty' => 'Nothing written.',
+        ],
+        'budget' => ':used / :total',
+        // The bare unit, for a readout that has already said the number.
+        'units' => ['compute' => 'qFLOPS', 'memory' => 'QB'],
+        // Only the deck you are carrying runs anything: putting one down stops
+        // everything on it, so an unequipped deck's list is empty by rule
+        // rather than by accident, and the screen says which.
+        'not_equipped' => 'Nothing runs on a deck you are not carrying.',
+        'open_deck' => 'Open the deck',
+        'running_none' => 'Nothing running',
+        'processes' => ['zero' => 'No processes', 'one' => ':count process', 'many' => ':count processes'],
+
+        'costs' => [
+            'compute' => ':value qFLOPS',
+            'memory' => ':value QB',
+            'storage' => ':value QB stored',
+        ],
+
+        'background' => 'Runs in the background',
+        'run_only' => 'Runs only during an intrusion',
+
+        'action' => [
+            'start' => 'Run',
+            'stop' => 'Stop',
+        ],
+
+        'refused' => [
+            'not_owned' => 'That is not yours to run.',
+            'not_a_program' => 'That is not software.',
+            'already_running' => 'It is already running.',
+            'not_running' => 'It was not running.',
+            'no_deck_equipped' => 'Equip a deck first. Software runs on the machine you are carrying.',
+            'deck_not_ready' => 'That deck will not run. Finish building it first.',
+            'not_enough_compute' => 'Not enough compute left. Stop something, or fit a better processor.',
+            'not_enough_memory' => 'Not enough memory left. Stop something, or fit more.',
+            'run_only' => 'This only does anything during an intrusion, and the run starts it, not you.',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Images
+    |--------------------------------------------------------------------------
+    |
+    | Pictures are found by convention rather than stored on a row — see
+    | App\Support\Image. These are the words around them.
+    |
+    */
+    'images' => [
+        'enlarge' => 'View :subject full size',
     ],
 
     'captcha' => [
@@ -113,7 +204,7 @@ return [
         'create' => [
             'title' => 'Create your character',
             'lede' => 'This is who you are on the street. The handle is permanent; spend your points carefully.',
-            'submit' => 'Jack in',
+            'submit' => 'Create character',
             // One character per user, so coming back to this screen with one
             // already made is a dead end rather than a second chance.
             'already' => 'You already have a character. There is only one of you.',
@@ -160,7 +251,7 @@ return [
             'mental' => 'Mental attributes',
             'pool' => 'Points remaining',
             'spent' => ':spent of :total spent',
-            'balanced' => 'Ready to jack in',
+            'balanced' => 'Ready to create',
             'remaining' => ':count still to spend',
             'overspent' => ':count over budget',
             'must_balance' => 'Spend exactly :total points before you can continue.',
@@ -184,16 +275,16 @@ return [
         'descriptions' => [
             // Physical
             'reflex' => 'The gap between something happening and you responding. Governs who moves first, which is usually who walks away.',
-            'meat' => 'Raw bodily resilience. How much punishment the flesh absorbs before it stops doing what you tell it.',
+            'meat' => 'Raw bodily resilience. How much punishment the flesh absorbs before it stops doing what you tell it — and the brain is flesh too, sitting behind whatever you have had bolted to it.',
             'motor' => 'Fine control and coordination. Steady hands on a lockpick, a scalpel, or a trigger, while everything around you is going wrong.',
             'senses' => 'Acuity of sight, hearing and whatever you have had installed since. Sets how much signal reaches you before you have to guess.',
             'muscle' => 'Applied force. Lifting, breaking, dragging a body, holding a door shut against the people on the other side.',
 
             // Mental
-            'intellect' => 'Analysis and problem solving. Reading the shape of a system fast enough to act on it while it is still true.',
-            'memory' => 'Recall and retention. How much you carry without a deck, and how much of it survives a bad night.',
+            'intellect' => 'Analysis and problem solving. Reading the shape of a system fast enough to act on it while it is still true — and understanding a thing is most of not being unmade by it.',
+            'memory' => 'Recall and retention. How much you carry without a deck, and how much you have already survived — a mind asked to take more falls back on what it has seen before.',
             'perception' => 'Noticing what other people miss. The tell, the tail, the one detail in the room that does not belong.',
-            'focus' => 'Sustained attention under load. Holding a thread while the room, the feed and your own chrome all compete for it.',
+            'focus' => 'Concentration and will. Holding a thread while the room, the feed and your own chrome all compete for it — and holding on past the point where stopping would be the sensible thing.',
             'social' => 'Reading people and steering them. Leverage that does not require breaking anything.',
         ],
 
@@ -300,7 +391,6 @@ return [
 
         // The equipped deck is not in either inventory — it is on you. This is
         // the one place it appears, and the only way through to its board.
-        'in_use' => 'In use',
 
         /*
         | What you can do to an item, on the card you already have open.
@@ -480,7 +570,21 @@ return [
             // socket it presents. The module that goes in it is a Power supply.
             'psu' => 'PSU',
             'thermal' => 'Thermal exhaust',
+            'storage' => 'Storage',
             'io' => 'IO port',
+        ],
+
+        /*
+         * What a board node's label says before the variant name. Short on
+         * purpose — the prefix has to name the kind without becoming the
+         * label. A kind with no variants is already its own name and takes
+         * none; see SlotType::boardLabel().
+         */
+        'prefixes' => [
+            'cpu' => 'CPU',
+            'ram' => 'RAM',
+            'expansion' => 'XP',
+            'io' => 'I/O',
         ],
 
         // The sub-types, short enough to sit in a spec line.
@@ -525,7 +629,7 @@ return [
             'empty' => 'No sockets',
             'count' => '×:count',
             'aria' => ':deck — :sockets',
-            'spec' => 'Specification',
+            'spec' => 'Specs',
             'open' => 'Board',
             'close' => 'Close',
         ],
@@ -677,8 +781,9 @@ return [
             // Made-up units like the rest. Thermal units, not degrees:
             // what a module makes and what a radiator takes away are the
             // same quantity, and neither is a temperature.
-            'heat' => ':value TU',
+            'thermal_load' => ':value TU',
             'cooling' => ':value TU cooling',
+            'storage' => ':value QB stored',
         ],
 
         'summary' => [
@@ -793,14 +898,29 @@ return [
                 'socket_hint' => 'Which socket it fits. A deck with no socket of that type cannot take it.',
                 'power_draw' => 'Power draw',
                 'power_draw_hint' => 'Watts off the deck\'s supply. A power supply draws none.',
-                'heat' => 'Heat',
-                'heat_hint' => 'What it makes by running, in thermal units. Zero is fine; a radiator makes none.',
+                'thermal_load' => 'Thermal load',
+                'thermal_load_hint' => 'What it makes per turn while running, in thermal units. Zero is fine; a radiator makes none.',
+                'storage' => 'Storage',
+                'storage_hint' => 'Bulk capacity in quantabits — where files and idle programs live. Not memory.',
                 'cooling' => 'Cooling',
                 'cooling_hint' => 'What a radiator takes away, in thermal units.',
-                'heat_level_warning' => 'Warns at',
-                'heat_level_warning_hint' => 'Deck heat at which this part starts to be at risk. Leave both empty for a part that does not care.',
-                'heat_level_limit' => 'Destroyed at',
-                'heat_level_limit_hint' => 'Deck heat at which this part is gone. A hard limit, not a roll. Must not be below the warning.',
+                'thermal_warning' => 'Warns at',
+                'thermal_warning_hint' => 'Accumulated deck load at which this part starts to be at risk. Leave both empty for a part that does not care.',
+                'thermal_limit' => 'Destroyed at',
+                'thermal_limit_hint' => 'Accumulated deck load at which this part is gone. A hard limit, not a roll. Must not be below the warning.',
+                'program_kind_none' => 'Not software',
+                'program_kind' => 'Program',
+                'program_kind_hint' => 'What the software is for. Leave empty for anything that is not a program. Deck hardware and skillbooks cannot be one.',
+                'qflops_cost' => 'Compute cost',
+                'qflops_cost_hint' => 'qFLOPS consumed while it runs, and only while it runs.',
+                'memory_cost' => 'Memory cost',
+                'memory_cost_hint' => 'Quantabits consumed while it runs.',
+                'storage_size' => 'Stored size',
+                'storage_size_hint' => 'Quantabits it occupies just by being owned, running or not.',
+                'background_process' => 'Runs in the background',
+                'background_process_hint' => 'Whether it may run outside an intrusion. A decryptor must; an icebreaker has nothing to break out there.',
+                'program_modifiers' => 'Modifiers',
+                'program_modifiers_hint' => 'A JSON list, in the shape archetype perks use. Empty is fine — a program that only gates modifies nothing.',
                 'qflops' => 'Compute',
                 'qflops_hint' => 'Raw throughput, in qFLOPS.',
                 'quantabits' => 'Memory',
@@ -818,6 +938,7 @@ return [
                 'physical' => 'Bulk and containment',
                 'market' => 'Market',
                 'hardware' => 'Deck hardware',
+                'software' => 'Software',
                 'sockets' => 'Sockets',
                 'board' => 'Board arrangement',
                 'module' => 'Module specification',
@@ -1066,10 +1187,12 @@ return [
             'hardware_is_physical' => 'Deck hardware is matter. A cyberdeck and every module that goes in one is carried, never stored on a deck.',
             'deck_needs_slots' => 'A cyberdeck with no sockets is a case. Give it at least a CPU socket and a power socket.',
             'slots_need_a_deck' => 'Only a cyberdeck has sockets. Set the hardware to Cyberdeck first.',
-            'heat_levels_pair' => 'Give both heat levels or neither — a part with one and not the other has no meaning.',
-            'heat_levels_order' => 'A part cannot be destroyed before it is warned about. The limit must be at or above the warning.',
-            'no_heat' => 'A radiator takes heat away rather than making it. Leave this empty.',
-            'module_needs_heat' => 'Say how much heat this makes. Zero is a fine answer.',
+            'modifier_shape' => 'Each modifier must be an object, not a bare value.',
+            'modifier_invalid' => 'Modifier :index is not valid: :reason',
+            'thermal_levels_pair' => 'Give both thermal levels or neither — a part with one and not the other has no meaning.',
+            'thermal_levels_order' => 'A part cannot be destroyed before it is warned about. The limit must be at or above the warning.',
+            'no_thermal_load' => 'A radiator takes thermal load away rather than making it. Leave this empty.',
+            'module_needs_thermal_load' => 'Say how much thermal load this makes per turn. Zero is a fine answer.',
             'board_needs_a_deck' => 'Only a cyberdeck has a board. Set the hardware to Cyberdeck first.',
             'board_malformed' => 'The board arrangement could not be read. Drag the boxes again, or reset it.',
             'board_unknown_socket' => 'The board arrangement names a socket that does not exist.',

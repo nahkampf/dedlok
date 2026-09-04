@@ -28,7 +28,7 @@ final class BoardNode
 
     public function label(): string
     {
-        return $this->type->label();
+        return $this->type->boardLabel();
     }
 
     /** The hub every wire runs to. A deck with no CPU socket is not a deck. */

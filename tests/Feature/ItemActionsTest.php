@@ -324,11 +324,11 @@ class ItemActionsTest extends TestCase
         $deck = $this->own($deckItem);
         (new DeckEquipper)->equip($this->character, $deck);
 
-        // An equipped deck is in no grid, so the stash's "in use" panel is
-        // the only way to its card — and its confirmation.
+        // A carried deck is an ordinary slot in the grid now, so its own card
+        // is the route to the confirmation — the same as everything else.
         $this->actingAs($this->character->user)
             ->get(route('inventory.index'))
-            ->assertSee('data-inspect-open="#detail-'.$deck->id.'"', false)
+            ->assertSee('data-inspect="#detail-'.$deck->id.'"', false)
             ->assertSee(Text::get('inventory.destroy.fitted'))
             ->assertSee(Text::get('inventory.destroy.equipped'));
     }

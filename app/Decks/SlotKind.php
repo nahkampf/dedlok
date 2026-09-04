@@ -33,6 +33,15 @@ enum SlotKind: string
     /** Thermal exhaust. Seats a radiator; a deck may present none at all. */
     case Thermal = 'thermal';
 
+    /**
+     * Where data and unloaded programs live.
+     *
+     * Not memory. Memory is what a program occupies while it RUNS; storage is
+     * what a file costs by existing, and the two are separate measures for the
+     * reason a deck can be full without being busy. See CYBERSPACE.md.
+     */
+    case Storage = 'storage';
+
     /** Electrode and neuralink ports. Seats nothing. */
     case Io = 'io';
 
@@ -65,6 +74,7 @@ enum SlotKind: string
             self::Expansion => Hardware::Expansion,
             self::Psu => Hardware::Psu,
             self::Thermal => Hardware::Thermal,
+            self::Storage => Hardware::Storage,
             self::Io => null,
         };
     }
@@ -89,6 +99,9 @@ enum SlotKind: string
             // A deck may present none, one, or several. Nothing requires an
             // exhaust — a cold deck does not need one.
             self::Thermal => 4,
+            // Same shape cap as memory: a deck may present several, and a
+            // number field typo must not write four hundred rows.
+            self::Storage => 8,
             // One electrode port and one neuralink port. The per-variant cap
             // in App\Decks\SlotType is what makes that one of each.
             self::Io => 2,

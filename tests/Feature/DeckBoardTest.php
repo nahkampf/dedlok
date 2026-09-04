@@ -379,4 +379,42 @@ class DeckBoardTest extends TestCase
         // for the sockets themselves.
         $this->assertNull($deck->fresh()->board_layout);
     }
+
+    /**
+     * The longest box on the screen folds. <details> does it, so there is no
+     * script to break and the keyboard behaviour is the browser's.
+     */
+    public function test_the_specs_panel_is_collapsible_and_starts_open(): void
+    {
+        $character = $this->character();
+        $entry = InventoryItem::factory()->ownedBy($character)->of($this->deck())->create();
+
+        $this->actingAs($character->user)
+            ->get(route('deck.show', $entry))
+            ->assertOk()
+            ->assertSee('<summary class="panel__hd">', false)
+            ->assertSee(Text::get('decks.board.spec'));
+    }
+
+    /**
+     * Three boxes that fold, so the screen reads as one stack rather than a
+     * mix of tabs and panels. Storage is the one that starts closed: two slot
+     * grids are the longest thing here, and it is somewhere you go rather than
+     * something you watch.
+     */
+    public function test_the_deck_screen_is_a_stack_of_folding_panels(): void
+    {
+        $character = $this->character();
+        $entry = InventoryItem::factory()->ownedBy($character)->of($this->deck())->create();
+
+        $response = $this->actingAs($character->user)->get(route('deck.show', $entry))->assertOk();
+
+        // The board and Running share a row; Specs and Storage stack below it.
+        $response->assertSee('class="board-split"', false);
+        $this->assertSame(3, substr_count($response->getContent(), '<details class="panel"'));
+        $this->assertSame(2, substr_count($response->getContent(), '<details class="panel" open'));
+
+        // The tabs they replaced are gone; nothing on this screen needs script.
+        $response->assertDontSee('data-panel=', false);
+    }
 }

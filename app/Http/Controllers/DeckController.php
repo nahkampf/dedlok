@@ -7,11 +7,13 @@ namespace App\Http\Controllers;
 use App\Decks\DeckEquipper;
 use App\Decks\DeckTotals;
 use App\Decks\FittingRefusal;
-use App\Decks\HeatExposure;
 use App\Decks\ModuleFitter;
+use App\Decks\ThermalExposure;
 use App\Models\Character;
 use App\Models\DeckSlot;
 use App\Models\InventoryItem;
+use App\Models\Item;
+use App\Programs\ProgramRunner;
 use App\Stats\Resolver;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
@@ -53,7 +55,7 @@ class DeckController extends Controller
         return redirect()->route('deck.show', $deck);
     }
 
-    public function show(Request $request, InventoryItem $entry, Resolver $resolver): View
+    public function show(Request $request, InventoryItem $entry, Resolver $resolver, ProgramRunner $runner): View
     {
         $character = $this->character($request);
 
@@ -81,11 +83,11 @@ class DeckController extends Controller
             // equipped/unequipped rule is applied — see below.
             'totals' => $totals = $this->totals($character, $entry, $resolver),
             'equipped' => $character->hasEquipped($entry),
-            // What that heat is doing to each thing fitted in it. Kept apart
+            // What that load is doing to each thing fitted in it. Kept apart
             // from the totals because a deck's tolerance is its weakest part
             // rather than the sum of its parts.
-            'heat' => HeatExposure::of(
-                $totals->netHeat(),
+            'thermal' => ThermalExposure::of(
+                $totals->netThermalLoad(),
                 $entry->fittings,
                 $character->modifiers(),
                 $resolver,
@@ -99,6 +101,43 @@ class DeckController extends Controller
                 ->get()
                 ->filter(fn (InventoryItem $row) => $row->item?->isModule() ?? false)
                 ->sortBy(fn (InventoryItem $row) => $row->item->displayName())
+                ->values(),
+
+            /*
+             * What is running ON THIS DECK, which is not the same as what the
+             * character is running: only the equipped deck's processes count
+             * for modifiers, but an unequipped deck has none at all — putting
+             * a machine down stops everything on it. So this is empty for any
+             * deck but the one being carried, and the screen says so rather
+             * than showing an empty box with no explanation.
+             */
+            'processes' => $entry->processes()
+                ->with('item.program')
+                ->orderBy('started_at')
+                ->get(),
+
+            // What compute and memory the running set is already spending,
+            // against what the deck resolves. The budget a start is checked
+            // against, shown where the starting happens.
+            'spent' => $runner->spentOn($character, (int) $entry->id),
+
+            /*
+             * Deck storage: everything written rather than carried.
+             *
+             * Split into programs and data because they are two different
+             * things that happen to share an inventory — one is something you
+             * RUN and the other is something you HOLD — and a single list
+             * mixing an icebreaker with a stolen file would be sorted by name
+             * and useful to nobody.
+             */
+            'stored' => $character->inventoryIn(Item::CONTAINER_DATA)
+                ->partition(fn (InventoryItem $row) => $row->item?->program !== null),
+
+            // What a stored row could be put away into. The physical side,
+            // because a memory shard is a physical object that accepts data —
+            // the case `container` alone could not express.
+            'storageContainers' => $character->inventoryIn(Item::CONTAINER_PHYSICAL)
+                ->filter(fn (InventoryItem $row) => $row->item?->isContainer() ?? false)
                 ->values(),
         ]);
     }

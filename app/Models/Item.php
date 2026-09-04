@@ -98,6 +98,23 @@ class Item extends Model
     }
 
     /** What this module is worth. Null for everything that is not one. */
+    /**
+     * The software half, if this item is a program.
+     *
+     * Its presence is what MAKES an item a program — there is no column on
+     * this table saying so, the same way `deck_modules` rather than a word is
+     * what makes an item a module.
+     */
+    public function program(): HasOne
+    {
+        return $this->hasOne(Program::class);
+    }
+
+    public function isProgram(): bool
+    {
+        return $this->program()->exists();
+    }
+
     public function deckModule(): HasOne
     {
         return $this->hasOne(DeckModule::class);
@@ -262,10 +279,48 @@ class Item extends Model
      * in has already been answered by the tab it was found under. Everything
      * else falls back to that inventory, which is the only kind it has.
      */
+    /**
+     * What this item IS, in one word.
+     *
+     * Deck hardware says which piece it is, software says what it is for, and
+     * everything else falls back to the inventory it lives in. A program that
+     * called itself "Data" would be telling the player the one thing they can
+     * already see from where it is sitting.
+     */
     public function kindName(): string
     {
         return $this->hardware?->label()
+            ?? $this->program?->kind->label()
             ?? Text::get("items.kinds.{$this->container}");
+    }
+
+    /**
+     * What a program costs, as a spec line.
+     *
+     * Reads like a module's, and for the same reason: the numbers, never the
+     * word. Which kind of program it is has already been said beside the tier.
+     *
+     * Two of the three are spent only while it runs and the third is paid by
+     * owning it, so the line says which is which rather than leaving three
+     * bare quantabit figures to be told apart by position.
+     */
+    public function programSummary(): ?string
+    {
+        $program = $this->program;
+
+        if ($program === null) {
+            return null;
+        }
+
+        $parts = [
+            Text::get('programs.costs.compute', ['value' => $program->qflops_cost]),
+            Text::get('programs.costs.memory', ['value' => $program->memory_cost]),
+            Text::get('programs.costs.storage', ['value' => $program->storage_size]),
+        ];
+
+        $parts[] = Text::get($program->background_process ? 'programs.background' : 'programs.run_only');
+
+        return implode(Text::get('items.summary.separator'), $parts);
     }
 
     public function tierName(): string

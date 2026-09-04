@@ -187,13 +187,22 @@ point.
 - **The icon column stays `--dock-w` wide in both states**, and the active marker is a
   pseudo-element rather than a border, so nothing moves sideways when the rail opens or
   the page changes.
-- **The bar is the mark and three numbers** — HP, SI, creds. Nothing else: that is what
-  makes them fit across a 320px phone, and it is why *Jack out* sits in the rail. The
-  wordmark is `.brand__name`, its own element rather than a bare text node so CSS can
-  drop it below 560px while the mark stays. It is
+- **The bar is where status lives, and width is the whole constraint.** The mark, the
+  two resources, the money, and a count of what is running. Three `.gauge` blocks at
+  104px each did not leave room for the fourth, so the resources became `.dial`s — the
+  same meter bent into a ring, 40px, with the current value inside it and the exact
+  figures in `title` and `aria-label`. Money is a glyph and a number (`.chip-stat`),
+  because `¤` is in Latin-1 and the word is not worth 40px. Anything ADDED here has to
+  pay for itself in the same currency: audit at 320px or take it to the rail, which is
+  why *Sign out* sits there. The wordmark is `.brand__name`, its own element rather than
+  a bare text node so CSS can drop it below 560px while the mark stays. It is
   `.topbar--stuck`: **sticky, not fixed**, so it stays in flow and nothing below has to
   reserve a matching strip of padding — the number that is still 52px on the day the bar
   wraps to two rows.
+- **A dial is a meter, not a second component.** `--v` is the ratio, `--fill` the
+  colour, `data-hot-low` the threshold — all read by the same `ui-kit.js` that drives
+  `.meter`, so "low" is one number in one place across both shapes. Use a bar wherever
+  there is room for one; the dial exists because the topbar has none.
 - **`creds` has no bar because it has no maximum.** The two resources come from
   `Character::RESOURCES`, whose maxima are derived and resolved per request;
   `Character::resourceRatio()` is the meter's `--v`. Money is in neither, for the reason
@@ -652,10 +661,13 @@ says which, and two tables carry what a bare `items` row cannot.
   string. (`auth.login`/`auth.logout` still say "Jack in"/"Jack out" for signing
   in and out — pre-existing, and worth revisiting when a cyberspace session
   exists.)
-- **An equipped deck is not in the stash**, and `scopeLoose()` is where that
-  lives — with rows inside a container and modules fitted into a deck, three
-  ways of being spoken for decided in one place. Unequipping puts it back. The
-  stash shows it in its own panel, which is the only route to its board.
+- **An equipped deck IS in the stash.** It is on you, not elsewhere, so it lists
+  with everything else and its card wears the tag. It used to be excluded, and
+  the exclusion forced the stash to grow a panel whose only job was to be the
+  route back to it — a box built to solve a problem the exclusion created.
+  `scopeLoose()` now leaves out three things that really are elsewhere: rows
+  inside a container, modules fitted into a socket, and programs that are
+  running. All three decided in one place.
 - **`characters.equipped_deck_id` is which deck is carried**, and NULL is the
   ordinary state. A column rather than a flag on the inventory
   row, so "only one at a time" is not a rule anybody enforces: one column holds

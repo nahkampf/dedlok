@@ -1186,11 +1186,12 @@ through one, running whatever it is running. Equipping is about the gear: which
 deck you are carrying. The two words are not interchangeable and the strings
 must not treat them as though they were.
 
-- **An equipped deck is not in the stash.** `InventoryItem::scopeLoose()` leaves
-  it out, alongside rows inside a container and modules fitted into a deck —
-  three ways of being spoken for, all decided in one place. Unequipping is what
-  puts it back. The stash therefore shows the equipped deck in its own panel,
-  which is also the only route through to its board.
+- **An equipped deck IS in the stash**, and used not to be. A carried deck is a
+  thing you have rather than a thing that is elsewhere, so it lists with the
+  rest and its card carries the tag. `InventoryItem::scopeLoose()` leaves out
+  rows inside a container, modules fitted into a socket, and programs that are
+  running — three ways of being genuinely spoken for, all decided in one place.
+  Being carried is not one of them.
 - **"Equipped" IS a column on `characters`** — `equipped_deck_id`, a nullable
   foreign key to the inventory row rather than a flag on `inventory_items`. One
   column can only hold one value, so "only one deck at a time" stops being a

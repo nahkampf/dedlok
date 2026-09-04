@@ -83,7 +83,10 @@ class ShellTest extends TestCase
 
         foreach (Character::RESOURCES as $resource => $statId) {
             $response->assertSee(Text::get("character.abbreviations.{$statId}"));
-            $response->assertSee(Text::get('ui.hud.ratio', [
+            // The exact figures live in the dial's title and aria-label; the
+            // ring shows the ratio and the current value shows inside it.
+            $response->assertSee(Text::get('ui.hud.aria', [
+                'label' => Text::get("character.abbreviations.{$statId}"),
                 'current' => $character->{$resource},
                 'max' => $character->maximumFor($resource),
             ]));
@@ -93,17 +96,51 @@ class ShellTest extends TestCase
         $response->assertSee('48 210');
     }
 
-    public function test_the_money_has_no_bar_because_it_has_no_maximum(): void
+    /**
+     * A ring rather than a bar, because the bar is where there is no room for
+     * one. Same contract either way: --v is the ratio and ui-kit.js decides
+     * what "low" is from the same threshold.
+     */
+    public function test_each_resource_is_a_dial_and_the_money_is_not(): void
     {
         $character = $this->character(['creds' => 500]);
 
         $response = $this->actingAs($character->user)->get(route('inventory.index'));
 
-        // One meter per resource, and creds is not one — see Character::RESOURCES.
         $this->assertSame(
             count(Character::RESOURCES),
-            substr_count($response->getContent(), 'class="meter" role="meter"')
+            substr_count($response->getContent(), 'class="dial" role="meter"'),
+            'one dial per resource, and creds is not one — see Character::RESOURCES'
         );
+
+        $response->assertSee('data-hot-low', false);
+    }
+
+    /**
+     * The word costs more width than the bar can spare, so the generic
+     * currency sign carries it. U+00A4 is in Latin-1, which the font subset
+     * covers by construction — the name stays for a screen reader.
+     */
+    public function test_the_money_shows_a_glyph_and_keeps_its_name_for_a_reader(): void
+    {
+        $character = $this->character(['creds' => 500]);
+
+        $this->actingAs($character->user)
+            ->get(route('inventory.index'))
+            ->assertSee('&#164;', false)
+            ->assertSee('<span class="sr-only">'.Text::get('creds.name').'</span>', false);
+    }
+
+    /** The count is what the bar has room for. The modal says the rest. */
+    public function test_the_bar_carries_a_process_count_that_opens_the_list(): void
+    {
+        $character = $this->character();
+
+        $this->actingAs($character->user)
+            ->get(route('inventory.index'))
+            ->assertSee('data-open="#processes"', false)
+            ->assertSee('<dialog id="processes"', false)
+            ->assertSee(Text::get('programs.running_none'));
     }
 
     public function test_a_guest_gets_no_rail_and_keeps_the_brand(): void
@@ -142,6 +179,7 @@ class ShellTest extends TestCase
             ->get(route('admin.index'))
             ->assertOk()
             ->assertSee('class="dock"', false)
-            ->assertDontSee('class="gauge"', false);
+            ->assertDontSee('class="dial"', false)
+            ->assertDontSee('data-open="#processes"', false);
     }
 }

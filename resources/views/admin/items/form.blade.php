@@ -22,6 +22,11 @@
     // request, so this is disclosure and never a guarantee.
     $isDeck = $hardwareValue === Hardware::Deck->value;
     $isModule = $hardwareValue !== '' && ! $isDeck;
+
+    // Software, the same way: the select decides whether the costs are shown,
+    // and ItemRequest decides whether they may be saved.
+    $programValue = old('program_kind', $item?->program?->kind?->value ?? '');
+    $isProgram = $programValue !== '';
     // A socket counter: what was typed, else what is stored, else none.
     $slotCount = fn ($type) => (int) old('slots.'.$type->key(), $layout->count($type));
     $moduleValue = fn (string $field) => old($field, $module?->{$field});
@@ -217,6 +222,67 @@
             </div>
         </div>
 
+        {{-- Software. The mirror of the hardware panel below, and the two are
+             mutually exclusive without a rule saying so: hardware forces the
+             container to physical, and a program is data.
+
+             What the KIND does is not decoration. A program is a gate as well
+             as a modifier — you cannot fight ICE without a running icebreaker
+             — so the kind is asked about by name, and no set of modifiers adds
+             up to having one. --}}
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.software') }}</span></div>
+            <div class="panel__bd">
+                <div class="field" @error('program_kind') data-invalid @enderror>
+                    <label class="field__label" for="program_kind">{{ Text::get('admin.items.fields.program_kind') }}</label>
+                    <select class="select" id="program_kind" name="program_kind" data-controls="program">
+                        <option value="">{{ Text::get('admin.items.fields.program_kind_none') }}</option>
+                        @foreach ($programKinds as $kind)
+                            <option value="{{ $kind->value }}" @selected($programValue === $kind->value)>{{ $kind->label() }}</option>
+                        @endforeach
+                    </select>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.program_kind_hint') }}</span>
+                    @error('program_kind') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+
+                <div data-when="program" @unless ($isProgram) hidden @endunless>
+                    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));margin-top:var(--s-4)">
+                        {{-- Two of these are spent only while it runs, and the
+                             third is paid by owning it at all. That is why they
+                             are three numbers and not one. --}}
+                        @foreach (['qflops_cost', 'memory_cost', 'storage_size'] as $field)
+                            <div class="field" @error($field) data-invalid @enderror>
+                                <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
+                                <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0"
+                                       value="{{ old($field, $item?->program?->{$field} ?? 0) }}">
+                                <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
+                                @error($field) <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <label class="check" style="margin-top:var(--s-3)">
+                        <input type="hidden" name="background_process" value="0">
+                        <input type="checkbox" name="background_process" value="1"
+                               @checked(old('background_process', $item?->program?->background_process ?? false))>
+                        <span>{{ Text::get('admin.items.fields.background_process') }}</span>
+                    </label>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.background_process_hint') }}</span>
+
+                    {{-- Validated by BUILDING each one — see ItemRequest. A
+                         shape that parses but names an op that does not exist
+                         is a modifier that throws on somebody else's screen. --}}
+                    <div class="field" style="margin-top:var(--s-4)" @error('program_modifiers') data-invalid @enderror>
+                        <label class="field__label" for="program_modifiers">{{ Text::get('admin.items.fields.program_modifiers') }}</label>
+                        <textarea class="input mono" id="program_modifiers" name="program_modifiers" rows="5"
+                                  spellcheck="false">{{ old('program_modifiers', $item?->program?->modifiers ? json_encode($item->program->modifiers, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : '') }}</textarea>
+                        <span class="field__hint">{{ Text::get('admin.items.fields.program_modifiers_hint') }}</span>
+                        @error('program_modifiers') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.hardware') }}</span></div>
             <div class="panel__bd">
@@ -337,14 +403,15 @@
                     'bandwidth' => 'nic',
                     'watts' => 'psu',
                     'cooling' => 'thermal',
-                    'power_draw' => 'cpu npu ram nic expansion thermal',
+                    'storage' => 'storage',
+                    'power_draw' => 'cpu npu ram nic expansion thermal storage',
                     // Every module but the radiator, which takes heat away
                     // rather than making it — chk_deck_modules_thermal.
-                    'heat' => 'cpu npu ram nic expansion psu',
+                    'thermal_load' => 'cpu npu ram nic expansion psu storage',
                     // Every module, radiators included: a radiator in a deck
                     // hot enough will cook like anything else in it.
-                    'heat_level_warning' => 'cpu npu ram nic expansion psu thermal',
-                    'heat_level_limit' => 'cpu npu ram nic expansion psu thermal',
+                    'thermal_warning' => 'cpu npu ram nic expansion psu thermal storage',
+                    'thermal_limit' => 'cpu npu ram nic expansion psu thermal storage',
                 ] as $field => $kinds)
                     <div class="field" data-hardware="{{ $kinds }}" @error($field) data-invalid @enderror>
                         <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>

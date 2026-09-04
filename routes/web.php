@@ -96,6 +96,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/fit', [InventoryController::class, 'fit'])
         ->name('inventory.fit');
 
+    /*
+     * Start or stop a program. One route for both directions, like
+     * inventory.place and deck.fit: running and not running are the same
+     * question about the same row, and the row already knows which way it is
+     * being asked.
+     */
+    Route::post('/inventory/{entry}/run', [InventoryController::class, 'run'])
+        ->name('inventory.run');
+
     // Moving a row into a container, or back out of one. One route for both
     // directions: an absent `parent` means the loose pile, which is the same
     // operation with a null target.

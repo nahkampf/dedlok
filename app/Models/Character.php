@@ -326,6 +326,30 @@ class Character extends Model
         return $this->characterSkills()->where('skill_id', $skill->id)->exists();
     }
 
+    /**
+     * What is running on the deck being carried.
+     *
+     * Empty when nothing is equipped, because software runs on the machine you
+     * have with you — putting a deck down stops everything on it. One query
+     * with the item and its program alongside, since every caller wants all
+     * three.
+     *
+     * @return Collection<int, InventoryItem>
+     */
+    public function runningProcesses(): Collection
+    {
+        if ($this->equipped_deck_id === null) {
+            return new Collection;
+        }
+
+        return InventoryItem::query()
+            ->where('character_id', $this->id)
+            ->where('running_on_deck_id', $this->equipped_deck_id)
+            ->with('item.program')
+            ->orderBy('started_at')
+            ->get();
+    }
+
     /** The ordered training queue: (skill, target level) pairs. */
     public function trainingQueue(): HasMany
     {
@@ -400,23 +424,45 @@ class Character extends Model
     /**
      * Every modifier currently acting on this character.
      *
-     * Archetype perks only, for now. Implants, drugs, injuries and gear join
-     * this list as they are built, each as its own ModifierSource — nothing
-     * downstream changes when they do.
+     * Two sources so far: the archetype's live perks, and the software running
+     * on the equipped deck. Implants, drugs and injuries join the list as they
+     * are built, each as its own ModifierSource — the resolver learns nothing
+     * new when they do, which is the whole point of the interface.
+     *
+     * Order does not matter. The resolver sorts modifiers into layers by op
+     * and sums within each, so two sources cannot fight over which went first.
      *
      * @return list<Modifier>
      */
     public function modifiers(): array
     {
-        return (new ArchetypePerks($this->archetype))->modifiers();
+        $sources = [
+            new ArchetypePerks($this->archetype),
+            new RunningPrograms($this),
+        ];
+
+        $modifiers = [];
+
+        foreach ($sources as $source) {
+            foreach ($source->modifiers() as $modifier) {
+                $modifiers[] = $modifier;
+            }
+        }
+
+        return $modifiers;
     }
 
     /**
-     * The unmodified starting value for a stat.
+     * The unmodified starting value for a stat, from stored numbers alone.
      *
-     * Attributes read their column. hitpoints_max is derived here rather than
-     * from a formula in config, because the derived-stat graph does not exist
-     * yet (MECHANICS.md, step 4).
+     * DEPRECATED as the way to compute a derived stat, and kept because the
+     * character-creation screen has a legitimate use for it: a spread of
+     * slider values that is not a character yet has no modifiers to resolve,
+     * so raw columns are the right and only input there.
+     *
+     * Everywhere else, go through App\Stats\Sheet. A derived stat's inputs
+     * are the RESOLVED values of what it reads, and this method cannot see
+     * them — which is exactly the bug the graph was built to close.
      */
     public function baseStat(string $statId): float
     {

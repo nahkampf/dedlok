@@ -10,7 +10,9 @@ use App\Decks\SlotLayout;
 use App\Decks\Variant;
 use App\Market\Rarity;
 use App\Models\Item;
+use App\Models\Program;
 use App\Models\Skill;
+use App\Programs\ProgramKind;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -180,5 +182,41 @@ class ItemFactory extends Factory
             'use_op' => Item::USE_INJECT_SKILL,
             'use_skill_id' => $skill->id,
         ]);
+    }
+
+    /**
+     * A program: an item with a `programs` row beside it.
+     *
+     * The software mirror of module(). Costs default to something small and
+     * plausible so a test that only cares about modifiers need not invent
+     * three numbers it has no opinion about.
+     *
+     * @param  list<array<string, mixed>>  $modifiers
+     */
+    public function program(
+        ProgramKind $kind,
+        int $qflops = 1,
+        int $memory = 1,
+        int $storage = 1,
+        ?bool $background = null,
+        array $modifiers = [],
+    ): static {
+        return $this
+            ->state([
+                'container' => Item::CONTAINER_DATA,
+                'hardware' => null,
+                'stackable' => true,
+            ])
+            ->afterCreating(function (Item $item) use ($kind, $qflops, $memory, $storage, $background, $modifiers): void {
+                Program::create([
+                    'item_id' => $item->id,
+                    'kind' => $kind,
+                    'qflops_cost' => $qflops,
+                    'memory_cost' => $memory,
+                    'storage_size' => $storage,
+                    'background_process' => $background ?? $kind->runsInBackgroundByDefault(),
+                    'modifiers' => $modifiers === [] ? null : $modifiers,
+                ]);
+            });
     }
 }

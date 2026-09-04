@@ -103,6 +103,21 @@ return [
             'rounding' => 'floor',
         ],
 
+        /*
+         * Bulk storage. Quantabits like deck_quantabits and deliberately NOT
+         * the same stat: memory is what a program occupies while it runs,
+         * storage is what a file costs by existing. DeckTotals sums by measure,
+         * so one id for both would merge two different capacities into one
+         * meaningless figure — the same reason draw and supply are two stats
+         * that share a unit.
+         */
+        'deck_storage' => [
+            'tags' => ['deck', 'storage'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'deck_bandwidth' => [
             'tags' => ['deck', 'link'],
             'min' => 0,
