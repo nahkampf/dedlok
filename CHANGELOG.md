@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.8.1] — 2026-09-04
+
+### Added
+
+- feat(inventory): item actions live on the card, and the sidemenu gets a Deck (566a510)
+
 ## [0.8.0] — 2026-09-03
 
 ### Added
@@ -191,7 +197,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/nahkampf/dedlok/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/nahkampf/dedlok/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/nahkampf/dedlok/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/nahkampf/dedlok/compare/v0.6.1...v0.7.0
