@@ -10,15 +10,31 @@ the arithmetic lives in this file.
 
 ## Status
 
-**Nothing in this document is built.** It is the agreed design, written down so
-the implementation has something to be checked against — the same contract
-MECHANICS.md holds for the stat system.
+**Phase 3 is under way; everything past it is still design.** This document is
+the agreed shape, written down so the implementation has something to be
+checked against — the same contract MECHANICS.md holds for the stat system.
 
 | Piece | State |
 | --- | --- |
-| Everything below | **specified only** |
+| Everything below, unless a row here says otherwise | **specified only** |
+| The grid itself — positions, chunks, the portal, the edges | **built**; `App\Cyberspace\Grid` is the one place that knows how it is stored |
+| Addresses | **built**; generated, validated and normalised, and unique on the table |
+| The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
+| System names | **built**; drawn from a word repository per type and written onto the row |
+| Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
+| Discovery — contact | **built** as rows keyed by position, with no foreign key to `systems` on purpose |
+| Sweeping — the act that writes both | **built**; `App\Cyberspace\Sweep`, clipped to the grid |
+| Jacking in and out | **built**; `App\Cyberspace\Navigator`, gated on `DeckTotals::isReady()` |
+| Stepping and jumping to an address | **built**; every arrival sweeps |
+| The deck lock while jacked in | **built**; `Character::isLockedInCyberspace()` is the question, and the three writers all ask it |
+| Losing readiness while jacked in | **specified only**; nothing watches for it and nothing damages Synaptic Integrity. TODO.md carries it, including the open question of what triggers the check |
+| Bookmarks — waypoints and system bookmarks | **built**; one table, two kinds, and a waypoint may only be set on swept ground |
+| Recall — travelling to a bookmark | **built**, and free: walking is what buys new ground |
+| The map screen | **built**; `/cyberspace`, drawn from memory and never from `systems` |
+| Marking a machine you have not seen before | **built**; `system_contacts.first_seen_at`, carried through a sweep and restarted when a different address appears at a position |
+| Moving by tap, click and key | **built**; the eight around you are buttons, arrows and the numpad reach the same eight |
 | The storage socket and its measure | **built**; every deck has one, and nothing reads the totals yet |
-| The check layer it all resolves through | **partly built** — `check.*` stats, the dependency graph and conditional modifiers exist; `character_modifiers` and skill effects do not. See MECHANICS.md |
+| The check layer it all resolves through | **partly built** — `check.*` stats, the dependency graph, conditional modifiers, `character_modifiers` and skill effects all exist; nothing ROLLS a check yet. See MECHANICS.md |
 | Jack in / sign in — the vocabulary split | **done**; auth reads Sign in / Sign out, and `ui.action.jack_*` is reserved for cyberspace |
 | Operating System skills — AuraOS, Prism-V, IRONCLAD, Lattice | **built** as skill rows; nothing reads them |
 | Network Topology, System Profiling, Advanced System Profiling | **built** as skill rows; nothing reads them |
@@ -27,6 +43,8 @@ MECHANICS.md holds for the stat system.
 | Synaptic Integrity as a resource | **built**; nothing damages it |
 | AuraOS in the Deck Jockey loadout | **done**; granted at level 1 alongside the deck |
 | The thermal rename | **done**. Accumulation itself is **specified only** — nothing runs a deck yet |
+| Burning a module out mid-run | **specified only**; the thermally weakest module is destroyed, the trace is cancelled, the player is thrown out for 25–75% of current SI and a 12% chance of a flatline taking 5–15% of maximum SI. The numbers are in `config/cyberspace.php` and nothing reads them |
+| The order a bad ending resolves in | **specified only**; damage, then consequence, then ejection, then the waiting screen — one order for defeats, burnouts and readiness losses alike |
 | Radiator cooling, recalibrated for accumulation | **done** as data — the eight radiators, compressed to 90–520 TU |
 | `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
 | Routing, Advanced Routing | **built** as skill rows with books and prerequisites; nothing reads them |
@@ -143,6 +161,33 @@ bookmarked automatically, as systems.
 **A player's own nodes are the exception**: when one relocates, the owner's
 bookmark to it is rewritten to the new address rather than being allowed to die.
 See *Player-owned nodes*.
+
+**What each kind is FOR, in the player's terms**, because the two are not
+alternatives and a screen that presents them as one list still has to make the
+difference obvious:
+
+- **A waypoint marks a NEIGHBOURHOOD, not a machine.** You find a stretch of
+  the grid thick with high-value targets and you want to come back to *there* —
+  and you mark the position rather than any one machine because the machines
+  are what will eventually move. Nothing places such a cluster today; it is a
+  statistical accident. But an accident is enough, because **the grid only
+  moves where players push it**: an untouched cluster keeps its shape until
+  somebody starts working through it, and by then the waypoint has already paid
+  for itself. See *Relocation*.
+- **A system bookmark is an address, and an address behaves like an IP.** You
+  do not have to have swept the surrounding area to connect straight to one;
+  you do not have to know where it is, or what is between you and it. Somebody
+  can simply give you one.
+
+**What may be bookmarked is not symmetric, and that asymmetry is what paces
+exploration.** A waypoint may only be set on ground the character has SWEPT;
+a system bookmark may be set on any address at all, seen or not. It looks
+inconsistent until you ask what each one is worth to somebody else: an address
+is a door, so handing one over is the invitation the design already blesses,
+while a position is a *map*, and a tradeable position would let one player hand
+another the walking they did. So the terrain bitmap gates one and nothing gates
+the other. `App\Cyberspace\BookmarkKeeper` is where that lives, because no
+CHECK can reach across to another table's bitmap.
 
 ### How the grid is stored
 
@@ -285,6 +330,16 @@ luck and one that fires on arithmetic.
 **When lockdown ends, the system moves.** New position, new address, same
 system. Its bookmarks break, its address dies, and every scan anyone was holding
 on it becomes worthless.
+
+**RELOCATION IS A CONSEQUENCE, NOT A BACKGROUND PROCESS.** The grid does not
+churn on its own. A system moves because somebody raided it and its lockdown
+expired, or because somebody sold a scan of it to an NPC buyer — both of which
+are players acting on it. **A system nobody has touched sits exactly where it
+is, indefinitely.** That is easy to misread as ambient churn and it is worth
+being plain about, because a great deal follows from it: a stretch of grid a
+player has found and not yet worked through is *stable* while they work through
+it, and it only starts moving once somebody starts taking it apart. Discovery
+keeps its value; exploiting what you discovered is what spends it.
 
 This is the mechanic that makes the grid a living thing rather than a board that
 gets solved, and it is why roughly a third of the grid is empty: relocation
@@ -559,14 +614,127 @@ more turns is more heat and more trace; a faster NIC buys back turns; a better
 radiator buys back heat. **Nothing in a run is free, because everything in a run
 costs turns.**
 
-It ends when the ICE is defeated, the player is defeated, or a threshold trips
-and the player egresses — which is itself a roll against the ICE, so retreat can
-fail and cost a turn.
+It ends four ways: the ICE is defeated, the player is defeated, a threshold
+trips and the player egresses — which is itself a roll against the ICE, so
+retreat can fail and cost a turn — or **the deck burns a module out and throws
+the player through the wall.**
 
 **Accumulated thermal load resets when the run ends.** Heat is a property of a
 run, not of a session or of a deck, so the risk is always about *this* run being
 too long rather than about a deck being tired. That also keeps the simulation
 self-contained: a run needs no state carried in from the last one.
+
+### Burning out a module ends the run
+
+**Thermal load accumulates per turn, so a long fight is a hot deck, and a module
+CAN break from heat inside a run.** This is what the tolerance thresholds are
+for — `heat_level_warning` and `heat_level_limit` are read against the deck's
+accumulated load, and a fight that runs long is the ordinary way a deck reaches
+them. A drawn-out ICE fight is therefore dangerous twice over: the ICE is
+hitting you, and your own deck is cooking.
+
+**A module that breaks is DESTROYED.** There is no damaged state, no repair and
+no degraded mode — the same vocabulary as Surge, which destroys fitted
+hardware, and the same as everything else in the game: an item exists or it does
+not.
+
+**Which module breaks depends on what broke it**, and the two rules are
+different on purpose:
+
+- **Thermal overload takes the thermally weakest module** — the one that
+  overheats first, deterministically. It is the part the player was warned
+  about, on the screen, before they went in.
+- **Anything else that breaks hardware takes a random one.** ICE does not know
+  or care which part is closest to its limit.
+
+When the deck freezes:
+
+- **The run ends and the player is jacked out.** Not an egress and not a defeat
+  — there is no roll, nothing to retreat from, and the ICE does not get a say.
+- **The trace is cancelled.** It was walking a chain to a deck that has just
+  stopped existing as a working machine. Nothing to follow, nothing to arrive
+  at.
+- **The player takes 25–75% of their CURRENT Synaptic Integrity**, rolled, and
+  rounded the ordinary way — below 0.5 is 0. At very low current that means no
+  damage at all, which is fine and needs no special floor.
+
+  **This can only finish somebody who was already at 1 or 2 SI.** Reaching 0
+  needs a roll at or above `1 - 0.5/current` — 50% at 1 SI, 75% at 2, and above
+  100% from 3 upwards, which the range cannot produce. That is deliberate
+  rather than a hole: the flatline below is what carries the real risk of a
+  freeze, and it does not care how much SI you had.
+- **A freeze flatlines 12% of the time**, and takes **5–15% of MAXIMUM SI**
+  when it does, rolled.
+
+  The chance is one number rather than the 10–15% the design first said,
+  because a probability that is itself rolled uniformly is arithmetically just
+  its own mean: rolling 10–15 and then rolling against it is a flat 12.5%. Two
+  dice to say what one says. Move the number, do not widen it back out.
+
+  The amount is small on purpose, because **a flatline is permanent and
+  flatlines ACCUMULATE** — the one that matters is the fourth, not the first, so
+  a single event taking a fifth of a ceiling would end characters rather than
+  mark them. `config/cyberspace.php` holds all three numbers so they can be
+  calibrated together, against each other and against a survivable run length.
+
+  Permanent damage to maximum SI is an unexpiring modifier row and never a
+  subtraction into a column, because maximum SI is derived — see MECHANICS.md,
+  *Flatline is a permanent stored modifier*. It deepens the character's ONE
+  *neural damage* modifier rather than adding a second — see *Losing*. **The
+  stat floors at 1, so accumulated flatlines converge on a maximum of 1 rather
+  than 0**: they permanently cripple and never themselves kill. Current SI then
+  clamps down to the new ceiling on the next save, the way it always has.
+- **No PROGRAM tag fires.** Nothing surges, erases, skims or bounties, because
+  the tag set belongs to the program that got you and here nothing got you. The
+  flatline above is not a tag firing — it is what a violent ejection does to a
+  brain.
+
+**The freeze leaves no new state behind, because it does not need one.** A
+module is gone, so the deck is short of what it needs, so `isReady()` says no
+and the player cannot jack back in until they replace it. That is the lasting
+consequence and it is already expressible — no cooldown, no repair flag, no
+column.
+
+**Three different causes damage SI and they must not be conflated:**
+
+| Cause | Current SI | Flatline? | Program tag? |
+| --- | --- | --- | --- |
+| Readiness lost while jacked in, outside a run | **1 point**, flat | no | no |
+| The deck freezes — a module broke | **25–75% of current**, rolled | **12%**, for 5–15% of max | no |
+| Defeated by ICE | whatever the tag carries | only via the **Flatline** tag | **yes** |
+
+### The order a bad ending happens in
+
+**Damage first, then the consequence it causes, then the ejection, then the
+waiting screen.** Every bad ending resolves in that order, and it is one order
+for all of them so that no two endings can disagree about what a player has
+left:
+
+1. **The damage lands.** SI, and any hardware the event destroys — a burnout's
+   module, a Surge's modules.
+2. **The consequence is worked out.** A destroyed module means a deck that may
+   no longer meet its requirements; a freeze means one that certainly does not.
+3. **It is resolved immediately.** A frozen or unready deck cannot be stood in,
+   so the player is jacked out then and there. Not at the end of the turn, not
+   on their next request — `Navigator::jackOut()`, as part of the same
+   resolution.
+4. **Only then, the waiting screen**, if SI or HP reached 0.
+
+The waiting screen coming last is the load-bearing part. A character must never
+be sitting on it while still holding a position in cyberspace — that is the one
+ordering that produces a state nothing else in the game knows how to read.
+
+**This answers who ends the session on a defeat: every bad ending does, through
+the same door.** A defeat, a burnout and a readiness loss all end with
+`jackOut()` before anything else is shown.
+
+One thing still to decide: **does a Surge that leaves the deck unready also roll
+the freeze's flatline chance?** A Surge fires at 0 SI, so the 25–75% is nil —
+but the 12% flatline roll is not, and stacking it on top of a Surge that may
+already carry the Flatline tag would be two rolls at the same permanent damage.
+The likely answer is that the freeze's damage belongs to a *thermal* burnout and
+a Surge carries only its own tag, but it should be said out loud before either
+is written.
 
 ### Losing
 
@@ -607,10 +775,23 @@ on `synaptic_integrity_max`, floored at 1 the way maximum HP is. Permanent
 damage to both HP and SI is reversible later, by means not yet designed. See
 MECHANICS.md.
 
+**Every flatline deepens ONE injury rather than adding another.** *Neural
+damage* is a single accumulating modifier per character: -5 that takes another
+-3 becomes -8, and the row is updated rather than joined by a second. The nerves
+do not care what caused the damage, only that there is more of it — which is
+what lets a freeze, an ICE flatline and, later, a drug overdose all write into
+the same injury without knowing about each other, and lets a clinic heal one
+number. MECHANICS.md has the shape.
+
 ### Trace, and the heat it leaves
 
 A completed trace puts **heat** on the character. Heat is persistent, it belongs
 to the person, and it is what the world knows about them.
+
+**A trace only lands if it completes.** A deck that freezes cancels it outright
+— see *Burning out a module ends the run* — so burning a module out is not the
+worst of both: it costs a module and a great deal of SI, and it does at least
+take the trace with it.
 
 What a completed trace does:
 
@@ -632,6 +813,35 @@ rather than a punishment to endure.
 
 Routing through backdoored relays is what slows a trace down, which is what
 makes a backdoor run worth doing for its own sake.
+
+---
+
+## The map, and how it is driven
+
+**The map is the player's MEMORY, not a live feed.** It draws the terrain they
+have swept and the last thing they saw at each position — so most of it is what
+*was* there, and only the current view window is fresh.
+
+**The window is always centred on the player**, which is what makes the whole
+interaction work: the eight legal steps are therefore always at the same eight
+places on the screen, and the map is already a D-pad without anything drawing
+one.
+
+- **Tap or click a cell to step to it.** The eight around you are step targets.
+  One gesture, all eight directions, no extra chrome, and identical with a
+  mouse or a thumb.
+- **Tap anything else to inspect it** — what you remember of it, and the
+  actions that belong to it: bookmark the position, jump to the address if you
+  know one. A cell with nothing to say is not interactive at all.
+- **Arrow keys move orthogonally; the numpad moves in all eight**, 8 for north
+  and 7 for north-west, the way every roguelike has done it. 5 looks again
+  without moving. Keys are ignored whenever focus is in a text field, or typing
+  an address would walk you across the grid.
+
+**A mis-step is the cheapest error in the game** — one step back, nothing
+destroyed, nothing confirmed — which is what makes a tap target smaller than
+the usual guideline acceptable here. It is not what makes it acceptable
+anywhere else.
 
 ---
 
@@ -771,11 +981,12 @@ is a race, and the sweep is what serialises it.
 All of it. In the order it should be built:
 
 0. Settle this document.
-1. **The check layer.** Half done: `check.*` and `skill.*` stats, the
-   derived-stat dependency graph and conditional modifiers are **built**.
-   Still missing: `character_modifiers` — the table an unexpiring flatline is a
-   row in — and skills as a `ModifierSource`, so that having a skill grants
-   something beyond its own check.
+1. **The check layer.** **Built**: `check.*` and `skill.*` stats, the
+   derived-stat dependency graph, conditional modifiers, `character_modifiers`
+   — the table an unexpiring flatline is a row in — and skills as a
+   `ModifierSource`, so that having a skill grants something beyond its own
+   check. Still missing: anything that ROLLS one. A check is a resolved number
+   today and the die that reads it arrives with the simulator.
 2. **Software.** **Built**: `programs` beside `items`, three costs, a kind that
    gates and modifiers that resolve; the admin editor; the topbar's readout;
    the deck screen's Running and Storage tabs, where a program is stopped
@@ -785,6 +996,18 @@ All of it. In the order it should be built:
    icebreaker.
 3. **The grid.** Positions, systems, addresses, movement, discovery, the map,
    bookmarks, jumping. No intrusion at all — a walkable, empty world.
+
+   **Built so far**: the coordinate space and its one storage class, addresses,
+   the world generator behind `cyberspace:seed`, generated names, both halves
+   of discovery — the terrain bitmap and the contact rows — written together by
+   a sweep, and the session itself: jacking in against the readiness gate,
+   jacking out, stepping, and jumping to an address, every arrival sweeping.
+   Bookmarks are built too, both kinds, along with recalling one, and the map
+   screen that draws all of it. Systems have owners, drawn from the corp roster
+   in WORLDBUILDING.md. The deck lock is built as well. **Phase 3 is done.**
+   What is carried forward is one thing that was never phase 3's: losing
+   readiness while jacked in, which nothing can currently cause. It is in
+   TODO.md with the trigger question it is waiting on.
 4. **Systems and scanning.** Grades, types, owners, node inventories, the probe,
    and the scan file. Still no combat.
 
@@ -847,3 +1070,54 @@ dependants.
     `IRONCLAD ← Prism-V L3` exists; AuraOS gates nothing and Lattice — rank 16,
     the top — is reachable from a standing start. The encryption skills have no
     prerequisites at all yet, deliberately.
+11. **Where does a relocating system go?** **Answered for now: anywhere.** A
+    free position drawn uniformly from the whole grid, which is what
+    `Grid::freePosition()` already does. Local relocation — a system moving
+    within some radius of where it was — is the interesting alternative and is
+    parked below rather than decided. Nothing is blocked by leaving it random.
+
+12. **Does a Surge that leaves the deck unready roll the freeze's flatline
+    chance?** The 25–75% is nil at 0 SI, but the 12% is not, and stacking it
+    on a Surge that may already carry the Flatline tag is two rolls at one
+    permanent consequence. See *The order a bad ending happens in*.
+
+    (*Who ends the session on a bad ending* was the question here before, and
+    it is settled: every bad ending ejects, through `Navigator::jackOut()`,
+    before the waiting screen is shown.)
+
+---
+
+## Ideas, parked
+
+Not questions blocking anything, and not on the roadmap. Written down so they
+are not re-derived from scratch later, and so nobody mistakes them for
+decisions.
+
+**Give the grid geography.** Today every position is interchangeable: grade does
+not vary with where a system is, so a dense cluster of high-value targets is a
+statistical accident rather than a place. It could instead be a place —
+grade correlating with distance from the portal, or districts laid down by
+noise, so a region keeps its character no matter which individual machines
+occupy it.
+
+What it would buy:
+
+- **Somewhere to go.** It is what would make 2048 x 2048 mean something other
+  than four million interchangeable cells — a frontier worth reaching rather
+  than more of the same at a greater distance.
+- **A reason to map rather than to raid.** A region with known character is
+  information worth selling, which is the mapping run's whole premise.
+- **Durable waypoints.** A neighbourhood that is dense *by design* stays dense
+  through relocation, so marking one is a lasting investment rather than a bet
+  on a cluster holding still.
+
+Why it is parked rather than open: clusters already work well enough without it,
+because the grid only moves where players push it. This is an enrichment, not a
+repair.
+
+**Relocate locally.** A system moves within some radius of where it was rather
+than anywhere on the grid. Clusters would survive being worked through, and
+*it moved, but it is still around here somewhere* would become true — which
+would quietly make a waypoint the way to re-find a system whose address died.
+Relocation is uniform-random to begin with; this is the first thing to try if
+that turns out to feel arbitrary.

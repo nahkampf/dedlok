@@ -7,7 +7,30 @@ what will break if it is left alone.
 
 ## Switch `QUEUE_CONNECTION` to `database`
 
-**Status:** `sync` — listeners run in-process, on the request thread.
+**Status:** `sync`, and **that is currently the right setting** — do not switch
+yet. Kept here for the day it stops being right.
+
+**Nothing is queued, because nothing can be.** Three events exist
+(`SkillInjected`, `SkillLevelReached`, `TrainingEntryCompleted`), `app/Listeners`
+does not exist at all, there are no jobs, notifications or mailables, and
+**nothing in `app/` implements `ShouldQueue`**. Only a listener implementing it
+moves off the request path, so switching the driver today would change the
+behaviour of zero code paths — jobs would go to a table nothing writes to.
+
+It would also cost something. It requires a worker, and without one jobs queue
+silently forever, which looks exactly like nothing happening. The `database`
+driver also POLLS, and this application's database is on the public internet:
+a worker asking a remote host for work every second is a continuous stream of
+round trips.
+
+**The trigger to switch**, when one of these becomes true:
+
+1. **`MAIL_MAILER` stops being `log`.** A password-reset request would then
+   block the form submit on SMTP, which is the classic first thing to queue and
+   is probably the real trigger here.
+2. **A listener appears on one of the three events** that does slow work — a
+   webhook, an image resize, a fan-out write across characters.
+3. Anything else where a player waits on work whose result they do not need.
 
 Right now `Event::dispatch()` executes every listener inline before the response is sent.
 That is fine while listeners are trivial, but the moment one does real work (an HTTP call,
@@ -43,6 +66,9 @@ poll is a round trip to a MySQL host on the public internet.
 
 ## Lock down the database account
 
+**Parked by explicit decision, 2026-09-05.** Still the single largest risk in
+the project; to be picked up before anything goes near production.
+
 **Status:** running as `lod@%` with `ALL PRIVILEGES ON *.*`, unencrypted, by explicit
 decision to defer.
 
@@ -67,6 +93,8 @@ connection. See CLAUDE.md for the safe local-override recipe.
 
 ## Write the 2FA and passkey screens
 
+**Parked by explicit decision, 2026-09-05.**
+
 **Status:** both features commented out in `config/fortify.php`.
 
 The columns (`two_factor_secret`, `two_factor_recovery_codes`, `two_factor_confirmed_at`)
@@ -76,6 +104,106 @@ Ash & Ember kit like the rest of `resources/views/auth/`.
 
 Enabling the features before the views exist gives 500s on those routes rather than a
 clear error, so keep them commented until the screens are written.
+
+---
+
+## Dump the player when readiness is lost
+
+**Status:** not built. The deck LOCK that used to sit beside this item is done —
+`Character::isLockedInCyberspace()` is the one question, and `ModuleFitter`,
+`DeckEquipper` and the destroy path all ask it. What is left is the other half.
+
+**If readiness is lost while jacked in, the player is jacked out and takes 1
+point of Synaptic Integrity damage** (`current_synaptic_integrity`). Not a
+warning, not a grace period — the machine stopped working while they were
+inside it. The damage carries **no defeat effect**: no ICE was involved, so
+nothing flatlines, surges or erases, and at worst it puts the character on the
+waiting screen like any other trip to zero. Small because the cause is usually
+not the player's fault; nonzero because being dumped out should never be free.
+
+**The open question is the trigger, and it should be settled before this is
+written.** With the deck locked, the only thing that can now cause a loss of
+readiness is the resolver — a buff expiring, a drug wearing off, an injury
+landing — and none of those fire an event today. Two candidate shapes:
+
+- **Check on every jacked-in request**, in middleware. Cheap to reason about,
+  and a player who is not clicking stays in cyberspace on a dead deck until
+  they next do.
+- **Check when a modifier changes.** `character_modifiers` exists now, so
+  this is no longer blocked on a table. What it still wants is something
+  that fires when a row is written, expires or is swept — none of those
+  raise an event today. The correct shape, and the only one that notices a
+  drug wearing off at the moment it wears off rather than at the next
+  click.
+
+`DeckTotals::forCharacter($character, $deck, $resolver)->isReady()` is the call
+either way, and `Navigator::jackOut()` performs the ejection.
+
+**Two things that are NOT this, and must not be folded into it:**
+
+- **A module burning out mid-run is its own ending**, with its own damage
+  (25-75% of current SI, plus a 12% chance of a flatline), its own trace
+  cancellation and its own ejection. It is not a readiness check that happened
+  to fail — the run stops the moment the hardware does. See CYBERSPACE.md,
+  *Burning out a module ends the run*.
+- **Ejection is immediate, not deferred.** CYBERSPACE.md fixes one order for
+  every bad ending — damage, then consequence, then `jackOut()`, then the
+  waiting screen. That rules out middleware for anything happening *during* a
+  run: a player must never be left standing in cyberspace on a dead deck until
+  their next request. Middleware is an acceptable safety net for the slow,
+  out-of-run causes; it is not an answer for a burnout or a Surge, which have
+  to resolve where they happen.
+
+**What breaks if it is left alone:** nothing today, but the reason has
+changed. Skills now move deck measures — `deck_qflops`, `deck_bandwidth`,
+`deck_power_draw` — and training carries on while a character is jacked in,
+so readiness can already move inside a session. It can only move UP: a level
+reached mid-session adds, and nothing subtracts, because nothing yet writes a
+timed modifier against a deck measure. The hole opens with the first drug
+that does, and it will be silent: the player simply keeps playing on a deck
+that no longer runs.
+
+---
+
+## Name systems `<Type> - <corp>`
+
+**Status:** not built. Systems are currently named from an adjective-and-noun
+word list — *Fast Forge*, *Cold Vault 041* — which reads well but says nothing
+about who owns the machine.
+
+Names should instead compose as **`<Type> - <corp>`**, drawing the corp from the
+dummy-corps list in WORLDBUILDING.md (121 of them). *Data silo - Anansi Data
+Weaving*, *Network relay - SveaCom*.
+
+### This is phase 4 arriving early, and it should be built as such
+
+CYBERSPACE.md already says names will be "combined by owner, type and grade".
+**The corp in that name is an OWNER, not a word** — so the honest shape is a
+column on the system (or a foreign key to a corps table), with the name derived
+from it, rather than a second word list that happens to contain company names.
+Doing it as a string convention now means doing it twice.
+
+That also decides where the list lives. Content lives in the database in this
+codebase, not in config — the documented exception the items and skills tables
+already take. WORLDBUILDING.md stays the source a human edits.
+
+### Three things to settle first
+
+- **The type would appear twice.** The detail card already shows
+  `SystemType::label()` beside the name, so a name beginning with the type reads
+  *Data silo — Data silo - Anansi*. Either the card drops its type, or the ROW
+  stores only the owner and the screen composes the pair. The second is
+  cleaner and still obeys "a name lives on the row", because both halves are on
+  it.
+- **Names stop being unique.** 121 corps x 3 types is 363 combinations against
+  2 867 systems — about eight systems to a name. The numeric designation is
+  currently a 60% chance; it would have to become near-universal, or the name
+  identifies nothing.
+- **The 2 867 systems already standing keep their old names.** Nothing renames
+  a row. **Now is the cheapest possible moment to change this**: no character
+  has walked the grid, so no `system_contacts` snapshot and no bookmark holds an
+  old name. Once players start, a rename leaves stale names in every contact
+  ever taken. Re-seed rather than migrate, and do it before anyone plays.
 
 ---
 

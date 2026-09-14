@@ -38,11 +38,13 @@ down so the implementation has something to be checked against.
 | Skill thresholds and SP/minute (`App\Skills\`) | **built**, pure and config-tunable |
 | Skill training — the deposit, the scheduler, the queue (`App\Skills\TrainingDeposit`) | **built**, with `training:deposit` on a one-minute schedule |
 | `SkillLevelReached` / `TrainingEntryCompleted` events | **built**, dispatched; no listeners yet |
-| `skill_effects` and skills as a `ModifierSource` | **specified only** — a skill is a stat now, but having one grants no modifiers yet |
-| `character_modifiers` table | **specified only** |
+| Skills as a `ModifierSource` | **built** — `skills.modifiers` as JSON on the row, read by `App\Stats\Sources\SkillEffects`; there is no `skill_effects` table, for the reason an implant has none |
+| `character_modifiers` table | **built** — instances in the database, definitions in `config/effects.php`, stacking collapsed at read time by `App\Stats\Stacking` |
 | Item *modifiers* — items that change a stat | **built** — software. `programs`, `App\Programs\ProgramRunner`, `App\Stats\Sources\RunningPrograms`, authored in the item editor |
 | A program's KIND as a gate | **specified only**; nothing asks whether an icebreaker is running until the run simulator does |
-| Implants, drugs, injuries | **specified only** |
+| Implants | **built** — `items.implant_region`, `inventory_items.installed_at`, `App\Implants\ImplantFitter`, and the body map at `/implants` |
+| Injuries | **partly built** — `App\Stats\InjuryLedger` deepens one row per injury and `config/effects.php` defines two; nothing damages a character yet |
+| Drugs | **specified only** — the timed half of `character_modifiers` is built and nothing writes one |
 | The market's supply — `items.rarity`, `items.seed_quantity`, `market_stock`, `market_purchases` | **built**, with `market:seed` on an eight-hour schedule |
 | Archetype loadouts — `archetypes.starting_creds`, `archetype_skills`, `archetype_items` | **built**, granted at creation by `App\Archetypes\LoadoutGranter`, edited in the archetype editor |
 | `archetypes.playable` — which roles are on offer | **built**; only the Deck Jockey is offered, the other six are withdrawn rather than deleted |
@@ -63,7 +65,7 @@ down so the implementation has something to be checked against.
 | A floor of 1 on `synaptic_integrity_max` | **done**; `DerivedStatTest` pins both ceilings at 1 |
 | `characters.heat` — what the world knows about you | **specified only**; see CYBERSPACE.md |
 | A sixth deck measure — storage, to hold data and programs | **built** — `SlotKind::Storage`, `deck_modules.storage`, `deck_storage` |
-| Cyberspace — the grid, systems, intrusion | **specified only**; CYBERSPACE.md is the document |
+| Cyberspace — the grid, systems, intrusion | **partly built** — the world is walkable: jacking in, stepping, jumping, bookmarks, discovery and the map screen. No system can be entered and nothing is inside one. CYBERSPACE.md is the document and carries the detail |
 | Encryption skills — four, ranks 2/4/8/16, with books | **built** as rows; placeholder descriptions, nothing reads them |
 | `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
 | Routing, Advanced Routing — how long a chain may be | **built** as skill rows with prerequisites; nothing reads them |
@@ -414,7 +416,8 @@ thing they describe already lives — on the row if it has one, in
 | What | Where |
 | --- | --- |
 | Stat definitions: ids, tags, formula, clamps, rounding | `config/stats.php` |
-| Implant / drug / effect definitions | `config/implants.php`, `config/effects.php`, … |
+| Effect definitions with no row of their own — injuries, statuses | `config/effects.php` |
+| Modifiers belonging to a thing that HAS a row — an item, a program, a perk | a `modifiers` JSON column on that row |
 | **Item and skill definitions** | the `items` and `skills` tables — the documented exception, see below |
 | Market restock maths — rarity chances, the demand window and curve | `config/market.php` |
 | Player-visible words with no row of their own | `config/strings.php` |
@@ -845,9 +848,13 @@ stash renders the plain sum — nothing about it depends on who owns it.
 draw able to bring an over-committed deck into spec — the solution this section
 names below — without `DeckRequirement` knowing that skills exist.
 
-No modifier in the game moves a deck measure today, so the two paths render the
-same numbers. What is built is that the first one to do so will be picked up by
-every screen at once, rather than by whoever remembers.
+**Skills move deck measures now, so the two paths no longer agree.** Cyberdecks
+and Overclocking raise `deck_qflops`, Routing and Neural Interfacing raise
+`deck_bandwidth`, Advanced Routing cuts `deck_power_draw`, and Thermal
+Management cuts `deck_thermal_load` — so the deck a character is carrying reads
+differently from the same deck sitting in somebody else's stash, which is the
+whole point of resolving per character. Every screen picked that up at once,
+because there is one place the rule lives.
 
 The rules the above follows:
 
@@ -1256,6 +1263,47 @@ system has been given so far: the injury is data, the ceiling recomputes, the
 resource clamps down on the next save because it always did, and the breakdown
 tooltip can say *why* the number is what it is.
 
+**The injury is a NAMED definition, not an anonymous row.** Permanent damage to
+maximum SI is one definition key — *neural damage* — and permanent damage to
+maximum HP is its twin, so both read as an injury a character is carrying rather
+than as a number that went down. That matters twice over: the breakdown tooltip
+can name what took the points, and **a clinic has something to point at.** A
+treatment that had to find "whichever unexpiring negative modifiers happen to
+target this stat" would be a treatment defined by a search; one that removes
+*neural damage* is defined by what it heals.
+
+Both need a player-visible name in `config/strings.php`, and the HP twin still
+needs its own — *neural damage* is the wrong words for a broken body.
+
+**ONE ROW PER CHARACTER, AND EVERY SOURCE WRITES INTO IT.** Neural damage is a
+single accumulating modifier, not one row per injury. A character carrying -5
+who takes another flatline for -3 carries -8; the row is updated, not joined by
+a second. **The nerves do not care what caused the damage, only that there is
+more of it** — which is the whole justification, and it pays off immediately:
+a drug overdose, a botched implant and an ICE flatline all deepen the same
+injury without any of them needing to know the others exist. A clinic reduces
+that one number back towards zero.
+
+That makes neural damage a KIND of modifier rather than a one-off, and
+permanent HP damage is the other member of it. What the kind means:
+
+- **No source.** `source_type` and `source_id` are null, deliberately, and this
+  is the only shape where that is right. Every other modifier exists *because
+  of* something — an equipped implant, a running program, a drug — and dies
+  with it. This one outlives whatever caused it, and the cause is not part of
+  what it is.
+- **No expiry**, and no `stacks`. The magnitude lives in `data` as a running
+  total, which is exactly what that column was described for.
+- **At most one row per character per definition key.** Whether that is a
+  general constraint on the table or specific to accumulating definitions is a
+  question for whoever writes it.
+
+**This is why nothing needs to remove a modifier.** Therapy moves an amount
+towards zero, and nothing is cancelled or countered. **At zero the row is
+deleted** — a healed character is not carrying an injury of size nothing, and
+the history is not worth keeping: nothing is meant to know that somebody was
+hurt once and has been made whole.
+
 **Both consequences are decided.** `synaptic_integrity_max` gets a **floor of
 1**, exactly as `hitpoints_max` has one, so accumulated injury can never end a
 character by arithmetic — only damage reaches zero. `config/stats.php` still
@@ -1411,21 +1459,86 @@ A skill cannot be trained until its book has been owned and spent.
 
 Items carry no modifiers yet — this is the shape they will take.
 
-1. `config/items.php` — add the definition:
+**A THING WITH A ROW CARRIES ITS MODIFIERS ON THAT ROW**, as JSON, which is
+already true twice over: `archetype_perks.modifiers` and `programs.modifiers`.
+An item is a row, so an implant's modifiers belong in an `items.modifiers`
+column and NOT in a config file. (An earlier draft of this section said
+`config/items.php`, which contradicted the paragraph above it — that file does
+not exist and is not planned, and item definitions live in the database.)
+
+1. `items.modifiers` — the JSON, in the same shape the other two use:
 
    ```php
-   'kiroshi_optics' => [
-       'slot'      => 'ocular',
-       'stacking'  => 'unique',       // sum | highest | unique | unique_by_source
-       'duration'  => null,           // null = permanent while equipped
-       'modifiers' => [
-           ['op' => 'add', 'amount' => 4, 'target' => ['id' => 'perception']],
-           ['op' => 'percentage_of_base', 'amount' => 10, 'target' => ['all_of' => ['check', 'perception']]],
-       ],
-   ],
+   [
+       ['op' => 'add', 'amount' => 4, 'target' => ['id' => 'perception']],
+       ['op' => 'percentage_of_base', 'amount' => 10, 'target' => ['all_of' => ['check', 'perception']]],
+   ]
    ```
 
 2. `name`, and `flavor` if it has any, on the same row.
+
+**Config definitions are for modifiers whose cause has NO row** — an injury, a
+status effect, anything a character simply has. Those are keyed by
+`definition_key` and live in `config/effects.php`; a `character_modifiers` row
+points at one. `config/implants.php` is therefore not planned either: an
+implant is an item, and items are rows.
+
+### How big a skill grant should be
+
+**A skill grant is a NUDGE, not a swing: 2%, and 3% at the very top.** A skill
+is an edge; the deck, the implants and the software are where the big numbers
+belong. Several skills at 2% still add to something a player can feel, because
+percentages of one base sum and apply once — 8% arrived at by having trained
+four things, rather than by one lucky pick.
+
+Two shapes worth copying:
+
+- **Percentages for anything that grows.** Maximum Synaptic Integrity is a
+  pool that gets bigger, so a percentage stays an edge at 31 and at 200 alike;
+  a flat +5 is a third of a starting character and a rounding error to a
+  veteran.
+- **Flat +1 for an attribute**, because 2% of an attribute of 15 is 0.3 and the
+  resolver rounds once at the end — a percentage there would grant nothing at
+  all. One point is the smallest quantum an attribute has, and a grant that
+  cannot be felt is worse than no grant.
+
+**A SMALL PERCENTAGE OF A SMALL STAT IS NOTHING, AND ROUNDING IS WHY.** Several
+stats round with `floor`, including `hitpoints_max`. A percentage grant is
+therefore invisible unless it clears a whole point:
+
+| Base | Smallest percentage that does anything |
+| --- | --- |
+| 15 (an attribute) | 6.7% |
+| 30 (starting HP) | 3.4% |
+| 31 (starting SI) | 3.3% |
+| 100 | 1% |
+
+So +2% of maximum hit points is **+0.6, floored to nothing** for a starting
+character, and only starts paying at a base of 50. That is not an argument for
+bigger percentages — the 2% territory is right — it is an argument for
+**checking a grant against the base it will actually meet**, and for using a
+flat value where the base is small and stays small. Two grants have already
+been caught by this: an attribute one that would have granted zero, and the
+placeholder implants, which grant zero today and will start working when hit
+points grow.
+
+`round` rather than `floor` would halve the problem and is not the fix: a
+ceiling that rounds up is a ceiling that can be raised by a modifier worth
+nothing, which is a different and worse surprise.
+
+**A grant may cost something.** Overclocking buys compute with heat in one
+skill, which is the shape a skill tree wants: a choice rather than a reward,
+and a reason a player might decline to train it.
+
+**A grant has to move a number that exists.** Most skills in the game grant
+nothing, and that is correct rather than unfinished — Blades, IRONCLAD and
+Leadership govern subsystems that are not built, and inventing "+2 Intellect
+for Leadership" would be filler that says nothing about leadership and would
+have to be unpicked when the real thing arrives.
+
+`skills:validate` checks every authored grant against `Modifier::fromArray()`,
+because skills are content in the database and no test against a fresh one can
+see them.
 
 ### Add a skill
 
@@ -1618,11 +1731,14 @@ they acquire dependants.
    Focus cap to 110" needs a fifth op that modifies the clamp rather than the
    value. Not needed yet, but the clamp should not be buried somewhere that
    makes it impossible to add later.
-4. **How does a modifier remove a modifier?** Permanent damage to maximum HP
-   and SI is reversible, which means something has to cancel an unexpiring row
-   in `character_modifiers`. Deleting the row loses the history; a second row
-   with the opposite sign keeps it but makes the breakdown read strangely.
-   Neither is obviously right and the answer shapes what a clinic is.
+4. ~~**How does a modifier remove a modifier?**~~ **Resolved.** Permanent damage
+   to maximum HP and SI accumulates into ONE named row per character, so a
+   clinic reduces an amount rather than cancelling, countering or deleting
+   anything — see *Flatline is a permanent stored modifier*. **A row that
+   reaches zero is deleted**: nothing needs to know a character was hurt once
+   and has been made whole, so a zero row is a row that only clutters a
+   breakdown. The general mechanism — one modifier removing another — is
+   therefore not needed, because the case that raised it no longer wants it.
 5. **Does the certainty floor belong to detection or to every check?** Stated
    today as a 3% floor on intrusion detection. As a general principle it would
    also mean an egress can always fail and an attack can always miss, which is

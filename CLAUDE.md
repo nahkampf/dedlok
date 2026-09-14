@@ -693,18 +693,25 @@ says which, and two tables carry what a bare `items` row cannot.
   on its own output: `heat_level_warning` and `heat_level_limit`, nullable
   together (null = does not care), warning at or below limit. The same part is
   safe in a cold deck and dying in a hot one — **a deck's tolerance is its
-  weakest part, not the sum of its parts**, which is why `App\Decks\HeatExposure`
-  is separate from `DeckTotals`. Both thresholds are resolved stats.
+  weakest part, not the sum of its parts**, which is why
+  `App\Decks\ThermalExposure` is separate from `DeckTotals`. Both thresholds
+  are resolved stats.
 - **The two warnings are deliberately different volumes.** Over the warning
   level: an amber callout naming the parts. Past the limit: the kit's
   `.hud-alert`, the only place the deck screen spends the accent, because it is
   a certainty rather than a risk. `.slot--hot` pulses slowly on the board —
   slow because it is a condition, not an event — and `.slot--doomed` adds the
   crit fill.
-- **Destroying modules in an overheating deck is NOT built.** The algorithm is
-  undecided; `DeckTotals::isOverheating()` is the state it will read, and the
-  screen says the risk is specified rather than promising a mechanic that
-  cannot fire.
+- **Destroying modules in an overheating deck is NOT built**, and neither is
+  the accumulation that would cause it. `DeckTotals::netThermalLoad()` is a
+  RATE, in thermal units per turn, and nothing runs a deck over time — so no
+  total accumulates and there is nothing for a threshold to trip. What exists
+  is `ThermalExposure`'s static verdict on a loadout
+  (`ThermalVerdict::OverLimit`), which the deck screen shows as a warning about
+  what WOULD happen. The algorithm that destroys a module is undecided.
+  CYBERSPACE.md puts accumulation in two places and they are not the same
+  mechanic: inside a run, where it resets when the run ends, and under a
+  decryption, where it cooks the weakest module overnight and unattended.
 - **A module goes into a socket, and `deck_fittings` is that row.** Three
   references, because three things have to be named: `deck_id` (an inventory
   row — WHICH deck), `deck_slot_id` (a definition row — WHICH socket), and
@@ -768,13 +775,34 @@ says which, and two tables carry what a bare `items` row cannot.
   `deck_power_supply`, all tagged `deck` — and `DeckTotals::resolvedWith()`
   hands the summed base to `App\Stats\Resolver`. **The equipped deck resolves;
   every other deck shows bases**, because modifiers belong to a character and
-  only one deck is theirs at a time. `DeckController::totals()` is the one place
-  that rule lives. No modifier moves a deck measure yet, so both paths render
-  the same numbers today — what is built is that the first one to do so is
-  picked up everywhere at once.
+  only one deck is theirs at a time. `DeckTotals::forCharacter()` is the one
+  place that rule lives — it moved off `DeckController::totals()` (which now
+  delegates to it) the moment the jack-in gate became a second caller, because
+  a readiness check reading bases while the screen showed resolved numbers
+  would refuse a deck the player is being told is fine. Skills move deck measures
+  now — Overclocking and Cyberdecks raise `deck_qflops`, Advanced Routing
+  cuts `deck_power_draw`, Thermal Management cuts `deck_thermal_load` — so
+  the equipped deck genuinely reads differently from the same deck in the
+  stash, and every screen picked that up at once because there is one place
+  the rule lives.
 - **Readiness gates jacking in, and nothing else.** `DeckTotals::isReady()` is
-  the whole check; jacking in is not built and must call it when it is. Fitting
-  and equipping are never refused for it — you build a deck while carrying it.
+  the whole check, and `App\Cyberspace\Navigator::jackIn()` is what calls it.
+  Fitting and equipping are never refused for it — you build a deck while
+  carrying it. CYBERSPACE.md names one more caller, the start of every
+  intrusion run, which does not exist yet.
+- **The deck is locked while you are jacked in.** Fitting, taking out,
+  stripping, unequipping, and destroying the deck or anything fitted in it are
+  all refused while a character is in cyberspace — three writers
+  (`ModuleFitter`, `DeckEquipper`, the destroy path) asking ONE question,
+  `Character::isLockedInCyberspace()`, so the rule cannot drift into three.
+  Only the EQUIPPED deck and its modules: a spare deck in the stash is not in
+  play, other items are still destroyable, and training carries on.
+  **The lock guards what the PLAYER does and must never be asked by the game's
+  own consequences** — a Surge or a thermal burnout destroys fitted hardware
+  precisely while somebody is jacked in, and neither goes near these writers.
+  The other half is still missing: losing readiness while inside is meant to
+  dump the player out for 1 point of Synaptic Integrity, and nothing watches
+  for it. See TODO.md.
 - **Nothing a deck stores makes its owner better at anything yet.** No stat,
   check or modifier reads a deck's totals in the other direction; the
   `ModifierSource` over fitted hardware that MECHANICS names is still missing.
@@ -1073,6 +1101,73 @@ normal code. Read it before debugging anything that fails mysteriously:
   enabled before any HTTPS deployment.
 
 ## Environment and the database
+
+### Every table and every column carries a comment
+
+**This is a standing rule, not a one-off tidy-up: EVERY NEW TABLE AND EVERY NEW
+COLUMN GETS A COMMENT, in the migration that creates it.** No exceptions, and
+it is not something to come back to later.
+
+**The schema explains itself in MySQL, not only in the migrations.** All 32
+tables and all 257 columns carry a `COMMENT` saying what the thing MEANS rather
+than restating its type — which inventory `items.container` names, why
+`characters.grid_x` being NULL is ordinary, which numbers are bases rather than
+values, which ones nothing reads yet. A GUI, a `SHOW CREATE TABLE`, or somebody
+with a mysql prompt at three in the morning gets the same explanation the code
+has.
+
+How to write them:
+
+```php
+Schema::create('widgets', function (Blueprint $table): void {
+    $table->comment('What this table is for, in a sentence.');
+    $table->string('slug', 100)->comment('Stable machine name. Permanent: rows reference it.');
+});
+
+// Adding to an existing table works the same way.
+$table->unsignedInteger('charge')->comment('Uses left before it is spent.');
+```
+
+Both are **no-ops on SQLite**, so the test suite is unaffected — exactly like
+the CHECK constraints.
+
+**Two ways this fails silently, and `bookmarks` hit both on its first
+outing:**
+
+- **`->comment()` must come BEFORE `->constrained()`.** `constrained()` returns
+  a `ForeignKeyDefinition`, not the column, so a comment chained after it is
+  set on the key and never reaches the column:
+  `$table->foreignId('x')->comment('…')->constrained()->cascadeOnDelete();`
+- **`$table->timestamps()` returns void**, so `created_at` and `updated_at`
+  cannot be commented inline at all. Add them with a separate statement, or
+  accept that they will need a follow-up migration. `$table->id()` does accept
+  `->comment()`, but it is easy to forget in passing.
+
+Neither failure says anything: the migration runs, the table is right, and the
+comment is simply absent — and both of them have already happened, on the two
+tables added since the rule was written. **So check, do not remember:**
+
+```bash
+docker compose exec -u www-data web php artisan db:comments          # report
+docker compose exec -u www-data web php artisan db:comments --fill   # and fix the easy ones
+```
+
+`--fill` writes only the three bookkeeping comments — `id`, `created_at`,
+`updated_at` — because those mean the same thing on every table there has ever
+been. It deliberately refuses to invent anything else: a generated line saying
+"The owner id." would be worse than the silence, because it would look done.
+The command exits non-zero while anything is still missing, so it can sit in CI
+the day there is one.
+
+- **Say what it means, not what it is.** `varchar(20)` is already in the type.
+  Whether NULL is an ordinary state, whether a number is a base the resolver
+  reads, and whether anything reads it yet are the things worth a sentence.
+- **Do not edit `2026_09_04_190000_comment_every_column`.** It is history and
+  covered what existed when it ran. That migration also documents why column
+  comments have to restate a whole definition, and how it avoids the risk.
+- **Nothing enforces this.** A missing comment fails no test and no build, so
+  it is a habit rather than a guarantee — which is exactly why it is written
+  down here.
 
 **The application uses a remote MySQL server, not the local `db` container.** `.env`
 (gitignored) holds the real credentials and points `DB_HOST` at an external IP on port
