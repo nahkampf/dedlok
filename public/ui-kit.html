@@ -95,6 +95,7 @@
       <a class="rail__item" href="#hud">Game HUD</a>
       <a class="rail__item" href="#terminal">Terminal</a>
       <a class="rail__item" href="#inventory">Inventory</a>
+      <a class="rail__item" href="#gridmap">Grid map</a>
       <a class="rail__item" href="#screen">Full screen</a>
     </div>
   </nav>
@@ -1140,6 +1141,155 @@ public/assets/
             <div class="loadout__row"><span class="micro">Arms</span><div class="slot slot--empty loadout__slot"></div><span class="dim" style="font-size:var(--fs-sm)">Empty</span></div>
             <div class="loadout__row"><span class="micro">Skeleton</span><div class="slot slot--locked loadout__slot"></div><span class="dim" style="font-size:var(--fs-sm)">Requires body 8</span></div>
           </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="gridmap">
+    <div class="sec__hd"><h2 class="h1">Grid map</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">A player's memory of cyberspace, one cell per position and always centred on them. <strong>It scrolls</strong>, and that is what makes it work on a phone: the cell stays a tappable <code class="inl">--cell</code> and the window shows however many fit, rather than dividing a 320px screen by twenty-one and producing a 14px target. Because the map is always centred, the eight steppable cells are always in the same eight places — the map is a D-pad without one being drawn.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">The map</h3><p>Six states, and they are the whole vocabulary: where you are, a machine you remember, the portal, empty ground you have swept, ground you never looked at, and the void past the edge of the world. The eight cells around you are buttons; everything else is a reading. A corner tick marks a saved position — the same device that means <em>one you have</em> everywhere else in the kit.</p></div>
+      <template class="demo-src">
+        <div class="gridmap" style="--span:11;max-height:320px">
+          <div class="gridmap__grid">
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system cell--new">&#9670;</div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--portal">&#9673;</div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <button type="button" class="cell cell--step" data-step="-1,-1"></button>
+              <button type="button" class="cell cell--step" data-step="0,-1"></button>
+              <button type="button" class="cell cell--step" data-step="1,-1">&#9670;</button>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <button type="button" class="cell cell--step" data-step="-1,0"></button>
+              <div class="cell cell--you">&#9679;</div>
+              <button type="button" class="cell cell--step" data-step="1,0"></button>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <button type="button" class="cell cell--step" data-step="-1,1"></button>
+              <button type="button" class="cell cell--step" data-step="0,1"></button>
+              <button type="button" class="cell cell--step" data-step="1,1"></button>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system cell--marked">&#9670;</div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system">&#9670;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--empty"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Legend</h3><p>The swatches are real <code class="inl">.cell</code> elements wearing the modifiers they explain, so a legend cannot drift from the map beside it.</p></div>
+      <template class="demo-src">
+        <div class="gridmap__legend">
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--you"></span><span class="micro">You are here</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system"></span><span class="micro">Remembered</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--portal"></span><span class="micro">Portal</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--empty"></span><span class="micro">Empty space</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--unswept"></span><span class="micro">Unswept</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--new"></span><span class="micro">New here</span></span>
         </div>
       </template>
     </div>

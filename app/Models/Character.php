@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Cyberspace\Position;
 use App\Skills\TrainingRate;
 use App\Stats\Context;
 use App\Stats\Modifier;
@@ -134,6 +135,7 @@ class Character extends Model
             array_fill_keys(self::ATTRIBUTES, 'integer'),
             array_fill_keys(array_keys(self::RESOURCES), 'integer'),
             ['archetype' => 'integer', 'creds' => 'integer'],
+            ['grid_x' => 'integer', 'grid_y' => 'integer'],
         );
     }
 
@@ -259,6 +261,66 @@ class Character extends Model
     public function hasEquipped(InventoryItem $deck): bool
     {
         return $this->equipped_deck_id === $deck->getKey();
+    }
+
+    /**
+     * Is this character in cyberspace right now?
+     *
+     * Having a position IS being jacked in — there is no separate flag that
+     * could disagree with the coordinates, and the schema's CHECK is what
+     * keeps half a position from existing. Written only by
+     * App\Cyberspace\Navigator, and outside #[Fillable] for the reason
+     * `equipped_deck_id` is.
+     */
+    public function isJackedIn(): bool
+    {
+        return $this->grid_x !== null && $this->grid_y !== null;
+    }
+
+    /**
+     * Is this inventory row locked by the character being in cyberspace?
+     *
+     * THE DECK IS LOCKED WHILE YOU ARE JACKED IN. You cannot fit a module,
+     * take one out, strip it, unequip it, or destroy it or anything fitted in
+     * it — the machine is running and you are inside it. Three writers ask
+     * this one question, which is what keeps it one rule rather than three
+     * that can drift.
+     *
+     * Only the EQUIPPED deck and what is fitted into it. A spare deck in the
+     * stash is not in play and stays yours to tinker with, which is what
+     * CYBERSPACE.md means by everything else being unaffected.
+     *
+     * This guards what the PLAYER does. It must never be asked by the game's
+     * own consequences: a Surge or a thermal burnout destroys fitted hardware
+     * precisely while somebody is jacked in, and those go nowhere near these
+     * writers.
+     */
+    public function isLockedInCyberspace(InventoryItem $row): bool
+    {
+        if (! $this->isJackedIn() || $this->equipped_deck_id === null) {
+            return false;
+        }
+
+        if ($this->equipped_deck_id === $row->getKey()) {
+            return true;
+        }
+
+        return DeckFitting::query()
+            ->where('deck_id', $this->equipped_deck_id)
+            ->where('module_id', $row->getKey())
+            ->exists();
+    }
+
+    /**
+     * Where they are standing, or null if they are not in cyberspace at all.
+     *
+     * Null is the ordinary answer and every caller has to mean something by
+     * it, which is the point: "where are you" and "are you in" are one
+     * question here rather than two that can drift apart.
+     */
+    public function gridPosition(): ?Position
+    {
+        return $this->isJackedIn() ? new Position($this->grid_x, $this->grid_y) : null;
     }
 
     public function inventory(): HasMany

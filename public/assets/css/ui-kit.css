@@ -2457,6 +2457,136 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 }
 
 /* ============================================================================
+   THE GRID MAP
+   A player's memory of cyberspace: one cell per position, centred on them.
+
+   IT SCROLLS, AND THAT IS WHAT MAKES IT WORK ON A PHONE. The cell is a fixed,
+   tappable size and the window shows however many of them fit — rather than
+   dividing a 320px screen by twenty-one and producing a 14px target. Fewer
+   cells at once is a fair price; a control too small to hit is not.
+
+   The eight cells around the player are the step targets, and because the map
+   is always centred on them those eight are always in the same eight places.
+   The map is a D-pad without one being drawn.
+   ========================================================================== */
+.gridmap {
+  --cell: 30px;
+  --span: 21;
+  overflow: auto;
+  background: var(--bg-1);
+  border: var(--hair) solid var(--line-1);
+  padding: var(--s-3);
+  /* Tall enough to be a map and short enough to leave the panel below it on
+     screen. Capped against the viewport so a short window does not push the
+     controls off the bottom. */
+  max-height: min(60vh, 560px);
+  overscroll-behavior: contain;
+}
+
+.gridmap__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--span), var(--cell));
+  grid-auto-rows: var(--cell);
+  gap: 1px;
+  width: max-content;
+  margin: 0 auto;
+}
+
+.cell {
+  width: var(--cell);
+  height: var(--cell);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1;
+  color: var(--ink-2);
+  background: var(--bg-2);
+  border: var(--hair) solid var(--line-0);
+  border-radius: var(--r-1);
+  padding: 0;
+  position: relative;
+}
+
+/* Beyond the edge of the world. THE GRID DOES NOT WRAP, so this is a hole in
+   the drawing rather than a place — no border, no fill, nothing to read. */
+.cell--void { background: transparent; border-color: transparent; }
+
+/* Never looked at. Sunken, so unexplored ground reads as depth rather than as
+   an object. */
+.cell--unswept { background: var(--bg-1); border-color: transparent; }
+
+/* Swept, and nothing was there. Space, not a dead node. */
+.cell--empty { background: var(--bg-2); }
+
+/* Something was standing here when they last looked. */
+.cell--system { background: var(--bg-3); border-color: var(--line-1); color: var(--ink-1); }
+
+/* The portal. Informational rather than dangerous, so steel and not ember. */
+.cell--portal { color: var(--info); border-color: color-mix(in srgb, var(--info) 40%, transparent); background: var(--info-a); }
+
+/* You. Bone is the ink of the system and this is the one thing the eye has to
+   find first; the accent is deliberately NOT spent here, because a map is a
+   screen you stare at and an ember cell would burn a hole in it. */
+.cell--you { background: var(--ink-0); border-color: var(--ink-0); color: var(--ink-on-bone); }
+
+/* One of the eight. A brighter hairline and nothing else at rest — the ring
+   should be findable without being loud, because it is on screen constantly. */
+button.cell--step { cursor: pointer; border-color: var(--line-2); }
+button.cell--step:hover { background: var(--bg-4); border-color: var(--ink-2); }
+button.cell--step:active { transform: scale(.92); }
+
+/* Anything openable that is not a step. */
+button.cell { cursor: pointer; }
+button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px; z-index: 1; }
+
+/* Only just appeared. A BRIGHTNESS STEP, NOT A HUE — new is noteworthy rather
+   than live, critical or destructive, so it must not spend the ember accent;
+   and a freshly swept window can hold forty-odd new machines at once, which is
+   twenty times the accent's whole budget. Bone is the ink, so bone is what says
+   "look here".
+
+   The ring is drawn with an inset shadow rather than a border because the cell
+   already has one, and swapping a hairline's colour would make a new cell read
+   as a different KIND of cell rather than as the same cell wearing a mark. */
+.cell--new {
+  color: var(--ink-0);
+  border-color: var(--ink-1);
+  box-shadow: inset 0 0 0 1px var(--ink-1);
+}
+
+/* A saved position, marked with the kit's corner tick — the same device that
+   means "one you have" everywhere else, which is exactly what a waypoint is. */
+.cell--marked::after {
+  content: "";
+  position: absolute;
+  top: 0; right: 0;
+  width: 5px; height: 5px;
+  background: var(--warn);
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+
+.gridmap__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  align-items: center;
+}
+
+.gridmap__key { display: inline-flex; align-items: center; gap: var(--s-2); }
+
+/* The legend reuses .cell so a swatch cannot drift from the thing it explains.
+   Size only — the border and fill stay the modifier's business, or the shorthand
+   here would repaint the very colours the legend exists to show. */
+.gridmap__swatch { width: 14px; height: 14px; flex: none; }
+
+/* A real target for a thumb. The map scrolls, so this costs visible cells
+   rather than legibility — the right way round. */
+@media (pointer: coarse) {
+  .gridmap { --cell: 44px; }
+}
+
+/* ============================================================================
    THE BODY MAP
    A Vitruvian figure with the implant regions boxed off it — the same device
    as the deck board, applied to a person instead of a machine.

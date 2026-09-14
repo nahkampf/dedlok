@@ -29,7 +29,10 @@ return [
             'run' => 'Run',
             'stash' => 'Stash',
             'deck' => 'Deck',
+            // The grid. Never "jack in" here: the rail names a PLACE, and the
+            // act of entering it is a button on the screen it leads to.
             'implants' => 'Implants',
+            'cyberspace' => 'Cyberspace',
             'skills' => 'Skills',
             'contracts' => 'Contracts',
             'profile' => 'Profile',
@@ -176,6 +179,186 @@ return [
     */
     'images' => [
         'enlarge' => 'View :subject full size',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cyberspace
+    |--------------------------------------------------------------------------
+    |
+    | The grid, and what a player is told about a place on it. A system's NAME
+    | is not here: it is on the row, generated at instantiation from the word
+    | repository in config/cyberspace.php, because it is a string that belongs
+    | to a thing that has a row. What lives here is everything said ABOUT a
+    | system rather than by it.
+    |
+    | Jack in and jack out mean cyberspace and nothing else. Signing into the
+    | game is auth.login / auth.logout, and a player must never have to work out
+    | which of the two a button means.
+    |
+    */
+    'cyberspace' => [
+        'types' => [
+            'portal' => 'Portal',
+            'silo' => 'Data silo',
+            'compute' => 'Compute node',
+            'relay' => 'Network relay',
+        ],
+
+        /*
+        | The one authored system on the grid. Written onto its row when the
+        | world is instantiated, like every other name — this is the source of
+        | the words, not what anything reads at display time.
+        */
+        'portal' => [
+            'name' => 'Cyberspace Portal',
+            'flavor' => 'Where everyone arrives. Nothing here can be touched, and nothing here touches you.',
+        ],
+
+        'empty' => 'Empty space',
+        'unknown' => 'Unswept',
+
+        /*
+        | What a grade is CALLED, once something has earned the right to show
+        | it. A scan is the only thing that will; nothing on the map may say
+        | any of these, because the number is what the scan is for.
+        */
+        'grades' => [
+            1 => 'Unsecured',
+            2 => 'Domestic',
+            3 => 'Commercial',
+            4 => 'Hardened',
+            5 => 'Corporate',
+            6 => 'Restricted',
+            7 => 'Black',
+            8 => 'Sovereign',
+            9 => 'Apex',
+        ],
+
+        /*
+        | Why a player did not end up where they meant to.
+        |
+        | Read through App\Cyberspace\TravelRefusal, one per case. Every one
+        | of these is an ordinary thing to try with the screen in front of
+        | you, so they are worded as an answer rather than as an error — and
+        | none of them says "jack in" or "jack out" about signing into the
+        | game, which is auth.login / auth.logout and a different act.
+        */
+        'travel' => [
+            'no_deck' => 'You are carrying no deck. There is nothing to jack in with.',
+            'deck_not_ready' => 'That deck will not run. It is short of what it needs.',
+            'already_jacked_in' => 'You are already in.',
+            'not_jacked_in' => 'You are not in cyberspace.',
+            'not_a_step' => 'That is not one step from where you are standing.',
+            'off_the_grid' => 'There is nothing that way. The grid ends here.',
+            'not_an_address' => 'An address is eight hexadecimal characters. That is not one.',
+            'not_yours' => 'That bookmark is not yours.',
+            // Not a failure. The system that wore it has moved or burned, and
+            // an address is a fact about right now rather than a name.
+            'no_such_address' => 'Nothing answers to that address any more.',
+        ],
+
+        /*
+        | Saved ways back. Two kinds, and the words keep them apart: a waypoint
+        | is a PLACE and always works, a system bookmark is an ADDRESS and can
+        | stop answering. A player who cannot tell which they are looking at
+        | cannot tell whether "nothing there" is news.
+        */
+        /*
+        | The map screen. Jack in and jack out mean cyberspace here and only
+        | here; signing into the game is auth.login / auth.logout.
+        */
+        'map' => [
+            'title' => 'Cyberspace',
+            'lede' => 'What you have swept, and the last thing you saw in it.',
+            'nav' => 'Cyberspace',
+
+            'out' => 'You are not jacked in.',
+            'out_hint' => 'This is the grid as you last saw it. Jack in to walk it.',
+            'jack_in' => 'Jack in',
+            'jack_out' => 'Jack out',
+
+            'here' => 'You are here',
+            'position' => 'Position',
+            'swept' => 'Swept',
+            // No maximum is shown beside it on purpose: the size of the grid
+            // is not a thing the player is told, and a progress bar towards
+            // four million would be a promise that exploration ends.
+            'swept_count' => ':count positions',
+
+            'address' => 'Address',
+            'jump' => 'Jump',
+            'jump_hint' => 'Eight hexadecimal characters. Anyone can give you one.',
+
+            'empty' => 'Empty space',
+            'unswept' => 'Unswept',
+            // Not "unknown" or "undiscovered": the point is that it was not
+            // here last time, which is a statement about the world changing
+            // rather than about the player's ignorance.
+            'new' => 'New here',
+            'void' => 'Beyond the grid',
+            'step' => 'Step here',
+            'legend' => 'Legend',
+            'keys' => 'Arrow keys move; the numpad moves in all eight directions.',
+        ],
+
+        'bookmarks' => [
+            'heading' => 'Bookmarks',
+            'none' => 'Nothing saved yet. Mark a position you want to come back to.',
+            'mark_here' => 'Mark this position',
+            'mark_address' => 'Save an address',
+            'label' => 'Name',
+            'label_hint' => 'Optional.',
+            'recall' => 'Go',
+            'forget' => 'Forget',
+            'dead' => 'Nothing answers to it',
+            'save' => 'Save',
+
+            'kind' => [
+                'waypoint' => 'Waypoint',
+                'system' => 'System',
+            ],
+
+            'refused' => [
+                'already_saved' => 'You have already saved that one.',
+                'off_the_grid' => 'There is nothing there. The grid ends before it.',
+                // The gate that paces exploration, said as a fact about the
+                // player rather than as a rule they broke.
+                'never_swept' => 'You have not been there. Walk it before you mark it.',
+                'not_an_address' => 'An address is eight hexadecimal characters. That is not one.',
+                'not_yours' => 'That bookmark is not yours.',
+            ],
+        ],
+
+        /*
+        | What the screen says after something happened.
+        |
+        | Walking says nothing at all unless it revealed something: a banner on
+        | every step would be noise the moment walking becomes the thing you do
+        | most. The two exceptions are the two things a player cannot see for
+        | themselves - that the ground was new, and that something they
+        | remembered has gone.
+        */
+        'status' => [
+            'jacked_in' => 'You are in. The portal hums around you.',
+            'jacked_out' => 'You are out.',
+            'saved' => 'Saved.',
+            'forgotten' => 'Forgotten.',
+
+            'swept' => [
+                'zero' => '',
+                'one' => ':count new position swept.',
+                'many' => ':count new positions swept.',
+            ],
+
+            // The world having moved on while they were away, which is the
+            // whole of why the map is a memory rather than a feed.
+            'gone' => [
+                'zero' => '',
+                'one' => 'Something you remembered is no longer there.',
+                'many' => ':count things you remembered are no longer there.',
+            ],
+        ],
     ],
 
     /*
@@ -684,6 +867,9 @@ return [
         'fitting' => [
             'fit' => 'Fit',
             'unfit' => 'Take out',
+            // The deck lock. Says what to do about it rather than only that
+            // it is refused, because there is exactly one thing to do.
+            'jacked_in' => 'You are jacked in on that deck. Jack out before taking it apart.',
             'empty_socket' => 'Empty',
             'choose' => 'What goes in the :socket socket',
             'nothing_fits' => 'You are carrying nothing that fits this socket.',

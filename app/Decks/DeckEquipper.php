@@ -41,6 +41,13 @@ final class DeckEquipper
             return FittingResult::refused(FittingRefusal::NotOwned);
         }
 
+        // Equipping SWAPS, so doing it while jacked in would take the deck the
+        // character is standing on out from under them. Refused whichever deck
+        // is being equipped, including the one already live.
+        if ($character->isJackedIn()) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
+        }
+
         if (! ($deck->item?->isCyberdeck() ?? false)) {
             return FittingResult::refused(FittingRefusal::NotADeck);
         }
@@ -64,6 +71,11 @@ final class DeckEquipper
 
         if ($deck === null) {
             return FittingResult::refused(FittingRefusal::NotEquipped);
+        }
+
+        // Putting the deck away while standing inside it. Jack out first.
+        if ($character->isJackedIn()) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
         }
 
         return DB::transaction(function () use ($character, $deck, $strip, $fitter): FittingResult {

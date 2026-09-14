@@ -246,23 +246,13 @@ class DeckController extends Controller
     /**
      * What this deck adds up to, resolved if it is the one being carried.
      *
-     * MECHANICS: the EQUIPPED deck resolves, because modifiers belong to a
-     * character and only one deck is theirs at a time; every other deck shows
-     * its bases, since nothing about a deck in the stash depends on who owns
-     * it. The sum is the resolver's input either way — there is no second
-     * implementation of it for the unequipped case.
-     *
-     * Readiness therefore reads the resolved numbers too, which is what makes
-     * a skill that cuts draw able to bring an over-committed deck into spec.
-     * MECHANICS names that as how over-commitment is meant to be solved.
+     * The rule itself lives on DeckTotals now, because the jack-in gate is a
+     * second caller and readiness has to agree with what the screen shows.
+     * This is the name the view already knew it by.
      */
     private function totals(Character $character, InventoryItem $entry, Resolver $resolver): DeckTotals
     {
-        $totals = DeckTotals::of($entry->fittings);
-
-        return $character->hasEquipped($entry)
-            ? $totals->resolvedWith($character->modifiers(), $resolver)
-            : $totals;
+        return DeckTotals::forCharacter($character, $entry, $resolver);
     }
 
     private function character(Request $request): Character

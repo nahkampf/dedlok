@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Decks\FittingRefusal;
 use App\Decks\ModuleFitter;
 use App\Inventory\ItemPlacer;
 use App\Inventory\SkillInjector;
@@ -117,6 +118,19 @@ class InventoryController extends Controller
         $character = $this->character($request);
 
         abort_unless($entry->character_id === $character->id, 404);
+
+        /*
+         * The deck lock, third door. Destroying the deck you are standing
+         * inside — or a module fitted into it — would leave a character in
+         * cyberspace on a machine that no longer exists.
+         *
+         * Refused here rather than in a writer class because destroying has no
+         * writer class: there is one rule and this controller already checks
+         * it, the same reasoning the ownership check above follows.
+         */
+        if ($character->isLockedInCyberspace($entry)) {
+            return back()->with('error', FittingRefusal::JackedIn->message());
+        }
 
         $name = $entry->item?->displayName() ?? '';
 

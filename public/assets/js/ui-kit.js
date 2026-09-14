@@ -473,5 +473,56 @@
   hotMeters();
   document.addEventListener("DOMContentLoaded", hotMeters);
 
-  window.UI = { toast, meter, log, type, esc, captcha };
+  /* --- The grid map ------------------------------------------------------
+     Two jobs, and both exist because the map is always centred on the player.
+
+     1. SCROLL THEM INTO THE MIDDLE. The map is wider and taller than any
+        phone, so without this it opens on its top-left corner and the player
+        is somewhere off screen. Done without smooth scrolling, because this is
+        the starting position rather than a movement.
+
+     2. KEYS. Arrows move orthogonally and the numpad moves in all eight, the
+        way every roguelike has done it — a diagonal is one step here, so four
+        keys would only reach half the moves. Each steppable cell carries its
+        own offset in data-step, so a key maps to a cell rather than to a
+        direction the browser would have to resolve against a position only the
+        server knows.                                                        */
+  const STEP_KEYS = {
+    ArrowUp: "0,-1", ArrowDown: "0,1", ArrowLeft: "-1,0", ArrowRight: "1,0",
+    Numpad8: "0,-1", Numpad2: "0,1", Numpad4: "-1,0", Numpad6: "1,0",
+    Numpad7: "-1,-1", Numpad9: "1,-1", Numpad1: "-1,1", Numpad3: "1,1",
+  };
+
+  function centreMap() {
+    document.querySelectorAll(".gridmap").forEach((map) => {
+      const you = map.querySelector(".cell--you");
+      if (!you) return;
+      map.scrollLeft = you.offsetLeft - map.clientWidth / 2 + you.offsetWidth / 2;
+      map.scrollTop = you.offsetTop - map.clientHeight / 2 + you.offsetHeight / 2;
+    });
+  }
+
+  centreMap();
+  document.addEventListener("DOMContentLoaded", centreMap);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+
+    /* Never while somebody is typing. The map has an address field on it, and
+       an arrow key inside that one must move the caret rather than the
+       player. */
+    const el = document.activeElement;
+    if (el && (el.matches("input, textarea, select") || el.isContentEditable)) return;
+
+    const offset = STEP_KEYS[e.code];
+    if (!offset) return;
+
+    const cell = document.querySelector('.cell--step[data-step="' + offset + '"]');
+    if (!cell) return;
+
+    e.preventDefault();
+    cell.click();
+  });
+
+  window.UI = { toast, meter, log, type, esc, captcha, centreMap };
 })();

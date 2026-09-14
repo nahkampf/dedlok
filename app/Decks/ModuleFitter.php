@@ -45,6 +45,11 @@ final class ModuleFitter
             return FittingResult::refused(FittingRefusal::NotOwned);
         }
 
+        // The deck is running and its owner is inside it.
+        if ($character->isLockedInCyberspace($deck)) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
+        }
+
         if (! ($deck->item?->isCyberdeck() ?? false)) {
             return FittingResult::refused(FittingRefusal::NotADeck);
         }
@@ -131,6 +136,12 @@ final class ModuleFitter
             return FittingResult::refused(FittingRefusal::NotEquipped);
         }
 
+        // This one always targets the equipped deck, so being jacked in
+        // always refuses it.
+        if ($character->isLockedInCyberspace($deck)) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
+        }
+
         $sockets = $deck->item->deckSlots->filter(
             fn (DeckSlot $slot): bool => $slot->accepts($module->item)
         );
@@ -168,6 +179,10 @@ final class ModuleFitter
             return FittingResult::refused(FittingRefusal::NotOwned);
         }
 
+        if ($character->isLockedInCyberspace($deck)) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
+        }
+
         return DB::transaction(function () use ($character, $deck, $slot): FittingResult {
             $this->stopProcesses($character, $deck);
 
@@ -199,6 +214,10 @@ final class ModuleFitter
     {
         if ($deck->character_id !== $character->id) {
             return FittingResult::refused(FittingRefusal::NotOwned);
+        }
+
+        if ($character->isLockedInCyberspace($deck)) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
         }
 
         if (! ($deck->item?->isCyberdeck() ?? false)) {

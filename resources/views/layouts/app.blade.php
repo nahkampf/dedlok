@@ -57,6 +57,16 @@
                 <span class="dock__label">{{ Text::get('ui.nav.implants') }}</span>
             </a>
 
+            {{-- Cyberspace. Always here, jacked in or not: the way IN is on the
+                 map, so a rail item that appeared only once you were already
+                 inside would be one nobody could find. Same rule as the deck
+                 link. --}}
+            <a class="dock__item" href="{{ route('cyberspace.index') }}"
+               @if (request()->routeIs('cyberspace.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#9638;</span>
+                <span class="dock__label">{{ Text::get('ui.nav.cyberspace') }}</span>
+            </a>
+
             <a class="dock__item" href="{{ route('skills.index') }}"
                @if (request()->routeIs('skills.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#10022;</span>

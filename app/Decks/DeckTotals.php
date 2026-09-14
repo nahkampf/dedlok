@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Decks;
 
+use App\Models\Character;
 use App\Models\DeckFitting;
+use App\Models\InventoryItem;
 use App\Stats\Modifier;
 use App\Stats\Resolver;
 use Illuminate\Support\Collection;
@@ -73,6 +75,30 @@ final class DeckTotals
         public readonly int $storage,
         private readonly array $counts,
     ) {}
+
+    /**
+     * A deck's totals as they apply to the character holding it.
+     *
+     * THE ONE PLACE that rule lives. The equipped deck resolves and every
+     * other deck shows its bases, and both the deck screen and the jack-in
+     * gate have to agree about which — a readiness check that read bases
+     * while the screen showed resolved numbers would refuse a deck the player
+     * is looking at being told is fine.
+     *
+     * It is here rather than on the screen that first needed it because there
+     * are two callers now. Readiness therefore reads the resolved numbers,
+     * which is what makes a skill that cuts draw able to bring an
+     * over-committed deck into spec — MECHANICS names that as how
+     * over-commitment is meant to be solved.
+     */
+    public static function forCharacter(Character $character, InventoryItem $deck, Resolver $resolver): self
+    {
+        $totals = self::of($deck->fittings);
+
+        return $character->hasEquipped($deck)
+            ? $totals->resolvedWith($character->modifiers(), $resolver)
+            : $totals;
+    }
 
     /** @param  Collection<int, DeckFitting>  $fittings */
     public static function of(Collection $fittings): self
