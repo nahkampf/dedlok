@@ -2,6 +2,54 @@
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-09-15
+Lots of cyberspace additions.
+
+### Added
+
+- feat(cyberspace): a machine is named for what it is and who runs it (cf85e3a)
+- feat(db): the schema explains itself, and a command that says where it does not (71c9498)
+- feat(cyberspace): the grid, the machines standing on it, and the deck lock (4e143a2)
+- feat(stats): timed modifiers, skill effects, and implants in the body (47aa757)
+- feat(images): pictures of things, found by convention (9f941db)
+- feat(ui-kit): a warn variant, the sheen, the dials and the entity image (df85f3a)
+- feat(programs): software that runs on a deck, and the storage it sits in (dcef5c3)
+- feat(stats): conditions, the dependency graph and the character sheet (abb47ad)
+
+### Changed
+
+- docs: the world's corps, and what the last two features changed (08f3f9a)
+- docs(mechanics): what cyberspace asks of the stat system (128eb47)
+- refactor(decks): heat becomes thermal load (eef8e84)
+- docs(cyberspace): write down the grid, the systems and the run (c9959f6)
+
+### Fixed
+
+- fix(home): the landing page advertises only what is listed (fcd16d9)
+
+### Migrations
+
+- `2026_09_04_100000_rename_heat_to_thermal_load`
+- `2026_09_04_120000_create_programs_and_processes`
+- `2026_09_04_140000_add_storage_to_cyberdecks`
+- `2026_09_04_160000_create_cyberspace_grid`
+- `2026_09_04_170000_create_cyberspace_discovery`
+- `2026_09_04_180000_add_cyberspace_position_to_characters`
+- `2026_09_04_190000_comment_every_column`
+- `2026_09_05_100000_create_bookmarks`
+- `2026_09_05_110000_comment_the_bookmarks_bookkeeping_columns`
+- `2026_09_05_120000_create_corps_and_give_systems_an_owner`
+- `2026_09_05_130000_add_grade_to_systems`
+- `2026_09_05_140000_create_character_modifiers`
+- `2026_09_05_150000_add_modifiers_to_skills`
+- `2026_09_05_160000_grant_the_first_skill_effects`
+- `2026_09_05_170000_scale_skill_grants_down`
+- `2026_09_05_180000_create_implants`
+- `2026_09_05_190000_add_the_dummy_implants`
+- `2026_09_05_200000_remember_when_a_system_was_first_seen`
+- `2026_09_14_100000_name_systems_for_their_owners`
+
+
 ## [0.8.1] — 2026-09-04
 
 ### Added
@@ -197,7 +245,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/nahkampf/dedlok/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/nahkampf/dedlok/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/nahkampf/dedlok/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/nahkampf/dedlok/compare/v0.7.0...v0.7.1
