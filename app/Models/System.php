@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Cyberspace\Position;
+use App\Cyberspace\SystemNamer;
 use App\Cyberspace\SystemType;
 use Database\Factories\SystemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * size, and Grid is the one place that knows which — see CYBERSPACE.md, *How
  * the grid is stored*.
  */
-#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'owner_id'])]
+#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id'])]
 class System extends Model
 {
     /** @use HasFactory<SystemFactory> */
@@ -37,8 +38,22 @@ class System extends Model
             'x' => 'integer',
             'y' => 'integer',
             'grade' => 'integer',
+            'designation' => 'integer',
             'type' => SystemType::class,
         ];
+    }
+
+    /**
+     * What it calls itself.
+     *
+     * Composed from the type, the owner and the designation unless the row
+     * carries an authored name — see App\Cyberspace\SystemNamer, which is the
+     * one place that decision is made. Reads the owner relation, so eager-load
+     * it when naming more than one machine at a time.
+     */
+    public function displayName(): string
+    {
+        return SystemNamer::fromConfig()->for($this);
     }
 
     /** Where it is standing right now. */

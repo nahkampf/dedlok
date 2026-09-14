@@ -112,7 +112,12 @@ final class Sweep
                         'x' => $system->x,
                         'y' => $system->y,
                         'address' => $system->address,
-                        'name' => $system->name,
+                        // The name as it READS, not the column: a generated
+                        // system has no name of its own, and what the player
+                        // saw was the sentence its type and its owner spell.
+                        // Composed once here, so a memory is a memory even
+                        // after the corp is renamed.
+                        'name' => $system->displayName(),
                         'type' => $system->type->value,
                         // The owner's NAME, not its id: a contact is a snapshot
                         // of what was seen, and a pointer would make the memory

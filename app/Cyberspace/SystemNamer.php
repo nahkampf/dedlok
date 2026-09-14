@@ -4,87 +4,126 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Models\System;
+use App\Support\Text;
 use Closure;
 use Illuminate\Support\Facades\Config;
 
 /**
- * Names for machines, out of a bag of words.
+ * What a machine calls itself: its type, its owner, and a serial.
  *
- * `A3F91C08` is not something a player will ever say out loud, so every system
- * carries a name as well as an address. Most are generated: a prefix and a noun
- * drawn per type, and a numeric designation on some of them, which is the
- * cheapest way to get four thousand names out of a hundred words.
+ * *Data silo - Anansi Data Weaving 041*. A name that says what the thing is
+ * and who answers for it, because those are the two questions a player has
+ * about a node they have just swept — and the old word-bag names, *Fast
+ * Forge*, *Cold Vault 041*, answered neither. They read well and identified
+ * nothing.
  *
- * The name is written ONTO THE ROW at instantiation and read from there
- * afterwards. Nothing looks a name up from config at display time — a system
- * whose name changed when somebody edited a word list would be a system nobody
- * could bookmark.
+ * THE NAME IS COMPOSED, NOT STORED, and that is the whole design. Both halves
+ * of it are already columns on the row: `type` and `owner_id`. A stored
+ * sentence spelling them out would be the same two facts written a second
+ * time, free to drift the first time a corp is renamed — which is exactly the
+ * drift `system_contacts` exists to have on purpose and a live row must never
+ * have by accident.
  *
- * Event, mission and player-owned systems will carry authored names instead.
- * They do not come through here; they arrive with a name already.
+ * What IS stored is the designation, because it is nowhere else: a serial per
+ * machine, rolled once at instantiation. Every generated system carries one
+ * now, where the word bag rolled one on 60% of names. It has to: 121 corps by
+ * three types is 363 combinations against nearly three thousand machines, so
+ * an unnumbered name identifies about eight systems and a numbered one
+ * identifies about one.
+ *
+ * AN AUTHORED NAME WINS. `systems.name` is no longer where generated names
+ * live; it is the override, NULL on nearly every row, the same shape as
+ * `items.board_layout`. The portal carries one, and event, mission and
+ * player-owned systems will arrive carrying theirs — those never come through
+ * the composition below.
+ *
+ * The punctuation is in `config/strings.php`, like every other player-visible
+ * string. A name is read out of two columns and one config line, and nothing
+ * here is a word list: the words are the corps' own names, and they live in
+ * the `corps` table.
  */
 final class SystemNamer
 {
-    /**
-     * @param  array<string, array{prefix: list<string>, noun: list<string>}>  $words
-     * @param  Closure(int, int): int  $roll  Inclusive both ends, like random_int.
-     */
+    /** @param  Closure(int, int): int  $roll  Inclusive both ends, like random_int. */
     public function __construct(
-        private readonly array $words,
-        private readonly int $designationChance,
+        private readonly int $minDesignation,
+        private readonly int $maxDesignation,
         private readonly Closure $roll,
     ) {}
 
     /** @param  ?Closure(int, int): int  $roll */
     public static function fromConfig(?Closure $roll = null): self
     {
-        /** @var array<string, array{prefix: list<string>, noun: list<string>}> $words */
-        $words = Config::get('cyberspace.names', []);
-
         return new self(
-            $words,
-            (int) Config::get('cyberspace.designation_chance', 60),
+            (int) Config::get('cyberspace.designation.min', 1),
+            (int) Config::get('cyberspace.designation.max', 999),
             $roll ?? static fn (int $min, int $max): int => random_int($min, $max),
         );
     }
 
     /**
-     * A name for a system of this type.
+     * A serial for a machine the world is about to instantiate.
      *
-     * A type with no word list gets its own label and a designation rather than
-     * an exception: a missing list is a content gap, and a system called
-     * "Relay 041" is a worse name than the ones beside it but still a name.
-     * Falling over here would take the whole world generation down.
+     * Rolled rather than counted, because a counter would tell a player how
+     * many machines a corp runs and that is not a thing they are supposed to
+     * be able to read off a name.
      */
-    public function for(SystemType $type): string
+    public function designate(): int
     {
-        $words = $this->words[$type->value] ?? null;
+        return ($this->roll)($this->minDesignation, $this->maxDesignation);
+    }
 
-        if ($words === null || $words['prefix'] === [] || $words['noun'] === []) {
-            return $type->label().' '.$this->designation();
+    /**
+     * The name a player reads for this machine.
+     *
+     * An authored name is returned as it is. Anything else is composed, and
+     * the owner is read through the relation — eager-load it wherever this is
+     * called for more than one system at a time.
+     */
+    public function for(System $system): string
+    {
+        if ($system->name !== null && $system->name !== '') {
+            return $system->name;
         }
 
-        $name = $this->pick($words['prefix']).' '.$this->pick($words['noun']);
+        return $this->compose($system->type, $system->owner?->name, $system->designation);
+    }
 
-        if (($this->roll)(1, 100) <= $this->designationChance) {
-            $name .= ' '.$this->designation();
+    /**
+     * The parts, spelled out.
+     *
+     * Pure, and public because the contact rows on a player's map hold the
+     * same three facts and must be able to say the same sentence about them
+     * without a `systems` row to look at.
+     *
+     * A missing owner is a system nobody runs — the portal, if it ever lost
+     * its authored name — and it falls back to the bare type rather than to
+     * an empty slot, for the reason the old namer fell back to one: a worse
+     * name is still a name, and failing here would take the whole map down.
+     */
+    public function compose(SystemType $type, ?string $owner, ?int $designation): string
+    {
+        $name = $owner === null || $owner === ''
+            ? $type->label()
+            : Text::get('cyberspace.name.owned', ['type' => $type->label(), 'owner' => $owner]);
+
+        if ($designation === null) {
+            return $name;
         }
 
-        return $name;
+        return Text::get('cyberspace.name.designated', [
+            'name' => $name,
+            'designation' => self::designation($designation),
+        ]);
     }
 
     /**
      * Three digits, zero-padded. Padded because 041 reads as a serial number
      * and 41 reads as a count.
      */
-    private function designation(): string
+    public static function designation(int $designation): string
     {
-        return str_pad((string) ($this->roll)(1, 999), 3, '0', STR_PAD_LEFT);
-    }
-
-    /** @param  list<string>  $words */
-    private function pick(array $words): string
-    {
-        return $words[($this->roll)(0, count($words) - 1)];
+        return str_pad((string) $designation, 3, '0', STR_PAD_LEFT);
     }
 }

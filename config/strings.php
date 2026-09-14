@@ -186,11 +186,12 @@ return [
     | Cyberspace
     |--------------------------------------------------------------------------
     |
-    | The grid, and what a player is told about a place on it. A system's NAME
-    | is not here: it is on the row, generated at instantiation from the word
-    | repository in config/cyberspace.php, because it is a string that belongs
-    | to a thing that has a row. What lives here is everything said ABOUT a
-    | system rather than by it.
+    | The grid, and what a player is told about a place on it — including the
+    | SHAPE of a machine's name, though none of its words. A generated system
+    | is named for its type and its owner: the type's word is here, the owner's
+    | is a row in `corps`, and the two patterns below are all that is left to
+    | say. An AUTHORED name — the portal's, and one day an event system's —
+    | still lives on the row it belongs to.
     |
     | Jack in and jack out mean cyberspace and nothing else. Signing into the
     | game is auth.login / auth.logout, and a player must never have to work out
@@ -206,9 +207,25 @@ return [
         ],
 
         /*
-        | The one authored system on the grid. Written onto its row when the
-        | world is instantiated, like every other name — this is the source of
-        | the words, not what anything reads at display time.
+        | How a machine's name is spelled: "Data silo - Anansi Data Weaving
+        | 041". The type, who runs it, and the serial that tells it from the
+        | other machines that corp runs.
+        |
+        | TWO PATTERNS RATHER THAN ONE, because a system with no owner has to
+        | read as a name and not as a sentence with a hole in it. The serial is
+        | separate again for the same reason: an authored name may carry one
+        | without being composed at all.
+        */
+        'name' => [
+            'owned' => ':type - :owner',
+            'designated' => ':name :designation',
+        ],
+
+        /*
+        | The one authored system on the grid, and the only one whose name is
+        | written onto its row: everything else is composed from the pair
+        | above. This is the source of the words, not what anything reads at
+        | display time.
         */
         'portal' => [
             'name' => 'Cyberspace Portal',

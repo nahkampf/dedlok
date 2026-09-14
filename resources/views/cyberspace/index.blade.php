@@ -18,13 +18,13 @@
                         <strong>{{ $character->gridPosition() }}</strong>
                     </span>
                     @if ($here)
+                        {{-- The name says what it is and who answers for it —
+                             a trace one day costs you standing with them — so
+                             the owner is not a second element beside it. What
+                             is drawn is the memory's name, not the machine's:
+                             the two can differ, and the difference is the
+                             point of a contact. --}}
                         <span class="tag">{{ $here->name }}</span>
-                        @if ($here->owner)
-                            {{-- Who answers for the machine, as it was when you
-                                 looked. A trace one day costs you standing with
-                                 them, so the name is worth reading now. --}}
-                            <span class="micro" style="color:var(--ink-2)">{{ $here->owner }}</span>
-                        @endif
                         <span class="micro" style="font-family:var(--font-mono)">{{ $here->address }}</span>
                     @endif
                 @else
@@ -76,9 +76,7 @@
                                 $title = Text::get('cyberspace.map.new').' — '.$title;
                             }
                             if ($cell->contact) {
-                                $title = $cell->contact->name
-                                    .($cell->contact->owner ? ' · '.$cell->contact->owner : '')
-                                    .' — '.$title;
+                                $title = $cell->contact->name.' — '.$title;
                             } elseif (! $cell->swept && $cell->onGrid) {
                                 $title = Text::get('cyberspace.map.unswept').' — '.$title;
                             }

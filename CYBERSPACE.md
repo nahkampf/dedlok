@@ -20,7 +20,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | The grid itself — positions, chunks, the portal, the edges | **built**; `App\Cyberspace\Grid` is the one place that knows how it is stored |
 | Addresses | **built**; generated, validated and normalised, and unique on the table |
 | The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
-| System names | **built**; drawn from a word repository per type and written onto the row |
+| System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
 | Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
 | Discovery — contact | **built** as rows keyed by position, with no foreign key to `systems` on purpose |
 | Sweeping — the act that writes both | **built**; `App\Cyberspace\Sweep`, clipped to the grid |
@@ -446,12 +446,36 @@ why the chain is chosen per run rather than left standing.
 ### Names
 
 Systems have names as well as addresses, because `A3F91C08` is not something a
-player will ever say out loud. Most are **generated from a word repository**,
-combined by owner, type and grade, so a grade-1 nobody's box and a grade-9
-corporate vault do not read alike. Event, mission and quest systems carry
-authored names. Player-owned nodes are **named by their players**, which makes
-them the first player-authored text other players will read, with everything
-that implies for escaping and for policy.
+player will ever say out loud. A generated name is **what it is and who runs
+it**, with a serial to tell it from its siblings: *Data silo - Anansi Data
+Weaving 041*. Those are the two questions a player has about a machine they
+have just swept, and the word-bag names that came first — *Fast Forge*, *Cold
+Vault 041* — answered neither.
+
+**The name is composed, not stored.** Both halves are already columns: `type`
+has always been one and `owner_id` arrived with the corps. Storing the sentence
+they spell would be storing the same facts twice, free to drift the first time
+a corp is renamed. What is stored is `systems.designation`, the one part of the
+name that is nowhere else, and `systems.name` becomes the **override**: NULL on
+nearly every row, and carrying an authored name where there is one. Renaming a
+corporation therefore renames every machine it runs, which is correct — and
+renames nothing a player *remembers*, because a contact snapshots the sentence
+as it read at the moment of looking.
+
+**Every generated machine carries a serial.** 121 corps by three types is 363
+combinations against nearly three thousand machines: unnumbered, a name would
+identify about eight systems at once. It is rolled rather than counted, so
+nobody can read how many machines a corp runs off the side of one of them.
+
+**Grade is deliberately not part of the name**, though an earlier draft of this
+section had it there. A grade is the thing a scan exists to discover — see
+*Grades* — and a name that whispered it would hand that away from the map for
+free.
+
+Event, mission and quest systems carry authored names. Player-owned nodes are
+**named by their players**, which makes them the first player-authored text
+other players will read, with everything that implies for escaping and for
+policy.
 
 ---
 

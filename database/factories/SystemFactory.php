@@ -32,7 +32,12 @@ class SystemFactory extends Factory
             // says so, and a rolled grade is a test that reads differently
             // every run.
             'grade' => Grade::MIN,
-            'name' => fake()->words(2, true),
+            // NO NAME, like anything the world generates: the name is composed
+            // from the type and the owner, and a factory that invented one
+            // would be making systems no seeder could produce. ->named() is how
+            // a test asks for an authored one.
+            'name' => null,
+            'designation' => fake()->numberBetween(1, 999),
         ];
     }
 
@@ -53,8 +58,15 @@ class SystemFactory extends Factory
         return $this->state([
             'type' => SystemType::Portal,
             'name' => 'Cyberspace Portal',
+            'designation' => null,
             'owner_id' => null,
         ]);
+    }
+
+    /** Carrying a name of its own, the way an event or mission system will. */
+    public function named(string $name): static
+    {
+        return $this->state(['name' => $name]);
     }
 
     public function grade(int $grade): static

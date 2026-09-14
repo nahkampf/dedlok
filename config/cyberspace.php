@@ -126,7 +126,7 @@ return [
     | a survivable run length, which is an open question in CYBERSPACE.md. They
     | are a starting point, not a balance pass.
     |
-    | Percentages, 0-100, like `occupancy` and `designation_chance` above.
+    | Percentages, 0-100, like `occupancy` above.
     */
     'freeze' => [
 
@@ -184,41 +184,18 @@ return [
     ],
 
     /*
-    | The word repository, per type of system.
+    | The serial on a generated name — the 041 of "Data silo - Anansi 041".
     |
-    | A name is generated once and STORED on the row, which is what keeps it a
-    | player-visible string in the one place the rules allow — on the thing that
-    | has a row. What lives here is the material a name is made of, not a name
-    | anybody reads: nothing looks a system's name up from this file.
+    | A name is its type and its owner, and both of those are columns; this is
+    | the one part of it that is stored, because it is the one part that is
+    | nowhere else. EVERY generated machine gets one, unlike the word bag that
+    | came before, which rolled a number onto 60% of names as texture. It is
+    | not texture any more: 121 corps by three types is 363 combinations, so
+    | without a serial a name identifies about eight machines at once.
     |
-    | Combined by type today. The design combines by owner and grade as well,
-    | and both arrive with phase 4 — a third and fourth list here, and no change
-    | to App\Cyberspace\SystemNamer, which reads whatever it is handed.
+    | Rolled rather than counted. A counter would let a player read how many
+    | machines a corp runs off the side of one of them.
     */
-    'names' => [
-        'silo' => [
-            'prefix' => ['Cold', 'Deep', 'Black', 'Quiet', 'Salt', 'Iron', 'Ash', 'Grey', 'Long', 'Low'],
-            'noun' => ['Archive', 'Vault', 'Cache', 'Ledger', 'Stack', 'Store', 'Reliquary', 'Index'],
-        ],
-        'compute' => [
-            'prefix' => ['Hot', 'Fast', 'Bright', 'Hard', 'Blue', 'Sharp', 'Dense', 'Loud'],
-            'noun' => ['Forge', 'Mill', 'Kiln', 'Furnace', 'Loom', 'Lathe', 'Press', 'Engine'],
-        ],
-        'relay' => [
-            'prefix' => ['North', 'South', 'East', 'West', 'Upper', 'Outer', 'Inner', 'Far'],
-            'noun' => ['Junction', 'Exchange', 'Switch', 'Crossing', 'Waystation', 'Bridge', 'Gate'],
-        ],
-    ],
-
-    /*
-    | How often a generated name carries a numeric designation — "Cold Vault
-    | 041" rather than "Cold Vault" — in percent.
-    |
-    | Not every system, because a grid where everything is numbered reads as
-    | machine output; not none, because two Cold Vaults in one sweep read as a
-    | bug. It is texture, and it is the cheapest way to get four thousand names
-    | out of a hundred words.
-    */
-    'designation_chance' => 60,
+    'designation' => ['min' => 1, 'max' => 999],
 
 ];

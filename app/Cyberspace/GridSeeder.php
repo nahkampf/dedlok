@@ -34,8 +34,10 @@ use Illuminate\Support\Facades\DB;
  *    overwritten, because a system is a machine with an identity and this is a
  *    generator, not a demolition crew.
  *  - NOTHING ELSE. Every other position is a roll: the type and the owning
- *    corp are both drawn evenly. Grade and contents are phase 4, and they will
- *    be rolled here too.
+ *    corp are both drawn evenly, and between them they name the machine — a
+ *    generated system stores no name at all, only the serial that tells it
+ *    from the other machines that corp runs. Contents are phase 4, and they
+ *    will be rolled here too.
  */
 final class GridSeeder
 {
@@ -146,6 +148,9 @@ final class GridSeeder
                 'x' => $where->x,
                 'y' => $where->y,
                 'type' => SystemType::Portal,
+                // The one AUTHORED name in a generated world, and no
+                // designation: there is exactly one portal, so a serial would
+                // be telling it apart from nothing.
                 'name' => Text::get('cyberspace.portal.name'),
             ]);
         });
@@ -227,7 +232,12 @@ final class GridSeeder
                 // Weighted steeply towards the harmless. See config; this is
                 // the dial for how dangerous the world feels.
                 'grade' => Grade::roll($this->roll),
-                'name' => $this->namer->for($type),
+                // NO NAME. A generated machine is named for its type and its
+                // owner, both of which are on the row already; what is stored
+                // is the serial that tells it from its siblings. See
+                // App\Cyberspace\SystemNamer.
+                'name' => null,
+                'designation' => $this->namer->designate(),
                 'owner_id' => $owners === [] ? null : $owners[($this->roll)(0, count($owners) - 1)],
                 'created_at' => $now,
                 'updated_at' => $now,

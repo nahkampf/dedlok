@@ -165,48 +165,6 @@ that no longer runs.
 
 ---
 
-## Name systems `<Type> - <corp>`
-
-**Status:** not built. Systems are currently named from an adjective-and-noun
-word list — *Fast Forge*, *Cold Vault 041* — which reads well but says nothing
-about who owns the machine.
-
-Names should instead compose as **`<Type> - <corp>`**, drawing the corp from the
-dummy-corps list in WORLDBUILDING.md (121 of them). *Data silo - Anansi Data
-Weaving*, *Network relay - SveaCom*.
-
-### This is phase 4 arriving early, and it should be built as such
-
-CYBERSPACE.md already says names will be "combined by owner, type and grade".
-**The corp in that name is an OWNER, not a word** — so the honest shape is a
-column on the system (or a foreign key to a corps table), with the name derived
-from it, rather than a second word list that happens to contain company names.
-Doing it as a string convention now means doing it twice.
-
-That also decides where the list lives. Content lives in the database in this
-codebase, not in config — the documented exception the items and skills tables
-already take. WORLDBUILDING.md stays the source a human edits.
-
-### Three things to settle first
-
-- **The type would appear twice.** The detail card already shows
-  `SystemType::label()` beside the name, so a name beginning with the type reads
-  *Data silo — Data silo - Anansi*. Either the card drops its type, or the ROW
-  stores only the owner and the screen composes the pair. The second is
-  cleaner and still obeys "a name lives on the row", because both halves are on
-  it.
-- **Names stop being unique.** 121 corps x 3 types is 363 combinations against
-  2 867 systems — about eight systems to a name. The numeric designation is
-  currently a 60% chance; it would have to become near-universal, or the name
-  identifies nothing.
-- **The 2 867 systems already standing keep their old names.** Nothing renames
-  a row. **Now is the cheapest possible moment to change this**: no character
-  has walked the grid, so no `system_contacts` snapshot and no bookmark holds an
-  old name. Once players start, a rename leaves stale names in every contact
-  ever taken. Re-seed rather than migrate, and do it before anyone plays.
-
----
-
 ## Housekeeping
 
 - **`php artisan storage:link` will fail** — `symlink` is in `disable_functions` and that

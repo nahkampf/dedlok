@@ -118,22 +118,49 @@ final class GridSeederTest extends TestCase
 
         foreach ($systems as $system) {
             $this->assertMatchesRegularExpression('/^[0-9A-F]{8}$/', $system->address);
-            $this->assertNotSame('', trim($system->name));
+            $this->assertNotSame('', trim($system->displayName()));
         }
     }
 
-    /** Names come from the word repository, and the portal's is authored. */
-    public function test_generated_names_read_as_names(): void
+    /**
+     * A generated machine stores NO name and a serial; the portal is the one
+     * that stores a name and no serial.
+     */
+    public function test_generated_systems_are_named_for_their_owner_and_the_portal_is_authored(): void
     {
         $this->generator()->run();
 
-        $names = System::query()
+        $generated = System::query()
             ->where('type', '!=', SystemType::Portal->value)
-            ->pluck('name');
+            ->get();
 
-        foreach ($names as $name) {
-            $this->assertMatchesRegularExpression('/^[A-Z][a-z]+ [A-Z][a-z]+( \d{3})?$/', $name);
+        foreach ($generated as $system) {
+            $this->assertNull($system->name);
+            $this->assertNotNull($system->designation);
+            $this->assertGreaterThanOrEqual(1, $system->designation);
+            $this->assertLessThanOrEqual(999, $system->designation);
         }
+
+        $portal = System::query()->where('type', SystemType::Portal->value)->sole();
+        $this->assertSame(Text::get('cyberspace.portal.name'), $portal->name);
+        $this->assertNull($portal->designation);
+    }
+
+    /** What the player reads: the type, who runs it, and the serial. */
+    public function test_a_generated_name_reads_as_type_owner_and_serial(): void
+    {
+        $this->generator()->run();
+
+        $system = System::query()
+            ->where('type', '!=', SystemType::Portal->value)
+            ->whereNotNull('owner_id')
+            ->with('owner')
+            ->firstOrFail();
+
+        $this->assertSame(
+            $system->type->label().' - '.$system->owner->name.' '.str_pad((string) $system->designation, 3, '0', STR_PAD_LEFT),
+            $system->displayName(),
+        );
     }
 
     public function test_a_dry_run_works_the_whole_thing_out_and_writes_nothing(): void
