@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Cyberspace\Position;
 use App\Skills\TrainingRate;
+use App\Stats\Context;
 use App\Stats\Modifier;
 use App\Stats\ResolvedStat;
-use App\Stats\Resolver;
+use App\Stats\Sheet;
 use App\Stats\Sources\ArchetypePerks;
+use App\Stats\Sources\CharacterModifiers;
+use App\Stats\Sources\InstalledImplants;
+use App\Stats\Sources\RunningPrograms;
+use App\Stats\Sources\SkillEffects;
 use Database\Factories\CharacterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -129,6 +135,7 @@ class Character extends Model
             array_fill_keys(self::ATTRIBUTES, 'integer'),
             array_fill_keys(array_keys(self::RESOURCES), 'integer'),
             ['archetype' => 'integer', 'creds' => 'integer'],
+            ['grid_x' => 'integer', 'grid_y' => 'integer'],
         );
     }
 
@@ -256,6 +263,66 @@ class Character extends Model
         return $this->equipped_deck_id === $deck->getKey();
     }
 
+    /**
+     * Is this character in cyberspace right now?
+     *
+     * Having a position IS being jacked in — there is no separate flag that
+     * could disagree with the coordinates, and the schema's CHECK is what
+     * keeps half a position from existing. Written only by
+     * App\Cyberspace\Navigator, and outside #[Fillable] for the reason
+     * `equipped_deck_id` is.
+     */
+    public function isJackedIn(): bool
+    {
+        return $this->grid_x !== null && $this->grid_y !== null;
+    }
+
+    /**
+     * Is this inventory row locked by the character being in cyberspace?
+     *
+     * THE DECK IS LOCKED WHILE YOU ARE JACKED IN. You cannot fit a module,
+     * take one out, strip it, unequip it, or destroy it or anything fitted in
+     * it — the machine is running and you are inside it. Three writers ask
+     * this one question, which is what keeps it one rule rather than three
+     * that can drift.
+     *
+     * Only the EQUIPPED deck and what is fitted into it. A spare deck in the
+     * stash is not in play and stays yours to tinker with, which is what
+     * CYBERSPACE.md means by everything else being unaffected.
+     *
+     * This guards what the PLAYER does. It must never be asked by the game's
+     * own consequences: a Surge or a thermal burnout destroys fitted hardware
+     * precisely while somebody is jacked in, and those go nowhere near these
+     * writers.
+     */
+    public function isLockedInCyberspace(InventoryItem $row): bool
+    {
+        if (! $this->isJackedIn() || $this->equipped_deck_id === null) {
+            return false;
+        }
+
+        if ($this->equipped_deck_id === $row->getKey()) {
+            return true;
+        }
+
+        return DeckFitting::query()
+            ->where('deck_id', $this->equipped_deck_id)
+            ->where('module_id', $row->getKey())
+            ->exists();
+    }
+
+    /**
+     * Where they are standing, or null if they are not in cyberspace at all.
+     *
+     * Null is the ordinary answer and every caller has to mean something by
+     * it, which is the point: "where are you" and "are you in" are one
+     * question here rather than two that can drift apart.
+     */
+    public function gridPosition(): ?Position
+    {
+        return $this->isJackedIn() ? new Position($this->grid_x, $this->grid_y) : null;
+    }
+
     public function inventory(): HasMany
     {
         return $this->hasMany(InventoryItem::class);
@@ -324,6 +391,30 @@ class Character extends Model
         return $this->characterSkills()->where('skill_id', $skill->id)->exists();
     }
 
+    /**
+     * What is running on the deck being carried.
+     *
+     * Empty when nothing is equipped, because software runs on the machine you
+     * have with you — putting a deck down stops everything on it. One query
+     * with the item and its program alongside, since every caller wants all
+     * three.
+     *
+     * @return Collection<int, InventoryItem>
+     */
+    public function runningProcesses(): Collection
+    {
+        if ($this->equipped_deck_id === null) {
+            return new Collection;
+        }
+
+        return InventoryItem::query()
+            ->where('character_id', $this->id)
+            ->where('running_on_deck_id', $this->equipped_deck_id)
+            ->with('item.program')
+            ->orderBy('started_at')
+            ->get();
+    }
+
     /** The ordered training queue: (skill, target level) pairs. */
     public function trainingQueue(): HasMany
     {
@@ -387,34 +478,83 @@ class Character extends Model
      * Uses RESOLVED attributes, so implants and drugs that move the governing
      * attributes change training speed with no special handling.
      */
-    public function trainingRateFor(Skill $skill): float
+    public function trainingRateFor(Skill $skill, ?\DateTimeInterface $asAt = null): float
     {
+        // Resolved AS OF a moment when one is given, which is what makes a
+        // catch-up honest: a deposit covering three hours during which a drug
+        // wore off credits the bonus for the part of the window that had it,
+        // and not for the rest. See TrainingDeposit::rateChangeBoundaries().
+        $sheet = $asAt === null
+            ? $this->sheet()
+            : Sheet::for($this, null, $this->modifiers($asAt));
+
         return TrainingRate::fromConfig()->perMinute(
-            $this->stat($skill->primary_attribute)->value,
-            $this->stat($skill->secondary_attribute)->value,
+            $sheet->get($skill->primary_attribute)->value,
+            $sheet->get($skill->secondary_attribute)->value,
         );
     }
 
     /**
      * Every modifier currently acting on this character.
      *
-     * Archetype perks only, for now. Implants, drugs, injuries and gear join
-     * this list as they are built, each as its own ModifierSource — nothing
-     * downstream changes when they do.
+     * Three sources: the archetype's live perks, the software running on the
+     * equipped deck, and whatever the character is carrying in their own right
+     * — injuries and statuses, out of `character_modifiers`. The first two are
+     * DERIVED from something else the character has and are recomputed on every
+     * read; the third is the one that had to be stored, because nothing else
+     * implies it.
+     *
+     * Implants and drugs join as they are built, each as its own
+     * ModifierSource — the resolver learns nothing new when they do, which is
+     * the whole point of the interface.
+     *
+     * Two of the three query, so this is not free. A Sheet is bound to the
+     * context it was built in and is cheap to rebuild rather than held, so
+     * build one and read it rather than calling this per stat.
+     *
+     * Order does not matter. The resolver sorts modifiers into layers by op
+     * and sums within each, so two sources cannot fight over which went first.
      *
      * @return list<Modifier>
      */
-    public function modifiers(): array
+    public function modifiers(?\DateTimeInterface $asAt = null): array
     {
-        return (new ArchetypePerks($this->archetype))->modifiers();
+        $sources = [
+            // Permanent by construction, so a past moment cannot change it.
+            new ArchetypePerks($this->archetype),
+            new RunningPrograms($this, $asAt),
+            // What their skills grant them for being known — not the checks
+            // those skills feed, which are generated stats of their own.
+            new SkillEffects($this),
+            // What is in their body. The first source that comes from an item.
+            new InstalledImplants($this, $asAt),
+            // The first source that is not derived from something else the
+            // character has: injuries and statuses that happened TO them.
+            new CharacterModifiers($this->getKey(), $asAt),
+        ];
+
+        $modifiers = [];
+
+        foreach ($sources as $source) {
+            foreach ($source->modifiers() as $modifier) {
+                $modifiers[] = $modifier;
+            }
+        }
+
+        return $modifiers;
     }
 
     /**
-     * The unmodified starting value for a stat.
+     * The unmodified starting value for a stat, from stored numbers alone.
      *
-     * Attributes read their column. hitpoints_max is derived here rather than
-     * from a formula in config, because the derived-stat graph does not exist
-     * yet (MECHANICS.md, step 4).
+     * DEPRECATED as the way to compute a derived stat, and kept because the
+     * character-creation screen has a legitimate use for it: a spread of
+     * slider values that is not a character yet has no modifiers to resolve,
+     * so raw columns are the right and only input there.
+     *
+     * Everywhere else, go through App\Stats\Sheet. A derived stat's inputs
+     * are the RESOLVED values of what it reads, and this method cannot see
+     * them — which is exactly the bug the graph was built to close.
      */
     public function baseStat(string $statId): float
     {
@@ -457,10 +597,30 @@ class Character extends Model
         return array_keys((array) config('stats.formulas', []));
     }
 
-    /** Resolve a stat for this character, with every active modifier applied. */
+    /**
+     * Resolve a stat for this character, with every active modifier applied.
+     *
+     * Goes through a Sheet, so a derived stat reads the RESOLVED values of its
+     * inputs rather than their columns. Each call builds one; hold the sheet
+     * yourself with `Character::sheet()` when reading several, or every stat on
+     * a screen re-resolves its own attributes.
+     */
     public function stat(string $statId): ResolvedStat
     {
-        return app(Resolver::class)->resolve($statId, $this->baseStat($statId), $this->modifiers());
+        return $this->sheet()->get($statId);
+    }
+
+    /**
+     * This character's stats, resolved together and memoised.
+     *
+     * Deliberately NOT cached on the model: a sheet is bound to the context it
+     * was built in — conditional modifiers are judged against Synaptic
+     * Integrity and the like, and those move. A stale sheet answers with the
+     * state the character used to be in.
+     */
+    public function sheet(?Context $context = null): Sheet
+    {
+        return Sheet::for($this, $context);
     }
 
     /** The resolved ceiling for a resource column. */

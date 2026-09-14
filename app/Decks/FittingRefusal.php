@@ -68,6 +68,14 @@ enum FittingRefusal: string
      */
     case Stowed = 'stowed';
 
+    /**
+     * The deck is running and you are inside it.
+     *
+     * Covers fitting, taking out, stripping, unequipping and destroying — the
+     * whole of what the deck lock refuses. Jack out first.
+     */
+    case JackedIn = 'jacked_in';
+
     public function message(): string
     {
         return Text::get("decks.fitting.{$this->value}");

@@ -6,6 +6,7 @@ namespace App\Decks;
 
 use App\Models\Character;
 use App\Models\InventoryItem;
+use App\Programs\ProgramRunner;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -40,6 +41,13 @@ final class DeckEquipper
             return FittingResult::refused(FittingRefusal::NotOwned);
         }
 
+        // Equipping SWAPS, so doing it while jacked in would take the deck the
+        // character is standing on out from under them. Refused whichever deck
+        // is being equipped, including the one already live.
+        if ($character->isJackedIn()) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
+        }
+
         if (! ($deck->item?->isCyberdeck() ?? false)) {
             return FittingResult::refused(FittingRefusal::NotADeck);
         }
@@ -65,7 +73,24 @@ final class DeckEquipper
             return FittingResult::refused(FittingRefusal::NotEquipped);
         }
 
+        // Putting the deck away while standing inside it. Jack out first.
+        if ($character->isJackedIn()) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
+        }
+
         return DB::transaction(function () use ($character, $deck, $strip, $fitter): FittingResult {
+            /*
+             * Everything running on it stops, always, whether or not the player
+             * asked for a strip. Software runs on the deck being CARRIED, so a
+             * deck that is not carried is not running anything — the rule
+             * CYBERSPACE.md records, and the reason a decryption in progress
+             * loses its current cycle when a player puts the machine down.
+             *
+             * Nothing is destroyed: the programs go back to the stash the same
+             * way stripped modules do.
+             */
+            app(ProgramRunner::class)->stopAll($character, $deck);
+
             $removed = 0;
 
             if ($strip) {

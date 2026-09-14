@@ -29,6 +29,10 @@ return [
             'run' => 'Run',
             'stash' => 'Stash',
             'deck' => 'Deck',
+            // The grid. Never "jack in" here: the rail names a PLACE, and the
+            // act of entering it is a button on the screen it leads to.
+            'implants' => 'Implants',
+            'cyberspace' => 'Cyberspace',
             'skills' => 'Skills',
             'contracts' => 'Contracts',
             'profile' => 'Profile',
@@ -68,7 +72,7 @@ return [
     ],
 
     'auth' => [
-        'login' => 'Jack in',
+        'login' => 'Sign in',
         'register' => 'New identity',
         'handle' => 'Handle',
         'handle_hint' => 'Up to :max characters.',
@@ -79,11 +83,344 @@ return [
         'email' => 'Email',
         'password' => 'Password',
         'confirm_password' => 'Confirm password',
-        'remember' => 'Stay jacked in',
+        'remember' => 'Stay signed in',
         'forgot' => 'Lost your key?',
         'start_playing' => 'New account',
         'have_account' => 'Already have an identity?',
-        'logout' => 'Jack out',
+        'logout' => 'Sign out',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Programs
+    |--------------------------------------------------------------------------
+    |
+    | Software: the first items in the game that change a number. A program is
+    | running or it is not — there is no loading — and running splits into
+    | background, which happens while the owner is elsewhere, and active, which
+    | only means during a cyberspace run.
+    |
+    */
+    'programs' => [
+
+        'kinds' => [
+            'icebreaker' => 'Icebreaker',
+            'decryptor' => 'Decryptor',
+            'evasion' => 'Evasion',
+            'analyser' => 'Analyser',
+            'daemon' => 'Daemon',
+        ],
+
+        // The status readout. A count, because the number is the whole of what
+        // the bar has room to say; the modal says the rest.
+        'running' => 'Running',
+        'started' => ':program is running.',
+        'stopped' => ':program has stopped.',
+
+        // The deck screen's two tabs. Storage is split because a program and a
+        // file are two different things sharing an inventory: one is something
+        // you RUN, the other something you HOLD.
+        'tabs' => [
+            'running' => 'Running',
+            'storage' => 'Storage',
+        ],
+        'storage' => [
+            'programs' => 'Programs',
+            'data' => 'Data',
+            'programs_empty' => 'No software.',
+            'data_empty' => 'Nothing written.',
+        ],
+        'budget' => ':used / :total',
+        // The bare unit, for a readout that has already said the number.
+        'units' => ['compute' => 'qFLOPS', 'memory' => 'QB'],
+        // Only the deck you are carrying runs anything: putting one down stops
+        // everything on it, so an unequipped deck's list is empty by rule
+        // rather than by accident, and the screen says which.
+        'not_equipped' => 'Nothing runs on a deck you are not carrying.',
+        'open_deck' => 'Open the deck',
+        'running_none' => 'Nothing running',
+        'processes' => ['zero' => 'No processes', 'one' => ':count process', 'many' => ':count processes'],
+
+        'costs' => [
+            'compute' => ':value qFLOPS',
+            'memory' => ':value QB',
+            'storage' => ':value QB stored',
+        ],
+
+        'background' => 'Runs in the background',
+        'run_only' => 'Runs only during an intrusion',
+
+        'action' => [
+            'start' => 'Run',
+            'stop' => 'Stop',
+        ],
+
+        'refused' => [
+            'not_owned' => 'That is not yours to run.',
+            'not_a_program' => 'That is not software.',
+            'already_running' => 'It is already running.',
+            'not_running' => 'It was not running.',
+            'no_deck_equipped' => 'Equip a deck first. Software runs on the machine you are carrying.',
+            'deck_not_ready' => 'That deck will not run. Finish building it first.',
+            'not_enough_compute' => 'Not enough compute left. Stop something, or fit a better processor.',
+            'not_enough_memory' => 'Not enough memory left. Stop something, or fit more.',
+            'run_only' => 'This only does anything during an intrusion, and the run starts it, not you.',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Images
+    |--------------------------------------------------------------------------
+    |
+    | Pictures are found by convention rather than stored on a row — see
+    | App\Support\Image. These are the words around them.
+    |
+    */
+    'images' => [
+        'enlarge' => 'View :subject full size',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cyberspace
+    |--------------------------------------------------------------------------
+    |
+    | The grid, and what a player is told about a place on it — including the
+    | SHAPE of a machine's name, though none of its words. A generated system
+    | is named for its type and its owner: the type's word is here, the owner's
+    | is a row in `corps`, and the two patterns below are all that is left to
+    | say. An AUTHORED name — the portal's, and one day an event system's —
+    | still lives on the row it belongs to.
+    |
+    | Jack in and jack out mean cyberspace and nothing else. Signing into the
+    | game is auth.login / auth.logout, and a player must never have to work out
+    | which of the two a button means.
+    |
+    */
+    'cyberspace' => [
+        'types' => [
+            'portal' => 'Portal',
+            'silo' => 'Data silo',
+            'compute' => 'Compute node',
+            'relay' => 'Network relay',
+        ],
+
+        /*
+        | How a machine's name is spelled: "Data silo - Anansi Data Weaving
+        | 041". The type, who runs it, and the serial that tells it from the
+        | other machines that corp runs.
+        |
+        | TWO PATTERNS RATHER THAN ONE, because a system with no owner has to
+        | read as a name and not as a sentence with a hole in it. The serial is
+        | separate again for the same reason: an authored name may carry one
+        | without being composed at all.
+        */
+        'name' => [
+            'owned' => ':type - :owner',
+            'designated' => ':name :designation',
+        ],
+
+        /*
+        | The one authored system on the grid, and the only one whose name is
+        | written onto its row: everything else is composed from the pair
+        | above. This is the source of the words, not what anything reads at
+        | display time.
+        */
+        'portal' => [
+            'name' => 'Cyberspace Portal',
+            'flavor' => 'Where everyone arrives. Nothing here can be touched, and nothing here touches you.',
+        ],
+
+        'empty' => 'Empty space',
+        'unknown' => 'Unswept',
+
+        /*
+        | What a grade is CALLED, once something has earned the right to show
+        | it. A scan is the only thing that will; nothing on the map may say
+        | any of these, because the number is what the scan is for.
+        */
+        'grades' => [
+            1 => 'Unsecured',
+            2 => 'Domestic',
+            3 => 'Commercial',
+            4 => 'Hardened',
+            5 => 'Corporate',
+            6 => 'Restricted',
+            7 => 'Black',
+            8 => 'Sovereign',
+            9 => 'Apex',
+        ],
+
+        /*
+        | Why a player did not end up where they meant to.
+        |
+        | Read through App\Cyberspace\TravelRefusal, one per case. Every one
+        | of these is an ordinary thing to try with the screen in front of
+        | you, so they are worded as an answer rather than as an error — and
+        | none of them says "jack in" or "jack out" about signing into the
+        | game, which is auth.login / auth.logout and a different act.
+        */
+        'travel' => [
+            'no_deck' => 'You are carrying no deck. There is nothing to jack in with.',
+            'deck_not_ready' => 'That deck will not run. It is short of what it needs.',
+            'already_jacked_in' => 'You are already in.',
+            'not_jacked_in' => 'You are not in cyberspace.',
+            'not_a_step' => 'That is not one step from where you are standing.',
+            'off_the_grid' => 'There is nothing that way. The grid ends here.',
+            'not_an_address' => 'An address is eight hexadecimal characters. That is not one.',
+            'not_yours' => 'That bookmark is not yours.',
+            // Not a failure. The system that wore it has moved or burned, and
+            // an address is a fact about right now rather than a name.
+            'no_such_address' => 'Nothing answers to that address any more.',
+        ],
+
+        /*
+        | Saved ways back. Two kinds, and the words keep them apart: a waypoint
+        | is a PLACE and always works, a system bookmark is an ADDRESS and can
+        | stop answering. A player who cannot tell which they are looking at
+        | cannot tell whether "nothing there" is news.
+        */
+        /*
+        | The map screen. Jack in and jack out mean cyberspace here and only
+        | here; signing into the game is auth.login / auth.logout.
+        */
+        'map' => [
+            'title' => 'Cyberspace',
+            'lede' => 'What you have swept, and the last thing you saw in it.',
+            'nav' => 'Cyberspace',
+
+            'out' => 'You are not jacked in.',
+            'out_hint' => 'This is the grid as you last saw it. Jack in to walk it.',
+            'jack_in' => 'Jack in',
+            'jack_out' => 'Jack out',
+
+            'here' => 'You are here',
+            'position' => 'Position',
+            'swept' => 'Swept',
+            // No maximum is shown beside it on purpose: the size of the grid
+            // is not a thing the player is told, and a progress bar towards
+            // four million would be a promise that exploration ends.
+            'swept_count' => ':count positions',
+
+            'address' => 'Address',
+            'jump' => 'Jump',
+            'jump_hint' => 'Eight hexadecimal characters. Anyone can give you one.',
+
+            'empty' => 'Empty space',
+            'unswept' => 'Unswept',
+            // Not "unknown" or "undiscovered": the point is that it was not
+            // here last time, which is a statement about the world changing
+            // rather than about the player's ignorance.
+            'new' => 'New here',
+            'void' => 'Beyond the grid',
+            'step' => 'Step here',
+            'legend' => 'Legend',
+            'keys' => 'Arrow keys move; the numpad moves in all eight directions.',
+        ],
+
+        'bookmarks' => [
+            'heading' => 'Bookmarks',
+            'none' => 'Nothing saved yet. Mark a position you want to come back to.',
+            'mark_here' => 'Mark this position',
+            'mark_address' => 'Save an address',
+            'label' => 'Name',
+            'label_hint' => 'Optional.',
+            'recall' => 'Go',
+            'forget' => 'Forget',
+            'dead' => 'Nothing answers to it',
+            'save' => 'Save',
+
+            'kind' => [
+                'waypoint' => 'Waypoint',
+                'system' => 'System',
+            ],
+
+            'refused' => [
+                'already_saved' => 'You have already saved that one.',
+                'off_the_grid' => 'There is nothing there. The grid ends before it.',
+                // The gate that paces exploration, said as a fact about the
+                // player rather than as a rule they broke.
+                'never_swept' => 'You have not been there. Walk it before you mark it.',
+                'not_an_address' => 'An address is eight hexadecimal characters. That is not one.',
+                'not_yours' => 'That bookmark is not yours.',
+            ],
+        ],
+
+        /*
+        | What the screen says after something happened.
+        |
+        | Walking says nothing at all unless it revealed something: a banner on
+        | every step would be noise the moment walking becomes the thing you do
+        | most. The two exceptions are the two things a player cannot see for
+        | themselves - that the ground was new, and that something they
+        | remembered has gone.
+        */
+        'status' => [
+            'jacked_in' => 'You are in. The portal hums around you.',
+            'jacked_out' => 'You are out.',
+            'saved' => 'Saved.',
+            'forgotten' => 'Forgotten.',
+
+            'swept' => [
+                'zero' => '',
+                'one' => ':count new position swept.',
+                'many' => ':count new positions swept.',
+            ],
+
+            // The world having moved on while they were away, which is the
+            // whole of why the map is a memory rather than a feed.
+            'gone' => [
+                'zero' => '',
+                'one' => 'Something you remembered is no longer there.',
+                'many' => ':count things you remembered are no longer there.',
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Implants
+    |--------------------------------------------------------------------------
+    |
+    | What is installed in a body, and where. The regions are a fixed
+    | vocabulary rather than rows, because every character has the same body -
+    | see App\Implants\BodyRegion.
+    |
+    */
+    'implants' => [
+        'title' => 'Implants',
+        'lede' => 'What is installed in you, and what room is left.',
+        'nav' => 'Implants',
+
+        'regions' => [
+            'head' => 'Head',
+            'body' => 'Body',
+            'arms' => 'Arms',
+            'legs' => 'Legs',
+            'spine' => 'Spine',
+        ],
+
+        'empty_slot' => 'Empty',
+        'capacity' => ':used of :total',
+        'install' => 'Install',
+        'remove' => 'Remove',
+        'installed' => ':implant is installed.',
+        'removed' => ':implant is back in your stash.',
+        'none_to_install' => 'You are carrying no implants that would go here.',
+        'nothing_installed' => 'Nothing is installed. Implants go in from your stash.',
+        'total' => 'Slots',
+
+        'refused' => [
+            'not_owned' => 'That is not yours.',
+            'not_an_implant' => 'That does not go in a body.',
+            'already_installed' => 'It is already installed.',
+            'not_installed' => 'That one is not installed.',
+            'no_room' => 'There is no room left there. Take something out first.',
+            // Refused rather than quietly pulled out: moving somebody's
+            // possessions without saying so is the thing to avoid.
+            'not_to_hand' => 'That one is packed away. Take it out first.',
+        ],
     ],
 
     'captcha' => [
@@ -113,7 +450,7 @@ return [
         'create' => [
             'title' => 'Create your character',
             'lede' => 'This is who you are on the street. The handle is permanent; spend your points carefully.',
-            'submit' => 'Jack in',
+            'submit' => 'Create character',
             // One character per user, so coming back to this screen with one
             // already made is a dead end rather than a second chance.
             'already' => 'You already have a character. There is only one of you.',
@@ -160,7 +497,7 @@ return [
             'mental' => 'Mental attributes',
             'pool' => 'Points remaining',
             'spent' => ':spent of :total spent',
-            'balanced' => 'Ready to jack in',
+            'balanced' => 'Ready to create',
             'remaining' => ':count still to spend',
             'overspent' => ':count over budget',
             'must_balance' => 'Spend exactly :total points before you can continue.',
@@ -184,16 +521,16 @@ return [
         'descriptions' => [
             // Physical
             'reflex' => 'The gap between something happening and you responding. Governs who moves first, which is usually who walks away.',
-            'meat' => 'Raw bodily resilience. How much punishment the flesh absorbs before it stops doing what you tell it.',
+            'meat' => 'Raw bodily resilience. How much punishment the flesh absorbs before it stops doing what you tell it — and the brain is flesh too, sitting behind whatever you have had bolted to it.',
             'motor' => 'Fine control and coordination. Steady hands on a lockpick, a scalpel, or a trigger, while everything around you is going wrong.',
             'senses' => 'Acuity of sight, hearing and whatever you have had installed since. Sets how much signal reaches you before you have to guess.',
             'muscle' => 'Applied force. Lifting, breaking, dragging a body, holding a door shut against the people on the other side.',
 
             // Mental
-            'intellect' => 'Analysis and problem solving. Reading the shape of a system fast enough to act on it while it is still true.',
-            'memory' => 'Recall and retention. How much you carry without a deck, and how much of it survives a bad night.',
+            'intellect' => 'Analysis and problem solving. Reading the shape of a system fast enough to act on it while it is still true — and understanding a thing is most of not being unmade by it.',
+            'memory' => 'Recall and retention. How much you carry without a deck, and how much you have already survived — a mind asked to take more falls back on what it has seen before.',
             'perception' => 'Noticing what other people miss. The tell, the tail, the one detail in the room that does not belong.',
-            'focus' => 'Sustained attention under load. Holding a thread while the room, the feed and your own chrome all compete for it.',
+            'focus' => 'Concentration and will. Holding a thread while the room, the feed and your own chrome all compete for it — and holding on past the point where stopping would be the sensible thing.',
             'social' => 'Reading people and steering them. Leverage that does not require breaking anything.',
         ],
 
@@ -300,7 +637,6 @@ return [
 
         // The equipped deck is not in either inventory — it is on you. This is
         // the one place it appears, and the only way through to its board.
-        'in_use' => 'In use',
 
         /*
         | What you can do to an item, on the card you already have open.
@@ -480,7 +816,21 @@ return [
             // socket it presents. The module that goes in it is a Power supply.
             'psu' => 'PSU',
             'thermal' => 'Thermal exhaust',
+            'storage' => 'Storage',
             'io' => 'IO port',
+        ],
+
+        /*
+         * What a board node's label says before the variant name. Short on
+         * purpose — the prefix has to name the kind without becoming the
+         * label. A kind with no variants is already its own name and takes
+         * none; see SlotType::boardLabel().
+         */
+        'prefixes' => [
+            'cpu' => 'CPU',
+            'ram' => 'RAM',
+            'expansion' => 'XP',
+            'io' => 'I/O',
         ],
 
         // The sub-types, short enough to sit in a spec line.
@@ -512,7 +862,7 @@ return [
             'universal' => 'Takes either kind of stick',
             'pei' => 'Peripheral Extension Interface',
             'npu' => 'Neural processing — required by some AI programs',
-            'thermal' => 'Where the heat goes. A deck may present none at all.',
+            'thermal' => 'Where the load goes. A deck may present none at all.',
         ],
 
         // The board: a deck's sockets seen as the thing rather than as a
@@ -525,7 +875,7 @@ return [
             'empty' => 'No sockets',
             'count' => '×:count',
             'aria' => ':deck — :sockets',
-            'spec' => 'Specification',
+            'spec' => 'Specs',
             'open' => 'Board',
             'close' => 'Close',
         ],
@@ -534,6 +884,9 @@ return [
         'fitting' => [
             'fit' => 'Fit',
             'unfit' => 'Take out',
+            // The deck lock. Says what to do about it rather than only that
+            // it is refused, because there is exactly one thing to do.
+            'jacked_in' => 'You are jacked in on that deck. Jack out before taking it apart.',
             'empty_socket' => 'Empty',
             'choose' => 'What goes in the :socket socket',
             'nothing_fits' => 'You are carrying nothing that fits this socket.',
@@ -589,7 +942,7 @@ return [
             'compute' => 'Compute',
             'memory' => 'Memory',
             'link' => 'Link',
-            'heat' => 'Heat',
+            'thermal' => 'Thermal load',
 
             'missing' => [
                 'compute' => 'A CPU or an NPU',
@@ -603,22 +956,23 @@ return [
         ],
 
         /*
-        | Heat: the second budget, and not the same shape as the first.
+        | Thermal load: the second budget, and not the same shape as the first.
         |
         | A deck over its POWER budget will not run, and readiness says so. A
         | deck over its THERMAL budget runs perfectly well and risks cooking
         | what is in it. So this warns rather than refusing, and it is not one
         | of the readiness requirements.
         */
-        'heat' => [
-            // No deck-level budget: a deck has no thermal rating and heat does
-            // not happen to it. What the number means is decided per module.
+        'thermal' => [
+            // No deck-level budget: a deck has no thermal rating and thermal
+            // load does not happen TO it. What the number means is decided per
+            // module.
             'cooled' => 'Cooled by :value TU',
             'risk_not_built' => 'Nothing is destroyed yet — the risk is specified, not built.',
 
             /*
-            | What the heat is doing to each thing fitted in it. A module's two
-            | thresholds are compared against the deck's NET heat, so the same
+            | What the load is doing to each thing fitted in it. A module's two
+            | thresholds are compared against the deck's NET load, so the same
             | part is safe in a cold deck and dying in a hot one.
             */
             'verdict' => [
@@ -634,7 +988,7 @@ return [
             // this screen has to say.
             'over_limit_code' => 'THERMAL',
             'over_limit' => 'This loadout destroys :modules the moment the deck runs.',
-            'over_limit_fix' => 'Fit a radiator, cut the heat, or use parts that tolerate more.',
+            'over_limit_fix' => 'Fit a radiator, cut the load, or use parts that tolerate more.',
         ],
 
         /*
@@ -676,8 +1030,9 @@ return [
             // Made-up units like the rest. Thermal units, not degrees:
             // what a module makes and what a radiator takes away are the
             // same quantity, and neither is a temperature.
-            'heat' => ':value TU',
+            'thermal_load' => ':value TU',
             'cooling' => ':value TU cooling',
+            'storage' => ':value QB stored',
         ],
 
         'summary' => [
@@ -792,14 +1147,29 @@ return [
                 'socket_hint' => 'Which socket it fits. A deck with no socket of that type cannot take it.',
                 'power_draw' => 'Power draw',
                 'power_draw_hint' => 'Watts off the deck\'s supply. A power supply draws none.',
-                'heat' => 'Heat',
-                'heat_hint' => 'What it makes by running, in thermal units. Zero is fine; a radiator makes none.',
+                'thermal_load' => 'Thermal load',
+                'thermal_load_hint' => 'What it makes per turn while running, in thermal units. Zero is fine; a radiator makes none.',
+                'storage' => 'Storage',
+                'storage_hint' => 'Bulk capacity in quantabits — where files and idle programs live. Not memory.',
                 'cooling' => 'Cooling',
                 'cooling_hint' => 'What a radiator takes away, in thermal units.',
-                'heat_level_warning' => 'Warns at',
-                'heat_level_warning_hint' => 'Deck heat at which this part starts to be at risk. Leave both empty for a part that does not care.',
-                'heat_level_limit' => 'Destroyed at',
-                'heat_level_limit_hint' => 'Deck heat at which this part is gone. A hard limit, not a roll. Must not be below the warning.',
+                'thermal_warning' => 'Warns at',
+                'thermal_warning_hint' => 'Accumulated deck load at which this part starts to be at risk. Leave both empty for a part that does not care.',
+                'thermal_limit' => 'Destroyed at',
+                'thermal_limit_hint' => 'Accumulated deck load at which this part is gone. A hard limit, not a roll. Must not be below the warning.',
+                'program_kind_none' => 'Not software',
+                'program_kind' => 'Program',
+                'program_kind_hint' => 'What the software is for. Leave empty for anything that is not a program. Deck hardware and skillbooks cannot be one.',
+                'qflops_cost' => 'Compute cost',
+                'qflops_cost_hint' => 'qFLOPS consumed while it runs, and only while it runs.',
+                'memory_cost' => 'Memory cost',
+                'memory_cost_hint' => 'Quantabits consumed while it runs.',
+                'storage_size' => 'Stored size',
+                'storage_size_hint' => 'Quantabits it occupies just by being owned, running or not.',
+                'background_process' => 'Runs in the background',
+                'background_process_hint' => 'Whether it may run outside an intrusion. A decryptor must; an icebreaker has nothing to break out there.',
+                'program_modifiers' => 'Modifiers',
+                'program_modifiers_hint' => 'A JSON list, in the shape archetype perks use. Empty is fine — a program that only gates modifies nothing.',
                 'qflops' => 'Compute',
                 'qflops_hint' => 'Raw throughput, in qFLOPS.',
                 'quantabits' => 'Memory',
@@ -817,6 +1187,7 @@ return [
                 'physical' => 'Bulk and containment',
                 'market' => 'Market',
                 'hardware' => 'Deck hardware',
+                'software' => 'Software',
                 'sockets' => 'Sockets',
                 'board' => 'Board arrangement',
                 'module' => 'Module specification',
@@ -1065,10 +1436,12 @@ return [
             'hardware_is_physical' => 'Deck hardware is matter. A cyberdeck and every module that goes in one is carried, never stored on a deck.',
             'deck_needs_slots' => 'A cyberdeck with no sockets is a case. Give it at least a CPU socket and a power socket.',
             'slots_need_a_deck' => 'Only a cyberdeck has sockets. Set the hardware to Cyberdeck first.',
-            'heat_levels_pair' => 'Give both heat levels or neither — a part with one and not the other has no meaning.',
-            'heat_levels_order' => 'A part cannot be destroyed before it is warned about. The limit must be at or above the warning.',
-            'no_heat' => 'A radiator takes heat away rather than making it. Leave this empty.',
-            'module_needs_heat' => 'Say how much heat this makes. Zero is a fine answer.',
+            'modifier_shape' => 'Each modifier must be an object, not a bare value.',
+            'modifier_invalid' => 'Modifier :index is not valid: :reason',
+            'thermal_levels_pair' => 'Give both thermal levels or neither — a part with one and not the other has no meaning.',
+            'thermal_levels_order' => 'A part cannot be destroyed before it is warned about. The limit must be at or above the warning.',
+            'no_thermal_load' => 'A radiator takes thermal load away rather than making it. Leave this empty.',
+            'module_needs_thermal_load' => 'Say how much thermal load this makes per turn. Zero is a fine answer.',
             'board_needs_a_deck' => 'Only a cyberdeck has a board. Set the hardware to Cyberdeck first.',
             'board_malformed' => 'The board arrangement could not be read. Drag the boxes again, or reset it.',
             'board_unknown_socket' => 'The board arrangement names a socket that does not exist.',

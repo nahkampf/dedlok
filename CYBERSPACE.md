@@ -1,0 +1,1147 @@
+# Cyberspace
+
+The grid, the systems on it, and what happens when you break into one.
+
+Read MECHANICS.md first for anything that produces a number: every threshold,
+chance and modifier named here resolves through the one resolver, and none of
+the arithmetic lives in this file.
+
+---
+
+## Status
+
+**Phase 3 is under way; everything past it is still design.** This document is
+the agreed shape, written down so the implementation has something to be
+checked against — the same contract MECHANICS.md holds for the stat system.
+
+| Piece | State |
+| --- | --- |
+| Everything below, unless a row here says otherwise | **specified only** |
+| The grid itself — positions, chunks, the portal, the edges | **built**; `App\Cyberspace\Grid` is the one place that knows how it is stored |
+| Addresses | **built**; generated, validated and normalised, and unique on the table |
+| The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
+| System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
+| Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
+| Discovery — contact | **built** as rows keyed by position, with no foreign key to `systems` on purpose |
+| Sweeping — the act that writes both | **built**; `App\Cyberspace\Sweep`, clipped to the grid |
+| Jacking in and out | **built**; `App\Cyberspace\Navigator`, gated on `DeckTotals::isReady()` |
+| Stepping and jumping to an address | **built**; every arrival sweeps |
+| The deck lock while jacked in | **built**; `Character::isLockedInCyberspace()` is the question, and the three writers all ask it |
+| Losing readiness while jacked in | **specified only**; nothing watches for it and nothing damages Synaptic Integrity. TODO.md carries it, including the open question of what triggers the check |
+| Bookmarks — waypoints and system bookmarks | **built**; one table, two kinds, and a waypoint may only be set on swept ground |
+| Recall — travelling to a bookmark | **built**, and free: walking is what buys new ground |
+| The map screen | **built**; `/cyberspace`, drawn from memory and never from `systems` |
+| Marking a machine you have not seen before | **built**; `system_contacts.first_seen_at`, carried through a sweep and restarted when a different address appears at a position |
+| Moving by tap, click and key | **built**; the eight around you are buttons, arrows and the numpad reach the same eight |
+| The storage socket and its measure | **built**; every deck has one, and nothing reads the totals yet |
+| The check layer it all resolves through | **partly built** — `check.*` stats, the dependency graph, conditional modifiers, `character_modifiers` and skill effects all exist; nothing ROLLS a check yet. See MECHANICS.md |
+| Jack in / sign in — the vocabulary split | **done**; auth reads Sign in / Sign out, and `ui.action.jack_*` is reserved for cyberspace |
+| Operating System skills — AuraOS, Prism-V, IRONCLAD, Lattice | **built** as skill rows; nothing reads them |
+| Network Topology, System Profiling, Advanced System Profiling | **built** as skill rows; nothing reads them |
+| Encryption skills — Cinder, Halcyon-3, BLACKGLASS, Ouroboros | **built** as skill rows with books; placeholder descriptions, no prerequisites yet |
+| `DeckTotals::isReady()` — the readiness gate | **built**; jacking in is what will call it |
+| Synaptic Integrity as a resource | **built**; nothing damages it |
+| AuraOS in the Deck Jockey loadout | **done**; granted at level 1 alongside the deck |
+| The thermal rename | **done**. Accumulation itself is **specified only** — nothing runs a deck yet |
+| Burning a module out mid-run | **specified only**; the thermally weakest module is destroyed, the trace is cancelled, the player is thrown out for 25–75% of current SI and a 12% chance of a flatline taking 5–15% of maximum SI. The numbers are in `config/cyberspace.php` and nothing reads them |
+| The order a bad ending resolves in | **specified only**; damage, then consequence, then ejection, then the waiting screen — one order for defeats, burnouts and readiness losses alike |
+| Radiator cooling, recalibrated for accumulation | **done** as data — the eight radiators, compressed to 90–520 TU |
+| `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
+| Routing, Advanced Routing | **built** as skill rows with books and prerequisites; nothing reads them |
+| Radiator power draw, raised alongside cooling | **done** as data — 25–300 W |
+| Everything a deck's numbers do | **specified only** — see MECHANICS.md |
+
+---
+
+## Vocabulary
+
+Three words were already spoken for and have been re-cut. Getting these wrong
+in a player-visible string is a bug, not a style preference.
+
+**Jack in / jack out means cyberspace, and nothing else.** Entering and leaving
+the grid. Signing into the *game* is **sign in / sign out**, and the auth
+screens have to be re-worded: `auth.login`, `auth.logout`, `auth.remember` and
+the submit label all currently say "Jack in", which would put two Jack out
+buttons in the rail meaning two different things. Equipping a deck is a third
+thing again — which deck you are carrying — and was never either of these.
+
+**Heat is how badly the world wants you.** A completed trace puts heat on a
+character; it is a persistent property of the person, not of a machine. What a
+deck's hardware does thermally is **thermal load**, measured in **thermal units
+(TU)**, and every stat id, column and class carrying the old name has to move —
+see MECHANICS.md, *The thermal rename*. A player reading "your heat is high"
+must never have to ask which of the two is meant.
+
+**Grade is how hard a system is.** Not `rarity`, which already means how often
+the market stocks an item, and not `tier`, which already means what an item is.
+Grade decides a system's integrity, what countermeasures it runs, what it is
+carrying, and whether it is survivable at all. A grade is the number a scan
+exists to discover before you find it out the expensive way.
+
+---
+
+## The grid
+
+Cyberspace is a coordinate space. It is **64 × 64 today and will be 2048 × 2048**,
+and that second number is a design input rather than a someday: at four million
+positions, discovery stops being flavour and becomes the point of the map.
+
+**A position and a system are two different things, and this is the single most
+important structural fact here.** A position is a coordinate; it never moves and
+never changes. A system is a machine with an identity, a grade, an operating
+system, contents and a name — and its address and its coordinates are
+*attributes it currently has*, which change when it relocates. Anything written
+as though a cell "is" a node will break the first time a system moves, and
+systems move constantly.
+
+**Roughly 30% of positions are empty** — not a dead node, not a placeholder,
+just space. That reserve is what relocation and instantiation move through, and
+without it a grid that churns has nowhere to churn to.
+
+### The centre and the edges
+
+One position near the middle holds the **Cyberspace Portal**, where every player
+arrives on jacking in. It is not interactable in any way: it cannot be scanned,
+intruded, burned or owned, and it is the one system on the grid that is none of
+those things. 64 has no true centre cell and it does not matter — any single
+cell near the middle is the portal.
+
+**The grid does not wrap.** The edges are edges. A viewing range at the edge
+simply sees fewer positions, and the corners are the quietest part of the map,
+which is a reasonable thing for the corners of a map to be.
+
+### Addresses
+
+An address is **8 hexadecimal characters**, unique, random, and carries no
+information — you cannot read a position out of one.
+
+**Addresses do not survive.** A system that is burned takes its address out of
+existence with it, and a system that relocates comes back with a new one. This
+is deliberate and it is what keeps the map alive: an address is a fact about a
+system *right now*, not a permanent name for it.
+
+Jumping to a typed address goes there if it resolves. **Trading addresses is
+fine and expected** — it is the same act as inviting someone onto a shared run,
+and at four million positions the constraint on exploration was never secrecy.
+What paces exploration is patience: you walk, you bookmark the frontier, you
+come back. Subnets are the exception, because things there attack you for moving.
+
+### Subnets
+
+A subnet is a separate, much smaller grid reached through a relay. **Subnet
+addresses are in their own space and are not confusable with grid addresses:** a
+prefix naming the subnet, then a **16-bit address — 4 hex characters**:
+`mil:4A19`, `dark:00FE`.
+
+65 536 addresses is far more than a small grid needs, which is fine. What
+matters is that the prefix makes the space unambiguous, so nothing has to guess
+which grid an address belongs to.
+
+### Discovery: two records, not one
+
+Discovery used to be one question. Relocation makes it two, and they behave
+differently:
+
+- **Terrain** — *I have looked at this position.* A position cannot move, so
+  this never goes stale and is never wrong.
+- **Contact** — *I know this system: its name, its address, what it looked
+  like.* This dies when the system relocates or burns.
+
+**The map a player sees is their memory, not a live feed.** It shows the terrain
+they have swept and the last thing they saw at each position, marked stale where
+the sighting is old. Jumping to a bookmark and finding nothing there is not a
+bug — it is the world having moved on, and it is the mechanic that makes
+exploration continuous instead of a thing you finish.
+
+**Bookmarks are therefore two kinds.** A *waypoint* is a position and survives
+everything; it is how you return to the frontier. A *system bookmark* is an
+address and dies with the system. Special systems a player discovers are
+bookmarked automatically, as systems.
+
+**A player's own nodes are the exception**: when one relocates, the owner's
+bookmark to it is rewritten to the new address rather than being allowed to die.
+See *Player-owned nodes*.
+
+**What each kind is FOR, in the player's terms**, because the two are not
+alternatives and a screen that presents them as one list still has to make the
+difference obvious:
+
+- **A waypoint marks a NEIGHBOURHOOD, not a machine.** You find a stretch of
+  the grid thick with high-value targets and you want to come back to *there* —
+  and you mark the position rather than any one machine because the machines
+  are what will eventually move. Nothing places such a cluster today; it is a
+  statistical accident. But an accident is enough, because **the grid only
+  moves where players push it**: an untouched cluster keeps its shape until
+  somebody starts working through it, and by then the waypoint has already paid
+  for itself. See *Relocation*.
+- **A system bookmark is an address, and an address behaves like an IP.** You
+  do not have to have swept the surrounding area to connect straight to one;
+  you do not have to know where it is, or what is between you and it. Somebody
+  can simply give you one.
+
+**What may be bookmarked is not symmetric, and that asymmetry is what paces
+exploration.** A waypoint may only be set on ground the character has SWEPT;
+a system bookmark may be set on any address at all, seen or not. It looks
+inconsistent until you ask what each one is worth to somebody else: an address
+is a door, so handing one over is the invitation the design already blesses,
+while a position is a *map*, and a tradeable position would let one player hand
+another the walking they did. So the terrain bitmap gates one and nothing gates
+the other. `App\Cyberspace\BookmarkKeeper` is where that lives, because no
+CHECK can reach across to another table's bitmap.
+
+### How the grid is stored
+
+At 64 × 64 this is 4 096 rows and none of it matters. At 2048 × 2048 it is
+4.2 million positions and every decision below starts costing something. Both
+sizes have to work, so:
+
+- **Discovery is a chunked bitmap, never a row per position.** The grid divides
+  into 64 × 64 chunks — 512 bytes of bits each, one chunk today and 1 024 of
+  them at full size. A character stores a blob per chunk they have entered, so a
+  player who has explored five chunks holds 2.5 KB and a player who has explored
+  nothing holds nothing. A row per discovered position is the version that does
+  not survive the grid getting bigger.
+- **Contact is rows**, because there are few of them and they carry content —
+  what you saw, when, and whether it is stale.
+- **The world is materialised now and procedural later.** 4 096 system rows is
+  a table; 2.9 million is a generator with override rows for everything that has
+  diverged from it. Both are the same question — *what is at (x, y)?* — so it is
+  answered in one class from the start and the storage swaps underneath it.
+  Nothing else in the codebase should know which of the two is in use.
+
+The cost of the procedural version, stated in advance so it is not a surprise:
+questions like *list every grade-5 system on the grid* stop being cheap, and the
+override table grows with churn rather than with the world. Both are acceptable;
+neither is free.
+
+---
+
+## Systems
+
+Most systems on the grid are intrusible. What one carries:
+
+| Property | What it is |
+| --- | --- |
+| **System Integrity** | the core's hit points |
+| **Grade** | how hard it is, what it runs, what it holds |
+| **Operating System** | which OS skill you need at level 1 to attempt it at all |
+| **Type** | data silo, compute node, network relay, player-owned, and so on |
+| **IDS** | detects an intrusion; detection is what wakes everything else |
+| **ICE** | the opponent — integrity, attacks, and a defeat effect |
+| **Tracer** | runs the trace that ends in heat |
+| **Cloaked systems** | hidden extras; found by scanning, worth more |
+| **Owner** | a faction, a player, or nobody |
+| **Contents** | its own inventory — see below |
+
+**Grade spans magnitudes.** The easiest systems sit comfortably inside a
+starting character's Synaptic Integrity; the hardest can flatline someone at 200
+SI. That range is exactly why scanning is not optional flavour — the difference
+between a system you can take and a system that ends your character is a number
+you are meant to find out *before* you approach.
+
+**A system's contents are its own inventory model**, not the character inventory
+with a different owner column. A node holds creds, data and items; it is raided
+rather than carried; and what is in it is safe from the losses a character takes
+when ICE beats them. That is a different set of rules from a stash, and it gets
+a different model rather than a flag on the same one.
+
+**A node's inventory restocks nightly**, in housekeeping. Emptying one is
+therefore not permanent, which is what keeps the low end of the grid worth
+walking through — but a node also counts its raids, and the third one retires
+it. See *Lockdown*. A quiet thief gets three good nights out of a system, not an
+annuity.
+
+### Data is a file, and it is always encrypted
+
+Stolen data is not a generic reward. Every file has:
+
+- **A size in QB.** Transferring it takes turns, and turns are trace and thermal
+  load. A greedy haul is an exposed one.
+- **An encryption type.** Everything comes off a system encrypted. There is a
+  skill per encryption type, the same shape as the skill-per-operating-system
+  gate, and breaking one is a check against it.
+- **Two values.** What it fetches encrypted, and what it fetches once broken —
+  the second much higher. **NPC buyers are the primary market.**
+
+**Decryption happens later, at leisure** — never during a run. A file comes out
+of a system encrypted and stays that way until the player sits down with it,
+which keeps the run simulator free of a second kind of check and makes the
+stolen file an object with a future rather than a number that resolved on the
+way out.
+
+There are **four encryption types**, ranks 2, 4, 8 and 16, one skill each, the
+same shape as the operating systems: cheap at level 1, worth training past it,
+and gated by owning the book. Cinder, Halcyon-3, BLACKGLASS and Ouroboros exist
+as rows today with placeholder descriptions.
+
+Decryption is where a sell-it-now player and a sit-on-it player diverge: one
+takes the encrypted price, the other turns skill into margin.
+
+### Where a program lives and what it costs to run
+
+Three deck measures, three different jobs, and a program touches all three:
+
+| Measure | What it holds or spends |
+| --- | --- |
+| **qFLOPS** — compute | what a *running* program consumes. Every program has a qFLOPS cost, and a deck without enough free qFLOPS cannot run it. |
+| **Quantabits** — memory | what a *loaded* program occupies |
+| **Storage** — bulk | where files and unloaded programs sit; where extracted data lands |
+
+That is the loadout puzzle: memory limits what you can bring, compute limits
+what you can have running at once, and storage limits how much you can carry
+out. Storage is a **new socket kind and a new measure** — see MECHANICS.md, *The
+sixth measure*, for why it cannot simply be more quantabits.
+
+### Lockdown
+
+**Lockdown is what happens when a system knows it was violated.** That single
+rule is the whole of it, and every trigger below is an instance of it:
+
+| Trigger | Why the system knows |
+| --- | --- |
+| **The IDS fired** | it saw you. Applied after the run, whatever else happened. |
+| **The ICE activated** | it fought you. Applied after the run. |
+| **Burn** | there is nothing subtle about it. |
+| **The third raid** | see below — nobody's books stay unaudited forever. |
+
+**Extraction is stealing, and a clean extraction does not lock a system down.**
+Getting in, taking what it was holding, and getting out unseen leaves a system
+that does not know anything happened. Its inventory is empty and it restocks in
+housekeeping, so a quiet thief has somewhere to come back to.
+
+**Three raids and it locks down anyway.** A counter **on the system, not on the
+character**, incremented by every successful raid whoever made it, and when it
+reaches three the system locks down and relocates as though it had been caught.
+Somebody eventually reconciles the numbers. This is what stops a perfectly
+executed loop from being a permanent, riskless income: even flawless play
+retires the node.
+
+**The counter resets on relocation.** A relocated system is effectively a new
+one — new address, new position, and its books balanced. Without that reset
+every system in cyberspace would be on a permanent countdown to its third raid
+and the grid would grind itself into pure churn.
+
+Together with the detection floor — **no run is ever safer than about 3%**, see
+*Detection* — that is two independent brakes on the same loop, one that fires on
+luck and one that fires on arithmetic.
+
+### Relocation
+
+**When lockdown ends, the system moves.** New position, new address, same
+system. Its bookmarks break, its address dies, and every scan anyone was holding
+on it becomes worthless.
+
+**RELOCATION IS A CONSEQUENCE, NOT A BACKGROUND PROCESS.** The grid does not
+churn on its own. A system moves because somebody raided it and its lockdown
+expired, or because somebody sold a scan of it to an NPC buyer — both of which
+are players acting on it. **A system nobody has touched sits exactly where it
+is, indefinitely.** That is easy to misread as ambient churn and it is worth
+being plain about, because a great deal follows from it: a stretch of grid a
+player has found and not yet worked through is *stable* while they work through
+it, and it only starts moving once somebody starts taking it apart. Discovery
+keeps its value; exploiting what you discovered is what spends it.
+
+This is the mechanic that makes the grid a living thing rather than a board that
+gets solved, and it is why roughly a third of the grid is empty: relocation
+needs somewhere to go. A relocation is a *move* — it frees a position and takes
+one — so it does not consume the empty reserve. Only burning and instantiation
+do, and burning returns the position to empty after a while.
+
+**A relocated system keeps its identity.** It is the same machine with the same
+grade, contents and history, wearing a new address. That matters for backdoors,
+for ownership, and for anything that will one day want to say *this is the
+system that got you last time*.
+
+### Backdoors
+
+A backdoor install does not lock a system down, **and it does not lock one down
+even if the IDS fired or the ICE woke up**. That is the whole value of the
+operation: the install erases the logs, resets the countermeasures it tripped,
+and leaves the system believing nothing happened. A backdoor run is the only
+thing in cyberspace that cleans up after itself.
+
+Three consequences, and they follow from the fiction rather than being bolted
+onto it:
+
+- **A backdoor run that fails cleans up nothing.** Egress early or lose the
+  fight and there was no install, so the ordinary triggers apply and the system
+  locks down like any other.
+- **A completed trace still lands.** The cleanup fixes the system's *afterwards*
+  — its logs, its alarms, its lockdown — but a tracer that finished its job
+  found you while you were standing there, and heat is a fact about the world
+  and not about the machine. Erasing the logs does not un-know what the tracer
+  already told somebody.
+- **A backdoor does not increment the raid counter**, because the counter is
+  the system noticing a pattern in its own records, and those records are gone.
+
+A backdoor keeps a system open: no lockdown, no relocation, a permanent address
+in a world where nothing else has one. That is a genuinely powerful thing to
+hold, so it is not held forever.
+
+**A backdoor is one of two things, and the choice is made when it is installed.**
+A system can siphon or it can route. It cannot do both, and changing your mind
+means going back and doing the run again.
+
+| | **Siphon** | **Routing** |
+| --- | --- | --- |
+| What it gives | a little cash every night, paid straight into your creds | a hop in the chain a trace has to walk |
+| Where it is useful | on a system with something worth taking | on any system at all, however worthless |
+| How you lose it | the nightly ageing roll, and nothing else | the ageing roll **or** a completed trace, which takes every routing backdoor in that run's chain at once |
+
+That asymmetry is the point. **A siphon is safe and slow; a routing hop is free
+and expendable.** Income is insulated from routing risk — a trace that catches
+you never touches your siphons — so the two halves of a backdoor portfolio have
+genuinely different risk profiles and are worth building separately.
+
+**Both kinds give a discount on getting back in.** A backdoor skips or heavily
+reduces the **approach** detection roll on every return visit. It does
+**nothing** for the core roll: extracting through a backdoor is still stealing,
+still rolls, still counts toward the system's three raids, and still locks the
+system down if it is caught. A backdoor buys you half the risk permanently, not
+a bypass of the brake.
+
+### The routing chain
+
+Backdoored systems can be **chained**, and every run is routed through the chain
+before it reaches its target. That is the reason to hold a backdoor on a system
+worth nothing at all.
+
+**A hop does not slow the run down.** The extraction is a direct pull — the data
+comes straight back — and it is the *trace* that has to walk the chain to reach
+you. So a chain costs no turns, no bandwidth and no heat. What limits it is
+skill, and what it risks is itself.
+
+**The chain is declared per run, not held standing.** Every run picks its own
+path from the routing backdoors the character holds, so how much infrastructure
+goes on the table is a decision made fresh each time: a long chain for the job
+that matters, a short one or none for a routine raid. That is the decision the
+exposure rule exists to make interesting.
+
+**Chain length is a skill, and only a skill:**
+
+| Skill | Rank | Requires | Gives |
+| --- | --- | --- | --- |
+| **Routing** | 4 | Cyberdecks L3 | one system in the chain per level |
+| **Advanced Routing** | 8 | Cyberdecks L5, Routing L5 | one further system per level |
+
+Ten hops is therefore the ceiling a character can reach on skills alone, and
+implants and gear are expected to lift it later. Both skills exist as rows
+today. Siphon backdoors are not eligible and never appear in the list.
+
+**Each backdoored system will hinder the trace by a different amount** —
+depending on what it is, who owns it and how well it is dug in. That is
+specified and not designed: for now a hop is a hop.
+
+**A completed trace burns the whole chain.** A trace *passing through* a
+backdoored system does nothing to it — that is what the chain is for. But a
+trace that reaches 100% and finds you has followed the path all the way home,
+and every system on it is exposed: the backdoors are gone, the systems lock
+down and relocate, and the chain is simply not there any more.
+
+That is the cost that replaces latency, and it is a better one. **A longer chain
+is more protection and more to lose at once.** A ten-hop chain represents ten
+successful backdoor runs, and one bad night takes all of them — which is exactly
+why the chain is chosen per run rather than left standing.
+
+### Names
+
+Systems have names as well as addresses, because `A3F91C08` is not something a
+player will ever say out loud. A generated name is **what it is and who runs
+it**, with a serial to tell it from its siblings: *Data silo - Anansi Data
+Weaving 041*. Those are the two questions a player has about a machine they
+have just swept, and the word-bag names that came first — *Fast Forge*, *Cold
+Vault 041* — answered neither.
+
+**The name is composed, not stored.** Both halves are already columns: `type`
+has always been one and `owner_id` arrived with the corps. Storing the sentence
+they spell would be storing the same facts twice, free to drift the first time
+a corp is renamed. What is stored is `systems.designation`, the one part of the
+name that is nowhere else, and `systems.name` becomes the **override**: NULL on
+nearly every row, and carrying an authored name where there is one. Renaming a
+corporation therefore renames every machine it runs, which is correct — and
+renames nothing a player *remembers*, because a contact snapshots the sentence
+as it read at the moment of looking.
+
+**Every generated machine carries a serial.** 121 corps by three types is 363
+combinations against nearly three thousand machines: unnumbered, a name would
+identify about eight systems at once. It is rolled rather than counted, so
+nobody can read how many machines a corp runs off the side of one of them.
+
+**Grade is deliberately not part of the name**, though an earlier draft of this
+section had it there. A grade is the thing a scan exists to discover — see
+*Grades* — and a name that whispered it would hand that away from the map for
+free.
+
+Event, mission and quest systems carry authored names. Player-owned nodes are
+**named by their players**, which makes them the first player-authored text
+other players will read, with everything that implies for escaping and for
+policy.
+
+---
+
+## Getting in
+
+### Readiness is the gate, and it is checked twice
+
+`DeckTotals::isReady()` is the whole check — compute, memory, link, power, and
+draw within supply. There is no second list.
+
+- **On jacking in.** An unready deck does not enter cyberspace.
+- **At the start of every intrusion run.** Cheap, and it closes the window
+  between entering and attacking.
+
+**If readiness is lost while jacked in, the player is jacked out and takes 1
+point of Synaptic Integrity damage.** Not a warning, not a grace period — the
+machine stopped working while they were inside it. Since the deck is locked
+(below), the only thing that can cause this is the resolver: a buff expiring, a
+drug wearing off, an injury landing. The damage is small because the cause is
+usually not the player's fault; it is nonzero because being dumped out of
+cyberspace should never be free.
+
+That damage carries **no defeat effect**. No ICE was involved, so nothing
+flatlines, surges or erases — at worst it puts the character on the waiting
+screen like any other trip to zero.
+
+### The deck is locked while you are jacked in
+
+You cannot fit a module, strip the deck, unequip it, or destroy it or anything
+fitted in it while jacked in. Three writers enforce one rule — `ModuleFitter`,
+`DeckEquipper`, and the destroy path. Everything else is unaffected: the stash
+still opens, other items can still be destroyed, training carries on.
+
+### Scanning
+
+You can go in blind. It carries steep penalties, and against a system several
+grades above you it is how characters end.
+
+A scan catalogues what is installed: the operating system, the grade, the IDS,
+the ICE, the tracer, and any cloaked systems. **A cloaked system that is
+detected is detected** — there is no second roll for it at ransack time. A full
+scan means you bring your whole skill and software loadout to bear with no
+penalty; a partial one means penalties in proportion to what you did not find.
+
+**Scan data is perishable.** It expires **48 hours** after it is taken, and it
+is **consumed the first time it is used**.
+
+**A mapping run produces a file you can sell**, and that is the whole point of
+the run type — a safer living than intrusion, for people who would rather be
+paid less and survive.
+
+- **Sold to another player**, on the market, it is ordinary goods: the buyer
+  gets one use of it and the system is none the wiser.
+- **Sold to an NPC buyer**, it is a vulnerability report. They pay, they delete
+  it, and **the system resets** — it relocates and takes a new address, exactly
+  as though its lockdown had expired. Nobody else can use that scan afterwards,
+  because there is no longer anything for it to describe.
+
+That second route is deliberately a *different shape* of payday: guaranteed,
+immediate, and it burns the target. A player who maps for NPCs is quietly
+churning the grid for everybody.
+
+### The run plan
+
+**A run is atomic. Every decision is made before it starts.** The player picks
+the target, the purpose, solo or cooperative, their software loadout, and their
+two thresholds; the server resolves the whole thing in one transaction; and the
+client replays the log so it reads as it happened. Nothing is interactive, and
+that is a feature — it means preparation is the game, there is no reconnection
+problem, and pulling the plug cannot save you.
+
+The purposes:
+
+- **Mapping** — scan only, never touch the core. The safest thing you can do in
+  cyberspace, the only run that cannot trigger the second detection roll, and
+  the one that produces something to sell.
+- **Extraction** — steal what it is holding. Clean, it leaves no lockdown behind
+  and the node restocks; caught, it locks down like anything else.
+- **Backdoor** — keep access. Never locks the system down, even when the run
+  went loudly, and the system stays where it is until housekeeping catches it.
+- **Burn** — destroy it. Dead, then empty, then eventually something new.
+
+**A run is roughly 4 to 20 turns**, and knowing that number is what every
+thermal figure in the catalogue has to be calibrated against:
+
+| Phase | Turns |
+| --- | --- |
+| Scanning | 1–5. Chance-based, so a full picture may take several passes or never arrive. |
+| Fighting the ICE | 2–10, if it was ever activated. |
+| Extracting or installing | a few, scaling with the size of the data and scaled back down by the deck's bandwidth. |
+
+That last row is the whole economy of a run plan in one line: **a bigger haul is
+more turns, and a better NIC buys them back.**
+
+**Two thresholds, set as sliders, and they persist as defaults:**
+
+- egress if **trace** rises above *x*%
+- egress if **Synaptic Integrity** falls below *x*%
+
+They persist because they are a play style, not a per-run decision, and
+re-choosing them every time would train players to leave them alone.
+
+### Detection
+
+**Everything hostile can notice you, not just the IDS.** ICE and tracers carry
+their own detection values, much lower than an IDS's — so a system with no IDS
+but with ICE is a real and ordinary thing, and a quiet-looking system is not a
+safe one.
+
+**The IDS gets two chances:**
+
+1. **On approach**, when you arrive.
+2. **On touching the core** — burning, extracting, backdooring, injecting. Any
+   action against the core, not just the destructive ones.
+
+That second roll is why mapping is safe: it never touches the core, so it never
+happens. Detection wakes the tracer and activates the ICE; an undetected run
+walks past both — and leaves no lockdown behind it.
+
+**No check in the game resolves to a certainty**, and detection is only the
+most visible case. `config/checks.php` holds `certainty_floor`, a float, at
+**0.0085**: every roll keeps that much probability at each end however good the
+character and however trivial the opposition. The best runner alive still trips
+a household IDS about once in every hundred and twenty attempts.
+
+That is not a balance patch bolted on afterwards — it is the rule the whole risk
+curve rests on. A mechanic that can be reduced to a certainty stops being a
+mechanic, and cyberspace has several loops that would be farmed the moment one
+was.
+
+**It compounds, and that is the part to design around.** A run makes several
+floored rolls — the IDS on approach, the IDS on the core, the ICE, the tracer.
+Four of them and a clean run is 0.9915⁴ = 96.6%, not 99.15%. Across the three
+raids a system allows, a flawless player gets through untouched 90.3% of the
+time — so roughly one perfect farming attempt in ten still ends in a lockdown.
+**The felt risk of a run is therefore a function of how many rolls it makes**,
+and that count has to be a deliberate design number rather than an accident of
+how the simulator happens to be structured.
+
+At this floor the **raid counter is the dominant brake and the floor is the
+tiebreaker**. That is the intended division of labour: good play is not punished
+by luck, and a node still retires.
+
+### The fight
+
+Turn-based, automated, and **its own engine**. Physical combat and cyberspace
+combat are two engines, deliberately — they share a character and nothing else,
+and forcing one abstraction over both would make each of them worse.
+
+**Every turn does four things**, and they are all the same clock:
+
+1. The ICE and the player act.
+2. Data on the wire moves, at the deck's bandwidth.
+3. Thermal load accumulates — generated by the modules, bled off by the
+   radiators, and what is left over stays.
+4. The trace advances.
+
+That single clock is the spine of the whole design. A bigger haul is more turns;
+more turns is more heat and more trace; a faster NIC buys back turns; a better
+radiator buys back heat. **Nothing in a run is free, because everything in a run
+costs turns.**
+
+It ends four ways: the ICE is defeated, the player is defeated, a threshold
+trips and the player egresses — which is itself a roll against the ICE, so
+retreat can fail and cost a turn — or **the deck burns a module out and throws
+the player through the wall.**
+
+**Accumulated thermal load resets when the run ends.** Heat is a property of a
+run, not of a session or of a deck, so the risk is always about *this* run being
+too long rather than about a deck being tired. That also keeps the simulation
+self-contained: a run needs no state carried in from the last one.
+
+### Burning out a module ends the run
+
+**Thermal load accumulates per turn, so a long fight is a hot deck, and a module
+CAN break from heat inside a run.** This is what the tolerance thresholds are
+for — `heat_level_warning` and `heat_level_limit` are read against the deck's
+accumulated load, and a fight that runs long is the ordinary way a deck reaches
+them. A drawn-out ICE fight is therefore dangerous twice over: the ICE is
+hitting you, and your own deck is cooking.
+
+**A module that breaks is DESTROYED.** There is no damaged state, no repair and
+no degraded mode — the same vocabulary as Surge, which destroys fitted
+hardware, and the same as everything else in the game: an item exists or it does
+not.
+
+**Which module breaks depends on what broke it**, and the two rules are
+different on purpose:
+
+- **Thermal overload takes the thermally weakest module** — the one that
+  overheats first, deterministically. It is the part the player was warned
+  about, on the screen, before they went in.
+- **Anything else that breaks hardware takes a random one.** ICE does not know
+  or care which part is closest to its limit.
+
+When the deck freezes:
+
+- **The run ends and the player is jacked out.** Not an egress and not a defeat
+  — there is no roll, nothing to retreat from, and the ICE does not get a say.
+- **The trace is cancelled.** It was walking a chain to a deck that has just
+  stopped existing as a working machine. Nothing to follow, nothing to arrive
+  at.
+- **The player takes 25–75% of their CURRENT Synaptic Integrity**, rolled, and
+  rounded the ordinary way — below 0.5 is 0. At very low current that means no
+  damage at all, which is fine and needs no special floor.
+
+  **This can only finish somebody who was already at 1 or 2 SI.** Reaching 0
+  needs a roll at or above `1 - 0.5/current` — 50% at 1 SI, 75% at 2, and above
+  100% from 3 upwards, which the range cannot produce. That is deliberate
+  rather than a hole: the flatline below is what carries the real risk of a
+  freeze, and it does not care how much SI you had.
+- **A freeze flatlines 12% of the time**, and takes **5–15% of MAXIMUM SI**
+  when it does, rolled.
+
+  The chance is one number rather than the 10–15% the design first said,
+  because a probability that is itself rolled uniformly is arithmetically just
+  its own mean: rolling 10–15 and then rolling against it is a flat 12.5%. Two
+  dice to say what one says. Move the number, do not widen it back out.
+
+  The amount is small on purpose, because **a flatline is permanent and
+  flatlines ACCUMULATE** — the one that matters is the fourth, not the first, so
+  a single event taking a fifth of a ceiling would end characters rather than
+  mark them. `config/cyberspace.php` holds all three numbers so they can be
+  calibrated together, against each other and against a survivable run length.
+
+  Permanent damage to maximum SI is an unexpiring modifier row and never a
+  subtraction into a column, because maximum SI is derived — see MECHANICS.md,
+  *Flatline is a permanent stored modifier*. It deepens the character's ONE
+  *neural damage* modifier rather than adding a second — see *Losing*. **The
+  stat floors at 1, so accumulated flatlines converge on a maximum of 1 rather
+  than 0**: they permanently cripple and never themselves kill. Current SI then
+  clamps down to the new ceiling on the next save, the way it always has.
+- **No PROGRAM tag fires.** Nothing surges, erases, skims or bounties, because
+  the tag set belongs to the program that got you and here nothing got you. The
+  flatline above is not a tag firing — it is what a violent ejection does to a
+  brain.
+
+**The freeze leaves no new state behind, because it does not need one.** A
+module is gone, so the deck is short of what it needs, so `isReady()` says no
+and the player cannot jack back in until they replace it. That is the lasting
+consequence and it is already expressible — no cooldown, no repair flag, no
+column.
+
+**Three different causes damage SI and they must not be conflated:**
+
+| Cause | Current SI | Flatline? | Program tag? |
+| --- | --- | --- | --- |
+| Readiness lost while jacked in, outside a run | **1 point**, flat | no | no |
+| The deck freezes — a module broke | **25–75% of current**, rolled | **12%**, for 5–15% of max | no |
+| Defeated by ICE | whatever the tag carries | only via the **Flatline** tag | **yes** |
+
+### The order a bad ending happens in
+
+**Damage first, then the consequence it causes, then the ejection, then the
+waiting screen.** Every bad ending resolves in that order, and it is one order
+for all of them so that no two endings can disagree about what a player has
+left:
+
+1. **The damage lands.** SI, and any hardware the event destroys — a burnout's
+   module, a Surge's modules.
+2. **The consequence is worked out.** A destroyed module means a deck that may
+   no longer meet its requirements; a freeze means one that certainly does not.
+3. **It is resolved immediately.** A frozen or unready deck cannot be stood in,
+   so the player is jacked out then and there. Not at the end of the turn, not
+   on their next request — `Navigator::jackOut()`, as part of the same
+   resolution.
+4. **Only then, the waiting screen**, if SI or HP reached 0.
+
+The waiting screen coming last is the load-bearing part. A character must never
+be sitting on it while still holding a position in cyberspace — that is the one
+ordering that produces a state nothing else in the game knows how to read.
+
+**This answers who ends the session on a defeat: every bad ending does, through
+the same door.** A defeat, a burnout and a readiness loss all end with
+`jackOut()` before anything else is shown.
+
+One thing still to decide: **does a Surge that leaves the deck unready also roll
+the freeze's flatline chance?** A Surge fires at 0 SI, so the 25–75% is nil —
+but the 12% flatline roll is not, and stacking it on top of a Surge that may
+already carry the Flatline tag would be two rolls at the same permanent damage.
+The likely answer is that the freeze's damage belongs to a *thermal* burnout and
+a Surge carries only its own tag, but it should be said out loud before either
+is written.
+
+### Losing
+
+**Reaching 0 Synaptic Integrity is not one outcome, it is whichever outcome the
+program that got you carries.** Offensive programs are tagged, and the tag is
+what happens. The tag set is open by design — a new consequence is a new tag,
+never new code in the simulator:
+
+| Tag | What it does |
+| --- | --- |
+| **Flatline** | permanent damage to the character's *maximum* SI |
+| **Drain** | damage to current SI beyond the defeat itself |
+| **Surge** | destroys fitted hardware; levelled (Surge I, II, III …) with rising chance and rising module count |
+| **Erase** | deletes software or data held on the deck |
+| **Skim** | takes carried creds |
+| **Bounty** | puts a bounty on the character — the mechanic comes later, the tag exists now |
+| **Lobotomy** | **paused, not built.** Strips skill points from a random skill. |
+
+**Lobotomy is designed and deliberately shelved**, because it is the only tag
+whose consequences do not stop at the character sheet. Losing points can lose a
+level; losing a level can invalidate a skill that required it, and a module or a
+program that required *that*; and the player has to be told all of it clearly
+rather than discovering it later as a deck that stopped working. That is a
+cascade with a notification design attached, and it is not worth building until
+the simpler tags are proven.
+
+Underneath all of them: **reaching 0 SI or 0 HP puts the character on a waiting
+screen for a few minutes**, shortenable by implants and skills. It is the floor
+that makes every defeat cost something even when the program that beat you was
+carrying nothing worse.
+
+**What is in a node is never reachable by any of this.** A defeat takes what the
+character was carrying, never what they had stored.
+
+**Flatline is a permanent stored modifier, not a written-down number.** Maximum
+SI is derived and must never be stored, so a flatline is an unexpiring modifier
+on `synaptic_integrity_max`, floored at 1 the way maximum HP is. Permanent
+damage to both HP and SI is reversible later, by means not yet designed. See
+MECHANICS.md.
+
+**Every flatline deepens ONE injury rather than adding another.** *Neural
+damage* is a single accumulating modifier per character: -5 that takes another
+-3 becomes -8, and the row is updated rather than joined by a second. The nerves
+do not care what caused the damage, only that there is more of it — which is
+what lets a freeze, an ICE flatline and, later, a drug overdose all write into
+the same injury without knowing about each other, and lets a clinic heal one
+number. MECHANICS.md has the shape.
+
+### Trace, and the heat it leaves
+
+A completed trace puts **heat** on the character. Heat is persistent, it belongs
+to the person, and it is what the world knows about them.
+
+**A trace only lands if it completes.** A deck that freezes cancels it outright
+— see *Burning out a module ends the run* — so burning a module out is not the
+worst of both: it costs a module and a great deal of SI, and it does at least
+take the trace with it.
+
+What a completed trace does:
+
+- **Heat on the character.**
+- **If the system belongs to a faction**, standing with that faction falls.
+  Factions are out of scope for now and this is the hook they arrive on.
+- **If the system belongs to a player, the owner learns who attacked them** —
+  and that is the *only* way they find out. An untraced raid is anonymous, which
+  is what makes stealth worth investing in on both sides of it.
+- **The whole routing chain is exposed and locked down.** Every backdoor on it
+  is gone. See *The routing chain* — this is the price of the protection.
+- **Later: heat draws rogue programs** while moving through cyberspace, and
+  especially through subnets.
+
+**Heat decays on its own, slowly.** Doing nothing is a valid way to cool off and
+a slow one. It can also be **cleaned** through processes not yet designed —
+which is where the money sink is, and the reason heat is a number to manage
+rather than a punishment to endure.
+
+Routing through backdoored relays is what slows a trace down, which is what
+makes a backdoor run worth doing for its own sake.
+
+---
+
+## The map, and how it is driven
+
+**The map is the player's MEMORY, not a live feed.** It draws the terrain they
+have swept and the last thing they saw at each position — so most of it is what
+*was* there, and only the current view window is fresh.
+
+**The window is always centred on the player**, which is what makes the whole
+interaction work: the eight legal steps are therefore always at the same eight
+places on the screen, and the map is already a D-pad without anything drawing
+one.
+
+- **Tap or click a cell to step to it.** The eight around you are step targets.
+  One gesture, all eight directions, no extra chrome, and identical with a
+  mouse or a thumb.
+- **Tap anything else to inspect it** — what you remember of it, and the
+  actions that belong to it: bookmark the position, jump to the address if you
+  know one. A cell with nothing to say is not interactive at all.
+- **Arrow keys move orthogonally; the numpad moves in all eight**, 8 for north
+  and 7 for north-west, the way every roguelike has done it. 5 looks again
+  without moving. Keys are ignored whenever focus is in a text field, or typing
+  an address would walk you across the grid.
+
+**A mis-step is the cheapest error in the game** — one step back, nothing
+destroyed, nothing confirmed — which is what makes a tap target smaller than
+the usual guideline acceptable here. It is not what makes it acceptable
+anywhere else.
+
+---
+
+## Decryption
+
+Every file comes off a system encrypted, and breaking one is **a slow background
+process, never an action**. You start it and walk away.
+
+- **Cycles of several minutes.** At the end of each cycle one check runs — the
+  character's skills and attributes against the file's encryption type and its
+  difficulty. Pass and the file is clear. Fail and the cycle starts again. There
+  is no partial progress and no accumulating bonus: each cycle is a fresh
+  attempt, which is why a bad matchup is slow rather than impossible.
+- **One at a time, with a queue behind it.** The queue is ordered and the player
+  arranges it.
+- **It occupies the deck the whole time.** Compute and memory are consumed while
+  a decryption runs, and the file itself sits in storage. So a decryption is not
+  free background work — **it is a standing claim on the same budgets a run
+  needs**, and starting a run while one is going means starting it with less of
+  everything.
+- **It generates thermal load**, continuously, for as long as it runs.
+
+**This is the training queue's shape, and it should be built as one.**
+`training_queue`, `App\Skills\TrainingDeposit` and `TrainingQueueValidator`
+already solve an ordered queue, a scheduled tick, and entries that quietly went
+invalid. The one real difference is that training deposits deterministically and
+decryption rolls — the tick is a check rather than an accrual.
+
+**The queue has to survive its contents disappearing.** A queued file can be
+erased by ICE, sold, destroyed, or lost with the node it was stored in, and the
+queue must notice and skip rather than break — the same job
+`TrainingQueueValidator` does when it finds a queued skill that was never
+injected.
+
+### A decryption can cook a deck
+
+Thermal load accumulates whenever the deck is working, and a decryption is the
+deck working. That makes the arithmetic binary and easy to warn about:
+
+- **If cooling covers what the decryption generates**, net is zero or negative,
+  nothing accumulates, and the decryption can run for a week.
+- **If it does not**, accumulation never stops, and the deck will eventually
+  cook its weakest module — not during a run, but overnight, unattended.
+
+**So the screen has to say so before the player starts one**, in the same voice
+the deck screen already uses for a loadout that cannot survive: *this deck
+cannot sustain a decryption*. A player who loses a RAM stick while asleep should
+have been told, in advance, that they would.
+
+### Starting, stopping, and the deck it runs on
+
+- **Startable while jacked in, never stoppable.** You may queue and begin a
+  decryption from inside cyberspace; you may not call one off. That asymmetry is
+  the one that never traps anybody — a player can always add work and can never
+  strand themselves halfway out of a state.
+- **Unequipping a deck mid-decryption warns, and then does it.** MECHANICS.md
+  anticipated this — *unequipping will one day have to stop long-running
+  processes, and jacking out will not*. This is that day: the confirmation says
+  what will be lost, and if the player goes ahead the decryption stops and its
+  progress is discarded. They start again from the beginning.
+- **Cycles do not accumulate, deliberately.** Each one is a fresh attempt and a
+  failure carries nothing forward, so what an unequip discards is the current
+  cycle and nothing more. The warning is therefore honest about a small loss,
+  which is the right shape: unequipping a deck is an ordinary thing to do, and
+  it should cost minutes rather than an evening. A file is never *partly*
+  decrypted — it is encrypted until the cycle that opens it.
+
+---
+
+## Player-owned nodes
+
+Players can own systems: somewhere to keep creds and data, and eventually
+somewhere to run processes unattended.
+
+- **They can be raided by other players.** That is the point of them, and it is
+  why holding several is better than holding one — a raid takes what is in the
+  node it reached, not what you own.
+- **What is in a node is safe from what ICE takes off you.** Losing a fight in
+  someone else's system does not reach into your own. That is the trade the
+  player is balancing: carried is usable and exposed, stored is safe and remote.
+- **Stealth and security are investments**, in skills and in software, on the
+  defending side as much as the attacking one.
+- **They lock down and relocate like anything else**, and that is fine, because
+  the owner is told: a notification saying the node was hit, that it is in
+  lockdown, and where it has moved to — **and the owner's bookmark is rewritten
+  to the new address**. A player is never made to hunt for their own property.
+
+**Players are never visible to one another on the grid.** No presence, no
+positions, no synchronisation — this is not a game that supports two people
+being in the same place at the same second, and pretending otherwise would drag
+timing into everything.
+
+---
+
+## Subnets
+
+Smaller grids behind relays: military, darknet, AI. Entry needs prerequisites or
+an intrusion against the relay itself, and what is inside is different in kind
+rather than in degree.
+
+**Rogue programs wander subnets and attack on movement.** This is the one place
+exploration is not merely patience, and the reason a subnet is somewhere you go
+deliberately rather than somewhere you drift into.
+
+---
+
+## Housekeeping
+
+Cyberspace needs scheduled work, and it is **two jobs on two cadences**, not
+one. Both follow `market:seed`'s precedent: `withoutOverlapping()`, no stored
+clock, a missed pass is never made up, and a `--dry-run` that prints the whole
+decision table and writes nothing.
+
+**Nightly** — the world's slow metabolism:
+
+- **Backdoor discovery.** One roll per backdoor, odds rising with its age and
+  with nothing else. A hit removes the backdoor, relocates the system,
+  reassigns its address, and **notifies the player who installed it**.
+- **Backdoor siphons pay out.** A little from each backdoored system, scaled by
+  its grade, straight into the holder's creds.
+- **Node inventories restock**, so emptying one is temporary.
+- **Heat decays** on every character carrying any.
+
+**Frequently — every few minutes** — lockdown expiry:
+
+- Systems whose 2–6 hour lockdown has run out are relocated and reassigned.
+
+The second cannot be folded into the first: a 2–6 hour lockdown that only lifts
+at 04:00 is not a 2–6 hour lockdown. It also cannot be lazy — resolved when
+somebody next looks — because two systems relocating into the same free position
+is a race, and the sweep is what serialises it.
+
+---
+
+## What is not built
+
+All of it. In the order it should be built:
+
+0. Settle this document.
+1. **The check layer.** **Built**: `check.*` and `skill.*` stats, the
+   derived-stat dependency graph, conditional modifiers, `character_modifiers`
+   — the table an unexpiring flatline is a row in — and skills as a
+   `ModifierSource`, so that having a skill grants something beyond its own
+   check. Still missing: anything that ROLLS one. A check is a resolved number
+   today and the die that reads it arrives with the simulator.
+2. **Software.** **Built**: `programs` beside `items`, three costs, a kind that
+   gates and modifiers that resolve; the admin editor; the topbar's readout;
+   the deck screen's Running and Storage tabs, where a program is stopped
+   beside the compute and memory it is spending. A program is running or it is
+   not, running spends compute and memory, and owning it spends storage. Still missing: anything that READS the kind — the gate half waits
+   on the run simulator, which is what will pass `duringRun` and start an
+   icebreaker.
+3. **The grid.** Positions, systems, addresses, movement, discovery, the map,
+   bookmarks, jumping. No intrusion at all — a walkable, empty world.
+
+   **Built so far**: the coordinate space and its one storage class, addresses,
+   the world generator behind `cyberspace:seed`, generated names, both halves
+   of discovery — the terrain bitmap and the contact rows — written together by
+   a sweep, and the session itself: jacking in against the readiness gate,
+   jacking out, stepping, and jumping to an address, every arrival sweeping.
+   Bookmarks are built too, both kinds, along with recalling one, and the map
+   screen that draws all of it. Systems have owners, drawn from the corp roster
+   in WORLDBUILDING.md. The deck lock is built as well. **Phase 3 is done.**
+   What is carried forward is one thing that was never phase 3's: losing
+   readiness while jacked in, which nothing can currently cause. It is in
+   TODO.md with the trigger question it is waiting on.
+4. **Systems and scanning.** Grades, types, owners, node inventories, the probe,
+   and the scan file. Still no combat.
+
+   **Decide here whether the probe needs a running analyser.** Nothing reads a
+   program's kind as a gate yet — that half waits on the simulator, and
+   `ProgramRunner::start()` already carries the `$duringRun` flag nothing passes
+   `true` to. If the probe turns out to be gated on an analyser, this is the
+   phase that becomes the first caller to pass it, rather than phase 5; if the
+   scan is only ever turns 1–5 of a run, the question never arises and the gate
+   stays where it is. Answer it before the probe is written, not after.
+5. **The intrusion.** The simulator, the log, extraction, the defeat tags.
+   Solo only.
+6. **Consequences.** Trace, heat, backdoors and routing, burn, lockdown,
+   relocation, housekeeping.
+7. **The rest.** Cooperative runs, subnets, player-owned nodes, event systems,
+   decryption, glitches.
+
+---
+
+## Open questions
+
+Decided enough to build around, not settled. Resolve them before they acquire
+dependants.
+
+1. **Is the raid counter per system or per character?** Three raids retires a
+   node — but three by anybody, or three by you? A shared counter means someone
+   else can use up a system you found; a per-character one means a popular node
+   is raided into the ground by a hundred people who each think they have two
+   left. The world is shared, which argues for the first.
+2. **When does the raid counter reset?** On relocation is the obvious answer,
+   since the system is effectively new. If it never resets, every system in
+   cyberspace is on a countdown to its third raid and the grid slowly empties
+   into churn.
+3. **Does the 3% floor apply to every roll or only to detection?** *No check is
+   ever certain* is a good rule for a game like this and it would also mean
+   egress can always fail and an attack can always miss. Stated as a floor on
+   detection today; it wants to be a principle or it will be applied unevenly.
+4. **How much is a mapping payday worth against an intrusion?** The whole run
+   type is a design promise about safe income, and the ratio is what makes the
+   promise true or empty. It is also what sets how fast NPC scan sales churn
+   the grid for everyone else.
+5. **How is thermal load recalibrated, concretely?** A run is 4–20 turns, so a
+   module's per-turn generation and a module's tolerance are now two numbers
+   about three orders apart from where the catalogue has them. Someone has to
+   pick a survivable-run length and re-author every module against it.
+6. **How does a decryption attempt work?** A single check per file, or repeated
+   attempts with a cost? Can a failed attempt destroy the file? It is the one
+   place skill turns directly into money, so it wants more shape than "roll".
+7. **Where does decryption happen?** It is at leisure and not in a run — but is
+   it instant, does it take time like training, and does it occupy the deck
+   while it runs?
+8. **What are the node types, and do they mean anything mechanically?** Data
+   silo, compute node, network relay, player-owned. Only the relay currently
+   has a job (routing). The rest are flavour until they decide loot tables or
+   countermeasure mixes.
+9. **Player-authored node names** are the first player text other players read.
+   Length, character set, uniqueness, reporting, and whether an admin can
+   rename one.
+10. **Does Lattice get prerequisites, and does the OS ladder chain?** Today only
+    `IRONCLAD ← Prism-V L3` exists; AuraOS gates nothing and Lattice — rank 16,
+    the top — is reachable from a standing start. The encryption skills have no
+    prerequisites at all yet, deliberately.
+11. **Where does a relocating system go?** **Answered for now: anywhere.** A
+    free position drawn uniformly from the whole grid, which is what
+    `Grid::freePosition()` already does. Local relocation — a system moving
+    within some radius of where it was — is the interesting alternative and is
+    parked below rather than decided. Nothing is blocked by leaving it random.
+
+12. **Does a Surge that leaves the deck unready roll the freeze's flatline
+    chance?** The 25–75% is nil at 0 SI, but the 12% is not, and stacking it
+    on a Surge that may already carry the Flatline tag is two rolls at one
+    permanent consequence. See *The order a bad ending happens in*.
+
+    (*Who ends the session on a bad ending* was the question here before, and
+    it is settled: every bad ending ejects, through `Navigator::jackOut()`,
+    before the waiting screen is shown.)
+
+---
+
+## Ideas, parked
+
+Not questions blocking anything, and not on the roadmap. Written down so they
+are not re-derived from scratch later, and so nobody mistakes them for
+decisions.
+
+**Give the grid geography.** Today every position is interchangeable: grade does
+not vary with where a system is, so a dense cluster of high-value targets is a
+statistical accident rather than a place. It could instead be a place —
+grade correlating with distance from the portal, or districts laid down by
+noise, so a region keeps its character no matter which individual machines
+occupy it.
+
+What it would buy:
+
+- **Somewhere to go.** It is what would make 2048 x 2048 mean something other
+  than four million interchangeable cells — a frontier worth reaching rather
+  than more of the same at a greater distance.
+- **A reason to map rather than to raid.** A region with known character is
+  information worth selling, which is the mapping run's whole premise.
+- **Durable waypoints.** A neighbourhood that is dense *by design* stays dense
+  through relocation, so marking one is a lasting investment rather than a bet
+  on a cluster holding still.
+
+Why it is parked rather than open: clusters already work well enough without it,
+because the grid only moves where players push it. This is an enrichment, not a
+repair.
+
+**Relocate locally.** A system moves within some radius of where it was rather
+than anywhere on the grid. Clusters would survive being worked through, and
+*it moved, but it is still around here somewhere* would become true — which
+would quietly make a waypoint the way to re-find a system whose address died.
+Relocation is uniform-random to begin with; this is the first thing to try if
+that turns out to feel arbitrary.

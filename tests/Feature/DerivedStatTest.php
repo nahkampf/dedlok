@@ -62,7 +62,13 @@ class DerivedStatTest extends TestCase
         $this->assertSame(32.0, $character->stat('synaptic_integrity_max')->value);
     }
 
-    public function test_hitpoints_floor_at_one_but_synaptic_integrity_can_be_zero(): void
+    /**
+     * Both ceilings floor at one, and SI's floor is what makes FLATLINE
+     * survivable: an ICE program tagged flatline lowers this ceiling
+     * permanently, as an unexpiring modifier. Without a floor, accumulated
+     * injury would end a character by arithmetic rather than by damage.
+     */
+    public function test_both_derived_ceilings_floor_at_one(): void
     {
         $character = Character::factory()->create(array_merge(
             array_fill_keys(Character::ATTRIBUTES, 0),
@@ -70,7 +76,7 @@ class DerivedStatTest extends TestCase
         ));
 
         $this->assertSame(1.0, $character->stat('hitpoints_max')->value, 'a character is never born dead');
-        $this->assertSame(0.0, $character->stat('synaptic_integrity_max')->value);
+        $this->assertSame(1.0, $character->stat('synaptic_integrity_max')->value, 'nor born mindless');
     }
 
     // ---- the page ---------------------------------------------------------

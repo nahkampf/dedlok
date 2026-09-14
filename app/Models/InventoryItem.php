@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * card is a physical row holding data rows — the item says what kind of thing
  * it is, the row says where it ended up.
  */
-#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity'])]
+#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at'])]
 class InventoryItem extends Model
 {
     /** @use HasFactory<InventoryItemFactory> */
@@ -33,7 +33,11 @@ class InventoryItem extends Model
 
     protected function casts(): array
     {
-        return ['quantity' => 'integer'];
+        return [
+            'installed_at' => 'datetime',
+            'quantity' => 'integer',
+            'started_at' => 'datetime',
+        ];
     }
 
     /**
@@ -56,6 +60,21 @@ class InventoryItem extends Model
         $item = $this->relationLoaded('item') ? $this->item : Item::find($this->item_id);
 
         if ($item === null || ! $item->stackable) {
+            return null;
+        }
+
+        /*
+         * A RUNNING row is a thing rather than a quantity, so it never joins a
+         * pile — two running icebreakers are two processes, and a row holding
+         * two of them cannot be pointed at or stopped independently.
+         *
+         * This is why running lives on the row and not in a join table: this
+         * key is derived from the row alone on every save, so a flag anywhere
+         * else would be invisible here and the two copies would silently merge
+         * into one. Same failure the cyberdeck stack_key rewrite existed to
+         * kill, one subsystem later.
+         */
+        if ($this->running_on_deck_id !== null) {
             return null;
         }
 
@@ -96,6 +115,40 @@ class InventoryItem extends Model
     public function fitting(): HasOne
     {
         return $this->hasOne(DeckFitting::class, 'module_id');
+    }
+
+    /**
+     * The deck this row is running on, if it is a program that is running.
+     *
+     * A third way of being spoken for, alongside sitting in a container and
+     * being fitted into a socket — all of them decided in scopeLoose(), so no
+     * listing has to learn about any of them.
+     */
+    public function runningOn(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'running_on_deck_id');
+    }
+
+    /** What is running on this row, if it is a deck. */
+    public function processes(): HasMany
+    {
+        return $this->hasMany(self::class, 'running_on_deck_id');
+    }
+
+    public function isRunning(): bool
+    {
+        return $this->running_on_deck_id !== null;
+    }
+
+    /**
+     * Is this the deck its owner is carrying?
+     *
+     * NOT a way of being spoken for — see scopeLoose(). An equipped deck lists
+     * with everything else; this is only how its card says so.
+     */
+    public function isEquipped(): bool
+    {
+        return $this->equippedBy()->exists();
     }
 
     /** What is installed in this row, if it is a deck. */
@@ -169,14 +222,20 @@ class InventoryItem extends Model
      * - INSIDE something — a parent_id. Containment, which is about bulk.
      * - FITTED into a deck. A module in a socket is not cargo, it is part of
      *   the machine.
-     * - EQUIPPED. The deck you are carrying is not in the stash; unequipping
-     *   is what puts it back. (Not "jacked in" — that is a session in
-     *   cyberspace, and a deck stays equipped right through one.)
+     * - RUNNING on one. A process is a thing doing something, and stopping it
+     *   is what puts it back.
+     *
+     * BEING EQUIPPED IS NOT ONE OF THEM, and it used to be. A carried deck is
+     * still a thing you have — it is on you, not elsewhere — so it lists with
+     * everything else and wears its own tag. Taking it out of the grid meant
+     * the stash needed a panel whose only job was to be the one route back to
+     * it, which is a box built to solve a problem the exclusion created.
+     * (Equipped is not "jacked in" either; that is a session in cyberspace, and
+     * a deck stays equipped right through one.)
      *
      * All three belong here rather than at the call sites, so that a fourth
-     * way to be spoken for is one edit and not an audit of every screen. The
-     * third was added after the first two and cost nothing anywhere else,
-     * which is the whole argument for keeping them together.
+     * way to be spoken for is one edit and not an audit of every screen — and
+     * so that removing one is too.
      *
      * @param  Builder<self>  $query
      */
@@ -184,8 +243,17 @@ class InventoryItem extends Model
     {
         $query
             ->whereNull('parent_id')
-            ->whereDoesntHave('fitting')
-            ->whereDoesntHave('equippedBy');
+            ->whereNull('running_on_deck_id')
+            // Installed in a body. Elsewhere in exactly the sense the other
+            // three are: it is yours, and it is not in your hands.
+            ->whereNull('installed_at')
+            ->whereDoesntHave('fitting');
+    }
+
+    /** @param  Builder<self>  $query */
+    public function scopeRunning(Builder $query): void
+    {
+        $query->whereNotNull('running_on_deck_id');
     }
 
     /** @param  Builder<self>  $query */

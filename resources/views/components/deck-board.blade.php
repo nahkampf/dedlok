@@ -9,16 +9,16 @@
     'entry' => null,
     'fitted' => null,
     'spares' => null,
-    // What the deck's heat is doing to each socket. Absent everywhere but the
+    // What the deck's thermal load is doing to each socket. Absent everywhere but the
     // player's screen, where it is the whole point of the pulsing border.
-    'heat' => null,
+    'thermal' => null,
 ])
 
 @php($board = $item->board())
 @php($fitted = $fitted ?? collect())
 @php($spares = $spares ?? collect())
 @php($interactive = $entry !== null)
-@php($heat = $heat ?? new \App\Decks\NoHeatExposure)
+@php($thermal = $thermal ?? new \App\Decks\NoThermalExposure)
 
 {{-- A node knows its TYPE and where it sits; the sockets themselves are rows
      on the definition. Grouping them here rather than inside BoardLayout keeps
@@ -80,7 +80,7 @@
                                      dialog behind it is rendered outside the
                                      board — see below. --}}
                                 <button type="button"
-                                    class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$heat->verdict($socket->id)->slotClass() : 'slot--empty' }}"
+                                    class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty' }}"
                                     data-open="#socket-{{ $socket->id }}"
                                     aria-haspopup="dialog"
                                     aria-label="{{ $node->label() }} — {{ $module?->displayName() ?? Text::get('decks.fitting.empty_socket') }}">
@@ -89,7 +89,7 @@
                                     @endif
                                 </button>
                             @else
-                                <span class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$heat->verdict($socket->id)->slotClass() : 'slot--empty' }}"
+                                <span class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty' }}"
                                       @if ($module) title="{{ $module->displayName() }}" @endif>
                                     @if ($module)
                                         <span class="slot__icon" aria-hidden="true">{{ $module->glyph() }}</span>
@@ -123,6 +123,7 @@
             </template>
 
             <x-item-destroy :entry="$fitting->module" />
+            <x-item-image :entry="$fitting->module" />
         @endif
     @endforeach
 
@@ -155,7 +156,7 @@
                         </span>
                     </div>
 
-                    @php($verdict = $heat->verdict($socket->id))
+                    @php($verdict = $thermal->verdict($socket->id))
                     @unless ($verdict->isSafe())
                         <p class="item-card__note" style="padding:0">{{ $verdict->label() }}</p>
                     @endunless

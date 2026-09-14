@@ -33,6 +33,9 @@ enum Hardware: string
     /** Takes heat away. The only kind whose measure is a subtraction. */
     case Thermal = 'thermal';
 
+    /** Bulk storage: what a file costs by existing, not by running. */
+    case Storage = 'storage';
+
     /** @return list<self> */
     public static function modules(): array
     {
@@ -64,6 +67,7 @@ enum Hardware: string
             self::Expansion => SlotKind::Expansion,
             self::Psu => SlotKind::Psu,
             self::Thermal => SlotKind::Thermal,
+            self::Storage => SlotKind::Storage,
         };
     }
 
@@ -103,6 +107,11 @@ enum Hardware: string
             self::Nic => 'bandwidth',
             self::Psu => 'watts',
             self::Thermal => 'cooling',
+            // Quantabits like RAM, and NOT the same measure. A stick of RAM
+            // and a storage module are not interchangeable, and DeckTotals
+            // sums by measure — sharing `quantabits` would silently merge
+            // working memory with bulk storage into one meaningless figure.
+            self::Storage => 'storage',
             self::Deck, self::Expansion => null,
         };
     }

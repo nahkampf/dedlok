@@ -20,6 +20,14 @@
      a click can land, because the pointer has to cross the gap to reach a
      button and the layer is gone by then. --}}
 <div class="item-card {{ $item->tierClass() }}">
+    {{-- What the thing looks like, found by convention: one subdirectory per
+         type of item under public/images/items. The enlarge dialog is rendered
+         beside the listing instead of here — <x-item-image> — because this card
+         is cloned into the inspector and into a modal, and a <dialog> cloned
+         with it would be a second copy of itself in the top layer. --}}
+    <x-entity-image :kind="$item->imageKind()" :id="$item->id" :alt="$item->displayName()"
+                    dialog="image-{{ $entry->id }}" />
+
     <div class="item-card__hd">
         <div class="row" style="--gap:var(--s-2);align-items:flex-start">
             <span class="stack" style="--gap:5px;min-width:0">
@@ -40,6 +48,14 @@
                 <span class="row row--wrap" style="--gap:var(--s-2)">
                     <span class="tag tag--warn">{{ $item->kindName() }}</span>
                     <span class="item-card__tier">{{ $item->tierName() }}</span>
+                    {{-- Which deck you are carrying. It used to be said by the
+                         stash's "in use" panel, and that panel existed only
+                         because loose() took the deck out of the grid. The deck
+                         is back in the grid, so the fact moves onto the card —
+                         where every other fact about an item already is. --}}
+                    @if ($entry->isEquipped())
+                        <span class="tag">{{ Text::get('decks.equip.is_equipped') }}</span>
+                    @endif
                 </span>
             </span>
             <div class="spacer"></div>
@@ -56,6 +72,12 @@
                  so it reads where the skillbook's skill does. --}}
             <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">
                 {{ $item->hardwareSummary() }}
+            </div>
+        @elseif ($item->programSummary())
+            {{-- What running it costs, and whether it may run outside a run.
+                 Same place, same voice as a module's spec line. --}}
+            <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">
+                {{ $item->programSummary() }}
             </div>
         @endif
     </div>
@@ -209,6 +231,23 @@
                     @csrf
                     <button type="submit" class="btn btn--sm cut">
                         {{ Text::get('inventory.actions.fit') }}
+                    </button>
+                </form>
+            @endif
+
+            @if ($item->program)
+                {{-- Running is a state of THIS row, so the button is a toggle
+                     and the route is one. A running copy is a row of its own —
+                     idle copies stack and running ones do not — so this is
+                     never ambiguous about which one is meant.
+
+                     Offered even for run-only software, because every way it
+                     can fail is a refusal with a sentence attached: "the run
+                     starts this, not you" teaches more than an absent button. --}}
+                <form method="POST" action="{{ route('inventory.run', $entry) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm cut {{ $entry->isRunning() ? 'btn--ghost' : '' }}">
+                        {{ Text::get($entry->isRunning() ? 'programs.action.stop' : 'programs.action.start') }}
                     </button>
                 </form>
             @endif

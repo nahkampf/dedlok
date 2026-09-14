@@ -8,8 +8,10 @@ use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterCreationController;
+use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\SkillTreeController;
 use App\Http\Middleware\ForbidSecondCharacter;
@@ -73,7 +75,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/deck/{entry}/strip', [DeckController::class, 'strip'])->name('deck.strip');
 
     // Which deck is live. One route for both directions, like deck.fit: the
-    // absence of a deck to equip is a request to jack out.
+    // absence of a deck to equip is a request to put the current one away.
+    // NOT jacking out, which is leaving cyberspace and a different act
+    // entirely - an equipped deck sits right through one.
     Route::post('/deck/{entry}/equip', [DeckController::class, 'equip'])->name('deck.equip');
     Route::post('/deck/unequip', [DeckController::class, 'unequip'])->name('deck.unequip');
 
@@ -96,11 +100,57 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/fit', [InventoryController::class, 'fit'])
         ->name('inventory.fit');
 
+    /*
+     * Start or stop a program. One route for both directions, like
+     * inventory.place and deck.fit: running and not running are the same
+     * question about the same row, and the row already knows which way it is
+     * being asked.
+     */
+    Route::post('/inventory/{entry}/run', [InventoryController::class, 'run'])
+        ->name('inventory.run');
+
     // Moving a row into a container, or back out of one. One route for both
     // directions: an absent `parent` means the loose pile, which is the same
     // operation with a null target.
     Route::post('/inventory/{entry}/place', [InventoryController::class, 'place'])
         ->name('inventory.place');
+
+    /*
+     * Implants: what is installed in a body.
+     *
+     * One screen, and two writes that are the same act in both directions —
+     * an implant goes in or it comes out, and which one is being asked for is
+     * decided by the row rather than by a field.
+     */
+    Route::get('/implants', [ImplantController::class, 'index'])->name('implants.index');
+    Route::post('/implants/{entry}/install', [ImplantController::class, 'install'])->name('implants.install');
+    Route::post('/implants/{entry}/remove', [ImplantController::class, 'remove'])->name('implants.remove');
+
+    /*
+     * Cyberspace: the map, and everything done from it.
+     *
+     * One screen. `index` draws the grid whether or not the character is in
+     * it, because the way IN is on it — a rail item that vanished when you
+     * were jacked out would be a rail item nobody trusts, the same rule the
+     * deck link follows.
+     *
+     * Every mover is a POST to its own route rather than one route with an
+     * action field: stepping, jumping, recalling and jacking out are four
+     * different things that happen to change the same two columns, and a
+     * single endpoint switching on a string is where that stops being
+     * checkable.
+     */
+    Route::get('/cyberspace', [CyberspaceController::class, 'index'])->name('cyberspace.index');
+    Route::post('/cyberspace/jack-in', [CyberspaceController::class, 'jackIn'])->name('cyberspace.jack_in');
+    Route::post('/cyberspace/jack-out', [CyberspaceController::class, 'jackOut'])->name('cyberspace.jack_out');
+    Route::post('/cyberspace/step', [CyberspaceController::class, 'step'])->name('cyberspace.step');
+    Route::post('/cyberspace/jump', [CyberspaceController::class, 'jump'])->name('cyberspace.jump');
+
+    // Bookmarks. The recall is a POST because it moves you; the rest edit a
+    // note.
+    Route::post('/cyberspace/bookmark', [CyberspaceController::class, 'bookmark'])->name('cyberspace.bookmark');
+    Route::post('/cyberspace/bookmark/{bookmark}/recall', [CyberspaceController::class, 'recall'])->name('cyberspace.recall');
+    Route::delete('/cyberspace/bookmark/{bookmark}', [CyberspaceController::class, 'forget'])->name('cyberspace.forget');
 });
 
 /*

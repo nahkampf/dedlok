@@ -158,6 +158,31 @@ final class SlotType
     }
 
     /** The name with its kind in front, for a form where both matter. */
+    /**
+     * The label a board node wears, with its kind in front of it.
+     *
+     * A schematic shows variants — "Socket G", "Opto-electrical", "XGate" —
+     * and a variant name does not say what KIND of thing it is. On a spec line
+     * that is fine, because the line is about one socket; on a board it is six
+     * unrelated words and no way to tell the memory from the expansion bus at a
+     * glance. The prefix is the kind, short enough not to become the label.
+     *
+     * A socket with NO variant already reads as its kind — "NIC", "PSU", "NPU"
+     * — so it takes no prefix. "NPU: NPU" is not a clarification.
+     */
+    public function boardLabel(): string
+    {
+        if ($this->variant === null) {
+            return $this->kind->label();
+        }
+
+        $prefix = Text::get("decks.prefixes.{$this->kind->value}");
+
+        return $prefix === "decks.prefixes.{$this->kind->value}"
+            ? $this->variant->label()
+            : "{$prefix}: {$this->variant->label()}";
+    }
+
     public function fullLabel(): string
     {
         return $this->variant === null

@@ -14,6 +14,8 @@ use App\Http\Requests\Admin\ItemRequest;
 use App\Market\Rarity;
 use App\Models\Item;
 use App\Models\Skill;
+use App\Programs\ProgramEditor;
+use App\Programs\ProgramKind;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -84,6 +86,8 @@ class ItemController extends Controller
         $item = DB::transaction(function () use ($request): Item {
             $item = Item::create($request->columns());
 
+            ProgramEditor::apply($item, $request->programKind(), $request->programColumns());
+
             HardwareEditor::apply(
                 $item,
                 $request->hardware(),
@@ -110,6 +114,11 @@ class ItemController extends Controller
     {
         DB::transaction(function () use ($request, $item): void {
             $item->update($request->columns());
+
+            // Always, for the same reason HardwareEditor is: an item that has
+            // stopped being software has to LOSE its program row, or it stays
+            // runnable by anyone who already owns a copy.
+            ProgramEditor::apply($item, $request->programKind(), $request->programColumns());
 
             // Always, even for an item that is not hardware and never was:
             // becoming nothing is a change too, and it is the one that has to
@@ -163,6 +172,7 @@ class ItemController extends Controller
             // be a <select>; when it is not, this becomes a search field.
             'skills' => Skill::orderBy('title')->get(['id', 'slug', 'title']),
             'hardwareKinds' => Hardware::cases(),
+            'programKinds' => ProgramKind::cases(),
             // Every socket a deck could present, which is what the counters
             // in the form are: fourteen numbers, one per type.
             'slotTypes' => SlotType::all(),

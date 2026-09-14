@@ -7,6 +7,7 @@ namespace App\Skills;
 use App\Events\SkillLevelReached;
 use App\Events\TrainingEntryCompleted;
 use App\Models\Character;
+use App\Models\CharacterModifier;
 use App\Models\CharacterSkill;
 use App\Models\TrainingQueueEntry;
 use Carbon\CarbonImmutable;
@@ -119,7 +120,11 @@ final class TrainingDeposit
             return false;
         }
 
-        $perMinute = $character->trainingRateFor($skill);
+        // AS OF THE START OF THIS SEGMENT, not as of now. During a catch-up
+        // the window may be hours long and the character's modifiers may have
+        // changed inside it; segmentEnd() below cuts the segment at every one
+        // of those changes, and this is what makes the cut mean something.
+        $perMinute = $character->trainingRateFor($skill, $cursor);
 
         if ($perMinute <= 0) {
             // Every governing attribute is zero. Training can never finish, so
@@ -165,7 +170,35 @@ final class TrainingDeposit
         if ($award <= 0) {
             $entry->forceFill(['sp_per_minute' => $perMinute])->save();
 
-            return false;   // not yet a full point's worth of time
+            /*
+             * Not a whole point's worth of time — but WHY the segment is short
+             * decides whether that means stop or step over.
+             *
+             * A segment that ran all the way to `now` is simply the player
+             * arriving early: the clock stays put and the time is credited on
+             * the next visit. That is the ordinary case and it must not move
+             * the cursor, or the leftover minutes would be thrown away every
+             * time anybody looked at the screen.
+             *
+             * A segment cut SHORT BY A RATE CHANGE is a different thing. The
+             * sliver before the boundary is worth less than a point, and
+             * stopping here would abandon the entire rest of the window — which
+             * is exactly what happened the first time a timed modifier expired
+             * mid-catch-up. Step over the boundary and let the next segment,
+             * at its own rate, carry on.
+             *
+             * The cost is under one point per rate change, truncated rather
+             * than carried, because the leftover time was earned at a rate that
+             * no longer applies and crediting it at the new one would be a
+             * different wrong answer.
+             */
+            if ($segmentEnd < $now) {
+                $entry->forceFill(['last_deposited_at' => $segmentEnd])->save();
+
+                return true;
+            }
+
+            return false;
         }
 
         $award = min($award, $cap - $progress->skill_points);
@@ -266,16 +299,45 @@ final class TrainingDeposit
     /**
      * Moments inside a window at which the training rate changes.
      *
-     * Empty today: the only modifiers that exist are archetype perks, which are
-     * permanent. This is where timed modifiers plug in — a drug expiring
-     * mid-outage must split the gap, or its bonus is credited for the whole
-     * period instead of the ten minutes it had left.
+     * A modifier is live over an interval — applied until it expires — so both
+     * ENDS of that interval are places the rate can move. A drug taken during
+     * an outage starts helping when it was taken, and stops when it wears off;
+     * crediting either across the whole window is wrong, in opposite
+     * directions.
+     *
+     * Every boundary is returned, not only the ones that touch a training
+     * attribute. Splitting where nothing changed costs one extra resolution
+     * and computes the same rate twice; working out in advance whether a given
+     * modifier could matter would mean this method knowing which stats feed a
+     * training rate, which is the resolver's business and not its caller's.
+     *
+     * The caller takes the earliest boundary strictly inside the segment, so
+     * order and duplicates do not matter here.
      *
      * @return list<CarbonImmutable>
      */
     private function rateChangeBoundaries(Character $character, CarbonImmutable $from, CarbonImmutable $to): array
     {
-        return [];
+        $moments = [];
+
+        $rows = CharacterModifier::query()
+            ->where('character_id', $character->getKey())
+            ->where(function ($query) use ($from, $to): void {
+                $query
+                    ->whereBetween('created_at', [$from, $to])
+                    ->orWhereBetween('expires_at', [$from, $to]);
+            })
+            ->get(['created_at', 'expires_at']);
+
+        foreach ($rows as $row) {
+            foreach ([$row->created_at, $row->expires_at] as $moment) {
+                if ($moment !== null && $moment > $from && $moment < $to) {
+                    $moments[] = CarbonImmutable::instance($moment);
+                }
+            }
+        }
+
+        return $moments;
     }
 
     /**

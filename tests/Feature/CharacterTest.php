@@ -44,9 +44,15 @@ class CharacterTest extends TestCase
             'creds',
             // Which deck is live. A column here rather than a flag on the
             // inventory row, so "only one at a time" is not a rule anybody
-            // has to enforce — one column holds one value. NULL is jacked
-            // out, which is the ordinary state.
+            // has to enforce — one column holds one value. NULL is carrying
+            // no deck, which is the ordinary state. NOT jacked out: that is
+            // the pair below, and equipping was never either of these.
             'equipped_deck_id',
+            // Where they are standing in cyberspace, and therefore whether
+            // they are in it at all. Null together or set together — the
+            // schema's CHECK says so — because half a position is not a
+            // place. Jacked out is the ordinary state.
+            'grid_x', 'grid_y',
             'created_at', 'updated_at',
         ];
 

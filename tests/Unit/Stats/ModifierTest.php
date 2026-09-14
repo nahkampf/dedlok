@@ -34,22 +34,34 @@ class ModifierTest extends TestCase
         $this->assertSame('attribute+mental', $m->target->describe());
     }
 
+    public function test_a_condition_is_read_and_the_modifier_knows_it_is_conditional(): void
+    {
+        $m = Modifier::fromArray([
+            'op' => 'add',
+            'amount' => 5,
+            'target' => ['id' => 'focus'],
+            'condition' => ['when' => 'si_below_pct', 'args' => ['pct' => 30]],
+        ]);
+
+        $this->assertTrue($m->isConditional());
+        $this->assertSame('si_below_pct(pct=30)', $m->condition?->describe());
+    }
+
     /**
-     * Conditions are specified in MECHANICS.md but not implemented. A condition
-     * written today must fail loudly rather than be silently ignored, which
-     * would leave a modifier applying unconditionally and quietly unbalance the
-     * game.
+     * A predicate is a NAME, and an unknown one fails where it is written
+     * rather than the first time somebody happens to be under 30% SI. The
+     * message lists what is available, because the usual cause is a typo.
      */
-    public function test_an_unimplemented_condition_key_is_rejected_not_ignored(): void
+    public function test_an_unknown_predicate_is_rejected_at_the_point_it_is_written(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessageMatches('/Unknown modifier keys: condition/');
+        $this->expectExceptionMessageMatches('/Unknown condition predicate \[hp_belo\]/');
 
         Modifier::fromArray([
             'op' => 'add',
             'amount' => 5,
             'target' => ['id' => 'focus'],
-            'condition' => ['when' => 'hp_below_pct', 'args' => ['pct' => 30]],
+            'condition' => ['when' => 'hp_belo', 'args' => ['pct' => 30]],
         ]);
     }
 

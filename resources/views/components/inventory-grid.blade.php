@@ -1,5 +1,13 @@
 @use('App\Support\Text')
-@props(['rows', 'hint', 'containers' => null])
+@props([
+    'rows',
+    'hint',
+    'containers' => null,
+    // Renders without the .panel wrapper, for a grid that is already inside
+    // one. A panel nested in a panel reads as a mistake and boxes what is
+    // already boxed; the heading becomes a rule instead.
+    'bare' => false,
+])
 
 @php($containers = $containers ?? collect())
 
@@ -9,19 +17,31 @@
      There are no empty or locked slots padding the grid out. Neither inventory
      has a capacity, so a run of empties would draw a limit that does not exist
      — .slots--fluid simply fits as many columns as the viewport holds. --}}
-<div class="panel">
-    <div class="panel__hd">
+{{-- .rule draws its own trailing line, so the count goes before it rather
+     than being pushed to the far edge by a spacer that would then sit on the
+     wrong side of the line. --}}
+@if ($bare)
+    <div class="rule">
         <span class="micro">{{ $hint }}</span>
-        <div class="spacer"></div>
-        <span class="micro num">{{ Text::plural('inventory.count', $rows->sum('quantity')) }}</span>
+        <span class="micro num" style="color:var(--ink-3)">{{ Text::plural('inventory.count', $rows->sum('quantity')) }}</span>
     </div>
+@endif
+
+<div @class(['panel' => ! $bare])>
+    @unless ($bare)
+        <div class="panel__hd">
+            <span class="micro">{{ $hint }}</span>
+            <div class="spacer"></div>
+            <span class="micro num">{{ Text::plural('inventory.count', $rows->sum('quantity')) }}</span>
+        </div>
+    @endunless
 
     @if ($rows->isEmpty())
-        <div class="panel__bd">
+        <div @class(['panel__bd' => ! $bare])>
             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('inventory.empty') }}</p>
         </div>
     @else
-        <div class="panel__bd stack" style="--gap:var(--s-3)">
+        <div @class(['panel__bd' => ! $bare, 'stack']) style="--gap:var(--s-3)">
             <div class="slots slots--fluid" style="--slot-min:56px">
                 @foreach ($rows as $entry)
                     @php($item = $entry->item)
@@ -71,6 +91,7 @@
                     </template>
 
                     <x-item-destroy :entry="$entry" />
+                    <x-item-image :entry="$entry" />
                 @endforeach
             </div>
 

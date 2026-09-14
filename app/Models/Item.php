@@ -7,7 +7,9 @@ namespace App\Models;
 use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotLayout;
+use App\Implants\BodyRegion;
 use App\Market\Rarity;
+use App\Programs\ProgramKind;
 use App\Support\Text;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -30,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[Fillable([
     'slug', 'name', 'flavor', 'container', 'tier', 'rarity', 'stackable', 'use_op', 'use_skill_id',
     'weight', 'size', 'capacity', 'accepts', 'hardware', 'board_layout', 'base_cost', 'on_market', 'seed_quantity',
+    'implant_region', 'modifiers',
 ])]
 class Item extends Model
 {
@@ -49,6 +52,15 @@ class Item extends Model
     /** @var list<string> */
     public const USE_OPS = [self::USE_INJECT_SKILL];
 
+    /** Where every item's picture lives, one subdirectory per type below it. */
+    public const IMAGE_ROOT = 'items';
+
+    /**
+     * The one image type that is not an enum case: a book is data on the card
+     * and a book in the filing cabinet, and every book looks the same.
+     */
+    public const IMAGE_SKILLBOOK = 'skillbook';
+
     /**
      * Two tiers, and the scale is deliberately short.
      *
@@ -61,6 +73,8 @@ class Item extends Model
     protected function casts(): array
     {
         return [
+            'implant_region' => BodyRegion::class,
+            'modifiers' => 'array',
             'tier' => 'integer',
             'rarity' => Rarity::class,
             'stackable' => 'boolean',
@@ -92,12 +106,46 @@ class Item extends Model
      * Ordered here rather than at every call site: a deck's sockets are a
      * list a player reads, and id order after an edit is not that list.
      */
+    /**
+     * Where in a body this goes, or null if it is not an implant.
+     *
+     * The ONLY place the region is written down, so a fitted row can never
+     * disagree with its definition about where it went — the lesson
+     * `deck_modules` learned by carrying the numbers and not the word.
+     */
+    public function implantRegion(): ?BodyRegion
+    {
+        return $this->implant_region;
+    }
+
+    public function isImplant(): bool
+    {
+        return $this->implant_region !== null;
+    }
+
     public function deckSlots(): HasMany
     {
         return $this->hasMany(DeckSlot::class)->orderBy('position');
     }
 
     /** What this module is worth. Null for everything that is not one. */
+    /**
+     * The software half, if this item is a program.
+     *
+     * Its presence is what MAKES an item a program — there is no column on
+     * this table saying so, the same way `deck_modules` rather than a word is
+     * what makes an item a module.
+     */
+    public function program(): HasOne
+    {
+        return $this->hasOne(Program::class);
+    }
+
+    public function isProgram(): bool
+    {
+        return $this->program()->exists();
+    }
+
     public function deckModule(): HasOne
     {
         return $this->hasOne(DeckModule::class);
@@ -262,10 +310,104 @@ class Item extends Model
      * in has already been answered by the tab it was found under. Everything
      * else falls back to that inventory, which is the only kind it has.
      */
+    /**
+     * What this item IS, in one word.
+     *
+     * Deck hardware says which piece it is, software says what it is for, and
+     * everything else falls back to the inventory it lives in. A program that
+     * called itself "Data" would be telling the player the one thing they can
+     * already see from where it is sitting.
+     */
     public function kindName(): string
     {
         return $this->hardware?->label()
+            ?? $this->program?->kind->label()
             ?? Text::get("items.kinds.{$this->container}");
+    }
+
+    /**
+     * Which folder under public/images this item's picture is found in.
+     *
+     * One subdirectory per TYPE of item — `items/cpu`, `items/icebreaker`,
+     * `items/physical` — because one folder holding every item in the game is
+     * a folder nobody can find a file in. The vocabulary is the one the card
+     * already speaks (see kindName()), with two differences, both because this
+     * is a filing system rather than a sentence:
+     *
+     *  - a skillbook files itself, though it CALLS itself data: there is one
+     *    book per skill and they all look alike, so one picture in one folder
+     *    covers every book in the game;
+     *  - a container's kind is the inventory it lives in, which is the same
+     *    fallback kindName() ends on.
+     *
+     * `App\Support\Image` walks the default back up, so a type with no
+     * picture of its own falls to `items/_default.jpg` rather than to nothing.
+     */
+    public function imageKind(): string
+    {
+        return self::IMAGE_ROOT.'/'.$this->imageType();
+    }
+
+    /** The subdirectory alone: `cpu`, `daemon`, `skillbook`, `physical`. */
+    public function imageType(): string
+    {
+        if ($this->hardware !== null) {
+            return $this->hardware->value;
+        }
+
+        if ($this->program !== null) {
+            return $this->program->kind->value;
+        }
+
+        return $this->isSkillbook() ? self::IMAGE_SKILLBOOK : $this->container;
+    }
+
+    /**
+     * Every type there is, which is every subdirectory there should be.
+     *
+     * Composed from the three enums rather than written out, so a new kind of
+     * hardware or program arrives here on its own — a folder that has to be
+     * remembered is a folder that is missing on the day it is needed.
+     *
+     * @return list<string>
+     */
+    public static function imageTypes(): array
+    {
+        return [
+            ...array_column(Hardware::cases(), 'value'),
+            ...ProgramKind::values(),
+            self::IMAGE_SKILLBOOK,
+            ...self::CONTAINERS,
+        ];
+    }
+
+    /**
+     * What a program costs, as a spec line.
+     *
+     * Reads like a module's, and for the same reason: the numbers, never the
+     * word. Which kind of program it is has already been said beside the tier.
+     *
+     * Two of the three are spent only while it runs and the third is paid by
+     * owning it, so the line says which is which rather than leaving three
+     * bare quantabit figures to be told apart by position.
+     */
+    public function programSummary(): ?string
+    {
+        $program = $this->program;
+
+        if ($program === null) {
+            return null;
+        }
+
+        $parts = [
+            Text::get('programs.costs.compute', ['value' => $program->qflops_cost]),
+            Text::get('programs.costs.memory', ['value' => $program->memory_cost]),
+            Text::get('programs.costs.storage', ['value' => $program->storage_size]),
+        ];
+
+        $parts[] = Text::get($program->background_process ? 'programs.background' : 'programs.run_only');
+
+        return implode(Text::get('items.summary.separator'), $parts);
     }
 
     public function tierName(): string

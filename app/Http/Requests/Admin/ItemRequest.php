@@ -12,6 +12,8 @@ use App\Decks\SlotType;
 use App\Decks\Variant;
 use App\Market\Rarity;
 use App\Models\Item;
+use App\Programs\ProgramKind;
+use App\Stats\Modifier;
 use App\Support\Text;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -50,7 +52,7 @@ class ItemRequest extends FormRequest
      *
      * @var list<string>
      */
-    private const MEASURES = ['qflops', 'quantabits', 'bandwidth', 'watts', 'cooling'];
+    private const MEASURES = ['qflops', 'quantabits', 'bandwidth', 'watts', 'cooling', 'storage'];
 
     /** What an unsigned int column holds. A number above it is a typo. */
     private const MAX_MEASURE = 4_294_967_295;
@@ -89,9 +91,10 @@ class ItemRequest extends FormRequest
             'bandwidth' => $this->numberOrNull('bandwidth'),
             'watts' => $this->numberOrNull('watts'),
             'cooling' => $this->numberOrNull('cooling'),
-            'heat' => $this->numberOrNull('heat'),
-            'heat_level_warning' => $this->numberOrNull('heat_level_warning'),
-            'heat_level_limit' => $this->numberOrNull('heat_level_limit'),
+            'storage' => $this->numberOrNull('storage'),
+            'thermal_load' => $this->numberOrNull('thermal_load'),
+            'thermal_warning' => $this->numberOrNull('thermal_warning'),
+            'thermal_limit' => $this->numberOrNull('thermal_limit'),
             // The socket counters, with the empty ones dropped. The editor
             // renders all fourteen whatever kind of item is being edited, so
             // a form full of zeroes has to arrive as "no sockets asked for"
@@ -104,6 +107,16 @@ class ItemRequest extends FormRequest
             // can read its shape; a string that is not an object stays a
             // string and fails `array`, which is the message we want.
             'board_layout' => $this->boardLayout(),
+            // Software. Empty is no value, the same as every measure above.
+            'program_kind' => $this->filled('program_kind') ? $this->input('program_kind') : null,
+            'qflops_cost' => $this->numberOrNull('qflops_cost'),
+            'memory_cost' => $this->numberOrNull('memory_cost'),
+            'storage_size' => $this->numberOrNull('storage_size'),
+            'background_process' => $this->boolean('background_process'),
+            // One JSON document, like the board, and decoded here so the array
+            // rules below can see its shape. A string that is not an array
+            // stays a string and fails `array`, which is the message we want.
+            'program_modifiers' => $this->programModifiers(),
         ]);
     }
 
@@ -136,6 +149,7 @@ class ItemRequest extends FormRequest
         $capacity = (int) $this->input('capacity', 0);
         $isSkillbook = $this->input('use_op') === Item::USE_INJECT_SKILL;
         $hardware = $this->hardware();
+        $isProgram = $this->programKind() !== null;
 
         return array_merge([
             // Only on create. A slug is permanent — inventory rows and the
@@ -214,6 +228,46 @@ class ItemRequest extends FormRequest
             'board_layout.*' => ['array', 'size:2'],
             'board_layout.*.0' => ['numeric', 'between:'.BoardLayout::MIN.','.BoardLayout::MAX],
             'board_layout.*.1' => ['numeric', 'between:'.BoardLayout::MIN.','.BoardLayout::MAX],
+
+            /*
+             * SOFTWARE. An item is a program because it has a kind, the same
+             * way it is deck hardware because it has one — and the two are
+             * mutually exclusive without a rule saying so, because hardware
+             * forces `container` to physical and a program is data.
+             *
+             * A skillbook is not a program either. Both are data with a job,
+             * and `use_op` already says which job; a row claiming both would
+             * be a book that runs and a program that teaches.
+             */
+            'program_kind' => $hardware !== null || $isSkillbook
+                ? ['prohibited']
+                : ['nullable', Rule::enum(ProgramKind::class)],
+
+            'qflops_cost' => $isProgram
+                ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                : ['prohibited'],
+            'memory_cost' => $isProgram
+                ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                : ['prohibited'],
+            'storage_size' => $isProgram
+                ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                : ['prohibited'],
+
+            // A checkbox is always present and always boolean, so this one is
+            // not prohibited for a non-program — it is simply not written.
+            'background_process' => ['boolean'],
+
+            /*
+             * What running it does. A list of modifier definitions in the
+             * shape App\Stats\Modifier::fromArray() reads, and validated by
+             * BUILDING them in withValidator() — the only check that is worth
+             * anything, since a shape that parses but names an unknown op is
+             * a modifier that throws the first time a player runs it.
+             *
+             * Empty is ordinary. A plain icebreaker modifies nothing; being a
+             * gate is the whole of what it does.
+             */
+            'program_modifiers' => $isProgram ? ['nullable', 'array'] : ['prohibited'],
         ], $this->slotCountRules(), $this->moduleRules($hardware));
     }
 
@@ -272,11 +326,11 @@ class ItemRequest extends FormRequest
                 ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
 
-            // And the mirror: a radiator takes heat away and makes none —
+            // And the mirror: a radiator takes load away and makes none —
             // chk_deck_modules_thermal. Zero is allowed on everything else,
             // because most modules run cool and a required 1 would be a
             // number invented to satisfy a rule.
-            'heat' => $hardware?->heats()
+            'thermal_load' => $hardware?->heats()
                 ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
 
@@ -287,12 +341,13 @@ class ItemRequest extends FormRequest
              * pairing and the ordering are withValidator()'s, because neither
              * rule can see the other field from here.
              */
-            'heat_level_warning' => $hardware?->isModule()
+            'thermal_warning' => $hardware?->isModule()
                 ? ['nullable', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
-            'heat_level_limit' => $hardware?->isModule()
+            'thermal_limit' => $hardware?->isModule()
                 ? ['nullable', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
+
         ];
 
         $measure = $hardware?->measure();
@@ -337,8 +392,8 @@ class ItemRequest extends FormRequest
             'variant.prohibited' => Text::get('admin.validation.variant_needs_a_kind'),
             'power_draw.prohibited' => Text::get('admin.validation.no_power_draw'),
             'power_draw.required' => Text::get('admin.validation.module_needs_power'),
-            'heat.prohibited' => Text::get('admin.validation.no_heat'),
-            'heat.required' => Text::get('admin.validation.module_needs_heat'),
+            'thermal_load.prohibited' => Text::get('admin.validation.no_thermal_load'),
+            'thermal_load.required' => Text::get('admin.validation.module_needs_thermal_load'),
         ];
     }
 
@@ -382,6 +437,40 @@ class ItemRequest extends FormRequest
      */
     public function withValidator(Validator $validator): void
     {
+        /*
+         * A modifier definition is validated by BUILDING it.
+         *
+         * Nothing weaker is worth having. A shape that parses as JSON but
+         * names an op that does not exist, or a condition whose predicate is
+         * misspelled, is a modifier that throws the first time a player runs
+         * the program — which is a 500 on somebody else's screen, hours later,
+         * with nothing pointing back here. Modifier::fromArray() already
+         * refuses all of it with a message that names the problem; this hands
+         * that message to the person who can fix it.
+         */
+        $validator->after(function (Validator $validator): void {
+            if ($this->programKind() === null || $validator->errors()->has('program_modifiers')) {
+                return;
+            }
+
+            foreach ((array) $this->input('program_modifiers', []) as $index => $definition) {
+                if (! is_array($definition)) {
+                    $validator->errors()->add('program_modifiers', Text::get('admin.validation.modifier_shape'));
+
+                    continue;
+                }
+
+                try {
+                    Modifier::fromArray($definition);
+                } catch (\InvalidArgumentException $e) {
+                    $validator->errors()->add('program_modifiers', Text::get('admin.validation.modifier_invalid', [
+                        'index' => (int) $index + 1,
+                        'reason' => $e->getMessage(),
+                    ]));
+                }
+            }
+        });
+
         $validator->after(function (Validator $validator): void {
             if (! ($this->hardware()?->isDeck() ?? false) || $validator->errors()->has('slots')) {
                 return;
@@ -406,17 +495,17 @@ class ItemRequest extends FormRequest
                 }
             }
 
-            // Both heat levels or neither, and in that order. The schema's
-            // chk_deck_modules_heat_levels says the same; this is the half
+            // Both thermal levels or neither, and in that order. The schema's
+            // chk_deck_modules_thermal_levels says the same; this is the half
             // that explains itself, since what the database returns is a 500
             // and a constraint name.
-            $warning = $this->input('heat_level_warning');
-            $limit = $this->input('heat_level_limit');
+            $warning = $this->input('thermal_warning');
+            $limit = $this->input('thermal_limit');
 
             if (($warning === null) !== ($limit === null)) {
-                $validator->errors()->add('heat_level_limit', Text::get('admin.validation.heat_levels_pair'));
+                $validator->errors()->add('thermal_limit', Text::get('admin.validation.thermal_levels_pair'));
             } elseif ($warning !== null && (int) $limit < (int) $warning) {
-                $validator->errors()->add('heat_level_limit', Text::get('admin.validation.heat_levels_order'));
+                $validator->errors()->add('thermal_limit', Text::get('admin.validation.thermal_levels_order'));
             }
 
             // A board's keys are socket types. `board_layout.*` can say what
@@ -468,8 +557,8 @@ class ItemRequest extends FormRequest
         // The hardware lives in two other tables. `hardware` itself stays —
         // it is the column on `items` that says which of them to look in.
         unset(
-            $data['slots'], $data['variant'], $data['power_draw'], $data['heat'],
-            $data['heat_level_warning'], $data['heat_level_limit'],
+            $data['slots'], $data['variant'], $data['power_draw'], $data['thermal_load'],
+            $data['thermal_warning'], $data['thermal_limit'],
         );
 
         // Always written, never merely omitted: an item that has stopped being
@@ -489,7 +578,67 @@ class ItemRequest extends FormRequest
             unset($data[$column]);
         }
 
+        // Software lives in its own table too. Nothing on `items` says an item
+        // is a program — the row is what says so — so none of these stay.
+        unset(
+            $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
+            $data['storage_size'], $data['background_process'], $data['program_modifiers'],
+        );
+
         return $data;
+    }
+
+    /** What kind of software this payload describes, if any. */
+    public function programKind(): ?ProgramKind
+    {
+        $value = $this->input('program_kind');
+
+        return is_string($value) && $value !== '' ? ProgramKind::tryFrom($value) : null;
+    }
+
+    /**
+     * The program's row, everything but the kind.
+     *
+     * @return array<string, mixed>
+     */
+    public function programColumns(): array
+    {
+        $data = $this->validated();
+
+        return [
+            'qflops_cost' => (int) ($data['qflops_cost'] ?? 0),
+            'memory_cost' => (int) ($data['memory_cost'] ?? 0),
+            'storage_size' => (int) ($data['storage_size'] ?? 0),
+            'background_process' => (bool) ($data['background_process'] ?? false),
+            // Null rather than [], because a program that only gates genuinely
+            // modifies nothing and the two should not be different spellings
+            // of one fact.
+            'modifiers' => ($data['program_modifiers'] ?? []) === []
+                ? null
+                : array_values((array) $data['program_modifiers']),
+        ];
+    }
+
+    /**
+     * The modifiers field, decoded.
+     *
+     * @return array<int, mixed>|string|null
+     */
+    private function programModifiers(): array|string|null
+    {
+        $raw = $this->input('program_modifiers');
+
+        if ($raw === null || $raw === '' || $raw === '[]') {
+            return [];
+        }
+
+        if (is_array($raw)) {
+            return $raw;
+        }
+
+        $decoded = json_decode((string) $raw, true);
+
+        return is_array($decoded) ? $decoded : (string) $raw;
     }
 
     /** What kind of deck hardware this payload describes, if any. */
@@ -528,9 +677,9 @@ class ItemRequest extends FormRequest
             'power_draw' => (int) ($data['power_draw'] ?? 0),
             // A radiator's is prohibited and therefore absent, which is the
             // zero chk_deck_modules_thermal wants.
-            'heat' => (int) ($data['heat'] ?? 0),
-            'heat_level_warning' => $data['heat_level_warning'] ?? null,
-            'heat_level_limit' => $data['heat_level_limit'] ?? null,
+            'thermal_load' => (int) ($data['thermal_load'] ?? 0),
+            'thermal_warning' => $data['thermal_warning'] ?? null,
+            'thermal_limit' => $data['thermal_limit'] ?? null,
         ];
 
         foreach (self::MEASURES as $column) {

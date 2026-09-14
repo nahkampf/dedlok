@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Skills\SkillProgression;
+use App\Stats\SkillStats;
 use Database\Factories\SkillFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[Fillable([
     'slug', 'title', 'description', 'category', 'rank',
     'primary_attribute', 'secondary_attribute', 'base_cost', 'on_market',
+    'modifiers',
 ])]
 class Skill extends Model
 {
@@ -32,6 +34,9 @@ class Skill extends Model
     protected function casts(): array
     {
         return [
+            // What having the skill grants. Each entry carries a `level`;
+            // App\Stats\Sources\SkillEffects is the only reader.
+            'modifiers' => 'array',
             'rank' => 'integer',
             'base_cost' => 'integer',
             'on_market' => 'boolean',
@@ -106,5 +111,18 @@ class Skill extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    /**
+     * Every skill generates two stats — `skill.<slug>` and `check.<slug>` —
+     * and that list is cached, because check resolution reads it on nearly
+     * every request. Renaming, adding or deleting a skill has to drop it, and
+     * doing that here rather than in the admin controller means a seeder, a
+     * tinker session and the editor all stay in step.
+     */
+    protected static function booted(): void
+    {
+        static::saved(static fn () => SkillStats::forget());
+        static::deleted(static fn () => SkillStats::forget());
     }
 }

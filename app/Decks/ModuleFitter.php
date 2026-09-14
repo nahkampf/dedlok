@@ -8,6 +8,7 @@ use App\Models\Character;
 use App\Models\DeckFitting;
 use App\Models\DeckSlot;
 use App\Models\InventoryItem;
+use App\Programs\ProgramRunner;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -44,6 +45,11 @@ final class ModuleFitter
             return FittingResult::refused(FittingRefusal::NotOwned);
         }
 
+        // The deck is running and its owner is inside it.
+        if ($character->isLockedInCyberspace($deck)) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
+        }
+
         if (! ($deck->item?->isCyberdeck() ?? false)) {
             return FittingResult::refused(FittingRefusal::NotADeck);
         }
@@ -67,7 +73,9 @@ final class ModuleFitter
             return FittingResult::refused(FittingRefusal::Stowed);
         }
 
-        return DB::transaction(function () use ($deck, $slot, $module): FittingResult {
+        return DB::transaction(function () use ($character, $deck, $slot, $module): FittingResult {
+            $this->stopProcesses($character, $deck);
+
             $occupant = DeckFitting::query()
                 ->where('deck_id', $deck->getKey())
                 ->where('deck_slot_id', $slot->getKey())
@@ -128,6 +136,12 @@ final class ModuleFitter
             return FittingResult::refused(FittingRefusal::NotEquipped);
         }
 
+        // This one always targets the equipped deck, so being jacked in
+        // always refuses it.
+        if ($character->isLockedInCyberspace($deck)) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
+        }
+
         $sockets = $deck->item->deckSlots->filter(
             fn (DeckSlot $slot): bool => $slot->accepts($module->item)
         );
@@ -165,7 +179,13 @@ final class ModuleFitter
             return FittingResult::refused(FittingRefusal::NotOwned);
         }
 
-        return DB::transaction(function () use ($deck, $slot): FittingResult {
+        if ($character->isLockedInCyberspace($deck)) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
+        }
+
+        return DB::transaction(function () use ($character, $deck, $slot): FittingResult {
+            $this->stopProcesses($character, $deck);
+
             $fitting = DeckFitting::query()
                 ->where('deck_id', $deck->getKey())
                 ->where('deck_slot_id', $slot->getKey())
@@ -196,11 +216,17 @@ final class ModuleFitter
             return FittingResult::refused(FittingRefusal::NotOwned);
         }
 
+        if ($character->isLockedInCyberspace($deck)) {
+            return FittingResult::refused(FittingRefusal::JackedIn);
+        }
+
         if (! ($deck->item?->isCyberdeck() ?? false)) {
             return FittingResult::refused(FittingRefusal::NotADeck);
         }
 
-        return DB::transaction(function () use ($deck): FittingResult {
+        return DB::transaction(function () use ($character, $deck): FittingResult {
+            $this->stopProcesses($character, $deck);
+
             $fittings = DeckFitting::query()
                 ->where('deck_id', $deck->getKey())
                 ->lockForUpdate()
@@ -214,5 +240,29 @@ final class ModuleFitter
 
             return FittingResult::removed($fittings->count());
         });
+    }
+
+    /**
+     * Changing a deck's hardware stops everything running on it.
+     *
+     * ANY module, in EITHER direction, and that is a deliberate
+     * simplification rather than a fiction. Pulling the CPU obviously stops
+     * what was thinking; pulling an expansion card plausibly would not. But a
+     * process was admitted against a compute and memory budget, and the moment
+     * that budget changes every running program would have to be re-checked
+     * against the new one, in some order, with some rule for which survives.
+     *
+     * Stopping everything is one rule instead of that. It is honest on screen —
+     * you changed the machine, so the machine restarted — and it is the same
+     * decision unequipping already takes. Nothing is destroyed: the programs go
+     * back to the stash, exactly as stripped modules do.
+     *
+     * When this becomes too blunt, the place to soften it is here, and the
+     * softer rule will need to say what happens to a decryption that was
+     * halfway through a cycle.
+     */
+    private function stopProcesses(Character $character, InventoryItem $deck): void
+    {
+        app(ProgramRunner::class)->stopAll($character, $deck);
     }
 }

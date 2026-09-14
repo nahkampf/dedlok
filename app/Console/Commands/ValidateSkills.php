@@ -11,6 +11,7 @@ use App\Models\SkillPrerequisite;
 use App\Skills\PrerequisiteGraph;
 use App\Skills\SkillProgression;
 use App\Skills\TrainingQueueValidator;
+use App\Stats\Modifier;
 use Illuminate\Console\Command;
 
 /**
@@ -39,6 +40,7 @@ class ValidateSkills extends Command
         $this->checkStoredLevels($progression);
         $this->checkPointCaps($progression);
         $this->checkTrainingQueues();
+        $this->checkGrantedModifiers($progression);
 
         $this->newLine();
 
@@ -190,6 +192,54 @@ class ValidateSkills extends Command
                 }
             }
         );
+    }
+
+    /**
+     * Every grant a skill makes has to be a modifier the resolver will accept.
+     *
+     * Skills are authored in the admin editor, so this content lives in the
+     * database and cannot be checked by a test against a fresh one. A typo in
+     * a target id or an op is a 500 on the character sheet of everybody who
+     * has the skill, and this command is the only thing between the two.
+     *
+     * `Modifier::fromArray()` is the judge rather than a second copy of its
+     * rules — it already refuses unknown keys, unknown ops and malformed
+     * targets, and a validator that re-implemented that would be a validator
+     * free to disagree with the thing it validates.
+     */
+    private function checkGrantedModifiers(SkillProgression $progression): void
+    {
+        $this->section('Granted modifiers');
+
+        foreach (Skill::query()->whereNotNull('modifiers')->get() as $skill) {
+            if (! is_array($skill->modifiers)) {
+                $this->problem("{$skill->slug}: modifiers is not a list.");
+
+                continue;
+            }
+
+            foreach ($skill->modifiers as $index => $grant) {
+                if (! is_array($grant)) {
+                    $this->problem("{$skill->slug}[{$index}]: grant is not an object.");
+
+                    continue;
+                }
+
+                $level = $grant['level'] ?? 0;
+
+                if (! is_int($level) || $level < 0 || $level > $progression->maxLevel()) {
+                    $this->problem("{$skill->slug}[{$index}]: level [{$level}] is outside 0..{$progression->maxLevel()}.");
+                }
+
+                unset($grant['level']);
+
+                try {
+                    Modifier::fromArray($grant + ['source' => $skill->title]);
+                } catch (\Throwable $e) {
+                    $this->problem("{$skill->slug}[{$index}]: {$e->getMessage()}");
+                }
+            }
+        }
     }
 
     private function section(string $name): void

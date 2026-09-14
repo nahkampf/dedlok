@@ -113,10 +113,11 @@ class SlotTypeTest extends TestCase
         $this->assertNull(SlotType::fromKey('cpu_qdram'));
     }
 
-    public function test_the_fifteen_sockets_are_the_whole_vocabulary(): void
+    public function test_the_sixteen_sockets_are_the_whole_vocabulary(): void
     {
         // Named rather than counted, so adding one is a deliberate edit here
-        // as well as in the enum. The thermal exhaust arrived that way.
+        // as well as in the enum. The thermal exhaust arrived that way, and so
+        // did storage.
         $this->assertSame([
             'cpu_socket_g', 'cpu_socket_k', 'cpu_socket_z',
             'npu',
@@ -125,6 +126,7 @@ class SlotTypeTest extends TestCase
             'expansion_xgate', 'expansion_pei', 'expansion_horizon',
             'psu',
             'thermal',
+            'storage',
             'io_electrode', 'io_neuralink',
         ], array_map(static fn (SlotType $type): string => $type->key(), SlotType::all()));
     }
@@ -175,7 +177,14 @@ class SlotTypeTest extends TestCase
         $this->assertTrue(Hardware::Cpu->heats());
 
         $this->assertNull(Hardware::Deck->socket());
+        // Storage is quantabits like RAM and a DIFFERENT measure, because
+        // DeckTotals sums by measure: one id for both would merge working
+        // memory with bulk storage into a figure that means neither.
+        $this->assertSame('storage', Hardware::Storage->measure());
+        $this->assertSame('quantabits', Hardware::Ram->measure());
+
         $this->assertSame([Hardware::Cpu, Hardware::Npu, Hardware::Ram, Hardware::Nic,
-            Hardware::Expansion, Hardware::Psu, Hardware::Thermal], Hardware::modules());
+            Hardware::Expansion, Hardware::Psu, Hardware::Thermal,
+            Hardware::Storage], Hardware::modules());
     }
 }

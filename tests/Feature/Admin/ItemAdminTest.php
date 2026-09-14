@@ -126,7 +126,10 @@ class ItemAdminTest extends TestCase
             ]))
             ->assertSessionHasErrors('use_skill_id');
 
-        $this->assertDatabaseCount('items', 0);
+        // Scoped to the slug rather than counting the table: a fresh database
+        // now ships the placeholder implants, so "no items exist" stopped
+        // being the same statement as "this one was not created".
+        $this->assertDatabaseMissing('items', ['slug' => $this->payload()['slug']]);
     }
 
     public function test_a_non_injecting_item_may_not_name_a_skill(): void

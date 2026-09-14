@@ -12,11 +12,11 @@ namespace App\Decks;
  * a deck somebody owns. A null check at every socket would say the same thing
  * in more places, and the board would have to remember to make it.
  */
-final class NoHeatExposure
+final class NoThermalExposure
 {
-    public function verdict(?int $slotId): HeatVerdict
+    public function verdict(?int $slotId): ThermalVerdict
     {
-        return HeatVerdict::Safe;
+        return ThermalVerdict::Safe;
     }
 
     /** @return list<string> */
@@ -31,9 +31,9 @@ final class NoHeatExposure
         return [];
     }
 
-    public function worst(): HeatVerdict
+    public function worst(): ThermalVerdict
     {
-        return HeatVerdict::Safe;
+        return ThermalVerdict::Safe;
     }
 
     public function isSafe(): bool
