@@ -139,7 +139,9 @@ class CyberdeckAdminTest extends TestCase
             ->post('/admin/items', $this->deck(['cpu_socket_g' => 1]))
             ->assertSessionHasErrors('slots');
 
-        $this->assertSame(0, Item::count());
+        // No CYBERDECK was created. Counting the whole table stopped meaning
+        // that once a fresh database began shipping the placeholder implants.
+        $this->assertSame(0, Item::query()->whereNotNull('hardware')->count());
     }
 
     public function test_a_deck_with_no_sockets_at_all_is_refused(): void

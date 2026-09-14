@@ -10,7 +10,10 @@ use App\Stats\Modifier;
 use App\Stats\ResolvedStat;
 use App\Stats\Sheet;
 use App\Stats\Sources\ArchetypePerks;
+use App\Stats\Sources\CharacterModifiers;
+use App\Stats\Sources\InstalledImplants;
 use App\Stats\Sources\RunningPrograms;
+use App\Stats\Sources\SkillEffects;
 use Database\Factories\CharacterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -413,32 +416,59 @@ class Character extends Model
      * Uses RESOLVED attributes, so implants and drugs that move the governing
      * attributes change training speed with no special handling.
      */
-    public function trainingRateFor(Skill $skill): float
+    public function trainingRateFor(Skill $skill, ?\DateTimeInterface $asAt = null): float
     {
+        // Resolved AS OF a moment when one is given, which is what makes a
+        // catch-up honest: a deposit covering three hours during which a drug
+        // wore off credits the bonus for the part of the window that had it,
+        // and not for the rest. See TrainingDeposit::rateChangeBoundaries().
+        $sheet = $asAt === null
+            ? $this->sheet()
+            : Sheet::for($this, null, $this->modifiers($asAt));
+
         return TrainingRate::fromConfig()->perMinute(
-            $this->stat($skill->primary_attribute)->value,
-            $this->stat($skill->secondary_attribute)->value,
+            $sheet->get($skill->primary_attribute)->value,
+            $sheet->get($skill->secondary_attribute)->value,
         );
     }
 
     /**
      * Every modifier currently acting on this character.
      *
-     * Two sources so far: the archetype's live perks, and the software running
-     * on the equipped deck. Implants, drugs and injuries join the list as they
-     * are built, each as its own ModifierSource — the resolver learns nothing
-     * new when they do, which is the whole point of the interface.
+     * Three sources: the archetype's live perks, the software running on the
+     * equipped deck, and whatever the character is carrying in their own right
+     * — injuries and statuses, out of `character_modifiers`. The first two are
+     * DERIVED from something else the character has and are recomputed on every
+     * read; the third is the one that had to be stored, because nothing else
+     * implies it.
+     *
+     * Implants and drugs join as they are built, each as its own
+     * ModifierSource — the resolver learns nothing new when they do, which is
+     * the whole point of the interface.
+     *
+     * Two of the three query, so this is not free. A Sheet is bound to the
+     * context it was built in and is cheap to rebuild rather than held, so
+     * build one and read it rather than calling this per stat.
      *
      * Order does not matter. The resolver sorts modifiers into layers by op
      * and sums within each, so two sources cannot fight over which went first.
      *
      * @return list<Modifier>
      */
-    public function modifiers(): array
+    public function modifiers(?\DateTimeInterface $asAt = null): array
     {
         $sources = [
+            // Permanent by construction, so a past moment cannot change it.
             new ArchetypePerks($this->archetype),
-            new RunningPrograms($this),
+            new RunningPrograms($this, $asAt),
+            // What their skills grant them for being known — not the checks
+            // those skills feed, which are generated stats of their own.
+            new SkillEffects($this),
+            // What is in their body. The first source that comes from an item.
+            new InstalledImplants($this, $asAt),
+            // The first source that is not derived from something else the
+            // character has: injuries and statuses that happened TO them.
+            new CharacterModifiers($this->getKey(), $asAt),
         ];
 
         $modifiers = [];

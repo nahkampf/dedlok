@@ -10,6 +10,7 @@ use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\SkillTreeController;
 use App\Http\Middleware\ForbidSecondCharacter;
@@ -110,6 +111,17 @@ Route::middleware('auth')->group(function () {
     // operation with a null target.
     Route::post('/inventory/{entry}/place', [InventoryController::class, 'place'])
         ->name('inventory.place');
+
+    /*
+     * Implants: what is installed in a body.
+     *
+     * One screen, and two writes that are the same act in both directions —
+     * an implant goes in or it comes out, and which one is being asked for is
+     * decided by the row rather than by a field.
+     */
+    Route::get('/implants', [ImplantController::class, 'index'])->name('implants.index');
+    Route::post('/implants/{entry}/install', [ImplantController::class, 'install'])->name('implants.install');
+    Route::post('/implants/{entry}/remove', [ImplantController::class, 'remove'])->name('implants.remove');
 });
 
 /*

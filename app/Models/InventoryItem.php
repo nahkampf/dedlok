@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * card is a physical row holding data rows — the item says what kind of thing
  * it is, the row says where it ended up.
  */
-#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at'])]
+#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at'])]
 class InventoryItem extends Model
 {
     /** @use HasFactory<InventoryItemFactory> */
@@ -34,6 +34,7 @@ class InventoryItem extends Model
     protected function casts(): array
     {
         return [
+            'installed_at' => 'datetime',
             'quantity' => 'integer',
             'started_at' => 'datetime',
         ];
@@ -243,6 +244,9 @@ class InventoryItem extends Model
         $query
             ->whereNull('parent_id')
             ->whereNull('running_on_deck_id')
+            // Installed in a body. Elsewhere in exactly the sense the other
+            // three are: it is yours, and it is not in your hands.
+            ->whereNull('installed_at')
             ->whereDoesntHave('fitting');
     }
 

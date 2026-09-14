@@ -51,6 +51,12 @@
                 <span class="dock__label">{{ Text::get('ui.nav.deck') }}</span>
             </a>
 
+            <a class="dock__item" href="{{ route('implants.index') }}"
+               @if (request()->routeIs('implants.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#9784;</span>
+                <span class="dock__label">{{ Text::get('ui.nav.implants') }}</span>
+            </a>
+
             <a class="dock__item" href="{{ route('skills.index') }}"
                @if (request()->routeIs('skills.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#10022;</span>

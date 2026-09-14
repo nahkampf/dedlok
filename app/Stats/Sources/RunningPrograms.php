@@ -33,7 +33,11 @@ use Illuminate\Database\Eloquent\Collection;
  */
 final readonly class RunningPrograms implements ModifierSource
 {
-    public function __construct(private Character $character) {}
+    public function __construct(
+        private Character $character,
+        /** The moment to resolve as of; null is now. */
+        private ?\DateTimeInterface $asAt = null,
+    ) {}
 
     /** @return list<Modifier> */
     public function modifiers(): array
@@ -46,7 +50,7 @@ final readonly class RunningPrograms implements ModifierSource
 
         $modifiers = [];
 
-        foreach (self::processesOn($this->character, $deckId) as $row) {
+        foreach (self::processesOn($this->character, $deckId, $this->asAt) as $row) {
             $program = $row->item?->program;
 
             if ($program === null) {
@@ -69,11 +73,22 @@ final readonly class RunningPrograms implements ModifierSource
      *
      * @return Collection<int, InventoryItem>
      */
-    public static function processesOn(Character $character, int $deckId)
+    public static function processesOn(Character $character, int $deckId, ?\DateTimeInterface $asAt = null)
     {
         return InventoryItem::query()
             ->where('character_id', $character->id)
             ->where('running_on_deck_id', $deckId)
+            ->when($asAt !== null, static function ($query) use ($asAt): void {
+                // A program that had not started yet was not running. This is
+                // as far back as this source can honestly look: nothing
+                // records when a process STOPPED, so one that ran and was
+                // stopped inside the window cannot be reconstructed and is
+                // simply absent. Said out loud because it is a real limit
+                // rather than an oversight.
+                $query->where(function ($query) use ($asAt): void {
+                    $query->whereNull('started_at')->orWhere('started_at', '<=', $asAt);
+                });
+            })
             ->with('item.program')
             ->get();
     }

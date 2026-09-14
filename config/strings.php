@@ -29,6 +29,7 @@ return [
             'run' => 'Run',
             'stash' => 'Stash',
             'deck' => 'Deck',
+            'implants' => 'Implants',
             'skills' => 'Skills',
             'contracts' => 'Contracts',
             'profile' => 'Profile',
@@ -175,6 +176,51 @@ return [
     */
     'images' => [
         'enlarge' => 'View :subject full size',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Implants
+    |--------------------------------------------------------------------------
+    |
+    | What is installed in a body, and where. The regions are a fixed
+    | vocabulary rather than rows, because every character has the same body -
+    | see App\Implants\BodyRegion.
+    |
+    */
+    'implants' => [
+        'title' => 'Implants',
+        'lede' => 'What is installed in you, and what room is left.',
+        'nav' => 'Implants',
+
+        'regions' => [
+            'head' => 'Head',
+            'body' => 'Body',
+            'arms' => 'Arms',
+            'legs' => 'Legs',
+            'spine' => 'Spine',
+        ],
+
+        'empty_slot' => 'Empty',
+        'capacity' => ':used of :total',
+        'install' => 'Install',
+        'remove' => 'Remove',
+        'installed' => ':implant is installed.',
+        'removed' => ':implant is back in your stash.',
+        'none_to_install' => 'You are carrying no implants that would go here.',
+        'nothing_installed' => 'Nothing is installed. Implants go in from your stash.',
+        'total' => 'Slots',
+
+        'refused' => [
+            'not_owned' => 'That is not yours.',
+            'not_an_implant' => 'That does not go in a body.',
+            'already_installed' => 'It is already installed.',
+            'not_installed' => 'That one is not installed.',
+            'no_room' => 'There is no room left there. Take something out first.',
+            // Refused rather than quietly pulled out: moving somebody's
+            // possessions without saying so is the thing to avoid.
+            'not_to_hand' => 'That one is packed away. Take it out first.',
+        ],
     ],
 
     'captcha' => [

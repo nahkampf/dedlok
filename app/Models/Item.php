@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotLayout;
+use App\Implants\BodyRegion;
 use App\Market\Rarity;
 use App\Programs\ProgramKind;
 use App\Support\Text;
@@ -31,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[Fillable([
     'slug', 'name', 'flavor', 'container', 'tier', 'rarity', 'stackable', 'use_op', 'use_skill_id',
     'weight', 'size', 'capacity', 'accepts', 'hardware', 'board_layout', 'base_cost', 'on_market', 'seed_quantity',
+    'implant_region', 'modifiers',
 ])]
 class Item extends Model
 {
@@ -71,6 +73,8 @@ class Item extends Model
     protected function casts(): array
     {
         return [
+            'implant_region' => BodyRegion::class,
+            'modifiers' => 'array',
             'tier' => 'integer',
             'rarity' => Rarity::class,
             'stackable' => 'boolean',
@@ -102,6 +106,23 @@ class Item extends Model
      * Ordered here rather than at every call site: a deck's sockets are a
      * list a player reads, and id order after an edit is not that list.
      */
+    /**
+     * Where in a body this goes, or null if it is not an implant.
+     *
+     * The ONLY place the region is written down, so a fitted row can never
+     * disagree with its definition about where it went — the lesson
+     * `deck_modules` learned by carrying the numbers and not the word.
+     */
+    public function implantRegion(): ?BodyRegion
+    {
+        return $this->implant_region;
+    }
+
+    public function isImplant(): bool
+    {
+        return $this->implant_region !== null;
+    }
+
     public function deckSlots(): HasMany
     {
         return $this->hasMany(DeckSlot::class)->orderBy('position');

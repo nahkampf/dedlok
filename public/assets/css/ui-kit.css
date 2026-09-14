@@ -2455,3 +2455,81 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
   .slot { min-width: 44px; }
   .slots { overflow-x: auto; }
 }
+
+/* ============================================================================
+   THE BODY MAP
+   A Vitruvian figure with the implant regions boxed off it — the same device
+   as the deck board, applied to a person instead of a machine.
+
+   DRAWN, NOT PHOTOGRAPHED. A line figure in SVG themes with the kit's tokens,
+   scales to any width, needs no asset and carries no licence. A raster
+   Vitruvian Man would be a fixed-size picture with a hard-coded ink colour
+   sitting in a dark UI, which is the wrong answer twice over.
+   ========================================================================== */
+.bodymap {
+  display: grid;
+  grid-template-columns: minmax(min(220px, 100%), 300px) minmax(0, 1fr);
+  gap: var(--s-5);
+  align-items: start;
+}
+
+/* Below the breakpoint the figure sits above the regions rather than beside
+   them: two columns at 320px would give each of them nothing. */
+@media (max-width: 720px) {
+  .bodymap { grid-template-columns: minmax(0, 1fr); }
+}
+
+.bodymap__figure {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--bg-1);
+  border: var(--hair) solid var(--line-1);
+  padding: var(--s-3);
+}
+
+/* The figure itself: hairlines, like everything structural in the kit. */
+.bodymap__ink { fill: none; stroke: var(--line-2); stroke-width: 1.25; }
+.bodymap__frame { fill: none; stroke: var(--line-1); stroke-width: 1; }
+
+/* A leader from a region box to the part of the body it names. */
+.bodymap__wire { stroke: var(--line-1); stroke-width: 1; }
+
+/* The region markers on the figure. Filled when something is in them, hollow
+   when there is room — the same reading as a socket on the deck board. */
+.bodymap__node {
+  fill: var(--bg-3);
+  stroke: var(--line-2);
+  stroke-width: 1;
+}
+.bodymap__node--full { fill: var(--ink-0); stroke: var(--ink-0); }
+.bodymap__node--some { fill: var(--info); stroke: var(--info); }
+
+.bodymap__label {
+  fill: var(--ink-2);
+  font-family: var(--font-label);
+  font-size: 9px;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+/* The region list beside the figure. */
+.region {
+  border: var(--hair) solid var(--line-1);
+  background: var(--bg-2);
+  padding: var(--s-3);
+}
+.region + .region { margin-top: var(--s-3); }
+
+.region__hd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--s-2);
+}
+
+/* One box per slot in the region, filled or empty. Wraps, because four
+   abdominal slots and a 238px panel do not otherwise agree. */
+.region__slots { display: flex; flex-wrap: wrap; gap: var(--s-2); }
