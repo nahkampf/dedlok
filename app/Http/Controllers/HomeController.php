@@ -15,8 +15,14 @@ class HomeController extends Controller
         // so it may only read definitions — never a character's inventory.
         // Physical only: the data container is skillbooks, which say nothing
         // about themselves that the skill they teach does not say better.
+        // Listed only. `on_market = false` is how content is RETIRED in this
+        // codebase — the documented alternative to deleting it — so an
+        // unlisted item on the public landing page is the catalogue
+        // advertising something deliberately withdrawn. It is also what keeps
+        // placeholders and admin scaffolding off the front page.
         $items = Item::query()
             ->inContainer(Item::CONTAINER_PHYSICAL)
+            ->where('on_market', true)
             ->orderByDesc('tier')
             ->orderBy('slug')   // ties would otherwise order by insertion
             ->limit(3)
