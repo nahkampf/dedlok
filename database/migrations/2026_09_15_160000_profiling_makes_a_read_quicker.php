@@ -13,10 +13,12 @@ use Illuminate\Support\Facades\DB;
  * the top. This is the other half of that sentence — a trained profiler reads
  * the same machine in a little over half the time.
  *
- * FOUR STEPS RATHER THAN ONE PER LEVEL, because percentages SUM and apply once:
- * -10 at each of levels 2, 4, 6 and 8 is -40% at level 8, not 0.9^4. The
- * arithmetic is MECHANICS.md's and it is what keeps a resistance or a discount
- * from creeping towards certainty by multiplying against itself.
+ * SUPERSEDED, AND IT WAS WRONG TWICE. It granted -10% at levels 2, 4, 6 and 8;
+ * `skills.max_level` is FIVE, so half of that could never fire, and the
+ * remainder was at twice the scale this game wants. The migration that follows
+ * it replaces the list with -4% at each of the five levels a skill actually
+ * has. Left here as history rather than edited — see the rule about not
+ * rewriting a migration that has run.
  *
  * Authored here rather than in the editor only because it is the content that
  * makes a mechanic shipped today mean something. It is a skill's `modifiers`

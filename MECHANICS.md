@@ -440,6 +440,26 @@ the result. Only `override` carries a priority, because it is the only op that
 is not commutative. **A unit test asserts this**; if you add an op, it must
 either be commutative or live in the `override` layer.
 
+### How big a grant should be
+
+**2 to 5 per cent.** That is the house scale for a percentage modifier on a
+skill, an implant, a program or a perk, and it is smaller than it looks like it
+should be for two reasons.
+
+**Percentages sum rather than compounding**, and one stat is reachable from
+every one of those sources at the same time. Four grants at 12% is not 12%
+felt four ways, it is +48% on one number — and the sources that have not been
+built yet still have to fit. It is also far easier to raise a number than to
+take one back from players who already have it.
+
+**A skill grants at levels 1 to `skills.max_level`, which is five.** A grant
+written above that ceiling never fires and nothing reports it: System Profiling
+shipped granting at levels 2, 4, 6 and 8, documented as −40% at full training,
+and actually gave −20% until somebody counted the levels.
+
+Flat `add` grants want the same restraint read differently — +1 to an attribute
+or a derived ceiling is worth more than a percentage that looks bigger.
+
 ### `percentage_of_base` applies to base + flat
 
 This is the single most important rule in the file, and the name is slightly
