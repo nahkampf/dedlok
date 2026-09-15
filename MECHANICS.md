@@ -18,7 +18,7 @@ down so the implementation has something to be checked against.
 | Attributes on `characters` (10 columns, 0–100 in the DB) | **built** |
 | Attribute clamping on save | **built**, at the lifetime cap of 100 |
 | Archetypes + perks as rows (`archetypes`, `archetype_perks`) | **built**; `characters.archetype` is a real foreign key |
-| Live perks routed through the resolver — Netrunner's "Grey matter", Solo's "Scar tissue" | **built** |
+| Live perks routed through the resolver — the Deck Jockey's "Grey matter", the Crim's "Scar tissue" | **built** |
 | Display-only perks | one kept deliberately as the documented example; the rest removed |
 | `hitpoints_max` and `synaptic_integrity_max` as stats | **built**, formulas in `config/stats.php` |
 | `ModifierSource` + `ArchetypePerks` | **built** |
@@ -1692,10 +1692,16 @@ Renders on the card and **changes nothing**:
 ['key' => 'damage_taken', 'display_modifier' => -15, 'display_unit' => 'percent']
 ```
 
-Two perks are live: Netrunner's **Grey matter** (`+5% synaptic_integrity_max`)
-and Solo's **Scar tissue** (`+5% hitpoints_max`). Exactly one display-only perk
-survives — Solo's `damage_taken` — kept so the legacy shape stays documented and
-covered by tests. Delete it once every perk is live.
+Two perks are live: the Deck Jockey's **Grey matter**
+(`+5% synaptic_integrity_max`) and the Crim's **Scar tissue**
+(`+5% hitpoints_max`). Exactly one display-only perk survives — the Crim's
+`damage_taken` — kept so the legacy shape stays documented and covered by
+tests. Delete it once every perk is live.
+
+(Earlier drafts of this document called those two archetypes *Netrunner* and
+*Solo*. The roster has never used those names: it arrived as Deck Jockey, Crim,
+Sleuth, Code Monkey, Fixer, Hacktivist and Bloodhound in the migration that
+created it, and `Archetype::roster()` is the only truth about it.)
 
 The other four archetypes have no perks at all. Add new ones as **live**;
 there is no reason to write a display-only perk now that the resolver exists.

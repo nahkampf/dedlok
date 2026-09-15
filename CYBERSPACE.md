@@ -1060,7 +1060,7 @@ All of it. In the order it should be built:
    scan is only ever turns 1–5 of a run, the question never arises and the gate
    stays where it is. Answer it before the probe is written, not after.
 5. **The intrusion.** The simulator, the log, extraction, the defeat tags.
-   Solo only.
+   Single-player only — cooperative runs are phase 7.
 6. **Consequences.** Trace, heat, backdoors and routing, burn, lockdown,
    relocation, housekeeping.
 7. **The rest.** Cooperative runs, subnets, player-owned nodes, event systems,

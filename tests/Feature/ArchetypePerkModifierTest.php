@@ -48,7 +48,7 @@ class ArchetypePerkModifierTest extends TestCase
 
     public function test_display_only_perks_contribute_nothing(): void
     {
-        // Solo carries two perks: scar_tissue is live, damage_taken is the
+        // The Crim carries two perks: scar_tissue is live, damage_taken is the
         // retained display-only example. Only one reaches the resolver.
         $perks = Archetype::fromRoster(self::SOLO)->perks;
 
@@ -92,7 +92,7 @@ class ArchetypePerkModifierTest extends TestCase
         $solo = $this->character(self::SOLO, $attrs);
         $runner = $this->character(self::NETRUNNER, $attrs);
 
-        // Solo boosts HP only; Netrunner boosts SI only.
+        // The Crim boosts HP only; the Deck Jockey boosts SI only.
         $this->assertSame([], $solo->stat('synaptic_integrity_max')->steps);
         $this->assertSame([], $runner->stat('hitpoints_max')->steps);
         $this->assertNotSame([], $solo->stat('hitpoints_max')->steps);
@@ -135,7 +135,7 @@ class ArchetypePerkModifierTest extends TestCase
 
     public function test_another_archetype_gets_the_base_value(): void
     {
-        // Netrunner has a live perk, but it targets synaptic_integrity_max,
+        // The Deck Jockey has a live perk, but it targets synaptic_integrity_max,
         // so hit points are untouched.
         $runner = $this->character(self::NETRUNNER, ['meat' => 20, 'muscle' => 10, 'focus' => 10]);
 

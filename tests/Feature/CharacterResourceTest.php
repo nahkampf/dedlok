@@ -125,7 +125,7 @@ class CharacterResourceTest extends TestCase
 
     public function test_the_archetype_perk_raises_the_ceiling_a_resource_clamps_to(): void
     {
-        // Solo carries Scar tissue: +5% hitpoints_max.
+        // The Crim carries Scar tissue: +5% hitpoints_max.
         $solo = $this->character(['archetype' => 2]);
 
         // Base 20, +5% = 21, floored.
