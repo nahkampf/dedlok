@@ -79,11 +79,21 @@ final class MapView
          * Live only — spent or stale files say nothing, which is what makes
          * scan data perishable rather than a permanent unlock.
          */
-        $scans = SystemScan::query()
+        $files = SystemScan::query()
             ->where('character_id', $character->id)
             ->live()
-            ->whereNotNull('grade')
-            ->pluck('grade', 'address');
+            ->get()
+            ->keyBy('address');
+
+        $scans = $files->filter(static fn (SystemScan $file): bool => $file->grade !== null)
+            ->map(static fn (SystemScan $file): int => $file->grade);
+
+        // A MACHINE YOU HAVE READ SOMETHING OUT OF, which is not the same as
+        // one you have pointed an instrument at: a file that has learned
+        // nothing yet marks nothing. Keyed by address like the grade, and for
+        // the same reason — a machine that relocated is wearing a new one, so
+        // the mark clears itself rather than needing to be cleared.
+        $read = $files->filter(static fn (SystemScan $file): bool => $file->hasFindings());
 
         // Read once rather than per cell: four hundred cells asking config the
         // same question is four hundred answers that were always going to be
@@ -127,6 +137,7 @@ final class MapView
                     grade: ($address = $contacts->get($key)?->address) === null
                         ? null
                         : ($scans[$address] ?? null),
+                    isScanned: $address !== null && $read->has($address),
                     // Nothing is lit for somebody who is not in there: a
                     // jacked-out player is reading the whole map from memory.
                     inView: $standing !== null

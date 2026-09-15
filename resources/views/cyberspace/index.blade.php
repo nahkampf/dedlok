@@ -191,6 +191,7 @@
                 ['cell--system cell--silo cell--new', Text::get('cyberspace.map.new'), '▤'],
                 ['cell--system cell--compute cell--backdoored', Text::get('cyberspace.map.backdoored'), '⌬'],
                 ['cell--system cell--relay cell--rebooting', Text::get('cyberspace.map.rebooting'), '☰'],
+                ['cell--system cell--silo cell--scanned', Text::get('cyberspace.map.scanned'), '▤'],
                 ['cell--empty cell--marked', Text::get('cyberspace.map.marked'), ''],
             ] as [$class, $label, $glyph])
                 <span class="maplegend__key">

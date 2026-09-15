@@ -911,4 +911,78 @@ final class ProbeTest extends TestCase
         SystemScan::query()->sole()->forceFill(['used_at' => null, 'expires_at' => now()->subMinute()])->save();
         $this->assertSame(0, SystemScan::query()->live()->count());
     }
+
+    // ---- the mark it leaves on the map -------------------------------------
+
+    /**
+     * A MACHINE YOU HAVE READ SOMETHING OUT OF IS MARKED.
+     *
+     * The map is where a read pays off, so a file with anything in it puts a
+     * tick on the cell — the same device as the backdoor and the bookmark, in
+     * the last free corner.
+     *
+     * Counted rather than merely seen, because the key carries a sample swatch
+     * of its own and is supposed to.
+     */
+    public function test_the_map_marks_a_machine_something_was_read_out_of(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+
+        $this->instance(Probe::class, $this->probe(0.0));
+        $this->probe(0.0)->scan($this->character);
+        $this->travel(20)->minutes();
+        $this->sweep();
+
+        $html = $this->actingAs($this->character->fresh()->user)
+            ->get(route('cyberspace.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(2, substr_count($html, 'cell--scanned'), 'the key, and one read machine');
+    }
+
+    /** Pointing an instrument at something is not learning anything about it. */
+    public function test_a_read_that_learned_nothing_marks_nothing(): void
+    {
+        $this->machine(grade: 9);
+
+        $this->instance(Probe::class, $this->probe(0.999));
+        $this->probe(0.999)->scan($this->character);
+        $this->travel(20)->minutes();
+        $this->sweep();
+
+        $html = $this->actingAs($this->character->fresh()->user)
+            ->get(route('cyberspace.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(1, substr_count($html, 'cell--scanned'), 'the key alone');
+    }
+
+    /**
+     * AND IT CLEARS ITSELF WHEN THE MACHINE MOVES.
+     *
+     * A relocated system comes back wearing a new address, and the file
+     * describes the old one — so the mark goes without anything having to
+     * remove it. The same property that keeps a stale grade off the map.
+     */
+    public function test_the_mark_goes_when_the_machine_relocates(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+
+        $this->instance(Probe::class, $this->probe(0.0));
+        $this->probe(0.0)->scan($this->character);
+        $this->travel(20)->minutes();
+        $this->sweep();
+
+        System::query()->sole()->forceFill(['address' => 'FEEDFACE'])->save();
+        $this->sweep();
+
+        $html = $this->actingAs($this->character->fresh()->user)
+            ->get(route('cyberspace.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(1, substr_count($html, 'cell--scanned'), 'the key alone');
+    }
 }

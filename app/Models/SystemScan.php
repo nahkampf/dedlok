@@ -151,6 +151,26 @@ class SystemScan extends Model
         return $this->unknowns() === [];
     }
 
+    /**
+     * Has this file learned ANYTHING?
+     *
+     * A started scan and a scan that came to something are different states,
+     * and the map draws the second one: a mark that appeared the moment a pass
+     * began would be a mark for having pressed a button. Columns only, through
+     * `isKnownOn()`, because the map asks this of every file a character holds
+     * and a relation would be a query per cell.
+     */
+    public function hasFindings(): bool
+    {
+        foreach (ScanFact::discoverable() as $fact) {
+            if ($fact->isKnownOn($this)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** Spent, or past its expiry. Either way it is no longer worth anything. */
     public function isSpent(): bool
     {

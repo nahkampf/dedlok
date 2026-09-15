@@ -1232,9 +1232,20 @@ carries the detail.
   kind of machine, drawn from the set already proved against the font stack.
   **The hairline** is its condition — dashed while rebooting. **The corners**
   are what you have on it: bookmark top-right, backdoor bottom-left in ember,
-  the kit's one mark for *yours*. **A bar at the foot** is the scanned grade.
-  **Colour says type and nothing else** — steel, cyan, jade on the GLYPH, never
-  a fill, because four hundred tinted tiles is a quilt.
+  the kit's one mark for *yours*, and **scanned bottom-right in `--info`** — a
+  machine you have read something OUT of, which is not the same as one you
+  pointed an instrument at, so a file with no answers in it marks nothing. **A
+  bar at the foot** is the scanned grade. **Colour says type and nothing
+  else** — steel, cyan, jade on the GLYPH, never a fill, because four hundred
+  tinted tiles is a quilt.
+- **A cell has two pseudo-elements and four marks**, so the last two are
+  BACKGROUND LAYERS: the grade bar and the scanned tick composite through
+  `--cell-grade` and `--cell-read`, either of which may be absent. A rule that
+  set `background-image` outright would take the other one with it.
+- **The scanned mark clears itself**, because it is keyed by ADDRESS like the
+  grade: a machine that relocates after a lockdown comes back wearing a new
+  one, and the file stops describing it. Nothing has to go round removing
+  marks, which is the same property that keeps a stale grade off the map.
 - **The window is capped at what anybody could ever see.** `map_range` is 7
   because `view_range` is **2** and the modifiers meant to widen it are worth
   about +5 — drawing memory further out than a character can ever refresh it
@@ -1257,8 +1268,10 @@ carries the detail.
   the room.
 - **What is outside the current view range is dimmed**, not hidden. The map is
   memory and the sweep lights a square of it: `cell--distant` steps the rest
-  back to .8 so the square being looked at is obvious while everything
-  remembered stays readable. Nothing is lit at all while jacked out, because
+  back to **.55** so the square being looked at is obvious while everything
+  remembered stays readable. It was .8 once, and .8 is a difference that is
+  real in the numbers and invisible on a screen where most of the cells are
+  distant — the step has to be big enough that the few lit ones win. Nothing is lit at all while jacked out, because
   somebody outside cyberspace is reading the whole thing from memory.
 - **An ordinary machine has no hairline.** The fill lifts it off the ground and
   the glyph says what it is, which leaves the border free to mean something: a

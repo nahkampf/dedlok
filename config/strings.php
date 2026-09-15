@@ -445,6 +445,7 @@ return [
             'marked' => 'Saved position',
             'backdoored' => 'Your backdoor',
             'rebooting' => 'Rebooting',
+            'scanned' => 'Scanned',
             'grade_key' => 'Grade, once scanned',
             'position' => 'Position',
             'swept' => 'Swept',

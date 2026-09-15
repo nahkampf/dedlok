@@ -69,6 +69,17 @@ final readonly class MapCell
          */
         public bool $isRebooting = false,
         /**
+         * Have they read anything out of this machine?
+         *
+         * A live scan file with at least one answer in it — pointing an
+         * instrument at something is not the same as having learned something,
+         * so a read that has come to nothing yet marks nothing. Like the grade
+         * it is keyed by ADDRESS, which is what makes it clear itself: a
+         * machine that relocates comes back wearing a new one and the file
+         * stops describing it.
+         */
+        public bool $isScanned = false,
+        /**
          * Is it inside what they can see from where they are standing?
          *
          * The map draws memory and the sweep lights a square of it; this is
@@ -99,14 +110,11 @@ final readonly class MapCell
     }
 
     /**
-     * The class the kit paints it with.
+     * The class the kit paints it with, plus the newness mark.
      *
      * Composed here rather than in the template because it is a decision about
      * state, and a Blade file full of @if is a Blade file where the states stop
      * being enumerable.
-     */
-    /**
-     * The class the kit paints it with, plus the newness mark.
      *
      * Newness is a SEPARATE class rather than another case in the match below,
      * because it is orthogonal: a new machine is still a system cell, drawn the
@@ -120,6 +128,7 @@ final readonly class MapCell
             $this->inView ? null : 'cell--distant',
             $this->isNew ? 'cell--new' : null,
             $this->hasBackdoor ? 'cell--backdoored' : null,
+            $this->isScanned ? 'cell--scanned' : null,
             $this->isRebooting ? 'cell--rebooting' : null,
         ]));
     }

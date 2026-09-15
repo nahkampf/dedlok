@@ -2528,10 +2528,13 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
    fill is half of what a cell says and a bright tile with a faint mark on it
    reads as a mark that has gone wrong.
 
-   A step rather than a fade: .8 is enough that the lit square is obvious and
-   not so much that the memory around it stops being readable. Nothing is
-   hidden — a player can still read what they remember out there. */
-.cell--distant { opacity: .8; }
+   A step rather than a fade, and a big one: at .8 the lit square did not read
+   as lit — the difference was there in the numbers and not on the screen. What
+   the step has to survive is a map where most cells are distant, so the few
+   that are not have to win by a margin. Nothing is hidden at .55 — a player
+   can still read what they remember out there — and the fog, the glyphs and
+   the grade bars all step back together, because the cell dims as one thing. */
+.cell--distant { opacity: .55; }
 
 /* Beyond the edge of the world. THE GRID DOES NOT WRAP, so this is a hole in
    the drawing rather than a place — no border, no fill, nothing to read. */
@@ -2636,11 +2639,32 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
    A background layer rather than a pseudo-element, because both of this cell's
    are spoken for: the bookmark tick and the backdoor tick. */
 .cell[style*="--g"] {
-  background-image: linear-gradient(to right,
+  --cell-grade: linear-gradient(to right,
     var(--ink-2) calc(var(--g, 0) * 100%),
     transparent calc(var(--g, 0) * 100%));
-  background-size: calc(100% - 6px) 2px;
-  background-position: 3px calc(100% - 2px);
+}
+
+/* A MACHINE YOU HAVE READ SOMETHING OUT OF. Bottom-right, in --info, which is
+   the blue the kit already spends on "known rather than urgent" — and the last
+   free corner: the bookmark has the top-right and the backdoor the
+   bottom-left.
+
+   It says you LEARNED something, not that you pointed an instrument at it: a
+   file with no answers in it yet marks nothing. It also clears itself, because
+   what it is keyed on is the ADDRESS — a machine that relocates after a
+   lockdown comes back wearing a new one, and the file stops describing it.
+
+   A background layer rather than a pseudo-element, for the reason the grade
+   bar is one: both of this cell's pseudo-elements are spoken for. */
+.cell--scanned { --cell-read: linear-gradient(to top left, var(--info) 0 50%, transparent 50%); }
+
+.cell--scanned,
+.cell[style*="--g"] {
+  /* Two layers, and either may be absent — an unscanned grade is not a thing
+     that exists, but a read that has not turned up the grade yet is. */
+  background-image: var(--cell-read, none), var(--cell-grade, none);
+  background-size: 22% 22%, calc(100% - 6px) 2px;
+  background-position: 100% 100%, 3px calc(100% - 2px);
   background-repeat: no-repeat;
 }
 
