@@ -1088,10 +1088,17 @@ All of it. In the order it should be built:
    every emptied node nightly, and `systems.raids` counts what nothing can do
    to it yet.
 
+   **The loot table is built**: `loot_tables`, one row per (type, grade band,
+   rarity), and a NULL type meaning any machine. Grades 1-3 see rare at 1% and
+   ultra-rare is weight 0 below grade 8 — a wall rather than a long shot. What
+   a raid can carry is **data only**: files and programs, never objects, since
+   nobody is in the room.
+
    **Still missing**: taking any of it, which is the run; and selling a scan,
-   which needs a storefront the market does not have. What a node SHOULD hold
-   by type is a loot table and wants its own pass — the weighting in
-   `cyberspace.contents.by_type` is the crude version of one.
+   which needs a storefront the market does not have. **A machine carries no
+   defences yet** — no IDS, no tracer, no ICE on any row — which is why three
+   of `ScanFact`'s facts still read *not yet*, and it is what phase 5 has to
+   have before anything can be detected by anything.
 
    ~~**Decide here whether the probe needs a running analyser.**~~ **Decided:
    it does.** Reading a machine takes software, and the software has to be
