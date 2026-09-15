@@ -1193,11 +1193,20 @@ carries the detail.
   the kit's one mark for *yours*. **A bar at the foot** is the scanned grade.
   **Colour says type and nothing else** — steel, cyan, jade on the glyph and
   hairline, never a fill, because four hundred tinted tiles is a quilt.
-- **The portal is the only thing on the map that moves.** It breathes between
-  bone and brass over four seconds, which the ration affords because there is
-  exactly one portal in the world — and it is slow because it is a condition,
-  not an event. Nothing else animates, so a second pulse would cost both of them
-  their meaning. `prefers-reduced-motion` stops it.
+- **Two things move, and they move differently on purpose.** The portal
+  BREATHES between bone and brass over four seconds — a pulse in place, which
+  the ration affords because there is exactly one portal in the world. A
+  machine that has only just appeared has a light TRAVEL round its hairline, in
+  its own type colour, the same idea as the sheen crossing a button: movement
+  that says *something changed here* rather than *this is a different kind of
+  thing*. A pulse and a sweep read as two statements; two pulses would read as
+  neither. Everything else is static — rebooting is a dashed hairline for
+  exactly that reason — and `prefers-reduced-motion` stops both.
+- **A new cell keeps its type colour.** The first version went bone, and that
+  was wrong twice: a new compute node stopped looking like a compute node, and
+  a bone hairline is the loudest thing the kit has short of the accent. Forty
+  cells can be new at once after a sweep, so their phases are staggered by
+  position — forty synchronised sweeps is a disco, not a map.
 
 ### Archetypes and what they hand out
 

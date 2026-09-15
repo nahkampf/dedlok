@@ -2620,6 +2620,8 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
    is a map that gets closed. */
 @media (prefers-reduced-motion: reduce) {
   .cell--portal { animation: none; color: var(--brass); }
+  /* The new cell keeps its brighter hairline; it simply stops travelling. */
+  .cell--new { animation: none; border-image: none; }
 }
 
 /* You. Bone is the ink of the system and this is the one thing the eye has to
@@ -2637,20 +2639,58 @@ button.cell--step:active { transform: scale(.92); }
 button.cell { cursor: pointer; }
 button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px; z-index: 1; }
 
-/* Only just appeared. A BRIGHTNESS STEP, NOT A HUE — new is noteworthy rather
-   than live, critical or destructive, so it must not spend the ember accent;
-   and a freshly swept window can hold forty-odd new machines at once, which is
-   twenty times the accent's whole budget. Bone is the ink, so bone is what says
-   "look here".
+/* ONLY JUST APPEARED — a light travelling round the hairline, the same idea as
+   the sheen crossing a button and for the same reason: a moving reflection
+   reads as *something has changed here* where a static mark reads as a
+   different kind of thing.
 
-   The ring is drawn with an inset shadow rather than a border because the cell
-   already has one, and swapping a hairline's colour would make a new cell read
-   as a different KIND of cell rather than as the same cell wearing a mark. */
-.cell--new {
-  color: var(--ink-0);
-  border-color: var(--ink-1);
-  box-shadow: inset 0 0 0 1px var(--ink-1);
+   IT KEEPS THE TYPE COLOUR. The first version of this went bone — ink-0 glyph,
+   ink-1 ring — and that was wrong twice over: a new compute node stopped
+   looking like a compute node, and a bone hairline is the loudest thing the
+   kit has that is not the accent. The light is `--node`, so a new silo sweeps
+   steel and a new relay sweeps jade, and what the cell IS survives the mark
+   saying it is new.
+
+   Drawn with border-image rather than a background layer or a pseudo-element,
+   because on this cell all three of those are spoken for: the fill carries the
+   fog weave, the background carries the grade bar, and both pseudo-elements
+   are corner ticks. A conic gradient turned by an animated angle is the one
+   place left, and it happens to be the right one — the light goes round the
+   edge rather than across the face.
+
+   THEY DO NOT MARCH IN STEP. A freshly swept window can hold forty of these at
+   once, and forty synchronised sweeps is a disco rather than a map, so the
+   phase is staggered by position. Slow, because it is a condition and not an
+   event. */
+@property --cell-sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
+
+.cell--new {
+  /* Underneath the light, and what a browser without @property is left with:
+     a hairline in the machine's own colour, brighter than its neighbours. */
+  border-color: color-mix(in srgb, var(--node, var(--ink-1)) 70%, transparent);
+  border-image: conic-gradient(
+    from var(--cell-sweep),
+    transparent 0turn,
+    var(--node, var(--ink-1)) 0.06turn,
+    transparent 0.14turn,
+    transparent 1turn
+  ) 1;
+  animation: cell-sweep 3s linear infinite;
+}
+
+@keyframes cell-sweep {
+  to { --cell-sweep: 1turn; }
+}
+
+/* Four phases is enough to break the lockstep without anybody being able to
+   see the pattern in it. */
+.cell--new:nth-child(4n+1) { animation-delay: -0.4s; }
+.cell--new:nth-child(4n+2) { animation-delay: -1.3s; }
+.cell--new:nth-child(4n+3) { animation-delay: -2.1s; }
 
 /* A saved position, marked with the kit's corner tick — the same device that
    means "one you have" everywhere else, which is exactly what a waypoint is. */
