@@ -44,6 +44,30 @@ final readonly class MapCell
          * for empty ground, which cannot be new — a position never changes.
          */
         public bool $isNew = false,
+        /**
+         * The grade, IF this character has scanned it out of the machine.
+         *
+         * Null is the ordinary state and means *not found out*. A grade is
+         * what a scan exists to discover, so the map may show one that was
+         * discovered and may never show one that was not — which is the rule
+         * in CYBERSPACE.md, kept by the only thing that could break it having
+         * nowhere to get an unscanned grade from.
+         */
+        public ?int $grade = null,
+        /**
+         * Do they hold a backdoor on this machine?
+         *
+         * Nothing sets this yet — backdoors are phase 6 — and it is here now
+         * so that the day they exist is a query and not a design argument.
+         */
+        public bool $hasBackdoor = false,
+        /**
+         * Is it locked down and coming back up?
+         *
+         * The other half of the same sentence: lockdown is phase 6, the cell
+         * knows how to draw it already.
+         */
+        public bool $isRebooting = false,
     ) {}
 
     /**
@@ -81,7 +105,72 @@ final readonly class MapCell
      */
     public function classes(): string
     {
-        return $this->modifier().($this->isNew ? ' cell--new' : '');
+        return implode(' ', array_filter([
+            $this->modifier(),
+            $this->kind(),
+            $this->isNew ? 'cell--new' : null,
+            $this->hasBackdoor ? 'cell--backdoored' : null,
+            $this->isRebooting ? 'cell--rebooting' : null,
+        ]));
+    }
+
+    /**
+     * What KIND of machine, which is a different question from what state the
+     * cell is in.
+     *
+     * Its own class rather than a case in the match below, for the reason
+     * newness is: a compute node that is rebooting, backdoored and new is all
+     * four of those things at once, and a single class per cell could only say
+     * one of them.
+     */
+    public function kind(): ?string
+    {
+        $type = $this->contact?->type;
+
+        return match ($type) {
+            SystemType::Silo, SystemType::Compute, SystemType::Relay => "cell--{$type->value}",
+            default => null,
+        };
+    }
+
+    /**
+     * The character drawn in the cell.
+     *
+     * A glyph per type, so a map read at a glance says WHAT is out there and
+     * not merely where. Every one of these is from the set this codebase has
+     * already proved against the kit's font stack — see Item::glyph() and the
+     * rail — because a character that falls back to notdef is a box with a
+     * question mark in it on somebody else's machine.
+     */
+    public function glyph(): string
+    {
+        if ($this->isYou) {
+            return "\u{25CF}";           // ● — the one thing the eye finds first
+        }
+
+        return match ($this->contact?->type) {
+            SystemType::Portal => "\u{25CD}",    // ◍ an aperture
+            SystemType::Silo => "\u{25A4}",      // ▤ stacked bands: stored data
+            SystemType::Compute => "\u{232C}",   // ⌬ a part that thinks
+            SystemType::Relay => "\u{2630}",     // ☰ channels
+            default => $this->contact !== null ? "\u{25C6}" : '',
+        };
+    }
+
+    /**
+     * The grade as a 0-1 ratio, for the kit's `--g`.
+     *
+     * A magnitude drawn as a magnitude — a bar at the foot of the cell rather
+     * than a colour, because nine steps is more than colour can carry and a
+     * map of four hundred traffic lights is not a map anybody reads.
+     */
+    public function gradeRatio(): ?float
+    {
+        if ($this->grade === null) {
+            return null;
+        }
+
+        return round(max(0, min(Grade::MAX, $this->grade)) / Grade::MAX, 3);
     }
 
     public function modifier(): string

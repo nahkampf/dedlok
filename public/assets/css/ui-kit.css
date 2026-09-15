@@ -269,6 +269,12 @@
   --jade:   #6FD3A0;  --jade-a:   rgba(111, 211, 160, 0.13);
   --brass:  #E8B84B;  --brass-a:  rgba(232, 184, 75, 0.13);
   --steel:  #6E8CB5;  --steel-a:  rgba(110, 140, 181, 0.13);
+  /* Cyan joins the palette for one job: telling kinds of machine apart on the
+     map. Mixed to the same register as the three above — mid-saturation and
+     light, so it reads beside them rather than jumping out of them. It is
+     DECORATION, like the rarity tiers: it says what a thing is and never what
+     state it is in, which is why it has no semantic alias. */
+  --cyan:   #5FC6CE;  --cyan-a:   rgba(95, 198, 206, 0.13);
 
   /* Semantic aliases. Components speak through these, never through the
      palette directly, so re-pointing --ok re-skins every success state at
@@ -2512,9 +2518,22 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
    the drawing rather than a place — no border, no fill, nothing to read. */
 .cell--void { background: transparent; border-color: transparent; }
 
-/* Never looked at. Sunken, so unexplored ground reads as depth rather than as
-   an object. */
-.cell--unswept { background: var(--bg-1); border-color: transparent; }
+/* NEVER LOOKED AT — fog, and the difference from empty ground is a LAYER and
+   not a shade. It drops below the map's own ground, loses its hairline, and
+   carries a faint weave; empty ground sits on the board with its hairline
+   intact. One reads as under the table and the other as on it, which is a
+   difference you see without comparing two cells side by side.
+
+   The weave is two hairline gradients rather than an image: it has to survive
+   a re-skin, and a texture nobody can re-colour is a texture that dates. */
+.cell--unswept {
+  background:
+    repeating-linear-gradient(45deg,
+      var(--line-0) 0 1px,
+      transparent 1px 6px),
+    var(--bg-0);
+  border-color: transparent;
+}
 
 /* Swept, and nothing was there. Space, not a dead node. */
 .cell--empty { background: var(--bg-2); }
@@ -2522,8 +2541,86 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 /* Something was standing here when they last looked. */
 .cell--system { background: var(--bg-3); border-color: var(--line-1); color: var(--ink-1); }
 
-/* The portal. Informational rather than dangerous, so steel and not ember. */
-.cell--portal { color: var(--info); border-color: color-mix(in srgb, var(--info) 40%, transparent); background: var(--info-a); }
+/* WHAT KIND OF MACHINE, as a colour on the glyph and the hairline and never as
+   a fill. A map is a screen somebody stares at: four hundred tinted tiles is a
+   quilt, four hundred tinted marks is a legend.
+
+   `--node` is the one property each kind sets, so everything below it reads the
+   colour rather than the type — a fourth kind is a class and a token.        */
+.cell--silo    { --node: var(--steel); }
+.cell--compute { --node: var(--cyan); }
+.cell--relay   { --node: var(--jade); }
+
+.cell--silo, .cell--compute, .cell--relay {
+  color: var(--node);
+  border-color: color-mix(in srgb, var(--node) 34%, transparent);
+}
+
+/* THE PORTAL. There is exactly one in the world, which is what pays for the
+   only animation on the screen: a rationed accent spent on a thing you will
+   see once a session is not a rationed accent being wasted.
+
+   It breathes between bone and brass over four seconds — SLOW, because it is a
+   condition and not an event, the same reasoning `.slot--hot` follows. The
+   pulse is on the glyph and the hairline; the fill stays a --bg step, because
+   elevation here is never a glow. */
+.cell--portal {
+  color: var(--ink-0);
+  border-color: color-mix(in srgb, var(--brass) 45%, transparent);
+  background: var(--bg-3);
+  animation: cell-portal 4s ease-in-out infinite;
+}
+
+@keyframes cell-portal {
+  0%, 100% { color: var(--ink-0); border-color: color-mix(in srgb, var(--brass) 30%, transparent); }
+  50%      { color: var(--brass); border-color: color-mix(in srgb, var(--brass) 70%, transparent); }
+}
+
+/* LOCKED DOWN AND COMING BACK UP. A dashed hairline: the machine is not all
+   the way there. Static on purpose — the portal keeps the only movement on the
+   map, and a screen with two things pulsing has neither of them meaning
+   anything. */
+.cell--rebooting { border-style: dashed; }
+
+/* A BACKDOOR YOU HOLD. The kit's corner tick, which marks a box as one you
+   have and marks nothing else — and in ember, because this is the one thing on
+   a map that is yours. Bottom-left, leaving the top-right to the bookmark: the
+   same device twice, in two corners, both meaning yours.
+
+   Rare by construction. A player with backdoors on half the grid has earned a
+   map with ember on half of it. */
+.cell--backdoored::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 6px;
+  height: 6px;
+  border-left: var(--hair) solid var(--ember);
+  border-bottom: var(--hair) solid var(--ember);
+}
+
+/* THE GRADE, ONCE SOMEBODY HAS SCANNED IT OUT OF THE MACHINE — a bar at the
+   foot of the cell, `--g` wide, in bone. Nine steps is more than colour can
+   carry and a map of four hundred traffic lights is not a map anybody reads;
+   a magnitude drawn as a magnitude is read without a legend.
+
+   A background layer rather than a pseudo-element, because both of this cell's
+   are spoken for: the bookmark tick and the backdoor tick. */
+.cell[style*="--g"] {
+  background-image: linear-gradient(to right,
+    var(--ink-2) calc(var(--g, 0) * 100%),
+    transparent calc(var(--g, 0) * 100%));
+  background-size: calc(100% - 6px) 2px;
+  background-position: 3px calc(100% - 2px);
+  background-repeat: no-repeat;
+}
+
+/* Motion is a nicety, and a map that breathes at somebody who asked it not to
+   is a map that gets closed. */
+@media (prefers-reduced-motion: reduce) {
+  .cell--portal { animation: none; color: var(--brass); }
+}
 
 /* You. Bone is the ink of the system and this is the one thing the eye has to
    find first; the accent is deliberately NOT spent here, because a map is a

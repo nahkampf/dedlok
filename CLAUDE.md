@@ -1089,9 +1089,11 @@ carries the detail.
   because it is the only part that is nowhere else. Renaming a corp renames
   every live machine it runs and renames nothing a player remembers.
   `App\Cyberspace\SystemNamer` is the one place that decision is made.
-- **Grade is 1–9 and is NOT visible from the map.** That is a rule, not an
-  omission: a grade is the number a scan exists to discover, and nothing may put
-  one into a contact or onto a cell.
+- **An UNSCANNED grade is not visible from the map**, which is a rule and not
+  an omission: a sweep is free, so nothing may put a grade into a contact. **A
+  scanned one is drawn** — a bar at the foot of the cell, `--g` wide — because
+  the map is where the minutes and the instrument pay off. A cell can only get
+  a grade from a live `system_scans` row, which is what keeps that honest.
 - **`GridSeeder` tops the world up TO a target**, the way `MarketSeeder` does —
   so running it twice is not two worlds and a pass over a burned patch replaces
   exactly what was lost. Occupancy leaves about 30% of the grid empty on
@@ -1178,11 +1180,24 @@ carries the detail.
   since a mission node holding no money would announce itself.
 - **`systems.raids` is on the SYSTEM, not the character.** Three successful
   raids by anybody retires the node. Nothing increments it yet.
-- **The map screen draws from memory and never from `systems`.** Six cell
-  states are the whole vocabulary — you, a machine you remember, the portal,
-  swept ground, unswept ground, and the void past the edge. The eight cells
-  around you are buttons and everything else is a reading; arrows and the numpad
-  reach the same eight, because a diagonal is one step here.
+- **The map screen draws from memory and never from `systems`.** The eight
+  cells around you are buttons and everything else is a reading; arrows and the
+  numpad reach the same eight, because a diagonal is one step here.
+- **A cell says up to six things at once, and each has its OWN channel** — which
+  is the only way they stay legible at 30px. **Ground** is terrain: fog sits
+  below the board with a weave and no hairline, swept ground sits on it with
+  one, which is a layer difference rather than a shade. **The glyph** is the
+  kind of machine, drawn from the set already proved against the font stack.
+  **The hairline** is its condition — dashed while rebooting. **The corners**
+  are what you have on it: bookmark top-right, backdoor bottom-left in ember,
+  the kit's one mark for *yours*. **A bar at the foot** is the scanned grade.
+  **Colour says type and nothing else** — steel, cyan, jade on the glyph and
+  hairline, never a fill, because four hundred tinted tiles is a quilt.
+- **The portal is the only thing on the map that moves.** It breathes between
+  bone and brass over four seconds, which the ration affords because there is
+  exactly one portal in the world — and it is slow because it is a condition,
+  not an event. Nothing else animates, so a second pulse would cost both of them
+  their meaning. `prefers-reduced-motion` stops it.
 
 ### Archetypes and what they hand out
 

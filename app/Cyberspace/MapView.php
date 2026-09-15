@@ -7,6 +7,7 @@ namespace App\Cyberspace;
 use App\Models\Bookmark;
 use App\Models\Character;
 use App\Models\SystemContact;
+use App\Models\SystemScan;
 use Illuminate\Support\Facades\Config;
 
 /**
@@ -65,6 +66,25 @@ final class MapView
             ->get()
             ->keyBy(static fn (Bookmark $mark): string => "{$mark->x},{$mark->y}");
 
+        /*
+         * What they have found out, by ADDRESS.
+         *
+         * Keyed on the address rather than the position because that is what a
+         * scan describes: a machine that relocated since is a file about a
+         * machine that is no longer there, and keying by position would show
+         * its grade against whatever moved in. The contact supplies the
+         * address, so a cell only shows a grade when the file and the memory
+         * agree about which machine they are talking about.
+         *
+         * Live only — spent or stale files say nothing, which is what makes
+         * scan data perishable rather than a permanent unlock.
+         */
+        $scans = SystemScan::query()
+            ->where('character_id', $character->id)
+            ->live()
+            ->whereNotNull('grade')
+            ->pluck('grade', 'address');
+
         // Read once rather than per cell: four hundred cells asking config the
         // same question is four hundred answers that were always going to be
         // the same.
@@ -96,6 +116,12 @@ final class MapView
                     // never changes, which is the whole reason terrain never
                     // goes stale.
                     isNew: $contacts->get($key)?->isNew($newFor) ?? false,
+                    // Only what a scan found out. There is nowhere else on
+                    // this screen a grade could come from, which is how the
+                    // rule that the map never shows an unscanned one is kept.
+                    grade: ($address = $contacts->get($key)?->address) === null
+                        ? null
+                        : ($scans[$address] ?? null),
                 );
             }
 

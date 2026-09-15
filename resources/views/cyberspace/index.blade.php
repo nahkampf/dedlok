@@ -127,7 +127,11 @@
                                 $title = Text::get('cyberspace.map.new').' — '.$title;
                             }
                             if ($cell->contact) {
-                                $title = $cell->contact->name.' — '.$title;
+                                $title = $cell->contact->name
+                                    .($cell->gradeRatio() !== null
+                                        ? ' · '.Text::get('cyberspace.scan.grade').' '.$cell->grade
+                                        : '')
+                                    .' — '.$title;
                             } elseif (! $cell->swept && $cell->onGrid) {
                                 $title = Text::get('cyberspace.map.unswept').' — '.$title;
                             }
@@ -141,10 +145,12 @@
                                     class="{{ $classes }} cell--step"
                                     data-step="{{ $cell->position->x - $map->centre->x }},{{ $cell->position->y - $map->centre->y }}"
                                     title="{{ Text::get('cyberspace.map.step') }} — {{ $title }}"
-                                    aria-label="{{ Text::get('cyberspace.map.step') }} {{ $title }}">{!! $cell->contact ? '&#9670;' : '' !!}</button>
+                                    @if ($cell->gradeRatio() !== null) style="--g:{{ $cell->gradeRatio() }}" @endif
+                                    aria-label="{{ Text::get('cyberspace.map.step') }} {{ $title }}">{{ $cell->glyph() }}</button>
                         @else
                             <div class="{{ $classes }}" title="{{ $title }}"
-                                 @if ($cell->isYou) aria-label="{{ Text::get('cyberspace.map.here') }}" @endif>{!! $cell->isYou ? '&#9679;' : ($cell->contact ? '&#9670;' : '') !!}</div>
+                                 @if ($cell->gradeRatio() !== null) style="--g:{{ $cell->gradeRatio() }}" @endif
+                                 @if ($cell->isYou) aria-label="{{ Text::get('cyberspace.map.here') }}" @endif>{{ $cell->glyph() }}</div>
                         @endif
                     @endforeach
                 @endforeach
@@ -155,19 +161,33 @@
     <p class="micro" style="color:var(--ink-2);margin-top:var(--s-2)">{{ Text::get('cyberspace.map.keys') }}</p>
 
     <div class="gridmap__legend" style="margin-top:var(--s-3)">
+        {{-- The swatches are real .cell elements wearing the classes they
+             explain, so the legend cannot drift from the map beside it. Four
+             of them carry a glyph for the same reason: the shape IS the
+             legend entry. --}}
         @foreach ([
-            ['cell--you', Text::get('cyberspace.map.here')],
-            ['cell--system', Text::get('cyberspace.map.address')],
-            ['cell--portal', Text::get('cyberspace.types.portal')],
-            ['cell--empty', Text::get('cyberspace.map.empty')],
-            ['cell--unswept', Text::get('cyberspace.map.unswept')],
-            ['cell--system cell--new', Text::get('cyberspace.map.new')],
-        ] as [$class, $label])
+            ['cell--you', Text::get('cyberspace.map.here'), '●'],
+            ['cell--system cell--silo', Text::get('cyberspace.types.silo'), '▤'],
+            ['cell--system cell--compute', Text::get('cyberspace.types.compute'), '⌬'],
+            ['cell--system cell--relay', Text::get('cyberspace.types.relay'), '☰'],
+            ['cell--portal', Text::get('cyberspace.types.portal'), '◍'],
+            ['cell--empty', Text::get('cyberspace.map.empty'), ''],
+            ['cell--unswept', Text::get('cyberspace.map.unswept'), ''],
+            ['cell--system cell--silo cell--new', Text::get('cyberspace.map.new'), '▤'],
+            ['cell--system cell--compute cell--backdoored', Text::get('cyberspace.map.backdoored'), '⌬'],
+            ['cell--system cell--relay cell--rebooting', Text::get('cyberspace.map.rebooting'), '☰'],
+        ] as [$class, $label, $glyph])
             <span class="gridmap__key">
-                <span class="gridmap__swatch cell {{ $class }}" aria-hidden="true"></span>
+                <span class="gridmap__swatch cell {{ $class }}" aria-hidden="true">{{ $glyph }}</span>
                 <span class="micro">{{ $label }}</span>
             </span>
         @endforeach
+
+        {{-- The grade bar explains itself with a half-full one. --}}
+        <span class="gridmap__key">
+            <span class="gridmap__swatch cell cell--system cell--silo" style="--g:.55" aria-hidden="true">▤</span>
+            <span class="micro">{{ Text::get('cyberspace.map.grade_key') }}</span>
+        </span>
     </div>
 
     {{-- Getting somewhere without walking: an address anyone can hand you, and

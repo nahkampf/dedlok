@@ -384,6 +384,9 @@ return [
             'jack_out' => 'Jack out',
 
             'here' => 'You are here',
+            'backdoored' => 'Your backdoor',
+            'rebooting' => 'Rebooting',
+            'grade_key' => 'Grade, once scanned',
             'position' => 'Position',
             'swept' => 'Swept',
             // No maximum is shown beside it on purpose: the size of the grid

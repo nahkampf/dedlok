@@ -12,6 +12,7 @@ use App\Cyberspace\SystemType;
 use App\Models\Character;
 use App\Models\System;
 use App\Models\SystemContact;
+use App\Models\SystemScan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -169,7 +170,15 @@ final class GradeTest extends TestCase
     }
 
     /** And the map does not draw it either. */
-    public function test_the_map_does_not_show_a_grade(): void
+    /**
+     * A SWEEP TELLS YOU NOTHING ABOUT HOW HARD IT IS.
+     *
+     * The rule has one exception now and it is the one that makes scanning
+     * worth doing: a grade somebody found out is theirs to see. What may never
+     * appear is one nobody has read out of the machine — which is what this
+     * test holds, by only ever sweeping.
+     */
+    public function test_the_map_does_not_show_an_unscanned_grade(): void
     {
         $user = User::factory()->create();
         $character = Character::factory()->create(array_merge(
@@ -192,5 +201,75 @@ final class GradeTest extends TestCase
         foreach (Grade::all() as $grade) {
             $response->assertDontSee(Grade::label($grade));
         }
+
+        // Nor the bar that would draw one. Matched on the grade 9 ratio
+        // rather than on `--g:`, because the legend carries a sample swatch of
+        // its own and it is supposed to.
+        $response->assertDontSee('--g:1', false);
+    }
+
+    /**
+     * And a grade that WAS scanned is drawn, as a bar at the foot of the cell.
+     *
+     * The map is where scanning pays off: the number a scan exists to discover
+     * is a number you can then see from across the grid.
+     */
+    public function test_the_map_shows_a_grade_that_was_scanned(): void
+    {
+        $user = User::factory()->create();
+        $character = Character::factory()->create(array_merge(
+            array_fill_keys(Character::ATTRIBUTES, 20),
+            ['user_id' => $user->id, 'archetype' => 3],
+        ));
+
+        System::factory()->at(8, 9)->grade(9)->create(['address' => 'DEADBEEF', 'name' => 'Cold Vault']);
+        $this->equipReadyDeck($character);
+        $character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
+        Sweep::fromConfig()->from($character->fresh(), new Position(8, 8));
+
+        SystemScan::query()->create([
+            'character_id' => $character->id,
+            'address' => 'DEADBEEF',
+            'x' => 8,
+            'y' => 9,
+            'grade' => 9,
+            'passes' => 1,
+            'scanned_at' => now(),
+            'expires_at' => now()->addDay(),
+        ]);
+
+        $this->actingAs($user)->get(route('cyberspace.index'))
+            ->assertOk()
+            ->assertSee('--g:1', false);
+    }
+
+    /** A file that has gone stale says nothing, which is what perishing means. */
+    public function test_an_expired_scan_stops_showing_its_grade(): void
+    {
+        $user = User::factory()->create();
+        $character = Character::factory()->create(array_merge(
+            array_fill_keys(Character::ATTRIBUTES, 20),
+            ['user_id' => $user->id, 'archetype' => 3],
+        ));
+
+        System::factory()->at(8, 9)->grade(9)->create(['address' => 'DEADBEEF', 'name' => 'Cold Vault']);
+        $this->equipReadyDeck($character);
+        $character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
+        Sweep::fromConfig()->from($character->fresh(), new Position(8, 8));
+
+        SystemScan::query()->create([
+            'character_id' => $character->id,
+            'address' => 'DEADBEEF',
+            'x' => 8,
+            'y' => 9,
+            'grade' => 9,
+            'passes' => 1,
+            'scanned_at' => now()->subDays(3),
+            'expires_at' => now()->subDay(),
+        ]);
+
+        $this->actingAs($user)->get(route('cyberspace.index'))
+            ->assertOk()
+            ->assertDontSee('--g:1', false);
     }
 }

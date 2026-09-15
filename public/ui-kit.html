@@ -1281,15 +1281,49 @@ public/assets/
       </template>
     </div>
     <div class="demo">
+      <div class="demo__hd"><h3 class="h3">What a cell can say at once</h3><p>Six facts, five channels, so any combination stays legible. <strong>Ground</strong> is terrain — fog sits below the board with a weave and no hairline, swept ground sits on it with one. <strong>The glyph</strong> is what kind of machine. <strong>The hairline</strong> is its condition: dashed while it reboots. <strong>The corners</strong> are what you have on it — bookmark top-right, backdoor bottom-left in ember, the kit's one mark for &ldquo;yours&rdquo;. <strong>A bar at the foot</strong> is the grade, <code class="inl">--g</code> wide, and only ever appears once somebody has scanned it out of the machine. Colour says type and nothing else: steel for a silo, cyan for a compute node, jade for a relay — on the glyph and the hairline, never as a fill, because four hundred tinted tiles is a quilt.</p></div>
+      <div class="demo">
+        <div class="gridmap" style="--span:10;max-height:200px">
+          <div class="gridmap__grid">
+            <div class="cell cell--unswept"></div>
+            <div class="cell cell--empty"></div>
+            <div class="cell cell--system cell--silo">&#9636;</div>
+            <div class="cell cell--system cell--compute">&#9004;</div>
+            <div class="cell cell--system cell--relay">&#9776;</div>
+            <div class="cell cell--portal">&#9677;</div>
+            <div class="cell cell--you">&#9679;</div>
+            <div class="cell cell--system cell--silo cell--new">&#9636;</div>
+            <div class="cell cell--system cell--compute cell--backdoored">&#9004;</div>
+            <div class="cell cell--system cell--relay cell--rebooting">&#9776;</div>
+
+            <div class="cell cell--system cell--silo" style="--g:.11">&#9636;</div>
+            <div class="cell cell--system cell--silo" style="--g:.33">&#9636;</div>
+            <div class="cell cell--system cell--compute" style="--g:.55">&#9004;</div>
+            <div class="cell cell--system cell--compute" style="--g:.77">&#9004;</div>
+            <div class="cell cell--system cell--relay" style="--g:1">&#9776;</div>
+            <div class="cell cell--unswept"></div>
+            <div class="cell cell--unswept"></div>
+            <div class="cell cell--void"></div>
+            <div class="cell cell--void"></div>
+            <div class="cell cell--void"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="demo__hd"><h3 class="h3">Legend</h3><p>The swatches are real <code class="inl">.cell</code> elements wearing the modifiers they explain, so a legend cannot drift from the map beside it.</p></div>
       <template class="demo-src">
         <div class="gridmap__legend">
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--you"></span><span class="micro">You are here</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system"></span><span class="micro">Remembered</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--portal"></span><span class="micro">Portal</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--you">&#9679;</span><span class="micro">You are here</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--silo">&#9636;</span><span class="micro">Data silo</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--compute">&#9004;</span><span class="micro">Compute node</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--relay">&#9776;</span><span class="micro">Network relay</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--portal">&#9677;</span><span class="micro">Portal</span></span>
           <span class="gridmap__key"><span class="gridmap__swatch cell cell--empty"></span><span class="micro">Empty space</span></span>
           <span class="gridmap__key"><span class="gridmap__swatch cell cell--unswept"></span><span class="micro">Unswept</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--new"></span><span class="micro">New here</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--silo cell--new">&#9636;</span><span class="micro">New here</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--compute cell--backdoored">&#9004;</span><span class="micro">Your backdoor</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--relay cell--rebooting">&#9776;</span><span class="micro">Rebooting</span></span>
+          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--silo" style="--g:.55">&#9636;</span><span class="micro">Grade, once scanned</span></span>
         </div>
       </template>
     </div>
