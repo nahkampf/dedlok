@@ -345,15 +345,14 @@ class CharacterCreationController extends Controller
             ? '×'.$modifier->amount
             : $this->signed($modifier->amount).($modifier->op === Op::PercentageOfBase ? '%' : '');
 
-        $target = $modifier->target->id;
+        // One lookup for both kinds of target: a stat id, or a tag set named
+        // as a whole. An unnamed target renders as the bare amount rather than
+        // as its key — "−5% damage+hitpoints" is a debug string, and a card is
+        // not where one belongs.
+        $key = $modifier->target->nameKey();
+        $name = Text::get("character.names.{$key}");
 
-        if ($target === null) {
-            return $amount.' '.$modifier->target->describe();
-        }
-
-        $name = Text::get("character.names.{$target}");
-
-        return $name === "character.names.{$target}" ? $amount : $amount.' '.$name;
+        return $name === "character.names.{$key}" ? $amount : $amount.' '.$name;
     }
 
     /** U+2212 minus, not a hyphen, so a column of effects lines up. */

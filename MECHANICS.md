@@ -18,8 +18,8 @@ down so the implementation has something to be checked against.
 | Attributes on `characters` (10 columns, 0–100 in the DB) | **built** |
 | Attribute clamping on save | **built**, at the lifetime cap of 100 |
 | Archetypes + perks as rows (`archetypes`, `archetype_perks`) | **built**; `characters.archetype` is a real foreign key |
-| Live perks routed through the resolver — the Deck Jockey's "Grey matter", the Crim's "Scar tissue" | **built** |
-| Display-only perks | one kept deliberately as the documented example; the rest removed |
+| Live perks routed through the resolver | **built**; all three shipped perks are live, and "Hard knocks" is the first to target a tag set |
+| Display-only perks | **no shipped perk uses one**; the shape is kept for content that may want it, covered by tests that build their own |
 | `hitpoints_max` and `synaptic_integrity_max` as stats | **built**, formulas in `config/stats.php` |
 | `ModifierSource` + `ArchetypePerks` | **built** |
 | `items` + `inventory_items` tables, two containers | **built**, with constraints |
@@ -1692,19 +1692,34 @@ Renders on the card and **changes nothing**:
 ['key' => 'damage_taken', 'display_modifier' => -15, 'display_unit' => 'percent']
 ```
 
-Two perks are live: the Deck Jockey's **Grey matter**
-(`+5% synaptic_integrity_max`) and the Crim's **Scar tissue**
-(`+5% hitpoints_max`). Exactly one display-only perk survives — the Crim's
-`damage_taken` — kept so the legacy shape stays documented and covered by
-tests. Delete it once every perk is live.
+**Every shipped perk is live.** The Deck Jockey's **Grey matter**
+(`+5% synaptic_integrity_max`), and the Crim's **Scar tissue**
+(`+5% hitpoints_max`) and **Hard knocks** (`-5%` against
+`all_of: ['damage', 'hitpoints']`).
+
+Hard knocks is the first perk to target a **tag set** rather than a stat, and
+it is what damage becoming a resolved stat bought: *physical* damage only, from
+every origin. Being hard to hurt in a fight is a different thing from being
+hard to hurt by ICE, and a perk that softened both would quietly make the
+street fighter better at the Deck Jockey's job. It was display-only until there
+was a target for it to name.
+
+**The display-only shape is kept even though nothing uses it.**
+`display_modifier` and `display_unit` stay on the table, `isLive()` still
+answers, the card still renders one, and two tests build a synthetic perk to
+hold that path down — content may want a perk that describes itself without
+doing anything. What ended is shipped content relying on it, not the ability
+to.
 
 (Earlier drafts of this document called those two archetypes *Netrunner* and
 *Solo*. The roster has never used those names: it arrived as Deck Jockey, Crim,
 Sleuth, Code Monkey, Fixer, Hacktivist and Bloodhound in the migration that
 created it, and `Archetype::roster()` is the only truth about it.)
 
-The other four archetypes have no perks at all. Add new ones as **live**;
-there is no reason to write a display-only perk now that the resolver exists.
+The other five archetypes have no perks at all. Add new ones as **live**;
+there is no reason to write a display-only perk now that the resolver exists,
+and since damage resolves too, "takes less of something" is no longer a reason
+to reach for one.
 
 `CharacterCreationTest::test_every_archetype_perk_is_valid_and_labelled`
 checks both shapes and fails if a live perk targets a stat that is not declared.

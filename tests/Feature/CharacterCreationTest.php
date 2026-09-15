@@ -487,8 +487,34 @@ class CharacterCreationTest extends TestCase
         $response->assertSee($this->perkLabel('scar_tissue'));
         $response->assertSee('+5% '.Text::get('character.names.hitpoints_max'), false);
 
-        // The retained display-only example still renders, from its legacy pair.
+        // The Crim's second perk targets a TAG SET rather than a stat, and the
+        // card names the set as a whole — "physical damage taken" is what a
+        // person calls it, where the key is damage+hitpoints.
         $response->assertSee($this->perkLabel('damage_taken'));
+        $response->assertSee('−5% '.Text::get('character.names.damage+hitpoints'), false);
+    }
+
+    /**
+     * Nothing ships as display-only any more. The shape is kept for content
+     * that may want it, so the card has to keep rendering one — this builds a
+     * perk that exists nowhere else and looks for its legacy pair on the page.
+     */
+    public function test_a_display_only_perk_still_renders_from_its_legacy_pair(): void
+    {
+        ArchetypePerk::query()->create([
+            'archetype_id' => 1,
+            'key' => 'looks_the_part',
+            'label' => 'Looks the part',
+            'display_modifier' => -15,
+            'display_unit' => 'percent',
+            'position' => 9,
+        ]);
+
+        Archetype::forgetRoster();
+
+        $response = $this->actingAs(User::factory()->create())->get(route('character.create'));
+
+        $response->assertSee('Looks the part');
         $response->assertSee('−15%', false);
     }
 
@@ -538,7 +564,10 @@ class CharacterCreationTest extends TestCase
 
     public function test_every_archetype_perk_is_valid_and_labelled(): void
     {
-        $registry = StatRegistry::fromConfig();
+        // The FULL registry, not config alone: a perk may target a generated
+        // stat — a skill's check, or one of the damage stats — and those are
+        // no less declared for being generated.
+        $registry = app(StatRegistry::class);
 
         foreach (Archetype::roster() as $archetype) {
             foreach ($archetype->perks as $perk) {
@@ -552,7 +581,7 @@ class CharacterCreationTest extends TestCase
                         $this->assertNotSame(
                             [],
                             $registry->matching($modifier->target),
-                            "perk [{$perk->key}] targets nothing in config/stats.php"
+                            "perk [{$perk->key}] targets nothing that exists"
                         );
                     }
 

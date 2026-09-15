@@ -596,6 +596,15 @@ return [
             'motor' => 'Motor',
             'senses' => 'Senses',
             'muscle' => 'Muscle',
+
+            // Tag sets, named as a whole — see App\Stats\Target::nameKey().
+            // The key is the tags in alphabetical order, because a set has no
+            // order of its own, and the name is what a person would say: the
+            // pair damage+hitpoints is called physical damage, never "damage
+            // hitpoints".
+            'damage' => 'damage taken',
+            'damage+hitpoints' => 'physical damage taken',
+            'damage+synaptic_integrity' => 'neural damage taken',
         ],
     ],
 
