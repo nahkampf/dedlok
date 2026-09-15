@@ -497,20 +497,22 @@ class Character extends Model
     /**
      * Every modifier currently acting on this character.
      *
-     * Three sources: the archetype's live perks, the software running on the
-     * equipped deck, and whatever the character is carrying in their own right
-     * — injuries and statuses, out of `character_modifiers`. The first two are
-     * DERIVED from something else the character has and are recomputed on every
-     * read; the third is the one that had to be stored, because nothing else
-     * implies it.
+     * Five sources: the archetype's live perks, the software running on the
+     * equipped deck, what their skills grant them for being known, what is
+     * installed in their body, and whatever they are carrying in their own
+     * right — injuries and statuses, out of `character_modifiers`. The first
+     * four are DERIVED from something else the character has and are recomputed
+     * on every read; the last is the one that had to be stored, because nothing
+     * else implies it.
      *
-     * Implants and drugs join as they are built, each as its own
-     * ModifierSource — the resolver learns nothing new when they do, which is
-     * the whole point of the interface.
+     * Drugs join as they are built, and so does the fitted hardware MECHANICS
+     * names, each as its own ModifierSource — the resolver learns nothing new
+     * when they do, which is the whole point of the interface.
      *
-     * Two of the three query, so this is not free. A Sheet is bound to the
-     * context it was built in and is cheap to rebuild rather than held, so
-     * build one and read it rather than calling this per stat.
+     * Four of the five query, so this is not free — only ArchetypePerks reads
+     * the cached roster. A Sheet is bound to the context it was built in and is
+     * cheap to rebuild rather than held, so build one and read it rather than
+     * calling this per stat.
      *
      * Order does not matter. The resolver sorts modifiers into layers by op
      * and sums within each, so two sources cannot fight over which went first.
