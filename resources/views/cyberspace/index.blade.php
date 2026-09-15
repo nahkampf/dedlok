@@ -176,6 +176,7 @@
             ['cell--system cell--silo cell--new', Text::get('cyberspace.map.new'), '▤'],
             ['cell--system cell--compute cell--backdoored', Text::get('cyberspace.map.backdoored'), '⌬'],
             ['cell--system cell--relay cell--rebooting', Text::get('cyberspace.map.rebooting'), '☰'],
+            ['cell--empty cell--marked', Text::get('cyberspace.map.marked'), ''],
         ] as [$class, $label, $glyph])
             <span class="gridmap__key">
                 <span class="gridmap__swatch cell {{ $class }}" aria-hidden="true">{{ $glyph }}</span>

@@ -384,6 +384,7 @@ return [
             'jack_out' => 'Jack out',
 
             'here' => 'You are here',
+            'marked' => 'Saved position',
             'backdoored' => 'Your backdoor',
             'rebooting' => 'Rebooting',
             'grade_key' => 'Grade, once scanned',

@@ -2747,7 +2747,18 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
 /* The legend reuses .cell so a swatch cannot drift from the thing it explains.
    Size only — the border and fill stay the modifier's business, or the shorthand
    here would repaint the very colours the legend exists to show. */
-.gridmap__swatch { width: 14px; height: 14px; flex: none; }
+/* A swatch is a small .cell, and it has to stay a cell: the whole point of the
+   legend is that its samples are the real thing wearing the real classes.
+   So it overrides the two things that do not survive being shrunk — the size,
+   and the glyph inside it, which is sized for a 60px square and would hang out
+   of a 14px one. Big enough to show a glyph, because for half these entries
+   the glyph IS what is being explained. */
+.gridmap__swatch {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  font-size: var(--fs-sm);
+}
 
 /* A real target for a thumb. The map scrolls, so this costs visible cells
    rather than legibility — the right way round. */
