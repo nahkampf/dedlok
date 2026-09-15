@@ -1231,6 +1231,35 @@ module — see *Cyberdecks and modules*. `ItemController` wraps both writes in a
 transaction and delegates the decision of which tables those are to
 `App\Decks\HardwareEditor`.
 
+**Effects are edited as rows, by one component, everywhere.**
+`App\Admin\ModifierField` plus `<x-modifier-rows>` is the editor for every
+modifier list in the game — `items.modifiers`, `programs.modifiers`,
+`skills.modifiers`, and `archetype_perks.modifiers` when perks get a screen.
+Four tables carry the same JSON, and until this existed every one of them was
+authored by hand: a textarea for software and a migration for the rest, which
+is a content pipeline only a programmer can use for the half of the game
+MECHANICS insists must be data.
+
+- **A screen passes a field name and its extra keys.** `skills.modifiers`
+  carries a `level` per row — from which level the grant applies — and
+  `<x-modifier-rows :extras="['level']">` is the whole of that difference.
+- **The picker offers stats by id and tag sets by NAME.** Groups come from a
+  stat's leading tag; the sets offered are exactly the ones with an entry in
+  `character.names`, which is self-limiting on purpose — **a set nobody has
+  named cannot be rendered on a card**, so offering it would be offering an
+  effect nothing can describe.
+- **A target must reach something.** `Modifier::fromArray()` judges the shape
+  and knows nothing about which stats exist, so a mistyped id builds, resolves,
+  matches nothing and changes nothing for ever. The editor asks the registry as
+  well, and names the row that is wrong.
+- **A value is an id unless it is plainly a tag set** — more than one tag, or
+  one that declared stats actually wear. Anything else stays an id and is
+  refused, rather than quietly becoming `all_of: ['hitpints_max']`.
+- **What the editor does not understand, it carries.** A `condition`, a
+  `priority` or a `source` travels in a hidden field and comes back untouched.
+  Dropping them on save would be the kind of damage nobody notices until a drug
+  stops wearing off.
+
 **The form requests are the substantive part.** `App\Http\Requests\Admin\ItemRequest`,
 `SkillRequest` and `ArchetypeRequest` mirror every CHECK constraint on the tables — the
 constraints are the guarantee, these are the explanation, because what the database

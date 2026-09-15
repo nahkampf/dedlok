@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Admin\ModifierField;
 use App\Models\Character;
 use App\Models\Skill;
 use App\Models\SkillPrerequisite;
@@ -34,6 +35,9 @@ class SkillRequest extends FormRequest
         return $this->user()?->can('admin') ?? false;
     }
 
+    /** The extra key a skill's modifiers carry beyond a plain definition. */
+    private const EXTRAS = ['level'];
+
     protected function prepareForValidation(): void
     {
         $this->merge([
@@ -42,6 +46,11 @@ class SkillRequest extends FormRequest
             // A form with every prerequisite row removed sends nothing at all,
             // which has to mean "no prerequisites" rather than "leave them be".
             'prerequisites' => $this->normalisedPrerequisites(),
+            // What KNOWING this skill grants, read by
+            // App\Stats\Sources\SkillEffects. Each row carries the level it
+            // starts applying from, which is the extra key this table has and
+            // the source strips before building.
+            'modifiers' => ModifierField::normalise($this->input('modifiers'), self::EXTRAS),
         ]);
     }
 
@@ -72,6 +81,15 @@ class SkillRequest extends FormRequest
 
             'base_cost' => ['required', 'integer', 'min:0'],
             'on_market' => ['boolean'],
+
+            /*
+             * What having the skill grants — not the check it feeds, which is
+             * a generated stat and belongs to nobody. Judged by BUILDING each
+             * one in withValidator(), because content authored here is content
+             * no test sees: a typo in a target id is a 500 on the character
+             * sheet of everybody who has the skill.
+             */
+            'modifiers' => ['nullable', 'array'],
 
             'prerequisites' => ['array', 'max:20'],
             'prerequisites.*.required_skill_id' => [
@@ -115,6 +133,12 @@ class SkillRequest extends FormRequest
      */
     public function withValidator(Validator $validator): void
     {
+        $validator->after(function (Validator $validator): void {
+            if (! $validator->errors()->has('modifiers')) {
+                ModifierField::validate($validator, 'modifiers', (array) $this->input('modifiers', []), self::EXTRAS);
+            }
+        });
+
         $validator->after(function (Validator $validator): void {
             if ($validator->errors()->isNotEmpty()) {
                 return;   // The ids may not even exist yet; nothing to walk.
@@ -171,6 +195,10 @@ class SkillRequest extends FormRequest
         $data = $this->validated();
 
         unset($data['prerequisites']);
+
+        // Null rather than [], the same as an item's: a skill that grants
+        // nothing genuinely grants nothing.
+        $data['modifiers'] = ($data['modifiers'] ?? []) === [] ? null : array_values((array) $data['modifiers']);
 
         if (! $this->isCreating()) {
             unset($data['slug']);

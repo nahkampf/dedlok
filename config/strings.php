@@ -1125,6 +1125,7 @@ return [
     | only the custom rules belong here.
     */
     'validation' => [
+        'modifier_target' => 'nothing in the game is called [:target], so this effect would change nothing.',
         'handle_characters' => 'Handles may use letters and digits from any alphabet, plus: :symbols',
         'handle_length' => 'Handles may be at most :max characters long.',
     ],
@@ -1136,6 +1137,47 @@ return [
     | Item and skill NAMES are still columns — these are the words around them.
     */
     'admin' => [
+
+        /*
+        | The modifier editor, shared by every screen that edits a list of
+        | them: items, the software on them, skills, and perks when they get
+        | one. See App\Admin\ModifierField.
+        |
+        | The group labels are the first tag of a stat, so a new family of
+        | stats lands in a group of its own by having a tag — and the fallback
+        | is the tag itself, which is ugly enough to notice and harmless.
+        */
+        'modifiers' => [
+            'legend' => 'Effects',
+            'hint' => 'What having this changes. Each row is one modifier: how it applies, by how much, and to what.',
+            'empty' => 'No effects. This changes nothing about anybody.',
+            'add' => 'Add effect',
+            'remove' => 'Remove',
+            'op' => 'How',
+            'amount' => 'How much',
+            'target' => 'What',
+            'level' => 'From level',
+            'level_hint' => 'The level at which this starts applying. Blank means from level 0.',
+            'choose_target' => 'Choose a target',
+            'carried' => 'This effect also carries :keys, which are kept as they are.',
+            'ops' => [
+                'add' => 'Add a flat amount',
+                'percentage_of_base' => 'Add a percentage',
+                'multiplier' => 'Multiply by',
+                'override' => 'Replace with',
+            ],
+            'groups' => [
+                'attribute' => 'Attributes',
+                'derived' => 'Vitals',
+                'deck' => 'Deck measures',
+                'scan' => 'Scanning',
+                'skill' => 'Skill levels',
+                'check' => 'Skill checks',
+                'damage' => 'Damage taken',
+                'sets' => 'Groups',
+                'other' => 'Other',
+            ],
+        ],
 
         'nav' => 'Admin',
         'title' => 'Admin tools',
@@ -1244,8 +1286,11 @@ return [
                 'storage_size_hint' => 'Quantabits it occupies just by being owned, running or not.',
                 'background_process' => 'Runs in the background',
                 'background_process_hint' => 'Whether it may run outside an intrusion. A decryptor must; an icebreaker has nothing to break out there.',
-                'program_modifiers' => 'Modifiers',
-                'program_modifiers_hint' => 'A JSON list, in the shape archetype perks use. Empty is fine — a program that only gates modifies nothing.',
+                'program_modifiers' => 'What running it does',
+                'program_modifiers_hint' => 'Effects the character gets while this is running. Empty is fine — a program that only gates modifies nothing.',
+                'implant_region' => 'Implant region',
+                'implant_region_none' => 'Not an implant',
+                'implant_region_hint' => 'Where in a body this goes. Setting it is what makes an item an implant.',
                 'qflops' => 'Compute',
                 'qflops_hint' => 'Raw throughput, in qFLOPS.',
                 'quantabits' => 'Memory',
@@ -1321,6 +1366,8 @@ return [
             ],
 
             'fields' => [
+                'modifiers' => 'What knowing it grants',
+                'modifiers_hint' => 'Effects a character gets for having this skill — not the check it feeds, which exists for everybody. Each row applies from the level you give it.',
                 'slug' => 'Slug',
                 'slug_hint' => 'Permanent. Lower case, digits and underscores. The book is named from it.',
                 'slug_locked' => 'Permanent — saved progress references it.',

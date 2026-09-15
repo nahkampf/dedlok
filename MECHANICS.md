@@ -18,6 +18,7 @@ down so the implementation has something to be checked against.
 | Attributes on `characters` (10 columns, 0–100 in the DB) | **built** |
 | Attribute clamping on save | **built**, at the lifetime cap of 100 |
 | Archetypes + perks as rows (`archetypes`, `archetype_perks`) | **built**; `characters.archetype` is a real foreign key |
+| Authoring modifiers without writing JSON | **built** — `App\Admin\ModifierField` and `<x-modifier-rows>`, shared by the item and skill editors; perks still have no screen |
 | Live perks routed through the resolver | **built**; all three shipped perks are live, and "Hard knocks" is the first to target a tag set |
 | Display-only perks | **no shipped perk uses one**; the shape is kept for content that may want it, covered by tests that build their own |
 | `hitpoints_max` and `synaptic_integrity_max` as stats | **built**, formulas in `config/stats.php` |

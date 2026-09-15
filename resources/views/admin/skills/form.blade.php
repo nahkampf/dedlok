@@ -205,6 +205,16 @@
             </div>
         </div>
 
+        {{-- What KNOWING this grants, which is not the check it feeds: a check
+             is a generated stat and belongs to nobody. The level column is the
+             one extra key a skill's modifiers carry — App\Stats\Sources\SkillEffects
+             filters by it and strips it before building. --}}
+        <x-modifier-rows name="modifiers"
+                         :rows="\App\Admin\ModifierField::rows($skill?->modifiers, ['level'])"
+                         :extras="['level']"
+                         :legend="Text::get('admin.skills.fields.modifiers')"
+                         :hint="Text::get('admin.skills.fields.modifiers_hint')" />
+
         <div class="row row--wrap">
             <button type="submit" class="btn btn--primary cut">
                 {{ $creating ? Text::get('admin.actions.create') : Text::get('admin.actions.save') }}

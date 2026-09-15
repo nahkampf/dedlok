@@ -524,5 +524,55 @@
     cell.click();
   });
 
-  window.UI = { toast, meter, log, type, esc, captcha, centreMap };
+  /* --- Modifier rows -----------------------------------------------------
+     Add and remove rows in the admin's effects editor.
+
+     The blueprint is a <template> in the markup rather than a string here,
+     because a row is a dozen elements with labels and a whole grouped picker
+     in it — building that by concatenation is how a form ends up with two
+     versions of itself that disagree.
+
+     INDEXES ARE REWRITTEN AFTER EVERY CHANGE. PHP reads modifiers[0], [1], [2]
+     as a list; deleting the middle one and leaving a hole turns the list into
+     a map and the shape the request expects quietly changes.               */
+  function modifierRows(scope) {
+    (scope || document).querySelectorAll("[data-modifiers]").forEach((field) => {
+      if (field.dataset.modifiersReady) return;
+      field.dataset.modifiersReady = "1";
+
+      const list = field.querySelector("[data-modifier-rows]");
+      const template = field.querySelector("[data-modifier-template]");
+      const empty = field.querySelector("[data-modifier-empty]");
+      if (!list || !template) return;
+
+      const reindex = () => {
+        list.querySelectorAll("[data-modifier-row]").forEach((row, index) => {
+          row.querySelectorAll("[name]").forEach((input) => {
+            input.name = input.name.replace(/\[(?:\d+|__index__)\]/, "[" + index + "]");
+          });
+        });
+        if (empty) empty.hidden = list.querySelector("[data-modifier-row]") !== null;
+      };
+
+      field.querySelector("[data-modifier-add]")?.addEventListener("click", () => {
+        list.appendChild(template.content.cloneNode(true));
+        reindex();
+        list.lastElementChild?.querySelector("select")?.focus();
+      });
+
+      field.addEventListener("click", (e) => {
+        const remove = e.target.closest("[data-modifier-remove]");
+        if (!remove || !field.contains(remove)) return;
+        remove.closest("[data-modifier-row]")?.remove();
+        reindex();
+      });
+
+      reindex();
+    });
+  }
+
+  modifierRows();
+  document.addEventListener("DOMContentLoaded", () => modifierRows());
+
+  window.UI = { toast, meter, log, type, esc, captcha, centreMap, modifierRows };
 })();
