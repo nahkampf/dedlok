@@ -206,8 +206,11 @@ final class ProgramAdminTest extends TestCase
             ]))
             ->assertRedirect();
 
+        // Scoped to THIS item rather than counting the table: a fresh database
+        // ships the scanners, so "no programs exist" stopped being the same
+        // statement as "this item stopped being one".
         $this->assertNull($item->fresh()->program);
-        $this->assertDatabaseCount('programs', 0);
+        $this->assertDatabaseMissing('programs', ['item_id' => $item->id]);
     }
 
     public function test_editing_a_program_replaces_its_row_rather_than_adding_one(): void
@@ -226,7 +229,7 @@ final class ProgramAdminTest extends TestCase
             ]))
             ->assertRedirect();
 
-        $this->assertSame(1, Program::query()->count());
+        $this->assertSame(1, Program::query()->where('item_id', $item->id)->count(), 'replaced, not added to');
         $this->assertSame(ProgramKind::Decryptor, $item->fresh()->program->kind);
         $this->assertSame(30, $item->fresh()->program->qflops_cost);
         $this->assertTrue($item->fresh()->program->background_process);

@@ -1096,11 +1096,15 @@ carries the detail.
 - **Scanning is `App\Cyberspace\Probe`, and it reads the machine you are
   standing on.** No target in the request: you cannot read a machine you are
   not at. One press is one pass, a pass rolls once per thing not yet known, and
-  the budget is `cyberspace.scan.passes` — **a failed scan costs the expiry
-  window, not a retry**, which is what stops a free act from being ground.
-  **No analyser is required**, and that is a decision: mapping is the safe way
-  in, and a program between a new player and it would raise the floor of the
-  game to buy nothing.
+  the budget is the `scan_passes` stat — **a failed scan costs the expiry
+  window, not a retry**, which is what stops the act from being ground.
+- **Reading a machine takes software, and it has to be RUNNING.** An analyser
+  on the equipped deck is the gate; one in the stash is a file. **What a better
+  version buys is data, not code**: `programs.modifiers` against
+  `check.systemprofiling` for a steadier read and against `scan_passes` for
+  another look, so a new version is an item row and the probe never changes.
+  Analysers are BACKGROUND programs — mapping happens on the open grid, and
+  nothing passes `$duringRun` true.
 - **A scan is a file that perishes.** `system_scans` is one row per character
   per address — a sighting, like a contact, with no foreign key to `systems`,
   because it has to outlive the machine. What is known is COLUMNS and null

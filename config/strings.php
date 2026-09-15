@@ -288,6 +288,7 @@ return [
             'not_jacked_in' => 'You are not in cyberspace.',
             'nothing_there' => 'There is nothing here to read.',
             'not_scannable' => 'The portal answers nothing. There is nothing here to find out.',
+            'no_analyser' => 'You have no scanner running. Start one on the deck you are carrying.',
             'already_known' => 'You already have everything this machine will tell you.',
             'exhausted' => 'You have read this machine as far as you can. What you have is what you get until it goes stale.',
             'found' => [

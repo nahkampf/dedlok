@@ -10,9 +10,13 @@ use App\Cyberspace\Probe;
 use App\Cyberspace\ProbeRefusal;
 use App\Cyberspace\Sweep;
 use App\Models\Character;
+use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemScan;
+use App\Programs\ProgramKind;
+use App\Programs\ProgramRunner;
 use App\Stats\Sheet;
 use App\Stats\SkillStats;
 use App\Support\Text;
@@ -67,7 +71,10 @@ final class ProbeTest extends TestCase
         // request.
         $this->equipReadyDeck($this->character);
 
+        $this->runAScanner();
+
         $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
+        $this->character->refresh();
     }
 
     /**
@@ -81,6 +88,27 @@ final class ProbeTest extends TestCase
     private function sweep(): void
     {
         Sweep::fromConfig()->from($this->character->fresh(), new Position(8, 8));
+    }
+
+    /**
+     * A scanner, running on the deck they are carrying.
+     *
+     * Reading a machine takes software and the software has to be up, so this
+     * is part of the fixture rather than part of a single test — the gate has
+     * one test of its own below and everything else assumes it is satisfied.
+     */
+    private function runAScanner(array $modifiers = []): InventoryItem
+    {
+        $scanner = $this->ownedBy($this->character, Item::factory()->program(
+            ProgramKind::Analyser,
+            background: true,
+            modifiers: $modifiers,
+        )->create());
+
+        $result = app(ProgramRunner::class)->start($this->character->fresh(), $scanner);
+        $this->assertTrue($result->succeeded(), 'the fixture has to get the scanner running');
+
+        return $scanner->fresh();
     }
 
     /** A probe whose dice are ours: `$die` below the chance passes. */
@@ -136,6 +164,72 @@ final class ProbeTest extends TestCase
         $result = $this->probe(0.0)->scan($this->character);
 
         $this->assertSame(ProbeRefusal::NotScannable, $result->refusal);
+    }
+
+    /**
+     * READING A MACHINE TAKES SOFTWARE. A scanner in the stash is a file; what
+     * reads a machine is one that is running, spending the deck's compute the
+     * whole time it does.
+     */
+    public function test_a_scan_needs_a_scanner_running(): void
+    {
+        $this->machine();
+
+        app(ProgramRunner::class)->stopAll($this->character->fresh(), $this->character->equippedDeck);
+
+        $result = $this->probe(0.0)->scan($this->character->fresh());
+
+        $this->assertSame(ProbeRefusal::NoAnalyser, $result->refusal);
+        $this->assertSame(0, SystemScan::query()->count());
+    }
+
+    /** Owning one is not running one. */
+    public function test_a_scanner_sitting_in_the_stash_reads_nothing(): void
+    {
+        $this->machine();
+
+        app(ProgramRunner::class)->stopAll($this->character->fresh(), $this->character->equippedDeck);
+        $this->ownedBy($this->character, Item::factory()->program(ProgramKind::Analyser, background: true)->create());
+
+        $this->assertSame(ProbeRefusal::NoAnalyser, $this->probe(0.0)->scan($this->character->fresh())->refusal);
+    }
+
+    // ---- what a better scanner buys ----------------------------------------
+
+    /**
+     * A VERSION IS WORTH WHAT ITS ROW SAYS. Neither bonus is known to the
+     * probe: one reaches it through the resolver and the other through a stat.
+     */
+    public function test_a_better_scanner_reads_more_steadily(): void
+    {
+        $plain = Probe::fromConfig()->chanceFor($this->character->fresh(), new System(['grade' => 4]));
+
+        app(ProgramRunner::class)->stopAll($this->character->fresh(), $this->character->equippedDeck);
+        $this->runAScanner([
+            ['op' => 'percentage_of_base', 'amount' => 50, 'target' => ['id' => SkillStats::checkId('systemprofiling')]],
+        ]);
+
+        $better = Probe::fromConfig()->chanceFor($this->character->fresh(), new System(['grade' => 4]));
+
+        $this->assertGreaterThan($plain, $better);
+    }
+
+    public function test_a_better_scanner_buys_another_look(): void
+    {
+        $this->assertSame(
+            (int) config('cyberspace.scan.passes'),
+            Probe::fromConfig()->passesFor($this->character->fresh()),
+        );
+
+        app(ProgramRunner::class)->stopAll($this->character->fresh(), $this->character->equippedDeck);
+        $this->runAScanner([
+            ['op' => 'add', 'amount' => 2, 'target' => ['id' => 'scan_passes']],
+        ]);
+
+        $this->assertSame(
+            (int) config('cyberspace.scan.passes') + 2,
+            Probe::fromConfig()->passesFor($this->character->fresh()),
+        );
     }
 
     // ---- reading it --------------------------------------------------------

@@ -22,7 +22,8 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
 | System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
-| Scanning — the probe | **built** for what a system currently HAS: grade and operating system. One press is one pass, one roll per unknown, capped at five |
+| Scanning — the probe | **built** for what a system currently HAS: grade and operating system. Needs an analyser RUNNING on the equipped deck; one press is one pass, one roll per unknown, capped by the `scan_passes` stat |
+| Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
 | Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
 | Discovery — contact | **built** as rows keyed by position, with no foreign key to `systems` on purpose |
@@ -1070,13 +1071,22 @@ All of it. In the order it should be built:
    the scan file is an object with no buyer.
 
    ~~**Decide here whether the probe needs a running analyser.**~~ **Decided:
-   it does not.** Mapping is meant to be the safest thing in cyberspace and the
-   way a new player earns their first creds; putting a program between them and
-   it raises the floor of the whole game to buy nothing. When an analyser
-   exists it should make a scan BETTER — more passes, or a bonus to the roll —
-   which is a modifier on a row and needs no gate. `$duringRun` therefore still
-   has no caller passing `true`, and the simulator remains the only one that
-   ever should.
+   it does.** Reading a machine takes software, and the software has to be
+   RUNNING — an analyser on the equipped deck, spending compute and memory the
+   whole time. Scanning is a tool-assisted act rather than a talent, which is
+   what makes the first scanner a thing a character wants and a better one
+   worth paying for.
+
+   **A version is worth what its row says**, through the two channels every
+   program already has: `programs.modifiers` against `check.systemprofiling`
+   for a steadier read, and against `scan_passes` for another look at the
+   machine before the picture is the one you get. The probe knows about neither
+   — one arrives through the resolver and the other through a stat — so a Mk IV
+   is an item row and nothing else.
+
+   The analyser is a BACKGROUND program, not a run-only one: mapping happens on
+   the open grid. So `$duringRun` still has no caller passing `true`, and the
+   simulator remains the only thing that ever should.
 5. **The intrusion.** The simulator, the log, extraction, the defeat tags.
    Single-player only — cooperative runs are phase 7.
 6. **Consequences.** Trace, heat, backdoors and routing, burn, lockdown,

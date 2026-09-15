@@ -46,8 +46,12 @@ enum ProgramKind: string
     public function runsInBackgroundByDefault(): bool
     {
         return match ($this) {
-            self::Decryptor, self::Daemon => true,
-            self::Icebreaker, self::Evasion, self::Analyser => false,
+            // An analyser reads a machine you are standing in front of, which
+            // is something you do on the open grid and not only inside a run:
+            // scanning IS the safe run type. It idles and listens, which is
+            // the shape of a background job.
+            self::Decryptor, self::Daemon, self::Analyser => true,
+            self::Icebreaker, self::Evasion => false,
         };
     }
 

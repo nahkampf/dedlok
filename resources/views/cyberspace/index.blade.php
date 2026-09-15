@@ -41,6 +41,14 @@
                         @if ($scan?->operatingSystem)
                             <span class="micro">{{ $scan->operatingSystem->title }}</span>
                         @endif
+
+                        {{-- Reading a machine takes software. Said here rather
+                             than only in the refusal, because a disabled button
+                             with no reason beside it is a screen that looks
+                             broken. --}}
+                        @unless ($canScan)
+                            <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.no_analyser') }}</span>
+                        @endunless
                     @endif
                 @else
                     <span class="micro">{{ Text::get('cyberspace.map.out') }}</span>
@@ -69,7 +77,7 @@
                 <form method="POST" action="{{ route('cyberspace.scan') }}">
                     @csrf
                     <button type="submit" class="btn btn--sm cut"
-                            @disabled(! $here || $scan?->isComplete() || $scan?->passes >= config('cyberspace.scan.passes'))>
+                            @disabled(! $here || ! $canScan || $scan?->isComplete() || $scan?->passes >= $scanPasses)>
                         {{ Text::get('cyberspace.scan.action') }}
                     </button>
                 </form>

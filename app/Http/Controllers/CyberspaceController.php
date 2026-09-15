@@ -42,6 +42,7 @@ class CyberspaceController extends Controller
     {
         $character = $this->character($request);
         $grid = Grid::fromConfig();
+        $probe = Probe::fromConfig();
 
         $scan = $character->isJackedIn()
             ? SystemScan::query()
@@ -76,6 +77,12 @@ class CyberspaceController extends Controller
             // machine can move — a scan of something that has since relocated
             // is stale in the way the expiry exists to describe.
             'scan' => $scan,
+            // Reading a machine takes software that is running, and a screen
+            // that hides why the button is dead is worse than one without a
+            // button. Both come from the Probe rather than being worked out
+            // here, so the screen and the act cannot disagree about either.
+            'canScan' => $probe->hasAnalyserRunning($character),
+            'scanPasses' => $probe->passesFor($character),
         ]);
     }
 

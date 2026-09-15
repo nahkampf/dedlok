@@ -111,6 +111,27 @@ return [
          * meaningless figure — the same reason draw and supply are two stats
          * that share a unit.
          */
+        /*
+        | How many passes a scan gets before the picture it has is the picture
+        | it gets.
+        |
+        | A STAT RATHER THAN A CONSTANT because scanning software comes in
+        | versions, and a better one buying another look at the machine is the
+        | clearest thing a version can be worth. The base is
+        | `cyberspace.scan.passes` and a program, a skill or an implant moves it
+        | like anything else.
+        |
+        | Floored at 1: a character holding something that took their passes to
+        | nothing would be holding a program that stops them scanning, which is
+        | not a trade anybody would make on purpose.
+        */
+        'scan_passes' => [
+            'tags' => ['scan'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'deck_storage' => [
             'tags' => ['deck', 'storage'],
             'min' => 0,

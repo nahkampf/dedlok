@@ -6,8 +6,11 @@ namespace App\Cyberspace;
 
 use App\Checks\CheckRoller;
 use App\Models\Character;
+use App\Models\InventoryItem;
 use App\Models\System;
 use App\Models\SystemScan;
+use App\Programs\ProgramKind;
+use App\Stats\Resolver;
 use App\Stats\SkillStats;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -33,14 +36,24 @@ use Illuminate\Support\Facades\DB;
  * is hard to read whether or not anybody knows it is a grade 9, which is the
  * only way round that does not leak the answer into the question.
  *
- * NO ANALYSER IS REQUIRED, and that is a decision rather than an omission.
- * CYBERSPACE.md asks whether the probe should be gated on a running analyser
- * program and says to answer it before the probe is written: it is not, because
- * mapping is meant to be the safest thing in cyberspace and the way a new
- * player earns their first creds, and putting a program between them and it
- * raises the floor of the whole game to buy nothing. When an analyser exists it
- * should make a scan BETTER — more passes, or a bonus to the roll — which is a
- * modifier on a row and needs no gate at all.
+ * READING A MACHINE TAKES SOFTWARE, and the software has to be RUNNING. A
+ * scanner is a tool rather than a talent: an analyser on the equipped deck is
+ * what turns standing in front of a machine into finding out what it is, and it
+ * spends compute and memory the whole time it is doing so. That is the answer
+ * to the question CYBERSPACE.md said to settle before this class was written.
+ *
+ * WHAT A BETTER ANALYSER BUYS IS DATA, NOT CODE. Versions differ by what they
+ * carry on their own row, through the two channels every program already has:
+ *
+ *  - `programs.modifiers` targeting `check.systemprofiling` — a steadier read,
+ *    which reaches this class through the resolver without it knowing analysers
+ *    exist at all;
+ *  - the same, targeting `scan_passes` — another look at the machine before the
+ *    picture is the picture you get.
+ *
+ * So a Mk II is an item row and a Mk III is another one. Nothing here changes
+ * when the catalogue grows, which is the whole reason the bonus is a modifier
+ * rather than a column this class reads.
  *
  * WHAT A SCAN CAN FIND OUT IS WHAT A SYSTEM CURRENTLY HAS. Grade and operating
  * system today; the IDS, the ICE, the tracer and any cloaked systems join the
@@ -52,15 +65,17 @@ final class Probe
 {
     public function __construct(
         private readonly CheckRoller $roller,
-        private readonly int $maxPasses,
+        private readonly Resolver $resolver,
+        private readonly int $basePasses,
         private readonly int $lifetimeHours,
         private readonly string $skillSlug,
     ) {}
 
-    public static function fromConfig(?CheckRoller $roller = null): self
+    public static function fromConfig(?CheckRoller $roller = null, ?Resolver $resolver = null): self
     {
         return new self(
             $roller ?? CheckRoller::fromConfig(),
+            $resolver ?? app(Resolver::class),
             (int) Config::get('cyberspace.scan.passes', 5),
             (int) Config::get('cyberspace.scan.lifetime_hours', 48),
             (string) Config::get('cyberspace.scan.skill', 'systemprofiling'),
@@ -92,17 +107,58 @@ final class Probe
             return ProbeResult::refused(ProbeRefusal::NotScannable);
         }
 
+        if (! $this->hasAnalyserRunning($character)) {
+            return ProbeResult::refused(ProbeRefusal::NoAnalyser);
+        }
+
         $scan = $this->fileFor($character, $system);
 
         if ($scan->isComplete()) {
             return ProbeResult::refused(ProbeRefusal::AlreadyKnown);
         }
 
-        if ($scan->passes >= $this->maxPasses) {
+        if ($scan->passes >= $this->passesFor($character)) {
             return ProbeResult::refused(ProbeRefusal::Exhausted);
         }
 
         return $this->pass($character, $system, $scan);
+    }
+
+    /**
+     * Is there a scanner running on the deck they are carrying?
+     *
+     * Running, not owned: an analyser in the stash is a file, and the compute
+     * and memory it spends while running are what a scan costs. Only the
+     * EQUIPPED deck counts, for the reason every other question about a
+     * character's software does — a program running on a spare deck is
+     * spending that deck's budget and nobody's attention.
+     */
+    public function hasAnalyserRunning(Character $character): bool
+    {
+        if ($character->equipped_deck_id === null) {
+            return false;
+        }
+
+        return InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->where('running_on_deck_id', $character->equipped_deck_id)
+            ->whereHas('item.program', static fn ($query) => $query->where('kind', ProgramKind::Analyser->value))
+            ->exists();
+    }
+
+    /**
+     * How many looks this character gets at a machine.
+     *
+     * Resolved rather than read off config, because a better analyser buying
+     * another pass is the clearest thing a version can be worth. The base is
+     * the config number and everything else is a modifier — see the
+     * `scan_passes` stat.
+     */
+    public function passesFor(Character $character): int
+    {
+        return $this->resolver
+            ->resolve('scan_passes', (float) $this->basePasses, $character->modifiers())
+            ->toInt();
     }
 
     /** What the odds are of reading this machine, for a screen that wants to say so. */

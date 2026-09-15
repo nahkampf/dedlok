@@ -26,6 +26,15 @@ enum ProbeRefusal: string
      */
     case NotScannable = 'not_scannable';
 
+    /**
+     * No scanner running on the deck being carried.
+     *
+     * Reading a machine takes software, and the software has to be running —
+     * owning it is not the same as having it up. Says what to do about it,
+     * because there is exactly one thing.
+     */
+    case NoAnalyser = 'no_analyser';
+
     /** Everything about it is already known, and the file is still good. */
     case AlreadyKnown = 'already_known';
 
