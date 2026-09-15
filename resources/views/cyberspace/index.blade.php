@@ -302,6 +302,7 @@
         data-reading-unread="{{ Text::get('cyberspace.reading.unread') }}"
         data-reading-complete="{{ Text::get('cyberspace.reading.complete') }}"
         data-reading-idle="{{ Text::get('cyberspace.reading.idle') }}"
+        data-reading-exhausted="{{ Text::get('cyberspace.reading.exhausted') }}"
         data-reading-gone="{{ Text::get('cyberspace.scan.voided') }}"
         @if (session('reading')) data-reading-open="{{ session('reading') }}" @endif>
     <div class="panel__hd">

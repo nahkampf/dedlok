@@ -1108,9 +1108,16 @@ carries the detail.
   written down twice.
 - **Scanning is `App\Cyberspace\Probe`, and it reads the machine you are
   standing on.** No target in the request: you cannot read a machine you are
-  not at. One press STARTS a pass, a pass rolls once per thing not yet known,
+  not at. One press starts a READ, a pass rolls once per thing not yet known,
   and the budget is the `scan_passes` stat — **a failed scan costs the expiry
   window, not a retry**, which is what stops the act from being ground.
+- **A read goes round by itself.** A pass that matures without completing the
+  file starts the next one with the same instrument, until the picture is whole
+  or the budget is gone. Pressing Scan five times was never a decision — what
+  it bought was a screen that had to be watched for something it could do
+  itself. **Nothing about the cost moved**: passes are still spent when begun
+  and still capped, and stopping the scanner still ends the read, because that
+  is the one thing the player chose.
 - **A pass takes MINUTES** — one against a grade 1, sixteen against a grade 9,
   scaled by the `scan_duration` stat so skill and a better instrument cut it.
   **The pass is spent when BEGUN** and **the roll is made when it MATURES**, so

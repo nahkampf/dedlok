@@ -651,13 +651,19 @@
         }
       });
 
+      /* A read goes round by itself until the file is whole, so stopping
+         short says WHICH of the two ways it stopped: the budget ran out, or
+         the instrument was unloaded. They are different things to have done. */
       set("note", data.complete
         ? dlg.dataset.readingComplete
-        : (data.running ? "" : dlg.dataset.readingIdle));
+        : (data.running
+          ? ""
+          : (data.pass >= data.passes
+            ? dlg.dataset.readingExhausted
+            : dlg.dataset.readingIdle)));
 
-      // Nothing left to watch: the pass finished and either the picture is
-      // whole or there is no clock running on it. The dialog stays open and
-      // keeps showing what it found — it is the polling that stops.
+      // Nothing left to watch: the read stopped, and the dialog stays open
+      // showing what it found — it is the polling that stops.
       if (!data.running) stop();
     }
 

@@ -63,6 +63,15 @@ use Illuminate\Support\Facades\DB;
  * what stops the budget being dodged by starting five and finishing the one
  * that looks best.
  *
+ * ONE PRESS IS ONE READ, NOT ONE PASS. A pass that matures without finishing
+ * the picture starts the next one itself, with the same instrument, until the
+ * file is whole or the budget is gone. The player decided by pressing Scan
+ * once; making them press it five times bought nothing except a screen that
+ * had to be watched for something it could do on its own. Nothing about the
+ * cost changes — passes are still spent when begun and still capped by
+ * `scan_passes` — and unloading the scanner still ends it, because that is the
+ * one thing a player chose.
+ *
  * THE DIFFICULTY IS THE MACHINE'S, not the character's guess at it. A grade 9
  * is hard to read whether or not anybody knows it is a grade 9, which is the
  * only way round that does not leak the answer into the question.
@@ -257,7 +266,7 @@ final class Probe
             return $this->void($scan);
         }
 
-        return $this->resolve($character, $system, $scan);
+        return $this->resolve($character, $system, $scan, $now);
     }
 
     /**
@@ -298,6 +307,25 @@ final class Probe
             && $process->running_on_deck_id !== null
             && $process->started_at !== null
             && ! $process->started_at->isAfter($scan->pass_started_at);
+    }
+
+    /**
+     * Is the copy that just finished a pass still loaded?
+     *
+     * Asked before a read goes round again, and it is deliberately the weaker
+     * question than `stillReading()` — that one asks whether the SAME instance
+     * ran the whole pass, which is about a read that is already under way.
+     * This one only asks whether there is still something to read WITH.
+     */
+    private function instrumentIsRunning(?int $instrument): bool
+    {
+        if ($instrument === null) {
+            return false;
+        }
+
+        $process = InventoryItem::query()->find($instrument);
+
+        return $process !== null && $process->running_on_deck_id !== null;
     }
 
     /**
@@ -410,16 +438,22 @@ final class Probe
      * The pass is counted here rather than when it finishes, because it is
      * spent either way — see the class docblock.
      */
-    private function begin(Character $character, System $system, SystemScan $scan, CarbonImmutable $now): ProbeResult
-    {
+    private function begin(
+        Character $character,
+        System $system,
+        SystemScan $scan,
+        CarbonImmutable $now,
+        ?int $instrument = null,
+    ): ProbeResult {
         $scan->passes++;
         $scan->pass_started_at = $now;
         $scan->pass_ready_at = $now->addSeconds($this->durationFor($character, $system));
         // WHICH instrument, not merely that there was one. With two scanners
         // running on two machines, "is a scanner going?" stops being the
         // question — this read is finished by the copy that started it or by
-        // nobody.
-        $scan->reading_process_id = $this->freeAnalyser($character)?->getKey();
+        // nobody. A continuing read names the copy already on the machine,
+        // which `freeAnalyser()` would not offer, since it is reading this.
+        $scan->reading_process_id = $instrument ?? $this->freeAnalyser($character)?->getKey();
 
         DB::transaction(static fn () => $scan->save());
 
@@ -445,7 +479,7 @@ final class Probe
     }
 
     /** The roll itself, made at the moment the pass matures. */
-    private function resolve(Character $character, System $system, SystemScan $scan): ProbeResult
+    private function resolve(Character $character, System $system, SystemScan $scan, CarbonImmutable $now): ProbeResult
     {
         $reading = $this->reading($character);
         $difficulty = $this->difficultyOf($system);
@@ -469,10 +503,34 @@ final class Probe
             };
         }
 
+        $instrument = $scan->reading_process_id;
+
         $scan->pass_started_at = null;
         $scan->pass_ready_at = null;
         // The instrument is free again the moment it has an answer.
         $scan->reading_process_id = null;
+
+        /*
+         * AN INSTRUMENT KEEPS READING UNTIL IT HAS THE PICTURE.
+         *
+         * One press is one READ rather than one pass: a scanner pointed at a
+         * machine goes round again by itself, and stops when the file is whole,
+         * when the budget is gone, or when somebody unloads it. Pressing Scan
+         * five times was never a decision — the player had already decided by
+         * pressing it once, and what the repetition bought was a screen that
+         * had to be watched for something it could do itself.
+         *
+         * The budget is unchanged and so is what a pass costs: passes are still
+         * spent when BEGUN and still capped by `scan_passes`. What is gone is
+         * the pressing.
+         */
+        $continuing = ! $scan->isComplete()
+            && $scan->passes < $this->passesFor($character)
+            && $this->instrumentIsRunning($instrument);
+
+        if ($continuing) {
+            return ProbeResult::scanned($this->begin($character, $system, $scan, $now, $instrument)->scan, $found, $rolls);
+        }
 
         DB::transaction(static fn () => $scan->save());
 

@@ -295,7 +295,13 @@ final class ProbeTest extends TestCase
         $this->assertSame(1, $result->scan->passes);
     }
 
-    /** Learning nothing is an ordinary outcome, and it still costs a pass. */
+    /**
+     * Learning nothing is an ordinary outcome, and it still costs a pass.
+     *
+     * And the instrument goes straight round again: one press is one READ, so
+     * the pass that learned nothing is followed by the next one rather than by
+     * a screen waiting to be pressed.
+     */
     public function test_a_bad_pass_learns_nothing_and_spends_a_pass(): void
     {
         $this->machine(grade: 9);
@@ -305,7 +311,65 @@ final class ProbeTest extends TestCase
         $this->assertTrue($result->succeeded());
         $this->assertFalse($result->foundSomething());
         $this->assertNull($result->scan->grade);
-        $this->assertSame(1, $result->scan->passes);
+        $this->assertSame(2, $result->scan->passes, 'the second pass has already begun');
+        $this->assertTrue($result->scan->isRunning());
+    }
+
+    /**
+     * ONE PRESS IS ONE READ.
+     *
+     * The instrument keeps going until the file is whole, spending a pass each
+     * time round. Nothing is pressed after the first Scan and nothing is
+     * refunded — what the loop removes is the pressing, not the cost.
+     */
+    public function test_one_press_reads_until_the_picture_is_whole(): void
+    {
+        $os = $this->anOperatingSystem();
+        $this->machine(grade: 5, os: $os);
+
+        // Every roll fails, so the read goes round for as long as it is allowed.
+        $this->probe(0.999)->scan($this->character->fresh());
+
+        for ($pass = 0; $pass < 3; $pass++) {
+            $this->travel(20)->minutes();
+            $this->probe(0.999)->settleAll($this->character->fresh());
+        }
+
+        $this->assertSame(4, SystemScan::query()->sole()->passes);
+
+        // And the one that finally reads it stops the loop rather than
+        // spending what is left of the budget.
+        $this->travel(20)->minutes();
+        $this->probe(0.0)->settleAll($this->character->fresh());
+
+        $scan = SystemScan::query()->sole();
+        $this->assertTrue($scan->isComplete());
+        $this->assertFalse($scan->isRunning());
+        $this->assertSame(4, $scan->passes);
+        $this->assertNull($scan->reading_process_id, 'the instrument is free again');
+    }
+
+    /**
+     * Unloading the scanner ends the read, and it ends the LOOP with it.
+     *
+     * Stopping the program is the one thing a player chose, so nothing starts
+     * another pass on their behalf afterwards.
+     */
+    public function test_stopping_the_scanner_stops_the_read_going_round(): void
+    {
+        $this->machine(grade: 9);
+
+        $this->probe(0.999)->scan($this->character->fresh());
+
+        app(ProgramRunner::class)->stopAll($this->character->fresh(), $this->character->equippedDeck);
+
+        $this->travel(20)->minutes();
+        $this->probe(0.999)->settleAll($this->character->fresh());
+
+        $scan = SystemScan::query()->sole();
+        $this->assertSame(1, $scan->passes);
+        $this->assertFalse($scan->isRunning());
+        $this->assertNull($scan->reading_process_id);
     }
 
     /** A second pass adds to the file rather than starting a second one. */
