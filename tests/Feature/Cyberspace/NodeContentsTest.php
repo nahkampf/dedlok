@@ -8,6 +8,7 @@ use App\Cyberspace\ContentKind;
 use App\Cyberspace\NodeStocker;
 use App\Cyberspace\SystemType;
 use App\Models\Item;
+use App\Models\LootTable;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContent;
@@ -214,6 +215,109 @@ final class NodeContentsTest extends TestCase
         $this->stocker(lucky: true)->run();
 
         $this->assertSame(3, SystemContent::query()->ofKind(ContentKind::Item)->count());
+    }
+
+    // ---- how good the drop is ------------------------------------------------
+
+    /**
+     * A NODE HOLDS WHAT A MACHINE CAN HOLD. Software, files, books — never a
+     * cyberdeck or an implant, because those are objects in the world and a
+     * node is not somewhere a player's hands reach.
+     */
+    public function test_a_node_never_drops_a_physical_item(): void
+    {
+        Item::factory()->create(['slug' => 'a_deck', 'container' => Item::CONTAINER_PHYSICAL, 'on_market' => true]);
+        Item::factory()->create(['slug' => 'a_program', 'container' => Item::CONTAINER_DATA, 'on_market' => true]);
+
+        $this->machine(grade: 9);
+        $this->stocker(lucky: true)->run();
+
+        $stocked = SystemContent::query()->ofKind(ContentKind::Item)->pluck('item_id');
+
+        $this->assertNotEmpty($stocked);
+
+        foreach (Item::query()->whereIn('id', $stocked)->get() as $item) {
+            $this->assertSame(Item::CONTAINER_DATA, $item->container, "{$item->slug} is not something a node can hold");
+        }
+    }
+
+    /** The bottom of the grid hardly ever gives anything rare. */
+    public function test_a_low_grade_machine_almost_never_drops_rare(): void
+    {
+        Item::factory()->create(['container' => Item::CONTAINER_DATA, 'on_market' => true, 'rarity' => 'common']);
+        Item::factory()->create(['container' => Item::CONTAINER_DATA, 'on_market' => true, 'rarity' => 'rare']);
+
+        $this->machine(grade: 1);
+
+        // The weighted draw is a 1-in-1000 roll for rare at this band, so a
+        // roll at the top of the range is the only one that reaches it.
+        NodeStocker::fromConfig(static fn (int $min, int $max): int => $min)->run();
+
+        $drops = Item::query()
+            ->whereIn('id', SystemContent::query()->ofKind(ContentKind::Item)->pluck('item_id'))
+            ->pluck('rarity');
+
+        foreach ($drops as $rarity) {
+            $this->assertSame('common', $rarity->value);
+        }
+    }
+
+    /**
+     * And nothing below grade 8 ever gives ultra-rare.
+     *
+     * Run across every grade the wall covers, with dice that make every item
+     * roll hit — so each of those nodes holds its full four items and the only
+     * thing keeping the ultra-rare off them is the table.
+     */
+    public function test_nothing_below_grade_eight_drops_ultra_rare(): void
+    {
+        $prize = Item::factory()->create([
+            'container' => Item::CONTAINER_DATA,
+            'on_market' => true,
+            'rarity' => 'ultra_rare',
+        ]);
+
+        foreach (range(1, 7) as $grade) {
+            System::factory()->at($grade, 20)->grade($grade)->create([
+                'address' => str_pad((string) $grade, 8, 'B'),
+            ]);
+        }
+
+        $this->stocker(lucky: true)->run();
+
+        $this->assertGreaterThan(0, SystemContent::query()->ofKind(ContentKind::Item)->count());
+        $this->assertSame(
+            0,
+            SystemContent::query()->ofKind(ContentKind::Item)->where('item_id', $prize->id)->count(),
+        );
+    }
+
+    /** Weight 0 is a wall, not a long shot. */
+    public function test_a_zero_weight_rarity_is_never_drawn(): void
+    {
+        $this->assertSame(
+            0,
+            LootTable::query()->where('grade_max', '<=', 7)->where('rarity', 'ultra_rare')->sum('weight'),
+        );
+    }
+
+    // ---- what a file is called ------------------------------------------------
+
+    /** A silo keeps the records a company must keep; a relay keeps traffic. */
+    public function test_a_file_is_named_for_the_machine_it_came_off(): void
+    {
+        $silo = $this->machine(grade: 5, type: SystemType::Silo);
+
+        System::factory()->at(9, 9)->type(SystemType::Relay)->grade(5)->create(['address' => 'RELAYAAA']);
+
+        $this->stocker(lucky: true)->run();
+
+        $siloFile = $silo->contents()->ofKind(ContentKind::Data)->value('label');
+        $relayFile = SystemContent::query()->ofKind(ContentKind::Data)
+            ->whereNot('system_id', $silo->id)->value('label');
+
+        $this->assertContains($siloFile, config('strings.cyberspace.files.words.silo'));
+        $this->assertContains($relayFile, config('strings.cyberspace.files.words.relay'));
     }
 
     // ---- a machine that was told what to hold -------------------------------

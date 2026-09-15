@@ -376,12 +376,33 @@ return [
         */
         'files' => [
             'fallback' => 'Unlabelled data',
+
+            /*
+            | Names by the KIND of machine the file came off, because that is
+            | most of what makes a silo feel like a silo. A data silo keeps the
+            | records a company is obliged to keep; a compute node keeps what
+            | it was working on; a relay keeps what passed through it.
+            |
+            | A word list rather than rows: there is no catalogue of files and
+            | there should not be one. The name is the only part of a generated
+            | file that is not a number.
+            */
             'words' => [
-                'Payroll ledger', 'Internal memos', 'Personnel files', 'Audit trail',
-                'Client register', 'Design notes', 'Site surveys', 'Legal hold',
-                'Board minutes', 'Insurance claims', 'Shipping manifests', 'Patent drafts',
-                'Security roster', 'Access logs', 'Medical records', 'Tax filings',
-                'Research data', 'Supplier contracts', 'Incident reports', 'Asset registry',
+                'silo' => [
+                    'Payroll ledger', 'Personnel files', 'Audit trail', 'Client register',
+                    'Board minutes', 'Insurance claims', 'Medical records', 'Tax filings',
+                    'Legal hold', 'Asset registry', 'Pension schedules', 'Deed archive',
+                ],
+                'compute' => [
+                    'Research data', 'Design notes', 'Simulation output', 'Model weights',
+                    'Site surveys', 'Patent drafts', 'Failure analyses', 'Yield reports',
+                    'Test harness logs', 'Materials trials',
+                ],
+                'relay' => [
+                    'Access logs', 'Shipping manifests', 'Supplier contracts', 'Incident reports',
+                    'Routing tables', 'Handshake captures', 'Courier schedules', 'Freight waybills',
+                    'Switch diagnostics', 'Peering agreements',
+                ],
             ],
         ],
 

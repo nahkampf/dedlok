@@ -1183,6 +1183,28 @@ carries the detail.
   loop is the raid counter rather than scarcity.
 - **A node's items are a draw of NONE TO SEVERAL**, rolled again after each hit
   and capped, so a rich machine is rich rather than merely likely.
+- **Nothing PHYSICAL ever comes off a machine.** You are not in the room: what
+  a raid carries out is a file or a program, so the shelf is `on_market` items
+  whose `container` is `data` and nothing else. That rule lives in
+  `NodeStocker::stockableItems()` and is the one thing about node loot that is
+  not data.
+- **`loot_tables` is the weighting, and it is rows rather than config**, unlike
+  the rest of `config/cyberspace.php` — a band is content to tune, and tuning
+  it is not a deploy. One row per (type, grade band, rarity), `weight` out of
+  the band's own total, and **a NULL `system_type` means any machine**: four
+  band rows cover the whole world today, and a row naming a type is an
+  override that beats them. `App\Models\LootTable::weights()` is the read
+  (never `all()` — Eloquent owns that name) and `covers()` is the question.
+- **The bands are the design, and both ends are hard.** Grades 1–3 draw rare
+  at 1%, and **ultra-rare is weight 0 anywhere below grade 8** — a wall rather
+  than a long shot, so the best software in the game cannot fall out of a
+  street-corner relay however long anybody grinds it. A rarity with no items
+  behind it is skipped rather than drawing nothing, so an empty shelf costs a
+  roll rather than the whole draw.
+- **A file is labelled for the machine it came off.** `strings.cyberspace.files.words`
+  is per type — a silo yields a ledger, a compute node a model, a relay a
+  routing table — which is flavour and not mechanics: type still restricts no
+  kind of item.
 - **`systems.stock_rule` is how a machine is TOLD what to hold**, and NULL on
   nearly every row — the derived answer is the ordinary one and the column is
   the override, like `items.board_layout`. `fixed` is exactly these, `any_of` is

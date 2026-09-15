@@ -25,6 +25,8 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Scanning — the probe | **built** for what a system currently HAS: grade and operating system. Needs an analyser RUNNING on the equipped deck; one press starts one pass, capped by the `scan_passes` stat |
 | A pass takes TIME | **built** — about a minute against a grade 1 and sixteen against a grade 9, cut by skill and by a better instrument through the `scan_duration` stat. Settled lazily by whoever next looks |
 | Node inventories — what a machine holds | **built** — creds always, a generated FILE on a roll, and none to several items, all scaled by grade and leaned by type. `system_contents`, written by `App\Cyberspace\NodeStocker` |
+| Rarity, per grade band | **built** — `loot_tables`, one row per (type, band, rarity). Grades 1–3 see rare at 1%; ultra-rare is weight 0 below grade 8, which is a wall and not a long shot |
+| What a raid can carry out | **built** — data only. A node never yields a physical object: the shelf is `on_market` items whose `container` is `data` |
 | A machine told what to hold | **built** — `systems.stock_rule`, NULL on nearly every row: `fixed` for exactly these, `any_of` for this many from a set, `plus_random` to keep the ordinary draw as well. What mission systems will use; nothing sets one yet |
 | Nightly restock | **built** — `cyberspace:restock`, a TOP-UP like the market's pass: a node still holding something is left alone, so emptying one is temporary |
 | The raid counter | **built as a column**; `systems.raids`, on the system and not the character. Nothing increments it, because nothing can raid |

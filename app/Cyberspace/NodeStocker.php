@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Market\Rarity;
 use App\Models\Item;
+use App\Models\LootTable;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContent;
@@ -40,6 +42,13 @@ final class NodeStocker
     private const CHUNK = 500;
 
     /**
+     * The loot table, read once per pass.
+     *
+     * @var list<LootTable>
+     */
+    private array $weights = [];
+
+    /**
      * @param  array<string, mixed>  $config
      * @param  Closure(int, int): int  $roll  Inclusive both ends, like random_int.
      */
@@ -69,6 +78,9 @@ final class NodeStocker
         $result = new NodeStockResult;
         $encryption = $this->encryptionLadder();
         $items = $this->stockableItems();
+        // Read once for the whole pass: three thousand machines asking the
+        // same forty rows is three thousand answers that never differ.
+        $this->weights = LootTable::weights()->all();
 
         System::query()
             ->whereNot('type', SystemType::Portal->value)
@@ -130,7 +142,7 @@ final class NodeStocker
      * stocking without a pass over the whole grid.
      *
      * @param  array<int, int>  $encryption  rank => skill id
-     * @param  list<int>  $items
+     * @param  array<string, list<int>>  $items  rarity => item ids
      * @return list<array<string, mixed>>
      */
     public function contentsFor(System $system, array $encryption, array $items): array
@@ -150,10 +162,10 @@ final class NodeStocker
         ];
 
         if ($this->hits((int) ($this->config['data']['chance'][$grade] ?? 0), (int) ($lean['data'] ?? 1000))) {
-            $contents[] = $this->file($grade, $encryption);
+            $contents[] = $this->file($system->type, $grade, $encryption);
         }
 
-        foreach ($this->itemsFor($system, $grade, $lean, $items) as $item) {
+        foreach ($this->itemsFor($system, $lean, $items) as $item) {
             $contents[] = $item;
         }
 
@@ -177,7 +189,7 @@ final class NodeStocker
      * @param  list<int>  $catalogue
      * @return list<array<string, mixed>>
      */
-    private function itemsFor(System $system, int $grade, array $lean, array $catalogue): array
+    private function itemsFor(System $system, array $lean, array $catalogue): array
     {
         $rule = $system->stock_rule;
 
@@ -188,10 +200,10 @@ final class NodeStocker
                 return $told;
             }
 
-            return array_merge($told, $this->randomItems($grade, $lean, $catalogue));
+            return array_merge($told, $this->randomItems($system, $lean, $catalogue));
         }
 
-        return $this->randomItems($grade, $lean, $catalogue);
+        return $this->randomItems($system, $lean, $catalogue);
     }
 
     /**
@@ -236,18 +248,25 @@ final class NodeStocker
      * @param  list<int>  $catalogue
      * @return list<array<string, mixed>>
      */
-    private function randomItems(int $grade, array $lean, array $catalogue): array
+    private function randomItems(System $system, array $lean, array $catalogue): array
     {
         if ($catalogue === []) {
             return [];
         }
 
-        $chance = (int) ($this->config['item']['chance'][$grade] ?? 0);
+        $chance = (int) ($this->config['item']['chance'][(int) $system->grade] ?? 0);
         $max = max(0, (int) ($this->config['item']['max'] ?? 1));
         $items = [];
 
         while (count($items) < $max && $this->hits($chance, (int) ($lean['item'] ?? 1000))) {
-            $items[] = $this->item($catalogue[($this->roll)(0, count($catalogue) - 1)], 1);
+            $rarity = $this->rarityFor($system, $this->weights, $catalogue);
+
+            if ($rarity === null) {
+                break;
+            }
+
+            $shelf = $catalogue[$rarity];
+            $items[] = $this->item($shelf[($this->roll)(0, count($shelf) - 1)], 1);
         }
 
         return $items;
@@ -271,10 +290,13 @@ final class NodeStocker
      * it seals its data. Worth more broken than sealed, by a multiplier that is
      * the whole reason decryption is a decision.
      *
+     * Its NAME comes from the kind of machine it was on, because that is most
+     * of what makes a silo feel like a silo.
+     *
      * @param  array<int, int>  $encryption
      * @return array<string, mixed>
      */
-    private function file(int $grade, array $encryption): array
+    private function file(SystemType $type, int $grade, array $encryption): array
     {
         [$low, $high] = $this->range('data.size_qb', $grade);
         $size = ($this->roll)($low, $high);
@@ -286,7 +308,7 @@ final class NodeStocker
 
         return [
             'kind' => ContentKind::Data->value,
-            'label' => $this->labelFor($size),
+            'label' => $this->labelFor($type),
             'size_qb' => $size,
             'encryption_skill_id' => $this->encryptionFor($grade, $encryption),
             'value_sealed' => $sealed,
@@ -302,9 +324,9 @@ final class NodeStocker
      * remember leaving behind. Composed from the strings file: there is no
      * catalogue of files to carry one.
      */
-    private function labelFor(int $size): string
+    private function labelFor(SystemType $type): string
     {
-        $words = (array) Config::get('strings.cyberspace.files.words', []);
+        $words = (array) Config::get("strings.cyberspace.files.words.{$type->value}", []);
 
         if ($words === []) {
             return Text::get('cyberspace.files.fallback');
@@ -346,17 +368,76 @@ final class NodeStocker
     }
 
     /**
-     * What a node may be holding, from the catalogue.
+     * What a node may be holding, from the catalogue, grouped by rarity.
      *
-     * Listed items only — `on_market = false` is how content is retired, and a
-     * node holding something deliberately withdrawn is the catalogue leaking
-     * back in through the world.
+     * TWO FILTERS, AND THE SECOND IS THE IMPORTANT ONE.
      *
-     * @return list<int>
+     * Listed only: `on_market = false` is how content is retired, and a node
+     * holding something withdrawn is the catalogue leaking back in through the
+     * world.
+     *
+     * And DATA ONLY. A machine on the grid holds what a machine can hold —
+     * software, files, books. It cannot hand somebody a cyberdeck or an
+     * implant, because those are objects in the world and a node is not a
+     * place a player's hands can reach. `items.container` is the column that
+     * already says which is which, so this is one clause rather than a new
+     * flag on the catalogue.
+     *
+     * @return array<string, list<int>>
      */
     private function stockableItems(): array
     {
-        return Item::query()->where('on_market', true)->pluck('id')->all();
+        return Item::query()
+            ->where('on_market', true)
+            ->where('container', Item::CONTAINER_DATA)
+            ->get(['id', 'rarity'])
+            ->groupBy(fn (Item $item): string => $item->rarity?->value ?? Rarity::Common->value)
+            ->map(fn ($items): array => $items->pluck('id')->all())
+            ->all();
+    }
+
+    /**
+     * Which rarity this machine drops, out of the loot table.
+     *
+     * Weighted rather than gated, so the answer is "hardly ever" rather than
+     * "never" — except where the table says weight 0, which is how ultra-rare
+     * stays out of the bottom seven grades. A rarity nobody has any items of
+     * falls through to whatever the catalogue does have, because a table that
+     * picked an empty shelf would drop nothing and look like a bug.
+     *
+     * @param  list<LootTable>  $weights
+     * @param  array<string, list<int>>  $catalogue
+     */
+    private function rarityFor(System $system, array $weights, array $catalogue): ?string
+    {
+        $covering = array_filter(
+            $weights,
+            fn ($row): bool => $row->covers($system->type, (int) $system->grade)
+                && $row->weight > 0
+                && ($catalogue[$row->rarity->value] ?? []) !== [],
+        );
+
+        // A typed row beats an untyped one for the same machine.
+        $typed = array_filter($covering, static fn ($row): bool => $row->system_type !== null);
+        $covering = $typed !== [] ? $typed : $covering;
+
+        $total = array_sum(array_map(static fn ($row): int => $row->weight, $covering));
+
+        if ($total <= 0) {
+            return null;
+        }
+
+        $roll = ($this->roll)(1, $total);
+
+        foreach ($covering as $row) {
+            $roll -= $row->weight;
+
+            if ($roll <= 0) {
+                return $row->rarity->value;
+            }
+        }
+
+        return null;
     }
 
     /** A per-mille chance, leaned on by the machine's type. */
