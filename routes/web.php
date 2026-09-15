@@ -150,6 +150,11 @@ Route::middleware('auth')->group(function () {
     // the target, because you cannot read a machine you are not standing on.
     Route::post('/cyberspace/scan', [CyberspaceController::class, 'scan'])->name('cyberspace.scan');
 
+    // What the instrument has, for the screen that watches it work. A GET
+    // because it reads — and it settles a matured pass on the way past, which
+    // is the same lazy catch-up the map does rather than a write of its own.
+    Route::get('/cyberspace/reading', [CyberspaceController::class, 'reading'])->name('cyberspace.reading');
+
     // Bookmarks. The recall is a POST because it moves you; the rest edit a
     // note.
     Route::post('/cyberspace/bookmark', [CyberspaceController::class, 'bookmark'])->name('cyberspace.bookmark');

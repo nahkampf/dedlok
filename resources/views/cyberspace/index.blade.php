@@ -56,14 +56,17 @@
                              — and the figure beside it is what a player
                              actually wants, which is when to come back. --}}
                         @if ($scan?->isRunning())
-                            <span class="chip-stat">
+                            {{-- The way back into the read. A pass runs for
+                                 minutes and a player who closed the screen
+                                 needs a door back to it. --}}
+                            <button type="button" class="chip-stat" data-reading-open="{{ $here->address }}">
                                 <span class="micro">{{ Text::get('cyberspace.scan.reading') }}</span>
                                 <span class="meter" style="--v:{{ round($scan->progress(), 3) }};width:80px"
                                       title="{{ Text::get('cyberspace.scan.ready_in', ['when' => $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE])]) }}">
                                     <span class="meter__fill"></span>
                                 </span>
                                 <span class="micro">{{ $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }}</span>
-                            </span>
+                            </button>
                         @endif
                     @endif
                 @else
@@ -286,4 +289,78 @@
             @endforelse
         </section>
     </div>
+
+{{-- THE READ, AS A SCREEN YOU WATCH.
+     A pass takes minutes, so what a player wants while one runs is: what am I
+     pointed at, with what, how far in, and what has it told me so far. It
+     polls `cyberspace.reading`, which settles a matured pass on the way past —
+     so the answers fill in the moment a pass finishes rather than at the next
+     reload. --}}
+<dialog class="modal" id="reading" data-reading
+        data-reading-url="{{ route('cyberspace.reading') }}"
+        data-reading-pass="{{ Text::get('cyberspace.reading.pass_of', ['pass' => ':pass', 'total' => ':total']) }}"
+        data-reading-unread="{{ Text::get('cyberspace.reading.unread') }}"
+        data-reading-complete="{{ Text::get('cyberspace.reading.complete') }}"
+        data-reading-idle="{{ Text::get('cyberspace.reading.idle') }}"
+        data-reading-gone="{{ Text::get('cyberspace.scan.voided') }}"
+        @if (session('reading')) data-reading-open="{{ session('reading') }}" @endif>
+    <div class="panel__hd">
+        <span class="micro">{{ Text::get('cyberspace.reading.title') }}</span>
+        <div class="spacer"></div>
+        <span class="spinner" data-reading-spinner hidden aria-hidden="true"></span>
+    </div>
+
+    <div class="panel__bd">
+        <div class="stack" style="--gap:var(--s-3)">
+            <div>
+                <span class="micro">{{ Text::get('cyberspace.reading.target') }}</span>
+                <p style="margin:0"><strong data-reading-name>—</strong></p>
+                <p class="micro" style="margin:0;color:var(--ink-2)">
+                    <span data-reading-position>—</span>
+                    ·
+                    <span style="font-family:var(--font-mono)" data-reading-address>—</span>
+                </p>
+            </div>
+
+            <div>
+                <span class="micro">{{ Text::get('cyberspace.reading.instrument') }}</span>
+                <p style="margin:0" data-reading-instrument>—</p>
+            </div>
+
+            {{-- How far in. The bar is the kit's own, driven by --v, and it is
+                 the same fraction the cell on the map is drawing. --}}
+            <div>
+                <p class="micro" style="margin:0 0 var(--s-1)">
+                    <span data-reading-pass>—</span>
+                    <span data-reading-ready style="color:var(--ink-2)"></span>
+                </p>
+                <div class="progress"><div class="progress__bar" data-reading-bar style="--v:0"></div></div>
+                <p class="micro" style="margin:var(--s-1) 0 0;color:var(--ink-2)" data-reading-note></p>
+            </div>
+
+            {{-- Everything a scan asks, including the four nothing can answer
+                 yet: a screen that grew rows as features landed would be a
+                 screen nobody learns. --}}
+            {{-- The kit's own stat rows, which is what these are: a label on
+                 the left and what the machine gave up on the right. --}}
+            <div class="card__stats" style="padding:0;border:0" data-reading-facts>
+                @foreach ((new \App\Models\SystemScan)->facts() as $fact)
+                    <div class="card__stat" data-fact="{{ $fact['key'] }}">
+                        <span>{{ $fact['label'] }}</span>
+                        @if ($fact['discoverable'])
+                            <b data-fact-value>{{ Text::get('cyberspace.reading.unread') }}</b>
+                        @else
+                            <span class="tag">{{ Text::get('cyberspace.reading.not_yet') }}</span>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    <div class="panel__ft">
+        <button type="button" class="btn btn--sm cut" data-close>{{ Text::get('cyberspace.reading.close') }}</button>
+    </div>
+</dialog>
+
 @endsection

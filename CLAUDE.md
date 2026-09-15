@@ -1118,6 +1118,19 @@ carries the detail.
   half-finished read costs it. **Settling is lazy**: the map resolves anything
   that matured on the way in, the way a training deposit catches up, so no
   scheduler has to have been running.
+- **A read is a screen you watch.** The `<dialog>` on the map polls
+  `cyberspace.reading` while it is open — the target, the instrument, the pass
+  and everything the scan has asked — and **the endpoint settles a matured pass
+  on the way past**, which is why the answers fill in the moment one finishes
+  rather than at the next reload. It polls only while open: a timer behind a
+  closed dialog is a request every few seconds for ever.
+- **`App\Cyberspace\ScanFact` is the vocabulary of what a scan asks**, and it
+  lists the four nothing can read yet — IDS, ICE, tracer, cloaked — as *not
+  yet* rather than hiding them, the same decision the item card takes with its
+  unbuilt actions. `isKnownOn()` reads COLUMNS and `readFrom()` may reach
+  through a relation: asking a relation whether a scan is complete says no to a
+  scan that just answered, because Eloquent caches the null it loaded before
+  the probe wrote the id.
 - **A read runs in the BACKGROUND and belongs to the instrument doing it.**
   `system_scans.reading_process_id` points at the running copy of the scanner —
   an `inventory_items` row — so the read survives its owner walking to another

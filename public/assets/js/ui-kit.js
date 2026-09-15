@@ -590,5 +590,106 @@
     if (!open && legend.contains(document.activeElement)) document.activeElement.blur();
   });
 
+  /* --- Watching a read ---------------------------------------------------
+     A scan pass takes minutes, so the dialog that shows one has to keep up
+     with it. It polls while it is open and stops the moment it is closed —
+     there is nothing to watch behind a closed dialog, and a timer left running
+     on a screen nobody is looking at is a request every few seconds for ever.
+
+     The endpoint settles a matured pass on the way past, which is why the
+     answers fill in as soon as one finishes rather than at the next reload. */
+  function reading() {
+    const dlg = document.querySelector("[data-reading]");
+    if (!dlg) return;
+
+    let timer = null;
+    let address = null;
+
+    const set = (name, value) => {
+      const el = dlg.querySelector("[data-reading-" + name + "]");
+      if (el) el.textContent = value ?? "—";
+    };
+
+    async function refresh() {
+      if (!address || !dlg.open) return;
+
+      let data;
+      try {
+        const res = await fetch(
+          dlg.dataset.readingUrl + "?address=" + encodeURIComponent(address),
+          { headers: { Accept: "application/json" } }
+        );
+        data = await res.json();
+      } catch {
+        return;   // A dropped poll is not worth saying anything about.
+      }
+
+      if (!data.found) {
+        set("note", dlg.dataset.readingGone || "");
+        return stop();
+      }
+
+      set("name", data.name);
+      set("position", data.position);
+      set("address", data.address);
+      set("instrument", data.instrument);
+      set("pass", dlg.dataset.readingPass
+        .replace(":pass", data.pass)
+        .replace(":total", data.passes));
+      set("ready", data.running && data.readyIn ? "· " + data.readyIn : "");
+
+      const bar = dlg.querySelector("[data-reading-bar]");
+      if (bar) bar.style.setProperty("--v", data.running ? data.progress : 1);
+
+      const spinner = dlg.querySelector("[data-reading-spinner]");
+      if (spinner) spinner.hidden = !data.running;
+
+      (data.facts || []).forEach((fact) => {
+        const value = dlg.querySelector('[data-fact="' + fact.key + '"] [data-fact-value]');
+        if (value && fact.discoverable) {
+          value.textContent = fact.value ?? dlg.dataset.readingUnread;
+        }
+      });
+
+      set("note", data.complete
+        ? dlg.dataset.readingComplete
+        : (data.running ? "" : dlg.dataset.readingIdle));
+
+      // Nothing left to watch: the pass finished and either the picture is
+      // whole or there is no clock running on it. The dialog stays open and
+      // keeps showing what it found — it is the polling that stops.
+      if (!data.running) stop();
+    }
+
+    function start(target) {
+      stop();
+      address = target;
+      refresh();
+      timer = setInterval(refresh, 5000);
+    }
+
+    function stop() {
+      if (timer) clearInterval(timer);
+      timer = null;
+    }
+
+    dlg.addEventListener("close", () => stop());
+
+    on("click", "[data-reading-open]", (e, btn) => {
+      start(btn.dataset.readingOpen);
+      if (dlg.showModal) dlg.showModal();
+    });
+
+    // A read just begun opens the screen on it, so a player sees the
+    // instrument start rather than a sentence saying it did.
+    if (dlg.dataset.readingOpen) {
+      start(dlg.dataset.readingOpen);
+      if (dlg.showModal) dlg.showModal();
+    }
+  }
+
+  reading();
+  document.addEventListener("DOMContentLoaded", reading);
+
   window.UI = { toast, meter, log, type, esc, captcha, centreMap, modifierRows };
 })();

@@ -323,6 +323,42 @@ return [
         | is the run — so these are the words a node's contents will be listed
         | with rather than anything a player reads today.
         */
+        /*
+        | What a scan asks about a machine. Everything CYBERSPACE.md says a
+        | scan catalogues is here, including the four nothing can read yet —
+        | see App\Cyberspace\ScanFact for why they are listed rather than
+        | hidden.
+        */
+        'facts' => [
+            'grade' => 'Grade',
+            'os' => 'Operating system',
+            'ids' => 'Intrusion detection',
+            'ice' => 'ICE',
+            'tracer' => 'Tracer',
+            'cloaked' => 'Cloaked systems',
+        ],
+
+        /*
+        | The reading itself, as a screen you watch rather than a line of
+        | status text. A pass takes minutes, so what a player wants while it
+        | runs is: what am I pointed at, what with, how far in, and what has it
+        | told me so far.
+        */
+        'reading' => [
+            'title' => 'Reading a machine',
+            'open' => 'Show the read',
+            'instrument' => 'Instrument',
+            'target' => 'Target',
+            'pass_of' => 'Pass :pass of :total',
+            'remaining' => ':count left after this one',
+            'idle' => 'Nothing running. The file is what it is until it goes stale.',
+            'unread' => 'Unread',
+            'not_yet' => 'Not yet',
+            'complete' => 'Everything this machine will tell you.',
+            'exhausted' => 'Read as far as it can be. What is here is what you get until the file goes stale.',
+            'close' => 'Close',
+        ],
+
         'contents' => [
             'creds' => 'Creds',
             'item' => 'Hardware',

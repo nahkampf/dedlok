@@ -15,11 +15,13 @@ use App\Cyberspace\SweepResult;
 use App\Cyberspace\TravelResult;
 use App\Models\Bookmark;
 use App\Models\Character;
+use App\Models\System;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
 use App\Stats\Resolver;
 use App\Support\Text;
 use Carbon\CarbonInterface;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -180,9 +182,13 @@ class CyberspaceController extends Controller
 
         // A pass just begun has found nothing yet and says when it will have.
         if ($result->isRunning()) {
-            return back()->with('status', Text::get('cyberspace.scan.begun', [
-                'when' => $result->scan->pass_ready_at->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]),
-            ]));
+            // The screen opens on the machine just pointed at, so a player sees
+            // the read start rather than a sentence about it having started.
+            return back()
+                ->with('reading', $result->scan->address)
+                ->with('status', Text::get('cyberspace.scan.begun', [
+                    'when' => $result->scan->pass_ready_at->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]),
+                ]));
         }
 
         return back()->with('status', Text::plural(
@@ -190,6 +196,62 @@ class CyberspaceController extends Controller
             count($result->found),
             ['count' => count($result->found)],
         ));
+    }
+
+    /**
+     * What the instrument has, as JSON, for the screen that watches it.
+     *
+     * A pass takes minutes, so the read has to be somewhere a player can look
+     * WHILE it happens rather than a line that changes after a reload. This is
+     * what the modal polls.
+     *
+     * IT SETTLES ON THE WAY PAST, which is the same lazy catch-up the map does
+     * and the reason the screen updates the moment a pass matures without
+     * anything having been scheduled: whoever asks is who resolves it.
+     *
+     * Keyed by ADDRESS rather than by position, so a read running on the far
+     * side of the grid can be watched from wherever its owner is standing —
+     * which is the whole point of a read that runs in the background.
+     */
+    public function reading(Request $request, Probe $probe): JsonResponse
+    {
+        $character = $this->character($request);
+
+        $data = $request->validate([
+            'address' => ['required', 'string', 'max:32'],
+        ]);
+
+        $probe->settleAll($character);
+
+        $scan = SystemScan::query()
+            ->where('character_id', $character->id)
+            ->where('address', strtoupper($data['address']))
+            ->live()
+            ->with('operatingSystem', 'readingProcess.item')
+            ->first();
+
+        if ($scan === null) {
+            // Spent, stale, or never started. Not an error: a file that has
+            // gone is a thing the screen has to be able to say.
+            return response()->json(['found' => false]);
+        }
+
+        $system = System::query()->where('address', $scan->address)->first();
+
+        return response()->json([
+            'found' => true,
+            'address' => $scan->address,
+            'name' => $system?->displayName(),
+            'position' => (string) $scan->position(),
+            'instrument' => $scan->readingProcess?->item?->displayName(),
+            'running' => $scan->isRunning(),
+            'progress' => round($scan->progress(), 3),
+            'readyIn' => $scan->pass_ready_at?->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]),
+            'pass' => $scan->passes,
+            'passes' => $probe->passesFor($character),
+            'complete' => $scan->isComplete(),
+            'facts' => $scan->facts(),
+        ]);
     }
 
     public function jump(Request $request, Resolver $resolver): RedirectResponse

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Cyberspace\Position;
+use App\Cyberspace\ScanFact;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -77,10 +78,32 @@ class SystemScan extends Model
      */
     public function unknowns(): array
     {
-        return array_values(array_filter([
-            $this->grade === null ? 'grade' : null,
-            $this->os_skill_id === null ? 'os' : null,
-        ]));
+        return array_values(array_map(
+            static fn (ScanFact $fact): string => $fact->value,
+            array_filter(
+                ScanFact::discoverable(),
+                fn (ScanFact $fact): bool => ! $fact->isKnownOn($this),
+            ),
+        ));
+    }
+
+    /**
+     * Every question a scan asks, answered or not.
+     *
+     * Includes the ones nothing can find out yet — see App\Cyberspace\ScanFact.
+     * A screen that listed only what is implemented would grow rows as features
+     * land, which is a screen nobody learns.
+     *
+     * @return list<array{key: string, label: string, value: ?string, discoverable: bool}>
+     */
+    public function facts(): array
+    {
+        return array_map(fn (ScanFact $fact): array => [
+            'key' => $fact->value,
+            'label' => $fact->label(),
+            'value' => $fact->readFrom($this),
+            'discoverable' => $fact->isDiscoverable(),
+        ], ScanFact::cases());
     }
 
     /**

@@ -675,6 +675,128 @@ final class ProbeTest extends TestCase
         $this->assertTrue($result->isRunning());
     }
 
+    // ---- the screen that watches a read -------------------------------------
+
+    /**
+     * WHAT THE INSTRUMENT HAS, WHILE IT IS STILL WORKING. The modal polls this,
+     * so it carries everything that screen shows: the target, the tool, how far
+     * in, and every question a scan asks — including the ones nothing can
+     * answer yet.
+     */
+    public function test_the_reading_endpoint_describes_a_running_pass(): void
+    {
+        $os = $this->anOperatingSystem();
+        $this->machine(grade: 4, os: $os);
+
+        $this->probe(0.0)->scan($this->character);
+
+        $response = $this->actingAs($this->character->fresh()->user)
+            ->getJson(route('cyberspace.reading', ['address' => 'DEADBEEF']))
+            ->assertOk();
+
+        $response->assertJson([
+            'found' => true,
+            'address' => 'DEADBEEF',
+            'running' => true,
+            'pass' => 1,
+            'complete' => false,
+        ]);
+
+        $this->assertNotNull($response->json('instrument'), 'the screen says what is doing the reading');
+        $this->assertNotNull($response->json('name'));
+        $this->assertNotNull($response->json('readyIn'));
+
+        // Every question, answered or not, built or not.
+        $facts = collect($response->json('facts'))->keyBy('key');
+
+        $this->assertTrue($facts->has('grade'));
+        $this->assertNull($facts['grade']['value'], 'nothing is known until the pass matures');
+        $this->assertFalse($facts['ids']['discoverable'], 'and some of it nothing can read yet');
+    }
+
+    /** It settles on the way past, which is what makes the screen update itself. */
+    public function test_the_reading_endpoint_settles_a_matured_pass(): void
+    {
+        $os = $this->anOperatingSystem();
+        $this->machine(grade: 1, os: $os);
+
+        $this->instance(Probe::class, $this->probe(0.0));
+        $this->probe(0.0)->scan($this->character);
+        $this->travel(20)->minutes();
+
+        $response = $this->actingAs($this->character->fresh()->user)
+            ->getJson(route('cyberspace.reading', ['address' => 'DEADBEEF']))
+            ->assertOk();
+
+        $facts = collect($response->json('facts'))->keyBy('key');
+
+        $this->assertFalse($response->json('running'), 'the clock has stopped');
+        $this->assertTrue($response->json('complete'));
+        $this->assertSame('1', $facts['grade']['value']);
+        $this->assertSame('AuraOS', $facts['os']['value'], 'and the name, not the id');
+    }
+
+    /**
+     * Pressing Scan opens the screen on the machine just pointed at, rather
+     * than leaving a sentence saying a read began somewhere.
+     */
+    public function test_starting_a_read_opens_the_screen_on_it(): void
+    {
+        $this->machine(grade: 1);
+        $this->sweep();
+
+        $this->actingAs($this->character->user)
+            ->from(route('cyberspace.index'))
+            ->post(route('cyberspace.scan'))
+            ->assertRedirect(route('cyberspace.index'))
+            ->assertSessionHas('reading', 'DEADBEEF');
+
+        $this->actingAs($this->character->fresh()->user)
+            ->get(route('cyberspace.index'))
+            ->assertOk()
+            ->assertSee('data-reading-open="DEADBEEF"', false);
+    }
+
+    /** And the map keeps a door back into a read still running. */
+    public function test_the_map_offers_a_way_back_into_a_running_read(): void
+    {
+        $this->machine(grade: 4);
+        $this->sweep();
+        $this->probe(0.0)->scan($this->character);
+
+        $this->actingAs($this->character->fresh()->user)
+            ->get(route('cyberspace.index'))
+            ->assertOk()
+            ->assertSee('data-reading-open="DEADBEEF"', false)
+            ->assertSee(Text::get('cyberspace.reading.title'));
+    }
+
+    /** A file that has gone is a thing the screen has to be able to say. */
+    public function test_the_reading_endpoint_admits_when_there_is_no_file(): void
+    {
+        $this->actingAs($this->character->fresh()->user)
+            ->getJson(route('cyberspace.reading', ['address' => 'NOTHINGX']))
+            ->assertOk()
+            ->assertJson(['found' => false]);
+    }
+
+    /** One player cannot watch another's instrument. */
+    public function test_a_reading_belongs_to_whoever_started_it(): void
+    {
+        $this->machine(grade: 1);
+        $this->probe(0.0)->scan($this->character);
+
+        $other = Character::factory()->create(array_merge(
+            array_fill_keys(Character::ATTRIBUTES, 20),
+            ['archetype' => 3],
+        ));
+
+        $this->actingAs($other->user)
+            ->getJson(route('cyberspace.reading', ['address' => 'DEADBEEF']))
+            ->assertOk()
+            ->assertJson(['found' => false]);
+    }
+
     // ---- perishing ---------------------------------------------------------
 
     public function test_an_expired_file_is_replaced_rather_than_continued(): void
