@@ -1193,14 +1193,15 @@ carries the detail.
   the kit's one mark for *yours*. **A bar at the foot** is the scanned grade.
   **Colour says type and nothing else** — steel, cyan, jade on the GLYPH, never
   a fill, because four hundred tinted tiles is a quilt.
-- **The window is capped at what anybody could ever see.** `map_range` is 8
-  because `view_range` is 3 and the modifiers meant to widen it are worth about
-  +5 — drawing memory further out than a character can ever refresh it from
-  where they stand is drawing ground they cannot do anything about. **A cell is
-  60px**, which is what carrying a glyph, a grade bar and two corner ticks
-  costs; the map scrolls and centres on the player, so a phone shows five
-  columns of a seventeen-wide window and that is the documented trade — fewer
-  cells at once is a fair price, a control too small to hit is not.
+- **The window is capped at what anybody could ever see.** `map_range` is 7
+  because `view_range` is **2** and the modifiers meant to widen it are worth
+  about +5 — drawing memory further out than a character can ever refresh it
+  from where they stand is drawing ground they cannot do anything about. **A
+  cell is 60px**, which is what carrying a glyph, a grade bar and two corner
+  ticks costs; the map scrolls and centres on the player. A bare character's
+  lit square is 5 x 5, which is exactly what a 360px phone shows — so the thing
+  a player is actually looking at fits a screen, and the memory around it is
+  what they scroll for.
 - **What is outside the current view range is dimmed**, not hidden. The map is
   memory and the sweep lights a square of it: `cell--distant` steps the rest
   back to .8 so the square being looked at is obvious while everything

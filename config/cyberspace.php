@@ -52,8 +52,14 @@ return [
     | The edges are edges and the grid does not wrap, so a window at the edge
     | simply sees fewer positions. The corners are the quietest part of the map,
     | which is a reasonable thing for the corners of a map to be.
+    |
+    | TWO, so a bare character sees a 5 x 5 square. It is deliberately small:
+    | walking is what buys ground, and a wide default would hand a new player
+    | most of a neighbourhood for standing still. It is also exactly what a
+    | 360px phone shows at a 60px cell, so the lit square fits a screen without
+    | anybody scrolling to find the edge of their own sight.
     */
-    'view_range' => 3,
+    'view_range' => 2,
 
     /*
     | How dangerous the world is, as relative weights per grade.
@@ -84,7 +90,7 @@ return [
     ],
 
     /*
-    | How much of the map is DRAWN, as a Chebyshev radius. 8 is a 17 x 17
+    | How much of the map is DRAWN, as a Chebyshev radius. 7 is a 15 x 15
     | window.
     |
     | Not the same thing as `view_range`, and the difference is the whole point
@@ -98,8 +104,8 @@ return [
     | scrolls to fit, and the player is kept in the centre of it.
     */
     /*
-    | CAPPED AT WHAT A CHARACTER COULD EVER SEE. `view_range` is 3 and the
-    | modifiers that will widen it are worth about +5 between them, so eight is
+    | CAPPED AT WHAT A CHARACTER COULD EVER SEE. `view_range` is 2 and the
+    | modifiers that will widen it are worth about +5 between them, so seven is
     | the furthest anybody will ever see in one look — and drawing memory
     | further out than that is drawing ground the player has no way to refresh
     | from where they stand.
@@ -107,7 +113,7 @@ return [
     | Raise it if sight gets cheaper. The two numbers are related but not the
     | same one: this is how much is DRAWN and view_range is how much is LIT.
     */
-    'map_range' => 8,
+    'map_range' => 7,
 
     /*
     | How long a newly discovered machine stays marked as new, in minutes.

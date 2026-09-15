@@ -440,13 +440,16 @@ final class MapScreenTest extends TestCase
     /** The drawn window is capped at the furthest anybody will ever see. */
     public function test_the_window_is_the_configured_map_range(): void
     {
-        Config::set('cyberspace.map_range', 8);
+        // The shipped cap is view_range 2 plus the +5 the modifiers are worth.
+        // Set here rather than read, because this class narrows the map in
+        // setUp — reading it would assert the fixture, not the rule.
+        Config::set('cyberspace.map_range', 7);
 
         $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
 
         $map = MapView::for($this->character->fresh());
 
-        $this->assertSame(17, $map->span());
-        $this->assertCount(17, $map->rows);
+        $this->assertSame(15, $map->span());
+        $this->assertCount(15, $map->rows);
     }
 }
