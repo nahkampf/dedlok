@@ -10,11 +10,13 @@ use App\Cyberspace\Grid;
 use App\Cyberspace\MapView;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Position;
+use App\Cyberspace\Probe;
 use App\Cyberspace\SweepResult;
 use App\Cyberspace\TravelResult;
 use App\Models\Bookmark;
 use App\Models\Character;
 use App\Models\SystemContact;
+use App\Models\SystemScan;
 use App\Stats\Resolver;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +43,16 @@ class CyberspaceController extends Controller
         $character = $this->character($request);
         $grid = Grid::fromConfig();
 
+        $scan = $character->isJackedIn()
+            ? SystemScan::query()
+                ->where('character_id', $character->id)
+                ->where('x', $character->grid_x)
+                ->where('y', $character->grid_y)
+                ->live()
+                ->with('operatingSystem')
+                ->first()
+            : null;
+
         return view('cyberspace.index', [
             'character' => $character,
             'grid' => $grid,
@@ -59,6 +71,11 @@ class CyberspaceController extends Controller
                     ->at($character->gridPosition())
                     ->first()
                 : null,
+            // And what they have found out about it. Keyed by ADDRESS rather
+            // than by position, because the file describes a machine and a
+            // machine can move — a scan of something that has since relocated
+            // is stale in the way the expiry exists to describe.
+            'scan' => $scan,
         ]);
     }
 
@@ -98,6 +115,29 @@ class CyberspaceController extends Controller
             Navigator::fromConfig($resolver)->step($this->character($request), new Position($x, $y)),
             null,
         );
+    }
+
+    /**
+     * Read the machine you are standing on.
+     *
+     * No target and no address: you cannot read a machine you are not at,
+     * which is what makes walking the grid worth something. One press is one
+     * pass, and a pass that learns nothing still spends one — see
+     * App\Cyberspace\Probe.
+     */
+    public function scan(Request $request): RedirectResponse
+    {
+        $result = Probe::fromConfig()->scan($this->character($request));
+
+        if (! $result->succeeded()) {
+            return back()->with('error', $result->refusal->message());
+        }
+
+        return back()->with('status', Text::plural(
+            'cyberspace.scan.found',
+            count($result->found),
+            ['count' => count($result->found)],
+        ));
     }
 
     public function jump(Request $request, Resolver $resolver): RedirectResponse

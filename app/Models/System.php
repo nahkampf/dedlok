@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * size, and Grid is the one place that knows which — see CYBERSPACE.md, *How
  * the grid is stored*.
  */
-#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id'])]
+#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'os_skill_id'])]
 class System extends Model
 {
     /** @use HasFactory<SystemFactory> */
@@ -78,6 +78,20 @@ class System extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(Corp::class, 'owner_id');
+    }
+
+    /**
+     * What it runs, as the skill that gates it.
+     *
+     * A foreign key rather than a word, because the operating system IS a
+     * skill gate: the name, the description and the book all live on that row,
+     * and a varchar here would be a second spelling of it. NULL is the portal
+     * — and a world seeded before the skills existed, which is a content gap
+     * rather than a secret.
+     */
+    public function operatingSystem(): BelongsTo
+    {
+        return $this->belongsTo(Skill::class, 'os_skill_id');
     }
 
     /** @param  Builder<self>  $query */

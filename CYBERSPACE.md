@@ -21,6 +21,9 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Addresses | **built**; generated, validated and normalised, and unique on the table |
 | The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
 | System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
+| Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
+| Scanning — the probe | **built** for what a system currently HAS: grade and operating system. One press is one pass, one roll per unknown, capped at five |
+| Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
 | Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
 | Discovery — contact | **built** as rows keyed by position, with no foreign key to `systems` on purpose |
 | Sweeping — the act that writes both | **built**; `App\Cyberspace\Sweep`, clipped to the grid |
@@ -1053,13 +1056,27 @@ All of it. In the order it should be built:
 4. **Systems and scanning.** Grades, types, owners, node inventories, the probe,
    and the scan file. Still no combat.
 
-   **Decide here whether the probe needs a running analyser.** Nothing reads a
-   program's kind as a gate yet — that half waits on the simulator, and
-   `ProgramRunner::start()` already carries the `$duringRun` flag nothing passes
-   `true` to. If the probe turns out to be gated on an analyser, this is the
-   phase that becomes the first caller to pass it, rather than phase 5; if the
-   scan is only ever turns 1–5 of a run, the question never arises and the gate
-   stays where it is. Answer it before the probe is written, not after.
+   **Built so far**: every machine runs an operating system — a foreign key to
+   the skill that gates it, chosen by grade off the rank ladder those four
+   skills already form — and the probe reads a machine you are standing on.
+   One press is one pass; a pass rolls once per thing not yet known; five
+   passes is the budget and a file lasts 48 hours. Grade and operating system
+   are what there is to find out, because they are what a system currently
+   has: the IDS, the ICE, the tracer and cloaked extras join the list as they
+   are built, each a nullable column and a line in `SystemScan::unknowns()`.
+
+   **Still missing**: node inventories and their nightly restock, the raid
+   counter, and selling a scan — the market has no storefront at all yet, so
+   the scan file is an object with no buyer.
+
+   ~~**Decide here whether the probe needs a running analyser.**~~ **Decided:
+   it does not.** Mapping is meant to be the safest thing in cyberspace and the
+   way a new player earns their first creds; putting a program between them and
+   it raises the floor of the whole game to buy nothing. When an analyser
+   exists it should make a scan BETTER — more passes, or a bonus to the roll —
+   which is a modifier on a row and needs no gate. `$duringRun` therefore still
+   has no caller passing `true`, and the simulator remains the only one that
+   ever should.
 5. **The intrusion.** The simulator, the log, extraction, the defeat tags.
    Single-player only — cooperative runs are phase 7.
 6. **Consequences.** Trace, heat, backdoors and routing, burn, lockdown,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Cyberspace;
 
 use App\Models\Corp;
+use App\Models\Skill;
 use App\Models\System;
 use App\Support\Text;
 use Closure;
@@ -41,6 +42,27 @@ use Illuminate\Support\Facades\DB;
  */
 final class GridSeeder
 {
+    /**
+     * Which rung of the operating-system ladder a machine of this grade runs.
+     *
+     * Nine grades spread across however many rungs there are, so the top grade
+     * gets the top rung and the bottom gets the bottom whatever the ladder's
+     * length becomes. A fifth operating system is a skill row and nothing else.
+     *
+     * Static and pure, because the same mapping is what the backfill migration
+     * had to do and what a re-seed has to agree with.
+     *
+     * @param  list<int>  $ladder  Skill ids, cheapest first.
+     */
+    public static function operatingSystemFor(int $grade, array $ladder): ?int
+    {
+        if ($ladder === []) {
+            return null;
+        }
+
+        return $ladder[(int) floor(($grade - Grade::MIN) * count($ladder) / Grade::MAX)] ?? end($ladder);
+    }
+
     /** Rows per insert. Four million systems is not one statement. */
     private const CHUNK = 500;
 
@@ -185,6 +207,21 @@ final class GridSeeder
         // not run, and a world of unowned machines is better than no world.
         $owners = Corp::query()->pluck('id')->all();
 
+        /*
+         * The operating systems, cheapest first.
+         *
+         * Read as a LADDER rather than as a set, because which one a machine
+         * runs follows its grade: the common one at the bottom of the grid and
+         * the one almost nobody has trained at the top. Rank already says how
+         * far up a skill sits, so nothing about that pairing had to be written
+         * down a second time.
+         */
+        $operatingSystems = Skill::query()
+            ->where('category', 'Operating Systems')
+            ->orderBy('rank')
+            ->pluck('id')
+            ->all();
+
         $rows = [];
         $created = 0;
         $now = now();
@@ -219,6 +256,7 @@ final class GridSeeder
             }
 
             $type = $types[($this->roll)(0, count($types) - 1)];
+            $grade = Grade::roll($this->roll);
             $address = $this->address($takenAddresses);
 
             $takenPositions["{$free->x},{$free->y}"] = true;
@@ -231,7 +269,7 @@ final class GridSeeder
                 'type' => $type->value,
                 // Weighted steeply towards the harmless. See config; this is
                 // the dial for how dangerous the world feels.
-                'grade' => Grade::roll($this->roll),
+                'grade' => $grade,
                 // NO NAME. A generated machine is named for its type and its
                 // owner, both of which are on the row already; what is stored
                 // is the serial that tells it from its siblings. See
@@ -239,6 +277,7 @@ final class GridSeeder
                 'name' => null,
                 'designation' => $this->namer->designate(),
                 'owner_id' => $owners === [] ? null : $owners[($this->roll)(0, count($owners) - 1)],
+                'os_skill_id' => self::operatingSystemFor($grade, $operatingSystems),
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

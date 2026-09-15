@@ -275,6 +275,34 @@ return [
             'many' => 'Your deck stopped running and dumped you out of cyberspace. :count points of Synaptic Integrity.',
         ],
 
+        /*
+        | Scanning: finding out what a machine is before deciding what to do
+        | about it.
+        |
+        | The refusals say what to do next wherever there is something to do.
+        | "Exhausted" deliberately does not say "try again": the whole point of
+        | a pass budget is that trying again is not the answer.
+        */
+        'scan' => [
+            'action' => 'Scan',
+            'not_jacked_in' => 'You are not in cyberspace.',
+            'nothing_there' => 'There is nothing here to read.',
+            'not_scannable' => 'The portal answers nothing. There is nothing here to find out.',
+            'already_known' => 'You already have everything this machine will tell you.',
+            'exhausted' => 'You have read this machine as far as you can. What you have is what you get until it goes stale.',
+            'found' => [
+                'zero' => 'Nothing new. The machine gives up none of itself.',
+                'one' => 'One thing more about this machine.',
+                'many' => ':count things more about this machine.',
+            ],
+            'grade' => 'Grade',
+            'os' => 'Operating system',
+            'unknown' => 'Unread',
+            'expires' => 'Goes stale :when',
+            'passes' => ':used of :total passes',
+            'chance' => 'About :percent% to read something',
+        ],
+
         'travel' => [
             'no_deck' => 'You are carrying no deck. There is nothing to jack in with.',
             'deck_not_ready' => 'That deck will not run. It is short of what it needs.',

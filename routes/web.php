@@ -146,6 +146,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/cyberspace/step', [CyberspaceController::class, 'step'])->name('cyberspace.step');
     Route::post('/cyberspace/jump', [CyberspaceController::class, 'jump'])->name('cyberspace.jump');
 
+    // Reading the machine underfoot. No target in the request: the position is
+    // the target, because you cannot read a machine you are not standing on.
+    Route::post('/cyberspace/scan', [CyberspaceController::class, 'scan'])->name('cyberspace.scan');
+
     // Bookmarks. The recall is a POST because it moves you; the rest edit a
     // note.
     Route::post('/cyberspace/bookmark', [CyberspaceController::class, 'bookmark'])->name('cyberspace.bookmark');

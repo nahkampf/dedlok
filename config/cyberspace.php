@@ -114,6 +114,55 @@ return [
     'new_for_minutes' => 10,
 
     /*
+    | Scanning: what it takes to find out what a machine is.
+    |
+    | A scan answers the question a grade poses. The difficulty is per grade
+    | rather than a formula, for the reason the grade weights are a list: this
+    | is a tuning dial somebody will want to bend in the middle without
+    | rewriting either end.
+    |
+    | The numbers are against `check.systemprofiling`, which runs from about 15
+    | for a fresh character to the high sixties for a trained one with the
+    | attributes for it. So a beginner reads the bottom of the grid reliably,
+    | the middle with a trained specialist, and the top not at all — which is
+    | what makes a grade 9 a rumour rather than a target.
+    |
+    | PASSES is the other half of it. One attempt is one roll per thing not yet
+    | known, and a scan is allowed this many attempts before the picture it has
+    | is the picture it gets. That is the 1-5 turns CYBERSPACE.md budgets for
+    | scanning inside a run, and it is what stops a free act from being ground
+    | until it succeeds: a failed scan costs the expiry window, not a retry.
+    |
+    | LIFETIME is how long the answer stays true, in hours. A machine that has
+    | been relocated, patched or raided since is described by a file that no
+    | longer matches it.
+    */
+    'scan' => [
+        'difficulty' => [
+            1 => 10,
+            2 => 18,
+            3 => 26,
+            4 => 34,
+            5 => 44,
+            6 => 54,
+            7 => 66,
+            8 => 78,
+            9 => 92,
+        ],
+        'passes' => 5,
+        'lifetime_hours' => 48,
+
+        /*
+        | The skill a scan is read with, by slug.
+        |
+        | Here rather than in the Probe because it names a ROW: System Profiling
+        | is content, it has a book and a tree position, and a game that decided
+        | to read machines with something else should not need a deploy.
+        */
+        'skill' => 'systemprofiling',
+    ],
+
+    /*
     | What a deck that stops running costs the person standing in it.
     |
     | Not a burnout and not a defeat: the machine simply stopped meeting its

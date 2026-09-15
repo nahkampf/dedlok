@@ -26,6 +26,21 @@
                              point of a contact. --}}
                         <span class="tag">{{ $here->name }}</span>
                         <span class="micro" style="font-family:var(--font-mono)">{{ $here->address }}</span>
+
+                        {{-- What this machine has given up so far. A grade is
+                             the number a scan exists to discover, so it is
+                             shown as soon as it is known and as "unread" until
+                             then — never as a blank, which reads as a machine
+                             with nothing to hide. --}}
+                        @if ($scan?->grade !== null)
+                            <span class="tag">{{ Text::get('cyberspace.scan.grade') }} {{ $scan->grade }}</span>
+                        @else
+                            <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.unknown') }}</span>
+                        @endif
+
+                        @if ($scan?->operatingSystem)
+                            <span class="micro">{{ $scan->operatingSystem->title }}</span>
+                        @endif
                     @endif
                 @else
                     <span class="micro">{{ Text::get('cyberspace.map.out') }}</span>
@@ -45,6 +60,18 @@
                     {{-- A plain button, not --warn. Jacking out undoes no work:
                          terrain, contacts and bookmarks all survive it. --}}
                     <button type="submit" class="btn cut">{{ Text::get('cyberspace.map.jack_out') }}</button>
+                </form>
+
+                {{-- One press is one pass, and a pass that learns nothing
+                     still spends one. Offered only where there is something to
+                     read: the portal answers nothing and empty ground is not a
+                     machine. --}}
+                <form method="POST" action="{{ route('cyberspace.scan') }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm cut"
+                            @disabled(! $here || $scan?->isComplete() || $scan?->passes >= config('cyberspace.scan.passes'))>
+                        {{ Text::get('cyberspace.scan.action') }}
+                    </button>
                 </form>
             @else
                 <form method="POST" action="{{ route('cyberspace.jack_in') }}">

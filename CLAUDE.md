@@ -363,8 +363,9 @@ asked what a character's chances ARE without spending them.
 - **`chance()` is public and separate from `roll()`**, so a screen that warns
   "about one in three" and the roll that follows cannot disagree.
 - **The die is injected**, like the market's and the grid's. Pin it in tests.
-- Nothing calls it yet: there are no difficulties in the game until a system's
-  grade becomes one.
+- **The first caller is the probe**, against a difficulty per system grade —
+  so a grade is the first difficulty in the game, and `scan` the first kind a
+  floor could be keyed on.
 
 ### Where a modifier comes from
 
@@ -1086,6 +1087,27 @@ carries the detail.
   purpose: that reserve is what relocation and instantiation move through.
   `cyberspace:seed` is run BY HAND and is not scheduled, unlike `market:seed`;
   `--dry-run` decides everything and writes nothing.
+- **Every machine runs an operating system, as a foreign key to the skill that
+  gates it** — `systems.os_skill_id`. A word would be a second spelling of a
+  row that already carries the name, the description and the book; a fifth
+  operating system is a skill row and a weight. Which one a machine runs
+  follows its grade through the skills' own RANK, so that pairing is nowhere
+  written down twice.
+- **Scanning is `App\Cyberspace\Probe`, and it reads the machine you are
+  standing on.** No target in the request: you cannot read a machine you are
+  not at. One press is one pass, a pass rolls once per thing not yet known, and
+  the budget is `cyberspace.scan.passes` — **a failed scan costs the expiry
+  window, not a retry**, which is what stops a free act from being ground.
+  **No analyser is required**, and that is a decision: mapping is the safe way
+  in, and a program between a new player and it would raise the floor of the
+  game to buy nothing.
+- **A scan is a file that perishes.** `system_scans` is one row per character
+  per address — a sighting, like a contact, with no foreign key to `systems`,
+  because it has to outlive the machine. What is known is COLUMNS and null
+  means *not found out*; a JSON bag would be shorter and unqueryable. Live
+  means unspent and unexpired (`scopeLive`), and a stale file is replaced
+  rather than continued, since carrying old answers forward is worse than
+  having none.
 - **The map screen draws from memory and never from `systems`.** Six cell
   states are the whole vocabulary — you, a machine you remember, the portal,
   swept ground, unswept ground, and the void past the edge. The eight cells
