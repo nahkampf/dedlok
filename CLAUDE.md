@@ -1009,8 +1009,22 @@ carries the detail.
   player whose map went stale in front of them.
 - **Readiness gates jacking in**, through `DeckTotals::forCharacter()`, so the
   gate and the deck screen cannot disagree about a deck. Starting a program is
-  the other caller — see *Programs*. The deck lock that follows from being
-  inside is under *Cyberdecks and modules*, above.
+  the second caller — see *Programs* — and `ReadinessWatch` the third. The deck
+  lock that follows from being inside is under *Cyberdecks and modules*, above.
+- **A deck that stops running throws its owner out**, for 1 point of Synaptic
+  Integrity and no defeat effect. `App\Cyberspace\ReadinessWatch` is the rule
+  and it is asked in TWO places on purpose: **in place** by the screens that can
+  break a deck from inside — implants and programs, neither of which the deck
+  lock forbids — so the player is told as it happens, and by **middleware**
+  (`EnsureDeckStillRuns`) on every jacked-in request as the net under
+  everything else. The order is the one every bad ending uses: damage, then
+  consequence, then `jackOut()`. **It must never become the answer for
+  something happening during a run** — a burnout or a Surge resolves its own
+  ending where it happens.
+- **`Character::takeDamage()` is the first thing in the game that hurts
+  anybody**, and is deliberately the dullest version of it: a subtraction and a
+  floor at zero. What damage MEANS belongs to whatever caused it. Reaching zero
+  is not acted on — there is no waiting screen yet.
 - **A waypoint bookmark may only be set on swept ground, and
   `App\Cyberspace\BookmarkKeeper` is where that lives** — it is a fact about a
   bitmap in another table, so no CHECK can reach it. Without it, coordinates

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureCaptchaIsSolved;
+use App\Http\Middleware\EnsureDeckStillRuns;
 use App\Http\Middleware\RequireCharacter;
 use App\Support\Text;
 use Illuminate\Foundation\Application;
@@ -21,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
             RequireCharacter::class,
             // Guards the routes named in config/cap.php; a no-op elsewhere.
             EnsureCaptchaIsSolved::class,
+            // The net under ReadinessWatch: throws a player out of cyberspace
+            // when their deck has stopped running. After RequireCharacter,
+            // because it needs the character that guarantees.
+            EnsureDeckStillRuns::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -114,6 +114,25 @@ return [
     'new_for_minutes' => 10,
 
     /*
+    | What a deck that stops running costs the person standing in it.
+    |
+    | Not a burnout and not a defeat: the machine simply stopped meeting its
+    | own requirements while somebody was inside it — a buff expired, a drug
+    | wore off, an injury landed. They are thrown out and it costs them this
+    | much Synaptic Integrity. See App\Cyberspace\ReadinessWatch.
+    |
+    | SMALL BECAUSE THE CAUSE IS USUALLY NOT THEIRS, and not zero because being
+    | dumped out of cyberspace should never be free. One point carries no
+    | defeat effect of its own — no ICE was involved, so nothing flatlines,
+    | surges or erases.
+    |
+    | This one IS read, unlike the freeze numbers below it.
+    */
+    'readiness' => [
+        'damage' => 1,
+    ],
+
+    /*
     | What a deck freezing costs the person inside it.
     |
     | A module breaks from thermal load mid-run, the deck stops being a working

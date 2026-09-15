@@ -654,6 +654,47 @@ class Character extends Model
     }
 
     /**
+     * Take points off a resource, flooring at zero.
+     *
+     * THE FIRST THING IN THE GAME THAT HURTS ANYBODY, and deliberately the
+     * dullest possible version of it: a subtraction and a floor. What the
+     * damage MEANS — whether it flatlines, whether it ends a run, what the
+     * player is told — belongs to whatever caused it, and nothing about that
+     * is decided here.
+     *
+     * Zero is a real place to be and this will take somebody there. It does
+     * not act on it: reaching zero is a defeat, defeats have consequences that
+     * depend on their cause, and there is no waiting screen to put anybody on
+     * yet.
+     *
+     * Returns the points actually taken, which is not always what was asked
+     * for — a character on 1 loses 1 to a hit of 5.
+     */
+    public function takeDamage(string $resource, int $amount): int
+    {
+        if (! array_key_exists($resource, self::RESOURCES)) {
+            throw new \InvalidArgumentException(
+                "[{$resource}] is not a resource. Known: ".implode(', ', array_keys(self::RESOURCES)).'.'
+            );
+        }
+
+        if ($amount < 0) {
+            throw new \InvalidArgumentException('Damage is never negative. Healing is its own act.');
+        }
+
+        $current = (int) $this->getAttribute($resource);
+        $taken = min($current, $amount);
+
+        if ($taken === 0) {
+            return 0;
+        }
+
+        $this->forceFill([$resource => $current - $taken])->save();
+
+        return $taken;
+    }
+
+    /**
      * Bring every resource inside its current maximum.
      *
      * Clamps DOWN and never scales: losing the implant that granted +20 max HP

@@ -13,9 +13,6 @@ use App\Cyberspace\SystemType;
 use App\Cyberspace\Terrain;
 use App\Cyberspace\TravelRefusal;
 use App\Decks\DeckEquipper;
-use App\Decks\Hardware;
-use App\Decks\ModuleFitter;
-use App\Decks\Variant;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -23,6 +20,7 @@ use App\Models\System;
 use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
 /**
@@ -36,6 +34,7 @@ use Tests\TestCase;
  */
 final class NavigatorTest extends TestCase
 {
+    use CarriesAWorkingDeck;
     use RefreshDatabase;
 
     private Character $character;
@@ -65,51 +64,10 @@ final class NavigatorTest extends TestCase
         return Grid::fromConfig()->portal();
     }
 
-    private function own(Item $item): InventoryItem
-    {
-        return InventoryItem::create([
-            'character_id' => $this->character->id,
-            'item_id' => $item->id,
-            'quantity' => 1,
-        ]);
-    }
-
-    /** A deck that passes isReady(): compute, memory, link and power. */
-    private function equipReadyDeck(): InventoryItem
-    {
-        $deckItem = Item::factory()->cyberdeck([
-            'cpu_socket_k' => 1, 'ram_opto' => 1, 'nic' => 1, 'psu' => 1,
-        ])->create();
-
-        $deck = $this->own($deckItem);
-        $fitter = app(ModuleFitter::class);
-
-        $parts = [
-            ['cpu', Hardware::Cpu, Variant::SocketK, 100],
-            ['ram', Hardware::Ram, Variant::Opto, 100],
-            ['nic', Hardware::Nic, null, 50],
-            ['psu', Hardware::Psu, null, 2000],
-        ];
-
-        foreach ($parts as [$kind, $hardware, $variant, $measure]) {
-            $fitter->fit(
-                $this->character,
-                $deck,
-                $deckItem->deckSlots()->where('kind', $kind)->firstOrFail(),
-                $this->own(Item::factory()->module($hardware, $variant, measure: $measure, draw: 10)->create()),
-            );
-        }
-
-        app(DeckEquipper::class)->equip($this->character, $deck);
-        $this->character->refresh();
-
-        return $deck;
-    }
-
     /** An equipped deck with nothing in it. It will not run. */
     private function equipEmptyDeck(): InventoryItem
     {
-        $deck = $this->own(Item::factory()->cyberdeck(['cpu_socket_k' => 1, 'psu' => 1])->create());
+        $deck = $this->ownedBy($this->character, Item::factory()->cyberdeck(['cpu_socket_k' => 1, 'psu' => 1])->create());
 
         app(DeckEquipper::class)->equip($this->character, $deck);
         $this->character->refresh();
@@ -121,7 +79,7 @@ final class NavigatorTest extends TestCase
 
     public function test_a_ready_deck_gets_you_in_at_the_portal(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
 
         $result = $this->navigator()->jackIn($this->character);
 
@@ -156,7 +114,7 @@ final class NavigatorTest extends TestCase
 
     public function test_jacking_in_twice_is_refused(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $this->navigator()->jackIn($this->character);
 
         $again = $this->navigator()->jackIn($this->character->fresh());
@@ -168,7 +126,7 @@ final class NavigatorTest extends TestCase
 
     public function test_jacking_out_takes_the_position_with_it(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $this->navigator()->jackIn($this->character);
 
         $result = $this->navigator()->jackOut($this->character->fresh());
@@ -194,7 +152,7 @@ final class NavigatorTest extends TestCase
      */
     public function test_going_back_in_starts_at_the_portal_again(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
 
         $nav->jackIn($this->character);
@@ -210,7 +168,7 @@ final class NavigatorTest extends TestCase
 
     public function test_a_step_moves_one_position_and_sweeps(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -229,7 +187,7 @@ final class NavigatorTest extends TestCase
 
     public function test_two_positions_away_is_not_a_step(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -246,7 +204,7 @@ final class NavigatorTest extends TestCase
      */
     public function test_walking_off_the_edge_is_refused_as_the_edge(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -274,7 +232,7 @@ final class NavigatorTest extends TestCase
 
     public function test_a_jump_arrives_at_whatever_answers_to_the_address(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -290,7 +248,7 @@ final class NavigatorTest extends TestCase
     /** A typed address arrives with a stray space and in whatever case. */
     public function test_a_typed_address_is_normalised_before_it_is_looked_up(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -301,7 +259,7 @@ final class NavigatorTest extends TestCase
 
     public function test_something_that_is_not_an_address_is_told_apart_from_one_nothing_answers(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -323,7 +281,7 @@ final class NavigatorTest extends TestCase
      */
     public function test_an_address_stops_resolving_when_its_system_relocates(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -356,7 +314,7 @@ final class NavigatorTest extends TestCase
      */
     public function test_a_waypoint_takes_you_straight_back_to_it(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -382,7 +340,7 @@ final class NavigatorTest extends TestCase
     /** A system bookmark goes through the same lookup a typed address does. */
     public function test_a_system_bookmark_arrives_where_the_address_answers(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -400,7 +358,7 @@ final class NavigatorTest extends TestCase
      */
     public function test_a_system_bookmark_whose_system_moved_arrives_nowhere(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -419,7 +377,7 @@ final class NavigatorTest extends TestCase
 
     public function test_you_cannot_recall_without_being_in(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 
@@ -436,7 +394,7 @@ final class NavigatorTest extends TestCase
 
     public function test_you_cannot_recall_somebody_elses_bookmark(): void
     {
-        $this->equipReadyDeck();
+        $this->equipReadyDeck($this->character);
         $nav = $this->navigator();
         $nav->jackIn($this->character);
 

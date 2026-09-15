@@ -261,6 +261,20 @@ return [
         | none of them says "jack in" or "jack out" about signing into the
         | game, which is auth.login / auth.logout and a different act.
         */
+        /*
+        | Thrown out because the deck stopped running, which is the one way of
+        | leaving cyberspace the player did not ask for.
+        |
+        | It says WHY before it says what it cost: the damage is the smaller
+        | half of the news, and a player who reads only the first clause has
+        | still been told the thing they have to act on.
+        */
+        'dumped' => [
+            'zero' => 'Your deck stopped running. You are out of cyberspace.',
+            'one' => 'Your deck stopped running and dumped you out of cyberspace. :count point of Synaptic Integrity.',
+            'many' => 'Your deck stopped running and dumped you out of cyberspace. :count points of Synaptic Integrity.',
+        ],
+
         'travel' => [
             'no_deck' => 'You are carrying no deck. There is nothing to jack in with.',
             'deck_not_ready' => 'That deck will not run. It is short of what it needs.',

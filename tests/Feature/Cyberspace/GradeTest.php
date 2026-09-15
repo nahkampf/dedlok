@@ -16,6 +16,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
 /**
@@ -29,6 +30,7 @@ use Tests\TestCase;
  */
 final class GradeTest extends TestCase
 {
+    use CarriesAWorkingDeck;
     use RefreshDatabase;
 
     protected function setUp(): void
@@ -176,6 +178,9 @@ final class GradeTest extends TestCase
         ));
 
         System::factory()->at(8, 9)->grade(9)->create(['address' => 'DEADBEEF', 'name' => 'Cold Vault']);
+        // The map is fetched as the player, so they need a deck that runs:
+        // the readiness net ejects anybody inside without one.
+        $this->equipReadyDeck($character);
         $character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
         Sweep::fromConfig()->from($character->fresh(), new Position(8, 8));
 

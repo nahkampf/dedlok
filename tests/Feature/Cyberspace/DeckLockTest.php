@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
 /**
@@ -35,6 +36,7 @@ use Tests\TestCase;
  */
 final class DeckLockTest extends TestCase
 {
+    use CarriesAWorkingDeck;
     use RefreshDatabase;
 
     private User $user;
@@ -56,45 +58,7 @@ final class DeckLockTest extends TestCase
             ['user_id' => $this->user->id, 'archetype' => 3],
         ));
 
-        $this->deck = $this->buildReadyDeck();
-    }
-
-    private function own(Item $item): InventoryItem
-    {
-        return InventoryItem::create([
-            'character_id' => $this->character->id,
-            'item_id' => $item->id,
-            'quantity' => 1,
-        ]);
-    }
-
-    private function buildReadyDeck(): InventoryItem
-    {
-        $deckItem = Item::factory()->cyberdeck([
-            'cpu_socket_k' => 1, 'ram_opto' => 1, 'nic' => 1, 'psu' => 1,
-        ])->create();
-
-        $deck = $this->own($deckItem);
-        $fitter = app(ModuleFitter::class);
-
-        foreach ([
-            ['cpu', Hardware::Cpu, Variant::SocketK, 100],
-            ['ram', Hardware::Ram, Variant::Opto, 100],
-            ['nic', Hardware::Nic, null, 50],
-            ['psu', Hardware::Psu, null, 2000],
-        ] as [$kind, $hardware, $variant, $measure]) {
-            $fitter->fit(
-                $this->character,
-                $deck,
-                $deckItem->deckSlots()->where('kind', $kind)->firstOrFail(),
-                $this->own(Item::factory()->module($hardware, $variant, measure: $measure, draw: 10)->create()),
-            );
-        }
-
-        app(DeckEquipper::class)->equip($this->character, $deck);
-        $this->character->refresh();
-
-        return $deck;
+        $this->deck = $this->equipReadyDeck($this->character);
     }
 
     private function jackIn(): void
@@ -134,7 +98,7 @@ final class DeckLockTest extends TestCase
     public function test_a_module_cannot_be_fitted_while_jacked_in(): void
     {
         // An empty socket to aim at, fitted before jacking in.
-        $spare = $this->own(Item::factory()->module(Hardware::Expansion, null)->create());
+        $spare = $this->ownedBy($this->character, Item::factory()->module(Hardware::Expansion, null)->create());
         $this->jackIn();
 
         $slot = $this->deck->item->deckSlots()->where('kind', 'ram')->firstOrFail();
@@ -162,7 +126,7 @@ final class DeckLockTest extends TestCase
     /** Equipping SWAPS, so it would take the live deck out from under you. */
     public function test_another_deck_cannot_be_equipped_while_jacked_in(): void
     {
-        $other = $this->own(Item::factory()->cyberdeck(['cpu_socket_k' => 1, 'psu' => 1])->create());
+        $other = $this->ownedBy($this->character, Item::factory()->cyberdeck(['cpu_socket_k' => 1, 'psu' => 1])->create());
         $this->jackIn();
 
         $result = app(DeckEquipper::class)->equip($this->character, $other);
@@ -215,8 +179,8 @@ final class DeckLockTest extends TestCase
     public function test_a_deck_in_the_stash_is_untouched_by_the_lock(): void
     {
         $spareItem = Item::factory()->cyberdeck(['cpu_socket_k' => 1, 'psu' => 1])->create();
-        $spare = $this->own($spareItem);
-        $chip = $this->own(Item::factory()->module(Hardware::Cpu, Variant::SocketK, measure: 10)->create());
+        $spare = $this->ownedBy($this->character, $spareItem);
+        $chip = $this->ownedBy($this->character, Item::factory()->module(Hardware::Cpu, Variant::SocketK, measure: 10)->create());
 
         $this->jackIn();
 
@@ -229,7 +193,7 @@ final class DeckLockTest extends TestCase
     /** The stash still opens, and other things can still be destroyed. */
     public function test_ordinary_items_can_still_be_destroyed_while_jacked_in(): void
     {
-        $junk = $this->own(Item::factory()->physical()->create());
+        $junk = $this->ownedBy($this->character, Item::factory()->physical()->create());
         $this->jackIn();
 
         $this->actingAs($this->user)
@@ -250,8 +214,8 @@ final class DeckLockTest extends TestCase
 
     public function test_the_lock_names_the_deck_and_its_modules_and_nothing_else(): void
     {
-        $junk = $this->own(Item::factory()->physical()->create());
-        $spare = $this->own(Item::factory()->cyberdeck(['cpu_socket_k' => 1, 'psu' => 1])->create());
+        $junk = $this->ownedBy($this->character, Item::factory()->physical()->create());
+        $spare = $this->ownedBy($this->character, Item::factory()->cyberdeck(['cpu_socket_k' => 1, 'psu' => 1])->create());
         $this->jackIn();
 
         $module = DeckFitting::query()->where('deck_id', $this->deck->id)->firstOrFail()->module;
