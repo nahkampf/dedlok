@@ -12,8 +12,7 @@ declare(strict_types=1);
 | modifiers into a value and stops. What happens after that, when something
 | has to succeed or fail, is decided here.
 |
-| Nothing reads this file yet. The check layer is specified only; see
-| MECHANICS.md.
+| App\Checks\CheckRoller reads all of it, and is the only thing that does.
 |
 */
 
@@ -41,5 +40,48 @@ return [
     | decision rather than an accident of how the simulator is structured.
     */
     'certainty_floor' => 0.0085,
+
+    /*
+    | A KIND OF ROLL MAY NAME ITS OWN FLOOR, and this is the only place one can
+    | be named.
+    |
+    | The floor is a principle — every roll in the game keeps it — and this is
+    | the escape hatch for a mechanic that argues its way out of it. Keyed by
+    | the kind a caller passes to the roller.
+    |
+    | IT IS CONFIG AND NEVER AN ARGUMENT, deliberately. An override passed at a
+    | call site is a rule you can only find by reading every caller, and the
+    | reasoning for it lives in a commit message nobody will read again; here it
+    | sits next to the number, and the set of exceptions can be counted by
+    | looking at one file. If this list ever grows past a handful, the floor has
+    | stopped being a principle and that is worth noticing.
+    |
+    | Empty on purpose: nothing has argued its way out yet.
+    */
+    'floors' => [
+        // 'detection' => 0.02,
+    ],
+
+    /*
+    | HOW DECISIVE THE GAME IS, IN ONE NUMBER.
+    |
+    | The margin — check value less difficulty — worth roughly three-quarters
+    | odds. Every roll runs through the same logistic curve, so this is the
+    | single dial between "skill decides everything" and "everything is a coin
+    | flip":
+    |
+    |   spread 4   +8 margin is 88%, +16 is 98%    skill dominates
+    |   spread 8   +8 margin is 73%, +16 is 88%    the default
+    |   spread 16  +8 margin is 62%, +16 is 73%    luck matters everywhere
+    |
+    | Equal value and difficulty is 50% whatever this is set to, which is the
+    | property that makes a difficulty mean something: it is the level at which
+    | a character is evenly matched.
+    |
+    | Unmeasured. Nothing has been balanced against it because nothing rolls
+    | yet — 8 is a starting point chosen so that the attribute-and-skill numbers
+    | the game already produces land across a usable part of the curve.
+    */
+    'spread' => 8.0,
 
 ];

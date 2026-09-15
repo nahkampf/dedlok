@@ -344,6 +344,28 @@ thing to check before describing any of this as working. The resolver, the
 dependency graph, the character sheet and five modifier sources are built; what
 rolls a check, and most of the content that would feed one, are not.
 
+### Rolling a check
+
+**`App\Checks\CheckRoller` is the only die in the game**, and it is separate
+from `App\Stats\Resolver` on purpose: a resolver that rolled could not be
+asked what a character's chances ARE without spending them.
+
+- **A logistic on the MARGIN** — `1 / (1 + exp(-(value - difficulty) / spread))`
+  — so only the gap counts, and equal value and difficulty is always a coin
+  flip. That is what makes a difficulty mean something: it is the level at
+  which a character is evenly matched.
+- **`checks.spread` is how decisive the whole game is, in one number.** It is
+  unmeasured; nothing has been balanced against it.
+- **No check is ever certain.** Every roll is clamped into
+  `[floor, 1 - floor]`. A kind of roll may name its own floor in
+  `checks.floors` — **config and never an argument**, because a floor passed at
+  a call site is a rule you can only find by reading every caller.
+- **`chance()` is public and separate from `roll()`**, so a screen that warns
+  "about one in three" and the roll that follows cannot disagree.
+- **The die is injected**, like the market's and the grid's. Pin it in tests.
+- Nothing calls it yet: there are no difficulties in the game until a system's
+  grade becomes one.
+
 ### Where a modifier comes from
 
 **`Character::modifiers()` is the whole list, and each entry is a

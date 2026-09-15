@@ -34,7 +34,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Marking a machine you have not seen before | **built**; `system_contacts.first_seen_at`, carried through a sweep and restarted when a different address appears at a position |
 | Moving by tap, click and key | **built**; the eight around you are buttons, arrows and the numpad reach the same eight |
 | The storage socket and its measure | **built**; every deck has one, and nothing reads the totals yet |
-| The check layer it all resolves through | **partly built** — `check.*` stats, the dependency graph, conditional modifiers, `character_modifiers` and skill effects all exist; nothing ROLLS a check yet. See MECHANICS.md |
+| The check layer it all resolves through | **built** — the stats, the graph, conditional modifiers, `character_modifiers`, skill effects, and now the die: `App\Checks\CheckRoller`. Nothing calls it, because nothing has a difficulty yet. See MECHANICS.md |
 | Jack in / sign in — the vocabulary split | **done**; auth reads Sign in / Sign out, and `ui.action.jack_*` is reserved for cyberspace |
 | Operating System skills — AuraOS, Prism-V, IRONCLAD, Lattice | **built** as skill rows; nothing reads them |
 | Network Topology, System Profiling, Advanced System Profiling | **built** as skill rows; nothing reads them |
@@ -1021,12 +1021,13 @@ is a race, and the sweep is what serialises it.
 All of it. In the order it should be built:
 
 0. Settle this document.
-1. **The check layer.** **Built**: `check.*` and `skill.*` stats, the
+1. **The check layer.** **Done.** `check.*` and `skill.*` stats, the
    derived-stat dependency graph, conditional modifiers, `character_modifiers`
-   — the table an unexpiring flatline is a row in — and skills as a
-   `ModifierSource`, so that having a skill grants something beyond its own
-   check. Still missing: anything that ROLLS one. A check is a resolved number
-   today and the die that reads it arrives with the simulator.
+   — the table an unexpiring flatline is a row in — skills as a
+   `ModifierSource`, and the die itself: `App\Checks\CheckRoller`, a logistic
+   on the margin with one tunable spread. What is left is a caller, and a
+   caller needs a difficulty — the first of those is a system's grade, in
+   phase 4.
 2. **Software.** **Built**: `programs` beside `items`, three costs, a kind that
    gates and modifiers that resolve; the admin editor; the topbar's readout;
    the deck screen's Running and Storage tabs, where a program is stopped
@@ -1082,10 +1083,13 @@ dependants.
    since the system is effectively new. If it never resets, every system in
    cyberspace is on a countdown to its third raid and the grid slowly empties
    into churn.
-3. **Does the 3% floor apply to every roll or only to detection?** *No check is
-   ever certain* is a good rule for a game like this and it would also mean
-   egress can always fail and an attack can always miss. Stated as a floor on
-   detection today; it wants to be a principle or it will be applied unevenly.
+3. ~~**Does the 3% floor apply to every roll or only to detection?**~~
+   **Resolved: every roll.** It is a principle, applied once in
+   `App\Checks\CheckRoller` rather than decided per mechanic — egress can
+   always fail and an attack can always miss. A kind of roll may name its own
+   floor in `checks.floors`, which is config with the reasoning beside it and
+   never an argument at a call site; the list is empty, and a list that grows
+   past a handful means the floor has stopped being a principle.
 4. **How much is a mapping payday worth against an intrusion?** The whole run
    type is a design promise about safe income, and the ratio is what makes the
    promise true or empty. It is also what sets how fast NPC scan sales churn
