@@ -188,13 +188,138 @@ final class NodeContentsTest extends TestCase
 
         $this->stocker(lucky: true)->run();
 
-        $stocked = SystemContent::query()->ofKind(ContentKind::Item)->sole();
+        // Several, now that the draw repeats — so every one of them is checked
+        // rather than the only one there used to be.
+        $stocked = SystemContent::query()->ofKind(ContentKind::Item)->get();
+        $listed = Item::query()->where('on_market', true)->pluck('id')->all();
 
-        $this->assertContains(
-            $stocked->item_id,
-            Item::query()->where('on_market', true)->pluck('id')->all(),
-        );
-        $this->assertSame(1, $stocked->quantity);
+        $this->assertNotEmpty($stocked);
+
+        foreach ($stocked as $row) {
+            $this->assertContains($row->item_id, $listed);
+            $this->assertSame(1, $row->quantity);
+        }
+    }
+
+    /**
+     * NONE TO SEVERAL, rather than none or one. The odds are rolled again
+     * after each hit, so a rich machine is rich rather than merely likely.
+     */
+    public function test_a_lucky_node_holds_several_items(): void
+    {
+        Item::factory()->create(['slug' => 'loot', 'on_market' => true]);
+        Config::set('cyberspace.contents.item.max', 3);
+        $this->machine(grade: 9);
+
+        $this->stocker(lucky: true)->run();
+
+        $this->assertSame(3, SystemContent::query()->ofKind(ContentKind::Item)->count());
+    }
+
+    // ---- a machine that was told what to hold -------------------------------
+
+    /**
+     * A MISSION CANNOT BE BUILT ON THE WORLD HAPPENING TO PUT THE RIGHT THING
+     * IN THE RIGHT PLACE. A rule says exactly what is there, and replaces the
+     * draw rather than adding to it.
+     */
+    public function test_a_told_machine_holds_exactly_what_it_was_told(): void
+    {
+        $wanted = Item::factory()->create(['slug' => 'the_prize', 'on_market' => false]);
+        $system = $this->machine(grade: 9);
+
+        $system->update(['stock_rule' => [
+            'fixed' => [['item_id' => $wanted->id, 'quantity' => 2]],
+        ]]);
+
+        $this->stocker(lucky: true)->run();
+
+        $stocked = SystemContent::query()->ofKind(ContentKind::Item)->get();
+
+        $this->assertCount(1, $stocked, 'the rule replaced the draw');
+        $this->assertSame($wanted->id, $stocked->first()->item_id);
+        $this->assertSame(2, $stocked->first()->quantity);
+    }
+
+    /** Unlisted is no obstacle: a quest reward is not catalogue content. */
+    public function test_a_told_machine_may_hold_something_nobody_can_buy(): void
+    {
+        $wanted = Item::factory()->create(['slug' => 'the_prize', 'on_market' => false]);
+        $system = $this->machine(grade: 1);
+
+        $system->update(['stock_rule' => ['fixed' => [['item_id' => $wanted->id, 'quantity' => 1]]]]);
+
+        $this->stocker(lucky: false)->run();
+
+        $this->assertSame($wanted->id, SystemContent::query()->ofKind(ContentKind::Item)->sole()->item_id);
+    }
+
+    /** "One or more, from this set" — drawn without replacement. */
+    public function test_a_machine_can_be_told_to_pick_from_a_set(): void
+    {
+        $set = Item::factory()->count(3)->create(['on_market' => false])->pluck('id')->all();
+        $system = $this->machine(grade: 5);
+
+        $system->update(['stock_rule' => ['any_of' => ['from' => $set, 'count' => 2]]]);
+
+        $this->stocker(lucky: true)->run();
+
+        $stocked = SystemContent::query()->ofKind(ContentKind::Item)->pluck('item_id')->all();
+
+        $this->assertCount(2, $stocked);
+        $this->assertCount(2, array_unique($stocked), 'two of these three means two DIFFERENT ones');
+        $this->assertEmpty(array_diff($stocked, $set));
+    }
+
+    /** Asking for more than the set holds gives the set, not an error. */
+    public function test_a_set_cannot_be_drawn_past_its_end(): void
+    {
+        $set = Item::factory()->count(2)->create(['on_market' => false])->pluck('id')->all();
+        $system = $this->machine(grade: 5);
+
+        $system->update(['stock_rule' => ['any_of' => ['from' => $set, 'count' => 5]]]);
+
+        $this->stocker(lucky: true)->run();
+
+        $this->assertSame(2, SystemContent::query()->ofKind(ContentKind::Item)->count());
+    }
+
+    /** A node that should look ordinary while carrying the one thing that matters. */
+    public function test_a_told_machine_can_keep_its_ordinary_draw(): void
+    {
+        Item::factory()->create(['slug' => 'loot', 'on_market' => true]);
+        Config::set('cyberspace.contents.item.max', 1);
+
+        $wanted = Item::factory()->create(['slug' => 'the_prize', 'on_market' => false]);
+        $system = $this->machine(grade: 9);
+
+        $system->update(['stock_rule' => [
+            'fixed' => [['item_id' => $wanted->id, 'quantity' => 1]],
+            'plus_random' => true,
+        ]]);
+
+        $this->stocker(lucky: true)->run();
+
+        $stocked = SystemContent::query()->ofKind(ContentKind::Item)->pluck('item_id')->all();
+
+        $this->assertContains($wanted->id, $stocked);
+        $this->assertGreaterThan(1, count($stocked), 'and something the world put there too');
+    }
+
+    /**
+     * An id the catalogue has lost is skipped rather than fatal: a mission
+     * whose reward was deleted should fail to give a reward, not take the
+     * nightly restock of the whole grid down with it.
+     */
+    public function test_a_rule_naming_nothing_stocks_nothing_and_does_not_throw(): void
+    {
+        $system = $this->machine(grade: 5);
+        $system->update(['stock_rule' => ['fixed' => [['item_id' => 0, 'quantity' => 1]]]]);
+
+        $this->stocker(lucky: true)->run();
+
+        $this->assertSame(0, SystemContent::query()->ofKind(ContentKind::Item)->count());
+        $this->assertSame(1, $system->contents()->ofKind(ContentKind::Creds)->count(), 'the rest of it still stocked');
     }
 
     /** Unlucky dice mean a node holding nothing but its creds. */

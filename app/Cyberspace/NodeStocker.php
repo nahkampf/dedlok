@@ -153,15 +153,114 @@ final class NodeStocker
             $contents[] = $this->file($grade, $encryption);
         }
 
-        if ($items !== [] && $this->hits((int) ($this->config['item']['chance'][$grade] ?? 0), (int) ($lean['item'] ?? 1000))) {
-            $contents[] = [
-                'kind' => ContentKind::Item->value,
-                'item_id' => $items[($this->roll)(0, count($items) - 1)],
-                'quantity' => 1,
-            ];
+        foreach ($this->itemsFor($system, $grade, $lean, $items) as $item) {
+            $contents[] = $item;
         }
 
         return $contents;
+    }
+
+    /**
+     * The items this machine should be holding.
+     *
+     * NONE TO SEVERAL, ordinarily: the odds are rolled again after each hit,
+     * so a rich machine is rich rather than merely likely, capped so a run of
+     * luck cannot empty the catalogue into one box.
+     *
+     * UNLESS IT WAS TOLD. A machine carrying a `stock_rule` holds what the rule
+     * says — a mission cannot be built on the world happening to put the right
+     * thing in the right place. A rule REPLACES the draw rather than adding to
+     * it, unless it asks to keep it, which is for a node that should look
+     * ordinary while carrying the one thing that matters.
+     *
+     * @param  array<string, int>  $lean
+     * @param  list<int>  $catalogue
+     * @return list<array<string, mixed>>
+     */
+    private function itemsFor(System $system, int $grade, array $lean, array $catalogue): array
+    {
+        $rule = $system->stock_rule;
+
+        if (is_array($rule) && $rule !== []) {
+            $told = $this->fromRule($rule);
+
+            if (! ($rule['plus_random'] ?? false)) {
+                return $told;
+            }
+
+            return array_merge($told, $this->randomItems($grade, $lean, $catalogue));
+        }
+
+        return $this->randomItems($grade, $lean, $catalogue);
+    }
+
+    /**
+     * What a rule says, in the two shapes the design named.
+     *
+     * `fixed` is exactly these; `any_of` is this many drawn from that set,
+     * without replacement, because "two of these three" means two different
+     * ones. An id the catalogue has lost is skipped rather than fatal: a
+     * mission whose reward was deleted should fail to give a reward, not take
+     * the nightly restock of the whole grid down with it.
+     *
+     * @param  array<string, mixed>  $rule
+     * @return list<array<string, mixed>>
+     */
+    private function fromRule(array $rule): array
+    {
+        $items = [];
+
+        foreach ((array) ($rule['fixed'] ?? []) as $entry) {
+            $id = (int) ($entry['item_id'] ?? 0);
+
+            if ($id > 0) {
+                $items[] = $this->item($id, max(1, (int) ($entry['quantity'] ?? 1)));
+            }
+        }
+
+        $from = array_values(array_filter(array_map('intval', (array) ($rule['any_of']['from'] ?? []))));
+        $count = min((int) ($rule['any_of']['count'] ?? 0), count($from));
+
+        for ($i = 0; $i < $count; $i++) {
+            // Drawn out of the bag rather than back into it: "two of these
+            // three" means two different ones.
+            $picked = array_splice($from, ($this->roll)(0, count($from) - 1), 1);
+            $items[] = $this->item((int) $picked[0], 1);
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param  array<string, int>  $lean
+     * @param  list<int>  $catalogue
+     * @return list<array<string, mixed>>
+     */
+    private function randomItems(int $grade, array $lean, array $catalogue): array
+    {
+        if ($catalogue === []) {
+            return [];
+        }
+
+        $chance = (int) ($this->config['item']['chance'][$grade] ?? 0);
+        $max = max(0, (int) ($this->config['item']['max'] ?? 1));
+        $items = [];
+
+        while (count($items) < $max && $this->hits($chance, (int) ($lean['item'] ?? 1000))) {
+            $items[] = $this->item($catalogue[($this->roll)(0, count($catalogue) - 1)], 1);
+        }
+
+        return $items;
+    }
+
+    /** @return array<string, mixed> */
+    private function item(int $itemId, int $quantity): array
+    {
+        return [
+            'kind' => ContentKind::Item->value,
+            'item_id' => $itemId,
+            'quantity' => $quantity,
+        ];
     }
 
     /**

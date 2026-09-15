@@ -1166,6 +1166,16 @@ carries the detail.
   the same rule `MarketSeeder` follows. `cyberspace:restock` runs nightly with
   `--dry-run`; emptying a node is temporary on purpose, and the brake on that
   loop is the raid counter rather than scarcity.
+- **A node's items are a draw of NONE TO SEVERAL**, rolled again after each hit
+  and capped, so a rich machine is rich rather than merely likely.
+- **`systems.stock_rule` is how a machine is TOLD what to hold**, and NULL on
+  nearly every row — the derived answer is the ordinary one and the column is
+  the override, like `items.board_layout`. `fixed` is exactly these, `any_of` is
+  this many drawn from a set without replacement, and `plus_random` keeps the
+  ordinary draw for a node that should not look special. **A rule replaces the
+  draw**, because a mission cannot be built on the world happening to put the
+  right thing in the right place. Items only: creds and files are still rolled,
+  since a mission node holding no money would announce itself.
 - **`systems.raids` is on the SYSTEM, not the character.** Three successful
   raids by anybody retires the node. Nothing increments it yet.
 - **The map screen draws from memory and never from `systems`.** Six cell

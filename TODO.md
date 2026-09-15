@@ -107,6 +107,40 @@ clear error, so keep them commented until the screens are written.
 
 ---
 
+## Mission files, and how a mission knows it was completed
+
+**Status:** not built, and deliberately noted rather than designed. What exists
+is the half a mission will hang off: `systems.stock_rule` says what a machine
+must be holding, and `system_contents` can hold a file that nothing generated.
+
+**The shape, as described:** a quest file is not on a system until the player
+takes the mission. Starting one INJECTS the file into a target system, and the
+file is then the check — the mission is complete when that specific file is in
+the player's possession rather than when some counter says so. That is the
+right way round: the object is the evidence, so there is nothing to keep in
+step with it and nothing that can disagree.
+
+**What it will need, none of which exists:**
+
+- **A mission of some kind**, with a target system and a state.
+- **A way to mark a file as that file.** A `system_contents` row is generated
+  rather than authored today and carries no identity beyond its id; a mission
+  file needs to be recognisable after it has been extracted, which means it
+  has to survive becoming something the player carries — and how a file becomes
+  a possession at all is phase 5's question, not answered yet.
+- **Protection from housekeeping.** The nightly restock only fills EMPTY nodes,
+  so an injected file is safe from it today. A relocation or a burn is not
+  something it would survive, and a mission whose target relocated overnight
+  needs an answer.
+
+**What is already true and should stay true:** a node's items are drawn at
+random unless it was told, and a machine that was told holds exactly that. The
+two shapes are `fixed` and `any_of` — see the migration that added the column —
+and `plus_random` keeps the ordinary draw for a node that should not look
+special.
+
+---
+
 ## Housekeeping
 
 - **`php artisan storage:link` will fail** — `symlink` is in `disable_functions` and that

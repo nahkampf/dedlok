@@ -177,14 +177,25 @@ return [
         ],
 
         /*
-        | An item, per mille. Rare, and rarer still at the bottom of the grid:
-        | a grade 1 box has a tenth of a chance of holding something.
+        | Items: how many, rather than whether.
+        |
+        | A node holds NONE TO SEVERAL. `chance` is the per-mille odds of the
+        | first one and of each one after it, so a grade 1 usually holds
+        | nothing and a grade 9 often holds two — the draw repeats until it
+        | misses or hits `max`, which is what makes a rich machine feel rich
+        | rather than merely likely.
+        |
+        | A machine with a `stock_rule` ignores all of this: it holds what it
+        | was told to hold. See the migration that added the column.
         */
         'item' => [
             'chance' => [
                 1 => 100, 2 => 130, 3 => 170, 4 => 220, 5 => 280,
                 6 => 350, 7 => 430, 8 => 520, 9 => 620,
             ],
+            // A ceiling on the repeat, so a lucky run of rolls cannot empty
+            // the catalogue into one box.
+            'max' => 4,
         ],
 
         /*

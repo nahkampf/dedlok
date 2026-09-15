@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * size, and Grid is the one place that knows which — see CYBERSPACE.md, *How
  * the grid is stored*.
  */
-#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'os_skill_id'])]
+#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'os_skill_id', 'stock_rule'])]
 class System extends Model
 {
     /** @use HasFactory<SystemFactory> */
@@ -40,6 +40,7 @@ class System extends Model
             'y' => 'integer',
             'grade' => 'integer',
             'raids' => 'integer',
+            'stock_rule' => 'array',
             'designation' => 'integer',
             'type' => SystemType::class,
         ];
