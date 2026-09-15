@@ -24,6 +24,9 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
 | Scanning — the probe | **built** for what a system currently HAS: grade and operating system. Needs an analyser RUNNING on the equipped deck; one press starts one pass, capped by the `scan_passes` stat |
 | A pass takes TIME | **built** — about a minute against a grade 1 and sixteen against a grade 9, cut by skill and by a better instrument through the `scan_duration` stat. Settled lazily by whoever next looks |
+| Node inventories — what a machine holds | **built** — creds always, a generated FILE and an item on a roll, all scaled by grade and leaned by type. `system_contents`, written by `App\Cyberspace\NodeStocker` |
+| Nightly restock | **built** — `cyberspace:restock`, a TOP-UP like the market's pass: a node still holding something is left alone, so emptying one is temporary |
+| The raid counter | **built as a column**; `systems.raids`, on the system and not the character. Nothing increments it, because nothing can raid |
 | A read runs in the background | **built** — it belongs to the running copy of the scanner, not to where its owner is standing: walk away or jack out and the answer is waiting |
 | Two instruments, two machines | **built** — a second read needs a second running instance, which costs its own compute and a free thread |
 | Threads — how many copies of one program run at once | **built** — `program_threads`, one by default, raised by Multithreading and only for software flagged `multithreaded` |
@@ -1074,9 +1077,18 @@ All of it. In the order it should be built:
    has: the IDS, the ICE, the tracer and cloaked extras join the list as they
    are built, each a nullable column and a line in `SystemScan::unknowns()`.
 
-   **Still missing**: node inventories and their nightly restock, the raid
-   counter, and selling a scan — the market has no storefront at all yet, so
-   the scan file is an object with no buyer.
+   **Node inventories are built too**: every machine holds creds, and on a
+   roll a generated FILE — a size in QB, an encryption off the same ladder its
+   operating system comes from, and two values with the gap between them that
+   makes decryption a decision — and sometimes something from the catalogue.
+   All of it scales with grade and leans by type, `cyberspace:restock` tops up
+   every emptied node nightly, and `systems.raids` counts what nothing can do
+   to it yet.
+
+   **Still missing**: taking any of it, which is the run; and selling a scan,
+   which needs a storefront the market does not have. What a node SHOULD hold
+   by type is a loot table and wants its own pass — the weighting in
+   `cyberspace.contents.by_type` is the crude version of one.
 
    ~~**Decide here whether the probe needs a running analyser.**~~ **Decided:
    it does.** Reading a machine takes software, and the software has to be

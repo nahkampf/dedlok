@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A machine standing somewhere on the grid.
@@ -38,6 +39,7 @@ class System extends Model
             'x' => 'integer',
             'y' => 'integer',
             'grade' => 'integer',
+            'raids' => 'integer',
             'designation' => 'integer',
             'type' => SystemType::class,
         ];
@@ -92,6 +94,18 @@ class System extends Model
     public function operatingSystem(): BelongsTo
     {
         return $this->belongsTo(Skill::class, 'os_skill_id');
+    }
+
+    /**
+     * What it is holding.
+     *
+     * Its own inventory model rather than a stash with a different owner:
+     * raided rather than carried, safe from what ICE does to a person, and
+     * restocked on a clock. See App\Models\SystemContent.
+     */
+    public function contents(): HasMany
+    {
+        return $this->hasMany(SystemContent::class);
     }
 
     /** @param  Builder<self>  $query */

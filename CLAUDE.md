@@ -1150,6 +1150,24 @@ carries the detail.
   means unspent and unexpired (`scopeLive`), and a stale file is replaced
   rather than continued, since carrying old answers forward is worse than
   having none.
+- **What a node holds is its OWN inventory model.** `system_contents`, not the
+  character inventory with a different owner column: it is raided rather than
+  carried, safe from what ICE does to a person, and restocked on a clock — a
+  different set of rules, so a different table. Three kinds in one table
+  (`creds`, `item`, `data`) because they answer one question, with a CHECK per
+  kind saying which columns mean anything.
+- **A file is an object, not a reward.** Size in QB (turns on the way out), an
+  encryption type (a skill somebody has or does not), and TWO values — sealed
+  and broken. The gap between them is the whole reason decryption is a mechanic.
+  Files are **generated, never authored**: there is no catalogue of them, which
+  is why they are rows here rather than `items`.
+- **`App\Cyberspace\NodeStocker` is the only writer, and it TOPS UP.** A node
+  still holding something is left alone, so a pass run twice is not two hauls —
+  the same rule `MarketSeeder` follows. `cyberspace:restock` runs nightly with
+  `--dry-run`; emptying a node is temporary on purpose, and the brake on that
+  loop is the raid counter rather than scarcity.
+- **`systems.raids` is on the SYSTEM, not the character.** Three successful
+  raids by anybody retires the node. Nothing increments it yet.
 - **The map screen draws from memory and never from `systems`.** Six cell
   states are the whole vocabulary — you, a machine you remember, the portal,
   swept ground, unswept ground, and the void past the edge. The eight cells

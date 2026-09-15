@@ -318,6 +318,37 @@ return [
             'chance' => 'About :percent% to read something',
         ],
 
+        /*
+        | What a machine is holding. Nothing takes any of it yet — extraction
+        | is the run — so these are the words a node's contents will be listed
+        | with rather than anything a player reads today.
+        */
+        'contents' => [
+            'creds' => 'Creds',
+            'item' => 'Hardware',
+            'data' => 'Data',
+        ],
+
+        /*
+        | Files have names because a thing with a name is a thing you remember
+        | leaving behind, and what a player decides about a file is whether it
+        | is worth the turns to carry out.
+        |
+        | A word list rather than rows: there is no catalogue of files and
+        | there should not be one. Every file is generated, and its name is the
+        | only part of it that is not a number.
+        */
+        'files' => [
+            'fallback' => 'Unlabelled data',
+            'words' => [
+                'Payroll ledger', 'Internal memos', 'Personnel files', 'Audit trail',
+                'Client register', 'Design notes', 'Site surveys', 'Legal hold',
+                'Board minutes', 'Insurance claims', 'Shipping manifests', 'Patent drafts',
+                'Security roster', 'Access logs', 'Medical records', 'Tax filings',
+                'Research data', 'Supplier contracts', 'Incident reports', 'Asset registry',
+            ],
+        ],
+
         'travel' => [
             'no_deck' => 'You are carrying no deck. There is nothing to jack in with.',
             'deck_not_ready' => 'That deck will not run. It is short of what it needs.',

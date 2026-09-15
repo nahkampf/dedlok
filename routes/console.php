@@ -51,6 +51,22 @@ Schedule::command('training:deposit --quiet-when-idle')
  * to catch up from, and a shelf that goes unstocked for another eight hours is
  * indistinguishable from a run of failed rolls.
  */
+/*
+ * The world's slow metabolism, nightly.
+ *
+ * Emptying a node is temporary, and this is what makes it so. Same shape as the
+ * market's pass and for the same reasons: no stored clock, a missed night is
+ * never made up, and withoutOverlapping() because a second copy of a pass that
+ * writes thousands of rows is not something to find out about later.
+ *
+ * CYBERSPACE.md gives housekeeping three more nightly jobs — backdoor
+ * discovery, siphon payouts, heat decay — and a frequent one for lockdown
+ * expiry. None of those exist yet; this is the first of them.
+ */
+Schedule::command('cyberspace:restock')
+    ->dailyAt('04:10')
+    ->withoutOverlapping();
+
 Schedule::command('market:seed')
     ->cron('0 */8 * * *')
     ->withoutOverlapping();

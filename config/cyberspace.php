@@ -114,6 +114,92 @@ return [
     'new_for_minutes' => 10,
 
     /*
+    | WHAT A NODE IS HOLDING, and how much of it.
+    |
+    | Everything here scales with grade, because grade is the promise a scan
+    | makes: the machine that can end you is the machine worth breaking into.
+    | The numbers are a starting point and nothing has been balanced against
+    | them — nothing can raid a node yet.
+    |
+    | CREDS are the floor of a haul: always something, rarely much. A grade 1
+    | is pocket money and a grade 9 is a month's rent, which is roughly the
+    | span the rest of the economy will have to live with.
+    |
+    | A FILE is the real prize and is not guaranteed, so a raid is a gamble on
+    | more than getting out alive. Its SIZE costs turns on the way out, its
+    | ENCRYPTION is drawn from the ladder those four skills form — a grade 9
+    | seals things with something almost nobody can open — and it is worth more
+    | broken than sealed, which is the whole of why decryption exists.
+    |
+    | An ITEM is the rarest of the three. What a node SHOULD hold by type — a
+    | data silo full of files, a compute node full of creds — is a loot table
+    | and wants its own pass; the weighting below is the crude version of it.
+    */
+    'contents' => [
+
+        // Creds per grade: [min, max]. Rolled once per restock.
+        'creds' => [
+            1 => [40, 120],
+            2 => [80, 240],
+            3 => [150, 450],
+            4 => [300, 800],
+            5 => [600, 1500],
+            6 => [1000, 2600],
+            7 => [1800, 4200],
+            8 => [3000, 7000],
+            9 => [5000, 12000],
+        ],
+
+        /*
+        | How likely a node is holding a file at all, per mille, and what it
+        | looks like if it is.
+        |
+        | `size_qb` is what carrying it out costs in turns; `value` is what it
+        | fetches SEALED, and `broken_multiplier` is what breaking it is worth
+        | — the number that makes decryption a decision rather than a chore.
+        */
+        'data' => [
+            'chance' => [
+                1 => 250, 2 => 300, 3 => 350, 4 => 420, 5 => 500,
+                6 => 600, 7 => 700, 8 => 800, 9 => 900,
+            ],
+            'size_qb' => [
+                1 => [2, 6], 2 => [4, 10], 3 => [6, 16], 4 => [10, 24], 5 => [16, 40],
+                6 => [24, 60], 7 => [40, 90], 8 => [60, 140], 9 => [90, 220],
+            ],
+            'value' => [
+                1 => [120, 400], 2 => [250, 800], 3 => [500, 1600], 4 => [900, 2800], 5 => [1600, 5000],
+                6 => [2800, 8000], 7 => [4500, 13000], 8 => [7500, 21000], 9 => [12000, 34000],
+            ],
+            // Per mille of the sealed price, so 2200 means broken is worth
+            // 2.2x what a buyer gives for it still sealed.
+            'broken_multiplier' => 2200,
+        ],
+
+        /*
+        | An item, per mille. Rare, and rarer still at the bottom of the grid:
+        | a grade 1 box has a tenth of a chance of holding something.
+        */
+        'item' => [
+            'chance' => [
+                1 => 100, 2 => 130, 3 => 170, 4 => 220, 5 => 280,
+                6 => 350, 7 => 430, 8 => 520, 9 => 620,
+            ],
+        ],
+
+        /*
+        | What each type of machine leans towards, per mille applied to the
+        | chances above. A silo keeps files; a compute node moves money; a
+        | relay carries a bit of everything and not much of it.
+        */
+        'by_type' => [
+            'silo' => ['data' => 1500, 'item' => 900, 'creds' => 700],
+            'compute' => ['data' => 700, 'item' => 900, 'creds' => 1400],
+            'relay' => ['data' => 900, 'item' => 1300, 'creds' => 900],
+        ],
+    ],
+
+    /*
     | Scanning: what it takes to find out what a machine is.
     |
     | A scan answers the question a grade poses. The difficulty is per grade
