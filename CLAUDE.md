@@ -384,6 +384,15 @@ a sixth arrives — that is what the interface is for.
   `CharacterModifiers` filters rows to that instant rather than trusting a
   sweep to have been on time. Sources that cannot honestly look back say so —
   nothing records when a program STOPPED.
+- **Damage is a stat too, and its base arrives with the event.** One stat per
+  resource and origin (`damage.synaptic_integrity.ice`), generated from two
+  enums by `App\Stats\DamageStats`, each tagged with BOTH axes plus `damage` —
+  so a resistance is `percentage_of_base -15` against
+  `all_of: ['damage', 'ice']`, immunity is `multiplier 0`, and a vulnerability
+  is the same sentence with a sign. Percentages sum and apply once, so two −30%
+  resistances are −40% rather than 49%. `DamageResolver` is the only door, and
+  `taken` is for saying out loud — never for deciding whether anything
+  happened, since a hit mitigated to nothing still landed.
 - **Build a `Sheet` and read it; do not call `modifiers()` per stat.** Four of
   the five sources query — only `ArchetypePerks` reads the cached roster. A
   sheet is bound to the context it was built in and is cheap to rebuild rather
@@ -1021,10 +1030,14 @@ carries the detail.
   consequence, then `jackOut()`. **It must never become the answer for
   something happening during a run** — a burnout or a Surge resolves its own
   ending where it happens.
-- **`Character::takeDamage()` is the first thing in the game that hurts
-  anybody**, and is deliberately the dullest version of it: a subtraction and a
-  floor at zero. What damage MEANS belongs to whatever caused it. Reaching zero
-  is not acted on — there is no waiting screen yet.
+- **The damage it deals is RESOLVED, like every other number.**
+  `App\Stats\DamageResolver` is the door — a hit is
+  `Damage::synapticIntegrity(1, DamageOrigin::ReadinessLoss)` and what it costs
+  comes back through the resolver, so a resistance is a modifier, never code. See *Game mechanics*,
+  and MECHANICS.md's *Damage is a resolved stat*. `Character::takeDamage()` is
+  the dull half underneath it — a subtraction and a floor — and calling it
+  directly skips every rule. Reaching zero is not acted on: there is no waiting
+  screen yet.
 - **A waypoint bookmark may only be set on swept ground, and
   `App\Cyberspace\BookmarkKeeper` is where that lives** — it is a fact about a
   bitmap in another table, so no CHECK can reach it. Without it, coordinates

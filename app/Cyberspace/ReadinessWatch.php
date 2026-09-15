@@ -6,6 +6,9 @@ namespace App\Cyberspace;
 
 use App\Decks\DeckTotals;
 use App\Models\Character;
+use App\Stats\Damage;
+use App\Stats\DamageOrigin;
+use App\Stats\DamageResolver;
 use App\Stats\Resolver;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -111,11 +114,18 @@ final class ReadinessWatch
         }
 
         return DB::transaction(function () use ($character): Ejection {
-            $taken = $character->takeDamage('current_synaptic_integrity', $this->damage);
+            // Through the resolver, so a character who is good at surviving
+            // this particular way of losing a deck is good at it — the
+            // mitigation is modifiers on rows, and nothing here knows whether
+            // any exist.
+            $result = (new DamageResolver($this->resolver))->apply(
+                $character,
+                Damage::synapticIntegrity($this->damage, DamageOrigin::ReadinessLoss),
+            );
 
             $this->navigator->jackOut($character);
 
-            return new Ejection($taken);
+            return new Ejection($result->taken);
         });
     }
 }

@@ -394,6 +394,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Damage
+    |--------------------------------------------------------------------------
+    |
+    | What hurt somebody. One line per App\Stats\DamageOrigin, and they are
+    | here rather than on a row because an origin is a fixed vocabulary in the
+    | code, like a body region — there is nothing in the database that could
+    | carry the word.
+    |
+    | Nothing shows these yet. They exist because the first thing that explains
+    | a hit to a player — a combat log, a breakdown on the sheet — will need to
+    | name the cause, and a resolver step that says `readiness_loss` at
+    | somebody is not a sentence.
+    |
+    */
+    'damage' => [
+        'origins' => [
+            'readiness_loss' => 'Deck failure',
+            'burnout' => 'Burnout',
+            'ice' => 'ICE',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Implants
     |--------------------------------------------------------------------------
     |

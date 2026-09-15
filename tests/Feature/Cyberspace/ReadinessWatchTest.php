@@ -171,6 +171,74 @@ final class ReadinessWatchTest extends TestCase
         $this->assertSame(0, $this->synapticIntegrity());
     }
 
+    /**
+     * The dump is DAMAGE, and damage is resolved. A character who is good at
+     * surviving a deck failing under them takes less of it, and none of that
+     * is known to this class — it is a modifier against a tag set.
+     */
+    public function test_what_it_costs_is_mitigated_like_any_other_damage(): void
+    {
+        Config::set('cyberspace.readiness.damage', 4);
+        Config::set('effects.braced', [
+            'label' => 'Braced',
+            'stacking' => 'unique',
+            'retired' => false,
+            'modifiers' => [[
+                'op' => 'percentage_of_base',
+                'amount' => -50,
+                'target' => ['all_of' => ['damage', 'readiness_loss']],
+            ]],
+        ]);
+
+        $this->equipReadyDeck($this->character);
+        $this->jackIn();
+        $before = $this->synapticIntegrity();
+
+        CharacterModifier::query()->create([
+            'character_id' => $this->character->id,
+            'definition_key' => 'braced',
+        ]);
+        $this->cutThePower();
+
+        $this->assertSame(2, $this->watch()->check($this->character)?->damage);
+        $this->assertSame($before - 2, $this->synapticIntegrity());
+    }
+
+    /**
+     * And being good enough at it to take none does not buy off the ejection.
+     * The consequence is never paid for with the damage.
+     */
+    public function test_taking_no_damage_still_ends_the_session(): void
+    {
+        Config::set('effects.insulated', [
+            'label' => 'Insulated',
+            'stacking' => 'unique',
+            'retired' => false,
+            'modifiers' => [[
+                'op' => 'multiplier',
+                'amount' => 0,
+                'target' => ['all_of' => ['damage', 'readiness_loss']],
+            ]],
+        ]);
+
+        $this->equipReadyDeck($this->character);
+        $this->jackIn();
+        $before = $this->synapticIntegrity();
+
+        CharacterModifier::query()->create([
+            'character_id' => $this->character->id,
+            'definition_key' => 'insulated',
+        ]);
+        $this->cutThePower();
+
+        $ejection = $this->watch()->check($this->character);
+
+        $this->assertNotNull($ejection);
+        $this->assertSame(0, $ejection->damage);
+        $this->assertFalse($this->character->fresh()->isJackedIn(), 'out is out');
+        $this->assertSame($before, $this->synapticIntegrity());
+    }
+
     /** Asking twice must not cost twice. */
     public function test_a_second_look_finds_nobody_standing_there(): void
     {

@@ -40,7 +40,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Network Topology, System Profiling, Advanced System Profiling | **built** as skill rows; nothing reads them |
 | Encryption skills — Cinder, Halcyon-3, BLACKGLASS, Ouroboros | **built** as skill rows with books; placeholder descriptions, no prerequisites yet |
 | `DeckTotals::isReady()` — the readiness gate | **built**; jacking in is what will call it |
-| Synaptic Integrity as a resource | **built**, and the readiness dump is the first thing that damages it — `Character::takeDamage()`, a subtraction and a floor. Reaching zero has no consequence yet: there is no waiting screen |
+| Synaptic Integrity as a resource | **built**, and the readiness dump is the first thing that damages it. Damage resolves like any other number — origin and resource are both tags, so a resistance is a modifier; see MECHANICS.md. Reaching zero has no consequence yet: there is no waiting screen |
 | AuraOS in the Deck Jockey loadout | **done**; granted at level 1 alongside the deck |
 | The thermal rename | **done**. Accumulation itself is **specified only** — nothing runs a deck yet |
 | Burning a module out mid-run | **specified only**; the thermally weakest module is destroyed, the trace is cancelled, the player is thrown out for 25–75% of current SI and a 12% chance of a flatline taking 5–15% of maximum SI. The numbers are in `config/cyberspace.php` and nothing reads them |

@@ -656,11 +656,16 @@ class Character extends Model
     /**
      * Take points off a resource, flooring at zero.
      *
-     * THE FIRST THING IN THE GAME THAT HURTS ANYBODY, and deliberately the
-     * dullest possible version of it: a subtraction and a floor. What the
-     * damage MEANS — whether it flatlines, whether it ends a run, what the
-     * player is told — belongs to whatever caused it, and nothing about that
-     * is decided here.
+     * THE DULL HALF, deliberately: a subtraction and a floor, knowing nothing
+     * about why. **`App\Stats\DamageResolver` is the door**, because how much
+     * a hit is worth against this particular character is a resolved number —
+     * resistances, vulnerabilities and immunities are modifiers like anything
+     * else. Call this directly only where there is genuinely nothing to
+     * resolve, and expect to be wrong about that.
+     *
+     * What the damage MEANS — whether it flatlines, whether it ends a run,
+     * what the player is told — belongs to whatever caused it, and nothing
+     * about that is decided here.
      *
      * Zero is a real place to be and this will take somebody there. It does
      * not act on it: reaching zero is a defeat, defeats have consequences that
