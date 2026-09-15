@@ -90,6 +90,11 @@ final class MapView
         // the same.
         $newFor = (int) Config::get('cyberspace.new_for_minutes', 10);
 
+        // How far they can see from where they stand. The drawn map is wider
+        // than this on purpose — what is outside it is memory rather than
+        // sight, and the cells say so by stepping back.
+        $sight = $grid->viewRange();
+
         $terrain = new Terrain($character);
         $rows = [];
 
@@ -122,6 +127,11 @@ final class MapView
                     grade: ($address = $contacts->get($key)?->address) === null
                         ? null
                         : ($scans[$address] ?? null),
+                    // Nothing is lit for somebody who is not in there: a
+                    // jacked-out player is reading the whole map from memory.
+                    inView: $standing !== null
+                        && $onGrid
+                        && $standing->distanceTo($position) <= $sight,
                 );
             }
 

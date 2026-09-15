@@ -1184,7 +1184,7 @@ carries the detail.
   cells around you are buttons and everything else is a reading; arrows and the
   numpad reach the same eight, because a diagonal is one step here.
 - **A cell says up to six things at once, and each has its OWN channel** — which
-  is the only way they stay legible at 30px. **Ground** is terrain: fog sits
+  is the only way they stay legible in one small square. **Ground** is terrain: fog sits
   below the board with a weave and no hairline, swept ground sits on it with
   one, which is a layer difference rather than a shade. **The glyph** is the
   kind of machine, drawn from the set already proved against the font stack.
@@ -1193,6 +1193,19 @@ carries the detail.
   the kit's one mark for *yours*. **A bar at the foot** is the scanned grade.
   **Colour says type and nothing else** — steel, cyan, jade on the GLYPH, never
   a fill, because four hundred tinted tiles is a quilt.
+- **The window is capped at what anybody could ever see.** `map_range` is 8
+  because `view_range` is 3 and the modifiers meant to widen it are worth about
+  +5 — drawing memory further out than a character can ever refresh it from
+  where they stand is drawing ground they cannot do anything about. **A cell is
+  60px**, which is what carrying a glyph, a grade bar and two corner ticks
+  costs; the map scrolls and centres on the player, so a phone shows five
+  columns of a seventeen-wide window and that is the documented trade — fewer
+  cells at once is a fair price, a control too small to hit is not.
+- **What is outside the current view range is dimmed**, not hidden. The map is
+  memory and the sweep lights a square of it: `cell--distant` steps the rest
+  back to .8 so the square being looked at is obvious while everything
+  remembered stays readable. Nothing is lit at all while jacked out, because
+  somebody outside cyberspace is reading the whole thing from memory.
 - **An ordinary machine has no hairline.** The fill lifts it off the ground and
   the glyph says what it is, which leaves the border free to mean something: a
   hairline is only ever the portal, a machine that has just appeared, one that

@@ -84,7 +84,7 @@ return [
     ],
 
     /*
-    | How much of the map is DRAWN, as a Chebyshev radius. 10 is a 21 x 21
+    | How much of the map is DRAWN, as a Chebyshev radius. 8 is a 17 x 17
     | window.
     |
     | Not the same thing as `view_range`, and the difference is the whole point
@@ -97,7 +97,17 @@ return [
     | so it is a legibility number rather than a performance one. The map
     | scrolls to fit, and the player is kept in the centre of it.
     */
-    'map_range' => 10,
+    /*
+    | CAPPED AT WHAT A CHARACTER COULD EVER SEE. `view_range` is 3 and the
+    | modifiers that will widen it are worth about +5 between them, so eight is
+    | the furthest anybody will ever see in one look — and drawing memory
+    | further out than that is drawing ground the player has no way to refresh
+    | from where they stand.
+    |
+    | Raise it if sight gets cheaper. The two numbers are related but not the
+    | same one: this is how much is DRAWN and view_range is how much is LIT.
+    */
+    'map_range' => 8,
 
     /*
     | How long a newly discovered machine stays marked as new, in minutes.

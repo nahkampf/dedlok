@@ -68,6 +68,15 @@ final readonly class MapCell
          * knows how to draw it already.
          */
         public bool $isRebooting = false,
+        /**
+         * Is it inside what they can see from where they are standing?
+         *
+         * The map draws memory and the sweep lights a square of it; this is
+         * which square. False for everything when they are jacked out, because
+         * somebody outside cyberspace is looking at the whole thing from
+         * memory and none of it is lit.
+         */
+        public bool $inView = false,
     ) {}
 
     /**
@@ -108,6 +117,7 @@ final readonly class MapCell
         return implode(' ', array_filter([
             $this->modifier(),
             $this->kind(),
+            $this->inView ? null : 'cell--distant',
             $this->isNew ? 'cell--new' : null,
             $this->hasBackdoor ? 'cell--backdoored' : null,
             $this->isRebooting ? 'cell--rebooting' : null,

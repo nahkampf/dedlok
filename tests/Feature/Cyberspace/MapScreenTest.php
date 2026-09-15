@@ -386,4 +386,67 @@ final class MapScreenTest extends TestCase
         $this->assertTrue($centre->isYou);
         $this->assertSame('cell--you', $centre->modifier(), 'you outrank what you are standing on');
     }
+    // ---- what is lit, and what is only remembered ---------------------------
+
+    /**
+     * THE MAP DRAWS MEMORY AND THE SWEEP LIGHTS PART OF IT. Everything outside
+     * what they can see from where they stand steps back, so the square they
+     * are actually looking at is obvious without anything being hidden.
+     */
+    public function test_ground_outside_the_view_range_is_dimmed(): void
+    {
+        Config::set('cyberspace.view_range', 2);
+        Config::set('cyberspace.map_range', 5);
+
+        $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
+
+        $map = MapView::for($this->character->fresh());
+
+        $inView = [];
+        $distant = [];
+
+        foreach ($map->rows as $row) {
+            foreach ($row as $cell) {
+                $cell->inView ? $inView[] = $cell : $distant[] = $cell;
+            }
+        }
+
+        // A view range of 2 is a 5x5 square: twenty-five cells lit out of the
+        // eleven-by-eleven drawn.
+        $this->assertCount(25, $inView);
+        $this->assertNotEmpty($distant);
+
+        foreach ($distant as $cell) {
+            $this->assertStringContainsString('cell--distant', $cell->classes());
+        }
+
+        foreach ($inView as $cell) {
+            $this->assertStringNotContainsString('cell--distant', $cell->classes());
+        }
+    }
+
+    /** Nothing is lit for somebody reading the map from outside cyberspace. */
+    public function test_nothing_is_lit_while_jacked_out(): void
+    {
+        $map = MapView::for($this->character->fresh());
+
+        foreach ($map->rows as $row) {
+            foreach ($row as $cell) {
+                $this->assertFalse($cell->inView);
+            }
+        }
+    }
+
+    /** The drawn window is capped at the furthest anybody will ever see. */
+    public function test_the_window_is_the_configured_map_range(): void
+    {
+        Config::set('cyberspace.map_range', 8);
+
+        $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
+
+        $map = MapView::for($this->character->fresh());
+
+        $this->assertSame(17, $map->span());
+        $this->assertCount(17, $map->rows);
+    }
 }

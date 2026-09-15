@@ -2476,8 +2476,11 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
    The map is a D-pad without one being drawn.
    ========================================================================== */
 .gridmap {
-  --cell: 30px;
-  --span: 21;
+  /* Big enough to read a glyph, a grade bar and two corner ticks at once —
+     which is what a cell has to carry now. Half this was legible only because
+     it was carrying half as much. */
+  --cell: 60px;
+  --span: 17;
   overflow: auto;
   background: var(--bg-1);
   border: var(--hair) solid var(--line-1);
@@ -2513,6 +2516,18 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
   padding: 0;
   position: relative;
 }
+
+/* OUT OF SIGHT FROM WHERE THEY ARE STANDING.
+   The map is memory, and most of what is on it is not being looked at right
+   now — so the part that IS gets to be at full strength and everything else
+   steps back. The whole cell dims rather than its glyph alone, because the
+   fill is half of what a cell says and a bright tile with a faint mark on it
+   reads as a mark that has gone wrong.
+
+   A step rather than a fade: .8 is enough that the lit square is obvious and
+   not so much that the memory around it stops being readable. Nothing is
+   hidden — a player can still read what they remember out there. */
+.cell--distant { opacity: .8; }
 
 /* Beyond the edge of the world. THE GRID DOES NOT WRAP, so this is a hole in
    the drawing rather than a place — no border, no fill, nothing to read. */
@@ -2730,8 +2745,10 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
 
 /* A real target for a thumb. The map scrolls, so this costs visible cells
    rather than legibility — the right way round. */
+/* The touch size used to be an enlargement. It is a floor now that the cell is
+   60px, and kept for the day somebody tunes that number down. */
 @media (pointer: coarse) {
-  .gridmap { --cell: 44px; }
+  .gridmap { --cell: max(44px, 60px); }
 }
 
 /* ============================================================================
