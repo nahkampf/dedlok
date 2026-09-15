@@ -1310,22 +1310,61 @@ public/assets/
         </div>
       </div>
 
-      <div class="demo__hd"><h3 class="h3">Legend</h3><p>The swatches are real <code class="inl">.cell</code> elements wearing the modifiers they explain, so a legend cannot drift from the map beside it.</p></div>
-      <template class="demo-src">
-        <div class="gridmap__legend">
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--you">&#9679;</span><span class="micro">You are here</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--silo">&#9636;</span><span class="micro">Data silo</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--compute">&#9004;</span><span class="micro">Compute node</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--relay">&#9776;</span><span class="micro">Network relay</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--portal">&#9677;</span><span class="micro">Portal</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--empty"></span><span class="micro">Empty space</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--unswept"></span><span class="micro">Unswept</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--silo cell--new">&#9636;</span><span class="micro">New here</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--compute cell--backdoored">&#9004;</span><span class="micro">Your backdoor</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--relay cell--rebooting">&#9776;</span><span class="micro">Rebooting</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--empty cell--marked"></span><span class="micro">Saved position</span></span>
-          <span class="gridmap__key"><span class="gridmap__swatch cell cell--system cell--silo" style="--g:.55">&#9636;</span><span class="micro">Grade, once scanned</span></span>
+      <div class="demo__hd"><h3 class="h3">The key, beside the map</h3><p>The map scrolls and the key is reference material, so the key gets a column rather than a strip of dead space under a short map. <strong>It opens the way the rail does</strong> — pointing at it where a pointer exists, the toggle everywhere, focus-within for a keyboard — and it <strong>overlays</strong> the map's right edge instead of pushing it narrower, because the map re-centres on scroll and a column that resized it on hover would move the ground under the cursor. Below 720px there is no room beside a map worth looking at, so the key drops underneath and stays closed: a legend is something you consult, not something you watch.</p></div>
+      <div class="demo">
+        <div class="gridmap-frame">
+          <div class="gridmap" style="--span:5;max-height:220px">
+            <div class="gridmap__grid">
+              <div class="cell cell--system cell--silo">&#9636;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system cell--silo">&#9636;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system cell--silo">&#9636;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system cell--silo">&#9636;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--system cell--silo">&#9636;</div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+              <div class="cell cell--unswept"></div>
+            </div>
+          </div>
+
+          <div class="maplegend" data-legend>
+            <button type="button" class="maplegend__toggle" data-legend-toggle aria-expanded="false">
+              <span class="maplegend__icon">&#9776;</span>
+              <span class="maplegend__label">Key</span>
+            </button>
+            <div class="maplegend__keys">
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--you">&#9679;</span><span class="maplegend__label">You are here</span></span>
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--system cell--silo">&#9636;</span><span class="maplegend__label">Data silo</span></span>
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--system cell--compute">&#9004;</span><span class="maplegend__label">Compute node</span></span>
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--system cell--relay">&#9776;</span><span class="maplegend__label">Network relay</span></span>
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--portal">&#9677;</span><span class="maplegend__label">Portal</span></span>
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--empty"></span><span class="maplegend__label">Empty space</span></span>
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--unswept"></span><span class="maplegend__label">Unswept</span></span>
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--system cell--silo cell--new">&#9636;</span><span class="maplegend__label">New here</span></span>
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--system cell--compute cell--backdoored">&#9004;</span><span class="maplegend__label">Your backdoor</span></span>
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--system cell--relay cell--rebooting">&#9776;</span><span class="maplegend__label">Rebooting</span></span>
+              <span class="maplegend__key"><span class="gridmap__swatch cell cell--empty cell--marked"></span><span class="maplegend__label">Saved position</span></span>
+            </div>
+          </div>
         </div>
+      </div>
+
       </template>
     </div>
   </section>

@@ -574,5 +574,21 @@
   modifierRows();
   document.addEventListener("DOMContentLoaded", () => modifierRows());
 
+  /* --- The map's key -----------------------------------------------------
+     The same three ways in as the rail: hover where there is a pointer, focus
+     for a keyboard, and this button everywhere — which is the only one a phone
+     has. Closing takes the focus out with it, or the key would stay open on
+     :focus-within against the very press that shut it.                      */
+  on("click", "[data-legend-toggle]", (e, btn) => {
+    const legend = btn.closest(".maplegend");
+    if (!legend) return;
+
+    const open = !legend.hasAttribute("data-expanded");
+    legend.toggleAttribute("data-expanded", open);
+    btn.setAttribute("aria-expanded", String(open));
+
+    if (!open && legend.contains(document.activeElement)) document.activeElement.blur();
+  });
+
   window.UI = { toast, meter, log, type, esc, captcha, centreMap, modifierRows };
 })();

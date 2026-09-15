@@ -1202,6 +1202,17 @@ carries the detail.
   lit square is 5 x 5, which is exactly what a 360px phone shows — so the thing
   a player is actually looking at fits a screen, and the memory around it is
   what they scroll for.
+- **The key sits beside the map, as its own collapsible rail.** `.gridmap-frame`
+  reserves the collapsed width and `.maplegend` OVERLAYS the map's right edge
+  when it opens — the same discipline the dock follows, and for a sharper
+  reason: the map re-centres on scroll, so a column that pushed it narrower on
+  hover would move the ground under the cursor. Three ways in, all three the
+  dock's: hover where a pointer exists, the toggle everywhere, focus-within for
+  a keyboard. **Below 720px it drops under the map and stays closed** — a
+  legend is something you consult, not something you watch — and opens into the
+  wrapping row it always was. The frame declares `--key-w`, because a custom
+  property set on the child cannot be read by the parent that has to reserve
+  the room.
 - **What is outside the current view range is dimmed**, not hidden. The map is
   memory and the sweep lights a square of it: `cell--distant` steps the rest
   back to .8 so the square being looked at is obvious while everything

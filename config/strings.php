@@ -384,6 +384,7 @@ return [
             'jack_out' => 'Jack out',
 
             'here' => 'You are here',
+            'legend' => 'Key',
             'marked' => 'Saved position',
             'backdoored' => 'Your backdoor',
             'rebooting' => 'Rebooting',

@@ -2735,6 +2735,134 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
   clip-path: polygon(100% 0, 0 0, 100% 100%);
 }
 
+/* ── The map and its key, side by side ────────────────────────────────────
+   The map scrolls and the key is reference material, so the key gets a column
+   of its own rather than a strip of dead space under a short map.
+
+   THE KEY OVERLAYS WHEN IT OPENS, exactly as the rail does and for the same
+   reason: the map is a scrolling window that re-centres on the player, and a
+   column that pushed it narrower on hover would move the ground under the
+   cursor. The frame reserves the collapsed width and the key grows over the
+   map's right edge. */
+.gridmap-frame {
+  /* Declared HERE and not on the key, because the frame is what reserves the
+     room: a custom property set on a child cannot be read by its parent, and
+     `padding-right: var(--key-w)` with nothing to resolve is a frame that
+     reserves nothing and a key that sits on top of the map's right-hand
+     column. The key inherits both. */
+  --key-w: 46px;
+  --key-w-open: min(240px, 70vw);
+  position: relative;
+  padding-right: var(--key-w);
+}
+
+/* A column of swatches that opens to swatches and words. Three ways in, the
+   same three the dock has: pointing at it where a pointer exists, the toggle
+   everywhere (which is the only way in on a phone), and focus-within, which is
+   what a keyboard needs. */
+.maplegend {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--key-w);
+  max-height: 100%;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  background: var(--bg-1);
+  border: var(--hair) solid var(--line-1);
+  transition: width var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
+}
+
+.maplegend:is(:focus-within, [data-expanded]) {
+  width: var(--key-w-open);
+  box-shadow: var(--shadow-2);
+}
+
+/* Only where a pointer can hover: a touch device keeps :hover stuck on the
+   last thing tapped, which would leave the key jammed open over the map. */
+@media (hover: hover) {
+  .maplegend:hover { width: var(--key-w-open); box-shadow: var(--shadow-2); }
+  .maplegend:hover .maplegend__label { opacity: 1; }
+}
+
+.maplegend__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-2);
+  background: none;
+  border: 0;
+  border-bottom: var(--hair) solid var(--line-0);
+  color: var(--ink-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.maplegend__toggle:hover { color: var(--ink-0); }
+
+.maplegend__icon {
+  flex: none;
+  width: 26px;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.maplegend__keys {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-2);
+}
+
+.maplegend__key {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+/* The words are what the width buys. They fade rather than appear, because the
+   column is already sliding and two motions that disagree read as a glitch. */
+.maplegend__label {
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+  color: var(--ink-1);
+  opacity: 0;
+  transition: opacity var(--t-base) var(--ease);
+}
+
+.maplegend:is(:focus-within, [data-expanded]) .maplegend__label { opacity: 1; }
+
+/* ON A NARROW SCREEN THERE IS NO ROOM BESIDE THE MAP, so the key goes back
+   under it — and stays collapsed, because a legend is something you consult
+   rather than something you watch. Closed it costs one line; open it is the
+   wrapping row it always was.
+
+   The breakpoint is where a 46px column stops being affordable next to a map
+   worth looking at, not a device. */
+@media (max-width: 719px) {
+  .gridmap-frame { padding-right: 0; }
+
+  .maplegend {
+    position: static;
+    width: auto;
+    max-height: none;
+    margin-top: var(--s-3);
+  }
+
+  .maplegend__keys { display: none; }
+
+  .maplegend[data-expanded] .maplegend__keys {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-4);
+  }
+
+  .maplegend__label { opacity: 1; }
+}
+
 .gridmap__legend {
   display: flex;
   flex-wrap: wrap;

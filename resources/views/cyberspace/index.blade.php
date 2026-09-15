@@ -116,6 +116,7 @@
          with a different target, so 400 cells do not need 400 forms. --}}
     <form method="POST" action="{{ route('cyberspace.step') }}" style="margin-top:var(--s-4)">
         @csrf
+    <div class="gridmap-frame">
         <div class="gridmap" style="--span:{{ $map->span() }}">
             <div class="gridmap__grid">
                 @foreach ($map->rows as $row)
@@ -156,46 +157,56 @@
                 @endforeach
             </div>
         </div>
+
+        {{-- The key sits beside the map rather than under it: the map scrolls
+             and this is reference material, so it gets a column instead of a
+             strip of dead space. It overlays the map's right edge when it
+             opens, the way the rail overlays the page — a column that pushed
+             the map narrower on hover would move the ground under the cursor,
+             and the map re-centres on scroll. --}}
+        <div class="maplegend" data-legend>
+        {{-- The way in on a phone, and the way to pin it open on a desktop.
+             Hovering opens it where a pointer exists; this is everywhere. --}}
+        <button type="button" class="maplegend__toggle" data-legend-toggle aria-expanded="false">
+            <span class="maplegend__icon" aria-hidden="true">&#9776;</span>
+            <span class="maplegend__label">{{ Text::get('cyberspace.map.legend') }}</span>
+        </button>
+
+        <div class="maplegend__keys">
+            {{-- The swatches are real .cell elements wearing the classes they
+                 explain, so the key cannot drift from the map beside it. Half
+                 of them carry a glyph for the same reason: the shape IS the
+                 entry. --}}
+            @foreach ([
+                ['cell--you', Text::get('cyberspace.map.here'), '●'],
+                ['cell--system cell--silo', Text::get('cyberspace.types.silo'), '▤'],
+                ['cell--system cell--compute', Text::get('cyberspace.types.compute'), '⌬'],
+                ['cell--system cell--relay', Text::get('cyberspace.types.relay'), '☰'],
+                ['cell--portal', Text::get('cyberspace.types.portal'), '◍'],
+                ['cell--empty', Text::get('cyberspace.map.empty'), ''],
+                ['cell--unswept', Text::get('cyberspace.map.unswept'), ''],
+                ['cell--system cell--silo cell--new', Text::get('cyberspace.map.new'), '▤'],
+                ['cell--system cell--compute cell--backdoored', Text::get('cyberspace.map.backdoored'), '⌬'],
+                ['cell--system cell--relay cell--rebooting', Text::get('cyberspace.map.rebooting'), '☰'],
+                ['cell--empty cell--marked', Text::get('cyberspace.map.marked'), ''],
+            ] as [$class, $label, $glyph])
+                <span class="maplegend__key">
+                    <span class="gridmap__swatch cell {{ $class }}" aria-hidden="true">{{ $glyph }}</span>
+                    <span class="maplegend__label">{{ $label }}</span>
+                </span>
+            @endforeach
+
+            <span class="maplegend__key">
+                <span class="gridmap__swatch cell cell--system cell--silo" style="--g:.55" aria-hidden="true">▤</span>
+                <span class="maplegend__label">{{ Text::get('cyberspace.map.grade_key') }}</span>
+            </span>
+        </div>
+        </div>
+    </div>
     </form>
 
     <p class="micro" style="color:var(--ink-2);margin-top:var(--s-2)">{{ Text::get('cyberspace.map.keys') }}</p>
 
-    <div class="gridmap__legend" style="margin-top:var(--s-3)">
-        {{-- The swatches are real .cell elements wearing the classes they
-             explain, so the legend cannot drift from the map beside it. Four
-             of them carry a glyph for the same reason: the shape IS the
-             legend entry. --}}
-        @foreach ([
-            ['cell--you', Text::get('cyberspace.map.here'), '●'],
-            ['cell--system cell--silo', Text::get('cyberspace.types.silo'), '▤'],
-            ['cell--system cell--compute', Text::get('cyberspace.types.compute'), '⌬'],
-            ['cell--system cell--relay', Text::get('cyberspace.types.relay'), '☰'],
-            ['cell--portal', Text::get('cyberspace.types.portal'), '◍'],
-            ['cell--empty', Text::get('cyberspace.map.empty'), ''],
-            ['cell--unswept', Text::get('cyberspace.map.unswept'), ''],
-            ['cell--system cell--silo cell--new', Text::get('cyberspace.map.new'), '▤'],
-            ['cell--system cell--compute cell--backdoored', Text::get('cyberspace.map.backdoored'), '⌬'],
-            ['cell--system cell--relay cell--rebooting', Text::get('cyberspace.map.rebooting'), '☰'],
-            ['cell--empty cell--marked', Text::get('cyberspace.map.marked'), ''],
-        ] as [$class, $label, $glyph])
-            <span class="gridmap__key">
-                <span class="gridmap__swatch cell {{ $class }}" aria-hidden="true">{{ $glyph }}</span>
-                <span class="micro">{{ $label }}</span>
-            </span>
-        @endforeach
-
-        {{-- The grade bar explains itself with a half-full one. --}}
-        <span class="gridmap__key">
-            <span class="gridmap__swatch cell cell--system cell--silo" style="--g:.55" aria-hidden="true">▤</span>
-            <span class="micro">{{ Text::get('cyberspace.map.grade_key') }}</span>
-        </span>
-    </div>
-
-    {{-- Getting somewhere without walking: an address anyone can hand you, and
-         the places you have saved. --}}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:var(--s-4);margin-top:var(--s-5)">
-        <section class="panel">
-            <div class="panel__hd"><h2>{{ Text::get('cyberspace.map.jump') }}</h2></div>
 
             <form method="POST" action="{{ route('cyberspace.jump') }}">
                 @csrf
