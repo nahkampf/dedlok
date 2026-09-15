@@ -339,8 +339,64 @@ Read it before adding an item, a skill or an effect. The short version:
 - Derived stats are never stored; resources are stored and clamp down (never
   scale) when their maximum drops.
 
-Most of that system is **specified but not built** — MECHANICS.md has a status
-table saying exactly which parts exist. Do not describe it as working.
+MECHANICS.md has a status table saying exactly which parts exist, and it is the
+thing to check before describing any of this as working. The resolver, the
+dependency graph, the character sheet and five modifier sources are built; what
+rolls a check, and most of the content that would feed one, are not.
+
+### Where a modifier comes from
+
+**`Character::modifiers()` is the whole list, and each entry is a
+`ModifierSource`.** Five of them today, and the resolver learns nothing new when
+a sixth arrives — that is what the interface is for.
+
+| Source | Is |
+| --- | --- |
+| `ArchetypePerks` | the role's live perks. Permanent by construction |
+| `RunningPrograms` | software running on the equipped deck |
+| `SkillEffects` | what KNOWING a skill grants, from `skills.modifiers` |
+| `InstalledImplants` | what is in the body, from `items.modifiers` |
+| `CharacterModifiers` | injuries and statuses, from the `character_modifiers` table |
+
+- **A thing with a row carries its modifiers ON that row.** `items.modifiers`
+  and `skills.modifiers` are JSON columns, which is why there is no
+  `config/implants.php` and no `skill_effects` table. **`config/effects.php` is
+  only for causes with no row of their own** — an injury, a status, a lingering
+  effect, things that merely happen to a person and have nothing to hang from.
+- **Definition keys in `config/effects.php` are permanent.** Rows point at them,
+  so a deleted key orphans live data. Retire one with `retired => true`.
+- **A per-instance amount is the string `':amount'`**, filled from the row's
+  `data`. One definition covers every depth of neural damage rather than one
+  definition per depth.
+- **Stacking belongs to the DEFINITION, and collapses at READ time.**
+  `App\Stats\Stacking` has four answers because the right one depends on the
+  fiction — two doses of a stimulant add up, two implants doing one job do not.
+  Never at write time: "the strongest one wins" stops being true the moment the
+  strongest expires.
+- **`App\Stats\InjuryLedger` is the only writer of an accumulating injury**, and
+  it DEEPENS one row rather than adding a second — -5 neural damage plus -3 is
+  one row at -8. That is what lets a deck freeze, an ICE flatline and a future
+  overdose write into one injury without knowing about each other, and it is
+  what makes healing one number to reduce. A row that reaches zero is deleted.
+- **Resolution can be asked AS OF a moment.** A training catch-up covering a
+  window in which a drug wore off credits the bonus only for the part that had
+  it: `TrainingDeposit` cuts the segment at every modifier change and
+  `CharacterModifiers` filters rows to that instant rather than trusting a
+  sweep to have been on time. Sources that cannot honestly look back say so —
+  nothing records when a program STOPPED.
+- **Damage is a stat too, and its base arrives with the event.** One stat per
+  resource and origin (`damage.synaptic_integrity.ice`), generated from two
+  enums by `App\Stats\DamageStats`, each tagged with BOTH axes plus `damage` —
+  so a resistance is `percentage_of_base -15` against
+  `all_of: ['damage', 'ice']`, immunity is `multiplier 0`, and a vulnerability
+  is the same sentence with a sign. Percentages sum and apply once, so two −30%
+  resistances are −40% rather than 49%. `DamageResolver` is the only door, and
+  `taken` is for saying out loud — never for deciding whether anything
+  happened, since a hit mitigated to nothing still landed.
+- **Build a `Sheet` and read it; do not call `modifiers()` per stat.** Four of
+  the five sources query — only `ArchetypePerks` reads the cached roster. A
+  sheet is bound to the context it was built in and is cheap to rebuild rather
+  than hold.
 
 ## The Laravel application
 
@@ -746,9 +802,9 @@ says which, and two tables carry what a bare `items` row cannot.
   with everything else and its card wears the tag. It used to be excluded, and
   the exclusion forced the stash to grow a panel whose only job was to be the
   route back to it — a box built to solve a problem the exclusion created.
-  `scopeLoose()` now leaves out three things that really are elsewhere: rows
-  inside a container, modules fitted into a socket, and programs that are
-  running. All three decided in one place.
+  `scopeLoose()` now leaves out four things that really are elsewhere: rows
+  inside a container, modules fitted into a socket, programs that are running,
+  and implants installed in a body. All four decided in one place.
 - **`characters.equipped_deck_id` is which deck is carried**, and NULL is the
   ordinary state. A column rather than a flag on the inventory
   row, so "only one at a time" is not a rule anybody enforces: one column holds
@@ -785,10 +841,12 @@ says which, and two tables carry what a bare `items` row cannot.
   the equipped deck genuinely reads differently from the same deck in the
   stash, and every screen picked that up at once because there is one place
   the rule lives.
-- **Readiness gates jacking in, and nothing else.** `DeckTotals::isReady()` is
-  the whole check, and `App\Cyberspace\Navigator::jackIn()` is what calls it.
-  Fitting and equipping are never refused for it — you build a deck while
-  carrying it. CYBERSPACE.md names one more caller, the start of every
+- **Readiness gates jacking in and starting a program, and nothing else.**
+  `DeckTotals::isReady()` is the whole check;
+  `App\Cyberspace\Navigator::jackIn()` and `App\Programs\ProgramRunner::start()`
+  are the two callers — a machine missing its NIC does not get to run a
+  decryption either. Fitting and equipping are never refused for it: you build
+  a deck while carrying it. CYBERSPACE.md names one more caller, the start of every
   intrusion run, which does not exist yet.
 - **The deck is locked while you are jacked in.** Fitting, taking out,
   stripping, unequipping, and destroying the deck or anything fitted in it are
@@ -815,6 +873,202 @@ says which, and two tables carry what a bare `items` row cannot.
 - **A deck that cannot power every socket it presents is intentional.** Do not
   "fix" one, and do not add a bigger supply to make one fit — over-commitment
   is the player's decision to balance, and skills are meant to cut draw.
+
+### Programs
+
+**Software is an item with a `programs` row**, exactly as deck hardware is an
+item with a `deck_modules` row. No column on `items` says which — a row
+carrying costs and a kind is what being a program means, and one place to look
+beats two that can disagree.
+
+- **Three costs, because they are paid at different times.** `storage_size` is
+  paid by OWNING the file; `qflops_cost` and `memory_cost` only while it RUNS.
+  That is the whole reason storage is a measure of its own: a deck can be full
+  without being busy and busy without being full.
+- **There is no "loaded".** A program is running or it is not.
+  `background_process` says which a program is ALLOWED to be — a decryptor
+  grinds away while its owner is signed out, an icebreaker is meaningless
+  outside a run — and the refusal for getting it wrong is
+  `ProcessRefusal::RunOnly`.
+- **Running is two columns on the inventory row** — `running_on_deck_id` and
+  `started_at`, null exactly together — and never a join table. A fitting needs
+  three references because a socket is a place; a process has none, since a
+  program runs on a deck full stop. **It also has to be on the row**:
+  `stack_key` is derived from the row on every save and the rule is that IDLE
+  copies stack while RUNNING ones do not. A flag in another table would be
+  invisible to that derivation, and two running icebreakers would silently
+  merge into one row with a quantity of two.
+- **`App\Programs\ProgramRunner` is the only writer of those two columns.**
+  Starting takes one copy off the pile and gives it a row of its own; stopping
+  puts it back and MERGES into the pile if one is there. The merge is not
+  optional — `stack_key` is unique, so a stopped row whose key matches an
+  existing pile collides with it.
+- **Always the equipped deck**, which is why `start()` takes no deck argument.
+  It follows that unequipping stops everything, and so do fitting, stripping
+  and destroying the deck: `stopAll()` is called by `DeckEquipper`,
+  `ModuleFitter` and the destroy path.
+- **`running_on_deck_id` is RESTRICT, and that was forced rather than chosen.**
+  `ON DELETE SET NULL` is refused by MySQL (error 3823) because the column
+  appears in a CHECK constraint — and it was right to refuse, since nulling the
+  deck id would leave `started_at` behind, which is the state the "both or
+  neither" check exists to forbid. CASCADE was never an option: losing a machine
+  must not delete the software that was running on it. So the destroy path stops
+  the processes first, inside the same transaction, the way a skill's book is
+  dropped before the skill.
+- **Compute and memory are measured against the deck's RESOLVED totals**, so a
+  skill that frees up compute lets a player run one more program without
+  `ProgramRunner` knowing that skills exist.
+- **The kind is asked about BY NAME and is not derived from the modifiers.**
+  Five of them — icebreaker, decryptor, evasion, analyser, daemon — because a
+  program is a gate as much as a modifier: no amount of bonuses adds up to
+  having a running icebreaker. A sixth is an enum case, a line in the CHECK, and
+  a string, the same shape `App\Decks\Hardware` has.
+- **`programs.modifiers` is nullable JSON, and null is ordinary.** A plain
+  icebreaker genuinely modifies nothing, and `[]` and "nothing" should not be
+  two ways of writing one fact. `App\Stats\Sources\RunningPrograms` reads them,
+  and **only the equipped deck's processes count** — a character may leave
+  programs running on a spare deck, and it costs that deck's budget rather than
+  changing their sheet.
+- **`ProgramEditor` is the only writer of the `programs` table**, and like
+  `HardwareEditor` it always clears the side an item stopped being. Nothing to
+  diff, unlike sockets: a process points at an INVENTORY row and never at the
+  definition, so replacing it wholesale strands nothing.
+- **`$duringRun` is the gate nothing opens yet.** A run-only program is started
+  BY the intrusion simulator and never by a player pressing a button, and the
+  simulator does not exist — so today only background programs can be started
+  at all. Jacking into cyberspace is NOT a run and must not pass `true`.
+- **Storage is stored and not enforced.** `deck_storage` is a measure and
+  `DeckRequirement` has no storage case, so owning more software than the deck
+  can hold currently costs nothing.
+- The screens: the topbar carries a COUNT and a modal (width is the constraint
+  there, see *The page frame*), the deck screen has the Running and Storage
+  tabs — storage split into two grids because a program and a file share an
+  inventory without being the same kind of thing — and `inventory.run` is one
+  route in both directions, like `deck.equip`.
+
+### Implants
+
+**An implant is an item with a body to go in.** The same shape as a module and a
+deck — a definition row, an inventory row, and one writer class — applied to a
+person.
+
+- **Five regions and eleven slots, as a fixed vocabulary and not rows.**
+  `App\Implants\BodyRegion`: head 2, body 4, arms 2, legs 2, spine 1. Every
+  character has the same body, which is the OPPOSITE of a cyberdeck — different
+  decks present different sockets, so those are rows — and it is why there is no
+  `implant_slots` table beside `deck_slots`.
+- **Capacity belongs to the REGION, and is counted rather than stored.** Four
+  body slots means four altogether, however they are filled, the same rule a
+  deck's expansion slots follow. A stored count is a number that goes wrong the
+  first time a row is deleted around it.
+- **`items.implant_region` is the only place the region is written down**, so a
+  fitted row can never disagree with its definition about where it went — the
+  lesson `deck_modules` learned by carrying the numbers and not the word.
+- **`inventory_items.installed_at` is the one column that decides whether an
+  implant is doing anything**, and `App\Implants\ImplantFitter` is its only
+  writer. An implant in the stash does nothing and one inside a memory shard
+  does nothing; neither can be installed without being taken out first.
+- **Installed is a fourth way to be elsewhere.** `InventoryItem::scopeLoose()`
+  now leaves out four things: inside a container, fitted into a socket, running
+  on a deck, and installed in a body. All four decided in one place.
+- **An implant's effects live on `items.modifiers`**, read by
+  `App\Stats\Sources\InstalledImplants` — there is no `config/implants.php`,
+  for the reason a program has no config either.
+- **Surgery is free and nothing charges for it yet.** Installing and removing
+  are both surgery in the fiction; when something costs, `ImplantFitter` is the
+  class that knows the character and the implant at once.
+- The screen is `<x-body-map>`: a Vitruvian figure with the regions boxed off
+  it, the deck board's device applied to a person.
+
+### Cyberspace
+
+**`CYBERSPACE.md` is the document** — the grid, the systems on it, the run, and
+the phase order it is built in. **Phase 3, the grid, is done**: there is a world
+and it can be walked. **Nothing can be entered**: no scan, no intrusion, no
+combat, and nothing inside a system. That is phase 4 onward, and the document
+carries the detail.
+
+- **`App\Cyberspace\Grid` is the ONE place that knows how the world is stored,
+  and nothing else may query `systems` by position.** It is a table of
+  materialised rows today and a generator with override rows at 2048 x 2048,
+  where 4.2 million systems stop being a table. The day that lands, this class
+  changes and nothing else does.
+- **A position is where something is; an address is what answers.** Eight hex
+  characters, random, unique and MEANINGLESS — a position cannot be read out of
+  one, which is what makes trading addresses harmless and expected. **Addresses
+  do not survive**: a burned system takes its address out of existence and a
+  relocated one comes back wearing a new one, so everything that stores one — a
+  bookmark, a contact — must treat "nothing there" as an ordinary answer.
+- **Discovery is two records and one act.** Terrain is *I have looked here*: a
+  bitmap, 512 bytes per 64 x 64 chunk ENTERED, never a row per position.
+  `App\Cyberspace\Chunk` is the only arithmetic that turns a position into a
+  byte and a mask, and nothing else may touch `character_terrain.bits`. Contact
+  is *what was standing here*, and it is allowed to be wrong.
+- **`system_contacts` is a SIGHTING and carries no `system_id`**, deliberately.
+  It has to outlive the machine it describes, because a machine that relocated
+  or burned is the case the record exists to be wrong about. The map a player
+  sees is their memory, not a live feed. Rewritten in place inside the swept
+  window, so a position now empty FORGETS what was there —
+  `SystemContact::standingIs()` is where "is this still true?" is asked, and
+  none of its three answers is an error.
+- **`App\Cyberspace\Navigator` is the only writer of `characters.grid_x` and
+  `grid_y`.** Having a position IS being jacked in: no session row, no flag,
+  nothing that can disagree with the coordinates. **Every arrival sweeps**, in
+  the same transaction as the move — a player who moved and did not see is a
+  player whose map went stale in front of them.
+- **Readiness gates jacking in**, through `DeckTotals::forCharacter()`, so the
+  gate and the deck screen cannot disagree about a deck. Starting a program is
+  the second caller — see *Programs* — and `ReadinessWatch` the third. The deck
+  lock that follows from being inside is under *Cyberdecks and modules*, above.
+- **A deck that stops running throws its owner out**, for 1 point of Synaptic
+  Integrity and no defeat effect. `App\Cyberspace\ReadinessWatch` is the rule
+  and it is asked in TWO places on purpose: **in place** by the screens that can
+  break a deck from inside — implants and programs, neither of which the deck
+  lock forbids — so the player is told as it happens, and by **middleware**
+  (`EnsureDeckStillRuns`) on every jacked-in request as the net under
+  everything else. The order is the one every bad ending uses: damage, then
+  consequence, then `jackOut()`. **It must never become the answer for
+  something happening during a run** — a burnout or a Surge resolves its own
+  ending where it happens.
+- **The damage it deals is RESOLVED, like every other number.**
+  `App\Stats\DamageResolver` is the door — a hit is
+  `Damage::synapticIntegrity(1, DamageOrigin::ReadinessLoss)` and what it costs
+  comes back through the resolver, so a resistance is a modifier, never code. See *Game mechanics*,
+  and MECHANICS.md's *Damage is a resolved stat*. `Character::takeDamage()` is
+  the dull half underneath it — a subtraction and a floor — and calling it
+  directly skips every rule. Reaching zero is not acted on: there is no waiting
+  screen yet.
+- **A waypoint bookmark may only be set on swept ground, and
+  `App\Cyberspace\BookmarkKeeper` is where that lives** — it is a fact about a
+  bitmap in another table, so no CHECK can reach it. Without it, coordinates
+  become tradeable and the map is solved by whoever posts a list. **A SYSTEM
+  bookmark has no such gate**, because an address carries no position: it is a
+  door rather than a map.
+- **Every machine has an owner, and `corps` arrives by migration** like the
+  archetype roster — an owner id ends up in thousands of rows, and faction
+  standing keyed by a varchar falls apart the first time somebody fixes a typo.
+  The eight hardware manufacturers in WORLDBUILDING.md are deliberately NOT
+  corps: who BUILT a thing and who RUNS it are different questions.
+- **A name is composed, never stored.** `<Type> - <corp> NNN`, out of columns
+  the row already has; `systems.name` is the AUTHORED-name override and is NULL
+  on nearly every row, and `systems.designation` is the only stored part
+  because it is the only part that is nowhere else. Renaming a corp renames
+  every live machine it runs and renames nothing a player remembers.
+  `App\Cyberspace\SystemNamer` is the one place that decision is made.
+- **Grade is 1–9 and is NOT visible from the map.** That is a rule, not an
+  omission: a grade is the number a scan exists to discover, and nothing may put
+  one into a contact or onto a cell.
+- **`GridSeeder` tops the world up TO a target**, the way `MarketSeeder` does —
+  so running it twice is not two worlds and a pass over a burned patch replaces
+  exactly what was lost. Occupancy leaves about 30% of the grid empty on
+  purpose: that reserve is what relocation and instantiation move through.
+  `cyberspace:seed` is run BY HAND and is not scheduled, unlike `market:seed`;
+  `--dry-run` decides everything and writes nothing.
+- **The map screen draws from memory and never from `systems`.** Six cell
+  states are the whole vocabulary — you, a machine you remember, the portal,
+  swept ground, unswept ground, and the void past the edge. The eight cells
+  around you are buttons and everything else is a reading; arrows and the numpad
+  reach the same eight, because a diagonal is one step here.
 
 ### Archetypes and what they hand out
 

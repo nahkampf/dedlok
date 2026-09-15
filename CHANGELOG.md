@@ -2,6 +2,48 @@
 
 ## [Unreleased]
 
+## [0.9.1] — 2026-09-15
+
+Damage becomes a mechanic rather than a subtraction, and a deck that stops
+working no longer strands the person standing inside it.
+
+### Added
+
+- **A deck that stops running throws its owner out of cyberspace**, costing 1
+  point of Synaptic Integrity and nothing else — no ICE was involved, so nothing
+  flatlines. It is checked where a deck can be broken from the inside (pulling an
+  implant, starting a program) and by middleware behind that, so you are told as
+  it happens rather than at your next click. Nothing can currently cause it,
+  which is the point of having it before something can.
+- **Damage knows what it hurts and what caused it.** A hit is resolved like any
+  other number in the game, so resistances, vulnerabilities and immunities are
+  modifiers on ordinary rows instead of code: −15% against everything ICE does,
+  −5% against physical damage, ×0 to shrug off a burnout entirely. Resistances
+  add up rather than compounding, mitigation can never heal, and a hit absorbed
+  down to nothing still counts as a hit.
+- **The Crim gains "Hard knocks"** — −5% physical damage taken, and the first
+  perk that affects a kind of damage rather than a single stat. It sat on the
+  card as a decorative −15% for months because there was nothing for it to name.
+
+### Changed
+
+- CLAUDE.md documents cyberspace, implants, programs and the modifier sources
+  again: every built system is described in the file read first.
+- The roster has never had a Netrunner or a Solo. MECHANICS.md said otherwise in
+  three places and four test comments repeated it.
+- Display-only perks are no longer used by anything that ships, and the shape is
+  deliberately kept for content that may want it.
+
+### Fixed
+
+- A perk targeting a generated stat — a skill's check, or now a damage stat —
+  was reported as targeting nothing by the check that validates perks.
+
+### Migrations
+
+- `2026_09_15_100000_the_crim_learns_to_take_a_hit`
+
+
 ## [0.9.0] — 2026-09-15
 Lots of cyberspace additions.
 
@@ -245,7 +287,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/nahkampf/dedlok/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/nahkampf/dedlok/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/nahkampf/dedlok/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/nahkampf/dedlok/compare/v0.7.1...v0.8.0

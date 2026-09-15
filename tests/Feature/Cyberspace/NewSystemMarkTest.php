@@ -15,6 +15,7 @@ use App\Support\Text;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,7 @@ use Tests\TestCase;
  */
 final class NewSystemMarkTest extends TestCase
 {
+    use CarriesAWorkingDeck;
     use RefreshDatabase;
 
     private User $user;
@@ -150,6 +152,10 @@ final class NewSystemMarkTest extends TestCase
     public function test_the_map_marks_a_new_machine_and_stops_when_it_ages(): void
     {
         System::factory()->at(8, 9)->create(['address' => 'AAAAAAAA', 'name' => 'Cold Vault']);
+        // A deck that runs, because the screen is fetched as the player: the
+        // readiness net throws anybody standing in cyberspace without one
+        // straight back out, which is what it is for.
+        $this->equipReadyDeck($this->character);
         $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
         $this->sweep();
 

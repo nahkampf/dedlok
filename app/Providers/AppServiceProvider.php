@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Stats\DamageStats;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
 use App\Stats\StatGraph;
@@ -29,7 +30,12 @@ class AppServiceProvider extends ServiceProvider
          * attribute.
          */
         $this->app->singleton(StatRegistry::class, fn (): StatRegistry => StatRegistry::fromDefinitions(
-            ((array) config('stats.stats', [])) + SkillStats::definitions()
+            ((array) config('stats.stats', []))
+            + SkillStats::definitions()
+            // One per resource and origin. Pure, so unlike the skill stats
+            // there is nothing to cache and nothing to drop when content
+            // changes — an origin is an enum case.
+            + DamageStats::definitions()
         ));
 
         $this->app->singleton(Resolver::class, fn ($app): Resolver => new Resolver($app->make(StatRegistry::class)));

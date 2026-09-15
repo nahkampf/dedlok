@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Cyberspace\ReadinessWatch;
 use App\Decks\FittingRefusal;
 use App\Decks\ModuleFitter;
 use App\Inventory\ItemPlacer;
@@ -213,10 +214,21 @@ class InventoryController extends Controller
             return back()->with('error', $result->refusal->message());
         }
 
-        return back()->with('status', Text::get(
+        $status = back()->with('status', Text::get(
             $result->process !== null ? 'programs.started' : 'programs.stopped',
             ['program' => $name],
         ));
+
+        /*
+         * A program's modifiers can reach the deck it runs on, so starting or
+         * stopping one can be what takes a jacked-in player's machine below
+         * what it needs. Asked here rather than left to the middleware so the
+         * player is told in the same breath as the thing they asked for — two
+         * flashes, because both are true and neither replaces the other.
+         */
+        $ejection = ReadinessWatch::fromConfig()->check($character);
+
+        return $ejection === null ? $status : $status->with('error', $ejection->message());
     }
 
     private function character(Request $request): Character

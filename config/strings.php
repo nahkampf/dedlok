@@ -261,6 +261,20 @@ return [
         | none of them says "jack in" or "jack out" about signing into the
         | game, which is auth.login / auth.logout and a different act.
         */
+        /*
+        | Thrown out because the deck stopped running, which is the one way of
+        | leaving cyberspace the player did not ask for.
+        |
+        | It says WHY before it says what it cost: the damage is the smaller
+        | half of the news, and a player who reads only the first clause has
+        | still been told the thing they have to act on.
+        */
+        'dumped' => [
+            'zero' => 'Your deck stopped running. You are out of cyberspace.',
+            'one' => 'Your deck stopped running and dumped you out of cyberspace. :count point of Synaptic Integrity.',
+            'many' => 'Your deck stopped running and dumped you out of cyberspace. :count points of Synaptic Integrity.',
+        ],
+
         'travel' => [
             'no_deck' => 'You are carrying no deck. There is nothing to jack in with.',
             'deck_not_ready' => 'That deck will not run. It is short of what it needs.',
@@ -375,6 +389,30 @@ return [
                 'one' => 'Something you remembered is no longer there.',
                 'many' => ':count things you remembered are no longer there.',
             ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Damage
+    |--------------------------------------------------------------------------
+    |
+    | What hurt somebody. One line per App\Stats\DamageOrigin, and they are
+    | here rather than on a row because an origin is a fixed vocabulary in the
+    | code, like a body region — there is nothing in the database that could
+    | carry the word.
+    |
+    | Nothing shows these yet. They exist because the first thing that explains
+    | a hit to a player — a combat log, a breakdown on the sheet — will need to
+    | name the cause, and a resolver step that says `readiness_loss` at
+    | somebody is not a sentence.
+    |
+    */
+    'damage' => [
+        'origins' => [
+            'readiness_loss' => 'Deck failure',
+            'burnout' => 'Burnout',
+            'ice' => 'ICE',
         ],
     ],
 
@@ -558,6 +596,15 @@ return [
             'motor' => 'Motor',
             'senses' => 'Senses',
             'muscle' => 'Muscle',
+
+            // Tag sets, named as a whole — see App\Stats\Target::nameKey().
+            // The key is the tags in alphabetical order, because a set has no
+            // order of its own, and the name is what a person would say: the
+            // pair damage+hitpoints is called physical damage, never "damage
+            // hitpoints".
+            'damage' => 'damage taken',
+            'damage+hitpoints' => 'physical damage taken',
+            'damage+synaptic_integrity' => 'neural damage taken',
         ],
     ],
 

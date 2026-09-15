@@ -78,4 +78,29 @@ final readonly class Target
     {
         return $this->id ?? implode('+', $this->allOf);
     }
+
+    /**
+     * The key a player-facing NAME for this target is looked up under.
+     *
+     * Sorted, unlike describe(), because a tag set is a set: a perk written
+     * `['hitpoints', 'damage']` and one written `['damage', 'hitpoints']` mean
+     * the same thing and must not have to be named twice. describe() keeps the
+     * author's order because it exists to be read in a breakdown, where what
+     * was written is the useful thing to see.
+     *
+     * A TAG SET IS NAMED AS A WHOLE and never assembled from its parts:
+     * "damage" and "hitpoints" do not compose into English, and the pair is
+     * called physical damage by people rather than "damage hitpoints".
+     */
+    public function nameKey(): string
+    {
+        if ($this->id !== null) {
+            return $this->id;
+        }
+
+        $tags = $this->allOf;
+        sort($tags);
+
+        return implode('+', $tags);
+    }
 }

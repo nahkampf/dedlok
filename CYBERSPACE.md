@@ -27,7 +27,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Jacking in and out | **built**; `App\Cyberspace\Navigator`, gated on `DeckTotals::isReady()` |
 | Stepping and jumping to an address | **built**; every arrival sweeps |
 | The deck lock while jacked in | **built**; `Character::isLockedInCyberspace()` is the question, and the three writers all ask it |
-| Losing readiness while jacked in | **specified only**; nothing watches for it and nothing damages Synaptic Integrity. TODO.md carries it, including the open question of what triggers the check |
+| Losing readiness while jacked in | **built**; `App\Cyberspace\ReadinessWatch` ejects and takes 1 SI, asked in place by the screens that can cause it and by middleware on every jacked-in request. An idle player stays inside until they next click — there is no scheduled sweep |
 | Bookmarks — waypoints and system bookmarks | **built**; one table, two kinds, and a waypoint may only be set on swept ground |
 | Recall — travelling to a bookmark | **built**, and free: walking is what buys new ground |
 | The map screen | **built**; `/cyberspace`, drawn from memory and never from `systems` |
@@ -40,7 +40,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Network Topology, System Profiling, Advanced System Profiling | **built** as skill rows; nothing reads them |
 | Encryption skills — Cinder, Halcyon-3, BLACKGLASS, Ouroboros | **built** as skill rows with books; placeholder descriptions, no prerequisites yet |
 | `DeckTotals::isReady()` — the readiness gate | **built**; jacking in is what will call it |
-| Synaptic Integrity as a resource | **built**; nothing damages it |
+| Synaptic Integrity as a resource | **built**, and the readiness dump is the first thing that damages it. Damage resolves like any other number — origin and resource are both tags, so a resistance is a modifier; see MECHANICS.md. Reaching zero has no consequence yet: there is no waiting screen |
 | AuraOS in the Deck Jockey loadout | **done**; granted at level 1 alongside the deck |
 | The thermal rename | **done**. Accumulation itself is **specified only** — nothing runs a deck yet |
 | Burning a module out mid-run | **specified only**; the thermally weakest module is destroyed, the trace is cancelled, the player is thrown out for 25–75% of current SI and a 12% chance of a flatline taking 5–15% of maximum SI. The numbers are in `config/cyberspace.php` and nothing reads them |
@@ -501,6 +501,22 @@ cyberspace should never be free.
 That damage carries **no defeat effect**. No ICE was involved, so nothing
 flatlines, surges or erases — at worst it puts the character on the waiting
 screen like any other trip to zero.
+
+**`App\Cyberspace\ReadinessWatch` is where this lives, and it is asked in two
+places for two different reasons.** The screens that can break a deck from
+inside — installing or pulling an implant, starting or stopping a program, none
+of which the deck lock forbids — ask it themselves, so the player is told at the
+moment it happens and in the same breath as what they asked for. Middleware asks
+it on every request from somebody who is jacked in, as the net under everything
+else: a modifier that expired on its own, a console command, anything that has
+not learned to ask. One rule, two alarms.
+
+**What the net cannot do is wake somebody who is not clicking.** A player who
+walks away stays in cyberspace on a dead deck until their next request. Closing
+that would take a scheduled sweep, and nothing yet justifies one — but it is
+also why the net is not the only caller, and why anything happening *during* a
+run must resolve its own ending where it happens rather than leaving it to the
+next click.
 
 ### The deck is locked while you are jacked in
 
@@ -1029,9 +1045,10 @@ All of it. In the order it should be built:
    Bookmarks are built too, both kinds, along with recalling one, and the map
    screen that draws all of it. Systems have owners, drawn from the corp roster
    in WORLDBUILDING.md. The deck lock is built as well. **Phase 3 is done.**
-   What is carried forward is one thing that was never phase 3's: losing
-   readiness while jacked in, which nothing can currently cause. It is in
-   TODO.md with the trigger question it is waiting on.
+   Losing readiness while jacked in — carried forward, since it was never
+   phase 3's — is built too: `ReadinessWatch`, asked both where a deck can be
+   broken and by middleware behind it. Nothing can currently cause it, because
+   no modifier in the game lowers a deck measure.
 4. **Systems and scanning.** Grades, types, owners, node inventories, the probe,
    and the scan file. Still no combat.
 
@@ -1043,7 +1060,7 @@ All of it. In the order it should be built:
    scan is only ever turns 1–5 of a run, the question never arises and the gate
    stays where it is. Answer it before the probe is written, not after.
 5. **The intrusion.** The simulator, the log, extraction, the defeat tags.
-   Solo only.
+   Single-player only — cooperative runs are phase 7.
 6. **Consequences.** Trace, heat, backdoors and routing, burn, lockdown,
    relocation, housekeeping.
 7. **The rest.** Cooperative runs, subnets, player-owned nodes, event systems,

@@ -44,12 +44,13 @@ final class ProgramRunner
     /**
      * Start a program on the character's equipped deck.
      *
-     * @param  bool  $duringRun  whether a cyberspace run is in progress. Run-only
+     * @param  bool  $duringRun  whether an INTRUSION RUN is in progress. Run-only
      *                           programs are started BY the run and never by a
      *                           player pressing a button, so this defaults to
-     *                           false and the simulator passes true. Jacking in
-     *                           is not built; when it is, it is the only caller
-     *                           that may pass true.
+     *                           false and the simulator passes true. The
+     *                           simulator is the only caller that ever may.
+     *                           Jacking into cyberspace is not a run — that is
+     *                           built now, and it does not pass true.
      */
     public function start(Character $character, InventoryItem $row, bool $duringRun = false): ProcessResult
     {

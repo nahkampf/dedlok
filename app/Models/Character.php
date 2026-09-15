@@ -497,20 +497,22 @@ class Character extends Model
     /**
      * Every modifier currently acting on this character.
      *
-     * Three sources: the archetype's live perks, the software running on the
-     * equipped deck, and whatever the character is carrying in their own right
-     * — injuries and statuses, out of `character_modifiers`. The first two are
-     * DERIVED from something else the character has and are recomputed on every
-     * read; the third is the one that had to be stored, because nothing else
-     * implies it.
+     * Five sources: the archetype's live perks, the software running on the
+     * equipped deck, what their skills grant them for being known, what is
+     * installed in their body, and whatever they are carrying in their own
+     * right — injuries and statuses, out of `character_modifiers`. The first
+     * four are DERIVED from something else the character has and are recomputed
+     * on every read; the last is the one that had to be stored, because nothing
+     * else implies it.
      *
-     * Implants and drugs join as they are built, each as its own
-     * ModifierSource — the resolver learns nothing new when they do, which is
-     * the whole point of the interface.
+     * Drugs join as they are built, and so does the fitted hardware MECHANICS
+     * names, each as its own ModifierSource — the resolver learns nothing new
+     * when they do, which is the whole point of the interface.
      *
-     * Two of the three query, so this is not free. A Sheet is bound to the
-     * context it was built in and is cheap to rebuild rather than held, so
-     * build one and read it rather than calling this per stat.
+     * Four of the five query, so this is not free — only ArchetypePerks reads
+     * the cached roster. A Sheet is bound to the context it was built in and is
+     * cheap to rebuild rather than held, so build one and read it rather than
+     * calling this per stat.
      *
      * Order does not matter. The resolver sorts modifiers into layers by op
      * and sums within each, so two sources cannot fight over which went first.
@@ -649,6 +651,52 @@ class Character extends Model
         }
 
         return max(0.0, min(1.0, (int) $this->getAttribute($resource) / $max));
+    }
+
+    /**
+     * Take points off a resource, flooring at zero.
+     *
+     * THE DULL HALF, deliberately: a subtraction and a floor, knowing nothing
+     * about why. **`App\Stats\DamageResolver` is the door**, because how much
+     * a hit is worth against this particular character is a resolved number —
+     * resistances, vulnerabilities and immunities are modifiers like anything
+     * else. Call this directly only where there is genuinely nothing to
+     * resolve, and expect to be wrong about that.
+     *
+     * What the damage MEANS — whether it flatlines, whether it ends a run,
+     * what the player is told — belongs to whatever caused it, and nothing
+     * about that is decided here.
+     *
+     * Zero is a real place to be and this will take somebody there. It does
+     * not act on it: reaching zero is a defeat, defeats have consequences that
+     * depend on their cause, and there is no waiting screen to put anybody on
+     * yet.
+     *
+     * Returns the points actually taken, which is not always what was asked
+     * for — a character on 1 loses 1 to a hit of 5.
+     */
+    public function takeDamage(string $resource, int $amount): int
+    {
+        if (! array_key_exists($resource, self::RESOURCES)) {
+            throw new \InvalidArgumentException(
+                "[{$resource}] is not a resource. Known: ".implode(', ', array_keys(self::RESOURCES)).'.'
+            );
+        }
+
+        if ($amount < 0) {
+            throw new \InvalidArgumentException('Damage is never negative. Healing is its own act.');
+        }
+
+        $current = (int) $this->getAttribute($resource);
+        $taken = min($current, $amount);
+
+        if ($taken === 0) {
+            return 0;
+        }
+
+        $this->forceFill([$resource => $current - $taken])->save();
+
+        return $taken;
     }
 
     /**

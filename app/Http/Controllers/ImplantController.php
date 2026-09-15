@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Cyberspace\ReadinessWatch;
 use App\Implants\ImplantFitter;
 use App\Models\Character;
 use App\Models\InventoryItem;
@@ -47,9 +48,9 @@ class ImplantController extends Controller
         $result = $fitter->install($character, $entry);
 
         return $result->succeeded()
-            ? back()->with('status', Text::get('implants.installed', [
+            ? $this->watched($character, back()->with('status', Text::get('implants.installed', [
                 'implant' => $result->implant->item?->displayName() ?? '',
-            ]))
+            ])))
             : back()->with('error', $result->refusal->message());
     }
 
@@ -59,10 +60,24 @@ class ImplantController extends Controller
         $result = $fitter->remove($character, $entry);
 
         return $result->succeeded()
-            ? back()->with('status', Text::get('implants.removed', [
+            ? $this->watched($character, back()->with('status', Text::get('implants.removed', [
                 'implant' => $result->implant->item?->displayName() ?? '',
-            ]))
+            ])))
             : back()->with('error', $result->refusal->message());
+    }
+
+    /**
+     * Surgery is not refused while jacked in — the deck lock is about the
+     * deck — and an implant's modifiers can reach a deck measure. So pulling
+     * one can be the thing that stops the machine somebody is standing in, and
+     * they are told here rather than at their next click: two flashes, because
+     * the implant did come out and the deck did stop.
+     */
+    private function watched(Character $character, RedirectResponse $response): RedirectResponse
+    {
+        $ejection = ReadinessWatch::fromConfig()->check($character);
+
+        return $ejection === null ? $response : $response->with('error', $ejection->message());
     }
 
     private function character(Request $request): Character
