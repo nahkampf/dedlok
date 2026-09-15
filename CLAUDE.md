@@ -956,6 +956,17 @@ beats two that can disagree.
   `HardwareEditor` it always clears the side an item stopped being. Nothing to
   diff, unlike sockets: a process points at an INVENTORY row and never at the
   definition, so replacing it wholesale strands nothing.
+- **How many copies of one program a character may run is `program_threads`.**
+  One by default (`config/programs.php`), raised by the Multithreading skill,
+  and it is a **ceiling per program rather than a total** — two threads means
+  two scanners or two daemons, not two processes. `ProgramRunner` counts
+  running rows of the same item across every deck, because a thread is
+  attention and attention is the person's.
+- **`programs.multithreaded` decides whether more than one is a question at
+  all.** A property of the SOFTWARE: an icebreaker fighting two pieces of ICE
+  at once is not a thing skill should be able to buy, so a program without the
+  flag is capped at one however good its owner is. False by default, and the
+  item editor exposes it.
 - **`$duringRun` is the gate nothing opens yet.** A run-only program is started
   BY the intrusion simulator and never by a player pressing a button, and the
   simulator does not exist — so today only background programs can be started
@@ -1105,6 +1116,16 @@ carries the detail.
   half-finished read costs it. **Settling is lazy**: the map resolves anything
   that matured on the way in, the way a training deposit catches up, so no
   scheduler has to have been running.
+- **A read runs in the BACKGROUND and belongs to the instrument doing it.**
+  `system_scans.reading_process_id` points at the running copy of the scanner —
+  an `inventory_items` row — so the read survives its owner walking to another
+  machine or jacking out entirely. **Settling is per character, not per
+  position**: `settleAll()` resolves every matured read, because the ones
+  elsewhere are the whole point.
+- **Two instruments read two machines.** A second read needs a second running
+  instance, which costs another lot of compute and a free thread — see
+  *Programs*. `ProbeRefusal::AllBusy` is "every scanner you have going is
+  reading something else", which is a different sentence from having none.
 - **An interrupted read is a lost read.** The analyser must have been running
   for the WHOLE pass, not merely at the end: `inventory_items.started_at` is
   later than the read began if it was stopped and restarted, which answers it

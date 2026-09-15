@@ -7,8 +7,10 @@ namespace App\Programs;
 use App\Decks\DeckTotals;
 use App\Models\Character;
 use App\Models\InventoryItem;
+use App\Models\Program;
 use App\Stats\Resolver;
 use App\Stats\Sources\RunningPrograms;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -70,6 +72,19 @@ final class ProgramRunner
 
         if (! $duringRun && ! $program->background_process) {
             return ProcessResult::refused(ProcessRefusal::RunOnly);
+        }
+
+        /*
+         * HOW MANY OF THIS ONE THING ARE ALREADY GOING.
+         *
+         * Two walls with one message, because a player acts on both the same
+         * way: software that cannot multitask is capped at one for ever, and
+         * software that can is capped at what this character can keep in their
+         * head at once. Checked before the deck, since neither has anything to
+         * do with the machine.
+         */
+        if ($this->threadsRunning($character, (int) $row->item_id) >= $this->threadsAllowed($character, $program)) {
+            return ProcessResult::refused(ProcessRefusal::NoFreeThread);
         }
 
         $deck = $character->equippedDeck;
@@ -143,6 +158,43 @@ final class ProgramRunner
 
             return ProcessResult::stopped($rows->count());
         });
+    }
+
+    /**
+     * How many copies of one program this character has going.
+     *
+     * Counted across every deck rather than only the equipped one, because a
+     * thread is a thing the PERSON is doing: the fiction is attention, and a
+     * spare deck running something is still something they are keeping track
+     * of.
+     */
+    public function threadsRunning(Character $character, int $itemId): int
+    {
+        return InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->where('item_id', $itemId)
+            ->whereNotNull('running_on_deck_id')
+            ->count();
+    }
+
+    /**
+     * How many it is allowed at once.
+     *
+     * ONE, unless the software says it can multitask — a property of the
+     * program and not of the person, because an icebreaker fighting two pieces
+     * of ICE at once is not a thing skill should be able to buy. For software
+     * that can, the ceiling is the `program_threads` stat: one by default, and
+     * Multithreading is what raises it.
+     */
+    public function threadsAllowed(Character $character, Program $program): int
+    {
+        if (! $program->multithreaded) {
+            return 1;
+        }
+
+        return app(Resolver::class)
+            ->resolve('program_threads', (float) Config::get('programs.threads', 1), $character->modifiers())
+            ->toInt();
     }
 
     /**

@@ -33,11 +33,23 @@ use Illuminate\Support\Facades\DB;
  * reading the top is an evening somebody decides to spend. It is the first
  * thing in the game that makes standing still in cyberspace cost anything.
  *
+ * A READ RUNS IN THE BACKGROUND. Once begun it belongs to the INSTANCE of the
+ * scanner doing it — a row in `inventory_items` with `running_on_deck_id` set —
+ * and not to where its owner happens to be standing. Walk to the next machine,
+ * jack out, sign off: the instrument is still pointed at it, and the answer is
+ * waiting when you come back. What ends a read early is the instrument
+ * stopping, which is the one thing a player chose.
+ *
+ * SO TWO INSTRUMENTS READ TWO MACHINES. Every running copy is its own process
+ * with its own compute and memory, and how many of one program a character may
+ * run at once is `ProgramRunner`'s question — one by default, more with
+ * Multithreading, and only ever one for software that cannot multitask.
+ *
  * SETTLING IS LAZY. A matured pass is resolved by whoever next looks — the map
- * screen does it on the way in — rather than by a scheduler that has to have
- * been running, which is how a training deposit catches up and for the same
- * reason: the answer is a function of the clock, so anything that reads it can
- * work it out.
+ * screen settles EVERY read a character has, not only the one underfoot, since
+ * the others are the whole point — rather than by a scheduler that has to have
+ * been running. The answer is a function of the clock, so anything that reads
+ * it can work it out.
  *
  * THE ROLL IS MADE WHEN THE PASS MATURES, never when it is begun. Nothing is
  * decided in advance and kept waiting to be revealed, so the character whose
@@ -127,37 +139,81 @@ final class Probe
             return ProbeResult::refused(ProbeRefusal::NotScannable);
         }
 
-        if (! $this->hasAnalyserRunning($character)) {
-            return ProbeResult::refused(ProbeRefusal::NoAnalyser);
-        }
-
+        /*
+         * EVERYTHING THAT HAS MATURED IS SETTLED FIRST, not only the read on
+         * this machine. A pass that finished an hour ago on the far side of
+         * the grid is still holding its instrument until somebody looks, and
+         * the instrument is what a second read needs.
+         */
+        $settled = $this->settleAll($character, $now);
         $scan = $this->fileFor($character, $system);
-
-        // Anything that finished while they were away is resolved before
-        // anything else is decided: what is already known changes whether
-        // there is a reason to start another pass at all.
-        $settled = $this->settle($character, $scan, $now);
 
         if ($scan->isRunning($now)) {
             return ProbeResult::refused(ProbeRefusal::Busy);
         }
 
-        // A read that has just been lost is reported rather than immediately
-        // replaced: pressing Scan again is the player's decision to spend
-        // another pass, and they should make it knowing the last one is gone.
-        if ($settled?->voided === true) {
-            return $settled;
+        // A read on THIS machine that has just been lost is reported rather
+        // than immediately replaced: pressing Scan again is the player's
+        // decision to spend another pass, and they should make it knowing the
+        // last one is gone.
+        foreach ($settled as $result) {
+            if ($result->voided && $result->scan?->address === $system->address) {
+                return $result;
+            }
+        }
+
+        if ($this->freeAnalyser($character) === null) {
+            return ProbeResult::refused(
+                $this->hasAnalyserRunning($character)
+                    // Every scanner they have running is already reading
+                    // something. Another machine needs another instance, which
+                    // needs the compute and a thread to put it in.
+                    ? ProbeRefusal::AllBusy
+                    : ProbeRefusal::NoAnalyser,
+            );
         }
 
         if ($scan->isComplete()) {
-            return $settled ?? ProbeResult::refused(ProbeRefusal::AlreadyKnown);
+            return ProbeResult::refused(ProbeRefusal::AlreadyKnown);
         }
 
         if ($scan->passes >= $this->passesFor($character)) {
-            return $settled ?? ProbeResult::refused(ProbeRefusal::Exhausted);
+            return ProbeResult::refused(ProbeRefusal::Exhausted);
         }
 
         return $this->begin($character, $system, $scan, $now);
+    }
+
+    /**
+     * Settle every read this character has that has matured.
+     *
+     * The map calls this rather than settling the one underfoot, because the
+     * others are the point: a read runs while its owner is somewhere else, and
+     * the screen they come back to is where they find out what it came to.
+     *
+     * @return list<ProbeResult>
+     */
+    public function settleAll(Character $character, ?CarbonInterface $now = null): array
+    {
+        $now = CarbonImmutable::instance($now ?? CarbonImmutable::now());
+
+        $matured = SystemScan::query()
+            ->where('character_id', $character->getKey())
+            ->whereNotNull('pass_ready_at')
+            ->where('pass_ready_at', '<=', $now)
+            ->get();
+
+        $results = [];
+
+        foreach ($matured as $scan) {
+            $result = $this->settle($character, $scan, $now);
+
+            if ($result !== null) {
+                $results[] = $result;
+            }
+        }
+
+        return $results;
     }
 
     /**
@@ -197,7 +253,7 @@ final class Probe
          * place it can be: what a character was carrying minutes ago is not
          * what they are carrying now.
          */
-        if (! $this->hasAnalyserRunningSince($character, $scan->pass_started_at)) {
+        if (! $this->stillReading($scan)) {
             return $this->void($scan);
         }
 
@@ -216,6 +272,52 @@ final class Probe
     public function hasAnalyserRunning(Character $character): bool
     {
         return $this->analysers($character)->exists();
+    }
+
+    /**
+     * Is the instrument that began this read still on it?
+     *
+     * Three ways it is not, and all three are the same event to a player.
+     * The row is GONE, because stopping a stackable program merges it back
+     * into its pile and deletes it — the pointer nulls itself. The row is no
+     * longer RUNNING, which is what stopping an unstackable one leaves behind.
+     * Or it is running again but was restarted, which `started_at` gives away:
+     * an instrument that was off for part of a read did not finish it, and
+     * without this a player could free the compute for a quarter of an hour
+     * and switch it back on before looking.
+     */
+    private function stillReading(SystemScan $scan): bool
+    {
+        if ($scan->reading_process_id === null || $scan->pass_started_at === null) {
+            return false;
+        }
+
+        $process = InventoryItem::query()->find($scan->reading_process_id);
+
+        return $process !== null
+            && $process->running_on_deck_id !== null
+            && $process->started_at !== null
+            && ! $process->started_at->isAfter($scan->pass_started_at);
+    }
+
+    /**
+     * A running scanner that is not already reading something.
+     *
+     * The instrument is the scarce thing, not the software: a second machine
+     * needs a second instance, which costs another lot of compute and a thread
+     * to put it in. Null means every scanner they have going is busy — or
+     * there are none.
+     */
+    public function freeAnalyser(Character $character): ?InventoryItem
+    {
+        $reading = SystemScan::query()
+            ->where('character_id', $character->getKey())
+            ->whereNotNull('reading_process_id')
+            ->whereNotNull('pass_ready_at')
+            ->pluck('reading_process_id')
+            ->all();
+
+        return $this->analysers($character)->whereKeyNot($reading)->first();
     }
 
     /**
@@ -313,6 +415,11 @@ final class Probe
         $scan->passes++;
         $scan->pass_started_at = $now;
         $scan->pass_ready_at = $now->addSeconds($this->durationFor($character, $system));
+        // WHICH instrument, not merely that there was one. With two scanners
+        // running on two machines, "is a scanner going?" stops being the
+        // question — this read is finished by the copy that started it or by
+        // nobody.
+        $scan->reading_process_id = $this->freeAnalyser($character)?->getKey();
 
         DB::transaction(static fn () => $scan->save());
 
@@ -328,7 +435,11 @@ final class Probe
      */
     private function void(SystemScan $scan): ProbeResult
     {
-        $scan->forceFill(['pass_started_at' => null, 'pass_ready_at' => null])->save();
+        $scan->forceFill([
+            'pass_started_at' => null,
+            'pass_ready_at' => null,
+            'reading_process_id' => null,
+        ])->save();
 
         return ProbeResult::voided($scan);
     }
@@ -360,6 +471,8 @@ final class Probe
 
         $scan->pass_started_at = null;
         $scan->pass_ready_at = null;
+        // The instrument is free again the moment it has an answer.
+        $scan->reading_process_id = null;
 
         DB::transaction(static fn () => $scan->save());
 

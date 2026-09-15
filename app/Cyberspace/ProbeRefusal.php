@@ -36,6 +36,15 @@ enum ProbeRefusal: string
     case NoAnalyser = 'no_analyser';
 
     /**
+     * Every scanner they have running is already reading something.
+     *
+     * Different from having none: the answer is another instance, which costs
+     * another lot of compute and a thread to put it in — so the message points
+     * at the thing to do rather than at the thing that is missing.
+     */
+    case AllBusy = 'all_busy';
+
+    /**
      * A pass is already running against this machine.
      *
      * Reading takes minutes, and the instrument does one thing at a time. Says

@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written only by App\Cyberspace\Probe.
  */
-#[Fillable(['character_id', 'address', 'x', 'y', 'grade', 'os_skill_id', 'passes', 'pass_started_at', 'pass_ready_at', 'scanned_at', 'expires_at'])]
+#[Fillable(['character_id', 'address', 'x', 'y', 'grade', 'os_skill_id', 'passes', 'pass_started_at', 'pass_ready_at', 'reading_process_id', 'scanned_at', 'expires_at'])]
 class SystemScan extends Model
 {
     public $timestamps = false;
@@ -52,6 +52,12 @@ class SystemScan extends Model
     public function operatingSystem(): BelongsTo
     {
         return $this->belongsTo(Skill::class, 'os_skill_id');
+    }
+
+    /** The running copy of the scanner doing this read, while one is. */
+    public function readingProcess(): BelongsTo
+    {
+        return $this->belongsTo(InventoryItem::class, 'reading_process_id');
     }
 
     public function position(): Position

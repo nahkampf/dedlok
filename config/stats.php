@@ -137,6 +137,26 @@ return [
         | read a machine instantly is a mechanic that has stopped being one,
         | and a floor is cheaper than finding that out from a player.
         */
+        /*
+        | How many instances of ONE program a character may run at once.
+        |
+        | The base is `programs.threads`, which is 1: a new character runs a
+        | single copy of anything. Multithreading raises it, and so could an
+        | implant or a deck one day — it is a stat rather than a level lookup
+        | for exactly that reason.
+        |
+        | A ceiling per program, never a total: two threads means two scanners
+        | or two decryptors, not two processes. Floored at 1, because a
+        | character who could run none of something would be one for whom every
+        | program in the game had quietly stopped existing.
+        */
+        'program_threads' => [
+            'tags' => ['software'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'scan_duration' => [
             'tags' => ['scan'],
             'min' => 1,

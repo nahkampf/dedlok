@@ -115,6 +115,7 @@ class ItemRequest extends FormRequest
             'memory_cost' => $this->numberOrNull('memory_cost'),
             'storage_size' => $this->numberOrNull('storage_size'),
             'background_process' => $this->boolean('background_process'),
+            'multithreaded' => $this->boolean('multithreaded'),
             // Rows from the effects editor, turned into modifier definitions
             // here so everything downstream sees the shape
             // Modifier::fromArray() reads. A raw JSON string is still accepted:
@@ -263,6 +264,14 @@ class ItemRequest extends FormRequest
             // A checkbox is always present and always boolean, so this one is
             // not prohibited for a non-program — it is simply not written.
             'background_process' => ['boolean'],
+
+            /*
+             * Whether two copies may be pointed at two things at once. A
+             * property of the software: how many a character may run is the
+             * `program_threads` stat, and no amount of skill runs two of
+             * something this is false on.
+             */
+            'multithreaded' => ['boolean'],
 
             /*
              * What running it does. A list of modifier definitions in the
@@ -597,7 +606,8 @@ class ItemRequest extends FormRequest
         // is a program — the row is what says so — so none of these stay.
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
-            $data['storage_size'], $data['background_process'], $data['program_modifiers'],
+            $data['storage_size'], $data['background_process'], $data['multithreaded'],
+            $data['program_modifiers'],
         );
 
         // Null rather than [], for the reason a program's are: a thing that
@@ -630,6 +640,7 @@ class ItemRequest extends FormRequest
             'memory_cost' => (int) ($data['memory_cost'] ?? 0),
             'storage_size' => (int) ($data['storage_size'] ?? 0),
             'background_process' => (bool) ($data['background_process'] ?? false),
+            'multithreaded' => (bool) ($data['multithreaded'] ?? false),
             // Null rather than [], because a program that only gates genuinely
             // modifies nothing and the two should not be different spellings
             // of one fact.

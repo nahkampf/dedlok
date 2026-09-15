@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Tests\Feature\Cyberspace;
 
 use App\Checks\CheckRoller;
+use App\Cyberspace\Navigator;
 use App\Cyberspace\Position;
 use App\Cyberspace\Probe;
 use App\Cyberspace\ProbeRefusal;
 use App\Cyberspace\ProbeResult;
 use App\Cyberspace\Sweep;
 use App\Models\Character;
+use App\Models\CharacterModifier;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Skill;
@@ -18,6 +20,7 @@ use App\Models\System;
 use App\Models\SystemScan;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
+use App\Stats\Resolver;
 use App\Stats\Sheet;
 use App\Stats\SkillStats;
 use App\Support\Text;
@@ -135,6 +138,29 @@ final class ProbeTest extends TestCase
 
         return $this->probe($die)->settle($this->character->fresh(), $scan)
             ?? ProbeResult::refused(ProbeRefusal::NothingThere);
+    }
+
+    /**
+     * Let this character run more than one copy of a program at once.
+     *
+     * Through a modifier on `program_threads`, which is how Multithreading
+     * does it — the probe and the runner know nothing about skills.
+     */
+    private function allowThreads(int $threads): void
+    {
+        Config::set('effects.threading', [
+            'label' => 'Threading',
+            'stacking' => 'unique',
+            'retired' => false,
+            'modifiers' => [
+                ['op' => 'add', 'amount' => $threads - 1, 'target' => ['id' => 'program_threads']],
+            ],
+        ]);
+
+        CharacterModifier::query()->create([
+            'character_id' => $this->character->id,
+            'definition_key' => 'threading',
+        ]);
     }
 
     private function machine(int $grade = 1, ?Skill $os = null): System
@@ -504,7 +530,7 @@ final class ProbeTest extends TestCase
         $this->actingAs($this->character->fresh()->user)
             ->get(route('cyberspace.index'))
             ->assertOk()
-            ->assertSee(Text::get('cyberspace.scan.voided'));
+            ->assertSee(Text::plural('cyberspace.scan.lost', 1, ['count' => 1]));
     }
 
     /**
@@ -566,6 +592,89 @@ final class ProbeTest extends TestCase
         $this->assertSame(1.0, $scan->progress(), 'and it stops at full');
     }
 
+    // ---- in the background, and more than one at a time ---------------------
+
+    /**
+     * A READ RUNS WHILE YOU ARE SOMEWHERE ELSE. Point an instrument at a
+     * machine and walk away — or jack out entirely — and the answer is waiting
+     * when you come back. The instrument is what finishes it, not the standing
+     * around.
+     */
+    public function test_a_read_finishes_while_its_owner_is_elsewhere(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+
+        $this->probe(0.0)->scan($this->character);
+
+        // Out of cyberspace entirely, which stops nothing: an equipped deck
+        // keeps running what it was running.
+        Navigator::fromConfig(app(Resolver::class))->jackOut($this->character->fresh());
+        $this->travel(20)->minutes();
+
+        $settled = $this->probe(0.0)->settleAll($this->character->fresh());
+
+        $this->assertCount(1, $settled);
+        $this->assertTrue(SystemScan::query()->sole()->isComplete());
+    }
+
+    /** Two instruments, two machines, at the same time. */
+    public function test_two_instances_read_two_machines_at_once(): void
+    {
+        $this->allowThreads(2);
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+        $this->runAScanner();
+
+        // The machine underfoot, then one next door.
+        $this->probe(0.0)->scan($this->character->fresh());
+
+        System::factory()->at(8, 9)->create(['address' => 'FEEDFACE', 'grade' => 1]);
+        $this->character->forceFill(['grid_x' => 8, 'grid_y' => 9])->save();
+
+        $second = $this->probe(0.0)->scan($this->character->fresh());
+
+        $this->assertTrue($second->succeeded(), 'the second instrument takes the second machine');
+        $this->assertSame(2, SystemScan::query()->whereNotNull('pass_ready_at')->count());
+        $this->assertSame(
+            2,
+            SystemScan::query()->distinct()->count('reading_process_id'),
+            'and they are different instruments',
+        );
+    }
+
+    /** One scanner cannot be pointed at two machines. */
+    public function test_one_instrument_cannot_read_two_machines(): void
+    {
+        $this->machine(grade: 1);
+        $this->probe(0.0)->scan($this->character);
+
+        System::factory()->at(8, 9)->create(['address' => 'FEEDFACE', 'grade' => 1]);
+        $this->character->forceFill(['grid_x' => 8, 'grid_y' => 9])->save();
+
+        $result = $this->probe(0.0)->scan($this->character->fresh());
+
+        $this->assertSame(ProbeRefusal::AllBusy, $result->refusal);
+        $this->assertSame(1, SystemScan::query()->count());
+    }
+
+    /**
+     * A matured read frees its instrument, and starting another read is what
+     * notices — nothing has to have been running in between.
+     */
+    public function test_an_instrument_is_free_again_once_its_read_matures(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+        $this->probe(0.0)->scan($this->character);
+        $this->travel(20)->minutes();
+
+        System::factory()->at(8, 9)->create(['address' => 'FEEDFACE', 'grade' => 1]);
+        $this->character->forceFill(['grid_x' => 8, 'grid_y' => 9])->save();
+
+        $result = $this->probe(0.0)->scan($this->character->fresh());
+
+        $this->assertTrue($result->succeeded(), 'the first read settled and let the scanner go');
+        $this->assertTrue($result->isRunning());
+    }
+
     // ---- perishing ---------------------------------------------------------
 
     public function test_an_expired_file_is_replaced_rather_than_continued(): void
@@ -573,7 +682,10 @@ final class ProbeTest extends TestCase
         $os = $this->anOperatingSystem();
         $this->machine(grade: 1, os: $os);
 
-        $this->probe(0.999)->scan($this->character);
+        // A read that finished, on a file that has since gone stale — which is
+        // the state this is about, and it has to be reached the way a player
+        // would reach it rather than written straight into the row.
+        $this->readOnce(0.999);
 
         SystemScan::query()->sole()->forceFill([
             'expires_at' => now()->subHour(),

@@ -65,16 +65,23 @@ class CyberspaceController extends Controller
          * than to the next one — a player who arrives to find a scan quietly
          * finished has been told nothing about the minutes they spent.
          */
-        $settled = $probe->settle($character, $scan);
+        $settled = $probe->settleAll($character);
 
-        if ($settled !== null) {
+        if ($settled !== []) {
             $scan = $scan?->fresh(['operatingSystem']);
 
+            // One line however many finished, because the alternative is a
+            // stack of callouts on the way back in. What a player wants here is
+            // that something landed and whether any of it was lost; the files
+            // themselves say the rest.
+            $lost = count(array_filter($settled, static fn ($result): bool => $result->voided));
+            $found = array_sum(array_map(static fn ($result): int => count($result->found), $settled));
+
             $request->session()->now(
-                $settled->voided ? 'error' : 'status',
-                $settled->voided
-                    ? Text::get('cyberspace.scan.voided')
-                    : Text::plural('cyberspace.scan.found', count($settled->found), ['count' => count($settled->found)]),
+                $lost > 0 ? 'error' : 'status',
+                $lost > 0
+                    ? Text::plural('cyberspace.scan.lost', $lost, ['count' => $lost])
+                    : Text::plural('cyberspace.scan.found', $found, ['count' => $found]),
             );
         }
 
@@ -105,7 +112,10 @@ class CyberspaceController extends Controller
             // that hides why the button is dead is worse than one without a
             // button. Both come from the Probe rather than being worked out
             // here, so the screen and the act cannot disagree about either.
-            'canScan' => $probe->hasAnalyserRunning($character),
+            // A FREE scanner, not merely a running one: with two machines
+            // being read and two instruments going, the button is dead for a
+            // third and the screen should know it.
+            'canScan' => $probe->freeAnalyser($character) !== null,
             'scanPasses' => $probe->passesFor($character),
         ]);
     }

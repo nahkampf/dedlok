@@ -294,6 +294,19 @@
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.background_process_hint') }}</span>
 
+                    {{-- Whether two copies may be pointed at two things at
+                         once. A property of the SOFTWARE: how many a character
+                         may run is the program_threads stat, and an icebreaker
+                         fighting two pieces of ICE is not a thing skill should
+                         be able to buy. --}}
+                    <label class="check" style="margin-top:var(--s-3)">
+                        <input type="hidden" name="multithreaded" value="0">
+                        <input type="checkbox" name="multithreaded" value="1"
+                               @checked(old('multithreaded', $item?->program?->multithreaded ?? false))>
+                        <span>{{ Text::get('admin.items.fields.multithreaded') }}</span>
+                    </label>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.multithreaded_hint') }}</span>
+
                     {{-- Rows rather than the JSON this used to be. Validated
                          by BUILDING each one — see ItemRequest — because a
                          shape that parses but names an op that does not exist
