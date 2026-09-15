@@ -150,6 +150,33 @@ return [
             9 => 92,
         ],
         'passes' => 5,
+
+        /*
+        | HOW LONG ONE PASS TAKES, in minutes, for somebody with no skill at
+        | all. A grade 1 box gives itself up in about a minute; a grade 9 takes
+        | the better part of a quarter of an hour, and there are five passes in
+        | a full read of one.
+        |
+        | That is the point of the curve: reading the bottom of the grid is
+        | something you do in passing, and reading the top is an evening's work
+        | somebody has to decide to spend. It is also the first thing in the
+        | game that makes standing still in cyberspace cost anything.
+        |
+        | Skill and software cut it, through the `scan_duration` stat — a
+        | trained profiler with a good instrument reads a grade 9 in half this.
+        */
+        'minutes' => [
+            1 => 1,
+            2 => 2,
+            3 => 3,
+            4 => 4,
+            5 => 6,
+            6 => 8,
+            7 => 10,
+            8 => 13,
+            9 => 16,
+        ],
+
         'lifetime_hours' => 48,
 
         /*

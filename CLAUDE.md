@@ -1095,9 +1095,19 @@ carries the detail.
   written down twice.
 - **Scanning is `App\Cyberspace\Probe`, and it reads the machine you are
   standing on.** No target in the request: you cannot read a machine you are
-  not at. One press is one pass, a pass rolls once per thing not yet known, and
-  the budget is the `scan_passes` stat — **a failed scan costs the expiry
+  not at. One press STARTS a pass, a pass rolls once per thing not yet known,
+  and the budget is the `scan_passes` stat — **a failed scan costs the expiry
   window, not a retry**, which is what stops the act from being ground.
+- **A pass takes MINUTES** — one against a grade 1, sixteen against a grade 9,
+  scaled by the `scan_duration` stat so skill and a better instrument cut it.
+  **The pass is spent when BEGUN** and **the roll is made when it MATURES**, so
+  nothing is decided in advance waiting to be revealed and walking away from a
+  half-finished read costs it. **Settling is lazy**: the map resolves anything
+  that matured on the way in, the way a training deposit catches up, so no
+  scheduler has to have been running.
+- **`Probe` is bound in the container**, so a test can pin its dice and have
+  the SCREENS use them — the map settles a scan during `index()`, which a
+  `fromConfig()` built inside the controller would have made untestable.
 - **Reading a machine takes software, and it has to be RUNNING.** An analyser
   on the equipped deck is the gate; one in the stash is a file. **What a better
   version buys is data, not code**: `programs.modifiers` against

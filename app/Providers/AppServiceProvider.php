@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Checks\CheckRoller;
+use App\Cyberspace\Probe;
 use App\Models\User;
 use App\Stats\DamageStats;
 use App\Stats\Resolver;
@@ -39,6 +41,21 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         $this->app->singleton(Resolver::class, fn ($app): Resolver => new Resolver($app->make(StatRegistry::class)));
+
+        /*
+         * The die, and the one thing that rolls it so far.
+         *
+         * Bound rather than constructed at each call site so a test can put a
+         * pinned one in the container and have the SCREENS use it — the map
+         * settles a matured scan on the way in, and a test about what that
+         * settles cannot reach a `Probe::fromConfig()` built inside a
+         * controller. The same reason ProgramRunner is injected.
+         */
+        $this->app->bind(CheckRoller::class, static fn (): CheckRoller => CheckRoller::fromConfig());
+        $this->app->bind(Probe::class, static fn ($app): Probe => Probe::fromConfig(
+            $app->make(CheckRoller::class),
+            $app->make(Resolver::class),
+        ));
 
         /*
          * Which stats are computed from which. Two sources, and they are the

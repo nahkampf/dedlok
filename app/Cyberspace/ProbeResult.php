@@ -38,9 +38,26 @@ final class ProbeResult
         return new self($scan, $found, $rolls, null);
     }
 
+    /**
+     * A pass has been started and will have an answer later.
+     *
+     * No `found` and no rolls, because nothing has been decided: the roll is
+     * made when the pass matures, by whoever is standing there then.
+     */
+    public static function begun(SystemScan $scan): self
+    {
+        return new self($scan, [], [], null);
+    }
+
     public static function refused(ProbeRefusal $refusal): self
     {
         return new self(null, [], [], $refusal);
+    }
+
+    /** Started rather than finished: there is a clock running on this scan. */
+    public function isRunning(): bool
+    {
+        return $this->scan?->isRunning() ?? false;
     }
 
     public function succeeded(): bool

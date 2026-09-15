@@ -22,7 +22,8 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
 | System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
-| Scanning — the probe | **built** for what a system currently HAS: grade and operating system. Needs an analyser RUNNING on the equipped deck; one press is one pass, one roll per unknown, capped by the `scan_passes` stat |
+| Scanning — the probe | **built** for what a system currently HAS: grade and operating system. Needs an analyser RUNNING on the equipped deck; one press starts one pass, capped by the `scan_passes` stat |
+| A pass takes TIME | **built** — about a minute against a grade 1 and sixteen against a grade 9, cut by skill and by a better instrument through the `scan_duration` stat. Settled lazily by whoever next looks |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
 | Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
@@ -1060,8 +1061,11 @@ All of it. In the order it should be built:
    **Built so far**: every machine runs an operating system — a foreign key to
    the skill that gates it, chosen by grade off the rank ladder those four
    skills already form — and the probe reads a machine you are standing on.
-   One press is one pass; a pass rolls once per thing not yet known; five
-   passes is the budget and a file lasts 48 hours. Grade and operating system
+   **A pass takes minutes**: about one against a grade 1 and sixteen against a
+   grade 9 for somebody with no skill, cut by levels of System Profiling and by
+   a better instrument. One press starts a pass; the roll is made when it
+   matures, by whoever is standing there then; five passes is the budget and a
+   file lasts 48 hours. Grade and operating system
    are what there is to find out, because they are what a system currently
    has: the IDS, the ICE, the tracer and cloaked extras join the list as they
    are built, each a nullable column and a line in `SystemScan::unknowns()`.

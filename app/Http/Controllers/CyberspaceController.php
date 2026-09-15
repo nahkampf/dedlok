@@ -19,6 +19,7 @@ use App\Models\SystemContact;
 use App\Models\SystemScan;
 use App\Stats\Resolver;
 use App\Support\Text;
+use Carbon\CarbonInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -38,11 +39,10 @@ use Illuminate\View\View;
  */
 class CyberspaceController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, Probe $probe): View
     {
         $character = $this->character($request);
         $grid = Grid::fromConfig();
-        $probe = Probe::fromConfig();
 
         $scan = $character->isJackedIn()
             ? SystemScan::query()
@@ -53,6 +53,14 @@ class CyberspaceController extends Controller
                 ->with('operatingSystem')
                 ->first()
             : null;
+
+        // A pass that finished while they were away is resolved HERE, on the
+        // way in. Nothing schedules it: the answer is a function of the clock,
+        // so whoever looks next can work it out — the same shape a training
+        // deposit catches up in.
+        if ($probe->settle($character, $scan) !== null) {
+            $scan = $scan?->fresh(['operatingSystem']);
+        }
 
         return view('cyberspace.index', [
             'character' => $character,
@@ -132,12 +140,19 @@ class CyberspaceController extends Controller
      * pass, and a pass that learns nothing still spends one — see
      * App\Cyberspace\Probe.
      */
-    public function scan(Request $request): RedirectResponse
+    public function scan(Request $request, Probe $probe): RedirectResponse
     {
-        $result = Probe::fromConfig()->scan($this->character($request));
+        $result = $probe->scan($this->character($request));
 
         if (! $result->succeeded()) {
             return back()->with('error', $result->refusal->message());
+        }
+
+        // A pass just begun has found nothing yet and says when it will have.
+        if ($result->isRunning()) {
+            return back()->with('status', Text::get('cyberspace.scan.begun', [
+                'when' => $result->scan->pass_ready_at->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]),
+            ]));
         }
 
         return back()->with('status', Text::plural(

@@ -125,6 +125,25 @@ return [
         | nothing would be holding a program that stops them scanning, which is
         | not a trade anybody would make on purpose.
         */
+        /*
+        | How long one pass takes, IN SECONDS.
+        |
+        | Seconds rather than minutes because a modifier that takes 40% off
+        | four minutes should give two minutes twenty-four, and a stat that
+        | rounds to whole minutes would give two. The config that feeds it is
+        | in minutes, which is what a person tuning it wants to read.
+        |
+        | Floored at ONE SECOND rather than zero: an instrument good enough to
+        | read a machine instantly is a mechanic that has stopped being one,
+        | and a floor is cheaper than finding that out from a player.
+        */
+        'scan_duration' => [
+            'tags' => ['scan'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'scan_passes' => [
             'tags' => ['scan'],
             'min' => 1,

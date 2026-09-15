@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written only by App\Cyberspace\Probe.
  */
-#[Fillable(['character_id', 'address', 'x', 'y', 'grade', 'os_skill_id', 'passes', 'scanned_at', 'expires_at'])]
+#[Fillable(['character_id', 'address', 'x', 'y', 'grade', 'os_skill_id', 'passes', 'pass_started_at', 'pass_ready_at', 'scanned_at', 'expires_at'])]
 class SystemScan extends Model
 {
     public $timestamps = false;
@@ -35,6 +35,8 @@ class SystemScan extends Model
             'y' => 'integer',
             'grade' => 'integer',
             'passes' => 'integer',
+            'pass_started_at' => 'datetime',
+            'pass_ready_at' => 'datetime',
             'scanned_at' => 'datetime',
             'expires_at' => 'datetime',
             'used_at' => 'datetime',
@@ -73,6 +75,46 @@ class SystemScan extends Model
             $this->grade === null ? 'grade' : null,
             $this->os_skill_id === null ? 'os' : null,
         ]));
+    }
+
+    /**
+     * Is the instrument still reading?
+     *
+     * A pass whose clock has run out is NOT running: it is waiting to be
+     * settled, which is a different state and the one the map resolves on the
+     * way in. Nothing may start a second pass in either case.
+     */
+    public function isRunning(?\DateTimeInterface $now = null): bool
+    {
+        return $this->pass_ready_at !== null && $this->pass_ready_at->isAfter($now ?? now());
+    }
+
+    /** A pass that has finished and not yet been resolved. */
+    public function isWaitingToSettle(?\DateTimeInterface $now = null): bool
+    {
+        return $this->pass_ready_at !== null && ! $this->isRunning($now);
+    }
+
+    /**
+     * How far through the running pass we are, 0-1, for the kit's `--v`.
+     *
+     * Zero when nothing is running, which is what an empty bar already means.
+     */
+    public function progress(?\DateTimeInterface $now = null): float
+    {
+        if ($this->pass_started_at === null || $this->pass_ready_at === null) {
+            return 0.0;
+        }
+
+        $total = $this->pass_ready_at->getTimestamp() - $this->pass_started_at->getTimestamp();
+
+        if ($total <= 0) {
+            return 1.0;
+        }
+
+        $done = ($now ?? now())->getTimestamp() - $this->pass_started_at->getTimestamp();
+
+        return max(0.0, min(1.0, $done / $total));
     }
 
     public function isComplete(): bool

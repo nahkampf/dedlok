@@ -35,6 +35,15 @@ enum ProbeRefusal: string
      */
     case NoAnalyser = 'no_analyser';
 
+    /**
+     * A pass is already running against this machine.
+     *
+     * Reading takes minutes, and the instrument does one thing at a time. Says
+     * so rather than quietly queueing a second, which would spend a pass the
+     * player did not know they were spending.
+     */
+    case Busy = 'busy';
+
     /** Everything about it is already known, and the file is still good. */
     case AlreadyKnown = 'already_known';
 

@@ -289,6 +289,12 @@ return [
             'nothing_there' => 'There is nothing here to read.',
             'not_scannable' => 'The portal answers nothing. There is nothing here to find out.',
             'no_analyser' => 'You have no scanner running. Start one on the deck you are carrying.',
+            'busy' => 'Your scanner is still reading this machine.',
+            'begun' => 'Reading. The instrument will have something in :when.',
+            'reading' => 'Reading',
+            'ready_in' => 'Answer in :when',
+            'gone' => 'The machine stopped answering before the read finished.',
+            'duration' => 'A pass here takes about :when',
             'already_known' => 'You already have everything this machine will tell you.',
             'exhausted' => 'You have read this machine as far as you can. What you have is what you get until it goes stale.',
             'found' => [

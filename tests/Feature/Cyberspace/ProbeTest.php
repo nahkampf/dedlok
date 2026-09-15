@@ -8,6 +8,7 @@ use App\Checks\CheckRoller;
 use App\Cyberspace\Position;
 use App\Cyberspace\Probe;
 use App\Cyberspace\ProbeRefusal;
+use App\Cyberspace\ProbeResult;
 use App\Cyberspace\Sweep;
 use App\Models\Character;
 use App\Models\InventoryItem;
@@ -115,6 +116,25 @@ final class ProbeTest extends TestCase
     private function probe(float $die): Probe
     {
         return Probe::fromConfig(CheckRoller::fromConfig(static fn (): float => $die));
+    }
+
+    /**
+     * Start a pass and wait it out.
+     *
+     * A pass is two acts now — begun, then settled when its clock runs out —
+     * so a test about what a scan LEARNS has to travel past the read. Tests
+     * about the clock itself do the two halves by hand.
+     */
+    private function readOnce(float $die): ProbeResult
+    {
+        $this->probe($die)->scan($this->character->fresh());
+
+        $this->travel(20)->minutes();
+
+        $scan = SystemScan::query()->where('character_id', $this->character->id)->first();
+
+        return $this->probe($die)->settle($this->character->fresh(), $scan)
+            ?? ProbeResult::refused(ProbeRefusal::NothingThere);
     }
 
     private function machine(int $grade = 1, ?Skill $os = null): System
@@ -239,7 +259,7 @@ final class ProbeTest extends TestCase
         $os = $this->anOperatingSystem();
         $this->machine(grade: 1, os: $os);
 
-        $result = $this->probe(0.0)->scan($this->character);
+        $result = $this->readOnce(0.0);
 
         $this->assertTrue($result->succeeded());
         $this->assertSame(['grade', 'os'], $result->found);
@@ -254,7 +274,7 @@ final class ProbeTest extends TestCase
     {
         $this->machine(grade: 9);
 
-        $result = $this->probe(0.999)->scan($this->character);
+        $result = $this->readOnce(0.999);
 
         $this->assertTrue($result->succeeded());
         $this->assertFalse($result->foundSomething());
@@ -268,8 +288,8 @@ final class ProbeTest extends TestCase
         $os = $this->anOperatingSystem();
         $this->machine(grade: 1, os: $os);
 
-        $this->probe(0.999)->scan($this->character);
-        $this->probe(0.0)->scan($this->character->fresh());
+        $this->readOnce(0.999);
+        $this->readOnce(0.0);
 
         $this->assertSame(1, SystemScan::query()->count());
 
@@ -287,8 +307,8 @@ final class ProbeTest extends TestCase
         Config::set('cyberspace.scan.passes', 2);
         $this->machine(grade: 9);
 
-        $this->probe(0.999)->scan($this->character);
-        $this->probe(0.999)->scan($this->character->fresh());
+        $this->readOnce(0.999);
+        $this->readOnce(0.999);
 
         $result = $this->probe(0.0)->scan($this->character->fresh());
 
@@ -300,7 +320,7 @@ final class ProbeTest extends TestCase
     {
         $this->machine(grade: 1, os: $this->anOperatingSystem());
 
-        $this->probe(0.0)->scan($this->character);
+        $this->readOnce(0.0);
         $result = $this->probe(0.0)->scan($this->character->fresh());
 
         $this->assertSame(ProbeRefusal::AlreadyKnown, $result->refusal);
@@ -349,7 +369,7 @@ final class ProbeTest extends TestCase
         $blind->assertSee(Text::get('cyberspace.scan.unknown'));
         $blind->assertDontSee('AuraOS');
 
-        $this->probe(0.0)->scan($this->character);
+        $this->readOnce(0.0);
 
         $read = $this->actingAs($this->character->fresh()->user)->get(route('cyberspace.index'));
         $read->assertSee(Text::get('cyberspace.scan.grade').' 4', false);
@@ -364,6 +384,120 @@ final class ProbeTest extends TestCase
             ->post(route('cyberspace.scan'))
             ->assertRedirect(route('cyberspace.index'))
             ->assertSessionHas('error', ProbeRefusal::NothingThere->message());
+    }
+
+    // ---- a pass takes time -------------------------------------------------
+
+    /**
+     * THE CURVE THE DESIGN ASKS FOR: about a minute at the bottom of the grid,
+     * about sixteen at the top, for somebody with no skill at all.
+     */
+    public function test_a_pass_takes_longer_against_a_harder_machine(): void
+    {
+        $probe = Probe::fromConfig();
+        $character = $this->character->fresh();
+
+        $this->assertSame(60, $probe->durationFor($character, new System(['grade' => 1])));
+        $this->assertSame(120, $probe->durationFor($character, new System(['grade' => 2])));
+        $this->assertSame(16 * 60, $probe->durationFor($character, new System(['grade' => 9])));
+    }
+
+    /** Skill and software cut it, through the stat and nothing else. */
+    public function test_a_better_instrument_reads_faster(): void
+    {
+        $slow = Probe::fromConfig()->durationFor($this->character->fresh(), new System(['grade' => 9]));
+
+        app(ProgramRunner::class)->stopAll($this->character->fresh(), $this->character->equippedDeck);
+        $this->runAScanner([
+            ['op' => 'percentage_of_base', 'amount' => -50, 'target' => ['id' => 'scan_duration']],
+        ]);
+
+        $fast = Probe::fromConfig()->durationFor($this->character->fresh(), new System(['grade' => 9]));
+
+        $this->assertSame((int) ($slow / 2), $fast);
+    }
+
+    public function test_starting_a_pass_finds_nothing_yet(): void
+    {
+        $this->machine(grade: 4, os: $this->anOperatingSystem());
+
+        $result = $this->probe(0.0)->scan($this->character);
+
+        $this->assertTrue($result->succeeded());
+        $this->assertTrue($result->isRunning());
+        $this->assertSame([], $result->found, 'nothing is decided in advance');
+        $this->assertNull($result->scan->grade);
+        $this->assertSame(1, $result->scan->passes, 'and the pass is spent on starting');
+        $this->assertEqualsWithDelta(4 * 60, abs($result->scan->pass_ready_at->diffInSeconds(now())), 2);
+    }
+
+    /** The instrument does one thing at a time. */
+    public function test_a_second_pass_cannot_start_while_one_is_running(): void
+    {
+        $this->machine(grade: 4);
+
+        $this->probe(0.0)->scan($this->character);
+        $this->travel(1)->minutes();
+
+        $result = $this->probe(0.0)->scan($this->character->fresh());
+
+        $this->assertSame(ProbeRefusal::Busy, $result->refusal);
+        $this->assertSame(1, SystemScan::query()->sole()->passes, 'and nothing was spent on the attempt');
+    }
+
+    /** Coming back is what settles it — nothing had to be running meanwhile. */
+    public function test_the_map_settles_a_pass_that_matured_while_they_were_away(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+        $this->sweep();
+
+        // The SCREEN settles it, so the screen's probe is the one that has to
+        // roll our dice. It comes from the container for exactly this.
+        $this->instance(Probe::class, $this->probe(0.0));
+
+        $this->probe(0.0)->scan($this->character);
+        $this->travel(5)->minutes();
+
+        $this->actingAs($this->character->fresh()->user)->get(route('cyberspace.index'))->assertOk();
+
+        $scan = SystemScan::query()->sole();
+        $this->assertTrue($scan->isComplete(), 'the answer was waiting on the way in');
+        $this->assertNull($scan->pass_ready_at, 'and the clock is cleared');
+    }
+
+    /**
+     * A machine that stops answering mid-read costs the pass. The instrument
+     * has nothing to report, which is honest rather than a refund.
+     */
+    public function test_a_machine_that_vanishes_mid_read_spends_the_pass(): void
+    {
+        $system = $this->machine(grade: 1);
+
+        $this->probe(0.0)->scan($this->character);
+        $system->delete();
+        $this->travel(5)->minutes();
+
+        $result = $this->probe(0.0)->settle($this->character->fresh(), SystemScan::query()->sole());
+
+        $this->assertNotNull($result);
+        $this->assertFalse($result->foundSomething());
+        $this->assertSame(1, SystemScan::query()->sole()->passes);
+        $this->assertNull(SystemScan::query()->sole()->pass_ready_at);
+    }
+
+    public function test_progress_reads_as_a_fraction_of_the_read(): void
+    {
+        $this->machine(grade: 4);
+        $this->probe(0.0)->scan($this->character);
+
+        $scan = SystemScan::query()->sole();
+        $this->assertEqualsWithDelta(0.0, $scan->progress(), 0.01);
+
+        $this->travel(2)->minutes();
+        $this->assertEqualsWithDelta(0.5, $scan->progress(), 0.02);
+
+        $this->travel(10)->minutes();
+        $this->assertSame(1.0, $scan->progress(), 'and it stops at full');
     }
 
     // ---- perishing ---------------------------------------------------------

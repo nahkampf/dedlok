@@ -49,6 +49,22 @@
                         @unless ($canScan)
                             <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.no_analyser') }}</span>
                         @endunless
+
+                        {{-- A pass in progress. The bar is the kit's meter with
+                             the elapsed fraction in --v, so it reads as
+                             something happening rather than as a frozen button
+                             — and the figure beside it is what a player
+                             actually wants, which is when to come back. --}}
+                        @if ($scan?->isRunning())
+                            <span class="chip-stat">
+                                <span class="micro">{{ Text::get('cyberspace.scan.reading') }}</span>
+                                <span class="meter" style="--v:{{ round($scan->progress(), 3) }};width:80px"
+                                      title="{{ Text::get('cyberspace.scan.ready_in', ['when' => $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE])]) }}">
+                                    <span class="meter__fill"></span>
+                                </span>
+                                <span class="micro">{{ $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }}</span>
+                            </span>
+                        @endif
                     @endif
                 @else
                     <span class="micro">{{ Text::get('cyberspace.map.out') }}</span>
@@ -70,14 +86,14 @@
                     <button type="submit" class="btn cut">{{ Text::get('cyberspace.map.jack_out') }}</button>
                 </form>
 
-                {{-- One press is one pass, and a pass that learns nothing
-                     still spends one. Offered only where there is something to
-                     read: the portal answers nothing and empty ground is not a
-                     machine. --}}
+                {{-- One press starts one pass, which takes MINUTES and is
+                     spent whether or not it finds anything. Offered only where
+                     there is something to read: the portal answers nothing and
+                     empty ground is not a machine. --}}
                 <form method="POST" action="{{ route('cyberspace.scan') }}">
                     @csrf
                     <button type="submit" class="btn btn--sm cut"
-                            @disabled(! $here || ! $canScan || $scan?->isComplete() || $scan?->passes >= $scanPasses)>
+                            @disabled(! $here || ! $canScan || $scan?->isRunning() || $scan?->isComplete() || $scan?->passes >= $scanPasses)>
                         {{ Text::get('cyberspace.scan.action') }}
                     </button>
                 </form>

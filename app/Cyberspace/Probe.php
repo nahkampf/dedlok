@@ -12,6 +12,8 @@ use App\Models\SystemScan;
 use App\Programs\ProgramKind;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -24,13 +26,29 @@ use Illuminate\Support\Facades\DB;
  * discover BEFORE you approach. This is the discovering, and it is the first
  * thing in the game to roll a check.
  *
+ * A PASS IS SOMETHING YOU START AND COME BACK TO. It takes minutes — about one
+ * against a grade 1 and sixteen against a grade 9, before skill and software cut
+ * it — so reading the bottom of the grid is something done in passing and
+ * reading the top is an evening somebody decides to spend. It is the first
+ * thing in the game that makes standing still in cyberspace cost anything.
+ *
+ * SETTLING IS LAZY. A matured pass is resolved by whoever next looks — the map
+ * screen does it on the way in — rather than by a scheduler that has to have
+ * been running, which is how a training deposit catches up and for the same
+ * reason: the answer is a function of the clock, so anything that reads it can
+ * work it out.
+ *
+ * THE ROLL IS MADE WHEN THE PASS MATURES, never when it is begun. Nothing is
+ * decided in advance and kept waiting to be revealed, so the character whose
+ * modifiers are asked is the one who finished the read.
+ *
  * ONE PASS IS ONE ROLL PER THING NOT YET KNOWN. A pass that learns nothing is
  * the ordinary outcome against something above a character's reach, and a pass
  * that learns half of it is why a scan is a row that can be added to rather
- * than a yes or a no. CYBERSPACE.md budgets 1-5 turns for scanning inside a
- * run; `cyberspace.scan.passes` is that budget, and it is what stops a free act
- * from being ground until it succeeds — **a failed scan costs the expiry
- * window, not a retry.**
+ * than a yes or a no. The budget is the `scan_passes` stat, and **a pass is
+ * spent when BEGUN**: walking away from a half-finished read costs it, which is
+ * what stops the budget being dodged by starting five and finishing the one
+ * that looks best.
  *
  * THE DIFFICULTY IS THE MACHINE'S, not the character's guess at it. A grade 9
  * is hard to read whether or not anybody knows it is a grade 9, which is the
@@ -89,8 +107,9 @@ final class Probe
      * cannot read a machine you are not at. That is what makes walking the grid
      * worth something and what keeps a scan honest about having been there.
      */
-    public function scan(Character $character): ProbeResult
+    public function scan(Character $character, ?CarbonInterface $now = null): ProbeResult
     {
+        $now = CarbonImmutable::instance($now ?? CarbonImmutable::now());
         $at = $character->gridPosition();
 
         if ($at === null) {
@@ -113,15 +132,53 @@ final class Probe
 
         $scan = $this->fileFor($character, $system);
 
+        // Anything that finished while they were away is resolved before
+        // anything else is decided: what is already known changes whether
+        // there is a reason to start another pass at all.
+        $settled = $this->settle($character, $scan, $now);
+
+        if ($scan->isRunning($now)) {
+            return ProbeResult::refused(ProbeRefusal::Busy);
+        }
+
         if ($scan->isComplete()) {
-            return ProbeResult::refused(ProbeRefusal::AlreadyKnown);
+            return $settled ?? ProbeResult::refused(ProbeRefusal::AlreadyKnown);
         }
 
         if ($scan->passes >= $this->passesFor($character)) {
-            return ProbeResult::refused(ProbeRefusal::Exhausted);
+            return $settled ?? ProbeResult::refused(ProbeRefusal::Exhausted);
         }
 
-        return $this->pass($character, $system, $scan);
+        return $this->begin($character, $system, $scan, $now);
+    }
+
+    /**
+     * Resolve a pass that has matured, if one has.
+     *
+     * Safe to call on anything, which is the point: the map screen calls it on
+     * the way in without knowing whether there is anything to settle, and a
+     * scan with nothing running is left exactly as it is.
+     */
+    public function settle(Character $character, ?SystemScan $scan, ?CarbonInterface $now = null): ?ProbeResult
+    {
+        $now = CarbonImmutable::instance($now ?? CarbonImmutable::now());
+
+        if ($scan === null || $scan->pass_ready_at === null || $scan->pass_ready_at->isAfter($now)) {
+            return null;
+        }
+
+        $system = System::query()->where('address', $scan->address)->first();
+
+        // The machine it was reading has gone — burned, or relocated and
+        // wearing a new address. The instrument has nothing to report and the
+        // pass is spent, which is the honest outcome rather than a refund.
+        if ($system === null) {
+            $scan->forceFill(['pass_started_at' => null, 'pass_ready_at' => null])->save();
+
+            return ProbeResult::scanned($scan, [], []);
+        }
+
+        return $this->resolve($character, $system, $scan);
     }
 
     /**
@@ -198,7 +255,25 @@ final class Probe
         ]);
     }
 
-    private function pass(Character $character, System $system, SystemScan $scan): ProbeResult
+    /**
+     * Point the instrument at it and start the clock.
+     *
+     * The pass is counted here rather than when it finishes, because it is
+     * spent either way — see the class docblock.
+     */
+    private function begin(Character $character, System $system, SystemScan $scan, CarbonImmutable $now): ProbeResult
+    {
+        $scan->passes++;
+        $scan->pass_started_at = $now;
+        $scan->pass_ready_at = $now->addSeconds($this->durationFor($character, $system));
+
+        DB::transaction(static fn () => $scan->save());
+
+        return ProbeResult::begun($scan);
+    }
+
+    /** The roll itself, made at the moment the pass matures. */
+    private function resolve(Character $character, System $system, SystemScan $scan): ProbeResult
     {
         $reading = $this->reading($character);
         $difficulty = $this->difficultyOf($system);
@@ -222,11 +297,29 @@ final class Probe
             };
         }
 
-        $scan->passes++;
+        $scan->pass_started_at = null;
+        $scan->pass_ready_at = null;
 
         DB::transaction(static fn () => $scan->save());
 
         return ProbeResult::scanned($scan, $found, $rolls);
+    }
+
+    /**
+     * How long one pass at this machine takes, in seconds.
+     *
+     * The base is minutes per grade from config — one for the bottom of the
+     * grid, sixteen for the top — and everything that cuts it is a modifier on
+     * `scan_duration`: levels of System Profiling, and a better instrument.
+     */
+    public function durationFor(Character $character, System $system): int
+    {
+        $minutes = (array) Config::get('cyberspace.scan.minutes', []);
+        $base = (float) ($minutes[$system->grade] ?? reset($minutes) ?: 1) * 60;
+
+        return $this->resolver
+            ->resolve('scan_duration', $base, $character->modifiers())
+            ->toInt();
     }
 
     /** What the character brings to reading a machine. */
