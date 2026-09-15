@@ -1191,8 +1191,12 @@ carries the detail.
   **The hairline** is its condition — dashed while rebooting. **The corners**
   are what you have on it: bookmark top-right, backdoor bottom-left in ember,
   the kit's one mark for *yours*. **A bar at the foot** is the scanned grade.
-  **Colour says type and nothing else** — steel, cyan, jade on the glyph and
-  hairline, never a fill, because four hundred tinted tiles is a quilt.
+  **Colour says type and nothing else** — steel, cyan, jade on the GLYPH, never
+  a fill, because four hundred tinted tiles is a quilt.
+- **An ordinary machine has no hairline.** The fill lifts it off the ground and
+  the glyph says what it is, which leaves the border free to mean something: a
+  hairline is only ever the portal, a machine that has just appeared, one that
+  is rebooting, or you.
 - **Two things move, and they move differently on purpose.** The portal
   BREATHES between bone and brass over four seconds — a pulse in place, which
   the ration affords because there is exactly one portal in the world. A

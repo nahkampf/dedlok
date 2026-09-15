@@ -2538,12 +2538,18 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 /* Swept, and nothing was there. Space, not a dead node. */
 .cell--empty { background: var(--bg-2); }
 
-/* Something was standing here when they last looked. */
-.cell--system { background: var(--bg-3); border-color: var(--line-1); color: var(--ink-1); }
+/* Something was standing here when they last looked.
+   NO HAIRLINE. The fill lifts it off the ground and the glyph says what it is,
+   which is enough — and it leaves the border free to mean something. A map
+   where every machine is outlined is a map where an outline says nothing; now
+   a hairline is only ever the portal, a machine that has just appeared, one
+   that is rebooting, or you. */
+.cell--system { background: var(--bg-3); border-color: transparent; color: var(--ink-1); }
 
-/* WHAT KIND OF MACHINE, as a colour on the glyph and the hairline and never as
-   a fill. A map is a screen somebody stares at: four hundred tinted tiles is a
-   quilt, four hundred tinted marks is a legend.
+/* WHAT KIND OF MACHINE, as a colour on the GLYPH and nothing else. A map is a
+   screen somebody stares at: four hundred tinted tiles is a quilt, four
+   hundred tinted marks is a legend — and an ordinary machine has no hairline
+   at all now, so the colour has one job and the border has another.
 
    `--node` is the one property each kind sets, so everything below it reads the
    colour rather than the type — a fourth kind is a class and a token.        */
@@ -2551,10 +2557,7 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 .cell--compute { --node: var(--cyan); }
 .cell--relay   { --node: var(--jade); }
 
-.cell--silo, .cell--compute, .cell--relay {
-  color: var(--node);
-  border-color: color-mix(in srgb, var(--node) 34%, transparent);
-}
+.cell--silo, .cell--compute, .cell--relay { color: var(--node); }
 
 /* THE PORTAL. There is exactly one in the world, which is what pays for the
    only animation on the screen: a rationed accent spent on a thing you will
@@ -2580,7 +2583,11 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
    the way there. Static on purpose — the portal keeps the only movement on the
    map, and a screen with two things pulsing has neither of them meaning
    anything. */
-.cell--rebooting { border-style: dashed; }
+.cell--rebooting {
+  border-style: dashed;
+  /* Its own, because an ordinary machine no longer has one to restyle. */
+  border-color: color-mix(in srgb, var(--node, var(--ink-2)) 55%, transparent);
+}
 
 /* A BACKDOOR YOU HOLD. The kit's corner tick, which marks a box as one you
    have and marks nothing else — and in ember, because this is the one thing on
@@ -2670,16 +2677,20 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
 
 .cell--new {
   /* Underneath the light, and what a browser without @property is left with:
-     a hairline in the machine's own colour, brighter than its neighbours. */
-  border-color: color-mix(in srgb, var(--node, var(--ink-1)) 70%, transparent);
+     a hairline in the machine's own colour. Quiet — now that an ordinary
+     machine has no border at all, having one is already the whole signal, and
+     the travelling light only has to be noticed rather than announced. */
+  border-color: color-mix(in srgb, var(--node, var(--ink-1)) 40%, transparent);
   border-image: conic-gradient(
     from var(--cell-sweep),
     transparent 0turn,
-    var(--node, var(--ink-1)) 0.06turn,
+    color-mix(in srgb, var(--node, var(--ink-1)) 65%, transparent) 0.06turn,
     transparent 0.14turn,
     transparent 1turn
   ) 1;
-  animation: cell-sweep 3s linear infinite;
+  /* Unhurried. It is a condition, and a light going round a 30px square in
+     three seconds reads as urgency the fact does not have. */
+  animation: cell-sweep 6s linear infinite;
 }
 
 @keyframes cell-sweep {
@@ -2688,9 +2699,9 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
 
 /* Four phases is enough to break the lockstep without anybody being able to
    see the pattern in it. */
-.cell--new:nth-child(4n+1) { animation-delay: -0.4s; }
-.cell--new:nth-child(4n+2) { animation-delay: -1.3s; }
-.cell--new:nth-child(4n+3) { animation-delay: -2.1s; }
+.cell--new:nth-child(4n+1) { animation-delay: -0.9s; }
+.cell--new:nth-child(4n+2) { animation-delay: -2.6s; }
+.cell--new:nth-child(4n+3) { animation-delay: -4.2s; }
 
 /* A saved position, marked with the kit's corner tick — the same device that
    means "one you have" everywhere else, which is exactly what a waypoint is. */
