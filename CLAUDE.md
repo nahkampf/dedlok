@@ -1105,6 +1105,13 @@ carries the detail.
   half-finished read costs it. **Settling is lazy**: the map resolves anything
   that matured on the way in, the way a training deposit catches up, so no
   scheduler has to have been running.
+- **An interrupted read is a lost read.** The analyser must have been running
+  for the WHOLE pass, not merely at the end: `inventory_items.started_at` is
+  later than the read began if it was stopped and restarted, which answers it
+  without recording any history — and without it a player could free the
+  compute for a quarter of an hour and switch it back on before looking.
+  Swapping to a different analyser fails the same test, correctly. A voided
+  pass is still SPENT, and the map says so on the way in.
 - **`Probe` is bound in the container**, so a test can pin its dice and have
   the SCREENS use them — the map settles a scan during `index()`, which a
   `fromConfig()` built inside the controller would have made untestable.

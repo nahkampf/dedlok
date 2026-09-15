@@ -27,6 +27,7 @@ final class ProbeResult
         public readonly array $found,
         public readonly array $rolls,
         public readonly ?ProbeRefusal $refusal,
+        public readonly bool $voided = false,
     ) {}
 
     /**
@@ -52,6 +53,18 @@ final class ProbeResult
     public static function refused(ProbeRefusal $refusal): self
     {
         return new self(null, [], [], $refusal);
+    }
+
+    /**
+     * The read was lost: the scanner stopped before it finished.
+     *
+     * A success in the sense that nothing was refused — the pass ran and came
+     * to nothing — which is why it is a flag on a result rather than a
+     * refusal. The pass is spent either way.
+     */
+    public static function voided(SystemScan $scan): self
+    {
+        return new self($scan, [], [], null, true);
     }
 
     /** Started rather than finished: there is a clock running on this scan. */

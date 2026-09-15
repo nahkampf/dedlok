@@ -14,6 +14,7 @@ use App\Stats\Resolver;
 use App\Stats\SkillStats;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -141,6 +142,13 @@ final class Probe
             return ProbeResult::refused(ProbeRefusal::Busy);
         }
 
+        // A read that has just been lost is reported rather than immediately
+        // replaced: pressing Scan again is the player's decision to spend
+        // another pass, and they should make it knowing the last one is gone.
+        if ($settled?->voided === true) {
+            return $settled;
+        }
+
         if ($scan->isComplete()) {
             return $settled ?? ProbeResult::refused(ProbeRefusal::AlreadyKnown);
         }
@@ -173,9 +181,24 @@ final class Probe
         // wearing a new address. The instrument has nothing to report and the
         // pass is spent, which is the honest outcome rather than a refund.
         if ($system === null) {
-            $scan->forceFill(['pass_started_at' => null, 'pass_ready_at' => null])->save();
+            return $this->void($scan);
+        }
 
-            return ProbeResult::scanned($scan, [], []);
+        /*
+         * THE SCANNER HAS TO STILL BE RUNNING AT THE END.
+         *
+         * A read is minutes of an instrument pointed at a machine, not a
+         * button that pays out later: unloading it halfway through loses what
+         * it had, and the pass is spent all the same. That is what makes the
+         * compute an analyser spends a real cost — it has to be spent for the
+         * whole read, on a deck that could be running something else.
+         *
+         * Checked HERE rather than when the pass began, which is the only
+         * place it can be: what a character was carrying minutes ago is not
+         * what they are carrying now.
+         */
+        if (! $this->hasAnalyserRunningSince($character, $scan->pass_started_at)) {
+            return $this->void($scan);
         }
 
         return $this->resolve($character, $system, $scan);
@@ -192,15 +215,39 @@ final class Probe
      */
     public function hasAnalyserRunning(Character $character): bool
     {
-        if ($character->equipped_deck_id === null) {
-            return false;
+        return $this->analysers($character)->exists();
+    }
+
+    /**
+     * Has one been running SINCE a moment — without interruption?
+     *
+     * `inventory_items.started_at` is what makes this answerable without
+     * recording a history: starting a program writes the moment, so an
+     * analyser that was stopped and started again during the read carries a
+     * later one and fails this. **A read that was interrupted is a read that
+     * was lost**, and asking only whether one is running NOW would let a
+     * player free the compute for fifteen minutes and turn it back on before
+     * looking.
+     *
+     * Swapping to a different analyser mid-read fails it too, and correctly:
+     * the instrument that finishes the read has to be the one that started it.
+     */
+    public function hasAnalyserRunningSince(Character $character, ?\DateTimeInterface $since): bool
+    {
+        if ($since === null) {
+            return $this->hasAnalyserRunning($character);
         }
 
+        return $this->analysers($character)->where('started_at', '<=', $since)->exists();
+    }
+
+    /** @return Builder<InventoryItem> */
+    private function analysers(Character $character): Builder
+    {
         return InventoryItem::query()
             ->where('character_id', $character->getKey())
-            ->where('running_on_deck_id', $character->equipped_deck_id)
-            ->whereHas('item.program', static fn ($query) => $query->where('kind', ProgramKind::Analyser->value))
-            ->exists();
+            ->where('running_on_deck_id', $character->equipped_deck_id ?? 0)
+            ->whereHas('item.program', static fn ($query) => $query->where('kind', ProgramKind::Analyser->value));
     }
 
     /**
@@ -270,6 +317,20 @@ final class Probe
         DB::transaction(static fn () => $scan->save());
 
         return ProbeResult::begun($scan);
+    }
+
+    /**
+     * The read came to nothing. Stop the clock and keep the pass spent.
+     *
+     * One place for both ways of losing one — the machine stopped answering,
+     * or the instrument stopped listening — because what the player is told
+     * and what the row ends up holding are the same in each case.
+     */
+    private function void(SystemScan $scan): ProbeResult
+    {
+        $scan->forceFill(['pass_started_at' => null, 'pass_ready_at' => null])->save();
+
+        return ProbeResult::voided($scan);
     }
 
     /** The roll itself, made at the moment the pass matures. */

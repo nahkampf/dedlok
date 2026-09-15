@@ -54,12 +54,28 @@ class CyberspaceController extends Controller
                 ->first()
             : null;
 
-        // A pass that finished while they were away is resolved HERE, on the
-        // way in. Nothing schedules it: the answer is a function of the clock,
-        // so whoever looks next can work it out — the same shape a training
-        // deposit catches up in.
-        if ($probe->settle($character, $scan) !== null) {
+        /*
+         * A pass that finished while they were away is resolved HERE, on the
+         * way in. Nothing schedules it: the answer is a function of the clock,
+         * so whoever looks next can work it out — the same shape a training
+         * deposit catches up in.
+         *
+         * And it SAYS what it came to. Flashed for this render only, because
+         * this is a GET and the news belongs to the screen being drawn rather
+         * than to the next one — a player who arrives to find a scan quietly
+         * finished has been told nothing about the minutes they spent.
+         */
+        $settled = $probe->settle($character, $scan);
+
+        if ($settled !== null) {
             $scan = $scan?->fresh(['operatingSystem']);
+
+            $request->session()->now(
+                $settled->voided ? 'error' : 'status',
+                $settled->voided
+                    ? Text::get('cyberspace.scan.voided')
+                    : Text::plural('cyberspace.scan.found', count($settled->found), ['count' => count($settled->found)]),
+            );
         }
 
         return view('cyberspace.index', [
@@ -146,6 +162,10 @@ class CyberspaceController extends Controller
 
         if (! $result->succeeded()) {
             return back()->with('error', $result->refusal->message());
+        }
+
+        if ($result->voided) {
+            return back()->with('error', Text::get('cyberspace.scan.voided'));
         }
 
         // A pass just begun has found nothing yet and says when it will have.

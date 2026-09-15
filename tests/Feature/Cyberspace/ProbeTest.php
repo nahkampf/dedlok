@@ -466,6 +466,71 @@ final class ProbeTest extends TestCase
     }
 
     /**
+     * STOPPING THE SCANNER LOSES THE READ. A read is minutes of an instrument
+     * pointed at a machine, not a button that pays out later — so unloading it
+     * halfway through costs what it had and the pass with it.
+     */
+    public function test_stopping_the_scanner_mid_read_voids_the_pass(): void
+    {
+        $this->machine(grade: 4, os: $this->anOperatingSystem());
+
+        $this->probe(0.0)->scan($this->character);
+
+        app(ProgramRunner::class)->stopAll($this->character->fresh(), $this->character->equippedDeck);
+        $this->travel(20)->minutes();
+
+        $result = $this->probe(0.0)->settle($this->character->fresh(), SystemScan::query()->sole());
+
+        $this->assertNotNull($result);
+        $this->assertTrue($result->voided);
+        $this->assertFalse($result->foundSomething());
+
+        $scan = SystemScan::query()->sole();
+        $this->assertNull($scan->grade, 'a read that was not finished found nothing');
+        $this->assertSame(1, $scan->passes, 'and the pass is spent all the same');
+        $this->assertNull($scan->pass_ready_at);
+    }
+
+    /** The screen says so rather than letting minutes vanish quietly. */
+    public function test_the_map_reports_a_lost_read(): void
+    {
+        $this->machine(grade: 1);
+        $this->sweep();
+
+        $this->probe(0.0)->scan($this->character);
+        app(ProgramRunner::class)->stopAll($this->character->fresh(), $this->character->equippedDeck);
+        $this->travel(20)->minutes();
+
+        $this->actingAs($this->character->fresh()->user)
+            ->get(route('cyberspace.index'))
+            ->assertOk()
+            ->assertSee(Text::get('cyberspace.scan.voided'));
+    }
+
+    /**
+     * AND TURNING IT BACK ON DOES NOT HEAL IT. `started_at` on the running row
+     * is later than the read began, so an instrument that was off for part of
+     * it is one that did not finish the read — otherwise a player could free
+     * the compute for a quarter of an hour and switch it back on before
+     * looking.
+     */
+    public function test_a_lost_read_is_reported_before_another_is_started(): void
+    {
+        $this->machine(grade: 1);
+
+        $this->probe(0.0)->scan($this->character);
+        app(ProgramRunner::class)->stopAll($this->character->fresh(), $this->character->equippedDeck);
+        $this->travel(20)->minutes();
+
+        $this->runAScanner();
+
+        $result = $this->probe(0.0)->scan($this->character->fresh());
+
+        $this->assertTrue($result->voided);
+        $this->assertSame(1, SystemScan::query()->sole()->passes, 'no second pass was begun');
+    }
+
+    /**
      * A machine that stops answering mid-read costs the pass. The instrument
      * has nothing to report, which is honest rather than a refund.
      */
@@ -480,6 +545,7 @@ final class ProbeTest extends TestCase
         $result = $this->probe(0.0)->settle($this->character->fresh(), SystemScan::query()->sole());
 
         $this->assertNotNull($result);
+        $this->assertTrue($result->voided);
         $this->assertFalse($result->foundSomething());
         $this->assertSame(1, SystemScan::query()->sole()->passes);
         $this->assertNull(SystemScan::query()->sole()->pass_ready_at);

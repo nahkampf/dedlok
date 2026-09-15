@@ -294,6 +294,7 @@ return [
             'reading' => 'Reading',
             'ready_in' => 'Answer in :when',
             'gone' => 'The machine stopped answering before the read finished.',
+            'voided' => 'Your scanner stopped before the read finished. That pass is gone.',
             'duration' => 'A pass here takes about :when',
             'already_known' => 'You already have everything this machine will tell you.',
             'exhausted' => 'You have read this machine as far as you can. What you have is what you get until it goes stale.',

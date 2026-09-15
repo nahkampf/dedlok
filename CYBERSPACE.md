@@ -24,6 +24,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
 | Scanning — the probe | **built** for what a system currently HAS: grade and operating system. Needs an analyser RUNNING on the equipped deck; one press starts one pass, capped by the `scan_passes` stat |
 | A pass takes TIME | **built** — about a minute against a grade 1 and sixteen against a grade 9, cut by skill and by a better instrument through the `scan_duration` stat. Settled lazily by whoever next looks |
+| An interrupted read is lost | **built** — the analyser has to have been running for the WHOLE pass, which `inventory_items.started_at` answers without recording a history |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
 | Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
