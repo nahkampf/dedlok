@@ -832,10 +832,12 @@ says which, and two tables carry what a bare `items` row cannot.
   the equipped deck genuinely reads differently from the same deck in the
   stash, and every screen picked that up at once because there is one place
   the rule lives.
-- **Readiness gates jacking in, and nothing else.** `DeckTotals::isReady()` is
-  the whole check, and `App\Cyberspace\Navigator::jackIn()` is what calls it.
-  Fitting and equipping are never refused for it — you build a deck while
-  carrying it. CYBERSPACE.md names one more caller, the start of every
+- **Readiness gates jacking in and starting a program, and nothing else.**
+  `DeckTotals::isReady()` is the whole check;
+  `App\Cyberspace\Navigator::jackIn()` and `App\Programs\ProgramRunner::start()`
+  are the two callers — a machine missing its NIC does not get to run a
+  decryption either. Fitting and equipping are never refused for it: you build
+  a deck while carrying it. CYBERSPACE.md names one more caller, the start of every
   intrusion run, which does not exist yet.
 - **The deck is locked while you are jacked in.** Fitting, taking out,
   stripping, unequipping, and destroying the deck or anything fitted in it are
@@ -862,6 +864,78 @@ says which, and two tables carry what a bare `items` row cannot.
 - **A deck that cannot power every socket it presents is intentional.** Do not
   "fix" one, and do not add a bigger supply to make one fit — over-commitment
   is the player's decision to balance, and skills are meant to cut draw.
+
+### Programs
+
+**Software is an item with a `programs` row**, exactly as deck hardware is an
+item with a `deck_modules` row. No column on `items` says which — a row
+carrying costs and a kind is what being a program means, and one place to look
+beats two that can disagree.
+
+- **Three costs, because they are paid at different times.** `storage_size` is
+  paid by OWNING the file; `qflops_cost` and `memory_cost` only while it RUNS.
+  That is the whole reason storage is a measure of its own: a deck can be full
+  without being busy and busy without being full.
+- **There is no "loaded".** A program is running or it is not.
+  `background_process` says which a program is ALLOWED to be — a decryptor
+  grinds away while its owner is signed out, an icebreaker is meaningless
+  outside a run — and the refusal for getting it wrong is
+  `ProcessRefusal::RunOnly`.
+- **Running is two columns on the inventory row** — `running_on_deck_id` and
+  `started_at`, null exactly together — and never a join table. A fitting needs
+  three references because a socket is a place; a process has none, since a
+  program runs on a deck full stop. **It also has to be on the row**:
+  `stack_key` is derived from the row on every save and the rule is that IDLE
+  copies stack while RUNNING ones do not. A flag in another table would be
+  invisible to that derivation, and two running icebreakers would silently
+  merge into one row with a quantity of two.
+- **`App\Programs\ProgramRunner` is the only writer of those two columns.**
+  Starting takes one copy off the pile and gives it a row of its own; stopping
+  puts it back and MERGES into the pile if one is there. The merge is not
+  optional — `stack_key` is unique, so a stopped row whose key matches an
+  existing pile collides with it.
+- **Always the equipped deck**, which is why `start()` takes no deck argument.
+  It follows that unequipping stops everything, and so do fitting, stripping
+  and destroying the deck: `stopAll()` is called by `DeckEquipper`,
+  `ModuleFitter` and the destroy path.
+- **`running_on_deck_id` is RESTRICT, and that was forced rather than chosen.**
+  `ON DELETE SET NULL` is refused by MySQL (error 3823) because the column
+  appears in a CHECK constraint — and it was right to refuse, since nulling the
+  deck id would leave `started_at` behind, which is the state the "both or
+  neither" check exists to forbid. CASCADE was never an option: losing a machine
+  must not delete the software that was running on it. So the destroy path stops
+  the processes first, inside the same transaction, the way a skill's book is
+  dropped before the skill.
+- **Compute and memory are measured against the deck's RESOLVED totals**, so a
+  skill that frees up compute lets a player run one more program without
+  `ProgramRunner` knowing that skills exist.
+- **The kind is asked about BY NAME and is not derived from the modifiers.**
+  Five of them — icebreaker, decryptor, evasion, analyser, daemon — because a
+  program is a gate as much as a modifier: no amount of bonuses adds up to
+  having a running icebreaker. A sixth is an enum case, a line in the CHECK, and
+  a string, the same shape `App\Decks\Hardware` has.
+- **`programs.modifiers` is nullable JSON, and null is ordinary.** A plain
+  icebreaker genuinely modifies nothing, and `[]` and "nothing" should not be
+  two ways of writing one fact. `App\Stats\Sources\RunningPrograms` reads them,
+  and **only the equipped deck's processes count** — a character may leave
+  programs running on a spare deck, and it costs that deck's budget rather than
+  changing their sheet.
+- **`ProgramEditor` is the only writer of the `programs` table**, and like
+  `HardwareEditor` it always clears the side an item stopped being. Nothing to
+  diff, unlike sockets: a process points at an INVENTORY row and never at the
+  definition, so replacing it wholesale strands nothing.
+- **`$duringRun` is the gate nothing opens yet.** A run-only program is started
+  BY the intrusion simulator and never by a player pressing a button, and the
+  simulator does not exist — so today only background programs can be started
+  at all. Jacking into cyberspace is NOT a run and must not pass `true`.
+- **Storage is stored and not enforced.** `deck_storage` is a measure and
+  `DeckRequirement` has no storage case, so owning more software than the deck
+  can hold currently costs nothing.
+- The screens: the topbar carries a COUNT and a modal (width is the constraint
+  there, see *The page frame*), the deck screen has the Running and Storage
+  tabs — storage split into two grids because a program and a file share an
+  inventory without being the same kind of thing — and `inventory.run` is one
+  route in both directions, like `deck.equip`.
 
 ### Implants
 
@@ -933,10 +1007,10 @@ carries the detail.
   nothing that can disagree with the coordinates. **Every arrival sweeps**, in
   the same transaction as the move — a player who moved and did not see is a
   player whose map went stale in front of them.
-- **Readiness gates jacking in and nothing else.** `DeckTotals::isReady()`
-  through `forCharacter()`, so the gate and the deck screen cannot disagree.
-  The deck lock that follows from being inside is under *Cyberdecks and
-  modules*, above.
+- **Readiness gates jacking in**, through `DeckTotals::forCharacter()`, so the
+  gate and the deck screen cannot disagree about a deck. Starting a program is
+  the other caller — see *Programs*. The deck lock that follows from being
+  inside is under *Cyberdecks and modules*, above.
 - **A waypoint bookmark may only be set on swept ground, and
   `App\Cyberspace\BookmarkKeeper` is where that lives** — it is a fact about a
   bitmap in another table, so no CHECK can reach it. Without it, coordinates
