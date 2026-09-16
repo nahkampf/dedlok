@@ -211,6 +211,11 @@
 
     <p class="micro" style="color:var(--ink-2);margin-top:var(--s-2)">{{ Text::get('cyberspace.map.keys') }}</p>
 
+    {{-- Getting somewhere without walking: an address anyone can hand you, and
+         the places you have saved. --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:var(--s-4);margin-top:var(--s-5)">
+        <section class="panel">
+            <div class="panel__hd"><h2>{{ Text::get('cyberspace.map.jump') }}</h2></div>
 
             <form method="POST" action="{{ route('cyberspace.jump') }}">
                 @csrf

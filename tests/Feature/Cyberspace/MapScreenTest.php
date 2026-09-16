@@ -293,6 +293,36 @@ final class MapScreenTest extends TestCase
 
     // ---- the view model ----------------------------------------------------
 
+    /**
+     * THE PANELS BELOW THE MAP ARE STILL THERE, AND STILL CLOSED.
+     *
+     * This is a structural assertion rather than a content one, and it exists
+     * because the thing it catches actually shipped: a commit that rebuilt the
+     * legend took the two-column wrapper and the jump panel's opening tags with
+     * it, leaving two orphaned closers. The page still rendered — a browser
+     * simply discards a close tag with nothing to close — so every test here
+     * went on passing while the bottom of the screen fell apart.
+     *
+     * Nothing else in the suite would notice: assertSee() finds the text
+     * whether or not the box around it survived.
+     */
+    public function test_the_panels_under_the_map_are_whole(): void
+    {
+        $html = $this->actingAs($this->user)
+            ->get(route('cyberspace.index'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(
+            substr_count($html, '<section class="panel"'),
+            substr_count($html, '</section>'),
+            'the panels under the map do not close cleanly',
+        );
+
+        $this->assertStringContainsString(Text::get('cyberspace.bookmarks.heading'), $html);
+        $this->assertStringContainsString(Text::get('cyberspace.map.jump'), $html);
+    }
+
     public function test_the_window_is_square_and_centred_on_the_player(): void
     {
         $this->equipReadyDeck();
