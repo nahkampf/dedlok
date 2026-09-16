@@ -837,6 +837,44 @@ final class ProbeTest extends TestCase
         $this->assertSame('ok', $facts['os']['mark']);
     }
 
+    /**
+     * ABANDONING FREES THE INSTRUMENT AND REFUNDS NOTHING.
+     *
+     * The pass is spent when begun, so a player who could take one back by
+     * pressing a button would have a free look at whether a read was going
+     * well. What it buys is the scanner, immediately, for another machine.
+     */
+    public function test_abandoning_a_read_frees_the_scanner_and_keeps_the_pass_spent(): void
+    {
+        $this->machine(grade: 5, os: $this->anOperatingSystem());
+
+        $begun = $this->probe(0.0)->scan($this->character);
+        $this->assertTrue($begun->isRunning());
+        $this->assertSame(1, $begun->scan->passes);
+
+        $this->actingAs($this->character->fresh()->user)
+            ->delete(route('cyberspace.abandon'), ['address' => 'DEADBEEF'])
+            ->assertRedirect();
+
+        $scan = SystemScan::query()->where('address', 'DEADBEEF')->first();
+
+        $this->assertNull($scan->reading_process_id, 'the instrument is free again');
+        $this->assertNull($scan->pass_ready_at, 'and the clock has stopped');
+        $this->assertSame(1, $scan->passes, 'the pass it had begun stays spent');
+        $this->assertNotNull($scan->expires_at, 'and the file survives to be continued');
+    }
+
+    /** Abandoning what is not running is an ordinary answer, not an error. */
+    public function test_abandoning_nothing_refuses_quietly(): void
+    {
+        $this->machine(grade: 5);
+
+        $this->actingAs($this->character->fresh()->user)
+            ->delete(route('cyberspace.abandon'), ['address' => 'DEADBEEF'])
+            ->assertRedirect()
+            ->assertSessionHas('error');
+    }
+
     /** A fact nobody has read is marked with nothing — an unanswered question is not a failure. */
     public function test_an_unread_operating_system_is_not_marked_as_a_failure(): void
     {

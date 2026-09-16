@@ -155,6 +155,12 @@ Route::middleware('auth')->group(function () {
     // is the same lazy catch-up the map does rather than a write of its own.
     Route::get('/cyberspace/reading', [CyberspaceController::class, 'reading'])->name('cyberspace.reading');
 
+    // Stopping a read. NOT jacking out and not unloading the analyser — it
+    // stops pointing the instrument at one machine and frees it for another.
+    // Takes an address rather than a position, because a read survives its
+    // owner walking away from the machine it is reading.
+    Route::delete('/cyberspace/reading', [CyberspaceController::class, 'abandon'])->name('cyberspace.abandon');
+
     // Bookmarks. The recall is a POST because it moves you; the rest edit a
     // note.
     Route::post('/cyberspace/bookmark', [CyberspaceController::class, 'bookmark'])->name('cyberspace.bookmark');

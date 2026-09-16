@@ -1074,6 +1074,19 @@ cap-widget {
 }
 .panel.cut { border: 0; border-radius: 0; background: transparent; }
 
+/* A PANEL WHOSE CONTENT IS NOT IN A BODY.
+
+   `.panel__bd` is what normally holds a panel off its own border, and a panel
+   that puts forms and rows directly inside it has nothing doing that job — the
+   content ends up flush against the hairline, which reads as a box that has
+   come apart rather than as a tight one.
+
+   Inline only: the head and foot bring their own padding, and rows inside
+   these panels carry their own vertical rhythm through the border-top that
+   separates them. `padding-inline` rather than left and right so it follows
+   the writing direction without a second rule. */
+.panel--snug { padding-inline: 3px; }
+
 .panel__hd {
   display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3);
   padding: var(--s-3) var(--s-4);

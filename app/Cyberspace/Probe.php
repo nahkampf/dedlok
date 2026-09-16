@@ -246,7 +246,7 @@ final class Probe
         // wearing a new address. The instrument has nothing to report and the
         // pass is spent, which is the honest outcome rather than a refund.
         if ($system === null) {
-            return $this->void($scan);
+            return $this->void($scan, VoidCause::TargetGone);
         }
 
         /*
@@ -263,7 +263,7 @@ final class Probe
          * what they are carrying now.
          */
         if (! $this->stillReading($scan)) {
-            return $this->void($scan);
+            return $this->void($scan, VoidCause::InstrumentStopped);
         }
 
         return $this->resolve($character, $system, $scan, $now);
@@ -461,13 +461,57 @@ final class Probe
     }
 
     /**
+     * Stop reading this machine, because the player said so.
+     *
+     * NOT A REFUND. The pass it had begun is spent, the same way a pass lost
+     * to an unloaded scanner is — passes are spent when BEGUN, and a player who
+     * could take one back by pressing a button would have a free look at
+     * whether a read was going well.
+     *
+     * What it DOES buy is the instrument. Clearing the pointer frees the
+     * analyser to be aimed at something else immediately, which is the whole
+     * reason to abandon one: a scanner grinding away at a machine you have
+     * lost interest in is compute you are not spending on the machine you have
+     * moved on to. The program keeps running — abandoning a read is not
+     * unloading the software.
+     *
+     * The file itself SURVIVES, with whatever it had already found out. It
+     * goes stale on its own clock like any other scan, so coming back to an
+     * abandoned read means continuing it rather than starting again.
+     *
+     * Returns false when there was nothing to abandon, which is an ordinary
+     * answer: a read can finish, or be voided, between the screen rendering
+     * the button and somebody pressing it.
+     */
+    public function abandon(Character $character, string $address): bool
+    {
+        $scan = SystemScan::query()
+            ->where('character_id', $character->id)
+            ->where('address', strtoupper($address))
+            ->live()
+            ->first();
+
+        if ($scan === null || $scan->reading_process_id === null) {
+            return false;
+        }
+
+        $scan->forceFill([
+            'pass_started_at' => null,
+            'pass_ready_at' => null,
+            'reading_process_id' => null,
+        ])->save();
+
+        return true;
+    }
+
+    /**
      * The read came to nothing. Stop the clock and keep the pass spent.
      *
      * One place for both ways of losing one — the machine stopped answering,
      * or the instrument stopped listening — because what the player is told
      * and what the row ends up holding are the same in each case.
      */
-    private function void(SystemScan $scan): ProbeResult
+    private function void(SystemScan $scan, VoidCause $cause): ProbeResult
     {
         $scan->forceFill([
             'pass_started_at' => null,
@@ -475,7 +519,7 @@ final class Probe
             'reading_process_id' => null,
         ])->save();
 
-        return ProbeResult::voided($scan);
+        return ProbeResult::voided($scan, $cause);
     }
 
     /** The roll itself, made at the moment the pass matures. */

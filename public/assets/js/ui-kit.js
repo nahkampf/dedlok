@@ -638,6 +638,12 @@
       // placeholder it was rendered with.
       const addr = dlg.querySelector("[data-reading-address]");
       if (addr && data.address) addr.dataset.copy = data.address;
+
+      // Abandoning posts an address, and the dialog is rendered once for
+      // whichever read is being watched — so the form has to follow the poll
+      // rather than the page it was rendered on.
+      const target = dlg.querySelector("[data-reading-abandon-address]");
+      if (target && data.address) target.value = data.address;
       set("instrument", data.instrument);
       set("pass", dlg.dataset.readingPass
         .replace(":pass", data.pass)

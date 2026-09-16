@@ -370,8 +370,32 @@ return [
             'none' => 'None',
             'tracer' => ':detection, tracing :rate% a turn',
             'complete' => 'Everything this machine will tell you.',
-            'exhausted' => 'Read as far as it can be. What is here is what you get until the file goes stale.',
-            'close' => 'Close',
+            'exhausted' => 'Scan attempt finished (incomplete).',
+
+            /*
+            | THE TWO WAYS OUT OF A READ, and neither of them is "close".
+            |
+            | A scan is a background process: leaving the screen does not stop
+            | it, and a button that said Close would be describing the window
+            | rather than the thing in it. So one button says what carries on
+            | and the other says what stops — and the screen is reachable again
+            | from the running processes in the bar, which is where a
+            | background process lives once you have walked away from it.
+            */
+            'background' => 'Run in background',
+            'abandon' => 'Abandon scan',
+            'abandoned' => 'Scan abandoned. The pass it had begun is spent.',
+            'abandon_nothing' => 'Nothing is reading that machine.',
+            'running_label' => 'Running scan',
+
+            /*
+            | NO FILE AT THIS ADDRESS, which is not the same as a read that was
+            | lost and must not borrow its sentence. It means the file was
+            | spent, went stale, or was never started — nothing has gone wrong
+            | with anybody's scanner, and saying one did sends a player to
+            | inspect a deck that is working.
+            */
+            'no_file' => 'No scan data for this address. It was spent, or it went stale.',
 
             /*
             | An address is the one thing on these screens somebody wants OUT

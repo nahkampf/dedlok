@@ -313,8 +313,10 @@ final class MapScreenTest extends TestCase
             ->assertOk()
             ->getContent();
 
+        // Counted on the TAG, not on a class list — a class added to a panel
+        // is not a structural change and must not fail a structural test.
         $this->assertSame(
-            substr_count($html, '<section class="panel"'),
+            substr_count($html, '<section'),
             substr_count($html, '</section>'),
             'the panels under the map do not close cleanly',
         );

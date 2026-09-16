@@ -28,6 +28,14 @@ final class ProbeResult
         public readonly array $rolls,
         public readonly ?ProbeRefusal $refusal,
         public readonly bool $voided = false,
+        /**
+         * WHY it was lost, when it was. Two causes wore one sentence for a
+         * while and the sentence named the wrong one half the time: a machine
+         * that burned or relocated under a read has nothing to do with the
+         * player's scanner, and telling them their scanner stopped sends them
+         * to look at a deck that is working perfectly.
+         */
+        public readonly ?VoidCause $cause = null,
     ) {}
 
     /**
@@ -62,9 +70,9 @@ final class ProbeResult
      * to nothing — which is why it is a flag on a result rather than a
      * refusal. The pass is spent either way.
      */
-    public static function voided(SystemScan $scan): self
+    public static function voided(SystemScan $scan, VoidCause $cause = VoidCause::InstrumentStopped): self
     {
-        return new self($scan, [], [], null, true);
+        return new self($scan, [], [], null, true, $cause);
     }
 
     /** Started rather than finished: there is a clock running on this scan. */

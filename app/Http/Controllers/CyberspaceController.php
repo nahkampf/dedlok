@@ -177,7 +177,10 @@ class CyberspaceController extends Controller
         }
 
         if ($result->voided) {
-            return back()->with('error', Text::get('cyberspace.scan.voided'));
+            // WHICH way it was lost. The instrument and the machine are two
+            // different things to have gone wrong, and one message for both
+            // sent players to inspect a deck that was working.
+            return back()->with('error', $result->cause?->message() ?? Text::get('cyberspace.scan.voided'));
         }
 
         // A pass just begun has found nothing yet and says when it will have.
@@ -213,6 +216,33 @@ class CyberspaceController extends Controller
      * side of the grid can be watched from wherever its owner is standing —
      * which is the whole point of a read that runs in the background.
      */
+    /**
+     * Stop reading a machine.
+     *
+     * The pass it had begun stays spent — see Probe::abandon() — so this is
+     * not a way to take a look at how a read is going and then undo it. What
+     * it frees is the instrument.
+     *
+     * A read that has already finished or been lost is not an error: the
+     * screen showing the button and the press that follows it are minutes
+     * apart, and a scan can end in between.
+     */
+    public function abandon(Request $request, Probe $probe): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        $data = $request->validate([
+            'address' => ['required', 'string', 'max:32'],
+        ]);
+
+        $abandoned = $probe->abandon($character, $data['address']);
+
+        return back()->with(
+            $abandoned ? 'status' : 'error',
+            Text::get($abandoned ? 'cyberspace.reading.abandoned' : 'cyberspace.reading.abandon_nothing'),
+        );
+    }
+
     public function reading(Request $request, Probe $probe): JsonResponse
     {
         $character = $this->character($request);
