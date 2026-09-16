@@ -85,16 +85,18 @@ class DefendSystems extends Command
             $query->where('ids_detection', 0)
                 ->where('tracer_detection', 0)
                 ->where('tracer_rate', 0)
-                ->whereNull('ice_id');
+                ->whereNull('ice_id')
+                ->where('ice_bounty', false);
         }
 
         // The catalogue, grouped by the grades each piece covers. Twelve rows
         // read once rather than a query per machine.
         $iceByGrade = [];
 
-        foreach (Ice::query()->get(['id', 'grade_min', 'grade_max']) as $ice) {
+        foreach (Ice::query()->get(['id', 'level', 'grade_min', 'grade_max']) as $ice) {
             foreach (range($ice->grade_min, $ice->grade_max) as $grade) {
-                $iceByGrade[$grade][] = $ice->id;
+                // id => level: the level is what the bounty odds are keyed on.
+                $iceByGrade[$grade][$ice->id] = $ice->level;
             }
         }
 
@@ -103,6 +105,7 @@ class DefendSystems extends Command
         $withIds = 0;
         $withTracer = 0;
         $withIce = 0;
+        $withBounty = 0;
 
         /*
          * ROLLED PER MACHINE, WRITTEN PER OUTCOME.
@@ -119,7 +122,7 @@ class DefendSystems extends Command
         $byOutcome = [];
 
         $query->orderBy('id')->chunkById(500, function ($systems) use (
-            $roll, $iceByGrade, &$byOutcome, &$rows, &$touched, &$withIds, &$withTracer, &$withIce
+            $roll, $iceByGrade, &$byOutcome, &$rows, &$touched, &$withIds, &$withTracer, &$withIce, &$withBounty
         ): void {
             foreach ($systems as $system) {
                 $defences = Defences::roll($system->type, $system->grade, $roll, $iceByGrade[$system->grade] ?? []);
@@ -129,6 +132,7 @@ class DefendSystems extends Command
                 $withIds += $defences->idsDetection > 0 ? 1 : 0;
                 $withTracer += $defences->tracerDetection > 0 ? 1 : 0;
                 $withIce += $defences->iceId !== null ? 1 : 0;
+                $withBounty += $defences->iceBounty ? 1 : 0;
 
                 $byOutcome[implode(':', $columns)][] = $system->getKey();
 
@@ -140,13 +144,14 @@ class DefendSystems extends Command
                     $defences->tracerDetection ?: '—',
                     $defences->tracerRate ?: '—',
                     $defences->iceId ?? '—',
+                    $defences->iceBounty ? 'yes' : '—',
                 ];
             }
         });
 
         if (! $dryRun) {
             foreach ($byOutcome as $key => $ids) {
-                [$idsDetection, $tracerDetection, $tracerRate, $iceId] = explode(':', $key);
+                [$idsDetection, $tracerDetection, $tracerRate, $iceId, $bounty] = explode(':', $key);
 
                 // Capped so the IN list stays a query rather than a novel.
                 foreach (array_chunk($ids, 500) as $batch) {
@@ -155,22 +160,24 @@ class DefendSystems extends Command
                         'tracer_detection' => (int) $tracerDetection,
                         'tracer_rate' => (int) $tracerRate,
                         'ice_id' => $iceId === '' ? null : (int) $iceId,
+                        'ice_bounty' => (bool) $bounty,
                     ]);
                 }
             }
         }
 
         $summary = sprintf(
-            '%d machine(s): %d with an IDS, %d with a tracer, %d with ICE',
+            '%d machine(s): %d with an IDS, %d with a tracer, %d with ICE, %d of those with a bounty',
             $touched,
             $withIds,
             $withTracer,
             $withIce,
+            $withBounty,
         );
 
         if ($dryRun) {
             $this->table(
-                ['address', 'type', 'grade', 'ids', 'tracer', 'rate', 'ice'],
+                ['address', 'type', 'grade', 'ids', 'tracer', 'rate', 'ice', 'bounty'],
                 array_slice($rows, 0, max(0, (int) $this->option('sample'))),
             );
 

@@ -45,19 +45,20 @@ final readonly class Defences
         public int $tracerDetection,
         public int $tracerRate,
         public ?int $iceId = null,
+        public bool $iceBounty = false,
     ) {}
 
     /** A machine that defends itself with nothing. The portal, and any misread type. */
     public static function none(): self
     {
-        return new self(0, 0, 0, null);
+        return new self(0, 0, 0, null, false);
     }
 
     /**
      * What a newly instantiated machine carries.
      *
      * @param  Closure(int, int): int  $roll  Inclusive both ends, like random_int.
-     * @param  list<int>  $iceForGrade  Ids of the ICE eligible for this grade, drawn from evenly.
+     * @param  array<int, int>  $iceForGrade  Eligible ICE for this grade as id => level, drawn from evenly.
      */
     public static function roll(SystemType $type, int $grade, Closure $roll, array $iceForGrade = []): self
     {
@@ -88,15 +89,34 @@ final readonly class Defences
          * ICE has not been migrated yet is a world of machines that cannot
          * fight, which beats no world at all.
          */
-        $ice = $carries('ice') && $iceForGrade !== []
-            ? $iceForGrade[$roll(0, count($iceForGrade) - 1)]
+        $ids_ = array_keys($iceForGrade);
+
+        $ice = $carries('ice') && $ids_ !== []
+            ? $ids_[$roll(0, count($ids_) - 1)]
             : null;
+
+        /*
+         * THE BOUNTY BELONGS TO THE MACHINE, NOT TO THE GUARD.
+         *
+         * The same piece of ICE on two systems is two different propositions,
+         * because one of them belongs to somebody who answers. So this is
+         * rolled here, beside the ICE, rather than carried on the ICE's row —
+         * and a player who has met an ICE XII and walked away has learned what
+         * it hits for, never whether the next one has them followed home.
+         *
+         * The odds climb with the PIECE's level even though the answer is the
+         * machine's: what is being asked is how much trouble a guard of this
+         * calibre implies about whoever installed it.
+         */
+        $bounty = $ice !== null
+            && $roll(1, 100) <= DefeatTag::Bounty->authoringChance($iceForGrade[$ice]);
 
         return new self(
             $ids,
             $tracer ? (self::table('tracer.detection')[$grade] ?? 0) : 0,
             $tracer ? (self::table('tracer.rate')[$grade] ?? 0) : 0,
             $ice,
+            $bounty,
         );
     }
 
@@ -108,6 +128,7 @@ final readonly class Defences
             'tracer_detection' => $this->tracerDetection,
             'tracer_rate' => $this->tracerRate,
             'ice_id' => $this->iceId,
+            'ice_bounty' => $this->iceBounty,
         ];
     }
 

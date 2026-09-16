@@ -22,21 +22,18 @@ use Illuminate\Console\Command;
  * piece, because it is the most expensive thing in the tag set by some
  * distance and it should belong to the single worst thing in the world.
  *
- * BOUNTY IS ROLLED RATHER THAN CHOSEN, at odds that climb with level — a tenth
- * at ICE I, two-thirds at ICE XII. That is what keeps a player who has met one
- * grade 9 guard from knowing the next, and it is the only tag here whose
- * presence is not a decision. The roll is injected so a test can pin it.
+ * BOUNTY IS NOT HERE, and that is deliberate. It belongs to the MACHINE rather
+ * than to the guard — the same piece of ICE on two systems is two different
+ * propositions, because one of them belongs to somebody who answers — so it is
+ * rolled beside the ICE in `App\Cyberspace\Defences` and stored on
+ * `systems.ice_bounty`. Nothing here writes it.
  *
- * Idempotent in the sense that matters: it REPLACES a row's tags with the grid,
- * so running it twice gives the same authored tags — but it rolls Bounty again,
- * so running it twice is a different lottery. --keep-bounty leaves whatever was
- * already rolled.
+ * Running this twice writes the same tags, because nothing in it is rolled.
  */
 class TagIce extends Command
 {
     protected $signature = 'cyberspace:tag-ice
-                            {--dry-run : Print the grid and write nothing}
-                            {--keep-bounty : Leave each row\'s existing bounty alone rather than rolling again}';
+                            {--dry-run : Print the grid and write nothing}';
 
     protected $description = 'Write the defeat tags onto the twelve pieces of ICE';
 
@@ -63,9 +60,6 @@ class TagIce extends Command
     public function handle(): int
     {
         $dryRun = (bool) $this->option('dry-run');
-        $keep = (bool) $this->option('keep-bounty');
-        $roll = static fn (int $min, int $max): int => random_int($min, $max);
-
         $rows = [];
 
         foreach (Ice::query()->orderBy('level')->get() as $ice) {
@@ -73,14 +67,6 @@ class TagIce extends Command
                 static fn (array $tag): array => ['tag' => $tag[0], 'level' => $tag[1]],
                 self::GRID[$ice->level] ?? [],
             );
-
-            $bounty = $keep
-                ? $ice->carries(DefeatTag::Bounty)
-                : $roll(1, 100) <= DefeatTag::Bounty->authoringChance($ice->level);
-
-            if ($bounty) {
-                $tags[] = ['tag' => DefeatTag::Bounty->value, 'level' => null];
-            }
 
             $rows[] = [
                 $ice->name,
@@ -97,7 +83,10 @@ class TagIce extends Command
             }
         }
 
-        $this->table(['ice', 'level', 'tags', 'bounty odds'], $rows);
+        // The bounty column is what a MACHINE carrying this piece will be
+        // rolled at — see Defences. It is shown here because it is the other
+        // half of what losing to this guard costs, and it is not on this row.
+        $this->table(['ice', 'level', 'tags', 'bounty odds per machine'], $rows);
         $this->info($dryRun ? 'Dry run. Nothing was written.' : 'Written.');
 
         return self::SUCCESS;

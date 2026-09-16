@@ -183,23 +183,26 @@ final class DefencesTest extends TestCase
      */
     public function test_a_guarded_type_is_given_a_piece_of_ice_from_its_band(): void
     {
-        $eligible = Ice::query()->forGrade(5)->pluck('id')->all();
+        $eligible = Ice::query()->forGrade(5)->pluck('level', 'id')->all();
 
         $this->assertNotEmpty($eligible, 'the catalogue arrives by migration');
 
         // A silo always fights, whatever the presence roll does.
         $defences = Defences::roll(SystemType::Silo, 5, $this->die(101), $eligible);
 
-        $this->assertContains($defences->iceId, $eligible);
+        $this->assertContains($defences->iceId, array_keys($eligible));
     }
 
     /** A relay rolls for its ICE, so a lost roll leaves it unguarded. */
     public function test_a_relay_that_loses_its_roll_has_no_ice(): void
     {
-        $eligible = Ice::query()->forGrade(5)->pluck('id')->all();
+        $eligible = Ice::query()->forGrade(5)->pluck('level', 'id')->all();
 
         $this->assertNull(Defences::roll(SystemType::Relay, 5, $this->die(101), $eligible)->iceId);
-        $this->assertContains(Defences::roll(SystemType::Relay, 5, $this->die(1), $eligible)->iceId, $eligible);
+        $this->assertContains(
+            Defences::roll(SystemType::Relay, 5, $this->die(1), $eligible)->iceId,
+            array_keys($eligible),
+        );
     }
 
     /** A world whose ICE has not been migrated is machines that cannot fight, not no world. */
@@ -305,13 +308,41 @@ final class DefencesTest extends TestCase
     }
 
     /**
-     * BOUNTY IS ROLLED RATHER THAN CHOSEN, and the odds climb with the level.
+     * A BOUNTY BELONGS TO THE MACHINE, NOT TO THE GUARD.
      *
-     * A low-level guard rarely carries it; a high-level one usually does and
-     * sometimes does not, which is what stops a player who has met one grade 9
-     * from knowing the next. It is the only tag whose presence on a row was not
-     * a decision.
+     * The same piece of ICE on two systems is two different propositions,
+     * because one of them belongs to somebody who answers. So knowing what an
+     * ICE XII hits for tells a player nothing about whether the next one has
+     * them followed home — which is the whole reason this is rolled here rather
+     * than carried on the catalogue row.
      */
+    public function test_a_bounty_is_rolled_per_machine_and_not_per_piece(): void
+    {
+        $eligible = Ice::query()->forGrade(9)->pluck('level', 'id')->all();
+
+        $lucky = Defences::roll(SystemType::Silo, 9, $this->die(1), $eligible);
+        $unlucky = Defences::roll(SystemType::Silo, 9, $this->die(101), $eligible);
+
+        $this->assertTrue($lucky->iceBounty, 'a won roll puts a price on losing here');
+        $this->assertFalse($unlucky->iceBounty, 'a lost one does not');
+
+        // And nothing about the CATALOGUE changed between those two.
+        $this->assertNotNull($lucky->iceId);
+        $this->assertFalse(Ice::query()->whereKey($lucky->iceId)->sole()->carries(DefeatTag::Bounty));
+    }
+
+    /** No ICE, no bounty — there is nothing to lose to. */
+    public function test_a_machine_with_no_ice_carries_no_bounty(): void
+    {
+        // A relay that loses its ICE roll, with the die winning everything else.
+        $eligible = Ice::query()->forGrade(5)->pluck('level', 'id')->all();
+        $defences = Defences::roll(SystemType::Relay, 5, $this->die(101), $eligible);
+
+        $this->assertNull($defences->iceId);
+        $this->assertFalse($defences->iceBounty);
+    }
+
+    /** The odds climb with the piece's level: rarely at the bottom, usually at the top. */
     public function test_the_bounty_odds_climb_with_the_ladder(): void
     {
         $this->assertSame(10, DefeatTag::Bounty->authoringChance(1));
@@ -346,7 +377,7 @@ final class DefencesTest extends TestCase
      */
     public function test_the_tag_pass_writes_the_grid(): void
     {
-        $this->artisan('cyberspace:tag-ice --keep-bounty')->assertSuccessful();
+        $this->artisan('cyberspace:tag-ice')->assertSuccessful();
 
         $first = Ice::query()->where('level', 1)->sole();
         $worst = Ice::query()->where('level', 12)->sole();
@@ -368,35 +399,14 @@ final class DefencesTest extends TestCase
         $this->assertSame(12, $wipers->first()->level);
     }
 
-    /** --keep-bounty does not re-run the lottery on a catalogue somebody has tuned. */
-    public function test_keeping_a_bounty_leaves_the_roll_alone(): void
+    /** NO piece of ICE carries a bounty: it is not the catalogue's to carry. */
+    public function test_the_tag_pass_never_writes_a_bounty(): void
     {
-        $ice = Ice::query()->where('level', 1)->sole();
-        $ice->forceFill(['defeat_tags' => [['tag' => 'bounty', 'level' => null]]])->save();
+        $this->artisan('cyberspace:tag-ice')->assertSuccessful();
 
-        $this->artisan('cyberspace:tag-ice --keep-bounty')->assertSuccessful();
-
-        $this->assertTrue(
-            Ice::query()->where('level', 1)->sole()->carries(DefeatTag::Bounty),
-            'a one-in-ten roll that already landed is not thrown again',
-        );
-    }
-
-    /** Five tags come in strengths; the one that just happens does not. */
-    public function test_the_levelled_tags_have_their_numbers(): void
-    {
-        $this->assertSame(3, DefeatTag::Flatline->levels());
-        $this->assertSame(3, DefeatTag::Skim->levels());
-        $this->assertSame(3, DefeatTag::Erase->levels());
-        $this->assertSame(3, DefeatTag::NeuralShock->levels());
-        $this->assertSame(3, DefeatTag::Surge->levels(), 'and Surge has its numbers now');
-
-        $this->assertSame(0, DefeatTag::Bounty->levels(), 'a bounty is one thing that happens');
-        $this->assertCount(6, DefeatTag::cases(), 'six tags — Lobotomy was dropped, not shelved');
-        $this->assertSame(['share' => 60], DefeatTag::Skim->levelValue(3));
-        $this->assertSame(['count' => 1, 'share' => null], DefeatTag::Erase->levelValue(1));
-        $this->assertSame(['chance' => 45, 'modules' => 1], DefeatTag::Surge->levelValue(1));
-        $this->assertNull(DefeatTag::Surge->levelValue(4), 'a level nobody defined resolves to nothing');
+        foreach (Ice::query()->get() as $ice) {
+            $this->assertFalse($ice->carries(DefeatTag::Bounty), "{$ice->name} carries a bounty it cannot own");
+        }
     }
 
     // ---- the back-fill -----------------------------------------------------

@@ -1214,6 +1214,13 @@ carries the detail.
   stays pure, the way `Grade::roll()` is handed its weights. An empty list is
   not an error: a world whose ICE has not been migrated is machines that cannot
   fight, which beats no world.
+- **A bounty belongs to the MACHINE, not to the guard.** `systems.ice_bounty` is
+  rolled when a machine's ICE is assigned, at odds climbing with the piece's
+  level — a tenth under ICE I, two-thirds under ICE XII. So the same piece of
+  ICE on two systems is two different propositions, and a player who has met an
+  ICE XII has learned what it hits for and nothing about whether the next one
+  will have them followed home. It is the only part of a defence that is not a
+  property of what is defending, and no ICE means no bounty.
 - **Integrity and attack are BASES and expect to move.** A fight is meant to run
   2-10 turns and that depends on icebreaker throughput, which does not exist —
   the twelve pieces climb together so the ratio survives recalibration. Nothing

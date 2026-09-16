@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * size, and Grid is the one place that knows which — see CYBERSPACE.md, *How
  * the grid is stored*.
  */
-#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'os_skill_id', 'stock_rule', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_id'])]
+#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'os_skill_id', 'stock_rule', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_id', 'ice_bounty'])]
 class System extends Model
 {
     /** @use HasFactory<SystemFactory> */
@@ -43,6 +43,7 @@ class System extends Model
             'ids_detection' => 'integer',
             'tracer_detection' => 'integer',
             'tracer_rate' => 'integer',
+            'ice_bounty' => 'boolean',
             'stock_rule' => 'array',
             'designation' => 'integer',
             'type' => SystemType::class,
@@ -91,6 +92,20 @@ class System extends Model
     public function ice(): BelongsTo
     {
         return $this->belongsTo(Ice::class);
+    }
+
+    /**
+     * Does losing here get a price put on you?
+     *
+     * A PROPERTY OF THE MACHINE AND NOT OF ITS GUARD. The same piece of ICE on
+     * two systems is two different risks, because one of them belongs to
+     * somebody who answers — so knowing what an ICE XII hits for tells you
+     * nothing about whether the next one has you followed home. Rolled when the
+     * ICE was assigned; false whenever there is no ICE at all.
+     */
+    public function carriesBounty(): bool
+    {
+        return $this->hasIce() && $this->ice_bounty;
     }
 
     /**

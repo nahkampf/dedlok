@@ -232,9 +232,10 @@ final class GridSeeder
          */
         $iceByGrade = [];
 
-        foreach (Ice::query()->get(['id', 'grade_min', 'grade_max']) as $ice) {
+        foreach (Ice::query()->get(['id', 'level', 'grade_min', 'grade_max']) as $ice) {
             foreach (range($ice->grade_min, $ice->grade_max) as $grade) {
-                $iceByGrade[$grade][] = $ice->id;
+                // id => level: the level is what the bounty odds are keyed on.
+                $iceByGrade[$grade][$ice->id] = $ice->level;
             }
         }
 
