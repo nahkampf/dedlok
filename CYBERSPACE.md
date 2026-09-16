@@ -78,7 +78,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | AuraOS in the Deck Jockey loadout | **done**; granted at level 1 alongside the deck |
 | The thermal rename | **done**. Accumulation itself is **specified only** — nothing runs a deck yet |
 | Burning a module out mid-run | **specified only**; the thermally weakest module is destroyed, the trace is cancelled, the player is thrown out for 25–75% of current SI and a 12% chance of a flatline taking 5–15% of maximum SI. The numbers are in `config/cyberspace.php` and nothing reads them |
-| The order a bad ending resolves in | **specified only**; damage, then consequence, then ejection, then the waiting screen — one order for defeats, burnouts and readiness losses alike |
+| The order a bad ending resolves in | **specified only**; damage, then consequence, then ejection, then the waiting screen — one order for defeats, burnouts and readiness losses alike, and **a consequence never becomes a new cause of damage within it**. That is what says a Surge carries its own tag and nothing else |
 | Radiator cooling, recalibrated for accumulation | **done** as data — the eight radiators, compressed to 90–520 TU |
 | `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
 | Routing, Advanced Routing | **built** as skill rows with books and prerequisites; nothing reads them |
@@ -1206,13 +1206,31 @@ ordering that produces a state nothing else in the game knows how to read.
 the same door.** A defeat, a burnout and a readiness loss all end with
 `jackOut()` before anything else is shown.
 
-One thing still to decide: **does a Surge that leaves the deck unready also roll
-the freeze's flatline chance?** A Surge fires at 0 SI, so the 25–75% is nil —
-but the 12% flatline roll is not, and stacking it on top of a Surge that may
-already carry the Flatline tag would be two rolls at the same permanent damage.
-The likely answer is that the freeze's damage belongs to a *thermal* burnout and
-a Surge carries only its own tag, but it should be said out loud before either
-is written.
+**A CONSEQUENCE NEVER BECOMES A NEW CAUSE OF DAMAGE WITHIN THE SAME ENDING.**
+That is the rule the order above implies, and it is worth stating outright
+because the alternative is not merely wrong, it is circular: step 2 is where a
+consequence is worked out, and a consequence that generated fresh step 1 damage
+would re-enter an ordering whose whole purpose is that no two endings can
+disagree about what a player has left.
+
+**So a Surge carries its own tag and nothing else**, and the freeze's damage
+belongs to a *thermal* burnout. A Surge destroys fitted hardware, that hardware
+may leave the deck unready, and the unready deck is the CONSEQUENCE — it does
+not reach back and roll the freeze's 12% flatline on top of a defeat the player
+has already paid for. Otherwise whether somebody took permanent brain damage
+would come down to whether the Surge happened to destroy their NIC or their
+spare RAM, which is nobody's design decision.
+
+**The price is attached to the CAUSE, never to the end state**, and this
+document had already decided that twice over before the question was asked.
+`ReadinessWatch` handles precisely the state a Surge produces — a deck that
+stopped meeting its requirements with somebody inside it — and prices it at one
+flat point with no flatline and no tag. The table above is four causes and four
+different prices for what is, at the end, the same player in the same chair.
+
+The same answer covers everything shaped like this without anyone asking again:
+an **Erase** that deletes the program holding the deck together is the identical
+case, and so is anything else that breaks a requirement on its way past.
 
 ### Losing
 
@@ -1641,14 +1659,23 @@ dependants.
     alone — see *Taking a turn, and running one together*. **Nothing here is
     open any more.**
 
-14. **Does a Surge that leaves the deck unready roll the freeze's flatline
-    chance?** The 25–75% is nil at 0 SI, but the 12% is not, and stacking it
-    on a Surge that may already carry the Flatline tag is two rolls at one
-    permanent consequence. See *The order a bad ending happens in*.
+14. ~~**Does a Surge that leaves the deck unready roll the freeze's flatline
+    chance?**~~ **Resolved: no.** A Surge carries its own tag and nothing else.
+    The general rule it rests on is in *The order a bad ending happens in* — a
+    consequence never becomes a new cause of damage within the same ending —
+    and it answers the next one of these before it is asked.
 
     (*Who ends the session on a bad ending* was the question here before, and
     it is settled: every bad ending ejects, through `Navigator::jackOut()`,
     before the waiting screen is shown.)
+
+15. **Can one program carry more than one tag?** The design says *the tag is
+    what happens* and lists seven, but never says whether a program has one or
+    a set. An ICE carrying both Surge and Flatline is a different thing to
+    balance from one carrying either, and the answer decides whether a defeat
+    resolves one consequence or several. Nothing is blocked — the ordering rule
+    holds either way — but it wants pinning while the tag set is still only a
+    table in a document.
 
 ---
 
