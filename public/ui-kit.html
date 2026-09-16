@@ -664,10 +664,24 @@ public/assets/
           <span class="tag tag--crit">Traced</span>
           <span class="tag tag--info">Queued</span>
           <span class="tag tag--solid">Owned</span>
+          <span class="tag tag--ember">Grade IX</span>
           <span class="row" style="--gap:6px"><span class="dot dot--live"></span><span class="micro">Recording</span></span>
           <span class="count">7</span>
           <span class="avatar">V</span>
           <span class="avatar" style="border-color:var(--ember);color:var(--ember)">JS</span>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Copyable values &amp; gate marks</h3><p><code class="inl">.copy</code> is a button that looks like a link, because it acts instead of navigating — pressing it puts its own text on the clipboard. Monospace, dotted underline, and the payload is <code class="inl">data-copy</code> so the label and what gets copied can differ. Wire the two toast strings through <code class="inl">data-copied</code> and <code class="inl">data-copy-failed</code>; the write can fail on an insecure origin and a button that silently does nothing is worse than one that says so. <code class="inl">.mark--ok</code> and <code class="inl">.mark--no</code> are the semantic pair for <em>can you use this</em> — a gate answered, not a value.</p></div>
+      <template class="demo-src">
+        <div class="row row--wrap" style="--gap:var(--s-4)">
+          <span class="micro">Address <button type="button" class="copy" data-copy="A3F91C08" data-copied="Address copied." data-copy-failed="Could not reach the clipboard." title="Copy this address">A3F91C08</button></span>
+          <span class="micro"><span aria-hidden="true">&#x2295;</span> 128, 96</span>
+          <span class="tag tag--ember"><span class="mark--ok">&#x2713;</span> AuraOS</span>
+          <span class="tag tag--ember"><span class="mark--no">&#x2717;</span> Lattice</span>
+          <span class="tag">UNKNOWN</span>
+          <span class="tag">NOT YET</span>
         </div>
       </template>
     </div>

@@ -460,6 +460,31 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
 }
 .link:hover { color: var(--ink-0); text-decoration-color: var(--ember); }
 
+/* AN ADDRESS YOU CAN TAKE WITH YOU.
+
+   A button that looks like a link, because it acts rather than navigates —
+   pressing it puts the text on the clipboard. Semantics follow the behaviour
+   and the appearance follows the affordance, which is the one case where those
+   two want to disagree.
+
+   Monospace because an address is eight hex characters somebody is going to
+   compare by eye, and the button reset is explicit: a <button> brings a font,
+   a background and a border nobody asked for. */
+.copy {
+  font: inherit;
+  font-family: var(--font-mono);
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 3px;
+}
+.copy:hover { color: var(--ink-0); text-decoration-color: var(--ember); }
+
 .kbd {
   font: 600 var(--fs-xs)/1 var(--font-mono);
   padding: 4px 6px;
@@ -1194,6 +1219,19 @@ cap-widget {
 .tag--crit  { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 40%, transparent); background: var(--crit-a); }
 .tag--info  { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: var(--info-a); }
 .tag--solid { background: var(--ink-0); border-color: var(--ink-0); color: var(--ink-on-bone); }
+
+/* DECORATION, and the palette name says so. The semantic aliases carry meaning
+   — .tag--crit is a thing going wrong — and this one carries emphasis: a scan
+   finding is not critical, it is what the player spent an instrument to learn.
+   Rationed like every other use of the accent: see the note on --ember. */
+.tag--ember { color: var(--ember); border-color: var(--ember-2); background: var(--ember-a); }
+
+/* CAN YOU OPERATE IT. The mark beside a scanned operating system, and the one
+   place a fact on that screen also answers a question about the READER.
+   Semantic aliases rather than the palette, because these carry meaning: a
+   cross is a machine nothing you do would work on. */
+.mark--ok { color: var(--ok); }
+.mark--no { color: var(--crit); }
 
 .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); flex: none; }
 .dot--ok { background: var(--ok); }

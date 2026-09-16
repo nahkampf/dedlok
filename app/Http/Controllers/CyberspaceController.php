@@ -250,7 +250,9 @@ class CyberspaceController extends Controller
             'pass' => $scan->passes,
             'passes' => $probe->passesFor($character),
             'complete' => $scan->isComplete(),
-            'facts' => $scan->facts(),
+            // The character, so the operating system can say whether they can
+            // operate it — a fact that is also a gate.
+            'facts' => $scan->facts($character),
         ]);
     }
 

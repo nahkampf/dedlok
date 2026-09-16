@@ -105,14 +105,46 @@ class SystemScan extends Model
      *
      * @return list<array{key: string, label: string, value: ?string, discoverable: bool}>
      */
-    public function facts(): array
+    public function facts(?Character $for = null): array
     {
         return array_map(fn (ScanFact $fact): array => [
             'key' => $fact->value,
             'label' => $fact->label(),
             'value' => $fact->readFrom($this),
             'discoverable' => $fact->isDiscoverable(),
+            'mark' => $for === null ? null : $this->markFor($fact, $for),
         ], ScanFact::cases());
+    }
+
+    /**
+     * Whether the reader can do anything with what a fact told them.
+     *
+     * ONLY THE OPERATING SYSTEM HAS ONE, because it is the only fact that is
+     * also a GATE: the skill at level 1 or nothing you do to the machine works
+     * at all. Knowing a machine runs Lattice and knowing you cannot operate
+     * Lattice are two different things to have learned, and the second one is
+     * what decides whether to approach.
+     *
+     * A fact nobody has read yet is marked with nothing rather than with a
+     * cross — an unanswered question is not a failure, and a screen of red
+     * crosses before the instrument has said anything would read as one.
+     *
+     * Null for every other fact. When a second gate appears this becomes a
+     * match; it is an `if` today because there is one of them.
+     */
+    private function markFor(ScanFact $fact, Character $for): ?string
+    {
+        if ($fact !== ScanFact::OperatingSystem || $this->os_skill_id === null) {
+            return null;
+        }
+
+        $slug = $this->operatingSystem()->first()?->slug;
+
+        if ($slug === null) {
+            return null;
+        }
+
+        return $for->hasSkillAtLevel($slug, 1) ? 'ok' : 'no';
     }
 
     /**

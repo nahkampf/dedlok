@@ -632,6 +632,12 @@
       set("name", data.name);
       set("position", data.position);
       set("address", data.address);
+
+      // The address is a copy button, so its payload has to follow its label —
+      // otherwise the read shows one machine and the clipboard hands over the
+      // placeholder it was rendered with.
+      const addr = dlg.querySelector("[data-reading-address]");
+      if (addr && data.address) addr.dataset.copy = data.address;
       set("instrument", data.instrument);
       set("pass", dlg.dataset.readingPass
         .replace(":pass", data.pass)
@@ -644,11 +650,25 @@
       const spinner = dlg.querySelector("[data-reading-spinner]");
       if (spinner) spinner.hidden = !data.running;
 
+      /* An answer looks different from the absence of one. A row the
+         instrument has filled in turns ember and says what it found; a row it
+         has not stays the same box it started as. The mark on the operating
+         system is the one place a fact also says whether the reader can DO
+         anything with it — see SystemScan::markFor(). */
       (data.facts || []).forEach((fact) => {
         const value = dlg.querySelector('[data-fact="' + fact.key + '"] [data-fact-value]');
-        if (value && fact.discoverable) {
-          value.textContent = fact.value ?? dlg.dataset.readingUnread;
-        }
+        if (!value || !fact.discoverable) return;
+
+        const known = fact.value != null;
+        value.classList.toggle("tag--ember", known);
+
+        const mark = known && fact.mark
+          ? '<span class="' + (fact.mark === "ok" ? "mark--ok" : "mark--no") + '" title="' +
+            esc(fact.mark === "ok" ? dlg.dataset.readingOsKnown : dlg.dataset.readingOsUnknown) +
+            '">' + (fact.mark === "ok" ? "\u2713" : "\u2717") + "</span> "
+          : "";
+
+        value.innerHTML = mark + esc(known ? fact.value : dlg.dataset.readingUnread);
       });
 
       /* A read goes round by itself until the file is whole, so stopping
@@ -693,6 +713,31 @@
       if (dlg.showModal) dlg.showModal();
     }
   }
+
+  /* AN ADDRESS, ONTO THE CLIPBOARD.
+
+     Every address on screen is a click away from being pasted somewhere else,
+     because that is what an address is FOR: it carries no position, so trading
+     one is harmless and expected. The alternative is a player retyping eight
+     hex characters and getting one wrong.
+
+     The write can fail — an insecure origin, a browser that refuses, a denied
+     permission — so the failure says so rather than leaving a button that
+     quietly does nothing. */
+  on("click", "[data-copy]", async (e, el) => {
+    e.preventDefault();
+
+    const text = el.dataset.copy;
+    const ok = el.dataset.copied;
+    const bad = el.dataset.copyFailed;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      if (ok) toast(ok);
+    } catch {
+      if (bad) toast(bad, { level: "warn" });
+    }
+  });
 
   reading();
   document.addEventListener("DOMContentLoaded", reading);

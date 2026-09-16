@@ -11,6 +11,7 @@ use App\Cyberspace\Probe;
 use App\Cyberspace\ProbeRefusal;
 use App\Cyberspace\ProbeResult;
 use App\Cyberspace\Sweep;
+use App\Inventory\SkillInjector;
 use App\Models\Character;
 use App\Models\CharacterModifier;
 use App\Models\InventoryItem;
@@ -796,8 +797,61 @@ final class ProbeTest extends TestCase
 
         $this->assertFalse($response->json('running'), 'the clock has stopped');
         $this->assertTrue($response->json('complete'));
-        $this->assertSame('1', $facts['grade']['value']);
+        $this->assertSame('I', $facts['grade']['value'], 'a grade is a rank, so it reads as a numeral');
         $this->assertSame('AuraOS', $facts['os']['value'], 'and the name, not the id');
+    }
+
+    /**
+     * THE OPERATING SYSTEM IS A FACT THAT IS ALSO A GATE.
+     *
+     * Knowing a machine runs AuraOS and knowing you cannot operate AuraOS are
+     * two different things to have learned, and only the second one decides
+     * whether to approach. So the read marks it — and marks nothing else,
+     * because nothing else on that screen is a gate.
+     */
+    public function test_the_read_says_whether_you_can_operate_what_it_found(): void
+    {
+        $os = $this->anOperatingSystem();
+        $this->machine(grade: 1, os: $os);
+
+        $this->instance(Probe::class, $this->probe(0.0));
+        $this->probe(0.0)->scan($this->character);
+        $this->travel(20)->minutes();
+
+        $facts = collect($this->actingAs($this->character->fresh()->user)
+            ->getJson(route('cyberspace.reading', ['address' => 'DEADBEEF']))
+            ->assertOk()
+            ->json('facts'))->keyBy('key');
+
+        $this->assertSame('no', $facts['os']['mark'], 'untrained, so nothing here would work');
+        $this->assertNull($facts['grade']['mark'], 'a grade gates nothing');
+
+        // Injected and trained to level 1, which is the whole of the gate.
+        app(SkillInjector::class)->grant($this->character->fresh(), $os, 1);
+
+        $facts = collect($this->actingAs($this->character->fresh()->user)
+            ->getJson(route('cyberspace.reading', ['address' => 'DEADBEEF']))
+            ->assertOk()
+            ->json('facts'))->keyBy('key');
+
+        $this->assertSame('ok', $facts['os']['mark']);
+    }
+
+    /** A fact nobody has read is marked with nothing — an unanswered question is not a failure. */
+    public function test_an_unread_operating_system_is_not_marked_as_a_failure(): void
+    {
+        $this->machine(grade: 9, os: $this->anOperatingSystem());
+
+        $this->instance(Probe::class, $this->probe(0.999));
+        $this->probe(0.999)->scan($this->character);
+
+        $facts = collect($this->actingAs($this->character->fresh()->user)
+            ->getJson(route('cyberspace.reading', ['address' => 'DEADBEEF']))
+            ->assertOk()
+            ->json('facts'))->keyBy('key');
+
+        $this->assertNull($facts['os']['value'], 'nothing was found out');
+        $this->assertNull($facts['os']['mark'], 'so nothing is claimed about it either');
     }
 
     /**

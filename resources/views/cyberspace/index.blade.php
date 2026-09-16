@@ -25,7 +25,7 @@
                              the two can differ, and the difference is the
                              point of a contact. --}}
                         <span class="tag">{{ $here->name }}</span>
-                        <span class="micro" style="font-family:var(--font-mono)">{{ $here->address }}</span>
+                        <span class="micro"><x-address :address="$here->address" /></span>
 
                         {{-- What this machine has given up so far. A grade is
                              the number a scan exists to discover, so it is
@@ -33,7 +33,7 @@
                              then — never as a blank, which reads as a machine
                              with nothing to hide. --}}
                         @if ($scan?->grade !== null)
-                            <span class="tag">{{ Text::get('cyberspace.scan.grade') }} {{ $scan->grade }}</span>
+                            <span class="tag">{{ Text::get('cyberspace.scan.grade') }} {{ \App\Cyberspace\Grade::roman($scan->grade) }}</span>
                         @else
                             <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.unknown') }}</span>
                         @endif
@@ -270,7 +270,13 @@
                 @php($standing = $mark->resolve())
                 <div style="display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center;justify-content:space-between;padding:var(--s-2) 0;border-top:var(--hair) solid var(--line-0)">
                     <div style="min-width:0">
-                        <div>{{ $mark->displayLabel() ?? $mark->address }}</div>
+                        <div>
+                            @if ($mark->displayLabel() !== null)
+                                {{ $mark->displayLabel() }}
+                            @else
+                                <x-address :address="$mark->address" />
+                            @endif
+                        </div>
                         <span class="tag tag--{{ $mark->isWaypoint() ? 'info' : 'warn' }}">{{ $mark->kind->label() }}</span>
                         @if (! $mark->isWaypoint() && $standing === null)
                             <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.bookmarks.dead') }}</span>
@@ -310,6 +316,8 @@
         data-reading-idle="{{ Text::get('cyberspace.reading.idle') }}"
         data-reading-exhausted="{{ Text::get('cyberspace.reading.exhausted') }}"
         data-reading-gone="{{ Text::get('cyberspace.scan.voided') }}"
+        data-reading-os-known="{{ Text::get('cyberspace.reading.os_known') }}"
+        data-reading-os-unknown="{{ Text::get('cyberspace.reading.os_unknown') }}"
         @if (session('reading')) data-reading-open="{{ session('reading') }}" @endif>
     <div class="panel__hd">
         <span class="micro">{{ Text::get('cyberspace.reading.title') }}</span>
@@ -322,10 +330,16 @@
             <div>
                 <span class="micro">{{ Text::get('cyberspace.reading.target') }}</span>
                 <p style="margin:0"><strong data-reading-name>—</strong></p>
+                {{-- WHERE, THEN WHAT. The glyph is the old symbol for the
+                     globe and it marks the coordinates as a PLACE — the one
+                     line on this screen that is not a property of the machine.
+                     From the geometric set the kit has proved, like every
+                     other glyph in the game. --}}
                 <p class="micro" style="margin:0;color:var(--ink-2)">
+                    <span aria-hidden="true">&#x2295;</span>
                     <span data-reading-position>—</span>
                     ·
-                    <span style="font-family:var(--font-mono)" data-reading-address>—</span>
+                    <x-address address="—" data-reading-address />
                 </p>
             </div>
 
@@ -354,8 +368,15 @@
                 @foreach ((new \App\Models\SystemScan)->facts() as $fact)
                     <div class="card__stat" data-fact="{{ $fact['key'] }}">
                         <span>{{ $fact['label'] }}</span>
+                        {{-- BOTH BLANKS WEAR THE SAME BOX. "Nobody can read
+                             this yet" and "you have not read it yet" are
+                             different facts and neither is an answer, so the
+                             screen does not ask the player to tell two kinds
+                             of nothing apart. What separates them is that one
+                             can change: a discoverable row is the one that
+                             turns ember when the instrument comes back. --}}
                         @if ($fact['discoverable'])
-                            <b data-fact-value>{{ Text::get('cyberspace.reading.unread') }}</b>
+                            <span class="tag" data-fact-value>{{ Text::get('cyberspace.reading.unread') }}</span>
                         @else
                             <span class="tag">{{ Text::get('cyberspace.reading.not_yet') }}</span>
                         @endif

@@ -120,6 +120,27 @@ final class Grade
     }
 
     /**
+     * The grade as the player reads it: I to IX.
+     *
+     * A ROMAN NUMERAL EVERYWHERE A GRADE IS SHOWN, and never the arabic digit.
+     * A grade is a rank rather than a quantity — nine is not nine of anything —
+     * and the numeral says so at a glance, the way a tier does. It also keeps
+     * a grade from reading as one of the many actual numbers on these screens:
+     * a tracer's rate, a pass count, a detection value.
+     *
+     * A lookup rather than an algorithm, because the range is fixed at 1-9 and
+     * a general converter would be forty lines to answer nine questions. Out of
+     * range is clamped rather than thrown: a screen is not where a bad grade
+     * should first be noticed.
+     */
+    public static function roman(int $grade): string
+    {
+        $numerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+
+        return $numerals[max(self::MIN, min(self::MAX, $grade)) - 1];
+    }
+
+    /**
      * What a grade is called once the player has earned the right to see it.
      *
      * Used by the scan and by nothing else — putting a band on the map would

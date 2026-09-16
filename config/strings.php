@@ -345,15 +345,22 @@ return [
         | told me so far.
         */
         'reading' => [
-            'title' => 'Reading a machine',
+            'title' => 'Scanning a system',
             'open' => 'Show the read',
             'instrument' => 'Instrument',
             'target' => 'Target',
             'pass_of' => 'Pass :pass of :total',
             'remaining' => ':count left after this one',
             'idle' => 'Nothing running. The file is what it is until it goes stale.',
-            'unread' => 'Unread',
-            'not_yet' => 'Not yet',
+            /*
+            | NOT FOUND OUT, and it wears the same box as `not_yet` on purpose.
+            | The two are different facts — nobody can read this yet, versus
+            | you have not read it yet — but both are the absence of an answer,
+            | and a screen that drew them differently would be asking the
+            | player to tell two blanks apart.
+            */
+            'unread' => 'UNKNOWN',
+            'not_yet' => 'NOT YET',
             /*
             | A FINDING, NOT AN ABSENCE. A scan that comes back with nothing on
             | a machine's defences has told the player the most valuable thing
@@ -365,6 +372,29 @@ return [
             'complete' => 'Everything this machine will tell you.',
             'exhausted' => 'Read as far as it can be. What is here is what you get until the file goes stale.',
             'close' => 'Close',
+
+            /*
+            | An address is the one thing on these screens somebody wants OUT
+            | of the game — traded, pasted into a message, kept in a note — so
+            | every one of them is a click away from the clipboard. Harmless
+            | by construction: an address carries no position, which is the
+            | same reason a system bookmark has no gate on it.
+            */
+            'copy' => 'Copy this address',
+            'copied' => 'Address copied.',
+            'copy_failed' => 'Could not reach the clipboard. Select it by hand.',
+
+            /*
+            | Whether the reader can operate what they found. An operating
+            | system is a GATE before it is a fact — the skill at level 1, or
+            | nothing you do to the machine works at all — so the scan says
+            | which side of it you are on rather than leaving the player to go
+            | and check the tree.
+            */
+            'os_known' => 'You have trained this operating system.',
+            'os_unknown' => 'You have not trained this operating system.',
+
+            'position' => 'Position',
         ],
 
         'contents' => [

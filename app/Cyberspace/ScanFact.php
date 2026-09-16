@@ -86,7 +86,7 @@ enum ScanFact: string
         }
 
         return match ($this) {
-            self::Grade => (string) $scan->grade,
+            self::Grade => Grade::roman((int) $scan->grade),
             self::OperatingSystem => $scan->operatingSystem()->first()?->title,
             self::Ids => $scan->ids_detection > 0
                 ? (string) $scan->ids_detection
