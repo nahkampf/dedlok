@@ -1249,6 +1249,21 @@ never new code in the simulator:
 | **Bounty** | puts a bounty on the character — the mechanic comes later, the tag exists now |
 | **Lobotomy** | **paused, not built.** Strips skill points from a random skill. |
 
+**A PROGRAM MAY CARRY SEVERAL TAGS.** An ICE tagged Flatline and Surge does both
+— it takes a permanent piece of the ceiling *and* destroys fitted hardware — and
+the worst software in the game is worst because it carries more than one
+consequence rather than because it carries a bigger number. That is what keeps
+the tag set the whole vocabulary of losing: a new kind of bad night is a new
+combination, never a new special case in the simulator.
+
+**It does not disturb the rule above**, which is worth being plain about because
+the two look adjacent. A program with Flatline and Surge rolls **one** flatline —
+its own, because its row says Flatline — and destroys hardware, because its row
+says Surge. What it never does is roll a *second* flatline on the grounds that
+the hardware it destroyed left the deck unready. Every consequence here is
+declared by the program; none is inherited from the state the program left
+behind.
+
 **Lobotomy is designed and deliberately shelved**, because it is the only tag
 whose consequences do not stop at the character sheet. Losing points can lose a
 level; losing a level can invalidate a skill that required it, and a module or a
@@ -1669,13 +1684,11 @@ dependants.
     it is settled: every bad ending ejects, through `Navigator::jackOut()`,
     before the waiting screen is shown.)
 
-15. **Can one program carry more than one tag?** The design says *the tag is
-    what happens* and lists seven, but never says whether a program has one or
-    a set. An ICE carrying both Surge and Flatline is a different thing to
-    balance from one carrying either, and the answer decides whether a defeat
-    resolves one consequence or several. Nothing is blocked — the ordering rule
-    holds either way — but it wants pinning while the tag set is still only a
-    table in a document.
+15. ~~**Can one program carry more than one tag?**~~ **Resolved: it can.** An
+    ICE tagged Flatline and Surge does both, and the worst software in the game
+    is worst for carrying several consequences rather than one large number. It
+    leaves the ordering rule untouched: every consequence is declared by the
+    program, and none is inherited from the state the program left behind.
 
 ---
 
