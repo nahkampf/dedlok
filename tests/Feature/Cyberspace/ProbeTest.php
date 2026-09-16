@@ -928,6 +928,59 @@ final class ProbeTest extends TestCase
         $this->assertSame(1, $scan->passes, 'a read that answered everything spends no more of the budget');
     }
 
+    // ---- the sweep that settles for people who are not looking ------------
+
+    /**
+     * THE ROW IS TRUE BETWEEN VISITS.
+     *
+     * The sweep is not what makes a read finish — the settling catches up with
+     * the clock on its own, which the tests above pin. What it buys is a row
+     * that is resolved before anybody asks, which is what every reader that is
+     * not the owner needs: a notification can only be raised by something that
+     * NOTICED a read finish, and lazy settling never notices.
+     */
+    public function test_the_sweep_settles_a_read_nobody_looked_at(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+
+        $this->instance(Probe::class, $this->probe(0.999));
+        $this->probe(0.999)->scan($this->character);
+
+        // Nobody looks. The row still says a pass is running.
+        $this->travel(90)->minutes();
+        $this->assertNotNull(SystemScan::query()->sole()->pass_ready_at);
+
+        $this->artisan('cyberspace:settle')->assertSuccessful();
+
+        $scan = SystemScan::query()->sole();
+        $this->assertNull($scan->pass_ready_at, 'resolved without anybody asking');
+        $this->assertSame(5, $scan->passes, 'and caught the read up rather than nudging it one pass');
+    }
+
+    public function test_the_sweep_writes_nothing_on_a_dry_run(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+
+        $this->instance(Probe::class, $this->probe(0.999));
+        $this->probe(0.999)->scan($this->character);
+        $this->travel(90)->minutes();
+
+        $this->artisan('cyberspace:settle --dry-run')->assertSuccessful();
+
+        $this->assertNotNull(
+            SystemScan::query()->sole()->pass_ready_at,
+            'a dry run reports and writes nothing',
+        );
+    }
+
+    /** A sweep with nothing to do is successful and says nothing. */
+    public function test_an_empty_sweep_is_quiet(): void
+    {
+        $this->artisan('cyberspace:settle --quiet-when-idle')
+            ->doesntExpectOutput('Nothing had matured.')
+            ->assertSuccessful();
+    }
+
     /** Abandoning what is not running is an ordinary answer, not an error. */
     public function test_abandoning_nothing_refuses_quietly(): void
     {

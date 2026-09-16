@@ -1136,6 +1136,14 @@ carries the detail.
   stops the read or begins a pass whose maturity is strictly later, and the
   budget is finite. **A lost pass still stops the loop**, because spending the
   next one is the player's decision.
+- **`cyberspace:settle` sweeps every five minutes, and it is NOT what makes a
+  read finish.** The catch-up above is; a player who walks away for a day gets
+  the whole read resolved on arrival whether or not this ever ran. What the
+  sweep buys is a row that is TRUE between visits, which is what every reader
+  that is not the owner needs — a notification saying a read finished can only
+  come from something that NOTICED, and lazy settling never notices. **Do not
+  delete the catch-up because the sweep exists**: the sweep is a convenience and
+  the catch-up is the guarantee.
 - **Losing a read has two causes and they must not share a sentence.**
   `App\Cyberspace\VoidCause` — the instrument stopped (they did it, and can
   avoid doing it again) or the machine burned or relocated (nobody could have

@@ -70,3 +70,21 @@ Schedule::command('cyberspace:restock')
 Schedule::command('market:seed')
     ->cron('0 */8 * * *')
     ->withoutOverlapping();
+
+/*
+ * Resolving reads that have matured, for people who are not looking.
+ *
+ * NOT WHAT MAKES A READ FINISH. `Probe::settle()` catches up with the clock by
+ * itself, so a player who walks away for a day gets the whole read resolved the
+ * moment they come back. This makes the row true in between, which matters to
+ * every reader that is not the owner — a notification saying a read finished
+ * can only come from something that NOTICED, and a sellable scan is one
+ * player's file in another player's hands.
+ *
+ * Five minutes rather than the heartbeat's minute: a deposit is credited FROM a
+ * clock and wants to be current, and this resolves something that has already
+ * happened. Nobody is waiting on it.
+ */
+Schedule::command('cyberspace:settle --quiet-when-idle')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
