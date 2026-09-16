@@ -31,6 +31,10 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | A scan is spent by the run that uses it | **built as a column** (`system_scans.used_at`, consumed on first use); nothing spends one, because spending one means a run. In co-op the most complete file covers the party and only that file is spent |
 | Concurrent runners | **specified only**; a machine holds several at once and they are not instanced. First extraction takes it, and both raids count |
 | A cancelled run | **specified only**; burned or locked down under you ends the run for 1 flat SI and nothing else. Asked on the lock, never by a sweeper, and the run row carries the ADDRESS so a burned target is an ordinary answer |
+| Coordinated Strike, Advanced Coordination | **not built**; rank 8 (needs Cyberdecks 5) and rank 16 (needs Coordinated Strike 5), +1 co-op slot per level each. Skill ROWS, authored in the editor — but the `coop_slots` stat has to exist first or the modifier editor refuses the target |
+| `coop_slots` | **not built**; the base is 0 in config and every slot is a modifier. `program_threads`' shape, floored at ZERO rather than one, because zero is the gate |
+| Detection scaling with party size | **specified only**, and the number is unset. More runners is louder; how much louder is a value nobody has picked |
+| A trace per runner | **specified only**; one meter each on the same clock, so a completed trace burns the chain that runner came in on and not the party's |
 | The turn protocol | **specified only**; a turn resolves when all have chosen or 30 seconds pass, an absent player is resolved by their own thresholds, and `auto-run` hands the whole run to them. Shared with physical combat as a PROTOCOL, never as an engine |
 | The two thresholds | **specified only**; they ACT rather than warn, every character is born with 70% trace and 30% SI, and they are changed in an accordion on the cyberspace screen |
 | The notification queue | **not built**, and named here because a cancelled run needs one. One place, reached from the rail, with priorities and categories. Until it exists the cancellation screen is the notification |
@@ -845,6 +849,53 @@ holding up themselves, and the lock is already the answer to that. The
 thresholds still act, and `auto-run` is still there for anyone who would rather
 not sit through it.
 
+**A PARTY IS A THING YOU TRAIN FOR, and by default you cannot have one.**
+Calling a co-op run takes **Coordinated Strike**, and a character without it
+runs alone — not as a penalty but as the ordinary state, the same way a
+character without an icebreaker cannot fight ICE. Coordinating a strike is a
+skill somebody has or does not, and no amount of deck, software or nerve
+substitutes for it.
+
+| Skill | Rank | Requires | Grants |
+| --- | --- | --- | --- |
+| **Coordinated Strike** | 8 | Cyberdecks at level 5 | +1 co-op slot per level |
+| **Advanced Coordination** | 16 | Coordinated Strike at level 5 | +1 co-op slot per level |
+
+*Coordinated Strike* — "Allows for cooperative Runs on a system, where several
+runners coordinate to strike a single system in concert."
+
+Both maxed is **ten slots**, so eleven runners in one machine. **That is overkill
+for anything currently on the grid and is meant to be** — it is built for
+machines that do not exist yet, the ones no party of three could reasonably
+take. A ceiling nobody needs today is the right shape for a ladder that has to
+have somewhere to go; what it must not be is a ceiling that arrives *after* the
+machines that need it.
+
+**It is the OWNER'S skill that sizes the party.** Whoever calls the run is who
+trained for it, which is what makes the skill worth a rank 8 and a rank 16 slot
+rather than something everybody buys one level of.
+
+**`coop_slots` is the stat**, and it is `program_threads` with one difference
+that matters: **it floors at ZERO, not at one.** A character who can run no
+copies of any program is a character for whom software stopped existing, so that
+stat is floored at 1. A character who can call no co-op runs is just a character
+who has not trained for it — zero is the ordinary state and the gate, which is
+why the base lives in config at 0 and every slot above it is a modifier.
+
+**A big party does not sneak, and that is the trade.** Detection rises with every
+runner in the machine — four people moving through a system are louder than one,
+and by eleven the question is not whether the ICE wakes up but how long you last
+after it does. That is what stops a large party from being strictly better than a
+small one: numbers buy you a machine you could not otherwise survive, and they
+cost you any chance of walking in unnoticed.
+
+**The trace runs for every runner, separately.** One meter each, advancing on the
+same clock — so an egress threshold is your own, a completed trace lands on you
+and not on the party, and the routing chain it burns is the chain *you* came in
+on. It follows that a backdoor is worth having individually rather than
+collectively: the careful runner in a loud party still gets the protection they
+paid for, and the one who came in over open ground is the one the heat finds.
+
 **The party forms at the door.** Nobody joins a run in progress — a run is a
 plan, the loadouts and the scan were decided against it, and a late arrival is a
 different plan wearing the same name.
@@ -1557,10 +1608,12 @@ dependants.
     they share a run and take turns in it.** A turn resolves when everybody has
     chosen or thirty seconds pass, an absent player is resolved by their own
     thresholds, and nobody is held by anybody — see *Taking a turn, and running
-    one together*. What is still open is smaller and can wait for the phase:
-    whether a party has a size cap, and what a second runner's presence does to
-    a system's detection rolls, since four people in a machine are surely
-    louder than one.
+    one together*. The size cap is answered too — it is the run owner's
+    `coop_slots`, trained through Coordinated Strike and Advanced Coordination,
+    and zero without them. **What is left is one number**: detection rises with
+    every runner in the machine, and by how much is unset. It is the whole
+    trade a large party makes, so it wants picking deliberately rather than
+    falling out of whatever the simulator happens to do first.
 
 14. **Does a Surge that leaves the deck unready roll the freeze's flatline
     chance?** The 25–75% is nil at 0 SI, but the 12% is not, and stacking it
