@@ -27,6 +27,13 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | The run, interactive | **specified only**, and a REVERSAL: a run is played turn by turn rather than resolved atomically. It is durable state, which an atomic run never needed |
 | The run lock | **specified only**; while a run is live every request but signing in and out is sent back to it. This is what replaces "pulling the plug cannot save you" |
 | The blind-run warning | **specified only**; the screen that starts a run names what the scan did not find out, from `SystemScan::unknowns()` |
+| Mapping as a run purpose | **withdrawn**. The probe took the job: a read happens on the open grid, produces the same sellable file, and needs no run. Scanning from inside a run is not allowed either — a blind run is a commitment |
+| A scan is spent by the run that uses it | **built as a column** (`system_scans.used_at`, consumed on first use); nothing spends one, because spending one means a run. In co-op the most complete file covers the party and only that file is spent |
+| Concurrent runners | **specified only**; a machine holds several at once and they are not instanced. First extraction takes it, and both raids count |
+| A cancelled run | **specified only**; burned or locked down under you ends the run for 1 flat SI and nothing else. Asked on the lock, never by a sweeper, and the run row carries the ADDRESS so a burned target is an ordinary answer |
+| The turn protocol | **specified only**; a turn resolves when all have chosen or 30 seconds pass, an absent player is resolved by their own thresholds, and `auto-run` hands the whole run to them. Shared with physical combat as a PROTOCOL, never as an engine |
+| The two thresholds | **specified only**; they ACT rather than warn, every character is born with 70% trace and 30% SI, and they are changed in an accordion on the cyberspace screen |
+| The notification queue | **not built**, and named here because a cancelled run needs one. One place, reached from the rail, with priorities and categories. Until it exists the cancellation screen is the notification |
 | Scanning — the probe | **built** for what a system currently HAS: grade, operating system, intrusion detection and tracer. A machine with none of the last two reads as *None*, which is an answer rather than an unread field. Needs an analyser RUNNING on the equipped deck; one press starts a READ, which goes round pass after pass until the file is whole or the `scan_passes` budget is gone |
 | A pass takes TIME | **built** — about a minute against a grade 1 and sixteen against a grade 9, cut by skill and by a better instrument through the `scan_duration` stat. Settled lazily by whoever next looks |
 | Node inventories — what a machine holds | **built** — creds always, a generated FILE on a roll, and none to several items, all scaled by grade and leaned by type. `system_contents`, written by `App\Cyberspace\NodeStocker` |
@@ -612,9 +619,12 @@ penalty; a partial one means penalties in proportion to what you did not find.
 **Scan data is perishable.** It expires **48 hours** after it is taken, and it
 is **consumed the first time it is used**.
 
-**A mapping run produces a file you can sell**, and that is the whole point of
-the run type — a safer living than intrusion, for people who would rather be
-paid less and survive.
+**A scan produces a file you can sell**, and that is the whole point of mapping
+as a living — safer than intrusion, for people who would rather be paid less and
+survive. **It is not a kind of run**: reading a machine happens on the open
+grid, from the square you are standing on, and needs no run to be inside of.
+That is what makes it the safe trade — there is no core to avoid touching,
+because you never went in.
 
 - **Sold to another player**, on the market, it is ordinary goods: the buyer
   gets one use of it and the system is none the wiser.
@@ -662,6 +672,32 @@ software**, using something carried — a drug, a patch, a one-shot — and
 **trying to egress**, which is always on the list. Nothing here is free: every
 one of them spends the turn, and a turn is trace and thermal load.
 
+**MAPPING IS NOT A RUN, and scanning is not a turn.** It used to be a purpose
+of its own — scan only, never touch the core — and the probe took that job the
+day it shipped: a read happens on the open grid, from the square you are
+standing on, with no run, no lock and no core to avoid, and it produces the same
+sellable file. A second way to do one thing is one of them being wrong, so the
+purpose is gone and so is the scanning phase that used to head the turn table.
+
+**You cannot scan from inside, either.** Reading a machine is preparation, and
+**a blind run is a commitment** — the decision to go in without a picture is the
+decision, and being able to buy the picture afterwards from inside the room
+would refund it.
+
+**A scan is SPENT by the run that uses it**, which is what the file always said:
+`system_scans` rows are consumed on first use and were built that way before
+anything could consume one. So a file is a vulnerability report you can read
+*or* sell, never both, and walking into a machine is the moment you choose. The
+run that goes in blind spends nothing, which is the only thing going in blind
+has ever had going for it.
+
+**In a co-op run the best file covers everybody.** Whoever brought the most
+complete picture has it applied to the whole party for that run — counted as
+facts known, and settled in the run owner's favour if two files tie. **Only that
+file is spent.** Everyone else's stays whole and stays sellable, because it was
+not the one that got used, and burning the party's spare copies would make
+bringing one a penalty.
+
 **A blind run is warned about, clearly, every time.** Going in unscanned is
 allowed and always was — but it must never be something a player did without
 noticing, so the screen that starts a run says what is not known before it will
@@ -677,9 +713,6 @@ unknown is not being told which one it is.
 
 The purposes:
 
-- **Mapping** — scan only, never touch the core. The safest thing you can do in
-  cyberspace, the only run that cannot trigger the second detection roll, and
-  the one that produces something to sell.
 - **Extraction** — steal what it is holding. Clean, it leaves no lockdown behind
   and the node restocks; caught, it locks down like anything else.
 - **Backdoor** — keep access. Never locks the system down, even when the run
@@ -691,7 +724,6 @@ thermal figure in the catalogue has to be calibrated against:
 
 | Phase | Turns |
 | --- | --- |
-| Scanning | 1–5. Chance-based, so a full picture may take several passes or never arrive. |
 | Fighting the ICE | 2–10, if it was ever activated. |
 | Extracting or installing | a few, scaling with the size of the data and scaled back down by the deck's bandwidth. |
 
@@ -712,16 +744,35 @@ length**, which is a better brake than a turn count would have been — it is
 bought with hardware, it can be planned around, and it fails loudly rather than
 by refusing a button.
 
-**The two thresholds survive, with a smaller job.**
+### The two thresholds, and what they now decide
 
 - egress if **trace** rises above *x*%
 - egress if **Synaptic Integrity** falls below *x*%
 
-They were the whole of a run's automation when a run resolved itself; now that
-every turn is a decision, they are a **safety net under inattention** rather than
-the plan. They still persist as defaults, for the reason they always did — they
-are a play style and not a per-run choice — and they still fire on their own, so
-a player who looks away does not come back to a corpse they could have saved.
+**They ACT. They do not warn.** Checked at the start of each of your turns, and
+when one is breached the egress is attempted then and there. That is deliberately
+not the gentler rule — a threshold that only warned would leave an unresponsive
+player sitting in a run that never resolves, and in a co-op run it would leave
+everybody else sitting there with them.
+
+**They persist, and every character is born with them.** 70% trace and 30%
+Synaptic Integrity, granted at creation like anything else a character starts
+with, so a player who has never found the sliders is still carried out of a run
+they were losing. They are changed in an **accordion on the cyberspace screen** —
+two sliders, open when you want them and shut the rest of the time, because
+they are a play style rather than a per-run decision and a screen that asked
+every time would train everyone to ignore it.
+
+**They are also the whole of the default-action policy**, which is what makes a
+timeout resolvable without the engine guessing at an intention. See *Taking a
+turn* below.
+
+**`auto-run` is the same idea, chosen on purpose.** A player may hand the whole
+run over to their thresholds: no timer, no prompt, each turn resolved by the
+policy until the run ends or a threshold pulls them out. It is the honest
+version of walking away — the run resolves at speed rather than crawling one
+deadline at a time, and a player who wanted the old atomic run can have one by
+ticking a box.
 
 ### The run holds you
 
@@ -759,6 +810,127 @@ nothing, until that run is finished. A player who would rather hold a doomed run
 open forever than resolve it has chosen not to play. No timer, no scheduled
 sweep, and nothing that has to have been running — the same call the readiness
 net makes about players who walk away.
+
+### Taking a turn, and running one together
+
+**A turn resolves when everybody has chosen, or when the deadline passes.**
+Thirty seconds. A party that is paying attention moves at its own speed and
+never meets the clock; a party waiting on somebody who has walked away waits
+thirty seconds and moves on.
+
+**A timeout is not a pass — it is the player's own policy, applied.** Continue
+the purpose, unless a threshold is breached, in which case egress. That is why
+the engine never has to guess at an intention: the player declared one, in the
+accordion, and a cautious player gets cautious defaults without configuring a
+second thing. **A timeout costs exactly what acting costs** — the same turn, the
+same trace, the same heat — because the moment timing out is cheaper than acting
+it becomes a tactic.
+
+**An absent player resolves themselves.** Turn after turn of defaults walks their
+trace up or their Synaptic Integrity down until a threshold trips and carries
+them out. Nobody has to write a rule for abandonment; it falls out of the policy,
+and the lock releases when they go.
+
+**The deadline is a deadline and not a scheduled job.** The run screen polls, the
+way the reading dialog already polls while it is open, so **the polling client is
+the clock**: whichever request arrives first past the deadline is the one that
+resolves the absent players and advances the turn. If everybody walks away
+nothing resolves and the run sits frozen — which is correct rather than broken,
+since the lock is punishing all of them equally and there is nobody being kept
+waiting.
+
+**A solo run has no deadline.** The timer is a courtesy owed to other players,
+so it exists when there are other players. A solo runner who stops is only
+holding up themselves, and the lock is already the answer to that. The
+thresholds still act, and `auto-run` is still there for anyone who would rather
+not sit through it.
+
+**The party forms at the door.** Nobody joins a run in progress — a run is a
+plan, the loadouts and the scan were decided against it, and a late arrival is a
+different plan wearing the same name.
+
+**One runner leaving does not end it.** They egress, their lock releases, and the
+rest play on. What they had already taken is theirs.
+
+**Who gets what:**
+
+- **The owner keeps the files.** The player who called the run is who the haul
+  belongs to. Parties settle the rest between themselves, which is what parties
+  do.
+- **Creds are split evenly, including with the ones who left.** Somebody who
+  egressed at turn three took a risk for the same money and is owed their share
+  of it; a split that paid only the survivors would make leaving a punishment on
+  top of a punishment.
+- **If the OWNER leaves and the run still succeeds, the files pass to one of the
+  others at random.** Not to whoever is nominally next, because there is no
+  ordering that is not somebody's advantage to engineer.
+
+**What this shares with physical combat is the PROTOCOL, not the engine.** They
+are two engines deliberately and stay two — but everybody choosing, a turn
+resolving when the last of them has or the deadline passes, and an absent
+fighter getting their own policy is how a turn is *taken*, not what an action
+*means*. When physical combat arrives it takes the same protocol and resolves it
+with entirely different numbers.
+
+### More than one runner at a time
+
+**A machine can hold several runners at once, and they are not instanced.** One
+world, one node, one shelf — and everything that follows is a consequence of
+that rather than a rule on top of it.
+
+- **The first extraction takes it.** Two runners after one file is one runner
+  with a file and one looking at an empty shelf. Instanced contents would make
+  raiding safe and the restock clock meaningless; a shared shelf is what gives
+  concurrency teeth.
+- **Both raids count.** A node retires on its third, and two thefts in one
+  evening are two thefts — the counter is about the books not balancing, and
+  they do not balance twice as slowly because it was busy.
+- **Somebody else's run can end yours.** That is the subject of the next
+  section, and it is the price of a shared world: a machine you are standing in
+  is a machine somebody else can burn.
+
+### A run that stopped being valid
+
+**Some things end a run without anybody in it losing.** The machine is burned
+out from under you; the machine locks down because another runner finished what
+they came for; the character is left in a state that cannot hold a run at all.
+All of them are meant to be possible — a world where they cannot happen is a
+world where nobody else is real.
+
+**Validity is asked on the lock, not by a sweeper.** The lock already stops every
+request from a player in a run; that interception is where *is this still a run?*
+gets asked, so nothing has to have been running and nothing has to be scheduled.
+It is the same lazy settlement a matured scan gets, a training catch-up gets, and
+the readiness net gets — a player who never comes back needs to be told nothing,
+and the moment they come back is the moment they are told.
+
+**THE RUN ROW CARRIES THE ADDRESS, NEVER THE SYSTEM ID.** Exactly the rule
+`system_scans` and `system_contacts` already follow, and for exactly the same
+reason: it has to outlive the machine. A burned target must be an ordinary
+answer — *there is nothing at that address* — rather than a foreign key
+violation or a row that cascaded away with the evidence.
+
+**A cancellation is an ending, and it is the one that already exists.** The
+player is out, it costs **one flat point of Synaptic Integrity**, and nothing
+else happens: no defeat effect, no lockdown, no raid counted, no trace. That is
+`ReadinessWatch`'s consequence and its reasoning transfers word for word — small
+because the cause was not theirs, and nonzero because being dumped out of
+cyberspace is never free.
+
+**What was already taken stays taken.** Extraction moved it; the object is the
+evidence. What had not been lifted yet is gone with the machine.
+
+**It is explained, and that is not optional.** A player thrown out of a run they
+were winning, by something they could not see, with no account of it, has been
+handed a bug rather than a consequence. The message is the notification queue's:
+*System experienced a lockdown during your run, and the run was cancelled.*
+
+**The notification centre is a named dependency and not a blocker.** It is meant
+to be one place, reached from the rail, with priorities and categories, and it
+does not exist. Until it does, **the cancellation screen is the notification** —
+the lock guarantees the player lands somewhere, so that somewhere is the
+explanation. When the centre arrives this becomes one more thing that emits into
+it rather than a rewrite.
 
 ### Detection
 
@@ -834,9 +1006,15 @@ against the system. **Leaving a high-grade machine is much harder than leaving a
 low-grade one**, which is what stops a deep run from being safe merely because
 the player set a cautious threshold.
 
+**An active ICE makes it harder.** The difficulty is the grade, plus a term for
+anything currently fighting you — so walking out of a quiet machine and tearing
+free of one mid-fight are not the same act, and an ICE is something you have to
+get past on the way out as well as on the way in. A machine whose ICE was never
+activated is the cheap exit, which is one more thing an undetected run is worth.
+
 It resolves through `App\Checks\CheckRoller` like everything else, so it carries
 the certainty floor at both ends — the best runner alive is occasionally held,
-and the worst one occasionally walks. The difficulty is per grade, the shape
+and the worst one occasionally walks. The per-grade difficulty is the shape
 `scan.difficulty` already uses, and "modified by their skills" needs no code: a
 skill that helps you leave is a modifier targeting the egress stat, the way
 Overclocking targets `deck_qflops`.
@@ -917,11 +1095,12 @@ and the player cannot jack back in until they replace it. That is the lasting
 consequence and it is already expressible — no cooldown, no repair flag, no
 column.
 
-**Three different causes damage SI and they must not be conflated:**
+**Four different causes damage SI and they must not be conflated:**
 
 | Cause | Current SI | Flatline? | Program tag? |
 | --- | --- | --- | --- |
 | Readiness lost while jacked in, outside a run | **1 point**, flat | no | no |
+| A run cancelled under you — burned or locked down | **1 point**, flat | no | no |
 | The deck freezes — a module broke | **25–75% of current**, rolled | **12%**, for 5–15% of max | no |
 | Defeated by ICE | whatever the tag carries | only via the **Flatline** tag | **yes** |
 
@@ -1368,21 +1547,20 @@ dependants.
     within some radius of where it was — is the interesting alternative and is
     parked below rather than decided. Nothing is blocked by leaving it random.
 
-12. **Does an active ICE make egress harder, or only the grade?** Egress is
-    settled as a derived chance against the SYSTEM, scaled by grade — which
-    means it reads the same whether or not anything is fighting you. That is
-    the simpler rule and probably the right one, since a player egresses for a
-    trace as often as for a fight. The alternative is grade plus a term for a
-    live ICE, which is one number more to tune and makes retreat from a quiet
-    machine nearly free. Nothing is blocked by leaving it at grade.
+12. ~~**Does an active ICE make egress harder, or only the grade?**~~
+    **Resolved: it does.** The difficulty is the grade plus a term for anything
+    currently fighting you, so tearing free mid-fight is not the same act as
+    walking out of a quiet machine — and an undetected run is worth one more
+    thing than it was, since an ICE that never woke is a cheap exit.
 
-13. **What does an interactive run do to cooperative runs?** Phase 7 was
-    written against atomic runs, where two players' plans could be resolved
-    together in one pass. Turn by turn it is a different problem: whose turn is
-    it, what happens while one of them is not answering, and does one player
-    stalling hold the other in the lock. Nothing is blocked today — co-op is two
-    phases out — but the cost of that phase went up and should not be discovered
-    then.
+13. ~~**What does an interactive run do to cooperative runs?**~~ **Answered:
+    they share a run and take turns in it.** A turn resolves when everybody has
+    chosen or thirty seconds pass, an absent player is resolved by their own
+    thresholds, and nobody is held by anybody — see *Taking a turn, and running
+    one together*. What is still open is smaller and can wait for the phase:
+    whether a party has a size cap, and what a second runner's presence does to
+    a system's detection rolls, since four people in a machine are surely
+    louder than one.
 
 14. **Does a Surge that leaves the deck unready roll the freeze's flatline
     chance?** The 25–75% is nil at 0 SI, but the 12% is not, and stacking it
@@ -1414,7 +1592,7 @@ What it would buy:
   than four million interchangeable cells — a frontier worth reaching rather
   than more of the same at a greater distance.
 - **A reason to map rather than to raid.** A region with known character is
-  information worth selling, which is the mapping run's whole premise.
+  information worth selling, which is what mapping for a living rests on.
 - **Durable waypoints.** A neighbourhood that is dense *by design* stays dense
   through relocation, so marking one is a lasting investment rather than a bet
   on a cluster holding still.
