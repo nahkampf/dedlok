@@ -500,6 +500,14 @@ final class Probe
             match ($unknown) {
                 'grade' => $scan->grade = $system->grade,
                 'os' => $scan->os_skill_id = $system->os_skill_id,
+                // A machine with no intrusion detection answers ZERO rather
+                // than staying null: "there is none" is a finding, and it is
+                // most of what somebody scans a machine to hear.
+                'ids' => $scan->ids_detection = $system->ids_detection,
+                'tracer' => [
+                    $scan->tracer_detection = $system->tracer_detection,
+                    $scan->tracer_rate = $system->tracer_rate,
+                ],
             };
         }
 

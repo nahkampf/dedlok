@@ -65,6 +65,36 @@ final class GridSeederTest extends TestCase
         $this->assertSame($addresses, System::query()->orderBy('id')->pluck('address')->all());
     }
 
+    /**
+     * The world comes out defended, and the portal does not.
+     *
+     * Every generated machine guarantees two countermeasures by its type, so
+     * nothing reaches the grid undefended however the presence roll lands —
+     * and the portal is exempt for the reason it is exempt from everything.
+     */
+    public function test_the_world_arrives_with_its_defences_decided(): void
+    {
+        $this->generator()->run();
+
+        $ordinary = System::query()->where('type', '!=', SystemType::Portal->value)->get();
+
+        $this->assertNotEmpty($ordinary);
+
+        foreach ($ordinary as $system) {
+            $this->assertTrue(
+                $system->hasIds() || $system->hasTracer(),
+                "a {$system->type->value} reached the grid with nothing watching it",
+            );
+        }
+
+        $portal = System::query()->where('type', SystemType::Portal->value)->first();
+
+        if ($portal !== null) {
+            $this->assertFalse($portal->hasIds());
+            $this->assertFalse($portal->hasTracer());
+        }
+    }
+
     public function test_it_replaces_exactly_what_a_burn_took(): void
     {
         $this->generator()->run();

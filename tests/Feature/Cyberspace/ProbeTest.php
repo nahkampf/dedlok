@@ -288,7 +288,7 @@ final class ProbeTest extends TestCase
         $result = $this->readOnce(0.0);
 
         $this->assertTrue($result->succeeded());
-        $this->assertSame(['grade', 'os'], $result->found);
+        $this->assertSame(['grade', 'os', 'ids', 'tracer'], $result->found);
         $this->assertTrue($result->scan->isComplete());
         $this->assertSame(1, $result->scan->grade);
         $this->assertSame($os->id, $result->scan->os_skill_id);
@@ -775,7 +775,7 @@ final class ProbeTest extends TestCase
 
         $this->assertTrue($facts->has('grade'));
         $this->assertNull($facts['grade']['value'], 'nothing is known until the pass matures');
-        $this->assertFalse($facts['ids']['discoverable'], 'and some of it nothing can read yet');
+        $this->assertFalse($facts['ice']['discoverable'], 'and some of it nothing can read yet');
     }
 
     /** It settles on the way past, which is what makes the screen update itself. */

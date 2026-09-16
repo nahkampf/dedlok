@@ -354,6 +354,14 @@ return [
             'idle' => 'Nothing running. The file is what it is until it goes stale.',
             'unread' => 'Unread',
             'not_yet' => 'Not yet',
+            /*
+            | A FINDING, NOT AN ABSENCE. A scan that comes back with nothing on
+            | a machine's defences has told the player the most valuable thing
+            | it can tell them, and the screen must not render that as though
+            | the question went unanswered. `unread` above is the other state.
+            */
+            'none' => 'None',
+            'tracer' => ':detection, tracing :rate% a turn',
             'complete' => 'Everything this machine will tell you.',
             'exhausted' => 'Read as far as it can be. What is here is what you get until the file goes stale.',
             'close' => 'Close',

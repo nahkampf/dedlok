@@ -250,6 +250,147 @@ return [
     | been relocated, patched or raided since is described by a file that no
     | longer matches it.
     */
+    /*
+    |--------------------------------------------------------------------------
+    | What a machine defends itself with
+    |--------------------------------------------------------------------------
+    |
+    | Three countermeasures, and EVERY HOSTILE THING CAN NOTICE YOU — not just
+    | the intrusion detection. The IDS is far better at it, but a tracer and an
+    | ICE each carry a detection value of their own, which is why a machine with
+    | no IDS is quieter rather than safe. See CYBERSPACE.md, *Detection*.
+    |
+    | WHAT A MACHINE CARRIES IS DECIDED ONCE, AT CREATION, AND STORED. Type sets
+    | the floor and grade rolls the rest, and the answer lands in columns on the
+    | row rather than being derived on read. That is what makes a mission node
+    | free: a machine that has to be dangerous is a row with different numbers
+    | in the same columns, needing no rule, no override and no special case.
+    | `stock_rule` exists because a node's CONTENTS are re-rolled nightly;
+    | defences never are.
+    |
+    | The portal carries nothing, and that needs no entry here —
+    | SystemType::isInteractable() already says no to everything for it.
+    */
+    'defences' => [
+
+        /*
+        | WHAT EACH KIND OF MACHINE ALWAYS HAS.
+        |
+        | A rotation: every type guarantees two countermeasures and rolls for
+        | the third, and every countermeasure is guaranteed by two types and
+        | rolled by one. So the thing a scan is for is never "does this have
+        | anything" — it is which of the three it happens to be missing.
+        |
+        | The compute node is the machine CYBERSPACE.md describes when it says a
+        | system with no IDS but with ICE is real and ordinary: it is the one
+        | type whose detection is the thing left to chance.
+        */
+        'always' => [
+            'silo' => ['ids', 'ice'],
+            'relay' => ['ids', 'tracer'],
+            'compute' => ['ice', 'tracer'],
+        ],
+
+        /*
+        | THE CHANCE OF CARRYING THE ONE ITS TYPE DOES NOT GUARANTEE, per cent.
+        |
+        | Never zero and never certain, for the reason no check resolves to a
+        | certainty: a grade 1 that happens to have a tracer is the machine that
+        | teaches somebody to scan, and a grade 9 without one is the rumour
+        | worth chasing.
+        */
+        'presence' => [
+            1 => 10,
+            2 => 18,
+            3 => 26,
+            4 => 36,
+            5 => 46,
+            6 => 58,
+            7 => 70,
+            8 => 82,
+            9 => 95,
+        ],
+
+        /*
+        | HOW HARD THE INTRUSION DETECTION IS TO GET PAST.
+        |
+        | A difficulty handed to App\Checks\CheckRoller, so it is directly
+        | comparable to `scan.difficulty` below — and deliberately the same
+        | table. Reading a machine and hiding from its watchdog being equally
+        | hard at a given grade is an anchor a designer can hold in their head,
+        | and one curve to tune beats two that drift apart.
+        |
+        | Against a mid-career runner (a check around 51, at the default spread)
+        | that is the certainty floor at grade 1, about three in ten at grade 5,
+        | and the floor at the other end by grade 9 — which is exactly the
+        | "trips a household IDS about once in every hundred and twenty
+        | attempts" CYBERSPACE.md claims for the bottom of the range.
+        */
+        'ids' => [
+            1 => 10,
+            2 => 18,
+            3 => 26,
+            4 => 34,
+            5 => 44,
+            6 => 54,
+            7 => 66,
+            8 => 78,
+            9 => 92,
+        ],
+
+        'tracer' => [
+
+            /*
+            | WHAT A TRACER NOTICES, and it is MUCH LOWER than an IDS at the
+            | same grade — a fifth of it at the bottom, widening to a little
+            | over two-fifths at the top.
+            |
+            | Shaped rather than a flat fraction, because the curve says
+            | something: a cheap tracer is following traffic and not looking for
+            | anybody, and an expensive one is doing both. Up to grade 4 it sits
+            | on the certainty floor against a competent runner and genuinely
+            | never notices them, which is what keeps the bottom of the grid
+            | walkable; from grade 7 it is a second pair of eyes, and at grade 9
+            | it catches a good runner about one approach in five.
+            */
+            'detection' => [
+                1 => 2,
+                2 => 4,
+                3 => 7,
+                4 => 10,
+                5 => 14,
+                6 => 19,
+                7 => 25,
+                8 => 32,
+                9 => 40,
+            ],
+
+            /*
+            | HOW FAST IT TRACES, as per cent of a completed trace per turn.
+            |
+            | Calibrated against the one number the design already fixes: a run
+            | is 4-20 turns. A grade 1 tracer needs twenty-five turns and so
+            | never lands inside an ordinary run; a grade 9 completes in five,
+            | which is faster than most hauls. The curve is the brake, not a
+            | threshold somewhere else.
+            |
+            | NOTHING READS THIS YET. The trace advances per turn and there is
+            | no turn loop — see CYBERSPACE.md, *The fight*.
+            */
+            'rate' => [
+                1 => 4,
+                2 => 5,
+                3 => 6,
+                4 => 8,
+                5 => 10,
+                6 => 12,
+                7 => 15,
+                8 => 18,
+                9 => 22,
+            ],
+        ],
+    ],
+
     'scan' => [
         'difficulty' => [
             1 => 10,

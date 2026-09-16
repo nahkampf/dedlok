@@ -11,7 +11,7 @@ use App\Support\Text;
  * The things a scan is trying to find out.
  *
  * CYBERSPACE.md lists what a scan catalogues: the operating system, the grade,
- * the IDS, the ICE, the tracer, and any cloaked systems. Two of those exist —
+ * the IDS, the ICE, the tracer, and any cloaked systems. Four of those exist —
  * the rest are phases away — and this is the one place that says which is
  * which.
  *
@@ -45,8 +45,8 @@ enum ScanFact: string
     public function isDiscoverable(): bool
     {
         return match ($this) {
-            self::Grade, self::OperatingSystem => true,
-            self::Ids, self::Ice, self::Tracer, self::Cloaked => false,
+            self::Grade, self::OperatingSystem, self::Ids, self::Tracer => true,
+            self::Ice, self::Cloaked => false,
         };
     }
 
@@ -64,6 +64,11 @@ enum ScanFact: string
         return match ($this) {
             self::Grade => $scan->grade !== null,
             self::OperatingSystem => $scan->os_skill_id !== null,
+            // NOT `> 0`. Zero is an ANSWER here — this machine has none — and
+            // reading it as unknown would send the probe back to roll again for
+            // a fact it already has, for as many passes as the budget allows.
+            self::Ids => $scan->ids_detection !== null,
+            self::Tracer => $scan->tracer_detection !== null,
             default => false,
         };
     }
@@ -83,6 +88,17 @@ enum ScanFact: string
         return match ($this) {
             self::Grade => (string) $scan->grade,
             self::OperatingSystem => $scan->operatingSystem()->first()?->title,
+            self::Ids => $scan->ids_detection > 0
+                ? (string) $scan->ids_detection
+                : Text::get('cyberspace.reading.none'),
+            // Both halves of one fact, because one roll answered both: what it
+            // notices, and how fast it traces once it has.
+            self::Tracer => $scan->tracer_detection > 0
+                ? Text::get('cyberspace.reading.tracer', [
+                    'detection' => (string) $scan->tracer_detection,
+                    'rate' => (string) $scan->tracer_rate,
+                ])
+                : Text::get('cyberspace.reading.none'),
             default => null,
         };
     }

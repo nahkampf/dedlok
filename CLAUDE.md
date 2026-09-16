@@ -1131,10 +1131,47 @@ carries the detail.
   on the way past**, which is why the answers fill in the moment one finishes
   rather than at the next reload. It polls only while open: a timer behind a
   closed dialog is a request every few seconds for ever.
+- **A machine's defences are decided ONCE, at creation, and stored.**
+  `App\Cyberspace\Defences` is that decision: **type sets the floor and grade
+  rolls the rest.** A silo always watches and always fights, a relay always
+  watches and always traces, a compute node always fights and always traces and
+  rolls for its detection — a rotation, so every type guarantees two and rolls
+  one, and what a scan is for is never *does this have anything* but *which one
+  is it missing*. The portal carries nothing, and that needs no entry anywhere:
+  `SystemType::isInteractable()` already says no to everything for it.
+- **This is why a mission node needs no override mechanism.** Nothing derives a
+  defence on read, so nothing has to be told not to — a machine that has to be
+  dangerous is a row with different numbers in the same columns, and a grade 9
+  watchdog sits on a grade 2 box by being written there. `systems.stock_rule`
+  exists because a node's CONTENTS are re-rolled nightly and so need a standing
+  instruction; defences never are.
+- **Everything hostile can notice you, not just the IDS.** A tracer carries its
+  own detection value — much lower, a fifth of the IDS at grade 1 widening to
+  two-fifths at grade 9 — so a machine with no IDS is quieter rather than safe.
+  Detection is the EVENT and not the instrument: the lockdown table lists *the
+  IDS fired* and *the ICE activated* as separate triggers for exactly this
+  reason.
+- **Zero means "has none"; null means "not looked".** On `systems` the three
+  defence columns are NOT NULL and 0 is the absence, so *has an IDS* is
+  `ids_detection > 0` in one shape everywhere. On `system_scans` the same
+  columns are nullable, because there the two states are genuinely different
+  and the distinction is the product: **a scan that comes back clean has told
+  the player the most valuable thing it can.** Reading 0 as unknown would send
+  the probe back round rolling for a fact it already has.
+- **A tracer is one thing, so it is rolled for once.** `tracer_detection` and
+  `tracer_rate` are zero together or positive together, and
+  `chk_systems_tracer` says so — the same "null exactly together" discipline
+  `running_on_deck_id` and `started_at` follow. Nothing reads the rate yet: the
+  trace advances per turn and there is no turn loop.
+- **ICE is the third countermeasure and is not built.** `defences.always` names
+  it anyway, because the rotation is unreadable without it — the compute node
+  rolls for its detection precisely because its ICE is certain. What ICE has
+  that the other two do not is combat numbers, and those cannot be calibrated
+  until something runs a turn.
 - **`App\Cyberspace\ScanFact` is the vocabulary of what a scan asks**, and it
-  lists the four nothing can read yet — IDS, ICE, tracer, cloaked — as *not
-  yet* rather than hiding them, the same decision the item card takes with its
-  unbuilt actions. `isKnownOn()` reads COLUMNS and `readFrom()` may reach
+  lists the two nothing can read yet — ICE and cloaked — as *not yet* rather
+  than hiding them, the same decision the item card takes with its unbuilt
+  actions. `isKnownOn()` reads COLUMNS and `readFrom()` may reach
   through a relation: asking a relation whether a scan is complete says no to a
   scan that just answered, because Eloquent caches the null it loaded before
   the probe wrote the id.

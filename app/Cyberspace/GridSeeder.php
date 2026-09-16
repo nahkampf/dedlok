@@ -278,6 +278,9 @@ final class GridSeeder
                 'designation' => $this->namer->designate(),
                 'owner_id' => $owners === [] ? null : $owners[($this->roll)(0, count($owners) - 1)],
                 'os_skill_id' => self::operatingSystemFor($grade, $operatingSystems),
+                // What it defends itself with, decided here and stored. Type
+                // guarantees two countermeasures and grade rolls the third.
+                ...Defences::roll($type, $grade, $this->roll)->columns(),
                 'created_at' => $now,
                 'updated_at' => $now,
             ];

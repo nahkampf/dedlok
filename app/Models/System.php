@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * size, and Grid is the one place that knows which — see CYBERSPACE.md, *How
  * the grid is stored*.
  */
-#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'os_skill_id', 'stock_rule'])]
+#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'os_skill_id', 'stock_rule', 'ids_detection', 'tracer_detection', 'tracer_rate'])]
 class System extends Model
 {
     /** @use HasFactory<SystemFactory> */
@@ -40,10 +40,38 @@ class System extends Model
             'y' => 'integer',
             'grade' => 'integer',
             'raids' => 'integer',
+            'ids_detection' => 'integer',
+            'tracer_detection' => 'integer',
+            'tracer_rate' => 'integer',
             'stock_rule' => 'array',
             'designation' => 'integer',
             'type' => SystemType::class,
         ];
+    }
+
+    /**
+     * Does this machine watch for intruders?
+     *
+     * ZERO IS HOW A MACHINE SAYS IT HAS NONE, on this table — the column is not
+     * nullable, so there is one question to ask rather than two. A scan's copy
+     * IS nullable, because there the difference between "there is none" and "I
+     * have not looked" is the whole point of looking.
+     */
+    public function hasIds(): bool
+    {
+        return $this->ids_detection > 0;
+    }
+
+    /**
+     * Does it trace?
+     *
+     * A tracer notices far less than an intrusion detection does, so a machine
+     * with only this one is quiet rather than safe — see CYBERSPACE.md,
+     * *Detection*: everything hostile can notice you.
+     */
+    public function hasTracer(): bool
+    {
+        return $this->tracer_detection > 0;
     }
 
     /**

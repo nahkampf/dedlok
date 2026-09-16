@@ -74,6 +74,28 @@ class SystemFactory extends Factory
         return $this->state(['grade' => $grade]);
     }
 
+    /**
+     * Watching for intruders.
+     *
+     * NOT IN `definition()`, deliberately: the columns default to 0 and a
+     * factory-built machine therefore defends itself with nothing, so a test
+     * about defences has to say so. That is the same call the schema makes for
+     * the same reason — nothing becomes dangerous by being forgotten.
+     */
+    public function withIds(int $detection): static
+    {
+        return $this->state(['ids_detection' => $detection]);
+    }
+
+    /** Tracing. Both columns together, because a tracer is one thing. */
+    public function withTracer(int $detection, int $rate): static
+    {
+        return $this->state([
+            'tracer_detection' => $detection,
+            'tracer_rate' => $rate,
+        ]);
+    }
+
     /** Run by a particular corp. */
     public function ownedBy(Corp $corp): static
     {

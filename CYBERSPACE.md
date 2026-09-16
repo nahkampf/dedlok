@@ -22,7 +22,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
 | System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
-| Scanning — the probe | **built** for what a system currently HAS: grade and operating system. Needs an analyser RUNNING on the equipped deck; one press starts a READ, which goes round pass after pass until the file is whole or the `scan_passes` budget is gone |
+| Scanning — the probe | **built** for what a system currently HAS: grade, operating system, intrusion detection and tracer. A machine with none of the last two reads as *None*, which is an answer rather than an unread field. Needs an analyser RUNNING on the equipped deck; one press starts a READ, which goes round pass after pass until the file is whole or the `scan_passes` budget is gone |
 | A pass takes TIME | **built** — about a minute against a grade 1 and sixteen against a grade 9, cut by skill and by a better instrument through the `scan_duration` stat. Settled lazily by whoever next looks |
 | Node inventories — what a machine holds | **built** — creds always, a generated FILE on a roll, and none to several items, all scaled by grade and leaned by type. `system_contents`, written by `App\Cyberspace\NodeStocker` |
 | Rarity, per grade band | **built** — `loot_tables`, one row per (type, band, rarity). Grades 1–3 see rare at 1%; ultra-rare is weight 0 below grade 8, which is a wall and not a long shot |
@@ -34,6 +34,9 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Two instruments, two machines | **built** — a second read needs a second running instance, which costs its own compute and a free thread |
 | Threads — how many copies of one program run at once | **built** — `program_threads`, one by default, raised by Multithreading and only for software flagged `multithreaded` |
 | An interrupted read is lost | **built** — the analyser has to have been running for the WHOLE pass, which `inventory_items.started_at` answers without recording a history |
+| Defences — the IDS and the tracer | **built** as columns on `systems`, decided once at creation and stored. Type guarantees two countermeasures and grade rolls the third; `App\Cyberspace\Defences` is the decision. Nothing rolls against them — that is the simulator |
+| A machine told what to defend itself with | **built**, and it needed no mechanism: defences are stored rather than derived, so a mission node is a row with different numbers in the same columns |
+| ICE | **specified only**. The third countermeasure, and the one with combat numbers — integrity, an attack, and a defeat tag — none of which can be calibrated until something runs a turn |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
 | Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
@@ -1094,11 +1097,28 @@ All of it. In the order it should be built:
    a raid can carry is **data only**: files and programs, never objects, since
    nobody is in the room.
 
-   **Still missing**: taking any of it, which is the run; and selling a scan,
-   which needs a storefront the market does not have. **A machine carries no
-   defences yet** — no IDS, no tracer, no ICE on any row — which is why three
-   of `ScanFact`'s facts still read *not yet*, and it is what phase 5 has to
-   have before anything can be detected by anything.
+   **Defences are built, less the ICE**: `systems.ids_detection`,
+   `tracer_detection` and `tracer_rate`, decided once at creation by
+   `App\Cyberspace\Defences` and carried on the row. **Type sets the floor and
+   grade rolls the rest** — a silo always watches and always fights, a relay
+   always watches and always traces, a compute node always fights and always
+   traces and rolls for its detection, which is the machine this document means
+   when it says a system with no IDS but with ICE is real and ordinary. The
+   probe reads both, and *None* is a finding rather than an empty field.
+
+   Because they are STORED rather than derived, a mission node needs no
+   override mechanism at all: a machine that has to be dangerous is a row with
+   different numbers in the same columns. `stock_rule` exists because a node's
+   contents are re-rolled nightly; defences never are.
+
+   **Still missing**: taking any of it, which is the run; selling a scan, which
+   needs a storefront the market does not have; and **ICE**, which is why
+   `ScanFact::Ice` still reads *not yet*. ICE is the countermeasure with combat
+   numbers on it — integrity, an attack, a defeat tag — and every one of those
+   has to be calibrated against a run of 4–20 turns that nothing runs yet, the
+   same dependency open question 5 names for thermal load. Nothing rolls
+   against the IDS or the tracer either: they are difficulties waiting for a
+   caller, and the caller is the simulator.
 
    ~~**Decide here whether the probe needs a running analyser.**~~ **Decided:
    it does.** Reading a machine takes software, and the software has to be

@@ -22,9 +22,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * which is the whole subject of this table: a partial picture is the ordinary
  * outcome of scanning something near the limit of what a character can read.
  *
+ * THE DEFENCE COLUMNS CARRY A THIRD STATE, and it is the one worth the care:
+ * null is *not found out*, and ZERO is *found out, and there is none*. Every
+ * machine has a grade, so grade never needed the distinction; not every machine
+ * has an intrusion detection, and "this one is clean" is exactly the answer a
+ * player spent an instrument and a quarter of an hour to buy.
+ *
  * Written only by App\Cyberspace\Probe.
  */
-#[Fillable(['character_id', 'address', 'x', 'y', 'grade', 'os_skill_id', 'passes', 'pass_started_at', 'pass_ready_at', 'reading_process_id', 'scanned_at', 'expires_at'])]
+#[Fillable(['character_id', 'address', 'x', 'y', 'grade', 'os_skill_id', 'ids_detection', 'tracer_detection', 'tracer_rate', 'passes', 'pass_started_at', 'pass_ready_at', 'reading_process_id', 'scanned_at', 'expires_at'])]
 class SystemScan extends Model
 {
     public $timestamps = false;
@@ -35,6 +41,9 @@ class SystemScan extends Model
             'x' => 'integer',
             'y' => 'integer',
             'grade' => 'integer',
+            'ids_detection' => 'integer',
+            'tracer_detection' => 'integer',
+            'tracer_rate' => 'integer',
             'passes' => 'integer',
             'pass_started_at' => 'datetime',
             'pass_ready_at' => 'datetime',
