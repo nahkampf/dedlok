@@ -52,6 +52,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | An interrupted read is lost | **built** — the analyser has to have been running for the WHOLE pass, which `inventory_items.started_at` answers without recording a history |
 | Defences — the IDS and the tracer | **built** as columns on `systems`, decided once at creation and stored. Type guarantees two countermeasures and grade rolls the third; `App\Cyberspace\Defences` is the decision. Nothing rolls against them — that is the simulator |
 | A machine told what to defend itself with | **built**, and it needed no mechanism: defences are stored rather than derived, so a mission node is a row with different numbers in the same columns |
+| Defeat tags | **built** as vocabulary and numbers: `App\Cyberspace\DefeatTag`, seven of them, four levelled I-III. Skim and Erase are settled, Flatline was already, Surge's numbers are unset and Drain's MEANING is open. Nothing reads any of it — there is no defeat |
 | ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are null until somebody assigns them, and nothing fights yet |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
@@ -1242,15 +1243,40 @@ program that got you carries.** Offensive programs are tagged, and the tag is
 what happens. The tag set is open by design — a new consequence is a new tag,
 never new code in the simulator:
 
-| Tag | What it does |
-| --- | --- |
-| **Flatline** | permanent damage to the character's *maximum* SI. Levelled I-III, rising amount |
-| **Drain** | damage to current SI beyond the defeat itself |
-| **Surge** | destroys fitted hardware; levelled (Surge I, II, III …) with rising chance and rising module count |
-| **Erase** | deletes software or data held on the deck |
-| **Skim** | takes carried creds |
-| **Bounty** | puts a bounty on the character — the mechanic comes later, the tag exists now |
-| **Lobotomy** | **paused, not built.** Strips skill points from a random skill. |
+| Tag | What it does | Levels |
+| --- | --- | --- |
+| **Flatline** | permanent damage to the character's *maximum* SI | **I-III** — 4-10 / 9-16 / 14-19% of maximum |
+| **Drain** | damage to current SI beyond the defeat itself | **I-III** — rising amount, and see the caveat below |
+| **Surge** | destroys fitted hardware, at random | **I, II, III…** — rising chance and module count, **numbers unset** |
+| **Erase** | deletes software or data held on the deck | **I-III** — one file, half the deck, the whole deck |
+| **Skim** | takes carried creds | **I-III** — 10%, 30%, 60% of what you were CARRYING |
+| **Bounty** | puts a bounty on the character — the mechanic comes later, the tag exists now | none; it either happens or it does not |
+| **Lobotomy** | **paused, not built.** Strips skill points from a random skill | none |
+
+**Four of the seven come in strengths, and what rises is different for each** —
+an amount for Flatline and Drain, a share of what you were carrying for Skim,
+and how much of the deck goes for Erase. `App\Cyberspace\DefeatTag` is the
+vocabulary and `config/cyberspace.defeat_tags` holds the numbers, so they can be
+tuned against one another the way the freeze's three are.
+
+**Skim reaches what you CARRIED and never what you stored**, which is the same
+rule that keeps a node's contents safe from anything that happens to a person.
+It is also the only tag a player can act on in advance: banking before a run is
+a decision, where a flatline is not.
+
+**Erase III wipes the deck** — every program and every file on it — and is the
+most expensive thing in the tag set by some distance. It belongs only on ICE
+nobody should meet by accident.
+
+**DRAIN RESTS ON A QUESTION NOBODY HAS ANSWERED.** A defeat has already taken
+current SI to zero, and subtracting from zero does nothing — so *damage beyond
+the defeat* has no meaning until something says what being driven further down
+is worth. There is no SI regeneration in the game and no waiting screen, which
+are the two places that meaning could live. The numbers in config assume the
+waiting screen is the thing Drain lengthens; if the answer turns out to be
+something else — Drain reaching the body instead, or landing during the fight
+rather than at the end — it is the tag's MEANING that changes and not its
+levels. See the open questions.
 
 **FLATLINE IS LEVELLED, I TO III**, the way Surge is, and what rises is the
 amount rather than a chance — a Flatline tag fires because the program that beat
@@ -1722,7 +1748,17 @@ dependants.
     it is settled: every bad ending ejects, through `Navigator::jackOut()`,
     before the waiting screen is shown.)
 
-15. ~~**Can one program carry more than one tag?**~~ **Resolved: it can.** An
+15. **What does Drain do, given the defeat already took you to zero?** The tag
+    is *damage to current SI beyond the defeat itself*, and current SI is zero
+    by the time a tag fires — so as written it is a no-op. There is no SI
+    regeneration and no waiting screen, which are the two places a meaning
+    could live. The likeliest answer is that being driven past zero lengthens
+    the wait, and the levels in config assume it; the alternatives are Drain
+    landing during the fight rather than at the end, or Drain reaching the body
+    instead of the mind. **The levels are fine either way** — it is the meaning
+    that is open.
+
+16. ~~**Can one program carry more than one tag?**~~ **Resolved: it can.** An
     ICE tagged Flatline and Surge does both, and the worst software in the game
     is worst for carrying several consequences rather than one large number. It
     leaves the ordering rule untouched: every consequence is declared by the

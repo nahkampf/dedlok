@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Cyberspace\DefeatTag;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -79,10 +80,42 @@ class Ice extends Model
      * set" should not be two ways of writing it. The same call
      * `programs.modifiers` makes.
      *
-     * @return list<string>
+     * Each entry is a tag and, for the levelled ones, which rung — so the
+     * stored shape is `[['tag' => 'flatline', 'level' => 2], …]`. A tag the
+     * vocabulary no longer knows is DROPPED rather than thrown on: this is read
+     * on a screen, and content that has been retired should stop appearing
+     * rather than take a page down with it.
+     *
+     * @return list<array{tag: DefeatTag, level: ?int}>
      */
     public function defeatTags(): array
     {
-        return array_values($this->defeat_tags ?? []);
+        $tags = [];
+
+        foreach ($this->defeat_tags ?? [] as $entry) {
+            $tag = DefeatTag::tryFrom(is_array($entry) ? ($entry['tag'] ?? '') : (string) $entry);
+
+            if ($tag === null) {
+                continue;
+            }
+
+            $level = is_array($entry) ? ($entry['level'] ?? null) : null;
+
+            $tags[] = ['tag' => $tag, 'level' => $tag->isLevelled() ? (int) ($level ?? 1) : null];
+        }
+
+        return $tags;
+    }
+
+    /** Does this carry the named consequence, at any strength? */
+    public function carries(DefeatTag $tag): bool
+    {
+        foreach ($this->defeatTags() as $entry) {
+            if ($entry['tag'] === $tag) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

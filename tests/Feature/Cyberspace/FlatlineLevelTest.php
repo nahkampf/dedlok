@@ -29,7 +29,7 @@ final class FlatlineLevelTest extends TestCase
      */
     public function test_no_single_flatline_takes_a_fifth_of_the_ceiling(): void
     {
-        foreach (Config::get('cyberspace.flatline') as $level => $band) {
+        foreach (Config::get('cyberspace.defeat_tags.flatline') as $level => $band) {
             $this->assertLessThan(20, $band['max'], "Flatline {$level} reaches a fifth of maximum SI");
         }
     }
@@ -37,7 +37,7 @@ final class FlatlineLevelTest extends TestCase
     /** Worse means worse. A level that did not out-rank the one below it is a label. */
     public function test_the_levels_climb(): void
     {
-        $bands = Config::get('cyberspace.flatline');
+        $bands = Config::get('cyberspace.defeat_tags.flatline');
 
         $this->assertSame([1, 2, 3], array_keys($bands), 'three levels, and three is enough');
 
@@ -59,7 +59,7 @@ final class FlatlineLevelTest extends TestCase
     {
         $this->assertSame(1, Config::get('cyberspace.freeze.flatline_level'));
         $this->assertSame(
-            min(array_keys(Config::get('cyberspace.flatline'))),
+            min(array_keys(Config::get('cyberspace.defeat_tags.flatline'))),
             Config::get('cyberspace.freeze.flatline_level'),
         );
     }

@@ -571,10 +571,110 @@ return [
     | fifteen points wide, and the difference between III and a hypothetical IV
     | would be invisible to the person it happened to.
     */
-    'flatline' => [
-        1 => ['min' => 4, 'max' => 10],
-        2 => ['min' => 9, 'max' => 16],
-        3 => ['min' => 14, 'max' => 19],
+    'defeat_tags' => [
+
+        /*
+        | FLATLINE — permanent damage to MAXIMUM Synaptic Integrity, rolled.
+        |
+        | Small on purpose, all three. A flatline is PERMANENT and it
+        | ACCUMULATES — the one that matters is the fourth, not the first — so a
+        | single event taking a fifth of somebody's ceiling would end characters
+        | rather than mark them. NOTHING HERE REACHES 20%, and that is the rule
+        | rather than where the numbers happened to land: a grade 9's ICE is
+        | terrifying for carrying Flatline III AND Surge III AND Drain, which is
+        | what several tags on one program are FOR.
+        |
+        | Permanent damage to maximum SI is an unexpiring modifier row and never
+        | a subtraction into a column, because maximum SI is derived — see
+        | MECHANICS.md. The stat floors at 1, so accumulated flatlines converge
+        | on a maximum of 1 rather than 0: they cripple and never themselves
+        | kill.
+        |
+        | Three levels is enough. The usable range is fifteen points wide and a
+        | fourth rung would be invisible to the person it happened to.
+        */
+        'flatline' => [
+            1 => ['min' => 4, 'max' => 10],
+            2 => ['min' => 9, 'max' => 16],
+            3 => ['min' => 14, 'max' => 19],
+        ],
+
+        /*
+        | SKIM — how much of what you were CARRYING is taken, per cent.
+        |
+        | Carried, never stored: what is in a node is beyond anything a defeat
+        | can reach, and so is anything a character has not got on them. That is
+        | the rule that makes a node worth coming back to and a rich runner
+        | worth robbing.
+        |
+        | Steep on purpose. Ten per cent is a fee, sixty is a reason to bank
+        | before a run — which is the decision the tag exists to create, and it
+        | is one a player can actually act on, unlike a flatline.
+        */
+        'skim' => [
+            1 => ['share' => 10],
+            2 => ['share' => 30],
+            3 => ['share' => 60],
+        ],
+
+        /*
+        | ERASE — how much of the deck's software and data goes.
+        |
+        | `count` is exactly that many, drawn at random; `share` is that
+        | fraction of what is held. Two keys rather than one clever number,
+        | because "1" meaning a count and "0.5" meaning a share is the kind of
+        | type-punning that reads fine today and wrongly at three in the
+        | morning.
+        |
+        | Level three wipes the deck — every program and every file on it. That
+        | is the most expensive thing in the tag set by some distance, and it
+        | belongs only on ICE nobody should be fighting by accident.
+        */
+        'erase' => [
+            1 => ['count' => 1, 'share' => null],
+            2 => ['count' => null, 'share' => 50],
+            3 => ['count' => null, 'share' => 100],
+        ],
+
+        /*
+        | DRAIN — damage to CURRENT Synaptic Integrity beyond the defeat, as a
+        | percentage of maximum, rolled.
+        |
+        | *** THESE NUMBERS REST ON A QUESTION NOBODY HAS ANSWERED. ***
+        |
+        | A defeat has already taken current SI to zero, and subtracting from
+        | zero does nothing — so "damage beyond the defeat" has no meaning until
+        | something says what being driven FURTHER down is worth. There is no SI
+        | regeneration in the game and no waiting screen, which are the two
+        | places that meaning could live.
+        |
+        | The shape these assume is that the waiting screen is the thing Drain
+        | lengthens: the damage is real, it takes you past zero, and what past
+        | zero buys is a longer wait. Express it as a share of maximum so it is
+        | comparable to Flatline sitting beside it — the difference being that
+        | this one comes back and that one does not.
+        |
+        | If the answer turns out to be something else — Drain reaching the body
+        | instead, or Drain landing during the fight rather than at the end —
+        | these are the numbers to re-anchor, and the tag's meaning is what
+        | changes, not its levels.
+        */
+        'drain' => [
+            1 => ['min' => 8, 'max' => 15],
+            2 => ['min' => 15, 'max' => 28],
+            3 => ['min' => 28, 'max' => 45],
+        ],
+
+        /*
+        | SURGE — destroys fitted hardware, at random.
+        |
+        | UNSET, and deliberately left so. The design gives it a rising chance
+        | and a rising module count and neither number has been picked, because
+        | what a destroyed module costs depends on what a deck costs to rebuild
+        | and nothing has priced that yet. A level with no entry here resolves
+        | to nothing rather than to a guess.
+        */
+        'surge' => [],
     ],
 
     /*

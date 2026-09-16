@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Cyberspace\DefeatTag;
 use App\Cyberspace\Defences;
 use App\Cyberspace\ScanFact;
 use App\Cyberspace\SystemType;
@@ -237,6 +238,67 @@ final class DefencesTest extends TestCase
     public function test_ice_carries_no_defeat_tags_until_somebody_assigns_them(): void
     {
         $this->assertSame([], Ice::query()->where('level', 1)->sole()->defeatTags());
+    }
+
+    /** A stored tag comes back as vocabulary, with its rung where it has one. */
+    public function test_defeat_tags_read_back_as_tags_and_levels(): void
+    {
+        $ice = Ice::query()->where('level', 12)->sole();
+        $ice->defeat_tags = [
+            ['tag' => 'flatline', 'level' => 3],
+            ['tag' => 'bounty'],
+        ];
+
+        $read = $ice->defeatTags();
+
+        $this->assertSame(DefeatTag::Flatline, $read[0]['tag']);
+        $this->assertSame(3, $read[0]['level']);
+        $this->assertSame(DefeatTag::Bounty, $read[1]['tag']);
+        $this->assertNull($read[1]['level'], 'a bounty has no strength, it just happens');
+        $this->assertTrue($ice->carries(DefeatTag::Flatline));
+        $this->assertFalse($ice->carries(DefeatTag::Skim));
+    }
+
+    /**
+     * RETIRED CONTENT STOPS APPEARING; it does not take the page down.
+     *
+     * These are read on a screen, and a tag the vocabulary no longer knows is
+     * the same kind of problem as an item whose type folder was deleted — the
+     * answer is to show less, never to throw.
+     */
+    public function test_a_tag_the_vocabulary_no_longer_knows_is_dropped(): void
+    {
+        $ice = Ice::query()->where('level', 1)->sole();
+        $ice->defeat_tags = [['tag' => 'nonsense'], ['tag' => 'skim', 'level' => 2]];
+
+        $read = $ice->defeatTags();
+
+        $this->assertCount(1, $read);
+        $this->assertSame(DefeatTag::Skim, $read[0]['tag']);
+    }
+
+    /** Lobotomy is designed and shelved, so nothing may point at it. */
+    public function test_lobotomy_is_not_assignable(): void
+    {
+        $this->assertFalse(DefeatTag::Lobotomy->isAssignable());
+        $this->assertNotContains(DefeatTag::Lobotomy, DefeatTag::assignable());
+        $this->assertContains(DefeatTag::Flatline, DefeatTag::assignable());
+    }
+
+    /** Four tags come in strengths; the two that just happen do not. */
+    public function test_the_levelled_tags_have_their_numbers(): void
+    {
+        $this->assertSame(3, DefeatTag::Flatline->levels());
+        $this->assertSame(3, DefeatTag::Skim->levels());
+        $this->assertSame(3, DefeatTag::Erase->levels());
+        $this->assertSame(3, DefeatTag::Drain->levels());
+
+        $this->assertSame(0, DefeatTag::Bounty->levels(), 'a bounty is one thing that happens');
+        $this->assertSame(0, DefeatTag::Surge->levels(), 'levelled, but nobody has picked its numbers');
+
+        $this->assertSame(['share' => 60], DefeatTag::Skim->levelValue(3));
+        $this->assertSame(['count' => 1, 'share' => null], DefeatTag::Erase->levelValue(1));
+        $this->assertNull(DefeatTag::Surge->levelValue(1), 'unset resolves to nothing, never to a guess');
     }
 
     // ---- the back-fill -----------------------------------------------------
