@@ -1391,6 +1391,45 @@ carries the detail.
   cells can be new at once after a sweep, so their phases are staggered by
   position — forty synchronised sweeps is a disco, not a map.
 
+### Runs
+
+**The spine is built; the turns are not.** A run can be begun, looked at and
+left. Detection, the ICE, extraction and the endings are the simulator, and
+`RunController::act()` is deliberately the one door waiting for them.
+
+- **`runs` is durable state, and that is the cost of making a run interactive.**
+  An atomic run needed no row — it began and ended inside one request. **The row
+  carries the ADDRESS and never a system id**, the rule `system_scans` and
+  `system_contacts` already follow: a machine burned or relocated out from under
+  a run is what CANCELS one, and a foreign key would make that an integrity
+  error instead of a game event. `Run::system()` returning null is ordinary.
+- **`characters.current_run_id` is what "in a run" means** — a column rather
+  than a flag on `runs`, so "one at a time" is not a rule anybody enforces. The
+  same call `equipped_deck_id` makes, and the lock reads it on every request.
+- **`App\Cyberspace\RunStarter` is the only writer**, and it sets the character's
+  pointer inside the same transaction that writes the run: a character pointing
+  at nothing, or a live run nobody points at, are both states the lock cannot
+  read.
+- **It refuses four things and deliberately not a fifth.** Not in cyberspace,
+  nothing there, the portal, and a deck that stopped meeting its requirements
+  (readiness, checked a second time — cheap, and it closes the window between
+  entering and attacking). **It does NOT refuse a machine whose operating system
+  you lack**: that run is entered and `runs.os_locked` records the verdict,
+  because a refusal naming the OS would hand over a scan fact for one click.
+- **`EnsureRunIsFinished` is the lock, and it is `RequireCharacter`'s shape** —
+  one middleware, a named allow-list, everything else redirected, 409 and a URL
+  for a JSON caller. **Admin routes are not exempt**, which is the one
+  difference: the tools edit the game, but a run is a character in jeopardy and
+  an admin could edit their way out of one.
+- **The readiness net stands down inside a run.** `EnsureDeckStillRuns` returns
+  early while `current_run_id` is set, because a burnout is *supposed* to break
+  the deck and resolves its own ending — two things racing to end one run would
+  let the one that knows least win, throwing away a defeat and calling it a
+  readiness loss.
+- **Leaving is always on the list.** Egress is never absent and never disabled,
+  whatever else a turn offers. A run with no exit is a character deleted by a
+  door they could not see.
+
 ### Archetypes and what they hand out
 
 **An archetype is a role, a set of perks, and a loadout.** The perks say what it

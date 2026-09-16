@@ -24,7 +24,10 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
 | The OS as a gate you cannot see | **specified only**; a machine whose OS you lack is entered rather than refused, and every action against it fails. Indistinguishable from bad luck on purpose — a refusal would hand over a scan fact for free |
 | Egress | **specified only**; always possible, never certain. A derived chance from attributes and skills against a per-grade difficulty, not a roll against the ICE |
-| The run, interactive | **specified only**, and a REVERSAL: a run is played turn by turn rather than resolved atomically. It is durable state, which an atomic run never needed |
+| The run, interactive | **the spine is built**: `runs` is durable state, `App\Cyberspace\RunStarter` begins and ends one, and `characters.current_run_id` is what says somebody is inside. The turns themselves are the simulator and are not built |
+| The run lock | **built**; `EnsureRunIsFinished` sends every request but signing in, signing out and the run's own routes back to it. Admin routes are NOT exempt, unlike `RequireCharacter` — a run is a character in jeopardy |
+| The readiness net inside a run | **built**; `EnsureDeckStillRuns` stands down while `current_run_id` is set, so a burnout resolves its own ending instead of racing a middleware that would call it a readiness loss |
+| The OS gate at the door | **built**; a machine whose operating system the runner lacks is ENTERED and `runs.os_locked` records it. Nothing shows it, and nothing reads it yet — the failures it causes are the simulator's |
 | The run lock | **specified only**; while a run is live every request but signing in and out is sent back to it. This is what replaces "pulling the plug cannot save you" |
 | The blind-run warning | **specified only**; the screen that starts a run names what the scan did not find out, from `SystemScan::unknowns()` |
 | Mapping as a run purpose | **withdrawn**. The probe took the job: a read happens on the open grid, produces the same sellable file, and needs no run. Scanning from inside a run is not allowed either — a blind run is a commitment |

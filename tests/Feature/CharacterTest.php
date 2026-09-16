@@ -53,6 +53,12 @@ class CharacterTest extends TestCase
             // schema's CHECK says so — because half a position is not a
             // place. Jacked out is the ordinary state.
             'grid_x', 'grid_y',
+            // The run they are inside, or NULL. A column for the reason
+            // equipped_deck_id is one: "only one at a time" is not a rule
+            // anybody enforces when one column holds one value. It is also
+            // what App\Http\Middleware\EnsureRunIsFinished reads on every
+            // request, which is why it is a column and not a lookup.
+            'current_run_id',
             'created_at', 'updated_at',
         ];
 

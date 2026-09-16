@@ -1,0 +1,79 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use App\Cyberspace\Position;
+use App\Cyberspace\RunPurpose;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * An intrusion run.
+ *
+ * DURABLE, BECAUSE IT IS INTERACTIVE. A run used to be resolved end to end
+ * inside one request and needed no row; making it a thing a player plays out
+ * turn by turn made it a state machine that has to survive a disconnect, a
+ * crash and a deploy. This is that state.
+ *
+ * NO FOREIGN KEY TO `systems`, on purpose and for the third time in this
+ * codebase: a run has to outlive the machine it is against, because the machine
+ * being burned or relocated out from under it is precisely the case that
+ * cancels one. `system()` may return null and that is an ordinary answer.
+ *
+ * Written by App\Cyberspace\RunStarter and nothing else.
+ */
+#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'turn', 'os_locked', 'started_at', 'ended_at', 'ending', 'log'])]
+class Run extends Model
+{
+    protected function casts(): array
+    {
+        return [
+            'x' => 'integer',
+            'y' => 'integer',
+            'turn' => 'integer',
+            'os_locked' => 'boolean',
+            'purpose' => RunPurpose::class,
+            'started_at' => 'datetime',
+            'ended_at' => 'datetime',
+            'log' => 'array',
+        ];
+    }
+
+    public function character(): BelongsTo
+    {
+        return $this->belongsTo(Character::class);
+    }
+
+    /**
+     * The machine, if it is still there.
+     *
+     * NULL IS AN ORDINARY ANSWER — it means the target was burned or has
+     * relocated and is wearing a new address, which is what cancels a run
+     * rather than what breaks one.
+     */
+    public function system(): ?System
+    {
+        return System::query()->where('address', $this->address)->first();
+    }
+
+    public function position(): Position
+    {
+        return new Position($this->x, $this->y);
+    }
+
+    /** Is this run still being played? */
+    public function isLive(): bool
+    {
+        return $this->ended_at === null;
+    }
+
+    /** @param  Builder<self>  $query */
+    public function scopeLive(Builder $query): void
+    {
+        $query->whereNull('ended_at');
+    }
+}

@@ -41,7 +41,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'user_id', 'handle', 'archetype', 'creds',
-    'current_hitpoints', 'current_synaptic_integrity',
+    'current_hitpoints', 'current_synaptic_integrity', 'current_run_id',
     'intellect', 'memory', 'perception', 'reflex', 'focus',
     'social', 'meat', 'motor', 'senses', 'muscle',
 ])]
@@ -413,6 +413,18 @@ class Character extends Model
             ->with('item.program')
             ->orderBy('started_at')
             ->get();
+    }
+
+    /**
+     * The run this character is inside, if any.
+     *
+     * A COLUMN AND NOT A FLAG on the runs table, so "one at a time" is not a
+     * rule anybody enforces — one column holds one value, the same call
+     * `equipped_deck_id` makes. Written only by App\Cyberspace\RunStarter.
+     */
+    public function currentRun(): BelongsTo
+    {
+        return $this->belongsTo(Run::class, 'current_run_id');
     }
 
     /** The ordered training queue: (skill, target level) pairs. */

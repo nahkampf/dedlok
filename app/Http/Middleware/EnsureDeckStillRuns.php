@@ -54,6 +54,25 @@ class EnsureDeckStillRuns
             return $next($request);
         }
 
+        /*
+         * THE NET STANDS DOWN INSIDE A RUN.
+         *
+         * A burnout is SUPPOSED to break the deck, and a Surge is supposed to
+         * destroy what is fitted in it — both while somebody is standing in it,
+         * and both resolve their own ending where they happen. If this fired
+         * too, two things would be racing to end one run and the one that knows
+         * least would usually win: this would eject for a flat point of
+         * Synaptic Integrity and call it a readiness loss, throwing away the
+         * defeat that actually occurred.
+         *
+         * The rule is the deck lock's, said about a different subject: the net
+         * is for what happens to somebody standing still, never for what
+         * happens to somebody in a fight.
+         */
+        if ($character->current_run_id !== null) {
+            return $next($request);
+        }
+
         $ejection = ReadinessWatch::fromConfig()->check($character);
 
         if ($ejection === null) {

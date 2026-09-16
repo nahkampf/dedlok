@@ -329,6 +329,49 @@ return [
         | see App\Cyberspace\ScanFact for why they are listed rather than
         | hidden.
         */
+        /*
+        | The run itself. A screen a player is LOCKED into while it lasts, so
+        | every word here is read by somebody who cannot go anywhere else.
+        */
+        'run' => [
+            'title' => 'Intrusion',
+            'heading' => 'In the machine',
+            'turn' => 'Turn :turn',
+            'begin' => 'Begin run',
+            'locked' => 'You are in a run. It does not stop because you looked away.',
+            'egress' => 'Egress',
+            'egress_hint' => 'Leaving is always possible and never certain.',
+            'not_built' => 'There is nothing to do in here yet. The simulator is not built.',
+
+            'purpose' => [
+                'extraction' => 'Extraction',
+                'backdoor' => 'Backdoor',
+                'burn' => 'Burn',
+            ],
+
+            'purpose_hint' => [
+                'extraction' => 'Take what it is holding. Clean, it never knows you were here.',
+                'backdoor' => 'Keep access. Cleans up after itself, however loudly it went.',
+                'burn' => 'Destroy it. Nothing subtle about it and nothing left afterwards.',
+            ],
+
+            'refused' => [
+                'not_jacked_in' => 'You are not in cyberspace.',
+                'nothing_there' => 'There is nothing here to break into.',
+                'not_intrudable' => 'The portal is not a machine you can enter.',
+                'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
+                'already_running' => 'You are already in a run.',
+            ],
+
+            'ended' => [
+                'egress' => 'You pulled out.',
+                'defeat' => 'It beat you.',
+                'burnout' => 'Your deck cooked a module and threw you through the wall.',
+                'cancelled' => 'The machine stopped existing while you were in it. The run is over and nobody won.',
+                'completed' => 'Done.',
+            ],
+        ],
+
         'facts' => [
             'grade' => 'Grade',
             'os' => 'Operating system',

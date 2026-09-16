@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureCaptchaIsSolved;
 use App\Http\Middleware\EnsureDeckStillRuns;
+use App\Http\Middleware\EnsureRunIsFinished;
 use App\Http\Middleware\RequireCharacter;
 use App\Support\Text;
 use Illuminate\Foundation\Application;
@@ -24,8 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureCaptchaIsSolved::class,
             // The net under ReadinessWatch: throws a player out of cyberspace
             // when their deck has stopped running. After RequireCharacter,
-            // because it needs the character that guarantees.
+            // because it needs the character that guarantees. It stands down
+            // inside a run — a burnout is supposed to break the deck.
             EnsureDeckStillRuns::class,
+            // A live run owns the screen. Last, because it is the narrowest
+            // gate: everything before it decides whether the player may be
+            // here at all, and this decides where "here" is.
+            EnsureRunIsFinished::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

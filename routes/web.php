@@ -13,6 +13,7 @@ use App\Http\Controllers\DeckController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillTreeController;
 use App\Http\Middleware\ForbidSecondCharacter;
 use Illuminate\Support\Facades\Route;
@@ -154,6 +155,19 @@ Route::middleware('auth')->group(function () {
     // because it reads — and it settles a matured pass on the way past, which
     // is the same lazy catch-up the map does rather than a write of its own.
     Route::get('/cyberspace/reading', [CyberspaceController::class, 'reading'])->name('cyberspace.reading');
+
+    /*
+     * The run. Three routes and they are the only ones a locked player may
+     * reach — see App\Http\Middleware\EnsureRunIsFinished, whose allow-list
+     * names exactly these.
+     *
+     * Egress is a POST rather than a DELETE: it is a roll that may fail and
+     * cost a turn, not a deletion that either happens or does not.
+     */
+    Route::post('/cyberspace/run', [RunController::class, 'start'])->name('run.start');
+    Route::get('/run', [RunController::class, 'show'])->name('run.show');
+    Route::post('/run/act', [RunController::class, 'act'])->name('run.act');
+    Route::post('/run/egress', [RunController::class, 'egress'])->name('run.egress');
 
     // Stopping a read. NOT jacking out and not unloading the analyser — it
     // stops pointing the instrument at one machine and frees it for another.
