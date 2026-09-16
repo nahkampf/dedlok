@@ -22,6 +22,8 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
 | System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
+| The OS as a gate you cannot see | **specified only**; a machine whose OS you lack is entered rather than refused, and every action against it fails. Indistinguishable from bad luck on purpose — a refusal would hand over a scan fact for free |
+| Egress | **specified only**; always possible, never certain. A derived chance from attributes and skills against a per-grade difficulty, not a roll against the ICE |
 | Scanning — the probe | **built** for what a system currently HAS: grade, operating system, intrusion detection and tracer. A machine with none of the last two reads as *None*, which is an answer rather than an unread field. Needs an analyser RUNNING on the equipped deck; one press starts a READ, which goes round pass after pass until the file is whole or the `scan_passes` budget is gone |
 | A pass takes TIME | **built** — about a minute against a grade 1 and sixteen against a grade 9, cut by skill and by a better instrument through the `scan_duration` stat. Settled lazily by whoever next looks |
 | Node inventories — what a machine holds | **built** — creds always, a generated FILE on a roll, and none to several items, all scaled by grade and leaned by type. `system_contents`, written by `App\Cyberspace\NodeStocker` |
@@ -543,6 +545,48 @@ fitted in it while jacked in. Three writers enforce one rule — `ModuleFitter`,
 `DeckEquipper`, and the destroy path. Everything else is unaffected: the stash
 still opens, other items can still be destroyed, training carries on.
 
+### The operating system is a gate you cannot see
+
+**Every machine runs an operating system, and you need the matching skill at
+level 1 to do anything to it.** What makes it a gate rather than a door is that
+**nothing ever tells you which one it runs.** A scan is the only thing that
+answers that question, and a run against a machine whose OS you do not have is
+not refused — it is entered, and then **every action you take against the system
+fails.**
+
+**A refusal would be the leak.** "You do not have Lattice" is a scan fact handed
+over for one click, for free, with no instrument running and no minutes spent —
+so anybody could read the operating system off every machine on the grid by
+trying to enter it. The gate has to cost a run, or it is not a gate; it is a
+lookup.
+
+**The failures are indistinguishable from bad luck, deliberately.** Nothing in
+the log says the commands are not understood, because that sentence narrows the
+OS to one you do not have and the whole point is that nothing narrows it for
+free. What the player has instead is the PATTERN: every action failing, run
+after run, is not what a bad night looks like.
+
+**That signal is a streak, and a streak needs length.** Three failures in a row
+is an ordinary afternoon at the certainty floor, so a short poke at a system
+teaches nothing and a long haul teaches quickly. It follows that the simulator
+must never cut a run short on the player's behalf while everything is failing —
+shortening it is deleting the only evidence there is.
+
+**What fails is what touches the SYSTEM.** Extracting, backdooring, injecting,
+burning, and scanning from inside. Everything that happens TO the player carries
+on exactly as normal: the IDS still rolls on approach, the tracer still traces,
+the ICE still hits, and the deck still cooks. That asymmetry is the fiction —
+the room works, and it is the intruder who cannot operate in it.
+
+**Egress is never one of the things that fails.** See below: leaving is always
+possible, whatever else is not.
+
+Two consequences fall out of it, and both are wanted. **The raid counter does
+not move**, because nothing succeeded — so a machine that beat you this way is
+still there to come back to once you have read it. And **there is no cheap probe
+here**: finding out costs the approach roll, the turns and the heat, which is
+several orders more than a refusal would have cost.
+
 ### Scanning
 
 You can go in blind. It carries steep penalties, and against a system several
@@ -673,9 +717,25 @@ radiator buys back heat. **Nothing in a run is free, because everything in a run
 costs turns.**
 
 It ends four ways: the ICE is defeated, the player is defeated, a threshold
-trips and the player egresses — which is itself a roll against the ICE, so
-retreat can fail and cost a turn — or **the deck burns a module out and throws
-the player through the wall.**
+trips and the player egresses — which is itself a roll, so retreat can fail and
+cost a turn — or **the deck burns a module out and throws the player through the
+wall.**
+
+**Egress is always POSSIBLE and never certain**, and those are two different
+statements. Nothing can take the attempt away — not an active ICE, not a wrong
+operating system, not a trace about to land — because a run with no exit is a
+character deleted by a door they could not see. What varies is the chance, and
+it is a DERIVED one: the character's attributes, modified by their skills, rolled
+against the system. **Leaving a high-grade machine is much harder than leaving a
+low-grade one**, which is what stops a deep run from being safe merely because
+the player set a cautious threshold.
+
+It resolves through `App\Checks\CheckRoller` like everything else, so it carries
+the certainty floor at both ends — the best runner alive is occasionally held,
+and the worst one occasionally walks. The difficulty is per grade, the shape
+`scan.difficulty` already uses, and "modified by their skills" needs no code: a
+skill that helps you leave is a modifier targeting the egress stat, the way
+Overclocking targets `deck_qflops`.
 
 **Accumulated thermal load resets when the run ends.** Heat is a property of a
 run, not of a session or of a deck, so the risk is always about *this* run being
@@ -1198,7 +1258,15 @@ dependants.
     within some radius of where it was — is the interesting alternative and is
     parked below rather than decided. Nothing is blocked by leaving it random.
 
-12. **Does a Surge that leaves the deck unready roll the freeze's flatline
+12. **Does an active ICE make egress harder, or only the grade?** Egress is
+    settled as a derived chance against the SYSTEM, scaled by grade — which
+    means it reads the same whether or not anything is fighting you. That is
+    the simpler rule and probably the right one, since a player egresses for a
+    trace as often as for a fight. The alternative is grade plus a term for a
+    live ICE, which is one number more to tune and makes retreat from a quiet
+    machine nearly free. Nothing is blocked by leaving it at grade.
+
+13. **Does a Surge that leaves the deck unready roll the freeze's flatline
     chance?** The 25–75% is nil at 0 SI, but the 12% is not, and stacking it
     on a Surge that may already carry the Flatline tag is two rolls at one
     permanent consequence. See *The order a bad ending happens in*.
