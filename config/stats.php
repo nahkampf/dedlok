@@ -157,6 +157,35 @@ return [
             'rounding' => 'floor',
         ],
 
+        /*
+        | How many OTHER runners this character may take into a system.
+        |
+        | The base is `cyberspace.coop.slots`, which is ZERO, and that is the
+        | difference from `program_threads` above rather than an oversight.
+        | Software floors at one because a character who could run no copy of
+        | anything is a character for whom every program in the game quietly
+        | stopped existing. A character who can call no cooperative run has
+        | simply not trained for it — **zero is the ordinary state and it is
+        | also the gate**, the same way no icebreaker means no fighting ICE.
+        |
+        | Raised a slot per level by Coordinated Strike and again by Advanced
+        | Coordination, so both trained out is ten others and eleven runners in
+        | one machine. It is the RUN OWNER'S stat and nobody else's: whoever
+        | calls the run is who trained for it, and a participant needs none of
+        | it. That is what keeps it a specialisation worth a rank 8 and a rank
+        | 16 slot instead of a level everybody buys one of.
+        |
+        | NOTHING READS IT YET. Cooperative runs are phase 7; this exists so
+        | the two skills can be authored in the editor, which refuses a
+        | modifier whose target reaches nothing.
+        */
+        'coop_slots' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'scan_duration' => [
             'tags' => ['scan'],
             'min' => 1,

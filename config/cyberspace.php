@@ -271,6 +271,25 @@ return [
     | The portal carries nothing, and that needs no entry here —
     | SystemType::isInteractable() already says no to everything for it.
     */
+    /*
+    | HOW MANY OTHER RUNNERS A CHARACTER MAY TAKE INTO A SYSTEM.
+    |
+    | None. Calling a cooperative run is a thing you train for — Coordinated
+    | Strike and then Advanced Coordination, a slot per level each — and a
+    | character who has neither runs alone. That is the ordinary state rather
+    | than a penalty, the same shape as owning no icebreaker.
+    |
+    | The base of the `coop_slots` stat, floored at zero rather than one, so
+    | zero is both the default and the gate. Both skills trained out is ten
+    | others, which is overkill for anything currently on the grid and is meant
+    | to be: it is a ceiling built for machines that do not exist yet.
+    |
+    | Nothing reads it. Cooperative runs are phase 7.
+    */
+    'coop' => [
+        'slots' => 0,
+    ],
+
     'defences' => [
 
         /*

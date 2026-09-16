@@ -33,7 +33,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | A cancelled run | **specified only**; burned or locked down under you ends the run for 1 flat SI and nothing else. Asked on the lock, never by a sweeper, and the run row carries the ADDRESS so a burned target is an ordinary answer |
 | Coordinated Strike, Advanced Coordination | **not built**; rank 8 (needs Cyberdecks 5) and rank 16 (needs Coordinated Strike 5), +1 co-op slot per level each. Skill ROWS, authored in the editor — but the `coop_slots` stat has to exist first or the modifier editor refuses the target |
 | `coop_slots` | **not built**; the base is 0 in config and every slot is a modifier. `program_threads`' shape, floored at ZERO rather than one, because zero is the gate |
-| Detection scaling with party size | **specified only**, and the number is unset. More runners is louder; how much louder is a value nobody has picked |
+| Detection scaling with party size | **decided, and it is no number at all**: every runner rolls their own approach and detection is party-wide, so a party is louder by compounding. A per-runner difficulty term was measured and rejected — it changes nothing at the grades co-op is for |
 | A trace per runner | **specified only**; one meter each on the same clock, so a completed trace burns the chain that runner came in on and not the party's |
 | The turn protocol | **specified only**; a turn resolves when all have chosen or 30 seconds pass, an absent player is resolved by their own thresholds, and `auto-run` hands the whole run to them. Shared with physical combat as a PROTOCOL, never as an engine |
 | The two thresholds | **specified only**; they ACT rather than warn, every character is born with 70% trace and 30% SI, and they are changed in an accordion on the cyberspace screen |
@@ -882,12 +882,38 @@ stat is floored at 1. A character who can call no co-op runs is just a character
 who has not trained for it — zero is the ordinary state and the gate, which is
 why the base lives in config at 0 and every slot above it is a modifier.
 
-**A big party does not sneak, and that is the trade.** Detection rises with every
-runner in the machine — four people moving through a system are louder than one,
-and by eleven the question is not whether the ICE wakes up but how long you last
-after it does. That is what stops a large party from being strictly better than a
-small one: numbers buy you a machine you could not otherwise survive, and they
-cost you any chance of walking in unnoticed.
+**A big party does not sneak, and it costs no new number to say so.** Every
+runner rolls their own approach, and detection wakes the ICE for everybody — so
+a party is louder simply because there are more of them, with nothing added to
+the machine's difficulty. Against a mid-career runner at grade 5 that is 29%
+caught alone, 75% as four, and 98% as eleven.
+
+**A per-runner difficulty increase was measured and rejected.** Two reasons, and
+the first is the one that settles it: **at the grades cooperation exists for, the
+shape makes no difference at all.** Grade 7 and above is already pinned at
+effectively certain detection from a party of two upward under every variant
+tried — the machines that need eleven people are machines where being noticed
+was never the question. What an added term actually changes is the grade 3-5
+band, where a party is a convenience rather than a necessity, and there it turns
+a group of four from a risk into a formality. That is not making large parties
+loud; it is making small ones pointless.
+
+The second: it would be a third multiplier on a stack this document already
+warns about. Detection compounds across ROLLS — *four of them and a clean run is
+96.6%, not 99.15%* — a party compounds that across PEOPLE, and a difficulty that
+also climbed with party size would compound a compound.
+
+**Only the approach compounds.** The IDS's second roll fires on touching the
+core, and only the runner who touches it makes that one — so eleven people are
+eleven approach rolls and still a single core roll, and the delicate work goes
+to whoever is best at it.
+
+**Two behaviours fall out of this, and both are wanted.** Stealth becomes worth
+training, because a party's chance of going unnoticed is the product of its
+members' and every weak link is felt by everybody. And **the owner has a reason
+not to invite just anyone** — an eleventh runner who is bad at this costs the
+whole party more than they bring, which is what makes a party a thing you
+assemble rather than a queue you join.
 
 **The trace runs for every runner, separately.** One meter each, advancing on the
 same clock — so an egress threshold is your own, a completed trace lands on you
@@ -1608,12 +1634,12 @@ dependants.
     they share a run and take turns in it.** A turn resolves when everybody has
     chosen or thirty seconds pass, an absent player is resolved by their own
     thresholds, and nobody is held by anybody — see *Taking a turn, and running
-    one together*. The size cap is answered too — it is the run owner's
-    `coop_slots`, trained through Coordinated Strike and Advanced Coordination,
-    and zero without them. **What is left is one number**: detection rises with
-    every runner in the machine, and by how much is unset. It is the whole
-    trade a large party makes, so it wants picking deliberately rather than
-    falling out of whatever the simulator happens to do first.
+    one together*. The size cap is the run owner's `coop_slots`, trained
+    through Coordinated Strike and Advanced Coordination and zero without them.
+    And the noise a party makes needs no number: every runner rolls their own
+    approach and detection is party-wide, so a party is louder by compounding
+    alone — see *Taking a turn, and running one together*. **Nothing here is
+    open any more.**
 
 14. **Does a Surge that leaves the deck unready roll the freeze's flatline
     chance?** The 25–75% is nil at 0 SI, but the 12% is not, and stacking it

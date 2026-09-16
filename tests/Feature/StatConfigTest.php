@@ -24,6 +24,27 @@ class StatConfigTest extends TestCase
         }
     }
 
+    /**
+     * `coop_slots` floors at ZERO and `program_threads` floors at one, and the
+     * difference is the whole design rather than an inconsistency to tidy.
+     *
+     * Software floors at one because a character who could run no copy of
+     * anything is one for whom every program in the game quietly stopped
+     * existing. A character who can call no cooperative run has simply not
+     * trained for it — zero is the ordinary state AND the gate, so raising this
+     * floor to one would hand every character in the game a party they never
+     * paid for.
+     */
+    public function test_a_party_is_trained_for_and_software_is_not(): void
+    {
+        $registry = StatRegistry::fromConfig();
+
+        $this->assertTrue($registry->has('coop_slots'), 'the two coordination skills have nothing to target without it');
+        $this->assertSame(0.0, (float) $registry->get('coop_slots')->min, 'zero is the gate');
+        $this->assertSame(1.0, (float) $registry->get('program_threads')->min);
+        $this->assertSame(0, (int) config('cyberspace.coop.slots'), 'and nobody starts with a party');
+    }
+
     public function test_attributes_are_tagged_by_their_group(): void
     {
         $registry = StatRegistry::fromConfig();
