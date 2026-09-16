@@ -24,6 +24,9 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
 | The OS as a gate you cannot see | **specified only**; a machine whose OS you lack is entered rather than refused, and every action against it fails. Indistinguishable from bad luck on purpose — a refusal would hand over a scan fact for free |
 | Egress | **specified only**; always possible, never certain. A derived chance from attributes and skills against a per-grade difficulty, not a roll against the ICE |
+| The run, interactive | **specified only**, and a REVERSAL: a run is played turn by turn rather than resolved atomically. It is durable state, which an atomic run never needed |
+| The run lock | **specified only**; while a run is live every request but signing in and out is sent back to it. This is what replaces "pulling the plug cannot save you" |
+| The blind-run warning | **specified only**; the screen that starts a run names what the scan did not find out, from `SystemScan::unknowns()` |
 | Scanning — the probe | **built** for what a system currently HAS: grade, operating system, intrusion detection and tracer. A machine with none of the last two reads as *None*, which is an answer rather than an unread field. Needs an analyser RUNNING on the equipped deck; one press starts a READ, which goes round pass after pass until the file is whole or the `scan_passes` budget is gone |
 | A pass takes TIME | **built** — about a minute against a grade 1 and sixteen against a grade 9, cut by skill and by a better instrument through the `scan_duration` stat. Settled lazily by whoever next looks |
 | Node inventories — what a machine holds | **built** — creds always, a generated FILE on a roll, and none to several items, all scaled by grade and leaned by type. `system_contents`, written by `App\Cyberspace\NodeStocker` |
@@ -568,9 +571,17 @@ after run, is not what a bad night looks like.
 
 **That signal is a streak, and a streak needs length.** Three failures in a row
 is an ordinary afternoon at the certainty floor, so a short poke at a system
-teaches nothing and a long haul teaches quickly. It follows that the simulator
-must never cut a run short on the player's behalf while everything is failing —
-shortening it is deleting the only evidence there is.
+teaches nothing and a long haul teaches quickly.
+
+**An interactive run is what makes this legible**, and it is the strongest
+argument the turn loop has. A player who suspects something is wrong can spend
+another turn to find out, and another — watching a dozen actions fail in a row is
+a conclusion, where a log of three failures handed over after the fact is a
+shrug. The cost of asking is real, since every turn is trace and heat, which is
+exactly the shape this should have: the answer is available and it is not free.
+
+It follows that **nothing may cut a run short on the player's behalf while
+everything is failing.** Shortening it is deleting the only evidence there is.
 
 **What fails is what touches the SYSTEM.** Extracting, backdooring, injecting,
 burning, and scanning from inside. Everything that happens TO the player carries
@@ -618,12 +629,51 @@ churning the grid for everybody.
 
 ### The run plan
 
-**A run is atomic. Every decision is made before it starts.** The player picks
-the target, the purpose, solo or cooperative, their software loadout, and their
-two thresholds; the server resolves the whole thing in one transaction; and the
-client replays the log so it reads as it happened. Nothing is interactive, and
-that is a feature — it means preparation is the game, there is no reconnection
-problem, and pulling the plug cannot save you.
+**A run is INTERACTIVE, turn by turn.** The player picks the target, the
+purpose, solo or cooperative, and their software loadout before they go in — and
+then plays the run out: each turn they choose what to do, and the server
+resolves that turn and waits for the next one.
+
+**This reverses an earlier decision, and it is worth saying what that decision
+was buying.** A run used to be atomic — resolved end to end in one transaction,
+with the client replaying a log of something already finished. That bought three
+things, and each one has to be re-bought here rather than quietly dropped:
+
+| Atomicity bought | What buys it now |
+| --- | --- |
+| **Pulling the plug cannot save you** | **the run lock** — see below. Signing out does not end a run, it postpones one |
+| **No reconnection problem** | the run's own state IS the reconnection. There is a row, it says whose turn it is and what has happened, and coming back means being put in front of it |
+| **Preparation is the game** | still true, and no longer the whole of it. The loadout, the deck and the scan decide what you CAN do; the turns decide what you do with it |
+
+The cost is honest and should be stated: **a run is now durable state.** An
+atomic run needed no row at all — it began and ended inside one request. An
+interactive one is a state machine that has to survive a disconnect, a crash and
+a deploy, and every ending in this document has to be reachable from it. That is
+the single biggest thing phase 5 gained.
+
+What the reversal is FOR: a bad run stops being something you watch and becomes
+something you are in. Loading different software, burning a drug, or deciding
+that this is the turn to leave are decisions, and a decision made while losing is
+worth more than the same decision made on a planning screen twenty minutes
+earlier.
+
+What a turn offers: an action against the system, **loading or dropping
+software**, using something carried — a drug, a patch, a one-shot — and
+**trying to egress**, which is always on the list. Nothing here is free: every
+one of them spends the turn, and a turn is trace and thermal load.
+
+**A blind run is warned about, clearly, every time.** Going in unscanned is
+allowed and always was — but it must never be something a player did without
+noticing, so the screen that starts a run says what is not known before it will
+start one. **A partial picture gets the same treatment as no picture**, naming
+the gaps rather than counting them: *you have not found out this machine's ICE
+or its tracer* is a sentence a player can act on, and "3 of 6 known" is not.
+
+That list is already exact and already computed — `SystemScan::unknowns()` is
+the questions a file has not answered — so the warning is a read of the player's
+OWN file and leaks nothing about the machine. **It also cannot help them past
+the operating system**, which is the point of that gate: being told the OS is
+unknown is not being told which one it is.
 
 The purposes:
 
@@ -648,13 +698,67 @@ thermal figure in the catalogue has to be calibrated against:
 That last row is the whole economy of a run plan in one line: **a bigger haul is
 more turns, and a better NIC buys them back.**
 
-**Two thresholds, set as sliders, and they persist as defaults:**
+**Those turns are now a typical range and not a bound**, and the change is worth
+being explicit about because every thermal figure in the catalogue is calibrated
+against them. An atomic run took as many turns as the plan implied; an
+interactive one takes as many as the player spends, and a player may spend them
+on anything — probing a machine whose commands are not landing, waiting out a
+trace, trying egress after egress. **Nothing caps a run, and nothing should.**
+
+What stops one running forever is the deck: heat accumulates per turn and bleeds
+off at the radiators' rate, so a run long enough to be free is a run long enough
+to cook a module. **That makes thermal accumulation the real limiter on run
+length**, which is a better brake than a turn count would have been — it is
+bought with hardware, it can be planned around, and it fails loudly rather than
+by refusing a button.
+
+**The two thresholds survive, with a smaller job.**
 
 - egress if **trace** rises above *x*%
 - egress if **Synaptic Integrity** falls below *x*%
 
-They persist because they are a play style, not a per-run decision, and
-re-choosing them every time would train players to leave them alone.
+They were the whole of a run's automation when a run resolved itself; now that
+every turn is a decision, they are a **safety net under inattention** rather than
+the plan. They still persist as defaults, for the reason they always did — they
+are a play style and not a per-run choice — and they still fire on their own, so
+a player who looks away does not come back to a corpse they could have saved.
+
+### The run holds you
+
+**A live run is the only thing on screen.** While one is running, every request
+that is not the run itself is sent back to it: the map, the stash, the deck, the
+market, the admin tools. The two exceptions are **signing in and signing out**,
+which have to work so that a session can end and resume at all.
+
+**This is what replaces atomicity, and it is the whole reason the lock exists.**
+An interactive run that a player could walk out of is not a risk, it is a menu:
+close the tab when the ICE lands a good hit, sign back in, and the bad run never
+happened. So signing out does not end a run and does not pause its
+consequences — **it postpones a turn, and the turn is still there when you come
+back.** There is nothing to escape to.
+
+**It is the shape `RequireCharacter` already has**, and should be built as that
+shape rather than as a new idea: one middleware, a named list of what is allowed
+through, everything else redirected whatever it asked for. A JSON caller gets
+**409 and the URL**, the way both creation guards already answer one, rather
+than a redirect a `fetch()` would follow into HTML.
+
+**While a run is live, the readiness net stands down.** `EnsureDeckStillRuns`
+ejects a jacked-in player whose deck stopped meeting its requirements — and
+inside a run that is exactly the wrong answer, because a burnout or a Surge is
+*supposed* to break the deck and already resolves its own ending where it
+happens. Two middlewares would otherwise race for the same player, and the one
+that knows least would usually win. This is the same rule the deck lock follows
+and it is worth stating twice: **the net is for what happens to somebody
+standing still, never for what happens to somebody in a fight.**
+
+**Stalling is possible and is its own punishment.** Nothing forces a turn, so a
+player who is losing can simply stop — but the lock means stopping costs them
+the entire game: no stash, no training screen, no market, no second character,
+nothing, until that run is finished. A player who would rather hold a doomed run
+open forever than resolve it has chosen not to play. No timer, no scheduled
+sweep, and nothing that has to have been running — the same call the readiness
+net makes about players who walk away.
 
 ### Detection
 
@@ -1199,6 +1303,12 @@ All of it. In the order it should be built:
    simulator remains the only thing that ever should.
 5. **The intrusion.** The simulator, the log, extraction, the defeat tags.
    Single-player only — cooperative runs are phase 7.
+
+   **The run is interactive**, so this phase is a durable state machine and a
+   lock rather than one long transaction — see *The run plan* and *The run holds
+   you*. Every ending in this document has to be reachable from that state, and
+   the lock has to be in front of it before the first bad run exists, not
+   after: a run a player can walk out of teaches them to walk out of runs.
 6. **Consequences.** Trace, heat, backdoors and routing, burn, lockdown,
    relocation, housekeeping.
 7. **The rest.** Cooperative runs, subnets, player-owned nodes, event systems,
@@ -1266,7 +1376,15 @@ dependants.
     live ICE, which is one number more to tune and makes retreat from a quiet
     machine nearly free. Nothing is blocked by leaving it at grade.
 
-13. **Does a Surge that leaves the deck unready roll the freeze's flatline
+13. **What does an interactive run do to cooperative runs?** Phase 7 was
+    written against atomic runs, where two players' plans could be resolved
+    together in one pass. Turn by turn it is a different problem: whose turn is
+    it, what happens while one of them is not answering, and does one player
+    stalling hold the other in the lock. Nothing is blocked today — co-op is two
+    phases out — but the cost of that phase went up and should not be discovered
+    then.
+
+14. **Does a Surge that leaves the deck unready roll the freeze's flatline
     chance?** The 25–75% is nil at 0 SI, but the 12% is not, and stacking it
     on a Surge that may already carry the Flatline tag is two rolls at one
     permanent consequence. See *The order a bad ending happens in*.
