@@ -10,10 +10,12 @@ use App\Cyberspace\Position;
 use App\Cyberspace\Probe;
 use App\Cyberspace\ProbeRefusal;
 use App\Cyberspace\ProbeResult;
+use App\Cyberspace\ScanFact;
 use App\Cyberspace\Sweep;
 use App\Inventory\SkillInjector;
 use App\Models\Character;
 use App\Models\CharacterModifier;
+use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Skill;
@@ -990,6 +992,30 @@ final class ProbeTest extends TestCase
             ->delete(route('cyberspace.abandon'), ['address' => 'DEADBEEF'])
             ->assertRedirect()
             ->assertSessionHas('error');
+    }
+
+    /**
+     * The probe writes the bounty with the guard, off the machine it is reading.
+     *
+     * End to end rather than on a constructed row: what matters is that the
+     * scan's copy agrees with the system's, since the file has to outlive the
+     * machine and be right about it afterwards.
+     */
+    public function test_a_read_carries_the_bounty_off_the_machine(): void
+    {
+        $ice = Ice::query()->where('level', 3)->sole();
+
+        System::query()->where('address', 'DEADBEEF')->delete();
+        System::factory()->at(8, 8)->grade(1)->withIce($ice)->create([
+            'address' => 'DEADBEEF',
+            'ice_bounty' => true,
+        ]);
+
+        $result = $this->readOnce(0.0);
+
+        $this->assertTrue($result->scan->ice_bounty, 'the file knows the owner answers');
+        $this->assertSame(3, $result->scan->ice_level);
+        $this->assertSame('ICE III · Bounty', ScanFact::Ice->readFrom($result->scan));
     }
 
     /** A fact nobody has read is marked with nothing — an unanswered question is not a failure. */

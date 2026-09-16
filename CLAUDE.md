@@ -1220,7 +1220,11 @@ carries the detail.
   ICE on two systems is two different propositions, and a player who has met an
   ICE XII has learned what it hits for and nothing about whether the next one
   will have them followed home. It is the only part of a defence that is not a
-  property of what is defending, and no ICE means no bounty.
+  property of what is defending, and no ICE means no bounty. **A scan reads it,
+  folded into the ICE fact** — one question and one roll, because a file that
+  knew the guard but not the reprisal would describe half a decision. It is the
+  one answer on `system_scans` that is not nullable: `ice_level` already carries
+  whether the fact was read.
 - **Integrity and attack are BASES and expect to move.** A fight is meant to run
   2-10 turns and that depends on icebreaker throughput, which does not exist —
   the twelve pieces climb together so the ratio survives recalibration. Nothing

@@ -108,11 +108,32 @@ enum ScanFact: string
             // ICE reads by its new name in every file anybody is holding —
             // the behaviour renaming a corp already has.
             self::Ice => $scan->ice_level > 0
-                ? (Ice::query()->where('level', $scan->ice_level)->value('name')
-                    ?? Text::get('cyberspace.reading.unread'))
+                ? self::iceWithBounty($scan)
                 : Text::get('cyberspace.reading.none'),
             default => null,
         };
+    }
+
+    /**
+     * The guard, and whether its owner answers for it.
+     *
+     * ONE FACT AND ONE ROLL. A file that knew there was an ICE XII but not
+     * whether losing to it would be remembered would be describing half a
+     * decision, so the bounty is learned with the guard rather than beside it.
+     */
+    private static function iceWithBounty(SystemScan $scan): string
+    {
+        $name = Ice::query()->where('level', $scan->ice_level)->value('name');
+
+        if ($name === null) {
+            // The piece was retired out from under an old file. The level is
+            // still true about what was there; its name is simply gone.
+            return Text::get('cyberspace.reading.unread');
+        }
+
+        return $scan->ice_bounty
+            ? Text::get('cyberspace.reading.ice_bounty', ['name' => $name])
+            : $name;
     }
 
     public function label(): string

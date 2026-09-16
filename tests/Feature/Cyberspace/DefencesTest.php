@@ -528,8 +528,36 @@ final class DefencesTest extends TestCase
     /** And a guarded one reads by NAME, resolved from the level it remembered. */
     public function test_ice_reads_by_name_from_the_level_it_remembered(): void
     {
-        $scan = new SystemScan(['ice_level' => 7]);
+        $scan = new SystemScan(['ice_level' => 7, 'ice_bounty' => false]);
 
         $this->assertSame('ICE VII', ScanFact::Ice->readFrom($scan));
+    }
+
+    /**
+     * THE GUARD AND THE REPRISAL ARE ONE FACT.
+     *
+     * A file that knew there was an ICE XII but not whether losing to it would
+     * be remembered would be describing half a decision — so the bounty is
+     * learned with the guard, in the same roll, and read out beside it.
+     */
+    public function test_a_bounty_reads_out_with_the_guard(): void
+    {
+        $guarded = new SystemScan(['ice_level' => 12, 'ice_bounty' => true]);
+        $quiet = new SystemScan(['ice_level' => 12, 'ice_bounty' => false]);
+
+        $this->assertSame('ICE XII · Bounty', ScanFact::Ice->readFrom($guarded));
+        $this->assertSame('ICE XII', ScanFact::Ice->readFrom($quiet));
+
+        // One fact, so one question: reading it answers both halves at once.
+        $this->assertTrue(ScanFact::Ice->isKnownOn($guarded));
+        $this->assertNotContains('ice', $guarded->unknowns());
+    }
+
+    /** A machine with no guard has nothing to be remembered for. */
+    public function test_no_ice_reads_as_none_whatever_the_bounty_column_says(): void
+    {
+        $scan = new SystemScan(['ice_level' => 0, 'ice_bounty' => false]);
+
+        $this->assertSame('None', ScanFact::Ice->readFrom($scan));
     }
 }

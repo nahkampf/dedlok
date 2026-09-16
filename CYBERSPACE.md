@@ -54,7 +54,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | A machine told what to defend itself with | **built**, and it needed no mechanism: defences are stored rather than derived, so a mission node is a row with different numbers in the same columns |
 | Defeat tags | **built** as vocabulary and numbers: `App\Cyberspace\DefeatTag`, six of them, five levelled I-III. All the numbers are settled. Nothing reads any of it — there is no defeat |
 | What each piece of ICE does | **written**, by `cyberspace:tag-ice`. The bottom of the ladder carries nothing, permanent damage starts in the grade 6-7 band, and Erase III — the deck wipe — is on exactly one piece |
-| Whether losing gets a price put on you | **built** as `systems.ice_bounty`, rolled per MACHINE when its ICE is assigned. The same guard on two systems is two different risks |
+| Whether losing gets a price put on you | **built** as `systems.ice_bounty`, rolled per MACHINE when its ICE is assigned. The same guard on two systems is two different risks, and **a scan reads it** — folded into the ICE fact, one roll for both |
 | ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are null until somebody assigns them, and nothing fights yet |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
@@ -1311,6 +1311,17 @@ always report you or never.
 
 No ICE means no bounty: there is nothing to lose to. `cyberspace:tag-ice` writes
 what the guards do and never touches this; `cyberspace:defend` rolls it.
+
+**A SCAN READS IT, FOLDED INTO THE ICE FACT.** One question and one roll — a
+file that knew there was an ICE XII but not whether losing to it would be
+remembered would be describing half a decision. So the answer comes out as
+*ICE XII · Bounty*, or just *ICE XII* where the owner does not answer, and a
+machine with no guard still reads *None*.
+
+That is also why `system_scans.ice_bounty` is the one answer on that table which
+is **not** nullable: `ice_level` already carries whether the fact was read, and a
+second nullable column would be a second way to ask one question — free to
+disagree with the first.
 
 **FLATLINE IS LEVELLED, I TO III**, the way Surge is, and what rises is the
 amount rather than a chance — a Flatline tag fires because the program that beat

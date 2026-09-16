@@ -369,6 +369,14 @@ return [
             */
             'none' => 'None',
             'tracer' => ':detection, tracing :rate% a turn',
+
+            /*
+            | The guard and the reprisal, read together. A machine whose owner
+            | answers for it is a different proposition from one that does not,
+            | and the word is the whole of what the player needs — the mechanic
+            | behind it does not exist yet.
+            */
+            'ice_bounty' => ':name · Bounty',
             'complete' => 'Everything this machine will tell you.',
             'exhausted' => 'Scan attempt finished (incomplete).',
 

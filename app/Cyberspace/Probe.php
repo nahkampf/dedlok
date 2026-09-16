@@ -600,7 +600,14 @@ final class Probe
                 // The LEVEL, never the row id: a scan outlives the machine and
                 // must not point at a catalogue row that could be deleted.
                 // Zero says the machine has no guard, which is a finding.
-                'ice' => $scan->ice_level = $system->ice?->level ?? 0,
+                //
+                // The bounty comes with it, in the same roll: knowing there is
+                // an ICE XII and knowing the owner answers for it are one
+                // assessment, and half of it is half a decision.
+                'ice' => [
+                    $scan->ice_level = $system->ice?->level ?? 0,
+                    $scan->ice_bounty = $system->carriesBounty(),
+                ],
             };
         }
 
