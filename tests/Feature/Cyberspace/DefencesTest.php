@@ -6,6 +6,7 @@ namespace Tests\Feature\Cyberspace;
 
 use App\Cyberspace\DefeatTag;
 use App\Cyberspace\Defences;
+use App\Cyberspace\Grade;
 use App\Cyberspace\ScanFact;
 use App\Cyberspace\SystemType;
 use App\Models\Ice;
@@ -301,6 +302,44 @@ final class DefencesTest extends TestCase
         $this->assertEqualsWithDelta(0.45, $expected($one), 0.001);
         $this->assertEqualsWithDelta(0.90, $expected($two), 0.001);
         $this->assertEqualsWithDelta(1.65, $expected($three), 0.001);
+    }
+
+    /**
+     * A BOUNTY IS A CONSEQUENCE OF THE ADDRESS, NOT OF THE GUARD.
+     *
+     * It is the only tag nobody assigns: its chance is keyed by the machine's
+     * grade, so every piece of ICE carries it and none of them has to be told
+     * to. Being caught in a street relay is embarrassing; being caught in a
+     * grade 9 is somebody's afternoon ruined, and they can afford to answer.
+     */
+    public function test_a_bounty_is_keyed_by_the_address_and_not_the_guard(): void
+    {
+        $this->assertFalse(DefeatTag::Bounty->isAuthored());
+        $this->assertTrue(DefeatTag::Flatline->isAuthored());
+
+        $this->assertSame(10, DefeatTag::Bounty->chanceAt(1));
+        $this->assertSame(65, DefeatTag::Bounty->chanceAt(9));
+
+        // It climbs the whole way: no grade is safer than the one below it.
+        $previous = 0;
+
+        foreach (Grade::all() as $grade) {
+            $chance = DefeatTag::Bounty->chanceAt($grade);
+            $this->assertGreaterThan($previous, $chance, "grade {$grade} does not climb");
+            $previous = $chance;
+        }
+    }
+
+    /** Only Bounty is rolled by address; everything else is put on a row. */
+    public function test_no_other_tag_has_a_chance_by_grade(): void
+    {
+        foreach (DefeatTag::cases() as $tag) {
+            if ($tag === DefeatTag::Bounty) {
+                continue;
+            }
+
+            $this->assertSame(0, $tag->chanceAt(9), "{$tag->value} is authored, not rolled for");
+        }
     }
 
     /** Five tags come in strengths; the one that just happens does not. */

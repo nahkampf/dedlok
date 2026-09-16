@@ -1250,7 +1250,7 @@ never new code in the simulator:
 | **Surge** | destroys fitted hardware, at random | **I-III** — 45% x1, 45% x2, 55% x3, **rolled per module** |
 | **Erase** | deletes software or data held on the deck | **I-III** — one file, half the deck, the whole deck |
 | **Skim** | takes carried creds | **I-III** — 10%, 30%, 60% of what you were CARRYING |
-| **Bounty** | puts a bounty on the character — the mechanic comes later, the tag exists now | none; it either happens or it does not |
+| **Bounty** | puts a price on the character — the mechanic comes later, the tag exists now | **rolled by the machine's GRADE**, 10% at grade 1 rising to 65% at grade 9 |
 
 **Five of the six come in strengths, and what rises is different for each** —
 an amount for Flatline and Neural Shock, a share of what you were carrying for
@@ -1292,6 +1292,20 @@ memory, link and power — so anybody a Surge can reach has modules to lose.
 
 A Surge does not stack with itself: a piece of ICE carries one, and the level is
 which one.
+
+**A BOUNTY IS A CONSEQUENCE OF THE ADDRESS, NOT OF THE GUARD**, and it is the
+only tag nobody assigns. Its chance is keyed by the machine's **grade** rather
+than by a level — 10% at grade 1 climbing to 65% at grade 9 — because whether
+somebody comes looking for you has nothing to do with which piece of ICE
+happened to be in the way and everything to do with whose machine you just lost
+on. Being caught in a street-corner relay is embarrassing; being caught in a
+grade 9 is somebody's afternoon ruined, and they have the money to answer it.
+
+**So every piece of ICE carries it and none of them has to be told to.** Bounty
+never appears in a row's `defeat_tags`, and an empty tag list on a low-grade
+piece still means a one-in-ten chance of being remembered. That is also what
+makes the grade a player chooses to attack the dial on how much the world
+notices them losing.
 
 **FLATLINE IS LEVELLED, I TO III**, the way Surge is, and what rises is the
 amount rather than a chance — a Flatline tag fires because the program that beat

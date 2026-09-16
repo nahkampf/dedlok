@@ -687,6 +687,41 @@ return [
         | player was warned about it. ICE does not know or care which part is
         | closest to its limit, so watching your heat buys nothing here.
         */
+        /*
+        | BOUNTY — somebody puts a price on the character.
+        |
+        | KEYED BY THE MACHINE'S GRADE, not by a level, and that is the one
+        | table in this list shaped differently. The others ask *how hard did
+        | this piece of ICE hit you*; this one asks *whose machine did you just
+        | lose on*. Being caught in a street-corner relay is embarrassing.
+        | Being caught in a grade 9 is somebody's afternoon ruined, and they
+        | have the money to do something about it.
+        |
+        | It follows that **every piece of ICE carries it and none of them has
+        | to be told to** — a bounty is not a property of the guard, it is a
+        | consequence of the address. So Bounty does not appear in any row's
+        | `defeat_tags`, and an empty tag list on a low-grade piece still means
+        | a one-in-ten chance of being remembered.
+        |
+        | Per cent, and it climbs the whole way: a tenth at the bottom and
+        | two-thirds at the top, so the grade a player chooses to attack is the
+        | dial on how much the world notices.
+        |
+        | The mechanic a bounty turns into does not exist. The roll can be made
+        | the day it does, and this is where the number will already be.
+        */
+        'bounty' => [
+            1 => 10,
+            2 => 17,
+            3 => 24,
+            4 => 31,
+            5 => 38,
+            6 => 45,
+            7 => 52,
+            8 => 58,
+            9 => 65,
+        ],
+
         'surge' => [
             1 => ['chance' => 45, 'modules' => 1],
             2 => ['chance' => 45, 'modules' => 2],

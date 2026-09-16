@@ -63,7 +63,18 @@ enum DefeatTag: string
     /** Takes carried creds. Never what is in a node: a defeat reaches what you carried. */
     case Skim = 'skim';
 
-    /** Puts a bounty on the character. The mechanic comes later; the tag exists now. */
+    /**
+     * Somebody puts a price on the character.
+     *
+     * THE ONLY TAG NOBODY ASSIGNS. Its chance is keyed by the MACHINE'S GRADE
+     * rather than by a level, because a bounty is not a property of the guard
+     * that beat you — it is a consequence of whose address you were standing
+     * on. So every piece of ICE carries it, none of them has to be told to, and
+     * `chanceAt()` is the lookup rather than `levelValue()`.
+     *
+     * The mechanic a bounty turns into does not exist. The roll can be made the
+     * day it does, and the number is already there.
+     */
     case Bounty = 'bounty';
 
     /** Does this tag come in strengths, or is it one thing that happens? */
@@ -94,5 +105,36 @@ enum DefeatTag: string
         return $this->isLevelled()
             ? count((array) Config::get("cyberspace.defeat_tags.{$this->value}", []))
             : 0;
+    }
+
+    /**
+     * How likely this is on a machine of that grade, per cent.
+     *
+     * Bounty only. A tenth at grade 1, two-thirds at grade 9 — so the grade a
+     * player chooses to attack is the dial on how much the world notices them
+     * losing. Zero for every other tag, which are assigned rather than rolled
+     * for by address.
+     */
+    public function chanceAt(int $grade): int
+    {
+        if ($this !== self::Bounty) {
+            return 0;
+        }
+
+        /** @var array<int, int> $table */
+        $table = Config::get('cyberspace.defeat_tags.bounty', []);
+
+        return (int) ($table[$grade] ?? 0);
+    }
+
+    /**
+     * Is this one somebody puts on a piece of ICE, or one the world applies?
+     *
+     * Everything but Bounty is authored onto a row. Bounty happens to anybody
+     * who loses, scaled by where they lost.
+     */
+    public function isAuthored(): bool
+    {
+        return $this !== self::Bounty;
     }
 }
