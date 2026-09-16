@@ -881,9 +881,9 @@ says which, and two tables carry what a bare `items` row cannot.
   **The lock guards what the PLAYER does and must never be asked by the game's
   own consequences** — a Surge or a thermal burnout destroys fitted hardware
   precisely while somebody is jacked in, and neither goes near these writers.
-  The other half is still missing: losing readiness while inside is meant to
-  dump the player out for 1 point of Synaptic Integrity, and nothing watches
-  for it. See TODO.md.
+  The other half — losing readiness while inside, which ejects for 1 point of
+  Synaptic Integrity — is `App\Cyberspace\ReadinessWatch`, under *Cyberspace*
+  below.
 - **Nothing a deck stores makes its owner better at anything yet.** No stat,
   check or modifier reads a deck's totals in the other direction; the
   `ModifierSource` over fitted hardware that MECHANICS names is still missing.

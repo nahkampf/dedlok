@@ -2533,8 +2533,14 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
    the step has to survive is a map where most cells are distant, so the few
    that are not have to win by a margin. Nothing is hidden at .55 — a player
    can still read what they remember out there — and the fog, the glyphs and
-   the grade bars all step back together, because the cell dims as one thing. */
-.cell--distant { opacity: .55; }
+   the grade bars all step back together, because the cell dims as one thing.
+
+   The blur is the second half of the same statement, and it says something
+   opacity cannot: memory is not merely quieter than sight, it is less exact.
+   1px is enough to soften a hairline and a glyph without making either
+   unreadable — a player can still tell a silo from a relay out there, which is
+   the whole point of drawing it at all. */
+.cell--distant { opacity: .55; filter: blur(1px); }
 
 /* Beyond the edge of the world. THE GRID DOES NOT WRAP, so this is a hole in
    the drawing rather than a place — no border, no fill, nothing to read. */
