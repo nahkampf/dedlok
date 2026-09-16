@@ -690,36 +690,42 @@ return [
         /*
         | BOUNTY — somebody puts a price on the character.
         |
-        | KEYED BY THE MACHINE'S GRADE, not by a level, and that is the one
-        | table in this list shaped differently. The others ask *how hard did
-        | this piece of ICE hit you*; this one asks *whose machine did you just
-        | lose on*. Being caught in a street-corner relay is embarrassing.
-        | Being caught in a grade 9 is somebody's afternoon ruined, and they
-        | have the money to do something about it.
+        | AN AUTHORING CHANCE, NOT A ROLL AT DEFEAT. Bounty is an ordinary tag
+        | that sits on a piece of ICE like any other — what is unusual is how it
+        | got there: rather than being chosen per piece, it is rolled once when
+        | the catalogue is written, at these odds.
         |
-        | It follows that **every piece of ICE carries it and none of them has
-        | to be told to** — a bounty is not a property of the guard, it is a
-        | consequence of the address. So Bounty does not appear in any row's
-        | `defeat_tags`, and an empty tag list on a low-grade piece still means
-        | a one-in-ten chance of being remembered.
+        | So a given piece of ICE either carries it or does not, permanently and
+        | visibly on its row. Low-level ICE rarely does; high-level ICE usually
+        | does and sometimes does not, which is the point — a player who has met
+        | one grade 9 guard has learned nothing certain about the next.
         |
-        | Per cent, and it climbs the whole way: a tenth at the bottom and
-        | two-thirds at the top, so the grade a player chooses to attack is the
-        | dial on how much the world notices.
+        | Keyed by the ICE's LEVEL rather than by grade, because the tag lives
+        | on the piece and a piece spans a band. The ends are the ones the design
+        | asks for — a tenth at the bottom, two-thirds at the top — and the
+        | middle is the straight line between them.
         |
-        | The mechanic a bounty turns into does not exist. The roll can be made
-        | the day it does, and this is where the number will already be.
+        | Read once, by the pass that authors the catalogue. Editing a row
+        | afterwards is how a piece stops agreeing with this table, and that is
+        | allowed: the table generates a starting distribution, it does not own
+        | the rows.
+        |
+        | The mechanic a bounty turns into does not exist. What exists is which
+        | pieces of ICE will trigger it.
         */
         'bounty' => [
             1 => 10,
-            2 => 17,
-            3 => 24,
-            4 => 31,
-            5 => 38,
-            6 => 45,
-            7 => 52,
-            8 => 58,
-            9 => 65,
+            2 => 15,
+            3 => 20,
+            4 => 25,
+            5 => 30,
+            6 => 35,
+            7 => 40,
+            8 => 45,
+            9 => 50,
+            10 => 55,
+            11 => 60,
+            12 => 65,
         ],
 
         'surge' => [

@@ -305,41 +305,81 @@ final class DefencesTest extends TestCase
     }
 
     /**
-     * A BOUNTY IS A CONSEQUENCE OF THE ADDRESS, NOT OF THE GUARD.
+     * BOUNTY IS ROLLED RATHER THAN CHOSEN, and the odds climb with the level.
      *
-     * It is the only tag nobody assigns: its chance is keyed by the machine's
-     * grade, so every piece of ICE carries it and none of them has to be told
-     * to. Being caught in a street relay is embarrassing; being caught in a
-     * grade 9 is somebody's afternoon ruined, and they can afford to answer.
+     * A low-level guard rarely carries it; a high-level one usually does and
+     * sometimes does not, which is what stops a player who has met one grade 9
+     * from knowing the next. It is the only tag whose presence on a row was not
+     * a decision.
      */
-    public function test_a_bounty_is_keyed_by_the_address_and_not_the_guard(): void
+    public function test_the_bounty_odds_climb_with_the_ladder(): void
     {
-        $this->assertFalse(DefeatTag::Bounty->isAuthored());
-        $this->assertTrue(DefeatTag::Flatline->isAuthored());
+        $this->assertSame(10, DefeatTag::Bounty->authoringChance(1));
+        $this->assertSame(65, DefeatTag::Bounty->authoringChance(12));
 
-        $this->assertSame(10, DefeatTag::Bounty->chanceAt(1));
-        $this->assertSame(65, DefeatTag::Bounty->chanceAt(9));
-
-        // It climbs the whole way: no grade is safer than the one below it.
         $previous = 0;
 
-        foreach (Grade::all() as $grade) {
-            $chance = DefeatTag::Bounty->chanceAt($grade);
-            $this->assertGreaterThan($previous, $chance, "grade {$grade} does not climb");
+        for ($level = 1; $level <= 12; $level++) {
+            $chance = DefeatTag::Bounty->authoringChance($level);
+            $this->assertGreaterThan($previous, $chance, "level {$level} does not climb");
             $previous = $chance;
         }
     }
 
-    /** Only Bounty is rolled by address; everything else is put on a row. */
-    public function test_no_other_tag_has_a_chance_by_grade(): void
+    /** Only Bounty is rolled for; every other tag is put on a row deliberately. */
+    public function test_no_other_tag_is_rolled_for(): void
     {
         foreach (DefeatTag::cases() as $tag) {
             if ($tag === DefeatTag::Bounty) {
                 continue;
             }
 
-            $this->assertSame(0, $tag->chanceAt(9), "{$tag->value} is authored, not rolled for");
+            $this->assertSame(0, $tag->authoringChance(12), "{$tag->value} is chosen, not rolled for");
         }
+    }
+
+    /**
+     * The grid is written, and the bottom of the ladder carries NOTHING.
+     *
+     * Losing to a street-corner guard should cost the waiting screen and no
+     * more — which is also what makes the tag list meaningful further up.
+     */
+    public function test_the_tag_pass_writes_the_grid(): void
+    {
+        $this->artisan('cyberspace:tag-ice --keep-bounty')->assertSuccessful();
+
+        $first = Ice::query()->where('level', 1)->sole();
+        $worst = Ice::query()->where('level', 12)->sole();
+
+        $this->assertSame([], $first->defeatTags(), 'the bottom of the ladder costs you the wait and no more');
+
+        $this->assertTrue($worst->carries(DefeatTag::Flatline));
+        $this->assertTrue($worst->carries(DefeatTag::Erase));
+        $this->assertTrue($worst->carries(DefeatTag::Surge));
+
+        // Erase III wipes a deck of every program and every file, so it belongs
+        // to exactly one piece rather than to a band.
+        $wipers = Ice::query()->get()->filter(
+            fn (Ice $ice): bool => collect($ice->defeatTags())
+                ->contains(fn (array $t): bool => $t['tag'] === DefeatTag::Erase && $t['level'] === 3)
+        );
+
+        $this->assertCount(1, $wipers, 'only the worst thing in the world wipes a deck');
+        $this->assertSame(12, $wipers->first()->level);
+    }
+
+    /** --keep-bounty does not re-run the lottery on a catalogue somebody has tuned. */
+    public function test_keeping_a_bounty_leaves_the_roll_alone(): void
+    {
+        $ice = Ice::query()->where('level', 1)->sole();
+        $ice->forceFill(['defeat_tags' => [['tag' => 'bounty', 'level' => null]]])->save();
+
+        $this->artisan('cyberspace:tag-ice --keep-bounty')->assertSuccessful();
+
+        $this->assertTrue(
+            Ice::query()->where('level', 1)->sole()->carries(DefeatTag::Bounty),
+            'a one-in-ten roll that already landed is not thrown again',
+        );
     }
 
     /** Five tags come in strengths; the one that just happens does not. */

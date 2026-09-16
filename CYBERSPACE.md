@@ -53,6 +53,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Defences — the IDS and the tracer | **built** as columns on `systems`, decided once at creation and stored. Type guarantees two countermeasures and grade rolls the third; `App\Cyberspace\Defences` is the decision. Nothing rolls against them — that is the simulator |
 | A machine told what to defend itself with | **built**, and it needed no mechanism: defences are stored rather than derived, so a mission node is a row with different numbers in the same columns |
 | Defeat tags | **built** as vocabulary and numbers: `App\Cyberspace\DefeatTag`, six of them, five levelled I-III. All the numbers are settled. Nothing reads any of it — there is no defeat |
+| What each piece of ICE does | **written**, by `cyberspace:tag-ice`. The bottom of the ladder carries nothing, permanent damage starts in the grade 6-7 band, and Erase III — the deck wipe — is on exactly one piece. Bounty is rolled rather than chosen |
 | ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are null until somebody assigns them, and nothing fights yet |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
@@ -1250,7 +1251,7 @@ never new code in the simulator:
 | **Surge** | destroys fitted hardware, at random | **I-III** — 45% x1, 45% x2, 55% x3, **rolled per module** |
 | **Erase** | deletes software or data held on the deck | **I-III** — one file, half the deck, the whole deck |
 | **Skim** | takes carried creds | **I-III** — 10%, 30%, 60% of what you were CARRYING |
-| **Bounty** | puts a price on the character — the mechanic comes later, the tag exists now | **rolled by the machine's GRADE**, 10% at grade 1 rising to 65% at grade 9 |
+| **Bounty** | puts a price on the character — the mechanic comes later, the tag exists now | none, but **which pieces carry it is rolled** when the catalogue is authored: 10% at ICE I rising to 65% at ICE XII |
 
 **Five of the six come in strengths, and what rises is different for each** —
 an amount for Flatline and Neural Shock, a share of what you were carrying for
@@ -1293,19 +1294,17 @@ memory, link and power — so anybody a Surge can reach has modules to lose.
 A Surge does not stack with itself: a piece of ICE carries one, and the level is
 which one.
 
-**A BOUNTY IS A CONSEQUENCE OF THE ADDRESS, NOT OF THE GUARD**, and it is the
-only tag nobody assigns. Its chance is keyed by the machine's **grade** rather
-than by a level — 10% at grade 1 climbing to 65% at grade 9 — because whether
-somebody comes looking for you has nothing to do with which piece of ICE
-happened to be in the way and everything to do with whose machine you just lost
-on. Being caught in a street-corner relay is embarrassing; being caught in a
-grade 9 is somebody's afternoon ruined, and they have the money to answer it.
+**BOUNTY IS ROLLED RATHER THAN CHOSEN.** It sits on a row like any other tag —
+what is unusual is how it got there. When the catalogue is authored, each piece
+is rolled for it at odds that climb with its level: a tenth at ICE I, two-thirds
+at ICE XII. So a low-level guard **rarely** carries it, a high-level one
+**usually** does and sometimes does not, and a player who has met one grade 9
+guard has learned nothing certain about the next.
 
-**So every piece of ICE carries it and none of them has to be told to.** Bounty
-never appears in a row's `defeat_tags`, and an empty tag list on a low-grade
-piece still means a one-in-ten chance of being remembered. That is also what
-makes the grade a player chooses to attack the dial on how much the world
-notices them losing.
+It is the only tag whose presence on a row was not a decision, and the table
+that generated it does not own the rows afterwards: editing a piece is how it
+stops agreeing, and that is allowed. `cyberspace:tag-ice` is the pass, and
+`--keep-bounty` leaves a lottery that has already been run alone.
 
 **FLATLINE IS LEVELLED, I TO III**, the way Surge is, and what rises is the
 amount rather than a chance — a Flatline tag fires because the program that beat

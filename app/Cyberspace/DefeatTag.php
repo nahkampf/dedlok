@@ -66,14 +66,15 @@ enum DefeatTag: string
     /**
      * Somebody puts a price on the character.
      *
-     * THE ONLY TAG NOBODY ASSIGNS. Its chance is keyed by the MACHINE'S GRADE
-     * rather than by a level, because a bounty is not a property of the guard
-     * that beat you — it is a consequence of whose address you were standing
-     * on. So every piece of ICE carries it, none of them has to be told to, and
-     * `chanceAt()` is the lookup rather than `levelValue()`.
+     * An ordinary tag on a row like any other — what is unusual is how it gets
+     * there. Rather than being chosen per piece, it is ROLLED ONCE when the
+     * catalogue is authored, at odds that climb with the ICE's level: a tenth
+     * at the bottom, two-thirds at the top. So a low-level guard rarely carries
+     * it and a high-level one usually does and sometimes does not, which is
+     * what stops a player who has met one grade 9 from knowing the next.
      *
-     * The mechanic a bounty turns into does not exist. The roll can be made the
-     * day it does, and the number is already there.
+     * The mechanic a bounty turns into does not exist. What exists is which
+     * pieces of ICE will trigger it.
      */
     case Bounty = 'bounty';
 
@@ -108,14 +109,18 @@ enum DefeatTag: string
     }
 
     /**
-     * How likely this is on a machine of that grade, per cent.
+     * The chance a piece of ICE at this level is WRITTEN with this tag, per
+     * cent, when the catalogue is authored.
      *
-     * Bounty only. A tenth at grade 1, two-thirds at grade 9 — so the grade a
-     * player chooses to attack is the dial on how much the world notices them
-     * losing. Zero for every other tag, which are assigned rather than rolled
-     * for by address.
+     * Bounty only, and it is read once by the pass that writes the rows rather
+     * than by anything at runtime — a row either carries the tag or it does
+     * not, and editing it afterwards is how a piece stops agreeing with the
+     * table. The table generates a starting distribution; it does not own the
+     * rows.
+     *
+     * Zero for every other tag, which are chosen deliberately.
      */
-    public function chanceAt(int $grade): int
+    public function authoringChance(int $level): int
     {
         if ($this !== self::Bounty) {
             return 0;
@@ -124,17 +129,6 @@ enum DefeatTag: string
         /** @var array<int, int> $table */
         $table = Config::get('cyberspace.defeat_tags.bounty', []);
 
-        return (int) ($table[$grade] ?? 0);
-    }
-
-    /**
-     * Is this one somebody puts on a piece of ICE, or one the world applies?
-     *
-     * Everything but Bounty is authored onto a row. Bounty happens to anybody
-     * who loses, scaled by where they lost.
-     */
-    public function isAuthored(): bool
-    {
-        return $this !== self::Bounty;
+        return (int) ($table[$level] ?? 0);
     }
 }
