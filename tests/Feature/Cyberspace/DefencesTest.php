@@ -159,6 +159,63 @@ final class DefencesTest extends TestCase
         $this->assertFalse($node->hasTracer());
     }
 
+    // ---- the back-fill -----------------------------------------------------
+
+    /**
+     * THE WORLD PREDATES ITS OWN DEFENCES, so somebody has to arm it.
+     *
+     * The columns default to 0 — *has none* — which is right for a row somebody
+     * inserted by hand and wrong for a world. `Defences::roll()` runs when a
+     * machine is CREATED, and an existing machine is never created again:
+     * relocation keeps the row. Without this pass, a grid generated before
+     * defences existed stays defenceless for ever.
+     */
+    public function test_the_back_fill_arms_machines_that_were_generated_without_defences(): void
+    {
+        System::factory()->at(1, 1)->type(SystemType::Silo)->grade(5)->create();
+        System::factory()->at(2, 2)->type(SystemType::Relay)->grade(5)->create();
+        System::factory()->at(3, 3)->portal()->create();
+
+        $this->artisan('cyberspace:defend')->assertSuccessful();
+
+        $this->assertTrue(System::query()->where('type', SystemType::Silo)->sole()->hasIds());
+        $this->assertTrue(System::query()->where('type', SystemType::Relay)->sole()->hasTracer());
+
+        $portal = System::query()->where('type', SystemType::Portal)->sole();
+        $this->assertFalse($portal->hasIds(), 'the portal is none of the things a system is');
+        $this->assertFalse($portal->hasTracer());
+    }
+
+    /**
+     * A BACK-FILL, NOT A RE-ROLL.
+     *
+     * A machine that was TOLD what to carry is the case the stored-not-derived
+     * design exists to allow — a mission node with a grade 9 watchdog on a
+     * grade 2 box — and a pass that overwrote it would destroy the thing it
+     * was written to protect.
+     */
+    public function test_the_back_fill_leaves_a_machine_that_was_told_what_to_carry(): void
+    {
+        System::factory()->at(4, 4)->type(SystemType::Compute)->grade(2)
+            ->withIds(92)->withTracer(40, 22)->create();
+
+        $this->artisan('cyberspace:defend')->assertSuccessful();
+
+        $node = System::query()->sole();
+        $this->assertSame(92, $node->ids_detection, 'a told machine keeps what it was told');
+        $this->assertSame(40, $node->tracer_detection);
+        $this->assertSame(22, $node->tracer_rate);
+    }
+
+    public function test_the_back_fill_writes_nothing_on_a_dry_run(): void
+    {
+        System::factory()->at(5, 5)->type(SystemType::Silo)->grade(9)->create();
+
+        $this->artisan('cyberspace:defend --dry-run')->assertSuccessful();
+
+        $this->assertFalse(System::query()->sole()->hasIds(), 'a dry run rolls and writes nothing');
+    }
+
     // ---- what a scan makes of them ----------------------------------------
 
     /**

@@ -1163,6 +1163,15 @@ carries the detail.
   one, and what a scan is for is never *does this have anything* but *which one
   is it missing*. The portal carries nothing, and that needs no entry anywhere:
   `SystemType::isInteractable()` already says no to everything for it.
+- **The world predates its own defences, so `cyberspace:defend` arms it.** The
+  columns default to 0 — *has none* — which is right for a hand-inserted row
+  and wrong for a grid that already exists: `Defences::roll()` runs when a
+  machine is CREATED, and relocation keeps the row, so nothing generated before
+  the feature would ever gain an IDS. It is a **back-fill and not a re-roll** —
+  a machine already carrying something is left alone, because a told machine is
+  the case the whole design exists to allow. A command rather than part of the
+  migration, because it ROLLS: a migration carrying dice is one whose result
+  cannot be read off the file. Run once against the live grid on 2026-09-16.
 - **This is why a mission node needs no override mechanism.** Nothing derives a
   defence on read, so nothing has to be told not to — a machine that has to be
   dangerous is a row with different numbers in the same columns, and a grade 9
