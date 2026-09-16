@@ -1125,7 +1125,23 @@ carries the detail.
   half-finished read costs it. **Settling is lazy**: the map resolves anything
   that matured on the way in, the way a training deposit catches up, so no
   scheduler has to have been running.
-- **A read is a screen you watch.** The `<dialog>` on the map polls
+- **A READ CATCHES UP; it does not advance one pass per visit.** Lazy settling
+  used to mean exactly one pass resolved however long the player was away —
+  press Scan, come back an hour later, find that a five-pass read had managed
+  two. That made *one press is one read* false in the only way that matters: it
+  needed five presses to go round, and calling them page loads did not help.
+  `Probe::settle()` walks the clock forward instead, and **each pass begins when
+  the one before it MATURED rather than when somebody opened the screen** — so
+  an hour away is an hour of reading. It terminates because every turn either
+  stops the read or begins a pass whose maturity is strictly later, and the
+  budget is finite. **A lost pass still stops the loop**, because spending the
+  next one is the player's decision.
+- **Losing a read has two causes and they must not share a sentence.**
+  `App\Cyberspace\VoidCause` — the instrument stopped (they did it, and can
+  avoid doing it again) or the machine burned or relocated (nobody could have
+  prevented it, and it says nothing about the deck). One message for both sent
+  anybody who lost a read to a stale machine off to inspect a working deck.
+- **A read is a screen you watch.** The `<dialog>` **in the layout** polls
   `cyberspace.reading` while it is open — the target, the instrument, the pass
   and everything the scan has asked — and **the endpoint settles a matured pass
   on the way past**, which is why the answers fill in the moment one finishes

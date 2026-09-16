@@ -235,7 +235,52 @@ final class Probe
     public function settle(Character $character, ?SystemScan $scan, ?CarbonInterface $now = null): ?ProbeResult
     {
         $now = CarbonImmutable::instance($now ?? CarbonImmutable::now());
+        $last = null;
 
+        /*
+         * A READ CATCHES UP, IT DOES NOT ADVANCE ONE PASS PER VISIT.
+         *
+         * Settling is lazy — nothing is scheduled, and a matured pass waits
+         * for somebody to look. That is the design and it is fine. What is
+         * NOT fine is a read that resolves exactly one pass however long its
+         * owner was away: press Scan, come back an hour later, and find that
+         * a five-pass read has managed two of them. "One press is one read"
+         * stops being true the moment the read needs five presses to go round,
+         * even if the presses are called page loads.
+         *
+         * So this walks the clock forward instead. Each pass begins when the
+         * one before it MATURED rather than when somebody happened to open the
+         * screen, and the loop keeps going while the pass it just started has
+         * also already finished. An hour away is an hour of reading.
+         *
+         * It terminates because every turn either stops the read or begins a
+         * pass whose maturity is strictly later, and the budget is finite.
+         */
+        while ($scan !== null && $scan->pass_ready_at !== null && ! $scan->pass_ready_at->isAfter($now)) {
+            $result = $this->settleOnce($character, $scan, $now);
+
+            if ($result === null) {
+                break;
+            }
+
+            $last = $result;
+
+            // A lost read stops here rather than starting another: the player
+            // decides whether to spend the next pass, which is the same rule
+            // `scan()` follows when it reports one instead of replacing it.
+            if ($result->voided) {
+                break;
+            }
+
+            $scan = $result->scan;
+        }
+
+        return $last;
+    }
+
+    /** One pass, resolved. The loop above is what makes a read catch up. */
+    private function settleOnce(Character $character, ?SystemScan $scan, CarbonImmutable $now): ?ProbeResult
+    {
         if ($scan === null || $scan->pass_ready_at === null || $scan->pass_ready_at->isAfter($now)) {
             return null;
         }
@@ -557,6 +602,15 @@ final class Probe
 
         $instrument = $scan->reading_process_id;
 
+        // WHEN THIS PASS ACTUALLY FINISHED, kept before it is cleared. A
+        // continuing read starts its next pass from here rather than from
+        // `$now`, so the minutes somebody spent away are minutes the
+        // instrument spent reading instead of minutes it spent waiting to be
+        // noticed.
+        $maturedAt = $scan->pass_ready_at !== null
+            ? CarbonImmutable::instance($scan->pass_ready_at)
+            : $now;
+
         $scan->pass_started_at = null;
         $scan->pass_ready_at = null;
         // The instrument is free again the moment it has an answer.
@@ -581,7 +635,7 @@ final class Probe
             && $this->instrumentIsRunning($instrument);
 
         if ($continuing) {
-            return ProbeResult::scanned($this->begin($character, $system, $scan, $now, $instrument)->scan, $found, $rolls);
+            return ProbeResult::scanned($this->begin($character, $system, $scan, $maturedAt, $instrument)->scan, $found, $rolls);
         }
 
         DB::transaction(static fn () => $scan->save());

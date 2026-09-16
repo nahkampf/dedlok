@@ -328,26 +328,40 @@ final class ProbeTest extends TestCase
         $os = $this->anOperatingSystem();
         $this->machine(grade: 5, os: $os);
 
-        // Every roll fails, so the read goes round for as long as it is allowed.
+        // Every roll fails, so the read goes round for as long as it is
+        // allowed — and ONE look is enough to resolve all of it, because the
+        // read catches up with the clock rather than advancing a pass per
+        // visit. A grade 5 pass is six minutes and the budget is five.
         $this->probe(0.999)->scan($this->character->fresh());
 
-        for ($pass = 0; $pass < 3; $pass++) {
-            $this->travel(20)->minutes();
-            $this->probe(0.999)->settleAll($this->character->fresh());
-        }
+        $this->travel(90)->minutes();
+        $this->probe(0.999)->settleAll($this->character->fresh());
 
-        $this->assertSame(4, SystemScan::query()->sole()->passes);
+        $scan = SystemScan::query()->sole();
+        $this->assertSame(5, $scan->passes, 'the whole budget, from one press and one look');
+        $this->assertFalse($scan->isRunning());
+        $this->assertNull($scan->reading_process_id, 'the instrument is free again');
+    }
 
-        // And the one that finally reads it stops the loop rather than
-        // spending what is left of the budget.
-        $this->travel(20)->minutes();
+    /**
+     * A read that answers stops, rather than spending what is left of the
+     * budget on a machine it has nothing more to learn from.
+     */
+    public function test_a_read_that_answers_stops_the_loop(): void
+    {
+        $os = $this->anOperatingSystem();
+        $this->machine(grade: 5, os: $os);
+
+        $this->probe(0.0)->scan($this->character->fresh());
+
+        $this->travel(90)->minutes();
         $this->probe(0.0)->settleAll($this->character->fresh());
 
         $scan = SystemScan::query()->sole();
         $this->assertTrue($scan->isComplete());
         $this->assertFalse($scan->isRunning());
-        $this->assertSame(4, $scan->passes);
-        $this->assertNull($scan->reading_process_id, 'the instrument is free again');
+        $this->assertSame(1, $scan->passes, 'one pass answered it, so one pass is all it cost');
+        $this->assertNull($scan->reading_process_id);
     }
 
     /**
@@ -379,14 +393,16 @@ final class ProbeTest extends TestCase
         $os = $this->anOperatingSystem();
         $this->machine(grade: 1, os: $os);
 
+        // A grade 1 pass is about a minute, so the first look catches up the
+        // whole budget of failed passes — into ONE file, which is the thing
+        // being asserted here.
         $this->readOnce(0.999);
-        $this->readOnce(0.0);
 
         $this->assertSame(1, SystemScan::query()->count());
 
         $scan = SystemScan::query()->sole();
-        $this->assertSame(2, $scan->passes);
-        $this->assertTrue($scan->isComplete());
+        $this->assertSame(5, $scan->passes, 'every pass landed in the same file');
+        $this->assertFalse($scan->isComplete(), 'and none of them read anything');
     }
 
     /**
@@ -862,6 +878,54 @@ final class ProbeTest extends TestCase
         $this->assertNull($scan->pass_ready_at, 'and the clock has stopped');
         $this->assertSame(1, $scan->passes, 'the pass it had begun stays spent');
         $this->assertNotNull($scan->expires_at, 'and the file survives to be continued');
+    }
+
+    /**
+     * A READ CATCHES UP. It does not advance one pass per visit.
+     *
+     * Settling is lazy and nothing is scheduled, which is the design — but a
+     * read that resolved exactly one pass however long its owner was away made
+     * "one press is one read" false in the only way that matters: it needed
+     * five presses to go round, and calling them page loads did not help.
+     *
+     * This failed at 2 of 5 before the clock was walked forward.
+     */
+    public function test_a_read_left_alone_catches_up_with_the_clock(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+
+        // Every roll fails, so the read goes round for as long as it is allowed.
+        $probe = $this->probe(0.999);
+        $this->instance(Probe::class, $probe);
+        $probe->scan($this->character);
+
+        // A grade 1 pass is about a minute and the budget is five, so an hour
+        // is far more than the whole read could ever need.
+        $this->travel(60)->minutes();
+        $probe->settleAll($this->character->fresh());
+
+        $scan = SystemScan::query()->where('address', 'DEADBEEF')->first();
+
+        $this->assertSame(5, $scan->passes, 'an hour away is an hour of reading');
+        $this->assertFalse($scan->isRunning(), 'and the budget is gone, so nothing is still going');
+    }
+
+    /** Catching up stops at the answer, not at the budget. */
+    public function test_catching_up_stops_as_soon_as_the_picture_is_whole(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+
+        $probe = $this->probe(0.0);
+        $this->instance(Probe::class, $probe);
+        $probe->scan($this->character);
+
+        $this->travel(60)->minutes();
+        $probe->settleAll($this->character->fresh());
+
+        $scan = SystemScan::query()->where('address', 'DEADBEEF')->first();
+
+        $this->assertTrue($scan->isComplete());
+        $this->assertSame(1, $scan->passes, 'a read that answered everything spends no more of the budget');
     }
 
     /** Abandoning what is not running is an ordinary answer, not an error. */
