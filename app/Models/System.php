@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * size, and Grid is the one place that knows which — see CYBERSPACE.md, *How
  * the grid is stored*.
  */
-#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'os_skill_id', 'stock_rule', 'ids_detection', 'tracer_detection', 'tracer_rate'])]
+#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'os_skill_id', 'stock_rule', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_id'])]
 class System extends Model
 {
     /** @use HasFactory<SystemFactory> */
@@ -72,6 +72,25 @@ class System extends Model
     public function hasTracer(): bool
     {
         return $this->tracer_detection > 0;
+    }
+
+    /**
+     * Is anything on this machine going to fight back?
+     *
+     * A POINTER RATHER THAN A NUMBER, unlike the other two, because ICE is a
+     * definition — integrity, an attack, a hit chance, and what it does to
+     * whoever it beats. NULL is the ordinary "none": a relay rolls for its ICE
+     * and the portal has nothing.
+     */
+    public function hasIce(): bool
+    {
+        return $this->ice_id !== null;
+    }
+
+    /** The guard on this machine, if it has one. */
+    public function ice(): BelongsTo
+    {
+        return $this->belongsTo(Ice::class);
     }
 
     /**

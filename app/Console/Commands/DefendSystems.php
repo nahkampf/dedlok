@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Cyberspace\Defences;
 use App\Cyberspace\SystemType;
+use App\Models\Ice;
 use App\Models\System;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -34,8 +35,31 @@ use Illuminate\Support\Facades\Log;
  * A machine that already carries something. This is a back-fill and not a
  * re-roll: a mission node authored with a grade 9 watchdog on a grade 2 box is
  * exactly the case the stored-not-derived design exists to allow, and a pass
- * that overwrote it would destroy the thing it was written to protect. Use
- * --force to re-roll anyway, which is for a world nobody has authored yet.
+ * that overwrote it would destroy the thing it was written to protect.
+ *
+ * ## Why --force exists, and when it is the right tool
+ *
+ * A DEFENCE THAT ARRIVED LATE LEAVES A PARTIAL WORLD. The IDS and the tracer
+ * shipped first and ICE followed, so every machine ended up armed against the
+ * first pass's rule and unguarded by the second — carrying something, and
+ * therefore skipped for ever by a pass that only touches machines carrying
+ * nothing.
+ *
+ * Filling in "only what is missing" cannot fix that, and the reason is worth
+ * knowing: **zero is ambiguous**. A silo with no tracer either lost its roll or
+ * was never rolled for, and the row cannot tell you which. A pass that topped
+ * up every zero would hand a tracer to every machine that had honestly gone
+ * without one, a few per cent at a time, every time it ran.
+ *
+ * So --force re-rolls the lot, and it is a MIGRATION-MOMENT tool: correct while
+ * nothing has been authored, wrong the day a mission node exists. When that day
+ * comes, the answer is to author mission nodes after the pass, or to give them
+ * a flag this can honour — not to make this cleverer about zeroes it cannot
+ * read.
+ *
+ * ponytail: zero means both "rolled and lost" and "never rolled". A nullable
+ * column per countermeasure would separate them and cost a migration; do that
+ * if a third defence ever lands after the world exists.
  *
  * The portal is skipped by `Defences::roll()` itself, so nothing here has to
  * know about it.
@@ -60,13 +84,25 @@ class DefendSystems extends Command
             // Untouched only: a machine that was told what to carry keeps it.
             $query->where('ids_detection', 0)
                 ->where('tracer_detection', 0)
-                ->where('tracer_rate', 0);
+                ->where('tracer_rate', 0)
+                ->whereNull('ice_id');
+        }
+
+        // The catalogue, grouped by the grades each piece covers. Twelve rows
+        // read once rather than a query per machine.
+        $iceByGrade = [];
+
+        foreach (Ice::query()->get(['id', 'grade_min', 'grade_max']) as $ice) {
+            foreach (range($ice->grade_min, $ice->grade_max) as $grade) {
+                $iceByGrade[$grade][] = $ice->id;
+            }
         }
 
         $rows = [];
         $touched = 0;
         $withIds = 0;
         $withTracer = 0;
+        $withIce = 0;
 
         /*
          * ROLLED PER MACHINE, WRITTEN PER OUTCOME.
@@ -83,15 +119,16 @@ class DefendSystems extends Command
         $byOutcome = [];
 
         $query->orderBy('id')->chunkById(500, function ($systems) use (
-            $roll, &$byOutcome, &$rows, &$touched, &$withIds, &$withTracer
+            $roll, $iceByGrade, &$byOutcome, &$rows, &$touched, &$withIds, &$withTracer, &$withIce
         ): void {
             foreach ($systems as $system) {
-                $defences = Defences::roll($system->type, $system->grade, $roll);
+                $defences = Defences::roll($system->type, $system->grade, $roll, $iceByGrade[$system->grade] ?? []);
                 $columns = $defences->columns();
 
                 $touched++;
                 $withIds += $defences->idsDetection > 0 ? 1 : 0;
                 $withTracer += $defences->tracerDetection > 0 ? 1 : 0;
+                $withIce += $defences->iceId !== null ? 1 : 0;
 
                 $byOutcome[implode(':', $columns)][] = $system->getKey();
 
@@ -102,35 +139,38 @@ class DefendSystems extends Command
                     $defences->idsDetection ?: '—',
                     $defences->tracerDetection ?: '—',
                     $defences->tracerRate ?: '—',
+                    $defences->iceId ?? '—',
                 ];
             }
         });
 
         if (! $dryRun) {
             foreach ($byOutcome as $key => $ids) {
-                [$idsDetection, $tracerDetection, $tracerRate] = array_map('intval', explode(':', $key));
+                [$idsDetection, $tracerDetection, $tracerRate, $iceId] = explode(':', $key);
 
                 // Capped so the IN list stays a query rather than a novel.
                 foreach (array_chunk($ids, 500) as $batch) {
                     System::query()->whereIn('id', $batch)->update([
-                        'ids_detection' => $idsDetection,
-                        'tracer_detection' => $tracerDetection,
-                        'tracer_rate' => $tracerRate,
+                        'ids_detection' => (int) $idsDetection,
+                        'tracer_detection' => (int) $tracerDetection,
+                        'tracer_rate' => (int) $tracerRate,
+                        'ice_id' => $iceId === '' ? null : (int) $iceId,
                     ]);
                 }
             }
         }
 
         $summary = sprintf(
-            '%d machine(s): %d with an IDS, %d with a tracer',
+            '%d machine(s): %d with an IDS, %d with a tracer, %d with ICE',
             $touched,
             $withIds,
             $withTracer,
+            $withIce,
         );
 
         if ($dryRun) {
             $this->table(
-                ['address', 'type', 'grade', 'ids', 'tracer', 'rate'],
+                ['address', 'type', 'grade', 'ids', 'tracer', 'rate', 'ice'],
                 array_slice($rows, 0, max(0, (int) $this->option('sample'))),
             );
 

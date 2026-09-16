@@ -52,7 +52,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | An interrupted read is lost | **built** — the analyser has to have been running for the WHOLE pass, which `inventory_items.started_at` answers without recording a history |
 | Defences — the IDS and the tracer | **built** as columns on `systems`, decided once at creation and stored. Type guarantees two countermeasures and grade rolls the third; `App\Cyberspace\Defences` is the decision. Nothing rolls against them — that is the simulator |
 | A machine told what to defend itself with | **built**, and it needed no mechanism: defences are stored rather than derived, so a mission node is a row with different numbers in the same columns |
-| ICE | **specified only**. The third countermeasure, and the one with combat numbers — integrity, an attack, and a defeat tag — none of which can be calibrated until something runs a turn |
+| ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are null until somebody assigns them, and nothing fights yet |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
 | Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
@@ -1594,14 +1594,22 @@ All of it. In the order it should be built:
    different numbers in the same columns. `stock_rule` exists because a node's
    contents are re-rolled nightly; defences never are.
 
+   **ICE is built too**, which closes the defence set: a catalogue of twelve,
+   three per grade band, carrying integrity, an attack, a hit chance and a
+   detection value of its own. `ScanFact::Ice` reads, so the only fact still
+   saying *not yet* is cloaking. **Integrity and attack are the numbers to
+   expect to move** — a fight is meant to run 2–10 turns and that depends on
+   icebreaker throughput, which does not exist — and the twelve climb together
+   so the ratio survives being recalibrated. The two ends are checkable
+   today: ICE I lands 15% of the time for 7, about a point of Synaptic
+   Integrity a turn against a starting character's 31; ICE XII lands 95% of
+   the time for 57, which takes somebody at 200 SI down in four turns.
+
    **Still missing**: taking any of it, which is the run; selling a scan, which
-   needs a storefront the market does not have; and **ICE**, which is why
-   `ScanFact::Ice` still reads *not yet*. ICE is the countermeasure with combat
-   numbers on it — integrity, an attack, a defeat tag — and every one of those
-   has to be calibrated against a run of 4–20 turns that nothing runs yet, the
-   same dependency open question 5 names for thermal load. Nothing rolls
-   against the IDS or the tracer either: they are difficulties waiting for a
-   caller, and the caller is the simulator.
+   needs a storefront the market does not have; the defeat tags, which are null
+   on every piece until somebody assigns them; and any caller at all. Nothing
+   rolls against an IDS, a tracer or a piece of ICE — they are difficulties and
+   numbers waiting for the simulator.
 
    ~~**Decide here whether the probe needs a running analyser.**~~ **Decided:
    it does.** Reading a machine takes software, and the software has to be

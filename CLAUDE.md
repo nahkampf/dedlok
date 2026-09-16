@@ -1196,11 +1196,29 @@ carries the detail.
   `chk_systems_tracer` says so — the same "null exactly together" discipline
   `running_on_deck_id` and `started_at` follow. Nothing reads the rate yet: the
   trace advances per turn and there is no turn loop.
-- **ICE is the third countermeasure and is not built.** `defences.always` names
-  it anyway, because the rotation is unreadable without it — the compute node
-  rolls for its detection precisely because its ICE is certain. What ICE has
-  that the other two do not is combat numbers, and those cannot be calibrated
-  until something runs a turn.
+- **ICE is a POINTER; the other two defences are numbers.** An IDS and a tracer
+  are values on the machine. ICE is a definition — integrity, an attack, a hit
+  chance, and a list of what it does to whoever it beats — so `systems.ice_id`
+  points at an `ice` row. The catalogue **arrives by migration**, like the corps
+  and for the same reason: its ids end up in thousands of system rows.
+- **`skill` is a hit chance from 1 to 100, and a MISS DOES NOTHING AT ALL.** It
+  is a separate number from `attack` rather than folded in as an average,
+  because an average would make every fight the same fight — what makes a
+  low-grade guard survivable is that it mostly misses, not that it hits softly.
+- **A scan remembers the LEVEL, never the row.** `system_scans.ice_level` carries
+  no foreign key, the rule `system_contacts` follows by storing an owner's name
+  rather than a pointer: a scan has to outlive the machine. Null is *not found
+  out*, 0 is *found out and there is none*, and a renamed piece of ICE reads by
+  its new name in every file anybody holds.
+- **`Defences` is handed the catalogue, it does not query for it** — the class
+  stays pure, the way `Grade::roll()` is handed its weights. An empty list is
+  not an error: a world whose ICE has not been migrated is machines that cannot
+  fight, which beats no world.
+- **Integrity and attack are BASES and expect to move.** A fight is meant to run
+  2-10 turns and that depends on icebreaker throughput, which does not exist —
+  the twelve pieces climb together so the ratio survives recalibration. Nothing
+  resolves them yet; when something fights, it goes through `App\Stats\Resolver`
+  and `DamageResolver` so a resistance to ICE is a modifier and never a branch.
 - **`App\Cyberspace\ScanFact` is the vocabulary of what a scan asks**, and it
   lists the two nothing can read yet — ICE and cloaked — as *not yet* rather
   than hiding them, the same decision the item card takes with its unbuilt

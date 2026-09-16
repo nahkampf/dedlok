@@ -7,6 +7,7 @@ namespace Tests\Feature\Cyberspace;
 use App\Cyberspace\Defences;
 use App\Cyberspace\ScanFact;
 use App\Cyberspace\SystemType;
+use App\Models\Ice;
 use App\Models\System;
 use App\Models\SystemScan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,10 +26,19 @@ final class DefencesTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** A die that always rolls this. 1 passes any percentage; 101 fails every one. */
+    /**
+     * A die that always rolls this, CLAMPED TO THE BOUNDS IT IS HANDED.
+     *
+     * The contract is `random_int`'s — inclusive both ends — and a double that
+     * ignores it is not a pinned die, it is a different function. It matters
+     * here because `Defences` rolls twice against different ranges: a
+     * percentage for presence, and an index to pick a piece of ICE.
+     *
+     * 1 passes any percentage; 101 clamps to 100 and fails every one.
+     */
     private function die(int $value): callable
     {
-        return static fn (int $min, int $max): int => $value;
+        return static fn (int $min, int $max): int => min($max, max($min, $value));
     }
 
     // ---- type sets the floor ----------------------------------------------
@@ -159,6 +169,76 @@ final class DefencesTest extends TestCase
         $this->assertFalse($node->hasTracer());
     }
 
+    // ---- ICE ---------------------------------------------------------------
+
+    /**
+     * ICE IS A POINTER, and the other two defences are numbers.
+     *
+     * An IDS and a tracer are values on the machine; ICE is a definition with
+     * integrity, an attack and a hit chance, so the machine points at a row.
+     * `Defences` queries nothing, so the catalogue is handed in — the same
+     * shape `Grade::roll()` takes its weights.
+     */
+    public function test_a_guarded_type_is_given_a_piece_of_ice_from_its_band(): void
+    {
+        $eligible = Ice::query()->forGrade(5)->pluck('id')->all();
+
+        $this->assertNotEmpty($eligible, 'the catalogue arrives by migration');
+
+        // A silo always fights, whatever the presence roll does.
+        $defences = Defences::roll(SystemType::Silo, 5, $this->die(101), $eligible);
+
+        $this->assertContains($defences->iceId, $eligible);
+    }
+
+    /** A relay rolls for its ICE, so a lost roll leaves it unguarded. */
+    public function test_a_relay_that_loses_its_roll_has_no_ice(): void
+    {
+        $eligible = Ice::query()->forGrade(5)->pluck('id')->all();
+
+        $this->assertNull(Defences::roll(SystemType::Relay, 5, $this->die(101), $eligible)->iceId);
+        $this->assertContains(Defences::roll(SystemType::Relay, 5, $this->die(1), $eligible)->iceId, $eligible);
+    }
+
+    /** A world whose ICE has not been migrated is machines that cannot fight, not no world. */
+    public function test_an_empty_catalogue_leaves_machines_unguarded(): void
+    {
+        $this->assertNull(Defences::roll(SystemType::Silo, 5, $this->die(1), [])->iceId);
+    }
+
+    /** The bands are the design: nothing from the top of the ladder guards a street-corner box. */
+    public function test_the_bands_keep_the_worst_ice_off_the_bottom_of_the_grid(): void
+    {
+        $lowest = Ice::query()->forGrade(1)->get();
+        $highest = Ice::query()->forGrade(9)->get();
+
+        $this->assertNotEmpty($lowest);
+        $this->assertNotEmpty($highest);
+        $this->assertSame([], array_intersect($lowest->modelKeys(), $highest->modelKeys()));
+        $this->assertLessThan($highest->min('integrity'), $lowest->max('integrity'));
+        $this->assertLessThan($highest->min('attack'), $lowest->max('attack'));
+    }
+
+    /**
+     * A MISS DOES NOTHING AT ALL, which is what separates a slow fight from a
+     * survivable one — and why skill is its own number rather than folded into
+     * attack as an average. An average would make every fight the same fight.
+     */
+    public function test_skill_is_a_hit_chance_and_spans_the_ladder(): void
+    {
+        $first = Ice::query()->where('level', 1)->sole();
+        $last = Ice::query()->where('level', 12)->sole();
+
+        $this->assertSame(0.15, $first->hitChance());
+        $this->assertSame(0.95, $last->hitChance());
+    }
+
+    /** Nothing carries a defeat tag yet, and null is the ordinary state for that. */
+    public function test_ice_carries_no_defeat_tags_until_somebody_assigns_them(): void
+    {
+        $this->assertSame([], Ice::query()->where('level', 1)->sole()->defeatTags());
+    }
+
     // ---- the back-fill -----------------------------------------------------
 
     /**
@@ -251,11 +331,35 @@ final class DefencesTest extends TestCase
         $this->assertSame('40, tracing 22% a turn', ScanFact::Tracer->readFrom($scan));
     }
 
-    /** ICE is the one still waiting on a turn loop to calibrate it against. */
-    public function test_ice_still_says_not_yet(): void
+    /**
+     * All three countermeasures are readable; the cloaked extras are not.
+     *
+     * `ScanFact` lists what nobody can read yet rather than hiding it — the
+     * same decision the item card takes with its unbuilt actions — so this is
+     * the check that the list shrinks as things land.
+     */
+    public function test_every_countermeasure_is_readable_and_cloaking_is_not(): void
     {
-        $this->assertFalse(ScanFact::Ice->isDiscoverable());
         $this->assertTrue(ScanFact::Ids->isDiscoverable());
         $this->assertTrue(ScanFact::Tracer->isDiscoverable());
+        $this->assertTrue(ScanFact::Ice->isDiscoverable());
+        $this->assertFalse(ScanFact::Cloaked->isDiscoverable(), 'nothing cloaks yet');
+    }
+
+    /** A machine with no guard reads as having none, which is a finding. */
+    public function test_a_machine_with_no_ice_reads_as_none(): void
+    {
+        $scan = new SystemScan(['ice_level' => 0]);
+
+        $this->assertTrue(ScanFact::Ice->isKnownOn($scan));
+        $this->assertSame('None', ScanFact::Ice->readFrom($scan));
+    }
+
+    /** And a guarded one reads by NAME, resolved from the level it remembered. */
+    public function test_ice_reads_by_name_from_the_level_it_remembered(): void
+    {
+        $scan = new SystemScan(['ice_level' => 7]);
+
+        $this->assertSame('ICE VII', ScanFact::Ice->readFrom($scan));
     }
 }

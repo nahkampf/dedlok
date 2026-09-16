@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Models\Ice;
 use App\Models\SystemScan;
 use App\Support\Text;
 
@@ -11,7 +12,7 @@ use App\Support\Text;
  * The things a scan is trying to find out.
  *
  * CYBERSPACE.md lists what a scan catalogues: the operating system, the grade,
- * the IDS, the ICE, the tracer, and any cloaked systems. Four of those exist —
+ * the IDS, the ICE, the tracer, and any cloaked systems. Five of those exist —
  * the rest are phases away — and this is the one place that says which is
  * which.
  *
@@ -45,8 +46,8 @@ enum ScanFact: string
     public function isDiscoverable(): bool
     {
         return match ($this) {
-            self::Grade, self::OperatingSystem, self::Ids, self::Tracer => true,
-            self::Ice, self::Cloaked => false,
+            self::Grade, self::OperatingSystem, self::Ids, self::Tracer, self::Ice => true,
+            self::Cloaked => false,
         };
     }
 
@@ -69,6 +70,10 @@ enum ScanFact: string
             // a fact it already has, for as many passes as the budget allows.
             self::Ids => $scan->ids_detection !== null,
             self::Tracer => $scan->tracer_detection !== null,
+            // The LEVEL and not a row id, so a machine that burned does not
+            // take the answer with it. Zero is "there is none", which is an
+            // answer like any other.
+            self::Ice => $scan->ice_level !== null,
             default => false,
         };
     }
@@ -98,6 +103,13 @@ enum ScanFact: string
                     'detection' => (string) $scan->tracer_detection,
                     'rate' => (string) $scan->tracer_rate,
                 ])
+                : Text::get('cyberspace.reading.none'),
+            // Resolved through the catalogue by level, so a renamed piece of
+            // ICE reads by its new name in every file anybody is holding —
+            // the behaviour renaming a corp already has.
+            self::Ice => $scan->ice_level > 0
+                ? (Ice::query()->where('level', $scan->ice_level)->value('name')
+                    ?? Text::get('cyberspace.reading.unread'))
                 : Text::get('cyberspace.reading.none'),
             default => null,
         };

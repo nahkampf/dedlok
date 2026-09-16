@@ -597,6 +597,10 @@ final class Probe
                     $scan->tracer_detection = $system->tracer_detection,
                     $scan->tracer_rate = $system->tracer_rate,
                 ],
+                // The LEVEL, never the row id: a scan outlives the machine and
+                // must not point at a catalogue row that could be deleted.
+                // Zero says the machine has no guard, which is a finding.
+                'ice' => $scan->ice_level = $system->ice?->level ?? 0,
             };
         }
 

@@ -8,6 +8,7 @@ use App\Cyberspace\Address;
 use App\Cyberspace\Grade;
 use App\Cyberspace\SystemType;
 use App\Models\Corp;
+use App\Models\Ice;
 use App\Models\System;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -94,6 +95,12 @@ class SystemFactory extends Factory
             'tracer_detection' => $detection,
             'tracer_rate' => $rate,
         ]);
+    }
+
+    /** Guarded. Takes the ICE row rather than a level, like the column does. */
+    public function withIce(Ice $ice): static
+    {
+        return $this->state(['ice_id' => $ice->id]);
     }
 
     /** Run by a particular corp. */

@@ -29,14 +29,14 @@ use Illuminate\Support\Facades\Config;
  * `systems.stock_rule` exists because a node's CONTENTS are re-rolled nightly
  * and therefore need a standing instruction; defences never are.
  *
- * ## ICE is not here yet
+ * ## ICE is a pointer, and the other two are numbers
  *
- * It is the third countermeasure and `defences.always` names it, because the
- * rotation is unreadable without it — the compute node rolls for its detection
- * precisely because its ICE and tracer are certain. What ICE has that these two
- * do not is combat numbers: integrity, an attack, and a defeat tag, none of
- * which can be calibrated until something runs a turn. It arrives as a fourth
- * field here and changes nothing else.
+ * An IDS and a tracer are each a value on the machine. ICE is a definition —
+ * integrity, an attack, a hit chance, a list of what it does to whoever it
+ * beats — so the machine points at a row instead of carrying one. That is why
+ * the catalogue arrives as an argument: this class queries nothing, and a
+ * caller that knows the grade is already the one that knows which pieces are
+ * eligible for it.
  */
 final readonly class Defences
 {
@@ -44,20 +44,22 @@ final readonly class Defences
         public int $idsDetection,
         public int $tracerDetection,
         public int $tracerRate,
+        public ?int $iceId = null,
     ) {}
 
     /** A machine that defends itself with nothing. The portal, and any misread type. */
     public static function none(): self
     {
-        return new self(0, 0, 0);
+        return new self(0, 0, 0, null);
     }
 
     /**
      * What a newly instantiated machine carries.
      *
      * @param  Closure(int, int): int  $roll  Inclusive both ends, like random_int.
+     * @param  list<int>  $iceForGrade  Ids of the ICE eligible for this grade, drawn from evenly.
      */
-    public static function roll(SystemType $type, int $grade, Closure $roll): self
+    public static function roll(SystemType $type, int $grade, Closure $roll, array $iceForGrade = []): self
     {
         if (! $type->isInteractable()) {
             return self::none();
@@ -79,10 +81,22 @@ final readonly class Defences
         // tracer, and the CHECK constraint would catch it only half the time.
         $tracer = $carries('tracer');
 
+        /*
+         * ICE IS A POINTER, so the catalogue has to come in from outside —
+         * this class stays pure and queries nothing, the same way Grade::roll()
+         * is handed its weights. An empty list is not an error: a world whose
+         * ICE has not been migrated yet is a world of machines that cannot
+         * fight, which beats no world at all.
+         */
+        $ice = $carries('ice') && $iceForGrade !== []
+            ? $iceForGrade[$roll(0, count($iceForGrade) - 1)]
+            : null;
+
         return new self(
             $ids,
             $tracer ? (self::table('tracer.detection')[$grade] ?? 0) : 0,
             $tracer ? (self::table('tracer.rate')[$grade] ?? 0) : 0,
+            $ice,
         );
     }
 
@@ -93,6 +107,7 @@ final readonly class Defences
             'ids_detection' => $this->idsDetection,
             'tracer_detection' => $this->tracerDetection,
             'tracer_rate' => $this->tracerRate,
+            'ice_id' => $this->iceId,
         ];
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Cyberspace;
 
 use App\Models\Corp;
+use App\Models\Ice;
 use App\Models\Skill;
 use App\Models\System;
 use App\Support\Text;
@@ -222,6 +223,21 @@ final class GridSeeder
             ->pluck('id')
             ->all();
 
+        /*
+         * The ICE catalogue, grouped by the grades each piece turns up on.
+         *
+         * Read once for the whole pass, like the corps and the operating
+         * systems above: twelve rows answering the same question 2 866 times
+         * is 2 866 round trips to learn twelve ids.
+         */
+        $iceByGrade = [];
+
+        foreach (Ice::query()->get(['id', 'grade_min', 'grade_max']) as $ice) {
+            foreach (range($ice->grade_min, $ice->grade_max) as $grade) {
+                $iceByGrade[$grade][] = $ice->id;
+            }
+        }
+
         $rows = [];
         $created = 0;
         $now = now();
@@ -280,7 +296,7 @@ final class GridSeeder
                 'os_skill_id' => self::operatingSystemFor($grade, $operatingSystems),
                 // What it defends itself with, decided here and stored. Type
                 // guarantees two countermeasures and grade rolls the third.
-                ...Defences::roll($type, $grade, $this->roll)->columns(),
+                ...Defences::roll($type, $grade, $this->roll, $iceByGrade[$grade] ?? [])->columns(),
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
