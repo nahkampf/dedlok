@@ -1246,14 +1246,13 @@ never new code in the simulator:
 | Tag | What it does | Levels |
 | --- | --- | --- |
 | **Flatline** | permanent damage to the character's *maximum* SI | **I-III** — 4-10 / 9-16 / 14-19% of maximum |
-| **Drain** | damage to current SI beyond the defeat itself | **I-III** — rising amount, and see the caveat below |
+| **Drain** | damage to current SI; **what will not fit spills into the body** | **I-III** — 8-15 / 15-28 / 28-45% of maximum |
 | **Surge** | destroys fitted hardware, at random | **I, II, III…** — rising chance and module count, **numbers unset** |
 | **Erase** | deletes software or data held on the deck | **I-III** — one file, half the deck, the whole deck |
 | **Skim** | takes carried creds | **I-III** — 10%, 30%, 60% of what you were CARRYING |
 | **Bounty** | puts a bounty on the character — the mechanic comes later, the tag exists now | none; it either happens or it does not |
-| **Lobotomy** | **paused, not built.** Strips skill points from a random skill | none |
 
-**Four of the seven come in strengths, and what rises is different for each** —
+**Five of the six come in strengths, and what rises is different for each** —
 an amount for Flatline and Drain, a share of what you were carrying for Skim,
 and how much of the deck goes for Erase. `App\Cyberspace\DefeatTag` is the
 vocabulary and `config/cyberspace.defeat_tags` holds the numbers, so they can be
@@ -1320,13 +1319,14 @@ the hardware it destroyed left the deck unready. Every consequence here is
 declared by the program; none is inherited from the state the program left
 behind.
 
-**Lobotomy is designed and deliberately shelved**, because it is the only tag
-whose consequences do not stop at the character sheet. Losing points can lose a
-level; losing a level can invalidate a skill that required it, and a module or a
-program that required *that*; and the player has to be told all of it clearly
-rather than discovering it later as a deck that stopped working. That is a
-cascade with a notification design attached, and it is not worth building until
-the simpler tags are proven.
+**Lobotomy was designed and is now dropped.** It stripped skill points from a
+random skill, and it was the only tag whose consequences did not stop at the
+character sheet: losing points can lose a level, losing a level can invalidate a
+skill that gated a module or a program, and the player has to be told all of it
+rather than finding out later as a deck that stopped working. A cascade with a
+notification design attached, for a consequence the other six already cover
+between them. Recorded here so nobody re-derives it and mistakes it for an
+oversight.
 
 Underneath all of them: **reaching 0 SI or 0 HP puts the character on a waiting
 screen for a few minutes**, shortenable by implants and skills. It is the floor
@@ -1748,15 +1748,11 @@ dependants.
     it is settled: every bad ending ejects, through `Navigator::jackOut()`,
     before the waiting screen is shown.)
 
-15. **What does Drain do, given the defeat already took you to zero?** The tag
-    is *damage to current SI beyond the defeat itself*, and current SI is zero
-    by the time a tag fires — so as written it is a no-op. There is no SI
-    regeneration and no waiting screen, which are the two places a meaning
-    could live. The likeliest answer is that being driven past zero lengthens
-    the wait, and the levels in config assume it; the alternatives are Drain
-    landing during the fight rather than at the end, or Drain reaching the body
-    instead of the mind. **The levels are fine either way** — it is the meaning
-    that is open.
+15. ~~**What does Drain do, given the defeat already took you to zero?**~~
+    **Resolved: it spills into the body.** It lands on defeat, takes current
+    Synaptic Integrity, and what will not fit comes out of current hit points.
+    It touches neither maximum and it does not lengthen the wait — overshoot
+    buys damage somewhere else, never time.
 
 16. ~~**Can one program carry more than one tag?**~~ **Resolved: it can.** An
     ICE tagged Flatline and Surge does both, and the worst software in the game

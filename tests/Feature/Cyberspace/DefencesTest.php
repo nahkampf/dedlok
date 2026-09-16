@@ -277,15 +277,7 @@ final class DefencesTest extends TestCase
         $this->assertSame(DefeatTag::Skim, $read[0]['tag']);
     }
 
-    /** Lobotomy is designed and shelved, so nothing may point at it. */
-    public function test_lobotomy_is_not_assignable(): void
-    {
-        $this->assertFalse(DefeatTag::Lobotomy->isAssignable());
-        $this->assertNotContains(DefeatTag::Lobotomy, DefeatTag::assignable());
-        $this->assertContains(DefeatTag::Flatline, DefeatTag::assignable());
-    }
-
-    /** Four tags come in strengths; the two that just happen do not. */
+    /** Five tags come in strengths; the one that just happens does not. */
     public function test_the_levelled_tags_have_their_numbers(): void
     {
         $this->assertSame(3, DefeatTag::Flatline->levels());
@@ -294,6 +286,7 @@ final class DefencesTest extends TestCase
         $this->assertSame(3, DefeatTag::Drain->levels());
 
         $this->assertSame(0, DefeatTag::Bounty->levels(), 'a bounty is one thing that happens');
+        $this->assertCount(6, DefeatTag::cases(), 'six tags — Lobotomy was dropped, not shelved');
         $this->assertSame(0, DefeatTag::Surge->levels(), 'levelled, but nobody has picked its numbers');
 
         $this->assertSame(['share' => 60], DefeatTag::Skim->levelValue(3));

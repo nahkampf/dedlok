@@ -637,27 +637,24 @@ return [
         ],
 
         /*
-        | DRAIN — damage to CURRENT Synaptic Integrity beyond the defeat, as a
-        | percentage of maximum, rolled.
+        | DRAIN — damage to CURRENT Synaptic Integrity, as a percentage of
+        | maximum, rolled. WHAT WILL NOT FIT SPILLS INTO THE BODY.
         |
-        | *** THESE NUMBERS REST ON A QUESTION NOBODY HAS ANSWERED. ***
+        | It lands ON DEFEAT like every other tag, and a defeat has already
+        | taken Synaptic Integrity to zero — so in practice nearly all of a
+        | drain overspills, and what it really does is take hit points. That is
+        | the tag's character rather than an edge case: the mind has nothing
+        | left to give, so it comes out of the body.
         |
-        | A defeat has already taken current SI to zero, and subtracting from
-        | zero does nothing — so "damage beyond the defeat" has no meaning until
-        | something says what being driven FURTHER down is worth. There is no SI
-        | regeneration in the game and no waiting screen, which are the two
-        | places that meaning could live.
+        | THE OVERSPILL IS WHY THESE NUMBERS ARE SCALED THE WAY THEY ARE.
+        | Maximum hit points and maximum Synaptic Integrity sit within a point
+        | of each other on a new character — 30 and 31 — so a share of one is a
+        | comparable share of the other, and Drain III at 28-45% is a third to a
+        | half of somebody's body rather than a scratch or an execution.
         |
-        | The shape these assume is that the waiting screen is the thing Drain
-        | lengthens: the damage is real, it takes you past zero, and what past
-        | zero buys is a longer wait. Express it as a share of maximum so it is
-        | comparable to Flatline sitting beside it — the difference being that
-        | this one comes back and that one does not.
-        |
-        | If the answer turns out to be something else — Drain reaching the body
-        | instead, or Drain landing during the fight rather than at the end —
-        | these are the numbers to re-anchor, and the tag's meaning is what
-        | changes, not its levels.
+        | What it does NOT do: touch either maximum (that is Flatline, and
+        | permanent), or lengthen the waiting screen. Overshoot buys damage
+        | somewhere else, never time.
         */
         'drain' => [
             1 => ['min' => 8, 'max' => 15],

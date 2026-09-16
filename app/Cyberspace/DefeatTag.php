@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Config;
  *
  * ## Levels
  *
- * Four of the seven are levelled I-III, and what rises is different for each:
+ * Five of the six are levelled, and what rises is different for each:
  * an amount for Flatline and Drain, a share of what you were carrying for Skim,
  * and how much of the deck goes for Erase. The numbers live in
  * `config/cyberspace.defeat_tags` so they can be tuned against each other,
@@ -41,7 +41,16 @@ enum DefeatTag: string
     /** Permanent damage to MAXIMUM Synaptic Integrity. Deepens one injury; floors at 1. */
     case Flatline = 'flatline';
 
-    /** Damage to CURRENT Synaptic Integrity, beyond the defeat itself. */
+    /**
+     * Damage to CURRENT Synaptic Integrity — and what will not fit spills into
+     * the body.
+     *
+     * A defeat has already taken Synaptic Integrity to zero, so in practice
+     * almost all of a drain overspills: the mind has nothing left to give and
+     * the damage comes out of current hit points instead. That is the tag's
+     * whole character rather than an edge case. It touches neither MAXIMUM —
+     * that is Flatline's job and permanent — and it does not lengthen the wait.
+     */
     case Drain = 'drain';
 
     /** Destroys fitted hardware, at random — ICE does not care which part is closest to its limit. */
@@ -56,38 +65,13 @@ enum DefeatTag: string
     /** Puts a bounty on the character. The mechanic comes later; the tag exists now. */
     case Bounty = 'bounty';
 
-    /**
-     * Strips skill points from a random skill. PAUSED, NOT BUILT.
-     *
-     * The only tag whose consequences do not stop at the character sheet:
-     * losing points can lose a level, losing a level can invalidate a skill
-     * that gated a module or a program, and the player has to be TOLD all of it
-     * rather than discovering it later as a deck that stopped working. That is
-     * a cascade with a notification design attached. **Nothing should carry it
-     * until that exists.**
-     */
-    case Lobotomy = 'lobotomy';
-
     /** Does this tag come in strengths, or is it one thing that happens? */
     public function isLevelled(): bool
     {
         return match ($this) {
-            self::Flatline, self::Drain, self::Skim, self::Erase => true,
-            self::Surge => true,
-            self::Bounty, self::Lobotomy => false,
+            self::Flatline, self::Drain, self::Skim, self::Erase, self::Surge => true,
+            self::Bounty => false,
         };
-    }
-
-    /**
-     * May this be put on a piece of ICE today?
-     *
-     * False is not a gap — it is a consequence the game cannot deliver yet, and
-     * a row pointing at one would be a promise nothing keeps. Same decision
-     * `ScanFact::isDiscoverable()` takes about the facts nobody can read.
-     */
-    public function isAssignable(): bool
-    {
-        return $this !== self::Lobotomy;
     }
 
     /**
@@ -109,11 +93,5 @@ enum DefeatTag: string
         return $this->isLevelled()
             ? count((array) Config::get("cyberspace.defeat_tags.{$this->value}", []))
             : 0;
-    }
-
-    /** @return list<self> */
-    public static function assignable(): array
-    {
-        return array_values(array_filter(self::cases(), static fn (self $tag): bool => $tag->isAssignable()));
     }
 }
