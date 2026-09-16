@@ -77,7 +77,8 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Synaptic Integrity as a resource | **built**, and the readiness dump is the first thing that damages it. Damage resolves like any other number — origin and resource are both tags, so a resistance is a modifier; see MECHANICS.md. Reaching zero has no consequence yet: there is no waiting screen |
 | AuraOS in the Deck Jockey loadout | **done**; granted at level 1 alongside the deck |
 | The thermal rename | **done**. Accumulation itself is **specified only** — nothing runs a deck yet |
-| Burning a module out mid-run | **specified only**; the thermally weakest module is destroyed, the trace is cancelled, the player is thrown out for 25–75% of current SI and a 12% chance of a flatline taking 5–15% of maximum SI. The numbers are in `config/cyberspace.php` and nothing reads them |
+| Burning a module out mid-run | **specified only**; the thermally weakest module is destroyed, the trace is cancelled, the player is thrown out for 25–75% of current SI and a 12% chance of a flatline — **Flatline I**, the mildest there is, because a burnout is an accident. The numbers are in `config/cyberspace.php` and nothing reads them |
+| Flatline levels | **specified only**; I-III at 4-10 / 9-16 / 14-19 per cent of maximum SI, and none of them reaches a fifth. `config/cyberspace.php`, unread |
 | The order a bad ending resolves in | **specified only**; damage, then consequence, then ejection, then the waiting screen — one order for defeats, burnouts and readiness losses alike, and **a consequence never becomes a new cause of damage within it**. That is what says a Surge carries its own tag and nothing else |
 | Radiator cooling, recalibrated for accumulation | **done** as data — the eight radiators, compressed to 90–520 TU |
 | `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
@@ -1140,8 +1141,10 @@ When the deck freezes:
   100% from 3 upwards, which the range cannot produce. That is deliberate
   rather than a hole: the flatline below is what carries the real risk of a
   freeze, and it does not care how much SI you had.
-- **A freeze flatlines 12% of the time**, and takes **5–15% of MAXIMUM SI**
-  when it does, rolled.
+- **A freeze flatlines 12% of the time**, and when it does it deals
+  **Flatline I** — 4–10% of maximum SI, the mildest rung, rolled. See
+  *Losing*: a burnout is an accident, so it must never take more of a ceiling
+  than software built on purpose to.
 
   The chance is one number rather than the 10–15% the design first said,
   because a probability that is itself rolled uniformly is arithmetically just
@@ -1178,7 +1181,7 @@ column.
 | --- | --- | --- | --- |
 | Readiness lost while jacked in, outside a run | **1 point**, flat | no | no |
 | A run cancelled under you — burned or locked down | **1 point**, flat | no | no |
-| The deck freezes — a module broke | **25–75% of current**, rolled | **12%**, for 5–15% of max | no |
+| The deck freezes — a module broke | **25–75% of current**, rolled | **12%**, and it is **Flatline I** | no |
 | Defeated by ICE | whatever the tag carries | only via the **Flatline** tag | **yes** |
 
 ### The order a bad ending happens in
@@ -1241,13 +1244,40 @@ never new code in the simulator:
 
 | Tag | What it does |
 | --- | --- |
-| **Flatline** | permanent damage to the character's *maximum* SI |
+| **Flatline** | permanent damage to the character's *maximum* SI. Levelled I-III, rising amount |
 | **Drain** | damage to current SI beyond the defeat itself |
 | **Surge** | destroys fitted hardware; levelled (Surge I, II, III …) with rising chance and rising module count |
 | **Erase** | deletes software or data held on the deck |
 | **Skim** | takes carried creds |
 | **Bounty** | puts a bounty on the character — the mechanic comes later, the tag exists now |
 | **Lobotomy** | **paused, not built.** Strips skill points from a random skill. |
+
+**FLATLINE IS LEVELLED, I TO III**, the way Surge is, and what rises is the
+amount rather than a chance — a Flatline tag fires because the program that beat
+you carries it, so there is nothing to roll for except how much.
+
+| Level | % of MAXIMUM SI | Is |
+| --- | --- | --- |
+| **I** | 4-10 | what your own deck does to you when it cooks. A scar |
+| **II** | 9-16 | a bad night carried permanently |
+| **III** | 14-19 | the one people warn each other about |
+
+**NOTHING REACHES A FIFTH, AND THAT IS THE RULE AND NOT AN ACCIDENT.** A single
+event taking 20% of somebody's ceiling would end characters rather than mark
+them, and the whole design leans on accumulation instead: flatlines deepen one
+*neural damage* modifier, converge on a maximum of 1, and **permanently cripple
+without ever themselves killing**. The fourth one is the one that matters. A
+level that broke that would not be a harder flatline, it would be a different
+mechanic wearing the name.
+
+**The freeze is Flatline I**, and that is where the level came from rather than
+a number of its own. It used to carry 5-15% because it was the only flatline in
+the game and had nowhere else to get one; a thermal burnout is an ACCIDENT, and
+it should never take more of a ceiling than software built on purpose to do it.
+So the mildest rung is the one your own deck stands on.
+
+**Three levels is enough.** The whole usable range is fifteen points wide, and a
+fourth rung would be a distinction invisible to the person it happened to.
 
 **A PROGRAM MAY CARRY SEVERAL TAGS.** An ICE tagged Flatline and Surge does both
 — it takes a permanent piece of the ceiling *and* destroys fitted hardware — and

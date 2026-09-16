@@ -527,28 +527,54 @@ return [
         'flatline_chance' => 12,
 
         /*
-        | How much a flatline takes, as a percentage of MAXIMUM Synaptic
-        | Integrity, rolled per flatline.
+        | WHICH FLATLINE A FREEZE DEALS, by level. See `flatline` below.
         |
-        | An ICE flatline carries its amount on the program that inflicted it;
-        | a freeze has no program, so it needs a number of its own and this is
-        | it.
+        | The mildest one there is, and that is a statement rather than a
+        | default: a thermal burnout is an ACCIDENT, and it should never take
+        | more of somebody's ceiling than software built on purpose to do it.
         |
-        | Small on purpose. A flatline is PERMANENT and it ACCUMULATES — the
-        | one that matters is the fourth one, not the first — so a single event
-        | taking a fifth of somebody's ceiling would end characters rather than
-        | mark them. This is a scar, and scars are supposed to add up.
-        |
-        | Permanent damage to maximum SI is an unexpiring modifier row and
-        | never a subtraction into a column, because maximum SI is derived —
-        | see MECHANICS.md, *Flatline is a permanent stored modifier*. The stat
-        | floors at 1, so accumulated flatlines converge on a maximum of 1
-        | rather than 0: they permanently cripple and never themselves kill,
-        | which is the same rule that says injury can only ever be undone by a
-        | clinic and never by arithmetic.
+        | It used to carry its own 5-15% here, because it was the only flatline
+        | in the game and had nowhere else to get a number. Levels gave it
+        | somewhere, and one vocabulary beats a number that can drift away from
+        | whatever an ICE's Flatline I turns out to mean.
         */
-        'flatline_amount' => ['min' => 5, 'max' => 15],
+        'flatline_level' => 1,
 
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | How much a flatline takes
+    |--------------------------------------------------------------------------
+    |
+    | As a percentage of MAXIMUM Synaptic Integrity, rolled per flatline, by
+    | the level of the Flatline the program carried. An ICE says which level it
+    | inflicts; a freeze says the same thing through `freeze.flatline_level`.
+    |
+    | SMALL ON PURPOSE, ALL THREE OF THEM. A flatline is PERMANENT and it
+    | ACCUMULATES — the one that matters is the fourth, not the first — so a
+    | single event taking a fifth of somebody's ceiling would end characters
+    | rather than mark them. **Nothing here reaches 20%, and that is the rule
+    | rather than where the numbers happened to land.** A grade 9's ICE is
+    | terrifying because it carries Flatline III AND Surge III AND Drain, not
+    | because any one roll is enormous — which is what several tags on one
+    | program are FOR.
+    |
+    | Permanent damage to maximum SI is an unexpiring modifier row and never a
+    | subtraction into a column, because maximum SI is derived — see
+    | MECHANICS.md, *Flatline is a permanent stored modifier*. The stat floors
+    | at 1, so accumulated flatlines converge on a maximum of 1 rather than 0:
+    | they permanently cripple and never themselves kill, the same rule that
+    | says injury is undone by a clinic and never by arithmetic.
+    |
+    | Three levels is enough. A fourth would be splitting a range that is only
+    | fifteen points wide, and the difference between III and a hypothetical IV
+    | would be invisible to the person it happened to.
+    */
+    'flatline' => [
+        1 => ['min' => 4, 'max' => 10],
+        2 => ['min' => 9, 'max' => 16],
+        3 => ['min' => 14, 'max' => 19],
     ],
 
     /*
