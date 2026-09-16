@@ -277,21 +277,47 @@ final class DefencesTest extends TestCase
         $this->assertSame(DefeatTag::Skim, $read[0]['tag']);
     }
 
+    /**
+     * SURGE ROLLS PER MODULE, which is the whole of its feel.
+     *
+     * Two separate 45% rolls usually take one module and sometimes take two or
+     * none. One roll for the pair would either cost you both or cost you
+     * nothing, which reads as *how likely is a disaster* rather than *how much
+     * is at stake* — and the level is meant to say the second thing.
+     */
+    public function test_surge_raises_what_is_at_stake_before_it_raises_the_odds(): void
+    {
+        $one = DefeatTag::Surge->levelValue(1);
+        $two = DefeatTag::Surge->levelValue(2);
+        $three = DefeatTag::Surge->levelValue(3);
+
+        $this->assertSame($one['chance'], $two['chance'], 'II is the same odds against more modules');
+        $this->assertGreaterThan($two['modules'], $three['modules']);
+        $this->assertGreaterThan($two['chance'], $three['chance'], 'and the top rung moves both');
+
+        // What each level actually costs, in modules, on average.
+        $expected = static fn (array $l): float => $l['chance'] / 100 * $l['modules'];
+
+        $this->assertEqualsWithDelta(0.45, $expected($one), 0.001);
+        $this->assertEqualsWithDelta(0.90, $expected($two), 0.001);
+        $this->assertEqualsWithDelta(1.65, $expected($three), 0.001);
+    }
+
     /** Five tags come in strengths; the one that just happens does not. */
     public function test_the_levelled_tags_have_their_numbers(): void
     {
         $this->assertSame(3, DefeatTag::Flatline->levels());
         $this->assertSame(3, DefeatTag::Skim->levels());
         $this->assertSame(3, DefeatTag::Erase->levels());
-        $this->assertSame(3, DefeatTag::Drain->levels());
+        $this->assertSame(3, DefeatTag::NeuralShock->levels());
+        $this->assertSame(3, DefeatTag::Surge->levels(), 'and Surge has its numbers now');
 
         $this->assertSame(0, DefeatTag::Bounty->levels(), 'a bounty is one thing that happens');
         $this->assertCount(6, DefeatTag::cases(), 'six tags — Lobotomy was dropped, not shelved');
-        $this->assertSame(0, DefeatTag::Surge->levels(), 'levelled, but nobody has picked its numbers');
-
         $this->assertSame(['share' => 60], DefeatTag::Skim->levelValue(3));
         $this->assertSame(['count' => 1, 'share' => null], DefeatTag::Erase->levelValue(1));
-        $this->assertNull(DefeatTag::Surge->levelValue(1), 'unset resolves to nothing, never to a guess');
+        $this->assertSame(['chance' => 45, 'modules' => 1], DefeatTag::Surge->levelValue(1));
+        $this->assertNull(DefeatTag::Surge->levelValue(4), 'a level nobody defined resolves to nothing');
     }
 
     // ---- the back-fill -----------------------------------------------------

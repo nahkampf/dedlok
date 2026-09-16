@@ -556,7 +556,8 @@ return [
     | single event taking a fifth of somebody's ceiling would end characters
     | rather than mark them. **Nothing here reaches 20%, and that is the rule
     | rather than where the numbers happened to land.** A grade 9's ICE is
-    | terrifying because it carries Flatline III AND Surge III AND Drain, not
+    | terrifying because it carries Flatline III AND Surge III AND Neural
+        | Shock, not
     | because any one roll is enormous — which is what several tags on one
     | program are FOR.
     |
@@ -581,7 +582,8 @@ return [
         | single event taking a fifth of somebody's ceiling would end characters
         | rather than mark them. NOTHING HERE REACHES 20%, and that is the rule
         | rather than where the numbers happened to land: a grade 9's ICE is
-        | terrifying for carrying Flatline III AND Surge III AND Drain, which is
+        | terrifying for carrying Flatline III AND Surge III AND Neural Shock,
+        | which is
         | what several tags on one program are FOR.
         |
         | Permanent damage to maximum SI is an unexpiring modifier row and never
@@ -637,26 +639,22 @@ return [
         ],
 
         /*
-        | DRAIN — damage to CURRENT Synaptic Integrity, as a percentage of
-        | maximum, rolled. WHAT WILL NOT FIT SPILLS INTO THE BODY.
+        | NEURAL SHOCK — damage to CURRENT HIT POINTS, as a percentage of
+        | maximum, rolled.
         |
-        | It lands ON DEFEAT like every other tag, and a defeat has already
-        | taken Synaptic Integrity to zero — so in practice nearly all of a
-        | drain overspills, and what it really does is take hit points. That is
-        | the tag's character rather than an edge case: the mind has nothing
-        | left to give, so it comes out of the body.
+        | It was called Drain and aimed at Synaptic Integrity, which could never
+        | have worked: a tag fires BECAUSE Synaptic Integrity reached zero, and
+        | subtracting from zero is nothing. Aiming it at the body is what the
+        | mechanic was reaching for all along — the feedback comes back down the
+        | interface and stops a heart rather than a thought.
         |
-        | THE OVERSPILL IS WHY THESE NUMBERS ARE SCALED THE WAY THEY ARE.
-        | Maximum hit points and maximum Synaptic Integrity sit within a point
-        | of each other on a new character — 30 and 31 — so a share of one is a
-        | comparable share of the other, and Drain III at 28-45% is a third to a
-        | half of somebody's body rather than a scratch or an execution.
+        | It touches neither maximum. That is Flatline's job, and permanent.
         |
-        | What it does NOT do: touch either maximum (that is Flatline, and
-        | permanent), or lengthen the waiting screen. Overshoot buys damage
-        | somewhere else, never time.
+        | Scaled against a new character's 30 hit points, so Neural Shock III is
+        | a third to a half of somebody's body — enough to finish a runner who
+        | walked in hurt, and not enough to be an execution on its own.
         */
-        'drain' => [
+        'neural_shock' => [
             1 => ['min' => 8, 'max' => 15],
             2 => ['min' => 15, 'max' => 28],
             3 => ['min' => 28, 'max' => 45],
@@ -665,13 +663,35 @@ return [
         /*
         | SURGE — destroys fitted hardware, at random.
         |
-        | UNSET, and deliberately left so. The design gives it a rising chance
-        | and a rising module count and neither number has been picked, because
-        | what a destroyed module costs depends on what a deck costs to rebuild
-        | and nothing has priced that yet. A level with no entry here resolves
-        | to nothing rather than to a guess.
+        | `chance` IS ROLLED ONCE PER MODULE, not once for the tag. Surge II is
+        | two separate 45% rolls, so it usually takes one and sometimes takes
+        | two or none — which is a very different feel from one roll that either
+        | costs you two modules or costs you nothing, and it is the shape that
+        | makes the level read as *how much is at stake* rather than *how likely
+        | a disaster is*.
+        |
+        | The jump from II to III is in BOTH numbers, which is why the top rung
+        | is a step rather than a slope: three rolls at 55% averages 1.65
+        | modules against II's 0.9.
+        |
+        | It does not stack with itself — a piece of ICE carries one Surge, and
+        | the level is which one.
+        |
+        | NOTHING IS SPARED FOR HAVING LITTLE FITTED. A deck that is not ready
+        | cannot be in cyberspace at all — DeckRequirement wants compute, memory,
+        | link and power — so anybody a Surge can reach has modules to lose, and
+        | the tag never needs a special case for an empty deck.
+        |
+        | Random, and that is the contrast with a thermal burnout: the burnout
+        | takes the thermally weakest module deterministically, because the
+        | player was warned about it. ICE does not know or care which part is
+        | closest to its limit, so watching your heat buys nothing here.
         */
-        'surge' => [],
+        'surge' => [
+            1 => ['chance' => 45, 'modules' => 1],
+            2 => ['chance' => 45, 'modules' => 2],
+            3 => ['chance' => 55, 'modules' => 3],
+        ],
     ],
 
     /*

@@ -52,7 +52,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | An interrupted read is lost | **built** — the analyser has to have been running for the WHOLE pass, which `inventory_items.started_at` answers without recording a history |
 | Defences — the IDS and the tracer | **built** as columns on `systems`, decided once at creation and stored. Type guarantees two countermeasures and grade rolls the third; `App\Cyberspace\Defences` is the decision. Nothing rolls against them — that is the simulator |
 | A machine told what to defend itself with | **built**, and it needed no mechanism: defences are stored rather than derived, so a mission node is a row with different numbers in the same columns |
-| Defeat tags | **built** as vocabulary and numbers: `App\Cyberspace\DefeatTag`, seven of them, four levelled I-III. Skim and Erase are settled, Flatline was already, Surge's numbers are unset and Drain's MEANING is open. Nothing reads any of it — there is no defeat |
+| Defeat tags | **built** as vocabulary and numbers: `App\Cyberspace\DefeatTag`, six of them, five levelled I-III. All the numbers are settled. Nothing reads any of it — there is no defeat |
 | ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are null until somebody assigns them, and nothing fights yet |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
@@ -1246,14 +1246,15 @@ never new code in the simulator:
 | Tag | What it does | Levels |
 | --- | --- | --- |
 | **Flatline** | permanent damage to the character's *maximum* SI | **I-III** — 4-10 / 9-16 / 14-19% of maximum |
-| **Drain** | damage to current SI; **what will not fit spills into the body** | **I-III** — 8-15 / 15-28 / 28-45% of maximum |
-| **Surge** | destroys fitted hardware, at random | **I, II, III…** — rising chance and module count, **numbers unset** |
+| **Neural shock** | damage to current **hit points** — the mind's defeat landing on the body | **I-III** — 8-15 / 15-28 / 28-45% of maximum HP |
+| **Surge** | destroys fitted hardware, at random | **I-III** — 45% x1, 45% x2, 55% x3, **rolled per module** |
 | **Erase** | deletes software or data held on the deck | **I-III** — one file, half the deck, the whole deck |
 | **Skim** | takes carried creds | **I-III** — 10%, 30%, 60% of what you were CARRYING |
 | **Bounty** | puts a bounty on the character — the mechanic comes later, the tag exists now | none; it either happens or it does not |
 
 **Five of the six come in strengths, and what rises is different for each** —
-an amount for Flatline and Drain, a share of what you were carrying for Skim,
+an amount for Flatline and Neural Shock, a share of what you were carrying for
+Skim,
 and how much of the deck goes for Erase. `App\Cyberspace\DefeatTag` is the
 vocabulary and `config/cyberspace.defeat_tags` holds the numbers, so they can be
 tuned against one another the way the freeze's three are.
@@ -1267,15 +1268,30 @@ a decision, where a flatline is not.
 most expensive thing in the tag set by some distance. It belongs only on ICE
 nobody should meet by accident.
 
-**DRAIN RESTS ON A QUESTION NOBODY HAS ANSWERED.** A defeat has already taken
-current SI to zero, and subtracting from zero does nothing — so *damage beyond
-the defeat* has no meaning until something says what being driven further down
-is worth. There is no SI regeneration in the game and no waiting screen, which
-are the two places that meaning could live. The numbers in config assume the
-waiting screen is the thing Drain lengthens; if the answer turns out to be
-something else — Drain reaching the body instead, or landing during the fight
-rather than at the end — it is the tag's MEANING that changes and not its
-levels. See the open questions.
+**NEURAL SHOCK TAKES HIT POINTS, and it used to be called Drain and aim at
+Synaptic Integrity.** That could never have worked: a tag fires *because*
+Synaptic Integrity reached zero, and subtracting from zero is nothing. Aiming it
+at the body is what the mechanic was reaching for all along — the feedback comes
+back down the interface and stops a heart rather than a thought. It touches
+neither maximum; that is Flatline's job, and permanent.
+
+Scaled against a new character's 30 hit points, so Neural Shock III is a third
+to a half of somebody's body — enough to finish a runner who walked in hurt, and
+not an execution on its own.
+
+**SURGE ROLLS ONCE PER MODULE, not once for the tag.** Surge II is two separate
+45% rolls, so it usually takes one module and sometimes takes two or none —
+which is a different feel from a single roll that either costs both or costs
+nothing, and it is what makes the level read as *how much is at stake* rather
+than *how likely a disaster is*. On average: 0.45 modules at I, 0.90 at II, 1.65
+at III, where the top rung moves both numbers at once.
+
+**It never needs a special case for a deck with nothing in it.** A deck that is
+not ready cannot be in cyberspace at all — `DeckRequirement` wants compute,
+memory, link and power — so anybody a Surge can reach has modules to lose.
+
+A Surge does not stack with itself: a piece of ICE carries one, and the level is
+which one.
 
 **FLATLINE IS LEVELLED, I TO III**, the way Surge is, and what rises is the
 amount rather than a chance — a Flatline tag fires because the program that beat

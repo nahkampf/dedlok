@@ -45,7 +45,8 @@ enum DamageOrigin: string
 
     /**
      * Something in a system fought back. The defeat TAG says what reaching
-     * zero does — flatline, drain, surge — and this says who did it, which is
+     * zero does — flatline, neural shock, surge — and this says who did it,
+     * which is
      * the half a resistance cares about. Nothing deals it until the run
      * simulator exists.
      */

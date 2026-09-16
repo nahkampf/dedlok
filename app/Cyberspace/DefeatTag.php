@@ -23,7 +23,8 @@ use Illuminate\Support\Facades\Config;
  * ## Levels
  *
  * Five of the six are levelled, and what rises is different for each:
- * an amount for Flatline and Drain, a share of what you were carrying for Skim,
+ * an amount for Flatline and Neural Shock, a share of what you were carrying
+ * for Skim,
  * and how much of the deck goes for Erase. The numbers live in
  * `config/cyberspace.defeat_tags` so they can be tuned against each other,
  * which is the same call `freeze` makes about its own three.
@@ -42,16 +43,16 @@ enum DefeatTag: string
     case Flatline = 'flatline';
 
     /**
-     * Damage to CURRENT Synaptic Integrity — and what will not fit spills into
-     * the body.
+     * Damage to CURRENT HIT POINTS. The mind's defeat, landing on the body.
      *
-     * A defeat has already taken Synaptic Integrity to zero, so in practice
-     * almost all of a drain overspills: the mind has nothing left to give and
-     * the damage comes out of current hit points instead. That is the tag's
-     * whole character rather than an edge case. It touches neither MAXIMUM —
-     * that is Flatline's job and permanent — and it does not lengthen the wait.
+     * It was called Drain and aimed at Synaptic Integrity, which could never
+     * work: a tag fires because SI reached zero, and subtracting from zero is
+     * nothing. Aiming it at the body is what the mechanic was always reaching
+     * for — the feedback comes back down the interface and stops a heart rather
+     * than a thought. **It touches neither maximum**; that is Flatline's job,
+     * and permanent.
      */
-    case Drain = 'drain';
+    case NeuralShock = 'neural_shock';
 
     /** Destroys fitted hardware, at random — ICE does not care which part is closest to its limit. */
     case Surge = 'surge';
@@ -69,7 +70,7 @@ enum DefeatTag: string
     public function isLevelled(): bool
     {
         return match ($this) {
-            self::Flatline, self::Drain, self::Skim, self::Erase, self::Surge => true,
+            self::Flatline, self::NeuralShock, self::Skim, self::Erase, self::Surge => true,
             self::Bounty => false,
         };
     }
