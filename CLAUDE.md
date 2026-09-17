@@ -1423,7 +1423,42 @@ carries the detail.
   right thing in the right place. Items only: creds and files are still rolled,
   since a mission node holding no money would announce itself.
 - **`systems.raids` is on the SYSTEM, not the character.** Three successful
-  raids by anybody retires the node. Nothing increments it yet.
+  raids by anybody retires the node, and `App\Cyberspace\RaidLedger` is the
+  only writer of that counter — and the only thing that moves a machine once
+  it has been placed, because the reset is not a separate decision from the
+  count: a relocated machine has new books by definition. A per-character
+  counter would have every popular node raided into the ground by a hundred
+  people who each thought they had two left.
+- **A RAID IS A RUN, not a haul.** Counted once, the first time a run takes
+  anything — `Simulator::recordTake()` is the one door, which is why
+  `runs.extracted` is written there rather than at either call site. Creds on
+  turn two and a file finishing on turn six are one visit. It is counted when
+  the take LANDS rather than when the run ends, because the shelf is empty
+  from that moment whatever happens to the person carrying it: a raider who
+  flatlines on the way out has still emptied it.
+- **Retiring is relocation, and it happens in `RunStarter::end()`** — the one
+  door out of a run, so a retirement cannot depend on how somebody happened to
+  leave. Asked on EVERY ending, since the counter is what decides and it is
+  already spent. **Not while anybody is inside**: a live run on the address
+  holds the machine in place, because relocating out from under a run is
+  `RunEnding::Cancelled` — a real ending with its own damage, and not a side
+  effect a successful raid should inflict on a stranger. The counter waits, and
+  the next run to end there retires it.
+- **THE LOCKDOWN WINDOW IS NOT BUILT, deliberately.** CYBERSPACE.md has a
+  machine lock down and then relocate when the lockdown ends; the third raid is
+  one of four triggers, and the other three (the IDS fired, the ICE activated,
+  burn) all want the same state, the same duration and the same map treatment.
+  So the third raid relocates outright and the window arrives with the other
+  three — `cell--rebooting` is already in the kit waiting for it. Do not build
+  a private version of it for this one trigger.
+- **Relocation is `RaidLedger::relocate()`, and it is public because lockdown
+  and burn both end there too.** New position, new address, `raids` back to 0.
+  Bookmarks pointing at it break, every scan anybody held stops describing
+  anything, and the sighting left behind is forgotten by the next sweep — none
+  of which is an error anywhere, because all of it was designed around a
+  machine being allowed to go. A grid with nowhere free is an ordinary false:
+  occupancy leaves ~30% empty precisely so relocation has somewhere to move
+  through.
 - **The map screen draws from memory and never from `systems`.** The eight
   cells around you are buttons and everything else is a reading; arrows and the
   numpad reach the same eight, because a diagonal is one step here.

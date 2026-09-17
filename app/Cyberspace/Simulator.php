@@ -61,6 +61,7 @@ final readonly class Simulator
         private CheckRoller $checks,
         private DefeatResolver $defeats,
         private Extractor $extractor,
+        private RaidLedger $raids,
         private Closure $roll,
     ) {}
 
@@ -82,6 +83,9 @@ final readonly class Simulator
             // a second random source to control separately.
             DefeatResolver::fromConfig($roll),
             new Extractor,
+            // Same die again: a test that pins the turn's roll also pins where
+            // a retired machine moves to.
+            RaidLedger::fromConfig($roll),
             $roll,
         );
     }
@@ -459,7 +463,7 @@ final readonly class Simulator
         }
 
         if (! $instant->tookNothing()) {
-            $run->extracted = true;
+            $this->recordTake($run);
             $log[] = $this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($instant)], 'ok');
         }
 
@@ -533,9 +537,33 @@ final readonly class Simulator
             return [$this->line('cyberspace.run.log.transfer_gone')];
         }
 
-        $run->extracted = true;
+        $this->recordTake($run);
 
         return [$this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($result)], 'ok')];
+    }
+
+    /**
+     * Something came out of the machine.
+     *
+     * TWO THINGS AT ONCE, and they are one fact: the run has extracted, and
+     * the machine has been raided. They are set together because a take is
+     * the only thing that makes either true, and a raid counted anywhere else
+     * would be a second answer to "did this run get anything".
+     *
+     * ONCE PER RUN. A haul that takes the creds on turn two and finishes
+     * pulling a file on turn six is ONE raid — the guard is what makes that
+     * true, and it is why the flag is written here rather than at either call
+     * site. `systems.raids` is a count of runs that got something, not of
+     * turns that did.
+     */
+    private function recordTake(Run $run): void
+    {
+        if ($run->extracted) {
+            return;
+        }
+
+        $run->extracted = true;
+        $this->raids->record($run->address);
     }
 
     /**

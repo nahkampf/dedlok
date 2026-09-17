@@ -56,7 +56,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | What a raid can carry out | **built** — data only. A node never yields a physical object: the shelf is `on_market` items whose `container` is `data` |
 | A machine told what to hold | **built** — `systems.stock_rule`, NULL on nearly every row: `fixed` for exactly these, `any_of` for this many from a set, `plus_random` to keep the ordinary draw as well. What mission systems will use; nothing sets one yet |
 | Nightly restock | **built** — `cyberspace:restock`, a TOP-UP like the market's pass: a node still holding something is left alone, so emptying one is temporary |
-| The raid counter | **built as a column**; `systems.raids`, on the system and not the character. Nothing increments it, because nothing can raid |
+| The raid counter | **built**; `systems.raids`, on the system and not the character, written only by `App\Cyberspace\RaidLedger`. Counted once per RUN that took something, the moment the take lands; the third one relocates the machine when the run ends, unless somebody is still inside |
 | A read runs in the background | **built** — it belongs to the running copy of the scanner, not to where its owner is standing: walk away or jack out and the answer is waiting |
 | Two instruments, two machines | **built** — a second read needs a second running instance, which costs its own compute and a free thread |
 | Threads — how many copies of one program run at once | **built** — `program_threads`, one by default, raised by Multithreading and only for software flagged `multithreaded` |
@@ -364,6 +364,16 @@ housekeeping, so a quiet thief has somewhere to come back to.
 **Three raids and it locks down anyway.** A counter **on the system, not on the
 character**, incremented by every successful raid whoever made it, and when it
 reaches three the system locks down and relocates as though it had been caught.
+
+> **Built, less the window.** `App\Cyberspace\RaidLedger` counts the raid —
+> once per run, the moment a take lands — and relocates the machine when the
+> run ends. What is NOT built is the lockdown WINDOW: the three other triggers
+> in the table above all want the same state, the same duration and the same
+> map treatment, so inventing a private version of it for this one trigger
+> would be inventing the thing that pass has to replace. A machine with a live
+> run on it is held in place until that run ends, because relocating out from
+> under somebody is `RunEnding::Cancelled` — a real ending with its own
+> damage, and not a side effect a stranger's successful raid should inflict.
 Somebody eventually reconciles the numbers. This is what stops a perfectly
 executed loop from being a permanent, riskless income: even flawless play
 retires the node.
@@ -1660,8 +1670,8 @@ All of it. In the order it should be built:
    operating system comes from, and two values with the gap between them that
    makes decryption a decision — and sometimes something from the catalogue.
    All of it scales with grade and leans by type, `cyberspace:restock` tops up
-   every emptied node nightly, and `systems.raids` counts what nothing can do
-   to it yet.
+   every emptied node nightly, and `systems.raids` counts raids now —
+   `RaidLedger` writes it and the third one retires the node by relocating it.
 
    **The loot table is built**: `loot_tables`, one row per (type, grade band,
    rarity), and a NULL type meaning any machine. Grades 1-3 see rare at 1% and
@@ -1757,15 +1767,18 @@ All of it. In the order it should be built:
 Decided enough to build around, not settled. Resolve them before they acquire
 dependants.
 
-1. **Is the raid counter per system or per character?** Three raids retires a
-   node — but three by anybody, or three by you? A shared counter means someone
-   else can use up a system you found; a per-character one means a popular node
-   is raided into the ground by a hundred people who each think they have two
-   left. The world is shared, which argues for the first.
-2. **When does the raid counter reset?** On relocation is the obvious answer,
-   since the system is effectively new. If it never resets, every system in
-   cyberspace is on a countdown to its third raid and the grid slowly empties
-   into churn.
+1. ~~**Is the raid counter per system or per character?**~~ **Resolved: per
+   system.** Three by anybody. The world is shared, so a node is a resource
+   other people are also emptying — and a per-character counter would have
+   every popular machine raided into the ground by a hundred people who each
+   thought they had two left. `config/cyberspace.php`'s `raids.limit` is the
+   number, and `RaidLedger` is the only thing that writes the counter.
+2. ~~**When does the raid counter reset?**~~ **Resolved: on relocation**, for
+   the reason the question already gave — a system that never balanced its
+   books would be on a permanent countdown and the grid would grind into pure
+   churn. It is not a separate decision from the count, which is why one class
+   owns both: `RaidLedger::relocate()` writes the new position, the new address
+   and the zero together.
 3. ~~**Does the 3% floor apply to every roll or only to detection?**~~
    **Resolved: every roll.** It is a principle, applied once in
    `App\Checks\CheckRoller` rather than decided per mechanic — egress can

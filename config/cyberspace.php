@@ -135,7 +135,8 @@ return [
     | Everything here scales with grade, because grade is the promise a scan
     | makes: the machine that can end you is the machine worth breaking into.
     | The numbers are a starting point and nothing has been balanced against
-    | them — nothing can raid a node yet.
+    | them — a raid is built, and what a haul is worth against the rest of the
+    | economy is still nobody's decided answer.
     |
     | CREDS are the floor of a haul: always something, rarely much. A grade 1
     | is pocket money and a grade 9 is a month's rent, which is roughly the
@@ -271,6 +272,33 @@ return [
     | The portal carries nothing, and that needs no entry here —
     | SystemType::isInteractable() already says no to everything for it.
     */
+    /*
+    | HOW MANY RAIDS A NODE SURVIVES BEFORE SOMEBODY RECONCILES THE NUMBERS.
+    |
+    | THREE, and the counter is on the SYSTEM rather than on the character —
+    | three by anybody, not three by you. The world is shared, so a node is a
+    | resource other people are also emptying, and a per-character counter
+    | would have every popular machine raided into the ground by a hundred
+    | people who each thought they had two left.
+    |
+    | This is the arithmetic brake on a perfect loop. The detection floor is
+    | the other one: no run is ever safer than about 3%, so luck fires the
+    | first and counting fires the second, and neither can be played around.
+    | A quiet thief gets three good nights out of a system, never an annuity.
+    |
+    | THE COUNTER RESETS WHEN THE MACHINE RELOCATES, because a relocated
+    | machine is a new one — new address, new position, books balanced.
+    | Without the reset every system on the grid would be on a permanent
+    | countdown to its third raid and the world would grind into pure churn.
+    |
+    | Raising this makes the low end of the grid a steadier income; lowering it
+    | makes finding a machine matter more than farming one. Nothing has been
+    | balanced against it, like everything else a raid touches.
+    */
+    'raids' => [
+        'limit' => 3,
+    ],
+
     /*
     | HOW MANY OTHER RUNNERS A CHARACTER MAY TAKE INTO A SYSTEM.
     |
