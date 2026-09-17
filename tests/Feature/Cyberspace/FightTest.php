@@ -787,4 +787,105 @@ final class FightTest extends TestCase
 
         $this->assertSame(RunEnding::Egress, $result->ending);
     }
+
+    // ---- a file costs turns, and the ICE keeps swinging while it does -------
+
+    /**
+     * THE WHOLE POINT: a multi-turn pull is spent one ordinary turn at a
+     * time, so the ICE that woke up on the touch gets to act on every turn
+     * the transfer keeps running — the same as it would against Attack or
+     * Hold. The fixture's fitted NIC resolves to 50 QB of bandwidth a turn
+     * (see CarriesAWorkingDeck), so a 120 QB file takes three turns: begin,
+     * one continue, and one that completes it.
+     */
+    public function test_a_multi_turn_transfer_still_exposes_every_turn_to_the_ice(): void
+    {
+        $system = $this->machine(1); // ICE I: 15% to hit, 7 damage — simulator(1) always lands it
+        SystemContent::query()->create([
+            'system_id' => $system->id, 'kind' => 'data', 'label' => 'Ledger',
+            'size_qb' => 120, 'value_sealed' => 10, 'value_broken' => 20,
+        ]);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $sim = $this->simulator(1);
+
+        $before = $this->character->fresh()->current_synaptic_integrity;
+
+        $first = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+        $this->assertSame(70, $first->run->extracting_qb);
+        $this->assertFalse($first->run->extracted);
+
+        $second = $sim->take($this->character->fresh(), $first->run->fresh(), RunAction::Extract);
+        $this->assertSame(20, $second->run->extracting_qb);
+        $this->assertFalse($second->run->extracted);
+
+        $third = $sim->take($this->character->fresh(), $second->run->fresh(), RunAction::Extract);
+        $this->assertNull($third->run->extracting_qb, 'the countdown clears once the file lands');
+        $this->assertTrue($third->run->extracted);
+
+        // Three turns spent, three swings landed — nothing about a transfer
+        // running skips the machine's half of the turn.
+        $this->assertSame($before - 21, $this->character->fresh()->current_synaptic_integrity);
+
+        $this->assertSame(
+            1,
+            InventoryItem::where('character_id', $this->character->id)
+                ->whereHas('item', fn ($q) => $q->where('slug', 'encrypted-data-dump'))
+                ->count(),
+        );
+    }
+
+    /** Spending a turn on Attack instead pauses a pull rather than losing it. */
+    public function test_attacking_mid_transfer_leaves_its_progress_untouched(): void
+    {
+        $system = $this->machine(1);
+        SystemContent::query()->create([
+            'system_id' => $system->id, 'kind' => 'data', 'label' => 'Ledger',
+            'size_qb' => 120, 'value_sealed' => 10, 'value_broken' => 20,
+        ]);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $sim = $this->simulator(101); // misses every ICE swing, so SI is not what this test is about
+
+        $afterBegin = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+        $this->assertSame(70, $afterBegin->run->extracting_qb);
+
+        $afterAttack = $sim->take($this->character->fresh(), $afterBegin->run->fresh(), RunAction::Attack);
+        $this->assertSame(70, $afterAttack->run->extracting_qb, 'a turn spent elsewhere does not spend the transfer too');
+
+        $afterContinue = $sim->take($this->character->fresh(), $afterAttack->run->fresh(), RunAction::Extract);
+        $this->assertSame(20, $afterContinue->run->extracting_qb, 'picking it back up resumes from where it was');
+    }
+
+    /**
+     * A slower raider loses the race exactly the way an instant haul already
+     * does — `Extractor::takeFiles()`'s own "nothing to take" answer, reached
+     * this time from a countdown finishing rather than a single touch.
+     */
+    public function test_a_transfer_that_finishes_after_someone_else_already_took_it(): void
+    {
+        $system = $this->machine(1);
+        SystemContent::query()->create([
+            'system_id' => $system->id, 'kind' => 'data', 'label' => 'Ledger',
+            'size_qb' => 60, 'value_sealed' => 10, 'value_broken' => 20,
+        ]);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $sim = $this->simulator(101);
+
+        $afterBegin = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+        $this->assertSame(10, $afterBegin->run->extracting_qb);
+
+        // Somebody else's raid finishes first, in between this run's turns.
+        SystemContent::query()->where('system_id', $system->id)->where('kind', 'data')->delete();
+
+        $result = $sim->take($this->character->fresh(), $afterBegin->run->fresh(), RunAction::Extract);
+
+        $this->assertNull($result->run->extracting_qb);
+        $this->assertFalse($result->run->extracted);
+        $this->assertNotEmpty(array_filter(
+            array_column($result->log, 'text'),
+            static fn (string $l): bool => str_contains($l, 'stripped bare'),
+        ));
+    }
 }

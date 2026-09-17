@@ -18,15 +18,16 @@ use Illuminate\Support\Facades\DB;
  * what keeps "what is in a node" answerable by one query and "did somebody
  * already take it" a fact this class alone decides.
  *
- * ## The whole haul, in one turn
+ * ## Creds and items are instant; files cost turns
  *
- * CYBERSPACE.md prices a bigger haul in TURNS — a file's size in QB costs more
- * of them, cut back down by the deck's bandwidth — and that per-file transfer
- * cost is not built. What is built is the simpler half: everything a machine
- * is holding comes out in the one turn extraction is attempted, or none of it
- * does. The turns-per-QB economy is a real gap and is meant to be closed later
- * without this class changing shape — it already returns one line per kind
- * taken, which is what a multi-turn version would still need.
+ * `App\Cyberspace\Simulator` is where the turns-per-QB economy actually lives
+ * — this class only exposes the pieces it needs to spend them one turn at a
+ * time: `totalFileQb()` to size a transfer before committing to it,
+ * `takeCredsAndItems()` for the half of a haul that never waits, and
+ * `takeFiles()` for the half that does, called once a transfer's countdown
+ * reaches zero. `extract()` still takes everything in one call — composed
+ * from those same two methods — for every caller that does not need the
+ * turns to be interactive, tests included.
  *
  * ## Three kinds, three ways of becoming a possession
  *
@@ -47,18 +48,55 @@ final readonly class Extractor
     private const DUMP_SLUG = 'encrypted-data-dump';
 
     /**
-     * Take everything system $address is holding, right now.
+     * Take everything system $address is holding, right now, in one call.
      *
-     * Nothing to take is an ordinary answer, not a failure — the node might
-     * never have held anything, or somebody else's raid might have beaten this
-     * one to it, which is exactly what CONCURRENT RUNNERS means: the first
-     * extraction takes it.
+     * Composed from `takeCredsAndItems()` and `takeFiles()` rather than its
+     * own query — a caller with no reason to spread a haul across turns
+     * (a test, an atomic tool, anything that is not the interactive
+     * simulator) still gets one door and one result.
      */
     public function extract(Character $character, string $address): ExtractionResult
     {
         return DB::transaction(function () use ($character, $address): ExtractionResult {
+            $instant = $this->takeCredsAndItems($character, $address);
+            $files = $this->takeFiles($character, $address);
+
+            return new ExtractionResult(creds: $instant->creds, items: $instant->items, files: $files->files);
+        });
+    }
+
+    /**
+     * How much QB of DATA this node is still holding.
+     *
+     * READ ONLY, and the number a multi-turn transfer sizes itself against
+     * before committing to it. Asked again on the turn a transfer completes,
+     * too, so a raider who started counting down against a file somebody else
+     * finished taking first sees that honestly rather than trusting a number
+     * from turns ago.
+     */
+    public function totalFileQb(string $address): int
+    {
+        return (int) SystemContent::query()
+            ->whereHas('system', fn ($query) => $query->where('address', $address))
+            ->ofKind(ContentKind::Data)
+            ->sum('size_qb');
+    }
+
+    /**
+     * Creds and catalogue items only — the half of a haul CYBERSPACE.md never
+     * prices in turns. Takes them the moment extraction reaches the core,
+     * whatever a file sitting alongside them still costs to pull.
+     *
+     * Nothing to take is an ordinary answer, not a failure — the node might
+     * hold no creds or items at all, or somebody else's raid might have
+     * beaten this one to them.
+     */
+    public function takeCredsAndItems(Character $character, string $address): ExtractionResult
+    {
+        return DB::transaction(function () use ($character, $address): ExtractionResult {
             $contents = SystemContent::query()
                 ->whereHas('system', fn ($query) => $query->where('address', $address))
+                ->whereIn('kind', [ContentKind::Creds->value, ContentKind::Item->value])
                 ->get();
 
             if ($contents->isEmpty()) {
@@ -67,14 +105,45 @@ final readonly class Extractor
 
             $creds = 0;
             $items = 0;
-            $files = 0;
 
             foreach ($contents as $content) {
                 match ($content->kind) {
                     ContentKind::Creds => $creds += $this->takeCreds($character, $content),
                     ContentKind::Item => $items += $this->takeItem($character, $content),
-                    ContentKind::Data => $files += $this->takeFile($character, $content),
+                    ContentKind::Data => null,
                 };
+            }
+
+            SystemContent::query()->whereIn('id', $contents->pluck('id'))->delete();
+
+            return new ExtractionResult(creds: $creds, items: $items);
+        });
+    }
+
+    /**
+     * Every file the node is holding, however many turns it took to pull them.
+     *
+     * NOTHING TO TAKE is an ordinary answer here too, and the one a completing
+     * transfer has to be ready for: pricing a file in turns is exactly what
+     * lets somebody else's raid finish first while this one is still counting
+     * down.
+     */
+    public function takeFiles(Character $character, string $address): ExtractionResult
+    {
+        return DB::transaction(function () use ($character, $address): ExtractionResult {
+            $contents = SystemContent::query()
+                ->whereHas('system', fn ($query) => $query->where('address', $address))
+                ->ofKind(ContentKind::Data)
+                ->get();
+
+            if ($contents->isEmpty()) {
+                return ExtractionResult::empty();
+            }
+
+            $files = 0;
+
+            foreach ($contents as $content) {
+                $files += $this->takeFile($character, $content);
             }
 
             // Consumed. The node restocks on its own clock — NodeStocker tops
@@ -82,7 +151,7 @@ final readonly class Extractor
             // to refill, the same division of labour the market's shelf keeps.
             SystemContent::query()->whereIn('id', $contents->pluck('id'))->delete();
 
-            return new ExtractionResult(creds: $creds, items: $items, files: $files);
+            return new ExtractionResult(files: $files);
         });
     }
 

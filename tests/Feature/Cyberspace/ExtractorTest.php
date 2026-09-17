@@ -178,6 +178,88 @@ final class ExtractorTest extends TestCase
         );
     }
 
+    // ---- the granular pieces a multi-turn transfer spends ------------------
+
+    /** Sizing a transfer never takes anything — it is asked before committing to one. */
+    public function test_total_file_qb_reads_without_taking(): void
+    {
+        $system = $this->system();
+        SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 50]);
+        SystemContent::query()->create([
+            'system_id' => $system->id, 'kind' => 'data', 'label' => 'File',
+            'size_qb' => 40, 'value_sealed' => 10, 'value_broken' => 20,
+        ]);
+        SystemContent::query()->create([
+            'system_id' => $system->id, 'kind' => 'data', 'label' => 'File',
+            'size_qb' => 60, 'value_sealed' => 10, 'value_broken' => 20,
+        ]);
+
+        $this->assertSame(100, $this->extractor()->totalFileQb('DEADBEEF'));
+        $this->assertSame(2, SystemContent::query()->where('kind', 'data')->count(), 'reading the size takes nothing');
+    }
+
+    public function test_total_file_qb_is_zero_with_nothing_to_pull(): void
+    {
+        $this->system();
+
+        $this->assertSame(0, $this->extractor()->totalFileQb('DEADBEEF'));
+    }
+
+    /** Creds and items come out without touching a file sitting alongside them. */
+    public function test_take_creds_and_items_leaves_files_behind(): void
+    {
+        $system = $this->system();
+        SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 300]);
+        SystemContent::query()->create([
+            'system_id' => $system->id, 'kind' => 'data', 'label' => 'File',
+            'size_qb' => 40, 'value_sealed' => 10, 'value_broken' => 20,
+        ]);
+        $character = $this->character();
+
+        $result = $this->extractor()->takeCredsAndItems($character, 'DEADBEEF');
+
+        $this->assertSame(300, $result->creds);
+        $this->assertFalse($result->tookNothing());
+        $this->assertSame(300, $character->fresh()->creds);
+        $this->assertSame(1, SystemContent::query()->where('kind', 'data')->count(), 'the file is still there');
+    }
+
+    /** The file half of a haul, taken on its own once a transfer's countdown reaches zero. */
+    public function test_take_files_grants_only_the_files(): void
+    {
+        $system = $this->system();
+        SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 300]);
+        SystemContent::query()->create([
+            'system_id' => $system->id, 'kind' => 'data', 'label' => 'File',
+            'size_qb' => 40, 'value_sealed' => 10, 'value_broken' => 20,
+        ]);
+        $character = $this->character();
+
+        $result = $this->extractor()->takeFiles($character, 'DEADBEEF');
+
+        $this->assertSame(1, $result->files);
+        $this->assertSame(0, $result->creds);
+        $this->assertSame(0, $character->fresh()->creds, 'the creds are still on the node');
+        $this->assertSame(1, SystemContent::query()->where('kind', 'creds')->count());
+    }
+
+    /** A slower raider loses the race exactly the way an instant haul already does. */
+    public function test_take_files_finds_nothing_once_another_raid_beat_it_there(): void
+    {
+        $system = $this->system();
+        SystemContent::query()->create([
+            'system_id' => $system->id, 'kind' => 'data', 'label' => 'File',
+            'size_qb' => 40, 'value_sealed' => 10, 'value_broken' => 20,
+        ]);
+        $first = $this->character();
+        $second = $this->character();
+
+        $this->extractor()->takeFiles($first, 'DEADBEEF');
+        $result = $this->extractor()->takeFiles($second, 'DEADBEEF');
+
+        $this->assertTrue($result->tookNothing());
+    }
+
     // ---- concurrent runners --------------------------------------------------
 
     /** First extraction takes it. A concurrent second one finds the shelf empty. */

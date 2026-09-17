@@ -1654,13 +1654,42 @@ roll now.
 - **`App\Cyberspace\Extractor` is the only door between a node's inventory and
   a stash.** It reads and deletes `system_contents` rows and nothing else in
   the codebase touches either side of that exchange — the same discipline
-  `NodeStocker` keeps on the writing end. **The whole haul comes out in the one
-  turn extraction is attempted.** CYBERSPACE.md prices a bigger haul in TURNS —
-  a file's size in QB costs more, cut back down by the deck's bandwidth — and
-  that per-file economy is a real, deliberately open gap: `Extractor` already
-  returns one count per kind taken, which is the shape a multi-turn version
-  would still need, so closing the gap later should not change this class's
-  outline.
+  `NodeStocker` keeps on the writing end. **Creds and items are instant; a
+  file costs turns.** `takeCredsAndItems()` and `takeFiles()` are the two
+  halves a multi-turn pull needs kept separate, and `totalFileQb()` is what
+  sizes one before committing to it; `extract()` still composes all three into
+  the one-call haul every non-interactive caller (tests included) wants.
+- **A file's turn cost lives on the RUN, not the file.** `runs.extracting_qb`
+  is null whenever no pull is running and otherwise the QB still owed —
+  `Simulator::beginTransfer()` sets it from `Extractor::totalFileQb()` minus
+  one turn's bandwidth, `continueTransfer()` spends another bandwidth's worth
+  each time `RunAction::Extract` is chosen again, and `completeTransfer()`
+  calls `takeFiles()` once it reaches zero. **Continuing a pull is still an
+  ordinary call to `Simulator::extract()`, inside the ordinary turn `take()`
+  resolves** — there is no separate code path that skips the machine's half of
+  the turn, which is the whole requirement: an ICE woken by the core touch
+  keeps swinging on every turn a transfer runs, exactly as it would against
+  Attack or Hold. Choosing Attack instead simply does not call `extract()`
+  that turn, so `extracting_qb` sits untouched until the player comes back to
+  it — a pull is paused by spending the turn elsewhere, never lost.
+- **The core-touch detection roll fires only on the turn that BEGINS a pull,
+  never on one that continues it.** Touching the core is the act that risks
+  it; a transfer already running is not touching it again. That is why
+  `beginTransfer()`'s caller checks `extracting_qb === null` before rolling at
+  all, ahead of the OS/purpose/empty-node check that shares `extract_fails`.
+- **Bandwidth is read through `DeckTotals::forCharacter()`, floored at one.**
+  Same rule as everywhere else a deck measure is used: it is a RESOLVED stat,
+  never the row, so a skill or an implant that moves `deck_bandwidth` changes
+  how fast a runner pulls data without `Simulator` knowing either exists. The
+  floor is a degenerate-case guard — nothing today can drive resolved
+  bandwidth to zero on a deck that met the Link requirement to jack in — not a
+  balance number, and it is there so a transfer can never stall forever rather
+  than to make one faster.
+- **A transfer's own "somebody else took it first" gets its own log line,
+  `transfer_gone`, rather than sharing `extract_fails`.** Losing a race after
+  a countdown finishes is an ordinary outcome a player can learn from, unlike
+  the OS gate `extract_fails` exists to protect — nothing here is secrecy the
+  way the core-touch failure lines are.
 - **Three kinds, three ways of becoming a possession.** Creds go straight onto
   the character. A catalogue item is granted through the SAME merge-or-create
   `LoadoutGranter::grantItem()` already uses — two piles of one stackable thing

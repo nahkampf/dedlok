@@ -7,6 +7,7 @@ namespace App\Cyberspace;
 use App\Characters\DownedCause;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
+use App\Decks\DeckTotals;
 use App\Models\Character;
 use App\Models\Ice;
 use App\Models\Run;
@@ -398,17 +399,33 @@ final readonly class Simulator
      * a defence against a hand-built request rather than something a player
      * ordinarily meets.
      *
-     * ## The whole haul, one turn
+     * ## Creds and items are instant; a file costs turns
      *
-     * `App\Cyberspace\Extractor` takes everything the node is holding in one
-     * pass — see its own docblock for why the size-costed, multi-turn version
-     * CYBERSPACE.md prices is a real gap this deliberately leaves open rather
-     * than half-building.
+     * CYBERSPACE.md prices data in QB, cut back down by the deck's bandwidth —
+     * "a few turns, scaling with the size of the data." Creds and catalogue
+     * items come out the moment the core is touched, same as before; a file
+     * starts a countdown on `runs.extracting_qb` and `continueTransfer()`
+     * spends it down a bandwidth's worth per turn. **Continuing one still goes
+     * through this same method and this same turn**, which is the whole
+     * point: if the core touch woke the ICE, it gets to swing on every turn a
+     * transfer runs, exactly as it would against Attack or Hold. Nothing about
+     * a transfer resolves outside the ordinary turn cycle.
+     *
+     * The core-touch detection roll fires only on the turn that BEGINS a pull
+     * — touching the core is the act that risks it, and a transfer already
+     * running is not touching it again.
      *
      * @return list<array{text: string, tone: string}>
      */
     private function extract(Character $character, Run $run): array
     {
+        // CONTINUING. Spends this turn's bandwidth against what is already
+        // owed and never re-rolls detection — the core was already touched on
+        // the turn that started this.
+        if ($run->extracting_qb !== null) {
+            return $this->continueTransfer($character, $run);
+        }
+
         $system = System::query()->where('address', $run->address)->first();
 
         $log = [];
@@ -432,18 +449,116 @@ final readonly class Simulator
             return $log;
         }
 
-        $result = $this->extractor->extract($character, $run->address);
+        $instant = $this->extractor->takeCredsAndItems($character, $run->address);
+        $fileQb = $this->extractor->totalFileQb($run->address);
 
-        if ($result->tookNothing()) {
+        if ($instant->tookNothing() && $fileQb <= 0) {
             $log[] = $this->line('cyberspace.run.log.extract_fails');
 
             return $log;
         }
 
-        $run->extracted = true;
-        $log[] = $this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($result)], 'ok');
+        if (! $instant->tookNothing()) {
+            $run->extracted = true;
+            $log[] = $this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($instant)], 'ok');
+        }
+
+        if ($fileQb > 0) {
+            $log = [...$log, ...$this->beginTransfer($character, $run, $fileQb)];
+        }
 
         return $log;
+    }
+
+    /**
+     * Spend the first turn of a pull, against the whole file.
+     *
+     * A SMALL FILE NEVER SEES THE COUNTDOWN — if one turn's bandwidth clears
+     * it, this completes on the spot rather than writing a one-turn-long
+     * `extracting_qb` just to read it back and clear it again next turn.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function beginTransfer(Character $character, Run $run, int $fileQb): array
+    {
+        $bandwidth = $this->bandwidthFor($character);
+        $remaining = $fileQb - $bandwidth;
+
+        if ($remaining <= 0) {
+            return $this->completeTransfer($character, $run);
+        }
+
+        $run->extracting_qb = $remaining;
+
+        return [$this->line('cyberspace.run.log.transfer_begins', ['qb' => $fileQb, 'bandwidth' => $bandwidth])];
+    }
+
+    /**
+     * Spend another turn against a pull already under way.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function continueTransfer(Character $character, Run $run): array
+    {
+        $remaining = (int) $run->extracting_qb - $this->bandwidthFor($character);
+
+        if ($remaining <= 0) {
+            $run->extracting_qb = null;
+
+            return $this->completeTransfer($character, $run);
+        }
+
+        $run->extracting_qb = $remaining;
+
+        return [$this->line('cyberspace.run.log.transfer_continues', ['remaining' => $remaining])];
+    }
+
+    /**
+     * The countdown reaches zero: take the files, or find out somebody
+     * already did.
+     *
+     * NOTHING TO TAKE is an ordinary answer, exactly as it is for an instant
+     * haul — a slower raider losing a race they started first is the cost of
+     * pricing a file in turns at all.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function completeTransfer(Character $character, Run $run): array
+    {
+        $run->extracting_qb = null;
+
+        $result = $this->extractor->takeFiles($character, $run->address);
+
+        if ($result->tookNothing()) {
+            return [$this->line('cyberspace.run.log.transfer_gone')];
+        }
+
+        $run->extracted = true;
+
+        return [$this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($result)], 'ok')];
+    }
+
+    /**
+     * How fast a file moves, in QB per turn.
+     *
+     * THE EQUIPPED DECK'S RESOLVED BANDWIDTH — same rule `DeckTotals` fixes
+     * everywhere else: modifiers belong to a character, so the deck they are
+     * jacked in on reads through the resolver rather than off the row.
+     *
+     * FLOORED AT ONE. `deck_bandwidth` is a resolved stat and nothing today
+     * can push it to zero on a deck that met the Link requirement to jack in
+     * at all — but a transfer that could never finish would be a worse bug
+     * than a floor nobody has reason to hit yet.
+     */
+    private function bandwidthFor(Character $character): int
+    {
+        $deck = $character->equippedDeck;
+
+        if ($deck === null) {
+            return 1;
+        }
+
+        return max(1, DeckTotals::forCharacter($character, $deck, $this->resolver)->bandwidth);
     }
 
     /**

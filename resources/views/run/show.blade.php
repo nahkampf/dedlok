@@ -110,6 +110,16 @@
         @endif
     </div>
 
+    {{-- A PULL IN PROGRESS. Plain text rather than a bar — the total it
+         started against is not stored anywhere the bar could read, only what
+         is still owed, and inventing a total to draw one would be a number
+         nothing else in the run needs. --}}
+    @if ($run->extracting_qb !== null)
+        <p class="micro" style="color:var(--ink-2);padding:0 var(--s-2);margin:0 0 var(--s-2)">
+            {{ Text::get('cyberspace.run.transferring', ['qb' => $run->extracting_qb]) }}
+        </p>
+    @endif
+
     {{-- ONE FORM AND ONE DOOR. Every action costs the same turn, which is the
          economy the whole run rests on — so they are one button each on one
          form rather than a route apiece.
@@ -129,7 +139,7 @@
                  nothing yet does. --}}
             @if ($run->purpose === RunPurpose::Extraction)
                 <button type="submit" name="action" value="extract" class="btn cut">
-                    {{ Text::get('cyberspace.run.action.extract') }}
+                    {{ Text::get($run->extracting_qb !== null ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
                 </button>
             @endif
             <button type="submit" name="action" value="hold" class="btn btn--ghost cut">

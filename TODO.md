@@ -265,6 +265,69 @@ at which something changes, and nothing names one.
 
 ---
 
+## Surge's unpriced numbers
+
+**Status:** the tag applies — `App\Cyberspace\DefeatResolver::surge()` rolls
+per module and deletes what it hits — but every level's `chance`/`modules`
+pair in `config/cyberspace.defeat_tags.surge` is empty. A piece of ICE that
+carries Surge today destroys nothing, silently, because there is nothing to
+roll against.
+
+**What it needs.** Three levels, each a `chance` (per cent, per module) and a
+`modules` count — the same shape Flatline, Skim and Erase already have. The
+design note beside the empty table says why it was left that way: what a
+destroyed module is worth depends on what a deck costs to rebuild, and nothing
+has priced that yet. Pricing Surge means picking numbers against a real deck
+economy rather than a guess, which is why it waited.
+
+**Where to start.** `Flatline`'s levels climb from "a scar" to "the one people
+warn each other about" without ever reaching a fifth of the ceiling — Surge
+wants the same shape in module count: I doubt anyone should lose more than a
+handful of modules to one defeat, and the top level is the one that should
+hurt to rebuild rather than ends a character's deck outright.
+`DefencesTest::test_ice_carries_no_defeat_tags_until_somebody_assigns_them()`
+and `DefeatResolverTest`'s Surge cases are already written against the
+zero-numbers case — filling the table in needs new tests alongside them, not
+a rewrite.
+
+---
+
+## The routing chain
+
+**Status:** the SHAPE exists and nothing is IN it. `Run::routingGrades()`
+returns `[]` always, which is why a trace currently walks unopposed from the
+first turn — the empty case CYBERSPACE.md describes for "no routing", and the
+only case that has ever been true.
+
+**What is already built around the gap.** `Simulator::traceGetsThrough()` and
+the whole trace-walking mechanic (`runs.trace_hop`, one attempt at the NEXT
+hop per turn) were written to take a `list<int>` of grades from
+`routingGrades()` — nothing about the trace mechanic changes when this lands,
+only what that one method returns.
+
+**What is missing, per CYBERSPACE.md's own *Backdoors* and *The routing
+chain* sections:**
+
+- **Backdoors do not exist at all.** No install action, no `backdoors` table,
+  no way to hold access to a system. `RunPurpose::Backdoor` is a case in an
+  enum and nothing else.
+- **Routing and Advanced Routing are skill rows with no reader.** They exist,
+  they have books, nothing asks them how long a chain a character may run.
+- **A run does not let a player CHOOSE a chain.** CYBERSPACE.md: "the chain is
+  declared per run, not held standing" — a run needs to pick its route from
+  the backdoors a character holds, at the moment it starts, alongside purpose
+  and target.
+- **A completed trace does not burn anything**, because there is nothing to
+  burn. `Simulator::burnTheChain()` is already called at the right moment and
+  is a deliberate no-op with a comment saying so.
+
+**The size of this one.** Larger than Surge's numbers or heat's thresholds —
+it is a whole unbuilt purpose (Backdoor) plus the two skills that gate it
+plus the run-creation screen learning to ask for a route. Worth breaking into
+its own pass rather than picking up as a side effect of something else.
+
+---
+
 ## Housekeeping
 
 - **`php artisan storage:link` will fail** — `symlink` is in `disable_functions` and that

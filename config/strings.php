@@ -344,6 +344,11 @@ return [
             'action' => [
                 'attack' => 'Cut',
                 'extract' => 'Extract',
+                // Same button, same RunAction — only the label changes while
+                // runs.extracting_qb is set, so a player is never asked to
+                // guess that pressing Extract again is what continues a pull
+                // already under way.
+                'extract_continue' => 'Continue pull',
                 'hold' => 'Hold',
                 'egress' => 'Egress',
             ],
@@ -420,6 +425,22 @@ return [
                 'extract' => 'You pull :summary out.',
 
                 /*
+                | A FILE COSTS TURNS. `transfer_begins` and `transfer_continues`
+                | are the countdown a multi-turn pull leaves in the log — every
+                | turn it runs goes through the ordinary turn cycle, which is
+                | why the log has to say so each time rather than once. When it
+                | finishes, 'extract' above says so exactly as it does for a
+                | haul that cost nothing to wait for.
+                |
+                | `transfer_gone` is its own line rather than sharing
+                | `extract_fails` — losing a race is an ordinary outcome, not a
+                | fact worth hiding the way a scan gate is.
+                */
+                'transfer_begins' => 'The pull starts: :qb QB queued, at :bandwidth a turn.',
+                'transfer_continues' => ':remaining QB left to pull.',
+                'transfer_gone' => 'The pull finishes, and finds the machine already stripped bare.',
+
+                /*
                 | THE PIECES A SUMMARY IS BUILT FROM. Assembled in the
                 | simulator rather than as one templated sentence, because
                 | what actually came out is zero to three of these and a
@@ -463,6 +484,13 @@ return [
 
             'ice' => 'ICE',
             'ice_none' => 'Nothing is fighting you.',
+
+            /* THE COUNTDOWN A PULL LEAVES ON SCREEN, read off runs.extracting_qb
+               directly rather than composed in the simulator — it is a status,
+               not an account of what happened, and every other status line on
+               this screen (the trace, the fight) is read the same way. */
+            'transferring' => 'Pulling data — :qb QB left.',
+
             'log_heading' => 'What happened',
 
             'purpose' => [
