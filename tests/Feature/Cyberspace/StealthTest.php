@@ -154,6 +154,59 @@ final class StealthTest extends TestCase
         $this->assertSame(26.2, $character->fresh()->stat('stealth')->value);
     }
 
+    /**
+     * PERCENTAGES SUM AND APPLY ONCE, never compound — which is why three
+     * sources of "+x% stealth" are additive rather than multiplicative, and why
+     * the order they were acquired in cannot matter.
+     *
+     * Two skills at 3% a level and a program at 4.5% a level, all maxed, is
+     * 15 + 15 + 22.5 = 52.5% over base plus flat. Compounded it would be 61%,
+     * and the difference is the whole reason MECHANICS fixes the layer order.
+     */
+    public function test_three_percentage_sources_sum_rather_than_compounding(): void
+    {
+        $character = $this->character();
+        $this->equipReadyDeck($character);
+
+        app(SkillInjector::class)->grant($character, $this->obfuscation(), 5);
+        app(SkillInjector::class)->grant($character->fresh(), $this->percentSkill('clandestineintrusion', 3), 5);
+        app(SkillInjector::class)->grant($character->fresh(), $this->percentSkill('polymorphiccode', 3), 5);
+
+        $this->runProgram($character->fresh(), 'evasion-piggyback');
+        $this->runProgram($character->fresh(), 'evasion-payloadinjector');
+
+        // (9.41176 + 10 + 2) x 1.525
+        $this->assertSame(32.7, $character->fresh()->stat('stealth')->value);
+    }
+
+    /** A skill granting a percentage of stealth per level. */
+    private function percentSkill(string $slug, float $amount): Skill
+    {
+        SkillStats::forget();
+        Sheet::forgetSkills();
+
+        $skill = Skill::factory()->governedBy('intellect', 'memory')->create([
+            'slug' => $slug,
+            'title' => $slug,
+            'category' => 'Systems',
+            'rank' => 8,
+            'modifiers' => array_map(
+                static fn (int $level): array => [
+                    'op' => 'percentage_of_base',
+                    'level' => $level,
+                    'amount' => $amount,
+                    'target' => ['id' => 'stealth'],
+                ],
+                range(1, 5),
+            ),
+        ]);
+
+        SkillStats::forget();
+        Sheet::forgetSkills();
+
+        return $skill;
+    }
+
     /** Software that is not running is a file, and a file hides nobody. */
     public function test_an_unloaded_program_is_worth_nothing(): void
     {
