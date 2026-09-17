@@ -222,6 +222,38 @@ return [
         ],
 
         /*
+        | How hard this character is to notice in somebody else's machine.
+        |
+        | WHAT AN IDS IS ROLLED AGAINST. A machine's detection value is the
+        | difficulty and this is the value, so the margin between them is the
+        | whole of whether a run is a quiet one — see CYBERSPACE.md,
+        | *Detection*.
+        |
+        | ZERO BY DEFAULT, and that is the same call `icebreaker_damage` makes:
+        | somebody who has not trained for this is seen, every time, by
+        | everything. Sneaking is a thing you buy rather than a thing you have,
+        | which is what makes an unnoticed run worth the investment it costs.
+        |
+        | Raised flat by Obfuscation and as a percentage by Clandestine
+        | Intrusion Methods — and percentages apply to base PLUS flat and are
+        | summed before they are applied once, so the second skill is worth
+        | nothing without the first. That is why it requires it.
+        |
+        | Evasion programs are the other channel and none exist yet:
+        | `ProgramKind::Evasion` has been an empty case since programs shipped,
+        | and this is the stat it was waiting for.
+        */
+        'stealth' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => null,
+            // A FRACTION, kept to one decimal. The whole range is single
+            // digits before training, so rounding to a whole number would
+            // throw away most of what the first few levels buy.
+            'rounding' => 'tenth',
+        ],
+
+        /*
         | How hard a running icebreaker cuts, per turn.
         |
         | The base is ZERO and that is the gate: no icebreaker running means no
@@ -426,6 +458,50 @@ return [
     | shipped JavaScript against the PHP.
     |
     */
+    /*
+    |----------------------------------------------------------------------
+    | Pools
+    |----------------------------------------------------------------------
+    |
+    | A derived base that SUMS its attributes and divides once, which is the
+    | other way round from `formulas` below — and the difference is not a
+    | detail. A formula divides each attribute, rounds each UP, and adds the
+    | results, so four attributes of 20 over a divisor of 8.5 come to 12. A
+    | pool adds first: 80 over 8.5 is 9.4. The first is generous by design
+    | because hit points and Synaptic Integrity are pools you spend; the second
+    | is an average, and an average is what a capability reads like.
+    |
+    | Kept apart from `formulas` rather than folded in, because `formulas` is
+    | shipped to the character-creation screen as data and recomputed there in
+    | JavaScript — one shape, asserted by DerivedStatTest. A second shape in
+    | that array would have to be mirrored in the browser as well, and nothing
+    | here is shown at creation.
+    |
+    | The inputs are RESOLVED, like a formula's: an implant that raises
+    | Perception raises stealth, with no further wiring.
+    */
+    'pools' => [
+
+        /*
+        | Stealth = (Intellect + Focus + Memory + Perception) / 8.5.
+        |
+        | Four attributes because being hard to notice in somebody else's
+        | machine is not one faculty: knowing what a system expects to see
+        | (intellect), holding a pattern steady (focus), remembering what you
+        | already touched (memory), and noticing what is watching (perception).
+        |
+        | 8.5 puts a starting character around 9 and a very good one around 12,
+        | which against the IDS table is a coin flip at grade 1 and nothing at
+        | all above grade 3 — so the base is a floor to build on rather than a
+        | way past anything. Obfuscation adds to it flat and evasion programs
+        | are meant to carry the rest.
+        */
+        'stealth' => [
+            'attributes' => ['intellect', 'focus', 'memory', 'perception'],
+            'divisor' => 8.5,
+        ],
+    ],
+
     'formulas' => [
 
         /*

@@ -32,7 +32,7 @@ final readonly class Stat
 
         $rounding = $definition['rounding'] ?? 'none';
 
-        if (! in_array($rounding, ['round', 'floor', 'ceil', 'none'], true)) {
+        if (! in_array($rounding, ['round', 'floor', 'ceil', 'tenth', 'none'], true)) {
             throw new \InvalidArgumentException("Stat [{$id}] has unknown rounding [{$rounding}].");
         }
 
@@ -77,6 +77,11 @@ final readonly class Stat
             'round' => round($value),
             'floor' => floor($value),
             'ceil' => ceil($value),
+            // ONE DECIMAL PLACE. For a stat that is genuinely a fraction and
+            // whose whole range is small — stealth is single digits, so
+            // rounding it to a whole number would throw away most of what
+            // training it buys.
+            'tenth' => round($value, 1),
             default => $value,
         };
     }

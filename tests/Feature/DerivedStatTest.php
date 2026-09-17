@@ -94,6 +94,32 @@ class DerivedStatTest extends TestCase
     }
 
     /**
+     * A POOL SUMS THEN DIVIDES; a formula divides then rounds up then sums.
+     *
+     * Four attributes of 20 over 8.5 is 12 as a formula and 9.4 as a pool, and
+     * the difference is the point: hit points and Synaptic Integrity are pools
+     * you spend, so being generous with each term is right, while stealth is a
+     * capability and a capability reads like an average.
+     */
+    public function test_a_pool_averages_where_a_formula_is_generous(): void
+    {
+        $character = Character::factory()->create(array_merge(
+            array_fill_keys(Character::ATTRIBUTES, 20),
+            ['archetype' => 3],
+        ));
+
+        $this->assertSame(9.4, $character->stat('stealth')->value, '80 over 8.5, kept to one decimal');
+
+        // The same four attributes through the formula mechanism would be 12.
+        $asFormula = Character::applyFormula(
+            array_fill_keys(config('stats.pools.stealth.attributes'), 8.5),
+            array_fill_keys(Character::ATTRIBUTES, 20),
+        );
+
+        $this->assertSame(12.0, $asFormula, 'which is why stealth is not one');
+    }
+
+    /**
      * The browser recomputes these on every slider move, so the formula would
      * otherwise exist twice. It is shipped as data instead — this asserts the
      * page carries exactly what config declares, so the two cannot drift.

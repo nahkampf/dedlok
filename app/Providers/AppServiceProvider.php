@@ -59,8 +59,10 @@ class AppServiceProvider extends ServiceProvider
 
         /*
          * Which stats are computed from which. Two sources, and they are the
-         * two kinds of derived stat there are: the vitals, declared as formulas
-         * over attributes in config, and the checks, one per skill, generated.
+         * three kinds of derived stat there are: the vitals, declared as
+         * formulas over attributes in config; the pools, which read attributes
+         * too and differ only in dividing once rather than per term; and the
+         * checks, one per skill, generated.
          *
          * A cycle throws here rather than at a stack overflow later.
          */
@@ -69,6 +71,14 @@ class AppServiceProvider extends ServiceProvider
 
             foreach ((array) config('stats.formulas', []) as $statId => $formula) {
                 $dependencies[(string) $statId] = array_keys((array) $formula);
+            }
+
+            // Pools read attributes too — they only differ in the arithmetic —
+            // so they belong in the graph for the same reason: resolution order
+            // and cycle detection are about WHAT a stat reads, not how it adds
+            // it up.
+            foreach ((array) config('stats.pools', []) as $statId => $pool) {
+                $dependencies[(string) $statId] = array_values((array) $pool['attributes']);
             }
 
             return new StatGraph($dependencies + SkillStats::dependencies());

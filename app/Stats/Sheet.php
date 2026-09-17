@@ -207,6 +207,23 @@ final class Sheet
             return $this->checkBase((string) SkillStats::slugOf($statId));
         }
 
+        /*
+         * A POOL sums its attributes and divides ONCE, where a formula divides
+         * each and rounds each up before adding. Four attributes of 20 over 8.5
+         * is 12 as a formula and 9.4 as a pool, and the second is what a
+         * capability should read like. See config/stats.php.
+         */
+        $pool = config("stats.pools.{$statId}");
+
+        if ($pool !== null) {
+            $values = $this->inputValues((array) $pool['attributes']);
+
+            return array_sum(array_map(
+                static fn (string $attribute): float => (float) ($values[$attribute] ?? 0),
+                (array) $pool['attributes'],
+            )) / (float) $pool['divisor'];
+        }
+
         $formula = config("stats.formulas.{$statId}");
 
         if ($formula === null) {

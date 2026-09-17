@@ -1516,6 +1516,21 @@ left. Detection, the ICE, extraction and the endings are the simulator, and
   at. The gate must never announce itself, so the log line a missed pass gets is
   the line an unspeakable OS gets, and `FightTest` asserts the words *operating
   system* appear nowhere in it.
+- **`stealth` is what an IDS is rolled against**, and it floors at 0 the way
+  `icebreaker_damage` does: somebody who has not trained for it is seen, every
+  time, by everything. Its base is a **POOL** — `(intellect + focus + memory +
+  perception) / 8.5`, kept to one decimal — which is a different mechanism from
+  `formulas` and deliberately so: a formula divides each attribute, rounds each
+  UP and adds the results, while a pool adds first and divides once. Four
+  attributes of 20 are 12 as a formula and 9.4 as a pool. Hit points and
+  Synaptic Integrity are pools you SPEND, so being generous per term is right;
+  stealth is a capability, and a capability reads like an average.
+- **Pools are kept out of `stats.formulas` on purpose.** That array is shipped
+  to the character-creation screen and recomputed in JavaScript — one shape,
+  asserted by `DerivedStatTest` — so a second shape in it would have to be
+  mirrored in the browser. They are in the stat graph all the same, because
+  resolution order and cycle detection are about WHAT a stat reads, not how it
+  adds it up.
 - **DETECTION IS NOT BUILT, so every run is a loud one.** `Simulator::rouse()`
   wakes whatever guards a machine with certainty when the run begins, because
   the player's side of a detection roll needs a stat nothing grants — there is

@@ -62,6 +62,15 @@ class StatConfigTest extends TestCase
         $this->assertSame(0.0, (float) $registry->get('synaptic_regen')->min);
     }
 
+    /** Nobody is hard to notice by default — sneaking is bought, not had. */
+    public function test_stealth_floors_at_zero(): void
+    {
+        $registry = StatRegistry::fromConfig();
+
+        $this->assertTrue($registry->has('stealth'));
+        $this->assertSame(0.0, (float) $registry->get('stealth')->min);
+    }
+
     public function test_attributes_are_tagged_by_their_group(): void
     {
         $registry = StatRegistry::fromConfig();
