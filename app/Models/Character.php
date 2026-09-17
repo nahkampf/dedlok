@@ -40,7 +40,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * only writer today is App\Archetypes\LoadoutGranter at character creation.
  */
 #[Fillable([
-    'user_id', 'handle', 'archetype', 'creds',
+    'user_id', 'handle', 'archetype', 'creds', 'heat',
+    'egress_trace_at', 'egress_si_at',
     'current_hitpoints', 'current_synaptic_integrity', 'waiting_until', 'waiting_cause', 'current_run_id',
     'intellect', 'memory', 'perception', 'reflex', 'focus',
     'social', 'meat', 'motor', 'senses', 'muscle',
@@ -134,7 +135,8 @@ class Character extends Model
         return array_merge(
             array_fill_keys(self::ATTRIBUTES, 'integer'),
             array_fill_keys(array_keys(self::RESOURCES), 'integer'),
-            ['archetype' => 'integer', 'creds' => 'integer'],
+            ['archetype' => 'integer', 'creds' => 'integer', 'heat' => 'integer'],
+            ['egress_trace_at' => 'integer', 'egress_si_at' => 'integer'],
             ['grid_x' => 'integer', 'grid_y' => 'integer'],
             // On the floor, and what put them there. The cause is an array
             // because none of what it describes is built — see the migration.

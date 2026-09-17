@@ -368,6 +368,8 @@ return [
                 'ice_misses' => 'It reaches for you and misses.',
                 'ice_silent' => 'Whatever was fighting you is no longer there.',
                 'traced' => 'The trace reaches you. Somebody knows who was in here.',
+                'trace_held' => 'The route holds it up another turn.',
+                'threshold' => 'You hit your own mark, and pull out.',
 
                 /*
                 | ARRIVING, and whether anything looked up. Said first and said
@@ -393,6 +395,21 @@ return [
             ],
             'trace_done' => 'It has you.',
             'trace_you' => 'You',
+
+            /*
+            | The two standing instructions, set once and left alone. They ACT
+            | rather than warn, so the copy says what will happen rather than
+            | what might.
+            */
+            'thresholds' => [
+                'heading' => 'When to pull out',
+                'hint' => 'Set once. A run that crosses either of these leaves on its own, whatever you were doing.',
+                'trace' => 'Egress when the trace passes',
+                'si' => 'Egress when Synaptic Integrity falls below',
+                'off' => 'Zero turns one off.',
+                'save' => 'Save',
+                'saved' => 'Saved.',
+            ],
 
             'ice' => 'ICE',
             'ice_none' => 'Nothing is fighting you.',

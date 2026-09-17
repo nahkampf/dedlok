@@ -88,6 +88,19 @@ final class FightTest extends TestCase
      * what stealth buys. Pinning the die at 1.0 fails every evasion check, so
      * every watcher on the machine finds them.
      */
+    /**
+     * Turn off both standing instructions.
+     *
+     * A test about what happens when you are nearly dead has to get past the
+     * threshold that exists to stop you being nearly dead — which is the
+     * thresholds working, not the test fighting them.
+     */
+    private function ignoreThresholds(): void
+    {
+        $this->character->forceFill(['egress_trace_at' => 0, 'egress_si_at' => 0])->save();
+        $this->character->refresh();
+    }
+
     private function begin(): Run
     {
         $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 1.0));
@@ -288,6 +301,7 @@ final class FightTest extends TestCase
     public function test_being_beaten_ejects_first_and_then_puts_you_down(): void
     {
         $this->machine(1);
+        $this->ignoreThresholds();
         $run = $this->begin();
 
         $this->character->forceFill(['current_synaptic_integrity' => 3])->save();
@@ -425,6 +439,7 @@ final class FightTest extends TestCase
     public function test_a_completed_trace_lands_once(): void
     {
         $this->machine(1);
+        $this->ignoreThresholds();
         $run = $this->begin();
         $run->forceFill(['trace' => 98])->save();
 
@@ -450,6 +465,7 @@ final class FightTest extends TestCase
     public function test_the_screen_draws_the_chain(): void
     {
         $this->machine(1);
+        $this->ignoreThresholds();
         $run = $this->begin();
         $run->forceFill(['trace' => 40])->save();
 
@@ -459,5 +475,84 @@ final class FightTest extends TestCase
             ->assertSee('trace__node', false)
             ->assertSee('--v:0.4', false)
             ->assertSee('turns before it reaches you', false);
+    }
+
+    // ---- the standing instructions -----------------------------------------
+
+    /**
+     * THEY ACT, THEY DO NOT WARN — whatever the player asked for this turn.
+     *
+     * Not the gentler rule, deliberately: a threshold that only warned would
+     * leave an unresponsive player in a run that never resolves. It is the
+     * instruction they left for exactly this moment.
+     */
+    public function test_the_trace_threshold_pulls_you_out(): void
+    {
+        $this->machine(1);
+        $run = $this->begin();
+        $run->forceFill(['trace' => 72])->save();   // the default mark is 70
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Attack);
+
+        $this->assertSame(RunEnding::Egress, $result->ending, 'it left, though Cut was asked for');
+        $this->assertNull($this->character->fresh()->current_run_id);
+    }
+
+    public function test_the_synaptic_threshold_pulls_you_out(): void
+    {
+        $this->machine(1);
+        $run = $this->begin();
+
+        $max = $this->character->maximumFor('current_synaptic_integrity');
+        $this->character->forceFill(['current_synaptic_integrity' => (int) floor($max * 0.2)])->save();
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+
+        $this->assertSame(RunEnding::Egress, $result->ending);
+    }
+
+    /** Zero turns one off, without needing a second column to say whether it is on. */
+    public function test_a_threshold_of_zero_never_fires(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $run->forceFill(['trace' => 99])->save();
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+
+        $this->assertNull($result->ending, 'it stayed');
+    }
+
+    // ---- what a completed trace costs --------------------------------------
+
+    /** Heat is persistent and belongs to the person. One point, for now. */
+    public function test_a_completed_trace_puts_heat_on_the_character(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $run->forceFill(['trace' => 98])->save();
+
+        $before = (int) $this->character->fresh()->heat;
+
+        $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+
+        $this->assertSame($before + 1, (int) $this->character->fresh()->heat);
+    }
+
+    /** And only once, however long they stay afterwards. */
+    public function test_heat_lands_once_per_trace(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $run->forceFill(['trace' => 98])->save();
+
+        $sim = $this->simulator(101);
+        $sim->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $sim->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+
+        $this->assertSame(1, (int) $this->character->fresh()->heat);
     }
 }

@@ -243,6 +243,32 @@ class CyberspaceController extends Controller
         );
     }
 
+    /**
+     * Save the two standing instructions.
+     *
+     * A PLAY STYLE RATHER THAN A PER-RUN DECISION, which is why they live on
+     * the character and are set from the map rather than from inside a run —
+     * re-choosing them every time would train everybody to leave them alone,
+     * and changing them mid-run would be changing the rules of a fight while
+     * standing in it.
+     *
+     * Zero turns one off, which is why the floor is 0 and not 1: it saves a
+     * second column whose only job would be to say whether the first one counts.
+     */
+    public function thresholds(Request $request): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        $data = $request->validate([
+            'egress_trace_at' => ['required', 'integer', 'min:0', 'max:100'],
+            'egress_si_at' => ['required', 'integer', 'min:0', 'max:100'],
+        ]);
+
+        $character->forceFill($data)->save();
+
+        return back()->with('status', Text::get('cyberspace.run.thresholds.saved'));
+    }
+
     public function reading(Request $request, Probe $probe): JsonResponse
     {
         $character = $this->character($request);

@@ -484,4 +484,39 @@ final class MapScreenTest extends TestCase
         $this->assertSame(15, $map->span());
         $this->assertCount(15, $map->rows);
     }
+
+    /**
+     * The two standing instructions are set from the MAP, never from inside a
+     * run — changing them mid-fight would be changing the rules of a fight
+     * while standing in it.
+     */
+    public function test_the_thresholds_are_set_from_the_map(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('cyberspace.index'))
+            ->assertOk()
+            ->assertSee('egress_trace_at', false)
+            ->assertSee('egress_si_at', false);
+
+        $this->actingAs($this->user)
+            ->post(route('cyberspace.thresholds'), [
+                'egress_trace_at' => 45,
+                'egress_si_at' => 0,
+            ])
+            ->assertRedirect();
+
+        $character = $this->user->fresh()->character;
+
+        $this->assertSame(45, $character->egress_trace_at);
+        $this->assertSame(0, $character->egress_si_at, 'zero turns one off');
+    }
+
+    /** Every character is born with them, or nobody who never looked is carried out. */
+    public function test_a_new_character_has_both_marks(): void
+    {
+        $character = $this->user->fresh()->character;
+
+        $this->assertSame(70, $character->egress_trace_at);
+        $this->assertSame(30, $character->egress_si_at);
+    }
 }

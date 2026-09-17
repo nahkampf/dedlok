@@ -290,6 +290,56 @@ return [
         'slots' => 0,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | How fast a trace gets through a routing chain
+    |--------------------------------------------------------------------------
+    |
+    | THE CHANCE THAT THE TRACE ADVANCES AT ALL THIS TURN, per cent, decided by
+    | the GRADE of each backdoored system it has to come through. A grade 1
+    | relay slows it not at all; a grade 9 one stops it four turns in five.
+    |
+    | Every hop is asked, and the trace only moves if it gets through all of
+    | them — so the chances multiply and a longer chain is dramatically more
+    | protection. Three grade 5 hops is 0.6^3, about a fifth of the turns. That
+    | is what makes a ten-hop chain worth ten successful backdoor runs, and what
+    | makes losing the lot to one completed trace a real price.
+    |
+    | An EMPTY chain always advances, which is the no-routing case and the only
+    | one that exists today: nothing is in the way, so nothing slows it down.
+    |
+    | Ten points a grade, so the table is the design rather than a curve
+    | somebody fitted. CYBERSPACE.md says each backdoored system will hinder the
+    | trace by a different amount depending on what it is and who owns it; this
+    | is the first half of that, and grade is the part that is already on the
+    | row.
+    */
+    'trace' => [
+        'advance' => [
+            1 => 100,
+            2 => 90,
+            3 => 80,
+            4 => 70,
+            5 => 60,
+            6 => 50,
+            7 => 40,
+            8 => 30,
+            9 => 20,
+        ],
+
+        /*
+        | What a completed trace puts on the character.
+        |
+        | ONE, AND IT IS A PLACEHOLDER. Heat is persistent and belongs to the
+        | person — it is what the world knows about them — and what it DOES is
+        | not designed: the decay, the thresholds it crosses, what it draws
+        | towards somebody moving through cyberspace. See TODO.md. What is
+        | built is that a trace which completes costs something and that the
+        | something accumulates.
+        */
+        'heat' => 1,
+    ],
+
     'defences' => [
 
         /*

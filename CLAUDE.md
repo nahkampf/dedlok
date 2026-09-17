@@ -1567,9 +1567,33 @@ left. Detection, the ICE, extraction and the endings are the simulator, and
   `Run::turnsUntilTraced()` is the number the egress decision is made on, and it
   is worked out server-side because a player should not be dividing in their
   head while something is hitting them.
-- **Reaching 100 does nothing yet.** A completed trace is meant to put heat on
-  the character and burn every backdoor in the chain; neither heat nor backdoors
-  exist, so it lands, says so once, and stops climbing.
+- **Whether the trace advances at all is the CHAIN's to decide.** Every
+  backdoored system routed through is asked, by its grade — a grade 1 relay
+  slows it not at all, a grade 9 stops it four turns in five — and it only moves
+  if it gets through all of them, so the chances multiply and a long chain is
+  dramatically more protection. An empty chain always advances, which is the
+  no-routing case and the only one that exists today.
+- **A completed trace puts heat on the character and burns the chain.**
+  `characters.heat` is persistent and theirs; **one point is a placeholder** and
+  what heat DOES is undesigned — see TODO.md. Burning the chain is called and is
+  a no-op, because there are no backdoors; the day there are is not the day it
+  should be remembered.
+- **`characters.heat` and `runs.thermal_load` are different quantities.** The
+  design calls both "heat", which is why the run's column is named for what it
+  is: a per-run number in thermal units that resets, against a permanent one
+  that follows you home. One word for both is a bug waiting to be read at three
+  in the morning.
+- **The two thresholds ACT, and they act BEFORE the player's choice.** Checked at
+  the start of the turn; when one is breached the egress is attempted then and
+  there, whatever was asked for. That is deliberately not the gentler rule — a
+  threshold that only warned would leave an unresponsive player in a run that
+  never resolves — and it is the standing instruction they left for exactly this
+  moment. **Zero turns one off**, which saves a second column whose only job
+  would be to say whether the first counts.
+- **They are set from the MAP, never from inside a run.** An accordion on the
+  cyberspace screen, folded away, because they are a play style rather than a
+  per-run decision — and changing them mid-fight would be changing the rules of
+  a fight while standing in it.
 - **The IDS's second chance is not built.** The design gives it one on approach
   and one on touching the core; nothing touches the core yet, so that roll
   arrives with extraction.

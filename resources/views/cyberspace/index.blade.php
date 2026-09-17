@@ -249,6 +249,60 @@
             </form>
         </section>
 
+        {{-- THE TWO STANDING INSTRUCTIONS.
+
+             An accordion because they are set once and left alone — a play
+             style rather than a per-run decision, and a screen that asked every
+             time would train everybody to ignore it. Folded away by default for
+             the same reason: `<details>` already knows how to do this, keyboard
+             and screen reader included, and needs no script. --}}
+        <details class="panel panel--snug">
+            <summary class="panel__hd">
+                <h2>{{ Text::get('cyberspace.run.thresholds.heading') }}</h2>
+                <div class="spacer"></div>
+                <span class="micro num">{{ $character->egress_trace_at }}% · {{ $character->egress_si_at }}%</span>
+            </summary>
+
+            <form method="POST" action="{{ route('cyberspace.thresholds') }}" style="padding:var(--s-3) 0">
+                @csrf
+
+                <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-3)">
+                    {{ Text::get('cyberspace.run.thresholds.hint') }}
+                </p>
+
+                <div class="field">
+                    <label class="field__label" for="egress_trace_at">
+                        {{ Text::get('cyberspace.run.thresholds.trace') }}
+                    </label>
+                    <div class="row" style="--gap:var(--s-3);align-items:center">
+                        <input type="range" id="egress_trace_at" name="egress_trace_at" min="0" max="100" step="5"
+                               value="{{ old('egress_trace_at', $character->egress_trace_at) }}"
+                               oninput="this.nextElementSibling.textContent = this.value + '%'"
+                               style="flex:1;min-width:min(160px,100%)">
+                        <span class="num" style="min-width:3.5ch">{{ $character->egress_trace_at }}%</span>
+                    </div>
+                </div>
+
+                <div class="field" style="margin-top:var(--s-3)">
+                    <label class="field__label" for="egress_si_at">
+                        {{ Text::get('cyberspace.run.thresholds.si') }}
+                    </label>
+                    <div class="row" style="--gap:var(--s-3);align-items:center">
+                        <input type="range" id="egress_si_at" name="egress_si_at" min="0" max="100" step="5"
+                               value="{{ old('egress_si_at', $character->egress_si_at) }}"
+                               oninput="this.nextElementSibling.textContent = this.value + '%'"
+                               style="flex:1;min-width:min(160px,100%)">
+                        <span class="num" style="min-width:3.5ch">{{ $character->egress_si_at }}%</span>
+                    </div>
+                </div>
+
+                <div class="row row--wrap" style="--gap:var(--s-2);align-items:center;margin-top:var(--s-3)">
+                    <button type="submit" class="btn btn--sm cut">{{ Text::get('cyberspace.run.thresholds.save') }}</button>
+                    <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.run.thresholds.off') }}</span>
+                </div>
+            </form>
+        </details>
+
         <section class="panel panel--snug">
             <div class="panel__hd"><h2>{{ Text::get('cyberspace.bookmarks.heading') }}</h2></div>
 

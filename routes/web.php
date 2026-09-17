@@ -157,6 +157,10 @@ Route::middleware('auth')->group(function () {
     // is the same lazy catch-up the map does rather than a write of its own.
     Route::get('/cyberspace/reading', [CyberspaceController::class, 'reading'])->name('cyberspace.reading');
 
+    // The two standing instructions. A play style rather than a per-run
+    // choice, so they are saved from the map and never from inside a run.
+    Route::post('/cyberspace/thresholds', [CyberspaceController::class, 'thresholds'])->name('cyberspace.thresholds');
+
     /*
      * The floor under every defeat. One route, and the middleware that holds
      * somebody here is what releases them — the minute ends when they look.

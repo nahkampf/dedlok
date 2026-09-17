@@ -18,6 +18,7 @@ use App\Stats\DamageResolver;
 use App\Stats\Resolver;
 use App\Support\Text;
 use Closure;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -94,6 +95,24 @@ final readonly class Simulator
 
             $run->turn++;
 
+            /*
+             * THE THRESHOLDS ACT BEFORE ANYTHING ELSE DOES.
+             *
+             * Checked at the start of the turn, and when one is breached the
+             * egress is attempted then and there — whatever the player asked
+             * for. That is deliberately not the gentler rule: a threshold that
+             * only warned would leave an unresponsive player sitting in a run
+             * that never resolves, and it is the standing instruction they left
+             * for exactly this moment.
+             *
+             * It is also what makes `auto-run` possible at all, since a player
+             * who hands the whole run to their policy is handing it to this.
+             */
+            if ($this->thresholdBreached($character, $run)) {
+                $log[] = $this->line('cyberspace.run.log.threshold', tone: 'warn');
+                $action = RunAction::Egress;
+            }
+
             // --- the player acts ---------------------------------------------
 
             if ($action === RunAction::Egress) {
@@ -125,7 +144,7 @@ final readonly class Simulator
 
             // --- and then the machine does ------------------------------------
 
-            $log = [...$log, ...$this->advanceTrace($run)];
+            $log = [...$log, ...$this->advanceTrace($character, $run)];
 
             $ending = null;
 
@@ -154,13 +173,15 @@ final readonly class Simulator
      * change. A machine that has gone takes its tracer with it, which is the
      * right answer anyway.
      *
-     * Reaching 100 is not built. A completed trace is meant to put heat on the
-     * character and burn every backdoor in the routing chain, and neither heat
-     * nor backdoors exist — so for now it lands, says so, and stops climbing.
+     * THE CHAIN DECIDES WHETHER IT MOVES AT ALL. Every backdoored system routed
+     * through is asked, by its grade, and the trace only advances if it gets
+     * through all of them — so the chances multiply and a long chain is
+     * dramatically more protection. An empty chain always advances, which is
+     * the no-routing case and the only one that exists today.
      *
      * @return list<array{text: string, tone: string}>
      */
-    private function advanceTrace(Run $run): array
+    private function advanceTrace(Character $character, Run $run): array
     {
         if (! $run->detected || $run->trace >= 100) {
             return [];
@@ -172,14 +193,115 @@ final readonly class Simulator
             return [];
         }
 
+        if (! $this->traceGetsThrough($run)) {
+            return [$this->line('cyberspace.run.log.trace_held')];
+        }
+
         $was = (int) $run->trace;
         $run->trace = min(100, $was + (int) $rate);
 
-        if ($run->trace >= 100 && $was < 100) {
-            return [$this->line('cyberspace.run.log.traced', tone: 'crit')];
+        if ($run->trace < 100 || $was >= 100) {
+            return [];
         }
 
-        return [];
+        return $this->traceLands($character, $run);
+    }
+
+    /**
+     * Has either standing instruction come due?
+     *
+     * The trace passing the mark, or Synaptic Integrity falling below it. Both
+     * are percentages and both are the player's own, set once as a play style
+     * rather than chosen per run — so this is not the simulator deciding to
+     * pull somebody out, it is the simulator doing what it was told.
+     *
+     * A threshold of zero is never breached, which is how somebody turns one
+     * off without needing a second column to say whether it is on.
+     */
+    private function thresholdBreached(Character $character, Run $run): bool
+    {
+        $trace = (int) $character->egress_trace_at;
+
+        if ($trace > 0 && $run->trace >= $trace) {
+            return true;
+        }
+
+        $si = (int) $character->egress_si_at;
+
+        if ($si <= 0) {
+            return false;
+        }
+
+        $max = $character->maximumFor('current_synaptic_integrity');
+
+        return $max > 0
+            && ((int) $character->current_synaptic_integrity / $max) * 100 < $si;
+    }
+
+    /**
+     * Does the trace get past every hop this turn?
+     *
+     * One roll per backdoored system, at the chance its GRADE allows — a grade
+     * 1 relay slows it not at all and a grade 9 stops it four turns in five.
+     * All of them, because a chain is a chain: the trace is held if any single
+     * hop holds it.
+     */
+    private function traceGetsThrough(Run $run): bool
+    {
+        /** @var array<int, int> $table */
+        $table = Config::get('cyberspace.trace.advance', []);
+
+        // ROUTING IS NOT BUILT, so there is nothing in the way and nothing to
+        // roll. When it is, this is the list that changes and not the loop.
+        foreach ($run->routingGrades() as $grade) {
+            if (($this->roll)(1, 100) > ($table[$grade] ?? 100)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * It reached you.
+     *
+     * The order the design fixes: heat on the character, then the chain burns.
+     * **What heat DOES is not designed** — see TODO.md — so what is built is
+     * that a completed trace costs something and that the something
+     * accumulates. One point, and the number is in config to be moved.
+     *
+     * Burning the chain is a no-op with nothing in it: a completed trace takes
+     * every backdoor on the route, and there are no backdoors. It is called
+     * anyway, because the day there are is not the day this should be
+     * remembered.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function traceLands(Character $character, Run $run): array
+    {
+        $heat = (int) Config::get('cyberspace.trace.heat', 1);
+
+        $character->forceFill(['heat' => (int) $character->heat + $heat])->save();
+
+        $this->burnTheChain($run);
+
+        return [$this->line('cyberspace.run.log.traced', tone: 'crit')];
+    }
+
+    /**
+     * Every backdoor on the route is gone.
+     *
+     * NOTHING TO BURN YET. A trace passing THROUGH a backdoored system does
+     * nothing to it — that is what the chain is for — but one that reaches 100
+     * has followed the path all the way home, and every system on it is
+     * exposed: the backdoors go, the systems lock down and relocate.
+     *
+     * That is the cost that replaces latency, and it is why a longer chain is
+     * more protection and more to lose at once.
+     */
+    private function burnTheChain(Run $run): void
+    {
+        // Backdoors do not exist. When they do, this is where they stop.
     }
 
     /**

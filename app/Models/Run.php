@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'trace', 'heat', 'started_at', 'ended_at', 'ending', 'log'])]
+#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'trace', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -39,7 +39,7 @@ class Run extends Model
             'detected' => 'boolean',
             'ice_integrity' => 'integer',
             'trace' => 'integer',
-            'heat' => 'integer',
+            'thermal_load' => 'integer',
             'purpose' => RunPurpose::class,
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
@@ -98,6 +98,21 @@ class Run extends Model
         }
 
         return (int) ceil((100 - $this->trace) / $rate);
+    }
+
+    /**
+     * The grade of every backdoored system the trace has to come through.
+     *
+     * EMPTY, because routing is not built. Each one will slow the trace by an
+     * amount its grade decides, and the trace only advances if it gets through
+     * all of them — so this list being empty is exactly why a trace currently
+     * advances every turn.
+     *
+     * @return list<int>
+     */
+    public function routingGrades(): array
+    {
+        return [];
     }
 
     /** The chain the trace has to walk: the machine, the hops, and you. */

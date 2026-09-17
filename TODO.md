@@ -219,6 +219,42 @@ row looks like.
 
 ---
 
+## What heat actually does
+
+**Status:** it accumulates and nothing reads it. `characters.heat` goes up by
+one every time a trace completes, and that is the whole of the mechanic.
+
+**What it is.** Heat is persistent, it belongs to the person, and it is what the
+world knows about them — the lasting half of being traced, where the burned
+routing chain is the immediate half. It is deliberately a number to MANAGE
+rather than a punishment to endure.
+
+**One per trace is a placeholder.** `cyberspace.trace.heat` holds it. A real
+figure would depend on what the trace was following: the grade of the machine,
+whether its owner is a faction, how long the run had been going. None of that is
+decided.
+
+**What CYBERSPACE.md already says it should do**, none of which is built:
+
+- **Faction standing falls** when the traced system belongs to one. Factions do
+  not exist; this is the hook they arrive on.
+- **A player-owned system's owner learns who attacked them**, and that is the
+  *only* way they find out. An untraced raid is anonymous, which is what makes
+  stealth worth investing in on both sides.
+- **Heat decays on its own, slowly.** Doing nothing is a valid way to cool off
+  and a slow one. `characters:regenerate` is the shape that would credit it —
+  a per-minute pass with no stored clock.
+- **It can be CLEANED**, through processes not yet designed, and that is where
+  the money sink is.
+- **Later: heat draws rogue programs** while moving through cyberspace, and
+  especially through subnets.
+
+**The thresholds it crosses are the first thing to decide.** A number that only
+goes up and does nothing is not a mechanic — what makes heat real is the point
+at which something changes, and nothing names one.
+
+---
+
 ## Housekeeping
 
 - **`php artisan storage:link` will fail** — `symlink` is in `disable_functions` and that
