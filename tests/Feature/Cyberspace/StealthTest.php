@@ -119,7 +119,7 @@ final class StealthTest extends TestCase
         $this->assertSame(9.4, $character->fresh()->stat('stealth')->value);
     }
 
-    public function test_the_injector_pays_four_per_cent_a_level(): void
+    public function test_the_injector_pays_four_and_a_half_per_cent_a_level(): void
     {
         $character = $this->character();
         $this->equipReadyDeck($character);
@@ -127,14 +127,13 @@ final class StealthTest extends TestCase
         $this->runProgram($character->fresh(), 'evasion-payloadinjector');
 
         /*
-         * ROUNDING HAPPENS ONCE, AT THE END, which is why this is 17.3 and not
-         * 17.2. The pool's base is 80/8.5 = 9.41176…, not the 9.4 the sheet
-         * displays — so the percentage is taken over 15.41176 and the single
-         * rounding lands above the midpoint. Rounding the base first and then
+         * ROUNDING HAPPENS ONCE, AT THE END. The pool's base is 80/8.5 =
+         * 9.41176…, not the 9.4 the sheet displays, so the percentage is taken
+         * over 15.41176 rather than over 15.4. Rounding the base first and then
          * modifying it would break the commutativity the whole resolver design
          * rests on; see MECHANICS.md.
          */
-        $this->assertSame(17.3, $character->fresh()->stat('stealth')->value);
+        $this->assertSame(17.5, $character->fresh()->stat('stealth')->value, '15.41176 and 13.5% of it');
     }
 
     /**
@@ -151,8 +150,8 @@ final class StealthTest extends TestCase
         $this->runProgram($character->fresh(), 'evasion-piggyback');
         $this->runProgram($character->fresh(), 'evasion-payloadinjector');
 
-        // 9.4 + 10 (skill) + 2 (piggyback) = 21.4, then 20% over the lot.
-        $this->assertSame(25.7, $character->fresh()->stat('stealth')->value);
+        // 9.41176 + 10 (skill) + 2 (piggyback), then 22.5% over the lot.
+        $this->assertSame(26.2, $character->fresh()->stat('stealth')->value);
     }
 
     /** Software that is not running is a file, and a file hides nobody. */

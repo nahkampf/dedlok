@@ -23,8 +23,9 @@ use Illuminate\Support\Facades\DB;
  * it runs. Cheap, always exactly what it says, and worth proportionally most to
  * somebody who has trained nothing — which is what a Tier One tool should be.
  *
- * **PayloadInjector is worth what its operator is.** Four per cent per level of
- * Obfuscation, which is FIVE MODIFIERS each conditional on one more level
+ * **PayloadInjector is worth what its operator is.** Four and a half per cent
+ * per level of Obfuscation, which is FIVE MODIFIERS each conditional on one
+ * more level
  * rather than one modifier that multiplies — because a modifier's amount is a
  * number and never an expression. Five copies summing under a condition is the
  * only shape the resolver has for "per level of something else", and it is the
@@ -72,7 +73,7 @@ return new class extends Migration
                 'modifiers' => array_map(
                     static fn (int $level): array => [
                         'op' => 'percentage_of_base',
-                        'amount' => 4,
+                        'amount' => 4.5,
                         'target' => ['id' => 'stealth'],
                         'condition' => ['when' => 'skill_at_least', 'args' => ['skill' => 'obfuscation', 'level' => $level]],
                     ],
