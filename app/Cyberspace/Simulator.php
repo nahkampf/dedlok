@@ -59,6 +59,7 @@ final readonly class Simulator
         private WaitingRoom $waitingRoom,
         private CheckRoller $checks,
         private DefeatResolver $defeats,
+        private Extractor $extractor,
         private Closure $roll,
     ) {}
 
@@ -79,6 +80,7 @@ final readonly class Simulator
             // roll also pins what a defeat does — a Surge or a Flatline is not
             // a second random source to control separately.
             DefeatResolver::fromConfig($roll),
+            new Extractor,
             $roll,
         );
     }
@@ -124,14 +126,23 @@ final readonly class Simulator
             if ($action === RunAction::Egress) {
                 $log[] = $this->line('cyberspace.run.log.egress');
 
-                $run->save();
-                $this->runs->end($character, $run, RunEnding::Egress);
+                // COMPLETED IF THEY GOT WHAT THEY CAME FOR, egress otherwise —
+                // "they did what they came to do" is only true once
+                // extraction has actually taken something. This is also what
+                // a threshold-forced egress ends as, since that path reaches
+                // here too by reassigning $action above.
+                $ending = $run->extracted ? RunEnding::Completed : RunEnding::Egress;
 
-                return TurnResult::resolved($run, $log, RunEnding::Egress);
+                $run->save();
+                $this->runs->end($character, $run, $ending);
+
+                return TurnResult::resolved($run, $log, $ending);
             }
 
             if ($action === RunAction::Attack) {
                 $log[] = $this->attack($character, $run);
+            } elseif ($action === RunAction::Extract) {
+                $log = [...$log, ...$this->extract($character, $run)];
             } else {
                 $log[] = $this->line('cyberspace.run.log.hold');
             }
@@ -362,6 +373,109 @@ final readonly class Simulator
     }
 
     /**
+     * Take what the machine is holding.
+     *
+     * ## The IDS's second chance
+     *
+     * Extraction TOUCHES THE CORE — CYBERSPACE.md names it alongside burning,
+     * backdooring and injecting — so it is the second place the IDS gets a
+     * look, independent of whatever happened on approach. Rolled only while
+     * `! $run->detected`: once something has noticed, there is nothing further
+     * to discover, and asking again would just be asking whether they are
+     * STILL noticed.
+     *
+     * The roll fires REGARDLESS of whether the extraction itself goes on to
+     * succeed — touching the core is the act that risks it, not the result.
+     *
+     * ## One line for every reason it can fail
+     *
+     * An operating system the runner cannot speak, a purpose that is not
+     * `RunPurpose::Extraction`, and a machine with nothing left to give all
+     * wear the SAME sentence — `attack_fails`'s discipline again: a line that
+     * told them apart would let a player learn which one they were facing by
+     * elimination, and the OS gate exists precisely so that cannot happen. The
+     * UI only offers this button on an extraction run, so the purpose check is
+     * a defence against a hand-built request rather than something a player
+     * ordinarily meets.
+     *
+     * ## The whole haul, one turn
+     *
+     * `App\Cyberspace\Extractor` takes everything the node is holding in one
+     * pass — see its own docblock for why the size-costed, multi-turn version
+     * CYBERSPACE.md prices is a real gap this deliberately leaves open rather
+     * than half-building.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function extract(Character $character, Run $run): array
+    {
+        $system = System::query()->where('address', $run->address)->first();
+
+        $log = [];
+
+        if ($system !== null && ! $run->detected && $this->spottedBy($character, $system)) {
+            $run->forceFill([
+                'detected' => true,
+                'ice_id' => $system->ice_id,
+                'ice_integrity' => $system->ice?->integrity,
+            ]);
+
+            $log[] = $this->line(
+                $system->ice_id === null ? 'cyberspace.run.log.core_noticed' : 'cyberspace.run.log.core_noticed_ice',
+                tone: 'crit',
+            );
+        }
+
+        if ($system === null || $run->os_locked || $run->purpose !== RunPurpose::Extraction) {
+            $log[] = $this->line('cyberspace.run.log.extract_fails');
+
+            return $log;
+        }
+
+        $result = $this->extractor->extract($character, $run->address);
+
+        if ($result->tookNothing()) {
+            $log[] = $this->line('cyberspace.run.log.extract_fails');
+
+            return $log;
+        }
+
+        $run->extracted = true;
+        $log[] = $this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($result)], 'ok');
+
+        return $log;
+    }
+
+    /**
+     * Zero to three clauses, joined the way a sentence is rather than a list —
+     * because what a haul contains is never a fixed shape and a template
+     * cannot skip a placeholder that came back empty.
+     */
+    private function summarize(ExtractionResult $result): string
+    {
+        $pieces = [];
+
+        if ($result->creds > 0) {
+            $pieces[] = Text::get('cyberspace.run.log.took.creds', ['creds' => $result->creds]);
+        }
+
+        if ($result->items > 0) {
+            $pieces[] = Text::plural('cyberspace.run.log.took.items', $result->items, ['count' => $result->items]);
+        }
+
+        if ($result->files > 0) {
+            $pieces[] = Text::plural('cyberspace.run.log.took.files', $result->files, ['count' => $result->files]);
+        }
+
+        return match (count($pieces)) {
+            0 => '',
+            1 => $pieces[0],
+            2 => "{$pieces[0]} and {$pieces[1]}",
+            default => implode(', ', array_slice($pieces, 0, -1)).' and '.end($pieces),
+        };
+    }
+
+    /**
      * The machine hits back.
      *
      * A MISS DOES NOTHING AT ALL — no attack, no damage — which is what makes a
@@ -488,27 +602,7 @@ final readonly class Simulator
             return [];
         }
 
-        $stealth = $this->resolver
-            ->resolve('stealth', 0.0, $character->modifiers())
-            ->value;
-
-        $watchers = array_filter([
-            $system->ids_detection,
-            $system->tracer_detection,
-            $system->ice?->detection,
-        ], static fn (?int $value): bool => $value !== null && $value > 0);
-
-        $noticed = false;
-
-        foreach ($watchers as $difficulty) {
-            // The character rolls to go UNNOTICED, so a failed check is a pair
-            // of eyes that found them.
-            if (! $this->checks->roll($stealth, (float) $difficulty, 'detection')->passed) {
-                $noticed = true;
-            }
-        }
-
-        if (! $noticed) {
+        if (! $this->spottedBy($character, $system)) {
             return [$this->line('cyberspace.run.log.unnoticed', tone: 'ok')];
         }
 
@@ -522,6 +616,43 @@ final readonly class Simulator
             $system->ice_id === null ? 'cyberspace.run.log.noticed' : 'cyberspace.run.log.noticed_ice',
             tone: 'crit',
         )];
+    }
+
+    /**
+     * Does anything on this machine notice the character, right now?
+     *
+     * THE ROLL ITSELF, shared by both of the IDS's two chances — on approach
+     * and on touching the core. Every watcher present gets a look and ANY
+     * single success detects: an IDS, a tracer and a piece of ICE are not
+     * competing against each other, they are all in the room, and a machine
+     * with no IDS is quieter rather than safe.
+     *
+     * The global certainty floor, not a kind of its own — `checks.floors`
+     * names none for `detection` on purpose, because the best runner alive
+     * still trips a household IDS about once in a hundred and twenty
+     * attempts, and this is the case that rule was written for.
+     */
+    private function spottedBy(Character $character, System $system): bool
+    {
+        $stealth = $this->resolver
+            ->resolve('stealth', 0.0, $character->modifiers())
+            ->value;
+
+        $watchers = array_filter([
+            $system->ids_detection,
+            $system->tracer_detection,
+            $system->ice?->detection,
+        ], static fn (?int $value): bool => $value !== null && $value > 0);
+
+        foreach ($watchers as $difficulty) {
+            // The character rolls to go UNNOTICED, so a failed check is a pair
+            // of eyes that found them.
+            if (! $this->checks->roll($stealth, (float) $difficulty, 'detection')->passed) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

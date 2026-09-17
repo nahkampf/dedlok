@@ -24,6 +24,17 @@ enum RunAction: string
     case Attack = 'attack';
 
     /**
+     * Take what the machine is holding.
+     *
+     * TOUCHES THE CORE, the same as Attack — it is the second thing CYBERSPACE
+     * .md names for the IDS's second chance, alongside burning, backdooring
+     * and injecting. Available on an `RunPurpose::Extraction` run; on any
+     * other purpose it wastes the turn the same silent way a cut with no
+     * icebreaker does, rather than being refused for free.
+     */
+    case Extract = 'extract';
+
+    /**
      * Do nothing, and let the turn pass.
      *
      * Not a courtesy — it is how a player spends a turn waiting for something,
@@ -50,7 +61,7 @@ enum RunAction: string
      */
     public function touchesTheSystem(): bool
     {
-        return $this === self::Attack;
+        return $this === self::Attack || $this === self::Extract;
     }
 
     /** @return list<string> */

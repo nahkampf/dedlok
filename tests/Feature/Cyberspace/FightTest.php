@@ -18,6 +18,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Run;
 use App\Models\System;
+use App\Models\SystemContent;
 use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -668,5 +669,122 @@ final class FightTest extends TestCase
 
         $this->assertNotEmpty($cause->effects, 'the tags actually did something, not just named themselves');
         $this->assertSame('ICE IX', $cause->ice);
+    }
+
+    // ---- extraction ---------------------------------------------------------
+
+    /**
+     * THE WHOLE HAUL, ONE TURN. This is the end-to-end path — ExtractorTest
+     * pins the transfer itself, this pins that a turn spent Extracting
+     * actually reaches it.
+     */
+    public function test_extracting_takes_the_nodes_contents(): void
+    {
+        $system = $this->machine(1);
+        SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 500]);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+
+        $this->assertSame(500, $this->character->fresh()->creds);
+        $this->assertTrue($result->run->extracted);
+        $this->assertNotEmpty(array_filter(
+            array_column($result->log, 'text'),
+            static fn (string $l): bool => str_contains($l, '500 creds'),
+        ));
+    }
+
+    /**
+     * TOUCHING THE CORE IS THE IDS'S SECOND CHANCE, independent of what
+     * happened on approach. Begun UNNOTICED, then the extraction itself is
+     * what gets caught.
+     */
+    public function test_extraction_can_be_the_thing_that_gets_you_noticed(): void
+    {
+        $system = $this->machine(9); // grade 1 machine but a real IDS via the ICE row's own detection value is not enough alone; force a real ids_detection too
+        $system->forceFill(['ids_detection' => 50])->save();
+        SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 10]);
+        $this->ignoreThresholds();
+        $this->equipReadyDeck($this->character);
+
+        $run = $this->beginUnnoticed();
+        $this->assertFalse($run->detected);
+
+        // beginUnnoticed() bound CheckRoller to always evade, for the approach
+        // roll. Rebind it here to always FAIL evasion, so this turn's core
+        // touch is caught — simulator()'s own die only ever pins the OTHER
+        // rolls (damage, surge, and so on), never CheckRoller.
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 1.0));
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+
+        $this->assertTrue($result->run->detected, 'caught on the core touch, not on approach');
+        $this->assertSame($system->ice_id, $result->run->ice_id);
+
+        // And the extraction still succeeded — being noticed is a consequence
+        // of touching the core, not a block on the act itself.
+        $this->assertSame(10, $this->character->fresh()->creds);
+    }
+
+    /** An unspeakable operating system fails silently, the same line a wasted cut wears. */
+    public function test_extraction_fails_silently_against_an_unspeakable_os(): void
+    {
+        $system = $this->machine(1);
+        SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 500]);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $run->forceFill(['os_locked' => true])->save();
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+
+        $this->assertSame(0, $this->character->fresh()->creds, 'nothing came out');
+        $this->assertFalse($result->run->extracted);
+
+        foreach ($result->log as $line) {
+            $this->assertStringNotContainsStringIgnoringCase('operating system', $line['text']);
+        }
+    }
+
+    /** An empty node wastes the turn the same silent way — nothing distinguishes the two causes. */
+    public function test_extraction_finds_nothing_on_an_empty_node(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+
+        $this->assertFalse($result->run->extracted);
+        $this->assertSame(1, $result->run->turn, 'the turn is spent anyway');
+    }
+
+    /**
+     * COMPLETED, NOT EGRESS, once extraction actually took something — "they
+     * did what they came to do" is only true from that point on.
+     */
+    public function test_egress_after_a_successful_extraction_ends_as_completed(): void
+    {
+        $system = $this->machine(1);
+        SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 50]);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+
+        $sim = $this->simulator(101);
+        $afterExtract = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+        $result = $sim->take($this->character->fresh(), $afterExtract->run->fresh(), RunAction::Egress);
+
+        $this->assertSame(RunEnding::Completed, $result->ending);
+    }
+
+    /** Leaving empty-handed is still a plain Egress. */
+    public function test_egress_with_nothing_taken_stays_plain_egress(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Egress);
+
+        $this->assertSame(RunEnding::Egress, $result->ending);
     }
 }

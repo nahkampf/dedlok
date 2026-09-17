@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'trace', 'trace_hop', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
+#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'extracted', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'trace', 'trace_hop', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -36,6 +36,7 @@ class Run extends Model
             'y' => 'integer',
             'turn' => 'integer',
             'os_locked' => 'boolean',
+            'extracted' => 'boolean',
             'detected' => 'boolean',
             'ice_integrity' => 'integer',
             'trace' => 'integer',

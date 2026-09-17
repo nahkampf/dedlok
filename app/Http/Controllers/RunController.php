@@ -134,10 +134,15 @@ class RunController extends Controller
             return redirect()->route('cyberspace.index');
         }
 
-        $this->runs->end($character, $run, RunEnding::Egress);
+        // COMPLETED IF THEY GOT WHAT THEY CAME FOR — the same test the
+        // turn-based Egress action applies, so the two doors cannot disagree
+        // about whether an extraction actually happened.
+        $ending = $run->extracted ? RunEnding::Completed : RunEnding::Egress;
+
+        $this->runs->end($character, $run, $ending);
 
         return redirect()->route('cyberspace.index')
-            ->with('status', RunEnding::Egress->message());
+            ->with('status', $ending->message());
     }
 
     private function liveRun(Character $character): ?Run

@@ -27,7 +27,9 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | The run, interactive | **the spine is built**: `runs` is durable state, `App\Cyberspace\RunStarter` begins and ends one, and `characters.current_run_id` is what says somebody is inside. The turns themselves are the simulator and are not built |
 | The fight | **built**; `App\Cyberspace\Simulator` resolves one turn — the player acts, then the machine does. An icebreaker grinds integrity down, a miss does nothing at all, and a defeat ejects before the waiting screen |
 | Detection, on approach | **built**; every watcher on the machine rolls against the runner's `stealth` and any one success detects them. Nothing is woken by a run that goes unnoticed. The global certainty floor, not a kind of its own |
-| Detection, on the core | **not built**; nothing touches the core yet, so the second roll arrives with extraction |
+| Detection, on the core | **built**; extraction touches the core, so it is the second roll — every watcher gets a fresh look, independent of what happened on approach, and the roll fires whether or not the extraction it accompanies goes on to succeed |
+| Extraction | **built**; `App\Cyberspace\Extractor` takes everything a node holds in one turn. Creds go straight onto the character, a catalogue item merges the way an archetype loadout does, a file becomes one unstackable "Encrypted Data Dump" carrying its real numbers as JSON. The per-file, size-costed version this document prices is a deliberate gap, not an oversight |
+| `RunEnding::Completed` | **built**; egress after a successful extraction ends this way rather than as a plain egress — "they did what they came to do" is only true from that point on. `runs.extracted` is the flag both doors to leaving check |
 | The trace | **advances**, once something has noticed: the machine's `tracer_rate` a turn, and it WALKS the routing chain, one hop a turn: a single attempt at the next system, passed or not, and a hop once passed is behind it for good. Grade 1 never holds it, grade 9 holds it four turns in five. Drawn on the run screen as the chain it walks, with an estimate of the turns left |
 | A completed trace | **built**; puts heat on the character (one point, a placeholder — see TODO.md) and calls the chain-burn, which is a no-op because there are no backdoors |
 | The two thresholds | **built**; they ACT before the player's choice, every character is born with 70% and 30%, and they are set in an accordion on the map. Zero turns one off |
@@ -1692,13 +1694,18 @@ All of it. In the order it should be built:
    Integrity a turn against a starting character's 31; ICE XII lands 95% of
    the time for 57, which takes somebody at 200 SI down in four turns.
 
-   **Still missing**: extraction itself, which is the run's own purpose and
-   the thing that would let any of this be taken; and selling a scan, which
-   needs a storefront the market does not have. The defeat tags are no longer
-   on this list — `App\Cyberspace\DefeatResolver` rolls and applies every one
-   a piece of ICE carries the moment it wins, called from the simulator before
-   the ejection. Detection, the fight and the trace all roll now too; what is
-   left is the run's own PURPOSE — taking what a machine holds.
+   **Extraction is built too**, which closes this list. `App\Cyberspace\Extractor`
+   takes everything a `system_contents` row is holding — creds straight onto
+   the character, a catalogue item merged or created the way an archetype
+   loadout already is, a generated file becoming one unstackable "Encrypted
+   Data Dump" carrying its real numbers as JSON on the row rather than on a
+   catalogue entry that would have to pretend every file is the same object.
+   The whole haul comes out in the one turn extraction is attempted — the
+   per-file, size-costed, bandwidth-reduced version this document prices is a
+   real gap, deliberately left open rather than half-built.
+
+   **Still missing**: selling a scan, which needs a storefront the market does
+   not have.
 
    ~~**Decide here whether the probe needs a running analyser.**~~ **Decided:
    it does.** Reading a machine takes software, and the software has to be
@@ -1725,6 +1732,18 @@ All of it. In the order it should be built:
    you*. Every ending in this document has to be reachable from that state, and
    the lock has to be in front of it before the first bad run exists, not
    after: a run a player can walk out of teaches them to walk out of runs.
+
+   **Built so far: all of it, in the narrow sense.** A run begins, detects on
+   approach, fights, traces, extracts, applies what a defeat's tags carry, and
+   ends — through the waiting screen where the ending calls for one. What is
+   NOT built is the richer version of several of these: extraction takes a
+   whole node in one turn rather than the size-costed, multi-turn haul this
+   document prices; a piece of ICE's tags apply but nothing has priced Surge's
+   numbers; heat accumulates by one flat point with no decay, no thresholds and
+   no faction consequence; and the routing chain that would slow a trace down
+   is empty, because backdoors — phase 6 — do not exist. Nothing here is a gap
+   in the SPINE; every gap is a number or a mechanic phase 5 deliberately left
+   thin rather than half-inventing what phase 6 or 7 should decide.
 6. **Consequences.** Trace, heat, backdoors and routing, burn, lockdown,
    relocation, housekeeping.
 7. **The rest.** Cooperative runs, subnets, player-owned nodes, event systems,

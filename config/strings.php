@@ -343,6 +343,7 @@ return [
             'egress_hint' => 'Leaving is always possible and never certain.',
             'action' => [
                 'attack' => 'Cut',
+                'extract' => 'Extract',
                 'hold' => 'Hold',
                 'egress' => 'Egress',
             ],
@@ -382,6 +383,15 @@ return [
                 'noticed_ice' => 'Something registers you on the way in, and the ICE comes awake.',
 
                 /*
+                | THE SECOND CHANCE, ON TOUCHING THE CORE. The same event as
+                | arriving — something notices — but a different moment, so it
+                | gets its own words: this is what a machine says when it was
+                | quiet on the way in and then felt the extraction.
+                */
+                'core_noticed' => 'Something notices, this time.',
+                'core_noticed_ice' => 'Something notices, this time, and the ICE comes awake.',
+
+                /*
                 | WHAT A DEFEAT ACTUALLY COST. Said in the past tense and in
                 | numbers, because "Flatline" is a word and "you lost 2 points
                 | of your ceiling" is a fact — these are what DownedCause shows
@@ -393,6 +403,32 @@ return [
                     'surge' => ':count of your fitted modules burn out.',
                     'erase' => ':count file(s) or program(s) on your deck are wiped.',
                     'skim' => ':creds creds go missing from what you were carrying.',
+                ],
+
+                /*
+                | TOUCHING THE CORE. Extraction is the second thing the IDS
+                | gets a look at, alongside a cut. ONE LINE FOR BOTH CAUSES OF
+                | FAILURE, deliberately — the same discipline 'attack_fails'
+                | already keeps: an operating system the runner cannot speak
+                | and a machine with nothing left to take wear the same
+                | sentence, because a line that told them apart would let a
+                | player learn which one they were facing by elimination,
+                | which is exactly the scan fact the OS gate exists to
+                | withhold.
+                */
+                'extract_fails' => 'You get nowhere near what it is holding.',
+                'extract' => 'You pull :summary out.',
+
+                /*
+                | THE PIECES A SUMMARY IS BUILT FROM. Assembled in the
+                | simulator rather than as one templated sentence, because
+                | what actually came out is zero to three of these and a
+                | template cannot skip a clause a placeholder left empty.
+                */
+                'took' => [
+                    'creds' => ':creds creds',
+                    'items' => ['one' => 'a piece of hardware', 'many' => ':count pieces of hardware'],
+                    'files' => ['one' => 'a file', 'many' => ':count files'],
                 ],
             ],
 
@@ -1052,6 +1088,20 @@ return [
         'data_hint' => 'What is on your deck. Software, files, skillbooks.',
 
         'empty' => 'Nothing here.',
+
+        /*
+        | A REAL FILE, ON A GENERIC ITEM. Every "Encrypted Data Dump" is the
+        | same catalogue row; these numbers are the row's own, from
+        | App\Cyberspace\ExtractedFile — the same voice hardwareSummary() and
+        | programSummary() already speak for a module or a program.
+        */
+        'files' => [
+            'size' => ':qb QB',
+            'encrypted_with' => 'sealed with :skill',
+            'unencrypted' => 'unsealed',
+            'unknown_encryption' => 'an encryption nobody names any more',
+            'sealed_value' => 'worth :value sealed',
+        ],
 
         // The equipped deck is not in either inventory — it is on you. This is
         // the one place it appears, and the only way through to its board.

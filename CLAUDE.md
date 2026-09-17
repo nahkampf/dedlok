@@ -1464,11 +1464,10 @@ would take somebody to zero and say so in a comment.
 
 ### Runs
 
-**The spine is built, and so is the fight.** A run can be begun, played turn by
-turn, and left. Detection, the ICE, the trace and a defeat's own consequences
-all roll now. Extraction — the run's own purpose, taking what a machine holds
-— is what is left, and `RunController::act()` is deliberately the one door
-waiting for it.
+**The spine, the fight and extraction are all built.** A run can be begun,
+played turn by turn, and left with something to show for it. Detection, the
+ICE, the trace, a defeat's own consequences and taking what a machine holds all
+roll now.
 
 - **`runs` is durable state, and that is the cost of making a run interactive.**
   An atomic run needed no row — it began and ended inside one request. **The row
@@ -1601,9 +1600,12 @@ waiting for it.
   cyberspace screen, folded away, because they are a play style rather than a
   per-run decision — and changing them mid-fight would be changing the rules of
   a fight while standing in it.
-- **The IDS's second chance is not built.** The design gives it one on approach
-  and one on touching the core; nothing touches the core yet, so that roll
-  arrives with extraction.
+- **The IDS's second chance is built, and it is `Extract`'s own roll.**
+  `Simulator::spottedBy()` is the shared roll behind BOTH chances — `rouse()`
+  calls it on approach, `extract()` calls it again on the core touch, and
+  either one can independently find a runner the other missed. It fires
+  whether or not the extraction it accompanies goes on to succeed: touching
+  the core is the act that risks it, not the result.
 - **`App\Cyberspace\DefeatResolver` is what makes the tag set real.** Until it
   existed, `Ice::defeatTags()` fed `DownedCause` names for the waiting screen
   and nothing rolled or applied a single one — losing to ICE XII cost exactly
@@ -1649,6 +1651,48 @@ waiting for it.
   clone or a test database's ICE carries none until somebody runs it — tests
   that need a specific tag set write it onto the row directly rather than
   relying on the seeded catalogue.
+- **`App\Cyberspace\Extractor` is the only door between a node's inventory and
+  a stash.** It reads and deletes `system_contents` rows and nothing else in
+  the codebase touches either side of that exchange — the same discipline
+  `NodeStocker` keeps on the writing end. **The whole haul comes out in the one
+  turn extraction is attempted.** CYBERSPACE.md prices a bigger haul in TURNS —
+  a file's size in QB costs more, cut back down by the deck's bandwidth — and
+  that per-file economy is a real, deliberately open gap: `Extractor` already
+  returns one count per kind taken, which is the shape a multi-turn version
+  would still need, so closing the gap later should not change this class's
+  outline.
+- **Three kinds, three ways of becoming a possession.** Creds go straight onto
+  the character. A catalogue item is granted through the SAME merge-or-create
+  `LoadoutGranter::grantItem()` already uses — two piles of one stackable thing
+  in one place are one pile, however each pile arrived, so the logic could not
+  be allowed to diverge. A file has no catalogue row of its own — see
+  `ExtractedFile` — so it becomes one unstackable "Encrypted Data Dump", the
+  same generic item every extracted file becomes.
+- **A file's real numbers live in `inventory_items.extracted_file`, as JSON, on
+  the ROW and not on the item.** Every dump looks alike on the shelf, the way a
+  memory shard's contents are not the shard. `App\Cyberspace\ExtractedFile` is
+  the one author and reader, the same shape `DownedCause` takes for
+  `waiting_cause` and for the same reason: decryption and selling are not
+  designed, and columns modelled against either would be modelled wrong.
+- **Two files never merge, on purpose, even though the item they share is
+  unstackable anyway.** Two dumps with different sizes and different values
+  merging into one row with a summed quantity would destroy information a
+  quantity cannot hold — the one item in the game where merging would be worse
+  than the ordinary case `stack_key` exists to prevent.
+- **`RunEnding::Completed` finally has a caller.** It existed in the enum from
+  the start — "they did what they came to do" — with nothing to trigger it.
+  `runs.extracted` is the flag: egress after it is set reads as Completed
+  rather than a plain Egress, checked in BOTH doors to leaving — the turn-based
+  Egress action and the older, still-routed standalone `run.egress` endpoint —
+  so the two cannot disagree about whether a haul happened.
+- **One line covers every reason a core touch can fail**, the same discipline
+  `attack_fails` already keeps: an operating system the runner cannot speak, a
+  purpose that is not `RunPurpose::Extraction`, and a machine with nothing left
+  to give all wear one sentence. The UI only offers the Extract button on an
+  extraction run, so the purpose check is a defence against a hand-built
+  request rather than something a player ordinarily meets — but it still has to
+  fail exactly as quietly as the other two, or a player could learn which cause
+  applied by which sentence came back.
 
 ### Archetypes and what they hand out
 

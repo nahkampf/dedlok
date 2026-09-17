@@ -1,3 +1,4 @@
+@use('App\Cyberspace\RunPurpose')
 @use('App\Support\Text')
 
 @extends('layouts.app')
@@ -122,6 +123,15 @@
             <button type="submit" name="action" value="attack" class="btn cut" @unless ($run->inAFight()) disabled @endunless>
                 {{ Text::get('cyberspace.run.action.attack') }}
             </button>
+            {{-- ONLY ON AN EXTRACTION RUN. Purpose decides what a core touch
+                 IS — a backdoor and a burn are their own unbuilt purposes, and
+                 offering this button on either would promise something
+                 nothing yet does. --}}
+            @if ($run->purpose === RunPurpose::Extraction)
+                <button type="submit" name="action" value="extract" class="btn cut">
+                    {{ Text::get('cyberspace.run.action.extract') }}
+                </button>
+            @endif
             <button type="submit" name="action" value="hold" class="btn btn--ghost cut">
                 {{ Text::get('cyberspace.run.action.hold') }}
             </button>
