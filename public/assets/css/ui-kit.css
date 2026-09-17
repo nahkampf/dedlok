@@ -269,6 +269,12 @@
   --jade:   #6FD3A0;  --jade-a:   rgba(111, 211, 160, 0.13);
   --brass:  #E8B84B;  --brass-a:  rgba(232, 184, 75, 0.13);
   --steel:  #6E8CB5;  --steel-a:  rgba(110, 140, 181, 0.13);
+  /* Cyan joins the palette for one job: telling kinds of machine apart on the
+     map. Mixed to the same register as the three above — mid-saturation and
+     light, so it reads beside them rather than jumping out of them. It is
+     DECORATION, like the rarity tiers: it says what a thing is and never what
+     state it is in, which is why it has no semantic alias. */
+  --cyan:   #5FC6CE;  --cyan-a:   rgba(95, 198, 206, 0.13);
 
   /* Semantic aliases. Components speak through these, never through the
      palette directly, so re-pointing --ok re-skins every success state at
@@ -453,6 +459,31 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   text-decoration-thickness: 1px;
 }
 .link:hover { color: var(--ink-0); text-decoration-color: var(--ember); }
+
+/* AN ADDRESS YOU CAN TAKE WITH YOU.
+
+   A button that looks like a link, because it acts rather than navigates —
+   pressing it puts the text on the clipboard. Semantics follow the behaviour
+   and the appearance follows the affordance, which is the one case where those
+   two want to disagree.
+
+   Monospace because an address is eight hex characters somebody is going to
+   compare by eye, and the button reset is explicit: a <button> brings a font,
+   a background and a border nobody asked for. */
+.copy {
+  font: inherit;
+  font-family: var(--font-mono);
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 3px;
+}
+.copy:hover { color: var(--ink-0); text-decoration-color: var(--ember); }
 
 .kbd {
   font: 600 var(--fs-xs)/1 var(--font-mono);
@@ -1043,6 +1074,19 @@ cap-widget {
 }
 .panel.cut { border: 0; border-radius: 0; background: transparent; }
 
+/* A PANEL WHOSE CONTENT IS NOT IN A BODY.
+
+   `.panel__bd` is what normally holds a panel off its own border, and a panel
+   that puts forms and rows directly inside it has nothing doing that job — the
+   content ends up flush against the hairline, which reads as a box that has
+   come apart rather than as a tight one.
+
+   Inline only: the head and foot bring their own padding, and rows inside
+   these panels carry their own vertical rhythm through the border-top that
+   separates them. `padding-inline` rather than left and right so it follows
+   the writing direction without a second rule. */
+.panel--snug { padding-inline: 3px; }
+
 .panel__hd {
   display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3);
   padding: var(--s-3) var(--s-4);
@@ -1188,6 +1232,85 @@ cap-widget {
 .tag--crit  { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 40%, transparent); background: var(--crit-a); }
 .tag--info  { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: var(--info-a); }
 .tag--solid { background: var(--ink-0); border-color: var(--ink-0); color: var(--ink-on-bone); }
+
+/* DECORATION, and the palette name says so. The semantic aliases carry meaning
+   — .tag--crit is a thing going wrong — and this one carries emphasis: a scan
+   finding is not critical, it is what the player spent an instrument to learn.
+   Rationed like every other use of the accent: see the note on --ember. */
+.tag--ember { color: var(--ember); border-color: var(--ember-2); background: var(--ember-a); }
+
+/* THE TRACE, WALKING A CHAIN TOWARDS YOU.
+
+   A line of nodes with a fill crossing it: the machine at one end, the runner
+   at the other, and every backdoored relay routed through in between. What the
+   fill says is how far the thing following you has got, so the whole widget is
+   one question — is it time to leave.
+
+   `--v` is the 0-1 ratio, set server-side like every other meter in the kit, so
+   the bar needs no script and cannot disagree with the number beside it.
+
+   THE LINE IS A BACKGROUND ON THE TRACK, not a pseudo-element, because the
+   nodes sit on top of it and a pseudo-element would have to be positioned
+   around them. Two layers: the unlit rail, and the lit part clipped to `--v`.
+   The nodes carry their own background so the line appears to pass behind. */
+.trace {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  position: relative;
+  padding: var(--s-3) 0;
+}
+.trace::before,
+.trace::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: var(--hair);
+  transform: translateY(-50%);
+}
+.trace::before { background: var(--line-1); }
+.trace::after {
+  background: var(--crit);
+  /* Clipped rather than scaled: a transform would blur the hairline and a
+     width animation would relayout. */
+  clip-path: inset(0 calc(100% - (var(--v, 0) * 100%)) 0 0);
+}
+
+/* A stop on the chain. Positioned so the line runs behind it, and carrying the
+   page's own background so it reads as a node on a wire rather than a box with
+   a line through it. */
+.trace__node {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  background: var(--bg-1);
+  border: var(--hair) solid var(--line-2);
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+  /* The machined corner, at node scale. */
+  border-radius: var(--r-1);
+}
+
+/* PASSED. The trace has come through here already, so it wears the accent the
+   fill does — this is the one place a chain says what has been lost, and when
+   routing lands these are the backdoors that are about to burn. */
+.trace__node--passed { border-color: var(--crit); color: var(--crit); }
+
+/* The two ends. The machine is where it starts; you are what it is walking
+   towards, and you are drawn as bone because you are the thing at stake. */
+.trace__node--target { border-color: var(--line-2); }
+.trace__node--you { border-color: var(--ink-1); color: var(--ink-0); }
+
+/* CAN YOU OPERATE IT. The mark beside a scanned operating system, and the one
+   place a fact on that screen also answers a question about the READER.
+   Semantic aliases rather than the palette, because these carry meaning: a
+   cross is a machine nothing you do would work on. */
+.mark--ok { color: var(--ok); }
+.mark--no { color: var(--crit); }
 
 .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); flex: none; }
 .dot--ok { background: var(--ok); }
@@ -2470,8 +2593,11 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
    The map is a D-pad without one being drawn.
    ========================================================================== */
 .gridmap {
-  --cell: 30px;
-  --span: 21;
+  /* Big enough to read a glyph, a grade bar and two corner ticks at once —
+     which is what a cell has to carry now. Half this was legible only because
+     it was carrying half as much. */
+  --cell: 60px;
+  --span: 15;
   overflow: auto;
   background: var(--bg-1);
   border: var(--hair) solid var(--line-1);
@@ -2498,7 +2624,11 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
   display: grid;
   place-items: center;
   font-family: var(--font-mono);
-  font-size: var(--fs-xs);
+  /* The glyph IS the cell's content, so it is sized like a thing being looked
+     at rather than like a label on one. At --fs-xs in a 60px square it read as
+     a speck in a box; this fills the square the way an icon does, and leaves
+     room under it for the grade bar and either corner tick. */
+  font-size: var(--fs-xl);
   line-height: 1;
   color: var(--ink-2);
   background: var(--bg-2);
@@ -2508,22 +2638,166 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
   position: relative;
 }
 
+/* OUT OF SIGHT FROM WHERE THEY ARE STANDING.
+   The map is memory, and most of what is on it is not being looked at right
+   now — so the part that IS gets to be at full strength and everything else
+   steps back. The whole cell dims rather than its glyph alone, because the
+   fill is half of what a cell says and a bright tile with a faint mark on it
+   reads as a mark that has gone wrong.
+
+   A step rather than a fade, and a big one: at .8 the lit square did not read
+   as lit — the difference was there in the numbers and not on the screen. What
+   the step has to survive is a map where most cells are distant, so the few
+   that are not have to win by a margin. Nothing is hidden at .55 — a player
+   can still read what they remember out there — and the fog, the glyphs and
+   the grade bars all step back together, because the cell dims as one thing.
+
+   The blur is the second half of the same statement, and it says something
+   opacity cannot: memory is not merely quieter than sight, it is less exact.
+   1px is enough to soften a hairline and a glyph without making either
+   unreadable — a player can still tell a silo from a relay out there, which is
+   the whole point of drawing it at all. */
+.cell--distant { opacity: .55; filter: blur(1px); }
+
 /* Beyond the edge of the world. THE GRID DOES NOT WRAP, so this is a hole in
    the drawing rather than a place — no border, no fill, nothing to read. */
 .cell--void { background: transparent; border-color: transparent; }
 
-/* Never looked at. Sunken, so unexplored ground reads as depth rather than as
-   an object. */
-.cell--unswept { background: var(--bg-1); border-color: transparent; }
+/* NEVER LOOKED AT — fog, and the difference from empty ground is a LAYER and
+   not a shade. It drops below the map's own ground, loses its hairline, and
+   carries a faint weave; empty ground sits on the board with its hairline
+   intact. One reads as under the table and the other as on it, which is a
+   difference you see without comparing two cells side by side.
+
+   The weave is two hairline gradients rather than an image: it has to survive
+   a re-skin, and a texture nobody can re-colour is a texture that dates. */
+.cell--unswept {
+  background:
+    repeating-linear-gradient(45deg,
+      var(--line-0) 0 1px,
+      transparent 1px 6px),
+    var(--bg-0);
+  border-color: transparent;
+}
 
 /* Swept, and nothing was there. Space, not a dead node. */
 .cell--empty { background: var(--bg-2); }
 
-/* Something was standing here when they last looked. */
-.cell--system { background: var(--bg-3); border-color: var(--line-1); color: var(--ink-1); }
+/* Something was standing here when they last looked.
+   NO HAIRLINE. The fill lifts it off the ground and the glyph says what it is,
+   which is enough — and it leaves the border free to mean something. A map
+   where every machine is outlined is a map where an outline says nothing; now
+   a hairline is only ever the portal, a machine that has just appeared, one
+   that is rebooting, or you. */
+.cell--system { background: var(--bg-3); border-color: transparent; color: var(--ink-1); }
 
-/* The portal. Informational rather than dangerous, so steel and not ember. */
-.cell--portal { color: var(--info); border-color: color-mix(in srgb, var(--info) 40%, transparent); background: var(--info-a); }
+/* WHAT KIND OF MACHINE, as a colour on the GLYPH and nothing else. A map is a
+   screen somebody stares at: four hundred tinted tiles is a quilt, four
+   hundred tinted marks is a legend — and an ordinary machine has no hairline
+   at all now, so the colour has one job and the border has another.
+
+   `--node` is the one property each kind sets, so everything below it reads the
+   colour rather than the type — a fourth kind is a class and a token.        */
+.cell--silo    { --node: var(--steel); }
+.cell--compute { --node: var(--cyan); }
+.cell--relay   { --node: var(--jade); }
+
+.cell--silo, .cell--compute, .cell--relay { color: var(--node); }
+
+/* THE PORTAL. There is exactly one in the world, which is what pays for the
+   only animation on the screen: a rationed accent spent on a thing you will
+   see once a session is not a rationed accent being wasted.
+
+   It breathes between bone and brass over four seconds — SLOW, because it is a
+   condition and not an event, the same reasoning `.slot--hot` follows. The
+   pulse is on the glyph and the hairline; the fill stays a --bg step, because
+   elevation here is never a glow. */
+.cell--portal {
+  color: var(--ink-0);
+  border-color: color-mix(in srgb, var(--brass) 45%, transparent);
+  background: var(--bg-3);
+  animation: cell-portal 4s ease-in-out infinite;
+}
+
+@keyframes cell-portal {
+  0%, 100% { color: var(--ink-0); border-color: color-mix(in srgb, var(--brass) 30%, transparent); }
+  50%      { color: var(--brass); border-color: color-mix(in srgb, var(--brass) 70%, transparent); }
+}
+
+/* LOCKED DOWN AND COMING BACK UP. A dashed hairline: the machine is not all
+   the way there. Static on purpose — the portal keeps the only movement on the
+   map, and a screen with two things pulsing has neither of them meaning
+   anything. */
+.cell--rebooting {
+  border-style: dashed;
+  /* Its own, because an ordinary machine no longer has one to restyle. */
+  border-color: color-mix(in srgb, var(--node, var(--ink-2)) 55%, transparent);
+}
+
+/* A BACKDOOR YOU HOLD. The kit's corner tick, which marks a box as one you
+   have and marks nothing else — and in ember, because this is the one thing on
+   a map that is yours. Bottom-left, leaving the top-right to the bookmark: the
+   same device twice, in two corners, both meaning yours.
+
+   Rare by construction. A player with backdoors on half the grid has earned a
+   map with ember on half of it. */
+.cell--backdoored::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  /* A share of the cell rather than a fixed size: the cell doubled once
+     already, and a mark that does not follow it becomes a speck. */
+  width: 20%;
+  height: 20%;
+  border-left: var(--hair) solid var(--ember);
+  border-bottom: var(--hair) solid var(--ember);
+}
+
+/* THE GRADE, ONCE SOMEBODY HAS SCANNED IT OUT OF THE MACHINE — a bar at the
+   foot of the cell, `--g` wide, in bone. Nine steps is more than colour can
+   carry and a map of four hundred traffic lights is not a map anybody reads;
+   a magnitude drawn as a magnitude is read without a legend.
+
+   A background layer rather than a pseudo-element, because both of this cell's
+   are spoken for: the bookmark tick and the backdoor tick. */
+.cell[style*="--g"] {
+  --cell-grade: linear-gradient(to right,
+    var(--ink-2) calc(var(--g, 0) * 100%),
+    transparent calc(var(--g, 0) * 100%));
+}
+
+/* A MACHINE YOU HAVE READ SOMETHING OUT OF. Bottom-right, in --info, which is
+   the blue the kit already spends on "known rather than urgent" — and the last
+   free corner: the bookmark has the top-right and the backdoor the
+   bottom-left.
+
+   It says you LEARNED something, not that you pointed an instrument at it: a
+   file with no answers in it yet marks nothing. It also clears itself, because
+   what it is keyed on is the ADDRESS — a machine that relocates after a
+   lockdown comes back wearing a new one, and the file stops describing it.
+
+   A background layer rather than a pseudo-element, for the reason the grade
+   bar is one: both of this cell's pseudo-elements are spoken for. */
+.cell--scanned { --cell-read: linear-gradient(to top left, var(--info) 0 50%, transparent 50%); }
+
+.cell--scanned,
+.cell[style*="--g"] {
+  /* Two layers, and either may be absent — an unscanned grade is not a thing
+     that exists, but a read that has not turned up the grade yet is. */
+  background-image: var(--cell-read, none), var(--cell-grade, none);
+  background-size: 22% 22%, calc(100% - 6px) 2px;
+  background-position: 100% 100%, 3px calc(100% - 2px);
+  background-repeat: no-repeat;
+}
+
+/* Motion is a nicety, and a map that breathes at somebody who asked it not to
+   is a map that gets closed. */
+@media (prefers-reduced-motion: reduce) {
+  .cell--portal { animation: none; color: var(--brass); }
+  /* The new cell keeps its brighter hairline; it simply stops travelling. */
+  .cell--new { animation: none; border-image: none; }
+}
 
 /* You. Bone is the ink of the system and this is the one thing the eye has to
    find first; the accent is deliberately NOT spent here, because a map is a
@@ -2540,20 +2814,62 @@ button.cell--step:active { transform: scale(.92); }
 button.cell { cursor: pointer; }
 button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px; z-index: 1; }
 
-/* Only just appeared. A BRIGHTNESS STEP, NOT A HUE — new is noteworthy rather
-   than live, critical or destructive, so it must not spend the ember accent;
-   and a freshly swept window can hold forty-odd new machines at once, which is
-   twenty times the accent's whole budget. Bone is the ink, so bone is what says
-   "look here".
+/* ONLY JUST APPEARED — a light travelling round the hairline, the same idea as
+   the sheen crossing a button and for the same reason: a moving reflection
+   reads as *something has changed here* where a static mark reads as a
+   different kind of thing.
 
-   The ring is drawn with an inset shadow rather than a border because the cell
-   already has one, and swapping a hairline's colour would make a new cell read
-   as a different KIND of cell rather than as the same cell wearing a mark. */
-.cell--new {
-  color: var(--ink-0);
-  border-color: var(--ink-1);
-  box-shadow: inset 0 0 0 1px var(--ink-1);
+   IT KEEPS THE TYPE COLOUR. The first version of this went bone — ink-0 glyph,
+   ink-1 ring — and that was wrong twice over: a new compute node stopped
+   looking like a compute node, and a bone hairline is the loudest thing the
+   kit has that is not the accent. The light is `--node`, so a new silo sweeps
+   steel and a new relay sweeps jade, and what the cell IS survives the mark
+   saying it is new.
+
+   Drawn with border-image rather than a background layer or a pseudo-element,
+   because on this cell all three of those are spoken for: the fill carries the
+   fog weave, the background carries the grade bar, and both pseudo-elements
+   are corner ticks. A conic gradient turned by an animated angle is the one
+   place left, and it happens to be the right one — the light goes round the
+   edge rather than across the face.
+
+   THEY DO NOT MARCH IN STEP. A freshly swept window can hold forty of these at
+   once, and forty synchronised sweeps is a disco rather than a map, so the
+   phase is staggered by position. Slow, because it is a condition and not an
+   event. */
+@property --cell-sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
+
+.cell--new {
+  /* Underneath the light, and what a browser without @property is left with:
+     a hairline in the machine's own colour. Quiet — now that an ordinary
+     machine has no border at all, having one is already the whole signal, and
+     the travelling light only has to be noticed rather than announced. */
+  border-color: color-mix(in srgb, var(--node, var(--ink-1)) 40%, transparent);
+  border-image: conic-gradient(
+    from var(--cell-sweep),
+    transparent 0turn,
+    color-mix(in srgb, var(--node, var(--ink-1)) 65%, transparent) 0.06turn,
+    transparent 0.14turn,
+    transparent 1turn
+  ) 1;
+  /* Unhurried. It is a condition, and a light going round a 30px square in
+     three seconds reads as urgency the fact does not have. */
+  animation: cell-sweep 6s linear infinite;
+}
+
+@keyframes cell-sweep {
+  to { --cell-sweep: 1turn; }
+}
+
+/* Four phases is enough to break the lockstep without anybody being able to
+   see the pattern in it. */
+.cell--new:nth-child(4n+1) { animation-delay: -0.9s; }
+.cell--new:nth-child(4n+2) { animation-delay: -2.6s; }
+.cell--new:nth-child(4n+3) { animation-delay: -4.2s; }
 
 /* A saved position, marked with the kit's corner tick — the same device that
    means "one you have" everywhere else, which is exactly what a waypoint is. */
@@ -2561,9 +2877,137 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
   content: "";
   position: absolute;
   top: 0; right: 0;
-  width: 5px; height: 5px;
+  width: 18%; height: 18%;
   background: var(--warn);
   clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+
+/* ── The map and its key, side by side ────────────────────────────────────
+   The map scrolls and the key is reference material, so the key gets a column
+   of its own rather than a strip of dead space under a short map.
+
+   THE KEY OVERLAYS WHEN IT OPENS, exactly as the rail does and for the same
+   reason: the map is a scrolling window that re-centres on the player, and a
+   column that pushed it narrower on hover would move the ground under the
+   cursor. The frame reserves the collapsed width and the key grows over the
+   map's right edge. */
+.gridmap-frame {
+  /* Declared HERE and not on the key, because the frame is what reserves the
+     room: a custom property set on a child cannot be read by its parent, and
+     `padding-right: var(--key-w)` with nothing to resolve is a frame that
+     reserves nothing and a key that sits on top of the map's right-hand
+     column. The key inherits both. */
+  --key-w: 46px;
+  --key-w-open: min(240px, 70vw);
+  position: relative;
+  padding-right: var(--key-w);
+}
+
+/* A column of swatches that opens to swatches and words. Three ways in, the
+   same three the dock has: pointing at it where a pointer exists, the toggle
+   everywhere (which is the only way in on a phone), and focus-within, which is
+   what a keyboard needs. */
+.maplegend {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--key-w);
+  max-height: 100%;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  background: var(--bg-1);
+  border: var(--hair) solid var(--line-1);
+  transition: width var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
+}
+
+.maplegend:is(:focus-within, [data-expanded]) {
+  width: var(--key-w-open);
+  box-shadow: var(--shadow-2);
+}
+
+/* Only where a pointer can hover: a touch device keeps :hover stuck on the
+   last thing tapped, which would leave the key jammed open over the map. */
+@media (hover: hover) {
+  .maplegend:hover { width: var(--key-w-open); box-shadow: var(--shadow-2); }
+  .maplegend:hover .maplegend__label { opacity: 1; }
+}
+
+.maplegend__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 100%;
+  padding: var(--s-2);
+  background: none;
+  border: 0;
+  border-bottom: var(--hair) solid var(--line-0);
+  color: var(--ink-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.maplegend__toggle:hover { color: var(--ink-0); }
+
+.maplegend__icon {
+  flex: none;
+  width: 26px;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.maplegend__keys {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-2);
+}
+
+.maplegend__key {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+/* The words are what the width buys. They fade rather than appear, because the
+   column is already sliding and two motions that disagree read as a glitch. */
+.maplegend__label {
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+  color: var(--ink-1);
+  opacity: 0;
+  transition: opacity var(--t-base) var(--ease);
+}
+
+.maplegend:is(:focus-within, [data-expanded]) .maplegend__label { opacity: 1; }
+
+/* ON A NARROW SCREEN THERE IS NO ROOM BESIDE THE MAP, so the key goes back
+   under it — and stays collapsed, because a legend is something you consult
+   rather than something you watch. Closed it costs one line; open it is the
+   wrapping row it always was.
+
+   The breakpoint is where a 46px column stops being affordable next to a map
+   worth looking at, not a device. */
+@media (max-width: 719px) {
+  .gridmap-frame { padding-right: 0; }
+
+  .maplegend {
+    position: static;
+    width: auto;
+    max-height: none;
+    margin-top: var(--s-3);
+  }
+
+  .maplegend__keys { display: none; }
+
+  .maplegend[data-expanded] .maplegend__keys {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-4);
+  }
+
+  .maplegend__label { opacity: 1; }
 }
 
 .gridmap__legend {
@@ -2578,12 +3022,25 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
 /* The legend reuses .cell so a swatch cannot drift from the thing it explains.
    Size only — the border and fill stay the modifier's business, or the shorthand
    here would repaint the very colours the legend exists to show. */
-.gridmap__swatch { width: 14px; height: 14px; flex: none; }
+/* A swatch is a small .cell, and it has to stay a cell: the whole point of the
+   legend is that its samples are the real thing wearing the real classes.
+   So it overrides the two things that do not survive being shrunk — the size,
+   and the glyph inside it, which is sized for a 60px square and would hang out
+   of a 14px one. Big enough to show a glyph, because for half these entries
+   the glyph IS what is being explained. */
+.gridmap__swatch {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  font-size: var(--fs-sm);
+}
 
 /* A real target for a thumb. The map scrolls, so this costs visible cells
    rather than legibility — the right way round. */
+/* The touch size used to be an enlargement. It is a floor now that the cell is
+   60px, and kept for the day somebody tunes that number down. */
 @media (pointer: coarse) {
-  .gridmap { --cell: 44px; }
+  .gridmap { --cell: max(44px, 60px); }
 }
 
 /* ============================================================================

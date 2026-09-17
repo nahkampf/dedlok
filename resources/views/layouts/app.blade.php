@@ -23,6 +23,15 @@
 {{-- One query, and only for a signed-in character: the topbar's process
      count and the modal behind it read the same collection. --}}
 @php($processes = $hud?->runningProcesses() ?? collect())
+{{-- Which of those processes is reading a machine, keyed by the process row.
+     One query for the lot rather than one per process: a scan points at the
+     instance doing it (`system_scans.reading_process_id`), so the answer is a
+     pluck rather than a join, and a deck full of analysers still costs one. --}}
+@php($reading = $hud === null || $processes->isEmpty() ? collect() : \App\Models\SystemScan::query()
+    ->where('character_id', $hud->id)
+    ->whereIn('reading_process_id', $processes->modelKeys())
+    ->live()
+    ->pluck('address', 'reading_process_id'))
 
 <div class="shell @auth shell--docked @endauth">
 
@@ -224,11 +233,38 @@
                     <div style="min-width:0">
                         <div style="color:var(--ink-0)">{{ $process->item?->displayName() }}</div>
                         <div class="micro" style="color:var(--ink-2)">
-                            {{ $program?->kind->label() }}
+                            {{-- WHAT IT IS DOING BEATS WHAT IT IS. An analyser
+                                 pointed at a machine is a running scan, and
+                                 that is the thing a player walked away from
+                                 and wants back — so the row says so and opens
+                                 the read, which is why that dialog lives in
+                                 this layout and not on the map. --}}
+                            @if ($reading->has($process->getKey()))
+                                {{ Text::get('cyberspace.reading.running_label') }}
+                            @else
+                                {{ $program?->kind->label() }}
+                            @endif
                             @if ($process->started_at)
                                 &middot; {{ $process->started_at->diffForHumans() }}
                             @endif
                         </div>
+
+                        @if ($reading->has($process->getKey()))
+                            @php($address = $reading->get($process->getKey()))
+                            <div class="row row--wrap" style="--gap:var(--s-2);margin-top:var(--s-2)">
+                                <button type="button" class="btn btn--sm btn--ghost cut"
+                                        data-reading-open="{{ $address }}">
+                                    {{ Text::get('cyberspace.reading.open') }}
+                                </button>
+                                <form method="POST" action="{{ route('cyberspace.abandon') }}">
+                                    @csrf @method('DELETE')
+                                    <input type="hidden" name="address" value="{{ $address }}">
+                                    <button type="submit" class="btn btn--sm btn--ghost cut">
+                                        {{ Text::get('cyberspace.reading.abandon') }}
+                                    </button>
+                                </form>
+                            </div>
+                        @endif
                     </div>
                     @if ($program)
                         <div class="micro num" style="text-align:right;color:var(--ink-2);white-space:nowrap">
@@ -247,7 +283,118 @@
             <a class="btn btn--sm cut" href="{{ route('deck.index') }}">{{ Text::get('programs.open_deck') }}</a>
         </div>
     </dialog>
+
+    {{-- THE READ, AS A SCREEN YOU WATCH.
+
+         IN THE LAYOUT RATHER THAN ON THE MAP, and for the same reason the running
+         processes are: a read is a background process, it outlives its owner
+         walking away from the machine, and once you have left the map this is the
+         only place it is visible at all. It depends on nothing the map knows —
+         every value in it arrives from the polling endpoint — so being here costs
+         one dialog on every page and buys the screen being reachable from the bar.
+         A pass takes minutes, so what a player wants while one runs is: what am I
+         pointed at, with what, how far in, and what has it told me so far. It
+         polls `cyberspace.reading`, which settles a matured pass on the way past —
+         so the answers fill in the moment a pass finishes rather than at the next
+         reload. --}}
+    <dialog class="modal" id="reading" data-reading
+            data-reading-url="{{ route('cyberspace.reading') }}"
+            data-reading-pass="{{ Text::get('cyberspace.reading.pass_of', ['pass' => ':pass', 'total' => ':total']) }}"
+            data-reading-unread="{{ Text::get('cyberspace.reading.unread') }}"
+            data-reading-complete="{{ Text::get('cyberspace.reading.complete') }}"
+            data-reading-idle="{{ Text::get('cyberspace.reading.idle') }}"
+            data-reading-exhausted="{{ Text::get('cyberspace.reading.exhausted') }}"
+            data-reading-gone="{{ Text::get('cyberspace.reading.no_file') }}"
+            data-reading-os-known="{{ Text::get('cyberspace.reading.os_known') }}"
+            data-reading-os-unknown="{{ Text::get('cyberspace.reading.os_unknown') }}"
+            @if (session('reading')) data-reading-open="{{ session('reading') }}" @endif>
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('cyberspace.reading.title') }}</span>
+            <div class="spacer"></div>
+            <span class="spinner" data-reading-spinner hidden aria-hidden="true"></span>
+        </div>
+
+        <div class="panel__bd">
+            <div class="stack" style="--gap:var(--s-3)">
+                <div>
+                    <span class="micro">{{ Text::get('cyberspace.reading.target') }}</span>
+                    <p style="margin:0"><strong data-reading-name>—</strong></p>
+                    {{-- WHERE, THEN WHAT. The glyph is the old symbol for the
+                         globe and it marks the coordinates as a PLACE — the one
+                         line on this screen that is not a property of the machine.
+                         From the geometric set the kit has proved, like every
+                         other glyph in the game. --}}
+                    <p class="micro" style="margin:0;color:var(--ink-2)">
+                        <span aria-hidden="true">&#x2295;</span>
+                        <span data-reading-position>—</span>
+                        ·
+                        <x-address address="—" data-reading-address />
+                    </p>
+                </div>
+
+                <div>
+                    <span class="micro">{{ Text::get('cyberspace.reading.instrument') }}</span>
+                    <p style="margin:0" data-reading-instrument>—</p>
+                </div>
+
+                {{-- How far in. The bar is the kit's own, driven by --v, and it is
+                     the same fraction the cell on the map is drawing. --}}
+                <div>
+                    <p class="micro" style="margin:0 0 var(--s-1)">
+                        <span data-reading-pass>—</span>
+                        <span data-reading-ready style="color:var(--ink-2)"></span>
+                    </p>
+                    <div class="progress"><div class="progress__bar" data-reading-bar style="--v:0"></div></div>
+                    <p class="micro" style="margin:var(--s-1) 0 0;color:var(--ink-2)" data-reading-note></p>
+                </div>
+
+                {{-- Everything a scan asks, including the four nothing can answer
+                     yet: a screen that grew rows as features landed would be a
+                     screen nobody learns. --}}
+                {{-- The kit's own stat rows, which is what these are: a label on
+                     the left and what the machine gave up on the right. --}}
+                <div class="card__stats" style="padding:0;border:0" data-reading-facts>
+                    @foreach ((new \App\Models\SystemScan)->facts() as $fact)
+                        <div class="card__stat" data-fact="{{ $fact['key'] }}">
+                            <span>{{ $fact['label'] }}</span>
+                            {{-- BOTH BLANKS WEAR THE SAME BOX. "Nobody can read
+                                 this yet" and "you have not read it yet" are
+                                 different facts and neither is an answer, so the
+                                 screen does not ask the player to tell two kinds
+                                 of nothing apart. What separates them is that one
+                                 can change: a discoverable row is the one that
+                                 turns ember when the instrument comes back. --}}
+                            @if ($fact['discoverable'])
+                                <span class="tag" data-fact-value>{{ Text::get('cyberspace.reading.unread') }}</span>
+                            @else
+                                <span class="tag">{{ Text::get('cyberspace.reading.not_yet') }}</span>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
+        {{-- TWO WAYS OUT, AND NEITHER IS "CLOSE".
+
+             A read carries on whether or not anybody is looking at it, so a button
+             called Close would be naming the window instead of the thing in it.
+             One button says what continues and the other says what stops — and
+             what stops is worth confirming nothing, because the pass is already
+             spent either way and the file keeps what it found. --}}
+        <div class="panel__ft">
+            <form method="POST" action="{{ route('cyberspace.abandon') }}" data-reading-abandon>
+                @csrf @method('DELETE')
+                <input type="hidden" name="address" data-reading-abandon-address value="">
+                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('cyberspace.reading.abandon') }}</button>
+            </form>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn--sm cut" data-close>{{ Text::get('cyberspace.reading.background') }}</button>
+        </div>
+    </dialog>
 @endif
+
+
 
 <script src="{{ Asset::url('assets/js/ui-kit.js') }}" defer></script>
 @stack('scripts')

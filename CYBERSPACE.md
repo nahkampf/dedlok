@@ -21,6 +21,56 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Addresses | **built**; generated, validated and normalised, and unique on the table |
 | The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
 | System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
+| Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
+| The OS as a gate you cannot see | **specified only**; a machine whose OS you lack is entered rather than refused, and every action against it fails. Indistinguishable from bad luck on purpose — a refusal would hand over a scan fact for free |
+| Egress | **specified only**; always possible, never certain. A derived chance from attributes and skills against a per-grade difficulty, not a roll against the ICE |
+| The run, interactive | **the spine is built**: `runs` is durable state, `App\Cyberspace\RunStarter` begins and ends one, and `characters.current_run_id` is what says somebody is inside. The turns themselves are the simulator and are not built |
+| The fight | **built**; `App\Cyberspace\Simulator` resolves one turn — the player acts, then the machine does. An icebreaker grinds integrity down, a miss does nothing at all, and a defeat ejects before the waiting screen |
+| Detection, on approach | **built**; every watcher on the machine rolls against the runner's `stealth` and any one success detects them. Nothing is woken by a run that goes unnoticed. The global certainty floor, not a kind of its own |
+| Detection, on the core | **built**; extraction touches the core, so it is the second roll — every watcher gets a fresh look, independent of what happened on approach, and the roll fires whether or not the extraction it accompanies goes on to succeed |
+| Extraction | **built**; `App\Cyberspace\Extractor` takes creds and catalogue items the moment the core is touched, a catalogue item merging the way an archetype loadout does. A file becomes one unstackable "Encrypted Data Dump" carrying its real numbers as JSON, and costs turns to match its size in QB, cut back down by the deck's resolved bandwidth — `runs.extracting_qb` is the countdown, and `App\Cyberspace\Simulator` spends it a bandwidth's worth per turn, so the ICE (if anything woke) keeps swinging on every turn a pull runs |
+| `RunEnding::Completed` | **built**; egress after a successful extraction ends this way rather than as a plain egress — "they did what they came to do" is only true from that point on. `runs.extracted` is the flag both doors to leaving check |
+| The trace | **advances**, once something has noticed: the machine's `tracer_rate` a turn, and it WALKS the routing chain, one hop a turn: a single attempt at the next system, passed or not, and a hop once passed is behind it for good. Grade 1 never holds it, grade 9 holds it four turns in five. Drawn on the run screen as the chain it walks, with an estimate of the turns left |
+| A completed trace | **built**; puts heat on the character (one point, a placeholder — see TODO.md) and calls the chain-burn, which is a no-op because there are no backdoors |
+| The two thresholds | **built**; they ACT before the player's choice, every character is born with 70% and 30%, and they are set in an accordion on the map. Zero turns one off |
+| The run lock | **built**; `EnsureRunIsFinished` sends every request but signing in, signing out and the run's own routes back to it. Admin routes are NOT exempt, unlike `RequireCharacter` — a run is a character in jeopardy |
+| The readiness net inside a run | **built**; `EnsureDeckStillRuns` stands down while `current_run_id` is set, so a burnout resolves its own ending instead of racing a middleware that would call it a readiness loss |
+| The OS gate at the door | **built**; a machine whose operating system the runner lacks is ENTERED and `runs.os_locked` records it. Nothing shows it, and nothing reads it yet — the failures it causes are the simulator's |
+| The run lock | **specified only**; while a run is live every request but signing in and out is sent back to it. This is what replaces "pulling the plug cannot save you" |
+| The blind-run warning | **specified only**; the screen that starts a run names what the scan did not find out, from `SystemScan::unknowns()` |
+| Mapping as a run purpose | **withdrawn**. The probe took the job: a read happens on the open grid, produces the same sellable file, and needs no run. Scanning from inside a run is not allowed either — a blind run is a commitment |
+| A scan is spent by the run that uses it | **built as a column** (`system_scans.used_at`, consumed on first use); nothing spends one, because spending one means a run. In co-op the most complete file covers the party and only that file is spent |
+| Concurrent runners | **specified only**; a machine holds several at once and they are not instanced. First extraction takes it, and both raids count |
+| A cancelled run | **specified only**; burned or locked down under you ends the run for 1 flat SI and nothing else. Asked on the lock, never by a sweeper, and the run row carries the ADDRESS so a burned target is an ordinary answer |
+| Coordinated Strike, Advanced Coordination | **not built**; rank 8 (needs Cyberdecks 5) and rank 16 (needs Coordinated Strike 5), +1 co-op slot per level each. Skill ROWS, authored in the editor — but the `coop_slots` stat has to exist first or the modifier editor refuses the target |
+| `coop_slots` | **not built**; the base is 0 in config and every slot is a modifier. `program_threads`' shape, floored at ZERO rather than one, because zero is the gate |
+| Detection scaling with party size | **decided, and it is no number at all**: every runner rolls their own approach and detection is party-wide, so a party is louder by compounding. A per-runner difficulty term was measured and rejected — it changes nothing at the grades co-op is for |
+| A trace per runner | **specified only**; one meter each on the same clock, so a completed trace burns the chain that runner came in on and not the party's |
+| The turn protocol | **specified only**; a turn resolves when all have chosen or 30 seconds pass, an absent player is resolved by their own thresholds, and `auto-run` hands the whole run to them. Shared with physical combat as a PROTOCOL, never as an engine |
+| The two thresholds | **specified only**; they ACT rather than warn, every character is born with 70% trace and 30% SI, and they are changed in an accordion on the cyberspace screen |
+| The notification queue | **not built**, and named here because a cancelled run needs one. One place, reached from the rail, with priorities and categories. Until it exists the cancellation screen is the notification |
+| Scanning — the probe | **built** for what a system currently HAS: grade, operating system, intrusion detection and tracer. A machine with none of the last two reads as *None*, which is an answer rather than an unread field. Needs an analyser RUNNING on the equipped deck; one press starts a READ, which goes round pass after pass until the file is whole or the `scan_passes` budget is gone |
+| A pass takes TIME | **built** — about a minute against a grade 1 and sixteen against a grade 9, cut by skill and by a better instrument through the `scan_duration` stat. Settled lazily by whoever next looks |
+| Node inventories — what a machine holds | **built** — creds always, a generated FILE on a roll, and none to several items, all scaled by grade and leaned by type. `system_contents`, written by `App\Cyberspace\NodeStocker` |
+| Rarity, per grade band | **built** — `loot_tables`, one row per (type, band, rarity). Grades 1–3 see rare at 1%; ultra-rare is weight 0 below grade 8, which is a wall and not a long shot |
+| What a raid can carry out | **built** — data only. A node never yields a physical object: the shelf is `on_market` items whose `container` is `data` |
+| A machine told what to hold | **built** — `systems.stock_rule`, NULL on nearly every row: `fixed` for exactly these, `any_of` for this many from a set, `plus_random` to keep the ordinary draw as well. What mission systems will use; nothing sets one yet |
+| Nightly restock | **built** — `cyberspace:restock`, a TOP-UP like the market's pass: a node still holding something is left alone, so emptying one is temporary |
+| The raid counter | **built as a column**; `systems.raids`, on the system and not the character. Nothing increments it, because nothing can raid |
+| A read runs in the background | **built** — it belongs to the running copy of the scanner, not to where its owner is standing: walk away or jack out and the answer is waiting |
+| Two instruments, two machines | **built** — a second read needs a second running instance, which costs its own compute and a free thread |
+| Threads — how many copies of one program run at once | **built** — `program_threads`, one by default, raised by Multithreading and only for software flagged `multithreaded` |
+| An interrupted read is lost | **built** — the analyser has to have been running for the WHOLE pass, which `inventory_items.started_at` answers without recording a history |
+| Defences — the IDS and the tracer | **built** as columns on `systems`, decided once at creation and stored. Type guarantees two countermeasures and grade rolls the third; `App\Cyberspace\Defences` is the decision. Nothing rolls against them — that is the simulator |
+| A machine told what to defend itself with | **built**, and it needed no mechanism: defences are stored rather than derived, so a mission node is a row with different numbers in the same columns |
+| Defeat tags | **built and APPLIED.** `App\Cyberspace\DefeatResolver` rolls and applies every tag a piece of ICE carries the moment it wins — Flatline deepens the neural-damage injury, Neural Shock lands on current hit points, Surge destroys fitted modules one roll per module, Erase wipes storage AND anything running, Skim takes a share of carried creds. Called from `Simulator::resolveEnding()` before the ejection, per the bad-ending order |
+| What each piece of ICE does | **written**, by `cyberspace:tag-ice`. The bottom of the ladder carries nothing, permanent damage starts in the grade 6-7 band, and Erase III — the deck wipe — is on exactly one piece |
+| Whether losing gets a price put on you | **built** as `systems.ice_bounty`, rolled per MACHINE when its ICE is assigned. The same guard on two systems is two different risks, and **a scan reads it** — folded into the ICE fact, one roll for both |
+| Icebreakers | **built** as twelve programs, damage carried as a modifier on `icebreaker_damage`. **Twenty turns is never enough** — every one does strictly less than would break its matching ICE in that time, and the whole gap is left for skills |
+| Fighting at all | **gated behind training, deliberately.** A bare character cannot beat even ICE I: thirty turns against its 1.05 SI a turn is 31.5 against a starting pool of 31. The bottom of the grid is walkable, not fightable |
+| ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are content — `cyberspace:tag-ice` writes them, a console command and not a migration, so a fresh database's ICE carries none until it is run |
+| Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
+| Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
 | Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
 | Discovery — contact | **built** as rows keyed by position, with no foreign key to `systems` on purpose |
 | Sweeping — the act that writes both | **built**; `App\Cyberspace\Sweep`, clipped to the grid |
@@ -34,17 +84,19 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Marking a machine you have not seen before | **built**; `system_contacts.first_seen_at`, carried through a sweep and restarted when a different address appears at a position |
 | Moving by tap, click and key | **built**; the eight around you are buttons, arrows and the numpad reach the same eight |
 | The storage socket and its measure | **built**; every deck has one, and nothing reads the totals yet |
-| The check layer it all resolves through | **partly built** — `check.*` stats, the dependency graph, conditional modifiers, `character_modifiers` and skill effects all exist; nothing ROLLS a check yet. See MECHANICS.md |
+| The check layer it all resolves through | **built** — the stats, the graph, conditional modifiers, `character_modifiers`, skill effects, and now the die: `App\Checks\CheckRoller`. Nothing calls it, because nothing has a difficulty yet. See MECHANICS.md |
 | Jack in / sign in — the vocabulary split | **done**; auth reads Sign in / Sign out, and `ui.action.jack_*` is reserved for cyberspace |
 | Operating System skills — AuraOS, Prism-V, IRONCLAD, Lattice | **built** as skill rows; nothing reads them |
 | Network Topology, System Profiling, Advanced System Profiling | **built** as skill rows; nothing reads them |
 | Encryption skills — Cinder, Halcyon-3, BLACKGLASS, Ouroboros | **built** as skill rows with books; placeholder descriptions, no prerequisites yet |
 | `DeckTotals::isReady()` — the readiness gate | **built**; jacking in is what will call it |
+| The waiting screen | **built**; `App\Characters\WaitingRoom`, one minute through the `recovery_minutes` stat, released lazily on the next request. **Zero to one, and no further** — getting up is not healing. `ReadinessWatch` is its first caller, and the ejection happens before it |
 | Synaptic Integrity as a resource | **built**, and the readiness dump is the first thing that damages it. Damage resolves like any other number — origin and resource are both tags, so a resistance is a modifier; see MECHANICS.md. Reaching zero has no consequence yet: there is no waiting screen |
 | AuraOS in the Deck Jockey loadout | **done**; granted at level 1 alongside the deck |
 | The thermal rename | **done**. Accumulation itself is **specified only** — nothing runs a deck yet |
-| Burning a module out mid-run | **specified only**; the thermally weakest module is destroyed, the trace is cancelled, the player is thrown out for 25–75% of current SI and a 12% chance of a flatline taking 5–15% of maximum SI. The numbers are in `config/cyberspace.php` and nothing reads them |
-| The order a bad ending resolves in | **specified only**; damage, then consequence, then ejection, then the waiting screen — one order for defeats, burnouts and readiness losses alike |
+| Burning a module out mid-run | **specified only**; the thermally weakest module is destroyed, the trace is cancelled, the player is thrown out for 25–75% of current SI and a 12% chance of a flatline — **Flatline I**, the mildest there is, because a burnout is an accident. The numbers are in `config/cyberspace.php` and nothing reads them |
+| Flatline levels | **specified only**; I-III at 4-10 / 9-16 / 14-19 per cent of maximum SI, and none of them reaches a fifth. `config/cyberspace.php`, unread |
+| The order a bad ending resolves in | **specified only**; damage, then consequence, then ejection, then the waiting screen — one order for defeats, burnouts and readiness losses alike, and **a consequence never becomes a new cause of damage within it**. That is what says a Surge carries its own tag and nothing else |
 | Radiator cooling, recalibrated for accumulation | **done** as data — the eight radiators, compressed to 90–520 TU |
 | `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
 | Routing, Advanced Routing | **built** as skill rows with books and prerequisites; nothing reads them |
@@ -525,6 +577,56 @@ fitted in it while jacked in. Three writers enforce one rule — `ModuleFitter`,
 `DeckEquipper`, and the destroy path. Everything else is unaffected: the stash
 still opens, other items can still be destroyed, training carries on.
 
+### The operating system is a gate you cannot see
+
+**Every machine runs an operating system, and you need the matching skill at
+level 1 to do anything to it.** What makes it a gate rather than a door is that
+**nothing ever tells you which one it runs.** A scan is the only thing that
+answers that question, and a run against a machine whose OS you do not have is
+not refused — it is entered, and then **every action you take against the system
+fails.**
+
+**A refusal would be the leak.** "You do not have Lattice" is a scan fact handed
+over for one click, for free, with no instrument running and no minutes spent —
+so anybody could read the operating system off every machine on the grid by
+trying to enter it. The gate has to cost a run, or it is not a gate; it is a
+lookup.
+
+**The failures are indistinguishable from bad luck, deliberately.** Nothing in
+the log says the commands are not understood, because that sentence narrows the
+OS to one you do not have and the whole point is that nothing narrows it for
+free. What the player has instead is the PATTERN: every action failing, run
+after run, is not what a bad night looks like.
+
+**That signal is a streak, and a streak needs length.** Three failures in a row
+is an ordinary afternoon at the certainty floor, so a short poke at a system
+teaches nothing and a long haul teaches quickly.
+
+**An interactive run is what makes this legible**, and it is the strongest
+argument the turn loop has. A player who suspects something is wrong can spend
+another turn to find out, and another — watching a dozen actions fail in a row is
+a conclusion, where a log of three failures handed over after the fact is a
+shrug. The cost of asking is real, since every turn is trace and heat, which is
+exactly the shape this should have: the answer is available and it is not free.
+
+It follows that **nothing may cut a run short on the player's behalf while
+everything is failing.** Shortening it is deleting the only evidence there is.
+
+**What fails is what touches the SYSTEM.** Extracting, backdooring, injecting,
+burning, and scanning from inside. Everything that happens TO the player carries
+on exactly as normal: the IDS still rolls on approach, the tracer still traces,
+the ICE still hits, and the deck still cooks. That asymmetry is the fiction —
+the room works, and it is the intruder who cannot operate in it.
+
+**Egress is never one of the things that fails.** See below: leaving is always
+possible, whatever else is not.
+
+Two consequences fall out of it, and both are wanted. **The raid counter does
+not move**, because nothing succeeded — so a machine that beat you this way is
+still there to come back to once you have read it. And **there is no cheap probe
+here**: finding out costs the approach roll, the turns and the heat, which is
+several orders more than a refusal would have cost.
+
 ### Scanning
 
 You can go in blind. It carries steep penalties, and against a system several
@@ -539,9 +641,12 @@ penalty; a partial one means penalties in proportion to what you did not find.
 **Scan data is perishable.** It expires **48 hours** after it is taken, and it
 is **consumed the first time it is used**.
 
-**A mapping run produces a file you can sell**, and that is the whole point of
-the run type — a safer living than intrusion, for people who would rather be
-paid less and survive.
+**A scan produces a file you can sell**, and that is the whole point of mapping
+as a living — safer than intrusion, for people who would rather be paid less and
+survive. **It is not a kind of run**: reading a machine happens on the open
+grid, from the square you are standing on, and needs no run to be inside of.
+That is what makes it the safe trade — there is no core to avoid touching,
+because you never went in.
 
 - **Sold to another player**, on the market, it is ordinary goods: the buyer
   gets one use of it and the system is none the wiser.
@@ -556,18 +661,80 @@ churning the grid for everybody.
 
 ### The run plan
 
-**A run is atomic. Every decision is made before it starts.** The player picks
-the target, the purpose, solo or cooperative, their software loadout, and their
-two thresholds; the server resolves the whole thing in one transaction; and the
-client replays the log so it reads as it happened. Nothing is interactive, and
-that is a feature — it means preparation is the game, there is no reconnection
-problem, and pulling the plug cannot save you.
+**A run is INTERACTIVE, turn by turn.** The player picks the target, the
+purpose, solo or cooperative, and their software loadout before they go in — and
+then plays the run out: each turn they choose what to do, and the server
+resolves that turn and waits for the next one.
+
+**This reverses an earlier decision, and it is worth saying what that decision
+was buying.** A run used to be atomic — resolved end to end in one transaction,
+with the client replaying a log of something already finished. That bought three
+things, and each one has to be re-bought here rather than quietly dropped:
+
+| Atomicity bought | What buys it now |
+| --- | --- |
+| **Pulling the plug cannot save you** | **the run lock** — see below. Signing out does not end a run, it postpones one |
+| **No reconnection problem** | the run's own state IS the reconnection. There is a row, it says whose turn it is and what has happened, and coming back means being put in front of it |
+| **Preparation is the game** | still true, and no longer the whole of it. The loadout, the deck and the scan decide what you CAN do; the turns decide what you do with it |
+
+The cost is honest and should be stated: **a run is now durable state.** An
+atomic run needed no row at all — it began and ended inside one request. An
+interactive one is a state machine that has to survive a disconnect, a crash and
+a deploy, and every ending in this document has to be reachable from it. That is
+the single biggest thing phase 5 gained.
+
+What the reversal is FOR: a bad run stops being something you watch and becomes
+something you are in. Loading different software, burning a drug, or deciding
+that this is the turn to leave are decisions, and a decision made while losing is
+worth more than the same decision made on a planning screen twenty minutes
+earlier.
+
+What a turn offers: an action against the system, **loading or dropping
+software**, using something carried — a drug, a patch, a one-shot — and
+**trying to egress**, which is always on the list. Nothing here is free: every
+one of them spends the turn, and a turn is trace and thermal load.
+
+**MAPPING IS NOT A RUN, and scanning is not a turn.** It used to be a purpose
+of its own — scan only, never touch the core — and the probe took that job the
+day it shipped: a read happens on the open grid, from the square you are
+standing on, with no run, no lock and no core to avoid, and it produces the same
+sellable file. A second way to do one thing is one of them being wrong, so the
+purpose is gone and so is the scanning phase that used to head the turn table.
+
+**You cannot scan from inside, either.** Reading a machine is preparation, and
+**a blind run is a commitment** — the decision to go in without a picture is the
+decision, and being able to buy the picture afterwards from inside the room
+would refund it.
+
+**A scan is SPENT by the run that uses it**, which is what the file always said:
+`system_scans` rows are consumed on first use and were built that way before
+anything could consume one. So a file is a vulnerability report you can read
+*or* sell, never both, and walking into a machine is the moment you choose. The
+run that goes in blind spends nothing, which is the only thing going in blind
+has ever had going for it.
+
+**In a co-op run the best file covers everybody.** Whoever brought the most
+complete picture has it applied to the whole party for that run — counted as
+facts known, and settled in the run owner's favour if two files tie. **Only that
+file is spent.** Everyone else's stays whole and stays sellable, because it was
+not the one that got used, and burning the party's spare copies would make
+bringing one a penalty.
+
+**A blind run is warned about, clearly, every time.** Going in unscanned is
+allowed and always was — but it must never be something a player did without
+noticing, so the screen that starts a run says what is not known before it will
+start one. **A partial picture gets the same treatment as no picture**, naming
+the gaps rather than counting them: *you have not found out this machine's ICE
+or its tracer* is a sentence a player can act on, and "3 of 6 known" is not.
+
+That list is already exact and already computed — `SystemScan::unknowns()` is
+the questions a file has not answered — so the warning is a read of the player's
+OWN file and leaks nothing about the machine. **It also cannot help them past
+the operating system**, which is the point of that gate: being told the OS is
+unknown is not being told which one it is.
 
 The purposes:
 
-- **Mapping** — scan only, never touch the core. The safest thing you can do in
-  cyberspace, the only run that cannot trigger the second detection roll, and
-  the one that produces something to sell.
 - **Extraction** — steal what it is holding. Clean, it leaves no lockdown behind
   and the node restocks; caught, it locks down like anything else.
 - **Backdoor** — keep access. Never locks the system down, even when the run
@@ -579,20 +746,286 @@ thermal figure in the catalogue has to be calibrated against:
 
 | Phase | Turns |
 | --- | --- |
-| Scanning | 1–5. Chance-based, so a full picture may take several passes or never arrive. |
 | Fighting the ICE | 2–10, if it was ever activated. |
 | Extracting or installing | a few, scaling with the size of the data and scaled back down by the deck's bandwidth. |
 
 That last row is the whole economy of a run plan in one line: **a bigger haul is
 more turns, and a better NIC buys them back.**
 
-**Two thresholds, set as sliders, and they persist as defaults:**
+**Those turns are now a typical range and not a bound**, and the change is worth
+being explicit about because every thermal figure in the catalogue is calibrated
+against them. An atomic run took as many turns as the plan implied; an
+interactive one takes as many as the player spends, and a player may spend them
+on anything — probing a machine whose commands are not landing, waiting out a
+trace, trying egress after egress. **Nothing caps a run, and nothing should.**
+
+What stops one running forever is the deck: heat accumulates per turn and bleeds
+off at the radiators' rate, so a run long enough to be free is a run long enough
+to cook a module. **That makes thermal accumulation the real limiter on run
+length**, which is a better brake than a turn count would have been — it is
+bought with hardware, it can be planned around, and it fails loudly rather than
+by refusing a button.
+
+### The two thresholds, and what they now decide
 
 - egress if **trace** rises above *x*%
 - egress if **Synaptic Integrity** falls below *x*%
 
-They persist because they are a play style, not a per-run decision, and
-re-choosing them every time would train players to leave them alone.
+**They ACT. They do not warn.** Checked at the start of each of your turns, and
+when one is breached the egress is attempted then and there. That is deliberately
+not the gentler rule — a threshold that only warned would leave an unresponsive
+player sitting in a run that never resolves, and in a co-op run it would leave
+everybody else sitting there with them.
+
+**They persist, and every character is born with them.** 70% trace and 30%
+Synaptic Integrity, granted at creation like anything else a character starts
+with, so a player who has never found the sliders is still carried out of a run
+they were losing. They are changed in an **accordion on the cyberspace screen** —
+two sliders, open when you want them and shut the rest of the time, because
+they are a play style rather than a per-run decision and a screen that asked
+every time would train everyone to ignore it.
+
+**They are also the whole of the default-action policy**, which is what makes a
+timeout resolvable without the engine guessing at an intention. See *Taking a
+turn* below.
+
+**`auto-run` is the same idea, chosen on purpose.** A player may hand the whole
+run over to their thresholds: no timer, no prompt, each turn resolved by the
+policy until the run ends or a threshold pulls them out. It is the honest
+version of walking away — the run resolves at speed rather than crawling one
+deadline at a time, and a player who wanted the old atomic run can have one by
+ticking a box.
+
+### The run holds you
+
+**A live run is the only thing on screen.** While one is running, every request
+that is not the run itself is sent back to it: the map, the stash, the deck, the
+market, the admin tools. The two exceptions are **signing in and signing out**,
+which have to work so that a session can end and resume at all.
+
+**This is what replaces atomicity, and it is the whole reason the lock exists.**
+An interactive run that a player could walk out of is not a risk, it is a menu:
+close the tab when the ICE lands a good hit, sign back in, and the bad run never
+happened. So signing out does not end a run and does not pause its
+consequences — **it postpones a turn, and the turn is still there when you come
+back.** There is nothing to escape to.
+
+**It is the shape `RequireCharacter` already has**, and should be built as that
+shape rather than as a new idea: one middleware, a named list of what is allowed
+through, everything else redirected whatever it asked for. A JSON caller gets
+**409 and the URL**, the way both creation guards already answer one, rather
+than a redirect a `fetch()` would follow into HTML.
+
+**While a run is live, the readiness net stands down.** `EnsureDeckStillRuns`
+ejects a jacked-in player whose deck stopped meeting its requirements — and
+inside a run that is exactly the wrong answer, because a burnout or a Surge is
+*supposed* to break the deck and already resolves its own ending where it
+happens. Two middlewares would otherwise race for the same player, and the one
+that knows least would usually win. This is the same rule the deck lock follows
+and it is worth stating twice: **the net is for what happens to somebody
+standing still, never for what happens to somebody in a fight.**
+
+**Stalling is possible and is its own punishment.** Nothing forces a turn, so a
+player who is losing can simply stop — but the lock means stopping costs them
+the entire game: no stash, no training screen, no market, no second character,
+nothing, until that run is finished. A player who would rather hold a doomed run
+open forever than resolve it has chosen not to play. No timer, no scheduled
+sweep, and nothing that has to have been running — the same call the readiness
+net makes about players who walk away.
+
+### Taking a turn, and running one together
+
+**A turn resolves when everybody has chosen, or when the deadline passes.**
+Thirty seconds. A party that is paying attention moves at its own speed and
+never meets the clock; a party waiting on somebody who has walked away waits
+thirty seconds and moves on.
+
+**A timeout is not a pass — it is the player's own policy, applied.** Continue
+the purpose, unless a threshold is breached, in which case egress. That is why
+the engine never has to guess at an intention: the player declared one, in the
+accordion, and a cautious player gets cautious defaults without configuring a
+second thing. **A timeout costs exactly what acting costs** — the same turn, the
+same trace, the same heat — because the moment timing out is cheaper than acting
+it becomes a tactic.
+
+**An absent player resolves themselves.** Turn after turn of defaults walks their
+trace up or their Synaptic Integrity down until a threshold trips and carries
+them out. Nobody has to write a rule for abandonment; it falls out of the policy,
+and the lock releases when they go.
+
+**The deadline is a deadline and not a scheduled job.** The run screen polls, the
+way the reading dialog already polls while it is open, so **the polling client is
+the clock**: whichever request arrives first past the deadline is the one that
+resolves the absent players and advances the turn. If everybody walks away
+nothing resolves and the run sits frozen — which is correct rather than broken,
+since the lock is punishing all of them equally and there is nobody being kept
+waiting.
+
+**A solo run has no deadline.** The timer is a courtesy owed to other players,
+so it exists when there are other players. A solo runner who stops is only
+holding up themselves, and the lock is already the answer to that. The
+thresholds still act, and `auto-run` is still there for anyone who would rather
+not sit through it.
+
+**A PARTY IS A THING YOU TRAIN FOR, and by default you cannot have one.**
+Calling a co-op run takes **Coordinated Strike**, and a character without it
+runs alone — not as a penalty but as the ordinary state, the same way a
+character without an icebreaker cannot fight ICE. Coordinating a strike is a
+skill somebody has or does not, and no amount of deck, software or nerve
+substitutes for it.
+
+| Skill | Rank | Requires | Grants |
+| --- | --- | --- | --- |
+| **Coordinated Strike** | 8 | Cyberdecks at level 5 | +1 co-op slot per level |
+| **Advanced Coordination** | 16 | Coordinated Strike at level 5 | +1 co-op slot per level |
+
+*Coordinated Strike* — "Allows for cooperative Runs on a system, where several
+runners coordinate to strike a single system in concert."
+
+Both maxed is **ten slots**, so eleven runners in one machine. **That is overkill
+for anything currently on the grid and is meant to be** — it is built for
+machines that do not exist yet, the ones no party of three could reasonably
+take. A ceiling nobody needs today is the right shape for a ladder that has to
+have somewhere to go; what it must not be is a ceiling that arrives *after* the
+machines that need it.
+
+**It is the OWNER'S skill that sizes the party.** Whoever calls the run is who
+trained for it, which is what makes the skill worth a rank 8 and a rank 16 slot
+rather than something everybody buys one level of.
+
+**`coop_slots` is the stat**, and it is `program_threads` with one difference
+that matters: **it floors at ZERO, not at one.** A character who can run no
+copies of any program is a character for whom software stopped existing, so that
+stat is floored at 1. A character who can call no co-op runs is just a character
+who has not trained for it — zero is the ordinary state and the gate, which is
+why the base lives in config at 0 and every slot above it is a modifier.
+
+**A big party does not sneak, and it costs no new number to say so.** Every
+runner rolls their own approach, and detection wakes the ICE for everybody — so
+a party is louder simply because there are more of them, with nothing added to
+the machine's difficulty. Against a mid-career runner at grade 5 that is 29%
+caught alone, 75% as four, and 98% as eleven.
+
+**A per-runner difficulty increase was measured and rejected.** Two reasons, and
+the first is the one that settles it: **at the grades cooperation exists for, the
+shape makes no difference at all.** Grade 7 and above is already pinned at
+effectively certain detection from a party of two upward under every variant
+tried — the machines that need eleven people are machines where being noticed
+was never the question. What an added term actually changes is the grade 3-5
+band, where a party is a convenience rather than a necessity, and there it turns
+a group of four from a risk into a formality. That is not making large parties
+loud; it is making small ones pointless.
+
+The second: it would be a third multiplier on a stack this document already
+warns about. Detection compounds across ROLLS — *four of them and a clean run is
+96.6%, not 99.15%* — a party compounds that across PEOPLE, and a difficulty that
+also climbed with party size would compound a compound.
+
+**Only the approach compounds.** The IDS's second roll fires on touching the
+core, and only the runner who touches it makes that one — so eleven people are
+eleven approach rolls and still a single core roll, and the delicate work goes
+to whoever is best at it.
+
+**Two behaviours fall out of this, and both are wanted.** Stealth becomes worth
+training, because a party's chance of going unnoticed is the product of its
+members' and every weak link is felt by everybody. And **the owner has a reason
+not to invite just anyone** — an eleventh runner who is bad at this costs the
+whole party more than they bring, which is what makes a party a thing you
+assemble rather than a queue you join.
+
+**The trace runs for every runner, separately.** One meter each, advancing on the
+same clock — so an egress threshold is your own, a completed trace lands on you
+and not on the party, and the routing chain it burns is the chain *you* came in
+on. It follows that a backdoor is worth having individually rather than
+collectively: the careful runner in a loud party still gets the protection they
+paid for, and the one who came in over open ground is the one the heat finds.
+
+**The party forms at the door.** Nobody joins a run in progress — a run is a
+plan, the loadouts and the scan were decided against it, and a late arrival is a
+different plan wearing the same name.
+
+**One runner leaving does not end it.** They egress, their lock releases, and the
+rest play on. What they had already taken is theirs.
+
+**Who gets what:**
+
+- **The owner keeps the files.** The player who called the run is who the haul
+  belongs to. Parties settle the rest between themselves, which is what parties
+  do.
+- **Creds are split evenly, including with the ones who left.** Somebody who
+  egressed at turn three took a risk for the same money and is owed their share
+  of it; a split that paid only the survivors would make leaving a punishment on
+  top of a punishment.
+- **If the OWNER leaves and the run still succeeds, the files pass to one of the
+  others at random.** Not to whoever is nominally next, because there is no
+  ordering that is not somebody's advantage to engineer.
+
+**What this shares with physical combat is the PROTOCOL, not the engine.** They
+are two engines deliberately and stay two — but everybody choosing, a turn
+resolving when the last of them has or the deadline passes, and an absent
+fighter getting their own policy is how a turn is *taken*, not what an action
+*means*. When physical combat arrives it takes the same protocol and resolves it
+with entirely different numbers.
+
+### More than one runner at a time
+
+**A machine can hold several runners at once, and they are not instanced.** One
+world, one node, one shelf — and everything that follows is a consequence of
+that rather than a rule on top of it.
+
+- **The first extraction takes it.** Two runners after one file is one runner
+  with a file and one looking at an empty shelf. Instanced contents would make
+  raiding safe and the restock clock meaningless; a shared shelf is what gives
+  concurrency teeth.
+- **Both raids count.** A node retires on its third, and two thefts in one
+  evening are two thefts — the counter is about the books not balancing, and
+  they do not balance twice as slowly because it was busy.
+- **Somebody else's run can end yours.** That is the subject of the next
+  section, and it is the price of a shared world: a machine you are standing in
+  is a machine somebody else can burn.
+
+### A run that stopped being valid
+
+**Some things end a run without anybody in it losing.** The machine is burned
+out from under you; the machine locks down because another runner finished what
+they came for; the character is left in a state that cannot hold a run at all.
+All of them are meant to be possible — a world where they cannot happen is a
+world where nobody else is real.
+
+**Validity is asked on the lock, not by a sweeper.** The lock already stops every
+request from a player in a run; that interception is where *is this still a run?*
+gets asked, so nothing has to have been running and nothing has to be scheduled.
+It is the same lazy settlement a matured scan gets, a training catch-up gets, and
+the readiness net gets — a player who never comes back needs to be told nothing,
+and the moment they come back is the moment they are told.
+
+**THE RUN ROW CARRIES THE ADDRESS, NEVER THE SYSTEM ID.** Exactly the rule
+`system_scans` and `system_contacts` already follow, and for exactly the same
+reason: it has to outlive the machine. A burned target must be an ordinary
+answer — *there is nothing at that address* — rather than a foreign key
+violation or a row that cascaded away with the evidence.
+
+**A cancellation is an ending, and it is the one that already exists.** The
+player is out, it costs **one flat point of Synaptic Integrity**, and nothing
+else happens: no defeat effect, no lockdown, no raid counted, no trace. That is
+`ReadinessWatch`'s consequence and its reasoning transfers word for word — small
+because the cause was not theirs, and nonzero because being dumped out of
+cyberspace is never free.
+
+**What was already taken stays taken.** Extraction moved it; the object is the
+evidence. What had not been lifted yet is gone with the machine.
+
+**It is explained, and that is not optional.** A player thrown out of a run they
+were winning, by something they could not see, with no account of it, has been
+handed a bug rather than a consequence. The message is the notification queue's:
+*System experienced a lockdown during your run, and the run was cancelled.*
+
+**The notification centre is a named dependency and not a blocker.** It is meant
+to be one place, reached from the rail, with priorities and categories, and it
+does not exist. Until it does, **the cancellation screen is the notification** —
+the lock guarantees the player lands somewhere, so that somewhere is the
+explanation. When the centre arrives this becomes one more thing that emits into
+it rather than a rewrite.
 
 ### Detection
 
@@ -655,9 +1088,31 @@ radiator buys back heat. **Nothing in a run is free, because everything in a run
 costs turns.**
 
 It ends four ways: the ICE is defeated, the player is defeated, a threshold
-trips and the player egresses — which is itself a roll against the ICE, so
-retreat can fail and cost a turn — or **the deck burns a module out and throws
-the player through the wall.**
+trips and the player egresses — which is itself a roll, so retreat can fail and
+cost a turn — or **the deck burns a module out and throws the player through the
+wall.**
+
+**Egress is always POSSIBLE and never certain**, and those are two different
+statements. Nothing can take the attempt away — not an active ICE, not a wrong
+operating system, not a trace about to land — because a run with no exit is a
+character deleted by a door they could not see. What varies is the chance, and
+it is a DERIVED one: the character's attributes, modified by their skills, rolled
+against the system. **Leaving a high-grade machine is much harder than leaving a
+low-grade one**, which is what stops a deep run from being safe merely because
+the player set a cautious threshold.
+
+**An active ICE makes it harder.** The difficulty is the grade, plus a term for
+anything currently fighting you — so walking out of a quiet machine and tearing
+free of one mid-fight are not the same act, and an ICE is something you have to
+get past on the way out as well as on the way in. A machine whose ICE was never
+activated is the cheap exit, which is one more thing an undetected run is worth.
+
+It resolves through `App\Checks\CheckRoller` like everything else, so it carries
+the certainty floor at both ends — the best runner alive is occasionally held,
+and the worst one occasionally walks. The per-grade difficulty is the shape
+`scan.difficulty` already uses, and "modified by their skills" needs no code: a
+skill that helps you leave is a modifier targeting the egress stat, the way
+Overclocking targets `deck_qflops`.
 
 **Accumulated thermal load resets when the run ends.** Heat is a property of a
 run, not of a session or of a deck, so the risk is always about *this* run being
@@ -703,8 +1158,10 @@ When the deck freezes:
   100% from 3 upwards, which the range cannot produce. That is deliberate
   rather than a hole: the flatline below is what carries the real risk of a
   freeze, and it does not care how much SI you had.
-- **A freeze flatlines 12% of the time**, and takes **5–15% of MAXIMUM SI**
-  when it does, rolled.
+- **A freeze flatlines 12% of the time**, and when it does it deals
+  **Flatline I** — 4–10% of maximum SI, the mildest rung, rolled. See
+  *Losing*: a burnout is an accident, so it must never take more of a ceiling
+  than software built on purpose to.
 
   The chance is one number rather than the 10–15% the design first said,
   because a probability that is itself rolled uniformly is arithmetically just
@@ -735,12 +1192,13 @@ and the player cannot jack back in until they replace it. That is the lasting
 consequence and it is already expressible — no cooldown, no repair flag, no
 column.
 
-**Three different causes damage SI and they must not be conflated:**
+**Four different causes damage SI and they must not be conflated:**
 
 | Cause | Current SI | Flatline? | Program tag? |
 | --- | --- | --- | --- |
 | Readiness lost while jacked in, outside a run | **1 point**, flat | no | no |
-| The deck freezes — a module broke | **25–75% of current**, rolled | **12%**, for 5–15% of max | no |
+| A run cancelled under you — burned or locked down | **1 point**, flat | no | no |
+| The deck freezes — a module broke | **25–75% of current**, rolled | **12%**, and it is **Flatline I** | no |
 | Defeated by ICE | whatever the tag carries | only via the **Flatline** tag | **yes** |
 
 ### The order a bad ending happens in
@@ -768,13 +1226,31 @@ ordering that produces a state nothing else in the game knows how to read.
 the same door.** A defeat, a burnout and a readiness loss all end with
 `jackOut()` before anything else is shown.
 
-One thing still to decide: **does a Surge that leaves the deck unready also roll
-the freeze's flatline chance?** A Surge fires at 0 SI, so the 25–75% is nil —
-but the 12% flatline roll is not, and stacking it on top of a Surge that may
-already carry the Flatline tag would be two rolls at the same permanent damage.
-The likely answer is that the freeze's damage belongs to a *thermal* burnout and
-a Surge carries only its own tag, but it should be said out loud before either
-is written.
+**A CONSEQUENCE NEVER BECOMES A NEW CAUSE OF DAMAGE WITHIN THE SAME ENDING.**
+That is the rule the order above implies, and it is worth stating outright
+because the alternative is not merely wrong, it is circular: step 2 is where a
+consequence is worked out, and a consequence that generated fresh step 1 damage
+would re-enter an ordering whose whole purpose is that no two endings can
+disagree about what a player has left.
+
+**So a Surge carries its own tag and nothing else**, and the freeze's damage
+belongs to a *thermal* burnout. A Surge destroys fitted hardware, that hardware
+may leave the deck unready, and the unready deck is the CONSEQUENCE — it does
+not reach back and roll the freeze's 12% flatline on top of a defeat the player
+has already paid for. Otherwise whether somebody took permanent brain damage
+would come down to whether the Surge happened to destroy their NIC or their
+spare RAM, which is nobody's design decision.
+
+**The price is attached to the CAUSE, never to the end state**, and this
+document had already decided that twice over before the question was asked.
+`ReadinessWatch` handles precisely the state a Surge produces — a deck that
+stopped meeting its requirements with somebody inside it — and prices it at one
+flat point with no flatline and no tag. The table above is four causes and four
+different prices for what is, at the end, the same player in the same chair.
+
+The same answer covers everything shaped like this without anyone asking again:
+an **Erase** that deletes the program holding the deck together is the identical
+case, and so is anything else that breaks a requirement on its way past.
 
 ### Losing
 
@@ -783,26 +1259,140 @@ program that got you carries.** Offensive programs are tagged, and the tag is
 what happens. The tag set is open by design — a new consequence is a new tag,
 never new code in the simulator:
 
-| Tag | What it does |
-| --- | --- |
-| **Flatline** | permanent damage to the character's *maximum* SI |
-| **Drain** | damage to current SI beyond the defeat itself |
-| **Surge** | destroys fitted hardware; levelled (Surge I, II, III …) with rising chance and rising module count |
-| **Erase** | deletes software or data held on the deck |
-| **Skim** | takes carried creds |
-| **Bounty** | puts a bounty on the character — the mechanic comes later, the tag exists now |
-| **Lobotomy** | **paused, not built.** Strips skill points from a random skill. |
+| Tag | What it does | Levels |
+| --- | --- | --- |
+| **Flatline** | permanent damage to the character's *maximum* SI | **I-III** — 4-10 / 9-16 / 14-19% of maximum |
+| **Neural shock** | damage to current **hit points** — the mind's defeat landing on the body | **I-III** — 8-15 / 15-28 / 28-45% of maximum HP |
+| **Surge** | destroys fitted hardware, at random | **I-III** — 45% x1, 45% x2, 55% x3, **rolled per module** |
+| **Erase** | deletes software or data held on the deck | **I-III** — one file, half the deck, the whole deck |
+| **Skim** | takes carried creds | **I-III** — 10%, 30%, 60% of what you were CARRYING |
+| **Bounty** | puts a price on the character — the mechanic comes later, the tag exists now | none, and **it belongs to the MACHINE rather than to the guard**: rolled per system when its ICE is assigned, 10% under ICE I rising to 65% under ICE XII |
 
-**Lobotomy is designed and deliberately shelved**, because it is the only tag
-whose consequences do not stop at the character sheet. Losing points can lose a
-level; losing a level can invalidate a skill that required it, and a module or a
-program that required *that*; and the player has to be told all of it clearly
-rather than discovering it later as a deck that stopped working. That is a
-cascade with a notification design attached, and it is not worth building until
-the simpler tags are proven.
+**Five of the six come in strengths, and what rises is different for each** —
+an amount for Flatline and Neural Shock, a share of what you were carrying for
+Skim,
+and how much of the deck goes for Erase. `App\Cyberspace\DefeatTag` is the
+vocabulary and `config/cyberspace.defeat_tags` holds the numbers, so they can be
+tuned against one another the way the freeze's three are.
+
+**Skim reaches what you CARRIED and never what you stored**, which is the same
+rule that keeps a node's contents safe from anything that happens to a person.
+It is also the only tag a player can act on in advance: banking before a run is
+a decision, where a flatline is not.
+
+**Erase III wipes the deck** — every program and every file on it — and is the
+most expensive thing in the tag set by some distance. It belongs only on ICE
+nobody should meet by accident.
+
+**NEURAL SHOCK TAKES HIT POINTS, and it used to be called Drain and aim at
+Synaptic Integrity.** That could never have worked: a tag fires *because*
+Synaptic Integrity reached zero, and subtracting from zero is nothing. Aiming it
+at the body is what the mechanic was reaching for all along — the feedback comes
+back down the interface and stops a heart rather than a thought. It touches
+neither maximum; that is Flatline's job, and permanent.
+
+Scaled against a new character's 30 hit points, so Neural Shock III is a third
+to a half of somebody's body — enough to finish a runner who walked in hurt, and
+not an execution on its own.
+
+**SURGE ROLLS ONCE PER MODULE, not once for the tag.** Surge II is two separate
+45% rolls, so it usually takes one module and sometimes takes two or none —
+which is a different feel from a single roll that either costs both or costs
+nothing, and it is what makes the level read as *how much is at stake* rather
+than *how likely a disaster is*. On average: 0.45 modules at I, 0.90 at II, 1.65
+at III, where the top rung moves both numbers at once.
+
+**It never needs a special case for a deck with nothing in it.** A deck that is
+not ready cannot be in cyberspace at all — `DeckRequirement` wants compute,
+memory, link and power — so anybody a Surge can reach has modules to lose.
+
+A Surge does not stack with itself: a piece of ICE carries one, and the level is
+which one.
+
+**A BOUNTY BELONGS TO THE MACHINE, NOT TO THE GUARD**, and it is the only part
+of a defence that is not a property of what is defending. It lives on
+`systems.ice_bounty` and is rolled when a machine's ICE is assigned, at odds
+that climb with the PIECE's level — a tenth under ICE I, two-thirds under ICE
+XII — because what is being asked is how much trouble a guard of that calibre
+implies about whoever installed it.
+
+**So the same piece of ICE on two machines is two different propositions.** One
+of them belongs to somebody who answers. A player who has met an ICE XII and
+walked away has learned exactly what it hits for and **nothing at all** about
+whether the next one will have them followed home — which is the thing a
+catalogue-level roll could never have given, since a piece would then either
+always report you or never.
+
+No ICE means no bounty: there is nothing to lose to. `cyberspace:tag-ice` writes
+what the guards do and never touches this; `cyberspace:defend` rolls it.
+
+**A SCAN READS IT, FOLDED INTO THE ICE FACT.** One question and one roll — a
+file that knew there was an ICE XII but not whether losing to it would be
+remembered would be describing half a decision. So the answer comes out as
+*ICE XII · Bounty*, or just *ICE XII* where the owner does not answer, and a
+machine with no guard still reads *None*.
+
+That is also why `system_scans.ice_bounty` is the one answer on that table which
+is **not** nullable: `ice_level` already carries whether the fact was read, and a
+second nullable column would be a second way to ask one question — free to
+disagree with the first.
+
+**FLATLINE IS LEVELLED, I TO III**, the way Surge is, and what rises is the
+amount rather than a chance — a Flatline tag fires because the program that beat
+you carries it, so there is nothing to roll for except how much.
+
+| Level | % of MAXIMUM SI | Is |
+| --- | --- | --- |
+| **I** | 4-10 | what your own deck does to you when it cooks. A scar |
+| **II** | 9-16 | a bad night carried permanently |
+| **III** | 14-19 | the one people warn each other about |
+
+**NOTHING REACHES A FIFTH, AND THAT IS THE RULE AND NOT AN ACCIDENT.** A single
+event taking 20% of somebody's ceiling would end characters rather than mark
+them, and the whole design leans on accumulation instead: flatlines deepen one
+*neural damage* modifier, converge on a maximum of 1, and **permanently cripple
+without ever themselves killing**. The fourth one is the one that matters. A
+level that broke that would not be a harder flatline, it would be a different
+mechanic wearing the name.
+
+**The freeze is Flatline I**, and that is where the level came from rather than
+a number of its own. It used to carry 5-15% because it was the only flatline in
+the game and had nowhere else to get one; a thermal burnout is an ACCIDENT, and
+it should never take more of a ceiling than software built on purpose to do it.
+So the mildest rung is the one your own deck stands on.
+
+**Three levels is enough.** The whole usable range is fifteen points wide, and a
+fourth rung would be a distinction invisible to the person it happened to.
+
+**A PROGRAM MAY CARRY SEVERAL TAGS.** An ICE tagged Flatline and Surge does both
+— it takes a permanent piece of the ceiling *and* destroys fitted hardware — and
+the worst software in the game is worst because it carries more than one
+consequence rather than because it carries a bigger number. That is what keeps
+the tag set the whole vocabulary of losing: a new kind of bad night is a new
+combination, never a new special case in the simulator.
+
+**It does not disturb the rule above**, which is worth being plain about because
+the two look adjacent. A program with Flatline and Surge rolls **one** flatline —
+its own, because its row says Flatline — and destroys hardware, because its row
+says Surge. What it never does is roll a *second* flatline on the grounds that
+the hardware it destroyed left the deck unready. Every consequence here is
+declared by the program; none is inherited from the state the program left
+behind.
+
+**Lobotomy was designed and is now dropped.** It stripped skill points from a
+random skill, and it was the only tag whose consequences did not stop at the
+character sheet: losing points can lose a level, losing a level can invalidate a
+skill that gated a module or a program, and the player has to be told all of it
+rather than finding out later as a deck that stopped working. A cascade with a
+notification design attached, for a consequence the other six already cover
+between them. Recorded here so nobody re-derives it and mistakes it for an
+oversight.
 
 Underneath all of them: **reaching 0 SI or 0 HP puts the character on a waiting
-screen for a few minutes**, shortenable by implants and skills. It is the floor
+screen for a minute**, shortenable by implants and skills through the
+`recovery_minutes` stat. **You come back on ONE point of whatever emptied** —
+getting up is not healing, and the way back from one is Neuroplasticity, a
+clinic, or something a player does. It is the floor
 that makes every defeat cost something even when the program that beat you was
 carrying nothing worse.
 
@@ -1021,12 +1611,13 @@ is a race, and the sweep is what serialises it.
 All of it. In the order it should be built:
 
 0. Settle this document.
-1. **The check layer.** **Built**: `check.*` and `skill.*` stats, the
+1. **The check layer.** **Done.** `check.*` and `skill.*` stats, the
    derived-stat dependency graph, conditional modifiers, `character_modifiers`
-   — the table an unexpiring flatline is a row in — and skills as a
-   `ModifierSource`, so that having a skill grants something beyond its own
-   check. Still missing: anything that ROLLS one. A check is a resolved number
-   today and the die that reads it arrives with the simulator.
+   — the table an unexpiring flatline is a row in — skills as a
+   `ModifierSource`, and the die itself: `App\Checks\CheckRoller`, a logistic
+   on the margin with one tunable spread. What is left is a caller, and a
+   caller needs a difficulty — the first of those is a system's grade, in
+   phase 4.
 2. **Software.** **Built**: `programs` beside `items`, three costs, a kind that
    gates and modifiers that resolve; the admin editor; the topbar's readout;
    the deck screen's Running and Storage tabs, where a program is stopped
@@ -1052,15 +1643,108 @@ All of it. In the order it should be built:
 4. **Systems and scanning.** Grades, types, owners, node inventories, the probe,
    and the scan file. Still no combat.
 
-   **Decide here whether the probe needs a running analyser.** Nothing reads a
-   program's kind as a gate yet — that half waits on the simulator, and
-   `ProgramRunner::start()` already carries the `$duringRun` flag nothing passes
-   `true` to. If the probe turns out to be gated on an analyser, this is the
-   phase that becomes the first caller to pass it, rather than phase 5; if the
-   scan is only ever turns 1–5 of a run, the question never arises and the gate
-   stays where it is. Answer it before the probe is written, not after.
+   **Built so far**: every machine runs an operating system — a foreign key to
+   the skill that gates it, chosen by grade off the rank ladder those four
+   skills already form — and the probe reads a machine you are standing on.
+   **A pass takes minutes**: about one against a grade 1 and sixteen against a
+   grade 9 for somebody with no skill, cut by levels of System Profiling and by
+   a better instrument. One press starts a pass; the roll is made when it
+   matures, by whoever is standing there then; five passes is the budget and a
+   file lasts 48 hours. Grade and operating system
+   are what there is to find out, because they are what a system currently
+   has: the IDS, the ICE, the tracer and cloaked extras join the list as they
+   are built, each a nullable column and a line in `SystemScan::unknowns()`.
+
+   **Node inventories are built too**: every machine holds creds, and on a
+   roll a generated FILE — a size in QB, an encryption off the same ladder its
+   operating system comes from, and two values with the gap between them that
+   makes decryption a decision — and sometimes something from the catalogue.
+   All of it scales with grade and leans by type, `cyberspace:restock` tops up
+   every emptied node nightly, and `systems.raids` counts what nothing can do
+   to it yet.
+
+   **The loot table is built**: `loot_tables`, one row per (type, grade band,
+   rarity), and a NULL type meaning any machine. Grades 1-3 see rare at 1% and
+   ultra-rare is weight 0 below grade 8 — a wall rather than a long shot. What
+   a raid can carry is **data only**: files and programs, never objects, since
+   nobody is in the room.
+
+   **Defences are built, less the ICE**: `systems.ids_detection`,
+   `tracer_detection` and `tracer_rate`, decided once at creation by
+   `App\Cyberspace\Defences` and carried on the row. **Type sets the floor and
+   grade rolls the rest** — a silo always watches and always fights, a relay
+   always watches and always traces, a compute node always fights and always
+   traces and rolls for its detection, which is the machine this document means
+   when it says a system with no IDS but with ICE is real and ordinary. The
+   probe reads both, and *None* is a finding rather than an empty field.
+
+   Because they are STORED rather than derived, a mission node needs no
+   override mechanism at all: a machine that has to be dangerous is a row with
+   different numbers in the same columns. `stock_rule` exists because a node's
+   contents are re-rolled nightly; defences never are.
+
+   **ICE is built too**, which closes the defence set: a catalogue of twelve,
+   three per grade band, carrying integrity, an attack, a hit chance and a
+   detection value of its own. `ScanFact::Ice` reads, so the only fact still
+   saying *not yet* is cloaking. **Integrity and attack are the numbers to
+   expect to move** — a fight is meant to run 2–10 turns and that depends on
+   icebreaker throughput, which does not exist — and the twelve climb together
+   so the ratio survives being recalibrated. The two ends are checkable
+   today: ICE I lands 15% of the time for 7, about a point of Synaptic
+   Integrity a turn against a starting character's 31; ICE XII lands 95% of
+   the time for 57, which takes somebody at 200 SI down in four turns.
+
+   **Extraction is built too**, which closes this list. `App\Cyberspace\Extractor`
+   takes everything a `system_contents` row is holding — creds straight onto
+   the character, a catalogue item merged or created the way an archetype
+   loadout already is, a generated file becoming one unstackable "Encrypted
+   Data Dump" carrying its real numbers as JSON on the row rather than on a
+   catalogue entry that would have to pretend every file is the same object.
+   Creds and items come out the moment the core is touched; a file costs
+   turns to match its size in QB, cut back down by the deck's resolved
+   bandwidth — `runs.extracting_qb` is the countdown and `Simulator` spends it
+   down one bandwidth's worth per turn, through the ordinary turn cycle, so an
+   ICE that woke on the touch keeps swinging on every turn a pull runs.
+
+   **Still missing**: selling a scan, which needs a storefront the market does
+   not have.
+
+   ~~**Decide here whether the probe needs a running analyser.**~~ **Decided:
+   it does.** Reading a machine takes software, and the software has to be
+   RUNNING — an analyser on the equipped deck, spending compute and memory the
+   whole time. Scanning is a tool-assisted act rather than a talent, which is
+   what makes the first scanner a thing a character wants and a better one
+   worth paying for.
+
+   **A version is worth what its row says**, through the two channels every
+   program already has: `programs.modifiers` against `check.systemprofiling`
+   for a steadier read, and against `scan_passes` for another look at the
+   machine before the picture is the one you get. The probe knows about neither
+   — one arrives through the resolver and the other through a stat — so a Mk IV
+   is an item row and nothing else.
+
+   The analyser is a BACKGROUND program, not a run-only one: mapping happens on
+   the open grid. So `$duringRun` still has no caller passing `true`, and the
+   simulator remains the only thing that ever should.
 5. **The intrusion.** The simulator, the log, extraction, the defeat tags.
    Single-player only — cooperative runs are phase 7.
+
+   **The run is interactive**, so this phase is a durable state machine and a
+   lock rather than one long transaction — see *The run plan* and *The run holds
+   you*. Every ending in this document has to be reachable from that state, and
+   the lock has to be in front of it before the first bad run exists, not
+   after: a run a player can walk out of teaches them to walk out of runs.
+
+   **Built so far: all of it, in the narrow sense.** A run begins, detects on
+   approach, fights, traces, extracts — a file costing turns against the
+   deck's bandwidth the way this document always priced it — applies what a
+   defeat's tags carry, and ends — through the waiting screen where the ending
+   calls for one. What is NOT built is the richer version of several of these:
+   heat accumulates by one flat point with no decay, no thresholds and no
+   faction consequence; and the routing chain that would slow a trace down is
+   empty, because backdoors — phase 6 — do not exist. Nothing here is a gap in
+   the SPINE; every gap is a number or a mechanic phase 5 deliberately left thin
+   rather than half-inventing what phase 6 or 7 should decide.
 6. **Consequences.** Trace, heat, backdoors and routing, burn, lockdown,
    relocation, housekeeping.
 7. **The rest.** Cooperative runs, subnets, player-owned nodes, event systems,
@@ -1082,10 +1766,13 @@ dependants.
    since the system is effectively new. If it never resets, every system in
    cyberspace is on a countdown to its third raid and the grid slowly empties
    into churn.
-3. **Does the 3% floor apply to every roll or only to detection?** *No check is
-   ever certain* is a good rule for a game like this and it would also mean
-   egress can always fail and an attack can always miss. Stated as a floor on
-   detection today; it wants to be a principle or it will be applied unevenly.
+3. ~~**Does the 3% floor apply to every roll or only to detection?**~~
+   **Resolved: every roll.** It is a principle, applied once in
+   `App\Checks\CheckRoller` rather than decided per mechanic — egress can
+   always fail and an attack can always miss. A kind of roll may name its own
+   floor in `checks.floors`, which is config with the reasoning beside it and
+   never an argument at a call site; the list is empty, and a list that grows
+   past a handful means the floor has stopped being a principle.
 4. **How much is a mapping payday worth against an intrusion?** The whole run
    type is a design promise about safe income, and the ratio is what makes the
    promise true or empty. It is also what sets how fast NPC scan sales churn
@@ -1117,14 +1804,44 @@ dependants.
     within some radius of where it was — is the interesting alternative and is
     parked below rather than decided. Nothing is blocked by leaving it random.
 
-12. **Does a Surge that leaves the deck unready roll the freeze's flatline
-    chance?** The 25–75% is nil at 0 SI, but the 12% is not, and stacking it
-    on a Surge that may already carry the Flatline tag is two rolls at one
-    permanent consequence. See *The order a bad ending happens in*.
+12. ~~**Does an active ICE make egress harder, or only the grade?**~~
+    **Resolved: it does.** The difficulty is the grade plus a term for anything
+    currently fighting you, so tearing free mid-fight is not the same act as
+    walking out of a quiet machine — and an undetected run is worth one more
+    thing than it was, since an ICE that never woke is a cheap exit.
+
+13. ~~**What does an interactive run do to cooperative runs?**~~ **Answered:
+    they share a run and take turns in it.** A turn resolves when everybody has
+    chosen or thirty seconds pass, an absent player is resolved by their own
+    thresholds, and nobody is held by anybody — see *Taking a turn, and running
+    one together*. The size cap is the run owner's `coop_slots`, trained
+    through Coordinated Strike and Advanced Coordination and zero without them.
+    And the noise a party makes needs no number: every runner rolls their own
+    approach and detection is party-wide, so a party is louder by compounding
+    alone — see *Taking a turn, and running one together*. **Nothing here is
+    open any more.**
+
+14. ~~**Does a Surge that leaves the deck unready roll the freeze's flatline
+    chance?**~~ **Resolved: no.** A Surge carries its own tag and nothing else.
+    The general rule it rests on is in *The order a bad ending happens in* — a
+    consequence never becomes a new cause of damage within the same ending —
+    and it answers the next one of these before it is asked.
 
     (*Who ends the session on a bad ending* was the question here before, and
     it is settled: every bad ending ejects, through `Navigator::jackOut()`,
     before the waiting screen is shown.)
+
+15. ~~**What does Drain do, given the defeat already took you to zero?**~~
+    **Resolved: it spills into the body.** It lands on defeat, takes current
+    Synaptic Integrity, and what will not fit comes out of current hit points.
+    It touches neither maximum and it does not lengthen the wait — overshoot
+    buys damage somewhere else, never time.
+
+16. ~~**Can one program carry more than one tag?**~~ **Resolved: it can.** An
+    ICE tagged Flatline and Surge does both, and the worst software in the game
+    is worst for carrying several consequences rather than one large number. It
+    leaves the ordering rule untouched: every consequence is declared by the
+    program, and none is inherited from the state the program left behind.
 
 ---
 
@@ -1147,7 +1864,7 @@ What it would buy:
   than four million interchangeable cells — a frontier worth reaching rather
   than more of the same at a greater distance.
 - **A reason to map rather than to raid.** A region with known character is
-  information worth selling, which is the mapping run's whole premise.
+  information worth selling, which is what mapping for a living rests on.
 - **Durable waypoints.** A neighbourhood that is dense *by design* stays dense
   through relocation, so marking one is a lasting investment rather than a bet
   on a cluster holding still.

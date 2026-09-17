@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Admin\ModifierField;
 use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotKind;
 use App\Decks\SlotLayout;
 use App\Decks\SlotType;
 use App\Decks\Variant;
+use App\Implants\BodyRegion;
 use App\Market\Rarity;
 use App\Models\Item;
 use App\Programs\ProgramKind;
@@ -113,10 +115,16 @@ class ItemRequest extends FormRequest
             'memory_cost' => $this->numberOrNull('memory_cost'),
             'storage_size' => $this->numberOrNull('storage_size'),
             'background_process' => $this->boolean('background_process'),
-            // One JSON document, like the board, and decoded here so the array
-            // rules below can see its shape. A string that is not an array
-            // stays a string and fails `array`, which is the message we want.
-            'program_modifiers' => $this->programModifiers(),
+            'multithreaded' => $this->boolean('multithreaded'),
+            // Rows from the effects editor, turned into modifier definitions
+            // here so everything downstream sees the shape
+            // Modifier::fromArray() reads. A raw JSON string is still accepted:
+            // a payload written before the editor existed is not wrong.
+            'program_modifiers' => ModifierField::normalise($this->input('program_modifiers')),
+            // What the ITEM does, as opposed to the software on it. This is
+            // where an implant's effects live.
+            'modifiers' => ModifierField::normalise($this->input('modifiers')),
+            'implant_region' => $this->filled('implant_region') ? $this->input('implant_region') : null,
         ]);
     }
 
@@ -258,6 +266,14 @@ class ItemRequest extends FormRequest
             'background_process' => ['boolean'],
 
             /*
+             * Whether two copies may be pointed at two things at once. A
+             * property of the software: how many a character may run is the
+             * `program_threads` stat, and no amount of skill runs two of
+             * something this is false on.
+             */
+            'multithreaded' => ['boolean'],
+
+            /*
              * What running it does. A list of modifier definitions in the
              * shape App\Stats\Modifier::fromArray() reads, and validated by
              * BUILDING them in withValidator() — the only check that is worth
@@ -268,6 +284,27 @@ class ItemRequest extends FormRequest
              * gate is the whole of what it does.
              */
             'program_modifiers' => $isProgram ? ['nullable', 'array'] : ['prohibited'],
+
+            /*
+             * What the ITEM grants whoever has it — an implant's effects, and
+             * whatever else acquires them. Judged the same way and by the same
+             * class as the software's.
+             *
+             * Not gated on being an implant: MECHANICS is explicit that a thing
+             * with a row carries its modifiers on that row, and deciding here
+             * which KINDS of thing are allowed to would be a second opinion
+             * about that.
+             */
+            'modifiers' => ['nullable', 'array'],
+
+            /*
+             * Where in a body this goes, or nothing at all.
+             *
+             * The column is the only place a region is written down, so an
+             * implant that cannot be authored here is an implant that has to
+             * arrive by migration — which is how the placeholders got in.
+             */
+            'implant_region' => ['nullable', Rule::enum(BodyRegion::class)],
         ], $this->slotCountRules(), $this->moduleRules($hardware));
     }
 
@@ -449,25 +486,12 @@ class ItemRequest extends FormRequest
          * that message to the person who can fix it.
          */
         $validator->after(function (Validator $validator): void {
-            if ($this->programKind() === null || $validator->errors()->has('program_modifiers')) {
-                return;
+            if ($this->programKind() !== null && ! $validator->errors()->has('program_modifiers')) {
+                ModifierField::validate($validator, 'program_modifiers', (array) $this->input('program_modifiers', []));
             }
 
-            foreach ((array) $this->input('program_modifiers', []) as $index => $definition) {
-                if (! is_array($definition)) {
-                    $validator->errors()->add('program_modifiers', Text::get('admin.validation.modifier_shape'));
-
-                    continue;
-                }
-
-                try {
-                    Modifier::fromArray($definition);
-                } catch (\InvalidArgumentException $e) {
-                    $validator->errors()->add('program_modifiers', Text::get('admin.validation.modifier_invalid', [
-                        'index' => (int) $index + 1,
-                        'reason' => $e->getMessage(),
-                    ]));
-                }
+            if (! $validator->errors()->has('modifiers')) {
+                ModifierField::validate($validator, 'modifiers', (array) $this->input('modifiers', []));
             }
         });
 
@@ -582,8 +606,14 @@ class ItemRequest extends FormRequest
         // is a program — the row is what says so — so none of these stay.
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
-            $data['storage_size'], $data['background_process'], $data['program_modifiers'],
+            $data['storage_size'], $data['background_process'], $data['multithreaded'],
+            $data['program_modifiers'],
         );
+
+        // Null rather than [], for the reason a program's are: a thing that
+        // grants nothing genuinely grants nothing, and the two should not be
+        // different spellings of one fact.
+        $data['modifiers'] = ($data['modifiers'] ?? []) === [] ? null : array_values((array) $data['modifiers']);
 
         return $data;
     }
@@ -610,6 +640,7 @@ class ItemRequest extends FormRequest
             'memory_cost' => (int) ($data['memory_cost'] ?? 0),
             'storage_size' => (int) ($data['storage_size'] ?? 0),
             'background_process' => (bool) ($data['background_process'] ?? false),
+            'multithreaded' => (bool) ($data['multithreaded'] ?? false),
             // Null rather than [], because a program that only gates genuinely
             // modifies nothing and the two should not be different spellings
             // of one fact.

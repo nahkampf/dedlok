@@ -17,11 +17,19 @@ use Illuminate\Support\Facades\Config;
  * the number a scan exists to discover before you find it out the expensive
  * way.**
  *
- * IT IS NOT VISIBLE FROM THE MAP, and that is a rule rather than an omission.
- * Sweeping a position tells you a machine is there, what it calls itself, who
- * runs it and what it answers to. What it would cost you to break into is
- * exactly the thing you have to spend something to learn. Nothing may put a
- * grade into `system_contacts` or onto a cell.
+ * AN UNSCANNED GRADE IS NOT VISIBLE FROM THE MAP, and that is a rule rather
+ * than an omission. Sweeping a position tells you a machine is there, what it
+ * calls itself, who runs it and what it answers to. What it would cost you to
+ * break into is exactly the thing you have to spend something to learn, so
+ * nothing may put a grade into `system_contacts` — a sweep produces those, and
+ * a sweep is free.
+ *
+ * A grade somebody SCANNED is theirs to see, and the map draws it as a bar at
+ * the foot of the cell. That is the same rule rather than an exception to it:
+ * the number is still something you spent minutes and an instrument to learn,
+ * and the map is where having learnt it pays off. The only place a cell can get
+ * one from is a live `system_scans` row, which is what keeps the two halves
+ * from drifting.
  *
  * A class rather than an enum with nine cases: grade is arithmetic — compared,
  * ranged over, rolled — and nine singletons that exist to hold the numbers 1
@@ -109,6 +117,27 @@ final class Grade
         }
 
         return $weights;
+    }
+
+    /**
+     * The grade as the player reads it: I to IX.
+     *
+     * A ROMAN NUMERAL EVERYWHERE A GRADE IS SHOWN, and never the arabic digit.
+     * A grade is a rank rather than a quantity — nine is not nine of anything —
+     * and the numeral says so at a glance, the way a tier does. It also keeps
+     * a grade from reading as one of the many actual numbers on these screens:
+     * a tracer's rate, a pass count, a detection value.
+     *
+     * A lookup rather than an algorithm, because the range is fixed at 1-9 and
+     * a general converter would be forty lines to answer nine questions. Out of
+     * range is clamped rather than thrown: a screen is not where a bad grade
+     * should first be noticed.
+     */
+    public static function roman(int $grade): string
+    {
+        $numerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+
+        return $numerals[max(self::MIN, min(self::MAX, $grade)) - 1];
     }
 
     /**

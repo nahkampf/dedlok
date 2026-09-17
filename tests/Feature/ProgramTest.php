@@ -21,6 +21,7 @@ use App\Stats\SkillStats;
 use App\Stats\Sources\RunningPrograms;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
@@ -300,7 +301,14 @@ final class ProgramTest extends TestCase
      */
     public function test_two_running_copies_stay_two_rows(): void
     {
+        // Two copies at once needs software that multitasks and a character
+        // allowed two threads. Neither is what this test is about — it is
+        // about the two rows staying two rows — so both are simply granted.
+        Config::set('programs.threads', 2);
+
         $item = $this->programItem(qflops: 5, memory: 5);
+        $item->program->forceFill(['multithreaded' => true])->save();
+
         $stack = $this->own($item, quantity: 2);
 
         $first = $this->runner->start($this->character, $stack)->process;

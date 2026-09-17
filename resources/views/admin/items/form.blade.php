@@ -219,7 +219,32 @@
                     <span class="field__hint">{{ Text::get('admin.items.fields.accepts_hint') }}</span>
                     @error('accepts') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
+
+                {{-- Where in a body it goes, if it goes in one at all. The
+                     column is the ONLY place a region is written down, so an
+                     implant that cannot be authored here is one that has to
+                     arrive by migration. --}}
+                <div class="field" @error('implant_region') data-invalid @enderror>
+                    <label class="field__label" for="implant_region">{{ Text::get('admin.items.fields.implant_region') }}</label>
+                    <select class="select" id="implant_region" name="implant_region">
+                        <option value="">{{ Text::get('admin.items.fields.implant_region_none') }}</option>
+                        @foreach (\App\Implants\BodyRegion::cases() as $region)
+                            <option value="{{ $region->value }}" @selected($value('implant_region') === $region->value)>
+                                {{ $region->label() }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.implant_region_hint') }}</span>
+                    @error('implant_region') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
             </div>
+
+            {{-- What the ITEM grants whoever has it, as opposed to the software
+                 on it: an implant's effects live here. Not gated on being an
+                 implant, because MECHANICS is explicit that a thing with a row
+                 carries its modifiers on that row — deciding here which kinds
+                 of thing may is a second opinion about that. --}}
+            <x-modifier-rows name="modifiers" :rows="\App\Admin\ModifierField::rows($item?->modifiers)" />
         </div>
 
         {{-- Software. The mirror of the hardware panel below, and the two are
@@ -269,16 +294,27 @@
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.background_process_hint') }}</span>
 
-                    {{-- Validated by BUILDING each one — see ItemRequest. A
+                    {{-- Whether two copies may be pointed at two things at
+                         once. A property of the SOFTWARE: how many a character
+                         may run is the program_threads stat, and an icebreaker
+                         fighting two pieces of ICE is not a thing skill should
+                         be able to buy. --}}
+                    <label class="check" style="margin-top:var(--s-3)">
+                        <input type="hidden" name="multithreaded" value="0">
+                        <input type="checkbox" name="multithreaded" value="1"
+                               @checked(old('multithreaded', $item?->program?->multithreaded ?? false))>
+                        <span>{{ Text::get('admin.items.fields.multithreaded') }}</span>
+                    </label>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.multithreaded_hint') }}</span>
+
+                    {{-- Rows rather than the JSON this used to be. Validated
+                         by BUILDING each one — see ItemRequest — because a
                          shape that parses but names an op that does not exist
                          is a modifier that throws on somebody else's screen. --}}
-                    <div class="field" style="margin-top:var(--s-4)" @error('program_modifiers') data-invalid @enderror>
-                        <label class="field__label" for="program_modifiers">{{ Text::get('admin.items.fields.program_modifiers') }}</label>
-                        <textarea class="input mono" id="program_modifiers" name="program_modifiers" rows="5"
-                                  spellcheck="false">{{ old('program_modifiers', $item?->program?->modifiers ? json_encode($item->program->modifiers, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : '') }}</textarea>
-                        <span class="field__hint">{{ Text::get('admin.items.fields.program_modifiers_hint') }}</span>
-                        @error('program_modifiers') <span class="field__error">{{ $message }}</span> @enderror
-                    </div>
+                    <x-modifier-rows name="program_modifiers"
+                                     :rows="\App\Admin\ModifierField::rows($item?->program?->modifiers)"
+                                     :legend="Text::get('admin.items.fields.program_modifiers')"
+                                     :hint="Text::get('admin.items.fields.program_modifiers_hint')" />
                 </div>
             </div>
         </div>

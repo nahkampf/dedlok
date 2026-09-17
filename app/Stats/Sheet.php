@@ -135,6 +135,26 @@ final class Sheet
                 : 0.0;
         }
 
+        /*
+         * SKILL LEVELS, so a modifier can be conditional on training.
+         *
+         * Keyed `skill.<slug>` and only for skills this character actually has
+         * — an absent key and a level of zero are the same answer to
+         * `skill_at_least`, and writing every skill in the game into every
+         * context would be a row per skill per resolution for the sake of the
+         * ones nobody has.
+         *
+         * One query, through the same cached roster the sheet already uses for
+         * a skill's own stat.
+         */
+        foreach ($bare->levels() as $skillId => $level) {
+            $slug = self::skills()->firstWhere('id', $skillId)?->slug;
+
+            if ($slug !== null) {
+                $values['skill.'.$slug] = (float) $level;
+            }
+        }
+
         return Context::of($values);
     }
 
@@ -205,6 +225,23 @@ final class Sheet
 
         if (str_starts_with($statId, SkillStats::CHECK_PREFIX)) {
             return $this->checkBase((string) SkillStats::slugOf($statId));
+        }
+
+        /*
+         * A POOL sums its attributes and divides ONCE, where a formula divides
+         * each and rounds each up before adding. Four attributes of 20 over 8.5
+         * is 12 as a formula and 9.4 as a pool, and the second is what a
+         * capability should read like. See config/stats.php.
+         */
+        $pool = config("stats.pools.{$statId}");
+
+        if ($pool !== null) {
+            $values = $this->inputValues((array) $pool['attributes']);
+
+            return array_sum(array_map(
+                static fn (string $attribute): float => (float) ($values[$attribute] ?? 0),
+                (array) $pool['attributes'],
+            )) / (float) $pool['divisor'];
         }
 
         $formula = config("stats.formulas.{$statId}");

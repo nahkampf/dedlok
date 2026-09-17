@@ -40,8 +40,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * only writer today is App\Archetypes\LoadoutGranter at character creation.
  */
 #[Fillable([
-    'user_id', 'handle', 'archetype', 'creds',
-    'current_hitpoints', 'current_synaptic_integrity',
+    'user_id', 'handle', 'archetype', 'creds', 'heat',
+    'egress_trace_at', 'egress_si_at',
+    'current_hitpoints', 'current_synaptic_integrity', 'waiting_until', 'waiting_cause', 'current_run_id',
     'intellect', 'memory', 'perception', 'reflex', 'focus',
     'social', 'meat', 'motor', 'senses', 'muscle',
 ])]
@@ -134,8 +135,12 @@ class Character extends Model
         return array_merge(
             array_fill_keys(self::ATTRIBUTES, 'integer'),
             array_fill_keys(array_keys(self::RESOURCES), 'integer'),
-            ['archetype' => 'integer', 'creds' => 'integer'],
+            ['archetype' => 'integer', 'creds' => 'integer', 'heat' => 'integer'],
+            ['egress_trace_at' => 'integer', 'egress_si_at' => 'integer'],
             ['grid_x' => 'integer', 'grid_y' => 'integer'],
+            // On the floor, and what put them there. The cause is an array
+            // because none of what it describes is built — see the migration.
+            ['waiting_until' => 'datetime', 'waiting_cause' => 'array'],
         );
     }
 
@@ -413,6 +418,18 @@ class Character extends Model
             ->with('item.program')
             ->orderBy('started_at')
             ->get();
+    }
+
+    /**
+     * The run this character is inside, if any.
+     *
+     * A COLUMN AND NOT A FLAG on the runs table, so "one at a time" is not a
+     * rule anybody enforces — one column holds one value, the same call
+     * `equipped_deck_id` makes. Written only by App\Cyberspace\RunStarter.
+     */
+    public function currentRun(): BelongsTo
+    {
+        return $this->belongsTo(Run::class, 'current_run_id');
     }
 
     /** The ordered training queue: (skill, target level) pairs. */
@@ -697,6 +714,50 @@ class Character extends Model
         $this->forceFill([$resource => $current - $taken])->save();
 
         return $taken;
+    }
+
+    /**
+     * Put points back on a resource, capped at its current maximum.
+     *
+     * THE MIRROR OF takeDamage AND JUST AS DULL: an addition and a ceiling,
+     * knowing nothing about why. What healed somebody — a clinic, a drug, a
+     * trained Neuroplasticity ticking over — is that thing's business, and none
+     * of it is decided here.
+     *
+     * **Capped at the maximum AS IT IS NOW**, which is the whole reason this
+     * cannot be a subtraction with a minus sign. A character whose ceiling has
+     * been cut by flatlines heals to the smaller number, and healing must never
+     * be a way to climb above a ceiling that injury lowered.
+     *
+     * Zero is a real place to heal FROM. Nothing here refuses to bring somebody
+     * back from it — whether they may be brought back, and by what, belongs to
+     * whatever is doing the healing.
+     *
+     * Returns the points actually restored, which is not always what was asked
+     * for: a character one under their ceiling gains 1 from a dose of 5.
+     */
+    public function recover(string $resource, int $amount): int
+    {
+        if (! array_key_exists($resource, self::RESOURCES)) {
+            throw new \InvalidArgumentException(
+                "[{$resource}] is not a resource. Known: ".implode(', ', array_keys(self::RESOURCES)).'.'
+            );
+        }
+
+        if ($amount < 0) {
+            throw new \InvalidArgumentException('Healing is never negative. Damage is its own act.');
+        }
+
+        $current = (int) $this->getAttribute($resource);
+        $restored = min($amount, max(0, $this->maximumFor($resource) - $current));
+
+        if ($restored === 0) {
+            return 0;
+        }
+
+        $this->forceFill([$resource => $current + $restored])->save();
+
+        return $restored;
     }
 
     /**

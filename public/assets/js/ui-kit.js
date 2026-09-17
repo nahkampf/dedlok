@@ -524,5 +524,229 @@
     cell.click();
   });
 
-  window.UI = { toast, meter, log, type, esc, captcha, centreMap };
+  /* --- Modifier rows -----------------------------------------------------
+     Add and remove rows in the admin's effects editor.
+
+     The blueprint is a <template> in the markup rather than a string here,
+     because a row is a dozen elements with labels and a whole grouped picker
+     in it — building that by concatenation is how a form ends up with two
+     versions of itself that disagree.
+
+     INDEXES ARE REWRITTEN AFTER EVERY CHANGE. PHP reads modifiers[0], [1], [2]
+     as a list; deleting the middle one and leaving a hole turns the list into
+     a map and the shape the request expects quietly changes.               */
+  function modifierRows(scope) {
+    (scope || document).querySelectorAll("[data-modifiers]").forEach((field) => {
+      if (field.dataset.modifiersReady) return;
+      field.dataset.modifiersReady = "1";
+
+      const list = field.querySelector("[data-modifier-rows]");
+      const template = field.querySelector("[data-modifier-template]");
+      const empty = field.querySelector("[data-modifier-empty]");
+      if (!list || !template) return;
+
+      const reindex = () => {
+        list.querySelectorAll("[data-modifier-row]").forEach((row, index) => {
+          row.querySelectorAll("[name]").forEach((input) => {
+            input.name = input.name.replace(/\[(?:\d+|__index__)\]/, "[" + index + "]");
+          });
+        });
+        if (empty) empty.hidden = list.querySelector("[data-modifier-row]") !== null;
+      };
+
+      field.querySelector("[data-modifier-add]")?.addEventListener("click", () => {
+        list.appendChild(template.content.cloneNode(true));
+        reindex();
+        list.lastElementChild?.querySelector("select")?.focus();
+      });
+
+      field.addEventListener("click", (e) => {
+        const remove = e.target.closest("[data-modifier-remove]");
+        if (!remove || !field.contains(remove)) return;
+        remove.closest("[data-modifier-row]")?.remove();
+        reindex();
+      });
+
+      reindex();
+    });
+  }
+
+  modifierRows();
+  document.addEventListener("DOMContentLoaded", () => modifierRows());
+
+  /* --- The map's key -----------------------------------------------------
+     The same three ways in as the rail: hover where there is a pointer, focus
+     for a keyboard, and this button everywhere — which is the only one a phone
+     has. Closing takes the focus out with it, or the key would stay open on
+     :focus-within against the very press that shut it.                      */
+  on("click", "[data-legend-toggle]", (e, btn) => {
+    const legend = btn.closest(".maplegend");
+    if (!legend) return;
+
+    const open = !legend.hasAttribute("data-expanded");
+    legend.toggleAttribute("data-expanded", open);
+    btn.setAttribute("aria-expanded", String(open));
+
+    if (!open && legend.contains(document.activeElement)) document.activeElement.blur();
+  });
+
+  /* --- Watching a read ---------------------------------------------------
+     A scan pass takes minutes, so the dialog that shows one has to keep up
+     with it. It polls while it is open and stops the moment it is closed —
+     there is nothing to watch behind a closed dialog, and a timer left running
+     on a screen nobody is looking at is a request every few seconds for ever.
+
+     The endpoint settles a matured pass on the way past, which is why the
+     answers fill in as soon as one finishes rather than at the next reload. */
+  function reading() {
+    const dlg = document.querySelector("[data-reading]");
+    if (!dlg) return;
+
+    let timer = null;
+    let address = null;
+
+    const set = (name, value) => {
+      const el = dlg.querySelector("[data-reading-" + name + "]");
+      if (el) el.textContent = value ?? "—";
+    };
+
+    async function refresh() {
+      if (!address || !dlg.open) return;
+
+      let data;
+      try {
+        const res = await fetch(
+          dlg.dataset.readingUrl + "?address=" + encodeURIComponent(address),
+          { headers: { Accept: "application/json" } }
+        );
+        data = await res.json();
+      } catch {
+        return;   // A dropped poll is not worth saying anything about.
+      }
+
+      if (!data.found) {
+        set("note", dlg.dataset.readingGone || "");
+        return stop();
+      }
+
+      set("name", data.name);
+      set("position", data.position);
+      set("address", data.address);
+
+      // The address is a copy button, so its payload has to follow its label —
+      // otherwise the read shows one machine and the clipboard hands over the
+      // placeholder it was rendered with.
+      const addr = dlg.querySelector("[data-reading-address]");
+      if (addr && data.address) addr.dataset.copy = data.address;
+
+      // Abandoning posts an address, and the dialog is rendered once for
+      // whichever read is being watched — so the form has to follow the poll
+      // rather than the page it was rendered on.
+      const target = dlg.querySelector("[data-reading-abandon-address]");
+      if (target && data.address) target.value = data.address;
+      set("instrument", data.instrument);
+      set("pass", dlg.dataset.readingPass
+        .replace(":pass", data.pass)
+        .replace(":total", data.passes));
+      set("ready", data.running && data.readyIn ? "· " + data.readyIn : "");
+
+      const bar = dlg.querySelector("[data-reading-bar]");
+      if (bar) bar.style.setProperty("--v", data.running ? data.progress : 1);
+
+      const spinner = dlg.querySelector("[data-reading-spinner]");
+      if (spinner) spinner.hidden = !data.running;
+
+      /* An answer looks different from the absence of one. A row the
+         instrument has filled in turns ember and says what it found; a row it
+         has not stays the same box it started as. The mark on the operating
+         system is the one place a fact also says whether the reader can DO
+         anything with it — see SystemScan::markFor(). */
+      (data.facts || []).forEach((fact) => {
+        const value = dlg.querySelector('[data-fact="' + fact.key + '"] [data-fact-value]');
+        if (!value || !fact.discoverable) return;
+
+        const known = fact.value != null;
+        value.classList.toggle("tag--ember", known);
+
+        const mark = known && fact.mark
+          ? '<span class="' + (fact.mark === "ok" ? "mark--ok" : "mark--no") + '" title="' +
+            esc(fact.mark === "ok" ? dlg.dataset.readingOsKnown : dlg.dataset.readingOsUnknown) +
+            '">' + (fact.mark === "ok" ? "\u2713" : "\u2717") + "</span> "
+          : "";
+
+        value.innerHTML = mark + esc(known ? fact.value : dlg.dataset.readingUnread);
+      });
+
+      /* A read goes round by itself until the file is whole, so stopping
+         short says WHICH of the two ways it stopped: the budget ran out, or
+         the instrument was unloaded. They are different things to have done. */
+      set("note", data.complete
+        ? dlg.dataset.readingComplete
+        : (data.running
+          ? ""
+          : (data.pass >= data.passes
+            ? dlg.dataset.readingExhausted
+            : dlg.dataset.readingIdle)));
+
+      // Nothing left to watch: the read stopped, and the dialog stays open
+      // showing what it found — it is the polling that stops.
+      if (!data.running) stop();
+    }
+
+    function start(target) {
+      stop();
+      address = target;
+      refresh();
+      timer = setInterval(refresh, 5000);
+    }
+
+    function stop() {
+      if (timer) clearInterval(timer);
+      timer = null;
+    }
+
+    dlg.addEventListener("close", () => stop());
+
+    on("click", "[data-reading-open]", (e, btn) => {
+      start(btn.dataset.readingOpen);
+      if (dlg.showModal) dlg.showModal();
+    });
+
+    // A read just begun opens the screen on it, so a player sees the
+    // instrument start rather than a sentence saying it did.
+    if (dlg.dataset.readingOpen) {
+      start(dlg.dataset.readingOpen);
+      if (dlg.showModal) dlg.showModal();
+    }
+  }
+
+  /* AN ADDRESS, ONTO THE CLIPBOARD.
+
+     Every address on screen is a click away from being pasted somewhere else,
+     because that is what an address is FOR: it carries no position, so trading
+     one is harmless and expected. The alternative is a player retyping eight
+     hex characters and getting one wrong.
+
+     The write can fail — an insecure origin, a browser that refuses, a denied
+     permission — so the failure says so rather than leaving a button that
+     quietly does nothing. */
+  on("click", "[data-copy]", async (e, el) => {
+    e.preventDefault();
+
+    const text = el.dataset.copy;
+    const ok = el.dataset.copied;
+    const bad = el.dataset.copyFailed;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      if (ok) toast(ok);
+    } catch {
+      if (bad) toast(bad, { level: "warn" });
+    }
+  });
+
+  reading();
+  document.addEventListener("DOMContentLoaded", reading);
+
+  window.UI = { toast, meter, log, type, esc, captcha, centreMap, modifierRows };
 })();

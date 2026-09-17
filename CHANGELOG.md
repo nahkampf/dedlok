@@ -2,6 +2,158 @@
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-09-18
+
+Cyberspace becomes a game rather than a map. A machine can be read, it can
+notice you, it can fight back, and what it holds can be carried out — and
+losing costs something specific rather than a point off a number.
+
+### Added
+
+- **Reading a machine.** Scanning takes an analyser running on the equipped
+  deck, a pass takes minutes rather than a click, and one press is one read:
+  the scan goes round by itself until the picture is whole or the budget is
+  gone. It catches up with the clock, so an hour away is an hour of reading,
+  and a sweep every five minutes keeps the row true for anyone who is not
+  looking. A read belongs to the instrument doing it, so it survives you
+  walking to another machine or jacking out — and stopping the scanner loses
+  the pass, which is the one thing you chose.
+- **Every machine runs an operating system**, as the skill that gates it, so a
+  machine you cannot speak to is a machine you cannot take from. Finding out
+  which is what a scan is for.
+- **A machine defends itself**, decided once at creation: an IDS that watches,
+  a tracer that follows, and a piece of ICE that fights. Type sets the floor
+  and grade rolls the rest, so every machine guarantees two and rolls one —
+  what a scan tells you is never *does this have anything* but *which one is
+  it missing*. Everything hostile can notice you, so a machine with no IDS is
+  quieter rather than safe.
+- **Twelve pieces of ICE**, and a bounty that belongs to the machine rather
+  than the guard — so the same ICE on two systems is two different
+  propositions. Every icebreaker does strictly less than would break its
+  matching ICE in twenty turns, which is the floor the whole ladder is set by:
+  the first icebreaker is a tool for machines that have no ICE, and choosing to
+  fight is an investment decision.
+- **A run, played turn by turn.** Durable state, one at a time, a lock that
+  keeps you in it, and Egress always on the list — a run with no exit is a
+  character deleted by a door they could not see. The player acts and then the
+  machine does, so nobody takes a hit from something they have just destroyed.
+- **Arriving is the first thing anything gets to notice**, and detection is
+  what wakes things: an unseen run walks past the ICE and the tracer both. So
+  stealth does not make a fight easier, it makes the fight not happen.
+- **The trace walks the chain**, one hop a turn, and a hop once passed is
+  behind it. The screen draws it coming and says how many turns are left,
+  because a player should not be dividing in their head while something is
+  hitting them. Completing it puts heat on the character, which follows them
+  home.
+- **Two thresholds that act** — trace and thermal load — set from the map
+  rather than from inside a run, and they pull you out before the turn you
+  asked for. A threshold that only warned would leave an unresponsive player
+  in a run that never resolves.
+- **A defeat's tags happen.** Flatline deepens the neural-damage injury and
+  takes the ceiling with it, Neural Shock lands on the body, Surge destroys
+  fitted modules, Erase takes software and data off the deck — including what
+  was running — and Skim takes a share of your money. Losing to ICE XII no
+  longer costs what losing to ICE I did.
+- **The floor under every defeat.** Reaching zero in either resource puts a
+  character on the waiting screen for a minute and gets them up at one point:
+  the wait is not the punishment, it is what makes a defeat carrying nothing
+  still cost something. Released lazily, so the minute ends the moment the
+  player looks.
+- **Extraction — taking what a machine holds.** Creds and items are instant; a
+  file costs turns, at the deck's resolved bandwidth, and the pull runs inside
+  ordinary turns so whatever woke up keeps swinging while it does. Spending a
+  turn elsewhere pauses a transfer rather than losing it. A file becomes an
+  Encrypted Data Dump carrying its own numbers on the row, and a run that
+  extracted and then left reads as completed rather than as a retreat.
+- **What a machine is holding**, restocked nightly and topped up rather than
+  added to: creds, catalogue items and generated files, weighted by loot tables
+  that are rows rather than config. Ultra-rare is weight 0 below grade 8 — a
+  wall rather than a long shot — and nothing physical ever comes off a machine,
+  because you are not in the room. A machine may also be *told* what to hold,
+  which is what a mission node will be.
+- **Stealth**, as a pool of four attributes rather than a formula, so being
+  unseen reads like a capability rather than something you spend. It floors at
+  zero: somebody who has not trained for it is seen, every time, by everything.
+- **Neuroplasticity, and the only healing that happens by waiting** — a point a
+  minute per level, credited every minute by a worker that keeps no clock. A
+  character who has not trained it recovers nothing by sitting still, ever.
+- **Program threads**, so a scan can run while you are elsewhere and a second
+  read needs a second instrument. Multithreading raises the ceiling, and a
+  program without the flag is capped at one however good its owner is.
+- **Two evasion programs**, and the shape for "per level of something else" —
+  five conditional modifiers rather than an expression, because a modifier's
+  amount is a number.
+- **A character's own skills, and the queue that trains them.** What they know,
+  what is training, and the five entries behind it, with the validator's
+  warnings on screen for the first time. A player picks a skill and never a
+  level: pressing the button five times is how a skill gets taken to level 5.
+- **Effects are edited as rows, everywhere.** One editor for every modifier
+  list in the game — items, programs, skills and archetype perks — so the half
+  of the game MECHANICS insists must be data is authorable by somebody who is
+  not a programmer. What it does not understand, it carries.
+- **The map says six things at once**, one channel each: ground for terrain,
+  the glyph for the kind of machine, the hairline for its condition, the
+  corners for what you have on it, a bar for the scanned grade, and colour for
+  type and nothing else. Twice the cell, half the window, a legend that lives
+  in its own rail beside the map, and only what is lit drawn at full strength.
+
+### Changed
+
+- `cyberspace:defend` arms the world that predates its own defences — a
+  back-fill and not a re-roll, because a machine already carrying something is
+  the case the design exists to allow.
+- Losing a read has two causes and no longer shares one sentence: the
+  instrument stopped, or the machine burned or relocated. One message for both
+  sent people off to inspect a working deck.
+- The invented skill grants came down to scale and off the ceiling, twice.
+- CYBERSPACE.md carries the run's design as built: the phases, what a party
+  costs, and what is still a number rather than a mechanic.
+
+### Fixed
+
+- A trace walked the whole chain every turn instead of one hop, which made a
+  long route not slow but impassable.
+- The neural injector paid a flat bonus where it should pay four and a half per
+  cent a level.
+- A new cell on the map went bone and stopped looking like the kind of machine
+  it was; its light travels round the hairline in its own type colour instead.
+- Distant cells were dimmed by a step that was real in the numbers and
+  invisible on a screen.
+- Standing on a machine drew ● and hid what you were standing on. The bone fill
+  already says where you are.
+- The panels under the map came back after a layout pass dropped them.
+
+### Migrations
+
+- `2026_09_15_110000_every_system_runs_an_operating_system`
+- `2026_09_15_120000_create_system_scans`
+- `2026_09_15_130000_the_first_scanners`
+- `2026_09_15_140000_a_scanner_for_everybody_already_here`
+- `2026_09_15_150000_a_scan_pass_takes_time`
+- `2026_09_15_160000_profiling_makes_a_read_quicker`
+- `2026_09_15_170000_some_programs_multithread`
+- `2026_09_15_180000_a_scan_belongs_to_the_instance_reading_it`
+- `2026_09_15_200000_bring_the_grants_down_to_scale`
+- `2026_09_16_100000_what_a_node_is_holding`
+- `2026_09_16_110000_comment_the_contents_bookkeeping_columns`
+- `2026_09_16_120000_a_node_may_be_told_what_to_hold`
+- `2026_09_16_130000_create_loot_tables`
+- `2026_09_16_140000_a_machine_defends_itself`
+- `2026_09_16_150000_ice_stands_on_the_machines`
+- `2026_09_17_100000_a_bounty_belongs_to_the_machine`
+- `2026_09_17_110000_a_scan_reads_the_bounty_too`
+- `2026_09_17_120000_a_run_is_durable_state`
+- `2026_09_17_130000_twelve_icebreakers`
+- `2026_09_17_140000_the_waiting_screen`
+- `2026_09_17_150000_a_run_carries_its_fight`
+- `2026_09_17_160000_two_evasion_programs`
+- `2026_09_17_170000_the_injector_pays_more`
+- `2026_09_17_180000_heat_and_the_two_thresholds`
+- `2026_09_17_190000_a_trace_walks_the_chain`
+- `2026_09_18_100000_extraction_takes_what_a_machine_holds`
+- `2026_09_18_110000_a_transfer_spans_more_than_one_turn`
+
+
 ## [0.9.1] — 2026-09-15
 
 Damage becomes a mechanic rather than a subtraction, and a deck that stops
@@ -287,7 +439,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/nahkampf/dedlok/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/nahkampf/dedlok/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/nahkampf/dedlok/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/nahkampf/dedlok/compare/v0.8.0...v0.8.1

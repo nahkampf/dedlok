@@ -10,13 +10,18 @@ use App\Cyberspace\Grid;
 use App\Cyberspace\MapView;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Position;
+use App\Cyberspace\Probe;
 use App\Cyberspace\SweepResult;
 use App\Cyberspace\TravelResult;
 use App\Models\Bookmark;
 use App\Models\Character;
+use App\Models\System;
 use App\Models\SystemContact;
+use App\Models\SystemScan;
 use App\Stats\Resolver;
 use App\Support\Text;
+use Carbon\CarbonInterface;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -36,10 +41,51 @@ use Illuminate\View\View;
  */
 class CyberspaceController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, Probe $probe): View
     {
         $character = $this->character($request);
         $grid = Grid::fromConfig();
+
+        $scan = $character->isJackedIn()
+            ? SystemScan::query()
+                ->where('character_id', $character->id)
+                ->where('x', $character->grid_x)
+                ->where('y', $character->grid_y)
+                ->live()
+                ->with('operatingSystem')
+                ->first()
+            : null;
+
+        /*
+         * A pass that finished while they were away is resolved HERE, on the
+         * way in. Nothing schedules it: the answer is a function of the clock,
+         * so whoever looks next can work it out — the same shape a training
+         * deposit catches up in.
+         *
+         * And it SAYS what it came to. Flashed for this render only, because
+         * this is a GET and the news belongs to the screen being drawn rather
+         * than to the next one — a player who arrives to find a scan quietly
+         * finished has been told nothing about the minutes they spent.
+         */
+        $settled = $probe->settleAll($character);
+
+        if ($settled !== []) {
+            $scan = $scan?->fresh(['operatingSystem']);
+
+            // One line however many finished, because the alternative is a
+            // stack of callouts on the way back in. What a player wants here is
+            // that something landed and whether any of it was lost; the files
+            // themselves say the rest.
+            $lost = count(array_filter($settled, static fn ($result): bool => $result->voided));
+            $found = array_sum(array_map(static fn ($result): int => count($result->found), $settled));
+
+            $request->session()->now(
+                $lost > 0 ? 'error' : 'status',
+                $lost > 0
+                    ? Text::plural('cyberspace.scan.lost', $lost, ['count' => $lost])
+                    : Text::plural('cyberspace.scan.found', $found, ['count' => $found]),
+            );
+        }
 
         return view('cyberspace.index', [
             'character' => $character,
@@ -59,6 +105,20 @@ class CyberspaceController extends Controller
                     ->at($character->gridPosition())
                     ->first()
                 : null,
+            // And what they have found out about it. Keyed by ADDRESS rather
+            // than by position, because the file describes a machine and a
+            // machine can move — a scan of something that has since relocated
+            // is stale in the way the expiry exists to describe.
+            'scan' => $scan,
+            // Reading a machine takes software that is running, and a screen
+            // that hides why the button is dead is worse than one without a
+            // button. Both come from the Probe rather than being worked out
+            // here, so the screen and the act cannot disagree about either.
+            // A FREE scanner, not merely a running one: with two machines
+            // being read and two instruments going, the button is dead for a
+            // third and the screen should know it.
+            'canScan' => $probe->freeAnalyser($character) !== null,
+            'scanPasses' => $probe->passesFor($character),
         ]);
     }
 
@@ -98,6 +158,158 @@ class CyberspaceController extends Controller
             Navigator::fromConfig($resolver)->step($this->character($request), new Position($x, $y)),
             null,
         );
+    }
+
+    /**
+     * Read the machine you are standing on.
+     *
+     * No target and no address: you cannot read a machine you are not at,
+     * which is what makes walking the grid worth something. One press is one
+     * pass, and a pass that learns nothing still spends one — see
+     * App\Cyberspace\Probe.
+     */
+    public function scan(Request $request, Probe $probe): RedirectResponse
+    {
+        $result = $probe->scan($this->character($request));
+
+        if (! $result->succeeded()) {
+            return back()->with('error', $result->refusal->message());
+        }
+
+        if ($result->voided) {
+            // WHICH way it was lost. The instrument and the machine are two
+            // different things to have gone wrong, and one message for both
+            // sent players to inspect a deck that was working.
+            return back()->with('error', $result->cause?->message() ?? Text::get('cyberspace.scan.voided'));
+        }
+
+        // A pass just begun has found nothing yet and says when it will have.
+        if ($result->isRunning()) {
+            // The screen opens on the machine just pointed at, so a player sees
+            // the read start rather than a sentence about it having started.
+            return back()
+                ->with('reading', $result->scan->address)
+                ->with('status', Text::get('cyberspace.scan.begun', [
+                    'when' => $result->scan->pass_ready_at->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]),
+                ]));
+        }
+
+        return back()->with('status', Text::plural(
+            'cyberspace.scan.found',
+            count($result->found),
+            ['count' => count($result->found)],
+        ));
+    }
+
+    /**
+     * What the instrument has, as JSON, for the screen that watches it.
+     *
+     * A pass takes minutes, so the read has to be somewhere a player can look
+     * WHILE it happens rather than a line that changes after a reload. This is
+     * what the modal polls.
+     *
+     * IT SETTLES ON THE WAY PAST, which is the same lazy catch-up the map does
+     * and the reason the screen updates the moment a pass matures without
+     * anything having been scheduled: whoever asks is who resolves it.
+     *
+     * Keyed by ADDRESS rather than by position, so a read running on the far
+     * side of the grid can be watched from wherever its owner is standing —
+     * which is the whole point of a read that runs in the background.
+     */
+    /**
+     * Stop reading a machine.
+     *
+     * The pass it had begun stays spent — see Probe::abandon() — so this is
+     * not a way to take a look at how a read is going and then undo it. What
+     * it frees is the instrument.
+     *
+     * A read that has already finished or been lost is not an error: the
+     * screen showing the button and the press that follows it are minutes
+     * apart, and a scan can end in between.
+     */
+    public function abandon(Request $request, Probe $probe): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        $data = $request->validate([
+            'address' => ['required', 'string', 'max:32'],
+        ]);
+
+        $abandoned = $probe->abandon($character, $data['address']);
+
+        return back()->with(
+            $abandoned ? 'status' : 'error',
+            Text::get($abandoned ? 'cyberspace.reading.abandoned' : 'cyberspace.reading.abandon_nothing'),
+        );
+    }
+
+    /**
+     * Save the two standing instructions.
+     *
+     * A PLAY STYLE RATHER THAN A PER-RUN DECISION, which is why they live on
+     * the character and are set from the map rather than from inside a run —
+     * re-choosing them every time would train everybody to leave them alone,
+     * and changing them mid-run would be changing the rules of a fight while
+     * standing in it.
+     *
+     * Zero turns one off, which is why the floor is 0 and not 1: it saves a
+     * second column whose only job would be to say whether the first one counts.
+     */
+    public function thresholds(Request $request): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        $data = $request->validate([
+            'egress_trace_at' => ['required', 'integer', 'min:0', 'max:100'],
+            'egress_si_at' => ['required', 'integer', 'min:0', 'max:100'],
+        ]);
+
+        $character->forceFill($data)->save();
+
+        return back()->with('status', Text::get('cyberspace.run.thresholds.saved'));
+    }
+
+    public function reading(Request $request, Probe $probe): JsonResponse
+    {
+        $character = $this->character($request);
+
+        $data = $request->validate([
+            'address' => ['required', 'string', 'max:32'],
+        ]);
+
+        $probe->settleAll($character);
+
+        $scan = SystemScan::query()
+            ->where('character_id', $character->id)
+            ->where('address', strtoupper($data['address']))
+            ->live()
+            ->with('operatingSystem', 'readingProcess.item')
+            ->first();
+
+        if ($scan === null) {
+            // Spent, stale, or never started. Not an error: a file that has
+            // gone is a thing the screen has to be able to say.
+            return response()->json(['found' => false]);
+        }
+
+        $system = System::query()->where('address', $scan->address)->first();
+
+        return response()->json([
+            'found' => true,
+            'address' => $scan->address,
+            'name' => $system?->displayName(),
+            'position' => (string) $scan->position(),
+            'instrument' => $scan->readingProcess?->item?->displayName(),
+            'running' => $scan->isRunning(),
+            'progress' => round($scan->progress(), 3),
+            'readyIn' => $scan->pass_ready_at?->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]),
+            'pass' => $scan->passes,
+            'passes' => $probe->passesFor($character),
+            'complete' => $scan->isComplete(),
+            // The character, so the operating system can say whether they can
+            // operate it — a fact that is also a gate.
+            'facts' => $scan->facts($character),
+        ]);
     }
 
     public function jump(Request $request, Resolver $resolver): RedirectResponse

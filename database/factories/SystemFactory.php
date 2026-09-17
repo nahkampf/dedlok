@@ -8,6 +8,7 @@ use App\Cyberspace\Address;
 use App\Cyberspace\Grade;
 use App\Cyberspace\SystemType;
 use App\Models\Corp;
+use App\Models\Ice;
 use App\Models\System;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -72,6 +73,34 @@ class SystemFactory extends Factory
     public function grade(int $grade): static
     {
         return $this->state(['grade' => $grade]);
+    }
+
+    /**
+     * Watching for intruders.
+     *
+     * NOT IN `definition()`, deliberately: the columns default to 0 and a
+     * factory-built machine therefore defends itself with nothing, so a test
+     * about defences has to say so. That is the same call the schema makes for
+     * the same reason — nothing becomes dangerous by being forgotten.
+     */
+    public function withIds(int $detection): static
+    {
+        return $this->state(['ids_detection' => $detection]);
+    }
+
+    /** Tracing. Both columns together, because a tracer is one thing. */
+    public function withTracer(int $detection, int $rate): static
+    {
+        return $this->state([
+            'tracer_detection' => $detection,
+            'tracer_rate' => $rate,
+        ]);
+    }
+
+    /** Guarded. Takes the ICE row rather than a level, like the column does. */
+    public function withIce(Ice $ice): static
+    {
+        return $this->state(['ice_id' => $ice->id]);
     }
 
     /** Run by a particular corp. */

@@ -24,6 +24,53 @@ class StatConfigTest extends TestCase
         }
     }
 
+    /**
+     * `coop_slots` floors at ZERO and `program_threads` floors at one, and the
+     * difference is the whole design rather than an inconsistency to tidy.
+     *
+     * Software floors at one because a character who could run no copy of
+     * anything is one for whom every program in the game quietly stopped
+     * existing. A character who can call no cooperative run has simply not
+     * trained for it — zero is the ordinary state AND the gate, so raising this
+     * floor to one would hand every character in the game a party they never
+     * paid for.
+     */
+    public function test_a_party_is_trained_for_and_software_is_not(): void
+    {
+        $registry = StatRegistry::fromConfig();
+
+        $this->assertTrue($registry->has('coop_slots'), 'the two coordination skills have nothing to target without it');
+        $this->assertSame(0.0, (float) $registry->get('coop_slots')->min, 'zero is the gate');
+        $this->assertSame(1.0, (float) $registry->get('program_threads')->min);
+        $this->assertSame(0, (int) config('cyberspace.coop.slots'), 'and nobody starts with a party');
+    }
+
+    /**
+     * NOTHING HEALS BY WAITING, and the zero base is where that rule lives.
+     *
+     * Synaptic Integrity and hit points come back through things a player does.
+     * The single exception is bought with a rank 16 skill — Neuroplasticity, a
+     * point a minute per level — so a character who has not trained it recovers
+     * nothing by sitting still, ever. Raising this base would hand passive
+     * healing to everybody and quietly delete the reason healing exists.
+     */
+    public function test_nobody_recovers_by_waiting_unless_they_trained_for_it(): void
+    {
+        $registry = StatRegistry::fromConfig();
+
+        $this->assertTrue($registry->has('synaptic_regen'));
+        $this->assertSame(0.0, (float) $registry->get('synaptic_regen')->min);
+    }
+
+    /** Nobody is hard to notice by default — sneaking is bought, not had. */
+    public function test_stealth_floors_at_zero(): void
+    {
+        $registry = StatRegistry::fromConfig();
+
+        $this->assertTrue($registry->has('stealth'));
+        $this->assertSame(0.0, (float) $registry->get('stealth')->min);
+    }
+
     public function test_attributes_are_tagged_by_their_group(): void
     {
         $registry = StatRegistry::fromConfig();

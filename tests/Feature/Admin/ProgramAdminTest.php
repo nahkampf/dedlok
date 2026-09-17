@@ -206,8 +206,11 @@ final class ProgramAdminTest extends TestCase
             ]))
             ->assertRedirect();
 
+        // Scoped to THIS item rather than counting the table: a fresh database
+        // ships the scanners, so "no programs exist" stopped being the same
+        // statement as "this item stopped being one".
         $this->assertNull($item->fresh()->program);
-        $this->assertDatabaseCount('programs', 0);
+        $this->assertDatabaseMissing('programs', ['item_id' => $item->id]);
     }
 
     public function test_editing_a_program_replaces_its_row_rather_than_adding_one(): void
@@ -226,7 +229,7 @@ final class ProgramAdminTest extends TestCase
             ]))
             ->assertRedirect();
 
-        $this->assertSame(1, Program::query()->count());
+        $this->assertSame(1, Program::query()->where('item_id', $item->id)->count(), 'replaced, not added to');
         $this->assertSame(ProgramKind::Decryptor, $item->fresh()->program->kind);
         $this->assertSame(30, $item->fresh()->program->qflops_cost);
         $this->assertTrue($item->fresh()->program->background_process);
@@ -241,5 +244,60 @@ final class ProgramAdminTest extends TestCase
         foreach (ProgramKind::cases() as $kind) {
             $response->assertSee($kind->label());
         }
+    }
+
+    // ---- the listing -------------------------------------------------------
+
+    /**
+     * A PROGRAM'S KIND IS A GATE, not decoration — no amount of bonuses adds up
+     * to having a running icebreaker — so a listing that only said "Data" left
+     * every program in the game looking alike. With seventeen of them, that is
+     * the difference between a screen you can tune from and one you cannot.
+     */
+    public function test_the_listing_says_what_kind_of_program_each_item_is(): void
+    {
+        $item = Item::factory()->create(['slug' => 'breaker', 'name' => 'Breaker', 'container' => 'data']);
+
+        Program::query()->create([
+            'item_id' => $item->id,
+            'kind' => ProgramKind::Icebreaker->value,
+            'qflops_cost' => 7,
+            'memory_cost' => 4,
+            'storage_size' => 2,
+            'background_process' => false,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.items.index'))
+            ->assertOk()
+            ->assertSee(ProgramKind::Icebreaker->label())
+            ->assertSee('7 qF', false);
+    }
+
+    /** And the list can be narrowed to one kind, the way it can to one hardware. */
+    public function test_the_listing_filters_by_program_kind(): void
+    {
+        foreach ([ProgramKind::Icebreaker, ProgramKind::Analyser] as $kind) {
+            $item = Item::factory()->create([
+                'slug' => 'prog-'.$kind->value,
+                'name' => ucfirst($kind->value).' One',
+                'container' => 'data',
+            ]);
+
+            Program::query()->create([
+                'item_id' => $item->id,
+                'kind' => $kind->value,
+                'qflops_cost' => 2,
+                'memory_cost' => 2,
+                'storage_size' => 1,
+                'background_process' => true,
+            ]);
+        }
+
+        $this->actingAs($this->admin())
+            ->get(route('admin.items.index', ['program' => ProgramKind::Icebreaker->value]))
+            ->assertOk()
+            ->assertSee('Icebreaker One')
+            ->assertDontSee('Analyser One');
     }
 }

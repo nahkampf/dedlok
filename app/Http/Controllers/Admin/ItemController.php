@@ -47,10 +47,14 @@ class ItemController extends Controller
             'container' => ['nullable', 'string'],
             'market' => ['nullable', 'string'],
             'hardware' => ['nullable', 'string'],
+            'program' => ['nullable', 'string'],
         ]);
 
         $items = Item::query()
-            ->with(['useSkill:id,slug,title', 'marketStock', 'deckSlots', 'deckModule'])
+            // `program` eager-loaded for the same reason `deckModule` is: the
+            // listing draws a spec line from it for every row that has one, and
+            // a query per row is a query per row.
+            ->with(['useSkill:id,slug,title', 'marketStock', 'deckSlots', 'deckModule', 'program'])
             ->when($filters['q'] ?? null, fn ($query, string $term) => $query->where(
                 fn ($inner) => $inner
                     ->where('slug', 'like', "%{$term}%")
@@ -64,6 +68,13 @@ class ItemController extends Controller
                 Hardware::tryFrom((string) ($filters['hardware'] ?? '')),
                 fn ($query, Hardware $hardware) => $query->where('hardware', $hardware->value)
             )
+            ->when(
+                ProgramKind::tryFrom((string) ($filters['program'] ?? '')),
+                fn ($query, ProgramKind $kind) => $query->whereHas(
+                    'program',
+                    fn ($inner) => $inner->where('kind', $kind->value),
+                )
+            )
             ->when(($filters['market'] ?? null) === 'on', fn ($query) => $query->onMarket())
             ->when(($filters['market'] ?? null) === 'off', fn ($query) => $query->where('on_market', false))
             ->orderBy('slug')
@@ -73,6 +84,7 @@ class ItemController extends Controller
         return view('admin.items.index', [
             'items' => $items,
             'filters' => $filters,
+            'programKinds' => ProgramKind::cases(),
         ]);
     }
 

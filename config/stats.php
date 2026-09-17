@@ -111,6 +111,194 @@ return [
          * meaningless figure — the same reason draw and supply are two stats
          * that share a unit.
          */
+        /*
+        | How many passes a scan gets before the picture it has is the picture
+        | it gets.
+        |
+        | A STAT RATHER THAN A CONSTANT because scanning software comes in
+        | versions, and a better one buying another look at the machine is the
+        | clearest thing a version can be worth. The base is
+        | `cyberspace.scan.passes` and a program, a skill or an implant moves it
+        | like anything else.
+        |
+        | Floored at 1: a character holding something that took their passes to
+        | nothing would be holding a program that stops them scanning, which is
+        | not a trade anybody would make on purpose.
+        */
+        /*
+        | How long one pass takes, IN SECONDS.
+        |
+        | Seconds rather than minutes because a modifier that takes 40% off
+        | four minutes should give two minutes twenty-four, and a stat that
+        | rounds to whole minutes would give two. The config that feeds it is
+        | in minutes, which is what a person tuning it wants to read.
+        |
+        | Floored at ONE SECOND rather than zero: an instrument good enough to
+        | read a machine instantly is a mechanic that has stopped being one,
+        | and a floor is cheaper than finding that out from a player.
+        */
+        /*
+        | How many instances of ONE program a character may run at once.
+        |
+        | The base is `programs.threads`, which is 1: a new character runs a
+        | single copy of anything. Multithreading raises it, and so could an
+        | implant or a deck one day — it is a stat rather than a level lookup
+        | for exactly that reason.
+        |
+        | A ceiling per program, never a total: two threads means two scanners
+        | or two decryptors, not two processes. Floored at 1, because a
+        | character who could run none of something would be one for whom every
+        | program in the game had quietly stopped existing.
+        */
+        'program_threads' => [
+            'tags' => ['software'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        /*
+        | How many OTHER runners this character may take into a system.
+        |
+        | The base is `cyberspace.coop.slots`, which is ZERO, and that is the
+        | difference from `program_threads` above rather than an oversight.
+        | Software floors at one because a character who could run no copy of
+        | anything is a character for whom every program in the game quietly
+        | stopped existing. A character who can call no cooperative run has
+        | simply not trained for it — **zero is the ordinary state and it is
+        | also the gate**, the same way no icebreaker means no fighting ICE.
+        |
+        | Raised a slot per level by Coordinated Strike and again by Advanced
+        | Coordination, so both trained out is ten others and eleven runners in
+        | one machine. It is the RUN OWNER'S stat and nobody else's: whoever
+        | calls the run is who trained for it, and a participant needs none of
+        | it. That is what keeps it a specialisation worth a rank 8 and a rank
+        | 16 slot instead of a level everybody buys one of.
+        |
+        | NOTHING READS IT YET. Cooperative runs are phase 7; this exists so
+        | the two skills can be authored in the editor, which refuses a
+        | modifier whose target reaches nothing.
+        */
+        /*
+        | How long somebody stays on the floor, in minutes.
+        |
+        | ONE MINUTE, and it is the floor under every defeat: whatever the
+        | program that beat you carried, and whether it carried anything at all,
+        | the wait is what losing always costs. That is what stops a defeat with
+        | an empty tag list from being free.
+        |
+        | A stat rather than a constant because implants and skills are meant to
+        | cut it — waking up faster is exactly the sort of thing a wired nervous
+        | system should buy. Floored at ZERO on purpose: a build good enough to
+        | get straight back up has earned it, and nothing breaks if the wait is
+        | over before it began.
+        */
+        'recovery_minutes' => [
+            'tags' => ['derived', 'vital'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'ceil',
+        ],
+
+        /*
+        | Synaptic Integrity recovered per minute, on its own.
+        |
+        | ZERO BY DEFAULT, AND THAT IS THE RULE RATHER THAN A STARTING VALUE:
+        | nothing in this game heals by waiting. Synaptic Integrity and hit
+        | points come back through things a player DOES, and the one exception
+        | is bought with a rank 16 skill — Neuroplasticity, a point a minute per
+        | level. A character who has not trained it recovers nothing by sitting
+        | still, ever.
+        |
+        | Per MINUTE rather than per tick, so whatever eventually credits it can
+        | do so lazily off elapsed time the way a training deposit does. Nothing
+        | credits it yet.
+        */
+        'synaptic_regen' => [
+            'tags' => ['derived', 'vital'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        /*
+        | How hard this character is to notice in somebody else's machine.
+        |
+        | WHAT AN IDS IS ROLLED AGAINST. A machine's detection value is the
+        | difficulty and this is the value, so the margin between them is the
+        | whole of whether a run is a quiet one — see CYBERSPACE.md,
+        | *Detection*.
+        |
+        | ZERO BY DEFAULT, and that is the same call `icebreaker_damage` makes:
+        | somebody who has not trained for this is seen, every time, by
+        | everything. Sneaking is a thing you buy rather than a thing you have,
+        | which is what makes an unnoticed run worth the investment it costs.
+        |
+        | Raised flat by Obfuscation and as a percentage by Clandestine
+        | Intrusion Methods — and percentages apply to base PLUS flat and are
+        | summed before they are applied once, so the second skill is worth
+        | nothing without the first. That is why it requires it.
+        |
+        | Evasion programs are the other channel and none exist yet:
+        | `ProgramKind::Evasion` has been an empty case since programs shipped,
+        | and this is the stat it was waiting for.
+        */
+        'stealth' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => null,
+            // A FRACTION, kept to one decimal. The whole range is single
+            // digits before training, so rounding to a whole number would
+            // throw away most of what the first few levels buy.
+            'rounding' => 'tenth',
+        ],
+
+        /*
+        | How hard a running icebreaker cuts, per turn.
+        |
+        | The base is ZERO and that is the gate: no icebreaker running means no
+        | damage, and no amount of skill adds up to having one. An icebreaker's
+        | own bite is a modifier on its `programs.modifiers` like everything
+        | else a program is worth — so a skill that sharpens one and a better
+        | one are the same kind of thing to the resolver, and neither is a
+        | branch in the simulator.
+        |
+        | Every icebreaker is deliberately too slow on its own: each does
+        | strictly less than would break its matching ICE in twenty turns, and
+        | the whole of that gap is what skills are meant to close. A bare
+        | character therefore cannot win a fight at all — see the migration
+        | that authored them.
+        |
+        | NOTHING READS IT YET. The fight is the simulator.
+        */
+        'icebreaker_damage' => [
+            'tags' => ['software'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        'coop_slots' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        'scan_duration' => [
+            'tags' => ['scan'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        'scan_passes' => [
+            'tags' => ['scan'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'deck_storage' => [
             'tags' => ['deck', 'storage'],
             'min' => 0,
@@ -270,6 +458,50 @@ return [
     | shipped JavaScript against the PHP.
     |
     */
+    /*
+    |----------------------------------------------------------------------
+    | Pools
+    |----------------------------------------------------------------------
+    |
+    | A derived base that SUMS its attributes and divides once, which is the
+    | other way round from `formulas` below — and the difference is not a
+    | detail. A formula divides each attribute, rounds each UP, and adds the
+    | results, so four attributes of 20 over a divisor of 8.5 come to 12. A
+    | pool adds first: 80 over 8.5 is 9.4. The first is generous by design
+    | because hit points and Synaptic Integrity are pools you spend; the second
+    | is an average, and an average is what a capability reads like.
+    |
+    | Kept apart from `formulas` rather than folded in, because `formulas` is
+    | shipped to the character-creation screen as data and recomputed there in
+    | JavaScript — one shape, asserted by DerivedStatTest. A second shape in
+    | that array would have to be mirrored in the browser as well, and nothing
+    | here is shown at creation.
+    |
+    | The inputs are RESOLVED, like a formula's: an implant that raises
+    | Perception raises stealth, with no further wiring.
+    */
+    'pools' => [
+
+        /*
+        | Stealth = (Intellect + Focus + Memory + Perception) / 8.5.
+        |
+        | Four attributes because being hard to notice in somebody else's
+        | machine is not one faculty: knowing what a system expects to see
+        | (intellect), holding a pattern steady (focus), remembering what you
+        | already touched (memory), and noticing what is watching (perception).
+        |
+        | 8.5 puts a starting character around 9 and a very good one around 12,
+        | which against the IDS table is a coin flip at grade 1 and nothing at
+        | all above grade 3 — so the base is a floor to build on rather than a
+        | way past anything. Obfuscation adds to it flat and evasion programs
+        | are meant to carry the rest.
+        */
+        'stealth' => [
+            'attributes' => ['intellect', 'focus', 'memory', 'perception'],
+            'divisor' => 8.5,
+        ],
+    ],
+
     'formulas' => [
 
         /*

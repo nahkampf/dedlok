@@ -24,6 +24,18 @@ enum ProcessRefusal: string
     /** It is already running. Stopping and starting are not the same button. */
     case AlreadyRunning = 'already_running';
 
+    /**
+     * As many instances of this program as this character can run are already
+     * going.
+     *
+     * Two different walls wear this one message, because to a player they are
+     * the same sentence: software that cannot multitask at all is capped at
+     * one for ever, and software that can is capped at the `program_threads`
+     * stat. Which wall was hit is not a thing anybody can act on differently
+     * — what they do next is stop one or train for another thread.
+     */
+    case NoFreeThread = 'no_free_thread';
+
     /** It was not running, so there was nothing to stop. */
     case NotRunning = 'not_running';
 

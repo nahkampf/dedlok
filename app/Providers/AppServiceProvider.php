@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Checks\CheckRoller;
+use App\Cyberspace\Probe;
 use App\Models\User;
 use App\Stats\DamageStats;
 use App\Stats\Resolver;
@@ -41,9 +43,26 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(Resolver::class, fn ($app): Resolver => new Resolver($app->make(StatRegistry::class)));
 
         /*
+         * The die, and the one thing that rolls it so far.
+         *
+         * Bound rather than constructed at each call site so a test can put a
+         * pinned one in the container and have the SCREENS use it — the map
+         * settles a matured scan on the way in, and a test about what that
+         * settles cannot reach a `Probe::fromConfig()` built inside a
+         * controller. The same reason ProgramRunner is injected.
+         */
+        $this->app->bind(CheckRoller::class, static fn (): CheckRoller => CheckRoller::fromConfig());
+        $this->app->bind(Probe::class, static fn ($app): Probe => Probe::fromConfig(
+            $app->make(CheckRoller::class),
+            $app->make(Resolver::class),
+        ));
+
+        /*
          * Which stats are computed from which. Two sources, and they are the
-         * two kinds of derived stat there are: the vitals, declared as formulas
-         * over attributes in config, and the checks, one per skill, generated.
+         * three kinds of derived stat there are: the vitals, declared as
+         * formulas over attributes in config; the pools, which read attributes
+         * too and differ only in dividing once rather than per term; and the
+         * checks, one per skill, generated.
          *
          * A cycle throws here rather than at a stack overflow later.
          */
@@ -52,6 +71,14 @@ class AppServiceProvider extends ServiceProvider
 
             foreach ((array) config('stats.formulas', []) as $statId => $formula) {
                 $dependencies[(string) $statId] = array_keys((array) $formula);
+            }
+
+            // Pools read attributes too — they only differ in the arithmetic —
+            // so they belong in the graph for the same reason: resolution order
+            // and cycle detection are about WHAT a stat reads, not how it adds
+            // it up.
+            foreach ((array) config('stats.pools', []) as $statId => $pool) {
+                $dependencies[(string) $statId] = array_values((array) $pool['attributes']);
             }
 
             return new StatGraph($dependencies + SkillStats::dependencies());

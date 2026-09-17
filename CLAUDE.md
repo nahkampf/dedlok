@@ -344,6 +344,29 @@ thing to check before describing any of this as working. The resolver, the
 dependency graph, the character sheet and five modifier sources are built; what
 rolls a check, and most of the content that would feed one, are not.
 
+### Rolling a check
+
+**`App\Checks\CheckRoller` is the only die in the game**, and it is separate
+from `App\Stats\Resolver` on purpose: a resolver that rolled could not be
+asked what a character's chances ARE without spending them.
+
+- **A logistic on the MARGIN** — `1 / (1 + exp(-(value - difficulty) / spread))`
+  — so only the gap counts, and equal value and difficulty is always a coin
+  flip. That is what makes a difficulty mean something: it is the level at
+  which a character is evenly matched.
+- **`checks.spread` is how decisive the whole game is, in one number.** It is
+  unmeasured; nothing has been balanced against it.
+- **No check is ever certain.** Every roll is clamped into
+  `[floor, 1 - floor]`. A kind of roll may name its own floor in
+  `checks.floors` — **config and never an argument**, because a floor passed at
+  a call site is a rule you can only find by reading every caller.
+- **`chance()` is public and separate from `roll()`**, so a screen that warns
+  "about one in three" and the roll that follows cannot disagree.
+- **The die is injected**, like the market's and the grid's. Pin it in tests.
+- **The first caller is the probe**, against a difficulty per system grade —
+  so a grade is the first difficulty in the game, and `scan` the first kind a
+  floor could be keyed on.
+
 ### Where a modifier comes from
 
 **`Character::modifiers()` is the whole list, and each entry is a
@@ -641,6 +664,69 @@ the password-reset request.
 - `size` is enforced, but only as what a container's contents cost against its capacity.
   `weight` is still stored and unenforced, and neither inventory has an overall capacity.
 
+### Skills, and the training queue
+
+**`/skills` is a character's own skills and nothing else** — what they know,
+what is training, and the queue behind it. It was the CATALOGUE once: every
+skill in the game drawn as one tree per category, public because it described
+the game rather than a person, with a player's own levels laid over the top.
+That page is gone, along with `SkillTree`, `SkillTreeNode` and
+`<x-skill-node>`. An overlay on somebody else's list was a worse way to read
+your own rows than a list of the rows you actually have. The route moved
+behind `auth` with the rest, so `RequireCharacter` guarantees a character and
+nothing on the screen asks whether there is one.
+
+**HOW A PLAYER FINDS OUT A SKILL EXISTS IS THE MARKET, not a catalogue.** A
+skill is learned from its book and there is exactly one book per skill, so the
+shelf IS the list — and it is deliberately not the whole list. **A skill that
+is off the market is content with no shop entry on purpose**: quest rewards
+and the like, found rather than bought, and `Skillbook` keeping `on_market` in
+step with the skill on every save is what makes that one decision rather than
+two. A page enumerating every skill in the game would have undone exactly that
+— it would have published the list of things a player is supposed to discover.
+The skill EDITOR is where an admin sees them all, and that is the only place
+that should.
+
+- **`App\Skills\TrainingQueue` is the only writer a PLAYER reaches.**
+  `TrainingDeposit` writes these rows too — it retires a finished entry and
+  renumbers what is left — but that is the clock moving rather than somebody
+  deciding. Injecting is the gate in front of the sheet; this is the gate in
+  front of the queue.
+- **A player picks a SKILL and never a level.** An entry is a (skill, target)
+  pair and targets have to be consecutive, so the next level up — counting
+  what is already QUEUED, not only what is reached — is the only entry the
+  validator would accept. Pressing the same button five times is how a skill
+  gets taken to level 5, and the count is why: two presses that both computed
+  the same level would collide on the unique (character, skill, target_level)
+  index. Locked for the duration, so two taps cannot race it into a 500.
+- **The picker offers exactly what the writer would accept**, doing the same
+  sum in `SkillsController::queueable()`. Offering an option that comes
+  back refused is worse than offering none.
+- **An unmet prerequisite is a WARNING and never a refusal.** A queue is
+  allowed to describe training that cannot happen yet — that is the whole
+  point of ordering it, and it is what lets Codebreaking sit behind the
+  Hacking that unlocks it. `TrainingQueueValidator` already walks the queue
+  forward from what the character knows and says what will stall; until this
+  screen existed, the only thing that ever read it was `skills:validate`,
+  which nobody playing the game runs. `QueueRefusal` therefore has three cases
+  and none of them is about requirements.
+- **Removing one is allowed to break the rest**, deliberately: dropping
+  *Hacking I* out from under *Hacking II* leaves a queue the validator
+  complains about, and the alternative is a delete that silently takes three
+  other entries with it. **The deposit runs first**, inside `remove()` rather
+  than at a call site, because removing the entry at position 1 throws away
+  its clock and with it up to a minute of accrued training.
+- **Renumbering is ascending**, since `(character_id, position)` is unique and
+  each row has to move into a slot the row before it has already vacated —
+  the same walk `TrainingDeposit::completeEntry()` makes.
+- **The estimate is the rate it earns THIS INSTANT.** A drug wearing off
+  tonight moves it, and the screen does not pretend otherwise: modelling
+  future modifier changes would be a second, worse copy of `TrainingDeposit`'s
+  segment walk and would still be wrong the moment anything was installed.
+- **What is training wears the kit's `.dot--live`** rather than a colour of
+  its own. Ember, one per screen, which is what the accent is rationed for —
+  at most one entry trains at a time, by definition.
+
 ### The market's supply side
 
 **The market restocks itself; nothing sells anything yet.** There is no price paid and
@@ -656,6 +742,16 @@ spends it.
 - **An item is stocked only with `on_market` AND `seed_quantity > 0`.** The default shelf
   size is 0, so nothing reaches the market by being forgotten. `Item::restockable()` is
   the scope that means both.
+- **`on_market` is the SEEDER's question, and it will not be the player's.**
+  Players are meant to list their own goods eventually — skillbooks among
+  them, which is how a book for an off-market skill can still change hands —
+  and a listing somebody wrote is not the world deciding to stock a thing.
+  When that lands it is a table of offers, not this flag: a seeder that
+  restocked player listings would be manufacturing goods out of nothing.
+  **A listable book is an UN-INJECTED one, and that needs no rule** —
+  `SkillInjector` consumes the copy it spends, so a book still sitting in a
+  stash has by definition not been used. Nothing has to check, as long as
+  injecting goes on consuming.
 - **`market_stock` is one row per item, and a missing row is a shelf of zero**, not an
   error: rows are created by the first delivery that lands. Anything reading stock has to
   treat absent and empty alike — `Item::stockOnHand()` does.
@@ -858,9 +954,9 @@ says which, and two tables carry what a bare `items` row cannot.
   **The lock guards what the PLAYER does and must never be asked by the game's
   own consequences** — a Surge or a thermal burnout destroys fitted hardware
   precisely while somebody is jacked in, and neither goes near these writers.
-  The other half is still missing: losing readiness while inside is meant to
-  dump the player out for 1 point of Synaptic Integrity, and nothing watches
-  for it. See TODO.md.
+  The other half — losing readiness while inside, which ejects for 1 point of
+  Synaptic Integrity — is `App\Cyberspace\ReadinessWatch`, under *Cyberspace*
+  below.
 - **Nothing a deck stores makes its owner better at anything yet.** No stat,
   check or modifier reads a deck's totals in the other direction; the
   `ModifierSource` over fitted hardware that MECHANICS names is still missing.
@@ -933,6 +1029,17 @@ beats two that can disagree.
   `HardwareEditor` it always clears the side an item stopped being. Nothing to
   diff, unlike sockets: a process points at an INVENTORY row and never at the
   definition, so replacing it wholesale strands nothing.
+- **How many copies of one program a character may run is `program_threads`.**
+  One by default (`config/programs.php`), raised by the Multithreading skill,
+  and it is a **ceiling per program rather than a total** — two threads means
+  two scanners or two daemons, not two processes. `ProgramRunner` counts
+  running rows of the same item across every deck, because a thread is
+  attention and attention is the person's.
+- **`programs.multithreaded` decides whether more than one is a question at
+  all.** A property of the SOFTWARE: an icebreaker fighting two pieces of ICE
+  at once is not a thing skill should be able to buy, so a program without the
+  flag is capped at one however good its owner is. False by default, and the
+  item editor exposes it.
 - **`$duringRun` is the gate nothing opens yet.** A run-only program is started
   BY the intrusion simulator and never by a player pressing a button, and the
   simulator does not exist — so today only background programs can be started
@@ -1055,20 +1162,639 @@ carries the detail.
   because it is the only part that is nowhere else. Renaming a corp renames
   every live machine it runs and renames nothing a player remembers.
   `App\Cyberspace\SystemNamer` is the one place that decision is made.
-- **Grade is 1–9 and is NOT visible from the map.** That is a rule, not an
-  omission: a grade is the number a scan exists to discover, and nothing may put
-  one into a contact or onto a cell.
+- **An UNSCANNED grade is not visible from the map**, which is a rule and not
+  an omission: a sweep is free, so nothing may put a grade into a contact. **A
+  scanned one is drawn** — a bar at the foot of the cell, `--g` wide — because
+  the map is where the minutes and the instrument pay off. A cell can only get
+  a grade from a live `system_scans` row, which is what keeps that honest.
 - **`GridSeeder` tops the world up TO a target**, the way `MarketSeeder` does —
   so running it twice is not two worlds and a pass over a burned patch replaces
   exactly what was lost. Occupancy leaves about 30% of the grid empty on
   purpose: that reserve is what relocation and instantiation move through.
   `cyberspace:seed` is run BY HAND and is not scheduled, unlike `market:seed`;
   `--dry-run` decides everything and writes nothing.
-- **The map screen draws from memory and never from `systems`.** Six cell
-  states are the whole vocabulary — you, a machine you remember, the portal,
-  swept ground, unswept ground, and the void past the edge. The eight cells
-  around you are buttons and everything else is a reading; arrows and the numpad
-  reach the same eight, because a diagonal is one step here.
+- **Every machine runs an operating system, as a foreign key to the skill that
+  gates it** — `systems.os_skill_id`. A word would be a second spelling of a
+  row that already carries the name, the description and the book; a fifth
+  operating system is a skill row and a weight. Which one a machine runs
+  follows its grade through the skills' own RANK, so that pairing is nowhere
+  written down twice.
+- **Scanning is `App\Cyberspace\Probe`, and it reads the machine you are
+  standing on.** No target in the request: you cannot read a machine you are
+  not at. One press starts a READ, a pass rolls once per thing not yet known,
+  and the budget is the `scan_passes` stat — **a failed scan costs the expiry
+  window, not a retry**, which is what stops the act from being ground.
+- **A read goes round by itself.** A pass that matures without completing the
+  file starts the next one with the same instrument, until the picture is whole
+  or the budget is gone. Pressing Scan five times was never a decision — what
+  it bought was a screen that had to be watched for something it could do
+  itself. **Nothing about the cost moved**: passes are still spent when begun
+  and still capped, and stopping the scanner still ends the read, because that
+  is the one thing the player chose.
+- **A pass takes MINUTES** — one against a grade 1, sixteen against a grade 9,
+  scaled by the `scan_duration` stat so skill and a better instrument cut it.
+  **The pass is spent when BEGUN** and **the roll is made when it MATURES**, so
+  nothing is decided in advance waiting to be revealed and walking away from a
+  half-finished read costs it. **Settling is lazy**: the map resolves anything
+  that matured on the way in, the way a training deposit catches up, so no
+  scheduler has to have been running.
+- **A READ CATCHES UP; it does not advance one pass per visit.** Lazy settling
+  used to mean exactly one pass resolved however long the player was away —
+  press Scan, come back an hour later, find that a five-pass read had managed
+  two. That made *one press is one read* false in the only way that matters: it
+  needed five presses to go round, and calling them page loads did not help.
+  `Probe::settle()` walks the clock forward instead, and **each pass begins when
+  the one before it MATURED rather than when somebody opened the screen** — so
+  an hour away is an hour of reading. It terminates because every turn either
+  stops the read or begins a pass whose maturity is strictly later, and the
+  budget is finite. **A lost pass still stops the loop**, because spending the
+  next one is the player's decision.
+- **`cyberspace:settle` sweeps every five minutes, and it is NOT what makes a
+  read finish.** The catch-up above is; a player who walks away for a day gets
+  the whole read resolved on arrival whether or not this ever ran. What the
+  sweep buys is a row that is TRUE between visits, which is what every reader
+  that is not the owner needs — a notification saying a read finished can only
+  come from something that NOTICED, and lazy settling never notices. **Do not
+  delete the catch-up because the sweep exists**: the sweep is a convenience and
+  the catch-up is the guarantee.
+- **Losing a read has two causes and they must not share a sentence.**
+  `App\Cyberspace\VoidCause` — the instrument stopped (they did it, and can
+  avoid doing it again) or the machine burned or relocated (nobody could have
+  prevented it, and it says nothing about the deck). One message for both sent
+  anybody who lost a read to a stale machine off to inspect a working deck.
+- **A read is a screen you watch.** The `<dialog>` **in the layout** polls
+  `cyberspace.reading` while it is open — the target, the instrument, the pass
+  and everything the scan has asked — and **the endpoint settles a matured pass
+  on the way past**, which is why the answers fill in the moment one finishes
+  rather than at the next reload. It polls only while open: a timer behind a
+  closed dialog is a request every few seconds for ever.
+- **A machine's defences are decided ONCE, at creation, and stored.**
+  `App\Cyberspace\Defences` is that decision: **type sets the floor and grade
+  rolls the rest.** A silo always watches and always fights, a relay always
+  watches and always traces, a compute node always fights and always traces and
+  rolls for its detection — a rotation, so every type guarantees two and rolls
+  one, and what a scan is for is never *does this have anything* but *which one
+  is it missing*. The portal carries nothing, and that needs no entry anywhere:
+  `SystemType::isInteractable()` already says no to everything for it.
+- **The world predates its own defences, so `cyberspace:defend` arms it.** The
+  columns default to 0 — *has none* — which is right for a hand-inserted row
+  and wrong for a grid that already exists: `Defences::roll()` runs when a
+  machine is CREATED, and relocation keeps the row, so nothing generated before
+  the feature would ever gain an IDS. It is a **back-fill and not a re-roll** —
+  a machine already carrying something is left alone, because a told machine is
+  the case the whole design exists to allow. A command rather than part of the
+  migration, because it ROLLS: a migration carrying dice is one whose result
+  cannot be read off the file. Run once against the live grid on 2026-09-16.
+- **This is why a mission node needs no override mechanism.** Nothing derives a
+  defence on read, so nothing has to be told not to — a machine that has to be
+  dangerous is a row with different numbers in the same columns, and a grade 9
+  watchdog sits on a grade 2 box by being written there. `systems.stock_rule`
+  exists because a node's CONTENTS are re-rolled nightly and so need a standing
+  instruction; defences never are.
+- **Everything hostile can notice you, not just the IDS.** A tracer carries its
+  own detection value — much lower, a fifth of the IDS at grade 1 widening to
+  two-fifths at grade 9 — so a machine with no IDS is quieter rather than safe.
+  Detection is the EVENT and not the instrument: the lockdown table lists *the
+  IDS fired* and *the ICE activated* as separate triggers for exactly this
+  reason.
+- **Zero means "has none"; null means "not looked".** On `systems` the three
+  defence columns are NOT NULL and 0 is the absence, so *has an IDS* is
+  `ids_detection > 0` in one shape everywhere. On `system_scans` the same
+  columns are nullable, because there the two states are genuinely different
+  and the distinction is the product: **a scan that comes back clean has told
+  the player the most valuable thing it can.** Reading 0 as unknown would send
+  the probe back round rolling for a fact it already has.
+- **A tracer is one thing, so it is rolled for once.** `tracer_detection` and
+  `tracer_rate` are zero together or positive together, and
+  `chk_systems_tracer` says so — the same "null exactly together" discipline
+  `running_on_deck_id` and `started_at` follow. Nothing reads the rate yet: the
+  trace advances per turn and there is no turn loop.
+- **ICE is a POINTER; the other two defences are numbers.** An IDS and a tracer
+  are values on the machine. ICE is a definition — integrity, an attack, a hit
+  chance, and a list of what it does to whoever it beats — so `systems.ice_id`
+  points at an `ice` row. The catalogue **arrives by migration**, like the corps
+  and for the same reason: its ids end up in thousands of system rows.
+- **`skill` is a hit chance from 1 to 100, and a MISS DOES NOTHING AT ALL.** It
+  is a separate number from `attack` rather than folded in as an average,
+  because an average would make every fight the same fight — what makes a
+  low-grade guard survivable is that it mostly misses, not that it hits softly.
+- **A scan remembers the LEVEL, never the row.** `system_scans.ice_level` carries
+  no foreign key, the rule `system_contacts` follows by storing an owner's name
+  rather than a pointer: a scan has to outlive the machine. Null is *not found
+  out*, 0 is *found out and there is none*, and a renamed piece of ICE reads by
+  its new name in every file anybody holds.
+- **`Defences` is handed the catalogue, it does not query for it** — the class
+  stays pure, the way `Grade::roll()` is handed its weights. An empty list is
+  not an error: a world whose ICE has not been migrated is machines that cannot
+  fight, which beats no world.
+- **A bounty belongs to the MACHINE, not to the guard.** `systems.ice_bounty` is
+  rolled when a machine's ICE is assigned, at odds climbing with the piece's
+  level — a tenth under ICE I, two-thirds under ICE XII. So the same piece of
+  ICE on two systems is two different propositions, and a player who has met an
+  ICE XII has learned what it hits for and nothing about whether the next one
+  will have them followed home. It is the only part of a defence that is not a
+  property of what is defending, and no ICE means no bounty. **A scan reads it,
+  folded into the ICE fact** — one question and one roll, because a file that
+  knew the guard but not the reprisal would describe half a decision. It is the
+  one answer on `system_scans` that is not nullable: `ice_level` already carries
+  whether the fact was read.
+- **Nothing heals by waiting, and `synaptic_regen` floors at 0 to say so.**
+  Synaptic Integrity and hit points come back through things a player DOES, and
+  the single exception is bought with a rank 16 skill — **Neuroplasticity**, a
+  point a minute per level. A character who has not trained it recovers nothing
+  by sitting still, ever. Per MINUTE rather than per tick, so whatever credits
+  it can do so lazily off elapsed time. **`characters:regenerate` credits it,
+  every minute**, and keeps NO stored clock — `market:seed`'s stance rather than
+  the training heartbeat's, because a deposit is credited from a clock the
+  player is watching and this is a trickle nobody is counting. A minute lost to
+  a scheduler restart is a point. It heals from ZERO, which is the only route
+  off the floor that exists until healing is designed.
+- **`Character::recover()` is `takeDamage()`'s mirror and just as dull** — an
+  addition and a ceiling, knowing nothing about why. **Capped at the maximum as
+  it is NOW**, which is why it cannot be damage with a minus sign: a ceiling cut
+  by flatlines is the ceiling you heal to, and healing must never climb past
+  what injury lowered.
+- **An icebreaker is a GATE before it is a number**, and `icebreaker_damage`
+  floors at 0 to say so: no running icebreaker means no damage, and no amount of
+  skill adds up to having one. Its bite is a modifier on `programs.modifiers`
+  like everything else a program is worth, so a skill that sharpens one and a
+  better one are the same kind of thing to the resolver.
+- **TWENTY TURNS IS NEVER ENOUGH.** Every icebreaker does strictly less than
+  would break its matching ICE in twenty turns — the floor the whole ladder is
+  set by, with the gap left for skills to close. `DefencesTest` pins it, because
+  a tuning pass is exactly how a rule like that gets broken quietly.
+- **So fighting is gated behind training, and that is the intended reading of
+  "the bottom of the grid is walkable".** Walkable, not fightable: Icebreaker I
+  needs thirty turns against ICE I, which deals about 1.05 Synaptic Integrity a
+  turn — 31.5 against a starting pool of 31. The first icebreaker is a tool for
+  machines that have no ICE, and choosing to fight is an investment decision.
+- **Integrity and attack are BASES and expect to move.** A fight is meant to run
+  2-10 turns and that depends on icebreaker throughput, which does not exist —
+  the twelve pieces climb together so the ratio survives recalibration. Nothing
+  resolves them yet; when something fights, it goes through `App\Stats\Resolver`
+  and `DamageResolver` so a resistance to ICE is a modifier and never a branch.
+- **`App\Cyberspace\ScanFact` is the vocabulary of what a scan asks**, and it
+  lists the two nothing can read yet — ICE and cloaked — as *not yet* rather
+  than hiding them, the same decision the item card takes with its unbuilt
+  actions. `isKnownOn()` reads COLUMNS and `readFrom()` may reach
+  through a relation: asking a relation whether a scan is complete says no to a
+  scan that just answered, because Eloquent caches the null it loaded before
+  the probe wrote the id.
+- **A read runs in the BACKGROUND and belongs to the instrument doing it.**
+  `system_scans.reading_process_id` points at the running copy of the scanner —
+  an `inventory_items` row — so the read survives its owner walking to another
+  machine or jacking out entirely. **Settling is per character, not per
+  position**: `settleAll()` resolves every matured read, because the ones
+  elsewhere are the whole point.
+- **Two instruments read two machines.** A second read needs a second running
+  instance, which costs another lot of compute and a free thread — see
+  *Programs*. `ProbeRefusal::AllBusy` is "every scanner you have going is
+  reading something else", which is a different sentence from having none.
+- **An interrupted read is a lost read.** The analyser must have been running
+  for the WHOLE pass, not merely at the end: `inventory_items.started_at` is
+  later than the read began if it was stopped and restarted, which answers it
+  without recording any history — and without it a player could free the
+  compute for a quarter of an hour and switch it back on before looking.
+  Swapping to a different analyser fails the same test, correctly. A voided
+  pass is still SPENT, and the map says so on the way in.
+- **`Probe` is bound in the container**, so a test can pin its dice and have
+  the SCREENS use them — the map settles a scan during `index()`, which a
+  `fromConfig()` built inside the controller would have made untestable.
+- **Reading a machine takes software, and it has to be RUNNING.** An analyser
+  on the equipped deck is the gate; one in the stash is a file. **What a better
+  version buys is data, not code**: `programs.modifiers` against
+  `check.systemprofiling` for a steadier read and against `scan_passes` for
+  another look, so a new version is an item row and the probe never changes.
+  Analysers are BACKGROUND programs — mapping happens on the open grid, and
+  nothing passes `$duringRun` true.
+- **A scan is a file that perishes.** `system_scans` is one row per character
+  per address — a sighting, like a contact, with no foreign key to `systems`,
+  because it has to outlive the machine. What is known is COLUMNS and null
+  means *not found out*; a JSON bag would be shorter and unqueryable. Live
+  means unspent and unexpired (`scopeLive`), and a stale file is replaced
+  rather than continued, since carrying old answers forward is worse than
+  having none.
+- **What a node holds is its OWN inventory model.** `system_contents`, not the
+  character inventory with a different owner column: it is raided rather than
+  carried, safe from what ICE does to a person, and restocked on a clock — a
+  different set of rules, so a different table. Three kinds in one table
+  (`creds`, `item`, `data`) because they answer one question, with a CHECK per
+  kind saying which columns mean anything.
+- **A file is an object, not a reward.** Size in QB (turns on the way out), an
+  encryption type (a skill somebody has or does not), and TWO values — sealed
+  and broken. The gap between them is the whole reason decryption is a mechanic.
+  Files are **generated, never authored**: there is no catalogue of them, which
+  is why they are rows here rather than `items`.
+- **`App\Cyberspace\NodeStocker` is the only writer, and it TOPS UP.** A node
+  still holding something is left alone, so a pass run twice is not two hauls —
+  the same rule `MarketSeeder` follows. `cyberspace:restock` runs nightly with
+  `--dry-run`; emptying a node is temporary on purpose, and the brake on that
+  loop is the raid counter rather than scarcity.
+- **A node's items are a draw of NONE TO SEVERAL**, rolled again after each hit
+  and capped, so a rich machine is rich rather than merely likely.
+- **Nothing PHYSICAL ever comes off a machine.** You are not in the room: what
+  a raid carries out is a file or a program, so the shelf is `on_market` items
+  whose `container` is `data` and nothing else. That rule lives in
+  `NodeStocker::stockableItems()` and is the one thing about node loot that is
+  not data.
+- **`loot_tables` is the weighting, and it is rows rather than config**, unlike
+  the rest of `config/cyberspace.php` — a band is content to tune, and tuning
+  it is not a deploy. One row per (type, grade band, rarity), `weight` out of
+  the band's own total, and **a NULL `system_type` means any machine**: four
+  band rows cover the whole world today, and a row naming a type is an
+  override that beats them. `App\Models\LootTable::weights()` is the read
+  (never `all()` — Eloquent owns that name) and `covers()` is the question.
+- **The bands are the design, and both ends are hard.** Grades 1–3 draw rare
+  at 1%, and **ultra-rare is weight 0 anywhere below grade 8** — a wall rather
+  than a long shot, so the best software in the game cannot fall out of a
+  street-corner relay however long anybody grinds it. A rarity with no items
+  behind it is skipped rather than drawing nothing, so an empty shelf costs a
+  roll rather than the whole draw.
+- **A file is labelled for the machine it came off.** `strings.cyberspace.files.words`
+  is per type — a silo yields a ledger, a compute node a model, a relay a
+  routing table — which is flavour and not mechanics: type still restricts no
+  kind of item.
+- **`systems.stock_rule` is how a machine is TOLD what to hold**, and NULL on
+  nearly every row — the derived answer is the ordinary one and the column is
+  the override, like `items.board_layout`. `fixed` is exactly these, `any_of` is
+  this many drawn from a set without replacement, and `plus_random` keeps the
+  ordinary draw for a node that should not look special. **A rule replaces the
+  draw**, because a mission cannot be built on the world happening to put the
+  right thing in the right place. Items only: creds and files are still rolled,
+  since a mission node holding no money would announce itself.
+- **`systems.raids` is on the SYSTEM, not the character.** Three successful
+  raids by anybody retires the node. Nothing increments it yet.
+- **The map screen draws from memory and never from `systems`.** The eight
+  cells around you are buttons and everything else is a reading; arrows and the
+  numpad reach the same eight, because a diagonal is one step here.
+- **A cell says up to six things at once, and each has its OWN channel** — which
+  is the only way they stay legible in one small square. **Ground** is terrain: fog sits
+  below the board with a weave and no hairline, swept ground sits on it with
+  one, which is a layer difference rather than a shade. **The glyph** is the
+  kind of machine, drawn from the set already proved against the font stack.
+  **The hairline** is its condition — dashed while rebooting. **The corners**
+  are what you have on it: bookmark top-right, backdoor bottom-left in ember,
+  the kit's one mark for *yours*, and **scanned bottom-right in `--info`** — a
+  machine you have read something OUT of, which is not the same as one you
+  pointed an instrument at, so a file with no answers in it marks nothing. **A
+  bar at the foot** is the scanned grade. **Colour says type and nothing
+  else** — steel, cyan, jade on the GLYPH, never a fill, because four hundred
+  tinted tiles is a quilt.
+- **A cell has two pseudo-elements and four marks**, so the last two are
+  BACKGROUND LAYERS: the grade bar and the scanned tick composite through
+  `--cell-grade` and `--cell-read`, either of which may be absent. A rule that
+  set `background-image` outright would take the other one with it.
+- **The scanned mark clears itself**, because it is keyed by ADDRESS like the
+  grade: a machine that relocates after a lockdown comes back wearing a new
+  one, and the file stops describing it. Nothing has to go round removing
+  marks, which is the same property that keeps a stale grade off the map.
+- **The window is capped at what anybody could ever see.** `map_range` is 7
+  because `view_range` is **2** and the modifiers meant to widen it are worth
+  about +5 — drawing memory further out than a character can ever refresh it
+  from where they stand is drawing ground they cannot do anything about. **A
+  cell is 60px**, which is what carrying a glyph, a grade bar and two corner
+  ticks costs; the map scrolls and centres on the player. A bare character's
+  lit square is 5 x 5, which is exactly what a 360px phone shows — so the thing
+  a player is actually looking at fits a screen, and the memory around it is
+  what they scroll for.
+- **The key sits beside the map, as its own collapsible rail.** `.gridmap-frame`
+  reserves the collapsed width and `.maplegend` OVERLAYS the map's right edge
+  when it opens — the same discipline the dock follows, and for a sharper
+  reason: the map re-centres on scroll, so a column that pushed it narrower on
+  hover would move the ground under the cursor. Three ways in, all three the
+  dock's: hover where a pointer exists, the toggle everywhere, focus-within for
+  a keyboard. **Below 720px it drops under the map and stays closed** — a
+  legend is something you consult, not something you watch — and opens into the
+  wrapping row it always was. The frame declares `--key-w`, because a custom
+  property set on the child cannot be read by the parent that has to reserve
+  the room.
+- **What is outside the current view range is dimmed**, not hidden. The map is
+  memory and the sweep lights a square of it: `cell--distant` steps the rest
+  back to **.55** so the square being looked at is obvious while everything
+  remembered stays readable. It was .8 once, and .8 is a difference that is
+  real in the numbers and invisible on a screen where most of the cells are
+  distant — the step has to be big enough that the few lit ones win. Nothing is lit at all while jacked out, because
+  somebody outside cyberspace is reading the whole thing from memory.
+- **An ordinary machine has no hairline.** The fill lifts it off the ground and
+  the glyph says what it is, which leaves the border free to mean something: a
+  hairline is only ever the portal, a machine that has just appeared, one that
+  is rebooting, or you.
+- **Two things move, and they move differently on purpose.** The portal
+  BREATHES between bone and brass over four seconds — a pulse in place, which
+  the ration affords because there is exactly one portal in the world. A
+  machine that has only just appeared has a light TRAVEL round its hairline, in
+  its own type colour, the same idea as the sheen crossing a button: movement
+  that says *something changed here* rather than *this is a different kind of
+  thing*. A pulse and a sweep read as two statements; two pulses would read as
+  neither. Everything else is static — rebooting is a dashed hairline for
+  exactly that reason — and `prefers-reduced-motion` stops both.
+- **A new cell keeps its type colour.** The first version went bone, and that
+  was wrong twice: a new compute node stopped looking like a compute node, and
+  a bone hairline is the loudest thing the kit has short of the accent. Forty
+  cells can be new at once after a sweep, so their phases are staggered by
+  position — forty synchronised sweeps is a disco, not a map.
+
+### Being on the floor
+
+**Reaching 0 in either resource puts a character on the waiting screen**, and
+`App\Characters\WaitingRoom` is the whole of it. Until this, `takeDamage()`
+would take somebody to zero and say so in a comment.
+
+- **The wait is NOT the punishment.** What losing costs is whatever the defeat
+  tags carried; the minute is only there so a defeat carrying *nothing* still
+  costs something. A long wait would punish the player who lost to a harmless
+  guard hardest, which is backwards.
+- **Zero to one, and no further.** Getting up is not healing — it is getting up.
+  One point is enough to act and not enough to be safe, and the way back from
+  there is Neuroplasticity, a clinic, or something a player does. **Both
+  resources come back if both were empty**, or waking still broken in the other
+  half would put somebody straight back down; a resource that was NOT empty is
+  left exactly where it was.
+- **Released lazily, with no scheduler.** `EnsureCharacterIsStanding` asks on
+  the way past, so the minute ends the moment the player looks — the same
+  settlement a matured scan pass and a training deposit use. A player who never
+  comes back never needs to be got up.
+- **A second hit does not restart the clock.** A second hit on an unconscious
+  character is not a second wait.
+- **It runs BEFORE the run lock.** A defeat ejects and only then shows this
+  screen, so the two should never overlap — and if they do, being unconscious
+  wins, because sitting on the waiting screen while still holding a position in
+  cyberspace is the one state nothing else knows how to read.
+- **`ReadinessWatch` is its first caller**, and the order there is the order
+  every bad ending follows: damage, the consequence, the ejection, and **only
+  then** the screen. The screen comes after `jackOut()` because a character must
+  never be sitting on it while still holding a position in cyberspace — which is
+  why those are four lines apart rather than one call. **One point can do it**:
+  somebody on their last point of Synaptic Integrity whose deck stops running
+  goes down, which is a hard way to lose and not an unfair one.
+- **`characters.waiting_cause` is JSON, and that is temporary on purpose.** What
+  put somebody down is a run, a named machine, a named piece of ICE, damage and
+  a list of tags — none of which is built. Columns modelled against an unwritten
+  simulator get modelled wrong. `App\Characters\DownedCause` is the single
+  author and reader of that blob, and is the shape it becomes when it settles.
+  **Every field is optional**: a readiness loss knows nothing about ICE, and the
+  screen shows less rather than showing "unknown".
+
+### Runs
+
+**The spine, the fight and extraction are all built.** A run can be begun,
+played turn by turn, and left with something to show for it. Detection, the
+ICE, the trace, a defeat's own consequences and taking what a machine holds all
+roll now.
+
+- **`runs` is durable state, and that is the cost of making a run interactive.**
+  An atomic run needed no row — it began and ended inside one request. **The row
+  carries the ADDRESS and never a system id**, the rule `system_scans` and
+  `system_contacts` already follow: a machine burned or relocated out from under
+  a run is what CANCELS one, and a foreign key would make that an integrity
+  error instead of a game event. `Run::system()` returning null is ordinary.
+- **`characters.current_run_id` is what "in a run" means** — a column rather
+  than a flag on `runs`, so "one at a time" is not a rule anybody enforces. The
+  same call `equipped_deck_id` makes, and the lock reads it on every request.
+- **`App\Cyberspace\RunStarter` is the only writer**, and it sets the character's
+  pointer inside the same transaction that writes the run: a character pointing
+  at nothing, or a live run nobody points at, are both states the lock cannot
+  read.
+- **It refuses four things and deliberately not a fifth.** Not in cyberspace,
+  nothing there, the portal, and a deck that stopped meeting its requirements
+  (readiness, checked a second time — cheap, and it closes the window between
+  entering and attacking). **It does NOT refuse a machine whose operating system
+  you lack**: that run is entered and `runs.os_locked` records the verdict,
+  because a refusal naming the OS would hand over a scan fact for one click.
+- **`EnsureRunIsFinished` is the lock, and it is `RequireCharacter`'s shape** —
+  one middleware, a named allow-list, everything else redirected, 409 and a URL
+  for a JSON caller. **Admin routes are not exempt**, which is the one
+  difference: the tools edit the game, but a run is a character in jeopardy and
+  an admin could edit their way out of one.
+- **The readiness net stands down inside a run.** `EnsureDeckStillRuns` returns
+  early while `current_run_id` is set, because a burnout is *supposed* to break
+  the deck and resolves its own ending — two things racing to end one run would
+  let the one that knows least win, throwing away a defeat and calling it a
+  readiness loss.
+- **Leaving is always on the list.** Egress is never absent and never disabled,
+  whatever else a turn offers. A run with no exit is a character deleted by a
+  door they could not see.
+- **`App\Cyberspace\Simulator` is one door for every action**, so a turn always
+  costs the same thing whatever it was spent doing — the economy the whole run
+  rests on. The die is injected, like the market's and the probe's.
+- **The player acts, then the machine does**, and that order is not arbitrary:
+  somebody who lands the blow that breaks an ICE does not then take a hit from
+  something already destroyed, and somebody who leaves gets their attempt before
+  the thing they are leaving gets another swing.
+- **What is fighting lives on the RUN, not on the machine.** `runs.ice_id` and
+  `runs.ice_integrity` — the catalogue says what an ICE *is*, and these say what
+  this fight has left of it. It also means a machine burned out from under a
+  live run does not take the fight with it.
+- **A failed cut says one thing for three causes**, deliberately: no icebreaker
+  running, an operating system the runner cannot speak, or nothing awake to cut
+  at. The gate must never announce itself, so the log line a missed pass gets is
+  the line an unspeakable OS gets, and `FightTest` asserts the words *operating
+  system* appear nowhere in it.
+- **`stealth` is what an IDS is rolled against**, and it floors at 0 the way
+  `icebreaker_damage` does: somebody who has not trained for it is seen, every
+  time, by everything. Its base is a **POOL** — `(intellect + focus + memory +
+  perception) / 8.5`, kept to one decimal — which is a different mechanism from
+  `formulas` and deliberately so: a formula divides each attribute, rounds each
+  UP and adds the results, while a pool adds first and divides once. Four
+  attributes of 20 are 12 as a formula and 9.4 as a pool. Hit points and
+  Synaptic Integrity are pools you SPEND, so being generous per term is right;
+  stealth is a capability, and a capability reads like an average.
+- **Pools are kept out of `stats.formulas` on purpose.** That array is shipped
+  to the character-creation screen and recomputed in JavaScript — one shape,
+  asserted by `DerivedStatTest` — so a second shape in it would have to be
+  mirrored in the browser. They are in the stat graph all the same, because
+  resolution order and cycle detection are about WHAT a stat reads, not how it
+  adds it up.
+- **"Per level of something else" is FIVE MODIFIERS, each conditional on one
+  more level.** A modifier's amount is a number and never an expression, so
+  that is the only shape the resolver has for it — and it is the same shape a
+  skill's own per-level grants already use. `skill_at_least` is the predicate,
+  and `Sheet::contextFor()` puts a character's levels into the context as
+  `skill.<slug>` for it to read. **Only the skills they actually have**: an
+  absent key and a level of zero are the same answer, and writing every skill in
+  the game into every context would be a row per skill per resolution for the
+  sake of the ones nobody has.
+- **Arriving is the first thing anything gets to notice**, and
+  `Simulator::rouse()` is where. **Every watcher rolls, not just the IDS** — a
+  tracer and a piece of ICE each carry a value of their own, so a machine with
+  no IDS is quieter rather than safe. They are not competing: **any one success
+  detects you**, because they are all in the room.
+- **Detection is what wakes things.** An undetected run walks past the ICE and
+  the tracer both, so the ICE is only written onto the run when something
+  noticed — which means stealth does not make a fight easier, it makes the
+  fight not happen. Everything downstream asks `runs.ice_id`, so a quiet run
+  simply has nothing to fight.
+- **It takes the GLOBAL certainty floor**, and `checks.floors` names no kind for
+  it on purpose: the best runner alive still trips a household IDS about once in
+  a hundred and twenty attempts, and detection is the case that rule was written
+  for rather than an exception to it.
+- **The trace advances once something has noticed**, at the machine's
+  `tracer_rate` a turn — detection is what wakes the tracer, so a run nothing
+  saw is a run nothing is following. The rate is read off the machine rather
+  than copied onto the run, unlike the ICE's integrity: integrity is being
+  ground DOWN and belongs to the fight, while a tracer's speed is a property of
+  the hardware and does not change.
+- **The run screen draws the trace as the CHAIN it walks** — the machine at one
+  end, you at the other, and every backdoored relay routed through in between.
+  Routing is not built, so that chain is two nodes today; it is drawn as a chain
+  rather than a pair so it will not have to change when hops arrive.
+  `Run::turnsUntilTraced()` is the number the egress decision is made on, and it
+  is worked out server-side because a player should not be dividing in their
+  head while something is hitting them.
+- **A TRACE WALKS THE CHAIN, one hop a turn.** Each turn is a single attempt at
+  the NEXT system in the route: pass it and the trace moves up and the turn
+  ends, fail and it stays put and the turn ends anyway. **A hop once passed is
+  behind it** and is never rolled again — `runs.trace_hop` is that position, and
+  it is why the column exists. Rolling every hop every turn would make a long
+  chain not slow but impassable: ten simultaneous successes for ever, rather
+  than ten successes eventually.
+- **The chance is what the hop's GRADE allows** — 100% at grade 1 down to 20% at
+  grade 9 — so what a chain buys is the sum of 1/p over its hops. Three grade 9s
+  is about fifteen turns of nothing happening. Past the end of the chain the
+  trace comes on unopposed, and an empty chain is that case from the first turn.
+- **A completed trace puts heat on the character and burns the chain.**
+  `characters.heat` is persistent and theirs; **one point is a placeholder** and
+  what heat DOES is undesigned — see TODO.md. Burning the chain is called and is
+  a no-op, because there are no backdoors; the day there are is not the day it
+  should be remembered.
+- **`characters.heat` and `runs.thermal_load` are different quantities.** The
+  design calls both "heat", which is why the run's column is named for what it
+  is: a per-run number in thermal units that resets, against a permanent one
+  that follows you home. One word for both is a bug waiting to be read at three
+  in the morning.
+- **The two thresholds ACT, and they act BEFORE the player's choice.** Checked at
+  the start of the turn; when one is breached the egress is attempted then and
+  there, whatever was asked for. That is deliberately not the gentler rule — a
+  threshold that only warned would leave an unresponsive player in a run that
+  never resolves — and it is the standing instruction they left for exactly this
+  moment. **Zero turns one off**, which saves a second column whose only job
+  would be to say whether the first counts.
+- **They are set from the MAP, never from inside a run.** An accordion on the
+  cyberspace screen, folded away, because they are a play style rather than a
+  per-run decision — and changing them mid-fight would be changing the rules of
+  a fight while standing in it.
+- **The IDS's second chance is built, and it is `Extract`'s own roll.**
+  `Simulator::spottedBy()` is the shared roll behind BOTH chances — `rouse()`
+  calls it on approach, `extract()` calls it again on the core touch, and
+  either one can independently find a runner the other missed. It fires
+  whether or not the extraction it accompanies goes on to succeed: touching
+  the core is the act that risks it, not the result.
+- **`App\Cyberspace\DefeatResolver` is what makes the tag set real.** Until it
+  existed, `Ice::defeatTags()` fed `DownedCause` names for the waiting screen
+  and nothing rolled or applied a single one — losing to ICE XII cost exactly
+  what losing to ICE I did. Called from `Simulator::resolveEnding()` **before**
+  the ejection, which is the same ordering everything else in a bad ending
+  follows: damage (the ICE's hit, already landed), then the consequence, then
+  `jackOut()`, then the floor.
+- **Flatline deepens the injury; Neural Shock lands on the body.** Flatline
+  rolls its percentage against maximum SI **as it stands right now** — after
+  every earlier flatline, which is what "accumulates" means — and writes
+  through `InjuryLedger::inflict()`, the same *neural damage* row a freeze and
+  a future overdose both deepen. Current SI clamps to the new ceiling on the
+  save that follows, via the model's own hook, not a second call. Neural Shock
+  is a plain `takeDamage()` on current hit points and touches no maximum at
+  all — that is Flatline's job.
+- **Surge deletes the module outright**, chosen from whatever is CURRENTLY
+  fitted to the equipped deck — `deck_fittings.module_id` cascades on delete,
+  so the fitting row cleans itself up without a second write. One roll per
+  module the level names, exactly as designed: a module already taken by an
+  earlier roll this same Surge cannot be taken twice, because it is gone. No
+  deck, or nothing left fitted, is an ordinary no-op.
+- **Erase draws from storage AND whatever is running — deliberately wider than
+  `inventoryIn()`'s ordinary meaning.** `InventoryItem::scopeLoose()` excludes
+  anything running, fitted or installed on purpose, which is correct for a
+  stash listing and wrong here: "software or data held on the deck" has to
+  include what is running on it, or Erase would spare exactly the programs a
+  character cared enough about to load. A running row is stopped through
+  `ProgramRunner::stop()` before it is deleted, never blown through.
+- **Skim reaches `creds` directly**, floored so a share of nothing takes
+  nothing rather than throwing. Bounty never appears in this list — it cannot,
+  structurally, because it is rolled onto the MACHINE (`systems.ice_bounty`)
+  and never written into `Ice::defeat_tags` — so `DefeatResolver`'s match over
+  `DefeatTag` handles it by returning null, honestly, rather than by omitting
+  the case.
+- **`DownedCause` grew an `effects` field.** `tags` is names; `effects` is
+  `DefeatResolver`'s own rendered account — "2 points of your ceiling, gone for
+  good" rather than "flatline" — and the waiting screen shows `effects` in
+  preference to the bare tag pills whenever a resolver actually ran. A cause
+  built before `DefeatResolver` existed has the first and not the second, which
+  is why the screen still falls back to the tag list.
+- **`cyberspace:tag-ice` is a console command, not a migration.** It is how the
+  live database's twelve ICE rows got their `defeat_tags`, and it means a fresh
+  clone or a test database's ICE carries none until somebody runs it — tests
+  that need a specific tag set write it onto the row directly rather than
+  relying on the seeded catalogue.
+- **`App\Cyberspace\Extractor` is the only door between a node's inventory and
+  a stash.** It reads and deletes `system_contents` rows and nothing else in
+  the codebase touches either side of that exchange — the same discipline
+  `NodeStocker` keeps on the writing end. **Creds and items are instant; a
+  file costs turns.** `takeCredsAndItems()` and `takeFiles()` are the two
+  halves a multi-turn pull needs kept separate, and `totalFileQb()` is what
+  sizes one before committing to it; `extract()` still composes all three into
+  the one-call haul every non-interactive caller (tests included) wants.
+- **A file's turn cost lives on the RUN, not the file.** `runs.extracting_qb`
+  is null whenever no pull is running and otherwise the QB still owed —
+  `Simulator::beginTransfer()` sets it from `Extractor::totalFileQb()` minus
+  one turn's bandwidth, `continueTransfer()` spends another bandwidth's worth
+  each time `RunAction::Extract` is chosen again, and `completeTransfer()`
+  calls `takeFiles()` once it reaches zero. **Continuing a pull is still an
+  ordinary call to `Simulator::extract()`, inside the ordinary turn `take()`
+  resolves** — there is no separate code path that skips the machine's half of
+  the turn, which is the whole requirement: an ICE woken by the core touch
+  keeps swinging on every turn a transfer runs, exactly as it would against
+  Attack or Hold. Choosing Attack instead simply does not call `extract()`
+  that turn, so `extracting_qb` sits untouched until the player comes back to
+  it — a pull is paused by spending the turn elsewhere, never lost.
+- **The core-touch detection roll fires only on the turn that BEGINS a pull,
+  never on one that continues it.** Touching the core is the act that risks
+  it; a transfer already running is not touching it again. That is why
+  `beginTransfer()`'s caller checks `extracting_qb === null` before rolling at
+  all, ahead of the OS/purpose/empty-node check that shares `extract_fails`.
+- **Bandwidth is read through `DeckTotals::forCharacter()`, floored at one.**
+  Same rule as everywhere else a deck measure is used: it is a RESOLVED stat,
+  never the row, so a skill or an implant that moves `deck_bandwidth` changes
+  how fast a runner pulls data without `Simulator` knowing either exists. The
+  floor is a degenerate-case guard — nothing today can drive resolved
+  bandwidth to zero on a deck that met the Link requirement to jack in — not a
+  balance number, and it is there so a transfer can never stall forever rather
+  than to make one faster.
+- **A transfer's own "somebody else took it first" gets its own log line,
+  `transfer_gone`, rather than sharing `extract_fails`.** Losing a race after
+  a countdown finishes is an ordinary outcome a player can learn from, unlike
+  the OS gate `extract_fails` exists to protect — nothing here is secrecy the
+  way the core-touch failure lines are.
+- **Three kinds, three ways of becoming a possession.** Creds go straight onto
+  the character. A catalogue item is granted through the SAME merge-or-create
+  `LoadoutGranter::grantItem()` already uses — two piles of one stackable thing
+  in one place are one pile, however each pile arrived, so the logic could not
+  be allowed to diverge. A file has no catalogue row of its own — see
+  `ExtractedFile` — so it becomes one unstackable "Encrypted Data Dump", the
+  same generic item every extracted file becomes.
+- **A file's real numbers live in `inventory_items.extracted_file`, as JSON, on
+  the ROW and not on the item.** Every dump looks alike on the shelf, the way a
+  memory shard's contents are not the shard. `App\Cyberspace\ExtractedFile` is
+  the one author and reader, the same shape `DownedCause` takes for
+  `waiting_cause` and for the same reason: decryption and selling are not
+  designed, and columns modelled against either would be modelled wrong.
+- **Two files never merge, on purpose, even though the item they share is
+  unstackable anyway.** Two dumps with different sizes and different values
+  merging into one row with a summed quantity would destroy information a
+  quantity cannot hold — the one item in the game where merging would be worse
+  than the ordinary case `stack_key` exists to prevent.
+- **`RunEnding::Completed` finally has a caller.** It existed in the enum from
+  the start — "they did what they came to do" — with nothing to trigger it.
+  `runs.extracted` is the flag: egress after it is set reads as Completed
+  rather than a plain Egress, checked in BOTH doors to leaving — the turn-based
+  Egress action and the older, still-routed standalone `run.egress` endpoint —
+  so the two cannot disagree about whether a haul happened.
+- **One line covers every reason a core touch can fail**, the same discipline
+  `attack_fails` already keeps: an operating system the runner cannot speak, a
+  purpose that is not `RunPurpose::Extraction`, and a machine with nothing left
+  to give all wear one sentence. The UI only offers the Extract button on an
+  extraction run, so the purpose check is a defence against a hand-built
+  request rather than something a player ordinarily meets — but it still has to
+  fail exactly as quietly as the other two, or a player could learn which cause
+  applied by which sentence came back.
 
 ### Archetypes and what they hand out
 
@@ -1127,7 +1853,7 @@ once, at character creation.
   has to become a diff.**
 - **A granted level is drawn, not spelled out.** The archetype card shows the kit's
   segmented meter — `.meter--seg` with `--segs` from `SkillProgression::maxLevel()` —
-  the same device the skill tree uses for a level, so the two screens read alike. An
+  the same device the skills screen uses for a level, so the two read alike. An
   empty meter is a skill granted and untrained, which is not the same as no skill; the
   number lives in the meter's `title` and `aria-label`.
 - **The roster cache stays lean.** `Archetype::roster()` is read on nearly every
@@ -1155,7 +1881,7 @@ review.
   read-only copy would be a second place to add every new column.
 - **Both loadout dropdowns are grouped**, because a flat list of every skillbook in
   the game is a scroll rather than a choice. Skills group by their `category`, shown
-  raw the way the skill tree shows it; items group by their own vocabulary — deck
+  raw the way a skill's own row carries it; items group by their own vocabulary — deck
   hardware by `items.hardware` (labelled by `App\Decks\Hardware::label()`), then the
   two inventories, then skillbooks last. The grouping is decided in the controller and
   `<x-grouped-options>` renders it, so the four selects that need the identical list
@@ -1182,6 +1908,35 @@ in `deck_slots` if it is a cyberdeck, plus a row in `deck_modules` if it is a
 module — see *Cyberdecks and modules*. `ItemController` wraps both writes in a
 transaction and delegates the decision of which tables those are to
 `App\Decks\HardwareEditor`.
+
+**Effects are edited as rows, by one component, everywhere.**
+`App\Admin\ModifierField` plus `<x-modifier-rows>` is the editor for every
+modifier list in the game — `items.modifiers`, `programs.modifiers`,
+`skills.modifiers`, and `archetype_perks.modifiers` when perks get a screen.
+Four tables carry the same JSON, and until this existed every one of them was
+authored by hand: a textarea for software and a migration for the rest, which
+is a content pipeline only a programmer can use for the half of the game
+MECHANICS insists must be data.
+
+- **A screen passes a field name and its extra keys.** `skills.modifiers`
+  carries a `level` per row — from which level the grant applies — and
+  `<x-modifier-rows :extras="['level']">` is the whole of that difference.
+- **The picker offers stats by id and tag sets by NAME.** Groups come from a
+  stat's leading tag; the sets offered are exactly the ones with an entry in
+  `character.names`, which is self-limiting on purpose — **a set nobody has
+  named cannot be rendered on a card**, so offering it would be offering an
+  effect nothing can describe.
+- **A target must reach something.** `Modifier::fromArray()` judges the shape
+  and knows nothing about which stats exist, so a mistyped id builds, resolves,
+  matches nothing and changes nothing for ever. The editor asks the registry as
+  well, and names the row that is wrong.
+- **A value is an id unless it is plainly a tag set** — more than one tag, or
+  one that declared stats actually wear. Anything else stays an id and is
+  refused, rather than quietly becoming `all_of: ['hitpints_max']`.
+- **What the editor does not understand, it carries.** A `condition`, a
+  `priority` or a `source` travels in a hidden field and comes back untouched.
+  Dropping them on save would be the kind of damage nobody notices until a drug
+  stops wearing off.
 
 **The form requests are the substantive part.** `App\Http\Requests\Admin\ItemRequest`,
 `SkillRequest` and `ArchetypeRequest` mirror every CHECK constraint on the tables — the

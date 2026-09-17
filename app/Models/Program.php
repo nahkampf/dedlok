@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'item_id', 'kind', 'qflops_cost', 'memory_cost', 'storage_size',
-    'background_process', 'modifiers',
+    'background_process', 'multithreaded', 'modifiers',
 ])]
 class Program extends Model
 {
@@ -34,6 +34,7 @@ class Program extends Model
             'memory_cost' => 'integer',
             'storage_size' => 'integer',
             'background_process' => 'boolean',
+            'multithreaded' => 'boolean',
             'modifiers' => 'array',
         ];
     }

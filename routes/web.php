@@ -13,14 +13,14 @@ use App\Http\Controllers\DeckController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
-use App\Http\Controllers\SkillTreeController;
+use App\Http\Controllers\RunController;
+use App\Http\Controllers\SkillsController;
+use App\Http\Controllers\TrainingQueueController;
+use App\Http\Controllers\WaitingController;
 use App\Http\Middleware\ForbidSecondCharacter;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
-
-// The skill catalogue. Public: it describes the game, not a character.
-Route::get('/skills', SkillTreeController::class)->name('skills.index');
 
 // The whole pool in one response; the client randomises locally so repeated
 // presses cost no requests at all. Read-only, so GET and no CSRF. Still
@@ -145,6 +145,57 @@ Route::middleware('auth')->group(function () {
     Route::post('/cyberspace/jack-out', [CyberspaceController::class, 'jackOut'])->name('cyberspace.jack_out');
     Route::post('/cyberspace/step', [CyberspaceController::class, 'step'])->name('cyberspace.step');
     Route::post('/cyberspace/jump', [CyberspaceController::class, 'jump'])->name('cyberspace.jump');
+
+    // Reading the machine underfoot. No target in the request: the position is
+    // the target, because you cannot read a machine you are not standing on.
+    Route::post('/cyberspace/scan', [CyberspaceController::class, 'scan'])->name('cyberspace.scan');
+
+    // What the instrument has, for the screen that watches it work. A GET
+    // because it reads — and it settles a matured pass on the way past, which
+    // is the same lazy catch-up the map does rather than a write of its own.
+    Route::get('/cyberspace/reading', [CyberspaceController::class, 'reading'])->name('cyberspace.reading');
+
+    // The two standing instructions. A play style rather than a per-run
+    // choice, so they are saved from the map and never from inside a run.
+    Route::post('/cyberspace/thresholds', [CyberspaceController::class, 'thresholds'])->name('cyberspace.thresholds');
+
+    /*
+     * The floor under every defeat. One route, and the middleware that holds
+     * somebody here is what releases them — the minute ends when they look.
+     */
+    Route::get('/down', [WaitingController::class, 'show'])->name('waiting.show');
+
+    /*
+     * The run. Three routes and they are the only ones a locked player may
+     * reach — see App\Http\Middleware\EnsureRunIsFinished, whose allow-list
+     * names exactly these.
+     *
+     * Egress is a POST rather than a DELETE: it is a roll that may fail and
+     * cost a turn, not a deletion that either happens or does not.
+     */
+    Route::post('/cyberspace/run', [RunController::class, 'start'])->name('run.start');
+    Route::get('/run', [RunController::class, 'show'])->name('run.show');
+    Route::post('/run/act', [RunController::class, 'act'])->name('run.act');
+    Route::post('/run/egress', [RunController::class, 'egress'])->name('run.egress');
+
+    // Stopping a read. NOT jacking out and not unloading the analyser — it
+    // stops pointing the instrument at one machine and frees it for another.
+    // Takes an address rather than a position, because a read survives its
+    // owner walking away from the machine it is reading.
+    Route::delete('/cyberspace/reading', [CyberspaceController::class, 'abandon'])->name('cyberspace.abandon');
+
+    /*
+     * A character's own skills, and the queue that trains them. It was the
+     * CATALOGUE once — every skill in the game, public, because it described
+     * the game rather than a person — and that is the skill editor's job now.
+     *
+     * A player picks a SKILL and never a level — the next one up is the only
+     * entry the queue could accept, so there is nothing to choose. See
+     * App\Skills\TrainingQueue.
+     */
+    Route::get('/skills', SkillsController::class)->name('skills.index');
+    Route::post('/skills/queue', [TrainingQueueController::class, 'store'])->name('training.store');
+    Route::delete('/skills/queue/{entry}', [TrainingQueueController::class, 'destroy'])->name('training.destroy');
 
     // Bookmarks. The recall is a POST because it moves you; the rest edit a
     // note.

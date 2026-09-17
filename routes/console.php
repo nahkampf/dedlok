@@ -51,6 +51,55 @@ Schedule::command('training:deposit --quiet-when-idle')
  * to catch up from, and a shelf that goes unstocked for another eight hours is
  * indistinguishable from a run of failed rolls.
  */
+/*
+ * The world's slow metabolism, nightly.
+ *
+ * Emptying a node is temporary, and this is what makes it so. Same shape as the
+ * market's pass and for the same reasons: no stored clock, a missed night is
+ * never made up, and withoutOverlapping() because a second copy of a pass that
+ * writes thousands of rows is not something to find out about later.
+ *
+ * CYBERSPACE.md gives housekeeping three more nightly jobs — backdoor
+ * discovery, siphon payouts, heat decay — and a frequent one for lockdown
+ * expiry. None of those exist yet; this is the first of them.
+ */
+Schedule::command('cyberspace:restock')
+    ->dailyAt('04:10')
+    ->withoutOverlapping();
+
 Schedule::command('market:seed')
     ->cron('0 */8 * * *')
+    ->withoutOverlapping();
+
+/*
+ * Resolving reads that have matured, for people who are not looking.
+ *
+ * NOT WHAT MAKES A READ FINISH. `Probe::settle()` catches up with the clock by
+ * itself, so a player who walks away for a day gets the whole read resolved the
+ * moment they come back. This makes the row true in between, which matters to
+ * every reader that is not the owner — a notification saying a read finished
+ * can only come from something that NOTICED, and a sellable scan is one
+ * player's file in another player's hands.
+ *
+ * Five minutes rather than the heartbeat's minute: a deposit is credited FROM a
+ * clock and wants to be current, and this resolves something that has already
+ * happened. Nobody is waiting on it.
+ */
+/*
+ * The only thing in the game that heals by waiting.
+ *
+ * Every minute, because the rate IS per minute — Neuroplasticity grants a point
+ * a minute per level and nothing else grants any. On a world of untrained
+ * characters this resolves a few stats and writes nothing.
+ *
+ * No stored clock and a missed minute is never made up: market:seed's stance
+ * rather than the training heartbeat's, because a training deposit is credited
+ * from a clock the player is watching and this is a trickle nobody is counting.
+ */
+Schedule::command('characters:regenerate --quiet-when-idle')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+Schedule::command('cyberspace:settle --quiet-when-idle')
+    ->everyFiveMinutes()
     ->withoutOverlapping();

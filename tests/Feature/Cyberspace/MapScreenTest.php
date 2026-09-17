@@ -293,6 +293,38 @@ final class MapScreenTest extends TestCase
 
     // ---- the view model ----------------------------------------------------
 
+    /**
+     * THE PANELS BELOW THE MAP ARE STILL THERE, AND STILL CLOSED.
+     *
+     * This is a structural assertion rather than a content one, and it exists
+     * because the thing it catches actually shipped: a commit that rebuilt the
+     * legend took the two-column wrapper and the jump panel's opening tags with
+     * it, leaving two orphaned closers. The page still rendered — a browser
+     * simply discards a close tag with nothing to close — so every test here
+     * went on passing while the bottom of the screen fell apart.
+     *
+     * Nothing else in the suite would notice: assertSee() finds the text
+     * whether or not the box around it survived.
+     */
+    public function test_the_panels_under_the_map_are_whole(): void
+    {
+        $html = $this->actingAs($this->user)
+            ->get(route('cyberspace.index'))
+            ->assertOk()
+            ->getContent();
+
+        // Counted on the TAG, not on a class list — a class added to a panel
+        // is not a structural change and must not fail a structural test.
+        $this->assertSame(
+            substr_count($html, '<section'),
+            substr_count($html, '</section>'),
+            'the panels under the map do not close cleanly',
+        );
+
+        $this->assertStringContainsString(Text::get('cyberspace.bookmarks.heading'), $html);
+        $this->assertStringContainsString(Text::get('cyberspace.map.jump'), $html);
+    }
+
     public function test_the_window_is_square_and_centred_on_the_player(): void
     {
         $this->equipReadyDeck();
@@ -385,5 +417,125 @@ final class MapScreenTest extends TestCase
 
         $this->assertTrue($centre->isYou);
         $this->assertSame('cell--you', $centre->modifier(), 'you outrank what you are standing on');
+        $this->assertSame("\u{25CD}", $centre->glyph(), 'standing on a machine still draws the machine');
+    }
+
+    /**
+     * The other half of the same rule: ● is what is left for ground that has
+     * nothing of its own, and it is the ONLY thing it is still used for.
+     */
+    public function test_you_are_drawn_as_a_dot_on_empty_ground(): void
+    {
+        $this->equipReadyDeck();
+
+        $this->actingAs($this->user)->post(route('cyberspace.jack_in'));
+
+        $map = MapView::for($this->character->fresh());
+        $centre = $map->rows[$map->range][$map->range];
+
+        $this->assertTrue($centre->isYou);
+        $this->assertNull($centre->contact);
+        $this->assertSame("\u{25CF}", $centre->glyph());
+    }
+    // ---- what is lit, and what is only remembered ---------------------------
+
+    /**
+     * THE MAP DRAWS MEMORY AND THE SWEEP LIGHTS PART OF IT. Everything outside
+     * what they can see from where they stand steps back, so the square they
+     * are actually looking at is obvious without anything being hidden.
+     */
+    public function test_ground_outside_the_view_range_is_dimmed(): void
+    {
+        Config::set('cyberspace.view_range', 2);
+        Config::set('cyberspace.map_range', 5);
+
+        $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
+
+        $map = MapView::for($this->character->fresh());
+
+        $inView = [];
+        $distant = [];
+
+        foreach ($map->rows as $row) {
+            foreach ($row as $cell) {
+                $cell->inView ? $inView[] = $cell : $distant[] = $cell;
+            }
+        }
+
+        // A view range of 2 is a 5x5 square: twenty-five cells lit out of the
+        // eleven-by-eleven drawn.
+        $this->assertCount(25, $inView);
+        $this->assertNotEmpty($distant);
+
+        foreach ($distant as $cell) {
+            $this->assertStringContainsString('cell--distant', $cell->classes());
+        }
+
+        foreach ($inView as $cell) {
+            $this->assertStringNotContainsString('cell--distant', $cell->classes());
+        }
+    }
+
+    /** Nothing is lit for somebody reading the map from outside cyberspace. */
+    public function test_nothing_is_lit_while_jacked_out(): void
+    {
+        $map = MapView::for($this->character->fresh());
+
+        foreach ($map->rows as $row) {
+            foreach ($row as $cell) {
+                $this->assertFalse($cell->inView);
+            }
+        }
+    }
+
+    /** The drawn window is capped at the furthest anybody will ever see. */
+    public function test_the_window_is_the_configured_map_range(): void
+    {
+        // The shipped cap is view_range 2 plus the +5 the modifiers are worth.
+        // Set here rather than read, because this class narrows the map in
+        // setUp — reading it would assert the fixture, not the rule.
+        Config::set('cyberspace.map_range', 7);
+
+        $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
+
+        $map = MapView::for($this->character->fresh());
+
+        $this->assertSame(15, $map->span());
+        $this->assertCount(15, $map->rows);
+    }
+
+    /**
+     * The two standing instructions are set from the MAP, never from inside a
+     * run — changing them mid-fight would be changing the rules of a fight
+     * while standing in it.
+     */
+    public function test_the_thresholds_are_set_from_the_map(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('cyberspace.index'))
+            ->assertOk()
+            ->assertSee('egress_trace_at', false)
+            ->assertSee('egress_si_at', false);
+
+        $this->actingAs($this->user)
+            ->post(route('cyberspace.thresholds'), [
+                'egress_trace_at' => 45,
+                'egress_si_at' => 0,
+            ])
+            ->assertRedirect();
+
+        $character = $this->user->fresh()->character;
+
+        $this->assertSame(45, $character->egress_trace_at);
+        $this->assertSame(0, $character->egress_si_at, 'zero turns one off');
+    }
+
+    /** Every character is born with them, or nobody who never looked is carried out. */
+    public function test_a_new_character_has_both_marks(): void
+    {
+        $character = $this->user->fresh()->character;
+
+        $this->assertSame(70, $character->egress_trace_at);
+        $this->assertSame(30, $character->egress_si_at);
     }
 }

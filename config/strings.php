@@ -159,6 +159,7 @@ return [
             'not_owned' => 'That is not yours to run.',
             'not_a_program' => 'That is not software.',
             'already_running' => 'It is already running.',
+            'no_free_thread' => 'You are already running as many copies of this as you can at once.',
             'not_running' => 'It was not running.',
             'no_deck_equipped' => 'Equip a deck first. Software runs on the machine you are carrying.',
             'deck_not_ready' => 'That deck will not run. Finish building it first.',
@@ -275,6 +276,399 @@ return [
             'many' => 'Your deck stopped running and dumped you out of cyberspace. :count points of Synaptic Integrity.',
         ],
 
+        /*
+        | Scanning: finding out what a machine is before deciding what to do
+        | about it.
+        |
+        | The refusals say what to do next wherever there is something to do.
+        | "Exhausted" deliberately does not say "try again": the whole point of
+        | a pass budget is that trying again is not the answer.
+        */
+        'scan' => [
+            'action' => 'Scan',
+            'not_jacked_in' => 'You are not in cyberspace.',
+            'nothing_there' => 'There is nothing here to read.',
+            'not_scannable' => 'The portal answers nothing. There is nothing here to find out.',
+            'no_analyser' => 'You have no scanner running. Start one on the deck you are carrying.',
+            'busy' => 'Your scanner is still reading this machine.',
+            'all_busy' => 'Every scanner you have running is reading something else. Start another instance to read two machines at once.',
+            'begun' => 'Reading. The instrument will have something in :when.',
+            'reading' => 'Reading',
+            'ready_in' => 'Answer in :when',
+            'gone' => 'The machine stopped answering before the read finished.',
+            'voided' => 'Your scanner stopped before the read finished. That pass is gone.',
+            'lost' => [
+                'zero' => '',
+                'one' => 'A read was lost: the scanner stopped before it finished.',
+                'many' => ':count reads were lost: their scanners stopped before they finished.',
+            ],
+            'duration' => 'A pass here takes about :when',
+            'already_known' => 'You already have everything this machine will tell you.',
+            'exhausted' => 'You have read this machine as far as you can. What you have is what you get until it goes stale.',
+            'found' => [
+                'zero' => 'Nothing new. The machine gives up none of itself.',
+                'one' => 'One thing more about this machine.',
+                'many' => ':count things more about this machine.',
+            ],
+            'grade' => 'Grade',
+            'os' => 'Operating system',
+            'unknown' => 'Unread',
+            'expires' => 'Goes stale :when',
+            'passes' => ':used of :total passes',
+            'chance' => 'About :percent% to read something',
+        ],
+
+        /*
+        | What a machine is holding. Nothing takes any of it yet — extraction
+        | is the run — so these are the words a node's contents will be listed
+        | with rather than anything a player reads today.
+        */
+        /*
+        | What a scan asks about a machine. Everything CYBERSPACE.md says a
+        | scan catalogues is here, including the four nothing can read yet —
+        | see App\Cyberspace\ScanFact for why they are listed rather than
+        | hidden.
+        */
+        /*
+        | The run itself. A screen a player is LOCKED into while it lasts, so
+        | every word here is read by somebody who cannot go anywhere else.
+        */
+        'run' => [
+            'title' => 'Intrusion',
+            'heading' => 'In the machine',
+            'turn' => 'Turn :turn',
+            'begin' => 'Begin run',
+            'locked' => 'You are in a run. It does not stop because you looked away.',
+            'egress' => 'Egress',
+            'egress_hint' => 'Leaving is always possible and never certain.',
+            'action' => [
+                'attack' => 'Cut',
+                'extract' => 'Extract',
+                // Same button, same RunAction — only the label changes while
+                // runs.extracting_qb is set, so a player is never asked to
+                // guess that pressing Extract again is what continues a pull
+                // already under way.
+                'extract_continue' => 'Continue pull',
+                'hold' => 'Hold',
+                'egress' => 'Egress',
+            ],
+
+            /*
+            | THE LOG IS THE ACCOUNT, and a run is something a player watches
+            | happen — so every turn says what it did in the order it did it.
+            |
+            | `attack_fails` covers three different failures on purpose: no
+            | icebreaker running, an operating system the runner cannot speak,
+            | and nothing awake to cut at. A player is meant to work out which
+            | from a pattern, and the one that is a GATE must never announce
+            | itself — a refusal naming the operating system would hand over a
+            | scan fact for free.
+            */
+            'log' => [
+                'attack' => 'Your icebreaker cuts for :damage.',
+                'attack_fails' => 'Your pass finds nothing to cut.',
+                'hold' => 'You wait, and the machine waits with you.',
+                'egress' => 'You pull out.',
+                'ice_broken' => 'The ICE comes apart.',
+                'ice_hits' => 'It gets through for :damage.',
+                'ice_misses' => 'It reaches for you and misses.',
+                'ice_silent' => 'Whatever was fighting you is no longer there.',
+                'traced' => 'The trace reaches you. Somebody knows who was in here.',
+                'trace_held' => 'The route holds it up another turn.',
+                'threshold' => 'You hit your own mark, and pull out.',
+
+                /*
+                | ARRIVING, and whether anything looked up. Said first and said
+                | plainly, because it is the single most consequential thing a
+                | run will tell a player: an unnoticed run walks past the ICE
+                | and the tracer both, and a noticed one is a different night.
+                */
+                'unnoticed' => 'You are in, and nothing looked up.',
+                'noticed' => 'Something registers you on the way in.',
+                'noticed_ice' => 'Something registers you on the way in, and the ICE comes awake.',
+
+                /*
+                | THE SECOND CHANCE, ON TOUCHING THE CORE. The same event as
+                | arriving — something notices — but a different moment, so it
+                | gets its own words: this is what a machine says when it was
+                | quiet on the way in and then felt the extraction.
+                */
+                'core_noticed' => 'Something notices, this time.',
+                'core_noticed_ice' => 'Something notices, this time, and the ICE comes awake.',
+
+                /*
+                | WHAT A DEFEAT ACTUALLY COST. Said in the past tense and in
+                | numbers, because "Flatline" is a word and "you lost 2 points
+                | of your ceiling" is a fact — these are what DownedCause shows
+                | on the waiting screen as the reason it was worth losing to.
+                */
+                'defeat' => [
+                    'flatline' => 'Your ceiling gives a little: :points points of maximum Synaptic Integrity, gone for good.',
+                    'neural_shock' => 'The feedback comes back down the wire: :points hit points.',
+                    'surge' => ':count of your fitted modules burn out.',
+                    'erase' => ':count file(s) or program(s) on your deck are wiped.',
+                    'skim' => ':creds creds go missing from what you were carrying.',
+                ],
+
+                /*
+                | TOUCHING THE CORE. Extraction is the second thing the IDS
+                | gets a look at, alongside a cut. ONE LINE FOR BOTH CAUSES OF
+                | FAILURE, deliberately — the same discipline 'attack_fails'
+                | already keeps: an operating system the runner cannot speak
+                | and a machine with nothing left to take wear the same
+                | sentence, because a line that told them apart would let a
+                | player learn which one they were facing by elimination,
+                | which is exactly the scan fact the OS gate exists to
+                | withhold.
+                */
+                'extract_fails' => 'You get nowhere near what it is holding.',
+                'extract' => 'You pull :summary out.',
+
+                /*
+                | A FILE COSTS TURNS. `transfer_begins` and `transfer_continues`
+                | are the countdown a multi-turn pull leaves in the log — every
+                | turn it runs goes through the ordinary turn cycle, which is
+                | why the log has to say so each time rather than once. When it
+                | finishes, 'extract' above says so exactly as it does for a
+                | haul that cost nothing to wait for.
+                |
+                | `transfer_gone` is its own line rather than sharing
+                | `extract_fails` — losing a race is an ordinary outcome, not a
+                | fact worth hiding the way a scan gate is.
+                */
+                'transfer_begins' => 'The pull starts: :qb QB queued, at :bandwidth a turn.',
+                'transfer_continues' => ':remaining QB left to pull.',
+                'transfer_gone' => 'The pull finishes, and finds the machine already stripped bare.',
+
+                /*
+                | THE PIECES A SUMMARY IS BUILT FROM. Assembled in the
+                | simulator rather than as one templated sentence, because
+                | what actually came out is zero to three of these and a
+                | template cannot skip a clause a placeholder left empty.
+                */
+                'took' => [
+                    'creds' => ':creds creds',
+                    'items' => ['one' => 'a piece of hardware', 'many' => ':count pieces of hardware'],
+                    'files' => ['one' => 'a file', 'many' => ':count files'],
+                ],
+            ],
+
+            /*
+            | THE TRACE, AND THE ONE QUESTION IT ANSWERS: is it time to leave.
+            | The estimate is worked out rather than left to a player to divide
+            | in their head while something is hitting them.
+            */
+            'trace' => 'Trace',
+            'trace_none' => 'Nothing is following you.',
+            'trace_turns' => [
+                'one' => 'One turn before it reaches you',
+                'many' => ':count turns before it reaches you',
+            ],
+            'trace_done' => 'It has you.',
+            'trace_you' => 'You',
+
+            /*
+            | The two standing instructions, set once and left alone. They ACT
+            | rather than warn, so the copy says what will happen rather than
+            | what might.
+            */
+            'thresholds' => [
+                'heading' => 'When to pull out',
+                'hint' => 'Set once. A run that crosses either of these leaves on its own, whatever you were doing.',
+                'trace' => 'Egress when the trace passes',
+                'si' => 'Egress when Synaptic Integrity falls below',
+                'off' => 'Zero turns one off.',
+                'save' => 'Save',
+                'saved' => 'Saved.',
+            ],
+
+            'ice' => 'ICE',
+            'ice_none' => 'Nothing is fighting you.',
+
+            /* THE COUNTDOWN A PULL LEAVES ON SCREEN, read off runs.extracting_qb
+               directly rather than composed in the simulator — it is a status,
+               not an account of what happened, and every other status line on
+               this screen (the trace, the fight) is read the same way. */
+            'transferring' => 'Pulling data — :qb QB left.',
+
+            'log_heading' => 'What happened',
+
+            'purpose' => [
+                'extraction' => 'Extraction',
+                'backdoor' => 'Backdoor',
+                'burn' => 'Burn',
+            ],
+
+            'purpose_hint' => [
+                'extraction' => 'Take what it is holding. Clean, it never knows you were here.',
+                'backdoor' => 'Keep access. Cleans up after itself, however loudly it went.',
+                'burn' => 'Destroy it. Nothing subtle about it and nothing left afterwards.',
+            ],
+
+            'refused' => [
+                'not_jacked_in' => 'You are not in cyberspace.',
+                'nothing_there' => 'There is nothing here to break into.',
+                'not_intrudable' => 'The portal is not a machine you can enter.',
+                'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
+                'already_running' => 'You are already in a run.',
+            ],
+
+            'ended' => [
+                'egress' => 'You pulled out.',
+                'defeat' => 'It beat you.',
+                'burnout' => 'Your deck cooked a module and threw you through the wall.',
+                'cancelled' => 'The machine stopped existing while you were in it. The run is over and nobody won.',
+                'completed' => 'Done.',
+            ],
+        ],
+
+        'facts' => [
+            'grade' => 'Grade',
+            'os' => 'Operating system',
+            'ids' => 'Intrusion detection',
+            'ice' => 'ICE',
+            'tracer' => 'Tracer',
+            'cloaked' => 'Cloaked systems',
+        ],
+
+        /*
+        | The reading itself, as a screen you watch rather than a line of
+        | status text. A pass takes minutes, so what a player wants while it
+        | runs is: what am I pointed at, what with, how far in, and what has it
+        | told me so far.
+        */
+        'reading' => [
+            'title' => 'Scanning a system',
+            'open' => 'Show the read',
+            'instrument' => 'Instrument',
+            'target' => 'Target',
+            'pass_of' => 'Pass :pass of :total',
+            'remaining' => ':count left after this one',
+            'idle' => 'Nothing running. The file is what it is until it goes stale.',
+            /*
+            | NOT FOUND OUT, and it wears the same box as `not_yet` on purpose.
+            | The two are different facts — nobody can read this yet, versus
+            | you have not read it yet — but both are the absence of an answer,
+            | and a screen that drew them differently would be asking the
+            | player to tell two blanks apart.
+            */
+            'unread' => 'UNKNOWN',
+            'not_yet' => 'NOT YET',
+            /*
+            | A FINDING, NOT AN ABSENCE. A scan that comes back with nothing on
+            | a machine's defences has told the player the most valuable thing
+            | it can tell them, and the screen must not render that as though
+            | the question went unanswered. `unread` above is the other state.
+            */
+            'none' => 'None',
+            'tracer' => ':detection, tracing :rate% a turn',
+
+            /*
+            | The guard and the reprisal, read together. A machine whose owner
+            | answers for it is a different proposition from one that does not,
+            | and the word is the whole of what the player needs — the mechanic
+            | behind it does not exist yet.
+            */
+            'ice_bounty' => ':name · Bounty',
+            'complete' => 'Everything this machine will tell you.',
+            'exhausted' => 'Scan attempt finished (incomplete).',
+
+            /*
+            | THE TWO WAYS OUT OF A READ, and neither of them is "close".
+            |
+            | A scan is a background process: leaving the screen does not stop
+            | it, and a button that said Close would be describing the window
+            | rather than the thing in it. So one button says what carries on
+            | and the other says what stops — and the screen is reachable again
+            | from the running processes in the bar, which is where a
+            | background process lives once you have walked away from it.
+            */
+            'background' => 'Run in background',
+            'abandon' => 'Abandon scan',
+            'abandoned' => 'Scan abandoned. The pass it had begun is spent.',
+            'abandon_nothing' => 'Nothing is reading that machine.',
+            'running_label' => 'Running scan',
+
+            /*
+            | NO FILE AT THIS ADDRESS, which is not the same as a read that was
+            | lost and must not borrow its sentence. It means the file was
+            | spent, went stale, or was never started — nothing has gone wrong
+            | with anybody's scanner, and saying one did sends a player to
+            | inspect a deck that is working.
+            */
+            'no_file' => 'No scan data for this address. It was spent, or it went stale.',
+
+            /*
+            | An address is the one thing on these screens somebody wants OUT
+            | of the game — traded, pasted into a message, kept in a note — so
+            | every one of them is a click away from the clipboard. Harmless
+            | by construction: an address carries no position, which is the
+            | same reason a system bookmark has no gate on it.
+            */
+            'copy' => 'Copy this address',
+            'copied' => 'Address copied.',
+            'copy_failed' => 'Could not reach the clipboard. Select it by hand.',
+
+            /*
+            | Whether the reader can operate what they found. An operating
+            | system is a GATE before it is a fact — the skill at level 1, or
+            | nothing you do to the machine works at all — so the scan says
+            | which side of it you are on rather than leaving the player to go
+            | and check the tree.
+            */
+            'os_known' => 'You have trained this operating system.',
+            'os_unknown' => 'You have not trained this operating system.',
+
+            'position' => 'Position',
+        ],
+
+        'contents' => [
+            'creds' => 'Creds',
+            'item' => 'Hardware',
+            'data' => 'Data',
+        ],
+
+        /*
+        | Files have names because a thing with a name is a thing you remember
+        | leaving behind, and what a player decides about a file is whether it
+        | is worth the turns to carry out.
+        |
+        | A word list rather than rows: there is no catalogue of files and
+        | there should not be one. Every file is generated, and its name is the
+        | only part of it that is not a number.
+        */
+        'files' => [
+            'fallback' => 'Unlabelled data',
+
+            /*
+            | Names by the KIND of machine the file came off, because that is
+            | most of what makes a silo feel like a silo. A data silo keeps the
+            | records a company is obliged to keep; a compute node keeps what
+            | it was working on; a relay keeps what passed through it.
+            |
+            | A word list rather than rows: there is no catalogue of files and
+            | there should not be one. The name is the only part of a generated
+            | file that is not a number.
+            */
+            'words' => [
+                'silo' => [
+                    'Payroll ledger', 'Personnel files', 'Audit trail', 'Client register',
+                    'Board minutes', 'Insurance claims', 'Medical records', 'Tax filings',
+                    'Legal hold', 'Asset registry', 'Pension schedules', 'Deed archive',
+                ],
+                'compute' => [
+                    'Research data', 'Design notes', 'Simulation output', 'Model weights',
+                    'Site surveys', 'Patent drafts', 'Failure analyses', 'Yield reports',
+                    'Test harness logs', 'Materials trials',
+                ],
+                'relay' => [
+                    'Access logs', 'Shipping manifests', 'Supplier contracts', 'Incident reports',
+                    'Routing tables', 'Handshake captures', 'Courier schedules', 'Freight waybills',
+                    'Switch diagnostics', 'Peering agreements',
+                ],
+            ],
+        ],
+
         'travel' => [
             'no_deck' => 'You are carrying no deck. There is nothing to jack in with.',
             'deck_not_ready' => 'That deck will not run. It is short of what it needs.',
@@ -310,6 +704,12 @@ return [
             'jack_out' => 'Jack out',
 
             'here' => 'You are here',
+            'legend' => 'Key',
+            'marked' => 'Saved position',
+            'backdoored' => 'Your backdoor',
+            'rebooting' => 'Rebooting',
+            'scanned' => 'Scanned',
+            'grade_key' => 'Grade, once scanned',
             'position' => 'Position',
             'swept' => 'Swept',
             // No maximum is shown beside it on purpose: the size of the grid
@@ -485,6 +885,41 @@ return [
     ],
 
     'character' => [
+
+        /*
+        | THE FLOOR UNDER EVERY DEFEAT.
+        |
+        | Read by somebody who has just lost and cannot go anywhere else, so it
+        | says what happened rather than commiserating. The wait is not the
+        | punishment — what losing cost is whatever the defeat tags carried —
+        | and the copy should not pretend otherwise.
+        */
+        'waiting' => [
+            'title' => 'Down',
+            'heading' => 'You are on the floor',
+            'back_in' => 'Up in :when',
+            'up' => 'Get up',
+            'up_hint' => 'You come back on one point. Getting up is not healing.',
+
+            'reason' => [
+                'defeat' => 'Beaten in a run.',
+                'burnout' => 'Your deck cooked a module and threw you through the wall.',
+                'readiness' => 'Your deck stopped running while you were inside it.',
+                'unknown' => 'Something finished you.',
+            ],
+
+            'on_system' => 'On :system',
+            'by_ice' => 'Beaten by :ice',
+            'took' => 'Took :damage :resource',
+            'tags' => 'What it carried',
+            'no_tags' => 'It carried nothing beyond this.',
+
+            'resource' => [
+                'current_synaptic_integrity' => 'Synaptic Integrity',
+                'current_hitpoints' => 'hit points',
+            ],
+        ],
+
         'create' => [
             'title' => 'Create your character',
             'lede' => 'This is who you are on the street. The handle is permanent; spend your points carefully.',
@@ -631,35 +1066,76 @@ return [
         'log' => ':attacker hits :target for :damage.',
     ],
 
-    'skills' => [
+    /*
+    | The skills screen: what this character knows, what is training, and what
+    | is lined up behind it.
+    |
+    | It was `skills` once, and that block described the CATALOGUE — every
+    | skill in the game, the same words for everybody, signed in or not. The
+    | catalogue is gone and the editor is where a list of every skill lives
+    | now, so every key here is about one character.
+    */
+    'training' => [
 
-        'title' => 'Skill tree',
-        'lede' => 'Every skill in the game, grouped by category. Each one names what it needs first.',
+        'title' => 'Skills',
+        'lede' => 'What you know, what you are training, and what is lined up behind it. A skill is learned by spending its book from the stash, and trained by queuing it here.',
 
-        // The multiplication sign, matching inventory.quantity: a rank is a
-        // training-time multiplier, not an ordinal.
-        'rank' => '×:rank',
+        'mine' => 'Your skills',
+        'none' => 'Nothing injected yet. A skill is learned by spending its book from the stash.',
+        'count' => ['zero' => 'none', 'one' => ':count skill', 'many' => ':count skills'],
+
+        // What is training right now. The dot beside it is the kit's own
+        // `.dot--live`, which is what ember is rationed for.
+        'now' => 'Training',
+        'idle' => 'Nothing is training. Queue a skill and it starts on the next minute.',
+        'live' => 'Training now',
+        'toward' => 'toward level :level',
+        'banked' => ':points of :ceiling SP',
+        'rate' => ':rate SP/min',
+        'finishes' => 'Done :when',
+        'stalled' => 'Not earning: every attribute this skill trains on resolves to zero.',
+
+        'queue' => 'Queue',
+        'queue_hint' => 'Up to :limit, trained in order. A skill goes in at the next level up — press it again for the one after that.',
+        'queue_empty' => 'Nothing queued.',
+        'position' => ':position.',
+        'target' => 'Level :level',
+        'add' => 'Queue it',
+        'pick' => 'Skill to train',
+        'remove' => 'Take out',
+        'full' => 'The queue is full. Take something out to line up anything else.',
+        'nothing_queueable' => 'Everything you have injected is either at level :max or already queued.',
+
+        // Shown as ':skill → level :level' in the picker, so one option says
+        // both what it is and what pressing it buys.
+        'queueable' => ':skill → :level',
+
+        // The two the catalogue used to own, kept because the list of what a
+        // character knows says the same things about a row that the tree did.
         'governed_by' => ':primary / :secondary',
-        // Every requirement reads the same way, whether the tree could draw
-        // the edge or not.
-        'requires' => ':skill :level',
-
-        // A skill inside a prerequisite cycle: nothing can ever learn it, and
-        // skills:validate is what explains why.
-        'unreachable' => 'unreachable',
-        'unreachable_hint' => 'Inside a prerequisite cycle — run skills:validate.',
-
-        // A prerequisite in another category cannot be a parent without the
-        // skill hanging in two lanes at once, so it is named instead.
-        'from_elsewhere' => ':skill :level · :category',
-
-        'empty' => 'No skills in the database yet.',
-        'count' => ['zero' => 'empty', 'one' => ':count skill', 'many' => ':count skills'],
-        'deepest' => 'depth :levels',
-
-        // The overlay a signed-in player sees on top of the catalogue.
-        'injected' => 'Skill injected',
         'level_meter' => 'Level :level of :max · :points SP',
+
+        'queued' => ':skill queued for level :level.',
+        'dequeued' => ':skill level :level taken out of the queue.',
+
+        /*
+        | Why a skill did not go in. Prerequisites are deliberately not here —
+        | a queue is allowed to describe training that cannot happen yet, and
+        | the warnings below are how it says so.
+        */
+        'refused' => [
+            'not_injected' => 'You have not injected that skill. Spend its book from the stash first.',
+            'already_maxed' => 'Every level of that skill is either reached or already queued.',
+            'queue_full' => 'The queue is full. Take something out first.',
+        ],
+
+        /*
+        | What TrainingQueueValidator found. Its sentences are written for a
+        | console command and read a little flat on a screen; they are exact,
+        | which matters more than the tone while this is the only place a
+        | player can see why a queue will stall.
+        */
+        'problems' => 'This queue will not train as written',
     ],
 
     'errors' => [
@@ -681,6 +1157,20 @@ return [
         'data_hint' => 'What is on your deck. Software, files, skillbooks.',
 
         'empty' => 'Nothing here.',
+
+        /*
+        | A REAL FILE, ON A GENERIC ITEM. Every "Encrypted Data Dump" is the
+        | same catalogue row; these numbers are the row's own, from
+        | App\Cyberspace\ExtractedFile — the same voice hardwareSummary() and
+        | programSummary() already speak for a module or a program.
+        */
+        'files' => [
+            'size' => ':qb QB',
+            'encrypted_with' => 'sealed with :skill',
+            'unencrypted' => 'unsealed',
+            'unknown_encryption' => 'an encryption nobody names any more',
+            'sealed_value' => 'worth :value sealed',
+        ],
 
         // The equipped deck is not in either inventory — it is on you. This is
         // the one place it appears, and the only way through to its board.
@@ -1096,6 +1586,7 @@ return [
     | only the custom rules belong here.
     */
     'validation' => [
+        'modifier_target' => 'nothing in the game is called [:target], so this effect would change nothing.',
         'handle_characters' => 'Handles may use letters and digits from any alphabet, plus: :symbols',
         'handle_length' => 'Handles may be at most :max characters long.',
     ],
@@ -1107,6 +1598,47 @@ return [
     | Item and skill NAMES are still columns — these are the words around them.
     */
     'admin' => [
+
+        /*
+        | The modifier editor, shared by every screen that edits a list of
+        | them: items, the software on them, skills, and perks when they get
+        | one. See App\Admin\ModifierField.
+        |
+        | The group labels are the first tag of a stat, so a new family of
+        | stats lands in a group of its own by having a tag — and the fallback
+        | is the tag itself, which is ugly enough to notice and harmless.
+        */
+        'modifiers' => [
+            'legend' => 'Effects',
+            'hint' => 'What having this changes. Each row is one modifier: how it applies, by how much, and to what.',
+            'empty' => 'No effects. This changes nothing about anybody.',
+            'add' => 'Add effect',
+            'remove' => 'Remove',
+            'op' => 'How',
+            'amount' => 'How much',
+            'target' => 'What',
+            'level' => 'From level',
+            'level_hint' => 'The level at which this starts applying. Blank means from level 0.',
+            'choose_target' => 'Choose a target',
+            'carried' => 'This effect also carries :keys, which are kept as they are.',
+            'ops' => [
+                'add' => 'Add a flat amount',
+                'percentage_of_base' => 'Add a percentage',
+                'multiplier' => 'Multiply by',
+                'override' => 'Replace with',
+            ],
+            'groups' => [
+                'attribute' => 'Attributes',
+                'derived' => 'Vitals',
+                'deck' => 'Deck measures',
+                'scan' => 'Scanning',
+                'skill' => 'Skill levels',
+                'check' => 'Skill checks',
+                'damage' => 'Damage taken',
+                'sets' => 'Groups',
+                'other' => 'Other',
+            ],
+        ],
 
         'nav' => 'Admin',
         'title' => 'Admin tools',
@@ -1215,8 +1747,13 @@ return [
                 'storage_size_hint' => 'Quantabits it occupies just by being owned, running or not.',
                 'background_process' => 'Runs in the background',
                 'background_process_hint' => 'Whether it may run outside an intrusion. A decryptor must; an icebreaker has nothing to break out there.',
-                'program_modifiers' => 'Modifiers',
-                'program_modifiers_hint' => 'A JSON list, in the shape archetype perks use. Empty is fine — a program that only gates modifies nothing.',
+                'program_modifiers' => 'What running it does',
+                'program_modifiers_hint' => 'Effects the character gets while this is running. Empty is fine — a program that only gates modifies nothing.',
+                'multithreaded' => 'Can be run more than once at a time',
+                'multithreaded_hint' => 'Whether a character may point two copies at two things at once. How many they may run is their own skill; this is whether it is a question at all.',
+                'implant_region' => 'Implant region',
+                'implant_region_none' => 'Not an implant',
+                'implant_region_hint' => 'Where in a body this goes. Setting it is what makes an item an implant.',
                 'qflops' => 'Compute',
                 'qflops_hint' => 'Raw throughput, in qFLOPS.',
                 'quantabits' => 'Memory',
@@ -1253,6 +1790,18 @@ return [
             'teaches' => 'teaches :skill',
             'unlisted' => 'Unlisted',
             'container_of' => 'holds :accepts',
+
+            /*
+            | Software, in the listing. A program's KIND is a gate as much as a
+            | modifier, so a list that only said "Data" left every program in
+            | the game looking alike — and there are seventeen of them now.
+            */
+            'program' => [
+                'filter' => 'Program',
+                'any' => 'Any program',
+            ],
+            'program_summary' => ':qflops qF · :memory QB · :storage QB stored',
+            'run_only' => 'run only',
 
             'hardware' => [
                 'any' => 'Any hardware, and none',
@@ -1292,6 +1841,8 @@ return [
             ],
 
             'fields' => [
+                'modifiers' => 'What knowing it grants',
+                'modifiers_hint' => 'Effects a character gets for having this skill — not the check it feeds, which exists for everybody. Each row applies from the level you give it.',
                 'slug' => 'Slug',
                 'slug_hint' => 'Permanent. Lower case, digits and underscores. The book is named from it.',
                 'slug_locked' => 'Permanent — saved progress references it.',

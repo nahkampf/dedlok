@@ -9,7 +9,7 @@
 
     {{-- Where you are, and the way in or out. One row, wrapping, because on a
          320px screen these are four things that will not sit side by side. --}}
-    <div class="panel" style="margin-top:var(--s-4)">
+    <div class="panel panel--snug" style="margin-top:var(--s-4)">
         <div style="display:flex;flex-wrap:wrap;gap:var(--s-3);align-items:center;justify-content:space-between">
             <div style="display:flex;flex-wrap:wrap;gap:var(--s-4);align-items:center">
                 @if ($map->jackedIn)
@@ -25,7 +25,49 @@
                              the two can differ, and the difference is the
                              point of a contact. --}}
                         <span class="tag">{{ $here->name }}</span>
-                        <span class="micro" style="font-family:var(--font-mono)">{{ $here->address }}</span>
+                        <span class="micro"><x-address :address="$here->address" /></span>
+
+                        {{-- What this machine has given up so far. A grade is
+                             the number a scan exists to discover, so it is
+                             shown as soon as it is known and as "unread" until
+                             then — never as a blank, which reads as a machine
+                             with nothing to hide. --}}
+                        @if ($scan?->grade !== null)
+                            <span class="tag">{{ Text::get('cyberspace.scan.grade') }} {{ \App\Cyberspace\Grade::roman($scan->grade) }}</span>
+                        @else
+                            <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.unknown') }}</span>
+                        @endif
+
+                        @if ($scan?->operatingSystem)
+                            <span class="micro">{{ $scan->operatingSystem->title }}</span>
+                        @endif
+
+                        {{-- Reading a machine takes software. Said here rather
+                             than only in the refusal, because a disabled button
+                             with no reason beside it is a screen that looks
+                             broken. --}}
+                        @unless ($canScan)
+                            <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.no_analyser') }}</span>
+                        @endunless
+
+                        {{-- A pass in progress. The bar is the kit's meter with
+                             the elapsed fraction in --v, so it reads as
+                             something happening rather than as a frozen button
+                             — and the figure beside it is what a player
+                             actually wants, which is when to come back. --}}
+                        @if ($scan?->isRunning())
+                            {{-- The way back into the read. A pass runs for
+                                 minutes and a player who closed the screen
+                                 needs a door back to it. --}}
+                            <button type="button" class="chip-stat" data-reading-open="{{ $here->address }}">
+                                <span class="micro">{{ Text::get('cyberspace.scan.reading') }}</span>
+                                <span class="meter" style="--v:{{ round($scan->progress(), 3) }};width:80px"
+                                      title="{{ Text::get('cyberspace.scan.ready_in', ['when' => $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE])]) }}">
+                                    <span class="meter__fill"></span>
+                                </span>
+                                <span class="micro">{{ $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }}</span>
+                            </button>
+                        @endif
                     @endif
                 @else
                     <span class="micro">{{ Text::get('cyberspace.map.out') }}</span>
@@ -46,6 +88,18 @@
                          terrain, contacts and bookmarks all survive it. --}}
                     <button type="submit" class="btn cut">{{ Text::get('cyberspace.map.jack_out') }}</button>
                 </form>
+
+                {{-- One press starts one pass, which takes MINUTES and is
+                     spent whether or not it finds anything. Offered only where
+                     there is something to read: the portal answers nothing and
+                     empty ground is not a machine. --}}
+                <form method="POST" action="{{ route('cyberspace.scan') }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm cut"
+                            @disabled(! $here || ! $canScan || $scan?->isRunning() || $scan?->isComplete() || $scan?->passes >= $scanPasses)>
+                        {{ Text::get('cyberspace.scan.action') }}
+                    </button>
+                </form>
             @else
                 <form method="POST" action="{{ route('cyberspace.jack_in') }}">
                     @csrf
@@ -65,6 +119,7 @@
          with a different target, so 400 cells do not need 400 forms. --}}
     <form method="POST" action="{{ route('cyberspace.step') }}" style="margin-top:var(--s-4)">
         @csrf
+    <div class="gridmap-frame">
         <div class="gridmap" style="--span:{{ $map->span() }}">
             <div class="gridmap__grid">
                 @foreach ($map->rows as $row)
@@ -76,7 +131,11 @@
                                 $title = Text::get('cyberspace.map.new').' — '.$title;
                             }
                             if ($cell->contact) {
-                                $title = $cell->contact->name.' — '.$title;
+                                $title = $cell->contact->name
+                                    .($cell->gradeRatio() !== null
+                                        ? ' · '.Text::get('cyberspace.scan.grade').' '.$cell->grade
+                                        : '')
+                                    .' — '.$title;
                             } elseif (! $cell->swept && $cell->onGrid) {
                                 $title = Text::get('cyberspace.map.unswept').' — '.$title;
                             }
@@ -90,39 +149,72 @@
                                     class="{{ $classes }} cell--step"
                                     data-step="{{ $cell->position->x - $map->centre->x }},{{ $cell->position->y - $map->centre->y }}"
                                     title="{{ Text::get('cyberspace.map.step') }} — {{ $title }}"
-                                    aria-label="{{ Text::get('cyberspace.map.step') }} {{ $title }}">{!! $cell->contact ? '&#9670;' : '' !!}</button>
+                                    @if ($cell->gradeRatio() !== null) style="--g:{{ $cell->gradeRatio() }}" @endif
+                                    aria-label="{{ Text::get('cyberspace.map.step') }} {{ $title }}">{{ $cell->glyph() }}</button>
                         @else
                             <div class="{{ $classes }}" title="{{ $title }}"
-                                 @if ($cell->isYou) aria-label="{{ Text::get('cyberspace.map.here') }}" @endif>{!! $cell->isYou ? '&#9679;' : ($cell->contact ? '&#9670;' : '') !!}</div>
+                                 @if ($cell->gradeRatio() !== null) style="--g:{{ $cell->gradeRatio() }}" @endif
+                                 @if ($cell->isYou) aria-label="{{ Text::get('cyberspace.map.here') }}" @endif>{{ $cell->glyph() }}</div>
                         @endif
                     @endforeach
                 @endforeach
             </div>
         </div>
+
+        {{-- The key sits beside the map rather than under it: the map scrolls
+             and this is reference material, so it gets a column instead of a
+             strip of dead space. It overlays the map's right edge when it
+             opens, the way the rail overlays the page — a column that pushed
+             the map narrower on hover would move the ground under the cursor,
+             and the map re-centres on scroll. --}}
+        <div class="maplegend" data-legend>
+        {{-- The way in on a phone, and the way to pin it open on a desktop.
+             Hovering opens it where a pointer exists; this is everywhere. --}}
+        <button type="button" class="maplegend__toggle" data-legend-toggle aria-expanded="false">
+            <span class="maplegend__icon" aria-hidden="true">&#9776;</span>
+            <span class="maplegend__label">{{ Text::get('cyberspace.map.legend') }}</span>
+        </button>
+
+        <div class="maplegend__keys">
+            {{-- The swatches are real .cell elements wearing the classes they
+                 explain, so the key cannot drift from the map beside it. Half
+                 of them carry a glyph for the same reason: the shape IS the
+                 entry. --}}
+            @foreach ([
+                ['cell--you', Text::get('cyberspace.map.here'), '●'],
+                ['cell--system cell--silo', Text::get('cyberspace.types.silo'), '▤'],
+                ['cell--system cell--compute', Text::get('cyberspace.types.compute'), '⌬'],
+                ['cell--system cell--relay', Text::get('cyberspace.types.relay'), '☰'],
+                ['cell--portal', Text::get('cyberspace.types.portal'), '◍'],
+                ['cell--empty', Text::get('cyberspace.map.empty'), ''],
+                ['cell--unswept', Text::get('cyberspace.map.unswept'), ''],
+                ['cell--system cell--silo cell--new', Text::get('cyberspace.map.new'), '▤'],
+                ['cell--system cell--compute cell--backdoored', Text::get('cyberspace.map.backdoored'), '⌬'],
+                ['cell--system cell--relay cell--rebooting', Text::get('cyberspace.map.rebooting'), '☰'],
+                ['cell--system cell--silo cell--scanned', Text::get('cyberspace.map.scanned'), '▤'],
+                ['cell--empty cell--marked', Text::get('cyberspace.map.marked'), ''],
+            ] as [$class, $label, $glyph])
+                <span class="maplegend__key">
+                    <span class="gridmap__swatch cell {{ $class }}" aria-hidden="true">{{ $glyph }}</span>
+                    <span class="maplegend__label">{{ $label }}</span>
+                </span>
+            @endforeach
+
+            <span class="maplegend__key">
+                <span class="gridmap__swatch cell cell--system cell--silo" style="--g:.55" aria-hidden="true">▤</span>
+                <span class="maplegend__label">{{ Text::get('cyberspace.map.grade_key') }}</span>
+            </span>
+        </div>
+        </div>
+    </div>
     </form>
 
     <p class="micro" style="color:var(--ink-2);margin-top:var(--s-2)">{{ Text::get('cyberspace.map.keys') }}</p>
 
-    <div class="gridmap__legend" style="margin-top:var(--s-3)">
-        @foreach ([
-            ['cell--you', Text::get('cyberspace.map.here')],
-            ['cell--system', Text::get('cyberspace.map.address')],
-            ['cell--portal', Text::get('cyberspace.types.portal')],
-            ['cell--empty', Text::get('cyberspace.map.empty')],
-            ['cell--unswept', Text::get('cyberspace.map.unswept')],
-            ['cell--system cell--new', Text::get('cyberspace.map.new')],
-        ] as [$class, $label])
-            <span class="gridmap__key">
-                <span class="gridmap__swatch cell {{ $class }}" aria-hidden="true"></span>
-                <span class="micro">{{ $label }}</span>
-            </span>
-        @endforeach
-    </div>
-
     {{-- Getting somewhere without walking: an address anyone can hand you, and
          the places you have saved. --}}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:var(--s-4);margin-top:var(--s-5)">
-        <section class="panel">
+        <section class="panel panel--snug">
             <div class="panel__hd"><h2>{{ Text::get('cyberspace.map.jump') }}</h2></div>
 
             <form method="POST" action="{{ route('cyberspace.jump') }}">
@@ -157,7 +249,61 @@
             </form>
         </section>
 
-        <section class="panel">
+        {{-- THE TWO STANDING INSTRUCTIONS.
+
+             An accordion because they are set once and left alone — a play
+             style rather than a per-run decision, and a screen that asked every
+             time would train everybody to ignore it. Folded away by default for
+             the same reason: `<details>` already knows how to do this, keyboard
+             and screen reader included, and needs no script. --}}
+        <details class="panel panel--snug">
+            <summary class="panel__hd">
+                <h2>{{ Text::get('cyberspace.run.thresholds.heading') }}</h2>
+                <div class="spacer"></div>
+                <span class="micro num">{{ $character->egress_trace_at }}% · {{ $character->egress_si_at }}%</span>
+            </summary>
+
+            <form method="POST" action="{{ route('cyberspace.thresholds') }}" style="padding:var(--s-3) 0">
+                @csrf
+
+                <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-3)">
+                    {{ Text::get('cyberspace.run.thresholds.hint') }}
+                </p>
+
+                <div class="field">
+                    <label class="field__label" for="egress_trace_at">
+                        {{ Text::get('cyberspace.run.thresholds.trace') }}
+                    </label>
+                    <div class="row" style="--gap:var(--s-3);align-items:center">
+                        <input type="range" id="egress_trace_at" name="egress_trace_at" min="0" max="100" step="5"
+                               value="{{ old('egress_trace_at', $character->egress_trace_at) }}"
+                               oninput="this.nextElementSibling.textContent = this.value + '%'"
+                               style="flex:1;min-width:min(160px,100%)">
+                        <span class="num" style="min-width:3.5ch">{{ $character->egress_trace_at }}%</span>
+                    </div>
+                </div>
+
+                <div class="field" style="margin-top:var(--s-3)">
+                    <label class="field__label" for="egress_si_at">
+                        {{ Text::get('cyberspace.run.thresholds.si') }}
+                    </label>
+                    <div class="row" style="--gap:var(--s-3);align-items:center">
+                        <input type="range" id="egress_si_at" name="egress_si_at" min="0" max="100" step="5"
+                               value="{{ old('egress_si_at', $character->egress_si_at) }}"
+                               oninput="this.nextElementSibling.textContent = this.value + '%'"
+                               style="flex:1;min-width:min(160px,100%)">
+                        <span class="num" style="min-width:3.5ch">{{ $character->egress_si_at }}%</span>
+                    </div>
+                </div>
+
+                <div class="row row--wrap" style="--gap:var(--s-2);align-items:center;margin-top:var(--s-3)">
+                    <button type="submit" class="btn btn--sm cut">{{ Text::get('cyberspace.run.thresholds.save') }}</button>
+                    <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.run.thresholds.off') }}</span>
+                </div>
+            </form>
+        </details>
+
+        <section class="panel panel--snug">
             <div class="panel__hd"><h2>{{ Text::get('cyberspace.bookmarks.heading') }}</h2></div>
 
             @if ($map->jackedIn)
@@ -178,7 +324,13 @@
                 @php($standing = $mark->resolve())
                 <div style="display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center;justify-content:space-between;padding:var(--s-2) 0;border-top:var(--hair) solid var(--line-0)">
                     <div style="min-width:0">
-                        <div>{{ $mark->displayLabel() ?? $mark->address }}</div>
+                        <div>
+                            @if ($mark->displayLabel() !== null)
+                                {{ $mark->displayLabel() }}
+                            @else
+                                <x-address :address="$mark->address" />
+                            @endif
+                        </div>
                         <span class="tag tag--{{ $mark->isWaypoint() ? 'info' : 'warn' }}">{{ $mark->kind->label() }}</span>
                         @if (! $mark->isWaypoint() && $standing === null)
                             <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.bookmarks.dead') }}</span>
@@ -203,4 +355,6 @@
             @endforelse
         </section>
     </div>
+
+
 @endsection

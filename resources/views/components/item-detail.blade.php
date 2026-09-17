@@ -79,6 +79,14 @@
             <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">
                 {{ $item->programSummary() }}
             </div>
+        @elseif ($entry->extractedFileSummary())
+            {{-- A real file's own numbers, on the ROW rather than the item —
+                 every "Encrypted Data Dump" is the same catalogue entry and a
+                 different file, which is why this reads off $entry and not
+                 $item like every other branch here. --}}
+            <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">
+                {{ $entry->extractedFileSummary() }}
+            </div>
         @endif
     </div>
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Cyberspace\ExtractedFile;
+use App\Support\Text;
 use Database\Factories\InventoryItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * card is a physical row holding data rows — the item says what kind of thing
  * it is, the row says where it ended up.
  */
-#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at'])]
+#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'extracted_file'])]
 class InventoryItem extends Model
 {
     /** @use HasFactory<InventoryItemFactory> */
@@ -37,7 +39,52 @@ class InventoryItem extends Model
             'installed_at' => 'datetime',
             'quantity' => 'integer',
             'started_at' => 'datetime',
+            'extracted_file' => 'array',
         ];
+    }
+
+    /**
+     * What this row USED TO BE, before it left a machine as a generic dump.
+     *
+     * Non-null only on a row of the "Encrypted Data Dump" item —
+     * App\Cyberspace\Extractor is the only writer, and
+     * App\Cyberspace\ExtractedFile is the shape.
+     */
+    public function extractedFile(): ?ExtractedFile
+    {
+        return ExtractedFile::fromArray($this->extracted_file);
+    }
+
+    /**
+     * The spec line a real file earns, in the same voice a module's numbers or
+     * a program's costs already speak — see `Item::hardwareSummary()` and
+     * `Item::programSummary()`. Lives on the ROW rather than the item, because
+     * every "Encrypted Data Dump" is the same catalogue entry and a different
+     * file.
+     */
+    public function extractedFileSummary(): ?string
+    {
+        $file = $this->extractedFile();
+
+        if ($file === null) {
+            return null;
+        }
+
+        $parts = [
+            Text::get('inventory.files.size', ['qb' => $file->sizeQb]),
+            $file->encryptionSkillId !== null
+                ? Text::get('inventory.files.encrypted_with', ['skill' => $this->encryptionSkillName($file)])
+                : Text::get('inventory.files.unencrypted'),
+            Text::get('inventory.files.sealed_value', ['value' => $file->valueSealed]),
+        ];
+
+        return implode(Text::get('items.summary.separator'), $parts);
+    }
+
+    private function encryptionSkillName(ExtractedFile $file): string
+    {
+        return Skill::query()->find($file->encryptionSkillId)?->title
+            ?? Text::get('inventory.files.unknown_encryption');
     }
 
     /**

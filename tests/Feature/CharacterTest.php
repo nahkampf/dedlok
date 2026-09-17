@@ -42,6 +42,10 @@ class CharacterTest extends TestCase
             // mutable like a resource, but with no derived maximum to clamp
             // against. See the Character docblock.
             'creds',
+            // What the world knows about this character, from traces that
+            // completed. NOT the run's thermal load, which is a different
+            // quantity that used to share the word.
+            'heat',
             // Which deck is live. A column here rather than a flag on the
             // inventory row, so "only one at a time" is not a rule anybody
             // has to enforce — one column holds one value. NULL is carrying
@@ -53,6 +57,22 @@ class CharacterTest extends TestCase
             // schema's CHECK says so — because half a position is not a
             // place. Jacked out is the ordinary state.
             'grid_x', 'grid_y',
+            // The run they are inside, or NULL. A column for the reason
+            // equipped_deck_id is one: "only one at a time" is not a rule
+            // anybody enforces when one column holds one value. It is also
+            // what App\Http\Middleware\EnsureRunIsFinished reads on every
+            // request, which is why it is a column and not a lookup.
+            'current_run_id',
+            // The two standing instructions: when to pull out of a run. A play
+            // style rather than a per-run choice, which is why they live on the
+            // character and persist. Zero turns one off.
+            'egress_trace_at', 'egress_si_at',
+            // On the floor, and what put them there. Non-null waiting_until is
+            // what "down" means — one column, so nothing can disagree about
+            // whether somebody is up. The cause is JSON because none of what it
+            // describes is built, and columns modelled against an unwritten
+            // simulator get modelled wrong.
+            'waiting_until', 'waiting_cause',
             'created_at', 'updated_at',
         ];
 
