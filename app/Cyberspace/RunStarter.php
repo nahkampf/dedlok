@@ -89,22 +89,25 @@ final readonly class RunStarter
             $character->forceFill(['current_run_id' => $run->getKey()])->save();
 
             /*
-             * WHATEVER GUARDS THIS MACHINE WAKES UP, and it does so with
-             * certainty because DETECTION IS NOT BUILT.
+             * ARRIVING IS THE FIRST THING ANYTHING GETS TO NOTICE.
              *
-             * The design gives the IDS two chances — on approach and on
-             * touching the core — and everything hostile a lower one of its
-             * own, which is what makes a quiet run possible at all. None of
-             * that exists: the player's side of a detection roll needs a stat
-             * nothing grants, because there is no stealth skill in the tree.
+             * Every watcher on the machine rolls against the runner's stealth,
+             * and any one of them finding them is enough. Nothing is woken by a
+             * run that goes unnoticed — which is the whole of what stealth
+             * buys, and why the log starts with whether it worked.
              *
-             * So every run is a loud one for now. When detection lands this is
-             * the only place that changes, because everything downstream asks
-             * `runs.ice_id` rather than asking the machine.
+             * The IDS's SECOND chance is on touching the core, and nothing
+             * touches the core yet.
              */
-            Simulator::fromConfig(null, $this->resolver)->rouse($run, $system);
+            $log = Simulator::fromConfig(null, $this->resolver)->rouse($character, $run, $system);
 
-            return $run->fresh();
+            $run->refresh();
+            $run->forceFill(['log' => array_map(
+                static fn (array $line): array => $line + ['turn' => 0],
+                $log,
+            )])->save();
+
+            return $run;
         });
 
         return RunResult::started($run);

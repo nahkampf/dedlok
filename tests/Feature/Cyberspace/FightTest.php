@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Cyberspace;
 
 use App\Characters\WaitingRoom;
+use App\Checks\CheckRoller;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
@@ -69,8 +70,26 @@ final class FightTest extends TestCase
         );
     }
 
+    /**
+     * Begin a run that something noticed.
+     *
+     * DETECTION IS A ROLL NOW, so a test about the fight has to say which way
+     * it went — an unnoticed run has nothing to fight, which is the whole of
+     * what stealth buys. Pinning the die at 1.0 fails every evasion check, so
+     * every watcher on the machine finds them.
+     */
     private function begin(): Run
     {
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 1.0));
+
+        return app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Extraction)->run;
+    }
+
+    /** And one that nothing saw: every evasion check passes. */
+    private function beginUnnoticed(): Run
+    {
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 0.0));
+
         return app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Extraction)->run;
     }
 
@@ -98,6 +117,53 @@ final class FightTest extends TestCase
         $this->assertSame($system->ice_id, $run->ice_id);
         $this->assertSame(68, $run->ice_integrity, 'the catalogue says what it starts with');
         $this->assertTrue($run->inAFight());
+    }
+
+    /**
+     * A RUN NOTHING NOTICED HAS NOTHING TO FIGHT.
+     *
+     * Detection is what wakes the ICE and the tracer both, so stealth does not
+     * make a fight easier — it makes the fight not happen.
+     */
+    public function test_an_unnoticed_run_wakes_nothing(): void
+    {
+        $this->machine(3);
+        $run = $this->beginUnnoticed();
+
+        $this->assertFalse($run->detected);
+        $this->assertNull($run->ice_id, 'the guard is still asleep');
+        $this->assertFalse($run->inAFight());
+    }
+
+    /** Every watcher gets a look, and any one of them finding you is enough. */
+    public function test_a_machine_with_no_ids_can_still_notice_you(): void
+    {
+        $ice = Ice::query()->where('level', 3)->sole();
+
+        System::factory()->at(8, 8)->grade(1)->withIce($ice)->create([
+            'address' => 'DEADBEEF',
+            'ids_detection' => 0,
+            'tracer_detection' => 0,
+        ]);
+
+        $run = $this->begin();
+
+        $this->assertTrue($run->detected, 'the ICE noticed on its own');
+        $this->assertSame($ice->id, $run->ice_id);
+    }
+
+    /** Nothing watching at all is a machine nobody can be caught in. */
+    public function test_a_machine_with_no_watchers_notices_nothing(): void
+    {
+        System::factory()->at(8, 8)->grade(1)->create([
+            'address' => 'DEADBEEF',
+            'ids_detection' => 0,
+            'tracer_detection' => 0,
+        ]);
+
+        $run = $this->begin();
+
+        $this->assertFalse($run->detected);
     }
 
     public function test_an_unguarded_machine_starts_no_fight(): void
@@ -274,7 +340,11 @@ final class FightTest extends TestCase
         $log = $run->fresh()->log;
 
         $this->assertNotEmpty($log);
-        $this->assertSame(1, $log[0]['turn']);
+
+        // Turn ZERO is arriving. It is not a turn anybody spent — it is what
+        // happened on the way in, and it belongs at the top of the transcript
+        // because it decides whether the rest of it is a fight.
+        $this->assertSame(0, $log[0]['turn'], 'arriving is turn zero');
         $this->assertSame(2, end($log)['turn'], 'newest last, the way a transcript reads');
     }
 }

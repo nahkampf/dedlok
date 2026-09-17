@@ -367,6 +367,16 @@ return [
                 'ice_hits' => 'It gets through for :damage.',
                 'ice_misses' => 'It reaches for you and misses.',
                 'ice_silent' => 'Whatever was fighting you is no longer there.',
+
+                /*
+                | ARRIVING, and whether anything looked up. Said first and said
+                | plainly, because it is the single most consequential thing a
+                | run will tell a player: an unnoticed run walks past the ICE
+                | and the tracer both, and a noticed one is a different night.
+                */
+                'unnoticed' => 'You are in, and nothing looked up.',
+                'noticed' => 'Something registers you on the way in.',
+                'noticed_ice' => 'Something registers you on the way in, and the ICE comes awake.',
             ],
 
             'ice' => 'ICE',

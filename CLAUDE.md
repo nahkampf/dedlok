@@ -1540,12 +1540,23 @@ left. Detection, the ICE, extraction and the endings are the simulator, and
   absent key and a level of zero are the same answer, and writing every skill in
   the game into every context would be a row per skill per resolution for the
   sake of the ones nobody has.
-- **DETECTION IS NOT BUILT, so every run is a loud one.** `Simulator::rouse()`
-  wakes whatever guards a machine with certainty when the run begins, because
-  the player's side of a detection roll needs a stat nothing grants — there is
-  no stealth skill in the tree. **That is the only place that changes** when
-  detection lands: everything downstream already asks `runs.ice_id` rather than
-  asking the machine.
+- **Arriving is the first thing anything gets to notice**, and
+  `Simulator::rouse()` is where. **Every watcher rolls, not just the IDS** — a
+  tracer and a piece of ICE each carry a value of their own, so a machine with
+  no IDS is quieter rather than safe. They are not competing: **any one success
+  detects you**, because they are all in the room.
+- **Detection is what wakes things.** An undetected run walks past the ICE and
+  the tracer both, so the ICE is only written onto the run when something
+  noticed — which means stealth does not make a fight easier, it makes the
+  fight not happen. Everything downstream asks `runs.ice_id`, so a quiet run
+  simply has nothing to fight.
+- **It takes the GLOBAL certainty floor**, and `checks.floors` names no kind for
+  it on purpose: the best runner alive still trips a household IDS about once in
+  a hundred and twenty attempts, and detection is the case that rule was written
+  for rather than an exception to it.
+- **The IDS's second chance is not built.** The design gives it one on approach
+  and one on touching the core; nothing touches the core yet, so that roll
+  arrives with extraction.
 
 ### Archetypes and what they hand out
 

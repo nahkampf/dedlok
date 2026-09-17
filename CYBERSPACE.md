@@ -26,7 +26,8 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Egress | **specified only**; always possible, never certain. A derived chance from attributes and skills against a per-grade difficulty, not a roll against the ICE |
 | The run, interactive | **the spine is built**: `runs` is durable state, `App\Cyberspace\RunStarter` begins and ends one, and `characters.current_run_id` is what says somebody is inside. The turns themselves are the simulator and are not built |
 | The fight | **built**; `App\Cyberspace\Simulator` resolves one turn — the player acts, then the machine does. An icebreaker grinds integrity down, a miss does nothing at all, and a defeat ejects before the waiting screen |
-| Detection | **NOT built**, so every run is a loud one: whatever guards a machine wakes with certainty when the run begins. The player's side needs a stat nothing grants — there is no stealth skill in the tree |
+| Detection, on approach | **built**; every watcher on the machine rolls against the runner's `stealth` and any one success detects them. Nothing is woken by a run that goes unnoticed. The global certainty floor, not a kind of its own |
+| Detection, on the core | **not built**; nothing touches the core yet, so the second roll arrives with extraction |
 | The run lock | **built**; `EnsureRunIsFinished` sends every request but signing in, signing out and the run's own routes back to it. Admin routes are NOT exempt, unlike `RequireCharacter` — a run is a character in jeopardy |
 | The readiness net inside a run | **built**; `EnsureDeckStillRuns` stands down while `current_run_id` is set, so a burnout resolves its own ending instead of racing a middleware that would call it a readiness loss |
 | The OS gate at the door | **built**; a machine whose operating system the runner lacks is ENTERED and `runs.os_locked` records it. Nothing shows it, and nothing reads it yet — the failures it causes are the simulator's |

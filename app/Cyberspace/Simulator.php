@@ -6,6 +6,7 @@ namespace App\Cyberspace;
 
 use App\Characters\DownedCause;
 use App\Characters\WaitingRoom;
+use App\Checks\CheckRoller;
 use App\Models\Character;
 use App\Models\Ice;
 use App\Models\Run;
@@ -55,17 +56,22 @@ final readonly class Simulator
         private Resolver $resolver,
         private RunStarter $runs,
         private WaitingRoom $waitingRoom,
+        private CheckRoller $checks,
         private Closure $roll,
     ) {}
 
-    public static function fromConfig(?Closure $roll = null, ?Resolver $resolver = null): self
-    {
+    public static function fromConfig(
+        ?Closure $roll = null,
+        ?Resolver $resolver = null,
+        ?CheckRoller $checks = null,
+    ): self {
         $resolver ??= app(Resolver::class);
 
         return new self(
             $resolver,
             new RunStarter($resolver),
             new WaitingRoom($resolver),
+            $checks ?? app(CheckRoller::class),
             $roll ?? static fn (int $min, int $max): int => random_int($min, $max),
         );
     }
@@ -242,16 +248,64 @@ final readonly class Simulator
     }
 
     /**
-     * Wake whatever guards this machine.
+     * Arrive, and find out whether anything noticed.
      *
-     * DETECTION IS NOT BUILT, so this is certain — see the note on the caller.
-     * When it is, this is the one place that changes: everything downstream
-     * already asks `runs.ice_id` rather than the machine.
+     * ## Everything hostile gets a look, not just the IDS
+     *
+     * The detection is far better at it, but a tracer and a piece of ICE each
+     * carry a value of their own — which is what makes a machine with no IDS
+     * quieter rather than safe, and why this rolls against every watcher
+     * present rather than against the best one. **Any single success detects
+     * you**: they are not competing, they are all in the room.
+     *
+     * ## Detection is what wakes things
+     *
+     * An undetected run walks past the ICE and the tracer both, which is the
+     * whole of what stealth buys. So the ICE is only written onto the run when
+     * something has noticed — everything downstream asks `runs.ice_id`, so a
+     * quiet run simply has nothing to fight.
+     *
+     * ## The floor is the global one
+     *
+     * `checks.floors` names no kind here, deliberately. The best runner alive
+     * still trips a household IDS about once in a hundred and twenty attempts
+     * and the worst still slips a military one that often — and detection is
+     * the case that rule was written for, so it takes the rule rather than an
+     * exception to it.
+     *
+     * This is the IDS's FIRST chance. The second comes on touching the core,
+     * and nothing touches the core yet.
+     *
+     * @return list<array{text: string, tone: string}>
      */
-    public function rouse(Run $run, ?System $system): void
+    public function rouse(Character $character, Run $run, ?System $system): array
     {
-        if ($system?->ice_id === null) {
-            return;
+        if ($system === null) {
+            return [];
+        }
+
+        $stealth = $this->resolver
+            ->resolve('stealth', 0.0, $character->modifiers())
+            ->value;
+
+        $watchers = array_filter([
+            $system->ids_detection,
+            $system->tracer_detection,
+            $system->ice?->detection,
+        ], static fn (?int $value): bool => $value !== null && $value > 0);
+
+        $noticed = false;
+
+        foreach ($watchers as $difficulty) {
+            // The character rolls to go UNNOTICED, so a failed check is a pair
+            // of eyes that found them.
+            if (! $this->checks->roll($stealth, (float) $difficulty, 'detection')->passed) {
+                $noticed = true;
+            }
+        }
+
+        if (! $noticed) {
+            return [$this->line('cyberspace.run.log.unnoticed', tone: 'ok')];
         }
 
         $run->forceFill([
@@ -259,6 +313,11 @@ final readonly class Simulator
             'ice_id' => $system->ice_id,
             'ice_integrity' => $system->ice?->integrity,
         ])->save();
+
+        return [$this->line(
+            $system->ice_id === null ? 'cyberspace.run.log.noticed' : 'cyberspace.run.log.noticed_ice',
+            tone: 'crit',
+        )];
     }
 
     /**
