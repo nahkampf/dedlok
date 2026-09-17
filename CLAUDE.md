@@ -1421,6 +1421,40 @@ carries the detail.
   cells can be new at once after a sweep, so their phases are staggered by
   position — forty synchronised sweeps is a disco, not a map.
 
+### Being on the floor
+
+**Reaching 0 in either resource puts a character on the waiting screen**, and
+`App\Characters\WaitingRoom` is the whole of it. Until this, `takeDamage()`
+would take somebody to zero and say so in a comment.
+
+- **The wait is NOT the punishment.** What losing costs is whatever the defeat
+  tags carried; the minute is only there so a defeat carrying *nothing* still
+  costs something. A long wait would punish the player who lost to a harmless
+  guard hardest, which is backwards.
+- **Zero to one, and no further.** Getting up is not healing — it is getting up.
+  One point is enough to act and not enough to be safe, and the way back from
+  there is Neuroplasticity, a clinic, or something a player does. **Both
+  resources come back if both were empty**, or waking still broken in the other
+  half would put somebody straight back down; a resource that was NOT empty is
+  left exactly where it was.
+- **Released lazily, with no scheduler.** `EnsureCharacterIsStanding` asks on
+  the way past, so the minute ends the moment the player looks — the same
+  settlement a matured scan pass and a training deposit use. A player who never
+  comes back never needs to be got up.
+- **A second hit does not restart the clock.** A second hit on an unconscious
+  character is not a second wait.
+- **It runs BEFORE the run lock.** A defeat ejects and only then shows this
+  screen, so the two should never overlap — and if they do, being unconscious
+  wins, because sitting on the waiting screen while still holding a position in
+  cyberspace is the one state nothing else knows how to read.
+- **`characters.waiting_cause` is JSON, and that is temporary on purpose.** What
+  put somebody down is a run, a named machine, a named piece of ICE, damage and
+  a list of tags — none of which is built. Columns modelled against an unwritten
+  simulator get modelled wrong. `App\Characters\DownedCause` is the single
+  author and reader of that blob, and is the shape it becomes when it settles.
+  **Every field is optional**: a readiness loss knows nothing about ICE, and the
+  screen shows less rather than showing "unknown".
+
 ### Runs
 
 **The spine is built; the turns are not.** A run can be begun, looked at and

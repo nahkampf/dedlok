@@ -180,6 +180,27 @@ return [
         | modifier whose target reaches nothing.
         */
         /*
+        | How long somebody stays on the floor, in minutes.
+        |
+        | ONE MINUTE, and it is the floor under every defeat: whatever the
+        | program that beat you carried, and whether it carried anything at all,
+        | the wait is what losing always costs. That is what stops a defeat with
+        | an empty tag list from being free.
+        |
+        | A stat rather than a constant because implants and skills are meant to
+        | cut it — waking up faster is exactly the sort of thing a wired nervous
+        | system should buy. Floored at ZERO on purpose: a build good enough to
+        | get straight back up has earned it, and nothing breaks if the wait is
+        | over before it began.
+        */
+        'recovery_minutes' => [
+            'tags' => ['derived', 'vital'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'ceil',
+        ],
+
+        /*
         | Synaptic Integrity recovered per minute, on its own.
         |
         | ZERO BY DEFAULT, AND THAT IS THE RULE RATHER THAN A STARTING VALUE:

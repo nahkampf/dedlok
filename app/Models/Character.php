@@ -41,7 +41,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 #[Fillable([
     'user_id', 'handle', 'archetype', 'creds',
-    'current_hitpoints', 'current_synaptic_integrity', 'current_run_id',
+    'current_hitpoints', 'current_synaptic_integrity', 'waiting_until', 'waiting_cause', 'current_run_id',
     'intellect', 'memory', 'perception', 'reflex', 'focus',
     'social', 'meat', 'motor', 'senses', 'muscle',
 ])]
@@ -136,6 +136,9 @@ class Character extends Model
             array_fill_keys(array_keys(self::RESOURCES), 'integer'),
             ['archetype' => 'integer', 'creds' => 'integer'],
             ['grid_x' => 'integer', 'grid_y' => 'integer'],
+            // On the floor, and what put them there. The cause is an array
+            // because none of what it describes is built — see the migration.
+            ['waiting_until' => 'datetime', 'waiting_cause' => 'array'],
         );
     }
 

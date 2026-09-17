@@ -59,6 +59,12 @@ class CharacterTest extends TestCase
             // what App\Http\Middleware\EnsureRunIsFinished reads on every
             // request, which is why it is a column and not a lookup.
             'current_run_id',
+            // On the floor, and what put them there. Non-null waiting_until is
+            // what "down" means — one column, so nothing can disagree about
+            // whether somebody is up. The cause is JSON because none of what it
+            // describes is built, and columns modelled against an unwritten
+            // simulator get modelled wrong.
+            'waiting_until', 'waiting_cause',
             'created_at', 'updated_at',
         ];
 

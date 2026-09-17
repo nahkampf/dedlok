@@ -15,6 +15,7 @@ use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillTreeController;
+use App\Http\Controllers\WaitingController;
 use App\Http\Middleware\ForbidSecondCharacter;
 use Illuminate\Support\Facades\Route;
 
@@ -155,6 +156,12 @@ Route::middleware('auth')->group(function () {
     // because it reads — and it settles a matured pass on the way past, which
     // is the same lazy catch-up the map does rather than a write of its own.
     Route::get('/cyberspace/reading', [CyberspaceController::class, 'reading'])->name('cyberspace.reading');
+
+    /*
+     * The floor under every defeat. One route, and the middleware that holds
+     * somebody here is what releases them — the minute ends when they look.
+     */
+    Route::get('/down', [WaitingController::class, 'show'])->name('waiting.show');
 
     /*
      * The run. Three routes and they are the only ones a locked player may

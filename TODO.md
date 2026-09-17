@@ -141,6 +141,84 @@ special.
 
 ---
 
+## Drugs, addiction and tolerance
+
+**Status:** designed, not built. Nothing here exists — no item category, no
+family vocabulary, no ledger, no decay.
+
+**A drug is a physical item with effects on it.** `container` is `physical` and
+`items.modifiers` already carries what it does, so a drug needs no new column for
+its effects — the same channel an implant uses. What it needs beyond that is
+three properties:
+
+| Property | Is |
+| --- | --- |
+| **family** | which group it belongs to — opiates, stimulants, and so on |
+| **addictive** | how fast taking it drives the addiction figure up |
+| **tolerance** | how fast taking it drives the tolerance figure up |
+
+**The books are kept per FAMILY and per character, never per drug.** A character
+can be deep into opiates and clean of stimulants at the same time, so the ledger
+is (character, family) → addiction, tolerance. That is a table nothing resembles
+yet: `character_modifiers` is the wrong shape because these are two running
+totals rather than an effect with a duration.
+
+**Both figures decay on their own, slowly.** `characters:regenerate` is the
+precedent for how — a per-minute pass with no stored clock, or a lazy catch-up
+off elapsed time if the decay has to be exact. The choice is the same one that
+distinguishes the training heartbeat from the market's delivery run: exact
+catch-up when a player is watching the number, a trickle otherwise.
+
+**Addiction above a threshold is withdrawal**, and that half already has its
+machinery: a withdrawal effect is a `config/effects.php` definition — a cause
+with no row of its own, which is exactly what those are for — written as a
+`character_modifiers` row. Reductions to Focus are the example. It clears when
+the character takes a drug of the right family, which is the only thing that
+clears it.
+
+**Tolerance reduces what a drug DOES, in bands** — above one threshold its
+positive effects are worth 10% less, then 20%, then 30%.
+
+### The part that does not fit the resolver yet
+
+**Tolerance modifies a modifier, and `App\Stats\Resolver` has no such idea.** It
+resolves a stat from a base and a list of modifiers; it has no notion of one
+modifier scaling another. A drug granting +10 Focus at 20% tolerance is not a
+-20% modifier on Focus — that would also scale the implant, the perk and the
+attribute underneath it. It has to reach that one grant and nothing else.
+
+Three shapes, none obviously right:
+
+- **Apply it at the moment of consumption.** The drug writes a
+  `character_modifiers` row already reduced, and the row is honest about what it
+  is worth. Simplest, and it makes tolerance a property of the DOSE rather than
+  of the character — so a dose taken while clean stays strong as tolerance
+  climbs around it, which may be right or may be exactly wrong.
+- **A `source` on the modifier and a scaling rule keyed to it.** The resolver
+  learns to scale modifiers carrying a given source. Cheapest at read time, and
+  it is a genuinely new idea in a resolver that has deliberately stayed
+  arithmetic.
+- **A drug's grant is its own layer.** Tolerance becomes a `percentage_of_base`
+  against a tag every drug wears — which MECHANICS already supports, since
+  percentages sum and apply once — but only if a drug's contribution can be
+  separated from the base, which it currently cannot.
+
+**Decide that before authoring any drug**, because all three change what a drug
+row looks like.
+
+### What else it will need
+
+- **Stacking.** `App\Stats\Stacking` exists and its own docblock uses this
+  case: two doses of a stimulant add up, two implants doing one job do not. A
+  drug's effect wants the adding answer, and that is a choice on the definition.
+- **An overdose.** `App\Stats\InjuryLedger` already says a future overdose
+  should write into the same *neural damage* injury a freeze and an ICE flatline
+  write into — one row that deepens, so a clinic heals one number.
+- **A way to be told.** Crossing a withdrawal threshold is exactly the kind of
+  thing the unbuilt notification queue is for.
+
+---
+
 ## Housekeeping
 
 - **`php artisan storage:link` will fail** — `symlink` is in `disable_functions` and that

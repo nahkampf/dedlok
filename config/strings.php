@@ -735,6 +735,41 @@ return [
     ],
 
     'character' => [
+
+        /*
+        | THE FLOOR UNDER EVERY DEFEAT.
+        |
+        | Read by somebody who has just lost and cannot go anywhere else, so it
+        | says what happened rather than commiserating. The wait is not the
+        | punishment — what losing cost is whatever the defeat tags carried —
+        | and the copy should not pretend otherwise.
+        */
+        'waiting' => [
+            'title' => 'Down',
+            'heading' => 'You are on the floor',
+            'back_in' => 'Up in :when',
+            'up' => 'Get up',
+            'up_hint' => 'You come back on one point. Getting up is not healing.',
+
+            'reason' => [
+                'defeat' => 'Beaten in a run.',
+                'burnout' => 'Your deck cooked a module and threw you through the wall.',
+                'readiness' => 'Your deck stopped running while you were inside it.',
+                'unknown' => 'Something finished you.',
+            ],
+
+            'on_system' => 'On :system',
+            'by_ice' => 'Beaten by :ice',
+            'took' => 'Took :damage :resource',
+            'tags' => 'What it carried',
+            'no_tags' => 'It carried nothing beyond this.',
+
+            'resource' => [
+                'current_synaptic_integrity' => 'Synaptic Integrity',
+                'current_hitpoints' => 'hit points',
+            ],
+        ],
+
         'create' => [
             'title' => 'Create your character',
             'lede' => 'This is who you are on the street. The handle is permanent; spend your points carefully.',

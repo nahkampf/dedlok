@@ -496,6 +496,20 @@ return [
     |
     | Percentages, 0-100, like `occupancy` above.
     */
+    /*
+    | HOW LONG A DEFEAT KEEPS YOU DOWN, in minutes, before modifiers.
+    |
+    | One. The base of the `recovery_minutes` stat, so implants and skills can
+    | cut it the way they cut everything else.
+    |
+    | Short on purpose: the wait is not the punishment. What losing actually
+    | costs is whatever the defeat tags carried — a piece of a ceiling, a
+    | destroyed module, a wiped deck — and the minute is only there so that a
+    | defeat carrying NOTHING still costs something. A long wait would punish
+    | the player who lost to a harmless guard hardest, which is backwards.
+    */
+    'recovery_minutes' => 1,
+
     'freeze' => [
 
         /*
