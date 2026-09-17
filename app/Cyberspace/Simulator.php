@@ -239,25 +239,43 @@ final readonly class Simulator
     }
 
     /**
-     * Does the trace get past every hop this turn?
+     * Does the trace get past the NEXT hop this turn?
      *
-     * One roll per backdoored system, at the chance its GRADE allows — a grade
-     * 1 relay slows it not at all and a grade 9 stops it four turns in five.
-     * All of them, because a chain is a chain: the trace is held if any single
-     * hop holds it.
+     * A TRACE WALKS THE CHAIN, one system at a time. Each turn is a single
+     * attempt at the next one in the route — pass it and the trace moves up and
+     * the turn ends, fail and it stays put and the turn ends anyway. **A hop
+     * once passed is behind it** and is never rolled again, which is the whole
+     * difference between a long chain being slow and a long chain being
+     * impassable.
+     *
+     * The chance is what that system's GRADE allows: a grade 1 relay never
+     * holds it up and a grade 9 holds it four turns in five. So the turns a
+     * chain buys is the sum of 1/p over its hops — three grade 9s is about
+     * fifteen turns of nothing happening, which is what ten successful backdoor
+     * runs ought to be worth.
+     *
+     * Past the end of the chain there is nothing left in the way and the trace
+     * comes on unopposed. An EMPTY chain is that case from the first turn,
+     * which is the only one that exists today.
      */
     private function traceGetsThrough(Run $run): bool
     {
+        $grades = $run->routingGrades();
+        $next = $grades[(int) $run->trace_hop] ?? null;
+
+        if ($next === null) {
+            return true;
+        }
+
         /** @var array<int, int> $table */
         $table = Config::get('cyberspace.trace.advance', []);
 
-        // ROUTING IS NOT BUILT, so there is nothing in the way and nothing to
-        // roll. When it is, this is the list that changes and not the loop.
-        foreach ($run->routingGrades() as $grade) {
-            if (($this->roll)(1, 100) > ($table[$grade] ?? 100)) {
-                return false;
-            }
+        if (($this->roll)(1, 100) > ($table[$next] ?? 100)) {
+            return false;
         }
+
+        // Through it, and past it for good.
+        $run->trace_hop = (int) $run->trace_hop + 1;
 
         return true;
     }

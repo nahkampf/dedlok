@@ -555,4 +555,75 @@ final class FightTest extends TestCase
 
         $this->assertSame(1, (int) $this->character->fresh()->heat);
     }
+
+    // ---- walking the chain -------------------------------------------------
+
+    /**
+     * A TRACE WALKS THE CHAIN, one hop a turn, and a hop once passed is behind
+     * it for good.
+     *
+     * That last part is the whole difference between a long chain being slow
+     * and a long chain being impassable: rolling every hop every turn would
+     * need ten simultaneous successes for ever, rather than ten successes
+     * eventually.
+     *
+     * Routing is not built, so the chain is stubbed here — this pins the walk
+     * rather than the route, and `Run::routingGrades()` is the one method that
+     * changes when backdoors land.
+     */
+    public function test_the_trace_attempts_one_hop_a_turn_and_keeps_what_it_passes(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+
+        // A grade 9 hop lets it through 20% of the time; a 1 always does.
+        $chained = new class extends Run
+        {
+            protected $table = 'runs';
+
+            public function routingGrades(): array
+            {
+                return [9, 1];
+            }
+        };
+
+        $chained->setRawAttributes($run->getAttributes());
+        $chained->exists = true;
+
+        // Held at the first hop: the roll misses and nothing moves.
+        $this->simulator(101)->take($this->character->fresh(), $chained, RunAction::Hold);
+        $this->assertSame(0, $chained->trace, 'held at the first hop');
+        $this->assertSame(0, $chained->trace_hop);
+
+        // Through it, and the turn ends there.
+        $this->simulator(1)->take($this->character->fresh(), $chained, RunAction::Hold);
+        $this->assertSame(1, $chained->trace_hop, 'one hop, one turn');
+        $this->assertSame(4, $chained->trace);
+
+        // The second hop is a grade 1, so even the worst roll passes it — and
+        // the grade 9 behind it is never asked again.
+        $this->simulator(101)->take($this->character->fresh(), $chained, RunAction::Hold);
+        $this->assertSame(2, $chained->trace_hop, 'past the chain');
+        $this->assertSame(8, $chained->trace);
+
+        // And past the end it comes on unopposed.
+        $this->simulator(101)->take($this->character->fresh(), $chained, RunAction::Hold);
+        $this->assertSame(12, $chained->trace);
+    }
+
+    /** No chain is the unopposed case from the first turn. */
+    public function test_an_empty_chain_never_holds_the_trace_up(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+
+        $this->assertSame([], $run->routingGrades());
+
+        $this->simulator(101)->take($this->character->fresh(), $run, RunAction::Hold);
+
+        $this->assertSame(4, $run->fresh()->trace);
+        $this->assertSame(0, $run->fresh()->trace_hop, 'nothing to be past');
+    }
 }

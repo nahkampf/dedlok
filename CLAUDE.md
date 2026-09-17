@@ -1567,12 +1567,17 @@ left. Detection, the ICE, extraction and the endings are the simulator, and
   `Run::turnsUntilTraced()` is the number the egress decision is made on, and it
   is worked out server-side because a player should not be dividing in their
   head while something is hitting them.
-- **Whether the trace advances at all is the CHAIN's to decide.** Every
-  backdoored system routed through is asked, by its grade — a grade 1 relay
-  slows it not at all, a grade 9 stops it four turns in five — and it only moves
-  if it gets through all of them, so the chances multiply and a long chain is
-  dramatically more protection. An empty chain always advances, which is the
-  no-routing case and the only one that exists today.
+- **A TRACE WALKS THE CHAIN, one hop a turn.** Each turn is a single attempt at
+  the NEXT system in the route: pass it and the trace moves up and the turn
+  ends, fail and it stays put and the turn ends anyway. **A hop once passed is
+  behind it** and is never rolled again — `runs.trace_hop` is that position, and
+  it is why the column exists. Rolling every hop every turn would make a long
+  chain not slow but impassable: ten simultaneous successes for ever, rather
+  than ten successes eventually.
+- **The chance is what the hop's GRADE allows** — 100% at grade 1 down to 20% at
+  grade 9 — so what a chain buys is the sum of 1/p over its hops. Three grade 9s
+  is about fifteen turns of nothing happening. Past the end of the chain the
+  trace comes on unopposed, and an empty chain is that case from the first turn.
 - **A completed trace puts heat on the character and burns the chain.**
   `characters.heat` is persistent and theirs; **one point is a placeholder** and
   what heat DOES is undesigned — see TODO.md. Burning the chain is called and is

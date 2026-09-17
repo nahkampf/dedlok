@@ -299,14 +299,20 @@ return [
     | the GRADE of each backdoored system it has to come through. A grade 1
     | relay slows it not at all; a grade 9 one stops it four turns in five.
     |
-    | Every hop is asked, and the trace only moves if it gets through all of
-    | them — so the chances multiply and a longer chain is dramatically more
-    | protection. Three grade 5 hops is 0.6^3, about a fifth of the turns. That
-    | is what makes a ten-hop chain worth ten successful backdoor runs, and what
-    | makes losing the lot to one completed trace a real price.
+    | A TRACE WALKS THE CHAIN, one system at a time. Each turn is a single
+    | attempt at the NEXT hop: pass it and the trace moves up and the turn ends,
+    | fail and it stays put and the turn ends anyway. A hop once passed is
+    | behind it and never rolled again — which is the difference between a long
+    | chain being slow and a long chain being impassable.
     |
-    | An EMPTY chain always advances, which is the no-routing case and the only
-    | one that exists today: nothing is in the way, so nothing slows it down.
+    | So what a chain buys is the sum of 1/p over its hops. Three grade 9s is
+    | about fifteen turns of nothing happening, which is roughly what three
+    | successful backdoor runs ought to be worth — and a ten-hop chain is the
+    | reason losing the lot to one completed trace is a real price.
+    |
+    | Past the end of the chain nothing is in the way and the trace comes on
+    | unopposed. An EMPTY chain is that case from the first turn, which is the
+    | only one that exists today.
     |
     | Ten points a grade, so the table is the design rather than a curve
     | somebody fitted. CYBERSPACE.md says each backdoored system will hinder the
