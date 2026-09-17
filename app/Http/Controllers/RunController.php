@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Cyberspace\RunAction;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
+use App\Cyberspace\Simulator;
 use App\Models\Character;
 use App\Models\Run;
-use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -75,14 +76,40 @@ class RunController extends Controller
     /**
      * Spend a turn.
      *
-     * NOT BUILT. The simulator is what goes here, and it is deliberately one
-     * door rather than several: every action a turn can be spent on resolves
-     * through the same place, so a turn always costs the same thing whatever
-     * it was spent doing.
+     * ONE DOOR FOR EVERY ACTION, so a turn always costs the same thing whatever
+     * it was spent doing — which is the economy the whole run rests on.
      */
-    public function act(Request $request): RedirectResponse
+    public function act(Request $request, Simulator $simulator): RedirectResponse
     {
-        return back()->with('error', Text::get('cyberspace.run.not_built'));
+        $character = $this->character($request);
+        $run = $this->liveRun($character);
+
+        if ($run === null) {
+            return redirect()->route('cyberspace.index');
+        }
+
+        $data = $request->validate([
+            'action' => ['required', Rule::in(RunAction::values())],
+        ]);
+
+        $result = $simulator->take($character, $run, RunAction::from($data['action']));
+
+        if (! $result->succeeded()) {
+            return back()->with('error', $result->refusal->message());
+        }
+
+        if (! $result->ended()) {
+            return redirect()->route('run.show');
+        }
+
+        // A defeat ejects and puts them on the floor; an egress just ends. Both
+        // go through the one place that knows the order.
+        if ($result->ending !== RunEnding::Egress) {
+            $simulator->resolveEnding($character, $run, $result->ending);
+        }
+
+        return redirect()->route('cyberspace.index')
+            ->with($result->ending->isBad() ? 'error' : 'status', $result->ending->message());
     }
 
     /**

@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'turn', 'os_locked', 'started_at', 'ended_at', 'ending', 'log'])]
+#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'trace', 'heat', 'started_at', 'ended_at', 'ending', 'log'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -36,6 +36,10 @@ class Run extends Model
             'y' => 'integer',
             'turn' => 'integer',
             'os_locked' => 'boolean',
+            'detected' => 'boolean',
+            'ice_integrity' => 'integer',
+            'trace' => 'integer',
+            'heat' => 'integer',
             'purpose' => RunPurpose::class,
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
@@ -46,6 +50,25 @@ class Run extends Model
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);
+    }
+
+    /**
+     * What is fighting, if anything woke up.
+     *
+     * A key here where `address` is deliberately not one, and the difference is
+     * what each points at: an address names a machine that may stop existing,
+     * and the ICE catalogue is authored content that gets edited rather than
+     * deleted.
+     */
+    public function ice(): BelongsTo
+    {
+        return $this->belongsTo(Ice::class);
+    }
+
+    /** Is something still swinging at them? */
+    public function inAFight(): bool
+    {
+        return $this->ice_id !== null && (int) $this->ice_integrity > 0;
     }
 
     /**

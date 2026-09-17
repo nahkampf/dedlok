@@ -1500,6 +1500,28 @@ left. Detection, the ICE, extraction and the endings are the simulator, and
 - **Leaving is always on the list.** Egress is never absent and never disabled,
   whatever else a turn offers. A run with no exit is a character deleted by a
   door they could not see.
+- **`App\Cyberspace\Simulator` is one door for every action**, so a turn always
+  costs the same thing whatever it was spent doing — the economy the whole run
+  rests on. The die is injected, like the market's and the probe's.
+- **The player acts, then the machine does**, and that order is not arbitrary:
+  somebody who lands the blow that breaks an ICE does not then take a hit from
+  something already destroyed, and somebody who leaves gets their attempt before
+  the thing they are leaving gets another swing.
+- **What is fighting lives on the RUN, not on the machine.** `runs.ice_id` and
+  `runs.ice_integrity` — the catalogue says what an ICE *is*, and these say what
+  this fight has left of it. It also means a machine burned out from under a
+  live run does not take the fight with it.
+- **A failed cut says one thing for three causes**, deliberately: no icebreaker
+  running, an operating system the runner cannot speak, or nothing awake to cut
+  at. The gate must never announce itself, so the log line a missed pass gets is
+  the line an unspeakable OS gets, and `FightTest` asserts the words *operating
+  system* appear nowhere in it.
+- **DETECTION IS NOT BUILT, so every run is a loud one.** `Simulator::rouse()`
+  wakes whatever guards a machine with certainty when the run begins, because
+  the player's side of a detection roll needs a stat nothing grants — there is
+  no stealth skill in the tree. **That is the only place that changes** when
+  detection lands: everything downstream already asks `runs.ice_id` rather than
+  asking the machine.
 
 ### Archetypes and what they hand out
 

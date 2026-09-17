@@ -341,7 +341,37 @@ return [
             'locked' => 'You are in a run. It does not stop because you looked away.',
             'egress' => 'Egress',
             'egress_hint' => 'Leaving is always possible and never certain.',
-            'not_built' => 'There is nothing to do in here yet. The simulator is not built.',
+            'action' => [
+                'attack' => 'Cut',
+                'hold' => 'Hold',
+                'egress' => 'Egress',
+            ],
+
+            /*
+            | THE LOG IS THE ACCOUNT, and a run is something a player watches
+            | happen — so every turn says what it did in the order it did it.
+            |
+            | `attack_fails` covers three different failures on purpose: no
+            | icebreaker running, an operating system the runner cannot speak,
+            | and nothing awake to cut at. A player is meant to work out which
+            | from a pattern, and the one that is a GATE must never announce
+            | itself — a refusal naming the operating system would hand over a
+            | scan fact for free.
+            */
+            'log' => [
+                'attack' => 'Your icebreaker cuts for :damage.',
+                'attack_fails' => 'Your pass finds nothing to cut.',
+                'hold' => 'You wait, and the machine waits with you.',
+                'egress' => 'You pull out.',
+                'ice_broken' => 'The ICE comes apart.',
+                'ice_hits' => 'It gets through for :damage.',
+                'ice_misses' => 'It reaches for you and misses.',
+                'ice_silent' => 'Whatever was fighting you is no longer there.',
+            ],
+
+            'ice' => 'ICE',
+            'ice_none' => 'Nothing is fighting you.',
+            'log_heading' => 'What happened',
 
             'purpose' => [
                 'extraction' => 'Extraction',
