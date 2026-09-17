@@ -85,6 +85,21 @@ Schedule::command('market:seed')
  * clock and wants to be current, and this resolves something that has already
  * happened. Nobody is waiting on it.
  */
+/*
+ * The only thing in the game that heals by waiting.
+ *
+ * Every minute, because the rate IS per minute — Neuroplasticity grants a point
+ * a minute per level and nothing else grants any. On a world of untrained
+ * characters this resolves a few stats and writes nothing.
+ *
+ * No stored clock and a missed minute is never made up: market:seed's stance
+ * rather than the training heartbeat's, because a training deposit is credited
+ * from a clock the player is watching and this is a trickle nobody is counting.
+ */
+Schedule::command('characters:regenerate --quiet-when-idle')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 Schedule::command('cyberspace:settle --quiet-when-idle')
     ->everyFiveMinutes()
     ->withoutOverlapping();

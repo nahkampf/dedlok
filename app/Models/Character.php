@@ -712,6 +712,50 @@ class Character extends Model
     }
 
     /**
+     * Put points back on a resource, capped at its current maximum.
+     *
+     * THE MIRROR OF takeDamage AND JUST AS DULL: an addition and a ceiling,
+     * knowing nothing about why. What healed somebody — a clinic, a drug, a
+     * trained Neuroplasticity ticking over — is that thing's business, and none
+     * of it is decided here.
+     *
+     * **Capped at the maximum AS IT IS NOW**, which is the whole reason this
+     * cannot be a subtraction with a minus sign. A character whose ceiling has
+     * been cut by flatlines heals to the smaller number, and healing must never
+     * be a way to climb above a ceiling that injury lowered.
+     *
+     * Zero is a real place to heal FROM. Nothing here refuses to bring somebody
+     * back from it — whether they may be brought back, and by what, belongs to
+     * whatever is doing the healing.
+     *
+     * Returns the points actually restored, which is not always what was asked
+     * for: a character one under their ceiling gains 1 from a dose of 5.
+     */
+    public function recover(string $resource, int $amount): int
+    {
+        if (! array_key_exists($resource, self::RESOURCES)) {
+            throw new \InvalidArgumentException(
+                "[{$resource}] is not a resource. Known: ".implode(', ', array_keys(self::RESOURCES)).'.'
+            );
+        }
+
+        if ($amount < 0) {
+            throw new \InvalidArgumentException('Healing is never negative. Damage is its own act.');
+        }
+
+        $current = (int) $this->getAttribute($resource);
+        $restored = min($amount, max(0, $this->maximumFor($resource) - $current));
+
+        if ($restored === 0) {
+            return 0;
+        }
+
+        $this->forceFill([$resource => $current + $restored])->save();
+
+        return $restored;
+    }
+
+    /**
      * Bring every resource inside its current maximum.
      *
      * Clamps DOWN and never scales: losing the implant that granted +20 max HP

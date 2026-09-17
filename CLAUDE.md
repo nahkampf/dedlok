@@ -1230,8 +1230,17 @@ carries the detail.
   the single exception is bought with a rank 16 skill — **Neuroplasticity**, a
   point a minute per level. A character who has not trained it recovers nothing
   by sitting still, ever. Per MINUTE rather than per tick, so whatever credits
-  it can do so lazily off elapsed time the way a training deposit does; nothing
-  credits it yet.
+  it can do so lazily off elapsed time. **`characters:regenerate` credits it,
+  every minute**, and keeps NO stored clock — `market:seed`'s stance rather than
+  the training heartbeat's, because a deposit is credited from a clock the
+  player is watching and this is a trickle nobody is counting. A minute lost to
+  a scheduler restart is a point. It heals from ZERO, which is the only route
+  off the floor that exists until healing is designed.
+- **`Character::recover()` is `takeDamage()`'s mirror and just as dull** — an
+  addition and a ceiling, knowing nothing about why. **Capped at the maximum as
+  it is NOW**, which is why it cannot be damage with a minus sign: a ceiling cut
+  by flatlines is the ceiling you heal to, and healing must never climb past
+  what injury lowered.
 - **An icebreaker is a GATE before it is a number**, and `icebreaker_damage`
   floors at 0 to say so: no running icebreaker means no damage, and no amount of
   skill adds up to having one. Its bite is a modifier on `programs.modifiers`
