@@ -53,6 +53,18 @@
                     </select>
                 </div>
 
+                <div class="field">
+                    <label class="field__label" for="program">{{ Text::get('admin.items.program.filter') }}</label>
+                    <select class="select" id="program" name="program">
+                        <option value="">{{ Text::get('admin.items.program.any') }}</option>
+                        @foreach ($programKinds as $kind)
+                            <option value="{{ $kind->value }}" @selected(($filters['program'] ?? '') === $kind->value)>
+                                {{ $kind->label() }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 <div class="field" style="flex:1 1 min(180px, 100%)">
                     <label class="field__label" for="market">{{ Text::get('admin.items.fields.on_market') }}</label>
                     <select class="select" id="market" name="market">
@@ -115,6 +127,23 @@
                                     @if ($item->hardware)
                                         <div class="micro" style="color:var(--ink-3)">
                                             {{ $item->hardware->label() }}@if ($item->hardwareSummary()) — {{ $item->hardwareSummary() }}@endif
+                                        </div>
+                                    @endif
+
+                                    {{-- The same line for software. A program's
+                                         KIND is a gate as much as a modifier —
+                                         no amount of bonuses adds up to having a
+                                         running icebreaker — so a listing that
+                                         only said "Data" left every program in
+                                         the game looking alike. --}}
+                                    @if ($item->program)
+                                        <div class="micro" style="color:var(--ink-3)">
+                                            {{ $item->program->kind->label() }} —
+                                            {{ Text::get('admin.items.program_summary', [
+                                                'qflops' => $item->program->qflops_cost,
+                                                'memory' => $item->program->memory_cost,
+                                                'storage' => $item->program->storage_size,
+                                            ]) }}@unless ($item->program->background_process) · {{ Text::get('admin.items.run_only') }}@endunless
                                         </div>
                                     @endif
                                 </td>

@@ -1616,6 +1616,18 @@ return [
             'unlisted' => 'Unlisted',
             'container_of' => 'holds :accepts',
 
+            /*
+            | Software, in the listing. A program's KIND is a gate as much as a
+            | modifier, so a list that only said "Data" left every program in
+            | the game looking alike — and there are seventeen of them now.
+            */
+            'program' => [
+                'filter' => 'Program',
+                'any' => 'Any program',
+            ],
+            'program_summary' => ':qflops qF · :memory QB · :storage QB stored',
+            'run_only' => 'run only',
+
             'hardware' => [
                 'any' => 'Any hardware, and none',
                 'none' => 'Not deck hardware',
