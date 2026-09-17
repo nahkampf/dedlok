@@ -1239,6 +1239,72 @@ cap-widget {
    Rationed like every other use of the accent: see the note on --ember. */
 .tag--ember { color: var(--ember); border-color: var(--ember-2); background: var(--ember-a); }
 
+/* THE TRACE, WALKING A CHAIN TOWARDS YOU.
+
+   A line of nodes with a fill crossing it: the machine at one end, the runner
+   at the other, and every backdoored relay routed through in between. What the
+   fill says is how far the thing following you has got, so the whole widget is
+   one question — is it time to leave.
+
+   `--v` is the 0-1 ratio, set server-side like every other meter in the kit, so
+   the bar needs no script and cannot disagree with the number beside it.
+
+   THE LINE IS A BACKGROUND ON THE TRACK, not a pseudo-element, because the
+   nodes sit on top of it and a pseudo-element would have to be positioned
+   around them. Two layers: the unlit rail, and the lit part clipped to `--v`.
+   The nodes carry their own background so the line appears to pass behind. */
+.trace {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  position: relative;
+  padding: var(--s-3) 0;
+}
+.trace::before,
+.trace::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: var(--hair);
+  transform: translateY(-50%);
+}
+.trace::before { background: var(--line-1); }
+.trace::after {
+  background: var(--crit);
+  /* Clipped rather than scaled: a transform would blur the hairline and a
+     width animation would relayout. */
+  clip-path: inset(0 calc(100% - (var(--v, 0) * 100%)) 0 0);
+}
+
+/* A stop on the chain. Positioned so the line runs behind it, and carrying the
+   page's own background so it reads as a node on a wire rather than a box with
+   a line through it. */
+.trace__node {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  background: var(--bg-1);
+  border: var(--hair) solid var(--line-2);
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+  /* The machined corner, at node scale. */
+  border-radius: var(--r-1);
+}
+
+/* PASSED. The trace has come through here already, so it wears the accent the
+   fill does — this is the one place a chain says what has been lost, and when
+   routing lands these are the backdoors that are about to burn. */
+.trace__node--passed { border-color: var(--crit); color: var(--crit); }
+
+/* The two ends. The machine is where it starts; you are what it is walking
+   towards, and you are drawn as bone because you are the thing at stake. */
+.trace__node--target { border-color: var(--line-2); }
+.trace__node--you { border-color: var(--ink-1); color: var(--ink-0); }
+
 /* CAN YOU OPERATE IT. The mark beside a scanned operating system, and the one
    place a fact on that screen also answers a question about the READER.
    Semantic aliases rather than the palette, because these carry meaning: a

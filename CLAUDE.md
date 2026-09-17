@@ -1554,6 +1554,22 @@ left. Detection, the ICE, extraction and the endings are the simulator, and
   it on purpose: the best runner alive still trips a household IDS about once in
   a hundred and twenty attempts, and detection is the case that rule was written
   for rather than an exception to it.
+- **The trace advances once something has noticed**, at the machine's
+  `tracer_rate` a turn — detection is what wakes the tracer, so a run nothing
+  saw is a run nothing is following. The rate is read off the machine rather
+  than copied onto the run, unlike the ICE's integrity: integrity is being
+  ground DOWN and belongs to the fight, while a tracer's speed is a property of
+  the hardware and does not change.
+- **The run screen draws the trace as the CHAIN it walks** — the machine at one
+  end, you at the other, and every backdoored relay routed through in between.
+  Routing is not built, so that chain is two nodes today; it is drawn as a chain
+  rather than a pair so it will not have to change when hops arrive.
+  `Run::turnsUntilTraced()` is the number the egress decision is made on, and it
+  is worked out server-side because a player should not be dividing in their
+  head while something is hitting them.
+- **Reaching 100 does nothing yet.** A completed trace is meant to put heat on
+  the character and burn every backdoor in the chain; neither heat nor backdoors
+  exist, so it lands, says so once, and stops climbing.
 - **The IDS's second chance is not built.** The design gives it one on approach
   and one on touching the core; nothing touches the core yet, so that roll
   arrives with extraction.

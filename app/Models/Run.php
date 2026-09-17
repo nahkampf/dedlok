@@ -71,6 +71,48 @@ class Run extends Model
         return $this->ice_id !== null && (int) $this->ice_integrity > 0;
     }
 
+    /** How fast the trace is walking, per turn. Zero when nothing is following. */
+    public function traceRate(): int
+    {
+        if (! $this->detected) {
+            return 0;
+        }
+
+        return (int) (System::query()->where('address', $this->address)->value('tracer_rate') ?? 0);
+    }
+
+    /**
+     * Turns before it reaches you, or null when nothing is coming.
+     *
+     * THE NUMBER THE EGRESS DECISION IS MADE ON, which is why it is worked out
+     * here rather than left for a player to divide in their head while
+     * something is hitting them. Null means either nothing has noticed or this
+     * machine has no tracer — both of which are the same good news.
+     */
+    public function turnsUntilTraced(): ?int
+    {
+        $rate = $this->traceRate();
+
+        if ($rate <= 0 || $this->trace >= 100) {
+            return null;
+        }
+
+        return (int) ceil((100 - $this->trace) / $rate);
+    }
+
+    /** The chain the trace has to walk: the machine, the hops, and you. */
+    public function traceChain(): array
+    {
+        // ROUTING IS NOT BUILT, so the chain is the shortest one there is —
+        // the machine you are in, and you. Every backdoored relay a player
+        // routes through will land between these two, and the widget already
+        // draws a chain rather than a pair so that it does not have to change.
+        return [
+            ['label' => $this->address, 'kind' => 'target'],
+            ['label' => null, 'kind' => 'you'],
+        ];
+    }
+
     /**
      * The machine, if it is still there.
      *

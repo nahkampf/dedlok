@@ -125,6 +125,8 @@ final readonly class Simulator
 
             // --- and then the machine does ------------------------------------
 
+            $log = [...$log, ...$this->advanceTrace($run)];
+
             $ending = null;
 
             if ($run->ice_id !== null) {
@@ -137,6 +139,47 @@ final readonly class Simulator
 
             return TurnResult::resolved($run, $log, $ending);
         });
+    }
+
+    /**
+     * The trace walks a little further.
+     *
+     * ONLY ONCE SOMETHING HAS NOTICED. Detection is what wakes the tracer, so a
+     * run nothing saw is a run nothing is following — which is the other half
+     * of what stealth buys, alongside not having to fight.
+     *
+     * The rate is read off the machine rather than copied onto the run, unlike
+     * the ICE's integrity: integrity is being ground DOWN and so belongs to the
+     * fight, while a tracer's speed is a property of the hardware and does not
+     * change. A machine that has gone takes its tracer with it, which is the
+     * right answer anyway.
+     *
+     * Reaching 100 is not built. A completed trace is meant to put heat on the
+     * character and burn every backdoor in the routing chain, and neither heat
+     * nor backdoors exist — so for now it lands, says so, and stops climbing.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function advanceTrace(Run $run): array
+    {
+        if (! $run->detected || $run->trace >= 100) {
+            return [];
+        }
+
+        $rate = System::query()->where('address', $run->address)->value('tracer_rate');
+
+        if ($rate === null || $rate <= 0) {
+            return [];
+        }
+
+        $was = (int) $run->trace;
+        $run->trace = min(100, $was + (int) $rate);
+
+        if ($run->trace >= 100 && $was < 100) {
+            return [$this->line('cyberspace.run.log.traced', tone: 'crit')];
+        }
+
+        return [];
     }
 
     /**

@@ -367,6 +367,7 @@ return [
                 'ice_hits' => 'It gets through for :damage.',
                 'ice_misses' => 'It reaches for you and misses.',
                 'ice_silent' => 'Whatever was fighting you is no longer there.',
+                'traced' => 'The trace reaches you. Somebody knows who was in here.',
 
                 /*
                 | ARRIVING, and whether anything looked up. Said first and said
@@ -378,6 +379,20 @@ return [
                 'noticed' => 'Something registers you on the way in.',
                 'noticed_ice' => 'Something registers you on the way in, and the ICE comes awake.',
             ],
+
+            /*
+            | THE TRACE, AND THE ONE QUESTION IT ANSWERS: is it time to leave.
+            | The estimate is worked out rather than left to a player to divide
+            | in their head while something is hitting them.
+            */
+            'trace' => 'Trace',
+            'trace_none' => 'Nothing is following you.',
+            'trace_turns' => [
+                'one' => 'One turn before it reaches you',
+                'many' => ':count turns before it reaches you',
+            ],
+            'trace_done' => 'It has you.',
+            'trace_you' => 'You',
 
             'ice' => 'ICE',
             'ice_none' => 'Nothing is fighting you.',

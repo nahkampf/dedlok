@@ -37,6 +37,49 @@
     </div>
 </div>
 
+{{-- THE TRACE, AND THE ONE QUESTION IT ANSWERS: is it time to leave.
+
+     Drawn as the chain it actually is — the machine at one end, you at the
+     other, and every backdoored relay routed through in between. Routing is not
+     built, so today that chain is two nodes; the widget draws a chain rather
+     than a pair precisely so it will not have to change when hops arrive. --}}
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.trace') }}</h2>
+        <div class="spacer"></div>
+        @if ($run->trace >= 100)
+            <span class="tag tag--crit">{{ Text::get('cyberspace.run.trace_done') }}</span>
+        @elseif ($turnsLeft !== null)
+            <span class="micro num">{{ Text::plural('cyberspace.run.trace_turns', $turnsLeft, ['count' => $turnsLeft]) }}</span>
+        @endif
+    </div>
+
+    <div style="padding:0 var(--s-2)">
+        @if ($run->traceRate() > 0 || $run->trace > 0)
+            @php($chain = $run->traceChain())
+            @php($reached = $run->trace / 100 * (count($chain) - 1))
+
+            <div class="trace" style="--v:{{ round($run->trace / 100, 3) }}">
+                @foreach ($chain as $index => $node)
+                    <span class="trace__node trace__node--{{ $node['kind'] }} @if ($index <= $reached) trace__node--passed @endif"
+                          @if ($node['label']) title="{{ $node['label'] }}" @endif>
+                        {{ $node['kind'] === 'you' ? '◉' : '◇' }}
+                    </span>
+                @endforeach
+            </div>
+
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-3)">
+                <span class="num">{{ $run->trace }}%</span>
+                @if ($run->traceRate() > 0) · +{{ $run->traceRate() }}% a turn @endif
+            </p>
+        @else
+            <p class="micro" style="color:var(--ink-2);padding:var(--s-3) 0;margin:0">
+                {{ Text::get('cyberspace.run.trace_none') }}
+            </p>
+        @endif
+    </div>
+</div>
+
 {{-- WHAT IS FIGHTING, drawn from the RUN and not from the machine: integrity
      is being ground down, and the catalogue says what an ICE is rather than
      what this fight has left of it. --}}

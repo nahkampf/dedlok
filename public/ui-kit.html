@@ -687,6 +687,20 @@ public/assets/
       </template>
     </div>
     <div class="demo">
+      <div class="demo__hd"><h3 class="h3">The trace</h3><p>A line of nodes with a fill crossing it: the machine at one end, the runner at the other, and every relay routed through in between. <code class="inl">--v</code> is the 0&ndash;1 ratio, set server-side like every other meter here, so the bar needs no script and cannot disagree with the number beside it. The line is two background layers on the track rather than a pseudo-element, because the nodes sit on top of it; the lit half is clipped rather than scaled, since a transform would blur a hairline. Mark the stops it has already come through with <code class="inl">.trace__node--passed</code>.</p></div>
+      <template class="demo-src">
+        <div class="trace" style="--v:.55">
+          <span class="trace__node trace__node--target trace__node--passed">&#9671;</span>
+          <span class="trace__node trace__node--passed">&#9671;</span>
+          <span class="trace__node trace__node--passed">&#9671;</span>
+          <span class="trace__node">&#9671;</span>
+          <span class="trace__node">&#9671;</span>
+          <span class="trace__node trace__node--you">&#9673;</span>
+        </div>
+        <p class="micro" style="color:var(--ink-2);margin:0"><span class="num">55%</span> &middot; +12% a turn &middot; 4 turns before it reaches you</p>
+      </template>
+    </div>
+    <div class="demo">
       <div class="demo__hd"><h3 class="h3">Accordion &amp; empty state</h3><p>A <code class="inl">details.panel</code> with a <code class="inl">summary.panel__hd</code> is a panel that folds — the header becomes the control, so the whole strip is the hit target and nothing new appears beside it. No script: <code class="inl">&lt;details&gt;</code> already knows how to do this, keyboard and screen reader included. Its marker is ink rather than the accordion's ember, because a disclosure triangle is not a warning and a panel header sits on screens that spend the accent on things that are actually live.</p></div>
       <template class="demo-src">
         <details class="panel" open style="margin-bottom:var(--s-4)">

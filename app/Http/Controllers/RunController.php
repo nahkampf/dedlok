@@ -70,6 +70,10 @@ class RunController extends Controller
             'character' => $character,
             'run' => $run,
             'system' => $run->system(),
+            // Worked out here rather than in the template: it is the number the
+            // egress decision is made on, and a player should not have to do
+            // the division while something is hitting them.
+            'turnsLeft' => $run->turnsUntilTraced(),
         ]);
     }
 

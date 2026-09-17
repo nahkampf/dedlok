@@ -53,12 +53,22 @@ final class FightTest extends TestCase
         $this->character->refresh();
     }
 
-    /** A machine guarded by the named piece of ICE. */
+    /**
+     * A machine guarded by the named piece of ICE, and tracing at a grade 1's
+     * rate.
+     *
+     * The tracer is set explicitly because the factory defaults every defence
+     * to zero — nothing becomes dangerous by being forgotten — so a fixture
+     * that wanted one has to say so.
+     */
     private function machine(int $iceLevel = 1): System
     {
         $ice = Ice::query()->where('level', $iceLevel)->sole();
 
-        return System::factory()->at(8, 8)->grade(1)->withIce($ice)->create(['address' => 'DEADBEEF']);
+        return System::factory()->at(8, 8)->grade(1)
+            ->withIce($ice)
+            ->withTracer(2, 4)
+            ->create(['address' => 'DEADBEEF']);
     }
 
     /** A die that always rolls this, clamped to the bounds it is handed. */
@@ -346,5 +356,108 @@ final class FightTest extends TestCase
         // because it decides whether the rest of it is a fight.
         $this->assertSame(0, $log[0]['turn'], 'arriving is turn zero');
         $this->assertSame(2, end($log)['turn'], 'newest last, the way a transcript reads');
+    }
+
+    // ---- the trace ---------------------------------------------------------
+
+    /**
+     * DETECTION IS WHAT WAKES THE TRACER, so a run nothing saw is a run nothing
+     * is following — the other half of what stealth buys, alongside not having
+     * to fight.
+     */
+    public function test_an_unnoticed_run_is_not_being_traced(): void
+    {
+        $this->machine(1);
+        $run = $this->beginUnnoticed();
+
+        $this->simulator(101)->take($this->character->fresh(), $run, RunAction::Hold);
+
+        $this->assertSame(0, $run->fresh()->trace);
+        $this->assertNull($run->fresh()->turnsUntilTraced(), 'and nothing to count down');
+    }
+
+    public function test_the_trace_walks_a_little_further_every_turn(): void
+    {
+        // A grade 1 tracer moves 4% a turn.
+        $this->machine(1);
+        $run = $this->begin();
+
+        $sim = $this->simulator(101);
+        $sim->take($this->character->fresh(), $run, RunAction::Hold);
+        $this->assertSame(4, $run->fresh()->trace);
+
+        $sim->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $this->assertSame(8, $run->fresh()->trace);
+    }
+
+    /** The number the egress decision is made on. */
+    public function test_it_says_how_many_turns_are_left(): void
+    {
+        $this->machine(1);
+        $run = $this->begin();
+
+        $this->assertSame(25, $run->turnsUntilTraced(), '100 at 4% a turn');
+
+        $this->simulator(101)->take($this->character->fresh(), $run, RunAction::Hold);
+
+        $this->assertSame(24, $run->fresh()->turnsUntilTraced());
+    }
+
+    /** A machine with no tracer follows nobody, however loudly they came in. */
+    public function test_a_machine_with_no_tracer_never_traces(): void
+    {
+        $ice = Ice::query()->where('level', 1)->sole();
+
+        System::factory()->at(8, 8)->grade(1)->withIce($ice)->create([
+            'address' => 'DEADBEEF',
+            'tracer_detection' => 0,
+            'tracer_rate' => 0,
+        ]);
+
+        $run = $this->begin();
+        $this->simulator(101)->take($this->character->fresh(), $run, RunAction::Hold);
+
+        $this->assertTrue($run->fresh()->detected, 'the ICE saw them');
+        $this->assertSame(0, $run->fresh()->trace, 'but nothing is following');
+    }
+
+    /** It lands once and stops climbing. Heat and burning the chain are not built. */
+    public function test_a_completed_trace_lands_once(): void
+    {
+        $this->machine(1);
+        $run = $this->begin();
+        $run->forceFill(['trace' => 98])->save();
+
+        $sim = $this->simulator(101);
+        $result = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+
+        $this->assertSame(100, $result->run->trace);
+        $this->assertNotEmpty(array_filter(
+            array_column($result->log, 'text'),
+            static fn (string $line): bool => str_contains($line, 'reaches you'),
+        ));
+
+        // And it does not climb past, nor announce itself twice.
+        $again = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+
+        $this->assertSame(100, $again->run->trace);
+        $this->assertEmpty(array_filter(
+            array_column($again->log, 'text'),
+            static fn (string $line): bool => str_contains($line, 'reaches you'),
+        ));
+    }
+
+    public function test_the_screen_draws_the_chain(): void
+    {
+        $this->machine(1);
+        $run = $this->begin();
+        $run->forceFill(['trace' => 40])->save();
+
+        $this->actingAs($this->character->fresh()->user)
+            ->get(route('run.show'))
+            ->assertOk()
+            ->assertSee('trace__node', false)
+            ->assertSee('--v:0.4', false)
+            ->assertSee('turns before it reaches you', false);
     }
 }
