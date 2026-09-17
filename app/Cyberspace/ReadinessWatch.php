@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Characters\DownedCause;
+use App\Characters\WaitingRoom;
 use App\Decks\DeckTotals;
 use App\Models\Character;
 use App\Stats\Damage;
@@ -68,6 +70,7 @@ final class ReadinessWatch
     public function __construct(
         private readonly Navigator $navigator,
         private readonly Resolver $resolver,
+        private readonly WaitingRoom $waitingRoom,
         private readonly int $damage,
     ) {}
 
@@ -78,6 +81,7 @@ final class ReadinessWatch
         return new self(
             Navigator::fromConfig($resolver),
             $resolver,
+            new WaitingRoom($resolver),
             (int) Config::get('cyberspace.readiness.damage', 1),
         );
     }
@@ -124,6 +128,29 @@ final class ReadinessWatch
             );
 
             $this->navigator->jackOut($character);
+
+            /*
+             * THE ORDER EVERY BAD ENDING FOLLOWS, and this is the smallest one
+             * there is: damage, then the consequence it causes, then the
+             * ejection, then — only then — the waiting screen.
+             *
+             * The screen comes after `jackOut()` because a character must never
+             * be sitting on it while still holding a position in cyberspace.
+             * That is the one ordering CYBERSPACE.md says produces a state
+             * nothing else knows how to read, and it is why this is four lines
+             * apart rather than one call.
+             *
+             * ONE POINT CAN DO THIS, and it is meant to be able to. A character
+             * on their last point of Synaptic Integrity, whose deck stops
+             * running, goes down — which is a hard way to lose and not an
+             * unfair one: they were standing in a machine on nothing, and the
+             * watch is the thing that noticed.
+             */
+            $this->waitingRoom->checkFloor($character, new DownedCause(
+                reason: 'readiness',
+                damage: $result->taken,
+                resource: 'current_synaptic_integrity',
+            ));
 
             return new Ejection($result->taken);
         });

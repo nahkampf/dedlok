@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Characters\WaitingRoom;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\ReadinessWatch;
 use App\Implants\BodyRegion;
@@ -367,5 +368,48 @@ final class ReadinessWatchTest extends TestCase
 
         $this->assertFalse($this->character->fresh()->isJackedIn());
         $this->assertNotNull($implant->fresh()->installed_at, 'the surgery still happened');
+    }
+
+    /**
+     * ONE POINT CAN FINISH SOMEBODY, and the order it happens in is the order
+     * every bad ending follows: damage, consequence, ejection, and only then
+     * the waiting screen.
+     *
+     * A character must never be sitting on that screen while still holding a
+     * position in cyberspace — CYBERSPACE.md calls that the one ordering that
+     * produces a state nothing else knows how to read — so this asserts the
+     * ejection happened as well as the fall.
+     */
+    public function test_a_readiness_loss_can_put_somebody_on_the_floor(): void
+    {
+        $this->equipReadyDeck($this->character);
+        $this->jackIn();
+        $this->character->forceFill(['current_synaptic_integrity' => 1])->save();
+        $this->cutThePower();
+
+        $ejection = $this->watch()->check($this->character->fresh());
+
+        $this->assertNotNull($ejection);
+
+        $this->character->refresh();
+
+        $this->assertSame(0, $this->character->current_synaptic_integrity);
+        $this->assertFalse($this->character->isJackedIn(), 'ejected BEFORE the screen, never after');
+        $this->assertTrue(app(WaitingRoom::class)->isDown($this->character), 'and then put down');
+        $this->assertSame('readiness', $this->character->waiting_cause['reason']);
+    }
+
+    /** A hit that does not empty somebody leaves them on their feet. */
+    public function test_surviving_a_readiness_loss_does_not_put_anybody_down(): void
+    {
+        $this->equipReadyDeck($this->character);
+        $this->jackIn();
+        $this->character->forceFill(['current_synaptic_integrity' => 8])->save();
+        $this->cutThePower();
+
+        $this->watch()->check($this->character->fresh());
+
+        $this->assertFalse(app(WaitingRoom::class)->isDown($this->character->fresh()));
+        $this->assertNull($this->character->fresh()->waiting_until);
     }
 }

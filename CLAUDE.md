@@ -1447,6 +1447,13 @@ would take somebody to zero and say so in a comment.
   screen, so the two should never overlap — and if they do, being unconscious
   wins, because sitting on the waiting screen while still holding a position in
   cyberspace is the one state nothing else knows how to read.
+- **`ReadinessWatch` is its first caller**, and the order there is the order
+  every bad ending follows: damage, the consequence, the ejection, and **only
+  then** the screen. The screen comes after `jackOut()` because a character must
+  never be sitting on it while still holding a position in cyberspace — which is
+  why those are four lines apart rather than one call. **One point can do it**:
+  somebody on their last point of Synaptic Integrity whose deck stops running
+  goes down, which is a hard way to lose and not an unfair one.
 - **`characters.waiting_cause` is JSON, and that is temporary on purpose.** What
   put somebody down is a run, a named machine, a named piece of ICE, damage and
   a list of tags — none of which is built. Columns modelled against an unwritten
