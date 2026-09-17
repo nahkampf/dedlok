@@ -1464,9 +1464,11 @@ would take somebody to zero and say so in a comment.
 
 ### Runs
 
-**The spine is built; the turns are not.** A run can be begun, looked at and
-left. Detection, the ICE, extraction and the endings are the simulator, and
-`RunController::act()` is deliberately the one door waiting for them.
+**The spine is built, and so is the fight.** A run can be begun, played turn by
+turn, and left. Detection, the ICE, the trace and a defeat's own consequences
+all roll now. Extraction — the run's own purpose, taking what a machine holds
+— is what is left, and `RunController::act()` is deliberately the one door
+waiting for it.
 
 - **`runs` is durable state, and that is the cost of making a run interactive.**
   An atomic run needed no row — it began and ended inside one request. **The row
@@ -1602,6 +1604,51 @@ left. Detection, the ICE, extraction and the endings are the simulator, and
 - **The IDS's second chance is not built.** The design gives it one on approach
   and one on touching the core; nothing touches the core yet, so that roll
   arrives with extraction.
+- **`App\Cyberspace\DefeatResolver` is what makes the tag set real.** Until it
+  existed, `Ice::defeatTags()` fed `DownedCause` names for the waiting screen
+  and nothing rolled or applied a single one — losing to ICE XII cost exactly
+  what losing to ICE I did. Called from `Simulator::resolveEnding()` **before**
+  the ejection, which is the same ordering everything else in a bad ending
+  follows: damage (the ICE's hit, already landed), then the consequence, then
+  `jackOut()`, then the floor.
+- **Flatline deepens the injury; Neural Shock lands on the body.** Flatline
+  rolls its percentage against maximum SI **as it stands right now** — after
+  every earlier flatline, which is what "accumulates" means — and writes
+  through `InjuryLedger::inflict()`, the same *neural damage* row a freeze and
+  a future overdose both deepen. Current SI clamps to the new ceiling on the
+  save that follows, via the model's own hook, not a second call. Neural Shock
+  is a plain `takeDamage()` on current hit points and touches no maximum at
+  all — that is Flatline's job.
+- **Surge deletes the module outright**, chosen from whatever is CURRENTLY
+  fitted to the equipped deck — `deck_fittings.module_id` cascades on delete,
+  so the fitting row cleans itself up without a second write. One roll per
+  module the level names, exactly as designed: a module already taken by an
+  earlier roll this same Surge cannot be taken twice, because it is gone. No
+  deck, or nothing left fitted, is an ordinary no-op.
+- **Erase draws from storage AND whatever is running — deliberately wider than
+  `inventoryIn()`'s ordinary meaning.** `InventoryItem::scopeLoose()` excludes
+  anything running, fitted or installed on purpose, which is correct for a
+  stash listing and wrong here: "software or data held on the deck" has to
+  include what is running on it, or Erase would spare exactly the programs a
+  character cared enough about to load. A running row is stopped through
+  `ProgramRunner::stop()` before it is deleted, never blown through.
+- **Skim reaches `creds` directly**, floored so a share of nothing takes
+  nothing rather than throwing. Bounty never appears in this list — it cannot,
+  structurally, because it is rolled onto the MACHINE (`systems.ice_bounty`)
+  and never written into `Ice::defeat_tags` — so `DefeatResolver`'s match over
+  `DefeatTag` handles it by returning null, honestly, rather than by omitting
+  the case.
+- **`DownedCause` grew an `effects` field.** `tags` is names; `effects` is
+  `DefeatResolver`'s own rendered account — "2 points of your ceiling, gone for
+  good" rather than "flatline" — and the waiting screen shows `effects` in
+  preference to the bare tag pills whenever a resolver actually ran. A cause
+  built before `DefeatResolver` existed has the first and not the second, which
+  is why the screen still falls back to the tag list.
+- **`cyberspace:tag-ice` is a console command, not a migration.** It is how the
+  live database's twelve ICE rows got their `defeat_tags`, and it means a fresh
+  clone or a test database's ICE carries none until somebody runs it — tests
+  that need a specific tag set write it onto the row directly rather than
+  relying on the seeded catalogue.
 
 ### Archetypes and what they hand out
 

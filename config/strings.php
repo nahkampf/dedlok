@@ -380,6 +380,20 @@ return [
                 'unnoticed' => 'You are in, and nothing looked up.',
                 'noticed' => 'Something registers you on the way in.',
                 'noticed_ice' => 'Something registers you on the way in, and the ICE comes awake.',
+
+                /*
+                | WHAT A DEFEAT ACTUALLY COST. Said in the past tense and in
+                | numbers, because "Flatline" is a word and "you lost 2 points
+                | of your ceiling" is a fact — these are what DownedCause shows
+                | on the waiting screen as the reason it was worth losing to.
+                */
+                'defeat' => [
+                    'flatline' => 'Your ceiling gives a little: :points points of maximum Synaptic Integrity, gone for good.',
+                    'neural_shock' => 'The feedback comes back down the wire: :points hit points.',
+                    'surge' => ':count of your fitted modules burn out.',
+                    'erase' => ':count file(s) or program(s) on your deck are wiped.',
+                    'skim' => ':creds creds go missing from what you were carrying.',
+                ],
             ],
 
             /*

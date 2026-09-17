@@ -67,14 +67,24 @@
                     </div>
                 </div>
 
-                {{-- WHAT IT CARRIED, and this is the part that actually cost
-                     something. An empty list is said out loud rather than left
-                     blank: "it carried nothing" is the good news, and a blank
-                     space is not news at all. --}}
+                {{-- WHAT IT ACTUALLY DID, and this is the part that cost
+                     something. `effects` is App\Cyberspace\DefeatResolver's
+                     own account — points taken, modules burned, creds gone —
+                     which is why it is shown in preference to the bare tag
+                     names: "Flatline" is a word and "2 points of your ceiling,
+                     gone for good" is a fact. An empty list is said out loud
+                     rather than left blank: "it carried nothing" is the good
+                     news, and a blank space is not news at all. --}}
                 <div>
                     <span class="micro">{{ Text::get('character.waiting.tags') }}</span>
 
-                    @if ($cause->tags === [])
+                    @if ($cause->effects !== [])
+                        <ul class="stack" style="--gap:var(--s-1);margin:var(--s-1) 0 0;padding:0;list-style:none">
+                            @foreach ($cause->effects as $effect)
+                                <li class="micro" style="color:var(--ink-0)">{{ $effect }}</li>
+                            @endforeach
+                        </ul>
+                    @elseif ($cause->tags === [])
                         <p class="micro" style="color:var(--ink-2);margin:var(--s-1) 0 0">
                             {{ Text::get('character.waiting.no_tags') }}
                         </p>

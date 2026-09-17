@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Characters\DownedCause;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
 use App\Cyberspace\RunAction;
@@ -625,5 +626,47 @@ final class FightTest extends TestCase
 
         $this->assertSame(4, $run->fresh()->trace);
         $this->assertSame(0, $run->fresh()->trace_hop, 'nothing to be past');
+    }
+
+    // ---- what a defeat actually costs --------------------------------------
+
+    /**
+     * A DEFEAT APPLIES THE ICE'S OWN TAGS, in the order every bad ending
+     * follows: damage already landed (that is why we are here), so now the
+     * consequence, then the ejection, then the waiting screen. This is the
+     * end-to-end path — DefeatResolverTest pins each tag on its own.
+     */
+    public function test_a_defeat_applies_the_ices_tags_before_the_waiting_screen(): void
+    {
+        $this->machine(9);
+        $this->ignoreThresholds();
+        $this->equipReadyDeck($this->character);
+
+        // The catalogue's own tags are written by cyberspace:tag-ice, a
+        // console command and not a migration — so a test database's ICE
+        // rows carry no tags until told to. This is what the live one does.
+        Ice::query()->where('level', 9)->update([
+            'defeat_tags' => json_encode([
+                ['tag' => 'flatline', 'level' => 1],
+                ['tag' => 'skim', 'level' => 1],
+            ]),
+        ]);
+
+        $run = $this->begin();
+
+        $this->character->fresh()->forceFill(['current_synaptic_integrity' => 1, 'creds' => 1000])->save();
+
+        $sim = $this->simulator(1); // every roll wins
+        $result = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+
+        $this->assertSame(RunEnding::Defeat, $result->ending);
+
+        $sim->resolveEnding($this->character->fresh(), $result->run, $result->ending);
+
+        $character = $this->character->fresh();
+        $cause = DownedCause::fromArray($character->waiting_cause);
+
+        $this->assertNotEmpty($cause->effects, 'the tags actually did something, not just named themselves');
+        $this->assertSame('ICE IX', $cause->ice);
     }
 }

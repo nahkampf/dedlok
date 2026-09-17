@@ -58,6 +58,7 @@ final readonly class Simulator
         private RunStarter $runs,
         private WaitingRoom $waitingRoom,
         private CheckRoller $checks,
+        private DefeatResolver $defeats,
         private Closure $roll,
     ) {}
 
@@ -67,13 +68,18 @@ final readonly class Simulator
         ?CheckRoller $checks = null,
     ): self {
         $resolver ??= app(Resolver::class);
+        $roll ??= static fn (int $min, int $max): int => random_int($min, $max);
 
         return new self(
             $resolver,
             new RunStarter($resolver),
             new WaitingRoom($resolver),
             $checks ?? app(CheckRoller::class),
-            $roll ?? static fn (int $min, int $max): int => random_int($min, $max),
+            // Same die as the rest of the turn, so a test that pins Simulator's
+            // roll also pins what a defeat does — a Surge or a Flatline is not
+            // a second random source to control separately.
+            DefeatResolver::fromConfig($roll),
+            $roll,
         );
     }
 
@@ -398,7 +404,13 @@ final readonly class Simulator
     }
 
     /**
-     * Resolve a bad ending: eject, then the floor.
+     * Resolve a bad ending: apply what it costs, eject, then the floor.
+     *
+     * THE ORDER EVERY BAD ENDING FOLLOWS: damage has already landed (that is
+     * why we are here), so now the consequence, then the ejection, then —
+     * only then — the waiting screen. Applying a defeat's tags after ejecting
+     * would be settling a fight's outcome once the fight was already over by
+     * every other measure.
      *
      * Separate from the turn on purpose. A turn says what happened; this says
      * what it cost, and keeping them apart is what stops the ordering from
@@ -408,6 +420,14 @@ final readonly class Simulator
     {
         $ice = $run->ice_id === null ? null : Ice::query()->find($run->ice_id);
         $system = System::query()->where('address', $run->address)->first();
+
+        // THE CONSEQUENCE. Only a defeat has a piece of ICE whose tags fire —
+        // a burnout's cost is the module it took and the SI the freeze already
+        // dealt, and a cancelled run costs its own flat point. Neither reaches
+        // this list.
+        $effects = ($ending === RunEnding::Defeat && $ice !== null)
+            ? array_column($this->defeats->apply($character, $ice), 'text')
+            : [];
 
         $this->runs->end($character, $run, $ending);
 
@@ -426,6 +446,7 @@ final readonly class Simulator
                     static fn (array $entry): string => $entry['tag']->value,
                     $ice->defeatTags(),
                 ),
+                effects: $effects,
             ));
         }
     }

@@ -22,6 +22,11 @@ final readonly class DownedCause
 {
     /**
      * @param  list<string>  $tags  Defeat tags that fired, by value.
+     * @param  list<string>  $effects  What each tag actually DID, already
+     *                                 rendered — "lost 2 points of your ceiling" rather than "flatline".
+     *                                 `App\Cyberspace\DefeatResolver` is the only writer of these; `$tags`
+     *                                 is names, `$effects` is consequences, and a cause built before the
+     *                                 resolver existed has the first and not the second.
      */
     public function __construct(
         public string $reason,
@@ -31,6 +36,7 @@ final readonly class DownedCause
         public ?int $damage = null,
         public ?string $resource = null,
         public array $tags = [],
+        public array $effects = [],
     ) {}
 
     /** @return array<string, mixed> */
@@ -44,6 +50,7 @@ final readonly class DownedCause
             'damage' => $this->damage,
             'resource' => $this->resource,
             'tags' => $this->tags === [] ? null : $this->tags,
+            'effects' => $this->effects === [] ? null : $this->effects,
         ], static fn (mixed $value): bool => $value !== null);
     }
 
@@ -62,6 +69,7 @@ final readonly class DownedCause
             damage: isset($stored['damage']) ? (int) $stored['damage'] : null,
             resource: isset($stored['resource']) ? (string) $stored['resource'] : null,
             tags: array_values((array) ($stored['tags'] ?? [])),
+            effects: array_values((array) ($stored['effects'] ?? [])),
         );
     }
 }

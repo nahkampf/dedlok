@@ -61,12 +61,12 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | An interrupted read is lost | **built** — the analyser has to have been running for the WHOLE pass, which `inventory_items.started_at` answers without recording a history |
 | Defences — the IDS and the tracer | **built** as columns on `systems`, decided once at creation and stored. Type guarantees two countermeasures and grade rolls the third; `App\Cyberspace\Defences` is the decision. Nothing rolls against them — that is the simulator |
 | A machine told what to defend itself with | **built**, and it needed no mechanism: defences are stored rather than derived, so a mission node is a row with different numbers in the same columns |
-| Defeat tags | **built** as vocabulary and numbers: `App\Cyberspace\DefeatTag`, six of them, five levelled I-III. All the numbers are settled. Nothing reads any of it — there is no defeat |
+| Defeat tags | **built and APPLIED.** `App\Cyberspace\DefeatResolver` rolls and applies every tag a piece of ICE carries the moment it wins — Flatline deepens the neural-damage injury, Neural Shock lands on current hit points, Surge destroys fitted modules one roll per module, Erase wipes storage AND anything running, Skim takes a share of carried creds. Called from `Simulator::resolveEnding()` before the ejection, per the bad-ending order |
 | What each piece of ICE does | **written**, by `cyberspace:tag-ice`. The bottom of the ladder carries nothing, permanent damage starts in the grade 6-7 band, and Erase III — the deck wipe — is on exactly one piece |
 | Whether losing gets a price put on you | **built** as `systems.ice_bounty`, rolled per MACHINE when its ICE is assigned. The same guard on two systems is two different risks, and **a scan reads it** — folded into the ICE fact, one roll for both |
 | Icebreakers | **built** as twelve programs, damage carried as a modifier on `icebreaker_damage`. **Twenty turns is never enough** — every one does strictly less than would break its matching ICE in that time, and the whole gap is left for skills |
 | Fighting at all | **gated behind training, deliberately.** A bare character cannot beat even ICE I: thirty turns against its 1.05 SI a turn is 31.5 against a starting pool of 31. The bottom of the grid is walkable, not fightable |
-| ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are null until somebody assigns them, and nothing fights yet |
+| ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are content — `cyberspace:tag-ice` writes them, a console command and not a migration, so a fresh database's ICE carries none until it is run |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
 | Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
@@ -1692,11 +1692,13 @@ All of it. In the order it should be built:
    Integrity a turn against a starting character's 31; ICE XII lands 95% of
    the time for 57, which takes somebody at 200 SI down in four turns.
 
-   **Still missing**: taking any of it, which is the run; selling a scan, which
-   needs a storefront the market does not have; the defeat tags, which are null
-   on every piece until somebody assigns them; and any caller at all. Nothing
-   rolls against an IDS, a tracer or a piece of ICE — they are difficulties and
-   numbers waiting for the simulator.
+   **Still missing**: extraction itself, which is the run's own purpose and
+   the thing that would let any of this be taken; and selling a scan, which
+   needs a storefront the market does not have. The defeat tags are no longer
+   on this list — `App\Cyberspace\DefeatResolver` rolls and applies every one
+   a piece of ICE carries the moment it wins, called from the simulator before
+   the ejection. Detection, the fight and the trace all roll now too; what is
+   left is the run's own PURPOSE — taking what a machine holds.
 
    ~~**Decide here whether the probe needs a running analyser.**~~ **Decided:
    it does.** Reading a machine takes software, and the software has to be
