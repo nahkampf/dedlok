@@ -10,8 +10,10 @@ use App\Cyberspace\Grade;
 use App\Cyberspace\ScanFact;
 use App\Cyberspace\SystemType;
 use App\Models\Ice;
+use App\Models\Program;
 use App\Models\System;
 use App\Models\SystemScan;
+use App\Programs\ProgramKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
@@ -407,6 +409,76 @@ final class DefencesTest extends TestCase
         foreach (Ice::query()->get() as $ice) {
             $this->assertFalse($ice->carries(DefeatTag::Bounty), "{$ice->name} carries a bounty it cannot own");
         }
+    }
+
+    // ---- icebreakers -------------------------------------------------------
+
+    /**
+     * TWENTY TURNS IS NEVER ENOUGH, and that is the floor the whole ladder is
+     * set by. Every icebreaker does strictly less than would break its matching
+     * ICE in twenty turns, so the entire gap is left for skills to close.
+     *
+     * A tuning pass is exactly how this rule gets broken quietly, which is why
+     * it is a test rather than a note.
+     */
+    public function test_no_icebreaker_breaks_its_ice_inside_twenty_turns(): void
+    {
+        foreach (Ice::query()->orderBy('level')->get() as $ice) {
+            $damage = $this->icebreakerDamage($ice->level);
+
+            $this->assertGreaterThan(
+                20,
+                $ice->integrity / $damage,
+                "Icebreaker {$ice->level} breaks its ICE in twenty turns or fewer",
+            );
+        }
+    }
+
+    /**
+     * Damage climbs by at least a point a tier.
+     *
+     * An icebreaker that costs more and demands more compute for the same bite
+     * is not a better icebreaker, it is a worse one with a bigger number on the
+     * price tag.
+     */
+    public function test_every_icebreaker_cuts_harder_than_the_one_below_it(): void
+    {
+        $previous = 0;
+
+        for ($level = 1; $level <= 12; $level++) {
+            $damage = $this->icebreakerDamage($level);
+
+            $this->assertGreaterThan($previous, $damage, "Icebreaker {$level} does not improve on the one below");
+            $previous = $damage;
+        }
+    }
+
+    /** An icebreaker is meaningless outside a run, so it may not be started on the grid. */
+    public function test_an_icebreaker_is_never_a_background_process(): void
+    {
+        $breakers = Program::query()->where('kind', ProgramKind::Icebreaker->value)->get();
+
+        $this->assertCount(12, $breakers);
+
+        foreach ($breakers as $breaker) {
+            $this->assertFalse((bool) $breaker->background_process);
+        }
+    }
+
+    /** The bite is a MODIFIER, so a sharper skill and a better breaker are one kind of thing. */
+    private function icebreakerDamage(int $level): int
+    {
+        $program = Program::query()
+            ->whereHas('item', fn ($q) => $q->where('slug', 'icebreaker-'.$level))
+            ->sole();
+
+        foreach ($program->modifiers ?? [] as $modifier) {
+            if (($modifier['target']['id'] ?? null) === 'icebreaker_damage') {
+                return (int) $modifier['amount'];
+            }
+        }
+
+        $this->fail("Icebreaker {$level} carries no damage at all");
     }
 
     // ---- the back-fill -----------------------------------------------------

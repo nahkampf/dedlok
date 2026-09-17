@@ -179,6 +179,31 @@ return [
         | the two skills can be authored in the editor, which refuses a
         | modifier whose target reaches nothing.
         */
+        /*
+        | How hard a running icebreaker cuts, per turn.
+        |
+        | The base is ZERO and that is the gate: no icebreaker running means no
+        | damage, and no amount of skill adds up to having one. An icebreaker's
+        | own bite is a modifier on its `programs.modifiers` like everything
+        | else a program is worth — so a skill that sharpens one and a better
+        | one are the same kind of thing to the resolver, and neither is a
+        | branch in the simulator.
+        |
+        | Every icebreaker is deliberately too slow on its own: each does
+        | strictly less than would break its matching ICE in twenty turns, and
+        | the whole of that gap is what skills are meant to close. A bare
+        | character therefore cannot win a fight at all — see the migration
+        | that authored them.
+        |
+        | NOTHING READS IT YET. The fight is the simulator.
+        */
+        'icebreaker_damage' => [
+            'tags' => ['software'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'coop_slots' => [
             'tags' => ['cyberspace'],
             'min' => 0,

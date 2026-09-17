@@ -1225,6 +1225,20 @@ carries the detail.
   knew the guard but not the reprisal would describe half a decision. It is the
   one answer on `system_scans` that is not nullable: `ice_level` already carries
   whether the fact was read.
+- **An icebreaker is a GATE before it is a number**, and `icebreaker_damage`
+  floors at 0 to say so: no running icebreaker means no damage, and no amount of
+  skill adds up to having one. Its bite is a modifier on `programs.modifiers`
+  like everything else a program is worth, so a skill that sharpens one and a
+  better one are the same kind of thing to the resolver.
+- **TWENTY TURNS IS NEVER ENOUGH.** Every icebreaker does strictly less than
+  would break its matching ICE in twenty turns — the floor the whole ladder is
+  set by, with the gap left for skills to close. `DefencesTest` pins it, because
+  a tuning pass is exactly how a rule like that gets broken quietly.
+- **So fighting is gated behind training, and that is the intended reading of
+  "the bottom of the grid is walkable".** Walkable, not fightable: Icebreaker I
+  needs thirty turns against ICE I, which deals about 1.05 Synaptic Integrity a
+  turn — 31.5 against a starting pool of 31. The first icebreaker is a tool for
+  machines that have no ICE, and choosing to fight is an investment decision.
 - **Integrity and attack are BASES and expect to move.** A fight is meant to run
   2-10 turns and that depends on icebreaker throughput, which does not exist —
   the twelve pieces climb together so the ratio survives recalibration. Nothing
