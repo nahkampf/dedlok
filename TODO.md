@@ -5,6 +5,16 @@ what will break if it is left alone.
 
 ---
 
+## The /skills endpoint
+This endpoint should list all the skills *your* character has, and their levels. Plus indicate if there is currently a skill being trained (pulsing turquoise border?). This page should also host the Skill Queue (accordion?). Here you can queue up to 5 skills to train after each other. This queue should warn if any skill is unattainable due to requirements. A bonus feature would be just select a skill and a desired level, and then the skill queue presents you with the optimal steps to get there, including other skills you need to train first etc.
+
+## Scans
+A small fix: Scan's should not have just "5 passes". Keep the scan window open and just continue doing passes until all the unknowns have been revealed. 
+
+
+## Cyberspace grid
+The "You are here" in the grid should also display the system glyph just like every other cell, but it can keep the white background.
+
 ## Switch `QUEUE_CONNECTION` to `database`
 
 **Status:** `sync`, and **that is currently the right setting** — do not switch
