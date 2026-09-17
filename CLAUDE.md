@@ -1531,6 +1531,15 @@ left. Detection, the ICE, extraction and the endings are the simulator, and
   mirrored in the browser. They are in the stat graph all the same, because
   resolution order and cycle detection are about WHAT a stat reads, not how it
   adds it up.
+- **"Per level of something else" is FIVE MODIFIERS, each conditional on one
+  more level.** A modifier's amount is a number and never an expression, so
+  that is the only shape the resolver has for it — and it is the same shape a
+  skill's own per-level grants already use. `skill_at_least` is the predicate,
+  and `Sheet::contextFor()` puts a character's levels into the context as
+  `skill.<slug>` for it to read. **Only the skills they actually have**: an
+  absent key and a level of zero are the same answer, and writing every skill in
+  the game into every context would be a row per skill per resolution for the
+  sake of the ones nobody has.
 - **DETECTION IS NOT BUILT, so every run is a loud one.** `Simulator::rouse()`
   wakes whatever guards a machine with certainty when the run begins, because
   the player's side of a detection roll needs a stat nothing grants — there is

@@ -135,6 +135,26 @@ final class Sheet
                 : 0.0;
         }
 
+        /*
+         * SKILL LEVELS, so a modifier can be conditional on training.
+         *
+         * Keyed `skill.<slug>` and only for skills this character actually has
+         * — an absent key and a level of zero are the same answer to
+         * `skill_at_least`, and writing every skill in the game into every
+         * context would be a row per skill per resolution for the sake of the
+         * ones nobody has.
+         *
+         * One query, through the same cached roster the sheet already uses for
+         * a skill's own stat.
+         */
+        foreach ($bare->levels() as $skillId => $level) {
+            $slug = self::skills()->firstWhere('id', $skillId)?->slug;
+
+            if ($slug !== null) {
+                $values['skill.'.$slug] = (float) $level;
+            }
+        }
+
         return Context::of($values);
     }
 

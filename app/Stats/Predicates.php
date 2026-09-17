@@ -42,6 +42,23 @@ final class Predicates
             'si_above_pct' => static fn (Context $c, array $args): bool => self::above($c, 'si_pct', $args),
 
             /*
+             * TRAINED TO AT LEAST THIS LEVEL.
+             *
+             * What lets a piece of software be worth more in trained hands
+             * without the software knowing anything about skills: five copies
+             * of the same modifier, each conditional on one more level, sum to
+             * a bonus that scales with training. That is the only shape the
+             * resolver supports for "per level of something else", because a
+             * modifier's amount is a number and never an expression — and it is
+             * the same shape a skill's own per-level grants already use.
+             *
+             * An absent key and a level of zero are the same answer, so a
+             * character who has never injected the skill simply fails it.
+             */
+            'skill_at_least' => static fn (Context $c, array $args): bool => ($c->number('skill.'.((string) ($args['skill'] ?? ''))) ?? 0.0)
+                    >= (float) ($args['level'] ?? 1),
+
+            /*
              * Where the character is. Jacked in is the cyberspace session, not
              * signing in and not carrying a deck — see CYBERSPACE.md,
              * "Vocabulary". Nothing sets these yet; the predicate exists so the
