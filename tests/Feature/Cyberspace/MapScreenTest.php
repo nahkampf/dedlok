@@ -417,6 +417,25 @@ final class MapScreenTest extends TestCase
 
         $this->assertTrue($centre->isYou);
         $this->assertSame('cell--you', $centre->modifier(), 'you outrank what you are standing on');
+        $this->assertSame("\u{25CD}", $centre->glyph(), 'standing on a machine still draws the machine');
+    }
+
+    /**
+     * The other half of the same rule: ● is what is left for ground that has
+     * nothing of its own, and it is the ONLY thing it is still used for.
+     */
+    public function test_you_are_drawn_as_a_dot_on_empty_ground(): void
+    {
+        $this->equipReadyDeck();
+
+        $this->actingAs($this->user)->post(route('cyberspace.jack_in'));
+
+        $map = MapView::for($this->character->fresh());
+        $centre = $map->rows[$map->range][$map->range];
+
+        $this->assertTrue($centre->isYou);
+        $this->assertNull($centre->contact);
+        $this->assertSame("\u{25CF}", $centre->glyph());
     }
     // ---- what is lit, and what is only remembered ---------------------------
 

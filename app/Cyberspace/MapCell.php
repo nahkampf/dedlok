@@ -163,17 +163,21 @@ final readonly class MapCell
      */
     public function glyph(): string
     {
-        if ($this->isYou) {
-            return "\u{25CF}";           // ● — the one thing the eye finds first
-        }
-
-        return match ($this->contact?->type) {
+        $glyph = match ($this->contact?->type) {
             SystemType::Portal => "\u{25CD}",    // ◍ an aperture
             SystemType::Silo => "\u{25A4}",      // ▤ stacked bands: stored data
             SystemType::Compute => "\u{232C}",   // ⌬ a part that thinks
             SystemType::Relay => "\u{2630}",     // ☰ channels
             default => $this->contact !== null ? "\u{25C6}" : '',
         };
+
+        // STANDING ON A MACHINE STILL DRAWS THE MACHINE. Where you are is said
+        // by the bone fill `cell--you` paints, which no other cell wears — so
+        // the glyph is free to go on saying what the glyph says everywhere
+        // else, and the one square the eye goes to first stops being the one
+        // square that will not tell you what you are standing on. ● is what is
+        // left for ground with nothing of its own.
+        return $glyph !== '' ? $glyph : ($this->isYou ? "\u{25CF}" : '');
     }
 
     /**
