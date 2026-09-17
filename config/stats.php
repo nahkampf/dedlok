@@ -180,6 +180,27 @@ return [
         | modifier whose target reaches nothing.
         */
         /*
+        | Synaptic Integrity recovered per minute, on its own.
+        |
+        | ZERO BY DEFAULT, AND THAT IS THE RULE RATHER THAN A STARTING VALUE:
+        | nothing in this game heals by waiting. Synaptic Integrity and hit
+        | points come back through things a player DOES, and the one exception
+        | is bought with a rank 16 skill — Neuroplasticity, a point a minute per
+        | level. A character who has not trained it recovers nothing by sitting
+        | still, ever.
+        |
+        | Per MINUTE rather than per tick, so whatever eventually credits it can
+        | do so lazily off elapsed time the way a training deposit does. Nothing
+        | credits it yet.
+        */
+        'synaptic_regen' => [
+            'tags' => ['derived', 'vital'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        /*
         | How hard a running icebreaker cuts, per turn.
         |
         | The base is ZERO and that is the gate: no icebreaker running means no

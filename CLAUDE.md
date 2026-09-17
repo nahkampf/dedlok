@@ -1225,6 +1225,13 @@ carries the detail.
   knew the guard but not the reprisal would describe half a decision. It is the
   one answer on `system_scans` that is not nullable: `ice_level` already carries
   whether the fact was read.
+- **Nothing heals by waiting, and `synaptic_regen` floors at 0 to say so.**
+  Synaptic Integrity and hit points come back through things a player DOES, and
+  the single exception is bought with a rank 16 skill — **Neuroplasticity**, a
+  point a minute per level. A character who has not trained it recovers nothing
+  by sitting still, ever. Per MINUTE rather than per tick, so whatever credits
+  it can do so lazily off elapsed time the way a training deposit does; nothing
+  credits it yet.
 - **An icebreaker is a GATE before it is a number**, and `icebreaker_damage`
   floors at 0 to say so: no running icebreaker means no damage, and no amount of
   skill adds up to having one. Its bite is a modifier on `programs.modifiers`

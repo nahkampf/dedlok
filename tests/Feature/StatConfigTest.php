@@ -45,6 +45,23 @@ class StatConfigTest extends TestCase
         $this->assertSame(0, (int) config('cyberspace.coop.slots'), 'and nobody starts with a party');
     }
 
+    /**
+     * NOTHING HEALS BY WAITING, and the zero base is where that rule lives.
+     *
+     * Synaptic Integrity and hit points come back through things a player does.
+     * The single exception is bought with a rank 16 skill — Neuroplasticity, a
+     * point a minute per level — so a character who has not trained it recovers
+     * nothing by sitting still, ever. Raising this base would hand passive
+     * healing to everybody and quietly delete the reason healing exists.
+     */
+    public function test_nobody_recovers_by_waiting_unless_they_trained_for_it(): void
+    {
+        $registry = StatRegistry::fromConfig();
+
+        $this->assertTrue($registry->has('synaptic_regen'));
+        $this->assertSame(0.0, (float) $registry->get('synaptic_regen')->min);
+    }
+
     public function test_attributes_are_tagged_by_their_group(): void
     {
         $registry = StatRegistry::fromConfig();
