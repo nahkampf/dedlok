@@ -1740,11 +1740,10 @@ All of it. In the order it should be built:
    deck's bandwidth the way this document always priced it — applies what a
    defeat's tags carry, and ends — through the waiting screen where the ending
    calls for one. What is NOT built is the richer version of several of these:
-   a piece of ICE's tags apply but nothing has priced Surge's numbers; heat
-   accumulates by one flat point with no decay, no thresholds and no faction
-   consequence; and the routing chain that would slow a trace down is empty,
-   because backdoors — phase 6 — do not exist. Nothing here is a gap in the
-   SPINE; every gap is a number or a mechanic phase 5 deliberately left thin
+   heat accumulates by one flat point with no decay, no thresholds and no
+   faction consequence; and the routing chain that would slow a trace down is
+   empty, because backdoors — phase 6 — do not exist. Nothing here is a gap in
+   the SPINE; every gap is a number or a mechanic phase 5 deliberately left thin
    rather than half-inventing what phase 6 or 7 should decide.
 6. **Consequences.** Trace, heat, backdoors and routing, burn, lockdown,
    relocation, housekeeping.

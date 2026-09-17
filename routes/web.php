@@ -14,15 +14,13 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\RunController;
-use App\Http\Controllers\SkillTreeController;
+use App\Http\Controllers\SkillsController;
+use App\Http\Controllers\TrainingQueueController;
 use App\Http\Controllers\WaitingController;
 use App\Http\Middleware\ForbidSecondCharacter;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
-
-// The skill catalogue. Public: it describes the game, not a character.
-Route::get('/skills', SkillTreeController::class)->name('skills.index');
 
 // The whole pool in one response; the client randomises locally so repeated
 // presses cost no requests at all. Read-only, so GET and no CSRF. Still
@@ -185,6 +183,19 @@ Route::middleware('auth')->group(function () {
     // Takes an address rather than a position, because a read survives its
     // owner walking away from the machine it is reading.
     Route::delete('/cyberspace/reading', [CyberspaceController::class, 'abandon'])->name('cyberspace.abandon');
+
+    /*
+     * A character's own skills, and the queue that trains them. It was the
+     * CATALOGUE once — every skill in the game, public, because it described
+     * the game rather than a person — and that is the skill editor's job now.
+     *
+     * A player picks a SKILL and never a level — the next one up is the only
+     * entry the queue could accept, so there is nothing to choose. See
+     * App\Skills\TrainingQueue.
+     */
+    Route::get('/skills', SkillsController::class)->name('skills.index');
+    Route::post('/skills/queue', [TrainingQueueController::class, 'store'])->name('training.store');
+    Route::delete('/skills/queue/{entry}', [TrainingQueueController::class, 'destroy'])->name('training.destroy');
 
     // Bookmarks. The recall is a POST because it moves you; the rest edit a
     // note.

@@ -5,15 +5,33 @@ what will break if it is left alone.
 
 ---
 
-## The /skills endpoint
-This endpoint should list all the skills *your* character has, and their levels. Plus indicate if there is currently a skill being trained (pulsing turquoise border?). This page should also host the Skill Queue (accordion?). Here you can queue up to 5 skills to train after each other. This queue should warn if any skill is unattainable due to requirements. A bonus feature would be just select a skill and a desired level, and then the skill queue presents you with the optimal steps to get there, including other skills you need to train first etc.
+## Working backwards from a skill to the steps that reach it
+
+**Status:** the rest of the /skills screen is built — a character's own skills
+and levels, what is training, and the queue, with `TrainingQueueValidator`'s
+warnings on it. What is not built is the convenience on top: pick a skill and a
+level you WANT, and have the queue filled in for you, prerequisites and
+intervening levels included.
+
+**What it needs.** A walk of `App\Skills\PrerequisiteGraph` from the target
+back to what the character already holds, turned into the (skill, level) pairs
+that satisfy it, ordered so every entry's requirements are met by the ones in
+front of it — which is exactly the property `TrainingQueueValidator` already
+checks, so the output can be verified by the thing that judges a hand-built
+queue. `TrainingQueue::enqueue()` appends one level at a time and is the only
+writer; a plan is several calls to it rather than a new door.
+
+**Two things it has to decide, and neither is obvious.** The queue holds five
+entries and a plan can easily be longer — so either it fills what fits and
+says what is left, or the limit moves. And a skill has to be INJECTED before
+it can be queued at all, so a plan naming a skill whose book the character
+does not own has to say so rather than silently skipping it.
+
+---
 
 ## Scans
 A small fix: Scan's should not have just "5 passes". Keep the scan window open and just continue doing passes until all the unknowns have been revealed. 
 
-
-## Cyberspace grid
-The "You are here" in the grid should also display the system glyph just like every other cell, but it can keep the white background.
 
 ## Switch `QUEUE_CONNECTION` to `database`
 
@@ -262,33 +280,6 @@ decided.
 **The thresholds it crosses are the first thing to decide.** A number that only
 goes up and does nothing is not a mechanic — what makes heat real is the point
 at which something changes, and nothing names one.
-
----
-
-## Surge's unpriced numbers
-
-**Status:** the tag applies — `App\Cyberspace\DefeatResolver::surge()` rolls
-per module and deletes what it hits — but every level's `chance`/`modules`
-pair in `config/cyberspace.defeat_tags.surge` is empty. A piece of ICE that
-carries Surge today destroys nothing, silently, because there is nothing to
-roll against.
-
-**What it needs.** Three levels, each a `chance` (per cent, per module) and a
-`modules` count — the same shape Flatline, Skim and Erase already have. The
-design note beside the empty table says why it was left that way: what a
-destroyed module is worth depends on what a deck costs to rebuild, and nothing
-has priced that yet. Pricing Surge means picking numbers against a real deck
-economy rather than a guess, which is why it waited.
-
-**Where to start.** `Flatline`'s levels climb from "a scar" to "the one people
-warn each other about" without ever reaching a fifth of the ceiling — Surge
-wants the same shape in module count: I doubt anyone should lose more than a
-handful of modules to one defeat, and the top level is the one that should
-hurt to rebuild rather than ends a character's deck outright.
-`DefencesTest::test_ice_carries_no_defeat_tags_until_somebody_assigns_them()`
-and `DefeatResolverTest`'s Surge cases are already written against the
-zero-numbers case — filling the table in needs new tests alongside them, not
-a rewrite.
 
 ---
 

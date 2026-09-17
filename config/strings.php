@@ -1066,35 +1066,76 @@ return [
         'log' => ':attacker hits :target for :damage.',
     ],
 
-    'skills' => [
+    /*
+    | The skills screen: what this character knows, what is training, and what
+    | is lined up behind it.
+    |
+    | It was `skills` once, and that block described the CATALOGUE — every
+    | skill in the game, the same words for everybody, signed in or not. The
+    | catalogue is gone and the editor is where a list of every skill lives
+    | now, so every key here is about one character.
+    */
+    'training' => [
 
-        'title' => 'Skill tree',
-        'lede' => 'Every skill in the game, grouped by category. Each one names what it needs first.',
+        'title' => 'Skills',
+        'lede' => 'What you know, what you are training, and what is lined up behind it. A skill is learned by spending its book from the stash, and trained by queuing it here.',
 
-        // The multiplication sign, matching inventory.quantity: a rank is a
-        // training-time multiplier, not an ordinal.
-        'rank' => '×:rank',
+        'mine' => 'Your skills',
+        'none' => 'Nothing injected yet. A skill is learned by spending its book from the stash.',
+        'count' => ['zero' => 'none', 'one' => ':count skill', 'many' => ':count skills'],
+
+        // What is training right now. The dot beside it is the kit's own
+        // `.dot--live`, which is what ember is rationed for.
+        'now' => 'Training',
+        'idle' => 'Nothing is training. Queue a skill and it starts on the next minute.',
+        'live' => 'Training now',
+        'toward' => 'toward level :level',
+        'banked' => ':points of :ceiling SP',
+        'rate' => ':rate SP/min',
+        'finishes' => 'Done :when',
+        'stalled' => 'Not earning: every attribute this skill trains on resolves to zero.',
+
+        'queue' => 'Queue',
+        'queue_hint' => 'Up to :limit, trained in order. A skill goes in at the next level up — press it again for the one after that.',
+        'queue_empty' => 'Nothing queued.',
+        'position' => ':position.',
+        'target' => 'Level :level',
+        'add' => 'Queue it',
+        'pick' => 'Skill to train',
+        'remove' => 'Take out',
+        'full' => 'The queue is full. Take something out to line up anything else.',
+        'nothing_queueable' => 'Everything you have injected is either at level :max or already queued.',
+
+        // Shown as ':skill → level :level' in the picker, so one option says
+        // both what it is and what pressing it buys.
+        'queueable' => ':skill → :level',
+
+        // The two the catalogue used to own, kept because the list of what a
+        // character knows says the same things about a row that the tree did.
         'governed_by' => ':primary / :secondary',
-        // Every requirement reads the same way, whether the tree could draw
-        // the edge or not.
-        'requires' => ':skill :level',
-
-        // A skill inside a prerequisite cycle: nothing can ever learn it, and
-        // skills:validate is what explains why.
-        'unreachable' => 'unreachable',
-        'unreachable_hint' => 'Inside a prerequisite cycle — run skills:validate.',
-
-        // A prerequisite in another category cannot be a parent without the
-        // skill hanging in two lanes at once, so it is named instead.
-        'from_elsewhere' => ':skill :level · :category',
-
-        'empty' => 'No skills in the database yet.',
-        'count' => ['zero' => 'empty', 'one' => ':count skill', 'many' => ':count skills'],
-        'deepest' => 'depth :levels',
-
-        // The overlay a signed-in player sees on top of the catalogue.
-        'injected' => 'Skill injected',
         'level_meter' => 'Level :level of :max · :points SP',
+
+        'queued' => ':skill queued for level :level.',
+        'dequeued' => ':skill level :level taken out of the queue.',
+
+        /*
+        | Why a skill did not go in. Prerequisites are deliberately not here —
+        | a queue is allowed to describe training that cannot happen yet, and
+        | the warnings below are how it says so.
+        */
+        'refused' => [
+            'not_injected' => 'You have not injected that skill. Spend its book from the stash first.',
+            'already_maxed' => 'Every level of that skill is either reached or already queued.',
+            'queue_full' => 'The queue is full. Take something out first.',
+        ],
+
+        /*
+        | What TrainingQueueValidator found. Its sentences are written for a
+        | console command and read a little flat on a screen; they are exact,
+        | which matters more than the tone while this is the only place a
+        | player can see why a queue will stall.
+        */
+        'problems' => 'This queue will not train as written',
     ],
 
     'errors' => [

@@ -664,6 +664,69 @@ the password-reset request.
 - `size` is enforced, but only as what a container's contents cost against its capacity.
   `weight` is still stored and unenforced, and neither inventory has an overall capacity.
 
+### Skills, and the training queue
+
+**`/skills` is a character's own skills and nothing else** — what they know,
+what is training, and the queue behind it. It was the CATALOGUE once: every
+skill in the game drawn as one tree per category, public because it described
+the game rather than a person, with a player's own levels laid over the top.
+That page is gone, along with `SkillTree`, `SkillTreeNode` and
+`<x-skill-node>`. An overlay on somebody else's list was a worse way to read
+your own rows than a list of the rows you actually have. The route moved
+behind `auth` with the rest, so `RequireCharacter` guarantees a character and
+nothing on the screen asks whether there is one.
+
+**HOW A PLAYER FINDS OUT A SKILL EXISTS IS THE MARKET, not a catalogue.** A
+skill is learned from its book and there is exactly one book per skill, so the
+shelf IS the list — and it is deliberately not the whole list. **A skill that
+is off the market is content with no shop entry on purpose**: quest rewards
+and the like, found rather than bought, and `Skillbook` keeping `on_market` in
+step with the skill on every save is what makes that one decision rather than
+two. A page enumerating every skill in the game would have undone exactly that
+— it would have published the list of things a player is supposed to discover.
+The skill EDITOR is where an admin sees them all, and that is the only place
+that should.
+
+- **`App\Skills\TrainingQueue` is the only writer a PLAYER reaches.**
+  `TrainingDeposit` writes these rows too — it retires a finished entry and
+  renumbers what is left — but that is the clock moving rather than somebody
+  deciding. Injecting is the gate in front of the sheet; this is the gate in
+  front of the queue.
+- **A player picks a SKILL and never a level.** An entry is a (skill, target)
+  pair and targets have to be consecutive, so the next level up — counting
+  what is already QUEUED, not only what is reached — is the only entry the
+  validator would accept. Pressing the same button five times is how a skill
+  gets taken to level 5, and the count is why: two presses that both computed
+  the same level would collide on the unique (character, skill, target_level)
+  index. Locked for the duration, so two taps cannot race it into a 500.
+- **The picker offers exactly what the writer would accept**, doing the same
+  sum in `SkillsController::queueable()`. Offering an option that comes
+  back refused is worse than offering none.
+- **An unmet prerequisite is a WARNING and never a refusal.** A queue is
+  allowed to describe training that cannot happen yet — that is the whole
+  point of ordering it, and it is what lets Codebreaking sit behind the
+  Hacking that unlocks it. `TrainingQueueValidator` already walks the queue
+  forward from what the character knows and says what will stall; until this
+  screen existed, the only thing that ever read it was `skills:validate`,
+  which nobody playing the game runs. `QueueRefusal` therefore has three cases
+  and none of them is about requirements.
+- **Removing one is allowed to break the rest**, deliberately: dropping
+  *Hacking I* out from under *Hacking II* leaves a queue the validator
+  complains about, and the alternative is a delete that silently takes three
+  other entries with it. **The deposit runs first**, inside `remove()` rather
+  than at a call site, because removing the entry at position 1 throws away
+  its clock and with it up to a minute of accrued training.
+- **Renumbering is ascending**, since `(character_id, position)` is unique and
+  each row has to move into a slot the row before it has already vacated —
+  the same walk `TrainingDeposit::completeEntry()` makes.
+- **The estimate is the rate it earns THIS INSTANT.** A drug wearing off
+  tonight moves it, and the screen does not pretend otherwise: modelling
+  future modifier changes would be a second, worse copy of `TrainingDeposit`'s
+  segment walk and would still be wrong the moment anything was installed.
+- **What is training wears the kit's `.dot--live`** rather than a colour of
+  its own. Ember, one per screen, which is what the accent is rationed for —
+  at most one entry trains at a time, by definition.
+
 ### The market's supply side
 
 **The market restocks itself; nothing sells anything yet.** There is no price paid and
@@ -679,6 +742,16 @@ spends it.
 - **An item is stocked only with `on_market` AND `seed_quantity > 0`.** The default shelf
   size is 0, so nothing reaches the market by being forgotten. `Item::restockable()` is
   the scope that means both.
+- **`on_market` is the SEEDER's question, and it will not be the player's.**
+  Players are meant to list their own goods eventually — skillbooks among
+  them, which is how a book for an off-market skill can still change hands —
+  and a listing somebody wrote is not the world deciding to stock a thing.
+  When that lands it is a table of offers, not this flag: a seeder that
+  restocked player listings would be manufacturing goods out of nothing.
+  **A listable book is an UN-INJECTED one, and that needs no rule** —
+  `SkillInjector` consumes the copy it spends, so a book still sitting in a
+  stash has by definition not been used. Nothing has to check, as long as
+  injecting goes on consuming.
 - **`market_stock` is one row per item, and a missing row is a shelf of zero**, not an
   error: rows are created by the first delivery that lands. Anything reading stock has to
   treat absent and empty alike — `Item::stockOnHand()` does.
@@ -1780,7 +1853,7 @@ once, at character creation.
   has to become a diff.**
 - **A granted level is drawn, not spelled out.** The archetype card shows the kit's
   segmented meter — `.meter--seg` with `--segs` from `SkillProgression::maxLevel()` —
-  the same device the skill tree uses for a level, so the two screens read alike. An
+  the same device the skills screen uses for a level, so the two read alike. An
   empty meter is a skill granted and untrained, which is not the same as no skill; the
   number lives in the meter's `title` and `aria-label`.
 - **The roster cache stays lean.** `Archetype::roster()` is read on nearly every
@@ -1808,7 +1881,7 @@ review.
   read-only copy would be a second place to add every new column.
 - **Both loadout dropdowns are grouped**, because a flat list of every skillbook in
   the game is a scroll rather than a choice. Skills group by their `category`, shown
-  raw the way the skill tree shows it; items group by their own vocabulary — deck
+  raw the way a skill's own row carries it; items group by their own vocabulary — deck
   hardware by `items.hardware` (labelled by `App\Decks\Hardware::label()`), then the
   two inventories, then skillbooks last. The grouping is decided in the controller and
   `<x-grouped-options>` renders it, so the four selects that need the identical list
