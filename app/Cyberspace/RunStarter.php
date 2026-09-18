@@ -46,7 +46,16 @@ final readonly class RunStarter
         private ?Lockdown $lockdown = null,
     ) {}
 
-    public function start(Character $character, RunPurpose $purpose): RunResult
+    /**
+     * Go in.
+     *
+     * THE BACKDOOR KIND IS CHOSEN HERE, with the purpose, and never changed —
+     * the same call `os_locked` makes. What a machine is worth holding for is
+     * something you decide from the map with a scan in front of you, not
+     * mid-fight; and the kind is permanent once installed, so the decision
+     * wants to be made where the information is.
+     */
+    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null): RunResult
     {
         if ($character->current_run_id !== null) {
             return RunResult::refused(RunRefusal::AlreadyRunning);
@@ -83,13 +92,16 @@ final readonly class RunStarter
             return RunResult::refused(RunRefusal::DeckNotReady);
         }
 
-        $run = DB::transaction(function () use ($character, $system, $at, $purpose): Run {
+        $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind): Run {
             $run = Run::query()->create([
                 'character_id' => $character->getKey(),
                 'address' => $system->address,
                 'x' => $at->x,
                 'y' => $at->y,
                 'purpose' => $purpose->value,
+                // Only a backdoor run carries one, so an extraction cannot end
+                // up holding a permanent property of a machine it never opened.
+                'backdoor_kind' => $purpose === RunPurpose::Backdoor ? $kind?->value : null,
                 'turn' => 0,
                 // Decided once, at the door, and never told to anybody.
                 'os_locked' => ! $this->canOperate($character, $system),

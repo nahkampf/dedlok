@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\Position;
 use App\Cyberspace\RunPurpose;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -26,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'extracted', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
+#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -37,6 +38,8 @@ class Run extends Model
             'turn' => 'integer',
             'os_locked' => 'boolean',
             'extracted' => 'boolean',
+            'backdoored' => 'boolean',
+            'backdoor_kind' => BackdoorKind::class,
             'detected' => 'boolean',
             'ice_integrity' => 'integer',
             'extracting_qb' => 'integer',
@@ -158,5 +161,18 @@ class Run extends Model
     public function scopeLive(Builder $query): void
     {
         $query->whereNull('ended_at');
+    }
+
+    /**
+     * What this run came to install, or null where that is not the question.
+     *
+     * NULL IS A REFUSAL AND NOT A DEFAULT. A backdoor run with no kind on it
+     * is a hand-built request rather than something a player can reach, and
+     * picking one for them would be picking the permanent property of a
+     * machine on their behalf.
+     */
+    public function backdoorKind(): ?BackdoorKind
+    {
+        return $this->purpose === RunPurpose::Backdoor ? $this->backdoor_kind : null;
     }
 }

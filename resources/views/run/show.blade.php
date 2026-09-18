@@ -270,6 +270,17 @@
                     {{ Text::get($run->extracting_qb !== null ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
                 </button>
             @endif
+            {{-- THE SAME RULE ON THE OTHER PURPOSE. The kind was chosen at the
+                 door and is permanent, so the button says which one it is
+                 about to leave rather than asking again mid-fight. --}}
+            @if ($run->purpose === RunPurpose::Backdoor)
+                <button type="submit" name="action" value="install" class="btn cut"
+                        @if ($run->backdoored) disabled @endif>
+                    {{ Text::get($run->backdoored ? 'cyberspace.run.action.install_done' : 'cyberspace.run.action.install', [
+                        'kind' => $run->backdoorKind()?->label() ?? '',
+                    ]) }}
+                </button>
+            @endif
             <button type="submit" name="action" value="hold" class="btn btn--ghost cut">
                 {{ Text::get('cyberspace.run.action.hold') }}
             </button>

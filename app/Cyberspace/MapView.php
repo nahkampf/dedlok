@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Models\Backdoor;
 use App\Models\Bookmark;
 use App\Models\Character;
 use App\Models\SystemContact;
@@ -57,6 +58,19 @@ final class MapView
             ->within($centre, $range)
             ->get()
             ->keyBy(static fn (SystemContact $contact): string => "{$contact->x},{$contact->y}");
+
+        /*
+         * WHAT THEY HOLD, keyed by where the machine is.
+         *
+         * A backdoor points at the SYSTEM rather than at a position, so this
+         * reads the position off the machines the rows already carry — which
+         * is not the positional query on `systems` that `Grid` reserves to
+         * itself. It is also the one thing on this map that is not memory: a
+         * backdoor is a fact about the player, and they know what they hold.
+         */
+        $backdoors = (new Backdoors)->heldBy($character)
+            ->filter(static fn (Backdoor $held): bool => $held->system !== null)
+            ->keyBy(static fn (Backdoor $held): string => "{$held->system->x},{$held->system->y}");
 
         $waypoints = Bookmark::query()
             ->where('character_id', $character->id)
@@ -130,6 +144,7 @@ final class MapView
                     // machine that shut after you walked past looks fine until
                     // you come back — the same way its address does.
                     isRebooting: $contacts->get($key)?->wasLockedDown() ?? false,
+                    hasBackdoor: $backdoors->has($key),
                     isYou: $standing !== null && $standing->equals($position),
                     isStep: $standing !== null && $grid->isStep($standing, $position),
                     // Only a machine can be new. Ground cannot: a position

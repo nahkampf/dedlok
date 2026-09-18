@@ -382,6 +382,10 @@ return [
                 // guess that pressing Extract again is what continues a pull
                 // already under way.
                 'extract_continue' => 'Continue pull',
+                // Names the kind, because it is permanent once it lands and
+                // the player chose it a screen ago.
+                'install' => 'Install :kind',
+                'install_done' => 'Way in installed',
                 'hold' => 'Hold',
                 'egress' => 'Egress',
             ],
@@ -421,6 +425,16 @@ return [
                 | and the tracer both, and a noticed one is a different night.
                 */
                 'unnoticed' => 'You are in, and nothing looked up.',
+                // THE BACKDOOR'S HALF OF THE RISK. Said differently from an
+                // ordinary quiet arrival, because it is not luck — it is the
+                // thing they went to the trouble of installing, working.
+                'unnoticed_backdoor' => 'Your way in is still open. Nothing looks up.',
+                // INSTALLING. One line for every reason it can fail, the same
+                // discipline the core touch already keeps: naming the cause
+                // would hand over the operating system for free.
+                'install' => 'You leave a way back in. :kind.',
+                'install_already' => 'Your way in is already here, and it is the one you left.',
+                'install_fails' => 'You reach for the core and find nothing you can use.',
                 'noticed' => 'Something registers you on the way in.',
                 'noticed_ice' => 'Something registers you on the way in, and the ICE comes awake.',
 
@@ -1106,6 +1120,23 @@ return [
     | the market has a supply side and no storefront, so the only thing that
     | writes it is the archetype grant at creation.
     */
+    /*
+    | Backdoors: what somebody keeps on a machine they have been inside.
+    |
+    | The kind is a permanent property of the install and the words have to
+    | carry that — "siphon" and "routing" are what they DO, not settings.
+    */
+    'backdoor' => [
+        'kind' => [
+            'siphon' => 'Siphon',
+            'routing' => 'Routing hop',
+        ],
+        'hint' => [
+            'siphon' => 'A little every night, from a machine with something worth taking.',
+            'routing' => 'A hop in the chain a trace has to walk. Worth holding on a machine worth nothing.',
+        ],
+    ],
+
     'creds' => [
         'name' => 'Creds',
         'amount' => ':amount cr',

@@ -464,6 +464,14 @@ still rolls, still counts toward the system's three raids, and still locks the
 system down if it is caught. A backdoor buys you half the risk permanently, not
 a bypass of the brake.
 
+> **Backdoors are built, less the chain and the nightly rolls.** The table,
+> the two kinds, installing one on a `RunPurpose::Backdoor` run, the cleanup
+> that leaves no lockdown behind, the skipped approach roll and the map's mark.
+> What is NOT built: the routing chain below (so `Run::routingGrades()` still
+> returns `[]`), the nightly siphon payout, and the ageing roll that is the
+> only thing which takes a siphon away. A backdoor is therefore permanent
+> today, which is the one thing the design says it must not be.
+
 ### The routing chain
 
 Backdoored systems can be **chained**, and every run is routed through the chain

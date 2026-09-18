@@ -1444,6 +1444,41 @@ carries the detail.
   `RunEnding::Cancelled` — a real ending with its own damage, and not a side
   effect a successful raid should inflict on a stranger. The counter waits, and
   the next run to end there retires it.
+- **A backdoor is ACCESS, so `backdoors.system_id` is a real foreign key** —
+  the opposite call from `system_contacts`, `system_scans` and `runs`, which
+  all carry an address precisely so they can outlive the machine. Those are
+  recollections, and a memory of a machine that has gone is still a memory;
+  access to one that has gone is nothing at all, so it cascades. It is also
+  what makes the design's promise true: a backdoored machine does not lock down
+  and does not relocate, so its address is permanent in a world where nothing
+  else is. `App\Cyberspace\Backdoors` is the only writer.
+- **The KIND is permanent, and `install()` will not reroll it.** A machine
+  siphons or it routes, never both. Going back in on one you already hold costs
+  the turn and the core roll and changes nothing — a silent overwrite would let
+  somebody convert a siphon into a routing hop for free, which is the one thing
+  the choice being permanent exists to prevent. It is chosen at the DOOR, with
+  the purpose, on `runs.backdoor_kind`: what a machine is worth holding for is
+  decided from the map with a scan in front of you, not mid-fight.
+- **A landed install is the only thing in cyberspace that cleans up after
+  itself.** `runs.backdoored` is what `Lockdown` reads, and a successful
+  install means no lockdown **even if the IDS fired and the ICE woke up** —
+  the install erases the logs and resets what it tripped, which is the whole
+  value of the operation. A backdoor run that FAILED cleans up nothing and the
+  ordinary triggers apply. It moves no raid counter either, because the books
+  it would be read from are gone.
+- **What holding one buys is exactly half the risk.** The approach roll is
+  SKIPPED on a machine you hold — skipped rather than discounted, because a
+  number nobody has tuned would be a second thing to balance. It buys nothing
+  at the core: extracting through a backdoor is still stealing, still takes the
+  second look, still counts toward the three raids and still shuts the machine
+  if it is caught.
+- **`Simulator::touchTheCore()` is that second look, shared.** Extraction and a
+  backdoor install are the same act as far as the machine is concerned, so the
+  roll lives in one place rather than in each.
+- **The backdoor mark is the one thing on the map that is NOT memory.** A
+  contact is a sighting and is allowed to be wrong; what you hold is a fact
+  about you. `MapView` reads the positions off the machines the rows point at,
+  which is not the positional query on `systems` that `Grid` reserves.
 - **`App\Cyberspace\Lockdown` is the window, and the only writer of
   `systems.locked_down_until`.** A machine that knows it was violated shuts for
   2-6 hours, nothing may run it while it is shut, and when the window closes it

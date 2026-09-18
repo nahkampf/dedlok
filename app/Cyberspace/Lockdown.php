@@ -94,6 +94,23 @@ final readonly class Lockdown
             return false;
         }
 
+        /*
+         * A BACKDOOR RUN THAT LANDED CLEANS UP AFTER ITSELF, and it is the
+         * only thing in cyberspace that does. The install erases the logs and
+         * resets the countermeasures it tripped, so the machine does not shut
+         * EVEN IF THE IDS FIRED AND THE ICE WOKE UP — that is the whole value
+         * of the operation and the reason it is worth doing loudly.
+         *
+         * `runs.backdoored` and not the purpose: a backdoor run that FAILED
+         * cleans up nothing, and the ordinary triggers apply to it like any
+         * other run. It is also why the raid counter is untouched here — only
+         * an extraction ever moves it, because the books it would read are
+         * gone.
+         */
+        if ($run->backdoored) {
+            return false;
+        }
+
         // The counter is read here rather than acted on: the raid ledger says
         // whether the books are spent, and shutting is this class's answer to
         // that — which is what took an immediate relocation out of the ledger.

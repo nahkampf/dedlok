@@ -323,39 +323,36 @@ consumes the grid's empty reserve.
 
 ---
 
-## The routing chain
+## The routing chain, and the nightly rolls
 
-**Status:** the SHAPE exists and nothing is IN it. `Run::routingGrades()`
-returns `[]` always, which is why a trace currently walks unopposed from the
-first turn — the empty case CYBERSPACE.md describes for "no routing", and the
-only case that has ever been true.
+**Status:** backdoors exist and do half of what they are for.
 
-**What is already built around the gap.** `Simulator::traceGetsThrough()` and
-the whole trace-walking mechanic (`runs.trace_hop`, one attempt at the NEXT
-hop per turn) were written to take a `list<int>` of grades from
-`routingGrades()` — nothing about the trace mechanic changes when this lands,
-only what that one method returns.
+**Built:** the `backdoors` table, the two kinds, installing one on a
+`RunPurpose::Backdoor` run, the cleanup that leaves no lockdown behind, the
+skipped approach roll on a machine you hold, and the map's mark.
 
-**What is missing, per CYBERSPACE.md's own *Backdoors* and *The routing
-chain* sections:**
+**Not built, and the first two matter most:**
 
-- **Backdoors do not exist at all.** No install action, no `backdoors` table,
-  no way to hold access to a system. `RunPurpose::Backdoor` is a case in an
-  enum and nothing else.
-- **Routing and Advanced Routing are skill rows with no reader.** They exist,
-  they have books, nothing asks them how long a chain a character may run.
-- **A run does not let a player CHOOSE a chain.** CYBERSPACE.md: "the chain is
-  declared per run, not held standing" — a run needs to pick its route from
-  the backdoors a character holds, at the moment it starts, alongside purpose
-  and target.
-- **A completed trace does not burn anything**, because there is nothing to
-  burn. `Simulator::burnTheChain()` is already called at the right moment and
-  is a deliberate no-op with a comment saying so.
-
-**The size of this one.** Larger than Surge's numbers or heat's thresholds —
-it is a whole unbuilt purpose (Backdoor) plus the two skills that gate it
-plus the run-creation screen learning to ask for a route. Worth breaking into
-its own pass rather than picking up as a side effect of something else.
+- **A backdoor is permanent today**, which is the one thing the design says it
+  must not be. The nightly ageing roll — odds rising with age and nothing else
+  — is what takes a siphon away, and it is the only thing that ever does.
+  `Backdoors::lose()` is already the door it will write through.
+- **A siphon pays nothing.** The nightly payout is a little from each
+  backdoored system, scaled by grade, straight into creds. Without it, the
+  siphon kind is a choice with no consequence — the same criticism this file
+  makes of heat.
+- **The routing chain.** `Run::routingGrades()` still returns `[]` always, so a
+  trace walks unopposed from the first turn. What it needs: a run picking its
+  chain from the ROUTING backdoors the character holds at the moment it starts
+  (declared per run, never held standing), the two Routing skills finally
+  having a reader — one hop per level each, ten the ceiling — and
+  `Simulator::burnTheChain()` stopping being a no-op, because a completed trace
+  takes every routing backdoor in that run's chain at once and relocates the
+  machines.
+- **There is no way to START a run from the UI.** `run.start` is routed and
+  nothing posts to it — a run can only be begun from a test or by hand. That
+  predates backdoors and blocks extraction just as much; the map needs a panel
+  offering the purpose, and now the backdoor kind with it.
 
 ---
 
