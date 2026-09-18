@@ -6,6 +6,7 @@ namespace Tests\Feature\Cyberspace;
 
 use App\Cyberspace\DefeatResolver;
 use App\Models\Character;
+use App\Models\CharacterModifier;
 use App\Models\DeckFitting;
 use App\Models\Ice;
 use App\Models\InventoryItem;
@@ -14,6 +15,7 @@ use App\Models\Program;
 use App\Programs\ProgramKind;
 use App\Stats\InjuryLedger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
@@ -113,6 +115,81 @@ final class DefeatResolverTest extends TestCase
 
         $this->assertSame($maxHp - $expected, $character->fresh()->current_hitpoints);
         $this->assertSame($maxSi, $character->fresh()->maximumFor('current_synaptic_integrity'), 'the ceiling is untouched');
+    }
+
+    /**
+     * AND IT GOES THROUGH THE DOOR, so mitigation reaches it.
+     *
+     * It called `Character::takeDamage()` directly once — the dull half
+     * underneath `DamageResolver`, which skips every rule the door exists for.
+     * Nothing could resist it, and the Crim's own "Hard knocks" could not
+     * touch it although its target set (`damage` + `hitpoints`) covers exactly
+     * this stat. The percentage is still rolled off the maximum; what the
+     * resolver decides is how much of it lands.
+     */
+    public function test_neural_shock_is_mitigated_like_any_other_hit(): void
+    {
+        $character = $this->character();
+        $maxHp = $character->maximumFor('current_hitpoints');
+        $character->forceFill(['current_hitpoints' => $maxHp])->save();
+
+        Config::set('effects.padded', [
+            'label' => 'Padded',
+            'stacking' => 'unique',
+            'retired' => false,
+            'modifiers' => [[
+                'op' => 'percentage_of_base',
+                'amount' => -50,
+                'target' => ['all_of' => ['damage', 'hitpoints']],
+            ]],
+        ]);
+
+        CharacterModifier::query()->create([
+            'character_id' => $character->id,
+            'definition_key' => 'padded',
+        ]);
+
+        $this->resolver(28)->apply($character->fresh(), $this->iceWithTags(['neural_shock']));
+
+        $rolled = (int) round($maxHp * 28 / 100);
+
+        $this->assertSame(
+            $maxHp - (int) round($rolled * 0.5),
+            $character->fresh()->current_hitpoints,
+            'half of it was soaked',
+        );
+    }
+
+    /**
+     * THE ORIGIN IS ICE, which is what dealt it — so a resistance written
+     * against ICE covers the body half of what ICE does as well as the mind
+     * half, and the two axes work the way the damage design says they do.
+     */
+    public function test_a_resistance_to_ice_covers_neural_shock(): void
+    {
+        $character = $this->character();
+        $maxHp = $character->maximumFor('current_hitpoints');
+        $character->forceFill(['current_hitpoints' => $maxHp])->save();
+
+        Config::set('effects.warded', [
+            'label' => 'Warded',
+            'stacking' => 'unique',
+            'retired' => false,
+            'modifiers' => [[
+                'op' => 'multiplier',
+                'amount' => 0,
+                'target' => ['all_of' => ['damage', 'ice']],
+            ]],
+        ]);
+
+        CharacterModifier::query()->create([
+            'character_id' => $character->id,
+            'definition_key' => 'warded',
+        ]);
+
+        $this->resolver(28)->apply($character->fresh(), $this->iceWithTags(['neural_shock']));
+
+        $this->assertSame($maxHp, $character->fresh()->current_hitpoints, 'immune, so nothing landed');
     }
 
     // ---- surge -------------------------------------------------------

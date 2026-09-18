@@ -44,7 +44,7 @@ final readonly class Damage
         return new self($amount, 'current_synaptic_integrity', $origin);
     }
 
-    /** Damage to the body. Nothing deals any yet. */
+    /** Damage to the body. Neural Shock is the first thing that deals any. */
     public static function hitpoints(int $amount, DamageOrigin $origin): self
     {
         return new self($amount, 'current_hitpoints', $origin);

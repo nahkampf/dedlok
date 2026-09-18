@@ -10,7 +10,11 @@ use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Programs\ProgramRunner;
+use App\Stats\Damage;
+use App\Stats\DamageOrigin;
+use App\Stats\DamageResolver;
 use App\Stats\InjuryLedger;
+use App\Stats\Resolver;
 use App\Support\Text;
 use Closure;
 use Illuminate\Support\Facades\Config;
@@ -53,6 +57,7 @@ final readonly class DefeatResolver
     public function __construct(
         private InjuryLedger $injuries,
         private ProgramRunner $runner,
+        private DamageResolver $damage,
         private Closure $roll,
     ) {}
 
@@ -61,6 +66,7 @@ final readonly class DefeatResolver
         return new self(
             app(InjuryLedger::class),
             app(ProgramRunner::class),
+            new DamageResolver(app(Resolver::class)),
             $roll ?? static fn (int $min, int $max): int => random_int($min, $max),
         );
     }
@@ -132,6 +138,20 @@ final readonly class DefeatResolver
     /**
      * Damage to CURRENT hit points. The mind's defeat, landing on the body.
      *
+     * THROUGH `DamageResolver`, LIKE EVERY OTHER HIT. It called
+     * `Character::takeDamage()` directly once, which is the dull half
+     * underneath the door and skips every rule the door exists for: a
+     * resistance, a vulnerability or an immunity written against physical
+     * damage could not touch it, and neither could the Crim's own "Hard
+     * knocks" — a perk whose target set (`damage` + `hitpoints`) covers
+     * exactly this stat. The percentage is rolled off the MAXIMUM as before;
+     * what the resolver decides is how much of it actually lands.
+     *
+     * The origin is ICE, which is what dealt it. Flatline next door does NOT
+     * come through here and should not: it writes a ceiling through
+     * `InjuryLedger` rather than landing a hit, and mitigation has nothing to
+     * say about an injury.
+     *
      * @return array{text: string, tone: string}
      */
     private function neuralShock(Character $character, int $level): array
@@ -141,9 +161,12 @@ final readonly class DefeatResolver
         $pct = ($this->roll)((int) $band['min'], (int) $band['max']);
         $points = (int) round($max * $pct / 100);
 
-        $taken = $character->takeDamage('current_hitpoints', $points);
+        $result = $this->damage->apply(
+            $character,
+            Damage::hitpoints($points, DamageOrigin::Ice),
+        );
 
-        return $this->line('neural_shock', ['points' => $taken]);
+        return $this->line('neural_shock', ['points' => $result->taken]);
     }
 
     /**

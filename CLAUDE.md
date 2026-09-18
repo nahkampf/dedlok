@@ -1754,8 +1754,14 @@ roll now.
   through `InjuryLedger::inflict()`, the same *neural damage* row a freeze and
   a future overdose both deepen. Current SI clamps to the new ceiling on the
   save that follows, via the model's own hook, not a second call. Neural Shock
-  is a plain `takeDamage()` on current hit points and touches no maximum at
-  all — that is Flatline's job.
+  goes through `DamageResolver` like every other hit, with `DamageOrigin::Ice`,
+  and touches no maximum at all — that is Flatline's job. It called
+  `takeDamage()` directly at first, which skipped every rule the door exists
+  for: nothing could resist it, and the Crim's "Hard knocks" could not touch it
+  although its target set (`damage` + `hitpoints`) covers exactly that stat.
+  **Flatline deliberately does NOT come through the door** — it writes a
+  ceiling through `InjuryLedger` rather than landing a hit, and mitigation has
+  nothing to say about an injury.
 - **Surge deletes the module outright**, chosen from whatever is CURRENTLY
   fitted to the equipped deck — `deck_fittings.module_id` cascades on delete,
   so the fitting row cleans itself up without a second write. One roll per
