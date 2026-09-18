@@ -352,6 +352,8 @@ return [
             */
             'setup' => [
                 'heading' => 'Go in',
+                'title' => 'Before you go in',
+                'open' => 'Plan a run',
                 'purpose' => 'What for',
                 'kind' => 'What to leave behind',
                 'chain' => 'Routed through',
@@ -360,6 +362,49 @@ return [
                 'chain_cost' => 'A trace has to come through all of these. Reach you, and it takes every one of them.',
                 'hop' => 'Grade :grade',
                 'begin' => 'Begin run',
+
+                /*
+                | WHAT IS KNOWN AND WHAT IS NOT. The second half is the point:
+                | a machine nobody has read is a machine whose guard, tracer
+                | and operating system are all surprises, and the screen that
+                | commits to a run should say so plainly rather than leaving a
+                | blank space to be read as nothing there.
+                */
+                'known' => 'What you know',
+                'unknown' => 'Not read',
+                'unread' => 'You have read nothing off this machine. Everything in it is a surprise.',
+                'partial' => 'Your file on this machine is incomplete.',
+                'complete' => 'Your file is complete.',
+
+                // The deck, and the two things about it that end runs.
+                'deck' => 'Your deck',
+                'deck_missing' => 'You are carrying no deck.',
+                'not_ready' => 'This deck does not meet its own requirements. It will not take you in.',
+                'thermal_risk' => 'Running hot: :parts will not take much more.',
+                'thermal_over' => 'Past its limit: :parts are being cooked right now.',
+                'thermal_safe' => 'Thermals are fine.',
+
+                'running' => 'Running',
+                'running_none' => 'Nothing is running. You cannot cut, and you cannot read.',
+                'no_icebreaker' => 'No icebreaker. If something wakes up, you cannot fight it.',
+
+                /*
+                | THE INTENTIONS. Each is a separate form and a separate
+                | button, because they are not settings of one act — choosing
+                | one decides what every turn afterwards can do, and a backdoor
+                | additionally decides a permanent property of the machine.
+                */
+                'intent' => 'What you came to do',
+                'intent_extraction' => 'Take what it holds',
+                'intent_siphon' => 'Leave a siphon',
+                'intent_routing' => 'Leave a routing hop',
+                'intent_burn' => 'Burn it',
+                'intent_extraction_hint' => 'Clean, it leaves no lockdown behind. Caught, it locks down like anything else.',
+                'intent_siphon_hint' => 'A little every night, from a machine with something worth taking.',
+                'intent_routing_hint' => 'A hop in the chain a trace has to walk. Worth holding on a machine worth nothing.',
+                'intent_burn_hint' => 'Not built yet.',
+                'held' => 'You already hold a way into this one. Nothing looks up when you arrive.',
+                'held_kind' => 'It is a :kind, and that cannot be changed.',
             ],
             // The odds, quoted on the button. The same number the roll uses —
             // `Simulator::egressChance()` answers both, which is why it is

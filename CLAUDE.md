@@ -1806,10 +1806,31 @@ roll now.
   free to include and hinders by its machine's grade, so a picker would be a
   list whose right answer is always "all of them, best first", asked on every
   run. What a player decides is which machines to hold one on.
-- **It is a PREVIEW before it is a commitment.** The map's *Go in* panel shows
-  the same list `RunStarter` writes, so the chain somebody was shown is the
-  chain they get — and everything on that panel is decided for good: the
-  purpose, the backdoor kind, and the route.
+- **`run.setup` is the briefing, and it is the only way a run begins.** The map
+  says *Plan a run* and nothing more: the decision has a screen of its own
+  because everything on it is permanent — the purpose is fixed at the door, a
+  backdoor's kind cannot be changed once it lands, and the route is snapshotted
+  the moment the run starts.
+- **The briefing's product is what is NOT known.** An unread machine says so in
+  words rather than leaving a blank column, because blank reads as *nothing
+  there* and for an IDS that is the opposite of the truth. Every `ScanFact` is
+  listed either way. Beside it: whether the deck meets its own requirements
+  (a run is refused otherwise), what the thermal verdict is on each fitted
+  part, what is running and **what each thing IS** — an icebreaker and a
+  decryptor are both "a program" until one of them is the only thing between
+  you and an ICE — and the route, as the same chain widget the run screen draws
+  the trace walking.
+- **An intention is a form, not a select.** Choosing one decides what every
+  turn afterwards may do, and a backdoor decides a permanent property of the
+  machine on top of that, so each is its own button with its own hidden
+  purpose and kind. **Burn is shown and disabled** with a *Not built yet* tag —
+  the item card's rule, that an action which does nothing yet says so rather
+  than being absent, because a screen that grows buttons as features land is a
+  screen nobody learns.
+- **It reads the machine LIVE, not the contact.** This is the thing about to be
+  attacked and a remembered one may not be there; everything else on the screen
+  is the same call the run itself makes, so the briefing cannot promise
+  something the run then disagrees with.
 - **`runs.chain` is system ids and never grades**, snapshotted at the door, and
   **never rewritten**. `trace_hop` indexes it, so a hop that goes dark has to
   become a GAP rather than a shift — `routingGrades()` returns one slot per

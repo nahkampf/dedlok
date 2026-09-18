@@ -496,8 +496,8 @@ run's route, and one lost during it drops out.
 > and hinders by its machine's grade, so a picker would be a list whose right
 > answer is always "all of them, best first" — asked on every run. What a
 > player decides is which machines to hold a routing backdoor on, one backdoor
-> run at a time. The map's *Go in* panel shows the route before committing, and
-> it is the same call the run makes.
+> run at a time. The briefing at `run.setup` shows the route before committing,
+> from the same call the run makes.
 
 **Chain length is a skill, and only a skill:**
 

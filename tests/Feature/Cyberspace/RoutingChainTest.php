@@ -220,28 +220,38 @@ final class RoutingChainTest extends TestCase
 
     // ---- and what the screen shows before any of it -------------------------
 
-    public function test_the_setup_screen_shows_the_route_before_committing(): void
+    public function test_the_briefing_shows_the_route_before_committing(): void
     {
         $this->trainRouting(2);
         $this->hold($this->relay(1, 9));
         $this->machine();
 
         $this->actingAs($this->character->user)
-            ->get(route('cyberspace.index'))
+            ->get(route('run.setup'))
             ->assertOk()
-            ->assertSee('Go in')
             ->assertSee('Routed through')
             ->assertSee('Grade 9');
     }
 
-    public function test_the_setup_screen_says_when_there_is_no_route(): void
+    public function test_the_briefing_says_when_there_is_no_route(): void
+    {
+        $this->machine();
+
+        $this->actingAs($this->character->user)
+            ->get(route('run.setup'))
+            ->assertOk()
+            ->assertSee('Routing is the skill for it');
+    }
+
+    /** The map is the way to the briefing, and says so only where there is one. */
+    public function test_the_map_offers_the_briefing(): void
     {
         $this->machine();
 
         $this->actingAs($this->character->user)
             ->get(route('cyberspace.index'))
             ->assertOk()
-            ->assertSee('Routing is the skill for it');
+            ->assertSee('Plan a run');
     }
 
     /** A shut machine is not offered, which is the refusal said before it is made. */
@@ -253,7 +263,7 @@ final class RoutingChainTest extends TestCase
         $this->actingAs($this->character->user)
             ->get(route('cyberspace.index'))
             ->assertOk()
-            ->assertDontSee('Routed through');
+            ->assertDontSee('Plan a run');
     }
 
     // ---- fixtures ------------------------------------------------------------
