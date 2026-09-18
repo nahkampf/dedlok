@@ -1832,6 +1832,30 @@ roll now.
   which is CYBERSPACE.md open question 12: tearing free mid-fight is not the
   same act as walking out of a quiet machine, and an ICE that never woke is a
   cheap exit — one more thing an undetected run is worth.
+- **THE SCORE IS ON THE SCREEN, AND SO IS ITS WORKING.** `Simulator::egressReport()`
+  assembles one `EgressReport` that the button, the explanation card, the roll
+  and the tests all read, so none of them can hold a different opinion about
+  the same attempt — `egressChance()` is a field of it rather than a second
+  calculation. The card is the FIRST renderer of `ResolvedStat::$steps`, which
+  has carried "why is my Focus 14?" since the resolver shipped and had nothing
+  drawing it: one line per LAYER rather than per modifier, because percentages
+  are summed and applied once, with the contributing sources named. That is how
+  *Egress Protocols* appears on the card without the card knowing skills exist.
+- **"Evasion" is the capability; "Egress" is the act.** Two words for two
+  things, which is why the panel and the button do not say the same one. The
+  panel's meter is the CHANCE and not the score, because a pool has no maximum
+  to fill and the number a decision is made on is the one that earns the bar.
+  The explanation is one `<template>` the kit clones into the hover layer and
+  the modal both, the `data-inspect` contract — a phone has no hover at all, so
+  the click path is not a nicety.
+- **`character.names` names the two pools**, so a modifier targeting either can
+  be described on a card. `egress` reads *Evasion* there, deliberately: the key
+  names the stat and the string names what a player calls it.
+- **Egress Protocols is the first thing that moves `egress`** — rank 8, behind
+  Cyberdecks 3, +3% of base per level as five grants on one row. It arrives by
+  MIGRATION, the call the corps and the ICE catalogue made: content rows point
+  at arrives once and stays, where a seeder would rewrite it on every re-seed.
+  Nothing in `Simulator` learned that it exists.
 - **A failed egress costs the turn like anything else**, so the machine gets
   its half of it: being held is paid for in trace, in heat and in one more
   swing. **A threshold-forced egress rolls too** — a mark is an instruction to

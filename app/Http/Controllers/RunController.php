@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Cyberspace\AttackTag;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
@@ -12,7 +11,6 @@ use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
 use App\Cyberspace\TurnResult;
 use App\Models\Character;
-use App\Models\Ice;
 use App\Models\Run;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,8 +67,6 @@ class RunController extends Controller
             return redirect()->route('cyberspace.index');
         }
 
-        $ice = $run->ice_id === null ? null : Ice::query()->find($run->ice_id);
-
         return view('run.show', [
             'character' => $character,
             'run' => $run,
@@ -79,14 +75,13 @@ class RunController extends Controller
             // egress decision is made on, and a player should not have to do
             // the division while something is hitting them.
             'turnsLeft' => $run->turnsUntilTraced(),
-            // THE SAME CALCULATION THE ROLL USES. `egressChance()` is public
-            // and separate from the roll precisely so the button and the
-            // attempt cannot quote different odds. Rounded for the label only.
-            'egressChance' => (int) round($simulator->egressChance($character, $run) * 100),
-            // Said out loud, because an unexplained collapse in the odds is
-            // indistinguishable from a bug. It does not name the tag: what
-            // matters is that something is holding you, not its vocabulary.
-            'snared' => $ice?->attackLevel(AttackTag::Ensnare) !== null,
+            // THE SAME ASSEMBLY THE ROLL USES, and it carries its own working
+            // — the button quotes `percent()`, the card beside it explains
+            // where that came from, and the attempt spends the same number.
+            // An unexplained collapse in the odds is indistinguishable from a
+            // bug, which is the whole reason the explanation is on the screen
+            // rather than in a log line.
+            'egress' => $simulator->egressReport($character, $run),
         ]);
     }
 

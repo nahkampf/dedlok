@@ -575,11 +575,62 @@ final readonly class Simulator
      */
     public function egressChance(Character $character, Run $run): float
     {
-        return $this->checks->chance(
-            $character->stat('egress')->value,
-            $this->egressDifficulty($run),
-            'egress',
-            $this->egressMultiplier($run),
+        return $this->egressReport($character, $run)->chance;
+    }
+
+    /**
+     * The same odds, with the working shown.
+     *
+     * ONE ASSEMBLY FOR ALL FOUR READERS — the button, the card that explains
+     * it, the roll and the tests. `egressChance()` is a field of this rather
+     * than a second calculation, so a screen cannot quote a number the attempt
+     * does not use.
+     *
+     * The pool's terms are resolved off the SHEET, which is the only place a
+     * pool exists: its base is the attributes added and divided once, and
+     * asking the resolver for it with a base of zero returns the modifiers
+     * alone. The steps come off the same `ResolvedStat` the value does, so the
+     * explanation is the resolver's own account and not a reconstruction.
+     */
+    public function egressReport(Character $character, Run $run): EgressReport
+    {
+        $sheet = $character->sheet();
+        $resolved = $sheet->get('egress');
+
+        /** @var array{attributes: list<string>, divisor: float} $pool */
+        $pool = (array) Config::get('stats.pools.egress', ['attributes' => [], 'divisor' => 1.0]);
+
+        $terms = [];
+
+        foreach ((array) $pool['attributes'] as $attribute) {
+            $terms[$attribute] = $sheet->value($attribute);
+        }
+
+        /** @var array<int, int> $table */
+        $table = Config::get('cyberspace.egress.difficulty', []);
+
+        $grade = System::query()->where('address', $run->address)->value('grade');
+        $grade = $grade === null ? null : (int) $grade;
+        $gradeDifficulty = (int) ($table[$grade] ?? ($table[1] ?? 0));
+
+        $ice = $run->ice_id === null ? null : Ice::query()->find($run->ice_id);
+        $snare = $ice?->attackLevel(AttackTag::Ensnare);
+        $multiplier = $snare === null ? 1.0 : AttackTag::Ensnare->multiplier($snare);
+        $difficulty = (int) $this->egressDifficulty($run);
+
+        return new EgressReport(
+            value: $resolved->value,
+            base: $resolved->base,
+            terms: $terms,
+            divisor: (float) $pool['divisor'],
+            steps: $resolved->steps,
+            difficulty: $difficulty,
+            gradeDifficulty: $gradeDifficulty,
+            grade: $grade,
+            iceLevel: $ice === null ? null : (int) $ice->level,
+            snareLevel: $snare,
+            multiplier: $multiplier,
+            chance: $this->checks->chance($resolved->value, (float) $difficulty, 'egress', $multiplier),
         );
     }
 

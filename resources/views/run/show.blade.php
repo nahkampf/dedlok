@@ -120,7 +120,135 @@
         </p>
     @endif
 
-    {{-- ONE FORM AND ONE DOOR. Every action costs the same turn, which is the
+    {{-- EVASION, AND THE WORKING BEHIND IT.
+
+     The score is the capability; the chance on the Egress button is what it
+     comes to against THIS machine. Both are here because neither is the whole
+     answer on its own — a good pool against a grade 9 is still a poor night.
+
+     Pointing at it floats the explanation; clicking opens the same card in a
+     modal, which is the only way in on a phone. One <template>, cloned by the
+     kit into both, so the two presentations cannot drift. --}}
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.evasion') }}</h2>
+        <div class="spacer"></div>
+        @if ($egress->isSnared())
+            <span class="tag tag--warn">{{ Text::get('cyberspace.run.evasion_snare', ['level' => $egress->snareLevel]) }}</span>
+        @endif
+    </div>
+
+    <div style="padding:var(--s-2) 0 var(--s-3)">
+        <button type="button" class="vital" data-inspect="#egress-working"
+                style="width:100%;text-align:left;background:none;border:0;padding:0;cursor:help"
+                aria-label="{{ Text::get('cyberspace.run.evasion_explain') }}">
+            <span class="vital__label">{{ Text::get('cyberspace.run.evasion_result') }}</span>
+            {{-- The meter is the CHANCE and not the score: a pool has no
+                 maximum to fill, and the number a decision is made on is the
+                 one that gets the bar. --}}
+            <div class="meter meter--lg" style="--v:{{ round($egress->chance, 3) }};--fill:{{ $egress->isSnared() ? 'var(--warn)' : 'var(--jade)' }}">
+                <div class="meter__fill"></div>
+            </div>
+            <span class="vital__value num">{{ $egress->percent() }}%</span>
+        </button>
+
+        <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
+            <span class="num">{{ rtrim(rtrim(number_format($egress->value, 1), '0'), '.') }}</span>
+            {{ Text::get('cyberspace.run.evasion') }}
+            ·
+            {{ Text::get('cyberspace.run.evasion_difficulty') }} <span class="num">{{ $egress->difficulty }}</span>
+            · {{ Text::get('cyberspace.run.evasion_explain') }}
+        </p>
+    </div>
+</div>
+
+{{-- WRITTEN ONCE, SHOWN TWO WAYS. The kit clones this into the floating
+     inspector on hover and into a modal on click. --}}
+<template id="egress-working">
+    <div class="card" style="max-width:min(420px, 100%)">
+        <div class="card__hd">
+            <span class="card__title">{{ Text::get('cyberspace.run.evasion') }}</span>
+            <div class="spacer"></div>
+            <span class="card__meta num">{{ rtrim(rtrim(number_format($egress->value, 1), '0'), '.') }}</span>
+        </div>
+
+        <div class="card__bd" style="padding-bottom:0">
+            <div class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.run.evasion_pool') }}</div>
+        </div>
+        <div class="card__stats">
+            @foreach ($egress->terms as $attribute => $value)
+                <div class="card__stat">
+                    <span>{{ Text::get('character.names.'.$attribute) }}</span>
+                    <b class="num">{{ rtrim(rtrim(number_format($value, 1), '0'), '.') }}</b>
+                </div>
+            @endforeach
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.evasion_pool_sum', [
+                    'sum' => rtrim(rtrim(number_format(array_sum($egress->terms), 1), '0'), '.'),
+                    'divisor' => rtrim(rtrim(number_format($egress->divisor, 1), '0'), '.'),
+                ]) }}</span>
+                <b class="num">{{ rtrim(rtrim(number_format($egress->base, 1), '0'), '.') }}</b>
+            </div>
+        </div>
+
+        <div class="card__bd" style="padding-bottom:0">
+            <div class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.run.evasion_modifiers') }}</div>
+        </div>
+        @if ($egress->steps === [])
+            <div class="card__bd" style="padding-top:var(--s-2)">
+                <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.evasion_unmodified') }}</p>
+            </div>
+        @else
+            {{-- ONE LINE PER LAYER, NOT PER MODIFIER, because percentages are
+                 summed and applied once — a line each would imply a
+                 compounding that does not happen. The sources are named
+                 instead, which is how a skill's own title appears here
+                 without this card knowing skills exist. --}}
+            <div class="card__stats">
+                @foreach ($egress->steps as $step)
+                    <div class="card__stat">
+                        <span>{{ $step->sources === [] ? $step->op : implode(', ', $step->sources) }}</span>
+                        <b class="num">{{ $step->delta() >= 0 ? '+' : '−' }}{{ rtrim(rtrim(number_format(abs($step->delta()), 1), '0'), '.') }}</b>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        <div class="card__bd" style="padding-bottom:0">
+            <div class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.run.evasion_against') }}</div>
+        </div>
+        <div class="card__stats">
+            <div class="card__stat">
+                <span>{{ $egress->grade === null ? Text::get('cyberspace.run.evasion_ice_none') : Text::get('cyberspace.run.evasion_grade', ['grade' => $egress->grade]) }}</span>
+                <b class="num">{{ $egress->gradeDifficulty }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ $egress->iceLevel === null ? Text::get('cyberspace.run.evasion_ice_none') : Text::get('cyberspace.run.evasion_ice', ['level' => $egress->iceLevel]) }}</span>
+                <b class="num">{{ $egress->iceLevel === null ? '—' : '+'.($egress->difficulty - $egress->gradeDifficulty) }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.evasion_difficulty') }}</span>
+                <b class="num">{{ $egress->difficulty }}</b>
+            </div>
+            @if ($egress->isSnared())
+                <div class="card__stat">
+                    <span style="color:var(--warn)">{{ Text::get('cyberspace.run.evasion_snare', ['level' => $egress->snareLevel]) }}</span>
+                    <b class="num" style="color:var(--warn)">−{{ Text::get('cyberspace.run.evasion_snare_cost', ['points' => $egress->snareCost()]) }}</b>
+                </div>
+            @endif
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.evasion_result') }}</span>
+                <b class="num">{{ $egress->percent() }}%</b>
+            </div>
+        </div>
+
+        <div class="card__ft">
+            <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.run.evasion_floor') }}</span>
+        </div>
+    </div>
+</template>
+
+{{-- ONE FORM AND ONE DOOR. Every action costs the same turn, which is the
          economy the whole run rests on — so they are one button each on one
          form rather than a route apiece.
 
@@ -150,12 +278,12 @@
                  what answers here and what the roll uses, so the number a
                  player decides against is the number the game believes. --}}
             <button type="submit" name="action" value="egress" class="btn btn--warn cut">
-                {{ Text::get('cyberspace.run.egress_chance', ['chance' => $egressChance]) }}
+                {{ Text::get('cyberspace.run.egress_chance', ['chance' => $egress->percent()]) }}
             </button>
         </div>
         <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
             {{ Text::get('cyberspace.run.egress_hint') }}
-            @if ($snared)
+            @if ($egress->isSnared())
                 <span style="color:var(--warn)">{{ Text::get('cyberspace.run.egress_snared') }}</span>
             @endif
         </p>

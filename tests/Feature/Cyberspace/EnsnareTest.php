@@ -211,6 +211,48 @@ final class EnsnareTest extends TestCase
             ->assertSee('has hold of you');
     }
 
+    /**
+     * THE WORKING IS ON THE SCREEN, in one template the kit clones into the
+     * hover layer and the modal both — so the two presentations cannot drift,
+     * and a phone (which has no hover at all) still gets the explanation.
+     */
+    public function test_the_screen_shows_how_the_chance_is_worked_out(): void
+    {
+        $this->machine(6);
+        $run = $this->begin();
+
+        $report = $this->simulator()->egressReport($this->character->fresh(), $run->fresh());
+
+        $this->actingAs($this->character->user)
+            ->get(route('run.show'))
+            ->assertOk()
+            // One template, addressed by the inspect behaviour.
+            ->assertSee('data-inspect="#egress-working"', false)
+            ->assertSee('id="egress-working"', false)
+            // The pool, by its terms — Reflex is the one stealth does not have.
+            ->assertSee('Reflex')
+            ->assertSee('Focus')
+            ->assertSee('Intellect')
+            // What it is up against, and what it comes to.
+            ->assertSee('Grade 1')
+            ->assertSee('ICE awake, level 6')
+            ->assertSee('Difficulty')
+            ->assertSee((string) $report->difficulty)
+            ->assertSee('Chance of getting out');
+    }
+
+    /** With nothing carried, the card says so rather than showing an empty list. */
+    public function test_an_unmodified_pool_says_so(): void
+    {
+        $this->machine(1);
+        $this->beginUnnoticed();
+
+        $this->actingAs($this->character->user)
+            ->get(route('run.show'))
+            ->assertOk()
+            ->assertSee('Nothing you carry moves it.');
+    }
+
     /** Nothing holding, nothing said about being held. */
     public function test_the_screen_says_nothing_about_a_snare_that_is_not_there(): void
     {

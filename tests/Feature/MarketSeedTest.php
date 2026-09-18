@@ -25,6 +25,24 @@ class MarketSeedTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * NOTHING ON THE SHELF THAT THIS TEST DID NOT PUT THERE.
+     *
+     * The catalogue is content and content arrives by migration — a skill
+     * shipped that way brings a restockable skillbook with it, which is an
+     * item in the pass that no test here created. These tests pin the die by
+     * SEQUENCE and count what a pass considered, so one extra item shifts
+     * every roll by one. Zeroing the seed quantity is what `restockable()`
+     * reads, so it takes them out of the pass without deleting content other
+     * tests may rely on.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Item::query()->update(['seed_quantity' => 0]);
+    }
+
     /** An item the market carries, common so the roll never gets in the way. */
     private function stocked(int $seedQuantity, Rarity $rarity = Rarity::Common): Item
     {

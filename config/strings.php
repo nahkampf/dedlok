@@ -346,6 +346,34 @@ return [
             // public and separate from the roll.
             'egress_chance' => 'Egress :chance%',
             'egress_snared' => 'Something in here has hold of you.',
+
+            /*
+            | THE SCORE, AND WHY IT IS WHAT IT IS.
+            |
+            | "Evasion" is the capability; "Egress" is the act and the roll it
+            | takes. Two words for two things, which is why the panel and the
+            | button do not say the same one.
+            |
+            | A number that collapses without saying why is indistinguishable
+            | from a bug, so the card shows the pool, then what modified it,
+            | then what is opposing it — the three layers in the order they
+            | happen.
+            */
+            'evasion' => 'Evasion',
+            'evasion_explain' => 'How this is worked out',
+            'evasion_pool' => 'The pool',
+            'evasion_pool_sum' => ':sum over :divisor',
+            'evasion_modifiers' => 'What moves it',
+            'evasion_unmodified' => 'Nothing you carry moves it.',
+            'evasion_against' => 'What you are up against',
+            'evasion_grade' => 'Grade :grade',
+            'evasion_ice' => 'ICE awake, level :level',
+            'evasion_ice_none' => 'Nothing awake',
+            'evasion_difficulty' => 'Difficulty',
+            'evasion_snare' => 'Ensnare :level',
+            'evasion_snare_cost' => ':points points of chance',
+            'evasion_result' => 'Chance of getting out',
+            'evasion_floor' => 'No attempt is ever hopeless, or ever certain.',
             'action' => [
                 'attack' => 'Cut',
                 'extract' => 'Extract',
@@ -1040,6 +1068,12 @@ return [
             'motor' => 'Motor',
             'senses' => 'Senses',
             'muscle' => 'Muscle',
+
+            // The two pools. Named so a modifier targeting one can say what it
+            // affects on a card — "Evasion" is the capability, and the act it
+            // pays for is called egress everywhere a player sees it.
+            'egress' => 'Evasion',
+            'stealth' => 'Stealth',
 
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
             // The key is the tags in alphabetical order, because a set has no

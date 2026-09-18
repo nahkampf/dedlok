@@ -295,7 +295,10 @@ class SkillTest extends TestCase
         Skill::factory()->offMarket()->create(['category' => 'intrusion']);
         Skill::factory()->create(['category' => 'combat']);
 
-        $this->assertSame(2, Skill::onMarket()->count());
+        // Scoped to the two categories this test made: the shipped catalogue
+        // is content in the database, and a skill added by migration is on the
+        // market too. A global count here was only ever true of an empty one.
+        $this->assertSame(2, Skill::onMarket()->whereIn('category', ['intrusion', 'combat'])->count());
         $this->assertSame(2, Skill::inCategory('intrusion')->count());
         $this->assertSame(1, Skill::onMarket()->inCategory('intrusion')->count());
     }

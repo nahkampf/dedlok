@@ -292,10 +292,11 @@ return [
         | could not see. What a bad pool buys is a poor chance and more turns
         | spent buying it.
         |
-        | NOTHING MODIFIES IT YET. No skill, implant or program targets it, so
-        | today the pool is the whole of it — and the first skill that helps
-        | somebody leave is a modifier on this id rather than a line in the
-        | simulator.
+        | EGRESS PROTOCOLS IS THE FIRST THING THAT MOVES IT — +3% of base per
+        | level, five grants on one skill row, which is what CYBERSPACE.md
+        | always said the shape would be: a skill that helps you leave is a
+        | modifier on this id and never a line in the simulator. Nothing in
+        | `Simulator` knows it exists.
         */
         'egress' => [
             'tags' => ['cyberspace'],

@@ -1105,9 +1105,11 @@ wall.**
 
 > **Built.** `App\Cyberspace\Simulator` rolls it, the `egress` pool is the
 > value, `config/cyberspace.egress` the difficulty, and both doors out of a run
-> go through the same roll. What is NOT built is any modifier that targets the
-> stat: no skill, implant or program helps somebody leave yet, so the pool is
-> currently the whole of it.
+> go through the same roll. **Egress Protocols** is the first thing that moves
+> the stat — rank 8, behind Cyberdecks 3, +3% of base per level — and it is
+> exactly the shape promised above: a row, not a branch. The run screen shows
+> the score and explains it, naming whatever contributed without knowing what a
+> skill is.
 
 **Egress is always POSSIBLE and never certain**, and those are two different
 statements. Nothing can take the attempt away — not an active ICE, not a wrong
