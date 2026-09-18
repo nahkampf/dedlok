@@ -512,6 +512,29 @@ trace that reaches 100% and finds you has followed the path all the way home,
 and every system on it is exposed: the backdoors are gone, the systems lock
 down and relocate, and the chain is simply not there any more.
 
+**LOSING ONE HOP IS NOT LOSING THE CHAIN.** That is the only case where the
+whole thing goes. A hop that is lost for any other reason — somebody else's run
+shut the machine, a burn took it, the nightly ageing roll found the backdoor —
+**drops out of the chain and the rest of it stands**. A chain is a route and
+not a circuit: one relay going dark shortens the road home, it does not open
+it. Anything else would make a long chain fragile in exactly the way the
+exposure rule already prices, and would punish the holder twice for one loss.
+
+Three things follow, and they are the implementation:
+
+- **A live run whose chain loses a hop keeps running.** The chain it declared
+  is re-read against what the character still holds, and the missing system is
+  simply not in it.
+- **The trace does not gain or lose ground.** `runs.trace_hop` is a position in
+  the chain, and a hop once passed is behind it for good. Dropping a hop the
+  trace has ALREADY passed moves the position down with it, so nothing it
+  fought through is re-fought; dropping one still ahead of the trace leaves the
+  position alone and simply gives it one less to get through. Neither case is
+  allowed to hand the trace a hop for free or take a passed one back.
+- **A chain can empty out entirely**, and that is the ordinary no-routing case
+  rather than an error: the trace comes on unopposed from wherever it had got
+  to, exactly as it does for a run that declared no chain at all.
+
 That is the cost that replaces latency, and it is a better one. **A longer chain
 is more protection and more to lose at once.** A ten-hop chain represents ten
 successful backdoor runs, and one bad night takes all of them — which is exactly

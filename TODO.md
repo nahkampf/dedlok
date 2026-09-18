@@ -345,6 +345,16 @@ skipped approach roll on a machine you hold, and the map's mark.
   `Simulator::burnTheChain()` stopping being a no-op, because a completed trace
   takes every routing backdoor in that run's chain at once and relocates the
   machines.
+
+  **LOSING ONE HOP IS NOT LOSING THE CHAIN**, and a completed trace is the only
+  case where the whole thing goes. A hop lost any other way — a lockdown
+  somebody else triggered, a burn, the ageing roll — drops out and the rest
+  stands, including for a run that is live at the time. `runs.trace_hop` is a
+  position in the chain, so dropping a hop the trace has already passed has to
+  move the position down with it and dropping one ahead of it must leave the
+  position alone: neither may hand the trace a free hop or take back one it
+  fought through. An emptied chain is the ordinary no-routing case, not an
+  error. CYBERSPACE.md, *The routing chain*, carries the same three rules.
 - **Nobody is TOLD their backdoor was found.** The ageing roll logs it, because
   there is no notification centre and — unlike a cancelled run — no screen the
   player is about to land on that could carry the message. CYBERSPACE.md asks
