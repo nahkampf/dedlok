@@ -341,6 +341,11 @@ return [
             'locked' => 'You are in a run. It does not stop because you looked away.',
             'egress' => 'Egress',
             'egress_hint' => 'Leaving is always possible and never certain.',
+            // The odds, quoted on the button. The same number the roll uses —
+            // `Simulator::egressChance()` answers both, which is why it is
+            // public and separate from the roll.
+            'egress_chance' => 'Egress :chance%',
+            'egress_snared' => 'Something in here has hold of you.',
             'action' => [
                 'attack' => 'Cut',
                 'extract' => 'Extract',
@@ -369,6 +374,10 @@ return [
                 'attack_fails' => 'Your pass finds nothing to cut.',
                 'hold' => 'You wait, and the machine waits with you.',
                 'egress' => 'You pull out.',
+                // HELD, and one line for both reasons — the machine out-rolled
+                // them, or something in it has hold of them. Which it was is
+                // already on the screen in the chance itself.
+                'egress_held' => 'You reach for the way out and the machine does not let go.',
                 'ice_broken' => 'The ICE comes apart.',
                 'ice_hits' => 'It gets through for :damage.',
                 'ice_misses' => 'It reaches for you and misses.',

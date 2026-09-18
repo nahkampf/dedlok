@@ -23,7 +23,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
 | The OS as a gate you cannot see | **specified only**; a machine whose OS you lack is entered rather than refused, and every action against it fails. Indistinguishable from bad luck on purpose — a refusal would hand over a scan fact for free |
-| Egress | **specified only**; always possible, never certain. A derived chance from attributes and skills against a per-grade difficulty, not a roll against the ICE |
+| Egress | **built**; always possible, never certain. The `egress` stat — a pool of Reflex, Focus and Intellect — rolled against the machine's grade plus a term for whatever is awake. A failed attempt spends the turn, so the machine gets its half of it; a threshold-forced egress rolls too. `Simulator::egressChance()` is public, and the button quotes it |
 | The run, interactive | **the spine is built**: `runs` is durable state, `App\Cyberspace\RunStarter` begins and ends one, and `characters.current_run_id` is what says somebody is inside. The turns themselves are the simulator and are not built |
 | The fight | **built**; `App\Cyberspace\Simulator` resolves one turn — the player acts, then the machine does. An icebreaker grinds integrity down, a miss does nothing at all, and a defeat ejects before the waiting screen |
 | Detection, on approach | **built**; every watcher on the machine rolls against the runner's `stealth` and any one success detects them. Nothing is woken by a run that goes unnoticed. The global certainty floor, not a kind of its own |
@@ -68,6 +68,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Whether losing gets a price put on you | **built** as `systems.ice_bounty`, rolled per MACHINE when its ICE is assigned. The same guard on two systems is two different risks, and **a scan reads it** — folded into the ICE fact, one roll for both |
 | Icebreakers | **built** as twelve programs, damage carried as a modifier on `icebreaker_damage`. **Twenty turns is never enough** — every one does strictly less than would break its matching ICE in that time, and the whole gap is left for skills |
 | Fighting at all | **gated behind training, deliberately.** A bare character cannot beat even ICE I: thirty turns against its 1.05 SI a turn is 31.5 against a starting pool of 31. The bottom of the grid is walkable, not fightable |
+| Attack tags — what ICE does WHILE it fights | **built**; `ice.attack_tags`, the mirror of `defeat_tags` and deliberately not a variation on it — a defeat tag fires once on somebody who lost, an attack tag is in force while the thing is awake. **Ensnare** is the first: it multiplies the egress chance (a quarter, two-fifths, rather more than half), is passive while the ICE lives so breaking the guard frees you, and is floored again after the reduction so it can never close the door. Five of the twelve carry it |
 | ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are content — `cyberspace:tag-ice` writes them, a console command and not a migration, so a fresh database's ICE carries none until it is run |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
@@ -1101,6 +1102,12 @@ It ends four ways: the ICE is defeated, the player is defeated, a threshold
 trips and the player egresses — which is itself a roll, so retreat can fail and
 cost a turn — or **the deck burns a module out and throws the player through the
 wall.**
+
+> **Built.** `App\Cyberspace\Simulator` rolls it, the `egress` pool is the
+> value, `config/cyberspace.egress` the difficulty, and both doors out of a run
+> go through the same roll. What is NOT built is any modifier that targets the
+> stat: no skill, implant or program helps somebody leave yet, so the pool is
+> currently the whole of it.
 
 **Egress is always POSSIBLE and never certain**, and those are two different
 statements. Nothing can take the attempt away — not an active ICE, not a wrong

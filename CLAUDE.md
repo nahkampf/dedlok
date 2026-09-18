@@ -1822,6 +1822,61 @@ roll now.
   rather than a plain Egress, checked in BOTH doors to leaving — the turn-based
   Egress action and the older, still-routed standalone `run.egress` endpoint —
   so the two cannot disagree about whether a haul happened.
+- **LEAVING IS A ROLL.** `Simulator::egressChance()` is the derived chance and
+  it is PUBLIC and separate from the roll, the `CheckRoller` rule: the button
+  quotes the number the attempt uses, so the two cannot disagree. The value is
+  the `egress` stat — a POOL of Reflex, Focus and Intellect, resolved like
+  everything else, so the first skill that helps somebody leave is a modifier
+  on that id and never a line in the simulator. The difficulty is the machine's
+  GRADE plus a term for whatever is currently fighting you (`cyberspace.egress`),
+  which is CYBERSPACE.md open question 12: tearing free mid-fight is not the
+  same act as walking out of a quiet machine, and an ICE that never woke is a
+  cheap exit — one more thing an undetected run is worth.
+- **A failed egress costs the turn like anything else**, so the machine gets
+  its half of it: being held is paid for in trace, in heat and in one more
+  swing. **A threshold-forced egress rolls too** — a mark is an instruction to
+  try to leave, not a door that opens.
+- **Both doors to leaving go through the same roll.** The standalone
+  `run.egress` endpoint used to end a run outright, which was correct while
+  there was nothing to roll and became a free exit the moment there was:
+  `RunController::egress()` now takes the ordinary turn, and `resolve()` is the
+  shared tail so the two cannot end a run differently.
+- **`Simulator` is bound in the container**, like `Probe` and for the same two
+  reasons plus one: its constructor takes an injected die, so nothing could
+  build one by reflection and every controller that type-hinted it was a 500
+  waiting to be requested. Bound to the container's `CheckRoller`, so a test
+  that pins the die gets a pinned SCREEN as well.
+- **ATTACK TAGS are what a piece of ICE does WHILE it fights**, and they are
+  the mirror of the defeat tags rather than a variation on them: a defeat tag
+  fires once, at the end, on somebody who already lost, while an attack tag is
+  in force for as long as the thing is awake and alive. One changes the price
+  of losing; the other changes the decisions inside the fight.
+  `ice.attack_tags` is the column, `App\Cyberspace\AttackTag` the vocabulary,
+  `config/cyberspace.attack_tags` the numbers, and `cyberspace:tag-ice` writes
+  both lists — so a second attack tag is an enum case, a config table and a
+  line in a grid.
+- **`Ensnare` is the first one, and it MULTIPLIES the egress chance** — a
+  quarter off at I, two-fifths at II, rather more than half at III. A
+  multiplier because every other percentage in the game is one: a flat 55
+  points off would annihilate a chance that was already poor and barely dent a
+  good one, which is backwards. **`CheckRoller` owns the multiplication**, as a
+  third argument to `chance()` and `roll()`, because the factor has to be
+  applied to the raw curve and the floor applied AGAIN after it — a caller
+  doing its own arithmetic would be the first mechanic with a real certainty in
+  it. Ensnare makes leaving expensive in turns; it can never close the door.
+- **It is PASSIVE while the ICE lives, and nothing is stored on the run.** Read
+  off `runs.ice_id` every time it is needed, so there is nothing to expire,
+  nothing to clean up, and no condition that can outlive its cause — breaking
+  the guard is the whole of getting free of it, which makes cutting worth doing
+  to somebody whose only plan was to leave. An undetected run never wakes the
+  ICE and so is never held by it.
+- **`stealth` is read off a SHEET and not the resolver**, and that was a bug
+  worth naming: `stealth` is a POOL, so its base is four attributes added and
+  divided once — arithmetic that lives in `Sheet`. `Resolver::resolve('stealth',
+  0.0, …)` returns the modifiers and nothing else, which is a bare zero for
+  every character carrying no implant, and detection had been rolling that
+  against every IDS in the world. **Any pool stat asked for outside a Sheet
+  reads as zero**; `Character::stat()` is the way in.
 - **One line covers every reason a core touch can fail**, the same discipline
   `attack_fails` already keeps: an operating system the runner cannot speak, a
   purpose that is not `RunPurpose::Extraction`, and a machine with nothing left

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Checks\CheckRoller;
 use App\Cyberspace\Probe;
+use App\Cyberspace\Simulator;
 use App\Models\User;
 use App\Stats\DamageStats;
 use App\Stats\Resolver;
@@ -55,6 +56,26 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(Probe::class, static fn ($app): Probe => Probe::fromConfig(
             $app->make(CheckRoller::class),
             $app->make(Resolver::class),
+        ));
+
+        /*
+         * And the turn, for the same two reasons and one more.
+         *
+         * `Simulator`'s constructor takes an injected die, so the container
+         * cannot build one by reflection — which made every controller that
+         * type-hinted it a 500 waiting to be requested rather than a
+         * dependency. `fromConfig()` is what knows how to assemble one, and
+         * this is where that knowledge belongs.
+         *
+         * Bound to the container's roller, so a test that pins the die gets a
+         * pinned SCREEN as well: the run screen quotes the egress chance, and
+         * a screen computing it from a different die than the roll would be
+         * quoting odds the game does not hold.
+         */
+        $this->app->bind(Simulator::class, static fn ($app): Simulator => Simulator::fromConfig(
+            null,
+            $app->make(Resolver::class),
+            $app->make(CheckRoller::class),
         ));
 
         /*

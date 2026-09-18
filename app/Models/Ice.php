@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Cyberspace\AttackTag;
 use App\Cyberspace\DefeatTag;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,7 +30,7 @@ use Illuminate\Database\Eloquent\Model;
  * and App\Stats\DamageResolver rather than reading these columns — so a
  * resistance to ICE is a modifier, never a branch.
  */
-#[Fillable(['level', 'name', 'integrity', 'attack', 'skill', 'detection', 'defeat_tags', 'grade_min', 'grade_max'])]
+#[Fillable(['level', 'name', 'integrity', 'attack', 'skill', 'detection', 'defeat_tags', 'attack_tags', 'grade_min', 'grade_max'])]
 class Ice extends Model
 {
     /** The table is already plural, and Laravel would look for `ices`. */
@@ -44,6 +45,7 @@ class Ice extends Model
             'skill' => 'integer',
             'detection' => 'integer',
             'defeat_tags' => 'array',
+            'attack_tags' => 'array',
             'grade_min' => 'integer',
             'grade_max' => 'integer',
         ];
@@ -117,5 +119,56 @@ class Ice extends Model
         }
 
         return false;
+    }
+
+    /**
+     * What this does WHILE it is fighting.
+     *
+     * The same shape and the same forgiveness as `defeatTags()` — null and `[]`
+     * are one answer, and a tag the vocabulary no longer knows is dropped
+     * rather than thrown on. The difference is when they matter: these are in
+     * force for as long as the thing is awake, so they are read on every turn
+     * that needs them rather than once at the end.
+     *
+     * @return list<array{tag: AttackTag, level: ?int}>
+     */
+    public function attackTags(): array
+    {
+        $tags = [];
+
+        foreach ($this->attack_tags ?? [] as $entry) {
+            $tag = AttackTag::tryFrom(is_array($entry) ? ($entry['tag'] ?? '') : (string) $entry);
+
+            if ($tag === null) {
+                continue;
+            }
+
+            $level = is_array($entry) ? ($entry['level'] ?? null) : null;
+
+            $tags[] = ['tag' => $tag, 'level' => $tag->isLevelled() ? (int) ($level ?? 1) : null];
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Which rung of this attack tag it carries, or null for none at all.
+     *
+     * THE HIGHEST IF A ROW SOMEHOW CARRIES TWO. Nothing authors a duplicate and
+     * the editor that would is not written, but a hand-edited row is content
+     * like any other and the worse of two answers should not win by being
+     * second in a list.
+     */
+    public function attackLevel(AttackTag $tag): ?int
+    {
+        $levels = [];
+
+        foreach ($this->attackTags() as $entry) {
+            if ($entry['tag'] === $tag) {
+                $levels[] = $entry['level'] ?? 1;
+            }
+        }
+
+        return $levels === [] ? null : max($levels);
     }
 }

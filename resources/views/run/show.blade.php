@@ -146,12 +146,18 @@
                 {{ Text::get('cyberspace.run.action.hold') }}
             </button>
             <div class="spacer"></div>
+            {{-- THE ODDS ARE ON THE BUTTON. `Simulator::egressChance()` is
+                 what answers here and what the roll uses, so the number a
+                 player decides against is the number the game believes. --}}
             <button type="submit" name="action" value="egress" class="btn btn--warn cut">
-                {{ Text::get('cyberspace.run.action.egress') }}
+                {{ Text::get('cyberspace.run.egress_chance', ['chance' => $egressChance]) }}
             </button>
         </div>
         <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
             {{ Text::get('cyberspace.run.egress_hint') }}
+            @if ($snared)
+                <span style="color:var(--warn)">{{ Text::get('cyberspace.run.egress_snared') }}</span>
+            @endif
         </p>
     </form>
 </div>

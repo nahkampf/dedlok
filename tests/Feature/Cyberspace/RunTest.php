@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Checks\CheckRoller;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
@@ -211,6 +212,11 @@ final class RunTest extends TestCase
     public function test_egress_ends_the_run_and_releases_the_lock(): void
     {
         $this->starter()->start($this->character->fresh(), RunPurpose::Extraction);
+
+        // LEAVING IS A ROLL NOW, so a test about what a successful one does to
+        // the lock has to pin the die. Against a real one this passes about
+        // four times in five, which is a test that fails on a Tuesday.
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 0.0));
 
         $this->actingAs($this->character->fresh()->user)
             ->post(route('run.egress'))

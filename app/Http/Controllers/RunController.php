@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Cyberspace\AttackTag;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
+use App\Cyberspace\TurnResult;
 use App\Models\Character;
+use App\Models\Ice;
 use App\Models\Run;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,7 +60,7 @@ class RunController extends Controller
      * empty screen: the lock only holds somebody who is IN one, so arriving
      * here without one means it ended while they were looking elsewhere.
      */
-    public function show(Request $request): View|RedirectResponse
+    public function show(Request $request, Simulator $simulator): View|RedirectResponse
     {
         $character = $this->character($request);
         $run = $this->liveRun($character);
@@ -65,6 +68,8 @@ class RunController extends Controller
         if ($run === null) {
             return redirect()->route('cyberspace.index');
         }
+
+        $ice = $run->ice_id === null ? null : Ice::query()->find($run->ice_id);
 
         return view('run.show', [
             'character' => $character,
@@ -74,6 +79,14 @@ class RunController extends Controller
             // egress decision is made on, and a player should not have to do
             // the division while something is hitting them.
             'turnsLeft' => $run->turnsUntilTraced(),
+            // THE SAME CALCULATION THE ROLL USES. `egressChance()` is public
+            // and separate from the roll precisely so the button and the
+            // attempt cannot quote different odds. Rounded for the label only.
+            'egressChance' => (int) round($simulator->egressChance($character, $run) * 100),
+            // Said out loud, because an unexplained collapse in the odds is
+            // indistinguishable from a bug. It does not name the tag: what
+            // matters is that something is holding you, not its vocabulary.
+            'snared' => $ice?->attackLevel(AttackTag::Ensnare) !== null,
         ]);
     }
 
@@ -96,8 +109,27 @@ class RunController extends Controller
             'action' => ['required', Rule::in(RunAction::values())],
         ]);
 
-        $result = $simulator->take($character, $run, RunAction::from($data['action']));
+        return $this->resolve(
+            $character,
+            $run,
+            $simulator->take($character, $run, RunAction::from($data['action'])),
+            $simulator,
+        );
+    }
 
+    /**
+     * What a turn's outcome means for the response.
+     *
+     * SHARED BY BOTH DOORS TO LEAVING, so the standalone egress route and the
+     * Egress button cannot end a run differently — which is the same reason
+     * they now share the roll.
+     */
+    private function resolve(
+        Character $character,
+        Run $run,
+        TurnResult $result,
+        Simulator $simulator,
+    ): RedirectResponse {
         if (! $result->succeeded()) {
             return back()->with('error', $result->refusal->message());
         }
@@ -119,13 +151,17 @@ class RunController extends Controller
     /**
      * Leave.
      *
-     * ALWAYS POSSIBLE, and for now always successful — the roll against the
-     * machine's grade and anything fighting you is the simulator's, and until
-     * that exists a player who can get into a run has to be able to get out of
-     * one. A run with no exit is a character deleted by a door they could not
-     * see, which is the one outcome this must never produce.
+     * THROUGH THE SIMULATOR, exactly as the turn-based action is. It used to
+     * end the run outright, which was correct while there was no roll to make
+     * — and became a free exit the moment there was one: a player who found
+     * this route could walk out of a fight an Egress button was busy failing
+     * at. One door, one roll, one turn spent.
+     *
+     * The route stays rather than being deleted, because it is what existing
+     * forms and links point at, and because "leave" wanting its own URL is
+     * reasonable even when it resolves like any other action.
      */
-    public function egress(Request $request): RedirectResponse
+    public function egress(Request $request, Simulator $simulator): RedirectResponse
     {
         $character = $this->character($request);
         $run = $this->liveRun($character);
@@ -134,15 +170,7 @@ class RunController extends Controller
             return redirect()->route('cyberspace.index');
         }
 
-        // COMPLETED IF THEY GOT WHAT THEY CAME FOR — the same test the
-        // turn-based Egress action applies, so the two doors cannot disagree
-        // about whether an extraction actually happened.
-        $ending = $run->extracted ? RunEnding::Completed : RunEnding::Egress;
-
-        $this->runs->end($character, $run, $ending);
-
-        return redirect()->route('cyberspace.index')
-            ->with('status', $ending->message());
+        return $this->resolve($character, $run, $simulator->take($character, $run, RunAction::Egress), $simulator);
     }
 
     private function liveRun(Character $character): ?Run

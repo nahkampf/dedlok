@@ -129,22 +129,45 @@ final readonly class Simulator
             // --- the player acts ---------------------------------------------
 
             if ($action === RunAction::Egress) {
-                $log[] = $this->line('cyberspace.run.log.egress');
+                /*
+                 * ALWAYS POSSIBLE, NEVER CERTAIN. The attempt cannot be taken
+                 * away — a run with no exit is a character deleted by a door
+                 * they could not see — but it is a roll, and a failed one
+                 * costs the turn like any other: the machine still gets its
+                 * half of it below, so being held is paid for in trace, in
+                 * heat and in one more swing.
+                 *
+                 * A THRESHOLD-FORCED EGRESS ROLLS TOO, since that path arrives
+                 * here by reassigning $action above. CYBERSPACE.md says so in
+                 * as many words: a threshold trips and the player egresses,
+                 * "which is itself a roll, so retreat can fail and cost a
+                 * turn".
+                 */
+                if ($this->checks->roll(
+                    $character->stat('egress')->value,
+                    $this->egressDifficulty($run),
+                    'egress',
+                    $this->egressMultiplier($run),
+                )->passed) {
+                    $log[] = $this->line('cyberspace.run.log.egress');
 
-                // COMPLETED IF THEY GOT WHAT THEY CAME FOR, egress otherwise —
-                // "they did what they came to do" is only true once
-                // extraction has actually taken something. This is also what
-                // a threshold-forced egress ends as, since that path reaches
-                // here too by reassigning $action above.
-                $ending = $run->extracted ? RunEnding::Completed : RunEnding::Egress;
+                    // COMPLETED IF THEY GOT WHAT THEY CAME FOR, egress
+                    // otherwise — "they did what they came to do" is only true
+                    // once extraction has actually taken something.
+                    $ending = $run->extracted ? RunEnding::Completed : RunEnding::Egress;
 
-                $run->save();
-                $this->runs->end($character, $run, $ending);
+                    $run->save();
+                    $this->runs->end($character, $run, $ending);
 
-                return TurnResult::resolved($run, $log, $ending);
-            }
+                    return TurnResult::resolved($run, $log, $ending);
+                }
 
-            if ($action === RunAction::Attack) {
+                // HELD. One line whether the machine merely out-rolled them or
+                // something in it has hold of them: which it was is visible on
+                // the screen in the chance itself, and does not want saying
+                // twice in different words.
+                $log[] = $this->line('cyberspace.run.log.egress_held', tone: 'warn');
+            } elseif ($action === RunAction::Attack) {
                 $log[] = $this->attack($character, $run);
             } elseif ($action === RunAction::Extract) {
                 $log = [...$log, ...$this->extract($character, $run)];
@@ -543,6 +566,78 @@ final readonly class Simulator
     }
 
     /**
+     * What the odds of leaving ARE, without spending them.
+     *
+     * PUBLIC AND SEPARATE FROM THE ROLL, which is the rule `CheckRoller` was
+     * built around: a screen that says "about one in three" and the attempt
+     * that follows have to be the same calculation, or the player is deciding
+     * against a number the game does not believe.
+     */
+    public function egressChance(Character $character, Run $run): float
+    {
+        return $this->checks->chance(
+            $character->stat('egress')->value,
+            $this->egressDifficulty($run),
+            'egress',
+            $this->egressMultiplier($run),
+        );
+    }
+
+    /**
+     * The grade, plus a term for whatever is currently fighting you.
+     *
+     * CYBERSPACE.md open question 12, resolved: tearing free mid-fight is not
+     * the same act as walking out of a quiet machine, so an ICE that never
+     * woke is a cheap exit — one more thing an undetected run is worth. The
+     * term is on the ICE's LEVEL rather than its attack, because what makes a
+     * guard hard to get away from is how good it is and not how hard it hits.
+     *
+     * A machine that has gone takes its grade with it and the difficulty falls
+     * back to the bottom of the table: leaving a hole where a machine used to
+     * be is not meant to be hard, and `runs.ice_id` is still on the run, so
+     * anything that had hold of you still does.
+     */
+    private function egressDifficulty(Run $run): float
+    {
+        /** @var array<int, int> $table */
+        $table = Config::get('cyberspace.egress.difficulty', []);
+
+        $grade = System::query()->where('address', $run->address)->value('grade');
+        $difficulty = (float) ($table[(int) $grade] ?? ($table[1] ?? 0));
+
+        if ($run->ice_id === null) {
+            return $difficulty;
+        }
+
+        $level = (int) (Ice::query()->whereKey($run->ice_id)->value('level') ?? 0);
+
+        return $difficulty + ($level * (float) Config::get('cyberspace.egress.ice_term', 1));
+    }
+
+    /**
+     * What being snared does to the chance.
+     *
+     * READ OFF THE ACTIVE ICE EVERY TIME, never stored on the run: an attack
+     * tag is in force for as long as the thing is awake and alive, so breaking
+     * the guard is the whole of getting free of it and there is nothing to
+     * expire, clean up or disagree with. `runs.ice_id` going null takes the
+     * snare with it.
+     *
+     * 1.0 is the ordinary answer — nothing fighting, or nothing that holds.
+     */
+    private function egressMultiplier(Run $run): float
+    {
+        if ($run->ice_id === null) {
+            return 1.0;
+        }
+
+        $ice = Ice::query()->find($run->ice_id);
+        $level = $ice?->attackLevel(AttackTag::Ensnare);
+
+        return $level === null ? 1.0 : AttackTag::Ensnare->multiplier($level);
+    }
+
+    /**
      * Something came out of the machine.
      *
      * TWO THINGS AT ONCE, and they are one fact: the run has extracted, and
@@ -777,9 +872,13 @@ final readonly class Simulator
      */
     private function spottedBy(Character $character, System $system): bool
     {
-        $stealth = $this->resolver
-            ->resolve('stealth', 0.0, $character->modifiers())
-            ->value;
+        // OFF A SHEET, NOT THE RESOLVER. `stealth` is a POOL — its base is
+        // four attributes added and divided once, and that arithmetic lives in
+        // `Sheet`. Asking the resolver for it with a base of 0.0 returns the
+        // modifiers and nothing else, which is a bare zero for every character
+        // who has not installed something: everybody was being seen by
+        // everything, and the pool that shipped with the stat was never read.
+        $stealth = $character->stat('stealth')->value;
 
         $watchers = array_filter([
             $system->ids_detection,
