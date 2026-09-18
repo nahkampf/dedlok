@@ -69,6 +69,16 @@ Schedule::command('cyberspace:restock')
     ->withoutOverlapping();
 
 /*
+ * Siphons pay out. The safe half of a backdoor portfolio: it arrives whether
+ * or not its holder went anywhere, and nothing takes it but the ageing roll
+ * below — which runs AFTER this, so a backdoor discovered tonight still paid
+ * tonight.
+ */
+Schedule::command('cyberspace:siphons --quiet-when-idle')
+    ->dailyAt('04:15')
+    ->withoutOverlapping();
+
+/*
  * Backdoor discovery, and the only thing that takes one from somebody who did
  * nothing wrong. Odds rise with age and with nothing else, so a backdoor is a
  * wasting asset rather than something that can be held carefully enough to

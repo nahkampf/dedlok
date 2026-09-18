@@ -381,6 +381,29 @@ return [
     | — they were all doors into a box that has moved.
     */
     'backdoors' => [
+
+        /*
+        | WHAT A SIPHON PAYS, per night, per backdoor.
+        |
+        | (3000 x grade) / 100 — thirty creds a grade, so a grade 1 relay is
+        | pocket change at 30 and a grade 9 is 270 a night for doing nothing.
+        | Against a node's own haul (a grade 9 holds hundreds) that is
+        | deliberately modest: a siphon is the SAFE half of a backdoor
+        | portfolio and safe income should be slow income. What makes it worth
+        | holding is that it arrives whether or not anybody goes anywhere.
+        |
+        | It is a BASE and expects to move. `siphon_yield` is a resolved stat,
+        | so a skill that makes somebody better at draining a machine is a
+        | modifier on it and never a branch here — the same shape every other
+        | number in the game takes. There are no such skills yet.
+        |
+        | Nothing has been balanced against it, like every number a backdoor
+        | touches. The dial to turn is this one.
+        */
+        'siphon' => [
+            'per_grade' => 30,
+        ],
+
         'ageing' => [
             'base' => 1.0,
             'per_day' => 0.05,

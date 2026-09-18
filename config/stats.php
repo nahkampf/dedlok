@@ -326,6 +326,27 @@ return [
         | from the routing backdoors its owner holds, and this is the most it
         | may name. Holding fewer is the usual case.
         */
+        /*
+        | What one siphon backdoor pays its holder in a night.
+        |
+        | THE BASE IS THE MACHINE'S and the modifiers are the PERSON'S: the
+        | caller hands in (3000 x grade) / 100 and the resolver applies
+        | whatever its owner carries, so a skill that makes somebody better at
+        | draining a machine raises every siphon they hold at once. There are
+        | no such skills yet; this is the id the first one will target.
+        |
+        | Deliberately NOT in `stats.bases`, unlike `routing_hops`: there is no
+        | such thing as a character's siphon yield, only this machine's. Asking
+        | `Character::stat()` for it would be asking a question with no answer,
+        | and it throwing is the right outcome.
+        */
+        'siphon_yield' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'routing_hops' => [
             'tags' => ['cyberspace'],
             'min' => 0,

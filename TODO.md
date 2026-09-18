@@ -323,20 +323,13 @@ consumes the grid's empty reserve.
 
 ---
 
-## The routing chain, and the nightly rolls
+## What backdoors still owe
 
-**Status:** backdoors exist and do half of what they are for.
+**Status:** built, and both kinds do their job — a siphon pays nightly, a
+routing hop goes on the route, and four separate things can take one away.
 
-**Built:** the `backdoors` table, the two kinds, installing one on a
-`RunPurpose::Backdoor` run, the cleanup that leaves no lockdown behind, the
-skipped approach roll on a machine you hold, and the map's mark.
+**What is left:**
 
-**Not built, and the first two matter most:**
-
-- **A siphon pays nothing.** The nightly payout is a little from each
-  backdoored system, scaled by grade, straight into creds. Without it, the
-  siphon kind is a choice with no consequence — the same criticism this file
-  makes of heat.
 - **Nobody is TOLD their backdoor was found.** The ageing roll logs it, because
   there is no notification centre and — unlike a cancelled run — no screen the
   player is about to land on that could carry the message. CYBERSPACE.md asks

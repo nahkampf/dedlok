@@ -448,7 +448,7 @@ means going back and doing the run again.
 
 | | **Siphon** | **Routing** |
 | --- | --- | --- |
-| What it gives | a little cash every night, paid straight into your creds — **not built** | a hop in the chain a trace has to walk — **not built** |
+| What it gives | a little cash every night, paid straight into your creds — **built**: (3000 x grade) / 100, through `siphon_yield` so a skill can raise it | a hop in the chain a trace has to walk — **built**: `ChainBuilder` puts every one you hold on the route, best first |
 | Where it is useful | on a system with something worth taking | on any system at all, however worthless |
 | How you lose it | the nightly ageing roll, and nothing else | the ageing roll **or** a completed trace, which takes every routing backdoor in that run's chain at once |
 
@@ -464,15 +464,15 @@ still rolls, still counts toward the system's three raids, and still locks the
 system down if it is caught. A backdoor buys you half the risk permanently, not
 a bypass of the brake.
 
-> **Backdoors are built, less the chain and the siphon payout.** The table,
+> **Backdoors are built.** The table,
 > the two kinds, installing one on a `RunPurpose::Backdoor` run, the cleanup
 > that leaves no lockdown behind, the skipped approach roll, the map's mark —
 > and every way one is lost: the nightly ageing roll
 > (`cyberspace:age-backdoors`), a lockdown somebody else triggered, a machine
-> that relocates for any reason, and a burn through the foreign key. What is
-> NOT built: the routing chain below, so `Run::routingGrades()` still returns
-> `[]` and a trace still walks unopposed; and the nightly siphon payout, so a
-> siphon is currently a choice that pays nothing.
+> that relocates for any reason, and a burn through the foreign key. Both kinds
+> do their job: a siphon pays nightly through `cyberspace:siphons`, and a
+> routing hop goes on the route `ChainBuilder` draws. What is NOT built is
+> telling anybody their backdoor was found.
 
 ### The routing chain
 
@@ -1676,7 +1676,9 @@ decision table and writes nothing.
   with nothing else. A hit removes the backdoor, relocates the system,
   reassigns its address, and **notifies the player who installed it**.
 - **Backdoor siphons pay out.** A little from each backdoored system, scaled by
-  its grade, straight into the holder's creds.
+  its grade, straight into the holder's creds. **Built**: `cyberspace:siphons`,
+  04:15, before the ageing roll so a backdoor discovered tonight still paid
+  tonight.
 - **Node inventories restock**, so emptying one is temporary.
 - **Heat decays** on every character carrying any.
 

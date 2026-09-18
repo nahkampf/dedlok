@@ -1485,6 +1485,22 @@ carries the detail.
   against ITS OWN triggers and has never protected against somebody else being
   caught in there, which is the same shared world that puts the raid counter on
   the machine rather than on the person.
+- **A siphon pays `(3000 x grade) / 100` a night** — thirty creds a grade,
+  `cyberspace:siphons`, run BEFORE the ageing roll so a backdoor discovered
+  tonight still paid tonight. Deliberately modest against what a raid on the
+  same machine yields: a siphon is the SAFE half of a portfolio, and safe
+  income should be slow income. What makes it worth holding is that it arrives
+  whether or not anybody goes anywhere.
+- **The base is the MACHINE'S and the modifiers are the PERSON'S.**
+  `App\Cyberspace\SiphonPayout` hands the per-grade figure to the resolver as
+  `siphon_yield`, so the first skill that makes somebody better at draining a
+  machine raises every siphon they hold and needs no code. That stat is
+  deliberately NOT in `stats.bases`, unlike `routing_hops`: there is no such
+  thing as a character's siphon yield, only this machine's, so
+  `Character::stat()` throwing for it is the right answer.
+- **Paying out is not a write to `backdoors`**, so it is not that table's
+  writer and does not live on `Backdoors` — it reads them and writes
+  `characters.creds`.
 - **The nightly ageing roll is the one that is nobody's fault**, and the only
   thing that takes a backdoor from somebody who did nothing wrong.
   `cyberspace:age-backdoors`, one roll per backdoor, **odds rising with AGE and
