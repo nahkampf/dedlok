@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
+#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -45,6 +45,7 @@ class Run extends Model
             'extracting_qb' => 'integer',
             'trace' => 'integer',
             'trace_hop' => 'integer',
+            'chain' => 'array',
             'thermal_load' => 'integer',
             'purpose' => RunPurpose::class,
             'started_at' => 'datetime',
@@ -109,16 +110,60 @@ class Run extends Model
     /**
      * The grade of every backdoored system the trace has to come through.
      *
-     * EMPTY, because routing is not built. Each one will slow the trace by an
-     * amount its grade decides, and the trace only advances if it gets through
-     * all of them — so this list being empty is exactly why a trace currently
-     * advances every turn.
+     * The route this run declared when it began, as grades — one slot per hop,
+     * in the order a trace meets them. A trace attempts the next one each turn
+     * and only advances if it gets through, so a long chain of deep machines is
+     * turns of nothing happening.
      *
-     * @return list<int>
+     * An empty list is no routing at all, which is the ordinary state for
+     * anybody who holds no routing backdoors or has trained neither Routing
+     * skill: the trace comes on unopposed from the first turn.
+     *
+     * @return list<?int> One slot per stored hop; null where it has gone.
      */
     public function routingGrades(): array
     {
-        return [];
+        $chain = (array) ($this->chain ?? []);
+
+        if ($chain === []) {
+            return [];
+        }
+
+        /*
+         * LOSING ONE HOP IS NOT LOSING THE CHAIN. A completed trace is the only
+         * thing that takes the whole route; a hop lost any other way — somebody
+         * else's lockdown, a burn, the nightly ageing roll — simply is not
+         * there any more, and the rest of the chain stands.
+         *
+         * The stored list is NEVER rewritten and this returns a slot for every
+         * entry in it, null where the machine has gone or the backdoor with
+         * it. That is what keeps `runs.trace_hop` honest: it indexes this
+         * list, so a hop going dark must not shift the ones behind it. A null
+         * is walked straight past — one less thing in the way — and a hop
+         * already passed stays passed because the index only ever moves
+         * forward.
+         *
+         * Read fresh every turn rather than cached on the run, because the
+         * whole point is that it can change underneath one.
+         */
+        $live = System::query()
+            ->whereIn('id', $chain)
+            ->whereIn('id', Backdoor::query()
+                ->where('character_id', $this->character_id)
+                ->where('kind', BackdoorKind::Routing->value)
+                ->select('system_id'))
+            ->pluck('grade', 'id');
+
+        return array_map(
+            static fn (mixed $id): ?int => ($grade = $live->get((int) $id)) === null ? null : (int) $grade,
+            array_values($chain),
+        );
+    }
+
+    /** How much of the route is still standing, for a screen that says so. */
+    public function liveHops(): int
+    {
+        return count(array_filter($this->routingGrades(), static fn (?int $grade): bool => $grade !== null));
     }
 
     /** The chain the trace has to walk: the machine, the hops, and you. */

@@ -341,6 +341,26 @@ return [
             'locked' => 'You are in a run. It does not stop because you looked away.',
             'egress' => 'Egress',
             'egress_hint' => 'Leaving is always possible and never certain.',
+
+            /*
+            | GOING IN. Everything decided here is decided for good: the
+            | purpose is fixed at the door, a backdoor's kind is permanent once
+            | it lands, and the route is snapshotted the moment the run starts.
+            |
+            | The chain is SHOWN and not chosen — see App\Cyberspace\ChainBuilder
+            | for why there is nothing to pick.
+            */
+            'setup' => [
+                'heading' => 'Go in',
+                'purpose' => 'What for',
+                'kind' => 'What to leave behind',
+                'chain' => 'Routed through',
+                'chain_none' => 'Nothing. A trace comes straight at you.',
+                'chain_untrained' => 'You cannot route a run. Routing is the skill for it.',
+                'chain_cost' => 'A trace has to come through all of these. Reach you, and it takes every one of them.',
+                'hop' => 'Grade :grade',
+                'begin' => 'Begin run',
+            ],
             // The odds, quoted on the button. The same number the roll uses —
             // `Simulator::egressChance()` answers both, which is why it is
             // public and separate from the roll.

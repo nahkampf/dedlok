@@ -99,6 +99,21 @@ final readonly class RunStarter
                 'x' => $at->x,
                 'y' => $at->y,
                 'purpose' => $purpose->value,
+                /*
+                 * THE ROUTE, SNAPSHOTTED. Declared per run and never held
+                 * standing — a backdoor installed after this moment is not on
+                 * this run's route, and one lost during it drops out of it.
+                 *
+                 * Built rather than chosen: every routing backdoor is free to
+                 * include and hinders by its machine's grade, so a picker
+                 * would be a list whose right answer is always "all of them,
+                 * best first". The setup screen shows the same list this
+                 * writes, so what a player was shown is what they got.
+                 */
+                'chain' => ChainBuilder::fromConfig($this->resolver)
+                    ->for($character, $system)
+                    ->map(static fn (System $hop): int => (int) $hop->getKey())
+                    ->all(),
                 // Only a backdoor run carries one, so an extraction cannot end
                 // up holding a permanent property of a machine it never opened.
                 'backdoor_kind' => $purpose === RunPurpose::Backdoor ? $kind?->value : null,

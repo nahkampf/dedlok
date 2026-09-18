@@ -337,32 +337,13 @@ skipped approach roll on a machine you hold, and the map's mark.
   backdoored system, scaled by grade, straight into creds. Without it, the
   siphon kind is a choice with no consequence — the same criticism this file
   makes of heat.
-- **The routing chain.** `Run::routingGrades()` still returns `[]` always, so a
-  trace walks unopposed from the first turn. What it needs: a run picking its
-  chain from the ROUTING backdoors the character holds at the moment it starts
-  (declared per run, never held standing), the two Routing skills finally
-  having a reader — one hop per level each, ten the ceiling — and
-  `Simulator::burnTheChain()` stopping being a no-op, because a completed trace
-  takes every routing backdoor in that run's chain at once and relocates the
-  machines.
-
-  **LOSING ONE HOP IS NOT LOSING THE CHAIN**, and a completed trace is the only
-  case where the whole thing goes. A hop lost any other way — a lockdown
-  somebody else triggered, a burn, the ageing roll — drops out and the rest
-  stands, including for a run that is live at the time. `runs.trace_hop` is a
-  position in the chain, so dropping a hop the trace has already passed has to
-  move the position down with it and dropping one ahead of it must leave the
-  position alone: neither may hand the trace a free hop or take back one it
-  fought through. An emptied chain is the ordinary no-routing case, not an
-  error. CYBERSPACE.md, *The routing chain*, carries the same three rules.
 - **Nobody is TOLD their backdoor was found.** The ageing roll logs it, because
   there is no notification centre and — unlike a cancelled run — no screen the
   player is about to land on that could carry the message. CYBERSPACE.md asks
   for a notification; this is the gap standing in for one.
-- **There is no way to START a run from the UI.** `run.start` is routed and
-  nothing posts to it — a run can only be begun from a test or by hand. That
-  predates backdoors and blocks extraction just as much; the map needs a panel
-  offering the purpose, and now the backdoor kind with it.
+- **Each hop hinders by its grade and nothing else**, which is decided rather
+  than missing — see CYBERSPACE.md, *The routing chain*. What is NOT decided is
+  what a SIPHON pays, which is the last thing backdoors owe.
 
 ---
 

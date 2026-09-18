@@ -280,6 +280,24 @@
     if (body) openInspector(body);
   });
 
+  /* --- Run purpose reveals its follow-up ---------------------------------
+     <select data-run-purpose>…</select>
+     <div data-run-kind hidden>…</div>
+
+     A backdoor's kind is permanent once the install lands, so it is asked at
+     the door with the purpose and nowhere else. Hidden rather than disabled:
+     it is not a field that is unavailable, it is a question that only one
+     purpose asks. The server drops it for every other purpose anyway, so this
+     is the courtesy and not the guard. */
+  function syncRunKind() {
+    const purpose = document.querySelector("[data-run-purpose]");
+    const kind = document.querySelector("[data-run-kind]");
+    if (purpose && kind) kind.hidden = purpose.value !== "backdoor";
+  }
+
+  on("change", "[data-run-purpose]", syncRunKind);
+  syncRunKind();
+
   /* --- Sortable tables --------------------------------------------------
      <th aria-sort="none" data-sort="num|text">                           */
   on("click", "th[data-sort]", (e, th) => {

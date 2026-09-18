@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\BookmarkKeeper;
 use App\Cyberspace\BookmarkKind;
+use App\Cyberspace\ChainBuilder;
 use App\Cyberspace\Grid;
 use App\Cyberspace\MapView;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Position;
 use App\Cyberspace\Probe;
+use App\Cyberspace\RunPurpose;
 use App\Cyberspace\SweepResult;
 use App\Cyberspace\TravelResult;
 use App\Models\Bookmark;
@@ -41,7 +44,7 @@ use Illuminate\View\View;
  */
 class CyberspaceController extends Controller
 {
-    public function index(Request $request, Probe $probe): View
+    public function index(Request $request, Probe $probe, ChainBuilder $chains): View
     {
         $character = $this->character($request);
         $grid = Grid::fromConfig();
@@ -119,6 +122,27 @@ class CyberspaceController extends Controller
             // third and the screen should know it.
             'canScan' => $probe->freeAnalyser($character) !== null,
             'scanPasses' => $probe->passesFor($character),
+            /*
+             * WHAT A RUN FROM HERE WOULD LOOK LIKE, before committing to one.
+             *
+             * The machine is read live rather than from the contact, because
+             * this is the thing they are about to attack and a remembered one
+             * may not be there — `RunStarter` will refuse that, and the screen
+             * should not offer it either.
+             *
+             * The route is built by the same call the run itself makes, so the
+             * chain a player was shown is the chain they get. Between looking
+             * and pressing, the world may move; that is what the degradation
+             * rule is for.
+             */
+            'target' => $target = $character->isJackedIn()
+                ? System::query()->at($character->gridPosition())->first()
+                : null,
+            'canRun' => $target !== null && $target->type->isInteractable() && ! $target->isLockedDown(),
+            'chain' => $target === null ? collect() : $chains->for($character, $target),
+            'chainCap' => $chains->hopsAllowed($character),
+            'purposes' => RunPurpose::cases(),
+            'backdoorKinds' => BackdoorKind::cases(),
         ]);
     }
 

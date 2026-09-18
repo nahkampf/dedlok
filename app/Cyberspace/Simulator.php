@@ -62,6 +62,7 @@ final readonly class Simulator
         private DefeatResolver $defeats,
         private Extractor $extractor,
         private Backdoors $backdoors,
+        private Lockdown $lockdown,
         private RaidLedger $raids,
         private Closure $roll,
     ) {}
@@ -85,6 +86,7 @@ final readonly class Simulator
             DefeatResolver::fromConfig($roll),
             new Extractor,
             new Backdoors,
+            Lockdown::fromConfig($roll),
             // Same die again: a test that pins the turn's roll also pins where
             // a retired machine moves to.
             RaidLedger::fromConfig($roll),
@@ -310,6 +312,30 @@ final readonly class Simulator
     private function traceGetsThrough(Run $run): bool
     {
         $grades = $run->routingGrades();
+
+        /*
+         * WALK PAST THE GAPS FIRST, and for free.
+         *
+         * A hop that has gone dark — somebody else's lockdown, a burn, the
+         * nightly ageing roll — is not in the way of anything, so it costs the
+         * trace nothing and holds it up for nothing. The stored route is never
+         * rewritten, so these are gaps in a fixed list rather than a list that
+         * shrank: a hop already passed stays passed, and one that vanishes
+         * ahead of the trace simply gives it one less to get through.
+         *
+         * Done in the same turn as the roll that follows, because a gap is not
+         * an obstacle and a turn spent on nothing would be the trace being
+         * hindered by a machine that is not there.
+         */
+        // `array_key_exists` and not `??`: a hop that is PRESENT AND NULL is a
+        // gap to step over, and one that is absent is the end of the route.
+        // Null coalescing cannot tell those apart, which is exactly the bug
+        // this loop had first time out.
+        while (array_key_exists((int) $run->trace_hop, $grades)
+            && $grades[(int) $run->trace_hop] === null) {
+            $run->trace_hop = (int) $run->trace_hop + 1;
+        }
+
         $next = $grades[(int) $run->trace_hop] ?? null;
 
         if ($next === null) {
@@ -368,7 +394,33 @@ final readonly class Simulator
      */
     private function burnTheChain(Run $run): void
     {
-        // Backdoors do not exist. When they do, this is where they stop.
+        $chain = (array) ($run->chain ?? []);
+
+        if ($chain === []) {
+            return;
+        }
+
+        /*
+         * A TRACE THAT REACHED YOU FOLLOWED THE PATH ALL THE WAY HOME.
+         *
+         * Every system on the route is exposed: the backdoors are gone, the
+         * machines shut, and when their windows close they relocate. That is
+         * the cost that makes a long chain a decision rather than a free
+         * upgrade — ten hops is ten successful backdoor runs and one bad night
+         * takes all of them.
+         *
+         * A trace PASSING THROUGH a hop does nothing to it; this is only ever
+         * reached by one that finished. Shutting is the whole of it, because
+         * `Lockdown::shut()` already closes every door into a machine and the
+         * relocation follows from the window closing — so the two halves of
+         * "the backdoors are gone and the systems move" are one call.
+         *
+         * Machines that have already gone are simply not found, which is the
+         * ordinary way a route decays and needs no case of its own.
+         */
+        foreach (System::query()->whereIn('id', $chain)->get() as $hop) {
+            $this->lockdown->shut($hop);
+        }
     }
 
     /**

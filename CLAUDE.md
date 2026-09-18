@@ -1784,6 +1784,31 @@ roll now.
   and were deliberately left alone.
 - Past the end of the chain the trace comes on unopposed, and an empty chain is
   that case from the first turn.
+- **THE CHAIN IS BUILT, NOT PICKED.** `App\Cyberspace\ChainBuilder` takes every
+  routing backdoor the character holds, best grade first, capped at
+  `routing_hops`, and never the target. There is nothing to choose: a hop is
+  free to include and hinders by its machine's grade, so a picker would be a
+  list whose right answer is always "all of them, best first", asked on every
+  run. What a player decides is which machines to hold one on.
+- **It is a PREVIEW before it is a commitment.** The map's *Go in* panel shows
+  the same list `RunStarter` writes, so the chain somebody was shown is the
+  chain they get — and everything on that panel is decided for good: the
+  purpose, the backdoor kind, and the route.
+- **`runs.chain` is system ids and never grades**, snapshotted at the door, and
+  **never rewritten**. `trace_hop` indexes it, so a hop that goes dark has to
+  become a GAP rather than a shift — `routingGrades()` returns one slot per
+  stored hop with null where the machine or the backdoor has gone, and
+  `traceGetsThrough()` steps over the nulls for free in the same turn. That is
+  how "a hop already passed stays passed, and one lost ahead simply gives the
+  trace one less to get through" holds without anybody rewriting an index.
+  **Use `array_key_exists` and not `??` when reading that list**: a present null
+  is a gap and an absent key is the end of the route, and null coalescing
+  cannot tell them apart.
+- **`Simulator::burnTheChain()` is no longer a no-op.** A trace that reaches you
+  followed the path home, so every machine on the route is shut through
+  `Lockdown::shut()` — which closes every door into each of them and relocates
+  them when their windows expire. One call does both halves of "the backdoors
+  are gone and the systems move".
 - **A completed trace puts heat on the character and burns the chain.**
   `characters.heat` is persistent and theirs; **one point is a placeholder** and
   what heat DOES is undesigned — see TODO.md. Burning the chain is called and is

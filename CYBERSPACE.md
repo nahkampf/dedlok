@@ -485,11 +485,19 @@ comes straight back — and it is the *trace* that has to walk the chain to reac
 you. So a chain costs no turns, no bandwidth and no heat. What limits it is
 skill, and what it risks is itself.
 
-**The chain is declared per run, not held standing.** Every run picks its own
-path from the routing backdoors the character holds, so how much infrastructure
-goes on the table is a decision made fresh each time: a long chain for the job
-that matters, a short one or none for a routine raid. That is the decision the
-exposure rule exists to make interesting.
+**The chain is declared per run, not held standing.** Every run takes its own
+path from the routing backdoors the character holds, snapshotted on
+`runs.chain` when it begins — so a backdoor installed afterwards is not on that
+run's route, and one lost during it drops out.
+
+> **Built, and it is BUILT rather than picked.** `App\Cyberspace\ChainBuilder`
+> takes everything available, best grade first, capped at `routing_hops`, never
+> including the target. There is nothing to choose: a hop is free to include
+> and hinders by its machine's grade, so a picker would be a list whose right
+> answer is always "all of them, best first" — asked on every run. What a
+> player decides is which machines to hold a routing backdoor on, one backdoor
+> run at a time. The map's *Go in* panel shows the route before committing, and
+> it is the same call the run makes.
 
 **Chain length is a skill, and only a skill:**
 
@@ -527,7 +535,10 @@ and a full chain of ten has a 40% chance of buying at least one — a chance
 rather than an income, which is the right shape for a machine nobody would
 otherwise bother with.
 
-**A completed trace burns the whole chain.** A trace *passing through* a
+**A completed trace burns the whole chain.** **Built**: `Simulator::burnTheChain()`
+shuts every machine on the route, which closes every door into each of them and
+relocates them when their windows expire.
+ A trace *passing through* a
 backdoored system does nothing to it — that is what the chain is for. But a
 trace that reaches 100% and finds you has followed the path all the way home,
 and every system on it is exposed: the backdoors are gone, the systems lock

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
@@ -40,9 +41,16 @@ class RunController extends Controller
 
         $data = $request->validate([
             'purpose' => ['required', Rule::in(RunPurpose::values())],
+            // Only a backdoor run carries one, and `RunStarter` drops it for
+            // every other purpose rather than trusting the form.
+            'backdoor_kind' => ['nullable', Rule::in(BackdoorKind::values())],
         ]);
 
-        $result = $this->runs->start($character, RunPurpose::from($data['purpose']));
+        $result = $this->runs->start(
+            $character,
+            RunPurpose::from($data['purpose']),
+            ($data['backdoor_kind'] ?? null) === null ? null : BackdoorKind::from($data['backdoor_kind']),
+        );
 
         if (! $result->succeeded()) {
             return back()->with('error', $result->refusal->message());

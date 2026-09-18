@@ -249,6 +249,93 @@
             </form>
         </section>
 
+        {{-- GOING IN, AND WHAT IT WOULD LOOK LIKE.
+
+             The one place a run begins. Everything here is decided BEFORE
+             committing, because none of it can be changed afterwards: the
+             purpose is fixed at the door, a backdoor's kind is permanent once
+             it lands, and the route is snapshotted the moment the run starts.
+
+             The chain is shown rather than chosen. Every routing backdoor is
+             free to include and hinders by its machine's grade, so a picker
+             would be a list whose right answer is always "all of them, best
+             first" — asked on every run. What a player decides is which
+             machines to hold, one backdoor run at a time. --}}
+        @if ($target)
+            <section class="panel panel--snug">
+                <div class="panel__hd">
+                    <h2>{{ Text::get('cyberspace.run.setup.heading') }}</h2>
+                    <div class="spacer"></div>
+                    <span class="tag">{{ $target->displayName() }}</span>
+                </div>
+
+                @if (! $canRun)
+                    <p class="micro" style="color:var(--ink-2);padding:var(--s-3) 0;margin:0">
+                        {{ $target->isLockedDown()
+                            ? Text::get('cyberspace.run.refused.locked_down')
+                            : Text::get('cyberspace.run.refused.not_intrudable') }}
+                    </p>
+                @else
+                    <form method="POST" action="{{ route('run.start') }}" style="padding:var(--s-3) 0">
+                        @csrf
+
+                        <div class="field">
+                            <label class="field__label" for="purpose">{{ Text::get('cyberspace.run.setup.purpose') }}</label>
+                            <select class="input cut" id="purpose" name="purpose" data-run-purpose>
+                                @foreach ($purposes as $purpose)
+                                    <option value="{{ $purpose->value }}">{{ $purpose->label() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Only a backdoor run asks, and it asks once: the
+                             kind cannot be changed after the install lands. --}}
+                        <div class="field" data-run-kind hidden>
+                            <label class="field__label" for="backdoor_kind">{{ Text::get('cyberspace.run.setup.kind') }}</label>
+                            <select class="input cut" id="backdoor_kind" name="backdoor_kind">
+                                @foreach ($backdoorKinds as $kind)
+                                    <option value="{{ $kind->value }}">{{ $kind->label() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- THE ROUTE, as a chain rather than a count: it is
+                             the same widget the run screen draws the trace
+                             walking, so the two read alike. --}}
+                        <div style="padding:var(--s-2) 0 var(--s-3)">
+                            <div class="micro" style="color:var(--ink-2);margin-bottom:var(--s-2)">
+                                {{ Text::get('cyberspace.run.setup.chain') }}
+                                <span class="num">{{ $chain->count() }}/{{ $chainCap }}</span>
+                            </div>
+
+                            @if ($chain->isEmpty())
+                                <p class="micro" style="color:var(--ink-2);margin:0">
+                                    {{ $chainCap < 1
+                                        ? Text::get('cyberspace.run.setup.chain_untrained')
+                                        : Text::get('cyberspace.run.setup.chain_none') }}
+                                </p>
+                            @else
+                                <div class="row row--wrap" style="--gap:var(--s-2)">
+                                    @foreach ($chain as $hop)
+                                        <span class="tag" title="{{ $hop->displayName() }}">
+                                            {{ Text::get('cyberspace.run.setup.hop', ['grade' => $hop->grade]) }}
+                                        </span>
+                                    @endforeach
+                                </div>
+                                <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
+                                    {{ Text::get('cyberspace.run.setup.chain_cost') }}
+                                </p>
+                            @endif
+                        </div>
+
+                        <button type="submit" class="btn btn--go cut">
+                            {{ Text::get('cyberspace.run.setup.begin') }}
+                        </button>
+                    </form>
+                @endif
+            </section>
+        @endif
+
         {{-- THE TWO STANDING INSTRUCTIONS.
 
              An accordion because they are set once and left alone — a play

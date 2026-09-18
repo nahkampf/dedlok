@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Checks\CheckRoller;
+use App\Cyberspace\ChainBuilder;
 use App\Cyberspace\Lockdown;
 use App\Cyberspace\Probe;
 use App\Cyberspace\Simulator;
@@ -82,6 +83,12 @@ class AppServiceProvider extends ServiceProvider
          * that die.
          */
         $this->app->bind(Lockdown::class, static fn (): Lockdown => Lockdown::fromConfig());
+
+        // Not for a die this time — it has none — but because it needs a
+        // Resolver and the container cannot reflect its way to `new Backdoors`.
+        $this->app->bind(ChainBuilder::class, static fn ($app): ChainBuilder => ChainBuilder::fromConfig(
+            $app->make(Resolver::class),
+        ));
 
         $this->app->bind(Simulator::class, static fn ($app): Simulator => Simulator::fromConfig(
             null,
