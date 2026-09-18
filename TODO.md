@@ -283,6 +283,29 @@ at which something changes, and nothing names one.
 
 ---
 
+## The gap that let a 500 ship
+
+**Status:** closed for the run routes and open everywhere else.
+`tests/Feature/Cyberspace/RunScreenSmokeTest.php` walks every run route over
+HTTP — the screen in five states, every `RunAction` through `run.act`, the
+standalone egress door, and the lock in front of the other screens. It was
+written after two bugs shipped in 0.10.0 that fourteen hundred unit tests could
+not see, because every one of them built its own `Simulator` and nothing ever
+posted to the route.
+
+**The rule it encodes.** A test that constructs its own collaborators cannot
+find a container problem, and a mechanic tested only through its own class
+cannot find a broken screen. Anything with a route wants at least one test that
+takes what a real request takes.
+
+**Where the same gap is still open** — no HTTP-level pass exists over the deck
+screen's fitting and stripping forms, the implant body map, the stash's item
+actions, or the admin editors' writes. The cyberspace map has one (the scan
+dialog polls through `cyberspace.reading`, which a test exercises), and the run
+screen now has one. The rest are unit-tested only.
+
+---
+
 ## Lockdown, burn and relocation
 
 **Status:** relocation is built and lockdown is not. `App\Cyberspace\RaidLedger`
