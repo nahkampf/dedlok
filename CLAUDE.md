@@ -1475,6 +1475,25 @@ carries the detail.
 - **`Simulator::touchTheCore()` is that second look, shared.** Extraction and a
   backdoor install are the same act as far as the machine is concerned, so the
   roll lives in one place rather than in each.
+- **A BACKDOOR IS NOT PERMANENT AND FOUR THINGS TAKE ONE.** Three are
+  somebody's fault and one is nobody's. `Backdoors::loseAllOn()` is the rule
+  and it is asked in two places — `Lockdown::shut()`, which is the machine
+  finding out, and `RaidLedger::relocate()`, which is the physical fact that a
+  door into a box that has moved is not a door. A BURN needs no entry at all:
+  it destroys the row and the foreign key cascades. **A stranger's bad night
+  costs you a door you were careful with** — a backdoor keeps a machine open
+  against ITS OWN triggers and has never protected against somebody else being
+  caught in there, which is the same shared world that puts the raid counter on
+  the machine rather than on the person.
+- **The nightly ageing roll is the one that is nobody's fault**, and the only
+  thing that takes a backdoor from somebody who did nothing wrong.
+  `cyberspace:age-backdoors`, one roll per backdoor, **odds rising with AGE and
+  with nothing else** — not the machine's grade, not what has been done through
+  it, so a backdoor cannot be held carefully enough to keep. A hit moves the
+  MACHINE, which takes every other door into it along too. The player is not
+  told, which is worse than CYBERSPACE.md asks for: there is no notification
+  centre and, unlike a cancelled run, no screen they are about to land on. It
+  is logged until there is somewhere to send it.
 - **The backdoor mark is the one thing on the map that is NOT memory.** A
   contact is a sighting and is allowed to be wrong; what you hold is a fact
   about you. `MapView` reads the positions off the machines the rows point at,

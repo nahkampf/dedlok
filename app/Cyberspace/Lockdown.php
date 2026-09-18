@@ -57,6 +57,7 @@ final readonly class Lockdown
     /** @param  Closure(int, int): int  $roll */
     public function __construct(
         private RaidLedger $raids,
+        private Backdoors $backdoors,
         private Closure $roll,
         private int $minHours,
         private int $maxHours,
@@ -69,6 +70,7 @@ final readonly class Lockdown
 
         return new self(
             RaidLedger::fromConfig($roll),
+            new Backdoors,
             $roll,
             (int) Config::get('cyberspace.lockdown.hours.min', 2),
             (int) Config::get('cyberspace.lockdown.hours.max', 6),
@@ -136,6 +138,20 @@ final readonly class Lockdown
             $system->forceFill([
                 'locked_down_until' => now()->addHours(($this->roll)($this->minHours, $this->maxHours)),
             ])->save();
+
+            /*
+             * A MACHINE THAT HAS FOUND OUT CLOSES THE WAY IN.
+             *
+             * Everybody's, not only the runner's — and the runner who caused
+             * this may not hold one at all. A backdoor keeps a system open
+             * against ITS OWN triggers: a clean install leaves no lockdown
+             * behind, and a machine you hold does not look up when you arrive.
+             * It has never protected against somebody ELSE being caught in
+             * there, and the shared world is the whole reason: a stranger's
+             * bad night can cost you a door you were careful with, exactly as
+             * a stranger's raid can spend a machine's third life.
+             */
+            $this->backdoors->loseAllOn($system);
 
             $this->throwOutEverybodyInside($system);
         });

@@ -60,11 +60,23 @@ Schedule::command('training:deposit --quiet-when-idle')
  * writes thousands of rows is not something to find out about later.
  *
  * CYBERSPACE.md gives housekeeping three more nightly jobs — backdoor
- * discovery, siphon payouts, heat decay — and a frequent one for lockdown
- * expiry. None of those exist yet; this is the first of them.
+ * discovery, siphon payouts, heat decay. The first of those is below; the
+ * other two are still unbuilt, and lockdown expiry has its own cadence
+ * further down because a window measured in hours cannot wait for 04:00.
  */
 Schedule::command('cyberspace:restock')
     ->dailyAt('04:10')
+    ->withoutOverlapping();
+
+/*
+ * Backdoor discovery, and the only thing that takes one from somebody who did
+ * nothing wrong. Odds rise with age and with nothing else, so a backdoor is a
+ * wasting asset rather than something that can be held carefully enough to
+ * keep. Ten past four, after the nodes restock, because a machine that moves
+ * tonight should have been stocked as itself first.
+ */
+Schedule::command('cyberspace:age-backdoors --quiet-when-idle')
+    ->dailyAt('04:25')
     ->withoutOverlapping();
 
 Schedule::command('market:seed')

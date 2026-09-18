@@ -129,6 +129,12 @@ final readonly class RaidLedger
         }
 
         return DB::transaction(function () use ($system, $position): bool {
+            // A DOOR INTO A BOX THAT HAS MOVED IS NOT A DOOR. Asked here as
+            // well as at `Lockdown::shut()` because this is the physical fact
+            // rather than the machine noticing — the nightly ageing roll
+            // relocates without shutting anything, and a burn will too.
+            (new Backdoors)->loseAllOn($system);
+
             $system->forceFill([
                 'x' => $position->x,
                 'y' => $position->y,

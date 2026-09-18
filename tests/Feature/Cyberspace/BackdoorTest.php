@@ -11,6 +11,7 @@ use App\Cyberspace\Lockdown;
 use App\Cyberspace\MapCell;
 use App\Cyberspace\MapView;
 use App\Cyberspace\Position;
+use App\Cyberspace\RaidLedger;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
@@ -227,6 +228,134 @@ final class BackdoorTest extends TestCase
         $this->assertTrue($run->fresh()->detected, 'the core touch still rolled');
     }
 
+    // ---- how one is lost ----------------------------------------------------
+
+    /**
+     * A STRANGER'S BAD NIGHT COSTS YOU A DOOR YOU WERE CAREFUL WITH.
+     *
+     * A backdoor keeps a machine open against ITS OWN triggers — a clean
+     * install leaves no lockdown, and a machine you hold does not look up when
+     * you arrive. It has never protected against somebody else being caught in
+     * there, and a machine that has found out audits itself.
+     */
+    public function test_somebody_elses_lockdown_closes_your_way_in(): void
+    {
+        $system = $this->machine();
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+
+        Lockdown::fromConfig(static fn (int $min, int $max): int => $max)->shut($system);
+
+        $this->assertNull((new Backdoors)->heldOn($this->character->fresh(), $system));
+    }
+
+    /** And it takes everybody's, because the machine closed one door and not a list. */
+    public function test_a_lockdown_closes_every_door_into_the_machine(): void
+    {
+        $system = $this->machine();
+        $stranger = Character::factory()->create(['archetype' => 3]);
+
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+        (new Backdoors)->install($stranger, $system, BackdoorKind::Routing);
+
+        Lockdown::fromConfig(static fn (int $min, int $max): int => $max)->shut($system);
+
+        $this->assertSame(0, Backdoor::query()->count());
+    }
+
+    /** A door into a box that has moved is not a door. */
+    public function test_relocating_the_machine_closes_it_too(): void
+    {
+        $system = $this->machine();
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Routing);
+
+        RaidLedger::fromConfig(static fn (int $min, int $max): int => $max)->relocate($system);
+
+        $this->assertSame(0, Backdoor::query()->count());
+    }
+
+    /** A burn needs no rule of its own: the row goes and the key cascades. */
+    public function test_destroying_the_machine_cascades(): void
+    {
+        $system = $this->machine();
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+
+        $system->delete();
+
+        $this->assertSame(0, Backdoor::query()->count());
+    }
+
+    // ---- the nightly ageing roll ---------------------------------------------
+
+    /** The odds read AGE and nothing else, so a fresh one is nearly always safe. */
+    public function test_a_fresh_backdoor_usually_survives_the_night(): void
+    {
+        $system = $this->machine();
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+
+        // Rolled just above a one-in-a-hundred chance.
+        $lost = $this->ageing(rolling: 200)->age();
+
+        $this->assertSame([], $lost);
+        $this->assertSame(1, Backdoor::query()->count());
+    }
+
+    public function test_an_old_backdoor_is_found_far_more_often(): void
+    {
+        $system = $this->machine();
+        $held = (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+        $held->forceFill(['installed_at' => now()->subDays(100)])->save();
+
+        // 1% + 100 days x 0.05 = 6%, and this roll is inside it but outside
+        // the 1% a fresh one would have had.
+        $lost = $this->ageing(rolling: 550)->age();
+
+        $this->assertCount(1, $lost);
+        $this->assertSame(0, Backdoor::query()->count());
+    }
+
+    /** The cap holds, however long somebody has sat on one. */
+    public function test_the_odds_stop_climbing_at_the_cap(): void
+    {
+        $system = $this->machine();
+        $held = (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+        $held->forceFill(['installed_at' => now()->subYears(5)])->save();
+
+        // Just outside a tenth, which is where the table stops.
+        $this->assertSame([], $this->ageing(rolling: 1001)->age());
+        $this->assertSame(1, Backdoor::query()->count());
+    }
+
+    /** Being found moves the machine, which takes every other door with it. */
+    public function test_being_found_moves_the_machine(): void
+    {
+        $system = $this->machine();
+        $stranger = Character::factory()->create(['archetype' => 3]);
+
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon)
+            ->forceFill(['installed_at' => now()->subDays(100)])->save();
+        (new Backdoors)->install($stranger, $system, BackdoorKind::Routing);
+
+        $lost = $this->ageing(rolling: 1)->age();
+
+        $this->assertTrue($lost[0]['moved']);
+        $this->assertNotSame('DEADBEEF', $system->fresh()->address);
+        $this->assertSame(0, Backdoor::query()->count(), 'and the other door went with it');
+    }
+
+    public function test_the_command_rolls_and_reports(): void
+    {
+        $system = $this->machine();
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+
+        $this->artisan('cyberspace:age-backdoors --dry-run')
+            ->expectsOutputToContain('1 backdoor(s) would be rolled')
+            ->assertSuccessful();
+
+        $this->assertSame(1, Backdoor::query()->count(), 'a dry run wrote nothing');
+
+        $this->artisan('cyberspace:age-backdoors')->assertSuccessful();
+    }
+
     // ---- and what the map says ----------------------------------------------
 
     /**
@@ -299,6 +428,15 @@ final class BackdoorTest extends TestCase
             static fn (int $min, int $max): int => $max,
             app(Resolver::class),
             app(CheckRoller::class),
+        );
+    }
+
+    /** The ageing sweep with its percentile die pinned. */
+    private function ageing(int $rolling): Backdoors
+    {
+        return new Backdoors(
+            RaidLedger::fromConfig(static fn (int $min, int $max): int => $max),
+            static fn (int $min, int $max): int => $rolling,
         );
     }
 

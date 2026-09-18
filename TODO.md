@@ -333,10 +333,6 @@ skipped approach roll on a machine you hold, and the map's mark.
 
 **Not built, and the first two matter most:**
 
-- **A backdoor is permanent today**, which is the one thing the design says it
-  must not be. The nightly ageing roll — odds rising with age and nothing else
-  — is what takes a siphon away, and it is the only thing that ever does.
-  `Backdoors::lose()` is already the door it will write through.
 - **A siphon pays nothing.** The nightly payout is a little from each
   backdoored system, scaled by grade, straight into creds. Without it, the
   siphon kind is a choice with no consequence — the same criticism this file
@@ -349,6 +345,10 @@ skipped approach roll on a machine you hold, and the map's mark.
   `Simulator::burnTheChain()` stopping being a no-op, because a completed trace
   takes every routing backdoor in that run's chain at once and relocates the
   machines.
+- **Nobody is TOLD their backdoor was found.** The ageing roll logs it, because
+  there is no notification centre and — unlike a cancelled run — no screen the
+  player is about to land on that could carry the message. CYBERSPACE.md asks
+  for a notification; this is the gap standing in for one.
 - **There is no way to START a run from the UI.** `run.start` is routed and
   nothing posts to it — a run can only be begun from a test or by hand. That
   predates backdoors and blocks extraction just as much; the map needs a panel

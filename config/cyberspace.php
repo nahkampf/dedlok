@@ -354,6 +354,41 @@ return [
     ],
 
     /*
+    | HOW A BACKDOOR IS LOST.
+    |
+    | A backdoor keeps a system open — no lockdown, no relocation, a permanent
+    | address in a world where nothing else has one. That is a genuinely
+    | powerful thing to hold, so it is not held for ever, and this is the only
+    | thing that takes one from somebody who does nothing wrong.
+    |
+    | ONE ROLL PER BACKDOOR PER NIGHT, and the odds rise with its AGE and with
+    | nothing else. Not with the machine's grade, not with what has been done
+    | through it — age alone, so a backdoor is a wasting asset rather than a
+    | thing you can play carefully enough to keep.
+    |
+    |   chance = base + (days held x per_day), capped
+    |
+    | 1% on the first night, climbing about a point and a half a month, capped
+    | at a tenth. That puts the median life of a backdoor somewhere near six
+    | weeks: long enough that installing one is worth the run, short enough
+    | that a portfolio has to be maintained rather than accumulated. Nothing
+    | has been balanced against it — like every number a raid touches — and it
+    | is the first dial to turn if backdoors feel disposable or eternal.
+    |
+    | A hit REMOVES THE BACKDOOR AND MOVES THE MACHINE: somebody found the way
+    | in, and the machine they found it on does not stay where it was. That
+    | takes every OTHER backdoor on the same machine with it, which is correct
+    | — they were all doors into a box that has moved.
+    */
+    'backdoors' => [
+        'ageing' => [
+            'base' => 1.0,
+            'per_day' => 0.05,
+            'cap' => 10.0,
+        ],
+    ],
+
+    /*
     | HOW LONG A MACHINE STAYS SHUT AFTER IT FINDS OUT.
     |
     | TWO TO SIX HOURS, rolled per lockdown. Long enough that waiting one out

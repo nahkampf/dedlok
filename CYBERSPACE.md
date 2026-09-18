@@ -448,7 +448,7 @@ means going back and doing the run again.
 
 | | **Siphon** | **Routing** |
 | --- | --- | --- |
-| What it gives | a little cash every night, paid straight into your creds | a hop in the chain a trace has to walk |
+| What it gives | a little cash every night, paid straight into your creds — **not built** | a hop in the chain a trace has to walk — **not built** |
 | Where it is useful | on a system with something worth taking | on any system at all, however worthless |
 | How you lose it | the nightly ageing roll, and nothing else | the ageing roll **or** a completed trace, which takes every routing backdoor in that run's chain at once |
 
@@ -464,13 +464,15 @@ still rolls, still counts toward the system's three raids, and still locks the
 system down if it is caught. A backdoor buys you half the risk permanently, not
 a bypass of the brake.
 
-> **Backdoors are built, less the chain and the nightly rolls.** The table,
+> **Backdoors are built, less the chain and the siphon payout.** The table,
 > the two kinds, installing one on a `RunPurpose::Backdoor` run, the cleanup
-> that leaves no lockdown behind, the skipped approach roll and the map's mark.
-> What is NOT built: the routing chain below (so `Run::routingGrades()` still
-> returns `[]`), the nightly siphon payout, and the ageing roll that is the
-> only thing which takes a siphon away. A backdoor is therefore permanent
-> today, which is the one thing the design says it must not be.
+> that leaves no lockdown behind, the skipped approach roll, the map's mark —
+> and every way one is lost: the nightly ageing roll
+> (`cyberspace:age-backdoors`), a lockdown somebody else triggered, a machine
+> that relocates for any reason, and a burn through the foreign key. What is
+> NOT built: the routing chain below, so `Run::routingGrades()` still returns
+> `[]` and a trace still walks unopposed; and the nightly siphon payout, so a
+> siphon is currently a choice that pays nothing.
 
 ### The routing chain
 
