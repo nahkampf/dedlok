@@ -244,6 +244,26 @@ final class Sheet
             )) / (float) $pool['divisor'];
         }
 
+        /*
+         * A DECLARED BASE, for a stat that is neither computed from attributes
+         * nor stored on the character — it starts at a number and everything
+         * it is worth comes from modifiers. `routing_hops` is the first:
+         * nobody routes a run through anything until a skill says otherwise.
+         *
+         * Opt-in by an entry in `stats.bases`, so the stats that
+         * already hand a base in at their call site (`icebreaker_damage` from
+         * zero, `scan_passes` from config) keep resolving exactly as they do.
+         * Without this a declared stat with no formula and no pool throws when
+         * asked through a Sheet, which is a loud failure but a failure all the
+         * same — `Character::stat()` is the obvious way to ask and it should
+         * answer.
+         */
+        $declared = config("stats.bases.{$statId}");
+
+        if ($declared !== null) {
+            return (float) $declared;
+        }
+
         $formula = config("stats.formulas.{$statId}");
 
         if ($formula === null) {

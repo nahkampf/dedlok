@@ -499,12 +499,33 @@ exposure rule exists to make interesting.
 | **Advanced Routing** | 8 | Cyberdecks L5, Routing L5 | one further system per level |
 
 Ten hops is therefore the ceiling a character can reach on skills alone, and
-implants and gear are expected to lift it later. Both skills exist as rows
-today. Siphon backdoors are not eligible and never appear in the list.
+implants and gear are expected to lift it later. **Built**: `routing_hops` is a
+resolved stat with base zero, and both skills grant one per level — so the
+ceiling is content rather than code, and an implant that lifts it is a row.
+Nothing READS it yet, because the chain itself is not built. Siphon backdoors are not eligible and never appear in the list.
 
-**Each backdoored system will hinder the trace by a different amount** —
-depending on what it is, who owns it and how well it is dug in. That is
-specified and not designed: for now a hop is a hop.
+~~**Each backdoored system will hinder the trace by a different amount** —
+depending on what it is, who owns it and how well it is dug in.~~ **Decided:
+grade, and nothing else.** A hop's chance of letting the trace through is what
+`cyberspace.trace.advance` says for the machine's grade, which is the
+differentiator already on the row. Owner was rejected as a number per corp for
+121 of them; age was rejected because it would pull against the ageing roll,
+which makes an old backdoor more likely to vanish rather than better at its job.
+
+**A hop only ever delays by FAILING.** Passing one costs the trace nothing — it
+moves up and advances in the same turn — so what a chain is worth is the held
+turns its failures buy. That is a decision and not an oversight: the
+alternative, where passing a hop also costs a turn, would put the price of a
+chain in its length rather than in what it is made of, and ten junk machines
+would be worth ten guaranteed turns.
+
+**Grade 1 is 95% and not 100%**, which is the whole of what keeps a worthless
+machine worth backdooring. At 100 a low-grade hop could never fail, so it could
+never delay anything, and this document promises a routing backdoor is useful
+on any system at all. At 95 one junk hop is worth about a twentieth of a turn
+and a full chain of ten has a 40% chance of buying at least one — a chance
+rather than an income, which is the right shape for a machine nobody would
+otherwise bother with.
 
 **A completed trace burns the whole chain.** A trace *passing through* a
 backdoored system does nothing to it — that is what the chain is for. But a

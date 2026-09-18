@@ -308,6 +308,31 @@ return [
             'rounding' => 'tenth',
         ],
 
+        /*
+        | How many systems a character may route a run through.
+        |
+        | THE CEILING IS TEN AND IT IS ALL SKILL: one hop per level of Routing
+        | and one more per level of Advanced Routing, which is the table
+        | CYBERSPACE.md has carried since the chain was specified. Implants and
+        | gear are expected to lift it later, and they will do so by being
+        | modifiers on this id rather than by anything learning what a chain is.
+        |
+        | BASE ZERO, so it is a gate before it is a number — the same shape as
+        | `icebreaker_damage` and `stealth`. A character who has trained
+        | neither skill routes through nothing and a trace comes straight at
+        | them, which is the ordinary state rather than a penalty.
+        |
+        | It is a CEILING and not an allowance: a run declares its own chain
+        | from the routing backdoors its owner holds, and this is the most it
+        | may name. Holding fewer is the usual case.
+        */
+        'routing_hops' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'coop_slots' => [
             'tags' => ['cyberspace'],
             'min' => 0,
@@ -510,6 +535,33 @@ return [
     | The inputs are RESOLVED, like a formula's: an implant that raises
     | Perception raises stealth, with no further wiring.
     */
+    /*
+    |----------------------------------------------------------------------
+    | Bases
+    |----------------------------------------------------------------------
+    |
+    | A starting value for a stat that is neither computed from attributes nor
+    | stored on the character: it begins at a number and everything it is worth
+    | comes from modifiers. The third map `App\Stats\Sheet::baseFor()` walks,
+    | after pools and before formulas.
+    |
+    | It exists so `Character::stat()` can answer for this family at all.
+    | Without an entry a declared stat with no pool and no formula THROWS when
+    | asked through a Sheet — which is a loud failure rather than a wrong
+    | answer, but still a landmine under the obvious way to ask.
+    |
+    | The older members of the family are deliberately not listed:
+    | `icebreaker_damage` hands in zero at its call site and `scan_passes`
+    | hands in a config value at its own. Listing them here would change how
+    | they resolve for the sake of tidiness, which is not a reason.
+    */
+    'bases' => [
+
+        // Nobody routes a run through anything until a skill says otherwise.
+        // Routing and Advanced Routing grant one hop per level each.
+        'routing_hops' => 0,
+    ],
+
     'pools' => [
 
         /*

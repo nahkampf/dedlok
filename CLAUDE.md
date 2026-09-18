@@ -1764,10 +1764,26 @@ roll now.
   it is why the column exists. Rolling every hop every turn would make a long
   chain not slow but impassable: ten simultaneous successes for ever, rather
   than ten successes eventually.
-- **The chance is what the hop's GRADE allows** — 100% at grade 1 down to 20% at
-  grade 9 — so what a chain buys is the sum of 1/p over its hops. Three grade 9s
-  is about fifteen turns of nothing happening. Past the end of the chain the
-  trace comes on unopposed, and an empty chain is that case from the first turn.
+- **The chance is what the hop's GRADE allows** — 95% at grade 1 down to 20% at
+  grade 9 — and **grade is the only thing a hop reads**. Owner and dig-in were
+  considered and decided against: a per-corp weight means a number for 121
+  corps, and reading age would pull against the ageing roll, which makes an old
+  backdoor likelier to vanish rather than better.
+- **A hop only delays by FAILING**, since passing one advances the trace in the
+  same turn. So a chain is worth the held turns its failures buy, and **grade 1
+  is 95 rather than 100 for exactly that reason**: at 100 a junk hop could never
+  fail and so could never delay anything, which contradicts the design's own
+  promise that a routing backdoor is useful on any machine at all. Ten junk hops
+  is a 40% chance of one held turn — a chance rather than an income.
+- **`routing_hops` is the ceiling, and it is all skill**: base zero, one hop per
+  level of Routing and of Advanced Routing, ten in total. It is the first entry
+  in `stats.bases` — the third map `Sheet::baseFor()` walks, after pools and
+  formulas — which exists so `Character::stat()` can answer for a stat that is
+  neither computed from attributes nor stored. The older stats of that family
+  (`icebreaker_damage`, `scan_passes`) still hand a base in at their call sites
+  and were deliberately left alone.
+- Past the end of the chain the trace comes on unopposed, and an empty chain is
+  that case from the first turn.
 - **A completed trace puts heat on the character and burns the chain.**
   `characters.heat` is persistent and theirs; **one point is a placeholder** and
   what heat DOES is undesigned — see TODO.md. Burning the chain is called and is

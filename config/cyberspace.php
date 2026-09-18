@@ -473,24 +473,41 @@ return [
     | behind it and never rolled again — which is the difference between a long
     | chain being slow and a long chain being impassable.
     |
-    | So what a chain buys is the sum of 1/p over its hops. Three grade 9s is
-    | about fifteen turns of nothing happening, which is roughly what three
-    | successful backdoor runs ought to be worth — and a ten-hop chain is the
-    | reason losing the lot to one completed trace is a real price.
+    | A HOP ONLY EVER DELAYS BY FAILING. Passing one costs the trace nothing:
+    | it moves up and advances in the same turn. So what a chain is worth is
+    | the held turns its failures buy — the sum of (1/p - 1) over its hops —
+    | and a hop's value is entirely its grade. That is a decision and not an
+    | omission: the alternative, where passing a hop also costs a turn, would
+    | make ten junk machines worth ten guaranteed turns and put the price of a
+    | chain in its LENGTH rather than in what it is made of.
+    |
+    | GRADE 1 IS 95 AND NOT 100, which is the whole of what keeps a worthless
+    | machine worth backdooring. At 100 a low-grade hop was decoration — it
+    | could never fail, so it could never delay anything, and the design says a
+    | routing backdoor is useful on any system at all. At 95 one junk hop is
+    | worth about a twentieth of a turn and a full chain of ten has a 40%
+    | chance of buying at least one — a chance rather than an income, which is
+    | the right shape for a machine nobody would otherwise bother with.
+    |
+    | Three grade 9s is about twelve held turns, which is roughly what three
+    | successful backdoor runs ought to be worth — and a ten-hop chain of them
+    | is the reason losing the lot to one completed trace is a real price.
     |
     | Past the end of the chain nothing is in the way and the trace comes on
     | unopposed. An EMPTY chain is that case from the first turn, which is the
     | only one that exists today.
     |
-    | Ten points a grade, so the table is the design rather than a curve
-    | somebody fitted. CYBERSPACE.md says each backdoored system will hinder the
-    | trace by a different amount depending on what it is and who owns it; this
-    | is the first half of that, and grade is the part that is already on the
-    | row.
+    | Ten points a grade below the top, so the table is the design rather than
+    | a curve somebody fitted. CYBERSPACE.md wondered whether a hop should also
+    | read who owns the machine and how well it is dug in: **decided against**.
+    | Grade is the differentiator and it is the one already on the row; an
+    | owner weight would need a number per corp for 121 of them, and reading
+    | age would pull against the ageing roll, which makes an old backdoor more
+    | likely to vanish rather than better.
     */
     'trace' => [
         'advance' => [
-            1 => 100,
+            1 => 95,
             2 => 90,
             3 => 80,
             4 => 70,
