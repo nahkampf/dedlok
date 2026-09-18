@@ -278,6 +278,35 @@ return [
             'rounding' => 'floor',
         ],
 
+        /*
+        | How good somebody is at leaving a machine that does not want them to.
+        |
+        | A POOL, like stealth, and for the same reason: leaving is a
+        | capability rather than something you spend, and a capability reads
+        | like an average. Rolled against the machine's grade plus whatever is
+        | currently fighting you — see `config/cyberspace.egress`.
+        |
+        | It has no floor of zero the way stealth and `icebreaker_damage` do,
+        | because there is no gate here to be behind. Everybody can always try
+        | to leave; a run with no exit is a character deleted by a door they
+        | could not see. What a bad pool buys is a poor chance and more turns
+        | spent buying it.
+        |
+        | NOTHING MODIFIES IT YET. No skill, implant or program targets it, so
+        | today the pool is the whole of it — and the first skill that helps
+        | somebody leave is a modifier on this id rather than a line in the
+        | simulator.
+        */
+        'egress' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => null,
+            // A FRACTION, kept to a tenth, exactly as stealth is: the whole
+            // useful range is single digits, so whole numbers would throw away
+            // most of what an attribute point is worth.
+            'rounding' => 'tenth',
+        ],
+
         'coop_slots' => [
             'tags' => ['cyberspace'],
             'min' => 0,
@@ -499,6 +528,38 @@ return [
         'stealth' => [
             'attributes' => ['intellect', 'focus', 'memory', 'perception'],
             'divisor' => 8.5,
+        ],
+
+        /*
+        | Egress = (Reflex + Focus + Intellect) / 4.
+        |
+        | Three attributes, and deliberately not stealth's four: getting out is
+        | a different act from not being seen in the first place, so a
+        | character built for one is only partly built for the other.
+        |
+        |   reflex     how fast the disconnect happens once it has been
+        |              decided. The term stealth does not have, and the one
+        |              that makes a physically quick character good at leaving
+        |              a machine they were never subtle in.
+        |   focus      holding the pattern together while something is actively
+        |              tearing at it. The composure half of the attribute, the
+        |              same half Synaptic Integrity reads.
+        |   intellect  knowing the way out. A machine's exits are its own and
+        |              finding one under pressure is comprehension, not speed.
+        |
+        | MEMORY IS ABSENT ON PURPOSE. Remembering what you already touched is
+        | what keeps you unseen on the way in; it does nothing for you once
+        | something has hold of you.
+        |
+        | 4 puts a starting character near 14 and a very good one near 19,
+        | which against `cyberspace.egress.difficulty` is out-in-a-turn at the
+        | bottom of the grid and a real decision from the middle up. Three
+        | attributes over 4 is a heavier divisor per term than stealth's four
+        | over 8.5 — that is what keeps the two on the same scale.
+        */
+        'egress' => [
+            'attributes' => ['reflex', 'focus', 'intellect'],
+            'divisor' => 4.0,
         ],
     ],
 

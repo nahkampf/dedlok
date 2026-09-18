@@ -118,6 +118,25 @@ final class FightTest extends TestCase
         return app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Extraction)->run;
     }
 
+    /**
+     * Let the next check PASS.
+     *
+     * `begin()` pins the die so every check fails, which is how a test gets a
+     * detected run — and egress is a check now, so a test that wants to leave
+     * has to say which way that roll went. Rebinding rather than passing a
+     * flag keeps the pinning in one idiom.
+     */
+    private function everyCheckPasses(): void
+    {
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 0.0));
+    }
+
+    /** And the mirror, for a test about being held. */
+    private function everyCheckFails(): void
+    {
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 1.0));
+    }
+
     /** Running the icebreaker of that tier, which is the gate on cutting at all. */
     private function runIcebreaker(int $level): void
     {
@@ -332,6 +351,7 @@ final class FightTest extends TestCase
     {
         $this->machine(12);
         $run = $this->begin();
+        $this->everyCheckPasses();
 
         $result = $this->simulator(1)->take($this->character->fresh(), $run, RunAction::Egress);
 
@@ -345,11 +365,44 @@ final class FightTest extends TestCase
     {
         $this->machine(12);
         $run = $this->begin();
+        $this->everyCheckPasses();
 
         $before = $this->character->fresh()->current_synaptic_integrity;
         $this->simulator(1)->take($this->character->fresh(), $run, RunAction::Egress);
 
         $this->assertSame($before, $this->character->fresh()->current_synaptic_integrity);
+    }
+
+    /**
+     * AND A FAILED ONE DOES TAKE THE HIT, because it spent the turn.
+     *
+     * The other half of the same rule: getting out early is what buys you the
+     * machine's half of the turn, so being held costs exactly what holding
+     * would have — one more swing, and the trace a little further along.
+     */
+    public function test_being_held_costs_the_turn_like_any_other(): void
+    {
+        // ICE I: 7 damage, which a pinned die always lands. ICE XII would
+        // simply kill them, and a defeat is a different test.
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $this->everyCheckFails();
+
+        $before = $this->character->fresh()->current_synaptic_integrity;
+        $result = $this->simulator(1)->take($this->character->fresh(), $run, RunAction::Egress);
+
+        $this->assertNull($result->ending, 'still in it');
+        $this->assertTrue($result->run->fresh()->isLive());
+        $this->assertLessThan(
+            $before,
+            $this->character->fresh()->current_synaptic_integrity,
+            'ICE XII swung on the turn the egress failed',
+        );
+        $this->assertNotEmpty(array_filter(
+            array_column($result->log, 'text'),
+            static fn (string $line): bool => str_contains($line, 'does not let go'),
+        ));
     }
 
     // ---- the account -------------------------------------------------------
@@ -493,11 +546,31 @@ final class FightTest extends TestCase
         $this->machine(1);
         $run = $this->begin();
         $run->forceFill(['trace' => 72])->save();   // the default mark is 70
+        $this->everyCheckPasses();
 
         $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Attack);
 
         $this->assertSame(RunEnding::Egress, $result->ending, 'it left, though Cut was asked for');
         $this->assertNull($this->character->fresh()->current_run_id);
+    }
+
+    /**
+     * AND A FORCED EGRESS CAN BE HELD, which is the honest consequence of
+     * leaving being a roll: a threshold is an instruction to TRY to leave, not
+     * a door that opens. CYBERSPACE.md says as much — retreat can fail and
+     * cost a turn — so the run carries on and the mark fires again next turn.
+     */
+    public function test_a_forced_egress_can_fail(): void
+    {
+        $this->machine(1);
+        $run = $this->begin();
+        $run->forceFill(['trace' => 72])->save();
+        $this->everyCheckFails();
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Attack);
+
+        $this->assertNull($result->ending, 'held, and still in it');
+        $this->assertNotNull($this->character->fresh()->current_run_id);
     }
 
     public function test_the_synaptic_threshold_pulls_you_out(): void
@@ -507,6 +580,7 @@ final class FightTest extends TestCase
 
         $max = $this->character->maximumFor('current_synaptic_integrity');
         $this->character->forceFill(['current_synaptic_integrity' => (int) floor($max * 0.2)])->save();
+        $this->everyCheckPasses();
 
         $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
 
@@ -769,9 +843,12 @@ final class FightTest extends TestCase
         $this->ignoreThresholds();
         $run = $this->begin();
 
-        $sim = $this->simulator(101);
-        $afterExtract = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
-        $result = $sim->take($this->character->fresh(), $afterExtract->run->fresh(), RunAction::Egress);
+        $afterExtract = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+
+        // Rebound BEFORE the next simulator is built: `fromConfig()` resolves
+        // the roller once, so a simulator made earlier keeps the old die.
+        $this->everyCheckPasses();
+        $result = $this->simulator(101)->take($this->character->fresh(), $afterExtract->run->fresh(), RunAction::Egress);
 
         $this->assertSame(RunEnding::Completed, $result->ending);
     }
@@ -782,6 +859,7 @@ final class FightTest extends TestCase
         $this->machine(1);
         $this->ignoreThresholds();
         $run = $this->begin();
+        $this->everyCheckPasses();
 
         $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Egress);
 

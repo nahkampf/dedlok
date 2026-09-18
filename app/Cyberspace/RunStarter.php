@@ -41,7 +41,10 @@ use Illuminate\Support\Facades\DB;
  */
 final readonly class RunStarter
 {
-    public function __construct(private Resolver $resolver) {}
+    public function __construct(
+        private Resolver $resolver,
+        private ?RaidLedger $raids = null,
+    ) {}
 
     public function start(Character $character, RunPurpose $purpose): RunResult
     {
@@ -137,6 +140,27 @@ final readonly class RunStarter
             if ($character->current_run_id === $run->getKey()) {
                 $character->forceFill(['current_run_id' => null])->save();
             }
+
+            /*
+             * HAS THE MACHINE BEEN EMPTIED ONCE TOO OFTEN?
+             *
+             * Asked HERE because this is the one door out of a run — the turn
+             * that egresses, the ending the simulator resolves, and the older
+             * standalone egress endpoint all arrive at this method, and a
+             * retirement any of them could skip is a retirement that depends
+             * on how somebody happened to leave.
+             *
+             * Inside the transaction and after the row is marked ended, so the
+             * ledger's "is anybody still inside?" question does not find this
+             * run and hold the machine in place on its own account.
+             *
+             * It asks on EVERY ending rather than only on a successful one.
+             * The counter is what decides, and it is already spent by then: a
+             * raider who emptied the shelf and then lost the fight has still
+             * emptied it, and the third raid retires the node whether or not
+             * the third raider got home.
+             */
+            ($this->raids ?? RaidLedger::fromConfig())->retireIfSpent($run->address);
         });
 
         return RunResult::ended($run);

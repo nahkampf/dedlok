@@ -283,6 +283,36 @@ at which something changes, and nothing names one.
 
 ---
 
+## Lockdown, burn and relocation
+
+**Status:** relocation is built and lockdown is not. `App\Cyberspace\RaidLedger`
+moves a machine — new position, new address, counter back to zero — and the
+third raid is the one trigger that calls it. CYBERSPACE.md's *Lockdown* table
+lists four, and the other three have nothing behind them.
+
+**What is missing.**
+
+- **The lockdown WINDOW itself.** A state on `systems` with a duration, during
+  which the machine is locked down rather than gone. The map already has the
+  vocabulary for it: `cell--rebooting` is drawn as a dashed hairline and
+  `MapCell::$isRebooting` is a parameter nothing sets.
+- **The three other triggers.** *The IDS fired* and *the ICE activated* are
+  facts a run already knows — `runs.detected` and `runs.ice_id` — and both are
+  applied AFTER the run, so they are one call each at the same moment the raid
+  counter is checked. *Burn* is its own mechanic and does not exist.
+- **Cancelling a run the machine went out from under.** `RunEnding::Cancelled`
+  exists with no caller, and its doc says it costs the flat point of Synaptic
+  Integrity a readiness loss costs — which also needs a `DamageOrigin` case of
+  its own, since an origin is the axis a resistance is written against. Until
+  it exists, `RaidLedger::retireIfSpent()` holds a machine in place while
+  anybody is inside it rather than inventing half of this.
+
+**Why they belong in one pass.** All four triggers want the same state, the
+same duration and the same map treatment, so building the window for one of
+them privately is building the thing the pass has to replace.
+
+---
+
 ## The routing chain
 
 **Status:** the SHAPE exists and nothing is IN it. `Run::routingGrades()`

@@ -135,7 +135,8 @@ return [
     | Everything here scales with grade, because grade is the promise a scan
     | makes: the machine that can end you is the machine worth breaking into.
     | The numbers are a starting point and nothing has been balanced against
-    | them — nothing can raid a node yet.
+    | them — a raid is built, and what a haul is worth against the rest of the
+    | economy is still nobody's decided answer.
     |
     | CREDS are the floor of a haul: always something, rarely much. A grade 1
     | is pocket money and a grade 9 is a month's rent, which is roughly the
@@ -271,6 +272,114 @@ return [
     | The portal carries nothing, and that needs no entry here —
     | SystemType::isInteractable() already says no to everything for it.
     */
+    /*
+    | LEAVING. Always possible, never certain.
+    |
+    | Nothing can take the attempt away — not an active ICE, not a wrong
+    | operating system, not a trace about to land — because a run with no exit
+    | is a character deleted by a door they could not see. What varies is the
+    | CHANCE, and a failed attempt costs the turn: the machine still gets its
+    | half of it, so being held is paid for in trace, heat and one more swing.
+    |
+    | The value is the `egress` stat, a POOL of three attributes resolved
+    | through modifiers like everything else — so a skill or a program that
+    | helps somebody leave is a row and never a branch in the simulator. See
+    | config/stats.php.
+    |
+    | DIFFICULTY IS THE GRADE PLUS WHAT IS FIGHTING YOU, which is CYBERSPACE.md
+    | open question 12 resolved: tearing free mid-fight is not the same act as
+    | walking out of a quiet machine, and an ICE that never woke is a cheap
+    | exit — one more thing an undetected run is worth.
+    |
+    | Against a starting character (the pool lands near 14) and the global
+    | spread of 8, the table below reads roughly:
+    |
+    |   grade 1, nothing awake      80%     out in a turn and a bit
+    |   grade 5, ICE V awake        44%     a real decision
+    |   grade 9, ICE XII awake      12%     you should not have been there
+    |
+    | `ice_term` is the multiplier on the ICE's LEVEL, not on its attack. What
+    | makes a guard hard to escape is how good it is, and level is the one
+    | number that says that about a piece of ICE without being about how hard
+    | it hits.
+    */
+    'egress' => [
+
+        // Difficulty per system grade, before anything fighting you is added.
+        'difficulty' => [
+            1 => 3,
+            2 => 5,
+            3 => 7,
+            4 => 9,
+            5 => 11,
+            6 => 13,
+            7 => 15,
+            8 => 17,
+            9 => 19,
+        ],
+
+        // Added per level of the ICE currently awake. 1 means ICE VII adds 7.
+        'ice_term' => 1,
+    ],
+
+    /*
+    | WHAT A PIECE OF ICE DOES WHILE IT IS FIGHTING.
+    |
+    | The mirror of `defeat_tags`, and the difference is when they matter: a
+    | defeat tag fires once, on somebody who already lost, while these are in
+    | force for as long as the thing is awake and alive. One changes the price
+    | of losing; the other changes the decisions inside the fight.
+    |
+    | ENSNARE multiplies the egress chance. A MULTIPLIER rather than a
+    | subtraction because every other percentage in the game is one — a flat 55
+    | points off would annihilate a chance that was already poor and barely
+    | dent a good one, which is backwards. A quarter off a bad chance is still
+    | a bad chance; a quarter off a good one is a decision.
+    |
+    | It is floored again after the reduction, so even Ensnare III leaves the
+    | door open. What it costs is turns, and turns are trace and heat.
+    |
+    | Passive while the ICE lives, so breaking the guard is the way out from
+    | under it — which is what makes cutting worth doing to somebody whose only
+    | plan was to leave.
+    */
+    'attack_tags' => [
+
+        // Per cent off the egress chance, per level.
+        'ensnare' => [
+            1 => ['reduction' => 25],
+            2 => ['reduction' => 40],
+            3 => ['reduction' => 55],
+        ],
+    ],
+
+    /*
+    | HOW MANY RAIDS A NODE SURVIVES BEFORE SOMEBODY RECONCILES THE NUMBERS.
+    |
+    | THREE, and the counter is on the SYSTEM rather than on the character —
+    | three by anybody, not three by you. The world is shared, so a node is a
+    | resource other people are also emptying, and a per-character counter
+    | would have every popular machine raided into the ground by a hundred
+    | people who each thought they had two left.
+    |
+    | This is the arithmetic brake on a perfect loop. The detection floor is
+    | the other one: no run is ever safer than about 3%, so luck fires the
+    | first and counting fires the second, and neither can be played around.
+    | A quiet thief gets three good nights out of a system, never an annuity.
+    |
+    | THE COUNTER RESETS WHEN THE MACHINE RELOCATES, because a relocated
+    | machine is a new one — new address, new position, books balanced.
+    | Without the reset every system on the grid would be on a permanent
+    | countdown to its third raid and the world would grind into pure churn.
+    |
+    | Raising this makes the low end of the grid a steadier income; lowering it
+    | makes finding a machine matter more than farming one. Nothing has been
+    | balanced against it, like everything else a raid touches.
+    */
+    'raids' => [
+        'limit' => 3,
+    ],
+
     /*
     | HOW MANY OTHER RUNNERS A CHARACTER MAY TAKE INTO A SYSTEM.
     |

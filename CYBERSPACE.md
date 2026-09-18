@@ -23,7 +23,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
 | The OS as a gate you cannot see | **specified only**; a machine whose OS you lack is entered rather than refused, and every action against it fails. Indistinguishable from bad luck on purpose — a refusal would hand over a scan fact for free |
-| Egress | **specified only**; always possible, never certain. A derived chance from attributes and skills against a per-grade difficulty, not a roll against the ICE |
+| Egress | **built**; always possible, never certain. The `egress` stat — a pool of Reflex, Focus and Intellect — rolled against the machine's grade plus a term for whatever is awake. A failed attempt spends the turn, so the machine gets its half of it; a threshold-forced egress rolls too. `Simulator::egressChance()` is public, and the button quotes it |
 | The run, interactive | **the spine is built**: `runs` is durable state, `App\Cyberspace\RunStarter` begins and ends one, and `characters.current_run_id` is what says somebody is inside. The turns themselves are the simulator and are not built |
 | The fight | **built**; `App\Cyberspace\Simulator` resolves one turn — the player acts, then the machine does. An icebreaker grinds integrity down, a miss does nothing at all, and a defeat ejects before the waiting screen |
 | Detection, on approach | **built**; every watcher on the machine rolls against the runner's `stealth` and any one success detects them. Nothing is woken by a run that goes unnoticed. The global certainty floor, not a kind of its own |
@@ -56,7 +56,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | What a raid can carry out | **built** — data only. A node never yields a physical object: the shelf is `on_market` items whose `container` is `data` |
 | A machine told what to hold | **built** — `systems.stock_rule`, NULL on nearly every row: `fixed` for exactly these, `any_of` for this many from a set, `plus_random` to keep the ordinary draw as well. What mission systems will use; nothing sets one yet |
 | Nightly restock | **built** — `cyberspace:restock`, a TOP-UP like the market's pass: a node still holding something is left alone, so emptying one is temporary |
-| The raid counter | **built as a column**; `systems.raids`, on the system and not the character. Nothing increments it, because nothing can raid |
+| The raid counter | **built**; `systems.raids`, on the system and not the character, written only by `App\Cyberspace\RaidLedger`. Counted once per RUN that took something, the moment the take lands; the third one relocates the machine when the run ends, unless somebody is still inside |
 | A read runs in the background | **built** — it belongs to the running copy of the scanner, not to where its owner is standing: walk away or jack out and the answer is waiting |
 | Two instruments, two machines | **built** — a second read needs a second running instance, which costs its own compute and a free thread |
 | Threads — how many copies of one program run at once | **built** — `program_threads`, one by default, raised by Multithreading and only for software flagged `multithreaded` |
@@ -68,6 +68,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Whether losing gets a price put on you | **built** as `systems.ice_bounty`, rolled per MACHINE when its ICE is assigned. The same guard on two systems is two different risks, and **a scan reads it** — folded into the ICE fact, one roll for both |
 | Icebreakers | **built** as twelve programs, damage carried as a modifier on `icebreaker_damage`. **Twenty turns is never enough** — every one does strictly less than would break its matching ICE in that time, and the whole gap is left for skills |
 | Fighting at all | **gated behind training, deliberately.** A bare character cannot beat even ICE I: thirty turns against its 1.05 SI a turn is 31.5 against a starting pool of 31. The bottom of the grid is walkable, not fightable |
+| Attack tags — what ICE does WHILE it fights | **built**; `ice.attack_tags`, the mirror of `defeat_tags` and deliberately not a variation on it — a defeat tag fires once on somebody who lost, an attack tag is in force while the thing is awake. **Ensnare** is the first: it multiplies the egress chance (a quarter, two-fifths, rather more than half), is passive while the ICE lives so breaking the guard frees you, and is floored again after the reduction so it can never close the door. Five of the twelve carry it |
 | ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are content — `cyberspace:tag-ice` writes them, a console command and not a migration, so a fresh database's ICE carries none until it is run |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
@@ -364,6 +365,16 @@ housekeeping, so a quiet thief has somewhere to come back to.
 **Three raids and it locks down anyway.** A counter **on the system, not on the
 character**, incremented by every successful raid whoever made it, and when it
 reaches three the system locks down and relocates as though it had been caught.
+
+> **Built, less the window.** `App\Cyberspace\RaidLedger` counts the raid —
+> once per run, the moment a take lands — and relocates the machine when the
+> run ends. What is NOT built is the lockdown WINDOW: the three other triggers
+> in the table above all want the same state, the same duration and the same
+> map treatment, so inventing a private version of it for this one trigger
+> would be inventing the thing that pass has to replace. A machine with a live
+> run on it is held in place until that run ends, because relocating out from
+> under somebody is `RunEnding::Cancelled` — a real ending with its own
+> damage, and not a side effect a stranger's successful raid should inflict.
 Somebody eventually reconciles the numbers. This is what stops a perfectly
 executed loop from being a permanent, riskless income: even flawless play
 retires the node.
@@ -1092,6 +1103,12 @@ trips and the player egresses — which is itself a roll, so retreat can fail an
 cost a turn — or **the deck burns a module out and throws the player through the
 wall.**
 
+> **Built.** `App\Cyberspace\Simulator` rolls it, the `egress` pool is the
+> value, `config/cyberspace.egress` the difficulty, and both doors out of a run
+> go through the same roll. What is NOT built is any modifier that targets the
+> stat: no skill, implant or program helps somebody leave yet, so the pool is
+> currently the whole of it.
+
 **Egress is always POSSIBLE and never certain**, and those are two different
 statements. Nothing can take the attempt away — not an active ICE, not a wrong
 operating system, not a trace about to land — because a run with no exit is a
@@ -1660,8 +1677,8 @@ All of it. In the order it should be built:
    operating system comes from, and two values with the gap between them that
    makes decryption a decision — and sometimes something from the catalogue.
    All of it scales with grade and leans by type, `cyberspace:restock` tops up
-   every emptied node nightly, and `systems.raids` counts what nothing can do
-   to it yet.
+   every emptied node nightly, and `systems.raids` counts raids now —
+   `RaidLedger` writes it and the third one retires the node by relocating it.
 
    **The loot table is built**: `loot_tables`, one row per (type, grade band,
    rarity), and a NULL type meaning any machine. Grades 1-3 see rare at 1% and
@@ -1757,15 +1774,18 @@ All of it. In the order it should be built:
 Decided enough to build around, not settled. Resolve them before they acquire
 dependants.
 
-1. **Is the raid counter per system or per character?** Three raids retires a
-   node — but three by anybody, or three by you? A shared counter means someone
-   else can use up a system you found; a per-character one means a popular node
-   is raided into the ground by a hundred people who each think they have two
-   left. The world is shared, which argues for the first.
-2. **When does the raid counter reset?** On relocation is the obvious answer,
-   since the system is effectively new. If it never resets, every system in
-   cyberspace is on a countdown to its third raid and the grid slowly empties
-   into churn.
+1. ~~**Is the raid counter per system or per character?**~~ **Resolved: per
+   system.** Three by anybody. The world is shared, so a node is a resource
+   other people are also emptying — and a per-character counter would have
+   every popular machine raided into the ground by a hundred people who each
+   thought they had two left. `config/cyberspace.php`'s `raids.limit` is the
+   number, and `RaidLedger` is the only thing that writes the counter.
+2. ~~**When does the raid counter reset?**~~ **Resolved: on relocation**, for
+   the reason the question already gave — a system that never balanced its
+   books would be on a permanent countdown and the grid would grind into pure
+   churn. It is not a separate decision from the count, which is why one class
+   owns both: `RaidLedger::relocate()` writes the new position, the new address
+   and the zero together.
 3. ~~**Does the 3% floor apply to every roll or only to detection?**~~
    **Resolved: every roll.** It is a principle, applied once in
    `App\Checks\CheckRoller` rather than decided per mechanic — egress can

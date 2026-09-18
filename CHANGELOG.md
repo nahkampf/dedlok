@@ -2,6 +2,80 @@
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-09-18
+
+Leaving a machine stops being free, some ICE stops letting go, and a node
+stops being an annuity. Also two things that were broken in 0.10.0: every
+turn of every run, and stealth.
+
+### Added
+
+- **Leaving is a roll.** Egress was always described as possible but never
+  certain, and until now it was simply certain. It is the `egress` stat — a
+  pool of Reflex, Focus and Intellect — against the machine's grade plus a
+  term for whatever is currently awake in it, so walking out of a quiet grade 1
+  and tearing free of a grade 9 mid-fight are not the same act. A failed
+  attempt spends the turn and the machine gets its half of it, which means
+  being held is paid for in trace, in heat and in one more swing. A threshold
+  that pulls you out rolls too: a mark is an instruction to try to leave, not a
+  door that opens. The button quotes the chance, and it is the same number the
+  attempt uses.
+- **An ICE that never woke is a cheap exit**, which is one more thing an
+  unnoticed run is worth.
+- **Attack tags — what a piece of ICE does WHILE it fights.** The mirror of the
+  defeat tags and deliberately not a variation on them: a defeat tag fires once,
+  at the end, on somebody who already lost, while an attack tag is in force for
+  as long as the thing is awake and alive. One changes the price of losing; the
+  other changes the decisions inside the fight.
+- **Ensnare**, the first of them: it takes a quarter off your chance of leaving
+  at level I, two-fifths at II and rather more than half at III. Five of the
+  twelve pieces of ICE carry it — a tag every guard had would be a property of
+  ICE rather than something worth finding out about one. It is passive while
+  the guard is alive, so **breaking the ICE is the way out from under it**,
+  which makes cutting worth doing to somebody whose only plan was to leave. It
+  can never close the door: the reduced chance is floored like any other, so
+  what Ensnare costs is turns.
+- **A node counts its raids, and the third one retires it.** Three by anybody,
+  not three by you — the world is shared, and a per-character counter would
+  have every popular machine raided into the ground by a hundred people who
+  each thought they had two left. A raid is a RUN and not a haul: creds pocketed
+  on one turn and a file finishing four turns later are one visit. The third
+  one relocates the machine when the run ends — new position, new address,
+  books balanced — so bookmarks pointing at it break and every scan anybody was
+  holding on it stops describing anything. A quiet thief gets three good nights
+  out of a system, never an annuity.
+
+### Changed
+
+- Both doors out of a run now go through the same roll. The standalone egress
+  route used to end a run outright, which was right while there was nothing to
+  roll and became a free exit the moment there was.
+- `cyberspace:tag-ice` writes both tag lists, and its table shows what each
+  piece does on defeat beside what it does while fighting.
+- CYBERSPACE.md's open questions 1, 2 and 12 are resolved rather than open: the
+  raid counter is per system, it resets on relocation, and an active ICE makes
+  leaving harder.
+- The lockdown window is deliberately still unbuilt, and TODO.md now says what
+  it needs. The third raid is one of four triggers, and the other three want
+  the same state and the same duration — building a private version of it for
+  this one would be building the thing that pass has to replace.
+
+### Fixed
+
+- **Every turn of every run was a 500.** `Simulator` was not bound in the
+  container and its constructor takes an injected die, so nothing could build
+  one by reflection — which made every controller that asked for it a server
+  error waiting to be requested. It shipped in 0.10.0 with the fight.
+- **Stealth was resolving to zero.** It is a pool, and asking the resolver for
+  a pool returns the modifiers and nothing else, so every character carrying no
+  implant was rolling a bare zero against every IDS in the world. Detection has
+  been far harsher than designed since the day stealth shipped.
+
+### Migrations
+
+- `2026_09_18_120000_ice_does_things_while_it_fights`
+
+
 ## [0.10.0] — 2026-09-18
 
 Cyberspace becomes a game rather than a map. A machine can be read, it can
@@ -439,7 +513,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/nahkampf/dedlok/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/nahkampf/dedlok/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/nahkampf/dedlok/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/nahkampf/dedlok/compare/v0.8.1...v0.9.0
