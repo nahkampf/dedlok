@@ -125,6 +125,11 @@ final class MapView
                     swept: $onGrid && $terrain->hasSwept($position),
                     contact: $contacts->get($key),
                     bookmark: $waypoints->get($key),
+                    // REBOOTING IS WHAT YOU SAW, not what is true: the cell
+                    // reads the CONTACT's own record of the window, so a
+                    // machine that shut after you walked past looks fine until
+                    // you come back — the same way its address does.
+                    isRebooting: $contacts->get($key)?->wasLockedDown() ?? false,
                     isYou: $standing !== null && $standing->equals($position),
                     isStep: $standing !== null && $grid->isStep($standing, $position),
                     // Only a machine can be new. Ground cannot: a position

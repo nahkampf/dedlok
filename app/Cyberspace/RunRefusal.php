@@ -27,6 +27,17 @@ enum RunRefusal: string
     case DeckNotReady = 'deck_not_ready';
 
     /** Already inside one. The lock should have caught this; it is the belt. */
+    /**
+     * The machine is shut. It found out about somebody — possibly you, an hour
+     * ago — and when the window closes it will be somewhere else.
+     *
+     * THIS ONE IS ALLOWED TO SAY WHAT IT IS, unlike the operating-system gate:
+     * a lockdown is visible from outside (the map draws a machine you have
+     * seen rebooting) and it is a consequence of something a player did rather
+     * than a fact about the machine they are supposed to pay a scan for.
+     */
+    case LockedDown = 'locked_down';
+
     case AlreadyRunning = 'already_running';
 
     public function message(): string

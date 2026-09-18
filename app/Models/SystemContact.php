@@ -30,7 +30,7 @@ use Illuminate\Support\Facades\Config;
  * which is what "the LAST thing they saw" means. `seen_at` is the only clock,
  * so there is no `updated_at` free to say a different moment.
  */
-#[Fillable(['character_id', 'x', 'y', 'address', 'name', 'type', 'owner', 'seen_at', 'first_seen_at'])]
+#[Fillable(['character_id', 'x', 'y', 'address', 'name', 'type', 'owner', 'locked_down_until', 'seen_at', 'first_seen_at'])]
 class SystemContact extends Model
 {
     public $timestamps = false;
@@ -41,6 +41,7 @@ class SystemContact extends Model
             'x' => 'integer',
             'y' => 'integer',
             'type' => SystemType::class,
+            'locked_down_until' => 'datetime',
             'seen_at' => 'datetime',
             'first_seen_at' => 'datetime',
         ];
@@ -109,5 +110,19 @@ class SystemContact extends Model
     {
         $query->whereBetween('x', [$centre->x - $range, $centre->x + $range])
             ->whereBetween('y', [$centre->y - $range, $centre->y + $range]);
+    }
+
+    /**
+     * Was it shut when this was seen?
+     *
+     * A MEMORY AND NOT A READING. The window recorded here may have closed
+     * since — in which case the machine has relocated and this contact is
+     * describing somewhere it no longer is, which is the ordinary way a
+     * sighting goes wrong rather than an error. The map draws it because a
+     * machine seen rebooting is worth walking back to check on.
+     */
+    public function wasLockedDown(): bool
+    {
+        return $this->locked_down_until !== null;
     }
 }

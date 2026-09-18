@@ -40,6 +40,7 @@ class System extends Model
             'y' => 'integer',
             'grade' => 'integer',
             'raids' => 'integer',
+            'locked_down_until' => 'datetime',
             'ids_detection' => 'integer',
             'tracer_detection' => 'integer',
             'tracer_rate' => 'integer',
@@ -190,5 +191,18 @@ class System extends Model
     {
         $query->whereBetween('x', [$centre->x - $range, $centre->x + $range])
             ->whereBetween('y', [$centre->y - $range, $centre->y + $range]);
+    }
+
+    /**
+     * Is this machine shut?
+     *
+     * NULL IS THE ORDINARY STATE, and a time in the past is the same answer as
+     * null — the sweep clears the column, but a question asked between the
+     * moment a window closes and the moment the sweep runs must not say the
+     * machine is still shut. `App\Cyberspace\Lockdown` is the only writer.
+     */
+    public function isLockedDown(): bool
+    {
+        return $this->locked_down_until !== null && $this->locked_down_until->isFuture();
     }
 }

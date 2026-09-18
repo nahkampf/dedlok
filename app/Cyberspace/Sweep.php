@@ -123,6 +123,12 @@ final class Sweep
                         // of what was seen, and a pointer would make the memory
                         // change when the corp row did.
                         'owner' => $system->owner?->name,
+                        // WHAT IT LOOKED LIKE WHEN SEEN. A contact is a
+                        // sighting and is allowed to be wrong: a machine that
+                        // shut after you walked past still looks fine on your
+                        // map until you sweep the position again, which is the
+                        // same rule its address and its owner already follow.
+                        'locked_down_until' => $system->isLockedDown() ? $system->locked_down_until : null,
                         'seen_at' => $now,
                         // THE CLOCK IS CARRIED, NOT RESET. Same position and
                         // same address means the same machine, however many

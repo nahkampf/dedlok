@@ -43,7 +43,7 @@ final readonly class RunStarter
 {
     public function __construct(
         private Resolver $resolver,
-        private ?RaidLedger $raids = null,
+        private ?Lockdown $lockdown = null,
     ) {}
 
     public function start(Character $character, RunPurpose $purpose): RunResult
@@ -66,6 +66,13 @@ final readonly class RunStarter
 
         if (! $system->type->isInteractable()) {
             return RunResult::refused(RunRefusal::NotIntrudable);
+        }
+
+        // SHUT. It found out about somebody, and until the window closes there
+        // is no way in — after which there is no machine here at all, because
+        // what ends a lockdown is the machine moving.
+        if ($system->isLockedDown()) {
+            return RunResult::refused(RunRefusal::LockedDown);
         }
 
         $deck = $character->equippedDeck;
@@ -142,25 +149,26 @@ final readonly class RunStarter
             }
 
             /*
-             * HAS THE MACHINE BEEN EMPTIED ONCE TOO OFTEN?
+             * DOES THE MACHINE NOW KNOW?
              *
              * Asked HERE because this is the one door out of a run — the turn
              * that egresses, the ending the simulator resolves, and the older
              * standalone egress endpoint all arrive at this method, and a
-             * retirement any of them could skip is a retirement that depends
+             * consequence any of them could skip is a consequence that depends
              * on how somebody happened to leave.
              *
-             * Inside the transaction and after the row is marked ended, so the
-             * ledger's "is anybody still inside?" question does not find this
-             * run and hold the machine in place on its own account.
+             * Two ways it finds out and `Lockdown` owns both: the run was
+             * noticed, or the raid counter is spent. Asked on EVERY ending
+             * rather than only a successful one, because neither fact is about
+             * how the run went — a raider who emptied the shelf and then lost
+             * the fight has still emptied it, and a machine that saw somebody
+             * saw them whatever became of them afterwards.
              *
-             * It asks on EVERY ending rather than only on a successful one.
-             * The counter is what decides, and it is already spent by then: a
-             * raider who emptied the shelf and then lost the fight has still
-             * emptied it, and the third raid retires the node whether or not
-             * the third raider got home.
+             * After the row is marked ended, so the runner who caused it is
+             * already out: a lockdown throws out everybody still inside, and
+             * that must never mean the person it was a consequence of.
              */
-            ($this->raids ?? RaidLedger::fromConfig())->retireIfSpent($run->address);
+            ($this->lockdown ?? Lockdown::fromConfig())->afterRun($run);
         });
 
         return RunResult::ended($run);

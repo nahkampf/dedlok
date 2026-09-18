@@ -1444,13 +1444,40 @@ carries the detail.
   `RunEnding::Cancelled` — a real ending with its own damage, and not a side
   effect a successful raid should inflict on a stranger. The counter waits, and
   the next run to end there retires it.
-- **THE LOCKDOWN WINDOW IS NOT BUILT, deliberately.** CYBERSPACE.md has a
-  machine lock down and then relocate when the lockdown ends; the third raid is
-  one of four triggers, and the other three (the IDS fired, the ICE activated,
-  burn) all want the same state, the same duration and the same map treatment.
-  So the third raid relocates outright and the window arrives with the other
-  three — `cell--rebooting` is already in the kit waiting for it. Do not build
-  a private version of it for this one trigger.
+- **`App\Cyberspace\Lockdown` is the window, and the only writer of
+  `systems.locked_down_until`.** A machine that knows it was violated shuts for
+  2-6 hours, nothing may run it while it is shut, and when the window closes it
+  relocates. **Two triggers, not four**: the run was noticed, or the raid
+  counter is spent. The table in CYBERSPACE.md lists four, and two of them
+  collapse — **the ICE can only have activated if something noticed**, since
+  detection is what wakes it, so `runs.detected` covers both rows. Burn does
+  not exist.
+- **It fires as a run ENDS**, from `RunStarter::end()` — the same single door
+  the raid counter is read at — so it can never reach the runner who caused it:
+  they are already out. A machine already shut is left alone rather than having
+  its window extended; a lockdown is what the machine DOES about being
+  violated, not a sentence that accumulates.
+- **Anybody else still inside is thrown out**, and that is what finally gives
+  `RunEnding::Cancelled` a caller. One flat point of Synaptic Integrity through
+  `DamageOrigin::RunCancelled` and nothing else — no defeat effect, no raid
+  counted, no trace, because the cause was not theirs. **The floor is asked
+  anyway**: one point can put somebody down. `Simulator::resolveEnding()` owns
+  it, so a cancellation cannot drift out of step with a defeat.
+- **A cancellation gets its own damage origin** even though it costs what a
+  readiness loss costs, because an origin is the axis a resistance is written
+  against: "tougher when your own deck fails" and "tougher when the world moves
+  out from under you" are different sentences.
+- **EXPIRY IS SWEPT AND NOT LAZY — the one place cyberspace breaks its own
+  rule.** A matured scan pass, a training deposit and the waiting screen all
+  settle when somebody looks. This cannot: two machines relocating into the
+  same free position is a race, and `cyberspace:lockdowns` (every five minutes)
+  is what serialises it. It is also how a 2-6 hour window ends for a player who
+  has gone to bed. A machine that opens with nowhere free to move to is logged
+  and left where it is rather than staying shut for ever.
+- **The map draws a lockdown from MEMORY, like everything else on it.**
+  `system_contacts.locked_down_until` is what you SAW; the sweep records it, and
+  a machine that shut after you walked past still looks fine until you come
+  back. `cell--rebooting` was in the kit from the start with nothing setting it.
 - **Relocation is `RaidLedger::relocate()`, and it is public because lockdown
   and burn both end there too.** New position, new address, `raids` back to 0.
   Bookmarks pointing at it break, every scan anybody held stops describing

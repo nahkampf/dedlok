@@ -306,33 +306,20 @@ screen now has one. The rest are unit-tested only.
 
 ---
 
-## Lockdown, burn and relocation
+## Burn
 
-**Status:** relocation is built and lockdown is not. `App\Cyberspace\RaidLedger`
-moves a machine — new position, new address, counter back to zero — and the
-third raid is the one trigger that calls it. CYBERSPACE.md's *Lockdown* table
-lists four, and the other three have nothing behind them.
+**Status:** the only one of lockdown's four triggers still unbuilt, and it is
+its own mechanic rather than a missing branch. `App\Cyberspace\Lockdown::shut()`
+is public precisely so burn can call it — everything a machine does about being
+violated is one write and one set of consequences, and burning is the loudest
+version of finding out.
 
-**What is missing.**
-
-- **The lockdown WINDOW itself.** A state on `systems` with a duration, during
-  which the machine is locked down rather than gone. The map already has the
-  vocabulary for it: `cell--rebooting` is drawn as a dashed hairline and
-  `MapCell::$isRebooting` is a parameter nothing sets.
-- **The three other triggers.** *The IDS fired* and *the ICE activated* are
-  facts a run already knows — `runs.detected` and `runs.ice_id` — and both are
-  applied AFTER the run, so they are one call each at the same moment the raid
-  counter is checked. *Burn* is its own mechanic and does not exist.
-- **Cancelling a run the machine went out from under.** `RunEnding::Cancelled`
-  exists with no caller, and its doc says it costs the flat point of Synaptic
-  Integrity a readiness loss costs — which also needs a `DamageOrigin` case of
-  its own, since an origin is the axis a resistance is written against. Until
-  it exists, `RaidLedger::retireIfSpent()` holds a machine in place while
-  anybody is inside it rather than inventing half of this.
-
-**Why they belong in one pass.** All four triggers want the same state, the
-same duration and the same map treatment, so building the window for one of
-them privately is building the thing the pass has to replace.
+**What it needs, none of which exists:** a way to burn a system at all (a run
+purpose, `RunPurpose::Burn` is not a case yet), what it costs the runner, and
+what it leaves behind. CYBERSPACE.md says a burned system takes its address out
+of existence rather than relocating — so it is NOT `RaidLedger::relocate()`, and
+the position it frees stays empty for a while, which is the one thing that
+consumes the grid's empty reserve.
 
 ---
 

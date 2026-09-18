@@ -103,3 +103,20 @@ Schedule::command('characters:regenerate --quiet-when-idle')
 Schedule::command('cyberspace:settle --quiet-when-idle')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+/*
+ * Lockdown expiry, and the one piece of cyberspace that CANNOT be lazy.
+ *
+ * Everything else settles when somebody looks — a matured scan pass, a training
+ * deposit, getting up off the floor. This cannot: two machines relocating into
+ * the same free position is a race, and the sweep is what serialises it. A
+ * lockdown is also 2-6 hours long, so the machine has to open on its own clock
+ * rather than on the next page load of a player who has gone to bed.
+ *
+ * Five minutes, the same cadence as the scan sweep: a window measured in hours
+ * does not need a finer one, and a machine that opens four minutes late is a
+ * machine nobody was standing next to.
+ */
+Schedule::command('cyberspace:lockdowns --quiet-when-idle')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

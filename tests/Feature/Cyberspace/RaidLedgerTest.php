@@ -7,7 +7,6 @@ namespace Tests\Feature\Cyberspace;
 use App\Checks\CheckRoller;
 use App\Cyberspace\RaidLedger;
 use App\Cyberspace\RunAction;
-use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
@@ -134,10 +133,10 @@ final class RaidLedgerTest extends TestCase
         $this->assertSame(1, $system->fresh()->raids, 'still one visit');
     }
 
-    // ---- retiring ----------------------------------------------------------
+    // ---- what the counter is for -------------------------------------------
 
-    /** Below the limit nothing moves: two good nights are two good nights. */
-    public function test_a_machine_under_the_limit_stays_where_it_is(): void
+    /** Below the limit nothing happens: two good nights are two good nights. */
+    public function test_a_machine_under_the_limit_is_left_alone(): void
     {
         $system = $this->machine();
         $system->forceFill(['raids' => 1])->save();
@@ -149,16 +148,16 @@ final class RaidLedgerTest extends TestCase
         $fresh = $system->fresh();
 
         $this->assertSame(2, $fresh->raids);
-        $this->assertSame(8, $fresh->x);
-        $this->assertSame(8, $fresh->y);
-        $this->assertSame('DEADBEEF', $fresh->address);
+        $this->assertFalse($fresh->isLockedDown());
+        $this->assertSame('DEADBEEF', $fresh->address, 'and it is still standing here');
     }
 
     /**
-     * THE THIRD RAID RETIRES IT: new position, new address, books balanced.
-     * Somebody eventually reconciles the numbers.
+     * THE THIRD RAID SHUTS IT. The move itself happens when the window closes
+     * — see `LockdownTest` — which is what CYBERSPACE.md described all along
+     * and what this class did immediately while the window had nowhere to live.
      */
-    public function test_the_third_raid_relocates_the_machine(): void
+    public function test_the_third_raid_shuts_the_machine(): void
     {
         $system = $this->machine();
         $system->forceFill(['raids' => 2])->save();
@@ -169,73 +168,47 @@ final class RaidLedgerTest extends TestCase
 
         $fresh = $system->fresh();
 
-        $this->assertSame(0, $fresh->raids, 'a relocated machine has new books');
-        $this->assertNotSame('DEADBEEF', $fresh->address, 'and a new address');
-        $this->assertNotSame([8, 8], [$fresh->x, $fresh->y], 'and it is somewhere else');
+        $this->assertSame(3, $fresh->raids, 'the books are spent');
+        $this->assertTrue($fresh->isLockedDown(), 'so it shut');
+        $this->assertSame('DEADBEEF', $fresh->address, 'and has not moved yet');
     }
 
-    /**
-     * IT GOES WHEN THE RAIDER IS OUT, not on the turn the shelf empties. The
-     * machine moving out from under a live run is a different ending
-     * (`RunEnding::Cancelled`) and not this one's to deal.
-     */
-    public function test_it_does_not_move_while_the_raider_is_still_inside(): void
+    /** The counter is a question this class answers and nothing more. */
+    public function test_spent_is_a_question_about_the_limit(): void
     {
+        $ledger = RaidLedger::fromConfig($this->die());
         $system = $this->machine();
-        $system->forceFill(['raids' => 2])->save();
-        $this->stock($system, 100);
 
-        $this->raid();
+        $this->assertFalse($ledger->isSpent($system));
 
-        $fresh = $system->fresh();
-
-        $this->assertSame(3, $fresh->raids, 'the books say it is spent');
-        $this->assertSame('DEADBEEF', $fresh->address, 'and it is still standing here');
-    }
-
-    /**
-     * A STRANGER'S RUN HOLDS IT IN PLACE TOO, and the counter waits rather
-     * than being spent — the next run to end on the machine retires it.
-     */
-    public function test_somebody_else_still_inside_holds_the_machine(): void
-    {
-        $system = $this->machine();
         $system->forceFill(['raids' => 3])->save();
 
-        Run::query()->create([
-            'character_id' => Character::factory()->create(['archetype' => 3])->id,
-            'address' => 'DEADBEEF',
-            'x' => 8,
-            'y' => 8,
-            'purpose' => RunPurpose::Extraction->value,
-            'turn' => 1,
-            'started_at' => now(),
-        ]);
-
-        $this->assertFalse(RaidLedger::fromConfig($this->die())->retireIfSpent('DEADBEEF'));
-        $this->assertSame('DEADBEEF', $system->fresh()->address);
+        $this->assertTrue($ledger->isSpent($system->fresh()));
     }
 
     /** An address that resolves to nothing is an ordinary answer, not an error. */
-    public function test_an_address_with_no_machine_behind_it_is_a_no_op(): void
+    public function test_recording_against_nothing_is_a_no_op(): void
     {
-        $ledger = RaidLedger::fromConfig($this->die());
+        RaidLedger::fromConfig($this->die())->record('C0FFEE01');
 
-        $ledger->record('C0FFEE01');
-
-        $this->assertFalse($ledger->retireIfSpent('C0FFEE01'));
+        $this->assertDatabaseMissing('systems', ['address' => 'C0FFEE01']);
     }
 
-    /** Every ending retires it, not only a tidy one: the counter is spent either way. */
-    public function test_the_counter_decides_and_not_the_ending(): void
+    // ---- moving ------------------------------------------------------------
+
+    /** New position, new address, books balanced. */
+    public function test_relocating_gives_it_new_everything(): void
     {
         $system = $this->machine();
         $system->forceFill(['raids' => 3])->save();
 
-        $run = $this->begin();
-        app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Defeat);
+        $this->assertTrue(RaidLedger::fromConfig($this->die())->relocate($system));
 
-        $this->assertNotSame('DEADBEEF', $system->fresh()->address);
+        $fresh = $system->fresh();
+
+        $this->assertSame(0, $fresh->raids, 'a relocated machine has new books');
+        $this->assertNotSame('DEADBEEF', $fresh->address, 'and a new address');
+        $this->assertNotSame([8, 8], [$fresh->x, $fresh->y], 'and it is somewhere else');
     }
 
     // ---- fixtures ----------------------------------------------------------

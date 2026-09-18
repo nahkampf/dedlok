@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
-use App\Models\Run;
 use App\Models\System;
 use Closure;
 use Illuminate\Support\Facades\Config;
@@ -88,30 +87,22 @@ final readonly class RaidLedger
     }
 
     /**
-     * Has this machine been emptied often enough to be moved on?
+     * Have the books been emptied often enough for somebody to notice?
      *
-     * Asked when a run ENDS rather than when the take lands, so the raider is
-     * out of the machine before it goes anywhere — and asked about the address
-     * rather than a model, because the run that is ending holds an address and
-     * the machine behind it may already be gone.
+     * A QUESTION AND NOT AN ACT. It used to relocate the machine on the spot,
+     * because the lockdown window had nowhere to live and a counter that did
+     * nothing at three would have been a counter that did nothing. Now
+     * `App\Cyberspace\Lockdown` asks this and shuts the machine, and the move
+     * happens when the window closes — which is what CYBERSPACE.md described
+     * all along.
      *
-     * Returns whether it moved. Nothing is told: the map is a player's memory
-     * and is allowed to be wrong, which is exactly what it will be until they
-     * walk past and sweep again.
+     * That also retired the compromise this class used to carry: a machine was
+     * held in place while anybody was inside it, because yanking it out from
+     * under a stranger had no ending to resolve to. A lockdown has one.
      */
-    public function retireIfSpent(string $address): bool
+    public function isSpent(System $system): bool
     {
-        $system = System::query()->where('address', $address)->first();
-
-        if ($system === null || (int) $system->raids < $this->limit) {
-            return false;
-        }
-
-        if (Run::query()->live()->where('address', $address)->exists()) {
-            return false;
-        }
-
-        return $this->relocate($system);
+        return (int) $system->raids >= $this->limit;
     }
 
     /**

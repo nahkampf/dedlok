@@ -56,7 +56,10 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | What a raid can carry out | **built** — data only. A node never yields a physical object: the shelf is `on_market` items whose `container` is `data` |
 | A machine told what to hold | **built** — `systems.stock_rule`, NULL on nearly every row: `fixed` for exactly these, `any_of` for this many from a set, `plus_random` to keep the ordinary draw as well. What mission systems will use; nothing sets one yet |
 | Nightly restock | **built** — `cyberspace:restock`, a TOP-UP like the market's pass: a node still holding something is left alone, so emptying one is temporary |
-| The raid counter | **built**; `systems.raids`, on the system and not the character, written only by `App\Cyberspace\RaidLedger`. Counted once per RUN that took something, the moment the take lands; the third one relocates the machine when the run ends, unless somebody is still inside |
+| The raid counter | **built**; `systems.raids`, on the system and not the character, written only by `App\Cyberspace\RaidLedger`. Counted once per RUN that took something, the moment the take lands; the third one is one of the two things that shut a machine |
+| Lockdown | **built**; `systems.locked_down_until`, written only by `App\Cyberspace\Lockdown`. Two triggers — the run was noticed, or the books are spent — asked as a run ENDS, so it never reaches the runner who caused it. 2-6 hours, rolled. Nothing may run a shut machine, and anybody still inside is thrown out as `RunEnding::Cancelled` |
+| Relocation | **built**; `RaidLedger::relocate()` — new position, new address, books balanced — driven by `cyberspace:lockdowns` every five minutes. **The one thing in cyberspace that is not settled lazily**: two machines drawing the same free position is a race, and the sweep serialises it |
+| `RunEnding::Cancelled` | **built**, and it finally has a caller. One flat point of Synaptic Integrity through `DamageOrigin::RunCancelled`, no defeat effect, no raid counted, no trace — and the floor is asked, because one point can put somebody down |
 | A read runs in the background | **built** — it belongs to the running copy of the scanner, not to where its owner is standing: walk away or jack out and the answer is waiting |
 | Two instruments, two machines | **built** — a second read needs a second running instance, which costs its own compute and a free thread |
 | Threads — how many copies of one program run at once | **built** — `program_threads`, one by default, raised by Multithreading and only for software flagged `multithreaded` |
@@ -366,15 +369,13 @@ housekeeping, so a quiet thief has somewhere to come back to.
 character**, incremented by every successful raid whoever made it, and when it
 reaches three the system locks down and relocates as though it had been caught.
 
-> **Built, less the window.** `App\Cyberspace\RaidLedger` counts the raid —
-> once per run, the moment a take lands — and relocates the machine when the
-> run ends. What is NOT built is the lockdown WINDOW: the three other triggers
-> in the table above all want the same state, the same duration and the same
-> map treatment, so inventing a private version of it for this one trigger
-> would be inventing the thing that pass has to replace. A machine with a live
-> run on it is held in place until that run ends, because relocating out from
-> under somebody is `RunEnding::Cancelled` — a real ending with its own
-> damage, and not a side effect a stranger's successful raid should inflict.
+> **Built.** `App\Cyberspace\RaidLedger` counts the raid — once per run, the
+> moment a take lands — and `App\Cyberspace\Lockdown` shuts the machine when
+> the run ends, for 2-6 hours, after which `cyberspace:lockdowns` relocates it.
+> Two triggers rather than four: the ICE can only have activated if something
+> noticed, so `runs.detected` covers both of those rows, and burn does not
+> exist. The compromise the raid pass carried — a machine held in place while
+> anybody was inside it — is gone, because a lockdown now throws them out.
 Somebody eventually reconciles the numbers. This is what stops a perfectly
 executed loop from being a permanent, riskless income: even flawless play
 retires the node.
@@ -1617,6 +1618,10 @@ decision table and writes nothing.
 **Frequently — every few minutes** — lockdown expiry:
 
 - Systems whose 2–6 hour lockdown has run out are relocated and reassigned.
+  **Built**: `cyberspace:lockdowns`, every five minutes, `withoutOverlapping()`
+  and a `--dry-run` like the rest. A machine that opens but finds nowhere free
+  to move to is logged rather than left shut for ever — a full grid is a
+  seeding problem, not a reason to keep a machine locked.
 
 The second cannot be folded into the first: a 2–6 hour lockdown that only lifts
 at 04:00 is not a 2–6 hour lockdown. It also cannot be lazy — resolved when

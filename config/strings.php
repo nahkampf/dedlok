@@ -548,13 +548,23 @@ return [
                 'not_intrudable' => 'The portal is not a machine you can enter.',
                 'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
                 'already_running' => 'You are already in a run.',
+                // Said plainly: a lockdown is a consequence of something
+                // somebody did, not a scan fact being given away. And it is
+                // worth knowing the machine will not be there afterwards.
+                'locked_down' => 'It is locked down. Whatever it found out, it has shut — and when it opens it will be somewhere else.',
             ],
 
             'ended' => [
                 'egress' => 'You pulled out.',
                 'defeat' => 'It beat you.',
                 'burnout' => 'Your deck cooked a module and threw you through the wall.',
-                'cancelled' => 'The machine stopped existing while you were in it. The run is over and nobody won.',
+                // WHAT ACTUALLY HAPPENED, because a player thrown out of a run
+                // they were winning, by something they could not see, with no
+                // account of it, has been handed a bug rather than a
+                // consequence. Until a notification centre exists, the screen
+                // they land on IS the notification — which the run lock
+                // guarantees they land on.
+                'cancelled' => 'It went into lockdown while you were inside. The run is over, and nothing you had already taken is lost.',
                 'completed' => 'Done.',
             ],
         ],

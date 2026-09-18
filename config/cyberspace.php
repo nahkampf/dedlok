@@ -354,6 +354,30 @@ return [
     ],
 
     /*
+    | HOW LONG A MACHINE STAYS SHUT AFTER IT FINDS OUT.
+    |
+    | TWO TO SIX HOURS, rolled per lockdown. Long enough that waiting one out
+    | is not a plan — a player who tripped an IDS does not sit on the square
+    | for ten minutes and go back in — and short enough that a machine is not
+    | taken out of the world for a session. The spread is there so a lockdown
+    | cannot be timed: coming back at the earliest possible moment is a guess
+    | rather than a schedule.
+    |
+    | What the window IS, mechanically: nobody may start a run on the machine,
+    | and when it closes the machine relocates. Anybody already inside when it
+    | begins is thrown out — see `RunEnding::Cancelled`, which costs the flat
+    | point of Synaptic Integrity a readiness loss costs and nothing else.
+    |
+    | Expiry is swept every few minutes rather than settled when somebody
+    | looks. That is deliberate and it is the one place cyberspace does not use
+    | lazy settlement: two machines relocating into the same free position is a
+    | race, and the sweep is what serialises it.
+    */
+    'lockdown' => [
+        'hours' => ['min' => 2, 'max' => 6],
+    ],
+
+    /*
     | HOW MANY RAIDS A NODE SURVIVES BEFORE SOMEBODY RECONCILES THE NUMBERS.
     |
     | THREE, and the counter is on the SYSTEM rather than on the character —

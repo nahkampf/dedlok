@@ -832,11 +832,51 @@ final readonly class Simulator
             ? array_column($this->defeats->apply($character, $ice), 'text')
             : [];
 
+        /*
+         * A CANCELLATION COSTS A FLAT POINT AND NOTHING ELSE.
+         *
+         * The machine shut or went out of existence under somebody standing in
+         * it — no defeat effect, no raid counted, no trace, because the cause
+         * was not theirs. `ReadinessWatch`'s reasoning transfers word for
+         * word: small because they did not lose, and nonzero because being
+         * dumped out of cyberspace is never free.
+         *
+         * Resolved like every other hit, so a resistance to having the world
+         * move out from under you is a modifier and not a branch.
+         */
+        $cancelled = $ending === RunEnding::Cancelled
+            ? (new DamageResolver($this->resolver))->apply(
+                $character,
+                Damage::synapticIntegrity(
+                    (int) Config::get('cyberspace.readiness.damage', 1),
+                    DamageOrigin::RunCancelled,
+                ),
+            )
+            : null;
+
         $this->runs->end($character, $run, $ending);
 
         // Ejected BEFORE the screen: a character must never be on the waiting
         // screen while still holding a position in cyberspace.
         Navigator::fromConfig($this->resolver)->jackOut($character);
+
+        /*
+         * THE FLOOR IS ASKED FOR A CANCELLATION TOO, and one point can do it:
+         * somebody on their last point of Synaptic Integrity whose machine
+         * shuts under them goes down. `isBad()` stays false — a cancellation
+         * is not a defeat and carries no tags — so the question is asked here
+         * rather than folded into it.
+         */
+        if ($cancelled !== null) {
+            $this->waitingRoom->checkFloor($character, new DownedCause(
+                reason: $ending->value,
+                address: $run->address,
+                damage: $cancelled->taken,
+                resource: 'current_synaptic_integrity',
+            ));
+
+            return;
+        }
 
         if ($ending->isBad()) {
             $this->waitingRoom->checkFloor($character, new DownedCause(

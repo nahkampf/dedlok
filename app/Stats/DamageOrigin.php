@@ -52,6 +52,18 @@ enum DamageOrigin: string
      */
     case Ice = 'ice';
 
+    /**
+     * The machine went into lockdown, or out of existence, under somebody who
+     * was standing in it. See App\Cyberspace\Lockdown.
+     *
+     * A SEPARATE ORIGIN FROM A READINESS LOSS even though it costs the same
+     * flat point, because an origin is the axis a resistance is written
+     * against: "tougher when your own deck fails" and "tougher when the world
+     * moves out from under you" are different sentences, and folding them into
+     * one would make the second unwritable.
+     */
+    case RunCancelled = 'run_cancelled';
+
     /** The tag a modifier names to reach every damage stat of this origin. */
     public function tag(): string
     {
