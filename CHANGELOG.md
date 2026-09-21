@@ -77,6 +77,10 @@ Four things the player is finally told, and one wall that became a difficulty.
 
 ### Migrations
 
+- `2026_09_21_100000_an_achievement_belongs_to_the_account`
+- `2026_09_21_110000_a_read_goes_round_until_the_file_goes_stale`
+- `2026_09_21_120000_something_happened_while_nobody_was_looking`
+- `2026_09_21_130000_the_operating_system_is_a_roll_not_a_wall`
 
 ## [0.12.2] — 2026-09-21
 
