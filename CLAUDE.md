@@ -716,10 +716,25 @@ implant's; the row says which family, how long, and what it costs the books.
   for `cyberspace:settle`'s reason: taking a dose has somebody pressing a button, a dose
   WEARING OFF has nobody.
 - **Overdosing is allowed and it is DETERMINISTIC.** A body holds `drugs.overdose.base`
-  of one family at once and tolerance widens that, so **tolerance costs potency and buys
-  headroom**. Going past it deepens the same `neural_damage` injury a freeze and an ICE
-  flatline write into. Nothing rolls: a drug is a known quantity somebody puts into their
-  own body on purpose, and the third one hurting *sometimes* is a slot machine.
+  doses of one family at once and tolerance widens that, so **tolerance costs potency and
+  buys headroom**. Capacity is counted against what is ALREADY working, so the dose being
+  taken is the one that breaks it. Nothing rolls: a drug is a known quantity somebody puts
+  into their own body on purpose, and the third one hurting *sometimes* is a slot machine.
+- **Too much costs three separate things, and they are different KINDS of thing.** The
+  ceiling comes down as an **injury** (`neural_damage`, not mitigable — mitigation has
+  nothing to say about a ceiling). The body takes **ordinary damage** through
+  `DamageResolver` under `DamageOrigin::Overdose`, so a constitution is written against
+  `all_of: ['damage', 'overdose']`. And past the family's line the **heart stops**.
+- **A flatline is not big damage.** The body is emptied outright and does not come through
+  the damage door — a resistance is about how hard something lands, and a stopped heart is
+  not a matter of degree. The same call the ICE attack tag of that name makes.
+  `WaitingRoom::checkFloor()` is asked either way, which is the rule every bad ending
+  follows.
+- **Lethality belongs to the FAMILY**, in `drugs.overdose.families`: opiates and sedatives
+  stop you at two past the line, a stimulant at three, a psychedelic never (`lethal_at`
+  null). **`drugs.lethal_at` is the per-drug override** and is nearly always NULL — null
+  asks the family and does not mean never, so a survivable drug in a lethal family sets a
+  high number.
 - **`drugs:metabolise` takes a day off both figures nightly**, tolerance faster than
   addiction — a break gives the drug its strength back long before it gives the need up.
   Books that reach nothing on both are deleted; absent and zero are the same answer.

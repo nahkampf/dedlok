@@ -9,9 +9,9 @@ use App\Models\Dose;
 /**
  * What taking one did.
  *
- * Carries the overdose because the screen has to say so out loud: it is the
- * one outcome a player must not have to infer from a number moving somewhere
- * else.
+ * Carries the overdose because the screen has to say so out loud: what it
+ * costs is a ceiling, a body and sometimes a heart, and none of those is
+ * something a player should have to infer from a number moving somewhere else.
  */
 final readonly class DoseResult
 {
@@ -19,10 +19,10 @@ final readonly class DoseResult
         public ?Dose $dose,
         public ?DoseRefusal $refusal,
         public float $potency = 1.0,
-        public float $overdose = 0.0,
+        public Overdose $overdose = new Overdose,
     ) {}
 
-    public static function taken(Dose $dose, float $potency, float $overdose): self
+    public static function taken(Dose $dose, float $potency, Overdose $overdose): self
     {
         return new self($dose, null, $potency, $overdose);
     }
@@ -37,9 +37,9 @@ final readonly class DoseResult
         return $this->refusal === null;
     }
 
-    /** Did it cost them nerve tissue? */
+    /** Did it cost them more than it gave? */
     public function overdosed(): bool
     {
-        return $this->overdose > 0.0;
+        return $this->overdose->happened();
     }
 }

@@ -117,6 +117,7 @@ class ItemRequest extends FormRequest
             'duration_minutes' => $this->numberOrNull('duration_minutes'),
             'addictive' => $this->numberOrNull('addictive'),
             'tolerance_gain' => $this->numberOrNull('tolerance_gain'),
+            'lethal_at' => $this->numberOrNull('lethal_at'),
             'qflops_cost' => $this->numberOrNull('qflops_cost'),
             'memory_cost' => $this->numberOrNull('memory_cost'),
             'storage_size' => $this->numberOrNull('storage_size'),
@@ -288,6 +289,12 @@ class ItemRequest extends FormRequest
                 : ['prohibited'],
             'tolerance_gain' => $isDrug
                 ? ['required', 'numeric', 'min:0', 'max:100']
+                : ['prohibited'],
+
+            // Nearly always blank: what too much does belongs to the family,
+            // and this is the one drug that disagrees. Null asks the family.
+            'lethal_at' => $isDrug
+                ? ['nullable', 'integer', 'min:1', 'max:255']
                 : ['prohibited'],
 
             // A checkbox is always present and always boolean, so this one is
@@ -640,7 +647,10 @@ class ItemRequest extends FormRequest
         );
 
         // And so does a drug. Nothing on `items` says an item is one.
-        unset($data['drug_family'], $data['duration_minutes'], $data['addictive'], $data['tolerance_gain']);
+        unset(
+            $data['drug_family'], $data['duration_minutes'], $data['addictive'],
+            $data['tolerance_gain'], $data['lethal_at'],
+        );
 
         // Null rather than [], for the reason a program's are: a thing that
         // grants nothing genuinely grants nothing, and the two should not be
@@ -671,6 +681,7 @@ class ItemRequest extends FormRequest
             'duration_minutes' => (int) ($data['duration_minutes'] ?? 0),
             'addictive' => (float) ($data['addictive'] ?? 0),
             'tolerance_gain' => (float) ($data['tolerance_gain'] ?? 0),
+            'lethal_at' => ($data['lethal_at'] ?? null) === null ? null : (int) $data['lethal_at'],
         ];
     }
 

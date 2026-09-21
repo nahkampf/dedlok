@@ -185,10 +185,13 @@ somebody swallowed is what they swallowed.
 - **Tolerance has no ceiling.** Nothing stops the figure climbing past the last
   band, where it buys headroom for ever and costs nothing more. Capping it, or
   making the top band hurt, is a design decision rather than a bug.
-- **The overdose is silent on the character screen.** It is said in the flash
-  message and lands in the injury, and nothing lists "what is in you right now"
-  anywhere. A dose panel on the character or stash screen is the obvious next
-  thing.
+- **Nothing lists "what is in you right now".** An overdose is said in the
+  flash message and lands in the injury, the body and sometimes the waiting
+  screen — but a player cannot see what they are carrying or how close they are
+  to the line. A dose panel on the character or stash screen is the obvious
+  next thing, and it is the only place `Overdose` would want a preview method.
+- **A clinic is now two injuries overdue.** Neural damage accumulates from
+  overdoses as well as ICE, and nothing heals any of it.
 
 --- | --- |
 | **family** | which group it belongs to — opiates, stimulants, and so on |

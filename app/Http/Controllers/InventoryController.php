@@ -92,9 +92,17 @@ class InventoryController extends Controller
         }
 
         if ($result->overdosed()) {
-            return back()->with('error', Text::get('drugs.overdosed', [
-                'points' => rtrim(rtrim(number_format($result->overdose, 1), '0'), '.'),
-            ]));
+            $overdose = $result->overdose;
+
+            // One sentence for all three costs, because they land together
+            // and a player reading three flashes would learn less than one.
+            return back()->with('error', Text::get(
+                $overdose->lethal ? 'drugs.overdosed_flatline' : 'drugs.overdosed',
+                [
+                    'points' => $this->points($overdose->injury),
+                    'hp' => $overdose->hitpoints,
+                ],
+            ));
         }
 
         return back()->with('status', $result->potency < 1.0
@@ -103,6 +111,12 @@ class InventoryController extends Controller
                 'percent' => (int) round($result->potency * 100),
             ])
             : Text::get('drugs.taken', ['name' => $name]));
+    }
+
+    /** Half a point reads as 0.5 and two points as 2, never as 2.0. */
+    private function points(float $amount): string
+    {
+        return rtrim(rtrim(number_format($amount, 1), '0'), '.');
     }
 
     /**

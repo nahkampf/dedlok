@@ -293,6 +293,19 @@
                             </div>
                         @endforeach
                     </div>
+
+                    {{-- The exception, and it is nearly always blank. What too
+                         much does belongs to the FAMILY — pharmacology rather
+                         than branding — and this is how one drug disagrees.
+                         Empty asks the family; it does not mean never. --}}
+                    <div class="field" style="margin-top:var(--s-3)" @error('lethal_at') data-invalid @enderror>
+                        <label class="field__label" for="lethal_at">{{ Text::get('admin.items.fields.lethal_at') }}</label>
+                        <input class="input num" id="lethal_at" name="lethal_at" type="number" min="1" max="255"
+                               style="width:min(180px,100%)"
+                               value="{{ old('lethal_at', $item?->drug?->lethal_at ?? '') }}">
+                        <span class="field__hint">{{ Text::get('admin.items.fields.lethal_at_hint') }}</span>
+                        @error('lethal_at') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
                 </div>
             </div>
         </div>

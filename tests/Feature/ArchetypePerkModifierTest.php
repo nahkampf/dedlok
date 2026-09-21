@@ -72,6 +72,7 @@ class ArchetypePerkModifierTest extends TestCase
         $this->assertSame([
             'damage.hitpoints.burnout',
             'damage.hitpoints.ice',
+            'damage.hitpoints.overdose',
             'damage.hitpoints.readiness_loss',
             // The cross product is per (resource, origin) and does not ask
             // whether anything deals that pair — a cancellation only ever

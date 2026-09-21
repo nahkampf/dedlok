@@ -18,7 +18,7 @@ use App\Support\Text;
  *
  * ONE CASE PER CAUSE, and a cause earns a case by existing in the world rather
  * than by being imaginable. There is no vocabulary here for falling off a
- * building, because nothing in this game falls off anything yet. A sixth
+ * building, because nothing in this game falls off anything yet. A seventh
  * origin is a case, a string, and nothing else — every stat that needs it is
  * generated from this list by App\Stats\DamageStats.
  *
@@ -63,6 +63,20 @@ enum DamageOrigin: string
      * one would make the second unwritable.
      */
     case RunCancelled = 'run_cancelled';
+
+    /**
+     * Too much of something, taken on purpose.
+     *
+     * A SEPARATE ORIGIN AND NOT A KIND OF ICE, because it is the one thing in
+     * this list somebody did to themselves. "Tougher when your own deck fails"
+     * and "tougher when you take too much" are different sentences and a
+     * constitution is exactly the modifier that would write the second one.
+     *
+     * See App\Drugs\DrugTaker. The neural damage an overdose also deals is an
+     * INJURY rather than damage, so it does not carry this — mitigation has
+     * nothing to say about a ceiling coming down.
+     */
+    case Overdose = 'overdose';
 
     /** The tag a modifier names to reach every damage stat of this origin. */
     public function tag(): string

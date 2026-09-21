@@ -90,12 +90,53 @@ return [
     | purpose. The third one hurting when you knew two was the limit is a
     | mechanic; the third one hurting sometimes is a slot machine.
     |
-    | The damage lands as `neural_damage`, the same injury a freeze and an ICE
-    | flatline deepen — one row that a clinic heals one number of.
+    | Three separate things land, and the table below says which: the ceiling
+    | comes down as an injury, the body takes ordinary damage, and past a
+    | family's threshold the heart stops.
     */
     'overdose' => [
         'base' => 2,
         'per_tolerance' => 25.0,
         'damage_per_excess' => 2.0,
+
+        /*
+        | WHAT TOO MUCH DOES, per family.
+        |
+        | Three things happen at once and they are deliberately different
+        | kinds of thing:
+        |
+        |   the CEILING comes down       `damage_per_excess` above, as an
+        |                                injury — permanent until a clinic
+        |                                exists, and not mitigable, because
+        |                                mitigation has nothing to say about
+        |                                a ceiling
+        |   the BODY takes it            `hp_per_excess` here, as ordinary
+        |                                damage through DamageResolver, so a
+        |                                constitution can be written against
+        |                                `all_of: ['damage', 'overdose']`
+        |   the HEART STOPS              at `lethal_at` excess doses, and
+        |                                null means this family never does
+        |
+        | LETHALITY IS THE FAMILY'S, because it is pharmacology rather than
+        | branding: opiates and sedatives stop you breathing and do it soonest,
+        | a stimulant has to work harder at it, and nothing about a psychedelic
+        | stops a heart. A specific drug that disagrees overrides it with
+        | `drugs.lethal_at` on its own row.
+        |
+        | A FLATLINE IS NOT BIG DAMAGE. It empties the body outright and does
+        | not come through the damage door, the same call the ICE attack tag of
+        | the same name makes: a resistance is about how hard something hits,
+        | and a heart that has stopped is not a matter of degree. What it costs
+        | is the waiting screen and whatever the injury already took.
+        |
+        | Nothing here is balanced. The numbers are chosen so that the third
+        | simultaneous dose is a bad afternoon and the fifth is an ending.
+        */
+        'families' => [
+            'stimulant' => ['hp_per_excess' => 4, 'lethal_at' => 3],
+            'opiate' => ['hp_per_excess' => 3, 'lethal_at' => 2],
+            'sedative' => ['hp_per_excess' => 3, 'lethal_at' => 2],
+            'psychedelic' => ['hp_per_excess' => 2, 'lethal_at' => null],
+        ],
     ],
 ];

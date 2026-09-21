@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Characters\WaitingRoom;
 use App\Drugs\DoseRefusal;
 use App\Drugs\DrugLedger;
 use App\Drugs\DrugTaker;
@@ -296,9 +297,15 @@ final class DrugTest extends TestCase
      * no tolerance, and it costs nerve tissue — the same injury a freeze and
      * an ICE flatline deepen.
      */
-    public function test_one_too_many_costs_nerve_tissue(): void
+    /**
+     * A BODY HOLDS SO MANY AT ONCE, and going past it costs three separate
+     * things: the ceiling comes down as an injury, the body takes ordinary
+     * damage through the door, and past the family's line the heart stops.
+     */
+    public function test_one_too_many_costs_the_ceiling_and_the_body(): void
     {
         $row = $this->carrying($this->drug(tolerance: 0.0));
+        $hp = (int) $this->character->fresh()->current_hitpoints;
 
         $this->taker()->take($this->character, $row->fresh());
         $this->taker()->take($this->character, $row->fresh());
@@ -306,16 +313,95 @@ final class DrugTest extends TestCase
         $result = $this->taker()->take($this->character, $row->fresh());
 
         $this->assertTrue($result->overdosed());
-        $this->assertSame(2.0, $result->overdose);
+        $this->assertSame(1, $result->overdose->excess);
+        $this->assertSame(2.0, $result->overdose->injury);
+        $this->assertSame(4, $result->overdose->hitpoints, 'a stimulant, at four a dose');
+        $this->assertFalse($result->overdose->lethal, 'one past the line is not three');
 
         // Asserted on the INJURY rather than on maximum SI, because the doses
-        // themselves move the attributes the maximum is derived from — the
-        // injury is the thing this is about.
+        // themselves move the attributes the maximum is derived from.
         $this->assertSame(
             -2.0,
             (new InjuryLedger)->carried($this->character->fresh(), 'neural_damage'),
             'into the same neural damage a freeze deepens',
         );
+
+        $this->assertSame($hp - 4, (int) $this->character->fresh()->current_hitpoints);
+    }
+
+    /** The body's half goes through the damage door, so a resistance reaches it. */
+    public function test_the_body_can_be_toughened_against_it(): void
+    {
+        Config::set('effects.constitution', [
+            'label' => 'Constitution',
+            'stacking' => 'sum',
+            'modifiers' => [
+                ['op' => 'percentage_of_base', 'amount' => -50, 'target' => ['all_of' => ['damage', 'overdose']]],
+            ],
+        ]);
+
+        CharacterModifier::query()->create([
+            'character_id' => $this->character->id,
+            'definition_key' => 'constitution',
+        ]);
+
+        $row = $this->carrying($this->drug(tolerance: 0.0));
+        $hp = (int) $this->character->fresh()->current_hitpoints;
+
+        $this->taker()->take($this->character, $row->fresh());
+        $this->taker()->take($this->character, $row->fresh());
+        $this->taker()->take($this->character, $row->fresh());
+
+        $this->assertSame($hp - 2, (int) $this->character->fresh()->current_hitpoints, 'half of four');
+    }
+
+    /**
+     * FAR ENOUGH PAST THE LINE AND THE HEART STOPS. Not big damage: the body
+     * is emptied outright, because a flatline is not a matter of degree and
+     * nothing resists it. What it costs is the waiting screen.
+     */
+    public function test_far_enough_past_the_line_stops_the_heart(): void
+    {
+        $row = $this->carrying($this->drug(Family::Opiate, tolerance: 0.0), quantity: 6);
+
+        // An opiate stops a heart at two past what the body holds, so the
+        // fourth simultaneous dose is the one.
+        foreach (range(1, 3) as $ignored) {
+            $this->taker()->take($this->character, $row->fresh());
+        }
+
+        $result = $this->taker()->take($this->character, $row->fresh());
+
+        $this->assertTrue($result->overdose->lethal);
+        $this->assertSame(0, (int) $this->character->fresh()->current_hitpoints);
+        $this->assertTrue(app(WaitingRoom::class)->isDown($this->character->fresh()));
+    }
+
+    /** And a family that does not stop hearts never does, however much is taken. */
+    public function test_a_psychedelic_does_not_stop_a_heart(): void
+    {
+        $row = $this->carrying($this->drug(Family::Psychedelic, tolerance: 0.0), quantity: 9);
+
+        foreach (range(1, 8) as $ignored) {
+            $result = $this->taker()->take($this->character, $row->fresh());
+        }
+
+        $this->assertTrue($result->overdose->happened());
+        $this->assertFalse($result->overdose->lethal);
+    }
+
+    /** A drug may disagree with its family, which is what the column is for. */
+    public function test_a_drug_can_be_deadlier_than_its_family(): void
+    {
+        $item = $this->drug(Family::Psychedelic, tolerance: 0.0);
+        $item->drug->forceFill(['lethal_at' => 1])->save();
+
+        $row = $this->carrying($item->fresh(), quantity: 4);
+
+        $this->taker()->take($this->character, $row->fresh());
+        $this->taker()->take($this->character, $row->fresh());
+
+        $this->assertTrue($this->taker()->take($this->character, $row->fresh())->overdose->lethal);
     }
 
     /** And tolerance buys the headroom back, which is what makes it worth having. */

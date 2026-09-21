@@ -4,10 +4,17 @@ declare(strict_types=1);
 
 namespace App\Drugs;
 
+use App\Characters\DownedCause;
+use App\Characters\WaitingRoom;
 use App\Models\Character;
 use App\Models\Dose;
+use App\Models\Drug;
 use App\Models\InventoryItem;
+use App\Stats\Damage;
+use App\Stats\DamageOrigin;
+use App\Stats\DamageResolver;
 use App\Stats\InjuryLedger;
+use App\Support\Text;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -50,7 +57,16 @@ final class DrugTaker
     public function __construct(
         private readonly DrugLedger $ledger = new DrugLedger,
         private readonly InjuryLedger $injuries = new InjuryLedger,
-    ) {}
+        ?DamageResolver $damage = null,
+        ?WaitingRoom $room = null,
+    ) {
+        $this->damage = $damage ?? app(DamageResolver::class);
+        $this->waitingRoom = $room ?? app(WaitingRoom::class);
+    }
+
+    private readonly DamageResolver $damage;
+
+    private readonly WaitingRoom $waitingRoom;
 
     public function take(Character $character, InventoryItem $row): DoseResult
     {
@@ -75,7 +91,7 @@ final class DrugTaker
             // And how far past the body's limit this one is, counted the same
             // way — before this dose is written, because capacity is about
             // what was already in them.
-            $overdose = $this->overdoseFor($character, $drug->family);
+            $overdose = $this->overdoseFor($character, $drug);
 
             $this->spend($row);
 
@@ -89,8 +105,8 @@ final class DrugTaker
 
             $this->ledger->record($character, $drug);
 
-            if ($overdose > 0.0) {
-                $this->injuries->inflict($character, 'neural_damage', $overdose);
+            if ($overdose->happened()) {
+                $this->hurt($character, $drug, $overdose);
             }
 
             // There is something of the family in them now, so whatever they
@@ -102,25 +118,83 @@ final class DrugTaker
     }
 
     /**
-     * What this dose costs for being one too many, in points of nerve tissue.
+     * The three ways too much hurts, in the order they matter.
      *
-     * Zero is the ordinary answer. The count is what is ALREADY working: the
-     * dose about to be taken is the one that breaks the capacity, not one of
-     * the things filling it.
+     * THE CEILING FIRST, because a flatline below reads the maximum it just
+     * lowered — an overdose that stops a heart should not be told the body was
+     * bigger than it is. Then the body, through the damage door, where a
+     * constitution gets its say. Then, if this family stops hearts and this
+     * dose went far enough past the line, the heart stops: the body is emptied
+     * outright rather than hit hard, because a flatline is not a matter of
+     * degree and nothing resists it.
+     *
+     * `WaitingRoom::checkFloor()` is asked either way, which is the rule every
+     * bad ending in this game follows: whatever emptied somebody, the same
+     * door decides they are on the floor.
      */
-    public function overdoseFor(Character $character, Family $family): float
+    private function hurt(Character $character, Drug $drug, Overdose $overdose): void
+    {
+        $this->injuries->inflict($character, 'neural_damage', $overdose->injury);
+
+        if ($overdose->hitpoints > 0) {
+            $this->damage->apply(
+                $character,
+                Damage::hitpoints($overdose->hitpoints, DamageOrigin::Overdose),
+            );
+        }
+
+        if ($overdose->lethal) {
+            // Emptied rather than hit for a large number: mitigation is about
+            // how hard something lands, and a heart that has stopped is not a
+            // question of how hard. The same call the ICE attack tag of this
+            // name makes about an injury.
+            $character->forceFill(['current_hitpoints' => 0])->save();
+        }
+
+        $this->waitingRoom->checkFloor($character->fresh() ?? $character, new DownedCause(
+            reason: $overdose->lethal ? 'overdose_flatline' : 'overdose',
+            damage: $overdose->hitpoints,
+            resource: 'current_hitpoints',
+            effects: [Text::get($overdose->lethal ? 'drugs.downed_flatline' : 'drugs.downed', [
+                'drug' => $drug->item?->displayName() ?? '',
+            ])],
+        ));
+    }
+
+    /**
+     * What this dose costs for being one too many.
+     *
+     * Zero excess is the ordinary answer. The count is what is ALREADY
+     * working: the dose about to be taken is the one that breaks the capacity
+     * rather than one of the things filling it.
+     */
+    public function overdoseFor(Character $character, Drug $drug): Overdose
     {
         $active = Dose::query()
             ->where('character_id', $character->getKey())
             ->inEffect()
-            ->whereHas('item.drug', static fn ($query) => $query->where('family', $family->value))
+            ->whereHas('item.drug', static fn ($query) => $query->where('family', $drug->family->value))
             ->count();
 
-        $excess = ($active + 1) - $this->ledger->capacityFor($character, $family);
+        $excess = ($active + 1) - $this->ledger->capacityFor($character, $drug->family);
 
-        return $excess > 0
-            ? round($excess * (float) Config::get('drugs.overdose.damage_per_excess', 2.0), 2)
-            : 0.0;
+        if ($excess <= 0) {
+            return Overdose::none();
+        }
+
+        /** @var array{hp_per_excess?: int, lethal_at?: ?int} $family */
+        $family = (array) Config::get("drugs.overdose.families.{$drug->family->value}", []);
+
+        // The drug's own threshold if it has one, the family's otherwise. NULL
+        // on both is a family that does not stop hearts.
+        $lethalAt = $drug->lethal_at ?? ($family['lethal_at'] ?? null);
+
+        return new Overdose(
+            excess: $excess,
+            injury: round($excess * (float) Config::get('drugs.overdose.damage_per_excess', 2.0), 2),
+            hitpoints: $excess * (int) ($family['hp_per_excess'] ?? 0),
+            lethal: $lethalAt !== null && $excess >= (int) $lethalAt,
+        );
     }
 
     /**

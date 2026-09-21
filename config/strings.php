@@ -248,7 +248,12 @@ return [
 
         // Said out loud, always. Losing nerve tissue is the one outcome
         // nobody should have to infer from a number moving somewhere else.
-        'overdosed' => 'Too much at once. :points points of neural damage.',
+        'overdosed' => 'Too much at once. :hp hitpoints, and :points points of neural damage that will not come back on its own.',
+        'overdosed_flatline' => 'Too much. Your heart stops. :points points of neural damage, and everything else went with it.',
+
+        // On the waiting screen, where DownedCause renders what finished you.
+        'downed' => 'You took too much :drug.',
+        'downed_flatline' => ':drug stopped your heart.',
 
         'refused' => [
             'not_a_drug' => 'That is not something you can take.',
@@ -1114,6 +1119,8 @@ return [
             'readiness_loss' => 'Deck failure',
             'burnout' => 'Burnout',
             'ice' => 'ICE',
+            'run_cancelled' => 'Lockdown',
+            'overdose' => 'Overdose',
         ],
     ],
 
@@ -2092,6 +2099,8 @@ return [
                 'addictive' => 'Addictive',
                 'tolerance_gain' => 'Tolerance',
                 'addictive_hint' => 'How far one dose drives the addiction figure up. Zero is a drug nobody gets hooked on.',
+                'lethal_at' => 'Lethal at (excess doses)',
+                'lethal_at_hint' => 'Leave empty unless this drug disagrees with its family. Empty asks the family, which is what nearly every drug wants; it does not mean never.',
                 'tolerance_gain_hint' => 'How far one dose drives tolerance up. Tolerance cuts what the NEXT dose is worth and widens how many the body holds at once.',
                 'qflops_cost' => 'Compute cost',
                 'qflops_cost_hint' => 'qFLOPS consumed while it runs, and only while it runs.',
