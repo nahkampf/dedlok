@@ -151,16 +151,46 @@ special.
 
 ## Drugs, addiction and tolerance
 
-**Status:** designed, not built. Nothing here exists — no item category, no
-family vocabulary, no ledger, no decay.
+**Status: built 2026-09-21, and the resolver never learned anything.**
 
-**A drug is a physical item with effects on it.** `container` is `physical` and
-`items.modifiers` already carries what it does, so a drug needs no new column for
-its effects — the same channel an implant uses. What it needs beyond that is
-three properties:
+The loop is whole: a drug is an item with a `drugs` row, taking one writes a
+`character_doses` row read by `App\Stats\Sources\ActiveDoses` (the sixth
+modifier source), the books move per (character, family), tolerance cuts what
+the next dose is worth, addiction past a threshold is a withdrawal you carry,
+overdosing deepens `neural_damage`, and `drugs:metabolise` takes a day off both
+figures nightly.
 
-| Property | Is |
-| --- | --- |
+**The question this entry used to be about is answered.** Tolerance is applied
+AT THE DOSE and frozen onto the row as `potency` — the first of the three
+shapes. `App\Stats\Resolver` still has no idea that one modifier can scale
+another, and did not have to learn. The cost of that choice is the one the
+entry predicted: a dose taken while clean keeps its strength for its whole
+duration even as tolerance climbs under it. That is the intended reading — what
+somebody swallowed is what they swallowed.
+
+**What is left, and none of it is blocking:**
+
+- **No drug is authored.** The editor can make one and nothing sells one, so
+  the catalogue is empty. Every number in `config/drugs.php` was chosen to make
+  the loop legible rather than because anything measured it.
+- **Nothing costs money.** A drug is an item, so this is the market's problem
+  rather than this mechanic's.
+- **A clinic.** Neural damage accumulates and there is still nothing that heals
+  it — the same gap an ICE flatline leaves. That is one screen and one writer,
+  and it is worth doing once, not per cause.
+- **Withdrawal is one modifier list per family and does not deepen.** Being
+  forty points over the line reads the same as being one. A depth term would
+  mean an `:amount` on the definition and `InjuryLedger`'s shape, which is a
+  bigger change than it looks and nobody has asked for it yet.
+- **Tolerance has no ceiling.** Nothing stops the figure climbing past the last
+  band, where it buys headroom for ever and costs nothing more. Capping it, or
+  making the top band hurt, is a design decision rather than a bug.
+- **The overdose is silent on the character screen.** It is said in the flash
+  message and lands in the injury, and nothing lists "what is in you right now"
+  anywhere. A dose panel on the character or stash screen is the obvious next
+  thing.
+
+--- | --- |
 | **family** | which group it belongs to — opiates, stimulants, and so on |
 | **addictive** | how fast taking it drives the addiction figure up |
 | **tolerance** | how fast taking it drives the tolerance figure up |

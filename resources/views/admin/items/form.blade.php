@@ -27,6 +27,9 @@
     // and ItemRequest decides whether they may be saved.
     $programValue = old('program_kind', $item?->program?->kind?->value ?? '');
     $isProgram = $programValue !== '';
+    // The same normalisation again for the drug family.
+    $drugValue = old('drug_family', $item?->drug?->family?->value ?? '');
+    $isDrug = $drugValue !== '';
     // A socket counter: what was typed, else what is stored, else none.
     $slotCount = fn ($type) => (int) old('slots.'.$type->key(), $layout->count($type));
     $moduleValue = fn (string $field) => old($field, $module?->{$field});
@@ -255,6 +258,44 @@
              as a modifier — you cannot fight ICE without a running icebreaker
              — so the kind is asked about by name, and no set of modifiers adds
              up to having one. --}}
+
+        {{-- Drugs. The third thing an item can also be, and the only one that
+             is physical: software is data and deck hardware is a component,
+             while this is a thing you swallow.
+
+             WHAT IT DOES is the modifiers panel above, like an implant's. What
+             it COSTS is here — the family decides which books a dose moves,
+             and the two figures are how fast it moves them. --}}
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.drug') }}</span></div>
+            <div class="panel__bd">
+                <div class="field" @error('drug_family') data-invalid @enderror>
+                    <label class="field__label" for="drug_family">{{ Text::get('admin.items.fields.drug_family') }}</label>
+                    <select class="select" id="drug_family" name="drug_family" data-controls="drug">
+                        <option value="">{{ Text::get('admin.items.fields.drug_family_none') }}</option>
+                        @foreach ($drugFamilies as $family)
+                            <option value="{{ $family->value }}" @selected($drugValue === $family->value)>{{ $family->label() }}</option>
+                        @endforeach
+                    </select>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.drug_family_hint') }}</span>
+                    @error('drug_family') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+
+                <div data-when="drug" @unless ($isDrug) hidden @endunless>
+                    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));margin-top:var(--s-4)">
+                        @foreach (['duration_minutes' => 1, 'addictive' => 0.5, 'tolerance_gain' => 0.5] as $field => $step)
+                            <div class="field" @error($field) data-invalid @enderror>
+                                <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
+                                <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0" step="{{ $step }}"
+                                       value="{{ old($field, $item?->drug?->{$field} ?? 0) }}">
+                                <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
+                                @error($field) <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.software') }}</span></div>
             <div class="panel__bd">

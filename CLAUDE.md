@@ -683,6 +683,50 @@ what a bare `items` row cannot.
 - Screens: topbar count + modal, deck screen's Running and Storage tabs (storage split
   into two grids), `inventory.run` in both directions.
 
+### Drugs
+
+**A drug is an item with a `drugs` row**, the same shape software and deck hardware have.
+Nothing on `items` says an item is one. What a dose DOES stays on `items.modifiers` like an
+implant's; the row says which family, how long, and what it costs the books.
+
+- **`App\Drugs\Family` is a fixed vocabulary and not rows** — stimulant, opiate, sedative,
+  psychedelic. **A fifth family is a case and a withdrawal**: each needs its own
+  `config/effects.php` definition, because coming off a stimulant is not coming off an
+  opiate and there is nothing generic to say about either.
+- **The books are per (character, family) and a missing row means clean.** Somebody can be
+  deep into opiates and clean of stimulants. `App\Drugs\DrugLedger` is the only writer of
+  `character_drug_use`, and the only thing that writes or clears a withdrawal.
+- **A dose in effect is its OWN row**, because `character_modifiers` cannot express it: a
+  modifier row names a definition and takes one amount, and a drug's effects are a list on
+  the item. So `character_doses` points at the item and
+  **`App\Stats\Sources\ActiveDoses` is the sixth modifier source** — the resolver learned
+  nothing new for it. **Two doses are two rows and they add up**, which is `Stacking::Sum`
+  by construction rather than by a rule anybody wrote.
+- **TOLERANCE IS A PROPERTY OF THE DOSE.** It is read when the dose is taken and frozen
+  onto the row as `potency`. A band that climbs an hour later does not reach back into
+  somebody's blood — and that decision is the whole reason this mechanic needs nothing
+  from `Resolver`, which still has no idea that one modifier can scale another.
+- **Only the POSITIVE amounts are scaled.** Tolerance means a drug does less *for* you,
+  never less *to* you; softening the cost too would make tolerance a pure good.
+- **`App\Drugs\DrugTaker` is the only door** between an item and somebody's blood. One
+  transaction: the copy is spent, the dose begins, the books move, the injury lands.
+- **Withdrawal is written, not derived**, and **taking one clears it without curing it** —
+  the row goes for as long as something of that family is in them and the figure underneath
+  does not move. Only time brings it down. **`drugs:withdraw` sweeps every five minutes**,
+  for `cyberspace:settle`'s reason: taking a dose has somebody pressing a button, a dose
+  WEARING OFF has nobody.
+- **Overdosing is allowed and it is DETERMINISTIC.** A body holds `drugs.overdose.base`
+  of one family at once and tolerance widens that, so **tolerance costs potency and buys
+  headroom**. Going past it deepens the same `neural_damage` injury a freeze and an ICE
+  flatline write into. Nothing rolls: a drug is a known quantity somebody puts into their
+  own body on purpose, and the third one hurting *sometimes* is a slot machine.
+- **`drugs:metabolise` takes a day off both figures nightly**, tolerance faster than
+  addiction — a break gives the drug its strength back long before it gives the need up.
+  Books that reach nothing on both are deleted; absent and zero are the same answer.
+- **`App\Drugs\DrugEditor` is the only writer of the `drugs` table** and clears the side an
+  item stopped being, exactly as `ProgramEditor` does. The item editor has a Drug panel and
+  `ItemRequest` refuses a drug that is also software, deck hardware or a skillbook.
+
 ### Implants
 
 **An implant is an item with a body to go in.**

@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Cyberspace\ReadinessWatch;
 use App\Decks\FittingRefusal;
 use App\Decks\ModuleFitter;
+use App\Drugs\DrugTaker;
 use App\Inventory\ItemPlacer;
 use App\Inventory\SkillInjector;
 use App\Models\Character;
@@ -63,6 +64,45 @@ class InventoryController extends Controller
         }
 
         return back()->with('status', Text::get('inventory.injected', ['skill' => $skillTitle]));
+    }
+
+    /**
+     * Take one.
+     *
+     * The HTTP-shaped half of `App\Drugs\DrugTaker`, which is the only door
+     * between an item and somebody's blood. Nothing is confirmed: a dose is
+     * one copy of a thing that is meant to be used, and the mechanic that
+     * makes taking one dangerous is the overdose rather than the click.
+     *
+     * AN OVERDOSE IS SAID OUT LOUD as an error even though the dose worked —
+     * losing nerve tissue is the one outcome nobody should have to infer from
+     * a number moving somewhere else.
+     */
+    public function take(Request $request, InventoryItem $entry, DrugTaker $taker): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $name = $entry->item?->displayName();
+        $result = $taker->take($character, $entry);
+
+        if (! $result->succeeded()) {
+            return back()->with('error', $result->refusal->message());
+        }
+
+        if ($result->overdosed()) {
+            return back()->with('error', Text::get('drugs.overdosed', [
+                'points' => rtrim(rtrim(number_format($result->overdose, 1), '0'), '.'),
+            ]));
+        }
+
+        return back()->with('status', $result->potency < 1.0
+            ? Text::get('drugs.taken_weakened', [
+                'name' => $name,
+                'percent' => (int) round($result->potency * 100),
+            ])
+            : Text::get('drugs.taken', ['name' => $name]));
     }
 
     /**

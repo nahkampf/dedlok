@@ -122,6 +122,30 @@ Schedule::command('characters:cool --quiet-when-idle')
     ->dailyAt('05:10')
     ->withoutOverlapping();
 
+/*
+ * A day off both drug figures, and a sweep of what has worn off.
+ *
+ * Tolerance falls faster than addiction, so a break gives the drug its
+ * strength back long before it gives the need up. Twenty past five, after the
+ * heat has been settled, because nothing here depends on that order and the
+ * housekeeping hour may as well stay one hour.
+ */
+Schedule::command('drugs:metabolise --quiet-when-idle')
+    ->dailyAt('05:20')
+    ->withoutOverlapping();
+
+/*
+ * And the withdrawal rows, kept true between visits.
+ *
+ * NOT LAZY, and it is the same reason the lockdown windows are swept: taking a
+ * dose clears withdrawal on the spot, but a dose WEARING OFF has nobody
+ * pressing anything. The row that says somebody is going without has to appear
+ * at the minute it becomes true rather than the next time they happen to look.
+ */
+Schedule::command('drugs:withdraw --quiet-when-idle')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 Schedule::command('market:seed')
     ->cron('0 */8 * * *')
     ->withoutOverlapping();

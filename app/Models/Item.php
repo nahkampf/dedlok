@@ -154,6 +154,25 @@ class Item extends Model
         return $this->program()->exists();
     }
 
+    /**
+     * The drug half of this item, if it is one.
+     *
+     * Its presence is what MAKES an item a drug, the same way a `programs` row
+     * makes one software. What a dose DOES stays on `modifiers` here, like an
+     * implant's — a thing with a row carries its modifiers on that row.
+     *
+     * @return HasOne<Drug, $this>
+     */
+    public function drug(): HasOne
+    {
+        return $this->hasOne(Drug::class);
+    }
+
+    public function isDrug(): bool
+    {
+        return $this->drug()->exists();
+    }
+
     /** @return HasOne<DeckModule, $this> */
     public function deckModule(): HasOne
     {

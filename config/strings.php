@@ -216,6 +216,46 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Drugs
+    |--------------------------------------------------------------------------
+    |
+    | Take one to get the effect; the two books move. Tolerance costs potency,
+    | addiction costs the option of stopping, and both come off slowly if left
+    | alone. The words are deliberately plain — the mechanic is legible enough
+    | without the game being pleased with itself about it.
+    |
+    */
+
+    'drugs' => [
+
+        'families' => [
+            'stimulant' => 'Stimulant',
+            'opiate' => 'Opiate',
+            'sedative' => 'Sedative',
+            'psychedelic' => 'Psychedelic',
+        ],
+
+        // On the item card, so what a dose costs is readable before it is
+        // taken rather than after.
+        'summary' => ':family · :minutes min',
+        'take' => 'Take',
+        'in_effect' => 'In effect for :when',
+
+        'taken' => ':name taken.',
+        'taken_weakened' => ':name taken. It is worth :percent% of what it was.',
+
+        // Said out loud, always. Losing nerve tissue is the one outcome
+        // nobody should have to infer from a number moving somewhere else.
+        'overdosed' => 'Too much at once. :points points of neural damage.',
+
+        'refused' => [
+            'not_a_drug' => 'That is not something you can take.',
+            'not_owned' => 'You do not have that.',
+        ],
+    ],
+
     'notifications' => [
         'title' => 'Messages',
         'lede' => 'What happened while you were somewhere else. Nothing here needs answering — it is the record of what the world did on its own.',
@@ -248,6 +288,7 @@ return [
             // Heat's first consequence, and deliberately vague: there is no
             // bounty row, no hunter and no price yet, so it says the word is
             // out and stops where the mechanic stops.
+            'withdrawal' => 'You need it. :family, and going without is starting to show.',
             'bounty_word' => "You've made enemies out there. Word is being put out on the street. There's going to be a price on your head.",
         ],
     ],
@@ -2043,6 +2084,15 @@ return [
                 'program_kind_none' => 'Not software',
                 'program_kind' => 'Program',
                 'program_kind_hint' => 'What the software is for. Leave empty for anything that is not a program. Deck hardware and skillbooks cannot be one.',
+                'drug_family' => 'Drug family',
+                'drug_family_none' => 'Not a drug',
+                'drug_family_hint' => 'Giving it a family makes the item a drug. The books are kept per family, so this decides which figures a dose moves and which withdrawal it answers.',
+                'duration_minutes' => 'Duration (minutes)',
+                'duration_minutes_hint' => 'How long one dose is in effect.',
+                'addictive' => 'Addictive',
+                'tolerance_gain' => 'Tolerance',
+                'addictive_hint' => 'How far one dose drives the addiction figure up. Zero is a drug nobody gets hooked on.',
+                'tolerance_gain_hint' => 'How far one dose drives tolerance up. Tolerance cuts what the NEXT dose is worth and widens how many the body holds at once.',
                 'qflops_cost' => 'Compute cost',
                 'qflops_cost_hint' => 'qFLOPS consumed while it runs, and only while it runs.',
                 'memory_cost' => 'Memory cost',
@@ -2076,6 +2126,7 @@ return [
                 'market' => 'Market',
                 'hardware' => 'Deck hardware',
                 'software' => 'Software',
+                'drug' => 'Drug',
                 'sockets' => 'Sockets',
                 'board' => 'Board arrangement',
                 'module' => 'Module specification',

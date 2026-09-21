@@ -11,6 +11,7 @@ use App\Decks\SlotKind;
 use App\Decks\SlotLayout;
 use App\Decks\SlotType;
 use App\Decks\Variant;
+use App\Drugs\Family;
 use App\Implants\BodyRegion;
 use App\Market\Rarity;
 use App\Models\Item;
@@ -111,6 +112,11 @@ class ItemRequest extends FormRequest
             'board_layout' => $this->boardLayout(),
             // Software. Empty is no value, the same as every measure above.
             'program_kind' => $this->filled('program_kind') ? $this->input('program_kind') : null,
+            // Drugs, the same way: empty is no value.
+            'drug_family' => $this->filled('drug_family') ? $this->input('drug_family') : null,
+            'duration_minutes' => $this->numberOrNull('duration_minutes'),
+            'addictive' => $this->numberOrNull('addictive'),
+            'tolerance_gain' => $this->numberOrNull('tolerance_gain'),
             'qflops_cost' => $this->numberOrNull('qflops_cost'),
             'memory_cost' => $this->numberOrNull('memory_cost'),
             'storage_size' => $this->numberOrNull('storage_size'),
@@ -158,6 +164,7 @@ class ItemRequest extends FormRequest
         $isSkillbook = $this->input('use_op') === Item::USE_INJECT_SKILL;
         $hardware = $this->hardware();
         $isProgram = $this->programKind() !== null;
+        $isDrug = $this->drugFamily() !== null;
 
         return array_merge([
             // Only on create. A slug is permanent — inventory rows and the
@@ -259,6 +266,28 @@ class ItemRequest extends FormRequest
                 : ['prohibited'],
             'storage_size' => $isProgram
                 ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                : ['prohibited'],
+            /*
+             * DRUGS. An item is a drug because it has a family, the same way
+             * it is software because it has a kind — and the row is what says
+             * so, never a column here.
+             *
+             * A drug is a PHYSICAL object you swallow, so it cannot also be
+             * software or deck hardware. What it DOES lives on `modifiers`
+             * like an implant's; these four are what it costs.
+             */
+            'drug_family' => $hardware !== null || $isProgram || $isSkillbook
+                ? ['prohibited']
+                : ['nullable', Rule::enum(Family::class)],
+
+            'duration_minutes' => $isDrug
+                ? ['required', 'integer', 'min:1', 'max:10080']
+                : ['prohibited'],
+            'addictive' => $isDrug
+                ? ['required', 'numeric', 'min:0', 'max:100']
+                : ['prohibited'],
+            'tolerance_gain' => $isDrug
+                ? ['required', 'numeric', 'min:0', 'max:100']
                 : ['prohibited'],
 
             // A checkbox is always present and always boolean, so this one is
@@ -610,12 +639,39 @@ class ItemRequest extends FormRequest
             $data['program_modifiers'],
         );
 
+        // And so does a drug. Nothing on `items` says an item is one.
+        unset($data['drug_family'], $data['duration_minutes'], $data['addictive'], $data['tolerance_gain']);
+
         // Null rather than [], for the reason a program's are: a thing that
         // grants nothing genuinely grants nothing, and the two should not be
         // different spellings of one fact.
         $data['modifiers'] = ($data['modifiers'] ?? []) === [] ? null : array_values((array) $data['modifiers']);
 
         return $data;
+    }
+
+    /** What family of drug this payload describes, if any. */
+    public function drugFamily(): ?Family
+    {
+        $value = $this->input('drug_family');
+
+        return is_string($value) && $value !== '' ? Family::tryFrom($value) : null;
+    }
+
+    /**
+     * The drug's row, everything but the family.
+     *
+     * @return array<string, mixed>
+     */
+    public function drugColumns(): array
+    {
+        $data = $this->validated();
+
+        return [
+            'duration_minutes' => (int) ($data['duration_minutes'] ?? 0),
+            'addictive' => (float) ($data['addictive'] ?? 0),
+            'tolerance_gain' => (float) ($data['tolerance_gain'] ?? 0),
+        ];
     }
 
     /** What kind of software this payload describes, if any. */

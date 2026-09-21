@@ -10,6 +10,7 @@ use App\Stats\Context;
 use App\Stats\Modifier;
 use App\Stats\ResolvedStat;
 use App\Stats\Sheet;
+use App\Stats\Sources\ActiveDoses;
 use App\Stats\Sources\ArchetypePerks;
 use App\Stats\Sources\CharacterModifiers;
 use App\Stats\Sources\InstalledImplants;
@@ -573,6 +574,9 @@ class Character extends Model
             // The first source that is not derived from something else the
             // character has: injuries and statuses that happened TO them.
             new CharacterModifiers($this->getKey(), $asAt),
+            // What they have in them. The sixth, and the resolver learned
+            // nothing new for it — a dose is a list of modifiers with a clock.
+            new ActiveDoses($this, $asAt),
         ];
 
         $modifiers = [];

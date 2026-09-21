@@ -9,6 +9,8 @@ use App\Decks\Hardware;
 use App\Decks\HardwareEditor;
 use App\Decks\SlotLayout;
 use App\Decks\SlotType;
+use App\Drugs\DrugEditor;
+use App\Drugs\Family;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ItemRequest;
 use App\Market\Rarity;
@@ -85,6 +87,7 @@ class ItemController extends Controller
             'items' => $items,
             'filters' => $filters,
             'programKinds' => ProgramKind::cases(),
+            'drugFamilies' => Family::cases(),
         ]);
     }
 
@@ -99,6 +102,8 @@ class ItemController extends Controller
             $item = Item::create($request->columns());
 
             ProgramEditor::apply($item, $request->programKind(), $request->programColumns());
+
+            DrugEditor::apply($item, $request->drugFamily(), $request->drugColumns());
 
             HardwareEditor::apply(
                 $item,
@@ -131,6 +136,10 @@ class ItemController extends Controller
             // stopped being software has to LOSE its program row, or it stays
             // runnable by anyone who already owns a copy.
             ProgramEditor::apply($item, $request->programKind(), $request->programColumns());
+
+            // Always, and for the same reason: an item that has stopped being
+            // a drug has to lose its row, or it stays swallowable.
+            DrugEditor::apply($item, $request->drugFamily(), $request->drugColumns());
 
             // Always, even for an item that is not hardware and never was:
             // becoming nothing is a change too, and it is the one that has to
@@ -185,6 +194,7 @@ class ItemController extends Controller
             'skills' => Skill::orderBy('title')->get(['id', 'slug', 'title']),
             'hardwareKinds' => Hardware::cases(),
             'programKinds' => ProgramKind::cases(),
+            'drugFamilies' => Family::cases(),
             // Every socket a deck could present, which is what the counters
             // in the form are: fourteen numbers, one per type.
             'slotTypes' => SlotType::all(),

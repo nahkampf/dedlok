@@ -192,6 +192,18 @@
                 </a>
             @endif
 
+            {{-- Taking one is not confirmed. A dose is one copy of a thing
+                 meant to be used, and what makes it dangerous is the overdose
+                 rather than the click. --}}
+            @if ($item->isDrug())
+                <form method="POST" action="{{ route('inventory.take', $entry) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm btn--primary cut">
+                        {{ Text::get('drugs.take') }}
+                    </button>
+                </form>
+            @endif
+
             @if ($item->isSkillbook() && $item->useSkill)
                 <form method="POST" action="{{ route('inventory.inject', $entry) }}">
                     @csrf

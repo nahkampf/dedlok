@@ -82,4 +82,65 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Withdrawal, one definition per drug family
+    |--------------------------------------------------------------------------
+    |
+    | WANTING SOMETHING IS A CAUSE WITH NO ROW OF ITS OWN, which is exactly
+    | what this file is for. A character past the addiction threshold for a
+    | family wears its definition until they take something of that family
+    | again — App\Drugs\DrugLedger is the only thing that writes or clears one.
+    |
+    | ONE PER FAMILY, because there is nothing generic to say. Coming off a
+    | stimulant is not coming off an opiate, and a single "withdrawal" entry
+    | would be a label doing the work a mechanic should.
+    |
+    | THEY ARE FLAT AND THEY ARE BLUNT. Each takes points off the attributes
+    | the family was being used to prop up, so the shape of the trap is legible
+    | from the numbers: the thing you took to be sharper leaves you duller than
+    | you started. `unique`, since a person is either in withdrawal or is not —
+    | there is no second row to add up.
+    |
+    | Retiring one means `retired => true` and never a deletion: rows in the
+    | database name these keys.
+    |
+    */
+
+    'withdrawal_stimulant' => [
+        'label' => 'Coming down',
+        'stacking' => 'unique',
+        'modifiers' => [
+            ['op' => 'add', 'amount' => -4, 'target' => ['id' => 'focus']],
+            ['op' => 'add', 'amount' => -2, 'target' => ['id' => 'reflex']],
+        ],
+    ],
+
+    'withdrawal_opiate' => [
+        'label' => 'Hurting',
+        'stacking' => 'unique',
+        'modifiers' => [
+            ['op' => 'add', 'amount' => -4, 'target' => ['id' => 'focus']],
+            ['op' => 'add', 'amount' => -3, 'target' => ['id' => 'meat']],
+        ],
+    ],
+
+    'withdrawal_sedative' => [
+        'label' => 'Wired',
+        'stacking' => 'unique',
+        'modifiers' => [
+            ['op' => 'add', 'amount' => -3, 'target' => ['id' => 'motor']],
+            ['op' => 'add', 'amount' => -3, 'target' => ['id' => 'focus']],
+        ],
+    ],
+
+    'withdrawal_psychedelic' => [
+        'label' => 'Flat',
+        'stacking' => 'unique',
+        'modifiers' => [
+            ['op' => 'add', 'amount' => -3, 'target' => ['id' => 'perception']],
+            ['op' => 'add', 'amount' => -2, 'target' => ['id' => 'intellect']],
+        ],
+    ],
+
 ];
