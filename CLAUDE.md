@@ -1046,7 +1046,7 @@ consequences and taking what a machine holds all roll.
   is listed either way. Beside it: deck requirements, thermal verdict per part, what is
   running and **what each thing IS**, and the route as the same chain widget.
 - **An intention is a form, not a select** — each its own button with its own hidden purpose
-  and kind. **Burn is shown and disabled** with a *Not built yet* tag.
+  and kind. All three are real submits now that burn is built.
 - **It reads the machine LIVE, not the contact**, and everything else on it is the same call
   the run makes.
 
@@ -1106,6 +1106,42 @@ consequences and taking what a machine holds all roll.
   egress rolls too** — a mark is an instruction to try, not a door that opens.
 - **Both doors to leaving go through the same roll.** `RunController::egress()` takes the
   ordinary turn and `resolve()` is the shared tail.
+
+#### Burn
+
+- **`App\Cyberspace\Burner` is the only thing in the game that deletes a
+  system.** A burn is not a relocation and not a lockdown: the row goes, the
+  address goes out of existence with it, and the position it held is simply
+  empty until a seeding pass puts something new there. CYBERSPACE.md: *dead,
+  then empty, then eventually something new.*
+- **It is a core touch**, so it takes the IDS's second look through the shared
+  `Simulator::touchTheCore()`, exactly as extraction and an install do. Being
+  seen changes nothing about whether the machine burns.
+- **One line for every reason it can fail** — a machine already gone, an
+  unspeakable operating system, a purpose that is not `RunPurpose::Burn` — the
+  same silence `extract_fails` and `install_fails` keep, so the OS gate never
+  announces itself.
+- **A landed burn is the last turn of the run.** Nothing is left to strike
+  back, advance a trace or be shut, so `take()` returns early and the run ends
+  `RunEnding::Completed` — the second thing besides `runs.extracted` that means
+  *they did what they came to do*.
+- **It is why lockdown's fourth trigger needs no code.** `Lockdown::afterRun()`
+  looks the machine up by address as the run ends and finds nothing: the
+  trigger resolves itself by making its own subject absent.
+- **Delete FIRST, then cancel everybody else.** The obvious order is wrong —
+  cancelling first walks each other runner's ending through `afterRun()` on a
+  machine still standing, and one that had noticed any of them would shut,
+  which throws out everybody inside, which re-enters the loop already running.
+- **`Simulator::cancelEveryRunOn()` is that shared consequence**, keyed by
+  ADDRESS so it can be called after the machine is gone, and taking the
+  burner's own run as the exception. Lockdown calls it too — it used to be a
+  private method there, and two copies would be two places for the ending order
+  to drift.
+- **What it costs is heat and nothing else.** Two points against a completed
+  trace's one, the same placeholder on the same undesigned axis. No loot, no
+  raid counted, no lockdown: the real price is everything the machine would
+  ever have been worth again, which is the design's own answer to what a burn
+  costs the runner.
 
 #### Attack tags and defeat
 

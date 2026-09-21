@@ -554,6 +554,27 @@ return [
         'heat' => 1,
     ],
 
+    /*
+    | Burning a machine out of existence.
+    |
+    | THE ONLY COST IS HEAT, and it is the same placeholder the trace carries
+    | for the same reason — what heat DOES is undesigned, and a burn is the
+    | loudest thing anybody can do to a machine, so it is the one axis that
+    | obviously belongs to it. Two points rather than the trace's one, because
+    | a completed trace is the world following somebody home and a burn is a
+    | machine missing from the grid in the morning.
+    |
+    | Deliberately nothing else. A burn takes no loot, counts no raid and
+    | leaves no lockdown — there is nothing left to shut — so what it spends is
+    | the run itself and everything the machine would ever have been worth
+    | again. That opportunity cost is the design's own answer to "what does it
+    | cost the runner", and inventing a second price before heat means anything
+    | would be balancing against a number nobody has set.
+    */
+    'burn' => [
+        'heat' => 2,
+    ],
+
     'defences' => [
 
         /*

@@ -10,9 +10,13 @@ the arithmetic lives in this file.
 
 ## Status
 
-**Phase 3 is under way; everything past it is still design.** This document is
-the agreed shape, written down so the implementation has something to be
-checked against — the same contract MECHANICS.md holds for the stat system.
+**Phases 3 to 6 are built; the table below is the detail.** The grid, scanning,
+the run and its fight, extraction, backdoors, lockdown and burn all exist and
+can be played. What is still design is named row by row — concurrent runners,
+co-op, the mission layer and everything the physical world would need. This
+document is the agreed shape, written down so the implementation has something
+to be checked against — the same contract MECHANICS.md holds for the stat
+system.
 
 | Piece | State |
 | --- | --- |
@@ -31,7 +35,8 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Extraction | **built**; `App\Cyberspace\Extractor` takes creds and catalogue items the moment the core is touched, a catalogue item merging the way an archetype loadout does. A file becomes one unstackable "Encrypted Data Dump" carrying its real numbers as JSON, and costs turns to match its size in QB, cut back down by the deck's resolved bandwidth — `runs.extracting_qb` is the countdown, and `App\Cyberspace\Simulator` spends it a bandwidth's worth per turn, so the ICE (if anything woke) keeps swinging on every turn a pull runs |
 | `RunEnding::Completed` | **built**; egress after a successful extraction ends this way rather than as a plain egress — "they did what they came to do" is only true from that point on. `runs.extracted` is the flag both doors to leaving check |
 | The trace | **advances**, once something has noticed: the machine's `tracer_rate` a turn, and it WALKS the routing chain, one hop a turn: a single attempt at the next system, passed or not, and a hop once passed is behind it for good. Grade 1 never holds it, grade 9 holds it four turns in five. Drawn on the run screen as the chain it walks, with an estimate of the turns left |
-| A completed trace | **built**; puts heat on the character (one point, a placeholder — see TODO.md) and calls the chain-burn, which is a no-op because there are no backdoors |
+| A completed trace | **built**; puts heat on the character (one point, a placeholder — see TODO.md) and burns the chain, shutting every machine the route ran through |
+| Burning a machine | **built**; `RunPurpose::Burn` and `RunAction::Burn`, a core touch like the other two. `App\Cyberspace\Burner` deletes the row — the address goes out of existence, backdoors cascade, contents go with it, the position is simply empty, and the run ends `Completed`. It costs heat and nothing else |
 | The two thresholds | **built**; they ACT before the player's choice, every character is born with 70% and 30%, and they are set in an accordion on the map. Zero turns one off |
 | The run lock | **built**; `EnsureRunIsFinished` sends every request but signing in, signing out and the run's own routes back to it. Admin routes are NOT exempt, unlike `RequireCharacter` — a run is a character in jeopardy |
 | The readiness net inside a run | **built**; `EnsureDeckStillRuns` stands down while `current_run_id` is set, so a burnout resolves its own ending instead of racing a middleware that would call it a readiness loss |
@@ -41,7 +46,7 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | Mapping as a run purpose | **withdrawn**. The probe took the job: a read happens on the open grid, produces the same sellable file, and needs no run. Scanning from inside a run is not allowed either — a blind run is a commitment |
 | A scan is spent by the run that uses it | **built as a column** (`system_scans.used_at`, consumed on first use); nothing spends one, because spending one means a run. In co-op the most complete file covers the party and only that file is spent |
 | Concurrent runners | **specified only**; a machine holds several at once and they are not instanced. First extraction takes it, and both raids count |
-| A cancelled run | **specified only**; burned or locked down under you ends the run for 1 flat SI and nothing else. Asked on the lock, never by a sweeper, and the run row carries the ADDRESS so a burned target is an ordinary answer |
+| A cancelled run | **built**; burned or locked down under you ends the run for 1 flat SI and nothing else. Asked on the lock, never by a sweeper, and the run row carries the ADDRESS so a burned target is an ordinary answer |
 | Coordinated Strike, Advanced Coordination | **not built**; rank 8 (needs Cyberdecks 5) and rank 16 (needs Coordinated Strike 5), +1 co-op slot per level each. Skill ROWS, authored in the editor — but the `coop_slots` stat has to exist first or the modifier editor refuses the target |
 | `coop_slots` | **not built**; the base is 0 in config and every slot is a modifier. `program_threads`' shape, floored at ZERO rather than one, because zero is the gate |
 | Detection scaling with party size | **decided, and it is no number at all**: every runner rolls their own approach and detection is party-wide, so a party is louder by compounding. A per-runner difficulty term was measured and rejected — it changes nothing at the grades co-op is for |
@@ -357,7 +362,7 @@ rule is the whole of it, and every trigger below is an instance of it:
 | --- | --- |
 | **The IDS fired** | it saw you. Applied after the run, whatever else happened. |
 | **The ICE activated** | it fought you. Applied after the run. |
-| **Burn** | there is nothing subtle about it. |
+| **Burn** | there is nothing subtle about it — and it resolves itself, because a burned machine has no row left to shut. `Burner` deletes it, and `Lockdown::afterRun()` then finds nothing. |
 | **The third raid** | see below — nobody's books stay unaudited forever. |
 
 **Extraction is stealing, and a clean extraction does not lock a system down.**
@@ -816,7 +821,9 @@ The purposes:
   and the node restocks; caught, it locks down like anything else.
 - **Backdoor** — keep access. Never locks the system down, even when the run
   went loudly, and the system stays where it is until housekeeping catches it.
-- **Burn** — destroy it. Dead, then empty, then eventually something new.
+- **Burn** — destroy it. Dead, then empty, then eventually something new. It
+  takes no loot, counts no raid and leaves no lockdown; what it costs is heat
+  and everything the machine would ever have been worth again.
 
 **A run is roughly 4 to 20 turns**, and knowing that number is what every
 thermal figure in the catalogue has to be calibrated against:

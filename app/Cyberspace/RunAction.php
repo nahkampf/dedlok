@@ -50,6 +50,22 @@ enum RunAction: string
     case Install = 'install';
 
     /**
+     * Destroy the machine.
+     *
+     * TOUCHES THE CORE, and CYBERSPACE.md names it first in the list that does
+     * — "burning, extracting, backdooring, injecting". Available on a
+     * `RunPurpose::Burn` run and silently wasted on any other, the same rule
+     * the other two purposed actions follow.
+     *
+     * IT IS THE LAST TURN OF THE RUN when it lands. There is no machine left
+     * to strike back, advance a trace or be locked down, so the run ends as
+     * `RunEnding::Completed` rather than leaving somebody standing in an
+     * address that answers nothing. Nothing comes out of a burned machine:
+     * no loot, no raid counted, and the position it held is simply empty.
+     */
+    case Burn = 'burn';
+
+    /**
      * Do nothing, and let the turn pass.
      *
      * Not a courtesy — it is how a player spends a turn waiting for something,

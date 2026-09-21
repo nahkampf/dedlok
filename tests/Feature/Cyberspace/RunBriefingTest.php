@@ -206,9 +206,11 @@ final class RunBriefingTest extends TestCase
             ->assertSee('Take what it holds')
             ->assertSee('Leave a siphon')
             ->assertSee('Leave a routing hop')
-            // Unbuilt, and shown saying so rather than left out.
             ->assertSee('Burn it')
-            ->assertSee('Not built yet');
+            // Every intention is a real submit now. Burn was the one shown
+            // disabled with a "Not built yet" tag; it starts a run like the
+            // rest, and the tag is gone rather than merely unasserted.
+            ->assertDontSee('Not built yet');
     }
 
     /** Holding one already is worth saying: the approach is free from now on. */

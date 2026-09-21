@@ -177,6 +177,28 @@ final readonly class Simulator
                 $log = [...$log, ...$this->extract($character, $run)];
             } elseif ($action === RunAction::Install) {
                 $log = [...$log, ...$this->install($character, $run)];
+            } elseif ($action === RunAction::Burn) {
+                [$lines, $burned] = $this->burn($character, $run);
+                $log = [...$log, ...$lines];
+
+                /*
+                 * THERE IS NOTHING LEFT TO TAKE A TURN AGAINST. The machine is
+                 * gone, so it cannot strike back, cannot advance a trace and
+                 * cannot be locked down — the early return is the same shape
+                 * the last blow against an ICE takes, and for the same reason.
+                 *
+                 * COMPLETED, because they did what they came to do. That
+                 * ending is keyed on `runs.extracted` everywhere else; a burn
+                 * is the other way of having finished, and the run is ended
+                 * here rather than leaving the player standing in an address
+                 * that answers nothing.
+                 */
+                if ($burned) {
+                    $run->save();
+                    $this->runs->end($character, $run, RunEnding::Completed);
+
+                    return TurnResult::resolved($run, $log, RunEnding::Completed);
+                }
             } else {
                 $log[] = $this->line('cyberspace.run.log.hold');
             }
@@ -822,7 +844,63 @@ final readonly class Simulator
     }
 
     /**
-     * Something came out of the machine.    /**
+     * Burn it out of existence.
+     *
+     * ## It is a core touch, like the other two
+     *
+     * CYBERSPACE.md names burning first in the list of things that give the
+     * IDS its second look — "any action against the core, not just the
+     * destructive ones" — so it takes the same shared roll extraction and an
+     * install take. Being seen doing it changes nothing about whether the
+     * machine burns; what it changes is whether the ICE is awake for the turn,
+     * and there is no turn after this one.
+     *
+     * ## One line for every reason it can fail
+     *
+     * `install_fails`'s discipline exactly. A machine that has already gone, a
+     * purpose that is not `RunPurpose::Burn`, and an operating system the
+     * runner cannot speak all wear one sentence, because the OS gate must not
+     * announce itself here either — the UI only offers the button on a burn
+     * run, so the purpose check is a defence against a hand-built request.
+     *
+     * ## What it costs, and what it does not
+     *
+     * Heat on the character, and nothing else. No loot, because a burn takes
+     * nothing; no raid counted, because the books it would be read from are
+     * ash; no lockdown, because there is nothing left to shut. The real price
+     * is everything the machine would ever have been worth again — see
+     * `config/cyberspace.burn`.
+     *
+     * @return array{0: list<array{text: string, tone: string}>, 1: bool}
+     */
+    private function burn(Character $character, Run $run): array
+    {
+        $system = System::query()->where('address', $run->address)->first();
+
+        $log = $this->touchTheCore($character, $run, $system);
+
+        if ($system === null || $run->os_locked || $run->purpose !== RunPurpose::Burn) {
+            $log[] = $this->line('cyberspace.run.log.burn_fails');
+
+            return [$log, false];
+        }
+
+        $character->forceFill([
+            'heat' => (int) $character->heat + (int) Config::get('cyberspace.burn.heat', 2),
+        ])->save();
+
+        $log[] = $this->line('cyberspace.run.log.burn', ['name' => $system->displayName()], 'crit');
+
+        // LAST, because everybody else inside is thrown out by it and the line
+        // above should read as the thing that caused that rather than a report
+        // filed afterwards. The burner's own run is excluded and ends as
+        // Completed in `take()`.
+        (new Burner)->burn($system, $run->getKey());
+
+        return [$log, true];
+    }
+
+    /**
      * Something came out of the machine.
      *
      * TWO THINGS AT ONCE, and they are one fact: the run has extracted, and
@@ -1059,6 +1137,50 @@ final readonly class Simulator
      *
      * @return list<array{text: string, tone: string}>
      */
+    /**
+     * Everybody standing in a machine that stopped being somewhere to stand.
+     *
+     * Shared by the two things that can do that to a stranger: a lockdown
+     * shutting the machine, and a burn taking it out of existence. It lives
+     * here because what it does is resolve ENDINGS, and this class is where an
+     * ending is resolved — the order (damage, consequence, ejection, floor) is
+     * one order for defeats, burnouts, readiness losses and cancellations
+     * alike, and a second copy of this loop would be a second place for that
+     * order to drift.
+     *
+     * KEYED BY ADDRESS rather than by system, so it can be called after the
+     * machine is gone — which `Burner` does deliberately, because cancelling
+     * first would walk each ending through `Lockdown::afterRun()` on a machine
+     * that is still standing.
+     *
+     * `$except` is a run that is ending some other way and must not be
+     * cancelled under itself.
+     *
+     * Returns how many runs it ended.
+     */
+    public function cancelEveryRunOn(string $address, ?int $except = null): int
+    {
+        $runs = Run::query()->live()->where('address', $address)->get();
+        $ended = 0;
+
+        foreach ($runs as $run) {
+            if ($except !== null && $run->getKey() === $except) {
+                continue;
+            }
+
+            $character = Character::query()->find($run->character_id);
+
+            if ($character === null) {
+                continue;
+            }
+
+            $this->resolveEnding($character, $run, RunEnding::Cancelled);
+            $ended++;
+        }
+
+        return $ended;
+    }
+
     public function rouse(Character $character, Run $run, ?System $system): array
     {
         if ($system === null) {

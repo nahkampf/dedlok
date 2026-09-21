@@ -202,6 +202,7 @@
                 ['intent' => 'extraction', 'purpose' => RunPurpose::Extraction, 'kind' => null],
                 ['intent' => 'siphon', 'purpose' => RunPurpose::Backdoor, 'kind' => BackdoorKind::Siphon],
                 ['intent' => 'routing', 'purpose' => RunPurpose::Backdoor, 'kind' => BackdoorKind::Routing],
+                ['intent' => 'burn', 'purpose' => RunPurpose::Burn, 'kind' => null],
             ] as $option)
                 <form method="POST" action="{{ route('run.start') }}">
                     @csrf
@@ -224,18 +225,6 @@
                     </div>
                 </form>
             @endforeach
-
-            {{-- Burn is a purpose with no mechanic behind it. Shown so the
-                 screen is the whole list, disabled so it cannot start a run
-                 there is nothing to do in. --}}
-            <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
-                <button type="button" class="btn cut" style="min-width:min(200px,100%)" disabled>
-                    {{ Text::get('cyberspace.run.setup.intent_burn') }}
-                </button>
-                <span class="micro" style="color:var(--ink-2);flex:1;min-width:min(240px,100%)">
-                    <span class="tag">{{ Text::get('cyberspace.run.setup.intent_burn_hint') }}</span>
-                </span>
-            </div>
         </div>
     @endif
 </div>

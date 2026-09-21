@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
-use App\Models\Character;
 use App\Models\Run;
 use App\Models\System;
 use Carbon\CarbonImmutable;
@@ -22,7 +21,10 @@ use Illuminate\Support\Facades\DB;
  * the third raid — and says the single rule underneath is *the machine found
  * out*. Two of those collapse into one question here, because **the ICE can
  * only have activated if something noticed**: detection is what wakes it, so
- * `runs.detected` covers both rows. Burn does not exist. That leaves:
+ * `runs.detected` covers both rows. **Burn collapses too, and downwards**: a
+ * burned machine is not shut, it is gone, so `App\Cyberspace\Burner` deletes
+ * the row and `afterRun()` then finds nothing to shut — the trigger resolves
+ * itself by making its own subject absent. That leaves:
  *
  *  - the run was noticed, whatever else happened in it;
  *  - the raid counter is spent, even if the run was clean. Three raids and it
@@ -129,9 +131,13 @@ final readonly class Lockdown
     /**
      * Shut it, and throw out anybody who was still inside.
      *
-     * PUBLIC BECAUSE BURN WILL END HERE TOO, the same reasoning
-     * `RaidLedger::relocate()` carries: whatever makes a machine know, the
-     * shutting is one write and one set of consequences.
+     * PUBLIC FOR THE CHAIN BURN. `Simulator::burnTheChain()` shuts every
+     * machine a completed trace followed home, which is the same write and the
+     * same consequences arrived at from somewhere that is not the end of a run.
+     *
+     * It was expected that burning a machine would end here too, and that was
+     * wrong by one step: a lockdown is a WINDOW, and a burned machine has no
+     * window because it has no row. See `App\Cyberspace\Burner`.
      */
     public function shut(System $system): void
     {
@@ -154,7 +160,7 @@ final readonly class Lockdown
              */
             $this->backdoors->loseAllOn($system);
 
-            $this->throwOutEverybodyInside($system);
+            Simulator::fromConfig()->cancelEveryRunOn($system->address);
         });
     }
 
@@ -188,27 +194,5 @@ final readonly class Lockdown
         }
 
         return $moved;
-    }
-
-    /**
-     * Anybody still in it when it shut.
-     *
-     * The order every bad ending uses, and `Simulator::resolveEnding()` is
-     * where it lives — damage, then the ejection, then the floor — so a
-     * cancellation cannot drift out of step with a defeat or a burnout.
-     */
-    private function throwOutEverybodyInside(System $system): void
-    {
-        $runs = Run::query()->live()->where('address', $system->address)->get();
-
-        foreach ($runs as $run) {
-            $character = Character::query()->find($run->character_id);
-
-            if ($character === null) {
-                continue;
-            }
-
-            Simulator::fromConfig()->resolveEnding($character, $run, RunEnding::Cancelled);
-        }
     }
 }

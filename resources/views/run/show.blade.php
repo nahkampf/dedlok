@@ -262,9 +262,9 @@
                 {{ Text::get('cyberspace.run.action.attack') }}
             </button>
             {{-- ONLY ON AN EXTRACTION RUN. Purpose decides what a core touch
-                 IS — a backdoor and a burn are their own unbuilt purposes, and
-                 offering this button on either would promise something
-                 nothing yet does. --}}
+                 IS, and each of the three has its own button: offering one on
+                 the wrong purpose would promise something the turn would
+                 silently waste. --}}
             @if ($run->purpose === RunPurpose::Extraction)
                 <button type="submit" name="action" value="extract" class="btn cut">
                     {{ Text::get($run->extracting_qb !== null ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
@@ -279,6 +279,16 @@
                     {{ Text::get($run->backdoored ? 'cyberspace.run.action.install_done' : 'cyberspace.run.action.install', [
                         'kind' => $run->backdoorKind()?->label() ?? '',
                     ]) }}
+                </button>
+            @endif
+            {{-- THE ONLY BUTTON THAT ENDS THE RUN BY WORKING, so it is the
+                 only one that wears the accent: ember means destructive, and
+                 there is nothing in the game this word fits better. It cannot
+                 be pressed twice — the machine is gone and the run is over the
+                 moment it lands. --}}
+            @if ($run->purpose === RunPurpose::Burn)
+                <button type="submit" name="action" value="burn" class="btn btn--danger cut">
+                    {{ Text::get('cyberspace.run.action.burn') }}
                 </button>
             @endif
             <button type="submit" name="action" value="hold" class="btn btn--ghost cut">

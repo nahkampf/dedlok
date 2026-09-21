@@ -402,7 +402,7 @@ return [
                 'intent_extraction_hint' => 'Clean, it leaves no lockdown behind. Caught, it locks down like anything else.',
                 'intent_siphon_hint' => 'A little every night, from a machine with something worth taking.',
                 'intent_routing_hint' => 'A hop in the chain a trace has to walk. Worth holding on a machine worth nothing.',
-                'intent_burn_hint' => 'Not built yet.',
+                'intent_burn_hint' => 'It stops existing, and so does everything in it. No haul, no way back.',
                 'held' => 'You already hold a way into this one. Nothing looks up when you arrive.',
                 'held_kind' => 'It is a :kind, and that cannot be changed.',
             ],
@@ -451,6 +451,9 @@ return [
                 // the player chose it a screen ago.
                 'install' => 'Install :kind',
                 'install_done' => 'Way in installed',
+                // The one action that ends the run by succeeding, so it says
+                // what it does rather than what it is aimed at.
+                'burn' => 'Burn it',
                 'hold' => 'Hold',
                 'egress' => 'Egress',
             ],
@@ -500,6 +503,14 @@ return [
                 'install' => 'You leave a way back in. :kind.',
                 'install_already' => 'Your way in is already here, and it is the one you left.',
                 'install_fails' => 'You reach for the core and find nothing you can use.',
+                /*
+                | BURNING. The machine is named because it is the last thing
+                | anybody will be able to call it — the address goes out of
+                | existence with it — and `burn_fails` keeps the same silence
+                | the other two do about which gate stopped you.
+                */
+                'burn' => ':name comes apart under you. There will be nothing here.',
+                'burn_fails' => 'You reach for the core and it is not there to break.',
                 'noticed' => 'Something registers you on the way in.',
                 'noticed_ice' => 'Something registers you on the way in, and the ICE comes awake.',
 
