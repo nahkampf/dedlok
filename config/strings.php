@@ -237,6 +237,7 @@ return [
             'cyberspace' => 'Cyberspace',
             'training' => 'Training',
             'achievement' => 'Achievement',
+            'street' => 'Street',
         ],
 
         'messages' => [
@@ -244,6 +245,10 @@ return [
             'backdoor_found' => 'Your way into :system was found. The machine is not where you left it.',
             'skill_level' => ':skill reached level :level.',
             'achievement_unlocked' => 'Achievement unlocked: :name.',
+            // Heat's first consequence, and deliberately vague: there is no
+            // bounty row, no hunter and no price yet, so it says the word is
+            // out and stops where the mechanic stops.
+            'bounty_word' => "You've made enemies out there. Word is being put out on the street. There's going to be a price on your head.",
         ],
     ],
 

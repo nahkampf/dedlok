@@ -695,6 +695,45 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | What heat does
+    |--------------------------------------------------------------------------
+    |
+    | Heat is persistent, it belongs to the PERSON rather than the run, and it
+    | is what the world knows about them. A completed trace puts one point on,
+    | a burn two, and until now nothing read it back — a number that only goes
+    | up and changes nothing is not a mechanic.
+    |
+    | THE FIRST THING IT DOES IS ATTRACT ATTENTION. Every night, once, each
+    | character carrying any heat is rolled against the chance that somebody
+    | decides they are worth money. Under `floor_below` it is the uncertainty
+    | floor and nothing more; from there it climbs in a straight line to
+    | certain at `certain_at`.
+    |
+    | A STRAIGHT LINE BECAUSE NOTHING IS BALANCED AGAINST IT YET. Anything
+    | shapelier would be a curve somebody has to defend before there is a game
+    | to defend it against, and `App\Characters\Bounties::chanceFor()` is one
+    | method to change when heat is finished.
+    |
+    | CERTAIN AT THE TOP IS DELIBERATE and does not break the rule that no
+    | check is ever certain: this is not a check. Nobody is attempting anything
+    | and there is nothing to be good at — it is the world deciding about you,
+    | which is the same shape the market's rarity roll and the backdoor ageing
+    | roll have, and those reach certainty too.
+    |
+    | The rest of what CYBERSPACE.md asks of heat is still unbuilt: the decay,
+    | faction standing, telling a player-owned system's owner who hit them, and
+    | what a bounty IS once one exists. See TODO.md.
+    |
+    */
+    'heat' => [
+        'bounty' => [
+            'floor_below' => 5,
+            'certain_at' => 100,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Speaking the machine's operating system
     |--------------------------------------------------------------------------
     |

@@ -1062,7 +1062,21 @@ consequences and taking what a machine holds all roll.
 - **`Simulator::burnTheChain()` shuts every machine on the route** through
   `Lockdown::shut()` — one call does "the backdoors are gone and the systems move".
 - **A completed trace puts heat on the character and burns the chain.** `characters.heat` is
-  persistent; **one point is a placeholder** and what heat DOES is undesigned (TODO.md).
+  persistent; **one point is a placeholder**, and what heat now DOES is attract attention:
+  `App\Characters\Bounties` rolls every character carrying any, once a night at five, against
+  the chance somebody decides they are worth money. The uncertainty floor under five points,
+  climbing in a straight line to **certain at a hundred** — a straight line because nothing
+  is balanced against it yet, and `chanceFor()` is one method to change when it is.
+- **That roll is NOT a check, which is why it may reach certainty.** A check is somebody
+  attempting something against a difficulty and the floor exists so skill never becomes a
+  guarantee; this is the world deciding about you, with nothing to be good at. It takes the
+  percentile shape the market's rarity roll and the backdoor ageing roll use — injected die,
+  strictly inside the bound, so nothing never fires and everything always does.
+- **Zero heat is not rolled at all.** A floor is what an attempt keeps, not something the
+  world owes somebody who has done nothing.
+- **What a hit IS has not been built.** No bounty row, no hunter, no price — the message
+  says the word is out and stops where the mechanic stops. It has no memory either, so high
+  heat says so again tomorrow; that wants a cooldown the day a bounty is a thing you carry.
 - **`characters.heat` and `runs.thermal_load` are different quantities.** The design calls
   both "heat"; the run's column is named for what it is.
 - **The two thresholds ACT, and BEFORE the player's choice** — checked at the start of the
@@ -1301,7 +1315,9 @@ stood on this not existing.
   `Character|User` because every sender holds a character and `characters.user_id` is a
   column rather than a query.
 - **`App\Notifications\Category` says where a message came from and never how loud it is.**
-  Three cases, each with a sender that runs today: `Cyberspace`, `Training`, `Achievement`.
+  Four cases, each with a sender that runs today: `Cyberspace`, `Training`, `Achievement`,
+  `Street`. **`route()` may be null** — a message about the street has nowhere to lead until
+  there is a street, and the row stops being a link rather than pointing somewhere unrelated.
   **A case without a sender would be a filter with nothing to filter.** There is no
   severity and no colour on them — the kit's aliases mean good, careful and bad, and
   painting Training green would say something untrue about it. The category also decides

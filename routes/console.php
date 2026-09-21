@@ -89,6 +89,23 @@ Schedule::command('cyberspace:age-backdoors --quiet-when-idle')
     ->dailyAt('04:25')
     ->withoutOverlapping();
 
+/*
+ * Word goes out about somebody, which is the first thing heat has ever done.
+ *
+ * FIVE, after the four-o'clock housekeeping rather than inside it: a trace
+ * that completed in the night has already put its point on by then, so the
+ * number being rolled is the number the night ended with. Every character
+ * carrying any heat is rolled once — the uncertainty floor under five points,
+ * certain at a hundred — and one that carries none is not rolled at all.
+ *
+ * No stored clock and a missed night is never made up, like every other
+ * housekeeping job here. `withoutOverlapping()` because two copies would be
+ * two decisions about the same person on the same night.
+ */
+Schedule::command('characters:bounties --quiet-when-idle')
+    ->dailyAt('05:00')
+    ->withoutOverlapping();
+
 Schedule::command('market:seed')
     ->cron('0 */8 * * *')
     ->withoutOverlapping();

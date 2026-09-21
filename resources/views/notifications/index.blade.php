@@ -31,19 +31,20 @@
             @else
                 <div class="stack" style="--gap:2px">
                     @foreach ($messages as $message)
-                        {{-- THE ROW IS THE LINK, and it leads where the
-                             category leads: the grid is a map rather than a
-                             page per machine, so there is nothing more
-                             specific to point at and a stored URL would rot
-                             the first time a route moved.
+                        {{-- THE ROW IS THE LINK where the category has
+                             somewhere to lead, and a plain row where it does
+                             not: a message about the street has nowhere to go
+                             until there is a street, and a link to somewhere
+                             unrelated would be worse than no link.
 
                              A read message is DIMMED rather than marked. The
                              kit's live dot is ember and pulses, and an inbox
                              with ten unread would be ten pulsing dots — which
                              is exactly what the accent is rationed against.
                              Unread is the ordinary weight; read is quieter. --}}
-                        <a class="item-row" href="{{ route($message->category->route()) }}"
-                           style="text-decoration:none">
+                        @php($target = $message->category->route())
+                        <{{ $target === null ? 'div' : 'a' }} class="item-row"
+                           @if ($target !== null) href="{{ route($target) }}" style="text-decoration:none" @endif>
                             <span class="slot__icon" aria-hidden="true">{{ $message->category->glyph() }}</span>
 
                             <span class="stack" style="--gap:2px;min-width:0">
@@ -58,7 +59,7 @@
                             @if ($message->read_at === null)
                                 <span class="item-row__meta micro">{{ Text::get('notifications.new') }}</span>
                             @endif
-                        </a>
+                        </{{ $target === null ? 'div' : 'a' }}>
                     @endforeach
                 </div>
             @endif

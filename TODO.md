@@ -230,26 +230,46 @@ row looks like.
 
 ## What heat actually does
 
-**Status:** it accumulates and nothing reads it. `characters.heat` goes up by
-one every time a trace completes, and that is the whole of the mechanic.
+**Status: it has a first consequence, and that is all.** `characters.heat` goes
+up by one every time a trace completes and two for a burn, and since
+2026-09-21 `App\Characters\Bounties` reads it back: every character carrying
+any is rolled once a night at five against the chance somebody decides they
+are worth money. The uncertainty floor under five points, a straight line to
+certain at a hundred.
 
-**What it is.** Heat is persistent, it belongs to the person, and it is what the
-world knows about them — the lasting half of being traced, where the burned
+**What lands is a notification and nothing else.** There is no bounty row, no
+hunter and no price. The message says the word is out and stops where the
+mechanic stops — which is the honest shape for a threshold whose consequence
+has not been designed, and the inbox is what made even that possible.
+
+**What it is.** Heat is persistent, it belongs to the person, and it is what
+the world knows about them — the lasting half of being traced, where the burned
 routing chain is the immediate half. It is deliberately a number to MANAGE
 rather than a punishment to endure.
 
-**One per trace is a placeholder.** `cyberspace.trace.heat` holds it. A real
-figure would depend on what the trace was following: the grade of the machine,
-whether its owner is a faction, how long the run had been going. None of that is
-decided.
+**One per trace is still a placeholder.** `cyberspace.trace.heat` holds it. A
+real figure would depend on what the trace was following: the grade of the
+machine, whether its owner is a faction, how long the run had been going. None
+of that is decided.
 
-**What CYBERSPACE.md already says it should do**, none of which is built:
+**The curve is a straight line because nothing is balanced against it.**
+`Bounties::chanceFor()` is one method, and the numbers are
+`cyberspace.heat.bounty`. Anything shapelier would be a curve somebody has to
+defend before there is a game to defend it against.
 
+**What is still missing, and it is most of it:**
+
+- **What a bounty IS.** A row, a hunter, a price, somebody who can collect it.
+  Until then the roll is a rumour with nothing behind it.
+- **A cooldown.** At high heat the roll is certain, so it says so every night.
+  That is honest about a manhunt and intolerable the day a bounty is a thing
+  you carry — the fix is a memory on the character, not a gentler curve.
 - **Faction standing falls** when the traced system belongs to one. Factions do
   not exist; this is the hook they arrive on.
 - **A player-owned system's owner learns who attacked them**, and that is the
   *only* way they find out. An untraced raid is anonymous, which is what makes
-  stealth worth investing in on both sides.
+  stealth worth investing in on both sides. The inbox is where that message
+  goes now.
 - **Heat decays on its own, slowly.** Doing nothing is a valid way to cool off
   and a slow one. `characters:regenerate` is the shape that would credit it —
   a per-minute pass with no stored clock.
@@ -257,10 +277,6 @@ decided.
   the money sink is.
 - **Later: heat draws rogue programs** while moving through cyberspace, and
   especially through subnets.
-
-**The thresholds it crosses are the first thing to decide.** A number that only
-goes up and does nothing is not a mechanic — what makes heat real is the point
-at which something changes, and nothing names one.
 
 ---
 
