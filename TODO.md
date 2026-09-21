@@ -356,3 +356,15 @@ routing hop goes on the route, and four separate things can take one away.
 - **Enable "block headless browsers" on the Cap site key** before launch. It is off on
   the local key because it breaks agent/QA browsers, and it is one of the two settings
   (with instrumentation, already on) that do most of the work against real bots.
+
+## Idea for a last stage of a run
+An idea would be to make the Operating System of a node be a challenge for any run on a node as well. Having level 5 in the same operating system as the node should make it more or less a 100% success (use the uncertainty floor - and make this a pass that takes 15 seconds each). Not having the skill at all would make it nigh on impossible to success (sub 5% chance), and scale up from there.
+
+
+## The physical side of the game
+Some ideas to develop later: A city map showing locations. Most locations are hidden from the player and must be discovered by exploring. This map shouldn't be a grid like the cyberspace map, but rather just districts that you can travel to and "walk the streets" (an action) to discover new stuff (can also be helped by skills later). Locations can hold certain specific markets (selling certain items), places where you can get treatment (heal HP/max HP, heal neural damage/SI etc), get cyber implants or augmentations etc. There can also be "random events" and quest chains in the city. And, of course, fighting NPCs (and even PVP later once we figure that out). Maybe heists/robberies/missions (similar to runs on a node but more demanding).
+
+Maybe players can also buy "houses" and "apartments" - figure out what this would be more than "cosmetics". Also possibly buying into existing businesses to generate passive income (investments). Maybe crafting of items?
+
+## Player Owned Systems ("Data Fortresses")
+Systems in cyberspace that a player can "build". Should take quite a lot of skill, and time and resources to build. Works more or less like a normal system, but players can stash cash here, run "programs" that do things like generate passive income etc, use it as a very good route in the chain etc. Prime target for other players to attack. Players should here have to "construct" their own IDS and ICE, which should take skills and the higher the skill and the longer they work on it the stronger their systems become. A data fortress built by a skilled runner should more or less require a team to take down.
