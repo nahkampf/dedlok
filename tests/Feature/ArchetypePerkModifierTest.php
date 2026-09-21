@@ -73,6 +73,12 @@ class ArchetypePerkModifierTest extends TestCase
             'damage.hitpoints.burnout',
             'damage.hitpoints.ice',
             'damage.hitpoints.readiness_loss',
+            // The cross product is per (resource, origin) and does not ask
+            // whether anything deals that pair — a cancellation only ever
+            // costs Synaptic Integrity, and the perk still matches the
+            // physical half of the origin because a tag set is not a guess
+            // about what exists.
+            'damage.hitpoints.run_cancelled',
         ], $matched, 'every way of being hurt in the body, and nothing in the mind');
     }
 

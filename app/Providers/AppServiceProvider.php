@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Checks\CheckRoller;
+use App\Cyberspace\ChainBuilder;
+use App\Cyberspace\Lockdown;
 use App\Cyberspace\Probe;
 use App\Cyberspace\Simulator;
 use App\Models\User;
@@ -72,6 +74,22 @@ class AppServiceProvider extends ServiceProvider
          * a screen computing it from a different die than the roll would be
          * quoting odds the game does not hold.
          */
+        /*
+         * The lockdown, for the third time and the same reason: it takes an
+         * injected die, so the container cannot build one by reflection and
+         * `cyberspace:lockdowns` type-hinting it would be a command that
+         * throws rather than a command with a dependency. Binding it also lets
+         * a test pin where a relocating machine lands and have the COMMAND use
+         * that die.
+         */
+        $this->app->bind(Lockdown::class, static fn (): Lockdown => Lockdown::fromConfig());
+
+        // Not for a die this time — it has none — but because it needs a
+        // Resolver and the container cannot reflect its way to `new Backdoors`.
+        $this->app->bind(ChainBuilder::class, static fn ($app): ChainBuilder => ChainBuilder::fromConfig(
+            $app->make(Resolver::class),
+        ));
+
         $this->app->bind(Simulator::class, static fn ($app): Simulator => Simulator::fromConfig(
             null,
             $app->make(Resolver::class),

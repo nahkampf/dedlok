@@ -30,11 +30,12 @@ class CharacterModifier extends Model
     {
         return [
             'stacks' => 'integer',
-            'expires_at' => 'datetime',
+            'expires_at' => 'immutable_datetime',
             'data' => 'array',
         ];
     }
 
+    /** @return BelongsTo<Character, $this> */
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);

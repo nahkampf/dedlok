@@ -35,6 +35,21 @@ enum RunAction: string
     case Extract = 'extract';
 
     /**
+     * Put a way back in.
+     *
+     * TOUCHES THE CORE, exactly as Extract does, and takes the same second
+     * look from the IDS. Available on a `RunPurpose::Backdoor` run; on any
+     * other purpose it wastes the turn the same silent way, because the
+     * failure lines never say which gate stopped you.
+     *
+     * A SUCCESSFUL INSTALL IS THE ONLY THING IN CYBERSPACE THAT CLEANS UP
+     * AFTER ITSELF: it erases the logs and resets what it tripped, so the
+     * machine does not lock down however loud the run was. A failed one cleans
+     * up nothing.
+     */
+    case Install = 'install';
+
+    /**
      * Do nothing, and let the turn pass.
      *
      * Not a courtesy — it is how a player spends a turn waiting for something,

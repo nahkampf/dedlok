@@ -41,6 +41,7 @@ class DeckSlot extends Model
         ];
     }
 
+    /** @return BelongsTo<Item, $this> */
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
@@ -52,6 +53,8 @@ class DeckSlot extends Model
      * A socket belongs to the DEFINITION, so "is it occupied" is a question
      * about all the Kurogane Explorers in the world at once. That is exactly
      * what App\Decks\HardwareEditor needs to know before it takes one away.
+     *
+     * @return HasMany<DeckFitting, $this>
      */
     public function fittings(): HasMany
     {

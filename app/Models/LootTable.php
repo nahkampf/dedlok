@@ -7,8 +7,8 @@ namespace App\Models;
 use App\Cyberspace\SystemType;
 use App\Market\Rarity;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 
 /**
  * How good a drop is, by how hard the machine is.
@@ -44,7 +44,7 @@ class LootTable extends Model
      * Not `all()`: that is Eloquent's, it takes a column list, and shadowing
      * it with a different signature is a trap for whoever calls the base one.
      *
-     * @return Collection<int, self>
+     * @return Collection<int, static>
      */
     public static function weights(): Collection
     {

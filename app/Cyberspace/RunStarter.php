@@ -9,6 +9,7 @@ use App\Models\Character;
 use App\Models\Run;
 use App\Models\System;
 use App\Stats\Resolver;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -43,10 +44,19 @@ final readonly class RunStarter
 {
     public function __construct(
         private Resolver $resolver,
-        private ?RaidLedger $raids = null,
+        private ?Lockdown $lockdown = null,
     ) {}
 
-    public function start(Character $character, RunPurpose $purpose): RunResult
+    /**
+     * Go in.
+     *
+     * THE BACKDOOR KIND IS CHOSEN HERE, with the purpose, and never changed —
+     * the same call `os_locked` makes. What a machine is worth holding for is
+     * something you decide from the map with a scan in front of you, not
+     * mid-fight; and the kind is permanent once installed, so the decision
+     * wants to be made where the information is.
+     */
+    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null): RunResult
     {
         if ($character->current_run_id !== null) {
             return RunResult::refused(RunRefusal::AlreadyRunning);
@@ -68,6 +78,13 @@ final readonly class RunStarter
             return RunResult::refused(RunRefusal::NotIntrudable);
         }
 
+        // SHUT. It found out about somebody, and until the window closes there
+        // is no way in — after which there is no machine here at all, because
+        // what ends a lockdown is the machine moving.
+        if ($system->isLockedDown()) {
+            return RunResult::refused(RunRefusal::LockedDown);
+        }
+
         $deck = $character->equippedDeck;
 
         // No deck at all is the emptiest possible failure of readiness, and it
@@ -76,17 +93,35 @@ final readonly class RunStarter
             return RunResult::refused(RunRefusal::DeckNotReady);
         }
 
-        $run = DB::transaction(function () use ($character, $system, $at, $purpose): Run {
+        $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind): Run {
             $run = Run::query()->create([
                 'character_id' => $character->getKey(),
                 'address' => $system->address,
                 'x' => $at->x,
                 'y' => $at->y,
                 'purpose' => $purpose->value,
+                /*
+                 * THE ROUTE, SNAPSHOTTED. Declared per run and never held
+                 * standing — a backdoor installed after this moment is not on
+                 * this run's route, and one lost during it drops out of it.
+                 *
+                 * Built rather than chosen: every routing backdoor is free to
+                 * include and hinders by its machine's grade, so a picker
+                 * would be a list whose right answer is always "all of them,
+                 * best first". The setup screen shows the same list this
+                 * writes, so what a player was shown is what they got.
+                 */
+                'chain' => ChainBuilder::fromConfig($this->resolver)
+                    ->for($character, $system)
+                    ->map(static fn (System $hop): int => (int) $hop->getKey())
+                    ->all(),
+                // Only a backdoor run carries one, so an extraction cannot end
+                // up holding a permanent property of a machine it never opened.
+                'backdoor_kind' => $purpose === RunPurpose::Backdoor ? $kind?->value : null,
                 'turn' => 0,
                 // Decided once, at the door, and never told to anybody.
                 'os_locked' => ! $this->canOperate($character, $system),
-                'started_at' => now(),
+                'started_at' => CarbonImmutable::now(),
             ]);
 
             $character->forceFill(['current_run_id' => $run->getKey()])->save();
@@ -133,7 +168,7 @@ final readonly class RunStarter
         }
 
         DB::transaction(function () use ($character, $run, $ending): void {
-            $run->forceFill(['ended_at' => now(), 'ending' => $ending->value])->save();
+            $run->forceFill(['ended_at' => CarbonImmutable::now(), 'ending' => $ending->value])->save();
 
             // Only if they are still pointing at THIS run. A character who
             // somehow moved on is not dragged back by an old row finishing.
@@ -142,25 +177,26 @@ final readonly class RunStarter
             }
 
             /*
-             * HAS THE MACHINE BEEN EMPTIED ONCE TOO OFTEN?
+             * DOES THE MACHINE NOW KNOW?
              *
              * Asked HERE because this is the one door out of a run — the turn
              * that egresses, the ending the simulator resolves, and the older
              * standalone egress endpoint all arrive at this method, and a
-             * retirement any of them could skip is a retirement that depends
+             * consequence any of them could skip is a consequence that depends
              * on how somebody happened to leave.
              *
-             * Inside the transaction and after the row is marked ended, so the
-             * ledger's "is anybody still inside?" question does not find this
-             * run and hold the machine in place on its own account.
+             * Two ways it finds out and `Lockdown` owns both: the run was
+             * noticed, or the raid counter is spent. Asked on EVERY ending
+             * rather than only a successful one, because neither fact is about
+             * how the run went — a raider who emptied the shelf and then lost
+             * the fight has still emptied it, and a machine that saw somebody
+             * saw them whatever became of them afterwards.
              *
-             * It asks on EVERY ending rather than only on a successful one.
-             * The counter is what decides, and it is already spent by then: a
-             * raider who emptied the shelf and then lost the fight has still
-             * emptied it, and the third raid retires the node whether or not
-             * the third raider got home.
+             * After the row is marked ended, so the runner who caused it is
+             * already out: a lockdown throws out everybody still inside, and
+             * that must never mean the person it was a consequence of.
              */
-            ($this->raids ?? RaidLedger::fromConfig())->retireIfSpent($run->address);
+            ($this->lockdown ?? Lockdown::fromConfig())->afterRun($run);
         });
 
         return RunResult::ended($run);

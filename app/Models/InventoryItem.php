@@ -36,9 +36,9 @@ class InventoryItem extends Model
     protected function casts(): array
     {
         return [
-            'installed_at' => 'datetime',
+            'installed_at' => 'immutable_datetime',
             'quantity' => 'integer',
-            'started_at' => 'datetime',
+            'started_at' => 'immutable_datetime',
             'extracted_file' => 'array',
         ];
     }
@@ -130,23 +130,33 @@ class InventoryItem extends Model
         return "{$this->character_id}:{$this->item_id}:".($this->parent_id ?? 0);
     }
 
+    /** @return BelongsTo<Character, $this> */
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);
     }
 
+    /** @return BelongsTo<Item, $this> */
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
     }
 
-    /** The row this one is inside, if any. */
+    /**
+     * The row this one is inside, if any.
+     *
+     * @return BelongsTo<InventoryItem, $this>
+     */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_id');
     }
 
-    /** What is inside this row. Empty for everything that is not a container. */
+    /**
+     * What is inside this row. Empty for everything that is not a container.
+     *
+     * @return HasMany<InventoryItem, $this>
+     */
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id');
@@ -158,6 +168,8 @@ class InventoryItem extends Model
      * A module is never "inside" a deck the way a book is inside a shard —
      * see App\Decks\ModuleFitter. `parent_id` stays null for a fitted module;
      * what takes it out of the player's hands is this relation.
+     *
+     * @return HasOne<DeckFitting, $this>
      */
     public function fitting(): HasOne
     {
@@ -170,13 +182,19 @@ class InventoryItem extends Model
      * A third way of being spoken for, alongside sitting in a container and
      * being fitted into a socket — all of them decided in scopeLoose(), so no
      * listing has to learn about any of them.
+     *
+     * @return BelongsTo<InventoryItem, $this>
      */
     public function runningOn(): BelongsTo
     {
         return $this->belongsTo(self::class, 'running_on_deck_id');
     }
 
-    /** What is running on this row, if it is a deck. */
+    /**
+     * What is running on this row, if it is a deck.
+     *
+     * @return HasMany<InventoryItem, $this>
+     */
     public function processes(): HasMany
     {
         return $this->hasMany(self::class, 'running_on_deck_id');
@@ -198,7 +216,11 @@ class InventoryItem extends Model
         return $this->equippedBy()->exists();
     }
 
-    /** What is installed in this row, if it is a deck. */
+    /**
+     * What is installed in this row, if it is a deck.
+     *
+     * @return HasMany<DeckFitting, $this>
+     */
     public function fittings(): HasMany
     {
         return $this->hasMany(DeckFitting::class, 'deck_id');
@@ -216,6 +238,8 @@ class InventoryItem extends Model
      * A hasOne through `characters.equipped_deck_id`. One column holds one
      * value, so at most one character can be pointing at a given row — and
      * only its owner ever can, which App\Decks\DeckEquipper enforces.
+     *
+     * @return HasOne<Character, $this>
      */
     public function equippedBy(): HasOne
     {

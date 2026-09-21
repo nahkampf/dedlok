@@ -6,6 +6,7 @@ namespace App\Implants;
 
 use App\Models\Character;
 use App\Models\InventoryItem;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -62,7 +63,7 @@ final class ImplantFitter
                 return ImplantResult::refused(ImplantRefusal::NoRoom);
             }
 
-            $implant->forceFill(['installed_at' => now()])->save();
+            $implant->forceFill(['installed_at' => CarbonImmutable::now()])->save();
 
             return ImplantResult::installed($implant);
         });

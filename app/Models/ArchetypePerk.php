@@ -44,6 +44,7 @@ class ArchetypePerk extends Model
         ];
     }
 
+    /** @return BelongsTo<Archetype, $this> */
     public function archetype(): BelongsTo
     {
         return $this->belongsTo(Archetype::class);

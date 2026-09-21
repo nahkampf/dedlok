@@ -39,6 +39,7 @@ class TerrainChunk extends Model
         ];
     }
 
+    /** @return BelongsTo<Character, $this> */
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);

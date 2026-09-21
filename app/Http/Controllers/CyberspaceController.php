@@ -119,6 +119,22 @@ class CyberspaceController extends Controller
             // third and the screen should know it.
             'canScan' => $probe->freeAnalyser($character) !== null,
             'scanPasses' => $probe->passesFor($character),
+            /*
+             * WHAT A RUN FROM HERE WOULD LOOK LIKE, before committing to one.
+             *
+             * The machine is read live rather than from the contact, because
+             * this is the thing they are about to attack and a remembered one
+             * may not be there — `RunStarter` will refuse that, and the screen
+             * should not offer it either.
+             *
+             */
+            'target' => $target = $character->isJackedIn()
+                ? System::query()->at($character->gridPosition())->first()
+                : null,
+            'canRun' => $target !== null && $target->type->isInteractable() && ! $target->isLockedDown(),
+            // The route and everything else about a run is the briefing's,
+            // one screen along. This one only says whether there is anything
+            // here to plan against.
         ]);
     }
 

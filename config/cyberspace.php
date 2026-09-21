@@ -354,6 +354,88 @@ return [
     ],
 
     /*
+    | HOW A BACKDOOR IS LOST.
+    |
+    | A backdoor keeps a system open — no lockdown, no relocation, a permanent
+    | address in a world where nothing else has one. That is a genuinely
+    | powerful thing to hold, so it is not held for ever, and this is the only
+    | thing that takes one from somebody who does nothing wrong.
+    |
+    | ONE ROLL PER BACKDOOR PER NIGHT, and the odds rise with its AGE and with
+    | nothing else. Not with the machine's grade, not with what has been done
+    | through it — age alone, so a backdoor is a wasting asset rather than a
+    | thing you can play carefully enough to keep.
+    |
+    |   chance = base + (days held x per_day), capped
+    |
+    | 1% on the first night, climbing about a point and a half a month, capped
+    | at a tenth. That puts the median life of a backdoor somewhere near six
+    | weeks: long enough that installing one is worth the run, short enough
+    | that a portfolio has to be maintained rather than accumulated. Nothing
+    | has been balanced against it — like every number a raid touches — and it
+    | is the first dial to turn if backdoors feel disposable or eternal.
+    |
+    | A hit REMOVES THE BACKDOOR AND MOVES THE MACHINE: somebody found the way
+    | in, and the machine they found it on does not stay where it was. That
+    | takes every OTHER backdoor on the same machine with it, which is correct
+    | — they were all doors into a box that has moved.
+    */
+    'backdoors' => [
+
+        /*
+        | WHAT A SIPHON PAYS, per night, per backdoor.
+        |
+        | (3000 x grade) / 100 — thirty creds a grade, so a grade 1 relay is
+        | pocket change at 30 and a grade 9 is 270 a night for doing nothing.
+        | Against a node's own haul (a grade 9 holds hundreds) that is
+        | deliberately modest: a siphon is the SAFE half of a backdoor
+        | portfolio and safe income should be slow income. What makes it worth
+        | holding is that it arrives whether or not anybody goes anywhere.
+        |
+        | It is a BASE and expects to move. `siphon_yield` is a resolved stat,
+        | so a skill that makes somebody better at draining a machine is a
+        | modifier on it and never a branch here — the same shape every other
+        | number in the game takes. There are no such skills yet.
+        |
+        | Nothing has been balanced against it, like every number a backdoor
+        | touches. The dial to turn is this one.
+        */
+        'siphon' => [
+            'per_grade' => 30,
+        ],
+
+        'ageing' => [
+            'base' => 1.0,
+            'per_day' => 0.05,
+            'cap' => 10.0,
+        ],
+    ],
+
+    /*
+    | HOW LONG A MACHINE STAYS SHUT AFTER IT FINDS OUT.
+    |
+    | TWO TO SIX HOURS, rolled per lockdown. Long enough that waiting one out
+    | is not a plan — a player who tripped an IDS does not sit on the square
+    | for ten minutes and go back in — and short enough that a machine is not
+    | taken out of the world for a session. The spread is there so a lockdown
+    | cannot be timed: coming back at the earliest possible moment is a guess
+    | rather than a schedule.
+    |
+    | What the window IS, mechanically: nobody may start a run on the machine,
+    | and when it closes the machine relocates. Anybody already inside when it
+    | begins is thrown out — see `RunEnding::Cancelled`, which costs the flat
+    | point of Synaptic Integrity a readiness loss costs and nothing else.
+    |
+    | Expiry is swept every few minutes rather than settled when somebody
+    | looks. That is deliberate and it is the one place cyberspace does not use
+    | lazy settlement: two machines relocating into the same free position is a
+    | race, and the sweep is what serialises it.
+    */
+    'lockdown' => [
+        'hours' => ['min' => 2, 'max' => 6],
+    ],
+
+    /*
     | HOW MANY RAIDS A NODE SURVIVES BEFORE SOMEBODY RECONCILES THE NUMBERS.
     |
     | THREE, and the counter is on the SYSTEM rather than on the character —
@@ -414,24 +496,41 @@ return [
     | behind it and never rolled again — which is the difference between a long
     | chain being slow and a long chain being impassable.
     |
-    | So what a chain buys is the sum of 1/p over its hops. Three grade 9s is
-    | about fifteen turns of nothing happening, which is roughly what three
-    | successful backdoor runs ought to be worth — and a ten-hop chain is the
-    | reason losing the lot to one completed trace is a real price.
+    | A HOP ONLY EVER DELAYS BY FAILING. Passing one costs the trace nothing:
+    | it moves up and advances in the same turn. So what a chain is worth is
+    | the held turns its failures buy — the sum of (1/p - 1) over its hops —
+    | and a hop's value is entirely its grade. That is a decision and not an
+    | omission: the alternative, where passing a hop also costs a turn, would
+    | make ten junk machines worth ten guaranteed turns and put the price of a
+    | chain in its LENGTH rather than in what it is made of.
+    |
+    | GRADE 1 IS 95 AND NOT 100, which is the whole of what keeps a worthless
+    | machine worth backdooring. At 100 a low-grade hop was decoration — it
+    | could never fail, so it could never delay anything, and the design says a
+    | routing backdoor is useful on any system at all. At 95 one junk hop is
+    | worth about a twentieth of a turn and a full chain of ten has a 40%
+    | chance of buying at least one — a chance rather than an income, which is
+    | the right shape for a machine nobody would otherwise bother with.
+    |
+    | Three grade 9s is about twelve held turns, which is roughly what three
+    | successful backdoor runs ought to be worth — and a ten-hop chain of them
+    | is the reason losing the lot to one completed trace is a real price.
     |
     | Past the end of the chain nothing is in the way and the trace comes on
     | unopposed. An EMPTY chain is that case from the first turn, which is the
     | only one that exists today.
     |
-    | Ten points a grade, so the table is the design rather than a curve
-    | somebody fitted. CYBERSPACE.md says each backdoored system will hinder the
-    | trace by a different amount depending on what it is and who owns it; this
-    | is the first half of that, and grade is the part that is already on the
-    | row.
+    | Ten points a grade below the top, so the table is the design rather than
+    | a curve somebody fitted. CYBERSPACE.md wondered whether a hop should also
+    | read who owns the machine and how well it is dug in: **decided against**.
+    | Grade is the differentiator and it is the one already on the row; an
+    | owner weight would need a number per corp for 121 of them, and reading
+    | age would pull against the ageing roll, which makes an old backdoor more
+    | likely to vanish rather than better.
     */
     'trace' => [
         'advance' => [
-            1 => 100,
+            1 => 95,
             2 => 90,
             3 => 80,
             4 => 70,

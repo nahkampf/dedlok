@@ -15,6 +15,7 @@ use App\Stats\Sources\CharacterModifiers;
 use App\Stats\Sources\InstalledImplants;
 use App\Stats\Sources\RunningPrograms;
 use App\Stats\Sources\SkillEffects;
+use Carbon\CarbonImmutable;
 use Database\Factories\CharacterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -38,6 +39,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * not a stat either — nothing targets it, so nothing resolves it. Nothing
  * spends it yet either: the market has a supply side and no storefront, so the
  * only writer today is App\Archetypes\LoadoutGranter at character creation.
+ *
+ * The two below are spelled out because casts() is composed with array_merge()
+ * from ATTRIBUTES and RESOURCES rather than written as a literal, so static
+ * analysis cannot read it and would take both of these for the raw column.
+ *
+ * @property CarbonImmutable|null $waiting_until
+ * @property array<string, mixed>|null $waiting_cause
  */
 #[Fillable([
     'user_id', 'handle', 'archetype', 'creds', 'heat',
@@ -140,10 +148,11 @@ class Character extends Model
             ['grid_x' => 'integer', 'grid_y' => 'integer'],
             // On the floor, and what put them there. The cause is an array
             // because none of what it describes is built — see the migration.
-            ['waiting_until' => 'datetime', 'waiting_cause' => 'array'],
+            ['waiting_until' => 'immutable_datetime', 'waiting_cause' => 'array'],
         );
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -232,6 +241,7 @@ class Character extends Model
         );
     }
 
+    /** @return BelongsToMany<Skill, $this, CharacterSkill, 'pivot'> */
     public function skills(): BelongsToMany
     {
         return $this->belongsToMany(Skill::class, 'character_skills')
@@ -240,7 +250,11 @@ class Character extends Model
             ->withTimestamps();
     }
 
-    /** The rows themselves, for training state rather than skill definitions. */
+    /**
+     * The rows themselves, for training state rather than skill definitions.
+     *
+     * @return HasMany<CharacterSkill, $this>
+     */
     public function characterSkills(): HasMany
     {
         return $this->hasMany(CharacterSkill::class);
@@ -257,6 +271,8 @@ class Character extends Model
      * NULL is a real state and the ordinary one — see the migration. Written
      * only by App\Decks\DeckEquipper, and outside #[Fillable] deliberately:
      * there is no request that should be able to set it by name.
+     *
+     * @return BelongsTo<InventoryItem, $this>
      */
     public function equippedDeck(): BelongsTo
     {
@@ -328,6 +344,7 @@ class Character extends Model
         return $this->isJackedIn() ? new Position($this->grid_x, $this->grid_y) : null;
     }
 
+    /** @return HasMany<InventoryItem, $this> */
     public function inventory(): HasMany
     {
         return $this->hasMany(InventoryItem::class);
@@ -426,13 +443,19 @@ class Character extends Model
      * A COLUMN AND NOT A FLAG on the runs table, so "one at a time" is not a
      * rule anybody enforces — one column holds one value, the same call
      * `equipped_deck_id` makes. Written only by App\Cyberspace\RunStarter.
+     *
+     * @return BelongsTo<Run, $this>
      */
     public function currentRun(): BelongsTo
     {
         return $this->belongsTo(Run::class, 'current_run_id');
     }
 
-    /** The ordered training queue: (skill, target level) pairs. */
+    /**
+     * The ordered training queue: (skill, target level) pairs.
+     *
+     * @return HasMany<TrainingQueueEntry, $this>
+     */
     public function trainingQueue(): HasMany
     {
         return $this->hasMany(TrainingQueueEntry::class)->orderBy('position');
@@ -597,7 +620,7 @@ class Character extends Model
      * and for a set of slider values that has not been saved yet.
      *
      * @param  array<string, int>  $formula  attribute => divisor
-     * @param  array<string, int>  $attributes
+     * @param  array<string, float|int>  $attributes
      */
     public static function applyFormula(array $formula, array $attributes): float
     {

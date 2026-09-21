@@ -341,11 +341,104 @@ return [
             'locked' => 'You are in a run. It does not stop because you looked away.',
             'egress' => 'Egress',
             'egress_hint' => 'Leaving is always possible and never certain.',
+
+            /*
+            | GOING IN. Everything decided here is decided for good: the
+            | purpose is fixed at the door, a backdoor's kind is permanent once
+            | it lands, and the route is snapshotted the moment the run starts.
+            |
+            | The chain is SHOWN and not chosen — see App\Cyberspace\ChainBuilder
+            | for why there is nothing to pick.
+            */
+            'setup' => [
+                'heading' => 'Go in',
+                'title' => 'Before you go in',
+                'open' => 'Plan a run',
+                'purpose' => 'What for',
+                'kind' => 'What to leave behind',
+                'chain' => 'Routed through',
+                'chain_none' => 'Nothing. A trace comes straight at you.',
+                'chain_untrained' => 'You cannot route a run. Routing is the skill for it.',
+                'chain_cost' => 'A trace has to come through all of these. Reach you, and it takes every one of them.',
+                'hop' => 'Grade :grade',
+                'begin' => 'Begin run',
+
+                /*
+                | WHAT IS KNOWN AND WHAT IS NOT. The second half is the point:
+                | a machine nobody has read is a machine whose guard, tracer
+                | and operating system are all surprises, and the screen that
+                | commits to a run should say so plainly rather than leaving a
+                | blank space to be read as nothing there.
+                */
+                'known' => 'What you know',
+                'unknown' => 'Not read',
+                'unread' => 'You have read nothing off this machine. Everything in it is a surprise.',
+                'partial' => 'Your file on this machine is incomplete.',
+                'complete' => 'Your file is complete.',
+
+                // The deck, and the two things about it that end runs.
+                'deck' => 'Your deck',
+                'deck_missing' => 'You are carrying no deck.',
+                'not_ready' => 'This deck does not meet its own requirements. It will not take you in.',
+                'thermal_risk' => 'Running hot: :parts will not take much more.',
+                'thermal_over' => 'Past its limit: :parts are being cooked right now.',
+                'thermal_safe' => 'Thermals are fine.',
+
+                'running' => 'Running',
+                'running_none' => 'Nothing is running. You cannot cut, and you cannot read.',
+                'no_icebreaker' => 'No icebreaker. If something wakes up, you cannot fight it.',
+
+                /*
+                | THE INTENTIONS. Each is a separate form and a separate
+                | button, because they are not settings of one act — choosing
+                | one decides what every turn afterwards can do, and a backdoor
+                | additionally decides a permanent property of the machine.
+                */
+                'intent' => 'What you came to do',
+                'intent_extraction' => 'Take what it holds',
+                'intent_siphon' => 'Leave a siphon',
+                'intent_routing' => 'Leave a routing hop',
+                'intent_burn' => 'Burn it',
+                'intent_extraction_hint' => 'Clean, it leaves no lockdown behind. Caught, it locks down like anything else.',
+                'intent_siphon_hint' => 'A little every night, from a machine with something worth taking.',
+                'intent_routing_hint' => 'A hop in the chain a trace has to walk. Worth holding on a machine worth nothing.',
+                'intent_burn_hint' => 'Not built yet.',
+                'held' => 'You already hold a way into this one. Nothing looks up when you arrive.',
+                'held_kind' => 'It is a :kind, and that cannot be changed.',
+            ],
             // The odds, quoted on the button. The same number the roll uses —
             // `Simulator::egressChance()` answers both, which is why it is
             // public and separate from the roll.
             'egress_chance' => 'Egress :chance%',
             'egress_snared' => 'Something in here has hold of you.',
+
+            /*
+            | THE SCORE, AND WHY IT IS WHAT IT IS.
+            |
+            | "Evasion" is the capability; "Egress" is the act and the roll it
+            | takes. Two words for two things, which is why the panel and the
+            | button do not say the same one.
+            |
+            | A number that collapses without saying why is indistinguishable
+            | from a bug, so the card shows the pool, then what modified it,
+            | then what is opposing it — the three layers in the order they
+            | happen.
+            */
+            'evasion' => 'Evasion',
+            'evasion_explain' => 'How this is worked out',
+            'evasion_pool' => 'The pool',
+            'evasion_pool_sum' => ':sum over :divisor',
+            'evasion_modifiers' => 'What moves it',
+            'evasion_unmodified' => 'Nothing you carry moves it.',
+            'evasion_against' => 'What you are up against',
+            'evasion_grade' => 'Grade :grade',
+            'evasion_ice' => 'ICE awake, level :level',
+            'evasion_ice_none' => 'Nothing awake',
+            'evasion_difficulty' => 'Difficulty',
+            'evasion_snare' => 'Ensnare :level',
+            'evasion_snare_cost' => ':points points of chance',
+            'evasion_result' => 'Chance of getting out',
+            'evasion_floor' => 'No attempt is ever hopeless, or ever certain.',
             'action' => [
                 'attack' => 'Cut',
                 'extract' => 'Extract',
@@ -354,6 +447,10 @@ return [
                 // guess that pressing Extract again is what continues a pull
                 // already under way.
                 'extract_continue' => 'Continue pull',
+                // Names the kind, because it is permanent once it lands and
+                // the player chose it a screen ago.
+                'install' => 'Install :kind',
+                'install_done' => 'Way in installed',
                 'hold' => 'Hold',
                 'egress' => 'Egress',
             ],
@@ -393,6 +490,16 @@ return [
                 | and the tracer both, and a noticed one is a different night.
                 */
                 'unnoticed' => 'You are in, and nothing looked up.',
+                // THE BACKDOOR'S HALF OF THE RISK. Said differently from an
+                // ordinary quiet arrival, because it is not luck — it is the
+                // thing they went to the trouble of installing, working.
+                'unnoticed_backdoor' => 'Your way in is still open. Nothing looks up.',
+                // INSTALLING. One line for every reason it can fail, the same
+                // discipline the core touch already keeps: naming the cause
+                // would hand over the operating system for free.
+                'install' => 'You leave a way back in. :kind.',
+                'install_already' => 'Your way in is already here, and it is the one you left.',
+                'install_fails' => 'You reach for the core and find nothing you can use.',
                 'noticed' => 'Something registers you on the way in.',
                 'noticed_ice' => 'Something registers you on the way in, and the ICE comes awake.',
 
@@ -520,13 +627,23 @@ return [
                 'not_intrudable' => 'The portal is not a machine you can enter.',
                 'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
                 'already_running' => 'You are already in a run.',
+                // Said plainly: a lockdown is a consequence of something
+                // somebody did, not a scan fact being given away. And it is
+                // worth knowing the machine will not be there afterwards.
+                'locked_down' => 'It is locked down. Whatever it found out, it has shut — and when it opens it will be somewhere else.',
             ],
 
             'ended' => [
                 'egress' => 'You pulled out.',
                 'defeat' => 'It beat you.',
                 'burnout' => 'Your deck cooked a module and threw you through the wall.',
-                'cancelled' => 'The machine stopped existing while you were in it. The run is over and nobody won.',
+                // WHAT ACTUALLY HAPPENED, because a player thrown out of a run
+                // they were winning, by something they could not see, with no
+                // account of it, has been handed a bug rather than a
+                // consequence. Until a notification centre exists, the screen
+                // they land on IS the notification — which the run lock
+                // guarantees they land on.
+                'cancelled' => 'It went into lockdown while you were inside. The run is over, and nothing you had already taken is lost.',
                 'completed' => 'Done.',
             ],
         ],
@@ -1041,6 +1158,12 @@ return [
             'senses' => 'Senses',
             'muscle' => 'Muscle',
 
+            // The two pools. Named so a modifier targeting one can say what it
+            // affects on a card — "Evasion" is the capability, and the act it
+            // pays for is called egress everywhere a player sees it.
+            'egress' => 'Evasion',
+            'stealth' => 'Stealth',
+
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
             // The key is the tags in alphabetical order, because a set has no
             // order of its own, and the name is what a person would say: the
@@ -1062,6 +1185,23 @@ return [
     | the market has a supply side and no storefront, so the only thing that
     | writes it is the archetype grant at creation.
     */
+    /*
+    | Backdoors: what somebody keeps on a machine they have been inside.
+    |
+    | The kind is a permanent property of the install and the words have to
+    | carry that — "siphon" and "routing" are what they DO, not settings.
+    */
+    'backdoor' => [
+        'kind' => [
+            'siphon' => 'Siphon',
+            'routing' => 'Routing hop',
+        ],
+        'hint' => [
+            'siphon' => 'A little every night, from a machine with something worth taking.',
+            'routing' => 'A hop in the chain a trace has to walk. Worth holding on a machine worth nothing.',
+        ],
+    ],
+
     'creds' => [
         'name' => 'Creds',
         'amount' => ':amount cr',

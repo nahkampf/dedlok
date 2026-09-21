@@ -1,0 +1,33 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - app
+
+    # Models declare casts in a casts() method whose return type is not a
+    # constant array, so larastan has to read the method body to see them at
+    # all. Character composes its casts with array_merge() and is beyond even
+    # that — the two it gets wrong are spelled out as @property on the class.
+    parseModelCastsMethod: true
+
+    # Column types come from the migrations rather than a live connection: the
+    # local db container is a scratch instance and has diverged from the remote
+    # the application actually runs against.
+    databaseMigrationsPath:
+        - database/migrations
+
+    # A type that is only certain because a PHPDoc says so is not certain. The
+    # docblocks here describe intent, and the branches behind them guard
+    # hand-edited content rows, decoded JSON and const tables that are allowed
+    # to grow — the defensive half of a codebase whose content lives in the
+    # database. Native types are still checked.
+    treatPhpDocTypesAsCertain: false
+
+    ignoreErrors:
+        # `$a?->b ?? $c` is redundant to the analyser, because `??` already
+        # swallows the null it is guarding. It is not redundant to a reader:
+        # the `?->` is where the code says out loud that the relation may be
+        # missing. Sixteen sites agree on it, so it is the house style.
+        - identifier: nullsafe.neverNull

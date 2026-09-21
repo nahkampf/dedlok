@@ -650,28 +650,6 @@ class ItemRequest extends FormRequest
         ];
     }
 
-    /**
-     * The modifiers field, decoded.
-     *
-     * @return array<int, mixed>|string|null
-     */
-    private function programModifiers(): array|string|null
-    {
-        $raw = $this->input('program_modifiers');
-
-        if ($raw === null || $raw === '' || $raw === '[]') {
-            return [];
-        }
-
-        if (is_array($raw)) {
-            return $raw;
-        }
-
-        $decoded = json_decode((string) $raw, true);
-
-        return is_array($decoded) ? $decoded : (string) $raw;
-    }
-
     /** What kind of deck hardware this payload describes, if any. */
     public function hardware(): ?Hardware
     {

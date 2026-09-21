@@ -25,11 +25,13 @@ class SkillPrerequisite extends Model
         return ['required_level' => 'integer'];
     }
 
+    /** @return BelongsTo<Skill, $this> */
     public function skill(): BelongsTo
     {
         return $this->belongsTo(Skill::class);
     }
 
+    /** @return BelongsTo<Skill, $this> */
     public function requiredSkill(): BelongsTo
     {
         return $this->belongsTo(Skill::class, 'required_skill_id');

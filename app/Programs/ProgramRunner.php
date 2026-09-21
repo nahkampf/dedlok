@@ -10,6 +10,7 @@ use App\Models\InventoryItem;
 use App\Models\Program;
 use App\Stats\Resolver;
 use App\Stats\Sources\RunningPrograms;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -238,7 +239,7 @@ final class ProgramRunner
     {
         if ($row->quantity <= 1) {
             $row->running_on_deck_id = $deckId;
-            $row->started_at = now();
+            $row->started_at = CarbonImmutable::now();
             $row->save();
 
             return $row;
@@ -253,7 +254,7 @@ final class ProgramRunner
             'parent_id' => $row->parent_id,
             'quantity' => 1,
             'running_on_deck_id' => $deckId,
-            'started_at' => now(),
+            'started_at' => CarbonImmutable::now(),
         ]);
     }
 

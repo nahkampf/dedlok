@@ -51,6 +51,8 @@ class Skill extends Model
      * no name of its own. The use_op filter is what makes it "the book"
      * rather than "an item that happens to point here" — use_skill_id is
      * only ever set alongside inject_skill, and the schema says so.
+     *
+     * @return HasOne<Item, $this>
      */
     public function skillbook(): HasOne
     {
@@ -58,18 +60,27 @@ class Skill extends Model
             ->where('use_op', Item::USE_INJECT_SKILL);
     }
 
-    /** What this skill requires before it can be learned. */
+    /**
+     * What this skill requires before it can be learned.
+     *
+     * @return HasMany<SkillPrerequisite, $this>
+     */
     public function prerequisites(): HasMany
     {
         return $this->hasMany(SkillPrerequisite::class);
     }
 
-    /** Skills that require THIS one. The other side of the graph. */
+    /**
+     * Skills that require THIS one. The other side of the graph.
+     *
+     * @return HasMany<SkillPrerequisite, $this>
+     */
     public function unlocks(): HasMany
     {
         return $this->hasMany(SkillPrerequisite::class, 'required_skill_id');
     }
 
+    /** @return BelongsToMany<Character, $this, CharacterSkill, 'pivot'> */
     public function characters(): BelongsToMany
     {
         return $this->belongsToMany(Character::class, 'character_skills')

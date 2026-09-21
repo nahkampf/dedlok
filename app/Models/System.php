@@ -40,6 +40,7 @@ class System extends Model
             'y' => 'integer',
             'grade' => 'integer',
             'raids' => 'integer',
+            'locked_down_until' => 'immutable_datetime',
             'ids_detection' => 'integer',
             'tracer_detection' => 'integer',
             'tracer_rate' => 'integer',
@@ -88,7 +89,11 @@ class System extends Model
         return $this->ice_id !== null;
     }
 
-    /** The guard on this machine, if it has one. */
+    /**
+     * The guard on this machine, if it has one.
+     *
+     * @return BelongsTo<Ice, $this>
+     */
     public function ice(): BelongsTo
     {
         return $this->belongsTo(Ice::class);
@@ -139,6 +144,8 @@ class System extends Model
      * owns, and inventing a company to run it would be a fact nobody asked
      * for. An owner survives relocation the way the row does — a company does
      * not stop owning a machine because the machine moved.
+     *
+     * @return BelongsTo<Corp, $this>
      */
     public function owner(): BelongsTo
     {
@@ -153,6 +160,8 @@ class System extends Model
      * and a varchar here would be a second spelling of it. NULL is the portal
      * — and a world seeded before the skills existed, which is a content gap
      * rather than a secret.
+     *
+     * @return BelongsTo<Skill, $this>
      */
     public function operatingSystem(): BelongsTo
     {
@@ -165,6 +174,8 @@ class System extends Model
      * Its own inventory model rather than a stash with a different owner:
      * raided rather than carried, safe from what ICE does to a person, and
      * restocked on a clock. See App\Models\SystemContent.
+     *
+     * @return HasMany<SystemContent, $this>
      */
     public function contents(): HasMany
     {
@@ -190,5 +201,18 @@ class System extends Model
     {
         $query->whereBetween('x', [$centre->x - $range, $centre->x + $range])
             ->whereBetween('y', [$centre->y - $range, $centre->y + $range]);
+    }
+
+    /**
+     * Is this machine shut?
+     *
+     * NULL IS THE ORDINARY STATE, and a time in the past is the same answer as
+     * null — the sweep clears the column, but a question asked between the
+     * moment a window closes and the moment the sweep runs must not say the
+     * machine is still shut. `App\Cyberspace\Lockdown` is the only writer.
+     */
+    public function isLockedDown(): bool
+    {
+        return $this->locked_down_until !== null && $this->locked_down_until->isFuture();
     }
 }

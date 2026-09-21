@@ -653,7 +653,10 @@ final class FightTest extends TestCase
         $this->ignoreThresholds();
         $run = $this->begin();
 
-        // A grade 9 hop lets it through 20% of the time; a 1 always does.
+        // A grade 9 hop lets it through 20% of the time; a grade 1 lets it
+        // through 95, which is the number that keeps a worthless machine worth
+        // backdooring — at 100 it could never fail and so could never delay
+        // anything.
         $chained = new class extends Run
         {
             protected $table = 'runs';
@@ -677,9 +680,15 @@ final class FightTest extends TestCase
         $this->assertSame(1, $chained->trace_hop, 'one hop, one turn');
         $this->assertSame(4, $chained->trace);
 
-        // The second hop is a grade 1, so even the worst roll passes it — and
-        // the grade 9 behind it is never asked again.
+        // EVEN A GRADE 1 CAN HOLD IT. A roll of 100 is outside the 95 that
+        // passes, so the cheapest hop in the game buys a turn here.
         $this->simulator(101)->take($this->character->fresh(), $chained, RunAction::Hold);
+        $this->assertSame(1, $chained->trace_hop, 'still at the second hop');
+        $this->assertSame(4, $chained->trace, 'and the trace did not move');
+
+        // Through it on an ordinary roll — and the grade 9 behind it is never
+        // asked again.
+        $this->simulator(1)->take($this->character->fresh(), $chained, RunAction::Hold);
         $this->assertSame(2, $chained->trace_hop, 'past the chain');
         $this->assertSame(8, $chained->trace);
 

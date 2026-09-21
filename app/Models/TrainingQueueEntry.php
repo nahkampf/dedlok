@@ -43,16 +43,18 @@ class TrainingQueueEntry extends Model
         return [
             'target_level' => 'integer',
             'position' => 'integer',
-            'last_deposited_at' => 'datetime',
+            'last_deposited_at' => 'immutable_datetime',
             'sp_per_minute' => 'decimal:2',
         ];
     }
 
+    /** @return BelongsTo<Character, $this> */
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);
     }
 
+    /** @return BelongsTo<Skill, $this> */
     public function skill(): BelongsTo
     {
         return $this->belongsTo(Skill::class);

@@ -472,8 +472,8 @@ final class Probe
             'x' => $system->x,
             'y' => $system->y,
             'passes' => 0,
-            'scanned_at' => now(),
-            'expires_at' => now()->addHours($this->lifetimeHours),
+            'scanned_at' => CarbonImmutable::now(),
+            'expires_at' => CarbonImmutable::now()->addHours($this->lifetimeHours),
         ]);
     }
 
@@ -608,6 +608,14 @@ final class Probe
                     $scan->ice_level = $system->ice?->level ?? 0,
                     $scan->ice_bounty = $system->carriesBounty(),
                 ],
+                // Nothing can read a cloak, so ScanFact::Cloaked is not
+                // discoverable and the loop above never yields it. Named all
+                // the same: the day it becomes readable, this is a pointed
+                // failure naming the one place to write the read, rather than
+                // an UnhandledMatchError from a match that quietly fell short.
+                'cloaked' => throw new \LogicException(
+                    'ScanFact::Cloaked became discoverable with no read behind it.'
+                ),
             };
         }
 

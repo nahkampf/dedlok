@@ -56,7 +56,10 @@ checked against — the same contract MECHANICS.md holds for the stat system.
 | What a raid can carry out | **built** — data only. A node never yields a physical object: the shelf is `on_market` items whose `container` is `data` |
 | A machine told what to hold | **built** — `systems.stock_rule`, NULL on nearly every row: `fixed` for exactly these, `any_of` for this many from a set, `plus_random` to keep the ordinary draw as well. What mission systems will use; nothing sets one yet |
 | Nightly restock | **built** — `cyberspace:restock`, a TOP-UP like the market's pass: a node still holding something is left alone, so emptying one is temporary |
-| The raid counter | **built**; `systems.raids`, on the system and not the character, written only by `App\Cyberspace\RaidLedger`. Counted once per RUN that took something, the moment the take lands; the third one relocates the machine when the run ends, unless somebody is still inside |
+| The raid counter | **built**; `systems.raids`, on the system and not the character, written only by `App\Cyberspace\RaidLedger`. Counted once per RUN that took something, the moment the take lands; the third one is one of the two things that shut a machine |
+| Lockdown | **built**; `systems.locked_down_until`, written only by `App\Cyberspace\Lockdown`. Two triggers — the run was noticed, or the books are spent — asked as a run ENDS, so it never reaches the runner who caused it. 2-6 hours, rolled. Nothing may run a shut machine, and anybody still inside is thrown out as `RunEnding::Cancelled` |
+| Relocation | **built**; `RaidLedger::relocate()` — new position, new address, books balanced — driven by `cyberspace:lockdowns` every five minutes. **The one thing in cyberspace that is not settled lazily**: two machines drawing the same free position is a race, and the sweep serialises it |
+| `RunEnding::Cancelled` | **built**, and it finally has a caller. One flat point of Synaptic Integrity through `DamageOrigin::RunCancelled`, no defeat effect, no raid counted, no trace — and the floor is asked, because one point can put somebody down |
 | A read runs in the background | **built** — it belongs to the running copy of the scanner, not to where its owner is standing: walk away or jack out and the answer is waiting |
 | Two instruments, two machines | **built** — a second read needs a second running instance, which costs its own compute and a free thread |
 | Threads — how many copies of one program run at once | **built** — `program_threads`, one by default, raised by Multithreading and only for software flagged `multithreaded` |
@@ -366,15 +369,13 @@ housekeeping, so a quiet thief has somewhere to come back to.
 character**, incremented by every successful raid whoever made it, and when it
 reaches three the system locks down and relocates as though it had been caught.
 
-> **Built, less the window.** `App\Cyberspace\RaidLedger` counts the raid —
-> once per run, the moment a take lands — and relocates the machine when the
-> run ends. What is NOT built is the lockdown WINDOW: the three other triggers
-> in the table above all want the same state, the same duration and the same
-> map treatment, so inventing a private version of it for this one trigger
-> would be inventing the thing that pass has to replace. A machine with a live
-> run on it is held in place until that run ends, because relocating out from
-> under somebody is `RunEnding::Cancelled` — a real ending with its own
-> damage, and not a side effect a stranger's successful raid should inflict.
+> **Built.** `App\Cyberspace\RaidLedger` counts the raid — once per run, the
+> moment a take lands — and `App\Cyberspace\Lockdown` shuts the machine when
+> the run ends, for 2-6 hours, after which `cyberspace:lockdowns` relocates it.
+> Two triggers rather than four: the ICE can only have activated if something
+> noticed, so `runs.detected` covers both of those rows, and burn does not
+> exist. The compromise the raid pass carried — a machine held in place while
+> anybody was inside it — is gone, because a lockdown now throws them out.
 Somebody eventually reconciles the numbers. This is what stops a perfectly
 executed loop from being a permanent, riskless income: even flawless play
 retires the node.
@@ -447,7 +448,7 @@ means going back and doing the run again.
 
 | | **Siphon** | **Routing** |
 | --- | --- | --- |
-| What it gives | a little cash every night, paid straight into your creds | a hop in the chain a trace has to walk |
+| What it gives | a little cash every night, paid straight into your creds — **built**: (3000 x grade) / 100, through `siphon_yield` so a skill can raise it | a hop in the chain a trace has to walk — **built**: `ChainBuilder` puts every one you hold on the route, best first |
 | Where it is useful | on a system with something worth taking | on any system at all, however worthless |
 | How you lose it | the nightly ageing roll, and nothing else | the ageing roll **or** a completed trace, which takes every routing backdoor in that run's chain at once |
 
@@ -463,6 +464,16 @@ still rolls, still counts toward the system's three raids, and still locks the
 system down if it is caught. A backdoor buys you half the risk permanently, not
 a bypass of the brake.
 
+> **Backdoors are built.** The table,
+> the two kinds, installing one on a `RunPurpose::Backdoor` run, the cleanup
+> that leaves no lockdown behind, the skipped approach roll, the map's mark —
+> and every way one is lost: the nightly ageing roll
+> (`cyberspace:age-backdoors`), a lockdown somebody else triggered, a machine
+> that relocates for any reason, and a burn through the foreign key. Both kinds
+> do their job: a siphon pays nightly through `cyberspace:siphons`, and a
+> routing hop goes on the route `ChainBuilder` draws. What is NOT built is
+> telling anybody their backdoor was found.
+
 ### The routing chain
 
 Backdoored systems can be **chained**, and every run is routed through the chain
@@ -474,11 +485,19 @@ comes straight back — and it is the *trace* that has to walk the chain to reac
 you. So a chain costs no turns, no bandwidth and no heat. What limits it is
 skill, and what it risks is itself.
 
-**The chain is declared per run, not held standing.** Every run picks its own
-path from the routing backdoors the character holds, so how much infrastructure
-goes on the table is a decision made fresh each time: a long chain for the job
-that matters, a short one or none for a routine raid. That is the decision the
-exposure rule exists to make interesting.
+**The chain is declared per run, not held standing.** Every run takes its own
+path from the routing backdoors the character holds, snapshotted on
+`runs.chain` when it begins — so a backdoor installed afterwards is not on that
+run's route, and one lost during it drops out.
+
+> **Built, and it is BUILT rather than picked.** `App\Cyberspace\ChainBuilder`
+> takes everything available, best grade first, capped at `routing_hops`, never
+> including the target. There is nothing to choose: a hop is free to include
+> and hinders by its machine's grade, so a picker would be a list whose right
+> answer is always "all of them, best first" — asked on every run. What a
+> player decides is which machines to hold a routing backdoor on, one backdoor
+> run at a time. The briefing at `run.setup` shows the route before committing,
+> from the same call the run makes.
 
 **Chain length is a skill, and only a skill:**
 
@@ -488,18 +507,65 @@ exposure rule exists to make interesting.
 | **Advanced Routing** | 8 | Cyberdecks L5, Routing L5 | one further system per level |
 
 Ten hops is therefore the ceiling a character can reach on skills alone, and
-implants and gear are expected to lift it later. Both skills exist as rows
-today. Siphon backdoors are not eligible and never appear in the list.
+implants and gear are expected to lift it later. **Built**: `routing_hops` is a
+resolved stat with base zero, and both skills grant one per level — so the
+ceiling is content rather than code, and an implant that lifts it is a row.
+Nothing READS it yet, because the chain itself is not built. Siphon backdoors are not eligible and never appear in the list.
 
-**Each backdoored system will hinder the trace by a different amount** —
-depending on what it is, who owns it and how well it is dug in. That is
-specified and not designed: for now a hop is a hop.
+~~**Each backdoored system will hinder the trace by a different amount** —
+depending on what it is, who owns it and how well it is dug in.~~ **Decided:
+grade, and nothing else.** A hop's chance of letting the trace through is what
+`cyberspace.trace.advance` says for the machine's grade, which is the
+differentiator already on the row. Owner was rejected as a number per corp for
+121 of them; age was rejected because it would pull against the ageing roll,
+which makes an old backdoor more likely to vanish rather than better at its job.
 
-**A completed trace burns the whole chain.** A trace *passing through* a
+**A hop only ever delays by FAILING.** Passing one costs the trace nothing — it
+moves up and advances in the same turn — so what a chain is worth is the held
+turns its failures buy. That is a decision and not an oversight: the
+alternative, where passing a hop also costs a turn, would put the price of a
+chain in its length rather than in what it is made of, and ten junk machines
+would be worth ten guaranteed turns.
+
+**Grade 1 is 95% and not 100%**, which is the whole of what keeps a worthless
+machine worth backdooring. At 100 a low-grade hop could never fail, so it could
+never delay anything, and this document promises a routing backdoor is useful
+on any system at all. At 95 one junk hop is worth about a twentieth of a turn
+and a full chain of ten has a 40% chance of buying at least one — a chance
+rather than an income, which is the right shape for a machine nobody would
+otherwise bother with.
+
+**A completed trace burns the whole chain.** **Built**: `Simulator::burnTheChain()`
+shuts every machine on the route, which closes every door into each of them and
+relocates them when their windows expire.
+ A trace *passing through* a
 backdoored system does nothing to it — that is what the chain is for. But a
 trace that reaches 100% and finds you has followed the path all the way home,
 and every system on it is exposed: the backdoors are gone, the systems lock
 down and relocate, and the chain is simply not there any more.
+
+**LOSING ONE HOP IS NOT LOSING THE CHAIN.** That is the only case where the
+whole thing goes. A hop that is lost for any other reason — somebody else's run
+shut the machine, a burn took it, the nightly ageing roll found the backdoor —
+**drops out of the chain and the rest of it stands**. A chain is a route and
+not a circuit: one relay going dark shortens the road home, it does not open
+it. Anything else would make a long chain fragile in exactly the way the
+exposure rule already prices, and would punish the holder twice for one loss.
+
+Three things follow, and they are the implementation:
+
+- **A live run whose chain loses a hop keeps running.** The chain it declared
+  is re-read against what the character still holds, and the missing system is
+  simply not in it.
+- **The trace does not gain or lose ground.** `runs.trace_hop` is a position in
+  the chain, and a hop once passed is behind it for good. Dropping a hop the
+  trace has ALREADY passed moves the position down with it, so nothing it
+  fought through is re-fought; dropping one still ahead of the trace leaves the
+  position alone and simply gives it one less to get through. Neither case is
+  allowed to hand the trace a hop for free or take a passed one back.
+- **A chain can empty out entirely**, and that is the ordinary no-routing case
+  rather than an error: the trace comes on unopposed from wherever it had got
+  to, exactly as it does for a run that declared no chain at all.
 
 That is the cost that replaces latency, and it is a better one. **A longer chain
 is more protection and more to lose at once.** A ten-hop chain represents ten
@@ -1105,9 +1171,11 @@ wall.**
 
 > **Built.** `App\Cyberspace\Simulator` rolls it, the `egress` pool is the
 > value, `config/cyberspace.egress` the difficulty, and both doors out of a run
-> go through the same roll. What is NOT built is any modifier that targets the
-> stat: no skill, implant or program helps somebody leave yet, so the pool is
-> currently the whole of it.
+> go through the same roll. **Egress Protocols** is the first thing that moves
+> the stat — rank 8, behind Cyberdecks 3, +3% of base per level — and it is
+> exactly the shape promised above: a row, not a branch. The run screen shows
+> the score and explains it, naming whatever contributed without knowing what a
+> skill is.
 
 **Egress is always POSSIBLE and never certain**, and those are two different
 statements. Nothing can take the attempt away — not an active ICE, not a wrong
@@ -1608,13 +1676,19 @@ decision table and writes nothing.
   with nothing else. A hit removes the backdoor, relocates the system,
   reassigns its address, and **notifies the player who installed it**.
 - **Backdoor siphons pay out.** A little from each backdoored system, scaled by
-  its grade, straight into the holder's creds.
+  its grade, straight into the holder's creds. **Built**: `cyberspace:siphons`,
+  04:15, before the ageing roll so a backdoor discovered tonight still paid
+  tonight.
 - **Node inventories restock**, so emptying one is temporary.
 - **Heat decays** on every character carrying any.
 
 **Frequently — every few minutes** — lockdown expiry:
 
 - Systems whose 2–6 hour lockdown has run out are relocated and reassigned.
+  **Built**: `cyberspace:lockdowns`, every five minutes, `withoutOverlapping()`
+  and a `--dry-run` like the rest. A machine that opens but finds nowhere free
+  to move to is logged rather than left shut for ever — a full grid is a
+  seeding problem, not a reason to keep a machine locked.
 
 The second cannot be folded into the first: a 2–6 hour lockdown that only lifts
 at 04:00 is not a 2–6 hour lockdown. It also cannot be lazy — resolved when

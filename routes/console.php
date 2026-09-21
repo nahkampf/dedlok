@@ -60,11 +60,33 @@ Schedule::command('training:deposit --quiet-when-idle')
  * writes thousands of rows is not something to find out about later.
  *
  * CYBERSPACE.md gives housekeeping three more nightly jobs — backdoor
- * discovery, siphon payouts, heat decay — and a frequent one for lockdown
- * expiry. None of those exist yet; this is the first of them.
+ * discovery, siphon payouts, heat decay. The first of those is below; the
+ * other two are still unbuilt, and lockdown expiry has its own cadence
+ * further down because a window measured in hours cannot wait for 04:00.
  */
 Schedule::command('cyberspace:restock')
     ->dailyAt('04:10')
+    ->withoutOverlapping();
+
+/*
+ * Siphons pay out. The safe half of a backdoor portfolio: it arrives whether
+ * or not its holder went anywhere, and nothing takes it but the ageing roll
+ * below — which runs AFTER this, so a backdoor discovered tonight still paid
+ * tonight.
+ */
+Schedule::command('cyberspace:siphons --quiet-when-idle')
+    ->dailyAt('04:15')
+    ->withoutOverlapping();
+
+/*
+ * Backdoor discovery, and the only thing that takes one from somebody who did
+ * nothing wrong. Odds rise with age and with nothing else, so a backdoor is a
+ * wasting asset rather than something that can be held carefully enough to
+ * keep. Ten past four, after the nodes restock, because a machine that moves
+ * tonight should have been stocked as itself first.
+ */
+Schedule::command('cyberspace:age-backdoors --quiet-when-idle')
+    ->dailyAt('04:25')
     ->withoutOverlapping();
 
 Schedule::command('market:seed')
@@ -101,5 +123,22 @@ Schedule::command('characters:regenerate --quiet-when-idle')
     ->withoutOverlapping();
 
 Schedule::command('cyberspace:settle --quiet-when-idle')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+/*
+ * Lockdown expiry, and the one piece of cyberspace that CANNOT be lazy.
+ *
+ * Everything else settles when somebody looks — a matured scan pass, a training
+ * deposit, getting up off the floor. This cannot: two machines relocating into
+ * the same free position is a race, and the sweep is what serialises it. A
+ * lockdown is also 2-6 hours long, so the machine has to open on its own clock
+ * rather than on the next page load of a player who has gone to bed.
+ *
+ * Five minutes, the same cadence as the scan sweep: a window measured in hours
+ * does not need a finer one, and a machine that opens four minutes late is a
+ * machine nobody was standing next to.
+ */
+Schedule::command('cyberspace:lockdowns --quiet-when-idle')
     ->everyFiveMinutes()
     ->withoutOverlapping();

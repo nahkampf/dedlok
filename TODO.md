@@ -283,69 +283,60 @@ at which something changes, and nothing names one.
 
 ---
 
-## Lockdown, burn and relocation
+## The gap that let a 500 ship
 
-**Status:** relocation is built and lockdown is not. `App\Cyberspace\RaidLedger`
-moves a machine — new position, new address, counter back to zero — and the
-third raid is the one trigger that calls it. CYBERSPACE.md's *Lockdown* table
-lists four, and the other three have nothing behind them.
+**Status:** closed for the run routes and open everywhere else.
+`tests/Feature/Cyberspace/RunScreenSmokeTest.php` walks every run route over
+HTTP — the screen in five states, every `RunAction` through `run.act`, the
+standalone egress door, and the lock in front of the other screens. It was
+written after two bugs shipped in 0.10.0 that fourteen hundred unit tests could
+not see, because every one of them built its own `Simulator` and nothing ever
+posted to the route.
 
-**What is missing.**
+**The rule it encodes.** A test that constructs its own collaborators cannot
+find a container problem, and a mechanic tested only through its own class
+cannot find a broken screen. Anything with a route wants at least one test that
+takes what a real request takes.
 
-- **The lockdown WINDOW itself.** A state on `systems` with a duration, during
-  which the machine is locked down rather than gone. The map already has the
-  vocabulary for it: `cell--rebooting` is drawn as a dashed hairline and
-  `MapCell::$isRebooting` is a parameter nothing sets.
-- **The three other triggers.** *The IDS fired* and *the ICE activated* are
-  facts a run already knows — `runs.detected` and `runs.ice_id` — and both are
-  applied AFTER the run, so they are one call each at the same moment the raid
-  counter is checked. *Burn* is its own mechanic and does not exist.
-- **Cancelling a run the machine went out from under.** `RunEnding::Cancelled`
-  exists with no caller, and its doc says it costs the flat point of Synaptic
-  Integrity a readiness loss costs — which also needs a `DamageOrigin` case of
-  its own, since an origin is the axis a resistance is written against. Until
-  it exists, `RaidLedger::retireIfSpent()` holds a machine in place while
-  anybody is inside it rather than inventing half of this.
-
-**Why they belong in one pass.** All four triggers want the same state, the
-same duration and the same map treatment, so building the window for one of
-them privately is building the thing the pass has to replace.
+**Where the same gap is still open** — no HTTP-level pass exists over the deck
+screen's fitting and stripping forms, the implant body map, the stash's item
+actions, or the admin editors' writes. The cyberspace map has one (the scan
+dialog polls through `cyberspace.reading`, which a test exercises), and the run
+screen now has one. The rest are unit-tested only.
 
 ---
 
-## The routing chain
+## Burn
 
-**Status:** the SHAPE exists and nothing is IN it. `Run::routingGrades()`
-returns `[]` always, which is why a trace currently walks unopposed from the
-first turn — the empty case CYBERSPACE.md describes for "no routing", and the
-only case that has ever been true.
+**Status:** the only one of lockdown's four triggers still unbuilt, and it is
+its own mechanic rather than a missing branch. `App\Cyberspace\Lockdown::shut()`
+is public precisely so burn can call it — everything a machine does about being
+violated is one write and one set of consequences, and burning is the loudest
+version of finding out.
 
-**What is already built around the gap.** `Simulator::traceGetsThrough()` and
-the whole trace-walking mechanic (`runs.trace_hop`, one attempt at the NEXT
-hop per turn) were written to take a `list<int>` of grades from
-`routingGrades()` — nothing about the trace mechanic changes when this lands,
-only what that one method returns.
+**What it needs, none of which exists:** a way to burn a system at all (a run
+purpose, `RunPurpose::Burn` is not a case yet), what it costs the runner, and
+what it leaves behind. CYBERSPACE.md says a burned system takes its address out
+of existence rather than relocating — so it is NOT `RaidLedger::relocate()`, and
+the position it frees stays empty for a while, which is the one thing that
+consumes the grid's empty reserve.
 
-**What is missing, per CYBERSPACE.md's own *Backdoors* and *The routing
-chain* sections:**
+---
 
-- **Backdoors do not exist at all.** No install action, no `backdoors` table,
-  no way to hold access to a system. `RunPurpose::Backdoor` is a case in an
-  enum and nothing else.
-- **Routing and Advanced Routing are skill rows with no reader.** They exist,
-  they have books, nothing asks them how long a chain a character may run.
-- **A run does not let a player CHOOSE a chain.** CYBERSPACE.md: "the chain is
-  declared per run, not held standing" — a run needs to pick its route from
-  the backdoors a character holds, at the moment it starts, alongside purpose
-  and target.
-- **A completed trace does not burn anything**, because there is nothing to
-  burn. `Simulator::burnTheChain()` is already called at the right moment and
-  is a deliberate no-op with a comment saying so.
+## What backdoors still owe
 
-**The size of this one.** Larger than Surge's numbers or heat's thresholds —
-it is a whole unbuilt purpose (Backdoor) plus the two skills that gate it
-plus the run-creation screen learning to ask for a route. Worth breaking into
-its own pass rather than picking up as a side effect of something else.
+**Status:** built, and both kinds do their job — a siphon pays nightly, a
+routing hop goes on the route, and four separate things can take one away.
+
+**What is left:**
+
+- **Nobody is TOLD their backdoor was found.** The ageing roll logs it, because
+  there is no notification centre and — unlike a cancelled run — no screen the
+  player is about to land on that could carry the message. CYBERSPACE.md asks
+  for a notification; this is the gap standing in for one.
+- **Each hop hinders by its grade and nothing else**, which is decided rather
+  than missing — see CYBERSPACE.md, *The routing chain*. What is NOT decided is
+  what a SIPHON pays, which is the last thing backdoors owe.
 
 ---
 
@@ -365,3 +356,15 @@ its own pass rather than picking up as a side effect of something else.
 - **Enable "block headless browsers" on the Cap site key** before launch. It is off on
   the local key because it breaks agent/QA browsers, and it is one of the two settings
   (with instrumentation, already on) that do most of the work against real bots.
+
+## Idea for a last stage of a run
+An idea would be to make the Operating System of a node be a challenge for any run on a node as well. Having level 5 in the same operating system as the node should make it more or less a 100% success (use the uncertainty floor - and make this a pass that takes 15 seconds each). Not having the skill at all would make it nigh on impossible to success (sub 5% chance), and scale up from there.
+
+
+## The physical side of the game
+Some ideas to develop later: A city map showing locations. Most locations are hidden from the player and must be discovered by exploring. This map shouldn't be a grid like the cyberspace map, but rather just districts that you can travel to and "walk the streets" (an action) to discover new stuff (can also be helped by skills later). Locations can hold certain specific markets (selling certain items), places where you can get treatment (heal HP/max HP, heal neural damage/SI etc), get cyber implants or augmentations etc. There can also be "random events" and quest chains in the city. And, of course, fighting NPCs (and even PVP later once we figure that out). Maybe heists/robberies/missions (similar to runs on a node but more demanding).
+
+Maybe players can also buy "houses" and "apartments" - figure out what this would be more than "cosmetics". Also possibly buying into existing businesses to generate passive income (investments). Maybe crafting of items?
+
+## Player Owned Systems ("Data Fortresses")
+Systems in cyberspace that a player can "build". Should take quite a lot of skill, and time and resources to build. Works more or less like a normal system, but players can stash cash here, run "programs" that do things like generate passive income etc, use it as a very good route in the chain etc. Prime target for other players to attack. Players should here have to "construct" their own IDS and ICE, which should take skills and the higher the skill and the longer they work on it the stronger their systems become. A data fortress built by a skilled runner should more or less require a team to take down.

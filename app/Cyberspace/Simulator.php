@@ -61,6 +61,8 @@ final readonly class Simulator
         private CheckRoller $checks,
         private DefeatResolver $defeats,
         private Extractor $extractor,
+        private Backdoors $backdoors,
+        private Lockdown $lockdown,
         private RaidLedger $raids,
         private Closure $roll,
     ) {}
@@ -83,6 +85,8 @@ final readonly class Simulator
             // a second random source to control separately.
             DefeatResolver::fromConfig($roll),
             new Extractor,
+            new Backdoors,
+            Lockdown::fromConfig($roll),
             // Same die again: a test that pins the turn's roll also pins where
             // a retired machine moves to.
             RaidLedger::fromConfig($roll),
@@ -171,6 +175,8 @@ final readonly class Simulator
                 $log[] = $this->attack($character, $run);
             } elseif ($action === RunAction::Extract) {
                 $log = [...$log, ...$this->extract($character, $run)];
+            } elseif ($action === RunAction::Install) {
+                $log = [...$log, ...$this->install($character, $run)];
             } else {
                 $log[] = $this->line('cyberspace.run.log.hold');
             }
@@ -242,10 +248,12 @@ final readonly class Simulator
             return [$this->line('cyberspace.run.log.trace_held')];
         }
 
-        $was = (int) $run->trace;
-        $run->trace = min(100, $was + (int) $rate);
+        // The guard above already returned on a trace that was at 100, so
+        // this is the turn it arrives on or it is not arriving at all.
+        $trace = min(100, (int) $run->trace + (int) $rate);
+        $run->trace = $trace;
 
-        if ($run->trace < 100 || $was >= 100) {
+        if ($trace < 100) {
             return [];
         }
 
@@ -306,6 +314,30 @@ final readonly class Simulator
     private function traceGetsThrough(Run $run): bool
     {
         $grades = $run->routingGrades();
+
+        /*
+         * WALK PAST THE GAPS FIRST, and for free.
+         *
+         * A hop that has gone dark — somebody else's lockdown, a burn, the
+         * nightly ageing roll — is not in the way of anything, so it costs the
+         * trace nothing and holds it up for nothing. The stored route is never
+         * rewritten, so these are gaps in a fixed list rather than a list that
+         * shrank: a hop already passed stays passed, and one that vanishes
+         * ahead of the trace simply gives it one less to get through.
+         *
+         * Done in the same turn as the roll that follows, because a gap is not
+         * an obstacle and a turn spent on nothing would be the trace being
+         * hindered by a machine that is not there.
+         */
+        // `array_key_exists` and not `??`: a hop that is PRESENT AND NULL is a
+        // gap to step over, and one that is absent is the end of the route.
+        // Null coalescing cannot tell those apart, which is exactly the bug
+        // this loop had first time out.
+        while (array_key_exists((int) $run->trace_hop, $grades)
+            && $grades[(int) $run->trace_hop] === null) {
+            $run->trace_hop = (int) $run->trace_hop + 1;
+        }
+
         $next = $grades[(int) $run->trace_hop] ?? null;
 
         if ($next === null) {
@@ -364,7 +396,33 @@ final readonly class Simulator
      */
     private function burnTheChain(Run $run): void
     {
-        // Backdoors do not exist. When they do, this is where they stop.
+        $chain = (array) ($run->chain ?? []);
+
+        if ($chain === []) {
+            return;
+        }
+
+        /*
+         * A TRACE THAT REACHED YOU FOLLOWED THE PATH ALL THE WAY HOME.
+         *
+         * Every system on the route is exposed: the backdoors are gone, the
+         * machines shut, and when their windows close they relocate. That is
+         * the cost that makes a long chain a decision rather than a free
+         * upgrade — ten hops is ten successful backdoor runs and one bad night
+         * takes all of them.
+         *
+         * A trace PASSING THROUGH a hop does nothing to it; this is only ever
+         * reached by one that finished. Shutting is the whole of it, because
+         * `Lockdown::shut()` already closes every door into a machine and the
+         * relocation follows from the window closing — so the two halves of
+         * "the backdoors are gone and the systems move" are one call.
+         *
+         * Machines that have already gone are simply not found, which is the
+         * ordinary way a route decays and needs no case of its own.
+         */
+        foreach (System::query()->whereIn('id', $chain)->get() as $hop) {
+            $this->lockdown->shut($hop);
+        }
     }
 
     /**
@@ -455,20 +513,7 @@ final readonly class Simulator
 
         $system = System::query()->where('address', $run->address)->first();
 
-        $log = [];
-
-        if ($system !== null && ! $run->detected && $this->spottedBy($character, $system)) {
-            $run->forceFill([
-                'detected' => true,
-                'ice_id' => $system->ice_id,
-                'ice_integrity' => $system->ice?->integrity,
-            ]);
-
-            $log[] = $this->line(
-                $system->ice_id === null ? 'cyberspace.run.log.core_noticed' : 'cyberspace.run.log.core_noticed_ice',
-                tone: 'crit',
-            );
-        }
+        $log = $this->touchTheCore($character, $run, $system);
 
         if ($system === null || $run->os_locked || $run->purpose !== RunPurpose::Extraction) {
             $log[] = $this->line('cyberspace.run.log.extract_fails');
@@ -575,11 +620,62 @@ final readonly class Simulator
      */
     public function egressChance(Character $character, Run $run): float
     {
-        return $this->checks->chance(
-            $character->stat('egress')->value,
-            $this->egressDifficulty($run),
-            'egress',
-            $this->egressMultiplier($run),
+        return $this->egressReport($character, $run)->chance;
+    }
+
+    /**
+     * The same odds, with the working shown.
+     *
+     * ONE ASSEMBLY FOR ALL FOUR READERS — the button, the card that explains
+     * it, the roll and the tests. `egressChance()` is a field of this rather
+     * than a second calculation, so a screen cannot quote a number the attempt
+     * does not use.
+     *
+     * The pool's terms are resolved off the SHEET, which is the only place a
+     * pool exists: its base is the attributes added and divided once, and
+     * asking the resolver for it with a base of zero returns the modifiers
+     * alone. The steps come off the same `ResolvedStat` the value does, so the
+     * explanation is the resolver's own account and not a reconstruction.
+     */
+    public function egressReport(Character $character, Run $run): EgressReport
+    {
+        $sheet = $character->sheet();
+        $resolved = $sheet->get('egress');
+
+        /** @var array{attributes: list<string>, divisor: float} $pool */
+        $pool = (array) Config::get('stats.pools.egress', ['attributes' => [], 'divisor' => 1.0]);
+
+        $terms = [];
+
+        foreach ((array) $pool['attributes'] as $attribute) {
+            $terms[$attribute] = $sheet->value($attribute);
+        }
+
+        /** @var array<int, int> $table */
+        $table = Config::get('cyberspace.egress.difficulty', []);
+
+        $grade = System::query()->where('address', $run->address)->value('grade');
+        $grade = $grade === null ? null : (int) $grade;
+        $gradeDifficulty = (int) ($table[$grade] ?? ($table[1] ?? 0));
+
+        $ice = $run->ice_id === null ? null : Ice::query()->find($run->ice_id);
+        $snare = $ice?->attackLevel(AttackTag::Ensnare);
+        $multiplier = $snare === null ? 1.0 : AttackTag::Ensnare->multiplier($snare);
+        $difficulty = (int) $this->egressDifficulty($run);
+
+        return new EgressReport(
+            value: $resolved->value,
+            base: $resolved->base,
+            terms: $terms,
+            divisor: (float) $pool['divisor'],
+            steps: $resolved->steps,
+            difficulty: $difficulty,
+            gradeDifficulty: $gradeDifficulty,
+            grade: $grade,
+            iceLevel: $ice === null ? null : (int) $ice->level,
+            snareLevel: $snare,
+            multiplier: $multiplier,
+            chance: $this->checks->chance($resolved->value, (float) $difficulty, 'egress', $multiplier),
         );
     }
 
@@ -638,6 +734,95 @@ final readonly class Simulator
     }
 
     /**
+     * The IDS's second chance, on whatever the core was touched FOR.
+     *
+     * Extraction and a backdoor install are the same act as far as the machine
+     * is concerned — CYBERSPACE.md names burning, backdooring, injecting and
+     * extracting together — so the roll lives here rather than in either. Only
+     * while undetected: once something has noticed there is nothing further to
+     * discover, and asking again would be asking whether they are STILL
+     * noticed.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function touchTheCore(Character $character, Run $run, ?System $system): array
+    {
+        if ($system === null || $run->detected || ! $this->spottedBy($character, $system)) {
+            return [];
+        }
+
+        $run->forceFill([
+            'detected' => true,
+            'ice_id' => $system->ice_id,
+            'ice_integrity' => $system->ice?->integrity,
+        ]);
+
+        return [$this->line(
+            $system->ice_id === null ? 'cyberspace.run.log.core_noticed' : 'cyberspace.run.log.core_noticed_ice',
+            tone: 'crit',
+        )];
+    }
+
+    /**
+     * Put a way back in.
+     *
+     * ## It cleans up after itself, and only if it lands
+     *
+     * `runs.backdoored` is what `Lockdown` reads, and it is set only by an
+     * install that actually happened. A backdoor run that failed — wrong
+     * operating system, wrong purpose, a machine that went — cleans up
+     * nothing, and the ordinary triggers shut the machine like any other run.
+     *
+     * ## One line for every reason it can fail
+     *
+     * `extract_fails`'s discipline, and the same sentence would do — but the
+     * act is different enough that a player deserves to know the install did
+     * not happen rather than reading about data. So it gets its own line,
+     * which still covers every cause without naming one: the OS gate must not
+     * announce itself here any more than it does over there.
+     *
+     * ## Going back in on a machine you already hold
+     *
+     * Costs the turn and the core roll, changes nothing, and says so. The kind
+     * is permanent, so this is not a way to convert a siphon into a routing
+     * hop — `Backdoors::install()` leaves an existing row alone and this reads
+     * `wasRecentlyCreated` to tell the player which happened.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function install(Character $character, Run $run): array
+    {
+        $system = System::query()->where('address', $run->address)->first();
+
+        $log = $this->touchTheCore($character, $run, $system);
+
+        $kind = $run->backdoorKind();
+
+        if ($system === null || $run->os_locked || $kind === null) {
+            $log[] = $this->line('cyberspace.run.log.install_fails');
+
+            return $log;
+        }
+
+        $backdoor = $this->backdoors->install($character, $system, $kind);
+
+        // ALREADY HELD is not a failure and must not read as one: the machine
+        // was open before the run and is open after it.
+        if (! $backdoor->wasRecentlyCreated) {
+            $log[] = $this->line('cyberspace.run.log.install_already');
+
+            return $log;
+        }
+
+        $run->backdoored = true;
+
+        $log[] = $this->line('cyberspace.run.log.install', ['kind' => $backdoor->kind->label()], 'ok');
+
+        return $log;
+    }
+
+    /**
+     * Something came out of the machine.    /**
      * Something came out of the machine.
      *
      * TWO THINGS AT ONCE, and they are one fact: the run has extracted, and
@@ -781,11 +966,51 @@ final readonly class Simulator
             ? array_column($this->defeats->apply($character, $ice), 'text')
             : [];
 
+        /*
+         * A CANCELLATION COSTS A FLAT POINT AND NOTHING ELSE.
+         *
+         * The machine shut or went out of existence under somebody standing in
+         * it — no defeat effect, no raid counted, no trace, because the cause
+         * was not theirs. `ReadinessWatch`'s reasoning transfers word for
+         * word: small because they did not lose, and nonzero because being
+         * dumped out of cyberspace is never free.
+         *
+         * Resolved like every other hit, so a resistance to having the world
+         * move out from under you is a modifier and not a branch.
+         */
+        $cancelled = $ending === RunEnding::Cancelled
+            ? (new DamageResolver($this->resolver))->apply(
+                $character,
+                Damage::synapticIntegrity(
+                    (int) Config::get('cyberspace.readiness.damage', 1),
+                    DamageOrigin::RunCancelled,
+                ),
+            )
+            : null;
+
         $this->runs->end($character, $run, $ending);
 
         // Ejected BEFORE the screen: a character must never be on the waiting
         // screen while still holding a position in cyberspace.
         Navigator::fromConfig($this->resolver)->jackOut($character);
+
+        /*
+         * THE FLOOR IS ASKED FOR A CANCELLATION TOO, and one point can do it:
+         * somebody on their last point of Synaptic Integrity whose machine
+         * shuts under them goes down. `isBad()` stays false — a cancellation
+         * is not a defeat and carries no tags — so the question is asked here
+         * rather than folded into it.
+         */
+        if ($cancelled !== null) {
+            $this->waitingRoom->checkFloor($character, new DownedCause(
+                reason: $ending->value,
+                address: $run->address,
+                damage: $cancelled->taken,
+                resource: 'current_synaptic_integrity',
+            ));
+
+            return;
+        }
 
         if ($ending->isBad()) {
             $this->waitingRoom->checkFloor($character, new DownedCause(
@@ -838,6 +1063,25 @@ final readonly class Simulator
     {
         if ($system === null) {
             return [];
+        }
+
+        /*
+         * A MACHINE YOU ALREADY HOLD DOES NOT LOOK UP WHEN YOU ARRIVE.
+         *
+         * The approach roll is skipped outright — "half the risk permanently,
+         * not a bypass of the brake". It buys NOTHING at the core: extracting
+         * through a backdoor is still stealing, still takes the second look,
+         * still counts toward the machine's three raids and still shuts it if
+         * it is caught. That asymmetry is what stops a backdoor from being a
+         * key to a free machine.
+         *
+         * Skipped rather than discounted, because the discount is the whole of
+         * what a backdoor buys on the way in and a number nobody has tuned
+         * would be a second thing to balance. `install_discount` is not a
+         * config value for that reason: there is nothing to turn down.
+         */
+        if ($this->backdoors->heldOn($character, $system) !== null) {
+            return [$this->line('cyberspace.run.log.unnoticed_backdoor', tone: 'ok')];
         }
 
         if (! $this->spottedBy($character, $system)) {

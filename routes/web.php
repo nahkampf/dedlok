@@ -174,6 +174,13 @@ Route::middleware('auth')->group(function () {
      * cost a turn, not a deletion that either happens or does not.
      */
     Route::post('/cyberspace/run', [RunController::class, 'start'])->name('run.start');
+    /*
+     * The briefing. Not inside the run lock's allow-list on purpose: somebody
+     * already in a run is sent to the run itself, which is the only screen
+     * they may reach — planning the next one is not a thing to do from inside
+     * this one.
+     */
+    Route::get('/run/setup', [RunController::class, 'setup'])->name('run.setup');
     Route::get('/run', [RunController::class, 'show'])->name('run.show');
     Route::post('/run/act', [RunController::class, 'act'])->name('run.act');
     Route::post('/run/egress', [RunController::class, 'egress'])->name('run.egress');

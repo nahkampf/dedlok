@@ -6,6 +6,7 @@ namespace App\Characters;
 
 use App\Models\Character;
 use App\Stats\Resolver;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -66,7 +67,7 @@ final readonly class WaitingRoom
         )->toInt();
 
         $character->forceFill([
-            'waiting_until' => now()->addMinutes(max(0, $minutes)),
+            'waiting_until' => CarbonImmutable::now()->addMinutes(max(0, $minutes)),
             'waiting_cause' => $cause->toArray(),
         ])->save();
     }

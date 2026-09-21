@@ -43,17 +43,23 @@ class SystemContent extends Model
         ];
     }
 
+    /** @return BelongsTo<System, $this> */
     public function system(): BelongsTo
     {
         return $this->belongsTo(System::class);
     }
 
+    /** @return BelongsTo<Item, $this> */
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
     }
 
-    /** What breaks this file, as the skill that does it. */
+    /**
+     * What breaks this file, as the skill that does it.
+     *
+     * @return BelongsTo<Skill, $this>
+     */
     public function encryption(): BelongsTo
     {
         return $this->belongsTo(Skill::class, 'encryption_skill_id');

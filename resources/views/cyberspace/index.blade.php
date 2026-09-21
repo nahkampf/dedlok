@@ -249,6 +249,38 @@
             </form>
         </section>
 
+        {{-- GOING IN.
+
+             The decision itself lives on its own screen, because everything
+             about it is permanent — the purpose, a backdoor's kind, the route
+             — and because what a player needs before committing is a briefing
+             rather than a button: what they have read off the machine, what
+             their deck is about to do to itself, and what is running. This is
+             the way to it and deliberately not a second copy of it. --}}
+        @if ($target)
+            <section class="panel panel--snug">
+                <div class="panel__hd">
+                    <h2>{{ Text::get('cyberspace.run.setup.heading') }}</h2>
+                    <div class="spacer"></div>
+                    <span class="tag">{{ $target->displayName() }}</span>
+                </div>
+
+                <div style="padding:var(--s-3) 0">
+                    @if (! $canRun)
+                        <p class="micro" style="color:var(--ink-2);margin:0">
+                            {{ $target->isLockedDown()
+                                ? Text::get('cyberspace.run.refused.locked_down')
+                                : Text::get('cyberspace.run.refused.not_intrudable') }}
+                        </p>
+                    @else
+                        <a class="btn btn--go cut" href="{{ route('run.setup') }}">
+                            {{ Text::get('cyberspace.run.setup.open') }}
+                        </a>
+                    @endif
+                </div>
+            </section>
+        @endif
+
         {{-- THE TWO STANDING INSTRUCTIONS.
 
              An accordion because they are set once and left alone — a play
