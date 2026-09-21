@@ -9,6 +9,7 @@ use App\Models\Character;
 use App\Models\Run;
 use App\Models\System;
 use App\Stats\Resolver;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -120,7 +121,7 @@ final readonly class RunStarter
                 'turn' => 0,
                 // Decided once, at the door, and never told to anybody.
                 'os_locked' => ! $this->canOperate($character, $system),
-                'started_at' => now(),
+                'started_at' => CarbonImmutable::now(),
             ]);
 
             $character->forceFill(['current_run_id' => $run->getKey()])->save();
@@ -167,7 +168,7 @@ final readonly class RunStarter
         }
 
         DB::transaction(function () use ($character, $run, $ending): void {
-            $run->forceFill(['ended_at' => now(), 'ending' => $ending->value])->save();
+            $run->forceFill(['ended_at' => CarbonImmutable::now(), 'ending' => $ending->value])->save();
 
             // Only if they are still pointing at THIS run. A character who
             // somehow moved on is not dragged back by an old row finishing.

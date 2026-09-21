@@ -41,12 +41,13 @@ class SystemContact extends Model
             'x' => 'integer',
             'y' => 'integer',
             'type' => SystemType::class,
-            'locked_down_until' => 'datetime',
-            'seen_at' => 'datetime',
-            'first_seen_at' => 'datetime',
+            'locked_down_until' => 'immutable_datetime',
+            'seen_at' => 'immutable_datetime',
+            'first_seen_at' => 'immutable_datetime',
         ];
     }
 
+    /** @return BelongsTo<Character, $this> */
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);

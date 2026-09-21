@@ -29,11 +29,13 @@ class ArchetypeItem extends Model
         return ['quantity' => 'integer'];
     }
 
+    /** @return BelongsTo<Archetype, $this> */
     public function archetype(): BelongsTo
     {
         return $this->belongsTo(Archetype::class);
     }
 
+    /** @return BelongsTo<Item, $this> */
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);

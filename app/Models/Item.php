@@ -89,12 +89,17 @@ class Item extends Model
         ];
     }
 
-    /** For inject_skill items: what the book teaches. */
+    /**
+     * For inject_skill items: what the book teaches.
+     *
+     * @return BelongsTo<Skill, $this>
+     */
     public function useSkill(): BelongsTo
     {
         return $this->belongsTo(Skill::class, 'use_skill_id');
     }
 
+    /** @return HasMany<InventoryItem, $this> */
     public function inventoryEntries(): HasMany
     {
         return $this->hasMany(InventoryItem::class);
@@ -123,6 +128,7 @@ class Item extends Model
         return $this->implant_region !== null;
     }
 
+    /** @return HasMany<DeckSlot, $this> */
     public function deckSlots(): HasMany
     {
         return $this->hasMany(DeckSlot::class)->orderBy('position');
@@ -135,6 +141,8 @@ class Item extends Model
      * Its presence is what MAKES an item a program — there is no column on
      * this table saying so, the same way `deck_modules` rather than a word is
      * what makes an item a module.
+     *
+     * @return HasOne<Program, $this>
      */
     public function program(): HasOne
     {
@@ -146,17 +154,23 @@ class Item extends Model
         return $this->program()->exists();
     }
 
+    /** @return HasOne<DeckModule, $this> */
     public function deckModule(): HasOne
     {
         return $this->hasOne(DeckModule::class);
     }
 
-    /** What the market is holding of this item. Absent means none. */
+    /**
+     * What the market is holding of this item. Absent means none.
+     *
+     * @return HasOne<MarketStock, $this>
+     */
     public function marketStock(): HasOne
     {
         return $this->hasOne(MarketStock::class);
     }
 
+    /** @return HasMany<MarketPurchase, $this> */
     public function purchases(): HasMany
     {
         return $this->hasMany(MarketPurchase::class);

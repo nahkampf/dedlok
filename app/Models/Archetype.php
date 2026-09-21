@@ -111,6 +111,7 @@ class Archetype extends Model
         static::deleted(self::forgetRoster(...));
     }
 
+    /** @return HasMany<ArchetypePerk, $this> */
     public function perks(): HasMany
     {
         return $this->hasMany(ArchetypePerk::class);
@@ -122,18 +123,25 @@ class Archetype extends Model
      * Unordered here: the sort a player reads is by the skill's own title,
      * which is a column on another table — the presenters sort the loaded
      * collection rather than making every read a join.
+     *
+     * @return HasMany<ArchetypeSkill, $this>
      */
     public function startingSkills(): HasMany
     {
         return $this->hasMany(ArchetypeSkill::class);
     }
 
-    /** The items a character of this archetype starts with. */
+    /**
+     * The items a character of this archetype starts with.
+     *
+     * @return HasMany<ArchetypeItem, $this>
+     */
     public function startingItems(): HasMany
     {
         return $this->hasMany(ArchetypeItem::class);
     }
 
+    /** @return HasMany<Character, $this> */
     public function characters(): HasMany
     {
         return $this->hasMany(Character::class, 'archetype');

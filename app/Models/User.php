@@ -23,7 +23,11 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
-    /** Every user has exactly one character; characters.user_id is unique. */
+    /**
+     * Every user has exactly one character; characters.user_id is unique.
+     *
+     * @return HasOne<Character, $this>
+     */
     public function character(): HasOne
     {
         return $this->hasOne(Character::class);
@@ -32,7 +36,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            'email_verified_at' => 'immutable_datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
         ];

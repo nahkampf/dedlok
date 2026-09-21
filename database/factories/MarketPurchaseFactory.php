@@ -6,6 +6,7 @@ namespace Database\Factories;
 
 use App\Models\Item;
 use App\Models\MarketPurchase;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -22,7 +23,7 @@ class MarketPurchaseFactory extends Factory
             'item_id' => Item::factory(),
             'quantity' => 1,
             'unit_price' => fake()->numberBetween(10, 50_000),
-            'purchased_at' => now(),
+            'purchased_at' => CarbonImmutable::now(),
         ];
     }
 
@@ -33,7 +34,7 @@ class MarketPurchaseFactory extends Factory
             'item_id' => $item->id,
             'quantity' => $quantity,
             'unit_price' => $item->base_cost,
-            'purchased_at' => now()->subDays($daysAgo),
+            'purchased_at' => CarbonImmutable::now()->subDays($daysAgo),
         ]);
     }
 }

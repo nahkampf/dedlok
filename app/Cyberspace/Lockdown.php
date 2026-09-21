@@ -7,6 +7,7 @@ namespace App\Cyberspace;
 use App\Models\Character;
 use App\Models\Run;
 use App\Models\System;
+use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -136,7 +137,7 @@ final readonly class Lockdown
     {
         DB::transaction(function () use ($system): void {
             $system->forceFill([
-                'locked_down_until' => now()->addHours(($this->roll)($this->minHours, $this->maxHours)),
+                'locked_down_until' => CarbonImmutable::now()->addHours(($this->roll)($this->minHours, $this->maxHours)),
             ])->save();
 
             /*

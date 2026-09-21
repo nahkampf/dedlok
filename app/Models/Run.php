@@ -48,12 +48,13 @@ class Run extends Model
             'chain' => 'array',
             'thermal_load' => 'integer',
             'purpose' => RunPurpose::class,
-            'started_at' => 'datetime',
-            'ended_at' => 'datetime',
+            'started_at' => 'immutable_datetime',
+            'ended_at' => 'immutable_datetime',
             'log' => 'array',
         ];
     }
 
+    /** @return BelongsTo<Character, $this> */
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);
@@ -66,6 +67,8 @@ class Run extends Model
      * what each points at: an address names a machine that may stop existing,
      * and the ICE catalogue is authored content that gets edited rather than
      * deleted.
+     *
+     * @return BelongsTo<Ice, $this>
      */
     public function ice(): BelongsTo
     {

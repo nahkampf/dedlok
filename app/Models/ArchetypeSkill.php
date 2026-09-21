@@ -29,11 +29,13 @@ class ArchetypeSkill extends Model
         return ['level' => 'integer'];
     }
 
+    /** @return BelongsTo<Archetype, $this> */
     public function archetype(): BelongsTo
     {
         return $this->belongsTo(Archetype::class);
     }
 
+    /** @return BelongsTo<Skill, $this> */
     public function skill(): BelongsTo
     {
         return $this->belongsTo(Skill::class);

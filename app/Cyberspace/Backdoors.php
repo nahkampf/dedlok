@@ -7,6 +7,7 @@ namespace App\Cyberspace;
 use App\Models\Backdoor;
 use App\Models\Character;
 use App\Models\System;
+use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Config;
@@ -67,7 +68,7 @@ final readonly class Backdoors
             ],
             [
                 'kind' => $kind->value,
-                'installed_at' => now(),
+                'installed_at' => CarbonImmutable::now(),
             ],
         ));
     }

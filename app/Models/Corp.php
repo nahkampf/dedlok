@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['name', 'business'])]
 class Corp extends Model
 {
+    /** @return HasMany<System, $this> */
     public function systems(): HasMany
     {
         return $this->hasMany(System::class, 'owner_id');

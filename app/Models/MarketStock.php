@@ -30,10 +30,11 @@ class MarketStock extends Model
     {
         return [
             'quantity' => 'integer',
-            'last_seeded_at' => 'datetime',
+            'last_seeded_at' => 'immutable_datetime',
         ];
     }
 
+    /** @return BelongsTo<Item, $this> */
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);

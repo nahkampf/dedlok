@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Skills\SkillProgression;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
@@ -38,12 +39,14 @@ class CharacterSkill extends Pivot
         ];
     }
 
-    public function character()
+    /** @return BelongsTo<Character, $this> */
+    public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);
     }
 
-    public function skill()
+    /** @return BelongsTo<Skill, $this> */
+    public function skill(): BelongsTo
     {
         return $this->belongsTo(Skill::class);
     }

@@ -11,9 +11,9 @@ use App\Models\SkillPrerequisite;
 use App\Skills\PrerequisiteGraph;
 use App\Skills\SkillProgression;
 use App\Support\Text;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * A skill definition and its prerequisites.

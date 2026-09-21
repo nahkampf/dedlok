@@ -54,12 +54,11 @@ final class TrainingDeposit
 
     public function __construct(
         private readonly SkillProgression $progression,
-        private readonly TrainingRate $rate,
     ) {}
 
     public static function make(): self
     {
-        return new self(SkillProgression::fromConfig(), TrainingRate::fromConfig());
+        return new self(SkillProgression::fromConfig());
     }
 
     public function advance(Character $character, ?CarbonInterface $now = null): DepositResult

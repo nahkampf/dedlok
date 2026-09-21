@@ -248,10 +248,12 @@ final readonly class Simulator
             return [$this->line('cyberspace.run.log.trace_held')];
         }
 
-        $was = (int) $run->trace;
-        $run->trace = min(100, $was + (int) $rate);
+        // The guard above already returned on a trace that was at 100, so
+        // this is the turn it arrives on or it is not arriving at all.
+        $trace = min(100, (int) $run->trace + (int) $rate);
+        $run->trace = $trace;
 
-        if ($run->trace < 100 || $was >= 100) {
+        if ($trace < 100) {
             return [];
         }
 

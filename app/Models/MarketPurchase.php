@@ -38,15 +38,17 @@ class MarketPurchase extends Model
         return [
             'quantity' => 'integer',
             'unit_price' => 'integer',
-            'purchased_at' => 'datetime',
+            'purchased_at' => 'immutable_datetime',
         ];
     }
 
+    /** @return BelongsTo<Item, $this> */
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
     }
 
+    /** @return BelongsTo<Character, $this> */
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);

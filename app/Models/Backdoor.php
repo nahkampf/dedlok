@@ -27,15 +27,17 @@ class Backdoor extends Model
     {
         return [
             'kind' => BackdoorKind::class,
-            'installed_at' => 'datetime',
+            'installed_at' => 'immutable_datetime',
         ];
     }
 
+    /** @return BelongsTo<Character, $this> */
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);
     }
 
+    /** @return BelongsTo<System, $this> */
     public function system(): BelongsTo
     {
         return $this->belongsTo(System::class);

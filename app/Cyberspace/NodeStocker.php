@@ -186,7 +186,7 @@ final class NodeStocker
      * ordinary while carrying the one thing that matters.
      *
      * @param  array<string, int>  $lean
-     * @param  list<int>  $catalogue
+     * @param  array<string, list<int>>  $catalogue
      * @return list<array<string, mixed>>
      */
     private function itemsFor(System $system, array $lean, array $catalogue): array
@@ -245,7 +245,7 @@ final class NodeStocker
 
     /**
      * @param  array<string, int>  $lean
-     * @param  list<int>  $catalogue
+     * @param  array<string, list<int>>  $catalogue
      * @return list<array<string, mixed>>
      */
     private function randomItems(System $system, array $lean, array $catalogue): array

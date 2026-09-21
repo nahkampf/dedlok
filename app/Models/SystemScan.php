@@ -47,26 +47,35 @@ class SystemScan extends Model
             'ice_level' => 'integer',
             'ice_bounty' => 'boolean',
             'passes' => 'integer',
-            'pass_started_at' => 'datetime',
-            'pass_ready_at' => 'datetime',
-            'scanned_at' => 'datetime',
-            'expires_at' => 'datetime',
-            'used_at' => 'datetime',
+            'pass_started_at' => 'immutable_datetime',
+            'pass_ready_at' => 'immutable_datetime',
+            'scanned_at' => 'immutable_datetime',
+            'expires_at' => 'immutable_datetime',
+            'used_at' => 'immutable_datetime',
         ];
     }
 
+    /** @return BelongsTo<Character, $this> */
     public function character(): BelongsTo
     {
         return $this->belongsTo(Character::class);
     }
 
-    /** The operating system found, or null if that is still unknown. */
+    /**
+     * The operating system found, or null if that is still unknown.
+     *
+     * @return BelongsTo<Skill, $this>
+     */
     public function operatingSystem(): BelongsTo
     {
         return $this->belongsTo(Skill::class, 'os_skill_id');
     }
 
-    /** The running copy of the scanner doing this read, while one is. */
+    /**
+     * The running copy of the scanner doing this read, while one is.
+     *
+     * @return BelongsTo<InventoryItem, $this>
+     */
     public function readingProcess(): BelongsTo
     {
         return $this->belongsTo(InventoryItem::class, 'reading_process_id');
@@ -85,7 +94,7 @@ class SystemScan extends Model
      * are the same question, and a second copy of the list is how a new
      * property ends up discoverable but never reported.
      *
-     * @return list<string>
+     * @return list<value-of<ScanFact>>
      */
     public function unknowns(): array
     {

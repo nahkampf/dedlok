@@ -25,19 +25,31 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['deck_id', 'deck_slot_id', 'module_id'])]
 class DeckFitting extends Model
 {
-    /** The inventory row of the deck this is installed in. */
+    /**
+     * The inventory row of the deck this is installed in.
+     *
+     * @return BelongsTo<InventoryItem, $this>
+     */
     public function deck(): BelongsTo
     {
         return $this->belongsTo(InventoryItem::class, 'deck_id');
     }
 
-    /** The socket on the deck's DEFINITION that is occupied. */
+    /**
+     * The socket on the deck's DEFINITION that is occupied.
+     *
+     * @return BelongsTo<DeckSlot, $this>
+     */
     public function slot(): BelongsTo
     {
         return $this->belongsTo(DeckSlot::class, 'deck_slot_id');
     }
 
-    /** The inventory row of the module that went in. */
+    /**
+     * The inventory row of the module that went in.
+     *
+     * @return BelongsTo<InventoryItem, $this>
+     */
     public function module(): BelongsTo
     {
         return $this->belongsTo(InventoryItem::class, 'module_id');
