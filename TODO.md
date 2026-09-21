@@ -270,9 +270,10 @@ defend before there is a game to defend it against.
   *only* way they find out. An untraced raid is anonymous, which is what makes
   stealth worth investing in on both sides. The inbox is where that message
   goes now.
-- **Heat decays on its own, slowly.** Doing nothing is a valid way to cool off
-  and a slow one. `characters:regenerate` is the shape that would credit it —
-  a per-minute pass with no stored clock.
+- ~~**Heat decays on its own, slowly.**~~ Done 2026-09-21: half a point a night
+  at 05:10, after the bounty roll so a character answers for the heat the night
+  ended with. The rate is the `heat_decay` stat, based at 0.5 — nothing raises
+  it yet, and the first skill that does needs no code in `characters:cool`.
 - **It can be CLEANED**, through processes not yet designed, and that is where
   the money sink is.
 - **Later: heat draws rogue programs** while moving through cyberspace, and
@@ -400,6 +401,37 @@ routing hop goes on the route, and four separate things can take one away.
 - **Enable "block headless browsers" on the Cap site key** before launch. It is off on
   the local key because it breaks agent/QA browsers, and it is one of the two settings
   (with instrumentation, already on) that do most of the work against real bots.
+
+## The Street category is a placeholder, and it is meant to be the City
+
+**Status: named wrong on purpose, because the thing it names does not exist.**
+`App\Notifications\Category::Street` was added for heat's first consequence —
+word going out that somebody is worth money — and it is the only category
+whose `route()` is null, because there is nowhere to send a reader.
+
+**It should be called City**, and the City is the screen the physical side of
+the game hangs off (see *The physical side of the game* below): districts,
+locations found by walking, clinics, markets, fixers, the people who put a
+price on your head in the first place. A category named for a street is a
+category named after one sentence in one message.
+
+**What has to happen, and none of it is hard:**
+
+- **Rename the case to `City`.** The enum's backed value is written into
+  `notifications.category` on every row, so renaming the case means either a
+  data migration over that column or a deliberate decision to leave old rows
+  reading `street`. Do the migration — the whole point of that column is that a
+  reader can group by it.
+- **Give it a route** once there is a City screen, and the inbox stops
+  rendering those rows as dead ends. `route()` returning null is deliberate and
+  should go back to being impossible.
+- **Then reconsider what belongs in it.** A bounty, a fixer's offer, an
+  invitation, a debt coming due are all the same category today because none of
+  them exists. When two of them do, this may want splitting.
+
+**Do not flesh the City out from this entry.** It is a note about a name and a
+null route; the design lives below, and that is a bigger conversation than a
+category label.
 
 ## The physical side of the game
 Some ideas to develop later: A city map showing locations. Most locations are hidden from the player and must be discovered by exploring. This map shouldn't be a grid like the cyberspace map, but rather just districts that you can travel to and "walk the streets" (an action) to discover new stuff (can also be helped by skills later). Locations can hold certain specific markets (selling certain items), places where you can get treatment (heal HP/max HP, heal neural damage/SI etc), get cyber implants or augmentations etc. There can also be "random events" and quest chains in the city. And, of course, fighting NPCs (and even PVP later once we figure that out). Maybe heists/robberies/missions (similar to runs on a node but more demanding).

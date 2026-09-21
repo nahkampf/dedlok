@@ -84,9 +84,9 @@ final class Bounties
      * a screen that warns somebody and the roll that judges them must not be
      * able to disagree. Nothing quotes it yet.
      */
-    public function chanceFor(int $heat): float
+    public function chanceFor(float $heat): float
     {
-        if ($heat <= 0) {
+        if ($heat <= 0.0) {
             return 0.0;
         }
 
@@ -113,7 +113,7 @@ final class Bounties
         $marked = [];
 
         foreach (Character::query()->where('heat', '>', 0)->orderBy('id')->cursor() as $character) {
-            if (! $this->decides((int) $character->heat)) {
+            if (! $this->decides((float) $character->heat)) {
                 continue;
             }
 
@@ -129,7 +129,7 @@ final class Bounties
      * Ten thousandths, and inside the bound rather than at it — so a chance of
      * nothing never fires and a chance of everything always does.
      */
-    private function decides(int $heat): bool
+    private function decides(float $heat): bool
     {
         return ($this->roll)(1, 10_000) <= (int) round($this->chanceFor($heat) * 10_000);
     }

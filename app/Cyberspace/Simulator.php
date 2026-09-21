@@ -406,7 +406,7 @@ final readonly class Simulator
     {
         $heat = (int) Config::get('cyberspace.trace.heat', 1);
 
-        $character->forceFill(['heat' => (int) $character->heat + $heat])->save();
+        $character->forceFill(['heat' => (float) $character->heat + $heat])->save();
 
         $this->burnTheChain($run);
 
@@ -1005,7 +1005,7 @@ final readonly class Simulator
         }
 
         $character->forceFill([
-            'heat' => (int) $character->heat + (int) Config::get('cyberspace.burn.heat', 2),
+            'heat' => (float) $character->heat + (float) Config::get('cyberspace.burn.heat', 2),
         ])->save();
 
         $log[] = $this->line('cyberspace.run.log.burn', ['name' => $system->displayName()], 'crit');

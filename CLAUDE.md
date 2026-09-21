@@ -1077,6 +1077,15 @@ consequences and taking what a machine holds all roll.
 - **What a hit IS has not been built.** No bounty row, no hunter, no price — the message
   says the word is out and stops where the mechanic stops. It has no memory either, so high
   heat says so again tomorrow; that wants a cooldown the day a bounty is a thing you carry.
+- **And it comes off again, slowly.** `App\Characters\HeatDecay` takes half a point a
+  night at 05:10, **after** the bounty roll — a character answers for the heat the night
+  ended with, and the cooling is the morning after rather than a discount applied before
+  anybody looked. **The rate is the `heat_decay` stat**, based at 0.5 in `stats.bases`, so
+  the first skill that speeds it up is a modifier and nothing in the command learns it
+  exists. Resolved **through the Sheet** (`Character::stat()`), never `Resolver::resolve()`
+  with a base handed in — `stats.bases` is a map only `Sheet::baseFor()` walks.
+- **`characters.heat` is a DECIMAL**, one place, because what earns heat is whole and what
+  removes it is not. It floors at nothing and has no ceiling.
 - **`characters.heat` and `runs.thermal_load` are different quantities.** The design calls
   both "heat"; the run's column is named for what it is.
 - **The two thresholds ACT, and BEFORE the player's choice** — checked at the start of the

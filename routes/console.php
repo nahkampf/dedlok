@@ -106,6 +106,22 @@ Schedule::command('characters:bounties --quiet-when-idle')
     ->dailyAt('05:00')
     ->withoutOverlapping();
 
+/*
+ * And then it comes off again, slowly.
+ *
+ * AFTER THE BOUNTY ROLL, ten minutes behind it, and the order is the point: a
+ * character is rolled on the heat the night ended with — what they did is what
+ * they answer for — and the cooling is the morning after rather than a
+ * discount applied before anybody looked. The siphons and the ageing roll are
+ * ordered against each other for the same reason.
+ *
+ * Half a point a night by default, and the rate is a stat, so the first skill
+ * that speeds it up changes nothing here.
+ */
+Schedule::command('characters:cool --quiet-when-idle')
+    ->dailyAt('05:10')
+    ->withoutOverlapping();
+
 Schedule::command('market:seed')
     ->cron('0 */8 * * *')
     ->withoutOverlapping();

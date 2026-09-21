@@ -333,6 +333,32 @@ return [
             'rounding' => 'floor',
         ],
 
+        /*
+        | HOW MUCH HEAT COMES OFF A NIGHT, in points.
+        |
+        | Doing nothing is a valid way to cool off and a slow one: half a point
+        | a night, so a completed trace is two nights to shake and a burn is
+        | four. There is no ceiling on heat, so there is no ratio here — this
+        | is an absolute, like the thing it reduces.
+        |
+        | A STAT RATHER THAN A CONSTANT because this is where the skills go.
+        | Nothing raises it today — no skill in the catalogue names it — but a
+        | fixer's contacts, a clean identity or a scrubbed record are all the
+        | same shape: a modifier on this id, and `characters:cool` learns
+        | nothing new when one arrives.
+        |
+        | Floored at 0 and rounded to a TENTH, which is the precision
+        | `characters.heat` stores and the same the pools keep. A modifier that
+        | took cooling below nothing would be heat that grows while you sit
+        | still, which is a different mechanic and not this one's to invent.
+        */
+        'heat_decay' => [
+            'tags' => ['heat'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'tenth',
+        ],
+
         'routing_hops' => [
             'tags' => ['cyberspace'],
             'min' => 0,
@@ -559,6 +585,11 @@ return [
         // Nobody routes a run through anything until a skill says otherwise.
         // Routing and Advanced Routing grant one hop per level each.
         'routing_hops' => 0,
+
+        // Half a point of heat comes off every night on its own. Nothing in
+        // the catalogue raises it yet; when something does, it is a modifier
+        // on this id and nothing else changes.
+        'heat_decay' => 0.5,
     ],
 
     'pools' => [

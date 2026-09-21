@@ -143,7 +143,7 @@ class Character extends Model
         return array_merge(
             array_fill_keys(self::ATTRIBUTES, 'integer'),
             array_fill_keys(array_keys(self::RESOURCES), 'integer'),
-            ['archetype' => 'integer', 'creds' => 'integer', 'heat' => 'integer'],
+            ['archetype' => 'integer', 'creds' => 'integer', 'heat' => 'float'],
             ['egress_trace_at' => 'integer', 'egress_si_at' => 'integer'],
             ['grid_x' => 'integer', 'grid_y' => 'integer'],
             // On the floor, and what put them there. The cause is an array

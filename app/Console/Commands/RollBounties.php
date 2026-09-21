@@ -52,7 +52,7 @@ class RollBounties extends Command
         }
 
         foreach ($marked as $character) {
-            $this->line(sprintf('  word is out on %s (heat %d)', $character->handle, (int) $character->heat));
+            $this->line(sprintf('  word is out on %s (heat %.1f)', $character->handle, (float) $character->heat));
         }
 
         $this->info(sprintf('%d character(s) had word put out.', count($marked)));
@@ -76,10 +76,10 @@ class RollBounties extends Command
 
         foreach ($rows as $character) {
             $this->line(sprintf(
-                '  %-24s heat %3d   %5.2f%%',
+                '  %-24s heat %5.1f   %5.2f%%',
                 $character->handle,
-                (int) $character->heat,
-                $bounties->chanceFor((int) $character->heat) * 100,
+                (float) $character->heat,
+                $bounties->chanceFor((float) $character->heat) * 100,
             ));
         }
 
