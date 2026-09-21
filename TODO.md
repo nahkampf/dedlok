@@ -298,11 +298,35 @@ find a container problem, and a mechanic tested only through its own class
 cannot find a broken screen. Anything with a route wants at least one test that
 takes what a real request takes.
 
-**Where the same gap is still open** — no HTTP-level pass exists over the deck
-screen's fitting and stripping forms, the implant body map, the stash's item
-actions, or the admin editors' writes. The cyberspace map has one (the scan
-dialog polls through `cyberspace.reading`, which a test exercises), and the run
-screen now has one. The rest are unit-tested only.
+**The gap this entry used to describe does not exist, checked 2026-09-21.** It
+named the deck screen's fitting and stripping forms, the implant body map, the
+stash's item actions and the admin editors' writes as unit-tested only. All
+four post to their routes: `ModuleFittingTest` alone makes eleven writes and
+twelve reads over HTTP, `ImplantTest` covers the body map and both surgery
+routes, `ItemActionsTest` the stash, and the seven files in `tests/Feature/Admin`
+hit the editors hard — including the delete that has to drop a skill's book
+first. The entry was written from an impression rather than a count.
+
+**What the count actually found: one route.** `run.start` — the door the
+briefing's buttons post to, shipped in 0.12.0 as the only way a run begins —
+had no HTTP test under any name, literal or routed. `RunStarter` was covered by
+`RunTest` and the briefing by `RunBriefingTest`, and nothing in between ever
+posted the form. `tests/Feature/Cyberspace/RunStartRouteTest.php` closes it:
+every purpose walked off the enum, both backdoor kinds, every refusal as a
+message rather than a 500, and what the form is allowed to say.
+
+**And it found one thing about the code.** `RunRefusal::DeckNotReady` is
+unreachable from `run.start` over HTTP: `EnsureDeckStillRuns` runs first on
+every jacked-in request and turns a cyberspace route away with its own message,
+so the controller's branch only ever answers callers that are not requests.
+Not a bug — defence in depth, and `RunTest` proves the refusal — but the test
+that assumed otherwise passed with the controller's refusal path deliberately
+broken, which is the failure mode this whole entry exists to catch.
+
+**To check it again rather than re-impress yourself:** list every route name,
+grep the suite for each one as both `route('name')` and its literal URL (the
+admin tests use literals, which is what made them look uncovered), and read
+the count.
 
 ---
 
