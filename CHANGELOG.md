@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+## [0.12.1] — 2026-09-21
+
+Documentation only, and a trap written down.
+
+### Changed
+
+- **The database account is no longer the risk CLAUDE.md said it was.** That
+  section was written against a `SHOW GRANTS` from 2026-09-01 and had been
+  wrong since somebody acted on it. Re-verified: global privileges are `USAGE`
+  only, `ALL PRIVILEGES` is scoped to `cyberpunk`.\* and nowhere else, and the
+  two unrelated production schemas are out of the account's view entirely. That
+  retires the worst line in the file — `FILE` plus an injection reading and
+  writing on the database server. Two findings still stand and are now the
+  whole section: the host mask is `%`, and the connection is unencrypted.
+- **An unquoted `#` in `.env` truncates the value at that character**, which is
+  written down because it cost an afternoon: a sixteen-character password
+  reached MySQL as three, and the `1045 Access denied` that came back was
+  accurate, unhelpful and about the last thing anyone suspects. Single quotes
+  and not double, since a double-quoted value interpolates and that password
+  also had a `$` in it. The one-liner that compares the file against what the
+  framework actually loaded is in there with it.
+
 ## [0.12.0] — 2026-09-21
 
 Phase 6's other half. A backdoor becomes something you hold, earn from and
@@ -654,7 +676,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/nahkampf/dedlok/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/nahkampf/dedlok/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/nahkampf/dedlok/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/nahkampf/dedlok/compare/v0.9.1...v0.10.0
