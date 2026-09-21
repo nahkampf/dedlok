@@ -2,6 +2,147 @@
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-09-21
+
+Phase 6's other half. A backdoor becomes something you hold, earn from and
+lose; a machine that finds out it was violated shuts its doors and then moves
+house; and a run stops being a link you follow and becomes a plan you commit
+to. Also: the trace finally has something to walk through, and the analyser
+learned what Eloquent is.
+
+### Added
+
+- **A way back in.** A backdoor is ACCESS rather than a recollection, so unlike
+  a contact or a scan it is a real foreign key to the machine — a memory of a
+  system that has gone is still a memory, access to one is nothing at all. It is
+  also what makes the promise true: a backdoored machine does not lock down and
+  does not relocate, so its address is permanent in a world where nothing else
+  is. The kind is chosen at the door with the purpose and is permanent — a
+  machine siphons or it routes — because going back in for a free reroll would
+  undo the one property another whole run is supposed to buy. A landed install
+  is the only thing in cyberspace that cleans up after itself: no lockdown even
+  though the IDS fired and the ICE woke, because the install erases the logs. A
+  FAILED one cleans up nothing. What holding one buys is exactly half the risk —
+  the approach roll is skipped for ever and the core roll is untouched, since
+  extracting through a backdoor is still stealing.
+- **A backdoor is not permanent, and four things take one.** Three are
+  somebody's fault: the machine shuts, it relocates, or it burns. The fourth is
+  nobody's — a nightly roll whose odds rise with AGE and with nothing else, so a
+  backdoor cannot be held carefully enough to keep. One per cent on the first
+  night, climbing about a point and a half a month, capped at a tenth: a median
+  life near six weeks, long enough that installing one is worth the run and
+  short enough that a portfolio is maintained rather than accumulated. A hit
+  moves the MACHINE, which takes every other door into it along with it — so a
+  stranger's bad night costs you a door you were careful with.
+- **Siphons pay out.** Thirty creds a grade a night, deliberately modest against
+  what raiding the same machine yields: a siphon is the safe half of a
+  portfolio, and safe income should be slow income. What makes it worth holding
+  is that it arrives whether or not anybody goes anywhere. The per-grade figure
+  is the MACHINE'S and goes to the resolver as `siphon_yield`, so the skills
+  that will make somebody better at draining one are rows rather than code.
+- **The routing chain, built rather than picked.** Every routing backdoor is
+  free to include and hinders the trace by exactly its machine's grade, so a
+  picker would be a list whose right answer is always "all of them, best first",
+  asked on every run. The chain is assembled instead — best grade first, capped
+  at `routing_hops`, never the target. What a player decides is which machines
+  to hold one on. It is snapshotted at the door and never rewritten: a hop that
+  goes dark becomes a gap rather than a shift, so one already passed stays
+  passed and one lost ahead simply gives the trace one less to get through.
+- **A trace walks that chain, one hop a turn**, and a hop only ever delays it by
+  FAILING. Grade 1 is 95% and not 100 for exactly that reason — at 100 a junk
+  hop could never fail and so could never delay anything, which would contradict
+  the design's own promise that a routing backdoor is useful on any machine at
+  all. Ten junk hops is a 40% chance of one held turn: a chance rather than an
+  income. Grade is the only thing a hop reads.
+- **Routing and Advanced Routing finally grant something.** Both have had books
+  on the shelf since the catalogue was written with nothing in the game ever
+  asking either of them a question. `routing_hops` is that question: base zero,
+  one hop per level from each, ten the ceiling.
+- **Lockdown — a machine that knows it was violated shuts, then moves.** Two
+  triggers and not the four the design table lists: the ICE can only have
+  activated if something noticed, so being noticed covers both rows, and burn
+  does not exist. That leaves detection, and a spent raid counter — three raids
+  and it shuts however quiet the third was. A clean extraction still leaves no
+  lockdown behind, which is what an unnoticed run is worth. It fires as a run
+  ends, so it can never reach the runner who caused it, and a machine already
+  shut is left alone rather than having its window extended: a lockdown is what
+  the machine DOES about being violated, not a sentence that accumulates.
+  Anybody else still inside is thrown out for one flat point of Synaptic
+  Integrity and nothing else — no defeat effect, no raid, no trace, because the
+  cause was not theirs.
+- **The briefing, and the first way to begin a run.** The map says *Plan a run*
+  and nothing more. Everything on that screen is permanent — the purpose is
+  fixed at the door, a backdoor's kind cannot be changed once it lands, and the
+  route is snapshotted the moment the run starts — so the decision gets a screen
+  of its own. What it is FOR is the unknowns: a blank column reads as "nothing
+  there", which for an IDS is the opposite of the truth, so every scan fact is
+  listed either way and an unread machine says so in words. Beside it, the three
+  things that turn a plan into a bad night: a deck that fails its own
+  requirements, a thermal verdict naming the parts at risk, and what is running
+  with what each thing IS — an icebreaker and a decryptor are both "a program"
+  until one of them is the only thing between you and an ICE.
+- **The evasion score, on the screen, with its working.** One report object the
+  button, the card, the roll and the tests all read, so nothing can hold a
+  different opinion about the same attempt. The card is the first thing in the
+  game to render the resolver's own steps, which have carried "why is my Focus
+  14?" since the resolver shipped with nothing drawing them — one line per
+  layer, because percentages are summed and applied once and a line each would
+  imply a compounding that does not happen. Then the opposition: the machine's
+  grade, what is awake in it, and the snare.
+- **Egress Protocols**, rank 8 behind Cyberdecks 3, +3% per level and +15%
+  trained out — the first skill that makes somebody better at leaving. Nothing
+  in the simulator learned it exists, which is the whole point of the shape.
+
+### Changed
+
+- **Static analysis can see the models now.** PHPStan was pointed at `app/` from
+  the start with nothing teaching it what Eloquent is, so it ran without the
+  half of the codebase that matters. Larastan at level 5, clean, with the casts
+  read out of their method and the column types read out of the migrations
+  rather than a live connection.
+- **The run screens have a smoke test.** Two bugs shipped in 0.10.0 that
+  fourteen hundred passing tests could not see, both of them the container
+  failing to build something the controller asked for. The new pass asserts the
+  duller thing the unit tests structurally cannot — that the routes resolve, the
+  views render and nothing 500s — across the screen in five states and every
+  `RunAction`, walked off the enum rather than named, so a new action is covered
+  the day it is added.
+- **`stats.bases`**, the third map a sheet walks after pools and formulas, for a
+  stat that is neither computed from attributes nor stored on the character.
+- **CLAUDE.md says the same things in half the words** — 27,800 down to 14,100,
+  every rule kept and the argument around it cut. Cyberspace was seven hundred
+  lines in one run and is now subdivided.
+- TODO.md records three things the game does not have yet: a node's operating
+  system as the last stage of a run, the physical side of the city, and
+  player-built data fortresses.
+- CYBERSPACE.md's "specified and not designed" note on what a hop reads is
+  resolved as decided-against rather than left open.
+
+### Fixed
+
+- **Neural Shock skipped every rule the damage door exists for.** It called the
+  dull subtraction underneath the resolver directly, so nothing could resist it
+  and nothing could be immune — although the Crim's "Hard knocks" covers exactly
+  the stat it deals. Going through the door makes that the first shipped perk in
+  the game that actually mitigates something. Flatline deliberately stays out:
+  it writes a ceiling through the injury ledger rather than landing a hit, and
+  mitigation has nothing to say about an injury.
+- **Nineteen writes handed a mutable `Carbon` to a column that holds an
+  immutable one.** Nothing had broken yet, because the value is only ever read
+  back — but a `->addHours()` on the wrong one mutates in place, which is the
+  bug that does not announce itself.
+- A dead request method, a validator imported from the contract where the
+  concrete class's `after()` is used, a service taking a dependency it never
+  asked anything, and a trace condition whose second half could never be true.
+
+### Migrations
+
+- `2026_09_18_130000_egress_protocols`
+- `2026_09_18_140000_a_machine_that_knows_it_was_violated`
+- `2026_09_18_150000_a_way_back_in`
+- `2026_09_18_160000_the_routing_skills_get_a_reader`
+- `2026_09_18_170000_a_run_carries_its_route`
+
 ## [0.11.0] — 2026-09-18
 
 Leaving a machine stops being free, some ICE stops letting go, and a node
@@ -513,7 +654,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/nahkampf/dedlok/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/nahkampf/dedlok/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/nahkampf/dedlok/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/nahkampf/dedlok/compare/v0.9.0...v0.9.1
