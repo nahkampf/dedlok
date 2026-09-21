@@ -1422,21 +1422,42 @@ The `db` service is **not what the app connects to**. `docker compose exec db my
 reaches the local scratch instance, not production. To reach the real database, go through
 Artisan or Eloquent in `web`. Keep the service — it is the safe target for destructive work.
 
-### The database account is dangerously over-privileged
+**Quote any value in `.env` that contains a `#`, and use SINGLE quotes.** phpdotenv reads
+an unquoted `#` as the start of an inline comment and truncates the value there, so a
+password carrying one arrives at MySQL as its first few characters and the server answers
+`1045 Access denied` for credentials that are, on the face of the file, correct. Double
+quotes are not the fix — a double-quoted value is interpolated, so a `$` in it expands.
+`DB_PASSWORD='...'`. This cost an afternoon on 2026-09-21, with the resolved password three
+characters of sixteen. **Nothing between the file and the error message says so**, so when
+a connection is refused, compare what the file holds against what the framework loaded
+before suspecting the server:
 
-Verified 2026-09-01. The single largest risk in the project.
+```bash
+docker compose exec -u www-data web php -r 'require "vendor/autoload.php"; $a=require "bootstrap/app.php"; $a->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo strlen((string) config("database.connections.mysql.password")), "\n";'
+```
 
-- **`ALL PRIVILEGES ON *.*`**, including `SUPER`, `FILE`, `SHUTDOWN`, `CREATE USER`, `DROP`
-  and `PROCESS`. `FILE` alone lets SQL injection read and write files on the DB server.
-- **`lod@%`**, connectable from anywhere, **unencrypted**.
-- The same account reaches two unrelated production schemas, `gryningsland` and `lod`.
+### The database account
 
-Before production: a dedicated account granted only
-`SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, DROP, REFERENCES` on the `cyberpunk`
-schema, a restricted host mask, and TLS (`DB_SSLMODE` / `MYSQL_ATTR_SSL_CA`).
+**Re-verified 2026-09-21, and the 2026-09-01 audit's worst findings are fixed.** It was
+`ALL PRIVILEGES ON *.*` — `SUPER`, `FILE`, `SHUTDOWN`, `CREATE USER`, `PROCESS` — on an
+account that could also see two unrelated production schemas. None of that is still true,
+so the warning that used to stand here does not.
 
-**Until then: never run `migrate:fresh`, `migrate:reset` or `db:wipe` against the remote.**
-Point destructive commands at the local container:
+- **`dedlok@%`**, with global privileges of **`USAGE` only**.
+- **`ALL PRIVILEGES` on `cyberpunk`.\* and nowhere else.** `SHOW DATABASES` returns
+  `cyberpunk` and the two system schemas; `gryningsland` and `lod` are out of its view.
+
+Two findings from that audit still stand, and they are what is left to do:
+
+- **The host mask is still `%`** — connectable from any host on the internet.
+- **The connection is still unencrypted.** `Ssl_cipher` is empty on a live session and
+  `require_secure_transport` is 0, so credentials and every query cross the internet in
+  clear text. Enable TLS (`DB_SSLMODE` / `MYSQL_ATTR_SSL_CA` in `config/database.php`)
+  before this goes anywhere near production.
+
+**Never run `migrate:fresh`, `migrate:reset` or `db:wipe` against the remote.** The scoping
+means they can no longer reach another project's data, so this is now a rule about losing
+your own — reason enough. Point destructive commands at the local container:
 
 ```bash
 docker compose exec -u www-data \
