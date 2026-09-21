@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Cyberspace\DefeatResolver;
 use App\Models\Character;
 use App\Models\CharacterModifier;
@@ -82,6 +84,9 @@ final class DefeatResolverTest extends TestCase
             -$expected,
             (int) app(InjuryLedger::class)->carried($character->fresh(), InjuryLedger::NEURAL),
         );
+
+        // The tag is what being flatlined MEANS, so it is what gets counted.
+        $this->assertSame(1, (new Achievements)->progressFor($character, Metric::Flatlines));
     }
 
     /** Current SI clamps to the new, lower ceiling immediately — not on some later save. */

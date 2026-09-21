@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -164,6 +166,12 @@ final readonly class Extractor
         }
 
         $character->forceFill(['creds' => $character->creds + $amount])->save();
+
+        // Counted HERE rather than at either call site, because this is the
+        // one place creds come off a system — `extract()` and the simulator's
+        // turn both arrive through it, and a second call site would be a
+        // second answer to how much somebody has ever raided.
+        (new Achievements)->record($character, Metric::RaidCreds, $amount);
 
         return $amount;
     }

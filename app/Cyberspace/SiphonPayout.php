@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Backdoor;
 use App\Models\Character;
 use App\Stats\Resolver;
@@ -99,6 +101,11 @@ final readonly class SiphonPayout
             DB::transaction(static function () use ($character, $amount): void {
                 $character->forceFill(['creds' => (int) $character->creds + $amount])->save();
             });
+
+            // Siphoned creds are counted apart from raided ones on purpose:
+            // the design's whole point about a siphon is that it is the half
+            // of the portfolio that never went anywhere.
+            (new Achievements)->record($character, Metric::SiphonCreds, $amount);
 
             $paid += $amount;
         }

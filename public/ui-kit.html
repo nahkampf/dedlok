@@ -298,7 +298,7 @@ public/assets/
       </template>
     </div>
     <div class="demo">
-      <div class="demo__hd"><h3 class="h3">Entity image</h3><p>A picture of a thing, found by convention rather than stored on a row — <code class="inl">public/images/&lt;kind&gt;/&lt;id&gt;.jpg</code>, with <code class="inl">_default.jpg</code> beside it. Fixed 16:9 and cropped, because a grid of cards whose images are each a different height is a grid that never lines up. Click it for <code class="inl">&lt;id&gt;_full.jpg</code>, which has no shape of its own. A kind may be a path — <code class="inl">items/cpu</code>, one subdirectory per type of item — and only the default walks back up it. Where the card gets cloned into the inspector, the dialog is rendered beside the listing instead: a <code class="inl">&lt;dialog&gt;</code> cloned along with a card is a second copy of itself in the top layer.</p></div>
+      <div class="demo__hd"><h3 class="h3">Entity image</h3><p>A picture of a thing, found by convention rather than stored on a row — <code class="inl">public/images/&lt;kind&gt;/&lt;id&gt;.jpg</code>, with <code class="inl">_default.jpg</code> beside it. Fixed 16:9 and cropped, because a grid of cards whose images are each a different height is a grid that never lines up. <code class="inl">.entity-image--sq</code> is the one exception: a 128px square that centres rather than filling, for a picture that is a badge rather than a scene. Click it for <code class="inl">&lt;id&gt;_full.jpg</code>, which has no shape of its own. A kind may be a path — <code class="inl">items/cpu</code>, one subdirectory per type of item — and only the default walks back up it. Where the card gets cloned into the inspector, the dialog is rendered beside the listing instead: a <code class="inl">&lt;dialog&gt;</code> cloned along with a card is a second copy of itself in the top layer.</p></div>
       <template class="demo-src">
         <div class="card" style="max-width:min(280px,100%)">
           <button type="button" class="entity-image entity-image--open" aria-label="View Deck Jockey full size">
@@ -309,6 +309,14 @@ public/assets/
             <div class="card__meta">Intrusion specialist</div>
           </div>
           <div class="card__bd">Lives in other people's systems.</div>
+        </div>
+
+        <div class="rule"><span class="micro">Square, for a badge</span></div>
+        <div class="card" style="max-width:min(180px,100%)">
+          <span class="entity-image entity-image--sq">
+            <img src="images/achievements/_default.jpg" alt="ACHIEVEMENT_1" width="128" height="128">
+          </span>
+          <div class="card__bd" style="text-align:center">ACHIEVEMENT_1</div>
         </div>
       </template>
     </div>
@@ -536,7 +544,7 @@ public/assets/
       </template>
     </div>
     <div class="demo">
-      <div class="demo__hd"><h3 class="h3">Dock &amp; gauges</h3><p>The page frame. <code class="inl">.dock</code> is a vertical rail of icons that opens to icon + label — on hover where there is a pointer, and on the <code class="inl">data-dock-toggle</code> button everywhere else, which is the only way in on a phone. The icon column stays <code class="inl">--dock-w</code> wide in both states, so opening it never moves an icon sideways, and the label fades with <code class="inl">opacity</code> rather than <code class="inl">display</code> so it stays the icon's accessible name while the rail is shut. On its own <code class="inl">.dock</code> is an ordinary column, as below; it is <code class="inl">.shell--docked</code> that pins it to the viewport, where opening has to overlay the page rather than reflow it. <code class="inl">.gauge</code> is one resource small enough for a bar that is always on screen — label and value on a row, the meter spanning both underneath. Drop the meter and it is a labelled number, which is what money is. <code class="inl">.dial</code> is the same number bent into a ring for where there is no room for a bar: same <code class="inl">--v</code>, same <code class="inl">--fill</code>, same <code class="inl">data-hot-low</code>, 40px instead of 104. <code class="inl">.chip-stat</code> is a glyph and a number, for the things that have no maximum and so get no meter of either shape.</p></div>
+      <div class="demo__hd"><h3 class="h3">Dock &amp; gauges</h3><p>The page frame. <code class="inl">.dock</code> is a vertical rail of icons that opens to icon + label — on hover where there is a pointer, and on the <code class="inl">data-dock-toggle</code> button everywhere else, which is the only way in on a phone. The icon column stays <code class="inl">--dock-w</code> wide in both states, so opening it never moves an icon sideways, and the label fades with <code class="inl">opacity</code> rather than <code class="inl">display</code> so it stays the icon's accessible name while the rail is shut. On its own <code class="inl">.dock</code> is an ordinary column, as below; it is <code class="inl">.shell--docked</code> that pins it to the viewport, where opening has to overlay the page rather than reflow it. <code class="inl">.gauge</code> is one resource small enough for a bar that is always on screen — label and value on a row, the meter spanning both underneath. Drop the meter and it is a labelled number, which is what money is. <code class="inl">.dial</code> is the same number bent into a ring for where there is no room for a bar: same <code class="inl">--v</code>, same <code class="inl">--fill</code>, same <code class="inl">data-hot-low</code>, 40px instead of 104. <code class="inl">.chip-stat</code> is a glyph and a number, for the things that have no maximum and so get no meter of either shape. <code class="inl">.dock__count</code> is the rail's only number: it sits on the ICON rather than beside the label, because a count that appeared only once the rail was open would be a count nobody sees. Filled ember at rest, which rule 2 otherwise keeps for hover — the same licence <code class="inl">.dot--live</code> has, spent on 16px that is only rendered when there is something to count, and it does not pulse.</p></div>
       <template class="demo-src">
         <div class="row" style="--gap:0;align-items:stretch;border:var(--hair) solid var(--line-1)">
           <nav class="dock" style="height:260px" aria-label="Sections">
@@ -555,6 +563,11 @@ public/assets/
             <a class="dock__item" href="#surfaces">
               <span class="dock__icon" aria-hidden="true">&#10022;</span>
               <span class="dock__label">Skills</span>
+            </a>
+            <a class="dock__item" href="#surfaces">
+              <span class="dock__icon" aria-hidden="true">&#9993;&#65038;</span>
+              <span class="dock__count">3</span>
+              <span class="dock__label">Messages</span>
             </a>
             <div class="spacer"></div>
             <div class="dock__sep"></div>

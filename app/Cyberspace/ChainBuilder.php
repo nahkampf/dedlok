@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Backdoor;
 use App\Models\Character;
 use App\Models\System;
@@ -72,7 +74,7 @@ final readonly class ChainBuilder
             return collect();
         }
 
-        return $this->backdoors->heldBy($character, BackdoorKind::Routing)
+        $chain = $this->backdoors->heldBy($character, BackdoorKind::Routing)
             ->map(static fn (Backdoor $held): ?System => $held->system)
             ->filter(static fn (?System $system): bool => $system !== null)
             // A machine that has gone is not a hop. `loseAllOn()` takes the
@@ -82,6 +84,16 @@ final readonly class ChainBuilder
             ->sortByDesc(static fn (System $system): int => (int) $system->grade)
             ->values()
             ->take($hops);
+
+        /*
+         * HOLDING a full chain is the achievement, not running one — so it is
+         * reported from the builder, which is also what the setup screen asks
+         * before a run exists. High-water, so a preview that recomputes the
+         * same chain on every render writes nothing after the first time.
+         */
+        (new Achievements)->reach($character, Metric::RoutingChain, $chain->count());
+
+        return $chain;
     }
 
     /**
