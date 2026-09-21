@@ -645,9 +645,7 @@
       const target = dlg.querySelector("[data-reading-abandon-address]");
       if (target && data.address) target.value = data.address;
       set("instrument", data.instrument);
-      set("pass", dlg.dataset.readingPass
-        .replace(":pass", data.pass)
-        .replace(":total", data.passes));
+      set("pass", dlg.dataset.readingPass.replace(":pass", data.pass));
       set("ready", data.running && data.readyIn ? "· " + data.readyIn : "");
 
       const bar = dlg.querySelector("[data-reading-bar]");
@@ -677,16 +675,12 @@
         value.innerHTML = mark + esc(known ? fact.value : dlg.dataset.readingUnread);
       });
 
-      /* A read goes round by itself until the file is whole, so stopping
-         short says WHICH of the two ways it stopped: the budget ran out, or
-         the instrument was unloaded. They are different things to have done. */
+      /* A read goes round by itself until the file is whole or the file goes
+         stale, so a stopped read that is not complete stopped for the one
+         remaining reason: nothing is running at it. */
       set("note", data.complete
         ? dlg.dataset.readingComplete
-        : (data.running
-          ? ""
-          : (data.pass >= data.passes
-            ? dlg.dataset.readingExhausted
-            : dlg.dataset.readingIdle)));
+        : (data.running ? "" : dlg.dataset.readingIdle));
 
       // Nothing left to watch: the read stopped, and the dialog stays open
       // showing what it found — it is the polling that stops.

@@ -241,15 +241,13 @@ return [
     | the middle with a trained specialist, and the top not at all — which is
     | what makes a grade 9 a rumour rather than a target.
     |
-    | PASSES is the other half of it. One attempt is one roll per thing not yet
-    | known, and a scan is allowed this many attempts before the picture it has
-    | is the picture it gets. That is the 1-5 turns CYBERSPACE.md budgets for
-    | scanning inside a run, and it is what stops a free act from being ground
-    | until it succeeds: a failed scan costs the expiry window, not a retry.
-    |
-    | LIFETIME is how long the answer stays true, in hours. A machine that has
-    | been relocated, patched or raided since is described by a file that no
-    | longer matches it.
+    | LIFETIME is the other half of it, and it is the whole budget: how long
+    | the answer stays true, in hours, and therefore how long an instrument may
+    | keep going round at a machine it cannot read. There is no pass count. A
+    | failed scan costs the window and an analyser's compute for the length of
+    | it, which is what stops a free act from being ground until it succeeds.
+    | A machine that has been relocated, patched or raided since is described
+    | by a file that no longer matches it.
     */
     /*
     |--------------------------------------------------------------------------
@@ -695,6 +693,78 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Speaking the machine's operating system
+    |--------------------------------------------------------------------------
+    |
+    | THE LAST THING BETWEEN A RUNNER AND THE CORE. Fighting the ICE is one
+    | program against another and needs no vocabulary; telling the machine
+    | itself to hand something over, open a door or destroy itself is done in
+    | the operating system it runs, and `systems.os_skill_id` names the skill
+    | that is.
+    |
+    | IT IS A ROLL RATHER THAN A GATE, which is the whole of this mechanic. The
+    | check value is read off `values` below by the runner's LEVEL in that
+    | skill, against a flat `difficulty`, through the ordinary logistic — so
+    | the curve runs 4.7% / 18% / 48% / 77% / 89% / 99.15%.
+    |
+    | Those are the numbers the design asked for at both ends: level 5 is "more
+    | or less 100%, using the uncertainty floor", and no skill at all is "nigh
+    | on impossible" — not because a wall says no, but because 4.7% a turn
+    | against a trace that is walking towards you is a losing race.
+    |
+    | THERE IS NO GRADE TERM, deliberately. A machine's grade already decides
+    | WHICH operating system it runs — the skill's rank follows the grade — so
+    | a grade 9 box is hard to speak to by running something nobody has
+    | trained, not by being the same language spoken faster. Putting grade in
+    | here as well would charge for it twice.
+    |
+    | A MACHINE RUNNING NOTHING IS OPEN TO ANYBODY. That is the portal's case
+    | and cannot be reached from a run anyway.
+    |
+    */
+    'os' => [
+
+        /*
+        | THE CHECK VALUE PER LEVEL, and the curve it makes against the
+        | difficulty below at the default spread of 8:
+        |
+        |   level 0     0.0    4.7%     never trained it, and it shows
+        |   level 1    11.9     18%     you have seen one before
+        |   level 2    23.4     48%     near enough a coin flip
+        |   level 3    33.7     77%
+        |   level 4    40.7     89%
+        |   level 5    65.0   99.15%    the certainty floor answers, not this number
+        |
+        | A TABLE RATHER THAN A MULTIPLIER, because the curve is hand-shaped
+        | and a straight line cannot draw it: the step from 0 to 1 is worth
+        | nearly twice the step from 3 to 4, which is the shape of learning
+        | something rather than the shape of a formula. Each value is simply
+        | what the logistic needs to land on the chance beside it.
+        |
+        | LEVEL 5 IS PAST THE CLAMP ON PURPOSE. Anything above about 62 is
+        | already at `checks.certainty_floor` from the other side, so the
+        | number is chosen to be comfortably there — the floor is what answers
+        | at the top of the curve, not the table, and it keeps answering if the
+        | spread is ever retuned.
+        |
+        | The chances move if `checks.spread` moves, which is correct: that
+        | number is how decisive the whole game is, and an OS curve that held
+        | still while everything else loosened would be opting out of it.
+        */
+        'values' => [
+            0 => 0.0,
+            1 => 11.9,
+            2 => 23.4,
+            3 => 33.7,
+            4 => 40.7,
+            5 => 65.0,
+        ],
+
+        'difficulty' => 24,
+    ],
+
     'scan' => [
         'difficulty' => [
             1 => 10,
@@ -707,13 +777,12 @@ return [
             8 => 78,
             9 => 92,
         ],
-        'passes' => 5,
 
         /*
         | HOW LONG ONE PASS TAKES, in minutes, for somebody with no skill at
         | all. A grade 1 box gives itself up in about a minute; a grade 9 takes
-        | the better part of a quarter of an hour, and there are five passes in
-        | a full read of one.
+        | the better part of a quarter of an hour, and a read goes round until
+        | it has the picture or the file goes stale.
         |
         | That is the point of the curve: reading the bottom of the grid is
         | something you do in passing, and reading the top is an evening's work

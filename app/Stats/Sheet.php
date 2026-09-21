@@ -252,7 +252,7 @@ final class Sheet
          *
          * Opt-in by an entry in `stats.bases`, so the stats that
          * already hand a base in at their call site (`icebreaker_damage` from
-         * zero, `scan_passes` from config) keep resolving exactly as they do.
+         * zero, `scan_duration` from config) keep resolving exactly as they do.
          * Without this a declared stat with no formula and no pool throws when
          * asked through a Sheet, which is a loud failure but a failure all the
          * same — `Character::stat()` is the obvious way to ask and it should

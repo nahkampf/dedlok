@@ -96,7 +96,7 @@
                 <form method="POST" action="{{ route('cyberspace.scan') }}">
                     @csrf
                     <button type="submit" class="btn btn--sm cut"
-                            @disabled(! $here || ! $canScan || $scan?->isRunning() || $scan?->isComplete() || $scan?->passes >= $scanPasses)>
+                            @disabled(! $here || ! $canScan || $scan?->isRunning() || $scan?->isComplete())>
                         {{ Text::get('cyberspace.scan.action') }}
                     </button>
                 </form>

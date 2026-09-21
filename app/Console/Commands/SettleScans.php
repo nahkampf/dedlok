@@ -46,8 +46,8 @@ use Illuminate\Support\Facades\Log;
  * on one read would both try to begin its next pass.
  *
  * ponytail: one character load and one resolver pass per character with a
- * matured read, because `passesFor()` and the reading value are per-character
- * stats. Nothing at this scale. If it ever matters, the fix is to settle in
+ * matured read, because the reading value and the pass duration are
+ * per-character stats. Nothing at this scale. If it ever matters, the fix is to settle in
  * chunks keyed by character rather than to make the stats cheaper.
  */
 class SettleScans extends Command

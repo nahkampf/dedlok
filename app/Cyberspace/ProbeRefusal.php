@@ -56,15 +56,6 @@ enum ProbeRefusal: string
     /** Everything about it is already known, and the file is still good. */
     case AlreadyKnown = 'already_known';
 
-    /**
-     * The passes are used up.
-     *
-     * The picture this scan has is the picture it gets. Not a failure of the
-     * character — a machine can simply be beyond reading today — and the way
-     * out is to come back once the file has expired.
-     */
-    case Exhausted = 'exhausted';
-
     public function message(): string
     {
         return Text::get("cyberspace.scan.{$this->value}");

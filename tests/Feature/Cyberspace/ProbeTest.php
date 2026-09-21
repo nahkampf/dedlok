@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Checks\CheckRoller;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Position;
@@ -18,9 +20,11 @@ use App\Models\CharacterModifier;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Notification;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemScan;
+use App\Notifications\Category;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Stats\Resolver;
@@ -263,24 +267,6 @@ final class ProbeTest extends TestCase
         $this->assertGreaterThan($plain, $better);
     }
 
-    public function test_a_better_scanner_buys_another_look(): void
-    {
-        $this->assertSame(
-            (int) config('cyberspace.scan.passes'),
-            Probe::fromConfig()->passesFor($this->character->fresh()),
-        );
-
-        app(ProgramRunner::class)->stopAll($this->character->fresh(), $this->character->equippedDeck);
-        $this->runAScanner([
-            ['op' => 'add', 'amount' => 2, 'target' => ['id' => 'scan_passes']],
-        ]);
-
-        $this->assertSame(
-            (int) config('cyberspace.scan.passes') + 2,
-            Probe::fromConfig()->passesFor($this->character->fresh()),
-        );
-    }
-
     // ---- reading it --------------------------------------------------------
 
     public function test_a_good_pass_finds_out_everything_there_is(): void
@@ -296,6 +282,10 @@ final class ProbeTest extends TestCase
         $this->assertSame(1, $result->scan->grade);
         $this->assertSame($os->id, $result->scan->os_skill_id);
         $this->assertSame(1, $result->scan->passes);
+
+        // A system read all the way through is one counted towards the
+        // scanning achievements — the pass that COMPLETED the picture.
+        $this->assertSame(1, (new Achievements)->progressFor($this->character, Metric::SystemsScanned));
     }
 
     /**
@@ -340,9 +330,8 @@ final class ProbeTest extends TestCase
         $this->probe(0.999)->settleAll($this->character->fresh());
 
         $scan = SystemScan::query()->sole();
-        $this->assertSame(5, $scan->passes, 'the whole budget, from one press and one look');
-        $this->assertFalse($scan->isRunning());
-        $this->assertNull($scan->reading_process_id, 'the instrument is free again');
+        $this->assertSame(16, $scan->passes, 'fifteen matured and a sixteenth already going');
+        $this->assertTrue($scan->isRunning(), 'and it is still going, because the file is still good');
     }
 
     /**
@@ -403,26 +392,40 @@ final class ProbeTest extends TestCase
         $this->assertSame(1, SystemScan::query()->count());
 
         $scan = SystemScan::query()->sole();
-        $this->assertSame(5, $scan->passes, 'every pass landed in the same file');
+        $this->assertSame(21, $scan->passes, 'every pass landed in the same file');
         $this->assertFalse($scan->isComplete(), 'and none of them read anything');
+
+        // Half a picture is not a scanned system, however many passes it ate.
+        $this->assertSame(0, (new Achievements)->progressFor($this->character, Metric::SystemsScanned));
     }
 
     /**
-     * THE BUDGET IS WHAT STOPS A FREE ACT BEING GROUND. A failed scan costs the
-     * expiry window, not a retry.
+     * THE WINDOW IS WHAT STOPS A FREE ACT BEING GROUND. A failed scan costs
+     * the expiry window and an analyser's compute for the length of it, and a
+     * read that reaches the end of the window stops there rather than filling
+     * a file `fileFor()` is about to throw away.
      */
-    public function test_the_passes_run_out(): void
+    public function test_the_read_stops_when_the_file_goes_stale(): void
     {
-        Config::set('cyberspace.scan.passes', 2);
+        Config::set('cyberspace.scan.lifetime_hours', 1);
         $this->machine(grade: 9);
 
-        $this->readOnce(0.999);
-        $this->readOnce(0.999);
+        // Sixteen minutes a pass against an hour of window: four passes begin
+        // inside it and the fourth is the last, because the fifth would start
+        // after the file stopped being worth anything.
+        $probe = $this->probe(0.999);
+        $probe->scan($this->character->fresh());
 
-        $result = $this->probe(0.0)->scan($this->character->fresh());
+        $this->travel(2)->hours();
+        $probe->settleAll($this->character->fresh());
 
-        $this->assertSame(ProbeRefusal::Exhausted, $result->refusal);
-        $this->assertSame(2, SystemScan::query()->sole()->passes);
+        $scan = SystemScan::query()->sole();
+
+        $this->assertSame(4, $scan->passes);
+        $this->assertFalse($scan->isComplete());
+        $this->assertFalse($scan->isRunning());
+        $this->assertNull($scan->reading_process_id, 'the instrument is free again');
+        $this->assertTrue($scan->hasExpired());
     }
 
     public function test_nothing_is_read_twice(): void
@@ -908,8 +911,8 @@ final class ProbeTest extends TestCase
 
         $scan = SystemScan::query()->where('address', 'DEADBEEF')->first();
 
-        $this->assertSame(5, $scan->passes, 'an hour away is an hour of reading');
-        $this->assertFalse($scan->isRunning(), 'and the budget is gone, so nothing is still going');
+        $this->assertSame(61, $scan->passes, 'an hour away is an hour of reading');
+        $this->assertTrue($scan->isRunning(), 'and the sixty-first is already going');
     }
 
     /** Catching up stops at the answer, not at the budget. */
@@ -927,7 +930,7 @@ final class ProbeTest extends TestCase
         $scan = SystemScan::query()->where('address', 'DEADBEEF')->first();
 
         $this->assertTrue($scan->isComplete());
-        $this->assertSame(1, $scan->passes, 'a read that answered everything spends no more of the budget');
+        $this->assertSame(1, $scan->passes, 'a read that answered everything reads no further');
     }
 
     // ---- the sweep that settles for people who are not looking ------------
@@ -955,8 +958,11 @@ final class ProbeTest extends TestCase
         $this->artisan('cyberspace:settle')->assertSuccessful();
 
         $scan = SystemScan::query()->sole();
-        $this->assertNull($scan->pass_ready_at, 'resolved without anybody asking');
-        $this->assertSame(5, $scan->passes, 'and caught the read up rather than nudging it one pass');
+        // Not null but FUTURE: ninety passes resolved without anybody asking
+        // and the ninety-first is already going, which is what a read that
+        // runs until it has the picture looks like between visits.
+        $this->assertTrue($scan->pass_ready_at->isFuture(), 'resolved without anybody asking');
+        $this->assertSame(91, $scan->passes, 'and caught the read up rather than nudging it one pass');
     }
 
     public function test_the_sweep_writes_nothing_on_a_dry_run(): void
@@ -1219,5 +1225,33 @@ final class ProbeTest extends TestCase
             ->getContent();
 
         $this->assertSame(1, substr_count($html, 'cell--scanned'), 'the key alone');
+    }
+
+    /**
+     * THE READ IS WHAT THE INBOX WAS BUILT FOR. A pass takes minutes and a
+     * read takes as many as it needs, so whoever pressed Scan is usually
+     * somewhere else by the time the file is whole — which is the definition
+     * of something that happened while nobody was looking.
+     */
+    public function test_a_finished_read_is_a_message(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+
+        $this->readOnce(0.0);
+
+        $message = Notification::query()->sole();
+
+        $this->assertSame(Category::Cyberspace, $message->category);
+        $this->assertStringContainsString('finished', $message->body);
+    }
+
+    /** A pass that learned nothing has nothing to say. */
+    public function test_an_unfinished_read_says_nothing(): void
+    {
+        $this->machine(grade: 9);
+
+        $this->readOnce(0.999);
+
+        $this->assertSame(0, Notification::query()->count());
     }
 }
