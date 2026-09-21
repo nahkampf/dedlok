@@ -40,7 +40,7 @@ system.
 | The two thresholds | **built**; they ACT before the player's choice, every character is born with 70% and 30%, and they are set in an accordion on the map. Zero turns one off |
 | The run lock | **built**; `EnsureRunIsFinished` sends every request but signing in, signing out and the run's own routes back to it. Admin routes are NOT exempt, unlike `RequireCharacter` — a run is a character in jeopardy |
 | The readiness net inside a run | **built**; `EnsureDeckStillRuns` stands down while `current_run_id` is set, so a burnout resolves its own ending instead of racing a middleware that would call it a readiness loss |
-| The OS gate at the door | **built**; a machine whose operating system the runner lacks is ENTERED and `runs.os_locked` records it. Nothing shows it, and nothing reads it yet — the failures it causes are the simulator's |
+| The OS gate at the door | **built, and it is a ROLL** — a machine whose operating system the runner lacks is ENTERED, `runs.os_locked` starts true for any machine that runs one, and every core action rolls the runner's LEVEL against it until one lands. 4.7% at no skill, the certainty floor at level 5. The chance is on the run screen; the reason behind it never is |
 | The run lock | **specified only**; while a run is live every request but signing in and out is sent back to it. This is what replaces "pulling the plug cannot save you" |
 | The blind-run warning | **specified only**; the screen that starts a run names what the scan did not find out, from `SystemScan::unknowns()` |
 | Mapping as a run purpose | **withdrawn**. The probe took the job: a read happens on the open grid, produces the same sellable file, and needs no run. Scanning from inside a run is not allowed either — a blind run is a commitment |
@@ -53,8 +53,8 @@ system.
 | A trace per runner | **specified only**; one meter each on the same clock, so a completed trace burns the chain that runner came in on and not the party's |
 | The turn protocol | **specified only**; a turn resolves when all have chosen or 30 seconds pass, an absent player is resolved by their own thresholds, and `auto-run` hands the whole run to them. Shared with physical combat as a PROTOCOL, never as an engine |
 | The two thresholds | **specified only**; they ACT rather than warn, every character is born with 70% trace and 30% SI, and they are changed in an accordion on the cyberspace screen |
-| The notification queue | **not built**, and named here because a cancelled run needs one. One place, reached from the rail, with priorities and categories. Until it exists the cancellation screen is the notification |
-| Scanning — the probe | **built** for what a system currently HAS: grade, operating system, intrusion detection and tracer. A machine with none of the last two reads as *None*, which is an answer rather than an unread field. Needs an analyser RUNNING on the equipped deck; one press starts a READ, which goes round pass after pass until the file is whole or the `scan_passes` budget is gone |
+| The notification centre | **built.** One place, reached from the rail, holding what happened while nobody was looking — a finished read, a backdoor found in the night, a level crossed by the clock, an achievement unlocked. Every message carries a CATEGORY and deliberately no priority: a category says where a message came from and never how loud it is, because anything that needs acting on this instant belongs on the screen where the acting happens. `App\Notifications\Notifier` is the only writer |
+| Scanning — the probe | **built** for what a system currently HAS: grade, operating system, intrusion detection and tracer. A machine with none of the last two reads as *None*, which is an answer rather than an unread field. Needs an analyser RUNNING on the equipped deck; one press starts a READ, which goes round pass after pass until the file is whole or the file goes stale |
 | A pass takes TIME | **built** — about a minute against a grade 1 and sixteen against a grade 9, cut by skill and by a better instrument through the `scan_duration` stat. Settled lazily by whoever next looks |
 | Node inventories — what a machine holds | **built** — creds always, a generated FILE on a roll, and none to several items, all scaled by grade and leaned by type. `system_contents`, written by `App\Cyberspace\NodeStocker` |
 | Rarity, per grade band | **built** — `loot_tables`, one row per (type, band, rarity). Grades 1–3 see rare at 1%; ultra-rare is weight 0 below grade 8, which is a wall and not a long shot |
@@ -659,45 +659,62 @@ fitted in it while jacked in. Three writers enforce one rule — `ModuleFitter`,
 `DeckEquipper`, and the destroy path. Everything else is unaffected: the stash
 still opens, other items can still be destroyed, training carries on.
 
-### The operating system is a gate you cannot see
+### The operating system is a difficulty you cannot read
 
-**Every machine runs an operating system, and you need the matching skill at
-level 1 to do anything to it.** What makes it a gate rather than a door is that
+**Every machine runs an operating system, and how well you know it is how well
+the core answers you.** What makes it a gate rather than a door is that
 **nothing ever tells you which one it runs.** A scan is the only thing that
 answers that question, and a run against a machine whose OS you do not have is
-not refused — it is entered, and then **every action you take against the system
-fails.**
+not refused — it is entered, and then the core has to be talked into opening.
 
-**A refusal would be the leak.** "You do not have Lattice" is a scan fact handed
-over for one click, for free, with no instrument running and no minutes spent —
-so anybody could read the operating system off every machine on the grid by
-trying to enter it. The gate has to cost a run, or it is not a gate; it is a
+**It is a roll on the LEVEL, not a wall at level 1.** The level is the check
+value: no skill at all is 4.7% a turn, level 2 is near enough a coin flip at
+48%, and level 5 sits on the certainty floor, which is as close to certain as
+anything in this game gets. The steps between are deliberately uneven — the
+first level is worth nearly twice the fourth, because that is the shape of
+learning a system rather than the shape of a formula. That curve is `config/cyberspace.os` and the roll is
+`Simulator::opensTheCore()`. **A landed roll opens the machine for the rest of
+that run** and not a minute longer.
+
+It used to be a verdict taken at the door — hold the skill at level 1 or every
+action against the machine fails for ever. That made an unfamiliar system
+impassable rather than expensive, and made levels 2 to 5 worth nothing at all on
+a run, which is the opposite of what a five-level skill is for.
+
+**A refusal would still be the leak.** "You do not have Lattice" is a scan fact
+handed over for one click, for free, with no instrument running and no minutes
+spent — so anybody could read the operating system off every machine on the grid
+by trying to enter it. The gate has to cost a run, or it is not a gate; it is a
 lookup.
 
 **The failures are indistinguishable from bad luck, deliberately.** Nothing in
 the log says the commands are not understood, because that sentence narrows the
 OS to one you do not have and the whole point is that nothing narrows it for
-free. What the player has instead is the PATTERN: every action failing, run
-after run, is not what a bad night looks like.
+free.
 
-**That signal is a streak, and a streak needs length.** Three failures in a row
-is an ordinary afternoon at the certainty floor, so a short poke at a system
-teaches nothing and a long haul teaches quickly.
+**What the player gets instead is the ODDS, before they spend the turn.** The
+run screen carries the chance the roll will use and never the reason behind it —
+*core access 4%* names no language. That is the half of the bargain the silence
+requires: an unexplained streak of failures is indistinguishable from a bug, and
+this game has a standing rule against handing somebody a bug in place of a
+consequence. It is the same call the egress panel makes, one screen down.
 
-**An interactive run is what makes this legible**, and it is the strongest
-argument the turn loop has. A player who suspects something is wrong can spend
-another turn to find out, and another — watching a dozen actions fail in a row is
-a conclusion, where a log of three failures handed over after the fact is a
-shrug. The cost of asking is real, since every turn is trace and heat, which is
-exactly the shape this should have: the answer is available and it is not free.
+**Knowing the odds does not tell you the OS.** It tells you how badly this run
+is going to go, which is a decision you are owed. Which of the dozen operating
+systems is behind the number is still a scan away, and that is the only thing
+the gate was ever protecting.
 
-It follows that **nothing may cut a run short on the player's behalf while
-everything is failing.** Shortening it is deleting the only evidence there is.
+**The cost of grinding at it is real**, which is what makes no skill at all
+*nigh on impossible* rather than merely slow: every attempt spends the turn, and
+every turn is trace and ICE and a deck getting hotter. A runner at 4.7% is not
+locked out. They are losing a race.
 
-**What fails is what touches the SYSTEM.** Extracting, backdooring, injecting,
-burning, and scanning from inside. Everything that happens TO the player carries
-on exactly as normal: the IDS still rolls on approach, the tracer still traces,
-the ICE still hits, and the deck still cooks. That asymmetry is the fiction —
+**What asks is what touches the CORE.** Extracting, backdooring and burning —
+the three actions that reach for the machine itself. **Cutting at an ICE does
+not ask**: an icebreaker against an ICE is one program against another, and
+needs no vocabulary. Everything that happens TO the player carries on exactly as
+normal: the IDS still rolls on approach, the tracer still traces, the ICE still
+hits, and the deck still cooks. That asymmetry is the fiction —
 the room works, and it is the intruder who cannot operate in it.
 
 **Egress is never one of the things that fails.** See below: leaving is always
@@ -1104,12 +1121,14 @@ were winning, by something they could not see, with no account of it, has been
 handed a bug rather than a consequence. The message is the notification queue's:
 *System experienced a lockdown during your run, and the run was cancelled.*
 
-**The notification centre is a named dependency and not a blocker.** It is meant
-to be one place, reached from the rail, with priorities and categories, and it
-does not exist. Until it does, **the cancellation screen is the notification** —
-the lock guarantees the player lands somewhere, so that somewhere is the
-explanation. When the centre arrives this becomes one more thing that emits into
-it rather than a rewrite.
+**The notification centre is built, and a cancelled run is still not one of its
+senders.** It is one place, reached from the rail, with categories — no
+priorities, which is a deliberate departure from the line above: a category says
+where a message came from, and a notification that needed acting on this instant
+would belong on the screen where the acting happens. **The cancellation screen
+remains the explanation**, because the lock guarantees the player lands there and
+a message in an inbox is a worse place to learn why you are not in a run any
+more. Emitting one as well is now one call rather than a dependency.
 
 ### Detection
 
@@ -1816,10 +1835,11 @@ All of it. In the order it should be built:
 
    **A version is worth what its row says**, through the two channels every
    program already has: `programs.modifiers` against `check.systemprofiling`
-   for a steadier read, and against `scan_passes` for another look at the
-   machine before the picture is the one you get. The probe knows about neither
-   — one arrives through the resolver and the other through a stat — so a Mk IV
-   is an item row and nothing else.
+   for a steadier read, and against `scan_duration` for the same picture
+   sooner. The probe knows about neither — one arrives through the resolver and
+   the other through a stat — so a Mk IV is an item row and nothing else. What a
+   version cannot buy any more is another pass: a read goes round until it has
+   the picture or the window closes.
 
    The analyser is a BACKGROUND program, not a run-only one: mapping happens on
    the open grid. So `$duringRun` still has no caller passing `true`, and the

@@ -302,6 +302,12 @@
                 {{ Text::get('cyberspace.run.egress_chance', ['chance' => $egress->percent()]) }}
             </button>
         </div>
+        @if ($core !== null)
+            <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
+                {{ Text::get('cyberspace.run.core_chance', ['chance' => $core]) }}
+                {{ Text::get('cyberspace.run.core_hint') }}
+            </p>
+        @endif
         <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
             {{ Text::get('cyberspace.run.egress_hint') }}
             @if ($egress->isSnared())

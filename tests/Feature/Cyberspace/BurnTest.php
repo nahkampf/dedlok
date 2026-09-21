@@ -243,17 +243,23 @@ final class BurnTest extends TestCase
         $this->assertSame(1, (int) $run->fresh()->turn, 'and the turn was spent');
     }
 
-    /** An operating system the runner cannot speak stops it, and says nothing. */
-    public function test_an_unspeakable_operating_system_stops_a_burn(): void
+    /** A core that will not open stops it, and says nothing. */
+    public function test_a_core_that_will_not_open_stops_a_burn(): void
     {
         $this->machine();
         $run = $this->begin(RunPurpose::Burn);
         $run->forceFill(['os_locked' => true])->save();
 
+        // Every check fails, which is the only way to be sure WHICH way the
+        // core roll went: it is a roll now rather than a verdict, so a test
+        // about the gate has to pin it like any other.
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 1.0));
+
         $result = $this->simulator()->take($this->character, $run->fresh(), RunAction::Burn);
 
         $this->assertSame(1, System::query()->count(), 'still standing');
         $this->assertNull($result->ending);
+        $this->assertTrue($run->fresh()->os_locked, 'and it is still shut');
 
         foreach ($result->log as $line) {
             $this->assertStringNotContainsStringIgnoringCase('operating system', $line['text']);
