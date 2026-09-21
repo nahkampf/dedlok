@@ -8,6 +8,8 @@ use App\Models\Character;
 use App\Models\Skill;
 use App\Models\TrainingQueueEntry;
 use App\Skills\QueueRefusal;
+use App\Skills\SkillProgression;
+use App\Skills\TrainingPlanner;
 use App\Skills\TrainingQueue;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
@@ -46,6 +48,66 @@ class TrainingQueueController extends Controller
         return back()->with('status', Text::get('training.queued', [
             'skill' => $skill->title,
             'level' => $result->target_level,
+        ]));
+    }
+
+    /**
+     * Fill the queue with everything that reaches a level of a skill.
+     *
+     * The same door as `store()` — every entry still goes through
+     * `TrainingQueue::enqueue()`, one at a time, in the order
+     * `TrainingPlanner` worked out. What is added here is the arithmetic a
+     * player would otherwise do on paper: which prerequisites, at which
+     * levels, in which order.
+     *
+     * IT STOPS AT THE FIRST REFUSAL AND SAYS WHICH ONE. A plan is routinely
+     * longer than the five entries a queue holds, and it can name a skill
+     * whose book has never been spent — both are ordinary, neither is a
+     * failure, and the queue already has the words for them. What lands is
+     * everything up to that point, because a partial route is still the
+     * beginning of the route.
+     */
+    public function plan(Request $request, TrainingQueue $queue, TrainingPlanner $planner): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        $validated = $request->validate([
+            'skill' => ['required', 'integer', 'exists:skills,id'],
+            'level' => ['required', 'integer', 'min:1', 'max:'.SkillProgression::fromConfig()->maxLevel()],
+        ]);
+
+        $skill = Skill::query()->findOrFail($validated['skill']);
+        $level = (int) $validated['level'];
+
+        $steps = $planner->plan($character, $skill, $level);
+
+        if ($steps === []) {
+            return back()->with('status', Text::get('training.plan_nothing', [
+                'skill' => $skill->title,
+                'level' => $level,
+            ]));
+        }
+
+        $queued = 0;
+
+        foreach ($steps as $step) {
+            $result = $queue->enqueue($character, $step);
+
+            if ($result instanceof QueueRefusal) {
+                return back()->with('status', Text::get('training.plan_stopped', [
+                    'count' => $queued,
+                    'total' => count($steps),
+                    'skill' => $step->title,
+                    'reason' => $result->message(),
+                ]));
+            }
+
+            $queued++;
+        }
+
+        return back()->with('status', Text::plural('training.plan_queued', $queued, [
+            'skill' => $skill->title,
+            'level' => $level,
         ]));
     }
 

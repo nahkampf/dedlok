@@ -61,6 +61,11 @@ class SkillsController extends Controller
             // yet, so these are warnings on the screen and never a refusal.
             'problems' => (new TrainingQueueValidator)->problemsFor($character),
             'queueable' => $this->queueable($skills, $levels, $queue, $progression),
+            // The same skills again, without a level baked into the label:
+            // planning names a level of its own. Only what they have
+            // injected, here as everywhere — a picker listing every skill in
+            // the game would be the catalogue this screen deleted.
+            'plannable' => $this->plannable($skills, $levels, $progression),
         ]);
     }
 
@@ -129,6 +134,32 @@ class SkillsController extends Controller
             // can say "in about three hours" with the framework's own words.
             'finishes' => $minutes === null ? null : now()->addMinutes((int) ceil($minutes)),
         ];
+    }
+
+    /**
+     * The skills a route could be planned to, grouped for the picker.
+     *
+     * Everything injected that is not already at the top, whatever is queued:
+     * a plan is allowed to describe a route that is already half lined up and
+     * to add nothing, which is a status rather than a refusal.
+     *
+     * @param  Collection<int, Skill>  $skills
+     * @param  array<int, array{level: int, points: int}>  $levels
+     * @return array<string, list<array{id: int, label: string}>>
+     */
+    private function plannable(Collection $skills, array $levels, SkillProgression $progression): array
+    {
+        $groups = [];
+
+        foreach ($skills as $skill) {
+            if (($levels[$skill->id]['level'] ?? 0) >= $progression->maxLevel()) {
+                continue;
+            }
+
+            $groups[$skill->category][] = ['id' => $skill->id, 'label' => $skill->title];
+        }
+
+        return $groups;
     }
 
     /**
