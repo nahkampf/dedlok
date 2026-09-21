@@ -2,6 +2,66 @@
 
 ## [Unreleased]
 
+## [0.12.2] — 2026-09-21
+
+The last run purpose, and the last route nothing had ever posted to.
+
+### Added
+
+- **Burn — destroy the machine.** The third intention on the briefing has been a
+  disabled button under a *Not built yet* tag since the screen shipped; it is a
+  real submit now, and a burn is an act you spend a turn on like any other. A
+  core touch, so it takes the IDS's second look exactly as extracting and
+  installing do, and it fails in one sentence for all three of its reasons — a
+  machine already gone, an operating system you cannot speak, or a purpose that
+  is not this one — because the OS gate must not announce itself here either.
+  When it lands it is the last turn of the run: nothing is left to strike back,
+  advance a trace or be shut, so the run ends Completed.
+- **What a burn leaves behind is nothing.** The machine is deleted outright —
+  the one thing in the game that deletes a system. Its address goes out of
+  existence with it, every backdoor into it cascades away, its contents go, and
+  the position it held is simply empty until a seeding pass puts something new
+  there. No loot, because a burn takes nothing; no raid counted, because the
+  books it would be read from are ash.
+- **Anybody else standing in it is thrown out**, for one flat point of Synaptic
+  Integrity and nothing else. That is the price of a shared world, and the same
+  cancellation a lockdown already dealt: a machine you are standing in is a
+  machine somebody else can burn.
+- **Lockdown's fourth trigger, by needing no code at all.** The design table has
+  always listed burn as a reason a machine shuts. It resolves itself instead —
+  the row is gone by the time the run ends, so the question "does the machine
+  now know" finds nothing to ask. A burn leaves no lockdown even when the IDS
+  fired and the ICE woke, and nothing had to be told to skip it.
+
+### Changed
+
+- **`run.start` is tested over HTTP**, which it never had been. It was the only
+  route in the application with no request-level test under any name — the
+  writer behind it was covered and the screen in front of it was covered, and
+  nothing in between ever posted the form. Every purpose, both backdoor kinds,
+  six refusals that have to arrive as a message rather than a server error.
+- **The consequence a lockdown and a burn share now lives once.** Throwing
+  everybody out of a machine that stopped being somewhere to stand was a private
+  method on the lockdown; it is on the simulator now, where endings are
+  resolved, so the order every bad ending follows has one place to drift from
+  instead of two.
+- **Three documents that were wrong rather than merely stale.** CYBERSPACE.md
+  said phase 3 was under way and everything past it was still design, three
+  phases after that stopped being true. TODO still described the database
+  account as holding every privilege on every schema, which was fixed on the
+  server and corrected in CLAUDE.md a release ago. And the note asking someone
+  to raise the PHPStan level outlived the morning it was raised.
+
+### Fixed
+
+- **A test that passed against deliberately broken code.** The new route test
+  was written expecting a run to be refused for a deck that stopped running, and
+  it passed with the refusal path removed — because that refusal cannot be
+  reached from this route at all. The readiness net runs first on every
+  jacked-in request and turns the request away with its own message, so the
+  controller's branch only ever answers callers that are not requests. Not a bug
+  in the game; a bug in the test, and exactly the kind the pass exists to catch.
+
 ## [0.12.1] — 2026-09-21
 
 Documentation only, and a trap written down.
@@ -676,7 +736,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/nahkampf/dedlok/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/nahkampf/dedlok/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/nahkampf/dedlok/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/nahkampf/dedlok/compare/v0.10.0...v0.11.0

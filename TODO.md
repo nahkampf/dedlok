@@ -94,28 +94,35 @@ poll is a round trip to a MySQL host on the public internet.
 
 ## Lock down the database account
 
-**Parked by explicit decision, 2026-09-05.** Still the single largest risk in
-the project; to be picked up before anything goes near production.
+**Mostly done, re-verified 2026-09-21.** The 2026-09-01 audit's worst findings
+are fixed and this entry no longer describes the account. It ran as `lod@%`
+with `ALL PRIVILEGES ON *.*` — `SUPER`, `FILE`, `SHUTDOWN`, `CREATE USER`,
+`PROCESS` — able to see two unrelated production schemas. `FILE` alone turned
+any SQL injection into file read/write on the database server. None of that is
+still true.
 
-**Status:** running as `lod@%` with `ALL PRIVILEGES ON *.*`, unencrypted, by explicit
-decision to defer.
+**Where it stands:** `dedlok@%`, global privileges `USAGE` only, `ALL
+PRIVILEGES` scoped to `cyberpunk`.* and nowhere else. `SHOW DATABASES` returns
+`cyberpunk` and the two system schemas; `gryningsland` and `lod` are out of its
+view.
 
-The account holds `SUPER`, `FILE`, `SHUTDOWN` and `CREATE USER`, is reachable from any
-host, and can see two unrelated production schemas (`gryningsland`, `lod`). `FILE` alone
-turns any SQL injection into file read/write on the database server.
+**What is left, and it is the half that needs the server:**
 
-Create a scoped account and enable TLS:
+- **The host mask is still `%`** — connectable from any host on the internet.
+- **The connection is still unencrypted.** `Ssl_cipher` is empty on a live
+  session and `require_secure_transport` is 0, so credentials and every query
+  cross the internet in clear text.
 
 ```sql
-CREATE USER 'cyberpunk_app'@'<app-ip>' IDENTIFIED BY '<strong-password>' REQUIRE SSL;
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, DROP, REFERENCES
-  ON `cyberpunk`.* TO 'cyberpunk_app'@'<app-ip>';
+ALTER USER 'dedlok'@'%' REQUIRE SSL;   -- or recreate it on a narrow host mask
 ```
 
 Then point `config/database.php` at a CA bundle via `MYSQL_ATTR_SSL_CA`.
 
-**Until then:** never run `migrate:fresh`, `migrate:reset` or `db:wipe` against the remote
-connection. See CLAUDE.md for the safe local-override recipe.
+**Still true regardless:** never run `migrate:fresh`, `migrate:reset` or
+`db:wipe` against the remote. The scoping means they can no longer reach
+another project's data, so it is now a rule about losing your own — reason
+enough. See CLAUDE.md for the safe local-override recipe.
 
 ---
 
@@ -298,28 +305,74 @@ find a container problem, and a mechanic tested only through its own class
 cannot find a broken screen. Anything with a route wants at least one test that
 takes what a real request takes.
 
-**Where the same gap is still open** — no HTTP-level pass exists over the deck
-screen's fitting and stripping forms, the implant body map, the stash's item
-actions, or the admin editors' writes. The cyberspace map has one (the scan
-dialog polls through `cyberspace.reading`, which a test exercises), and the run
-screen now has one. The rest are unit-tested only.
+**The gap this entry used to describe does not exist, checked 2026-09-21.** It
+named the deck screen's fitting and stripping forms, the implant body map, the
+stash's item actions and the admin editors' writes as unit-tested only. All
+four post to their routes: `ModuleFittingTest` alone makes eleven writes and
+twelve reads over HTTP, `ImplantTest` covers the body map and both surgery
+routes, `ItemActionsTest` the stash, and the seven files in `tests/Feature/Admin`
+hit the editors hard — including the delete that has to drop a skill's book
+first. The entry was written from an impression rather than a count.
+
+**What the count actually found: one route.** `run.start` — the door the
+briefing's buttons post to, shipped in 0.12.0 as the only way a run begins —
+had no HTTP test under any name, literal or routed. `RunStarter` was covered by
+`RunTest` and the briefing by `RunBriefingTest`, and nothing in between ever
+posted the form. `tests/Feature/Cyberspace/RunStartRouteTest.php` closes it:
+every purpose walked off the enum, both backdoor kinds, every refusal as a
+message rather than a 500, and what the form is allowed to say.
+
+**And it found one thing about the code.** `RunRefusal::DeckNotReady` is
+unreachable from `run.start` over HTTP: `EnsureDeckStillRuns` runs first on
+every jacked-in request and turns a cyberspace route away with its own message,
+so the controller's branch only ever answers callers that are not requests.
+Not a bug — defence in depth, and `RunTest` proves the refusal — but the test
+that assumed otherwise passed with the controller's refusal path deliberately
+broken, which is the failure mode this whole entry exists to catch.
+
+**To check it again rather than re-impress yourself:** list every route name,
+grep the suite for each one as both `route('name')` and its literal URL (the
+admin tests use literals, which is what made them look uncovered), and read
+the count.
 
 ---
 
 ## Burn
 
-**Status:** the only one of lockdown's four triggers still unbuilt, and it is
-its own mechanic rather than a missing branch. `App\Cyberspace\Lockdown::shut()`
-is public precisely so burn can call it — everything a machine does about being
-violated is one write and one set of consequences, and burning is the loudest
-version of finding out.
+**Built, 2026-09-21.** `RunPurpose::Burn` was a case with nothing behind it and
+`RunAction::Burn` did not exist; both do now, and the briefing's Burn button is
+a real submit rather than a disabled one wearing a *Not built yet* tag.
 
-**What it needs, none of which exists:** a way to burn a system at all (a run
-purpose, `RunPurpose::Burn` is not a case yet), what it costs the runner, and
-what it leaves behind. CYBERSPACE.md says a burned system takes its address out
-of existence rather than relocating — so it is NOT `RaidLedger::relocate()`, and
-the position it frees stays empty for a while, which is the one thing that
-consumes the grid's empty reserve.
+**What it is.** A core touch, like extracting and installing, so it takes the
+IDS's second look and wastes the turn silently on any other purpose.
+`App\Cyberspace\Burner` is the only thing in the game that deletes a system:
+the row goes, the address goes out of existence with it, backdoors cascade,
+contents go, and the position is simply empty until a seeding pass puts
+something new there. The run ends `Completed` — there is no machine left to
+strike back, advance a trace or be locked down.
+
+**Why it is not `Lockdown::shut()`**, which this entry used to predict. A
+lockdown is a WINDOW and a burned machine has no window because it has no row;
+writing `locked_down_until` onto a row about to be deleted is two statements
+that disagree, and the sweep would find nothing to settle. What the two share
+is the consequence — everybody else inside is thrown out — and that now lives
+once, on `Simulator::cancelEveryRunOn()`, which both call.
+
+**The order inside `Burner` is load-bearing: delete, THEN cancel.** Cancelling
+first walks every other runner's ending through `Lockdown::afterRun()` on a
+machine still standing, and one that had noticed any of them would shut, which
+throws out everybody inside, which re-enters the loop already in progress.
+Deleting first makes that unreachable by making the answer honest.
+
+**What was decided rather than specified**, because CYBERSPACE.md left it open
+and said only "what it costs the runner":
+
+- **Heat, two points**, against the completed trace's one. The same placeholder
+  on the same undesigned axis, and the only one that obviously fits a burn.
+  `config/cyberspace.burn.heat`.
+- **Nothing else.** The real price is the machine never being worth anything
+  again, and a second invented cost would be balancing against a number nobody
+  has set.
 
 ---
 
@@ -345,8 +398,9 @@ routing hop goes on the route, and four separate things can take one away.
 - **`php artisan storage:link` will fail** — `symlink` is in `disable_functions` and that
   setting is `PHP_INI_SYSTEM`, so it cannot be scoped per-SAPI. If public file storage is
   needed, create `public/storage` from the host with `ln -s ../storage/app/public`.
-- **Raise the PHPStan level.** No `phpstan.neon` exists, so it runs at level 0 and catches
-  almost nothing. Level 5 is a realistic first target for a Laravel app.
+- ~~**Raise the PHPStan level.**~~ Done 2026-09-21: `phpstan.neon` runs larastan
+  at level 5, clean. Raising it further is possible but each level buys less;
+  6 would mean annotating every iterable's value type.
 - **Enable `session.cookie_secure`** before any HTTPS deployment — it is commented out in
   `docker/php/php.ini:50` for local HTTP.
 - **`training_queue.last_deposited_at` is a MySQL `TIMESTAMP`**, so it cannot
