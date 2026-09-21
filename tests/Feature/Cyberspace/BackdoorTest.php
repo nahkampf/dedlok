@@ -21,8 +21,10 @@ use App\Cyberspace\TurnResult;
 use App\Models\Backdoor;
 use App\Models\Character;
 use App\Models\Ice;
+use App\Models\Notification;
 use App\Models\Run;
 use App\Models\System;
+use App\Notifications\Category;
 use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -451,5 +453,26 @@ final class BackdoorTest extends TestCase
         $map = MapView::for($this->character->fresh());
 
         return $map->rows[$map->range][$map->range + 1];
+    }
+
+    /**
+     * THE ONE THING THAT IS NOBODY'S FAULT IS ALSO THE ONE NOBODY WAS TOLD
+     * ABOUT. It happens in the night, so there is no screen they are about to
+     * land on — which is what the inbox exists for. The log line stays beside
+     * it for whoever reads the job's output.
+     */
+    public function test_being_found_reaches_the_inbox(): void
+    {
+        $system = $this->machine();
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+
+        $this->instance(Backdoors::class, $this->ageing(rolling: 1));
+        $this->artisan('cyberspace:age-backdoors')->assertSuccessful();
+
+        $message = Notification::query()->sole();
+
+        $this->assertSame($this->character->user_id, $message->user_id);
+        $this->assertSame(Category::Cyberspace, $message->category);
+        $this->assertStringContainsString($system->displayName(), $message->body);
     }
 }

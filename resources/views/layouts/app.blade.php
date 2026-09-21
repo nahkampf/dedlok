@@ -20,6 +20,11 @@
      already have been given, so the layout can never shadow it. An admin who
      has never played has none, and the bar simply has nothing to show. --}}
 @php($hud = auth()->user()?->character)
+{{-- What the rail's badge counts. One indexed count for a signed-in user, and
+     nothing for a guest: the inbox belongs to the ACCOUNT, so this asks the
+     user rather than the character — the bar has a character to draw and this
+     does not need one. --}}
+@php($unread = auth()->check() ? (new \App\Notifications\Notifier)->unreadFor(auth()->user()) : 0)
 {{-- One query, and only for a signed-in character: the topbar's process
      count and the modal behind it read the same collection. --}}
 @php($processes = $hud?->runningProcesses() ?? collect())
@@ -80,6 +85,33 @@
                @if (request()->routeIs('skills.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#10022;</span>
                 <span class="dock__label">{{ Text::get('ui.nav.skills') }}</span>
+            </a>
+
+            {{-- The account's own page, and the only rail item that is not
+                 about the character. A star rather than the skills rail's
+                 four-pointed one: U+2605, the same Miscellaneous Symbols block
+                 as the implants wheel and the admin cog, both of which render. --}}
+            <a class="dock__item" href="{{ route('achievements.index') }}"
+               @if (request()->routeIs('achievements.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#9733;</span>
+                <span class="dock__label">{{ Text::get('ui.nav.achievements') }}</span>
+            </a>
+
+            {{-- The inbox, beside the other page that belongs to the account
+                 rather than the character. An envelope from the same
+                 Miscellaneous Symbols block as the star above and the cog
+                 below, with U+FE0E on it so it is drawn as text rather than
+                 handed to an emoji font — the admin cog's own trick.
+
+                 THE COUNT IS ONLY THERE WHEN THERE IS ONE. An ember pip that
+                 was permanent furniture would spend the accent on nothing. --}}
+            <a class="dock__item" href="{{ route('notifications.index') }}"
+               @if (request()->routeIs('notifications.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#9993;&#65038;</span>
+                @if ($unread > 0)
+                    <span class="dock__count">{{ $unread > 99 ? '99+' : $unread }}</span>
+                @endif
+                <span class="dock__label">{{ Text::get('ui.nav.messages') }}</span>
             </a>
 
             {{-- Only ever rendered for an admin. The gate is the guard; this is
@@ -299,11 +331,10 @@
          reload. --}}
     <dialog class="modal" id="reading" data-reading
             data-reading-url="{{ route('cyberspace.reading') }}"
-            data-reading-pass="{{ Text::get('cyberspace.reading.pass_of', ['pass' => ':pass', 'total' => ':total']) }}"
+            data-reading-pass="{{ Text::get('cyberspace.reading.pass_of', ['pass' => ':pass']) }}"
             data-reading-unread="{{ Text::get('cyberspace.reading.unread') }}"
             data-reading-complete="{{ Text::get('cyberspace.reading.complete') }}"
             data-reading-idle="{{ Text::get('cyberspace.reading.idle') }}"
-            data-reading-exhausted="{{ Text::get('cyberspace.reading.exhausted') }}"
             data-reading-gone="{{ Text::get('cyberspace.reading.no_file') }}"
             data-reading-os-known="{{ Text::get('cyberspace.reading.os_known') }}"
             data-reading-os-unknown="{{ Text::get('cyberspace.reading.os_unknown') }}"

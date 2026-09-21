@@ -34,6 +34,10 @@ return [
             'implants' => 'Implants',
             'cyberspace' => 'Cyberspace',
             'skills' => 'Skills',
+            'achievements' => 'Achievements',
+            // The inbox. "Messages" rather than "Notifications" because the
+            // rail is 220px open and one word has to fit beside a glyph.
+            'messages' => 'Messages',
             'contracts' => 'Contracts',
             'profile' => 'Profile',
 
@@ -178,6 +182,111 @@ return [
     | App\Support\Image. These are the words around them.
     |
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Achievements
+    |--------------------------------------------------------------------------
+    |
+    | The catalogue itself is `config/achievements.php` — a metric and a number
+    | each. What is here is what a player READS, and today that is one
+    | placeholder name composed from the id. When the real names are written
+    | this becomes a map keyed by the same id, and nothing else changes.
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
+    | The inbox
+    |--------------------------------------------------------------------------
+    |
+    | WHAT HAPPENED WHILE NOBODY WAS LOOKING, which is the whole test for
+    | whether a sentence belongs down here rather than in a flash message. A
+    | flash covers what the player just did; these are the things that happened
+    | to them while the tab was shut.
+    |
+    | Every message under `messages` is RENDERED WHEN IT IS WRITTEN and stored
+    | as a sentence — App\Notifications\Notifier is the only reader of these
+    | keys. So rewording one changes what the next message says and never what
+    | an old one said, which is correct: an old message described a moment that
+    | has already passed.
+    |
+    | They are written in the PAST TENSE and name the thing they are about,
+    | because a notification is read out of context — hours later, in a list of
+    | other things, by somebody who has forgotten what they left running.
+    |
+    */
+
+    'notifications' => [
+        'title' => 'Messages',
+        'lede' => 'What happened while you were somewhere else. Nothing here needs answering — it is the record of what the world did on its own.',
+
+        'inbox' => 'Inbox',
+        'empty' => 'Nothing yet. This fills up while you are away.',
+        'new' => 'New',
+        'mark_read' => 'Mark all read',
+        'unread' => ['zero' => '', 'one' => ':count unread', 'many' => ':count unread'],
+        'marked' => [
+            'zero' => 'Nothing was unread.',
+            'one' => 'One message marked read.',
+            'many' => ':count messages marked read.',
+        ],
+
+        // Where a message came from, never how loud it is. One label per
+        // App\Notifications\Category case.
+        'categories' => [
+            'cyberspace' => 'Cyberspace',
+            'training' => 'Training',
+            'achievement' => 'Achievement',
+        ],
+
+        'messages' => [
+            'scan_complete' => 'Your read of :system finished. Everything that machine will give up is in the file.',
+            'backdoor_found' => 'Your way into :system was found. The machine is not where you left it.',
+            'skill_level' => ':skill reached level :level.',
+            'achievement_unlocked' => 'Achievement unlocked: :name.',
+        ],
+    ],
+
+    'achievements' => [
+        'title' => 'Achievements',
+        'lede' => 'Goota catch \'em all.',
+
+        // The two headers. The design only names the first — but a list with
+        // no header above it reads as a continuation of the one before it.
+        'gained' => 'Achievements gained',
+        'remaining' => 'Still to earn',
+
+        // The name is still one template composed from the id; the
+        // DESCRIPTION is already a map keyed by that same id, because there is
+        // nothing generic to say about what any of them took. When the names
+        // are written they become a map beside it, in the same shape.
+        //
+        // KEEP EACH ONE UNDER 255 CHARACTERS. Nothing here is a column, but a
+        // description that will not fit one is a description that has to be
+        // rewritten the day this becomes a table — AchievementTest pins it,
+        // and pins that every achievement in the catalogue has one at all.
+        'name' => 'ACHIEVEMENT_:id',
+
+        'description' => [
+            1 => 'A million creds extracted from runs.',
+            2 => 'Ten thousand creds drained using siphons.',
+            3 => 'A routing chain at its full length: ten relays between you and whoever is looking.',
+            4 => 'A hundred systems burned.',
+            5 => 'A hundred pieces of ICE defeated.',
+            6 => 'Flatlined. The first one is the one you remember.',
+            7 => 'Flatlined a hundred times, and still jacking in.',
+            8 => 'Twenty skills trained to the level cap.',
+            9 => 'Fifty skills trained to the level cap.',
+            10 => 'A hundred systems fully scanned.',
+            11 => 'A thousand systems fully scanned.',
+            12 => 'A thousand positions of the grid explored.',
+            13 => 'Ten thousand positions of the grid explored.',
+        ],
+
+        'none' => 'Nothing yet. Everything below is still out there.',
+        'complete' => 'Everything there is to earn has been earned.',
+    ],
+
     'images' => [
         'enlarge' => 'View :subject full size',
     ],
@@ -281,8 +390,8 @@ return [
         | about it.
         |
         | The refusals say what to do next wherever there is something to do.
-        | "Exhausted" deliberately does not say "try again": the whole point of
-        | a pass budget is that trying again is not the answer.
+        | A read goes round by itself until it has the picture, so none of them
+        | is ever "press it again".
         */
         'scan' => [
             'action' => 'Scan',
@@ -304,7 +413,6 @@ return [
             ],
             'duration' => 'A pass here takes about :when',
             'already_known' => 'You already have everything this machine will tell you.',
-            'exhausted' => 'You have read this machine as far as you can. What you have is what you get until it goes stale.',
             'found' => [
                 'zero' => 'Nothing new. The machine gives up none of itself.',
                 'one' => 'One thing more about this machine.',
@@ -314,7 +422,6 @@ return [
             'os' => 'Operating system',
             'unknown' => 'Unread',
             'expires' => 'Goes stale :when',
-            'passes' => ':used of :total passes',
             'chance' => 'About :percent% to read something',
         ],
 
@@ -341,6 +448,19 @@ return [
             'locked' => 'You are in a run. It does not stop because you looked away.',
             'egress' => 'Egress',
             'egress_hint' => 'Leaving is always possible and never certain.',
+            /*
+            | THE OTHER HALF OF THE SILENT FAILURE. A core action that fails
+            | says one thing for three causes and must never name the operating
+            | system — so the odds are shown BEFORE the turn is spent, and a
+            | streak of nothing becomes a number the player was told rather
+            | than a bug they have to guess at.
+            |
+            | It says CORE and never OS. What is behind the number is the
+            | machine's own operating system and the runner's level in it; what
+            | the player is owed is the chance, not the language.
+            */
+            'core_chance' => 'Core access :chance%.',
+            'core_hint' => 'A failed attempt spends the turn.',
 
             /*
             | GOING IN. Everything decided here is decided for good: the
@@ -679,8 +799,7 @@ return [
             'open' => 'Show the read',
             'instrument' => 'Instrument',
             'target' => 'Target',
-            'pass_of' => 'Pass :pass of :total',
-            'remaining' => ':count left after this one',
+            'pass_of' => 'Pass :pass',
             'idle' => 'Nothing running. The file is what it is until it goes stale.',
             /*
             | NOT FOUND OUT, and it wears the same box as `not_yet` on purpose.
@@ -708,7 +827,6 @@ return [
             */
             'ice_bounty' => ':name · Bounty',
             'complete' => 'Everything this machine will tell you.',
-            'exhausted' => 'Scan attempt finished (incomplete).',
 
             /*
             | THE TWO WAYS OUT OF A READ, and neither of them is "close".
@@ -1274,6 +1392,27 @@ return [
         // character knows says the same things about a row that the tree did.
         'governed_by' => ':primary / :secondary',
         'level_meter' => 'Level :level of :max · :points SP',
+
+        /*
+        | PLANNING BACKWARDS, from a skill somebody wants to the entries that
+        | reach it. The queue holds five and a route to a deep skill is
+        | routinely longer, so "as far as it got" is the ORDINARY outcome and
+        | is written as one — a status rather than an error, naming what landed
+        | and what stopped it.
+        */
+        'plan' => 'Plan a route',
+        'plan_hint' => 'Name a level you want and the prerequisites, and the levels in between, are queued in order. The queue still holds :limit, so a long route arrives in instalments.',
+        'plan_pick' => 'Skill to reach',
+        'plan_level' => 'Level wanted',
+        'plan_add' => 'Plan it',
+        'plan_option' => 'Level :level',
+        'plan_nothing' => 'Nothing to add: :skill is already trained or queued to level :level.',
+        'plan_queued' => [
+            'zero' => 'Nothing to add.',
+            'one' => 'One level queued, on the way to :skill :level.',
+            'many' => ':count levels queued, on the way to :skill :level.',
+        ],
+        'plan_stopped' => ':count of :total queued. Stopped at :skill — :reason',
 
         'queued' => ':skill queued for level :level.',
         'dequeued' => ':skill level :level taken out of the queue.',
