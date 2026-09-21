@@ -307,7 +307,7 @@ today, and the resolver learns nothing new when a sixth arrives.
   `DerivedStatTest`). They are in the stat graph all the same.
 - **`stats.bases` is the third map `Sheet::baseFor()` walks**, for stats that are neither
   attribute-derived nor stored (`routing_hops`). Older stats of that family
-  (`icebreaker_damage`, `scan_passes`) still hand a base in at their call sites.
+  (`icebreaker_damage`, `scan_duration`) still hand a base in at their call sites.
 - **"Per level of something else" is FIVE MODIFIERS**, each conditional on one more level
   — a modifier's amount is a number, never an expression. `skill_at_least` is the
   predicate; `Sheet::contextFor()` puts levels into the context as `skill.<slug>`, for the
@@ -488,6 +488,22 @@ every save. The skill EDITOR is the only place all of them are visible.
   target_level) index. Locked for the duration.
 - **The picker offers exactly what the writer would accept**, doing the same sum in
   `SkillsController::queueable()`.
+- **A PLAN IS SEVERAL PRESSES OF THAT BUTTON, never a second door.**
+  `App\Skills\TrainingPlanner` works backwards from a skill and the level somebody
+  WANTS to the entries that reach it — prerequisites first, then one entry per level in
+  between — and `TrainingQueueController::plan()` feeds them to `enqueue()` one at a
+  time. The planner decides the ORDER and the COUNT and nothing else, so every rule about
+  what may go into a queue still lives in one place and `TrainingQueueValidator` judges
+  the result exactly as it judges a hand-built one.
+- **A prerequisite is per SKILL, not per level**, so everything a skill requires stands in
+  front of its first level and nothing interleaves. That is what makes the plan a flat
+  list rather than a schedule.
+- **Stopping part-way is the ORDINARY outcome, and it is a status rather than an error.**
+  Nine entries into a queue that holds five, or a route through a book that was never
+  spent: the loop stops at the first `QueueRefusal`, keeps what landed, and names both the
+  skill it stopped at and why. A plan is never refused as a whole.
+- **The plan picker offers only INJECTED skills**, like every other list on this screen —
+  one naming every skill in the game would be the catalogue this page deleted.
 - **An unmet prerequisite is a WARNING, never a refusal.** A queue may describe training
   that cannot happen yet — that is what lets Codebreaking sit behind Hacking.
   `TrainingQueueValidator` says what will stall; `QueueRefusal` has three cases and none is
@@ -737,10 +753,11 @@ and extraction are built. See below for what is not.
 
 - **Scanning is `App\Cyberspace\Probe`, and it reads the machine you are standing on.** No
   target in the request. One press starts a READ; a pass rolls once per thing not yet
-  known; the budget is the `scan_passes` stat. **A failed scan costs the expiry window, not
-  a retry.**
-- **A read goes round by itself** until the picture is whole or the budget is gone.
-  Stopping the scanner ends the read — that is the one thing the player chose.
+  known. **There is no pass budget** — a failed scan costs the expiry window and an
+  analyser's compute for the length of it, not a retry.
+- **A read goes round by itself** until the picture is whole or the FILE GOES STALE. The
+  window in `cyberspace.scan.lifetime_hours` is the whole budget, and it is what bounds
+  the catch-up walk. Stopping the scanner ends the read — the one thing the player chose.
 - **A pass takes MINUTES** — one against grade 1, sixteen against grade 9, scaled by
   `scan_duration`. **Spent when BEGUN, rolled when it MATURES.**
 - **Settling is lazy**, and **a READ CATCHES UP**: `Probe::settle()` walks the clock
@@ -767,7 +784,7 @@ and extraction are built. See below for what is not.
   use them (the map settles during `index()`).
 - **Reading a machine takes software, and it has to be RUNNING.** **What a better version
   buys is data, not code**: `programs.modifiers` against `check.systemprofiling` and
-  `scan_passes`. Analysers are BACKGROUND programs.
+  `scan_duration`. Analysers are BACKGROUND programs.
 - **A scan is a file that perishes.** `system_scans` is one row per character per address,
   no foreign key to `systems`. Columns, not a JSON bag; null means *not found out*. Live
   means unspent and unexpired (`scopeLive`); a stale file is replaced, never continued.
@@ -972,9 +989,28 @@ consequences and taking what a machine holds all roll.
   same transaction.
 - **It refuses four things and deliberately not a fifth.** Not in cyberspace, nothing there,
   the portal, and a deck that stopped meeting its requirements (checked a second time —
-  cheap, and it closes the window). **It does NOT refuse a machine whose OS you lack**:
-  `runs.os_locked` records the verdict, because a refusal naming the OS would hand over a
-  scan fact for one click.
+  cheap, and it closes the window). **It does NOT refuse a machine whose OS you lack** —
+  that run is entered and the core is rolled for from the inside, because a refusal naming
+  the OS would hand over a scan fact for one click.
+- **SPEAKING THE MACHINE'S OS IS A ROLL, NOT A WALL.** `Simulator::opensTheCore()` is
+  asked by Extract, Install and Burn — the three actions that already share
+  `touchTheCore()` — and by nothing else. The check value is the runner's **LEVEL** in
+  `systems.os_skill_id`, read off the `cyberspace.os.values` table, against a flat
+  difficulty: 4.7% / 18% / 48% / 77% / 89%, and the certainty floor at level 5. **A table
+  and not a multiplier** — the first level is worth nearly twice the fourth, which no
+  straight line draws. **No grade term** — a
+  machine's grade already decides WHICH operating system it runs, via the skill's rank, so
+  charging for it again would charge twice.
+- **A cut never asks.** An icebreaker against an ICE is one program against another; the
+  vocabulary only matters when the MACHINE is being told to do something.
+- **`runs.os_locked` is the state of the door, not a verdict about the runner.** True from
+  the start whenever the machine runs anything, cleared by the roll that lands, and **open
+  for the rest of that run** — so a two-turn extraction does not re-roll. Going back in
+  tomorrow means finding the way in again.
+- **A failed attempt spends the turn and says nothing.** That silence is why the CHANCE is
+  on the run screen (`Simulator::coreChance()`, null when there is nothing to get past):
+  a streak of nothing has to be a number the player was shown rather than a bug they have
+  to guess at. The line says *core* and never names the OS.
 - **`EnsureRunIsFinished` is the lock**, `RequireCharacter`'s shape: named allow-list,
   everything else redirected, 409 and a URL for JSON. **Admin routes are not exempt** — an
   admin could otherwise edit their way out of a run.
@@ -989,8 +1025,9 @@ consequences and taking what a machine holds all roll.
   a hit from it; somebody who leaves gets their attempt first.
 - **What is fighting lives on the RUN** — `runs.ice_id` and `runs.ice_integrity`. The
   catalogue says what an ICE is; these say what this fight has left of it.
-- **A failed cut says one thing for three causes**: no icebreaker, an unspeakable OS, or
-  nothing awake. `FightTest` asserts the words *operating system* appear nowhere in it.
+- **A failed cut says one thing for two causes**: no icebreaker, or nothing awake. The OS
+  is not one of them — see *speaking the machine's OS* above. `FightTest` still asserts the
+  words *operating system* appear nowhere in it.
 - **`stealth` is what an IDS is rolled against**, floored at 0. Its base is a **POOL** —
   `(intellect + focus + memory + perception) / 8.5`, one decimal.
 - **Arriving is the first thing anything gets to notice** — `Simulator::rouse()`. **Every
@@ -1247,6 +1284,41 @@ loadout says what it *gives*, granted once at creation.
   holds perks only; `Archetype::withLoadout()` is the uncached read for the two screens that
   need grants.
 
+### The inbox
+
+**A notification is something that happened WHILE NOBODY WAS LOOKING.** That is the whole
+test for whether a sentence belongs here: a flash message already covers everything the
+player just did, and the inbox covers what the world did on its own. Three TODO entries
+stood on this not existing.
+
+- **`App\Notifications\Notifier` is the only writer of `notifications`**, and the only
+  thing that marks one read. A sender says what happened and hands over a strings KEY;
+  the sentence is rendered once, at write time, and stored.
+- **The body is never recomposed.** A message outlives its own subject — a machine
+  relocates, a skill is renamed, an achievement is retired — so a stored sentence is the
+  only one that is still true tomorrow. Same call `system_contacts` makes about a sighting.
+- **It belongs to the ACCOUNT**, like achievements, and `Notifier::send()` takes a
+  `Character|User` because every sender holds a character and `characters.user_id` is a
+  column rather than a query.
+- **`App\Notifications\Category` says where a message came from and never how loud it is.**
+  Three cases, each with a sender that runs today: `Cyberspace`, `Training`, `Achievement`.
+  **A case without a sender would be a filter with nothing to filter.** There is no
+  severity and no colour on them — the kit's aliases mean good, careful and bad, and
+  painting Training green would say something untrue about it. The category also decides
+  where reading one takes you (`route()`), so no URL is ever stored.
+- **Four senders, and all four are things nobody pressed a button for**: a read finishing
+  (`Probe::resolve()`), a backdoor found by the nightly roll (`cyberspace:age-backdoors`),
+  a skill crossing a level (`App\Listeners\NotifyOfSkillLevel`), an achievement unlocking
+  (the tail of `Achievements::check()`, where `insertOrIgnore`'s row count is what makes
+  "said once" true without a column recording it).
+- **Reading is its own POST**, never something opening the screen does — a badge cleared
+  by arriving is a badge cleared for messages nobody read. All of them at once, because
+  the alternative is a button per row for a state nothing reads except a count.
+- **`.dock__count` is the rail's only number**, on the icon rather than beside the label
+  so it is legible while the rail is shut. Filled ember at rest, which rule 2 otherwise
+  keeps for hover: the same licence `.dot--live` has, spent on 16px that is only rendered
+  above zero, and it does not pulse.
+
 ## Admin tools
 
 **Three content editors — items, skills, archetypes — behind one gate.** Content lives in
@@ -1328,8 +1400,10 @@ controller drops the book in the same transaction. Everything else cascades.
 
 ## Events
 
-Nothing custom yet; wiring is standard Laravel (`Event::dispatch()`, listeners auto-discovered
-from `app/Listeners`). `QUEUE_CONNECTION=sync` runs listeners in-process — switch to
+Three events, and **one listener**: `App\Listeners\NotifyOfSkillLevel` turns
+`SkillLevelReached` into an inbox message. Wiring is standard Laravel
+(`Event::dispatch()`, auto-discovered from `app/Listeners`). `QUEUE_CONNECTION=sync` runs
+listeners in-process, which is right while the only one does a single insert — switch to
 `database` or `redis` before any listener does slow work. See TODO.md.
 
 ## Templates

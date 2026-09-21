@@ -163,6 +163,50 @@
 
                     <button type="submit" class="btn btn--sm btn--go cut">{{ Text::get('training.add') }}</button>
                 </form>
+
+                {{-- THE SAME QUEUE, FILLED IN FROM THE OTHER END. Above is one
+                     level of one skill; this is "I want Codebreaking III" and
+                     the nine entries that reach it, in an order the player
+                     would otherwise work out on paper.
+
+                     Not a second filled button: `btn--go` is the one signal
+                     button this screen is allowed, and two of them beside each
+                     other would say neither. --}}
+                @if ($plannable !== [])
+                    <div class="stack" style="--gap:var(--s-2)">
+                        <span class="micro">{{ Text::get('training.plan') }}</span>
+                        <span class="micro" style="color:var(--ink-3)">
+                            {{ Text::get('training.plan_hint', ['limit' => $limit]) }}
+                        </span>
+                    </div>
+
+                    <form method="POST" action="{{ route('training.plan') }}"
+                          class="row row--wrap" style="--gap:var(--s-3);align-items:flex-end">
+                        @csrf
+                        <label class="field" style="flex:1 1 min(240px,100%);min-width:0">
+                            <span class="micro">{{ Text::get('training.plan_pick') }}</span>
+                            <select name="skill" class="select">
+                                <x-grouped-options :groups="$plannable" />
+                            </select>
+                        </label>
+
+                        {{-- A level, because a route has a destination. The
+                             queue itself still never takes one: what this
+                             produces is presses of the button above. --}}
+                        <label class="field" style="flex:0 1 min(140px,100%);min-width:0">
+                            <span class="micro">{{ Text::get('training.plan_level') }}</span>
+                            <select name="level" class="select">
+                                @for ($level = 1; $level <= $max; $level++)
+                                    <option value="{{ $level }}" @selected($level === $max)>
+                                        {{ Text::get('training.plan_option', ['level' => $level]) }}
+                                    </option>
+                                @endfor
+                            </select>
+                        </label>
+
+                        <button type="submit" class="btn btn--sm cut">{{ Text::get('training.plan_add') }}</button>
+                    </form>
+                @endif
             @endif
         </div>
     </details>

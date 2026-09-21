@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Checks\CheckRoller;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\System;
 use App\Models\SystemScan;
+use App\Notifications\Category;
+use App\Notifications\Notifier;
 use App\Programs\ProgramKind;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
@@ -58,19 +62,22 @@ use Illuminate\Support\Facades\DB;
  * ONE PASS IS ONE ROLL PER THING NOT YET KNOWN. A pass that learns nothing is
  * the ordinary outcome against something above a character's reach, and a pass
  * that learns half of it is why a scan is a row that can be added to rather
- * than a yes or a no. The budget is the `scan_passes` stat, and **a pass is
- * spent when BEGUN**: walking away from a half-finished read costs it, which is
- * what stops the budget being dodged by starting five and finishing the one
- * that looks best.
+ * than a yes or a no. **A pass is spent when BEGUN**: walking away from a
+ * half-finished read costs it, which is what stops a read being dodged by
+ * starting five and finishing the one that looks best.
  *
- * ONE PRESS IS ONE READ, NOT ONE PASS. A pass that matures without finishing
- * the picture starts the next one itself, with the same instrument, until the
- * file is whole or the budget is gone. The player decided by pressing Scan
- * once; making them press it five times bought nothing except a screen that
- * had to be watched for something it could do on its own. Nothing about the
- * cost changes — passes are still spent when begun and still capped by
- * `scan_passes` — and unloading the scanner still ends it, because that is the
- * one thing a player chose.
+ * ONE PRESS IS ONE READ, AND A READ RUNS UNTIL IT HAS THE PICTURE. A pass that
+ * matures without finishing it starts the next one itself, with the same
+ * instrument, and goes round for as long as the file is worth anything. THERE
+ * IS NO PASS BUDGET: a counted allowance stopped the ordinary case — a machine
+ * a character can read, given the minutes — at a half-filled file and a refusal
+ * telling them to come back in two days, which is a wait rather than a decision.
+ *
+ * WHAT STOPS IT IS THE EXPIRY WINDOW. A scan is a file that perishes, so the
+ * hours in `cyberspace.scan.lifetime_hours` are the budget, and a machine above
+ * a character's reach spends all of them without ever completing — which is
+ * what keeps a free act from being ground until it succeeds. The other two ways
+ * a read stops are the instrument being unloaded and the machine going away.
  *
  * THE DIFFICULTY IS THE MACHINE'S, not the character's guess at it. A grade 9
  * is hard to read whether or not anybody knows it is a grade 9, which is the
@@ -88,8 +95,9 @@ use Illuminate\Support\Facades\DB;
  *  - `programs.modifiers` targeting `check.systemprofiling` — a steadier read,
  *    which reaches this class through the resolver without it knowing analysers
  *    exist at all;
- *  - the same, targeting `scan_passes` — another look at the machine before the
- *    picture is the picture you get.
+ *  - the same, targeting `scan_duration` — the same picture, sooner, which is
+ *    what a better instrument is worth now that the window rather than a pass
+ *    count is what a read spends.
  *
  * So a Mk II is an item row and a Mk III is another one. Nothing here changes
  * when the catalogue grows, which is the whole reason the bonus is a modifier
@@ -106,7 +114,6 @@ final class Probe
     public function __construct(
         private readonly CheckRoller $roller,
         private readonly Resolver $resolver,
-        private readonly int $basePasses,
         private readonly int $lifetimeHours,
         private readonly string $skillSlug,
     ) {}
@@ -116,7 +123,6 @@ final class Probe
         return new self(
             $roller ?? CheckRoller::fromConfig(),
             $resolver ?? app(Resolver::class),
-            (int) Config::get('cyberspace.scan.passes', 5),
             (int) Config::get('cyberspace.scan.lifetime_hours', 48),
             (string) Config::get('cyberspace.scan.skill', 'systemprofiling'),
         );
@@ -186,10 +192,6 @@ final class Probe
             return ProbeResult::refused(ProbeRefusal::AlreadyKnown);
         }
 
-        if ($scan->passes >= $this->passesFor($character)) {
-            return ProbeResult::refused(ProbeRefusal::Exhausted);
-        }
-
         return $this->begin($character, $system, $scan, $now);
     }
 
@@ -254,7 +256,14 @@ final class Probe
          * also already finished. An hour away is an hour of reading.
          *
          * It terminates because every turn either stops the read or begins a
-         * pass whose maturity is strictly later, and the budget is finite.
+         * pass whose maturity is strictly later, and a pass maturing past the
+         * file's expiry is not begun at all.
+         *
+         * ponytail: the walk is one pass at a time, so an hour of catch-up is
+         * an hour's worth of saves and lookups. Bounded by the expiry window
+         * over the pass duration — 180 at the top of the grid, 2880 at the
+         * bottom. Hoist the system and instrument lookups out of the loop and
+         * save once at the end if it ever bites.
          */
         while ($scan !== null && $scan->pass_ready_at !== null && ! $scan->pass_ready_at->isAfter($now)) {
             $result = $this->settleOnce($character, $scan, $now);
@@ -423,21 +432,6 @@ final class Probe
             ->where('character_id', $character->getKey())
             ->where('running_on_deck_id', $character->equipped_deck_id ?? 0)
             ->whereHas('item.program', static fn ($query) => $query->where('kind', ProgramKind::Analyser->value));
-    }
-
-    /**
-     * How many looks this character gets at a machine.
-     *
-     * Resolved rather than read off config, because a better analyser buying
-     * another pass is the clearest thing a version can be worth. The base is
-     * the config number and everything else is a modifier — see the
-     * `scan_passes` stat.
-     */
-    public function passesFor(Character $character): int
-    {
-        return $this->resolver
-            ->resolve('scan_passes', (float) $this->basePasses, $character->modifiers())
-            ->toInt();
     }
 
     /** What the odds are of reading this machine, for a screen that wants to say so. */
@@ -619,6 +613,33 @@ final class Probe
             };
         }
 
+        /*
+         * THE PASS THAT FINISHED THE PICTURE, and only that one.
+         *
+         * `resolve()` runs against an incomplete file, so an empty `$found`
+         * cannot have completed anything and a complete file after a pass that
+         * found something is a file this pass completed. No extra column and
+         * nothing to keep in step.
+         *
+         * A SYSTEM RE-READ AFTER ITS FILE EXPIRED COUNTS AGAIN, deliberately:
+         * a scan is a file that perishes, and pretending otherwise would mean
+         * storing every address ever read for ever. Reading the same system a
+         * thousand times costs a thousand systems' worth of passes and
+         * minutes, so there is nothing here worth farming.
+         */
+        if ($found !== [] && $scan->isComplete()) {
+            (new Achievements)->record($character, Metric::SystemsScanned);
+
+            // THE READ IS THE FIRST THING THE INBOX WAS BUILT FOR. A pass
+            // takes minutes and a read takes as many as it needs, so the
+            // player who pressed Scan is usually somewhere else by the time it
+            // answers — and the sweep exists precisely so something NOTICES,
+            // which is only worth anything if there is somewhere to say it.
+            (new Notifier)->send($character, Category::Cyberspace, 'scan_complete', [
+                'system' => $system->displayName(),
+            ]);
+        }
+
         $instrument = $scan->reading_process_id;
 
         // WHEN THIS PASS ACTUALLY FINISHED, kept before it is cleared. A
@@ -640,17 +661,17 @@ final class Probe
          *
          * One press is one READ rather than one pass: a scanner pointed at a
          * machine goes round again by itself, and stops when the file is whole,
-         * when the budget is gone, or when somebody unloads it. Pressing Scan
-         * five times was never a decision — the player had already decided by
-         * pressing it once, and what the repetition bought was a screen that
-         * had to be watched for something it could do itself.
+         * when the file is no longer worth filling, or when somebody unloads
+         * the instrument. Pressing Scan five times was never a decision.
          *
-         * The budget is unchanged and so is what a pass costs: passes are still
-         * spent when BEGUN and still capped by `scan_passes`. What is gone is
-         * the pressing.
+         * THE EXPIRY IS THE ONLY COUNTER. A pass beginning after the file has
+         * gone stale would be an instrument reading into a row `fileFor()` is
+         * about to delete, so the read stops at the window's edge — and that
+         * window is also what bounds the catch-up walk above. A machine nobody
+         * can read costs two days of an analyser rather than five passes.
          */
         $continuing = ! $scan->isComplete()
-            && $scan->passes < $this->passesFor($character)
+            && ($scan->expires_at === null || $maturedAt->isBefore($scan->expires_at))
             && $this->instrumentIsRunning($instrument);
 
         if ($continuing) {

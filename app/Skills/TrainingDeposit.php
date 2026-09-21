@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Skills;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Events\SkillLevelReached;
 use App\Events\TrainingEntryCompleted;
 use App\Models\Character;
@@ -215,6 +217,24 @@ final class TrainingDeposit
         for ($level = $before + 1; $level <= $progress->attained_level; $level++) {
             SkillLevelReached::dispatch($character, $skill, $level, $earnedAt);
             $result->levelsReached[] = [$skill->slug, $level];
+        }
+
+        /*
+         * A SKILL REACHING THE CEILING is the only thing that can change how
+         * many are AT the ceiling, so the recount is asked here and nowhere
+         * else — one COUNT on a level-up rather than a running total somebody
+         * has to keep in step with every writer of `attained_level`.
+         *
+         * `SkillInjector::grant()` can also seat a skill at the cap without
+         * passing through here. It is left alone on purpose: an archetype
+         * granting twenty capped skills is not a loadout anybody will author,
+         * and the first deposit after one recounts everything anyway.
+         */
+        if ($progress->attained_level > $before && $progress->attained_level >= $this->progression->maxLevel()) {
+            (new Achievements)->reach($character, Metric::SkillsAtMaxLevel, CharacterSkill::query()
+                ->where('character_id', $character->id)
+                ->where('attained_level', '>=', $this->progression->maxLevel())
+                ->count());
         }
 
         $entry->forceFill([

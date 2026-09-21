@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Events\SkillLevelReached;
 use App\Events\TrainingEntryCompleted;
 use App\Models\Character;
@@ -370,6 +372,9 @@ class TrainingDepositTest extends TestCase
             ->where('character_id', $this->character->id)
             ->where('skill_id', $this->hacking->id)
             ->value('attained_level'));
+
+        // Reaching the ceiling is what recounts how many stand at it.
+        $this->assertSame(1, (new Achievements)->progressFor($this->character, Metric::SkillsAtMaxLevel));
     }
 
     public function test_the_last_entry_reports_an_empty_queue(): void

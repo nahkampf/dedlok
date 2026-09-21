@@ -2,6 +2,82 @@
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-09-21
+
+Four things the player is finally told, and one wall that became a difficulty.
+
+### Added
+
+- **Achievements, and they belong to the account rather than the character.** A
+  character is a run of play; what a person did has to survive whatever becomes
+  of the one who did it. One running total per metric, one row per unlock, and
+  the catalogue is config — so a second achievement over an existing metric is a
+  row in a file and no PHP at all. The call sites report what happened and never
+  name an achievement, which is why the six places already counting something —
+  creds raided, ICE defeated, systems scanned, systems burned, the longest chain
+  held, siphon income — needed one line each. An open achievement is on the page
+  from the first day as something to go and do; a secret one is not there at all
+  until it is won.
+- **The notification centre: what happened while nobody was looking.** That is
+  the whole test for what belongs in it. A flash message already covers
+  everything you just did, and until now nothing carried the other half — a read
+  that finished an hour after you walked away, a backdoor the nightly roll took
+  off you, a level the clock crossed while the tab was shut, an achievement that
+  unlocked as a side effect of something else. All four send now. Three separate
+  TODO entries stood on this table not existing.
+- **Messages carry a category and deliberately not a priority.** A category says
+  where a message came from — Cyberspace, Training, Achievement — and never how
+  loud it is, because anything that needs acting on this instant belongs on the
+  screen where the acting happens. The rail carries the unread count on the icon
+  so it is legible while the rail is shut, and reading them is its own act: a
+  badge cleared by arriving is a badge cleared for messages nobody read.
+- **`NotifyOfSkillLevel` is the first listener in the game.** `SkillLevelReached`
+  has been dispatched since the training queue was built with nothing subscribed
+  to it.
+- **Plan a route to a skill you want.** Name the level you are after and the
+  prerequisites, and the levels in between, are worked out and queued in order —
+  nine presses of a button in the order a player would otherwise work out on
+  paper. The planner decides the order and the count and nothing else; every
+  entry still goes through the one writer, so the validator judges the result
+  exactly as it judges a hand-built queue. Stopping part-way is the ordinary
+  outcome and says so: the queue holds five, and a route can run through a book
+  you have never spent.
+
+### Changed
+
+- **A scan goes round until it has the picture or the file goes stale.** The
+  five-pass budget is gone. It was stopping the ordinary case — a machine you
+  could read, given the minutes — at a half-filled file and a refusal telling you
+  to come back in two days, which is a wait rather than a decision. The expiry
+  window is the budget now, so a failed scan still costs the window and an
+  analyser's compute rather than being ground until it succeeds, and the window
+  is what bounds the catch-up walk. The `scan_passes` stat retires with the rule
+  it existed for; what a better analyser buys is the same picture sooner.
+- **A machine's operating system is a roll rather than a wall.** It used to be a
+  verdict taken at the door: hold the skill at level 1, or every action against
+  that machine failed for ever. An unfamiliar system was impassable instead of
+  expensive, and levels 2 to 5 were worth nothing at all on a run. The level is
+  the check value now — 4.7% at no skill, 48% at level 2, the certainty floor at
+  level 5 — off a table rather than a multiplier, because the first level is
+  worth nearly twice the fourth. No grade term: a machine's grade already decides
+  which system it runs. A landed roll opens the machine for the rest of that run.
+- **Only the core asks.** Extracting, installing a backdoor and burning are the
+  three actions that reach for the machine itself. Cutting at an ICE no longer
+  asks at all — an icebreaker against an ICE is one program against another and
+  needs no vocabulary.
+- **The odds of reaching the core are on the run screen.** The failure line has
+  to stay silent, because naming the operating system would hand over a scan fact
+  for one click — so a streak of failures had nothing to explain it, and an
+  unexplained streak is indistinguishable from a bug. The screen quotes the
+  chance the roll will use and never the reason behind it. Same bargain the
+  egress panel already makes.
+- **`runs.os_locked` keeps its name and changes its meaning**, from a verdict
+  about the runner to the state of the door, so nothing is migrated but the
+  column's comment.
+
+### Migrations
+
+
 ## [0.12.2] — 2026-09-21
 
 The last run purpose, and the last route nothing had ever posted to.
@@ -736,7 +812,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/nahkampf/dedlok/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/nahkampf/dedlok/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/nahkampf/dedlok/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/nahkampf/dedlok/compare/v0.11.0...v0.12.0

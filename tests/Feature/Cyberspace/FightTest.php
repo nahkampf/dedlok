@@ -252,10 +252,15 @@ final class FightTest extends TestCase
     }
 
     /**
-     * THE OPERATING SYSTEM GATE, and it never announces itself: the attack
-     * simply fails, wearing the same line as any other wasted pass.
+     * A SHUT CORE DOES NOT STOP A CUT.
+     *
+     * An icebreaker fighting an ICE is one program against another, and needs
+     * no vocabulary — the machine's operating system only matters when the
+     * machine itself is being told to do something, which is the core's roll
+     * and not this one's. It used to gate both, which made an unfamiliar
+     * system a wall rather than a difficulty.
      */
-    public function test_an_unspeakable_operating_system_makes_every_cut_fail(): void
+    public function test_a_shut_core_does_not_stop_a_cut(): void
     {
         $this->machine(1);
         $this->runIcebreaker(1);
@@ -265,12 +270,10 @@ final class FightTest extends TestCase
 
         $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Attack);
 
-        $this->assertSame(30, $result->run->ice_integrity);
+        $this->assertLessThan(30, $result->run->ice_integrity, 'the cut lands anyway');
+        $this->assertTrue($result->run->os_locked, 'and the core is no more open for it');
 
-        $lines = array_column($result->log, 'text');
-        $this->assertNotEmpty(array_filter($lines, static fn (string $l): bool => str_contains($l, 'nothing to cut')));
-
-        foreach ($lines as $line) {
+        foreach (array_column($result->log, 'text') as $line) {
             $this->assertStringNotContainsStringIgnoringCase('operating system', $line);
         }
     }

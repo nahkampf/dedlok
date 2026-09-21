@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Cyberspace\Position;
 use App\Cyberspace\Sweep;
 use App\Cyberspace\SystemType;
@@ -113,6 +115,10 @@ final class SweepTest extends TestCase
         $this->assertSame(0, $again->contactsLost);
         $this->assertSame(0, $again->newlySwept);
         $this->assertSame(1, SystemContact::query()->count());
+
+        // Ground walked twice is explored once — the achievement counts what
+        // the bitmap grew by, not how often somebody stood there.
+        $this->assertSame(25, (new Achievements)->progressFor($character, Metric::GridExplored));
     }
 
     /**

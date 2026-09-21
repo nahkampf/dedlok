@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Characters\DownedCause;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
@@ -39,11 +41,16 @@ use Illuminate\Support\Facades\DB;
  *
  * ## What the operating system gate does here
  *
- * Nothing announces itself. An action that touches the SYSTEM simply fails when
- * `runs.os_locked` is set, and the log line is the same one a missed attack
- * gets — because a refusal naming the operating system would hand over a scan
- * fact for free, and the player is supposed to work it out from a streak. What
- * happens TO the player is unaffected: the ICE still swings.
+ * Nothing announces itself. A core action rolls against the machine's own
+ * operating system — `opensTheCore()` — and a failed roll produces the same
+ * line a missed attack gets, because a refusal naming the operating system
+ * would hand over a scan fact for free. What the player IS given is the
+ * chance, on the screen, before they spend the turn: a streak of nothing has
+ * to be a number they were shown rather than a bug they have to guess at.
+ * What happens TO the player is unaffected either way: the ICE still swings.
+ *
+ * Cutting at an ICE does not ask. One program against another needs no
+ * vocabulary; only telling the MACHINE to do something does.
  *
  * ## The die is injected
  *
@@ -208,6 +215,7 @@ final readonly class Simulator
             // like the last blow.
             if ($run->ice_id !== null && $run->ice_integrity <= 0) {
                 $log[] = $this->line('cyberspace.run.log.ice_broken', tone: 'ok');
+                (new Achievements)->record($character, Metric::IceDefeated);
                 $run->forceFill(['ice_id' => null, 'ice_integrity' => null]);
                 $run->save();
                 $this->appendLog($run, $log);
@@ -450,11 +458,12 @@ final readonly class Simulator
     /**
      * Cut at the ICE.
      *
-     * THREE WAYS THIS DOES NOTHING, and they are deliberately indistinguishable
-     * in the log: no icebreaker running, an operating system the runner cannot
-     * speak, or nothing awake to cut at. A player is meant to work out which
-     * from a pattern rather than be told, and the one that is a gate — the
-     * operating system — must never announce itself.
+     * TWO WAYS THIS DOES NOTHING, and they are deliberately indistinguishable
+     * in the log: no icebreaker running, or nothing awake to cut at. The
+     * operating system is NOT one of them — an icebreaker fighting an ICE is
+     * one program against another, and the vocabulary only matters when the
+     * machine itself is being told to do something. That is the core's roll,
+     * not this one's.
      *
      * @return array{text: string, tone: string}
      */
@@ -471,7 +480,7 @@ final readonly class Simulator
         $running = $character->runningProcesses()
             ->contains(fn ($process): bool => $process->item?->program?->kind === ProgramKind::Icebreaker);
 
-        if (! $running || $damage <= 0 || $run->os_locked || $run->ice_id === null) {
+        if (! $running || $damage <= 0 || $run->ice_id === null) {
             return $this->line('cyberspace.run.log.attack_fails');
         }
 
@@ -537,7 +546,7 @@ final readonly class Simulator
 
         $log = $this->touchTheCore($character, $run, $system);
 
-        if ($system === null || $run->os_locked || $run->purpose !== RunPurpose::Extraction) {
+        if ($system === null || ! $this->opensTheCore($character, $run, $system) || $run->purpose !== RunPurpose::Extraction) {
             $log[] = $this->line('cyberspace.run.log.extract_fails');
 
             return $log;
@@ -630,6 +639,116 @@ final readonly class Simulator
         $this->recordTake($run);
 
         return [$this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($result)], 'ok')];
+    }
+
+    /**
+     * Can the runner speak to the machine itself yet?
+     *
+     * ## It is a roll, and it is the last thing between a run and its purpose
+     *
+     * Cutting at an ICE is one program against another and needs no vocabulary.
+     * Telling a machine to hand something over, to hold a door open or to
+     * destroy itself is said in the operating system it runs — so every core
+     * action asks this first, and none of the other three ever does.
+     *
+     * The value is the runner's LEVEL in that skill and nothing else: level 5
+     * lands on the certainty floor, no skill at all is under a twentieth, and
+     * the curve between them is in `config/cyberspace.os`. A machine running
+     * nothing is open to anybody.
+     *
+     * ## Once it is open it stays open
+     *
+     * `runs.os_locked` is what holds the answer, so the second turn of a
+     * two-turn extraction does not re-roll a machine already being spoken to.
+     * That is also why the column is per-RUN: going back in tomorrow means
+     * finding the way in again.
+     *
+     * ## A failed attempt costs the turn and says nothing
+     *
+     * The caller's own failure line covers it — the same sentence a wrong
+     * purpose and an empty machine get — because a line naming the operating
+     * system would hand over a scan fact the player did not pay for. What they
+     * are given instead is the CHANCE, on the screen, before they spend the
+     * turn: see `coreChance()`. A streak of nothing is then a number they were
+     * shown rather than a bug they have to guess at.
+     */
+    private function opensTheCore(Character $character, Run $run, ?System $system): bool
+    {
+        if (! $run->os_locked) {
+            return true;
+        }
+
+        if (! $this->checks->roll($this->osValue($character, $system), $this->osDifficulty(), 'os')->passed) {
+            return false;
+        }
+
+        $run->forceFill(['os_locked' => false]);
+
+        return true;
+    }
+
+    /**
+     * What the player is told before they spend the turn.
+     *
+     * Null when there is nothing to crack — no machine, or one already being
+     * spoken to — which is the screen's cue to say nothing at all rather than
+     * to print a hundred per cent. Public and separate from the roll for the
+     * reason `egressChance()` is: a warning and the attempt must not be able
+     * to disagree.
+     */
+    public function coreChance(Character $character, Run $run, ?System $system = null): ?float
+    {
+        if (! $run->os_locked) {
+            return null;
+        }
+
+        $system ??= System::query()->where('address', $run->address)->first();
+
+        if ($system === null) {
+            return null;
+        }
+
+        return $this->checks->chance($this->osValue($character, $system), $this->osDifficulty(), 'os');
+    }
+
+    /**
+     * The runner's standing in the machine's own language.
+     *
+     * LEVEL, not the check stat a skill also carries. This is "have you worked
+     * with one of these", which is what a level says and what the design asked
+     * for in as many words — attributes have nothing to do with whether you
+     * have seen a filesystem before.
+     *
+     * The level indexes a TABLE rather than multiplying a constant, because
+     * the curve is hand-shaped: the first level is worth nearly twice the
+     * fourth. A level past the end of the table reads as the last entry, which
+     * is the only sane answer if the progression ever grows a sixth.
+     */
+    private function osValue(Character $character, ?System $system): float
+    {
+        $skill = $system?->operatingSystem()->first();
+
+        if ($skill === null) {
+            return 0.0;
+        }
+
+        $level = (int) $character->characterSkills()
+            ->where('skill_id', $skill->getKey())
+            ->value('attained_level');
+
+        /** @var array<int, float> $values */
+        $values = (array) Config::get('cyberspace.os.values', []);
+
+        if ($values === []) {
+            return 0.0;
+        }
+
+        return (float) ($values[$level] ?? ($level > array_key_last($values) ? end($values) : reset($values)));
+    }
+
+    private function osDifficulty(): float
+    {
+        return (float) Config::get('cyberspace.os.difficulty', 24);
     }
 
     /**
@@ -820,7 +939,7 @@ final readonly class Simulator
 
         $kind = $run->backdoorKind();
 
-        if ($system === null || $run->os_locked || $kind === null) {
+        if ($system === null || ! $this->opensTheCore($character, $run, $system) || $kind === null) {
             $log[] = $this->line('cyberspace.run.log.install_fails');
 
             return $log;
@@ -879,7 +998,7 @@ final readonly class Simulator
 
         $log = $this->touchTheCore($character, $run, $system);
 
-        if ($system === null || $run->os_locked || $run->purpose !== RunPurpose::Burn) {
+        if ($system === null || ! $this->opensTheCore($character, $run, $system) || $run->purpose !== RunPurpose::Burn) {
             $log[] = $this->line('cyberspace.run.log.burn_fails');
 
             return [$log, false];
@@ -896,6 +1015,8 @@ final readonly class Simulator
         // filed afterwards. The burner's own run is excluded and ends as
         // Completed in `take()`.
         (new Burner)->burn($system, $run->getKey());
+
+        (new Achievements)->record($character, Metric::SystemsBurned);
 
         return [$log, true];
     }

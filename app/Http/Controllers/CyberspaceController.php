@@ -118,7 +118,6 @@ class CyberspaceController extends Controller
             // being read and two instruments going, the button is dead for a
             // third and the screen should know it.
             'canScan' => $probe->freeAnalyser($character) !== null,
-            'scanPasses' => $probe->passesFor($character),
             /*
              * WHAT A RUN FROM HERE WOULD LOOK LIKE, before committing to one.
              *
@@ -320,7 +319,6 @@ class CyberspaceController extends Controller
             'progress' => round($scan->progress(), 3),
             'readyIn' => $scan->pass_ready_at?->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]),
             'pass' => $scan->passes,
-            'passes' => $probe->passesFor($character),
             'complete' => $scan->isComplete(),
             // The character, so the operating system can say whether they can
             // operate it — a fact that is also a gate.

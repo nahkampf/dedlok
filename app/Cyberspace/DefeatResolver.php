@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Character;
 use App\Models\DeckFitting;
 use App\Models\Ice;
@@ -124,6 +126,11 @@ final readonly class DefeatResolver
         $points = (int) round($max * $pct / 100);
 
         $this->injuries->inflict($character, InjuryLedger::NEURAL, (float) $points);
+
+        // The tag is what "flatlined" means, so this is the one place it can
+        // be counted — a run ending badly is not the same event, and most of
+        // them are not this.
+        (new Achievements)->record($character, Metric::Flatlines);
 
         // Current SI clamps to the new, lower ceiling on save — the character
         // model's own `saving()` hook does this automatically, the same rule

@@ -6,6 +6,8 @@ namespace App\Console\Commands;
 
 use App\Cyberspace\Backdoors;
 use App\Models\Backdoor;
+use App\Notifications\Category;
+use App\Notifications\Notifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -36,13 +38,13 @@ use Illuminate\Support\Facades\Log;
  * `market:seed`'s: no stored clock, a missed night is never made up,
  * `withoutOverlapping()`, and a `--dry-run` that decides nothing.
  *
- * ## What is missing, and it is named in TODO.md
+ * ## The player is told, which is the whole reason this is not silent
  *
- * The player is not TOLD. CYBERSPACE.md wants a notification and the
- * notification centre does not exist — and unlike a cancelled run, there is no
- * screen they are about to land on that could carry it. So a backdoor simply
- * stops being on the map, which is worse than the design asks for and is
- * logged here until there is somewhere to send it.
+ * There is no screen they are about to land on — unlike a cancelled run, this
+ * happens in the night — so the news goes to the inbox, which is what the
+ * inbox is for. The log line stays beside it: one is for the player and one is
+ * for whoever is reading the nightly job's output, and they are not the same
+ * audience.
  */
 class AgeBackdoors extends Command
 {
@@ -71,12 +73,22 @@ class AgeBackdoors extends Command
         }
 
         foreach ($lost as $entry) {
-            // Logged because there is nowhere else to send it yet. When the
-            // notification centre lands, this is the line that becomes one.
+            $backdoor = $entry['backdoor'];
+            $character = $backdoor->character;
+
+            // A machine that was already gone leaves nothing to name, and a
+            // backdoor with no character is a fixture rather than a state the
+            // game reaches. Neither is an error: the roll still happened.
+            if ($character !== null && $backdoor->system !== null) {
+                (new Notifier)->send($character, Category::Cyberspace, 'backdoor_found', [
+                    'system' => $backdoor->system->displayName(),
+                ]);
+            }
+
             Log::info('a backdoor was discovered', [
-                'character_id' => $entry['backdoor']->character_id,
-                'system_id' => $entry['backdoor']->system_id,
-                'kind' => $entry['backdoor']->kind->value,
+                'character_id' => $backdoor->character_id,
+                'system_id' => $backdoor->system_id,
+                'kind' => $backdoor->kind->value,
                 'machine_moved' => $entry['moved'],
             ]);
         }

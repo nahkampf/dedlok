@@ -19,11 +19,11 @@ use Illuminate\Support\Facades\DB;
  *
  * Being in cyberspace, standing on something intrudable, and a deck that still
  * runs. **It does not refuse a machine whose operating system the runner
- * lacks** — that run is ENTERED, and every action against the system fails
- * afterwards. A refusal naming the OS would hand over a scan fact for one
- * click, with no instrument running and no minutes spent, so the gate has to
- * cost a run or it is a lookup. The verdict is written to `os_locked` when the
- * run begins and never shown.
+ * lacks** — that run is ENTERED, and the core is rolled for from the inside.
+ * A refusal naming the OS would hand over a scan fact for one click, with no
+ * instrument running and no minutes spent, so the gate has to cost a run or it
+ * is a lookup. What `os_locked` records is only whether the machine speaks
+ * anything at all; how well the runner speaks it is `Simulator`'s roll.
  *
  * ## Readiness is checked twice, and this is the second time
  *
@@ -119,8 +119,9 @@ final readonly class RunStarter
                 // up holding a permanent property of a machine it never opened.
                 'backdoor_kind' => $purpose === RunPurpose::Backdoor ? $kind?->value : null,
                 'turn' => 0,
-                // Decided once, at the door, and never told to anybody.
-                'os_locked' => ! $this->canOperate($character, $system),
+                // Only whether there is anything to get past. Whether they
+                // can is rolled at the core, turn by turn.
+                'os_locked' => $this->speaksSomething($system),
                 'started_at' => CarbonImmutable::now(),
             ]);
 
@@ -203,17 +204,20 @@ final readonly class RunStarter
     }
 
     /**
-     * Does the runner have the operating system this machine speaks?
+     * Does this machine speak anything that has to be spoken?
      *
-     * The skill at level 1 is the whole of it — knowing an operating system at
-     * all is what lets you operate it, and training further buys other things.
-     * A machine running nothing is operable by anybody, which is the portal's
-     * case and cannot be reached from here anyway.
+     * The whole of the door's interest in the operating system: a machine
+     * running one starts the run LOCKED, and getting in is a roll at the core
+     * — see `Simulator::opensTheCore()`. A machine running nothing is open to
+     * anybody, which is the portal's case and cannot be reached from here
+     * anyway.
+     *
+     * It used to ask whether the runner had the skill at level 1, which made
+     * an unfamiliar operating system a wall rather than a difficulty, and made
+     * level 2 through 5 worth nothing at all on a run.
      */
-    private function canOperate(Character $character, System $system): bool
+    private function speaksSomething(System $system): bool
     {
-        $slug = $system->operatingSystem()->first()?->slug;
-
-        return $slug === null || $character->hasSkillAtLevel($slug, 1);
+        return $system->os_skill_id !== null;
     }
 }

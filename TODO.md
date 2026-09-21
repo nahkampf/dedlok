@@ -5,45 +5,18 @@ what will break if it is left alone.
 
 ---
 
-## Working backwards from a skill to the steps that reach it
-
-**Status:** the rest of the /skills screen is built — a character's own skills
-and levels, what is training, and the queue, with `TrainingQueueValidator`'s
-warnings on it. What is not built is the convenience on top: pick a skill and a
-level you WANT, and have the queue filled in for you, prerequisites and
-intervening levels included.
-
-**What it needs.** A walk of `App\Skills\PrerequisiteGraph` from the target
-back to what the character already holds, turned into the (skill, level) pairs
-that satisfy it, ordered so every entry's requirements are met by the ones in
-front of it — which is exactly the property `TrainingQueueValidator` already
-checks, so the output can be verified by the thing that judges a hand-built
-queue. `TrainingQueue::enqueue()` appends one level at a time and is the only
-writer; a plan is several calls to it rather than a new door.
-
-**Two things it has to decide, and neither is obvious.** The queue holds five
-entries and a plan can easily be longer — so either it fills what fits and
-says what is left, or the limit moves. And a skill has to be INJECTED before
-it can be queued at all, so a plan naming a skill whose book the character
-does not own has to say so rather than silently skipping it.
-
----
-
-## Scans
-A small fix: Scan's should not have just "5 passes". Keep the scan window open and just continue doing passes until all the unknowns have been revealed. 
-
-
 ## Switch `QUEUE_CONNECTION` to `database`
 
 **Status:** `sync`, and **that is currently the right setting** — do not switch
 yet. Kept here for the day it stops being right.
 
-**Nothing is queued, because nothing can be.** Three events exist
-(`SkillInjected`, `SkillLevelReached`, `TrainingEntryCompleted`), `app/Listeners`
-does not exist at all, there are no jobs, notifications or mailables, and
-**nothing in `app/` implements `ShouldQueue`**. Only a listener implementing it
-moves off the request path, so switching the driver today would change the
-behaviour of zero code paths — jobs would go to a table nothing writes to.
+**Almost nothing is queued, because almost nothing can be.** Three events exist
+(`SkillInjected`, `SkillLevelReached`, `TrainingEntryCompleted`) and `app/Listeners`
+now holds exactly one — `NotifyOfSkillLevel`, which writes one row and has no
+business on a queue. There are no jobs and no mailables, and **nothing in `app/`
+implements `ShouldQueue`**. Only a listener implementing it moves off the request
+path, so switching the driver today would change the behaviour of zero code paths
+— jobs would go to a table nothing writes to.
 
 It would also cost something. It requires a worker, and without one jobs queue
 silently forever, which looks exactly like nothing happening. The `database`
@@ -250,7 +223,8 @@ row looks like.
   should write into the same *neural damage* injury a freeze and an ICE flatline
   write into — one row that deepens, so a clinic heals one number.
 - **A way to be told.** Crossing a withdrawal threshold is exactly the kind of
-  thing the unbuilt notification queue is for.
+  thing the inbox is for — `App\Notifications\Notifier`, which needs a
+  `Category` case for it and a sender.
 
 ---
 
@@ -383,10 +357,10 @@ routing hop goes on the route, and four separate things can take one away.
 
 **What is left:**
 
-- **Nobody is TOLD their backdoor was found.** The ageing roll logs it, because
-  there is no notification centre and — unlike a cancelled run — no screen the
-  player is about to land on that could carry the message. CYBERSPACE.md asks
-  for a notification; this is the gap standing in for one.
+- ~~**Nobody is TOLD their backdoor was found.**~~ Done 2026-09-21: the ageing
+  roll sends an inbox message (`App\Notifications\Category::Cyberspace`) beside
+  the log line it already wrote. The log is for whoever reads the nightly job's
+  output; the message is for the player, who is asleep.
 - **Each hop hinders by its grade and nothing else**, which is decided rather
   than missing — see CYBERSPACE.md, *The routing chain*. What is NOT decided is
   what a SIPHON pays, which is the last thing backdoors owe.
@@ -410,10 +384,6 @@ routing hop goes on the route, and four separate things can take one away.
 - **Enable "block headless browsers" on the Cap site key** before launch. It is off on
   the local key because it breaks agent/QA browsers, and it is one of the two settings
   (with instrumentation, already on) that do most of the work against real bots.
-
-## Idea for a last stage of a run
-An idea would be to make the Operating System of a node be a challenge for any run on a node as well. Having level 5 in the same operating system as the node should make it more or less a 100% success (use the uncertainty floor - and make this a pass that takes 15 seconds each). Not having the skill at all would make it nigh on impossible to success (sub 5% chance), and scale up from there.
-
 
 ## The physical side of the game
 Some ideas to develop later: A city map showing locations. Most locations are hidden from the player and must be discovered by exploring. This map shouldn't be a grid like the cyberspace map, but rather just districts that you can travel to and "walk the streets" (an action) to discover new stuff (can also be helped by skills later). Locations can hold certain specific markets (selling certain items), places where you can get treatment (heal HP/max HP, heal neural damage/SI etc), get cyber implants or augmentations etc. There can also be "random events" and quest chains in the city. And, of course, fighting NPCs (and even PVP later once we figure that out). Maybe heists/robberies/missions (similar to runs on a node but more demanding).

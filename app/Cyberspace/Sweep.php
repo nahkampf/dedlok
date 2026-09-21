@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Character;
 use App\Models\System;
 use App\Models\SystemContact;
@@ -142,6 +144,12 @@ final class Sweep
                 }
             )->values()->all());
         });
+
+        // GROUND, not systems — the same number the terrain bitmap just grew
+        // by, so ground somebody walked twice is counted once and empty ground
+        // counts as much as occupied. Zero is the ordinary case and records
+        // nothing.
+        (new Achievements)->record($character, Metric::GridExplored, $newlySwept);
 
         return new SweepResult(
             from: $centre,

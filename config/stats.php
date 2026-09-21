@@ -112,20 +112,6 @@ return [
          * that share a unit.
          */
         /*
-        | How many passes a scan gets before the picture it has is the picture
-        | it gets.
-        |
-        | A STAT RATHER THAN A CONSTANT because scanning software comes in
-        | versions, and a better one buying another look at the machine is the
-        | clearest thing a version can be worth. The base is
-        | `cyberspace.scan.passes` and a program, a skill or an implant moves it
-        | like anything else.
-        |
-        | Floored at 1: a character holding something that took their passes to
-        | nothing would be holding a program that stops them scanning, which is
-        | not a trade anybody would make on purpose.
-        */
-        /*
         | How long one pass takes, IN SECONDS.
         |
         | Seconds rather than minutes because a modifier that takes 40% off
@@ -368,13 +354,6 @@ return [
             'rounding' => 'floor',
         ],
 
-        'scan_passes' => [
-            'tags' => ['scan'],
-            'min' => 1,
-            'max' => null,
-            'rounding' => 'floor',
-        ],
-
         'deck_storage' => [
             'tags' => ['deck', 'storage'],
             'min' => 0,
@@ -571,10 +550,9 @@ return [
     | asked through a Sheet — which is a loud failure rather than a wrong
     | answer, but still a landmine under the obvious way to ask.
     |
-    | The older members of the family are deliberately not listed:
-    | `icebreaker_damage` hands in zero at its call site and `scan_passes`
-    | hands in a config value at its own. Listing them here would change how
-    | they resolve for the sake of tidiness, which is not a reason.
+    | The older member of the family is deliberately not listed:
+    | `icebreaker_damage` hands in zero at its call site. Listing it here would
+    | change how it resolves for the sake of tidiness, which is not a reason.
     */
     'bases' => [
 

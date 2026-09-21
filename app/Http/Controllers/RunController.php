@@ -151,10 +151,12 @@ class RunController extends Controller
             return redirect()->route('cyberspace.index');
         }
 
+        $system = $run->system();
+
         return view('run.show', [
             'character' => $character,
             'run' => $run,
-            'system' => $run->system(),
+            'system' => $system,
             // Worked out here rather than in the template: it is the number the
             // egress decision is made on, and a player should not have to do
             // the division while something is hitting them.
@@ -166,6 +168,20 @@ class RunController extends Controller
             // bug, which is the whole reason the explanation is on the screen
             // rather than in a log line.
             'egress' => $simulator->egressReport($character, $run),
+            /*
+             * WHAT THE CORE WILL ANSWER TO, as a percentage, or null when
+             * there is nothing to get past.
+             *
+             * The failure line is silent by design — it cannot say which of
+             * three things stopped a core action without handing over a scan
+             * fact — so this is the other half of that bargain: the player is
+             * shown the odds BEFORE they spend the turn, and a streak of
+             * nothing is then a number they were told rather than a bug they
+             * have to guess at. It never names the operating system.
+             */
+            'core' => ($chance = $simulator->coreChance($character, $run, $system)) === null
+                ? null
+                : (int) round($chance * 100),
         ]);
     }
 

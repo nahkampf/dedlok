@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\Admin\ArchetypeController as AdminArchetypeController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\DeckController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
 use App\Http\Controllers\TrainingQueueController;
@@ -201,8 +203,36 @@ Route::middleware('auth')->group(function () {
      * App\Skills\TrainingQueue.
      */
     Route::get('/skills', SkillsController::class)->name('skills.index');
+
+    /*
+     * Achievements. THE ONE SCREEN THAT BELONGS TO THE ACCOUNT rather than to
+     * the character — it still sits behind RequireCharacter, because getting
+     * to any screen at all means having one, but nothing on it is a
+     * character's.
+     */
+    Route::get('/achievements', [AchievementController::class, 'index'])->name('achievements.index');
+
+    /*
+     * The inbox. Also the account's rather than the character's, and for the
+     * same reason the rail is: what happened while nobody was looking belongs
+     * to the person who was not looking.
+     *
+     * Reading is its own POST rather than something opening the screen does —
+     * a badge cleared by arriving is a badge cleared for messages nobody read.
+     */
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::post('/skills/queue', [TrainingQueueController::class, 'store'])->name('training.store');
     Route::delete('/skills/queue/{entry}', [TrainingQueueController::class, 'destroy'])->name('training.destroy');
+
+    /*
+     * The same queue, filled in from the other end: name a skill and the level
+     * you want it AT, and the prerequisites and the levels in between are
+     * worked out and queued in order. Every entry still goes through
+     * TrainingQueue::enqueue(), so the plan decides the order and nothing
+     * else — see App\Skills\TrainingPlanner.
+     */
+    Route::post('/skills/plan', [TrainingQueueController::class, 'plan'])->name('training.plan');
 
     // Bookmarks. The recall is a POST because it moves you; the rest edit a
     // note.

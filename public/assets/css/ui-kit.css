@@ -1492,6 +1492,27 @@ cap-widget {
    of the icon it belongs to while the rail is shut. */
 .dock:is(:focus-within, [data-expanded]) .dock__label { opacity: 1; }
 
+/* THE RAIL'S ONLY NUMBER, and the one thing in it that is not furniture.
+
+   On the ICON, not beside the label: a count that only appeared once the rail
+   was open would be a count nobody sees, and the icon column is --dock-w wide
+   in both states, so nothing moves when the rail opens.
+
+   FILLED EMBER, at rest, which rule 2 otherwise reserves for hover. The same
+   licence .dot--live has and for the same reason — this is the accent's actual
+   job — and it is spent carefully: 16px, only ever rendered when the count is
+   above zero, and it does not pulse. A badge that pulsed would be a second
+   animation competing with the one the map already owns. */
+.dock__count {
+  position: absolute;
+  top: 7px; left: calc(var(--dock-w) / 2 + 3px);
+  min-width: 16px; height: 16px; padding: 0 4px;
+  display: grid; place-items: center;
+  background: var(--ember); color: var(--ink-on-ember);
+  font: 650 var(--fs-xs)/1 var(--font-mono);
+  border-radius: 2px;
+}
+
 .dock__sep { height: var(--hair); margin: var(--s-2) 0; background: var(--line-0); flex: none; }
 
 /* ── Shell: the docked page frame ─────────────────────────────────────── */
@@ -1634,6 +1655,19 @@ button.chip-stat:focus-visible .chip-stat__glyph { color: var(--ink-0); }
 /* Sitting at the top of a card, it inherits the card's corners. .card cannot
    simply clip its overflow — .card--select's corner tick lives outside it. */
 .card > .entity-image { border-radius: var(--r-2) var(--r-2) 0 0; }
+
+/* A SQUARE picture, for a thing whose image is a badge rather than a scene —
+   an achievement, and nothing else yet. 128px is what the source is drawn at
+   and min() keeps it inside a narrow card rather than forcing one open; it
+   centres rather than filling, because a badge blown up to card width stops
+   reading as a badge. No bottom hairline: it is not the top of the card, it
+   is a thing sitting on it. */
+.entity-image--sq {
+  width: min(128px, 100%);
+  aspect-ratio: 1;
+  margin: var(--s-4) auto 0;
+  border-bottom: 0;
+}
 
 .entity-image--open { cursor: zoom-in; }
 .entity-image--open:hover > img,

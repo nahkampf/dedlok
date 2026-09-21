@@ -16,7 +16,15 @@
     // top layer, which is the same reason x-item-destroy is not in the card
     // either. Null means the dialog is rendered here, which is the ordinary case.
     'dialog' => null,
+    // A 128px SQUARE rather than a 16:9 slot, for a picture that is a badge —
+    // see .entity-image--sq. The intrinsic size goes with it, because the
+    // attributes are what stop the page jumping before the file has loaded.
+    'square' => false,
 ])
+
+@php($shape = $square ? ' entity-image--sq' : '')
+@php($w = $square ? 128 : 640)
+@php($h = $square ? 128 : 360)
 
 @php($card = Image::card($kind, $id))
 @php($full = Image::full($kind, $id))
@@ -33,17 +41,17 @@
              it now stops the default action — this sits inside a <label> on the
              creation screen, and viewing a picture must not also pick the
              archetype it belongs to. --}}
-        <button type="button" class="entity-image entity-image--open" data-open="#{{ $target }}"
+        <button type="button" class="entity-image entity-image--open{{ $shape }}" data-open="#{{ $target }}"
                 aria-label="{{ Text::get('images.enlarge', ['subject' => $alt]) }}">
-            <img src="{{ $card }}" alt="{{ $alt }}" loading="lazy" decoding="async" width="640" height="360">
+            <img src="{{ $card }}" alt="{{ $alt }}" loading="lazy" decoding="async" width="{{ $w }}" height="{{ $h }}">
         </button>
 
         @if ($dialog === null)
             <x-entity-image-dialog :for="$target" :src="$full" :alt="$alt" />
         @endif
     @else
-        <span class="entity-image">
-            <img src="{{ $card }}" alt="{{ $alt }}" loading="lazy" decoding="async" width="640" height="360">
+        <span class="entity-image{{ $shape }}">
+            <img src="{{ $card }}" alt="{{ $alt }}" loading="lazy" decoding="async" width="{{ $w }}" height="{{ $h }}">
         </span>
     @endif
 @endif
