@@ -4,8 +4,12 @@
 @section('title', Text::get('training.title'))
 
 @section('content')
-    <h1>{{ Text::get('training.title') }}</h1>
-    <p class="lede" style="margin-top:var(--s-3);max-width:70ch">{{ Text::get('training.lede') }}</p>
+    <h1>{{ Text::get('character.title') }}</h1>
+
+    <x-character-tabs current="skills" />
+
+    <div class="tabpanel">
+        <p class="lede" style="margin:0 0 var(--s-4);max-width:70ch">{{ Text::get('training.lede') }}</p>
 
     {{-- Three panels, because they answer three questions and only the middle
          one changes minute to minute. Everything on them is handed over by
@@ -269,4 +273,5 @@
             @endif
         </div>
     </details>
+    </div>
 @endsection

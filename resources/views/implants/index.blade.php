@@ -4,8 +4,12 @@
 @section('title', Text::get('implants.title'))
 
 @section('content')
-    <h1>{{ Text::get('implants.title') }}</h1>
-    <p class="micro" style="color:var(--ink-2)">{{ Text::get('implants.lede') }}</p>
+    <h1>{{ Text::get('character.title') }}</h1>
+
+    <x-character-tabs current="implants" />
+
+    <div class="tabpanel">
+        <p class="micro" style="margin:0 0 var(--s-4);max-width:70ch">{{ Text::get('implants.lede') }}</p>
 
     <div class="bodymap" style="margin-top:var(--s-5)">
         <x-body-map :body="$body" />
@@ -69,5 +73,6 @@
                 </section>
             @endforeach
         </div>
+    </div>
     </div>
 @endsection

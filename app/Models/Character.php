@@ -49,7 +49,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<string, mixed>|null $waiting_cause
  */
 #[Fillable([
-    'user_id', 'handle', 'archetype', 'creds', 'heat',
+    'user_id', 'handle', 'bio', 'archetype', 'creds', 'heat',
     'egress_trace_at', 'egress_si_at',
     'current_hitpoints', 'current_synaptic_integrity', 'waiting_until', 'waiting_cause', 'current_run_id',
     'intellect', 'memory', 'perception', 'reflex', 'focus',

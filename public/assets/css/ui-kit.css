@@ -1669,6 +1669,16 @@ button.chip-stat:focus-visible .chip-stat__glyph { color: var(--ink-0); }
   border-bottom: 0;
 }
 
+/* A PORTRAIT, for the one picture that is of a PERSON. 3:4 and 300px, because
+   a face in a 16:9 slot is a face with its head cropped — the card shape is
+   right for a thing and wrong for somebody. It keeps the hairline the square
+   badge drops, since this one sits in a panel rather than on top of a card. */
+.entity-image--portrait {
+  width: min(300px, 100%);
+  aspect-ratio: 3 / 4;
+  margin: 0;
+}
+
 .entity-image--open { cursor: zoom-in; }
 .entity-image--open:hover > img,
 .entity-image--open:focus-visible > img { filter: none; transform: scale(1.02); }
@@ -1715,8 +1725,16 @@ dialog.modal--image > img {
   transition: color var(--t-fast) var(--ease);
 }
 .tab:hover { color: var(--ink-1); }
-.tab[aria-selected="true"] { color: var(--ink-0); }
-.tab[aria-selected="true"]::after {
+/* A TAB MAY BE A LINK. Where the panels are separate pages — a character sheet
+   whose sections each have a URL — the strip is a nav of anchors and the
+   current one is aria-current, not aria-selected: role="tab" on something that
+   navigates promises a panel switch that is not going to happen. Same two
+   lines of paint either way. */
+.tab[aria-selected="true"],
+.tab[aria-current="page"] { color: var(--ink-0); }
+a.tab { text-decoration: none; }
+.tab[aria-selected="true"]::after,
+.tab[aria-current="page"]::after {
   content: ""; position: absolute; inset: auto 0 -1px; height: 2px; background: var(--ember);
 }
 .tabpanel { padding-top: var(--s-4); }

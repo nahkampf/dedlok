@@ -37,10 +37,10 @@ class ShellTest extends TestCase
         $response->assertSee('class="dock"', false);
         $response->assertSee('shell--docked', false);
 
-        // Three destinations, and only three. Run and Contracts were a link to
-        // the landing page and a link to nothing; the mark in the bar still
-        // goes home, so removing the first cost no way of getting there.
-        foreach (['stash', 'deck', 'skills'] as $section) {
+        // Skills, implants and achievements became tabs of the character
+        // sheet, so one rail item stands where four did — and the rail is
+        // where you GO rather than a list of every screen there is.
+        foreach (['character', 'stash', 'deck'] as $section) {
             $response->assertSee(Text::get("ui.nav.{$section}"));
         }
 

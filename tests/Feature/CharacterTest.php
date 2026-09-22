@@ -35,7 +35,11 @@ class CharacterTest extends TestCase
     {
         $columns = Schema::getColumnListing('characters');
         $expected = [
-            'id', 'user_id', 'handle', 'archetype',
+            'id', 'user_id', 'handle',
+            // The only column on this row the game never reads: the
+            // player's own words about themselves.
+            'bio',
+            'archetype',
             ...Character::ATTRIBUTES,
             ...array_keys(Character::RESOURCES),
             // Money, named on its own because it is neither: stored and

@@ -298,7 +298,7 @@ public/assets/
       </template>
     </div>
     <div class="demo">
-      <div class="demo__hd"><h3 class="h3">Entity image</h3><p>A picture of a thing, found by convention rather than stored on a row — <code class="inl">public/images/&lt;kind&gt;/&lt;id&gt;.jpg</code>, with <code class="inl">_default.jpg</code> beside it. Fixed 16:9 and cropped, because a grid of cards whose images are each a different height is a grid that never lines up. <code class="inl">.entity-image--sq</code> is the one exception: a 128px square that centres rather than filling, for a picture that is a badge rather than a scene. Click it for <code class="inl">&lt;id&gt;_full.jpg</code>, which has no shape of its own. A kind may be a path — <code class="inl">items/cpu</code>, one subdirectory per type of item — and only the default walks back up it. Where the card gets cloned into the inspector, the dialog is rendered beside the listing instead: a <code class="inl">&lt;dialog&gt;</code> cloned along with a card is a second copy of itself in the top layer.</p></div>
+      <div class="demo__hd"><h3 class="h3">Entity image</h3><p>A picture of a thing, found by convention rather than stored on a row — <code class="inl">public/images/&lt;kind&gt;/&lt;id&gt;.jpg</code>, with <code class="inl">_default.jpg</code> beside it. Fixed 16:9 and cropped, because a grid of cards whose images are each a different height is a grid that never lines up. <code class="inl">.entity-image--sq</code> is a 128px square that centres rather than filling, for a picture that is a badge rather than a scene, and <code class="inl">.entity-image--portrait</code> is a 3:4 at 300px for the one picture that is of a PERSON — a face in a 16:9 slot is a face with its head cropped. Click it for <code class="inl">&lt;id&gt;_full.jpg</code>, which has no shape of its own. A kind may be a path — <code class="inl">items/cpu</code>, one subdirectory per type of item — and only the default walks back up it. Where the card gets cloned into the inspector, the dialog is rendered beside the listing instead: a <code class="inl">&lt;dialog&gt;</code> cloned along with a card is a second copy of itself in the top layer.</p></div>
       <template class="demo-src">
         <div class="card" style="max-width:min(280px,100%)">
           <button type="button" class="entity-image entity-image--open" aria-label="View Deck Jockey full size">
@@ -310,6 +310,11 @@ public/assets/
           </div>
           <div class="card__bd">Lives in other people's systems.</div>
         </div>
+
+        <div class="rule"><span class="micro">Portrait, for somebody</span></div>
+        <span class="entity-image entity-image--portrait">
+          <img src="images/archetypes/_default.jpg" alt="Dedlok" width="300" height="400">
+        </span>
 
         <div class="rule"><span class="micro">Square, for a badge</span></div>
         <div class="card" style="max-width:min(180px,100%)">
@@ -605,7 +610,7 @@ public/assets/
       </template>
     </div>
     <div class="demo">
-      <div class="demo__hd"><h3 class="h3">Tabs, breadcrumb, pagination</h3></div>
+      <div class="demo__hd"><h3 class="h3">Tabs, breadcrumb, pagination</h3><p>A tab may be a BUTTON that switches a panel, as below, or an <code class="inl">&lt;a class="tab"&gt;</code> that navigates — a character sheet whose sections each have a URL. The link form marks the current one with <code class="inl">aria-current="page"</code> rather than <code class="inl">aria-selected</code>, because <code class="inl">role="tab"</code> on something that reloads the page promises a panel switch that is not going to happen. Same two lines of paint either way.</p></div>
       <template class="demo-src">
         <div class="stack" style="--gap:var(--s-5)">
           <ol class="breadcrumb">

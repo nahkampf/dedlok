@@ -51,6 +51,21 @@
                 <span class="dock__label">{{ Text::get('ui.nav.menu') }}</span>
             </button>
 
+            {{-- Who you are, rather than what you are carrying. Skills,
+                 implants and achievements are tabs of this window now, so one
+                 rail item stands where four did — and it is current for any of
+                 the four, because they are one screen to a player.
+
+                 A chess pawn: a figure, and from the same Miscellaneous
+                 Symbols block every other glyph in this rail comes from, with
+                 U+FE0E so it is drawn as text rather than handed to an emoji
+                 font. --}}
+            <a class="dock__item" href="{{ route('character.index') }}"
+               @if (request()->routeIs('character.index', 'skills.*', 'implants.*', 'achievements.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#9823;&#65038;</span>
+                <span class="dock__label">{{ Text::get('ui.nav.character') }}</span>
+            </a>
+
             <a class="dock__item" href="{{ route('inventory.index') }}"
                @if (request()->routeIs('inventory.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9636;</span>
@@ -65,11 +80,6 @@
                 <span class="dock__label">{{ Text::get('ui.nav.deck') }}</span>
             </a>
 
-            <a class="dock__item" href="{{ route('implants.index') }}"
-               @if (request()->routeIs('implants.*')) aria-current="page" @endif>
-                <span class="dock__icon" aria-hidden="true">&#9784;</span>
-                <span class="dock__label">{{ Text::get('ui.nav.implants') }}</span>
-            </a>
 
             {{-- Cyberspace. Always here, jacked in or not: the way IN is on the
                  map, so a rail item that appeared only once you were already
@@ -81,11 +91,6 @@
                 <span class="dock__label">{{ Text::get('ui.nav.cyberspace') }}</span>
             </a>
 
-            <a class="dock__item" href="{{ route('skills.index') }}"
-               @if (request()->routeIs('skills.*')) aria-current="page" @endif>
-                <span class="dock__icon" aria-hidden="true">&#10022;</span>
-                <span class="dock__label">{{ Text::get('ui.nav.skills') }}</span>
-            </a>
 
             {{-- Somewhere you go, so it is in the rail rather than on a card
                  somewhere. U+2696 is the scales, from the same Miscellaneous
@@ -98,15 +103,6 @@
                 <span class="dock__label">{{ Text::get('ui.nav.market') }}</span>
             </a>
 
-            {{-- The account's own page, and the only rail item that is not
-                 about the character. A star rather than the skills rail's
-                 four-pointed one: U+2605, the same Miscellaneous Symbols block
-                 as the implants wheel and the admin cog, both of which render. --}}
-            <a class="dock__item" href="{{ route('achievements.index') }}"
-               @if (request()->routeIs('achievements.*')) aria-current="page" @endif>
-                <span class="dock__icon" aria-hidden="true">&#9733;</span>
-                <span class="dock__label">{{ Text::get('ui.nav.achievements') }}</span>
-            </a>
 
             {{-- The inbox, beside the other page that belongs to the account
                  rather than the character. An envelope from the same

@@ -27,6 +27,7 @@ return [
     'ui' => [
         'nav' => [
             'run' => 'Run',
+            'character' => 'Character',
             'stash' => 'Stash',
             'deck' => 'Deck',
             // The grid. Never "jack in" here: the rail names a PLACE, and the
@@ -238,6 +239,17 @@ return [
     | what the restock pass left — never the catalogue with stock counts laid
     | over it, because an item nobody can buy today is not something a shop is
     | holding.
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
+    | The character sheet
+    |--------------------------------------------------------------------------
+    |
+    | Who you are rather than what you are carrying. Three screens that used to
+    | have rail items of their own are tabs of this window now — they kept
+    | their URLs, so the strip is a nav of links rather than a panel switch.
     |
     */
 
@@ -1234,6 +1246,29 @@ return [
     ],
 
     'character' => [
+
+        /*
+        | THE SHEET ITSELF. Skills, implants and achievements each had a rail
+        | item once and are tabs of this window now — they kept their URLs, so
+        | the strip is a nav of links rather than a panel switch.
+        */
+        'title' => 'Character',
+        'tabs' => [
+            'label' => 'Character sections',
+            'character' => 'Character',
+            'skills' => 'Skills',
+            'implants' => 'Implants',
+            'achievements' => 'Achievements',
+        ],
+
+        'attributes_heading' => 'Attributes',
+        'attribute_value' => ':attribute :value of :max',
+        // The one thing on the sheet the game never reads.
+        'bio' => 'Bio',
+        'bio_hint' => 'Yours, and nothing in the game reads it. Clear the box to take it down.',
+        'bio_placeholder' => 'Whatever you want anyone who looks you up to find.',
+        'bio_save' => 'Save bio',
+        'bio_saved' => 'Bio saved.',
 
         /*
         | THE FLOOR UNDER EVERY DEFEAT.

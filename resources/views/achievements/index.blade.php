@@ -3,8 +3,12 @@
 @section('title', Text::get('achievements.title'))
 
 @section('content')
-    <h1>{{ Text::get('achievements.title') }}</h1>
-    <p class="lede" style="margin-top:var(--s-3);max-width:70ch">{{ Text::get('achievements.lede') }}</p>
+    <h1>{{ Text::get('character.title') }}</h1>
+
+    <x-character-tabs current="achievements" />
+
+    <div class="tabpanel">
+        <p class="lede" style="margin:0 0 var(--s-4);max-width:70ch">{{ Text::get('achievements.lede') }}</p>
 
     {{-- EARNED FIRST, because it is the half that is about this player. The
          controller has already sorted both lists alphabetically and filtered
@@ -37,5 +41,6 @@
                 <x-achievement-grid :rows="$remaining" />
             @endif
         </div>
+    </div>
     </div>
 @endsection

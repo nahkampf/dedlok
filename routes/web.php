@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
 use App\Http\Controllers\AvailableHandlesController;
+use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
@@ -209,6 +210,17 @@ Route::middleware('auth')->group(function () {
      * entry the queue could accept, so there is nothing to choose. See
      * App\Skills\TrainingQueue.
      */
+    /*
+     * The character sheet, and the window three other screens now live in.
+     *
+     * Skills, implants and achievements kept their URLs and their controllers
+     * and became TABS of this one — which is a nav of links rather than a
+     * client-side switch, so opening the sheet draws one panel instead of
+     * running four screens' worth of queries to show one of them.
+     */
+    Route::get('/character', [CharacterController::class, 'index'])->name('character.index');
+    Route::post('/character/bio', [CharacterController::class, 'bio'])->name('character.bio');
+
     Route::get('/skills', SkillsController::class)->name('skills.index');
 
     /*

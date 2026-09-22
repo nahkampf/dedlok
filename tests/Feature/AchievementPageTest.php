@@ -55,12 +55,22 @@ final class AchievementPageTest extends TestCase
         return Text::get('achievements.name', ['id' => $id]);
     }
 
-    public function test_the_rail_leads_here(): void
+    /**
+     * THE RAIL LEADS TO THE CHARACTER SHEET, and the sheet leads here.
+     *
+     * This page had a rail item of its own until the sheet gained tabs. One
+     * item stands where four did, and it is current for any of them, because
+     * to a player they are one screen.
+     */
+    public function test_the_rail_leads_to_the_sheet_and_the_sheet_leads_here(): void
     {
-        $response = $this->actingAs($this->character->user)->get(route('inventory.index'));
+        $rail = $this->actingAs($this->character->user)->get(route('inventory.index'));
 
-        $response->assertSee(route('achievements.index'), false);
-        $response->assertSee(Text::get('ui.nav.achievements'));
+        $rail->assertSee(route('character.index'), false);
+        $rail->assertSee(Text::get('ui.nav.character'));
+        $rail->assertDontSee(Text::get('ui.nav.achievements'));
+
+        $this->visit()->assertSee(route('achievements.index'), false);
     }
 
     /** Both headers are there whether or not either list has anything in it. */

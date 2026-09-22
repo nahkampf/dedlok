@@ -153,7 +153,9 @@ first, as does any markup built by concatenation.
 
 `layouts/app.blade.php` is a `.shell`; the split between its halves is the point.
 
-- **The rail (`.dock`) holds everywhere you can go**, plus sign-out. **A rail item never
+- **The rail (`.dock`) holds everywhere you can go**, plus sign-out. **One item may stand
+  for several screens** — Character is current for the sheet, skills, implants and
+  achievements alike, because to a player they are one place. **A rail item never
   points at a row id** — *Deck* links to `deck.index`, which resolves which deck you mean
   and redirects, or sends you to the stash. Icons at rest; opens to icon + label on hover
   where there is a pointer (`@media (hover: hover)`), on `data-dock-toggle` everywhere
@@ -712,6 +714,32 @@ what a bare `items` row cannot.
 - **Storage is stored and not enforced** — `DeckRequirement` has no storage case.
 - Screens: topbar count + modal, deck screen's Running and Storage tabs (storage split
   into two grids), `inventory.run` in both directions.
+
+### The character sheet
+
+**One rail item stands where four did.** Skills, Implants and Achievements each had their
+own, and are tabs of `/character` now — because to a player they are one screen: who you
+are, rather than what you are carrying.
+
+- **THE TABS ARE FOUR ROUTES, NOT FOUR PANELS.** Each kept its URL, its controller and its
+  tests; `<x-character-tabs>` is a nav of LINKS and the current one is `aria-current`,
+  never `role="tab"` with `aria-selected` — promising a tablist and then reloading the page
+  is a lie a screen reader acts on. A client-side window would run four screens' worth of
+  queries to draw one panel, on the screen a player opens most.
+- **`.tab[aria-current="page"]` is the kit's link form**, sharing the button form's two
+  lines of paint.
+- **The attributes are RESOLVED**, never the stored column — an implant or a drug moves
+  one, and a sheet showing the stored number would disagree with every check made against
+  it. Drawn as `.meter`s against `Character::ATTRIBUTE_MAX`.
+- **The portrait is 3:4 and 300px** — `.entity-image--portrait`, the one picture in the
+  game that is of a PERSON, because a face in the 16:9 card slot is a face with its head
+  cropped. Found by convention like every other picture:
+  `public/images/characters/<id>.jpg`, `_default.jpg` behind it.
+- **`characters.bio` is the only column on the row the game never reads.** Everything else
+  is a number something resolves, a pointer something follows or a clock something settles.
+  MEDIUMTEXT because the form allows 65,000 CHARACTERS and TEXT holds 65,535 BYTES — a bio
+  in Japanese is three bytes a character. Clearing the box writes NULL: empty and absent
+  are one state, and a row of spaces is not a bio.
 
 ### Drugs
 

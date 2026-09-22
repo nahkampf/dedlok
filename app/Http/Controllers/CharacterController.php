@@ -1,0 +1,105 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers;
+
+use App\Models\Archetype;
+use App\Models\Character;
+use App\Support\Text;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+/**
+ * The character sheet: who you are, rather than what you are carrying.
+ *
+ * ## Four screens became four tabs, and they are still four routes
+ *
+ * Skills, Implants and Achievements each had a rail item of their own and are
+ * panels of this window now. They kept their URLs, their controllers and their
+ * tests: the tab strip is a nav of LINKS, so each tab is a request that draws
+ * one panel rather than one request that draws four. A window that rendered
+ * every panel would run four screens' worth of queries to show one of them,
+ * and this is the screen a player opens most.
+ *
+ * ## The bio is the only thing here the game never reads
+ *
+ * Everything else on this screen is derived — the attributes are resolved, the
+ * archetype is a row, the picture is found by convention. The bio is the
+ * player's own text and nothing mechanical will ever look at it.
+ */
+class CharacterController extends Controller
+{
+    public function index(Request $request): View
+    {
+        $character = $this->character($request);
+
+        return view('character.index', [
+            'character' => $character,
+            // RESOLVED, never the column: an implant or a drug moves an
+            // attribute, and a sheet that showed the stored number would
+            // disagree with every check made against it.
+            'attributes' => $this->attributes($character),
+            'max' => Character::ATTRIBUTE_MAX,
+            // The roster is cached and read on nearly every request anyway,
+            // so naming the role costs nothing. `characters.archetype` is an
+            // id rather than a relation — see Character::modifiers().
+            'archetype' => Archetype::roster()->get($character->archetype),
+        ]);
+    }
+
+    /**
+     * Save what they wrote about themselves.
+     *
+     * No confirmation and no history: it is a text field somebody owns, and
+     * the only thing that can go wrong is writing over their own words, which
+     * is theirs to do.
+     */
+    public function bio(Request $request): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        $data = $request->validate([
+            'bio' => ['nullable', 'string', 'max:65000'],
+        ]);
+
+        // Empty and absent are the same thing here: clearing the box is how
+        // somebody takes their bio down, and a row of spaces is not a bio.
+        $bio = trim((string) ($data['bio'] ?? ''));
+
+        $character->forceFill(['bio' => $bio === '' ? null : $bio])->save();
+
+        return back()->with('status', Text::get('character.bio_saved'));
+    }
+
+    /**
+     * Every attribute, resolved, with the ratio a bar is drawn from.
+     *
+     * @return list<array{key: string, label: string, value: int, ratio: float}>
+     */
+    private function attributes(Character $character): array
+    {
+        $sheet = $character->sheet();
+        $rows = [];
+
+        foreach (Character::ATTRIBUTES as $attribute) {
+            $value = (int) round($sheet->value($attribute));
+
+            $rows[] = [
+                'key' => $attribute,
+                'label' => Text::get("character.names.{$attribute}"),
+                'value' => $value,
+                'ratio' => max(0.0, min(1.0, $value / Character::ATTRIBUTE_MAX)),
+            ];
+        }
+
+        return $rows;
+    }
+
+    private function character(Request $request): Character
+    {
+        // RequireCharacter guarantees one on every route in this group.
+        return $request->user()->character()->firstOrFail();
+    }
+}

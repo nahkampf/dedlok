@@ -20,11 +20,15 @@
     // see .entity-image--sq. The intrinsic size goes with it, because the
     // attributes are what stop the page jumping before the file has loaded.
     'square' => false,
+    // A 3:4 PORTRAIT at 300px, for a picture that is of a PERSON rather than
+    // of a thing — see .entity-image--portrait. A face in a 16:9 slot is a
+    // face with its head cropped.
+    'portrait' => false,
 ])
 
-@php($shape = $square ? ' entity-image--sq' : '')
-@php($w = $square ? 128 : 640)
-@php($h = $square ? 128 : 360)
+@php($shape = $square ? ' entity-image--sq' : ($portrait ? ' entity-image--portrait' : ''))
+@php($w = $square ? 128 : ($portrait ? 300 : 640))
+@php($h = $square ? 128 : ($portrait ? 400 : 360))
 
 @php($card = Image::card($kind, $id))
 @php($full = Image::full($kind, $id))
