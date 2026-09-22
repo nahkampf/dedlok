@@ -14,6 +14,7 @@ use App\Http\Controllers\DeckController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\MarketController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
@@ -209,6 +210,17 @@ Route::middleware('auth')->group(function () {
      * App\Skills\TrainingQueue.
      */
     Route::get('/skills', SkillsController::class)->name('skills.index');
+
+    /*
+     * The market, and the only place money leaves a character.
+     *
+     * The shelf is what the restock pass left, never the catalogue with stock
+     * counts laid over it — an item nobody can buy today is not something a
+     * shop is holding. It is also how a player finds out a skill exists, which
+     * is why a skill off the market is content found rather than bought.
+     */
+    Route::get('/market', [MarketController::class, 'index'])->name('market.index');
+    Route::post('/market/{item}', [MarketController::class, 'buy'])->name('market.buy');
 
     /*
      * Achievements. THE ONE SCREEN THAT BELONGS TO THE ACCOUNT rather than to

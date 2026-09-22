@@ -34,6 +34,7 @@ return [
             'implants' => 'Implants',
             'cyberspace' => 'Cyberspace',
             'skills' => 'Skills',
+            'market' => 'Market',
             'achievements' => 'Achievements',
             // The inbox. "Messages" rather than "Notifications" because the
             // rail is 220px open and one word has to fit beside a glyph.
@@ -227,6 +228,46 @@ return [
     | without the game being pleased with itself about it.
     |
     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | The market
+    |--------------------------------------------------------------------------
+    |
+    | The first thing in the game that spends money. What is on the shelf is
+    | what the restock pass left — never the catalogue with stock counts laid
+    | over it, because an item nobody can buy today is not something a shop is
+    | holding.
+    |
+    */
+
+    'market' => [
+        'title' => 'Market',
+        'lede' => 'What somebody is holding today. Stock arrives on its own schedule and what sells gets restocked deeper, so an empty shelf is a shelf rather than an error.',
+
+        'shelf' => 'On the shelf',
+        'empty' => 'Nothing for sale right now. Come back — the shelves refill on their own.',
+
+        'price' => ':price ¤',
+        'quantity' => 'How many',
+        'buy' => 'Buy',
+        'too_dear' => 'Not enough',
+        'on_shelf' => ['zero' => 'none left', 'one' => ':count left', 'many' => ':count left'],
+
+        'bought' => ':quantity × :item, for :paid ¤.',
+
+        /*
+        | Why nothing was bought. "Not enough left" is deliberately separate
+        | from "not stocked": somebody who asked for five and could have had
+        | two did not decide that, and quietly selling them two would be the
+        | shop making the decision.
+        */
+        'refused' => [
+            'not_stocked' => 'Nobody is holding that today.',
+            'not_enough_left' => 'There are not that many left.',
+            'cannot_afford' => 'You cannot afford that.',
+        ],
+    ],
 
     'drugs' => [
 

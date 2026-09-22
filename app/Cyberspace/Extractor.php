@@ -6,8 +6,8 @@ namespace App\Cyberspace;
 
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
+use App\Inventory\ItemGranter;
 use App\Models\Character;
-use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\SystemContent;
 use Illuminate\Support\Facades\DB;
@@ -195,31 +195,10 @@ final readonly class Extractor
             return 0;
         }
 
-        if (! $item->stackable) {
-            for ($copy = 0; $copy < $quantity; $copy++) {
-                $character->inventory()->create(['item_id' => $item->id, 'parent_id' => null, 'quantity' => 1]);
-            }
-
-            return $quantity;
-        }
-
-        // Merge rather than insert — the same rule LoadoutGranter follows, and
-        // for the same reason: two piles of the same stackable thing in one
-        // place are one pile, however each pile arrived.
-        $existing = InventoryItem::query()
-            ->where('character_id', $character->id)
-            ->where('item_id', $item->id)
-            ->whereNull('parent_id')
-            ->first();
-
-        if ($existing !== null) {
-            $existing->quantity += $quantity;
-            $existing->save();
-        } else {
-            $character->inventory()->create(['item_id' => $item->id, 'parent_id' => null, 'quantity' => $quantity]);
-        }
-
-        return $quantity;
+        // The merge-or-create is App\Inventory\ItemGranter, shared with the
+        // archetype loadout and the market: two piles of the same stackable
+        // thing in one place are one pile, however each pile arrived.
+        return ItemGranter::grant($character, $item, $quantity);
     }
 
     /**

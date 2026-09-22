@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Archetypes;
 
+use App\Inventory\ItemGranter;
 use App\Inventory\SkillInjector;
 use App\Models\Archetype;
 use App\Models\ArchetypeItem;
 use App\Models\ArchetypeSkill;
 use App\Models\Character;
-use App\Models\InventoryItem;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -94,52 +94,16 @@ final class LoadoutGranter
      * mean granting the container as well and ordering the two, and an
      * archetype's loadout is a set, not a sequence.
      *
-     * An unstackable item becomes one row per copy. Two cyberdecks are two
-     * objects — that is what unstackable means, and `stack_key` is null for
-     * them precisely so the rows stay apart.
+     * The merge-or-create itself is `App\Inventory\ItemGranter`, shared with
+     * the raid that takes something off a machine and the market that sells
+     * one — three doors, one rule about what having something means.
      */
     private function grantItem(Character $character, ArchetypeItem $grant): void
     {
-        $item = $grant->item;
-
-        if ($item === null || $grant->quantity < 1) {
+        if ($grant->item === null) {
             return;
         }
 
-        if (! $item->stackable) {
-            for ($copy = 0; $copy < $grant->quantity; $copy++) {
-                $character->inventory()->create([
-                    'item_id' => $item->id,
-                    'parent_id' => null,
-                    'quantity' => 1,
-                ]);
-            }
-
-            return;
-        }
-
-        // Merge rather than insert: the unique stack_key says two piles of the
-        // same stackable item in the same place are one pile. Nothing can be
-        // in the way of a character created a moment ago, but the index is the
-        // rule and code that only works because the table is empty is code
-        // waiting for the day it is not.
-        $existing = InventoryItem::query()
-            ->where('character_id', $character->id)
-            ->where('item_id', $item->id)
-            ->whereNull('parent_id')
-            ->first();
-
-        if ($existing !== null) {
-            $existing->quantity += $grant->quantity;
-            $existing->save();
-
-            return;
-        }
-
-        $character->inventory()->create([
-            'item_id' => $item->id,
-            'parent_id' => null,
-            'quantity' => $grant->quantity,
-        ]);
+        ItemGranter::grant($character, $grant->item, $grant->quantity);
     }
 }

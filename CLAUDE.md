@@ -519,8 +519,8 @@ every save. The skill EDITOR is the only place all of them are visible.
 
 ### The market's supply side
 
-**The market restocks itself; nothing sells anything yet.** Money exists
-(`characters.creds`) and nothing spends it.
+**The market restocks itself, and now it sells.** See *Buying* below for the demand
+side; this is where the stock comes from.
 
 - **`rarity` is not `tier`.** Tier is what an item IS (Tier One / Tier Two), colours the
   card through `.t1`/`.t2`, carries no mechanics. Rarity (`common`, `uncommon`, `rare`,
@@ -541,6 +541,36 @@ every save. The skill EDITOR is the only place all of them are visible.
   training heartbeat: no stored clock, a missed pass is never made up, a pass run twice is
   two deliveries — hence `withoutOverlapping()`. `--dry-run` prints and writes nothing.
 - **The roll is injected** (`MarketSeeder::fromConfig(fn () => …)`).
+
+### Buying
+
+**`App\Market\Purchaser` is the only thing that spends `characters.creds`**, the only
+writer of `market_purchases`, and the only thing besides `MarketSeeder` that touches a
+shelf. Money existed for four releases with nothing to spend it on.
+
+- **The price is the ITEM's, never the shelf's.** `market_stock` carries no price on
+  purpose, so a shelf row cannot drift out of step with the catalogue it sells from.
+  `items.base_cost` is what a thing costs; **`market_purchases.unit_price` records what it
+  cost that day**, which is the only copy that has to survive a retuning.
+- **One transaction, and the shelf is locked inside it.** Two people reaching for the last
+  one is the case it exists for: the stock row is locked, the count re-read inside the
+  lock, and the money and the goods move together or not at all.
+- **Asking for more than is left is REFUSED, not quietly reduced.** Somebody who asked for
+  five and could have had two did not decide that.
+- **Withdrawn from sale is the same answer as never stocked.** `on_market` is the seeder's
+  question, and an item that stops being on the market stops being buyable the moment it
+  does — checked before the shelf is even read.
+- **A purchase row is demand, not a receipt**, so writing one is half the reason the class
+  exists: `MarketSeeder` sums a window of them per item and stocks more of what sells.
+- **`App\Inventory\ItemGranter` is how a catalogue item becomes a possession**, shared by
+  the archetype loadout, a raid's haul and the market. Stackable merges into one pile,
+  unstackable becomes one row per copy, and everything lands LOOSE — which container it
+  goes in is `ItemPlacer`'s question and the player's choice. It was written out twice
+  before the market would have made it three times.
+- **The shelf screen lists `market_stock` rows with something left**, never the catalogue
+  with counts laid over it: an item nobody can buy today is not something a shop is
+  holding. Buy is an ordinary button and never `btn--go` — the green one is rationed to
+  one per screen and a shelf of twenty would say nothing.
 
 ### Cyberdecks and modules
 

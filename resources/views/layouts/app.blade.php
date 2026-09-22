@@ -87,6 +87,17 @@
                 <span class="dock__label">{{ Text::get('ui.nav.skills') }}</span>
             </a>
 
+            {{-- Somewhere you go, so it is in the rail rather than on a card
+                 somewhere. U+2696 is the scales, from the same Miscellaneous
+                 Symbols block as the star, the wheel and the cog above, with
+                 U+FE0E so it is drawn as text rather than handed to an emoji
+                 font. --}}
+            <a class="dock__item" href="{{ route('market.index') }}"
+               @if (request()->routeIs('market.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#9878;&#65038;</span>
+                <span class="dock__label">{{ Text::get('ui.nav.market') }}</span>
+            </a>
+
             {{-- The account's own page, and the only rail item that is not
                  about the character. A star rather than the skills rail's
                  four-pointed one: U+2605, the same Miscellaneous Symbols block
