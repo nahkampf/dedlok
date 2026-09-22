@@ -201,6 +201,20 @@ final class MarketPurchaseTest extends TestCase
             ->assertDontSeeText($empty->displayName());
     }
 
+    /** One accordion per kind, each card carrying the words the search box matches. */
+    public function test_the_shelf_is_grouped_by_kind_and_searchable(): void
+    {
+        $item = $this->stocked();
+
+        $this->actingAs($this->character->user)
+            ->get(route('market.index'))
+            ->assertOk()
+            ->assertSee('data-filter="#shelves"', false)
+            ->assertSee('<details class="panel" data-filter-group>', false)
+            ->assertSee('data-filter-text="'.e($item->displayName()), false)
+            ->assertSeeText($item->kindName());
+    }
+
     public function test_an_empty_market_says_so(): void
     {
         $this->actingAs($this->character->user)

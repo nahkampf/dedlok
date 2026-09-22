@@ -280,6 +280,42 @@
     if (body) openInspector(body);
   });
 
+  /* --- Filter ---------------------------------------------------------
+     <input type="search" data-filter="#list">
+     <div id="list">
+       <details data-filter-group> … <div data-filter-text="words to match">…
+       <p data-filter-empty hidden>Nothing matches.</p>
+
+     Hides every [data-filter-text] under the target whose words do not contain
+     what was typed, and every group left with nothing showing. While there is
+     a query a group with a match is opened; clearing the box puts each group
+     back the way the player left it. Matching only, never fetching: whatever
+     the filter can find is already on the page. */
+  on("input", "[data-filter]", (e, box) => {
+    const root = document.querySelector(box.dataset.filter);
+    if (!root) return;
+    const q = box.value.trim().toLowerCase();
+
+    root.querySelectorAll("[data-filter-text]").forEach((el) => {
+      el.hidden = q !== "" && !el.dataset.filterText.toLowerCase().includes(q);
+    });
+
+    root.querySelectorAll("[data-filter-group]").forEach((g) => {
+      g.hidden = !g.querySelector("[data-filter-text]:not([hidden])");
+      if (g.tagName !== "DETAILS") return;
+      if (q !== "") {
+        if (!("filterWasOpen" in g.dataset)) g.dataset.filterWasOpen = g.open ? "1" : "";
+        g.open = true;
+      } else if ("filterWasOpen" in g.dataset) {
+        g.open = g.dataset.filterWasOpen === "1";
+        delete g.dataset.filterWasOpen;
+      }
+    });
+
+    const empty = root.querySelector("[data-filter-empty]");
+    if (empty) empty.hidden = !!root.querySelector("[data-filter-text]:not([hidden])");
+  });
+
   /* --- Sortable tables --------------------------------------------------
      <th aria-sort="none" data-sort="num|text">                           */
   on("click", "th[data-sort]", (e, th) => {

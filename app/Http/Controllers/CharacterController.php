@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Archetype;
 use App\Models\Character;
+use App\Stats\BreakdownStep;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,6 +43,7 @@ class CharacterController extends Controller
             // disagree with every check made against it.
             'attributes' => $this->attributes($character),
             'max' => Character::ATTRIBUTE_MAX,
+            'vitals' => $this->vitals($character),
             // The roster is cached and read on nearly every request anyway,
             // so naming the role costs nothing. `characters.archetype` is an
             // id rather than a relation — see Character::modifiers().
@@ -91,6 +93,37 @@ class CharacterController extends Controller
                 'label' => Text::get("character.names.{$attribute}"),
                 'value' => $value,
                 'ratio' => max(0.0, min(1.0, $value / Character::ATTRIBUTE_MAX)),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The two resources, each against its RESOLVED maximum, with what moved
+     * that maximum.
+     *
+     * One line per layer rather than per modifier, straight off the resolver's
+     * steps — percentages are summed and applied once, so a line each would
+     * imply a compounding that does not happen. The run screen's evasion card
+     * reads the same steps the same way.
+     *
+     * @return list<array{label: string, current: int, max: int, ratio: float, steps: list<BreakdownStep>}>
+     */
+    private function vitals(Character $character): array
+    {
+        $sheet = $character->sheet();
+        $rows = [];
+
+        foreach (Character::RESOURCES as $resource => $statId) {
+            $stat = $sheet->get($statId);
+
+            $rows[] = [
+                'label' => Text::get("character.vitals.{$statId}"),
+                'current' => (int) $character->{$resource},
+                'max' => $stat->toInt(),
+                'ratio' => $character->resourceRatio($resource),
+                'steps' => $stat->steps,
             ];
         }
 

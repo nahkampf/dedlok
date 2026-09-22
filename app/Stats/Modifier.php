@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Stats;
 
+use Illuminate\Support\Facades\Config;
+
 /**
  * One change to one or more stats, from one source.
  *
@@ -108,5 +110,39 @@ final readonly class Modifier
         }
 
         return $context !== null && $this->condition->holds($context);
+    }
+
+    /**
+     * This modifier as card text: "+5% max HP".
+     *
+     * Generated from the modifier itself, so a card cannot drift from what
+     * the resolver does. One lookup for both kinds of target: a stat id, or a
+     * tag set named as a whole. An unnamed target renders as the bare amount
+     * rather than as its key — "−5% damage+hitpoints" is a debug string, and a
+     * card is not where one belongs.
+     */
+    public function effectText(): string
+    {
+        $amount = $this->op === Op::Multiplier
+            ? '×'.$this->amount
+            : self::signed($this->amount).($this->op === Op::PercentageOfBase ? '%' : '');
+
+        // Read as an array, not through Text::get(): a stat id can carry a
+        // dot (check.routing), which a config path would take for nesting.
+        $name = Config::get('strings.character.names')[$this->target->nameKey()] ?? null;
+
+        return is_string($name) ? $amount.' '.$name : $amount;
+    }
+
+    /**
+     * Signed display value. The sign is always shown — "+5" and "−10" read as
+     * modifiers, where "5" and "10" read as absolute values. U+2212 minus, not
+     * a hyphen, so a column of effects lines up.
+     */
+    public static function signed(float $amount): string
+    {
+        return ($amount < 0 ? '−' : '+').(abs($amount) == (int) abs($amount)
+            ? (string) (int) abs($amount)
+            : (string) abs($amount));
     }
 }

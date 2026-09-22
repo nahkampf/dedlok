@@ -4,32 +4,68 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\Item;
+use App\Support\Text;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
+/**
+ * The front page: the notice, and the two places there are to go.
+ *
+ * NOTICE.md at the repository root is the notice, rendered from Markdown on
+ * every request — it is a few lines and editing the file is how it changes.
+ * Authored in the repo and never by a player, but raw HTML in it is stripped
+ * all the same: Markdown is the whole format, and a notice that could carry a
+ * <script> is one careless paste from being a problem.
+ */
 class HomeController extends Controller
 {
+    /** The two places, and the picture that stands for each. */
+    private const PLACES = [
+        'city' => 'images/city.jpg',
+        'cyberspace' => 'images/cyberspace.jpg',
+    ];
+
     public function __invoke(): View
     {
-        // The catalogue's rarest few, from the items table. This page is public,
-        // so it may only read definitions — never a character's inventory.
-        // Physical only: the data container is skillbooks, which say nothing
-        // about themselves that the skill they teach does not say better.
-        // Listed only. `on_market = false` is how content is RETIRED in this
-        // codebase — the documented alternative to deleting it — so an
-        // unlisted item on the public landing page is the catalogue
-        // advertising something deliberately withdrawn. It is also what keeps
-        // placeholders and admin scaffolding off the front page.
-        $items = Item::query()
-            ->inContainer(Item::CONTAINER_PHYSICAL)
-            ->where('on_market', true)
-            ->orderByDesc('tier')
-            ->orderBy('slug')   // ties would otherwise order by insertion
-            ->limit(3)
-            ->get();
+        $markdown = is_file($path = base_path('NOTICE.md')) ? (string) file_get_contents($path) : '';
+
+        // The first line's heading is the accordion's summary rather than the
+        // first thing inside it — a closed notice still says what it is.
+        $title = null;
+
+        if (preg_match('/\A#[ \t]+(.+)\R?/u', $markdown, $m) === 1) {
+            $title = trim($m[1]);
+            $markdown = substr($markdown, strlen($m[0]));
+        }
+
+        $notice = trim($markdown) === '' ? null : Str::markdown($markdown, [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ]);
 
         return view('home', [
-            'items' => $items,
+            'title' => $title,
+            'notice' => $notice,
+            // What a closed notice shows: its first 250 characters as plain
+            // text. Taken from the RENDERED notice, so no Markdown syntax — a
+            // `**` or a link's URL — leaks into it. Blocks keep one line break
+            // each (the teaser is pre-line) and every other run of space is one.
+            'teaser' => $notice === null ? null : Str::limit(
+                (string) preg_replace(['/[ \t]+/u', '/\s*\n\s*/u'], [' ', "\n"], trim(html_entity_decode(strip_tags($notice), ENT_QUOTES | ENT_HTML5))),
+                250,
+                '…',
+            ),
+
+            // A missing picture renders no image rather than a broken one —
+            // the same rule every other picture in the game follows.
+            'places' => array_map(
+                fn (string $key, string $image): array => [
+                    'label' => Text::get("home.places.{$key}"),
+                    'image' => is_file(public_path($image)) ? $image : null,
+                ],
+                array_keys(self::PLACES),
+                self::PLACES,
+            ),
         ]);
     }
 }

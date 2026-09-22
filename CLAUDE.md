@@ -614,7 +614,9 @@ what a bare `items` row cannot.
   `editable` flipped.
 - **A deck has no thermal rating and heat does not happen to it.** Power is measured
   against fitted supplies; heat is measured against nothing at deck level. Do not add a
-  chassis cap. On screen that is why power has a meter and heat is a bare figure.
+  chassis cap. On screen heat's meter ends at the highest resolved LIMIT anything fitted
+  carries (`ThermalExposure::scale()`) — a scale, not a rating — with every module's
+  warning and limit ticked on it (`.meter__mark`). No module with a limit, no meter.
 - **Every module makes heat** (`deck_modules.heat`) and a **radiator takes it away**
   (`Hardware::Thermal` in a `thermal` socket, measure `cooling`). A radiator cools and
   heats none, but still draws.
@@ -815,7 +817,7 @@ implant's; the row says which family, how long, and what it costs the books.
 - **Installed is a fourth way to be elsewhere** (see `scopeLoose()`).
 - **An implant's effects live on `items.modifiers`**, read by `InstalledImplants`.
 - **Surgery is free.** When it costs, `ImplantFitter` is the class that knows both sides.
-- The screen is `<x-body-map>`: a Vitruvian figure with the regions boxed off it.
+- The screen is `<x-body-map>`: `public/images/body.gif` with the regions marked on it in SVG.
 
 ### Cyberspace
 

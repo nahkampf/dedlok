@@ -73,7 +73,9 @@ return [
     |
     */
 
-    'home' => '/home',
+    // '/' and not Fortify's default '/home': nothing is routed there, so a
+    // sign-in from the login screen itself landed on a 404.
+    'home' => '/',
 
     /*
     |--------------------------------------------------------------------------

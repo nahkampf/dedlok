@@ -1190,6 +1190,25 @@ class ModuleFittingTest extends TestCase
             ->assertSee('slot--doomed', false);
     }
 
+    public function test_the_thermal_bar_ends_at_the_highest_limit_and_ticks_each_threshold(): void
+    {
+        [, $deck] = $this->deckAt(110, warnAt: 150, dieAt: 220);
+
+        // 150/220 and 220/220: one brass tick, one ember tick at the edge.
+        $this->actingAs($this->character->user)
+            ->get(route('deck.show', $deck))
+            ->assertSee('--x:0.682;--mark:var(--warn)', false)
+            ->assertSee('--x:1;--mark:var(--crit)', false)
+            ->assertSee('--v:0.5;', false);
+
+        // No module carries a limit: nothing to measure against, no bar.
+        [, $bare] = $this->deckAt(110, warnAt: null, dieAt: null);
+
+        $this->actingAs($this->character->user)
+            ->get(route('deck.show', $bare))
+            ->assertDontSee('meter__mark', false);
+    }
+
     // ---- resolved, not merely summed ---------------------------------------
 
     /** @return list<Modifier> */

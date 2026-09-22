@@ -75,6 +75,30 @@ final class CharacterSheetTest extends TestCase
         ]), false);
     }
 
+    public function test_the_vitals_name_what_moved_each_maximum(): void
+    {
+        Config::set('effects.frail', [
+            'label' => 'Frail',
+            'stacking' => 'sum',
+            'modifiers' => [
+                ['op' => 'add', 'amount' => -4, 'target' => ['id' => 'hitpoints_max']],
+            ],
+        ]);
+
+        CharacterModifier::query()->create([
+            'character_id' => $this->character->id,
+            'definition_key' => 'frail',
+        ]);
+
+        $this->visit()
+            ->assertSeeText(Text::get('character.vitals_heading'))
+            ->assertSeeText(Text::get('character.vitals_modified'))
+            ->assertSeeText('Frail')
+            ->assertSee('−4', false)
+            // SI has nothing on it.
+            ->assertSeeText(Text::get('character.vitals_unmodified'));
+    }
+
     // ---- the tabs ----------------------------------------------------------
 
     /** Every tab is on every panel, and each panel says which one it is. */

@@ -44,9 +44,17 @@
 
                 <span class="row row--wrap" style="--gap:var(--s-2);align-items:baseline">
                     <span style="font-size:var(--fs-md)">{{ $training['skill']->title }}</span>
-                    <span class="micro" style="color:var(--ink-3)">
-                        {{ Text::get('training.toward', ['level' => $training['target']]) }}
-                    </span>
+                    {{-- The levels already held, and the one being earned
+                         breathing in ember beside them. --}}
+                    @php($toward = Text::get('training.toward', ['level' => $training['target']]))
+                    <div class="meter meter--seg"
+                         style="--segs:{{ $max }};--v:{{ $max > 0 ? ($training['target'] - 1) / $max : 0 }};--at:{{ $training['target'] - 1 }};--fill:var(--ok);width:min(140px,100%);align-self:center"
+                         role="img"
+                         aria-label="{{ $toward }}"
+                         title="{{ $toward }}">
+                        <div class="meter__fill"></div>
+                        <div class="meter__next"></div>
+                    </div>
                 </span>
 
                 {{-- Progress through the level being trained, never from zero:
@@ -239,7 +247,11 @@
                             'points' => Number::format($points),
                         ]))
 
-                        <div class="item-row">
+                        {{-- Hover floats the skill's whole card beside the row;
+                             a click or tap opens it as a modal, the only way in
+                             on a phone. The card is <x-skill-detail>, written
+                             once in the template below. --}}
+                        <div class="item-row" data-inspect="#skill-{{ $skill->id }}" tabindex="0" style="cursor:help">
                             <span class="slot__icon" aria-hidden="true">&#9670;</span>
 
                             <span class="stack" style="--gap:2px;min-width:0">
@@ -268,6 +280,13 @@
 
                             <span class="item-row__meta num">{{ $level }}/{{ $max }}</span>
                         </div>
+
+                        <template id="skill-{{ $skill->id }}">
+                            <x-skill-detail :skill="$skill" :max="$max" :level="$level" :points="$points"
+                                            :training="$training !== null && $training['skill']->id === $skill->id"
+                                            :owns-book="isset($books[$skill->id])"
+                                            :levels="array_map(fn (array $l): int => $l['level'], $levels)" />
+                        </template>
                     @endforeach
                 </div>
             @endif

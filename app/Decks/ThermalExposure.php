@@ -31,10 +31,12 @@ final class ThermalExposure
     /**
      * @param  array<int, ThermalVerdict>  $verdicts  keyed by deck_slot_id
      * @param  array<string, list<string>>  $names  module names per verdict value
+     * @param  list<array{name: string, warning: int, limit: int}>  $thresholds  resolved, per module that carries any
      */
     private function __construct(
         private readonly array $verdicts,
         private readonly array $names,
+        private readonly array $thresholds,
     ) {}
 
     /**
@@ -52,6 +54,7 @@ final class ThermalExposure
 
         $verdicts = [];
         $names = [];
+        $thresholds = [];
 
         foreach ($fittings as $fitting) {
             $item = $fitting->module?->item;
@@ -61,7 +64,26 @@ final class ThermalExposure
                 continue;
             }
 
-            $verdict = self::verdictFor($netThermalLoad, $module->thermal_warning, $module->thermal_limit, $modifiers, $resolver);
+            // Both null is a module with no known limit, which is not the same
+            // as a module with a limit of zero — the schema keeps the pair
+            // together for exactly this reason.
+            if ($module->thermal_warning === null || $module->thermal_limit === null) {
+                $verdicts[(int) $fitting->deck_slot_id] = ThermalVerdict::Safe;
+
+                continue;
+            }
+
+            $warning = (int) $resolver->resolve(self::STAT_WARNING, (float) $module->thermal_warning, $modifiers)->value;
+            $limit = (int) $resolver->resolve(self::STAT_LIMIT, (float) $module->thermal_limit, $modifiers)->value;
+            $thresholds[] = ['name' => $item->displayName(), 'warning' => $warning, 'limit' => $limit];
+
+            // The limit first: it is a certainty and the warning is only a
+            // threshold, so a module past both is past the one that matters.
+            $verdict = match (true) {
+                $netThermalLoad >= $limit => ThermalVerdict::OverLimit,
+                $netThermalLoad >= $warning => ThermalVerdict::AtRisk,
+                default => ThermalVerdict::Safe,
+            };
 
             $verdicts[(int) $fitting->deck_slot_id] = $verdict;
 
@@ -70,40 +92,29 @@ final class ThermalExposure
             }
         }
 
-        return new self($verdicts, $names);
+        return new self($verdicts, $names, $thresholds);
     }
 
     /**
-     * The verdict for one module, given the two thresholds it carries.
+     * Every fitted module's two thresholds, resolved — what the thermal meter
+     * marks. Modules with no known limit carry none and are left out.
      *
-     * Both null is a module with no known limit, which is not the same as a
-     * module with a limit of zero — the schema keeps the pair together for
-     * exactly this reason.
-     *
-     * @param  list<Modifier>  $modifiers
+     * @return list<array{name: string, warning: int, limit: int}>
      */
-    private static function verdictFor(
-        int $netThermalLoad,
-        ?int $warning,
-        ?int $limit,
-        array $modifiers,
-        Resolver $resolver,
-    ): ThermalVerdict {
-        if ($warning === null || $limit === null) {
-            return ThermalVerdict::Safe;
-        }
+    public function thresholds(): array
+    {
+        return $this->thresholds;
+    }
 
-        $resolvedLimit = (int) $resolver->resolve(self::STAT_LIMIT, (float) $limit, $modifiers)->value;
-
-        // The limit first: it is a certainty and the warning is only a
-        // threshold, so a module past both is past the one that matters.
-        if ($netThermalLoad >= $resolvedLimit) {
-            return ThermalVerdict::OverLimit;
-        }
-
-        $resolvedWarning = (int) $resolver->resolve(self::STAT_WARNING, (float) $warning, $modifiers)->value;
-
-        return $netThermalLoad >= $resolvedWarning ? ThermalVerdict::AtRisk : ThermalVerdict::Safe;
+    /**
+     * Where the thermal meter ends: the highest limit anything fitted has, so
+     * the last module to break is the right-hand edge. Not a rating — a deck
+     * has none — only the scale the marks are drawn against. Null when no
+     * module carries a limit, and then there is nothing to draw a meter for.
+     */
+    public function scale(): ?int
+    {
+        return $this->thresholds === [] ? null : max(1, ...array_column($this->thresholds, 'limit'));
     }
 
     /** What the socket at this slot is faring. Empty sockets are Safe. */

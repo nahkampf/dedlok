@@ -323,43 +323,12 @@ class CharacterCreationController extends Controller
     {
         if ($perk->isLive()) {
             return implode(', ', array_map(
-                fn (array $definition): string => $this->modifierEffect(Modifier::fromArray($definition)),
+                fn (array $definition): string => Modifier::fromArray($definition)->effectText(),
                 $perk->modifiers,
             ));
         }
 
-        return $this->signed((float) $perk->display_modifier)
+        return Modifier::signed((float) $perk->display_modifier)
             .($perk->display_unit === 'percent' ? '%' : '');
-    }
-
-    /**
-     * Render a real Modifier as card text: "+5% max HP".
-     *
-     * The stat name is appended because a perk's label is its own name
-     * ("Scar tissue"), not the thing it changes — unlike the legacy perks,
-     * where the label WAS the affected stat.
-     */
-    private function modifierEffect(Modifier $modifier): string
-    {
-        $amount = $modifier->op === Op::Multiplier
-            ? '×'.$modifier->amount
-            : $this->signed($modifier->amount).($modifier->op === Op::PercentageOfBase ? '%' : '');
-
-        // One lookup for both kinds of target: a stat id, or a tag set named
-        // as a whole. An unnamed target renders as the bare amount rather than
-        // as its key — "−5% damage+hitpoints" is a debug string, and a card is
-        // not where one belongs.
-        $key = $modifier->target->nameKey();
-        $name = Text::get("character.names.{$key}");
-
-        return $name === "character.names.{$key}" ? $amount : $amount.' '.$name;
-    }
-
-    /** U+2212 minus, not a hyphen, so a column of effects lines up. */
-    private function signed(float $amount): string
-    {
-        return ($amount < 0 ? '−' : '+').(abs($amount) == (int) abs($amount)
-            ? (string) (int) abs($amount)
-            : (string) abs($amount));
     }
 }

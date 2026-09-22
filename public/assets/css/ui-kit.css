@@ -436,6 +436,24 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
 .micro--ember { color: var(--ember); }
 
 .lede { font-size: var(--fs-lg); color: var(--ink-1); line-height: 1.5; }
+
+/* Rendered Markdown. The reset takes every margin off headings and
+   paragraphs, which is right for composed screens and wrong for text somebody
+   wrote as a document — so the rhythm comes back here, and only here. */
+.prose { color: var(--ink-1); line-height: 1.6; overflow-wrap: anywhere; }
+.prose > * + * { margin-top: var(--s-3); }
+.prose > * + :is(h1, h2, h3, h4) { margin-top: var(--s-5); }
+.prose > :is(h1, h2, h3, h4) + * { margin-top: var(--s-2); }
+.prose h1 { font-size: var(--fs-xl); }
+.prose h2 { font-size: var(--fs-lg); }
+.prose ul, .prose ol { padding-left: var(--s-5); }
+.prose li + li { margin-top: var(--s-1); }
+.prose a { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.prose a:hover { text-decoration-color: var(--ember); }
+.prose code { font-family: var(--font-mono); font-size: 0.92em; }
+.prose pre { overflow-x: auto; background: var(--bg-1); border: var(--hair) solid var(--line-1); padding: var(--s-3); }
+.prose blockquote { border-left: var(--hair) solid var(--line-2); padding-left: var(--s-3); color: var(--ink-2); }
+.prose hr { border: 0; border-top: var(--hair) solid var(--line-1); }
 .muted { color: var(--ink-2); }
 .dim   { color: var(--ink-3); }
 
@@ -1739,6 +1757,9 @@ a.tab { text-decoration: none; }
 }
 .tabpanel { padding-top: var(--s-4); }
 .tabpanel[hidden] { display: none; }
+/* The filter's three kinds of thing. A card or a panel sets its own display,
+   which beats the UA's [hidden] rule, so hiding has to be said outright. */
+[data-filter-text][hidden], [data-filter-group][hidden], [data-filter-empty][hidden] { display: none; }
 
 .pager { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-1); }
 .pager__item {
@@ -1896,6 +1917,10 @@ details.panel > summary.panel__hd::after {
   font-family: var(--font-mono); color: var(--ink-2);
 }
 details.panel[open] > summary.panel__hd::after { content: "\2212"; }
+/* The start of what a closed panel holds, said in its summary. Gone once the
+   panel is open, where the whole of it is right below. */
+.panel__teaser { font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.5; overflow-wrap: anywhere; white-space: pre-line; }
+details.panel[open] > summary .panel__teaser { display: none; }
 details.panel > summary.panel__hd:hover::after { color: var(--ink-0); }
 details.panel > summary.panel__hd:focus-visible {
   outline: 2px solid var(--steel); outline-offset: -2px;
@@ -1975,6 +2000,26 @@ details.panel > summary.panel__hd:focus-visible {
   background: var(--bg-3);
 }
 .meter--seg .meter__fill { position: relative; }
+/* The cell being earned: ember, breathing up from nothing to lit. --at is its
+   zero-based index. The bar's mask cuts it to one cell, as it does the fill.
+   At rest it is fully lit, so reduced motion stops it lit rather than gone. */
+.meter__next {
+  position: absolute; top: 0; bottom: 0;
+  left: calc(100% * var(--at) / var(--segs));
+  width: calc(100% / var(--segs));
+  background: var(--ember);
+  animation: seg-breathe 1.6s ease-in-out infinite alternate;
+}
+@keyframes seg-breathe { from { opacity: 0; } }
+
+/* A threshold on a bar: a hairline tick at --x (0–1 of the width), in --mark.
+   After the fill in the DOM, so it stands on top of it. */
+.meter__mark {
+  position: absolute; top: 0; bottom: 0;
+  left: calc(var(--x) * 100%);
+  width: 2px; margin-left: -1px;
+  background: var(--mark, var(--ink-0));
+}
 
 /* Overload — the bar is past safe limits and you should feel it */
 .meter--hot { --fill: var(--crit); }
@@ -1990,6 +2035,9 @@ details.panel > summary.panel__hd:focus-visible {
 .vital  { display: grid; grid-template-columns: minmax(0, 76px) minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); }
 /* Narrow label column, for a HUD rail rather than a settings panel. */
 .vital--tight { grid-template-columns: minmax(0, 48px) minmax(0, 1fr) auto; }
+/* Wide label column, for whole words: PERCEPTION overflows 76px, and the
+   meter is positioned, so a label that spills paints UNDER the bar. */
+.vital--wide { grid-template-columns: minmax(0, 96px) minmax(0, 1fr) auto; }
 .vital__label { font-family: var(--font-label); font-size: var(--fs-xs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
 .vital__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-xs); color: var(--ink-1); min-width: 54px; text-align: right; }
 
@@ -2572,6 +2620,10 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 .row     { display: flex; align-items: center; gap: var(--gap, var(--s-3)); }
 .row--wrap { flex-wrap: wrap; }
 .grid    { display: grid; gap: var(--gap, var(--s-4)); }
+.grid--pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid__wide { grid-column: 1 / -1; }
+/* Two cells side by side stop being readable before 640px. */
+@media (max-width: 640px) { .grid--pair { grid-template-columns: minmax(0, 1fr); } }
 .spacer  { flex: 1; }
 .t-right { text-align: right; }
 .nowrap  { white-space: nowrap; }
@@ -3097,13 +3149,12 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
 
 /* ============================================================================
    THE BODY MAP
-   A Vitruvian figure with the implant regions boxed off it — the same device
+   A wireframe body with the implant regions marked on it — the same device
    as the deck board, applied to a person instead of a machine.
 
-   DRAWN, NOT PHOTOGRAPHED. A line figure in SVG themes with the kit's tokens,
-   scales to any width, needs no asset and carries no licence. A raster
-   Vitruvian Man would be a fixed-size picture with a hard-coded ink colour
-   sitting in a dark UI, which is the wrong answer twice over.
+   The body is a picture (images/body.gif, white wire on black). It is
+   SCREENED onto the well, so its black drops out and only the wire lands on
+   --bg-1; the markers and labels stay SVG and take the kit's tokens.
    ========================================================================== */
 .bodymap {
   display: grid;
@@ -3127,25 +3178,27 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
   padding: var(--s-3);
 }
 
-/* The figure itself: hairlines, like everything structural in the kit. */
-.bodymap__ink { fill: none; stroke: var(--line-2); stroke-width: 1.25; }
-.bodymap__frame { fill: none; stroke: var(--line-1); stroke-width: 1; }
+/* The figure: screened, so the picture's black background is the well's. */
+.bodymap__photo { mix-blend-mode: screen; }
 
-/* A leader from a region box to the part of the body it names. */
-.bodymap__wire { stroke: var(--line-1); stroke-width: 1; }
+/* The overlay is in --info, so it reads as a layer over the wire rather than
+   as more of it: the picture is bone-white, and grey on it disappeared. */
 
-/* The region markers on the figure. Filled when something is in them, hollow
-   when there is room — the same reading as a socket on the deck board. */
+/* A leader from a region label to the part of the body it names. */
+.bodymap__wire { stroke: var(--info); stroke-width: 1; opacity: .6; }
+
+/* The region markers on the figure. Hollow with room, filled when something
+   is in them, bone when full — the same reading as a socket on the deck board. */
 .bodymap__node {
-  fill: var(--bg-3);
-  stroke: var(--line-2);
-  stroke-width: 1;
+  fill: var(--bg-1);
+  stroke: var(--info);
+  stroke-width: 1.25;
 }
 .bodymap__node--full { fill: var(--ink-0); stroke: var(--ink-0); }
 .bodymap__node--some { fill: var(--info); stroke: var(--info); }
 
 .bodymap__label {
-  fill: var(--ink-2);
+  fill: var(--info);
   font-family: var(--font-label);
   font-size: 9px;
   letter-spacing: var(--tracking-caps);

@@ -469,6 +469,31 @@ public/assets/
         </div>
       </template>
     </div>
+
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Filter</h3><p>A search box that filters what is already on the page. <code class="inl">data-filter</code> names the container; each thing it can find carries its words in <code class="inl">data-filter-text</code>. A <code class="inl">data-filter-group</code> left with nothing showing hides itself, and a <code class="inl">&lt;details&gt;</code> group opens while there is a query and goes back to how it was when the box empties. <code class="inl">data-filter-empty</code> shows when nothing matches.</p></div>
+      <template class="demo-src">
+        <div class="stack" style="--gap:var(--s-3)">
+          <input class="input" type="search" data-filter="#filter-demo" placeholder="Try &ldquo;ram&rdquo;" aria-label="Filter">
+          <div id="filter-demo" class="stack" style="--gap:var(--s-2)">
+            <details class="panel" data-filter-group>
+              <summary class="panel__hd"><span class="micro">Memory</span></summary>
+              <div class="panel__bd stack" style="--gap:var(--s-1)">
+                <span data-filter-text="Kurogane QDRAM ram">Kurogane QDRAM</span>
+                <span data-filter-text="Veritas SRAM ram">Veritas SRAM</span>
+              </div>
+            </details>
+            <details class="panel" data-filter-group>
+              <summary class="panel__hd"><span class="micro">Icebreaker</span></summary>
+              <div class="panel__bd stack" style="--gap:var(--s-1)">
+                <span data-filter-text="Hatchet icebreaker">Hatchet</span>
+              </div>
+            </details>
+            <p class="muted" data-filter-empty hidden style="margin:0">Nothing matches.</p>
+          </div>
+        </div>
+      </template>
+    </div>
   </section>
 
   <section id="surfaces">
@@ -858,6 +883,14 @@ public/assets/
           <div>
             <div class="micro" style="margin-bottom:6px">Segmented — RAM 8 / 12</div>
             <div class="meter meter--seg meter--lg" style="--v:.667;--segs:12"><div class="meter__fill"></div></div>
+          </div>
+          <div>
+            <div class="micro" style="margin-bottom:6px">Segmented, earning the next — <code class="inl">.meter__next</code> at <code class="inl">--at</code></div>
+            <div class="meter meter--seg" style="--v:.4;--segs:5;--at:2;--fill:var(--ok);width:min(140px,100%)"><div class="meter__fill"></div><div class="meter__next"></div></div>
+          </div>
+          <div>
+            <div class="micro" style="margin-bottom:6px">Thresholds — <code class="inl">.meter__mark</code> at <code class="inl">--x</code>, coloured by <code class="inl">--mark</code></div>
+            <div class="meter" style="--v:.45;--fill:var(--ok)"><div class="meter__fill"></div><span class="meter__mark" style="--x:.6;--mark:var(--warn)"></span><span class="meter__mark" style="--x:.85;--mark:var(--crit)"></span></div>
           </div>
           <div>
             <div class="micro" style="margin-bottom:6px">Thin — ambient / background values</div>
@@ -1481,6 +1514,11 @@ public/assets/
                     <span class="vital__label">Heat</span>
                     <div class="meter meter--hot" style="--v:.91"><div class="meter__fill"></div></div>
                     <span class="vital__value">91</span>
+                  </div>
+                  <div class="vital vital--wide">
+                    <span class="vital__label">Perception</span>
+                    <div class="meter" style="--v:.55;--fill:var(--ok)"><div class="meter__fill"></div></div>
+                    <span class="vital__value">11</span>
                   </div>
                 </div>
                 <div>

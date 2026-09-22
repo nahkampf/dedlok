@@ -31,7 +31,7 @@
                          not: ten bars in a single column is a scroll. --}}
                     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));--gap:var(--s-2)">
                         @foreach ($attributes as $attribute)
-                            <div class="vital vital--tight">
+                            <div class="vital vital--wide">
                                 <span class="vital__label">{{ $attribute['label'] }}</span>
                                 <div class="meter" style="--v:{{ $attribute['ratio'] }};--fill:var(--ok)"
                                      role="img"
@@ -43,6 +43,53 @@
                                     <div class="meter__fill"></div>
                                 </div>
                                 <span class="vital__value">{{ $attribute['value'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- The two resources against their RESOLVED maxima, and under
+                     each whatever moved that maximum: an injury, an implant, a
+                     dose. One line per layer, the evasion card's reading. --}}
+                <div class="stack" style="--gap:var(--s-2)">
+                    <span class="micro">{{ Text::get('character.vitals_heading') }}</span>
+
+                    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));--gap:var(--s-3)">
+                        @foreach ($vitals as $vital)
+                            <div class="card">
+                                <div class="card__bd stack" style="--gap:var(--s-2)">
+                                    <div class="readout">
+                                        <span class="readout__label">{{ $vital['label'] }}</span>
+                                        <span class="readout__value num">{{ $vital['current'] }}<span style="font-size:var(--fs-md);color:var(--ink-3)"> / {{ $vital['max'] }}</span></span>
+                                    </div>
+                                    {{-- data-hot-low: ui-kit.js owns what "low" is,
+                                         the same test the topbar's dials run. --}}
+                                    <div class="meter" data-hot-low style="--v:{{ $vital['ratio'] }};--fill:var(--ok)"
+                                         role="img"
+                                         aria-label="{{ Text::get('character.vital_value', [
+                                             'vital' => $vital['label'],
+                                             'current' => $vital['current'],
+                                             'max' => $vital['max'],
+                                         ]) }}">
+                                        <div class="meter__fill"></div>
+                                    </div>
+                                </div>
+
+                                @if ($vital['steps'] === [])
+                                    <div class="card__stats">
+                                        <span class="card__stat">{{ Text::get('character.vitals_unmodified') }}</span>
+                                    </div>
+                                @else
+                                    <div class="card__stats">
+                                        <span class="micro" style="color:var(--ink-2)">{{ Text::get('character.vitals_modified') }}</span>
+                                        @foreach ($vital['steps'] as $step)
+                                            <div class="card__stat">
+                                                <span>{{ $step->sources === [] ? $step->op : implode(', ', $step->sources) }}</span>
+                                                <b class="num">{{ $step->delta() >= 0 ? '+' : '−' }}{{ rtrim(rtrim(number_format(abs($step->delta()), 1), '0'), '.') }}</b>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>

@@ -1,41 +1,45 @@
+@use('App\Support\Asset')
 @use('App\Support\Text')
 @extends('layouts.app')
 @section('title', config('app.name'))
-@use('Illuminate\Support\Number')
 
 @section('content')
-    <h1 class="display">{{ Text::get('ui.nav.run') }}</h1>
-    <p class="lede" style="margin-top:var(--s-3);max-width:60ch">
-        Laravel {{ app()->version() }} · {{ config('version.app') }}
-    </p>
+    {{-- One wide card over two. .grid--pair is two columns that become one
+         below 640px, and a class rather than inline tracks because an inline
+         track would beat the media query. --}}
+    <div class="grid grid--pair">
+        {{-- An accordion, closed to begin with. Its summary is NOTICE.md's own
+             first heading and the start of what follows it, so a closed
+             notice still says what it is; the teaser goes once it is open. --}}
+        <details class="panel grid__wide">
+            <summary class="panel__hd">
+                <span class="stack" style="--gap:var(--s-2);flex:1;min-width:0">
+                    <span class="card__title">{{ $title ?? Text::get('home.notice') }}</span>
+                    @if ($teaser !== null)
+                        <span class="panel__teaser">{{ $teaser }}</span>
+                    @endif
+                </span>
+            </summary>
 
-    <div class="rule"><span class="micro">The catalogue</span></div>
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
-        {{-- The row carries the whole definition now, words included. It used
-             to carry a slug and nothing a player could read. --}}
-        @forelse ($items as $item)
-            <div class="item-card {{ $item->tierClass() }}" style="width:100%">
-                <div class="item-card__hd">
-                    <div class="item-card__name">{{ $item->displayName() }}</div>
-                    <div class="item-card__tier">{{ $item->tierName() }}</div>
+            @if ($notice !== null)
+                {{-- Rendered from NOTICE.md with raw HTML stripped, which is
+                     what makes printing it unescaped safe. --}}
+                <div class="panel__bd prose">{!! $notice !!}</div>
+            @endif
+        </details>
+
+        @foreach ($places as $place)
+            <div class="card">
+                <div class="card__hd">
+                    <span class="card__title">{{ $place['label'] }}</span>
                 </div>
-                <div class="item-card__stats">
-                    <div class="item-card__stat">
-                        <span>{{ Text::get('items.stat.weight') }}</span>
-                        <b class="num">{{ Number::format((float) $item->weight) }}</b>
+                @if ($place['image'] !== null)
+                    <div class="card__bd">
+                        <img src="{{ Asset::url($place['image']) }}" alt="{{ $place['label'] }}"
+                             style="display:block;width:min(300px,100%);height:auto">
                     </div>
-                    <div class="item-card__stat">
-                        <span>{{ Text::get('items.stat.cost') }}</span>
-                        <b class="num">{{ Number::format($item->base_cost) }}</b>
-                    </div>
-                </div>
-                {{-- Flavour is optional: most items have none. --}}
-                @if ($flavor = $item->displayFlavor())
-                    <div class="item-card__flavor">{{ $flavor }}</div>
                 @endif
             </div>
-        @empty
-            <p class="muted" style="font-size:var(--fs-sm)">{{ Text::get('items.catalogue_empty') }}</p>
-        @endforelse
+        @endforeach
     </div>
 @endsection

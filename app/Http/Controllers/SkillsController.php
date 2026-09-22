@@ -45,6 +45,7 @@ class SkillsController extends Controller
         // what is known, and what is queued — rather than one per row.
         $skills = Skill::query()
             ->whereIn('id', $levels === [] ? [0] : array_keys($levels))
+            ->with('prerequisites.requiredSkill')
             ->orderBy('title')
             ->get();
 
@@ -55,6 +56,14 @@ class SkillsController extends Controller
             'levels' => $levels,
             'max' => $progression->maxLevel(),
             'queue' => $queue,
+            // Which skills they hold a book for, anywhere they carry it — a
+            // book in a shard is still owned. One query for every card.
+            'books' => $character->inventory()
+                ->join('items', 'items.id', '=', 'inventory_items.item_id')
+                ->whereNotNull('items.use_skill_id')
+                ->pluck('items.use_skill_id')
+                ->flip()
+                ->all(),
             'limit' => TrainingQueue::LIMIT,
             'training' => $this->training($character, $queue->first(), $levels),
             // The queue is allowed to describe training that cannot happen

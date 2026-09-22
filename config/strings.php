@@ -265,6 +265,9 @@ return [
         'buy' => 'Buy',
         'too_dear' => 'Not enough',
         'on_shelf' => ['zero' => 'none left', 'one' => ':count left', 'many' => ':count left'],
+        'search' => 'Search the market',
+        'search_placeholder' => 'Name, kind or skill',
+        'no_match' => 'Nothing on the shelves matches that.',
 
         'bought' => ':quantity × :item, for :paid ¤.',
 
@@ -1263,6 +1266,15 @@ return [
 
         'attributes_heading' => 'Attributes',
         'attribute_value' => ':attribute :value of :max',
+        // The two resources on the sheet, each against its resolved maximum.
+        'vitals_heading' => 'Vitals',
+        'vitals' => [
+            'hitpoints_max' => 'Hitpoints',
+            'synaptic_integrity_max' => 'Synaptic Integrity',
+        ],
+        'vital_value' => ':vital :current of :max',
+        'vitals_modified' => 'Maximum changed by',
+        'vitals_unmodified' => 'Nothing is changing the maximum.',
         // The one thing on the sheet the game never reads.
         'bio' => 'Bio',
         'bio_hint' => 'Yours, and nothing in the game reads it. Clear the box to take it down.',
@@ -1422,6 +1434,22 @@ return [
             'egress' => 'Evasion',
             'stealth' => 'Stealth',
 
+            // What skill effects reach, named so a skill's card can say what
+            // it changes. Unnamed, an effect renders as a bare amount.
+            'scan_duration' => 'scan time',
+            'check.systemprofiling' => 'System Profiling checks',
+            'check.routing' => 'Routing checks',
+            'deck_storage' => 'deck storage',
+            'deck_qflops' => 'deck compute',
+            'deck_bandwidth' => 'deck bandwidth',
+            'deck_thermal_load' => 'deck thermal load',
+            'deck_cooling' => 'deck cooling',
+            'deck_power_draw' => 'deck power draw',
+            'routing_hops' => 'routing hops',
+            'program_threads' => 'program threads',
+            'coop_slots' => 'co-op slots',
+            'synaptic_regen' => 'SI regeneration',
+
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
             // The key is the tags in alphabetical order, because a set has no
             // order of its own, and the name is what a person would say: the
@@ -1520,6 +1548,24 @@ return [
         // The two the catalogue used to own, kept because the list of what a
         // character knows says the same things about a row that the tree did.
         'governed_by' => ':primary / :secondary',
+
+        // <x-skill-detail>: everything about one skill, on one card.
+        'card' => [
+            'rank' => 'Rank :rank',
+            'primary' => 'Primary',
+            'secondary' => 'Secondary',
+            'requires' => 'Requires',
+            'requires_none' => 'Nothing',
+            'effects' => 'Effects',
+            'effects_none' => 'Knowing it changes nothing on its own.',
+            'effect_level' => 'Level :level',
+            'book' => 'Skillbook',
+            'book_owned' => 'Owned',
+            'book_not_owned' => 'Not owned',
+            'injected' => 'Injected',
+            'not_injected' => 'Not injected',
+            'training' => 'Training level :level',
+        ],
         'level_meter' => 'Level :level of :max · :points SP',
 
         /*
@@ -1736,13 +1782,16 @@ return [
             'name' => 'Skillbook: :skill',
             'flavor' => 'Compressed instruction set. One read, then it is gone.',
         ],
+    ],
 
-        'stat' => [
-            'weight' => 'Weight',
-            'cost' => 'Cost',
+    // The front page: NOTICE.md, and the two places there are to go.
+    'home' => [
+        // The accordion's summary when NOTICE.md does not open with a heading.
+        'notice' => 'Notice',
+        'places' => [
+            'city' => 'CITY',
+            'cyberspace' => 'CYBERSPACE',
         ],
-
-        'catalogue_empty' => 'No items in the catalogue yet.',
     ],
 
     /*
@@ -1873,6 +1922,15 @@ return [
             'draw' => 'Draw',
             'supply' => 'Supply',
             'budget' => ':draw of :supply W',
+            // The deck's four bars. Short, because a vital's label column is
+            // 76px and "Thermal load" overflows it.
+            'compute' => 'Compute',
+            'memory' => 'Memory',
+            'thermal' => 'Thermal',
+            'used' => ':used of :total',
+            // One sentence per module, in the thermal bar's title: the ticks
+            // are too thin to point at one by one.
+            'threshold' => ':module warns at :warning, breaks at :limit',
             'over_budget' => 'Drawing more than the supplies deliver. Nothing enforces it yet — see MECHANICS.',
 
             // Refusals. Every one is an ordinary thing to try.

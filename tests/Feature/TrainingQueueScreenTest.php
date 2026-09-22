@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Inventory\ItemGranter;
+use App\Inventory\Skillbook;
 use App\Models\Character;
 use App\Models\Skill;
 use App\Models\SkillPrerequisite;
@@ -249,6 +251,37 @@ final class TrainingQueueScreenTest extends TestCase
             // The kit's live dot is what says something is running, and there
             // is at most one on the screen because at most one entry trains.
             ->assertSee('dot--live', false);
+    }
+
+    /**
+     * Each known skill carries its whole card in a template: requirements,
+     * effects in words, the book, and the level being earned breathing.
+     */
+    public function test_every_known_skill_has_its_card(): void
+    {
+        $routing = Skill::factory()->create(['slug' => 'routing', 'title' => 'Routing']);
+        SkillPrerequisite::query()->create([
+            'skill_id' => $this->hacking->id,
+            'required_skill_id' => $routing->id,
+            'required_level' => 2,
+        ]);
+        $this->hacking->forceFill(['modifiers' => [
+            ['op' => 'add', 'amount' => 1, 'level' => 1, 'target' => ['id' => 'routing_hops']],
+        ]])->save();
+
+        $this->inject($this->character, $this->hacking);
+        ItemGranter::grant($this->character, Skillbook::ensureFor($this->hacking));
+        $this->queue()->enqueue($this->character, $this->hacking);
+
+        $this->actingAs($this->user)
+            ->get(route('skills.index'))
+            ->assertOk()
+            ->assertSee('data-inspect="#skill-'.$this->hacking->id.'"', false)
+            ->assertSeeText('Routing')
+            ->assertSeeText('+1 '.Text::get('character.names.routing_hops'))
+            ->assertSeeText(Text::get('training.card.book_owned'))
+            ->assertSeeText(Text::get('training.card.injected'))
+            ->assertSee('meter__next', false);
     }
 
     public function test_an_idle_character_is_told_nothing_is_training(): void

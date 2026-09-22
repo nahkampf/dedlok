@@ -41,7 +41,12 @@ class MarketController extends Controller
 
         return view('market.index', [
             'character' => $character,
-            'shelves' => $shelves,
+            // One accordion per kind of thing — RAM, Icebreaker, Skillbook —
+            // named by Item::kindName(), which is what the card already calls
+            // it. Alphabetical, as the shelves inside each already are.
+            'groups' => $shelves
+                ->groupBy(fn (MarketStock $shelf): string => $shelf->item->kindName())
+                ->sortKeys(),
             // Worked out here rather than in the template: what a player can
             // afford is the one number every row on this screen is read
             // against, and Blade should not be doing division.
