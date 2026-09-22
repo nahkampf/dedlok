@@ -2,6 +2,71 @@
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-09-22
+
+The screens grow bars, cards and a search box; every level of a skill is
+worth something.
+
+### Added
+
+- **The character sheet has Vitals.** Hitpoints and Synaptic Integrity, each
+  against its RESOLVED maximum rather than a stored one, with a bar and the
+  effects that moved that maximum listed underneath — an injury, an implant, a
+  dose, a skill — one line per layer, read straight off the resolver's own
+  breakdown. The same account the run screen's evasion card gives, on the
+  screen a player opens most.
+- **A skill has a card, and it is the same device an item has.**
+  `<x-skill-detail>` in a `<template>`, floated beside the row on hover and
+  opened as a modal on a tap, so a skill and an item are inspected the same
+  way. It says what the skill is, what governs it, what it requires, what
+  knowing it grants at each level, whether the book is still owned, whether it
+  has been injected, and how far it has been trained — the level dots, with the
+  one being earned breathing in ember.
+- **What a modifier DOES is now said in words, once.** `Modifier::effectText()`
+  renders "+3% Evasion" from the modifier itself, so a card cannot drift from
+  what the resolver does; the skill card and character creation both read it,
+  and every stat a skill effect reaches is named, so none of them renders as a
+  bare percentage any more.
+- **The deck screen measures compute, memory and heat.** Compute and memory are
+  what the running set spends against what the deck resolves. Thermal load is
+  drawn against the highest LIMIT anything fitted carries — a scale and never a
+  chassis rating, since a deck still has none — with each module's warning in
+  brass and its limit in ember ticked on the bar. No module with a limit, no
+  bar: there is nothing to measure against.
+- **The market is one accordion per kind, with a search box.** It matches a
+  name, a kind, the skill a book teaches and its flavour, opens the groups that
+  match while there is a query, and puts them back when the box empties.
+  Filtering in the page rather than a round trip per keystroke: everything on
+  the shelf is already there. `data-filter` in the kit, for anything else that
+  wants it.
+- **A front page.** `NOTICE.md`, rendered from Markdown into a collapsed
+  accordion teased by its first 250 characters, over CITY and CYBERSPACE.
+
+### Changed
+
+- **Every level of a skill is worth something.** Seven skills still handed out
+  milestones — one grant at level 2, another at 4, and nothing in between,
+  which reads on the new card as levels that do nothing. Cyberdecks, Neural
+  Sheathing, Overclocking, Thermal Management, Neural Interfacing, Eidetic
+  Implants and Advanced System Profiling grant at every level now. Overclocking
+  is still a trade: the heat climbs faster than the compute does.
+- **The body map is a picture.** The drawn Vitruvian figure is
+  `public/images/body.gif`, screened onto the well so its black drops out, with
+  the five regions marked on it in `--info`.
+
+### Fixed
+
+- **Signing in landed on a 404.** Fortify was sending an authenticated player
+  to `/home`, where nothing is routed. It goes to `/`.
+- **Attribute labels spilled under their bars.** `.vital--tight` gives a label
+  48px, which is right for "HP" and not for "PERCEPTION"; the meter is
+  positioned, so anything that overflowed was painted over. `.vital--wide` is
+  the sheet's column.
+
+### Migrations
+
+- `2026_09_22_120000_every_level_of_a_skill_is_worth_something`
+
 ## [0.14.0] — 2026-09-22
 
 Heat finally does something, and there is something new to put in your body.
@@ -884,7 +949,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/nahkampf/dedlok/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/nahkampf/dedlok/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/nahkampf/dedlok/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/nahkampf/dedlok/compare/v0.12.1...v0.12.2
