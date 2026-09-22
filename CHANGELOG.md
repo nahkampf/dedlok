@@ -2,6 +2,74 @@
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-09-22
+
+Heat finally does something, and there is something new to put in your body.
+
+### Added
+
+- **Heat attracts attention.** It has been a number that only went up since the
+  trace was built — one point a completed trace, two a burn — and read by
+  nothing, which is not a mechanic. Every character carrying any is now rolled
+  once a night against the chance somebody out there decides they are worth
+  money: the uncertainty floor under five points, climbing in a straight line to
+  certain at a hundred. A character carrying none is not rolled at all, because
+  a floor is what an attempt keeps rather than something the world owes somebody
+  who has done nothing. What lands is a message saying the word is out — there
+  is no bounty row, no hunter and no price yet, so it says that and stops where
+  the mechanic stops.
+- **And heat comes off again, slowly.** Half a point a night, after the bounty
+  roll rather than before it: you answer for the heat the night ended with, and
+  the cooling is the morning after. Two nights to shake a completed trace, four
+  to shake a burn. The rate is a stat, so the first skill that speeds it up —
+  a fixer's contacts, a clean identity, a scrubbed record — is a modifier and
+  nothing in the nightly pass learns it exists.
+- **Drugs.** A drug is an item with a `drugs` row, the shape software and deck
+  hardware already have; what a dose does stays on the item's modifiers like an
+  implant's. Taking one spends a copy, writes a dose that wears off on its own
+  clock, and moves two books kept per family — so somebody can be deep into
+  opiates and clean of stimulants. Tolerance cuts what the NEXT dose is worth
+  and only its positive half: a drug does less *for* you as it becomes familiar,
+  never less *to* you. Addiction past a threshold is a withdrawal you carry
+  until you take something of the right family, which clears it without curing
+  it: the figure underneath does not move, and only time brings it down. Both
+  come off slowly if left alone, tolerance faster than addiction, so a break
+  gives the drug its strength back long before it gives the need up.
+- **Overdosing, which is allowed, deterministic, and costs three separate
+  things.** A body holds so many of one family at once and tolerance widens
+  that, so tolerance costs potency and buys headroom. Past the line the ceiling
+  comes down as an injury, the body takes ordinary damage a constitution can be
+  written against, and past the family's own threshold the heart stops and drops
+  you on the waiting screen. Opiates and sedatives do it soonest, a stimulant
+  has to work harder at it, and nothing about a psychedelic stops a heart.
+  Nothing rolls for any of it: a drug is a known quantity somebody puts into
+  their own body on purpose, and the third one hurting *sometimes* is a slot
+  machine.
+
+### Changed
+
+- **The resolver still has no idea that one modifier can scale another**, which
+  was the open question drugs were blocked on for two releases. Tolerance is
+  applied at the DOSE and frozen onto it, so what somebody swallowed is what
+  they swallowed — and the arithmetic stayed add, percentage, multiply,
+  override, clamp. A dose in effect is a row of its own read by a sixth modifier
+  source, because a modifier row names one definition and takes one amount while
+  a drug's effects are a list. Two doses are two rows and they add up, which is
+  the stacking answer drugs wanted without a rule being written for it.
+- **`characters.heat` is a decimal.** What earns heat is whole and what removes
+  it is not, so rounding the decay would have meant either no decay at all below
+  a point a night or a rate nobody could tune between one and two.
+- **A seventh damage origin, and the Crim noticed on its own.** An overdose
+  hurts the body through the ordinary damage door, so the archetype perk that
+  covers every way of being hurt in the body picked it up without being told —
+  which is what the tag sets are for.
+
+### Migrations
+
+- `2026_09_21_140000_heat_cools_by_half_a_point`
+- `2026_09_21_150000_a_drug_is_an_item_with_a_family`
+- `2026_09_22_090000_a_drug_may_disagree_with_its_family`
+
 ## [0.13.0] — 2026-09-21
 
 Four things the player is finally told, and one wall that became a difficulty.
@@ -816,7 +884,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/nahkampf/dedlok/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/nahkampf/dedlok/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/nahkampf/dedlok/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/nahkampf/dedlok/compare/v0.12.0...v0.12.1
