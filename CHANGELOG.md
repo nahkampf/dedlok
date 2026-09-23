@@ -2,6 +2,80 @@
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-09-23
+
+Somebody is keeping score. Entities own the grid, remember what you did to
+them, and a few of them keep a desk you can walk up to.
+
+### Added
+
+- **Entities, and ten of them are somebody.** `corps` is `entities`: a rename
+  rather than a second table, because it already owned 2,866 of the 2,867
+  systems and a second owner table would have meant every reader asking which
+  kind of owner a system had. It gains a `category` — corporation, government,
+  military, fringe — and **`interactable`, which is the whole difference
+  between scenery and somebody you can work for**, false by default the way
+  `archetypes.playable` is. Five existing companies are promoted and five are
+  authored: the Bureau of Network Integrity and the Directorate of Revenue
+  Enforcement, Joint Signals Command, and two fringe crews, Lockjaw and Golden
+  Path. The five new ones take systems of their own, because an entity nobody
+  can act against is half a relationship.
+- **Standing: what an entity thinks of you.** Two tables and one invariant —
+  `entity_books` carries a running total beside `entity_ledger`, an immutable
+  log of every change, and **the first is always exactly the sum of the
+  second**. It survives clamping because every delta records WHAT LANDED: an
+  act against somebody already at the floor writes a delta of zero, which says
+  honestly that it changed nothing. `standing:verify` asks out loud and exits
+  non-zero if the answer is no. Being seen on their system costs a little,
+  taking something costs more, a burn costs twenty raids, and a door of yours
+  found costs something in between. **Flavour entities keep no books at all**,
+  so the hundred-odd companies nobody can deal with are free to pass.
+- **And it fades, proportionally.** Half a percent of what is carried, toward
+  neutral from both directions, nightly at 05:20 after the heat comes off. Not
+  flat, which at the size of what earns standing would erase a day's work at
+  the bottom of the ladder and cost nothing at the top — and a percentage
+  gives every rung a soft ceiling without another rule.
+- **A reader, in the same release.** The map and the run briefing both say what
+  the system's owner makes of you, as a band rather than a figure: *hostile*,
+  *hated*, *cold*, *neutral*, *known*, *trusted*, *allied*. Heat spent four
+  releases as a number nothing read; this one did not.
+- **The Exchange: a system that is not one.** `SystemType::isInteractable()`
+  split into four questions the day this arrived, exactly as its own docblock
+  predicted it would — an Exchange answers no to being run against, scanned and
+  defended, and **yes to being owned**, because whose desk it is is the whole
+  reason to stand on one. Thirty-three desks stand across the ten entities,
+  deeper for higher grades, and none of them is ever raided, shut or moved.
+  Standing on one opens **Missions & Loyalty**, where the entity introduces
+  itself, an agent is named, and the desk says what standing it wants before it
+  will deal with anybody at all.
+
+### Changed
+
+- **A skillbook is an Eidetic Imprint.** Across the board: the class, the
+  relation, the predicate, the picture folder, the refusal, the tests and the
+  docs. The NAME needed no data migration, which is the whole argument for
+  composing it — an imprint has no name of its own and reads from the skill it
+  carries, so one line of `strings` renamed all thirty-nine at once. The SLUG
+  is the part with a row and moves by migration, because an item whose slug
+  says skillbook and whose name says imprint is one thing with two names.
+
+### Fixed
+
+- **A band lookup collapsed two bands into one.** The standing vocabulary was
+  keyed by float floors in config, and PHP casts a float array key to an int —
+  so −0.001 and 0.0 were the same key and *cold* was unreachable. It is a list
+  of `at`/`band` pairs now, with the reason written beside it.
+
+### Migrations
+
+- `2026_09_23_120000_corps_become_entities`
+- `2026_09_23_130000_the_first_entities_worth_dealing_with`
+- `2026_09_23_140000_the_new_entities_get_systems`
+- `2026_09_23_150000_standing_and_loyalty`
+- `2026_09_23_160000_entities_keep_front_desks`
+- `2026_09_23_170000_the_grid_admits_an_exchange`
+- `2026_09_23_180000_skillbooks_become_eidetic_imprints`
+
 ## [0.15.1] — 2026-09-23
 
 The sheet says what is in you, the inbox reads one at a time, and a
@@ -1003,7 +1077,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.15.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/nahkampf/dedlok/compare/v0.15.1...v0.16.0
 [0.15.1]: https://github.com/nahkampf/dedlok/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/nahkampf/dedlok/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/nahkampf/dedlok/compare/v0.13.0...v0.14.0
