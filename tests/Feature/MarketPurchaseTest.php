@@ -11,6 +11,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\MarketPurchase;
 use App\Models\MarketStock;
+use App\Programs\ProgramKind;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -213,6 +214,38 @@ final class MarketPurchaseTest extends TestCase
             ->assertSee('<details class="panel" data-filter-group>', false)
             ->assertSee('data-filter-text="'.e($item->displayName()), false)
             ->assertSeeText($item->kindName());
+    }
+
+    /**
+     * EVERY ICEBREAKER IS BUYABLE. It is the gate in front of every fight —
+     * without one a run that meets ICE has nothing to cut with — and the
+     * other half of that rule is pinned in DefencesTest: twenty turns is
+     * never enough, so the ladder has to be climbable by buying the next
+     * piece as well as by training for it.
+     *
+     * A shelf size of zero would mean listed and never delivered, which is
+     * the default and was the state they shipped in.
+     */
+    public function test_every_icebreaker_can_reach_a_shelf(): void
+    {
+        $icebreakers = Item::query()
+            ->whereHas('program', fn ($query) => $query->where('kind', ProgramKind::Icebreaker))
+            ->get();
+
+        $this->assertCount(12, $icebreakers);
+
+        foreach ($icebreakers as $item) {
+            $this->assertTrue($item->on_market, "{$item->name} is not listed");
+            $this->assertGreaterThan(0, $item->seed_quantity, "{$item->name} has a shelf of nothing");
+        }
+
+        // And the sizes fall as the rarity climbs, which is what makes the top
+        // of the ladder scarce rather than merely expensive.
+        $byRarity = $icebreakers->groupBy(fn (Item $item): string => $item->rarity->value)
+            ->map(fn ($group): int => (int) $group->first()->seed_quantity);
+
+        $this->assertGreaterThan($byRarity['ultra_rare'], $byRarity['common']);
+        $this->assertGreaterThanOrEqual($byRarity['rare'], $byRarity['uncommon']);
     }
 
     public function test_an_empty_market_says_so(): void
