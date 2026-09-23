@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Drugs\DrugLedger;
+use App\Drugs\Family;
 use App\Models\Archetype;
 use App\Models\Character;
+use App\Models\Dose;
 use App\Stats\BreakdownStep;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
@@ -44,6 +47,10 @@ class CharacterController extends Controller
             'attributes' => $this->attributes($character),
             'max' => Character::ATTRIBUTE_MAX,
             'vitals' => $this->vitals($character),
+            // What is in them right now, and how close each family is to the
+            // line. Empty for nearly everybody, and then the section is absent
+            // rather than a row of zeroes.
+            'doses' => $this->doses($character, new DrugLedger),
             // The roster is cached and read on nearly every request anyway,
             // so naming the role costs nothing. `characters.archetype` is an
             // id rather than a relation — see Character::modifiers().
@@ -124,6 +131,62 @@ class CharacterController extends Controller
                 'max' => $stat->toInt(),
                 'ratio' => $character->resourceRatio($resource),
                 'steps' => $stat->steps,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * One row per drug family they carry anything for: what is working, how
+     * many more this body holds, and what the books say.
+     *
+     * A FAMILY WITH NOTHING IN IT AND CLEAN BOOKS IS LEFT OUT. Somebody can be
+     * deep into opiates and clean of stimulants, so this is per family like
+     * the ledger underneath it, and absent and zero are the same answer.
+     *
+     * The capacity is counted against what is ALREADY working, which is what
+     * `App\Drugs\DrugTaker` counts when it decides whether the dose being
+     * taken is the one that breaks it — so the meter is the warning, not a
+     * second opinion.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function doses(Character $character, DrugLedger $ledger): array
+    {
+        $inEffect = Dose::query()
+            ->where('character_id', $character->getKey())
+            ->inEffect()
+            ->with('item.drug')
+            ->orderBy('expires_at')
+            ->get();
+
+        $rows = [];
+
+        foreach (Family::cases() as $family) {
+            $books = $ledger->for($character, $family);
+            $working = $inEffect->filter(fn (Dose $dose): bool => $dose->item?->drug?->family === $family)->values();
+            $addiction = (float) $books->addiction;
+            $tolerance = (float) $books->tolerance;
+
+            if ($working->isEmpty() && $addiction <= 0.0 && $tolerance <= 0.0) {
+                continue;
+            }
+
+            $capacity = $ledger->capacityFor($character, $family);
+
+            $rows[] = [
+                'family' => $family,
+                'doses' => $working,
+                'used' => $working->count(),
+                'capacity' => $capacity,
+                'ratio' => $capacity > 0 ? min(1.0, $working->count() / $capacity) : 1.0,
+                'tolerance' => $tolerance,
+                'addiction' => $addiction,
+                // Over the line, which is not the same as in withdrawal: a
+                // dose of the right family holds it off without curing it.
+                'hooked' => $ledger->isHooked($character, $family),
+                'withdrawing' => $ledger->isHooked($character, $family) && $working->isEmpty(),
             ];
         }
 

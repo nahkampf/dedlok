@@ -252,6 +252,8 @@ Route::middleware('auth')->group(function () {
      */
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/read', [NotificationController::class, 'read'])->name('notifications.read');
+    // Opening one is reading it, and it writes, so it is a POST like the other.
+    Route::post('/notifications/{message}/open', [NotificationController::class, 'open'])->name('notifications.open');
     Route::post('/skills/queue', [TrainingQueueController::class, 'store'])->name('training.store');
     Route::delete('/skills/queue/{entry}', [TrainingQueueController::class, 'destroy'])->name('training.destroy');
 

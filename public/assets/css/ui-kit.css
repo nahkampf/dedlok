@@ -2388,6 +2388,9 @@ details.panel > summary.panel__hd:focus-visible {
   border-left: 2px solid var(--tier, transparent);
 }
 .item-row:hover { background: var(--bg-2); }
+/* A row that submits. The inbox's rows write before they navigate, so they
+   are buttons; everything else about them is a row. */
+button.item-row { width: 100%; text-align: left; background: none; font: inherit; color: inherit; cursor: pointer; }
 .item-row__name { font-size: var(--fs-sm); color: var(--ink-0); }
 .item-row__meta { font: 600 var(--fs-xs)/1 var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--tier, var(--ink-2)); }
 

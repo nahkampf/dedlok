@@ -4,6 +4,25 @@
 @section('title', config('app.name'))
 
 @section('content')
+    {{-- The wordmark, above everything. It is the page's title in a picture,
+         so the alt text is the name and nothing else.
+
+         Four widths, and the browser picks: it is never drawn wider than 560
+         CSS pixels, so 1120 is the retina copy and the top of the ladder.
+         images/logo.png is the master and is not served — regenerate the four
+         from it, transparency and all, with:
+
+           for w in 320 560 840 1120; do convert logo.png -resize ${w}x \
+             -strip -define png:compression-level=9 logo-${w}.png; done --}}
+    <img src="{{ Asset::url('images/logo-560.png') }}" alt="{{ config('app.name') }}"
+         srcset="{{ Asset::url('images/logo-320.png') }} 320w,
+                 {{ Asset::url('images/logo-560.png') }} 560w,
+                 {{ Asset::url('images/logo-840.png') }} 840w,
+                 {{ Asset::url('images/logo-1120.png') }} 1120w"
+         sizes="(max-width: 640px) 100vw, 560px"
+         width="1120" height="448"
+         style="display:block;width:min(560px,100%);height:auto;margin:0 auto var(--s-5)">
+
     {{-- One wide card over two. .grid--pair is two columns that become one
          below 640px, and a class rather than inline tracks because an inline
          track would beat the media query. --}}

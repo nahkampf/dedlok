@@ -66,6 +66,10 @@ class SkillsController extends Controller
                 ->all(),
             'limit' => TrainingQueue::LIMIT,
             'training' => $this->training($character, $queue->first(), $levels),
+            // What the WHOLE queue costs, at the rates it earns this instant —
+            // the same honesty the active entry's estimate has, and the same
+            // limit: nothing here models a modifier that changes tonight.
+            'queueMinutes' => $this->queueMinutes($character, $queue, $levels),
             // The queue is allowed to describe training that cannot happen
             // yet, so these are warnings on the screen and never a refusal.
             'problems' => (new TrainingQueueValidator)->problemsFor($character),
@@ -143,6 +147,50 @@ class SkillsController extends Controller
             // can say "in about three hours" with the framework's own words.
             'finishes' => $minutes === null ? null : now()->addMinutes((int) ceil($minutes)),
         ];
+    }
+
+    /**
+     * How long the whole queue takes at the rates it earns now, in minutes.
+     *
+     * Per SKILL and not per entry: reaching level 4 costs `pointsForLevel(4)`
+     * altogether, so three entries taking one skill from 1 to 4 are one sum
+     * against what is already banked — counting each entry from zero would
+     * charge for the same points three times.
+     *
+     * Null when anything in it earns nothing: a queue with a stalled skill in
+     * it has no finishing time, and a number that left the stalled part out
+     * would be an estimate that quietly excludes the reason it is wrong.
+     *
+     * @param  Collection<int, TrainingQueueEntry>  $queue
+     * @param  array<int, array{level: int, points: int}>  $levels
+     */
+    private function queueMinutes(Character $character, Collection $queue, array $levels): ?float
+    {
+        $targets = [];
+
+        foreach ($queue as $entry) {
+            if ($entry->skill === null) {
+                continue;
+            }
+
+            $id = (int) $entry->skill_id;
+            $targets[$id] = max($targets[$id] ?? 0, (int) $entry->target_level);
+        }
+
+        $minutes = 0.0;
+
+        foreach ($targets as $id => $target) {
+            $skill = $queue->firstWhere('skill_id', $id)->skill;
+            $rate = $character->trainingRateFor($skill);
+
+            if ($rate <= 0) {
+                return null;
+            }
+
+            $minutes += max(0, $skill->pointsForLevel($target) - ($levels[$id]['points'] ?? 0)) / $rate;
+        }
+
+        return $queue->isEmpty() ? null : $minutes;
     }
 
     /**

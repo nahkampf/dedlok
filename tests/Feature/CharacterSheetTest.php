@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Drugs\Family;
 use App\Models\Character;
 use App\Models\CharacterModifier;
+use App\Models\Dose;
+use App\Models\Drug;
+use App\Models\DrugUse;
+use App\Models\Item;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -97,6 +102,51 @@ final class CharacterSheetTest extends TestCase
             ->assertSee('−4', false)
             // SI has nothing on it.
             ->assertSeeText(Text::get('character.vitals_unmodified'));
+    }
+
+    /**
+     * The dose panel is per FAMILY, and a family with nothing in it and clean
+     * books is left out — a row of zeroes would describe a problem nobody has.
+     */
+    public function test_the_sheet_says_what_is_in_them(): void
+    {
+        $item = Item::factory()->create(['container' => 'physical', 'name' => 'Redline']);
+        Drug::query()->create([
+            'item_id' => $item->id,
+            'family' => Family::Stimulant,
+            'duration_minutes' => 60,
+            'addictive' => 4.0,
+            'tolerance_gain' => 5.0,
+        ]);
+
+        Dose::query()->create([
+            'character_id' => $this->character->id,
+            'item_id' => $item->id,
+            'potency' => 0.8,
+            'started_at' => now(),
+            'expires_at' => now()->addHour(),
+        ]);
+
+        DrugUse::query()->create([
+            'character_id' => $this->character->id,
+            'family' => Family::Stimulant,
+            'addiction' => 12.0,
+            'tolerance' => 5.0,
+        ]);
+
+        $this->visit()
+            ->assertSeeText(Text::get('character.doses_heading'))
+            ->assertSeeText(Family::Stimulant->label())
+            ->assertSeeText('Redline')
+            ->assertSeeText(Text::get('character.doses_potency', ['percent' => 80]))
+            // Two of a possible two, and no card for a family they are clean of.
+            ->assertSeeText(Text::get('character.doses_capacity', ['used' => 1, 'capacity' => 2]))
+            ->assertDontSeeText(Family::Opiate->label());
+    }
+
+    public function test_a_clean_character_has_no_dose_panel(): void
+    {
+        $this->visit()->assertOk()->assertDontSeeText(Text::get('character.doses_heading'));
     }
 
     // ---- the tabs ----------------------------------------------------------

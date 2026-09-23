@@ -8,11 +8,13 @@ use App\Checks\CheckRoller;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
+use App\Cyberspace\Simulator;
 use App\Models\Character;
 use App\Models\Ice;
 use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemContent;
+use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
@@ -148,28 +150,65 @@ final class RunScreenSmokeTest extends TestCase
      */
     public function test_every_action_can_be_taken_over_http(): void
     {
-        foreach (RunAction::values() as $action) {
-            $this->refreshRun(iceLevel: 3);
+        foreach ([true, false] as $passes) {
+            $this->pinTheDice($passes);
 
-            $response = $this->post(route('run.act'), ['action' => $action]);
+            foreach (RunAction::values() as $action) {
+                $this->refreshRun(iceLevel: 3);
 
-            $response->assertRedirect();
-            $this->assertLessThan(
-                500,
-                $response->getStatusCode(),
-                "{$action} came back a server error",
-            );
+                $response = $this->post(route('run.act'), ['action' => $action]);
+
+                $response->assertRedirect();
+                $this->assertLessThan(
+                    500,
+                    $response->getStatusCode(),
+                    "{$action} came back a server error with every roll ".($passes ? 'passing' : 'failing'),
+                );
+            }
         }
     }
 
     /** The same, with nothing awake — the other side of every gate in a turn. */
     public function test_every_action_can_be_taken_against_a_quiet_machine(): void
     {
-        foreach (RunAction::values() as $action) {
-            $this->refreshRun();
+        foreach ([true, false] as $passes) {
+            $this->pinTheDice($passes);
 
-            $this->post(route('run.act'), ['action' => $action])->assertRedirect();
+            foreach (RunAction::values() as $action) {
+                $this->refreshRun();
+
+                $this->post(route('run.act'), ['action' => $action])->assertRedirect();
+            }
         }
+    }
+
+    /**
+     * BOTH DICE, PINNED, BOTH WAYS.
+     *
+     * This file used to take what the container gives a real request, dice and
+     * all, and a turn that 500s only on an unlucky roll would show up in one
+     * run out of however many — which is what happened on 2026-09-23. A smoke
+     * test that walks every action has to walk the same path every time, so
+     * the two rolls a turn makes are pinned and each test runs the whole list
+     * twice: everything passing, then everything failing.
+     *
+     * `CheckRoller` passes on a roll STRICTLY BELOW the chance, so 0.0 is a
+     * check that always lands and 1.0 one that never does. The simulator's own
+     * die is an integer range, and its two ends are the same two answers.
+     *
+     * The Simulator is rebuilt around the pinned roller rather than resolved
+     * from the container, or it would hold the random one the provider binds.
+     */
+    private function pinTheDice(bool $passes): void
+    {
+        $checks = CheckRoller::fromConfig(static fn (): float => $passes ? 0.0 : 1.0);
+
+        $this->instance(CheckRoller::class, $checks);
+        $this->instance(Simulator::class, Simulator::fromConfig(
+            static fn (int $min, int $max): int => $passes ? $max : $min,
+            app(Resolver::class),
+            $checks,
+        ));
     }
 
     /** An action nothing knows is refused by validation, not by a 500. */
@@ -241,11 +280,19 @@ final class RunScreenSmokeTest extends TestCase
             CheckRoller::fromConfig(static fn (): float => $noticed ? 1.0 : 0.0),
         );
 
-        $run = app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Extraction)->run;
+        $result = app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Extraction);
+
+        // A refusal here is the HELPER failing, not the screen, and it used to
+        // arrive as "begin(): return value must be of type Run, null returned"
+        // several frames away from the reason. Say the reason.
+        $this->assertNotNull(
+            $result->run,
+            'the run could not be started: '.($result->refusal?->name ?? 'no refusal given'),
+        );
 
         $this->actingAs($this->character->fresh()->user);
 
-        return $run;
+        return $result->run;
     }
 
     /** A machine and a fresh live run, for the next action in the loop. */
@@ -254,7 +301,26 @@ final class RunScreenSmokeTest extends TestCase
         Run::query()->delete();
         System::query()->delete();
 
-        $this->character->forceFill(['current_run_id' => null, 'grid_x' => 8, 'grid_y' => 8])->save();
+        /*
+         * BACK ON THEIR FEET, because the turn before this one was real. With
+         * every roll landing, an awake ICE takes eleven points of Synaptic
+         * Integrity a turn and empties a starting pool in four — and a
+         * character on the waiting screen has been jacked out, so the next
+         * run refuses with NotJackedIn and the failure lands here rather than
+         * anywhere near the action that caused it.
+         *
+         * So this puts back everything a turn is allowed to spend: the
+         * position, both resources and the floor itself.
+         */
+        $this->character->forceFill([
+            'current_run_id' => null,
+            'grid_x' => 8,
+            'grid_y' => 8,
+            'waiting_until' => null,
+            'waiting_cause' => null,
+            'current_hitpoints' => $this->character->maximumFor('current_hitpoints'),
+            'current_synaptic_integrity' => $this->character->maximumFor('current_synaptic_integrity'),
+        ])->save();
         $this->character->refresh();
 
         $this->machine($iceLevel);

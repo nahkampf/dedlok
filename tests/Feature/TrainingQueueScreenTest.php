@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Skills\QueueRefusal;
 use App\Skills\TrainingQueue;
 use App\Support\Text;
+use Carbon\CarbonInterval;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\InjectsSkills;
 use Tests\TestCase;
@@ -251,6 +252,42 @@ final class TrainingQueueScreenTest extends TestCase
             // The kit's live dot is what says something is running, and there
             // is at most one on the screen because at most one entry trains.
             ->assertSee('dot--live', false);
+    }
+
+    /**
+     * The whole queue's time, per SKILL rather than per entry: three entries
+     * taking one skill from 0 to 3 cost pointsForLevel(3) altogether, and
+     * counting each from zero would charge for the same points three times.
+     */
+    public function test_the_queue_says_how_long_all_of_it_takes(): void
+    {
+        $this->inject($this->character, $this->hacking);
+        $this->queue()->enqueue($this->character, $this->hacking);
+        $this->queue()->enqueue($this->character, $this->hacking);
+        $this->queue()->enqueue($this->character, $this->hacking);
+
+        $rate = $this->character->trainingRateFor($this->hacking);
+        $minutes = (int) ceil($this->hacking->pointsForLevel(3) / $rate);
+        $expected = CarbonInterval::minutes($minutes)->cascade()->forHumans(['parts' => 2]);
+
+        $this->actingAs($this->user)
+            ->get(route('skills.index'))
+            ->assertOk()
+            ->assertSeeText(Text::get('training.queue_total', ['duration' => $expected]));
+    }
+
+    /** What is training and what is queued reach the same card the list does. */
+    public function test_the_training_name_and_the_queue_rows_open_the_card(): void
+    {
+        $this->inject($this->character, $this->hacking);
+        $this->queue()->enqueue($this->character, $this->hacking);
+
+        $html = $this->actingAs($this->user)->get(route('skills.index'))->assertOk()->getContent();
+
+        // Once on the name that is training, once on the queue row, once on
+        // the row in the list below — and the template they all point at.
+        $this->assertSame(3, substr_count($html, 'data-inspect="#skill-'.$this->hacking->id.'"'));
+        $this->assertStringContainsString('<template id="skill-'.$this->hacking->id.'">', $html);
     }
 
     /**

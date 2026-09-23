@@ -175,9 +175,10 @@ somebody swallowed is what they swallowed.
   the loop legible rather than because anything measured it.
 - **Nothing costs money.** A drug is an item, so this is the market's problem
   rather than this mechanic's.
-- **A clinic.** Neural damage accumulates and there is still nothing that heals
-  it — the same gap an ICE flatline leaves. That is one screen and one writer,
-  and it is worth doing once, not per cause.
+- **A clinic, and it is two injuries overdue.** Neural damage accumulates from
+  overdoses as well as from an ICE flatline, and nothing heals any of it. That
+  is one screen and one writer, and it is worth doing once rather than per
+  cause.
 - **Withdrawal is one modifier list per family and does not deepen.** Being
   forty points over the line reads the same as being one. A depth term would
   mean an `:amount` on the definition and `InjuryLedger`'s shape, which is a
@@ -188,76 +189,17 @@ somebody swallowed is what they swallowed.
 - **Nothing lists "what is in you right now".** An overdose is said in the
   flash message and lands in the injury, the body and sometimes the waiting
   screen — but a player cannot see what they are carrying or how close they are
-  to the line. A dose panel on the character or stash screen is the obvious
-  next thing, and it is the only place `Overdose` would want a preview method.
-- **A clinic is now two injuries overdue.** Neural damage accumulates from
-  overdoses as well as ICE, and nothing heals any of it.
+  to the line. The character sheet grew a Vitals section in 0.15.0 and a dose
+  panel is the obvious thing beside it, and the only place `Overdose` would
+  want a preview method.
 
---- | --- |
-| **family** | which group it belongs to — opiates, stimulants, and so on |
-| **addictive** | how fast taking it drives the addiction figure up |
-| **tolerance** | how fast taking it drives the tolerance figure up |
-
-**The books are kept per FAMILY and per character, never per drug.** A character
-can be deep into opiates and clean of stimulants at the same time, so the ledger
-is (character, family) → addiction, tolerance. That is a table nothing resembles
-yet: `character_modifiers` is the wrong shape because these are two running
-totals rather than an effect with a duration.
-
-**Both figures decay on their own, slowly.** `characters:regenerate` is the
-precedent for how — a per-minute pass with no stored clock, or a lazy catch-up
-off elapsed time if the decay has to be exact. The choice is the same one that
-distinguishes the training heartbeat from the market's delivery run: exact
-catch-up when a player is watching the number, a trickle otherwise.
-
-**Addiction above a threshold is withdrawal**, and that half already has its
-machinery: a withdrawal effect is a `config/effects.php` definition — a cause
-with no row of its own, which is exactly what those are for — written as a
-`character_modifiers` row. Reductions to Focus are the example. It clears when
-the character takes a drug of the right family, which is the only thing that
-clears it.
-
-**Tolerance reduces what a drug DOES, in bands** — above one threshold its
-positive effects are worth 10% less, then 20%, then 30%.
-
-### The part that does not fit the resolver yet
-
-**Tolerance modifies a modifier, and `App\Stats\Resolver` has no such idea.** It
-resolves a stat from a base and a list of modifiers; it has no notion of one
-modifier scaling another. A drug granting +10 Focus at 20% tolerance is not a
--20% modifier on Focus — that would also scale the implant, the perk and the
-attribute underneath it. It has to reach that one grant and nothing else.
-
-Three shapes, none obviously right:
-
-- **Apply it at the moment of consumption.** The drug writes a
-  `character_modifiers` row already reduced, and the row is honest about what it
-  is worth. Simplest, and it makes tolerance a property of the DOSE rather than
-  of the character — so a dose taken while clean stays strong as tolerance
-  climbs around it, which may be right or may be exactly wrong.
-- **A `source` on the modifier and a scaling rule keyed to it.** The resolver
-  learns to scale modifiers carrying a given source. Cheapest at read time, and
-  it is a genuinely new idea in a resolver that has deliberately stayed
-  arithmetic.
-- **A drug's grant is its own layer.** Tolerance becomes a `percentage_of_base`
-  against a tag every drug wears — which MECHANICS already supports, since
-  percentages sum and apply once — but only if a drug's contribution can be
-  separated from the base, which it currently cannot.
-
-**Decide that before authoring any drug**, because all three change what a drug
-row looks like.
-
-### What else it will need
-
-- **Stacking.** `App\Stats\Stacking` exists and its own docblock uses this
-  case: two doses of a stimulant add up, two implants doing one job do not. A
-  drug's effect wants the adding answer, and that is a choice on the definition.
-- **An overdose.** `App\Stats\InjuryLedger` already says a future overdose
-  should write into the same *neural damage* injury a freeze and an ICE flatline
-  write into — one row that deepens, so a clinic heals one number.
-- **A way to be told.** Crossing a withdrawal threshold is exactly the kind of
-  thing the inbox is for — `App\Notifications\Notifier`, which needs a
-  `Category` case for it and a sender.
+**The design notes that used to follow are gone, swept 2026-09-23.** They
+described the shape of a mechanic that is now built, and two of them had already
+been answered by the thing that shipped: tolerance is applied at the dose and
+frozen onto the row as `potency`, doses sum because two rows sum, and the
+overdose writes into the same *neural damage* injury a freeze does. What has not
+happened is the third: crossing a withdrawal threshold still sends no inbox
+message, and `App\Notifications\Notifier` is what it would use.
 
 ---
 
@@ -412,8 +354,75 @@ routing hop goes on the route, and four separate things can take one away.
   the log line it already wrote. The log is for whoever reads the nightly job's
   output; the message is for the player, who is asleep.
 - **Each hop hinders by its grade and nothing else**, which is decided rather
-  than missing — see CYBERSPACE.md, *The routing chain*. What is NOT decided is
-  what a SIPHON pays, which is the last thing backdoors owe.
+  than missing — see CYBERSPACE.md, *The routing chain*.
+- ~~**What a siphon pays is undecided.**~~ Decided and paying: 30 a night per
+  grade of machine — `cyberspace.backdoors.siphon.per_grade` — run by
+  `cyberspace:siphons` before the ageing roll. The base is the machine's and the
+  modifiers are the person's — `siphon_yield` is a resolved stat, and no skill
+  moves it yet.
+- **Nothing else is outstanding.** Both kinds do their job; what is left is
+  balance, and nothing is balanced against anything yet.
+
+---
+
+## Author skills until every value has one behind it
+
+**Status: counted 2026-09-23. 104 stats in the registry, 16 moved by a skill.**
+This is authoring work, not engineering — a grant is a row, the editor writes
+one, and the three re-tunes so far arrived by migration because the skills did.
+What follows is the list of what nothing reaches, so the authoring has
+somewhere to start.
+
+**Attributes — nine of ten.** Only Memory is moved, by Eidetic Implants.
+`intellect`, `perception`, `reflex`, `focus`, `social`, `meat`, `motor`,
+`senses`, `muscle` have nothing.
+
+**Vitals.**
+
+- `hitpoints_max` — Neural Sheathing raises max SI and nothing raises max HP.
+- `recovery_minutes` — how long somebody lies on the floor.
+
+**Deck measures — five of ten.**
+
+- `deck_quantabits` and `deck_power_supply`, the two totals no skill helps with
+  while compute, storage, bandwidth and draw all have something.
+- `deck_cooling` — it had Thermal Management's level-5 grant until 0.15.0 made
+  that skill −2% thermal load at every level instead. Emptied by a re-tune
+  rather than never filled, and worth refilling.
+- `deck_module_thermal_warning` and `deck_module_thermal_limit` — a skill that
+  makes hardware tolerate more heat, now that the deck screen draws both
+  thresholds as ticks on a bar.
+
+**One each, and each one load-bearing.**
+
+- `icebreaker_damage` — nothing makes anybody better at the fight the game is
+  built around. It is a program's number today; a skill behind it is the
+  obvious first thing here.
+- `siphon_yield` — `config/cyberspace.php` says in its own comment that no
+  skill moves it.
+- `heat_decay` — half a point a night, and the first skill to speed it up needs
+  no code in `characters:cool`.
+
+**The checks: thirty-two of thirty-four.** Every skill has a `check.<slug>`
+stat. Two are raised — Advanced System Profiling raises `check.systemprofiling`
+and Advanced Routing raises `check.routing` — and nothing raises a combat
+check, an operating-system check, or the rest. That is the same hole from the
+other side: **sixteen skills grant nothing at all** (the eight OS skills, the
+six combat skills, Leadership and Network Topology).
+
+**What NOT to invent.** The OS skills gate what may be attempted and gating is
+not a modifier — see the migration that granted the first effects. The combat
+skills have nothing true to grant until combat exists, and Leadership the same
+until factions or crews do. So this entry is about the ~15 values above, and
+the sixteen empty skills stay empty until the mechanics under them arrive.
+
+**Deliberately not in the count:** the 34 `skill.*` level stats, which are read
+rather than modified, and the 10 damage stats, where a resistance is written
+against a tag set and no skill grants one yet.
+
+**To count it again:** walk `StatRegistry::ids()`, build every skill's
+modifiers through `Modifier::fromArray()`, and ask `appliesTo()` per stat —
+targets can be tag sets, so comparing ids alone would undercount.
 
 ---
 

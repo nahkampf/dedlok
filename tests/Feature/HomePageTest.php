@@ -37,6 +37,8 @@ class HomePageTest extends TestCase
     {
         $this->get(route('home'))
             ->assertOk()
+            ->assertSee('images/logo-560.png', false)
+            ->assertSee('320w', false)
             ->assertSee('class="grid grid--pair"', false)
             ->assertSee('grid__wide', false)
             ->assertSeeText(Text::get('home.places.city'))
@@ -51,7 +53,13 @@ class HomePageTest extends TestCase
             }
         }
 
-        $this->get(route('home'))->assertOk()->assertDontSee('<img', false);
+        // The wordmark above the cards is an <img> of its own, so this asks
+        // about the two places by name rather than about pictures in general.
+        $page = $this->get(route('home'))->assertOk();
+
+        foreach (['images/city.jpg', 'images/cyberspace.jpg'] as $image) {
+            $page->assertDontSee($image, false);
+        }
     }
 
     public function test_the_tier_scale_is_two_steps_and_the_words_match_it(): void

@@ -158,6 +158,54 @@ final class NotificationTest extends TestCase
     }
 
     /**
+     * Opening ONE reads that one and follows its category. The rule that
+     * arriving reads nothing is about the screen, not about a row somebody
+     * clicked.
+     */
+    public function test_opening_a_message_reads_it_and_follows_its_category(): void
+    {
+        $message = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+        $other = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'B', 'level' => 1]);
+
+        $this->actingAs($this->user)
+            ->from(route('notifications.index'))
+            ->post(route('notifications.open', $message))
+            ->assertRedirect(route(Category::Training->route()));
+
+        $this->assertNotNull($message->fresh()->read_at);
+        // Only that one: the rest of the inbox is untouched.
+        $this->assertNull($other->fresh()->read_at);
+        $this->assertSame(1, $this->notifier()->unreadFor($this->user));
+    }
+
+    /** A category with nowhere to lead still reads, and stays put. */
+    public function test_opening_a_message_that_leads_nowhere_still_reads_it(): void
+    {
+        $message = $this->notifier()->send($this->character, Category::Street, 'bounty_posted', []);
+
+        $this->assertNull(Category::Street->route());
+
+        $this->actingAs($this->user)
+            ->from(route('notifications.index'))
+            ->post(route('notifications.open', $message))
+            ->assertRedirect(route('notifications.index'));
+
+        $this->assertNotNull($message->fresh()->read_at);
+    }
+
+    public function test_somebody_elses_message_cannot_be_opened(): void
+    {
+        $stranger = User::factory()->create();
+        $message = $this->notifier()->send($stranger, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+
+        $this->actingAs($this->user)
+            ->post(route('notifications.open', $message))
+            ->assertNotFound();
+
+        $this->assertNull($message->fresh()->read_at);
+    }
+
+    /**
      * THE BADGE IS THE POINT OF THE RAIL ITEM. A count nobody can see without
      * opening the screen is a count that does not do its job.
      */

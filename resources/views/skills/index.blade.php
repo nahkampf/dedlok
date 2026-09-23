@@ -1,4 +1,5 @@
 @use('App\Support\Text')
+@use('Carbon\CarbonInterval')
 @use('Illuminate\Support\Number')
 @extends('layouts.app')
 @section('title', Text::get('training.title'))
@@ -43,7 +44,12 @@
                 ]))
 
                 <span class="row row--wrap" style="--gap:var(--s-2);align-items:baseline">
-                    <span style="font-size:var(--fs-md)">{{ $training['skill']->title }}</span>
+                    {{-- The same card the list below carries, on the name:
+                         floated on hover, opened as a modal on a tap. A button
+                         rather than the bare span, so it is reachable by
+                         keyboard — the kit inspects on :focus-visible. --}}
+                    <button type="button" class="link" style="font-size:var(--fs-md);cursor:help"
+                            data-inspect="#skill-{{ $training['skill']->id }}">{{ $training['skill']->title }}</button>
                     {{-- The levels already held, and the one being earned
                          breathing in ember beside them. --}}
                     @php($toward = Text::get('training.toward', ['level' => $training['target']]))
@@ -91,9 +97,17 @@
     {{-- THE QUEUE. An accordion, because it is a thing you come to change
          rather than something to watch. --}}
     <details class="panel" style="margin-top:var(--s-4)">
+        {{-- How long the whole thing takes, in the summary as well as inside:
+             the panel is shut to begin with, and that is the one number worth
+             reading without opening it. --}}
+        @php($queueEta = $queueMinutes === null ? null : CarbonInterval::minutes((int) ceil($queueMinutes))->cascade()->forHumans(['parts' => 2]))
+
         <summary class="panel__hd">
             <span class="micro">{{ Text::get('training.queue') }}</span>
             <div class="spacer"></div>
+            @if ($queueEta !== null)
+                <span class="micro" style="color:var(--ink-3)">{{ $queueEta }}</span>
+            @endif
             <span class="micro num">{{ count($queue) }}/{{ $limit }}</span>
         </summary>
 
@@ -101,6 +115,17 @@
             <p class="micro" style="color:var(--ink-3);margin:0">
                 {{ Text::get('training.queue_hint', ['limit' => $limit]) }}
             </p>
+
+            {{-- At the rate it earns THIS INSTANT, like the active entry's own
+                 estimate — and absent rather than wrong when something in the
+                 queue earns nothing at all. --}}
+            @if (count($queue) > 0)
+                <p class="micro" style="margin:0">
+                    {{ $queueEta === null
+                        ? Text::get('training.queue_total_stalled')
+                        : Text::get('training.queue_total', ['duration' => $queueEta]) }}
+                </p>
+            @endif
 
             {{-- What the validator found by walking the queue forward from what
                  the character knows now. Warnings and never refusals: a queue
@@ -132,7 +157,13 @@
                             </span>
 
                             <span class="stack" style="--gap:2px;min-width:0">
-                                <span class="item-row__name">{{ $entry->skill?->title }}</span>
+                                {{-- On the name and never the row: the row also
+                                     holds Remove, and a click that reached both
+                                     would open a card over the button. --}}
+                                @if ($entry->skill !== null)
+                                    <button type="button" class="link item-row__name" style="text-align:left;cursor:help"
+                                            data-inspect="#skill-{{ $entry->skill->id }}">{{ $entry->skill->title }}</button>
+                                @endif
                                 <span class="micro" style="color:var(--ink-3)">
                                     {{ Text::get('training.target', ['level' => $entry->target_level]) }}
                                 </span>

@@ -72,6 +72,19 @@ final class Notifier
      * that the rail stops counting it; the message itself stays where it is
      * until somebody clears it.
      */
+    /**
+     * One message, read because somebody opened it.
+     *
+     * Already read is a no-op rather than a second write: the moment a message
+     * was read is the FIRST time, and re-reading it does not move that.
+     */
+    public function markRead(Notification $message): void
+    {
+        if ($message->read_at === null) {
+            $message->forceFill(['read_at' => now()])->save();
+        }
+    }
+
     public function markAllRead(User $user): int
     {
         return Notification::query()

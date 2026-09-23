@@ -1275,6 +1275,20 @@ return [
         'vital_value' => ':vital :current of :max',
         'vitals_modified' => 'Maximum changed by',
         'vitals_unmodified' => 'Nothing is changing the maximum.',
+
+        // What is in them right now — one card per family they carry anything
+        // for. The line is the overdose one: the dose that takes it past the
+        // capacity is the dose that breaks it.
+        'doses_heading' => 'What is in you',
+        'doses_capacity' => ':used of :capacity',
+        'doses_none' => 'Nothing of this in you',
+        'doses_at_the_line' => 'One more is too much',
+        'doses_wears_off' => 'wears off :when',
+        'doses_potency' => ':percent% strength',
+        'doses_tolerance' => 'Tolerance',
+        'doses_addiction' => 'Addiction',
+        'doses_hooked' => 'Hooked',
+        'doses_withdrawing' => 'Withdrawal',
         // The one thing on the sheet the game never reads.
         'bio' => 'Bio',
         'bio_hint' => 'Yours, and nothing in the game reads it. Clear the box to take it down.',
@@ -1548,6 +1562,9 @@ return [
         // The two the catalogue used to own, kept because the list of what a
         // character knows says the same things about a row that the tree did.
         'governed_by' => ':primary / :secondary',
+        // What the whole queue costs, at the rate it earns this instant.
+        'queue_total' => 'The whole queue: :duration',
+        'queue_total_stalled' => 'The whole queue cannot be timed while something in it earns nothing.',
 
         // <x-skill-detail>: everything about one skill, on one card.
         'card' => [

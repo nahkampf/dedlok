@@ -97,6 +97,75 @@
             </div>
         </div>
 
+        {{-- WHAT IS IN THEM RIGHT NOW. Absent for nearly everybody, because a
+             family with nothing in it and clean books is left out — a row of
+             zeroes would say somebody has a drug problem they do not have.
+             The meter is the OVERDOSE line: the dose that takes it past the
+             capacity is the dose that breaks it. --}}
+        @if ($doses !== [])
+            <div class="stack" style="--gap:var(--s-2);margin-top:var(--s-5)">
+                <span class="micro">{{ Text::get('character.doses_heading') }}</span>
+
+                <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));--gap:var(--s-3)">
+                    @foreach ($doses as $row)
+                        <div class="card">
+                            <div class="card__hd">
+                                <div class="row row--wrap" style="--gap:var(--s-2);align-items:baseline">
+                                    <span class="card__title">{{ $row['family']->label() }}</span>
+                                    <div class="spacer"></div>
+                                    {{-- Brass and not ember: being hooked is a
+                                         condition to manage, and the accent is
+                                         for what is happening to you now. --}}
+                                    @if ($row['withdrawing'])
+                                        <span class="tag tag--warn">{{ Text::get('character.doses_withdrawing') }}</span>
+                                    @elseif ($row['hooked'])
+                                        <span class="tag tag--warn">{{ Text::get('character.doses_hooked') }}</span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="card__bd stack" style="--gap:var(--s-2)">
+                                <div class="vital vital--wide">
+                                    <span class="vital__label">{{ Text::get('character.doses_capacity', ['used' => $row['used'], 'capacity' => $row['capacity']]) }}</span>
+                                    <div class="meter" style="--v:{{ $row['ratio'] }};--fill:var({{ $row['used'] >= $row['capacity'] ? '--crit' : '--ok' }})">
+                                        <div class="meter__fill"></div>
+                                    </div>
+                                    <span class="vital__value num">{{ $row['used'] }}/{{ $row['capacity'] }}</span>
+                                </div>
+
+                                @if ($row['used'] >= $row['capacity'])
+                                    <span class="micro" style="color:var(--crit)">{{ Text::get('character.doses_at_the_line') }}</span>
+                                @endif
+
+                                @forelse ($row['doses'] as $dose)
+                                    <div class="row row--wrap micro" style="--gap:var(--s-2);color:var(--ink-3)">
+                                        <span style="color:var(--ink-1)">{{ $dose->item?->displayName() }}</span>
+                                        <span>{{ Text::get('character.doses_wears_off', ['when' => $dose->expires_at->diffForHumans()]) }}</span>
+                                        <span class="num">{{ Text::get('character.doses_potency', ['percent' => (int) round($dose->potency * 100)]) }}</span>
+                                    </div>
+                                @empty
+                                    <span class="micro" style="color:var(--ink-3)">{{ Text::get('character.doses_none') }}</span>
+                                @endforelse
+                            </div>
+
+                            {{-- The books. They move on their own clock and
+                                 only time brings either down. --}}
+                            <div class="card__stats">
+                                <div class="card__stat">
+                                    <span>{{ Text::get('character.doses_tolerance') }}</span>
+                                    <b class="num">{{ round($row['tolerance']) }}</b>
+                                </div>
+                                <div class="card__stat">
+                                    <span>{{ Text::get('character.doses_addiction') }}</span>
+                                    <b class="num">{{ round($row['addiction']) }}</b>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         {{-- The only thing on this screen the game never reads. Theirs to
              write and theirs to take down again: clearing the box is how. --}}
         <form method="POST" action="{{ route('character.bio') }}" class="stack"

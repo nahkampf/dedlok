@@ -57,6 +57,31 @@ class NotificationController extends Controller
         ]);
     }
 
+    /**
+     * Open one message: read it, then go wherever its category leads.
+     *
+     * OPENING ONE IS READING IT, which is not the contradiction of the rule
+     * above that it looks like. What that rule refuses is clearing the badge
+     * for messages nobody looked at — arriving on the screen is not reading
+     * thirty of them, but clicking this row is reading this one.
+     *
+     * A POST and not a link, even though it navigates: it writes. A category
+     * with nowhere to lead still reads — `Category::route()` may be null, and
+     * a message about the street is still a message somebody opened.
+     */
+    public function open(Request $request, Notification $message, Notifier $notifier): RedirectResponse
+    {
+        // Somebody else's message is a row that does not exist as far as this
+        // player is concerned — the same call every other owned row makes.
+        abort_unless((int) $message->user_id === (int) $request->user()->getKey(), 404);
+
+        $notifier->markRead($message);
+
+        $target = $message->category->route();
+
+        return $target === null ? back() : redirect()->route($target);
+    }
+
     public function read(Request $request, Notifier $notifier): RedirectResponse
     {
         /** @var User $user */
