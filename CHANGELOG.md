@@ -2,6 +2,43 @@
 
 ## [Unreleased]
 
+## [0.17.0] — 2026-09-23
+
+The icebreakers go on sale, and jacking in stops dying on the first desk
+near the portal.
+
+### Added
+
+- **The twelve icebreakers reach the shelf.** They were listed and never
+  delivered — `on_market` true with a shelf size of zero, which is the default
+  and means nothing arrives at the market here by being forgotten. This is the
+  authoring step that was left, and it matters more than most stock: an
+  icebreaker is the gate in front of every fight, and `DefencesTest` pins the
+  other half of that rule — twenty turns is never enough against the matching
+  ICE — so the ladder has to be climbable by BUYING the next piece as well as
+  by training for it. Shelves fall as rarity climbs, eight down to one, so the
+  top of the ladder is scarce rather than merely expensive.
+
+### Fixed
+
+- **Jacking in returned a 500 wherever a desk stood near the portal**, which
+  was every player's first act. The system-type vocabulary is written down in
+  SQL three times — `systems`, `system_contacts` and `loot_tables` — and the
+  Exchange widened only the first. Every arrival sweeps, a sweep writes a
+  sighting for everything in the window, and a Golden Path desk had been
+  placed two cells from the way in: so the contacts constraint refused the
+  insert and took the arrival down with it. A sighting may be of a desk now,
+  built from `SystemType::values()` like the systems one, and `ExchangeTest`
+  pins it so the next type to arrive fails in a test rather than on somebody's
+  first click. **`loot_tables` is deliberately left narrow** — a table of what
+  a kind of system holds has nothing to say about a desk that holds nothing
+  and is never raided.
+
+### Migrations
+
+- `2026_09_23_190000_icebreakers_reach_the_shelf`
+- `2026_09_23_200000_a_sighting_may_be_of_an_exchange`
+
 ## [0.16.0] — 2026-09-23
 
 Somebody is keeping score. Entities own the grid, remember what you did to
@@ -1077,7 +1114,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/nahkampf/dedlok/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/nahkampf/dedlok/compare/v0.15.1...v0.16.0
 [0.15.1]: https://github.com/nahkampf/dedlok/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/nahkampf/dedlok/compare/v0.14.0...v0.15.0
