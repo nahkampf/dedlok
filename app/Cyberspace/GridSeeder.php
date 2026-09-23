@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
-use App\Models\Corp;
+use App\Models\Entity;
 use App\Models\Ice;
 use App\Models\Skill;
 use App\Models\System;
@@ -36,9 +36,9 @@ use Illuminate\Support\Facades\DB;
  *    overwritten, because a system is a machine with an identity and this is a
  *    generator, not a demolition crew.
  *  - NOTHING ELSE. Every other position is a roll: the type and the owning
- *    corp are both drawn evenly, and between them they name the machine — a
+ *    entity are both drawn evenly, and between them they name the machine — a
  *    generated system stores no name at all, only the serial that tells it
- *    from the other machines that corp runs. Contents are phase 4, and they
+ *    from the other machines that entity runs. Contents are phase 4, and they
  *    will be rolled here too.
  */
 final class GridSeeder
@@ -204,9 +204,9 @@ final class GridSeeder
         // migration, so a query per system would be 2 866 round trips to learn
         // the same 121 ids.
         //
-        // An empty roster is not an error. It means the corps migration has
+        // An empty roster is not an error. It means the entities migration has
         // not run, and a world of unowned machines is better than no world.
-        $owners = Corp::query()->pluck('id')->all();
+        $owners = Entity::query()->pluck('id')->all();
 
         /*
          * The operating systems, cheapest first.
@@ -226,7 +226,7 @@ final class GridSeeder
         /*
          * The ICE catalogue, grouped by the grades each piece turns up on.
          *
-         * Read once for the whole pass, like the corps and the operating
+         * Read once for the whole pass, like the entities and the operating
          * systems above: twelve rows answering the same question 2 866 times
          * is 2 866 round trips to learn twelve ids.
          */

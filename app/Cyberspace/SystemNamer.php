@@ -21,13 +21,13 @@ use Illuminate\Support\Facades\Config;
  * THE NAME IS COMPOSED, NOT STORED, and that is the whole design. Both halves
  * of it are already columns on the row: `type` and `owner_id`. A stored
  * sentence spelling them out would be the same two facts written a second
- * time, free to drift the first time a corp is renamed — which is exactly the
+ * time, free to drift the first time an entity is renamed — which is exactly the
  * drift `system_contacts` exists to have on purpose and a live row must never
  * have by accident.
  *
  * What IS stored is the designation, because it is nowhere else: a serial per
  * machine, rolled once at instantiation. Every generated system carries one
- * now, where the word bag rolled one on 60% of names. It has to: 121 corps by
+ * now, where the word bag rolled one on 60% of names. It has to: 121 entities by
  * three types is 363 combinations against nearly three thousand machines, so
  * an unnumbered name identifies about eight systems and a numbered one
  * identifies about one.
@@ -40,8 +40,8 @@ use Illuminate\Support\Facades\Config;
  *
  * The punctuation is in `config/strings.php`, like every other player-visible
  * string. A name is read out of two columns and one config line, and nothing
- * here is a word list: the words are the corps' own names, and they live in
- * the `corps` table.
+ * here is a word list: the words are the entities' own names, and they
+ * live in the `entities` table.
  */
 final class SystemNamer
 {
@@ -66,7 +66,7 @@ final class SystemNamer
      * A serial for a machine the world is about to instantiate.
      *
      * Rolled rather than counted, because a counter would tell a player how
-     * many machines a corp runs and that is not a thing they are supposed to
+     * many machines an entity runs and that is not a thing they are supposed to
      * be able to read off a name.
      */
     public function designate(): int

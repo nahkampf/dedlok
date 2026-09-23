@@ -17,13 +17,13 @@ use Illuminate\Database\Eloquent\Model;
  * IDS and a tracer are each a number on the machine; ICE carries integrity, an
  * attack, a hit chance and a list of what it does to whoever it beats — and
  * that is a definition rather than a property, so it lives once and is pointed
- * at, the way a corp and an operating system are.
+ * at, the way an entity and an operating system are.
  *
  * A LEVEL IS WHAT A SCAN REMEMBERS. `system_scans.ice_level` holds the rung and
  * never the id, because a scan has to outlive the machine it describes — the
  * same rule that keeps a foreign key off `system_contacts`. Renaming a piece of
  * ICE therefore renames it in every file anybody is holding, which is the
- * behaviour renaming a corp already has and the behaviour you want.
+ * behaviour renaming an entity already has and the behaviour you want.
  *
  * Its numbers are BASES, like a deck's. Nothing resolves them yet because
  * nothing fights, but when something does it goes through App\Stats\Resolver

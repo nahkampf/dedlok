@@ -522,7 +522,7 @@ return [
     | a curve somebody fitted. CYBERSPACE.md wondered whether a hop should also
     | read who owns the machine and how well it is dug in: **decided against**.
     | Grade is the differentiator and it is the one already on the row; an
-    | owner weight would need a number per corp for 121 of them, and reading
+    | owner weight would need a number per entity for 121 of them, and reading
     | age would pull against the ageing roll, which makes an old backdoor more
     | likely to vanish rather than better.
     */
@@ -1149,11 +1149,11 @@ return [
     | the one part of it that is stored, because it is the one part that is
     | nowhere else. EVERY generated machine gets one, unlike the word bag that
     | came before, which rolled a number onto 60% of names as texture. It is
-    | not texture any more: 121 corps by three types is 363 combinations, so
+    | not texture any more: 121 entities by three types is 363 combinations, so
     | without a serial a name identifies about eight machines at once.
     |
     | Rolled rather than counted. A counter would let a player read how many
-    | machines a corp runs off the side of one of them.
+    | machines an entity runs off the side of one of them.
     */
     'designation' => ['min' => 1, 'max' => 999],
 

@@ -406,7 +406,7 @@ return [
     | The grid, and what a player is told about a place on it — including the
     | SHAPE of a machine's name, though none of its words. A generated system
     | is named for its type and its owner: the type's word is here, the owner's
-    | is a row in `corps`, and the two patterns below are all that is left to
+    | is a row in `entities`, and the two patterns below are all that is left to
     | say. An AUTHORED name — the portal's, and one day an event system's —
     | still lives on the row it belongs to.
     |
@@ -426,7 +426,7 @@ return [
         /*
         | How a machine's name is spelled: "Data silo - Anansi Data Weaving
         | 041". The type, who runs it, and the serial that tells it from the
-        | other machines that corp runs.
+        | other machines that entity runs.
         |
         | TWO PATTERNS RATHER THAN ONE, because a system with no owner has to
         | read as a name and not as a sentence with a hole in it. The serial is
@@ -1491,6 +1491,21 @@ return [
     | The kind is a permanent property of the install and the words have to
     | carry that — "siphon" and "routing" are what they DO, not settings.
     */
+    /*
+    | The organisations that own machines, hand out missions and keep books on
+    | what a runner has done to them. The CATEGORY is a fixed vocabulary read
+    | as App\Entities\EntityCategory; what an entity itself is called lives on
+    | its row, like every other thing with a row.
+    */
+    'entities' => [
+        'categories' => [
+            'corporation' => 'Corporation',
+            'government' => 'Government',
+            'military' => 'Military',
+            'fringe' => 'Fringe',
+        ],
+    ],
+
     'backdoor' => [
         'kind' => [
             'siphon' => 'Siphon',

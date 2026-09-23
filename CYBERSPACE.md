@@ -24,7 +24,7 @@ system.
 | The grid itself — positions, chunks, the portal, the edges | **built**; `App\Cyberspace\Grid` is the one place that knows how it is stored |
 | Addresses | **built**; generated, validated and normalised, and unique on the table |
 | The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
-| System names | **built**; composed as `<Type> - <corp> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
+| System names | **built**; composed as `<Type> - <entity> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
 | The OS as a gate you cannot see | **specified only**; a machine whose OS you lack is entered rather than refused, and every action against it fails. Indistinguishable from bad luck on purpose — a refusal would hand over a scan fact for free |
 | Egress | **built**; always possible, never certain. The `egress` stat — a pool of Reflex, Focus and Intellect — rolled against the machine's grade plus a term for whatever is awake. A failed attempt spends the turn, so the machine gets its half of it; a threshold-forced egress rolls too. `Simulator::egressChance()` is public, and the button quotes it |
@@ -77,7 +77,7 @@ system.
 | Icebreakers | **built** as twelve programs, damage carried as a modifier on `icebreaker_damage`. **Twenty turns is never enough** — every one does strictly less than would break its matching ICE in that time, and the whole gap is left for skills |
 | Fighting at all | **gated behind training, deliberately.** A bare character cannot beat even ICE I: thirty turns against its 1.05 SI a turn is 31.5 against a starting pool of 31. The bottom of the grid is walkable, not fightable |
 | Attack tags — what ICE does WHILE it fights | **built**; `ice.attack_tags`, the mirror of `defeat_tags` and deliberately not a variation on it — a defeat tag fires once on somebody who lost, an attack tag is in force while the thing is awake. **Ensnare** is the first: it multiplies the egress chance (a quarter, two-fifths, rather more than half), is passive while the ICE lives so breaking the guard frees you, and is floored again after the reduction so it can never close the door. Five of the twelve carry it |
-| ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the corps. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are content — `cyberspace:tag-ice` writes them, a console command and not a migration, so a fresh database's ICE carries none until it is run |
+| ICE | **built** as a catalogue of twelve, three per grade band, arriving by migration like the entities. Integrity, attack, a hit chance (`skill`, 1-100 — a miss does nothing at all) and detection. `systems.ice_id` points at one; a scan remembers the LEVEL and carries no foreign key. Defeat tags are content — `cyberspace:tag-ice` writes them, a console command and not a migration, so a fresh database's ICE carries none until it is run |
 | Scanning software, in versions | **built** — three analysers, differing by what their own rows carry: a bonus to the read, and extra passes |
 | Scan files — perishable, consumed | **built** as rows: 48 hours, spent on first use. Nothing spends one yet, because spending one means a run |
 | Discovery — terrain | **built** as a chunked bitmap, 512 bytes per 64 x 64 chunk entered |
@@ -521,7 +521,7 @@ Nothing READS it yet, because the chain itself is not built. Siphon backdoors ar
 depending on what it is, who owns it and how well it is dug in.~~ **Decided:
 grade, and nothing else.** A hop's chance of letting the trace through is what
 `cyberspace.trace.advance` says for the machine's grade, which is the
-differentiator already on the row. Owner was rejected as a number per corp for
+differentiator already on the row. Owner was rejected as a number per entity for
 121 of them; age was rejected because it would pull against the ageing roll,
 which makes an old backdoor more likely to vanish rather than better at its job.
 
@@ -587,19 +587,19 @@ have just swept, and the word-bag names that came first — *Fast Forge*, *Cold
 Vault 041* — answered neither.
 
 **The name is composed, not stored.** Both halves are already columns: `type`
-has always been one and `owner_id` arrived with the corps. Storing the sentence
+has always been one and `owner_id` arrived with the entities. Storing the sentence
 they spell would be storing the same facts twice, free to drift the first time
-a corp is renamed. What is stored is `systems.designation`, the one part of the
+an entity is renamed. What is stored is `systems.designation`, the one part of the
 name that is nowhere else, and `systems.name` becomes the **override**: NULL on
 nearly every row, and carrying an authored name where there is one. Renaming a
 corporation therefore renames every machine it runs, which is correct — and
 renames nothing a player *remembers*, because a contact snapshots the sentence
 as it read at the moment of looking.
 
-**Every generated machine carries a serial.** 121 corps by three types is 363
+**Every generated machine carries a serial.** 121 entities by three types is 363
 combinations against nearly three thousand machines: unnumbered, a name would
 identify about eight systems at once. It is rolled rather than counted, so
-nobody can read how many machines a corp runs off the side of one of them.
+nobody can read how many machines an entity runs off the side of one of them.
 
 **Grade is deliberately not part of the name**, though an earlier draft of this
 section had it there. A grade is the thing a scan exists to discover — see

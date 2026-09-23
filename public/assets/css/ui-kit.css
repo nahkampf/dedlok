@@ -2804,12 +2804,20 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
    at all now, so the colour has one job and the border has another.
 
    `--node` is the one property each kind sets, so everything below it reads the
-   colour rather than the type — a fourth kind is a class and a token.        */
+   colour rather than the type — a fifth kind is a class and a token.         */
 .cell--silo    { --node: var(--steel); }
 .cell--compute { --node: var(--cyan); }
 .cell--relay   { --node: var(--jade); }
+.cell--exchange { --node: var(--brass); }
 
-.cell--silo, .cell--compute, .cell--relay { color: var(--node); }
+.cell--silo, .cell--compute, .cell--relay, .cell--exchange { color: var(--node); }
+
+/* AN EXCHANGE IS THE PORTAL'S QUIETER SIBLING. It is not a machine — nothing
+   is run against it, scanned or burned — so it carries a hairline, which on
+   this map is reserved for what is not ordinary. Brass and STILL: the portal
+   breathes because there is one of it in the world, and two dozen breathing
+   desks is the disco the rule above refuses. */
+.cell--exchange { border-color: color-mix(in srgb, var(--brass) 45%, transparent); }
 
 /* THE PORTAL. There is exactly one in the world, which is what pays for the
    only animation on the screen: a rationed accent spent on a thing you will

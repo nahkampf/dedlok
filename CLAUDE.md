@@ -857,9 +857,14 @@ and extraction are built. See below for what is not.
   `App\Cyberspace\BookmarkKeeper`, since no CHECK can reach a bitmap in another table.
   Without it, coordinates become tradeable. **A SYSTEM bookmark has no such gate**, because
   an address carries no position.
-- **Every machine has an owner, and `corps` arrives by migration.** The eight hardware
-  manufacturers in WORLDBUILDING.md are deliberately NOT corps.
-- **A name is composed, never stored** — `<Type> - <corp> NNN`. `systems.name` is the
+- **Every machine has an owner, and `entities` arrives by migration.** The eight hardware
+  manufacturers in WORLDBUILDING.md are deliberately NOT entities — who BUILT a thing and
+  who RUNS it are different questions. `entities.category` is a fixed vocabulary read as
+  `App\Entities\EntityCategory` (corporation, government, military, fringe), and
+  **`entities.interactable` is the whole difference between scenery and somebody you can
+  work for** — false by default, the call `archetypes.playable` makes. Standing, missions
+  and the Exchange are designed in TODO.md and not built.
+- **A name is composed, never stored** — `<Type> - <entity> NNN`. `systems.name` is the
   authored-name override (NULL on nearly every row) and `systems.designation` the only
   stored part. `App\Cyberspace\SystemNamer` decides.
 - **`GridSeeder` tops the world up TO a target**, like `MarketSeeder`. Occupancy leaves

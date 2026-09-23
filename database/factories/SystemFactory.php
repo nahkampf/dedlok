@@ -7,7 +7,7 @@ namespace Database\Factories;
 use App\Cyberspace\Address;
 use App\Cyberspace\Grade;
 use App\Cyberspace\SystemType;
-use App\Models\Corp;
+use App\Models\Entity;
 use App\Models\Ice;
 use App\Models\System;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -103,9 +103,9 @@ class SystemFactory extends Factory
         return $this->state(['ice_id' => $ice->id]);
     }
 
-    /** Run by a particular corp. */
-    public function ownedBy(Corp $corp): static
+    /** Run by a particular entity. */
+    public function ownedBy(Entity $entity): static
     {
-        return $this->state(['owner_id' => $corp->id]);
+        return $this->state(['owner_id' => $entity->id]);
     }
 }

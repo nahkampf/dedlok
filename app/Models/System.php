@@ -145,11 +145,11 @@ class System extends Model
      * for. An owner survives relocation the way the row does — a company does
      * not stop owning a machine because the machine moved.
      *
-     * @return BelongsTo<Corp, $this>
+     * @return BelongsTo<Entity, $this>
      */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(Corp::class, 'owner_id');
+        return $this->belongsTo(Entity::class, 'owner_id');
     }
 
     /**

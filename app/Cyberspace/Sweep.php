@@ -118,12 +118,12 @@ final class Sweep
                         // system has no name of its own, and what the player
                         // saw was the sentence its type and its owner spell.
                         // Composed once here, so a memory is a memory even
-                        // after the corp is renamed.
+                        // after the entity is renamed.
                         'name' => $system->displayName(),
                         'type' => $system->type->value,
                         // The owner's NAME, not its id: a contact is a snapshot
                         // of what was seen, and a pointer would make the memory
-                        // change when the corp row did.
+                        // change when the entity row did.
                         'owner' => $system->owner?->name,
                         // WHAT IT LOOKED LIKE WHEN SEEN. A contact is a
                         // sighting and is allowed to be wrong: a machine that

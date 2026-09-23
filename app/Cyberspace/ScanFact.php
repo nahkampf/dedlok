@@ -106,7 +106,7 @@ enum ScanFact: string
                 : Text::get('cyberspace.reading.none'),
             // Resolved through the catalogue by level, so a renamed piece of
             // ICE reads by its new name in every file anybody is holding —
-            // the behaviour renaming a corp already has.
+            // the behaviour renaming an entity already has.
             self::Ice => $scan->ice_level > 0
                 ? self::iceWithBounty($scan)
                 : Text::get('cyberspace.reading.none'),

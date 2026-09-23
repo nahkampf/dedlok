@@ -9,7 +9,7 @@ use App\Cyberspace\Sweep;
 use App\Cyberspace\SystemNamer;
 use App\Cyberspace\SystemType;
 use App\Models\Character;
-use App\Models\Corp;
+use App\Models\Entity;
 use App\Models\System;
 use App\Models\SystemContact;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,14 +39,14 @@ final class SystemNameTest extends TestCase
 
     public function test_a_generated_machine_is_named_for_its_type_its_owner_and_its_serial(): void
     {
-        $corp = Corp::query()->firstOrFail();
+        $entity = Entity::query()->firstOrFail();
 
-        $system = System::factory()->at(3, 3)->ownedBy($corp)->create([
+        $system = System::factory()->at(3, 3)->ownedBy($entity)->create([
             'type' => SystemType::Silo,
             'designation' => 41,
         ]);
 
-        $this->assertSame(SystemType::Silo->label().' - '.$corp->name.' 041', $system->displayName());
+        $this->assertSame(SystemType::Silo->label().' - '.$entity->name.' 041', $system->displayName());
     }
 
     /** Padded, because 041 reads as a serial number and 41 reads as a count. */
@@ -63,9 +63,9 @@ final class SystemNameTest extends TestCase
      */
     public function test_an_authored_name_wins(): void
     {
-        $corp = Corp::query()->firstOrFail();
+        $entity = Entity::query()->firstOrFail();
 
-        $system = System::factory()->at(3, 3)->ownedBy($corp)
+        $system = System::factory()->at(3, 3)->ownedBy($entity)
             ->named('The Wound')
             ->create(['designation' => 41]);
 
@@ -102,15 +102,15 @@ final class SystemNameTest extends TestCase
      * storing buys: rename the company and every machine it runs is renamed,
      * with no migration and nothing to keep in step.
      */
-    public function test_renaming_a_corp_renames_the_machines_it_runs(): void
+    public function test_renaming_an_entity_renames_the_machines_it_runs(): void
     {
-        $corp = Corp::query()->firstOrFail();
-        $system = System::factory()->at(3, 3)->ownedBy($corp)->create([
+        $entity = Entity::query()->firstOrFail();
+        $system = System::factory()->at(3, 3)->ownedBy($entity)->create([
             'type' => SystemType::Compute,
             'designation' => 12,
         ]);
 
-        $corp->update(['name' => 'Vestibule Analytics']);
+        $entity->update(['name' => 'Vestibule Analytics']);
 
         $this->assertSame(
             SystemType::Compute->label().' - Vestibule Analytics 012',
@@ -126,9 +126,9 @@ final class SystemNameTest extends TestCase
     public function test_a_remembered_name_is_a_snapshot_and_does_not_follow(): void
     {
         $character = Character::factory()->create(['archetype' => 3]);
-        $corp = Corp::query()->firstOrFail();
+        $entity = Entity::query()->firstOrFail();
 
-        $system = System::factory()->at(8, 9)->ownedBy($corp)->create([
+        $system = System::factory()->at(8, 9)->ownedBy($entity)->create([
             'address' => 'DEADBEEF',
             'type' => SystemType::Silo,
             'designation' => 41,
@@ -136,10 +136,10 @@ final class SystemNameTest extends TestCase
 
         Sweep::fromConfig()->from($character, new Position(8, 8));
 
-        $seen = SystemType::Silo->label().' - '.$corp->name.' 041';
+        $seen = SystemType::Silo->label().' - '.$entity->name.' 041';
         $this->assertSame($seen, SystemContact::query()->sole()->name);
 
-        $corp->update(['name' => 'Vestibule Analytics']);
+        $entity->update(['name' => 'Vestibule Analytics']);
         $system->delete();
 
         $this->assertSame($seen, SystemContact::query()->sole()->name);
