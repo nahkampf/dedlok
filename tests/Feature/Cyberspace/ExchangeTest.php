@@ -16,6 +16,7 @@ use App\Models\Character;
 use App\Models\Entity;
 use App\Models\Exchange;
 use App\Models\System;
+use App\Models\SystemContact;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -187,6 +188,38 @@ final class ExchangeTest extends TestCase
 
         $this->assertNotSame([], $would);
         $this->assertSame(0, Exchange::query()->count());
+    }
+
+    /**
+     * A SIGHTING MAY BE OF A DESK, and the first one placed near the portal
+     * proved it the hard way: `chk_systems_type` was widened for the new type
+     * and `chk_contacts_type` was not, so the sweep that runs on every arrival
+     * turned JACKING IN into a 500 — every player's first act, broken by a
+     * constraint two tables from the change that caused it.
+     *
+     * The vocabulary is written down in SQL three times: `systems`,
+     * `system_contacts` and `loot_tables`. The third is deliberately narrow —
+     * a desk holds nothing and is never raided.
+     */
+    public function test_an_exchange_can_be_seen_and_remembered(): void
+    {
+        $system = $this->desk();
+
+        SystemContact::query()->create([
+            'character_id' => $this->character->id,
+            'x' => 8,
+            'y' => 8,
+            'address' => $system->address,
+            'name' => $system->displayName(),
+            'type' => $system->type,
+            'owner' => $this->entity->name,
+            'seen_at' => now(),
+            'first_seen_at' => now(),
+        ]);
+
+        $contact = SystemContact::query()->where('character_id', $this->character->id)->sole();
+
+        $this->assertSame(SystemType::Exchange, $contact->type);
     }
 
     // ---- the screen --------------------------------------------------------
