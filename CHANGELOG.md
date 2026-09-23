@@ -2,6 +2,60 @@
 
 ## [Unreleased]
 
+## [0.15.1] — 2026-09-23
+
+The sheet says what is in you, the inbox reads one at a time, and a
+flaky test turns out to have been the test.
+
+### Added
+
+- **The character sheet says what is in you.** One card per drug family
+  somebody carries anything for: the overdose line as a meter — what is
+  working against what this body holds — each dose by name with the strength
+  it was frozen at and when it wears off, and the books underneath. A family
+  with nothing in it and clean books is left out, because a row of zeroes
+  describes a problem nobody has. It was the last thing the drugs loop owed:
+  everything overdosing costs was said out loud and nothing let a player see
+  how close they were standing to it.
+- **The training screen carries the skill card.** What is training and every
+  row of the queue open the same card the list below does — on the NAME and
+  never the row, which also holds Remove and would otherwise open a card over
+  the button somebody was aiming at.
+- **The queue says how long all of it takes**, in its summary as well as
+  inside, so it reads without opening the panel. Counted per SKILL rather than
+  per entry — reaching level 4 costs one sum against what is banked, and
+  counting each entry from zero would charge three times for the same points —
+  and absent rather than wrong when something in the queue earns nothing.
+- **The wordmark is on the front page**, centred above the notice, in four
+  widths. A phone fetches 31KB where it used to be handed 797KB.
+  `images/logo.png` stays as the master and is not served; the view says how to
+  regenerate the four from it.
+
+### Changed
+
+- **Opening a message reads that one.** The inbox's rule — that arriving on
+  the screen reads nothing — is about the screen: arriving is not reading
+  thirty messages, and clicking this row is reading this one. A category with
+  nowhere to lead still reads and stays put, and "mark all read" is still
+  there for the rest. The rows are buttons rather than links, because opening
+  one writes before it navigates.
+- **TODO.md is swept.** The drugs entry loses sixty-five lines of design notes
+  for a mechanic that shipped, the siphon's figure is answered, and a new entry
+  lists every value no skill moves: 16 of 104 stats have something behind them,
+  and the nine untouched attributes, both deck totals, `icebreaker_damage`,
+  `siphon_yield` and `heat_decay` are the authoring work that is left.
+
+### Fixed
+
+- **An intermittent test failure, and it was the test.**
+  `RunScreenSmokeTest` walked every run action against the real, unpinned die,
+  so one full run in several failed on a type error several frames from its
+  cause. Both dice are pinned now and every action is walked twice, passing and
+  failing — which reproduced it on the spot: with every roll landing, an awake
+  ICE empties a starting pool in four turns, and the helper was beginning the
+  next run on a character who had been jacked out. It stands them back up, and
+  a refusal names itself rather than arriving as a null.
+
 ## [0.15.0] — 2026-09-22
 
 The screens grow bars, cards and a search box; every level of a skill is
@@ -949,7 +1003,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.15.1...HEAD
+[0.15.1]: https://github.com/nahkampf/dedlok/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/nahkampf/dedlok/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/nahkampf/dedlok/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/nahkampf/dedlok/compare/v0.12.2...v0.13.0
