@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * A machine standing somewhere on the grid.
@@ -150,6 +151,20 @@ class System extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(Entity::class, 'owner_id');
+    }
+
+    /**
+     * The front desk this system IS, if it is one.
+     *
+     * A system with an `exchanges` row is an Exchange — the shape `programs`
+     * and `deck_modules` have against `items`. The type says so as well, and
+     * the two are written together by the pass that places them.
+     *
+     * @return HasOne<Exchange, $this>
+     */
+    public function exchange(): HasOne
+    {
+        return $this->hasOne(Exchange::class);
     }
 
     /**

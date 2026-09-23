@@ -378,6 +378,71 @@ return [
     | takes every OTHER backdoor on the same machine with it, which is correct
     | — they were all doors into a box that has moved.
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Exchanges — an entity's front desks
+    |--------------------------------------------------------------------------
+    |
+    | An Exchange is the one system nothing can be done TO: no run, no probe,
+    | no burn, no lockdown and no relocation. What it offers is missions and a
+    | loyalty store, and both read the gate below.
+    |
+    | HOW MANY DESKS AN ENTITY KEEPS is authored rather than rolled. Which
+    | organisation runs a grade 5 desk is a fact about the world, and a world
+    | that re-rolled it every pass would be a different world each time. An
+    | entity with no entry keeps `default_grades` of them, from grade 1 up.
+    |
+    | THE GATE IS STANDING AND NOT DISTANCE. Higher grades sit deeper, so
+    | getting there is a journey; being served when you arrive is a question
+    | about who you are. `min_standing` is copied onto each desk as it is
+    | placed, so retuning this moves the NEXT world rather than this one.
+    |
+    */
+
+    'exchanges' => [
+        'default_grades' => 3,
+
+        'grades' => [
+            // The only grade 5 desk on the grid, and deliberately so: a fund
+            // large enough to be weather is the one that can afford it.
+            'Khaleej Sovereign Holdings' => 5,
+            'Ninth Circle Security' => 4,
+            'Anansi Data Weaving' => 4,
+            'Joint Signals Command' => 4,
+            'Bright Verge Media' => 3,
+            'Ivory Registry' => 3,
+            'Bureau of Network Integrity' => 3,
+            'Directorate of Revenue Enforcement' => 2,
+            'Lockjaw' => 3,
+            'Golden Path' => 2,
+        ],
+
+        // What each grade of desk wants to think of somebody first. The lower
+        // three are open to anybody not in the red; the top two have to be
+        // earned, which is what stops standing being only a store gate.
+        'gate' => [
+            1 => 0,
+            2 => 5,
+            3 => 20,
+            4 => 40,
+            5 => 60,
+        ],
+
+        // Agents are people, so they have names. Two lists and a roll: the
+        // point is that the desk is answered by somebody rather than by a
+        // department, not that the name means anything.
+        'agents' => [
+            'first' => [
+                'Ilse', 'Marek', 'Oyelaran', 'Tam', 'Rusalka', 'Benedikt', 'Nadia', 'Osric',
+                'Yusra', 'Dov', 'Lenka', 'Amadou', 'Pilar', 'Torsten', 'Wren', 'Kiyoshi',
+            ],
+            'last' => [
+                'Achebe', 'Varga', 'Okonkwo', 'Lindqvist', 'Baptiste', 'Moreau', 'Sandoval',
+                'Ferreira', 'Halloran', 'Novak', 'Rasmussen', 'Adeyemi', 'Castellanos', 'Aoki',
+            ],
+        ],
+    ],
+
     'backdoors' => [
 
         /*

@@ -27,6 +27,11 @@
                         <span class="tag">{{ $here->name }}</span>
                         <span class="micro"><x-address :address="$here->address" /></span>
 
+                        {{-- And what they make of you. Only for an entity
+                             somebody can deal with: the rest of the grid
+                             belongs to companies with no opinion to have. --}}
+                        <x-standing-tag :entity="$target?->owner" :standing="$standing" />
+
                         {{-- What this machine has given up so far. A grade is
                              the number a scan exists to discover, so it is
                              shown as soon as it is known and as "unread" until
@@ -186,6 +191,7 @@
                 ['cell--system cell--compute', Text::get('cyberspace.types.compute'), '⌬'],
                 ['cell--system cell--relay', Text::get('cyberspace.types.relay'), '☰'],
                 ['cell--portal', Text::get('cyberspace.types.portal'), '◍'],
+                ['cell--system cell--exchange', Text::get('cyberspace.types.exchange'), '⚖'],
                 ['cell--empty', Text::get('cyberspace.map.empty'), ''],
                 ['cell--unswept', Text::get('cyberspace.map.unswept'), ''],
                 ['cell--system cell--silo cell--new', Text::get('cyberspace.map.new'), '▤'],
@@ -266,7 +272,14 @@
                 </div>
 
                 <div style="padding:var(--s-3) 0">
-                    @if (! $canRun)
+                    {{-- A DESK IS NOT A TARGET. Nothing can be run against an
+                         Exchange, so the one thing to do here is the thing
+                         somebody walked out to it for. --}}
+                    @if ($target->type->isExchange())
+                        <a class="btn cut" href="{{ route('exchange.show') }}">
+                            {{ Text::get('exchange.visit') }}
+                        </a>
+                    @elseif (! $canRun)
                         <p class="micro" style="color:var(--ink-2);margin:0">
                             {{ $target->isLockedDown()
                                 ? Text::get('cyberspace.run.refused.locked_down')

@@ -62,7 +62,7 @@ final readonly class Defences
      */
     public static function roll(SystemType $type, int $grade, Closure $roll, array $iceForGrade = []): self
     {
-        if (! $type->isInteractable()) {
+        if (! $type->isDefended()) {
             return self::none();
         }
 

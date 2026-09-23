@@ -123,6 +123,23 @@ Schedule::command('characters:cool --quiet-when-idle')
     ->withoutOverlapping();
 
 /*
+ * And what the organisations think of you fades the same way.
+ *
+ * TWENTY PAST FIVE, after the heat has come off, because the two are the same
+ * kind of thing — a night passing — and reading the log in order should read
+ * as one morning rather than two. Half a percent of what is carried, toward
+ * neutral from both directions, so a grudge and a friendship both cool at the
+ * rate they are worth.
+ *
+ * Proportional and not flat: at the size of what earns standing a flat rate
+ * would erase a day's work at the bottom of the ladder and cost nothing at the
+ * top. Every move writes a ledger entry, so `standing:verify` still adds up.
+ */
+Schedule::command('standing:drift --quiet-when-idle')
+    ->dailyAt('05:20')
+    ->withoutOverlapping();
+
+/*
  * A day off both drug figures, and a sweep of what has worn off.
  *
  * Tolerance falls faster than addiction, so a break gives the drug its

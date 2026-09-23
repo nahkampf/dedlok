@@ -15,6 +15,8 @@ use App\Models\Ice;
 use App\Models\Run;
 use App\Models\System;
 use App\Programs\ProgramKind;
+use App\Standing\StandingLedger;
+use App\Standing\StandingReason;
 use App\Stats\Damage;
 use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
@@ -562,7 +564,7 @@ final readonly class Simulator
         }
 
         if (! $instant->tookNothing()) {
-            $this->recordTake($run);
+            $this->recordTake($character, $run);
             $log[] = $this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($instant)], 'ok');
         }
 
@@ -636,7 +638,7 @@ final readonly class Simulator
             return [$this->line('cyberspace.run.log.transfer_gone')];
         }
 
-        $this->recordTake($run);
+        $this->recordTake($character, $run);
 
         return [$this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($result)], 'ok')];
     }
@@ -898,6 +900,10 @@ final readonly class Simulator
             'ice_integrity' => $system->ice?->integrity,
         ]);
 
+        // Being seen is the cheapest thing that can cost standing: it is
+        // being noticed rather than what was done.
+        $this->charge($character, $system, StandingReason::Noticed);
+
         return [$this->line(
             $system->ice_id === null ? 'cyberspace.run.log.core_noticed' : 'cyberspace.run.log.core_noticed_ice',
             tone: 'crit',
@@ -1010,6 +1016,11 @@ final readonly class Simulator
 
         $log[] = $this->line('cyberspace.run.log.burn', ['name' => $system->displayName()], 'crit');
 
+        // BEFORE `Burner` deletes the row, because the owner is read through
+        // it. The ledger entry keeps the entity id, so a system that no
+        // longer exists still cost its owner's opinion of you.
+        $this->charge($character, $system, StandingReason::Burned);
+
         // LAST, because everybody else inside is thrown out by it and the line
         // above should read as the thing that caused that rather than a report
         // filed afterwards. The burner's own run is excluded and ends as
@@ -1035,7 +1046,7 @@ final readonly class Simulator
      * site. `systems.raids` is a count of runs that got something, not of
      * turns that did.
      */
-    private function recordTake(Run $run): void
+    private function recordTake(Character $character, Run $run): void
     {
         if ($run->extracted) {
             return;
@@ -1043,6 +1054,31 @@ final readonly class Simulator
 
         $run->extracted = true;
         $this->raids->record($run->address);
+
+        // Once per run, for the same reason the raid counter is: an entity
+        // whose system was emptied over four turns was robbed once.
+        $this->charge($character, $run->system(), StandingReason::Raided);
+    }
+
+    /**
+     * Tell the system's owner what was done to them.
+     *
+     * Built here rather than injected, the call `Burner` and `Achievements`
+     * already make at these call sites: the ledger holds no dice and no
+     * config a test would want to pin, so a constructor argument would be
+     * ceremony.
+     *
+     * **Scenery notices nothing.** `StandingLedger` answers null for an
+     * entity nobody can deal with, which is most of them, so every call here
+     * is free for the 111 companies that are only a name on a card.
+     */
+    private function charge(Character $character, ?System $system, StandingReason $reason): void
+    {
+        if ($system === null) {
+            return;
+        }
+
+        (new StandingLedger)->record($character, $system->owner, $reason);
     }
 
     /**
@@ -1336,6 +1372,8 @@ final readonly class Simulator
             'ice_id' => $system->ice_id,
             'ice_integrity' => $system->ice?->integrity,
         ])->save();
+
+        $this->charge($character, $system, StandingReason::Noticed);
 
         return [$this->line(
             $system->ice_id === null ? 'cyberspace.run.log.noticed' : 'cyberspace.run.log.noticed_ice',

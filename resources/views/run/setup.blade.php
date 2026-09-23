@@ -22,6 +22,11 @@
         <div class="spacer"></div>
         <span class="tag">{{ $target->displayName() }}</span>
         <span class="micro"><x-address :address="$target->address" /></span>
+
+        {{-- Who answers for it, and what they already make of you. The
+             briefing is where a run is decided, so it is where the cost of
+             being seen doing it belongs. --}}
+        <x-standing-tag :entity="$target->owner" :standing="$standing" />
     </div>
 
     <div class="row row--wrap" style="--gap:var(--s-3);align-items:center;padding:var(--s-3) 0">

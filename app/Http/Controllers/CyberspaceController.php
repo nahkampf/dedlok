@@ -18,6 +18,7 @@ use App\Models\Character;
 use App\Models\System;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
+use App\Standing\StandingLedger;
 use App\Stats\Resolver;
 use App\Support\Text;
 use Carbon\CarbonInterface;
@@ -131,6 +132,12 @@ class CyberspaceController extends Controller
                 ? System::query()->at($character->gridPosition())->first()
                 : null,
             'canRun' => $target !== null && $target->type->isInteractable() && ! $target->isLockedDown(),
+            // Who answers for what you are standing on, and what they make of
+            // you. Read off the LIVE system rather than the contact: a
+            // sighting remembers a name, and standing is with a row.
+            'standing' => $target?->owner?->interactable
+                ? (new StandingLedger)->standingFor($character, $target->owner)
+                : 0.0,
             // The route and everything else about a run is the briefing's,
             // one screen along. This one only says whether there is anything
             // here to plan against.

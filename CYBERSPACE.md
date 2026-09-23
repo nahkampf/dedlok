@@ -24,6 +24,8 @@ system.
 | The grid itself — positions, chunks, the portal, the edges | **built**; `App\Cyberspace\Grid` is the one place that knows how it is stored |
 | Addresses | **built**; generated, validated and normalised, and unique on the table |
 | The world generator | **built**; `cyberspace:seed` tops the grid up to its target occupancy, like the market's pass |
+| Entities, and what they think of you | **built**; `entities` (was `corps`) with a category and `interactable`, ten of them somebody can work for. `entity_books` beside `entity_ledger`, whose sum they always equal — `App\Standing\StandingLedger` is the only writer, `standing:verify` asks, and `standing:drift` takes 0.5% a night. Being noticed, raiding, burning and having a door found all cost; nothing pays yet, because missions are designed and not built |
+| The Exchange | **built** as a system nothing may be done TO: `SystemType::Exchange` plus an `exchanges` row (grade 1-5, an agent, `min_standing`). Placed by `cyberspace:exchanges`, deeper for higher grades, and never moved or shut. `/exchange` introduces the entity and says what it would take to be dealt with; the work and the shelf are the next thing |
 | System names | **built**; composed as `<Type> - <entity> NNN` from columns the row already has, never stored — `systems.name` is now the authored-name override |
 | Operating systems on machines | **built**; `systems.os_skill_id` points at the skill that gates it, chosen by grade off the skills' own rank ladder |
 | The OS as a gate you cannot see | **specified only**; a machine whose OS you lack is entered rather than refused, and every action against it fails. Indistinguishable from bad luck on purpose — a refusal would hand over a scan fact for free |

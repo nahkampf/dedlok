@@ -20,6 +20,7 @@ use App\Models\Character;
 use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemScan;
+use App\Standing\StandingLedger;
 use App\Stats\Resolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -78,6 +79,11 @@ class RunController extends Controller
         $totals = $deck === null ? null : DeckTotals::forCharacter($character, $deck, $resolver);
 
         return view('run.setup', [
+            // What the system's owner makes of you, on the screen where the
+            // run is decided rather than after it.
+            'standing' => $target->owner?->interactable
+                ? (new StandingLedger)->standingFor($character, $target->owner)
+                : 0.0,
             'character' => $character,
             'target' => $target,
             // What they have read out of it, and what they have not. A file

@@ -150,7 +150,7 @@ final class Probe
             return ProbeResult::refused(ProbeRefusal::NothingThere);
         }
 
-        if (! $system->type->isInteractable()) {
+        if (! $system->type->isScannable()) {
             return ProbeResult::refused(ProbeRefusal::NotScannable);
         }
 

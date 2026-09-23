@@ -864,6 +864,29 @@ and extraction are built. See below for what is not.
   **`entities.interactable` is the whole difference between scenery and somebody you can
   work for** — false by default, the call `archetypes.playable` makes. Standing, missions
   and the Exchange are designed in TODO.md and not built.
+- **Standing is what an entity thinks of you, and `App\Standing\StandingLedger` is its
+  only writer.** Two tables: `entity_books` (one row per character and entity, standing as
+  `DECIMAL(6,3)` and loyalty as an integer) and `entity_ledger` (immutable, one row per
+  change, both kinds in one table). **THE BOOKS ARE ALWAYS THE SUM OF THE LEDGER** —
+  clamping trims the DELTA rather than the total, so an act against somebody already at
+  −100 writes a delta of 0, which says honestly that it changed nothing. `standing:verify`
+  asks; `standing:drift` takes 0.5% of what is carried toward zero nightly at 05:20 and
+  writes a `Decay` entry for every move. **Flavour entities keep no books**: a write
+  against scenery is a no-op, not a refusal. Loyalty never decays and is spent at a store
+  that is not built. The hooks are in `Simulator` (noticed, raided, burned — the burn
+  BEFORE `Burner` deletes the row) and `cyberspace:age-backdoors`.
+- **An Exchange is a system that is not one.** `SystemType::Exchange`, with an `exchanges`
+  row carrying grade 1–5, the agent's name and `min_standing`. **That grade is NOT
+  `systems.grade`**, which stays at its floor: one means what is on offer, the other means
+  difficulty, and the difficulty column is what scans, loot and the OS ladder read.
+  **`isInteractable()` split into four** the day this arrived, exactly as its docblock
+  predicted — `isInteractable()` (a run), `isScannable()`, `isDefended()` and `isOwned()`,
+  which is the one an Exchange answers yes to. Placed by `cyberspace:exchanges`, a TOP-UP
+  run by hand: higher grades sit deeper, and a desk that exists is never moved, shut or
+  re-rolled. **ONE GATE, NOT TWO** — `exchanges.min_standing` (0/5/20/40/60 by grade) is
+  read by the work and the shelf alike. `/exchange` is the Missions & Loyalty screen,
+  reached by standing on the desk; missions and the store are designed in TODO.md and say
+  *Not yet*.
 - **A name is composed, never stored** — `<Type> - <entity> NNN`. `systems.name` is the
   authored-name override (NULL on nearly every row) and `systems.designation` the only
   stored part. `App\Cyberspace\SystemNamer` decides.

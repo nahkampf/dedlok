@@ -1,0 +1,113 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | What an entity thinks of you
+    |--------------------------------------------------------------------------
+    |
+    | Standing runs from -100 to 100 and is stored to three decimals, because
+    | what earns it is small: a mission is worth hundredths of a point and the
+    | nightly drift takes half a percent. Clamped on the way in by
+    | App\Standing\StandingLedger, which writes what LANDED rather than what
+    | was asked for — so the books always equal the sum of the ledger.
+    |
+    | NOTHING HERE IS BALANCED. There is no mission to earn it with yet, so
+    | every number below is a first pass chosen to make the shape legible.
+    |
+    */
+
+    'range' => [
+        'min' => -100.0,
+        'max' => 100.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | What each thing is worth
+    |--------------------------------------------------------------------------
+    |
+    | One entry per App\Standing\StandingReason. A reason with no entry is
+    | worth nothing, which is the honest answer for a cause nobody has priced.
+    |
+    | The negatives are the only ones that can happen today: missions and the
+    | store are designed in TODO.md and not built, and their entries wait for
+    | the writers that will use them.
+    |
+    | Being NOTICED costs least — it is being seen rather than what you did.
+    | A raid is the ordinary cost of taking something. A BURN is worth twenty
+    | raids, because the system never comes back and the entity knows exactly
+    | what it is looking at. A door found is between the two: it is evidence
+    | that you were inside and stayed.
+    |
+    */
+
+    'reasons' => [
+        'noticed' => -0.02,
+        'raided' => -0.10,
+        'backdoor_found' => -0.05,
+        'burned' => -1.00,
+
+        // Written by the mission writer with an amount of its own, scaled by
+        // the agent's grade — this is the floor it falls back to.
+        'mission_completed' => 0.01,
+
+        // Proportional to what was spent; the ratio lives with the store.
+        'store_spend' => 0.0,
+
+        // Computed per row by the drift, never read from here.
+        'decay' => 0.0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | The nightly drift
+    |--------------------------------------------------------------------------
+    |
+    | PROPORTIONAL, not flat: half a percent of what is carried, toward zero,
+    | from both directions. A flat rate at the size of a mission's reward would
+    | be backwards — it would erase a day's work at the bottom of the ladder
+    | and cost nothing at the top.
+    |
+    | It also gives every rung a soft ceiling without another rule. Standing
+    | settles where a day's earnings equal the drift, which is about 200x the
+    | daily rate: work from the lowest desks alone tops out around 30, below
+    | the standing the grade 4 desks will want.
+    |
+    */
+
+    'drift' => [
+        'nightly' => 0.005,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bands
+    |--------------------------------------------------------------------------
+    |
+    | What a number means, in words. A card shows the band and the entity's own
+    | screen shows the number: seven steps because that is as many distinctions
+    | as anybody can hold. `at` is the FLOOR of each band, and a LIST rather
+    | than a map keyed by that floor because PHP casts a float array key to an
+    | int — which silently collapsed -0.001 and 0.0 into one band.
+    |
+    | The two thresholds that matter mechanically are not here — the store and
+    | the missions read `exchanges.min_standing`, which is a column, because a
+    | gate is a property of the desk rather than of the vocabulary.
+    |
+    */
+
+    'bands' => [
+        ['at' => -100.0, 'band' => 'hostile'],
+        ['at' => -60.0, 'band' => 'hated'],
+        ['at' => -20.0, 'band' => 'cold'],
+        ['at' => 0.0, 'band' => 'neutral'],
+        ['at' => 5.0, 'band' => 'known'],
+        ['at' => 20.0, 'band' => 'trusted'],
+        ['at' => 60.0, 'band' => 'allied'],
+    ],
+
+];

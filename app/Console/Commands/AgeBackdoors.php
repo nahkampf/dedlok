@@ -8,6 +8,8 @@ use App\Cyberspace\Backdoors;
 use App\Models\Backdoor;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Standing\StandingLedger;
+use App\Standing\StandingReason;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -83,13 +85,22 @@ class AgeBackdoors extends Command
                 (new Notifier)->send($character, Category::Cyberspace, 'backdoor_found', [
                     'system' => $backdoor->system->displayName(),
                 ]);
+
+                // The owner now knows somebody had been living in it. Cheaper
+                // than a raid and dearer than being seen once: it is evidence
+                // that you were inside and stayed.
+                (new StandingLedger)->record(
+                    $character,
+                    $backdoor->system->owner,
+                    StandingReason::BackdoorFound,
+                );
             }
 
             Log::info('a backdoor was discovered', [
                 'character_id' => $backdoor->character_id,
                 'system_id' => $backdoor->system_id,
                 'kind' => $backdoor->kind->value,
-                'machine_moved' => $entry['moved'],
+                'system_moved' => $entry['moved'],
             ]);
         }
 

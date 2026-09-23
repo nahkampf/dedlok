@@ -147,7 +147,8 @@ final readonly class MapCell
         $type = $this->contact?->type;
 
         return match ($type) {
-            SystemType::Silo, SystemType::Compute, SystemType::Relay => "cell--{$type->value}",
+            SystemType::Silo, SystemType::Compute, SystemType::Relay,
+            SystemType::Exchange => "cell--{$type->value}",
             default => null,
         };
     }
@@ -168,6 +169,7 @@ final readonly class MapCell
             SystemType::Silo => "\u{25A4}",      // ▤ stacked bands: stored data
             SystemType::Compute => "\u{232C}",   // ⌬ a part that thinks
             SystemType::Relay => "\u{2630}",     // ☰ channels
+            SystemType::Exchange => "\u{2696}",  // ⚖ a deal, not a machine
             default => $this->contact !== null ? "\u{25C6}" : '',
         };
 

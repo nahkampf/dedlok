@@ -12,6 +12,7 @@ use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
+use App\Http\Controllers\ExchangeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
@@ -190,6 +191,13 @@ Route::middleware('auth')->group(function () {
      * they may reach — planning the next one is not a thing to do from inside
      * this one.
      */
+    /*
+     * An entity's front desk. No id in the route: the desk somebody is
+     * standing on is the desk they can use, which is what makes the walk to a
+     * high-grade agent worth making.
+     */
+    Route::get('/exchange', [ExchangeController::class, 'show'])->name('exchange.show');
+
     Route::get('/run/setup', [RunController::class, 'setup'])->name('run.setup');
     Route::get('/run', [RunController::class, 'show'])->name('run.show');
     Route::post('/run/act', [RunController::class, 'act'])->name('run.act');

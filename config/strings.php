@@ -421,6 +421,8 @@ return [
             'silo' => 'Data silo',
             'compute' => 'Compute node',
             'relay' => 'Network relay',
+            // Not a machine you break into: somebody's front desk.
+            'exchange' => 'Exchange',
         ],
 
         /*
@@ -1504,6 +1506,56 @@ return [
             'military' => 'Military',
             'fringe' => 'Fringe',
         ],
+
+        // What a standing figure means in one word. A card shows the band;
+        // the number is for the entity's own screen.
+        'bands' => [
+            'hostile' => 'Hostile',
+            'hated' => 'Hated',
+            'cold' => 'Cold',
+            'neutral' => 'Neutral',
+            'known' => 'Known',
+            'trusted' => 'Trusted',
+            'allied' => 'Allied',
+        ],
+
+        // Why a number moved, composed when it is read. Written in the past
+        // tense from the runner's side: this is their history, not the
+        // entity's minutes.
+        'reasons' => [
+            'noticed' => 'Seen on their system',
+            'raided' => 'Took from their system',
+            'backdoor_found' => 'Your door was found',
+            'burned' => 'Burned their system',
+            'mission_completed' => 'Work completed',
+            'store_spend' => 'Traded with them',
+            'decay' => 'Time passing',
+        ],
+
+        'standing' => 'Standing',
+        'loyalty' => 'Loyalty',
+        // On a card, where the band carries the meaning and the figure is
+        // beside it for anybody who wants it.
+        'standing_with' => ':band with :entity',
+    ],
+
+    /*
+    | An entity's front desk. Reached by standing on it, and the only thing
+    | that happens on one: nothing may be run against, scanned or burned here.
+    */
+    'exchange' => [
+        'title' => 'Missions & Loyalty',
+        'agent' => 'Agent',
+        'grade' => 'Grade :grade desk',
+        'missions' => 'Work on offer',
+        'store' => 'Loyalty store',
+        'not_built' => 'Not yet',
+        'missions_soon' => 'This desk will hand out work against grade :low to :high systems.',
+        'store_soon' => 'What this entity sells to the people it owes. Loyalty is earned by working for them.',
+        'unwelcome' => 'They will not deal with you.',
+        'unwelcome_hint' => 'This desk wants :band standing — :standing — before it opens a file for somebody.',
+        // On the map, where the desk is one step away.
+        'visit' => 'Talk to the desk',
     ],
 
     'backdoor' => [
