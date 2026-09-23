@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Inventory\Skillbook;
+use App\Inventory\Imprint;
 use App\Models\Item;
 use App\Models\Skill;
 use Illuminate\Database\Seeder;
@@ -12,7 +12,7 @@ use Illuminate\Database\Seeder;
 class ItemSeeder extends Seeder
 {
     /**
-     * One skillbook per skill, and nothing else.
+     * One imprint per skill, and nothing else.
      *
      * There is no hardcoded catalogue. Item definitions live in the `items`
      * table and are authored in the admin item editor — a list of them in PHP
@@ -20,7 +20,7 @@ class ItemSeeder extends Seeder
      * a re-seed rather than the one somebody edited. Deleting an item there
      * has to stay deleted.
      *
-     * Skillbooks are the exception because they are DERIVED, not authored:
+     * Imprints are the exception because they are DERIVED, not authored:
      * there is exactly one book per skill by definition, so listing them would
      * be a second place to forget when a skill is added. They carry no name of
      * their own — it composes from the skill they teach.
@@ -28,12 +28,12 @@ class ItemSeeder extends Seeder
     public function run(): void
     {
         Skill::query()->each(function (Skill $skill): void {
-            // The derivation lives in App\Inventory\Skillbook, because the
+            // The derivation lives in App\Inventory\Imprint, because the
             // admin skill editor creates books too and two copies of these
             // rules would be two copies to keep in step.
             $this->fillInMarketValues(
-                Skillbook::ensureFor($skill),
-                Skillbook::attributesFor($skill),
+                Imprint::ensureFor($skill),
+                Imprint::attributesFor($skill),
             );
         });
     }

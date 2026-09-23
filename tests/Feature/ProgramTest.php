@@ -8,7 +8,7 @@ use App\Decks\DeckEquipper;
 use App\Decks\Hardware;
 use App\Decks\ModuleFitter;
 use App\Decks\Variant;
-use App\Inventory\Skillbook;
+use App\Inventory\Imprint;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -595,7 +595,7 @@ final class ProgramTest extends TestCase
         $this->own($program);
 
         $skill = Skill::factory()->create(['slug' => 'quietfoot']);
-        $book = Skillbook::ensureFor($skill);
+        $book = Imprint::ensureFor($skill);
         $this->own($book);
 
         $this->actingAs($this->character->user)

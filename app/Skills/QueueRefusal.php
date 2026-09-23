@@ -21,7 +21,7 @@ use App\Support\Text;
  */
 enum QueueRefusal: string
 {
-    /** The skillbook has never been spent, so there is no progress row to train. */
+    /** The imprint has never been spent, so there is no progress row to train. */
     case NotInjected = 'not_injected';
 
     /** Every level of it is either reached or already queued. */

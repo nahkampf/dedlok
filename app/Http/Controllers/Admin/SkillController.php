@@ -7,7 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Admin\DeletionImpact;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SkillRequest;
-use App\Inventory\Skillbook;
+use App\Inventory\Imprint;
 use App\Models\Character;
 use App\Models\Skill;
 use App\Skills\SkillProgression;
@@ -39,7 +39,7 @@ class SkillController extends Controller
         ]);
 
         $skills = Skill::query()
-            ->with(['skillbook:id,slug,use_skill_id'])
+            ->with(['imprint:id,slug,use_skill_id'])
             ->withCount(['prerequisites', 'unlocks'])
             ->when($filters['q'] ?? null, fn ($query, string $term) => $query->where(
                 fn ($inner) => $inner
@@ -72,7 +72,7 @@ class SkillController extends Controller
             $this->replacePrerequisites($skill, $request->prerequisites());
 
             // The book is not optional. See the class comment.
-            Skillbook::ensureFor($skill);
+            Imprint::ensureFor($skill);
 
             return $skill;
         });
@@ -81,7 +81,7 @@ class SkillController extends Controller
             ->route('admin.skills.edit', $skill)
             ->with('status', Text::get('admin.skills.created', [
                 'skill' => $skill->slug,
-                'book' => Skillbook::slugFor($skill),
+                'book' => Imprint::slugFor($skill),
             ]));
     }
 
@@ -99,9 +99,9 @@ class SkillController extends Controller
 
             // Cost and availability follow the skill; the rank-derived values
             // do not, because they are the ones most likely to have been
-            // tuned by hand in the item editor. App\Inventory\Skillbook says
+            // tuned by hand in the item editor. App\Inventory\Imprint says
             // so at more length.
-            Skillbook::syncFor($skill);
+            Imprint::syncFor($skill);
         });
 
         return back()->with('status', Text::get('admin.skills.updated', ['skill' => $skill->slug]));
@@ -122,7 +122,7 @@ class SkillController extends Controller
         $slug = $skill->slug;
 
         DB::transaction(function () use ($skill): void {
-            $skill->skillbook()->delete();
+            $skill->imprint()->delete();
 
             $skill->delete();
         });
@@ -179,7 +179,7 @@ class SkillController extends Controller
                 ->get(['id', 'slug', 'title']),
             'existing' => $skill?->prerequisites()->with('requiredSkill:id,slug,title')->get() ?? collect(),
             'categories' => Skill::query()->distinct()->orderBy('category')->pluck('category'),
-            'book' => $skill === null ? null : Skillbook::forSkill($skill),
+            'book' => $skill === null ? null : Imprint::forSkill($skill),
             'impact' => $skill === null ? null : DeletionImpact::forSkill($skill),
         ];
     }

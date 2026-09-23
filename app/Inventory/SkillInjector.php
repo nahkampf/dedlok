@@ -13,7 +13,7 @@ use App\Skills\SkillProgression;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Turning a skillbook into a skill on the sheet.
+ * Turning an imprint into a skill on the sheet.
  *
  * This is the ONLY way a character_skills row comes into existence. Training
  * does not create one — a queue entry for a skill that was never injected is a
@@ -37,8 +37,8 @@ final class SkillInjector
     {
         $item = $entry->item;
 
-        if ($item === null || ! $item->isSkillbook()) {
-            return InjectionResult::refused(InjectionRefusal::NotASkillbook);
+        if ($item === null || ! $item->isImprint()) {
+            return InjectionResult::refused(InjectionRefusal::NotAnImprint);
         }
 
         if ($entry->character_id !== $character->id || $entry->quantity < 1) {

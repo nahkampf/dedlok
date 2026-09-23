@@ -358,7 +358,7 @@ class Character extends Model
      * row, so this filters through the definition rather than a column here.
      *
      * Loose rows only. What is inside a memory card belongs to the card and
-     * comes back on it, not beside it — a skillbook written to a card is not
+     * comes back on it, not beside it — an imprint written to a card is not
      * also sitting on the deck.
      *
      * @return Collection<int, InventoryItem>

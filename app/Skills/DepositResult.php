@@ -22,7 +22,7 @@ final class DepositResult
      * True when the active entry names a skill that was never injected.
      *
      * Kept apart from $stalled because the fix is different: a stall wants an
-     * implant, this wants the skillbook spent, and it should never happen at
+     * implant, this wants the imprint spent, and it should never happen at
      * all through the normal path.
      */
     public bool $uninjected = false;

@@ -25,7 +25,7 @@ use Illuminate\Validation\Rule;
  *   prerequisite is not also granted describes a character in a state the
  *   training system could never have produced — the queue would have refused
  *   every minute of it. Level 0 is exempt on purpose: it is what injecting a
- *   skillbook buys, and injection has never checked prerequisites.
+ *   imprint buys, and injection has never checked prerequisites.
  *
  * Neither `id` nor `slug` is editable, and both are refused rather than
  * ignored. An archetype id is written into every character row that chose it.

@@ -54,7 +54,7 @@ class Skill extends Model
      *
      * @return HasOne<Item, $this>
      */
-    public function skillbook(): HasOne
+    public function imprint(): HasOne
     {
         return $this->hasOne(Item::class, 'use_skill_id')
             ->where('use_op', Item::USE_INJECT_SKILL);

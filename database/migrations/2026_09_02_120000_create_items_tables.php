@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * Definitions live in the database, the same deliberate exception the skills
  * tables took and for the same reasons: there will be hundreds, the market has
- * to query them, and a skillbook has to point at a skill row. MECHANICS.md's
+ * to query them, and an imprint has to point at a skill row. MECHANICS.md's
  * "item definitions live in config/items.php" is superseded by this decision.
  *
  * Two inventories, not one. `container` says which a definition belongs to,
@@ -107,7 +107,7 @@ return new class extends Migration
         DB::statement("ALTER TABLE `items` ADD CONSTRAINT `chk_items_tier` CHECK (`tier` BETWEEN 1 AND {$maxTier})");
         DB::statement("ALTER TABLE `items` ADD CONSTRAINT `chk_items_use_op` CHECK (`use_op` IS NULL OR `use_op` IN ({$ops}))");
 
-        // A skillbook that teaches nothing is not a skillbook. The pair has to
+        // An imprint that teaches nothing is not an imprint. The pair has to
         // be consistent in both directions, or App\Inventory\SkillInjector has
         // to defend against a row that cannot exist.
         DB::statement(

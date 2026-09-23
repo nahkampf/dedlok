@@ -174,10 +174,10 @@ class ItemFactory extends Factory
     }
 
     /** A book that teaches one skill. Always data: it is injected, not carried. */
-    public function skillbookFor(Skill $skill): static
+    public function imprintFor(Skill $skill): static
     {
         return $this->state([
-            'slug' => "skillbook_{$skill->slug}",
+            'slug' => "imprint_{$skill->slug}",
             'container' => Item::CONTAINER_DATA,
             'use_op' => Item::USE_INJECT_SKILL,
             'use_skill_id' => $skill->id,

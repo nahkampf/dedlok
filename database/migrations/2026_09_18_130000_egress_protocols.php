@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Inventory\Skillbook;
+use App\Inventory\Imprint;
 use App\Models\Skill;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\DB;
  * stays. A seeder would rewrite it on every re-seed, which is how an item
  * somebody deliberately tuned comes back wearing its original numbers.
  *
- * The book is created through `App\Inventory\Skillbook`, the same class the
+ * The book is created through `App\Inventory\Imprint`, the same class the
  * seeder and the admin editor use — exactly one book per skill is what makes a
  * book nameless and the injection gate meaningful, so it cannot be something
  * somebody remembers to do.
@@ -62,7 +62,7 @@ return new class extends Migration
             'primary_attribute' => 'memory',
             'secondary_attribute' => 'intellect',
             'base_cost' => 15000,
-            // PUBLICLY AVAILABLE, so the book is on the shelf. `Skillbook`
+            // PUBLICLY AVAILABLE, so the book is on the shelf. `Imprint`
             // keeps `on_market` in step with the skill on every save, which is
             // what makes that one decision rather than two.
             'on_market' => true,
@@ -93,7 +93,7 @@ return new class extends Migration
             );
         }
 
-        Skillbook::ensureFor($skill);
+        Imprint::ensureFor($skill);
     }
 
     public function down(): void
@@ -108,7 +108,7 @@ return new class extends Migration
         // database refuses a skill something still points at rather than
         // cascading. Everything else — prerequisites, anybody's progress,
         // queued training — cascades on its own.
-        $skill->skillbook()->delete();
+        $skill->imprint()->delete();
         $skill->delete();
     }
 };

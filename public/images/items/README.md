@@ -2,7 +2,7 @@
 
 One subdirectory per **type** of item, named by `App\Models\Item::imageType()` —
 the hardware kind (`cpu`, `psu`, `thermal`, …), the program kind (`icebreaker`,
-`daemon`, …), `skillbook`, or the inventory an ordinary object lives in
+`daemon`, …), `imprint`, or the inventory an ordinary object lives in
 (`physical`, `data`).
 
 Inside one of them, by the item's **id**:

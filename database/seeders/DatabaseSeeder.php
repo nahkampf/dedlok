@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(SettingsSeeder::class);
 
-        // Runs after skills exist: it generates one skillbook per skill row.
+        // Runs after skills exist: it generates one imprint per skill row.
         $this->call(ItemSeeder::class);
 
         // User::factory(10)->create();

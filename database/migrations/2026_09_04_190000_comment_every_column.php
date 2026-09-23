@@ -117,7 +117,7 @@ return new class extends Migration
                 'rarity' => 'How often the market stocks one: common, uncommon, rare, ultra_rare. Not tier, and free to disagree with it.',
                 'stackable' => 'Whether two of these share one inventory row. False for containers and deck hardware, which must be pointable at individually.',
                 'use_op' => 'What using it does, or NULL for an item that cannot be used.',
-                'use_skill_id' => 'For a skillbook, the skill it teaches. Unique, because exactly one book exists per skill and that is what makes a book nameless.',
+                'use_skill_id' => 'For an imprint, the skill it teaches. Unique, because exactly one book exists per skill and that is what makes a book nameless.',
                 'weight' => 'Stored and currently unenforced. Neither inventory has a weight limit.',
                 'size' => 'What this costs against a container capacity. Enforced.',
                 'capacity' => 'How much this can hold. Greater than 0 makes the item a container.',

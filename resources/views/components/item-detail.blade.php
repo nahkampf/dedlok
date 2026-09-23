@@ -63,13 +63,13 @@
                 aria-label="{{ Text::get('inventory.close') }}">✕</button>
         </div>
 
-        @if ($item->isSkillbook() && $item->useSkill)
+        @if ($item->isImprint() && $item->useSkill)
             <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">
                 {{ Text::get('inventory.teaches', ['skill' => $item->useSkill->title]) }}
             </div>
         @elseif ($item->hardwareSummary())
             {{-- A deck's sockets or a module's numbers. It is what the item IS,
-                 so it reads where the skillbook's skill does. --}}
+                 so it reads where the imprint's skill does. --}}
             <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">
                 {{ $item->hardwareSummary() }}
             </div>
@@ -140,7 +140,7 @@
                                 {{ $child->item->tierName() }}
                             @endif
                         </span>
-                        @if ($child->item->isSkillbook() && $child->item->useSkill)
+                        @if ($child->item->isImprint() && $child->item->useSkill)
                             <form method="POST" action="{{ route('inventory.inject', $child) }}" data-act>
                                 @csrf
                                 <button type="submit" class="btn btn--sm cut">
@@ -162,7 +162,7 @@
                 </p>
             @endforelse
 
-            @if ($entry->children->contains(fn ($child) => $child->item->isSkillbook()))
+            @if ($entry->children->contains(fn ($child) => $child->item->isImprint()))
                 {{-- Once for the whole list rather than once per book: the
                      sentence is the same one every time, and a card holding
                      four books would otherwise say it four times. --}}
@@ -171,7 +171,7 @@
         </div>
     @endif
 
-    @if ($item->isSkillbook() && $item->useSkill)
+    @if ($item->isImprint() && $item->useSkill)
         {{-- Spending a book cannot be undone, so the sentence that says so is
              part of the card rather than a second dialog on top of this one. --}}
         <p class="item-card__note" data-act>
@@ -204,7 +204,7 @@
                 </form>
             @endif
 
-            @if ($item->isSkillbook() && $item->useSkill)
+            @if ($item->isImprint() && $item->useSkill)
                 <form method="POST" action="{{ route('inventory.inject', $entry) }}">
                     @csrf
                     <button type="submit" class="btn btn--sm btn--primary cut">

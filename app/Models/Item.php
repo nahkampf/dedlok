@@ -59,7 +59,7 @@ class Item extends Model
      * The one image type that is not an enum case: a book is data on the card
      * and a book in the filing cabinet, and every book looks the same.
      */
-    public const IMAGE_SKILLBOOK = 'skillbook';
+    public const IMAGE_IMPRINT = 'imprint';
 
     /**
      * Two tiers, and the scale is deliberately short.
@@ -206,7 +206,7 @@ class Item extends Model
         return $this->use_op !== null;
     }
 
-    public function isSkillbook(): bool
+    public function isImprint(): bool
     {
         return $this->use_op === self::USE_INJECT_SKILL;
     }
@@ -294,7 +294,7 @@ class Item extends Model
      *
      * `accepts` is compared against the other item's `container` — the kind of
      * thing it is. That is the whole reason `container` survived the arrival
-     * of nesting: a skillbook is data whether it is loose on a deck or written
+     * of nesting: an imprint is data whether it is loose on a deck or written
      * to a card in someone's coat pocket.
      */
     public function canHold(Item $item): bool
@@ -305,15 +305,15 @@ class Item extends Model
     /**
      * The name a player sees.
      *
-     * A skillbook has none of its own: there is exactly one book per skill, so
+     * An imprint has none of its own: there is exactly one book per skill, so
      * storing a name per book would be a second copy of the skill's title
      * waiting to disagree with it. The slug is the last resort — visible and
      * wrong beats blank and mysterious.
      */
     public function displayName(): string
     {
-        if ($this->isSkillbook()) {
-            return Text::get('items.skillbook.name', [
+        if ($this->isImprint()) {
+            return Text::get('items.imprint.name', [
                 'skill' => $this->useSkill?->title ?? $this->slug,
             ]);
         }
@@ -323,8 +323,8 @@ class Item extends Model
 
     public function displayFlavor(): ?string
     {
-        if ($this->isSkillbook()) {
-            return Text::get('items.skillbook.flavor');
+        if ($this->isImprint()) {
+            return Text::get('items.imprint.flavor');
         }
 
         return $this->flavor;
@@ -367,7 +367,7 @@ class Item extends Model
      * already speaks (see kindName()), with two differences, both because this
      * is a filing system rather than a sentence:
      *
-     *  - a skillbook files itself, though it CALLS itself data: there is one
+     *  - an imprint files itself, though it CALLS itself data: there is one
      *    book per skill and they all look alike, so one picture in one folder
      *    covers every book in the game;
      *  - a container's kind is the inventory it lives in, which is the same
@@ -381,7 +381,7 @@ class Item extends Model
         return self::IMAGE_ROOT.'/'.$this->imageType();
     }
 
-    /** The subdirectory alone: `cpu`, `daemon`, `skillbook`, `physical`. */
+    /** The subdirectory alone: `cpu`, `daemon`, `imprint`, `physical`. */
     public function imageType(): string
     {
         if ($this->hardware !== null) {
@@ -392,7 +392,7 @@ class Item extends Model
             return $this->program->kind->value;
         }
 
-        return $this->isSkillbook() ? self::IMAGE_SKILLBOOK : $this->container;
+        return $this->isImprint() ? self::IMAGE_IMPRINT : $this->container;
     }
 
     /**
@@ -409,7 +409,7 @@ class Item extends Model
         return [
             ...array_column(Hardware::cases(), 'value'),
             ...ProgramKind::values(),
-            self::IMAGE_SKILLBOOK,
+            self::IMAGE_IMPRINT,
             ...self::CONTAINERS,
         ];
     }
@@ -469,7 +469,7 @@ class Item extends Model
     public function glyph(): string
     {
         return match (true) {
-            $this->isSkillbook() => "\u{25C8}",
+            $this->isImprint() => "\u{25C8}",
             $this->isCyberdeck() => "\u{2394}",
             $this->isModule() => "\u{232C}",
             $this->isContainer() => "\u{25CD}",

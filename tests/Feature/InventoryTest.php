@@ -42,7 +42,7 @@ class InventoryTest extends TestCase
 
         $this->character = $this->character();
         $this->hacking = Skill::factory()->create(['slug' => 'hacking', 'title' => 'Hacking']);
-        $this->book = Item::factory()->skillbookFor($this->hacking)->create();
+        $this->book = Item::factory()->imprintFor($this->hacking)->create();
         $this->injector = new SkillInjector;
     }
 
@@ -88,7 +88,7 @@ class InventoryTest extends TestCase
         $this->assertSame([$shard->id], $data->pluck('item_id')->all());
     }
 
-    public function test_skillbooks_live_in_the_data_inventory(): void
+    public function test_imprints_live_in_the_data_inventory(): void
     {
         $this->give($this->book);
 
@@ -184,13 +184,13 @@ class InventoryTest extends TestCase
         $this->assertNull($this->progress($other));
     }
 
-    public function test_an_item_that_is_not_a_skillbook_is_refused(): void
+    public function test_an_item_that_is_not_an_imprint_is_refused(): void
     {
         $entry = $this->give(Item::factory()->physical()->create());
 
         $result = $this->injector->inject($this->character, $entry);
 
-        $this->assertSame(InjectionRefusal::NotASkillbook, $result->refusal);
+        $this->assertSame(InjectionRefusal::NotAnImprint, $result->refusal);
         $this->assertNotNull($entry->fresh(), 'a refused use never consumes');
     }
 
@@ -207,7 +207,7 @@ class InventoryTest extends TestCase
         $response->assertOk();
         $response->assertSee(Text::get('inventory.physical'));
         $response->assertSee(Text::get('inventory.data'));
-        $response->assertSee(Text::get('items.skillbook.name', ['skill' => 'Hacking']));
+        $response->assertSee(Text::get('items.imprint.name', ['skill' => 'Hacking']));
         $response->assertSee(Text::get('items.tiers.2'));
     }
 
@@ -257,7 +257,7 @@ class InventoryTest extends TestCase
             ->assertSee('16 QB');
     }
 
-    public function test_only_skillbooks_offer_an_inject_button(): void
+    public function test_only_imprints_offer_an_inject_button(): void
     {
         $this->give(Item::factory()->physical()->create());
 
@@ -317,12 +317,12 @@ class InventoryTest extends TestCase
 
     // ---- naming ------------------------------------------------------------
 
-    public function test_a_skillbook_is_named_from_the_skill_it_teaches(): void
+    public function test_an_imprint_is_named_from_the_skill_it_teaches(): void
     {
         // One lang entry covers every book, so adding a skill never means
         // editing a locale.
-        $this->assertSame('Skillbook: Hacking', $this->book->displayName());
-        $this->assertSame(Text::get('items.skillbook.flavor'), $this->book->displayFlavor());
+        $this->assertSame('Eidetic Imprint: Hacking', $this->book->displayName());
+        $this->assertSame(Text::get('items.imprint.flavor'), $this->book->displayFlavor());
     }
 
     public function test_an_ordinary_item_is_named_by_its_row(): void

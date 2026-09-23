@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * existing one has.
  *
  * Level 0 is the default and a real state: injected and untrained, exactly
- * what spending a skillbook buys. Anything above it is the archetype saying
+ * what spending an imprint buys. Anything above it is the archetype saying
  * the training already happened.
  */
 #[Fillable(['archetype_id', 'skill_id', 'level'])]

@@ -115,7 +115,7 @@
                                 </td>
                                 <td>
                                     {{ $item->displayName() }}
-                                    @if ($item->isSkillbook())
+                                    @if ($item->isImprint())
                                         <div class="micro">{{ Text::get('admin.items.teaches', ['skill' => $item->useSkill?->slug ?? '—']) }}</div>
                                     @elseif ($item->isContainer())
                                         <div class="micro">{{ Text::get('admin.items.container_of', ['accepts' => $item->accepts]) }}</div>

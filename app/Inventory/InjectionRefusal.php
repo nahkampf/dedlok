@@ -16,8 +16,8 @@ use App\Support\Text;
  */
 enum InjectionRefusal: string
 {
-    /** The item does no such thing — most items are not skillbooks. */
-    case NotASkillbook = 'not_a_skillbook';
+    /** The item does no such thing — most items are not imprints. */
+    case NotAnImprint = 'not_an_imprint';
 
     /** Not this character's row, or already spent. */
     case NotOwned = 'not_owned';

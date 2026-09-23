@@ -22,7 +22,7 @@ use Illuminate\Support\Str;
  *   check.<slug>   the number a roll is made against, derived from the skill's
  *                  OWN governing attributes and its level.
  *
- * They are generated for the same reason skillbooks are: there are hundreds of
+ * They are generated for the same reason imprints are: there are hundreds of
  * skills, they live in the database, and a per-skill entry in config/stats.php
  * would be a second place to remember. Adding a skill adds its stat and its
  * check for free, exactly as it adds its book.

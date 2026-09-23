@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
  * The modifiers a character gets from the software they are running.
  *
  * The first items in the game that change a number. Everything before this
- * either gated something (a skillbook) or described hardware; a program is the
+ * either gated something (an imprint) or described hardware; a program is the
  * first thing a player owns whose effect goes through the resolver.
  *
  * WHAT COUNTS AS RUNNING: a row with `running_on_deck_id` set. Not owned, not

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Inventory\Skillbook;
+use App\Inventory\Imprint;
 use App\Models\Character;
 use App\Models\CharacterSkill;
 use App\Models\InventoryItem;
@@ -63,10 +63,10 @@ class SkillAdminTest extends TestCase
             ->assertRedirect();
 
         $skill = Skill::where('slug', 'cryptography')->firstOrFail();
-        $book = Skillbook::forSkill($skill);
+        $book = Imprint::forSkill($skill);
 
         $this->assertNotNull($book);
-        $this->assertSame('skillbook_cryptography', $book->slug);
+        $this->assertSame('imprint_cryptography', $book->slug);
         $this->assertSame(Item::CONTAINER_DATA, $book->container);
         $this->assertSame(Item::USE_INJECT_SKILL, $book->use_op);
         $this->assertSame($skill->id, $book->use_skill_id);
@@ -79,7 +79,7 @@ class SkillAdminTest extends TestCase
             ->post('/admin/skills', $this->payload(['rank' => 4, 'base_cost' => 900]))
             ->assertRedirect();
 
-        $book = Skillbook::forSkill(Skill::where('slug', 'cryptography')->firstOrFail());
+        $book = Imprint::forSkill(Skill::where('slug', 'cryptography')->firstOrFail());
 
         $this->assertSame(2, $book->tier);              // log2(4) + 1, capped at 2
         $this->assertSame('rare', $book->rarity->value); // rank 4
@@ -92,10 +92,10 @@ class SkillAdminTest extends TestCase
         $this->actingAs($this->admin)->post('/admin/skills', $this->payload())->assertRedirect();
 
         $skill = Skill::where('slug', 'cryptography')->firstOrFail();
-        $book = Skillbook::forSkill($skill);
+        $book = Imprint::forSkill($skill);
 
         $this->assertNull($book->name);
-        $this->assertSame('Skillbook: Cryptography', $book->displayName());
+        $this->assertSame('Eidetic Imprint: Cryptography', $book->displayName());
     }
 
     public function test_a_slug_must_be_unique_and_well_formed(): void
@@ -275,7 +275,7 @@ class SkillAdminTest extends TestCase
     public function test_the_book_follows_the_skills_cost_and_listing(): void
     {
         $skill = Skill::factory()->create(['slug' => 'cryptography', 'base_cost' => 100]);
-        $book = Item::factory()->skillbookFor($skill)->create(['base_cost' => 100, 'on_market' => true]);
+        $book = Item::factory()->imprintFor($skill)->create(['base_cost' => 100, 'on_market' => true]);
 
         $this->actingAs($this->admin)
             ->put("/admin/skills/{$skill->slug}", $this->payload([
@@ -312,7 +312,7 @@ class SkillAdminTest extends TestCase
     {
         $character = Character::factory()->create();
         $skill = Skill::factory()->create(['slug' => 'cryptography']);
-        $book = Item::factory()->skillbookFor($skill)->create();
+        $book = Item::factory()->imprintFor($skill)->create();
 
         $row = InventoryItem::factory()->ownedBy($character)->of($book)->create();
         CharacterSkill::create([
@@ -349,7 +349,7 @@ class SkillAdminTest extends TestCase
     {
         $character = Character::factory()->create();
         $skill = Skill::factory()->create(['slug' => 'cryptography']);
-        Item::factory()->skillbookFor($skill)->create();
+        Item::factory()->imprintFor($skill)->create();
 
         CharacterSkill::create([
             'character_id' => $character->id, 'skill_id' => $skill->id,
@@ -359,7 +359,7 @@ class SkillAdminTest extends TestCase
         $this->actingAs($this->admin)
             ->get("/admin/skills/{$skill->slug}/edit")
             ->assertOk()
-            ->assertSee('its skillbook')
+            ->assertSee('its imprint')
             // escape defaults to true: Blade renders the apostrophe as &#039;.
             ->assertSee("1 character's progress in it");
     }
@@ -372,6 +372,6 @@ class SkillAdminTest extends TestCase
         $this->actingAs($this->admin)
             ->get("/admin/skills/{$skill->slug}/edit")
             ->assertOk()
-            ->assertSee('This skill has no book');
+            ->assertSee('This skill has no imprint');
     }
 }

@@ -41,7 +41,7 @@ class MarketController extends Controller
 
         return view('market.index', [
             'character' => $character,
-            // One accordion per kind of thing — RAM, Icebreaker, Skillbook —
+            // One accordion per kind of thing — RAM, Icebreaker, Imprint —
             // named by Item::kindName(), which is what the card already calls
             // it. Alphabetical, as the shelves inside each already are.
             'groups' => $shelves

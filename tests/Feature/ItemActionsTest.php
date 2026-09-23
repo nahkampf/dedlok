@@ -274,7 +274,7 @@ class ItemActionsTest extends TestCase
         $skill = Skill::factory()->create(['slug' => 'hacking', 'title' => 'Hacking']);
         $book = InventoryItem::factory()
             ->ownedBy($this->character)
-            ->of(Item::factory()->skillbookFor($skill)->size(8)->create())
+            ->of(Item::factory()->imprintFor($skill)->size(8)->create())
             ->inside($card)
             ->create();
 

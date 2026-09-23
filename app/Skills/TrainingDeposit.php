@@ -364,7 +364,7 @@ final class TrainingDeposit
      *
      * It does NOT create one. A character_skills row means "this skill has
      * been injected", and the only thing allowed to create that is
-     * App\Inventory\SkillInjector — spending the skillbook is the gate in
+     * App\Inventory\SkillInjector — spending the imprint is the gate in
      * front of training. A deposit that created the row on demand would let
      * anything that can write a queue entry skip the book entirely.
      */

@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Schema;
  *    loose pile — hence `parent_id`, and `whereNull('parent_id')` in every
  *    listing that means "loose".
  * 2. Two memory cards are no longer interchangeable. The old unique key on
- *    (character_id, item_id) said they were: a card with a skillbook on it and
+ *    (character_id, item_id) said they were: a card with an imprint on it and
  *    a blank one collapsed into a single row with quantity 2. That key has to
  *    go, and something weaker has to replace it or stacking stops working.
  */

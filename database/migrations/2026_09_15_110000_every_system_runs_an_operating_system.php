@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Schema;
  * to point at is the skill: the name, the description and the book all live on
  * that row already, and a varchar here would be a second spelling of something
  * the database can enforce. It is the same decision `items.use_skill_id` takes
- * for a skillbook, and it means a fifth operating system is a skill row and a
+ * for an imprint, and it means a fifth operating system is a skill row and a
  * weight rather than an enum case, a migration and a string.
  *
  * WHICH ONE A MACHINE RUNS FOLLOWS ITS GRADE, and follows it through the

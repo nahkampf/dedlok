@@ -63,7 +63,7 @@ return new class extends Migration
             /*
              * The level the character starts at, and 0 is the useful default
              * rather than a missing value: level 0 is a real state — the skill
-             * is injected and untrained — and it is what a skillbook buys. A
+             * is injected and untrained — and it is what an imprint buys. A
              * level above 0 is the archetype saying the character already put
              * the months in.
              */

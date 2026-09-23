@@ -24,7 +24,7 @@ down so the implementation has something to be checked against.
 | `hitpoints_max` and `synaptic_integrity_max` as stats | **built**, formulas in `config/stats.php` |
 | `ModifierSource` + `ArchetypePerks` | **built** |
 | `items` + `inventory_items` tables, two containers | **built**, with constraints |
-| Skillbooks and injection (`App\Inventory\SkillInjector`) | **built**, the only writer of a new `character_skills` row |
+| Imprints and injection (`App\Inventory\SkillInjector`) | **built**, the only writer of a new `character_skills` row |
 | Containers — items holding items (`App\Inventory\ItemPlacer`) | **built**, one level deep, capacity enforced |
 | Item names and flavour | **built** — columns on `items`; the shared vocabulary is in `config/strings.php` |
 | Character creation point pool | **built** |
@@ -305,7 +305,7 @@ values that is not a character yet and has no modifiers to resolve.
 ### Every skill is a stat, and implies a check
 
 `App\Stats\SkillStats` generates two stats per skill row, for the same reason
-`Skillbook` generates a book per skill: there will be hundreds, they live in the
+`Imprint` generates a book per skill: there will be hundreds, they live in the
 database, and a per-skill entry in `config/stats.php` would be a second place to
 remember.
 
@@ -1570,7 +1570,7 @@ instead.**
 **Item definitions live in the database, not in config.** They are the second
 exception to the mechanics-in-config rule, taken for the same reasons skills
 were:
-there will be hundreds, the market has to query them, and a skillbook has to
+there will be hundreds, the market has to query them, and an imprint has to
 point at a skill row. `config/items.php` does not exist and is not planned.
 
 1. An `items` row: `slug`, `container` (`physical` or `data`), `tier` 1 or 2, and
@@ -1606,12 +1606,12 @@ reaches the market by being forgotten.
 directions, so an item cannot claim capacity without a kind or a kind
 without capacity. Depth is capped at one: containers do not nest.
 
-**Skillbooks need neither step.** There is exactly one book per skill, so
+**Imprints need neither step.** There is exactly one book per skill, so
 `ItemSeeder` generates them from the skills table and their name composes from
-the skill's own title through `strings.items.skillbook.name`. Adding a skill
+the skill's own title through `strings.items.imprint.name`. Adding a skill
 adds its book, named for free.
 
-### Skillbooks and the training gate
+### Imprints and the training gate
 
 A skill cannot be trained until its book has been owned and spent.
 
@@ -1841,7 +1841,7 @@ ArchetypeItem::create(['archetype_id' => 1, 'item_id' => $deck->id, 'quantity' =
 
 Three things worth knowing before you write one:
 
-- **Level 0 is the ordinary grant.** It means what injecting a skillbook means:
+- **Level 0 is the ordinary grant.** It means what injecting an imprint means:
   on the sheet, untrained. A level above 0 says the training happened before the
   game started, and `SkillInjector::grant()` seeds `skill_points` to exactly
   that level's threshold so the stored level and the points agree.

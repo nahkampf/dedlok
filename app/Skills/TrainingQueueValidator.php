@@ -35,7 +35,7 @@ final class TrainingQueueValidator
             ->map(fn ($level): int => (int) $level)
             ->all();
 
-        // A character_skills row exists only because a skillbook was injected,
+        // A character_skills row exists only because an imprint was injected,
         // so the keys of that map are exactly the skills this character is
         // allowed to train. Level 0 is a real state here — injected, untrained
         // — which is why this is a key check and not a level check.
@@ -52,7 +52,7 @@ final class TrainingQueueValidator
 
             if (! in_array($skill->id, $injected, true)) {
                 $problems[] = "position {$entry->position} trains [{$skill->slug}] but it has never been ".
-                    'injected — the skillbook has to be used first';
+                    'injected — the imprint has to be used first';
 
                 continue;
             }

@@ -25,7 +25,7 @@ class DashboardController extends Controller
             'itemsOnMarket' => Item::onMarket()->count(),
             'skills' => Skill::count(),
             'skillsWithoutBooks' => Skill::query()
-                ->whereDoesntHave('skillbook')
+                ->whereDoesntHave('imprint')
                 ->count(),
             'archetypes' => Archetype::count(),
             // An archetype that hands out nothing is not broken, but it is

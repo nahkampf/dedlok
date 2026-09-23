@@ -1594,10 +1594,10 @@ return [
     'training' => [
 
         'title' => 'Skills',
-        'lede' => 'What you know, what you are training, and what is lined up behind it. A skill is learned by spending its book from the stash, and trained by queuing it here.',
+        'lede' => 'What you know, what you are training, and what is lined up behind it. A skill is learned by spending its imprint from the stash, and trained by queuing it here.',
 
         'mine' => 'Your skills',
-        'none' => 'Nothing injected yet. A skill is learned by spending its book from the stash.',
+        'none' => 'Nothing injected yet. A skill is learned by spending its imprint from the stash.',
         'count' => ['zero' => 'none', 'one' => ':count skill', 'many' => ':count skills'],
 
         // What is training right now. The dot beside it is the kit's own
@@ -1643,7 +1643,7 @@ return [
             'effects' => 'Effects',
             'effects_none' => 'Knowing it changes nothing on its own.',
             'effect_level' => 'Level :level',
-            'book' => 'Skillbook',
+            'book' => 'Imprint',
             'book_owned' => 'Owned',
             'book_not_owned' => 'Not owned',
             'injected' => 'Injected',
@@ -1682,7 +1682,7 @@ return [
         | the warnings below are how it says so.
         */
         'refused' => [
-            'not_injected' => 'You have not injected that skill. Spend its book from the stash first.',
+            'not_injected' => 'You have not injected that skill. Spend its imprint from the stash first.',
             'already_maxed' => 'Every level of that skill is either reached or already queued.',
             'queue_full' => 'The queue is full. Take something out first.',
         ],
@@ -1712,7 +1712,7 @@ return [
         'physical' => 'Carried',
         'physical_hint' => 'What is on you. Gear, chrome, salvage.',
         'data' => 'Deck',
-        'data_hint' => 'What is on your deck. Software, files, skillbooks.',
+        'data_hint' => 'What is on your deck. Software, files, imprints.',
 
         'empty' => 'Nothing here.',
 
@@ -1774,10 +1774,10 @@ return [
         'quantity' => '×:count',
 
         'inject' => 'Inject',
-        'inject_confirm' => 'Injecting :skill destroys the book. It cannot be undone.',
-        // The same sentence with no skill named, for a list of books rather
+        'inject_confirm' => 'Injecting :skill destroys the imprint. It cannot be undone.',
+        // The same sentence with no skill named, for a list of imprints rather
         // than one: the contents of a card say it once, not once each.
-        'inject_confirm_any' => 'Injecting a book destroys it. It cannot be undone.',
+        'inject_confirm_any' => 'Injecting an imprint destroys it. It cannot be undone.',
         'injected' => ':skill is on your sheet. Queue it to start training.',
 
         'teaches' => 'Teaches :skill',
@@ -1818,10 +1818,10 @@ return [
         ],
 
         'refused' => [
-            'not_a_skillbook' => 'That is not something you can inject.',
+            'not_an_imprint' => 'That is not something you can inject.',
             'not_owned' => 'You are not carrying that.',
-            'already_known' => 'You already know that skill. The book is no use to you.',
-            'skill_missing' => 'That book teaches a skill that no longer exists.',
+            'already_known' => 'You already know that skill. The imprint is no use to you.',
+            'skill_missing' => 'That imprint carries a skill that no longer exists.',
         ],
     ],
 
@@ -1862,8 +1862,11 @@ return [
             'ultra_rare' => 'Ultra-Rare',
         ],
 
-        'skillbook' => [
-            'name' => 'Skillbook: :skill',
+        // EIDETIC IMPRINT in full, "imprint" everywhere it is said twice in
+        // one breath. The item has no name of its own: it composes from the
+        // skill it carries, so renaming the format renames every one of them.
+        'imprint' => [
+            'name' => 'Eidetic Imprint: :skill',
             'flavor' => 'Compressed instruction set. One read, then it is gone.',
         ],
     ],
@@ -2258,7 +2261,7 @@ return [
                 'slug_hint' => 'Permanent. Lower case, digits and underscores.',
                 'slug_locked' => 'Permanent — inventory rows reference it.',
                 'name' => 'Name',
-                'name_book' => 'A skillbook has no name of its own: it reads from the skill it teaches.',
+                'name_book' => 'An imprint has no name of its own: it reads from the skill it carries.',
                 'flavor' => 'Flavour',
                 'flavor_hint' => 'One or two lines. Shown under the name on the card.',
                 'container' => 'Kind',
@@ -2273,7 +2276,7 @@ return [
                 'use_op_hint' => 'What using it does. Most items do nothing.',
                 'use_op_none' => 'Nothing',
                 'use_skill' => 'Teaches',
-                'use_skill_hint' => 'The skill this book injects. One book per skill.',
+                'use_skill_hint' => 'The skill this imprint injects. One imprint per skill.',
                 'weight' => 'Weight',
                 'weight_hint' => 'Stored and not yet enforced.',
                 'size' => 'Size',
@@ -2308,7 +2311,7 @@ return [
                 'thermal_limit_hint' => 'Accumulated deck load at which this part is gone. A hard limit, not a roll. Must not be below the warning.',
                 'program_kind_none' => 'Not software',
                 'program_kind' => 'Program',
-                'program_kind_hint' => 'What the software is for. Leave empty for anything that is not a program. Deck hardware and skillbooks cannot be one.',
+                'program_kind_hint' => 'What the software is for. Leave empty for anything that is not a program. Deck hardware and imprints cannot be one.',
                 'drug_family' => 'Drug family',
                 'drug_family_none' => 'Not a drug',
                 'drug_family_hint' => 'Giving it a family makes the item a drug. The books are kept per family, so this decides which figures a dose moves and which withdrawal it answers.',
@@ -2408,10 +2411,10 @@ return [
 
         'skills' => [
             'title' => 'Skills',
-            'lede' => 'Every skill, and what it requires first. Creating one also creates the book that teaches it — there is exactly one book per skill, and nothing can be learned without it.',
+            'lede' => 'Every skill, and what it requires first. Creating one also creates the imprint that teaches it — there is exactly one imprint per skill, and nothing can be learned without it.',
             'new' => 'New skill',
             'editing' => 'Editing :skill',
-            'created' => ':skill created, along with its book :book.',
+            'created' => ':skill created, along with its imprint :book.',
             'updated' => ':skill saved.',
             'deleted' => ':skill deleted, and :rows related rows with it.',
             'empty' => 'No skills match.',
@@ -2439,7 +2442,7 @@ return [
                 'secondary_attribute' => 'Secondary attribute',
                 'attribute_hint' => 'Together these decide skill points per minute. They should differ.',
                 'base_cost' => 'Cost',
-                'base_cost_hint' => 'What the book sells for. Kept in step with it on every save.',
+                'base_cost_hint' => 'What the imprint sells for. Kept in step with it on every save.',
                 'on_market' => 'Book listed on the market',
             ],
 
@@ -2448,7 +2451,7 @@ return [
                 'training' => 'Training',
                 'market' => 'Market',
                 'prerequisites' => 'Requirements',
-                'book' => 'Skillbook',
+                'book' => 'Imprint',
             ],
 
             'columns' => [
@@ -2458,7 +2461,7 @@ return [
                 'rank' => 'Rank',
                 'requires' => 'Requires',
                 'unlocks' => 'Unlocks',
-                'book' => 'Book',
+                'book' => 'Imprint',
             ],
 
             'prerequisites' => [
@@ -2469,10 +2472,10 @@ return [
             ],
 
             'book' => [
-                'present' => 'Its book is :book.',
-                'edit' => 'Edit the book',
-                'missing' => 'This skill has no book, so nobody can learn it. It was deleted, or the skill predates the editor.',
-                'derived' => 'Cost and listing follow the skill. Tier, rarity and shelf size were set from its rank when the book was made, and are the item editor\'s from then on.',
+                'present' => 'Its imprint is :book.',
+                'edit' => 'Edit the imprint',
+                'missing' => 'This skill has no imprint, so nobody can learn it. It was deleted, or the skill predates the editor.',
+                'derived' => 'Cost and listing follow the skill. Tier, rarity and shelf size were set from its rank when the imprint was made, and are the item editor\'s from then on.',
                 'yes' => 'Yes',
                 'no' => 'Missing',
             ],
@@ -2529,7 +2532,7 @@ return [
             ],
 
             'skills' => [
-                'help' => 'Skills the character already has. Level 0 is what a skillbook buys — on the sheet, untrained; anything above it is training that happened before the game started. A skill granted here is granted whole: no book is spent, and the points are seeded to exactly that level.',
+                'help' => 'Skills the character already has. Level 0 is what an imprint buys — on the sheet, untrained; anything above it is training that happened before the game started. A skill granted here is granted whole: no imprint is spent, and the points are seeded to exactly that level.',
                 'skill' => 'Skill',
                 'level' => 'At level',
                 'level_zero' => 'Injected, untrained',
@@ -2553,7 +2556,7 @@ return [
                 'groups' => [
                     'physical' => 'Carried',
                     'data' => 'On the deck',
-                    'skillbooks' => 'Skillbooks',
+                    'imprints' => 'Imprints',
                 ],
             ],
 
@@ -2590,7 +2593,7 @@ return [
             'queue_entries' => ['one' => ':count queued training entry', 'many' => ':count queued training entries'],
             'dependents' => ['one' => ':count skill that requires it', 'many' => ':count skills that require it'],
             'own_prerequisites' => ['one' => ':count requirement of its own', 'many' => ':count requirements of its own'],
-            'books' => ['one' => 'its skillbook', 'many' => 'its skillbook'],
+            'books' => ['one' => 'its imprint', 'many' => 'its imprint'],
             'book_copies' => ['one' => ':count copy of the book players hold', 'many' => ':count copies of the book players hold'],
             'archetype_loadouts' => [
                 'one' => ':count archetype stops handing it to new characters',
@@ -2605,7 +2608,7 @@ return [
         'validation' => [
             'slug' => 'Use lower case letters, digits and underscores only.',
             'slug_immutable' => 'A slug is permanent and cannot be changed.',
-            'name_required' => 'Give it a name. Only a skillbook may go without one.',
+            'name_required' => 'Give it a name. Only an imprint may go without one.',
             'container_stacks' => 'A container cannot stack: two of them would merge into one row and the contents of the second would be lost. Untick stackable.',
             'book_needs_skill' => 'A book that teaches nothing is not a book. Choose the skill it injects.',
             'skill_without_book' => 'Only an injecting item may name a skill.',

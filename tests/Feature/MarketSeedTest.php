@@ -29,7 +29,7 @@ class MarketSeedTest extends TestCase
      * NOTHING ON THE SHELF THAT THIS TEST DID NOT PUT THERE.
      *
      * The catalogue is content and content arrives by migration — a skill
-     * shipped that way brings a restockable skillbook with it, which is an
+     * shipped that way brings a restockable imprint with it, which is an
      * item in the pass that no test here created. These tests pin the die by
      * SEQUENCE and count what a pass considered, so one extra item shifts
      * every roll by one. Zeroing the seed quantity is what `restockable()`

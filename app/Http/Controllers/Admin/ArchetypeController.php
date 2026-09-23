@@ -83,7 +83,7 @@ class ArchetypeController extends Controller
             'archetype' => $archetype,
             'maxLevel' => SkillProgression::fromConfig()->maxLevel(),
             // Every skill and every item, so a loadout can name one, grouped
-            // into optgroups because a flat list of every skillbook in the
+            // into optgroups because a flat list of every imprint in the
             // game is a scroll rather than a choice. Still <select>s: when
             // grouping stops being enough, this becomes a search field.
             'skills' => $this->skillOptions(),
@@ -126,13 +126,13 @@ class ArchetypeController extends Controller
      * Every item, labelled the way a player would see it and grouped by what
      * kind of thing it is.
      *
-     * displayName() rather than the column, so the hundreds of skillbooks read
+     * displayName() rather than the column, so the hundreds of imprints read
      * as the skills they teach instead of as a list of blanks — which means
      * the sort has to happen after the names exist, not in SQL.
      *
      * The groups are the item's own vocabulary rather than a new one: deck
      * hardware by its `hardware` kind, then the two inventories for everything
-     * else. Skillbooks come out of the data inventory and last, because there
+     * else. Imprints come out of the data inventory and last, because there
      * is one per skill and they would otherwise bury every other choice.
      *
      * @return array<string, list<array{id: int, label: string}>>
@@ -165,8 +165,8 @@ class ArchetypeController extends Controller
     /** Which optgroup an item belongs in. */
     private function itemGroup(Item $item): string
     {
-        if ($item->isSkillbook()) {
-            return Text::get('admin.archetypes.items.groups.skillbooks');
+        if ($item->isImprint()) {
+            return Text::get('admin.archetypes.items.groups.imprints');
         }
 
         if ($item->hardware !== null) {
@@ -190,7 +190,7 @@ class ArchetypeController extends Controller
                 static fn (Hardware $hardware): string => $hardware->label(),
                 Hardware::cases(),
             ),
-            Text::get('admin.archetypes.items.groups.skillbooks'),
+            Text::get('admin.archetypes.items.groups.imprints'),
         ];
     }
 }

@@ -43,7 +43,7 @@ class ContainmentTest extends TestCase
 
         $this->character = $this->character();
         $this->hacking = Skill::factory()->create(['slug' => 'hacking', 'title' => 'Hacking']);
-        $this->book = Item::factory()->skillbookFor($this->hacking)->size(8)->create();
+        $this->book = Item::factory()->imprintFor($this->hacking)->size(8)->create();
         $this->card = Item::factory()->physical()->holds(Item::CONTAINER_DATA, 16)->create();
         $this->placer = new ItemPlacer;
     }
@@ -210,7 +210,7 @@ class ContainmentTest extends TestCase
         $second = $this->give($this->card);
 
         // The old unique key on (character, item) said these were the same
-        // object. They are not: one of them has a skillbook on it.
+        // object. They are not: one of them has an imprint on it.
         $this->assertNotSame($first->id, $second->id);
         $this->assertSame(2, $this->character->inventory()->count());
         $this->assertNull($first->fresh()->stack_key);

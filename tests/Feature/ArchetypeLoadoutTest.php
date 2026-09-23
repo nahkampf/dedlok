@@ -203,10 +203,10 @@ class ArchetypeLoadoutTest extends TestCase
         $this->assertSame([1, 1], $rows->pluck('quantity')->all());
     }
 
-    public function test_a_granted_skillbook_can_still_be_injected(): void
+    public function test_a_granted_imprint_can_still_be_injected(): void
     {
         $skill = Skill::factory()->create();
-        $book = Item::factory()->skillbookFor($skill)->create();
+        $book = Item::factory()->imprintFor($skill)->create();
         ArchetypeItem::create(['archetype_id' => 1, 'item_id' => $book->id, 'quantity' => 1]);
 
         $this->actingAs(User::factory()->create())

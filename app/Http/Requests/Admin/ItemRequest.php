@@ -35,7 +35,7 @@ use Illuminate\Validation\Validator;
  * SQL cannot express against a single row:
  *
  * - One book per skill. `use_skill_id` is unique across items, because a
- *   second book teaching the same skill would make Skillbook::forSkill()
+ *   second book teaching the same skill would make Imprint::forSkill()
  *   ambiguous and give the skill two names.
  * - A container cannot stack, and neither does a cyberdeck. InventoryItem
  *   derives `stack_key` from (character, item, parent), so two stackable
@@ -77,7 +77,7 @@ class ItemRequest extends FormRequest
         $this->merge([
             'stackable' => $this->boolean('stackable'),
             'on_market' => $this->boolean('on_market'),
-            // An empty text field is no value, not a value of ''. A skillbook
+            // An empty text field is no value, not a value of ''. An imprint
             // stores a null name; '' would be a name that renders as nothing.
             'name' => $this->filled('name') ? $this->input('name') : null,
             'use_op' => $this->filled('use_op') ? $this->input('use_op') : null,
@@ -162,22 +162,22 @@ class ItemRequest extends FormRequest
     public function rules(): array
     {
         $capacity = (int) $this->input('capacity', 0);
-        $isSkillbook = $this->input('use_op') === Item::USE_INJECT_SKILL;
+        $isImprint = $this->input('use_op') === Item::USE_INJECT_SKILL;
         $hardware = $this->hardware();
         $isProgram = $this->programKind() !== null;
         $isDrug = $this->drugFamily() !== null;
 
         return array_merge([
             // Only on create. A slug is permanent — inventory rows and the
-            // skillbook naming both reference it — so update() never sees one.
+            // imprint naming both reference it — so update() never sees one.
             'slug' => $this->isCreating()
                 ? ['required', 'string', 'max:100', 'regex:/^[a-z0-9_]+$/', Rule::unique('items', 'slug')]
                 : ['prohibited'],
 
-            // A skillbook has no name of its own: it composes from the skill
+            // An imprint has no name of its own: it composes from the skill
             // it teaches, and storing one would be a second copy of the
             // skill's title waiting to disagree with it.
-            'name' => $isSkillbook
+            'name' => $isImprint
                 ? ['nullable', 'string', 'max:255']
                 : ['required', 'string', 'max:255'],
 
@@ -205,7 +205,7 @@ class ItemRequest extends FormRequest
                 : ['boolean'],
 
             'use_op' => ['nullable', Rule::in(Item::USE_OPS)],
-            'use_skill_id' => $isSkillbook
+            'use_skill_id' => $isImprint
                 ? [
                     'required', 'integer', Rule::exists('skills', 'id'),
                     Rule::unique('items', 'use_skill_id')->ignore($this->item()?->id),
@@ -251,11 +251,11 @@ class ItemRequest extends FormRequest
              * mutually exclusive without a rule saying so, because hardware
              * forces `container` to physical and a program is data.
              *
-             * A skillbook is not a program either. Both are data with a job,
+             * An imprint is not a program either. Both are data with a job,
              * and `use_op` already says which job; a row claiming both would
              * be a book that runs and a program that teaches.
              */
-            'program_kind' => $hardware !== null || $isSkillbook
+            'program_kind' => $hardware !== null || $isImprint
                 ? ['prohibited']
                 : ['nullable', Rule::enum(ProgramKind::class)],
 
@@ -277,7 +277,7 @@ class ItemRequest extends FormRequest
              * software or deck hardware. What it DOES lives on `modifiers`
              * like an implant's; these four are what it costs.
              */
-            'drug_family' => $hardware !== null || $isProgram || $isSkillbook
+            'drug_family' => $hardware !== null || $isProgram || $isImprint
                 ? ['prohibited']
                 : ['nullable', Rule::enum(Family::class)],
 

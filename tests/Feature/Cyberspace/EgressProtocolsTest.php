@@ -8,7 +8,7 @@ use App\Checks\CheckRoller;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
-use App\Inventory\Skillbook;
+use App\Inventory\Imprint;
 use App\Models\Character;
 use App\Models\CharacterSkill;
 use App\Models\Skill;
@@ -109,7 +109,7 @@ final class EgressProtocolsTest extends TestCase
     /** One book per skill is what makes the injection gate mean anything. */
     public function test_its_book_is_on_the_shelf(): void
     {
-        $book = Skillbook::forSkill($this->skill());
+        $book = Imprint::forSkill($this->skill());
 
         $this->assertNotNull($book);
         $this->assertTrue($book->on_market);

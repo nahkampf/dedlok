@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Inventory\Imprint;
 use App\Inventory\ItemGranter;
-use App\Inventory\Skillbook;
 use App\Models\Character;
 use App\Models\Skill;
 use App\Models\SkillPrerequisite;
@@ -108,7 +108,7 @@ final class TrainingQueueScreenTest extends TestCase
     // ---- what is refused ----------------------------------------------------
 
     /**
-     * The skillbook gate, from the other side. A character_skills row is what
+     * The imprint gate, from the other side. A character_skills row is what
      * injecting creates and training can never create, so its absence is the
      * whole check — and never a level check, since level 0 is a real state.
      */
@@ -307,7 +307,7 @@ final class TrainingQueueScreenTest extends TestCase
         ]])->save();
 
         $this->inject($this->character, $this->hacking);
-        ItemGranter::grant($this->character, Skillbook::ensureFor($this->hacking));
+        ItemGranter::grant($this->character, Imprint::ensureFor($this->hacking));
         $this->queue()->enqueue($this->character, $this->hacking);
 
         $this->actingAs($this->user)

@@ -285,7 +285,7 @@ class InventoryItem extends Model
      * Only rows the player actually has to hand.
      *
      * Every listing that means "the player's inventory" wants this. Without it
-     * a skillbook written to a card shows up twice: once on the card and once
+     * an imprint written to a card shows up twice: once on the card and once
      * loose on the deck it was never on.
      *
      * Three ways of not being to hand, and they are different things:

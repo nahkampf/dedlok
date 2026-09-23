@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * slug, because a row could not hold a word that had to exist in every
  * language. There is one language now, so the row holds it: the definition is
  * one thing again instead of a row plus an entry someone has to remember.
- * Both are nullable because a skillbook has neither — there is exactly one
+ * Both are nullable because an imprint has neither — there is exactly one
  * book per skill, so its name is still composed from the skill it teaches.
  *
  * And `users.locale` recorded which language a player wanted, which is no
@@ -38,7 +38,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('items', function (Blueprint $table) {
-            // Nullable: a skillbook's name composes from its skill, and an item
+            // Nullable: an imprint's name composes from its skill, and an item
             // with no flavour is the common case rather than an omission.
             $table->string('name')->nullable()->after('slug');
             $table->text('flavor')->nullable()->after('name');

@@ -202,10 +202,10 @@ rather than a broken one. `App\Support\Image` resolves, `<x-entity-image>` rende
 - **`data-open` calls `preventDefault()`** — an opener can sit inside a `<label>` (the
   archetype cards), and looking at a picture must not also pick the thing.
 - **A kind may be a path; items are one subdirectory per TYPE** — `items/cpu/`,
-  `items/icebreaker/`, `items/skillbook/`, `items/physical/`. `Item::imageType()` names
+  `items/icebreaker/`, `items/imprint/`, `items/physical/`. `Item::imageType()` names
   it, `Item::imageTypes()` is the list composed from `Hardware`, `ProgramKind`, the book
   and the two inventories, so a new kind brings its folder with it.
-- **A skillbook calls itself data and files itself as a book** — one book per skill, one
+- **An imprint calls itself data and files itself as a book** — one book per skill, one
   picture for all of them.
 - **Only the default walks back up the path.** An item's own picture is looked for in its
   type's folder and nowhere else.
@@ -348,7 +348,7 @@ Every player-visible string lives in exactly one of two places:
 - **Keys name the role, not the text** — `ui.action.jack_in`.
 - **Counted strings** are `{zero, one, many}` read by `Text::plural()`.
 - **`Text::get()` returns the key** when missing.
-- **A skillbook has no name of its own** — it composes via `items.skillbook.name`.
+- **An imprint has no name of its own** — it composes via `items.imprint.name`.
 - **Archetypes carry their strings on their rows.** Perk labels live on `archetype_perks`,
   except where a perk borrows an attribute's name — those are null and read
   `character.names.<key>`.
@@ -409,14 +409,14 @@ registration and password-reset request.
   `CAP_VERIFY_ENDPOINT` the container's (`cap:3000`), defaulting to the first.
   `CAP_SECRET` is the site key's secret, never `CAP_ADMIN_KEY`.
 
-### Inventory and skillbooks
+### Inventory and imprints
 
 **Two inventories, and one gate in front of every skill.**
 
 - `items` holds definitions, `inventory_items` what a character carries — one row per
   (character, item) with a `quantity`. Item definitions are in the **database, not
   config**; `config/items.php` does not exist.
-- **`ItemSeeder` seeds no items.** It generates one skillbook per skill. A hardcoded
+- **`ItemSeeder` seeds no items.** It generates one imprint per skill. A hardcoded
   catalogue would be a second source that wins on re-seed. Author items in the editor; a
   seeder may only write rows *derived* from another table.
 - **`container` is a property of the item, never a player choice.** `physical` and `data`
@@ -478,7 +478,7 @@ registration and password-reset request.
 
 **HOW A PLAYER FINDS OUT A SKILL EXISTS IS THE MARKET.** One book per skill, so the shelf
 IS the list — and deliberately not the whole list: **a skill off the market is content
-found rather than bought**, and `Skillbook` keeps `on_market` in step with the skill on
+found rather than bought**, and `Imprint` keeps `on_market` in step with the skill on
 every save. The skill EDITOR is the only place all of them are visible.
 
 - **`App\Skills\TrainingQueue` is the only writer a PLAYER reaches.** `TrainingDeposit`
@@ -800,7 +800,7 @@ implant's; the row says which family, how long, and what it costs the books.
   Books that reach nothing on both are deleted; absent and zero are the same answer.
 - **`App\Drugs\DrugEditor` is the only writer of the `drugs` table** and clears the side an
   item stopped being, exactly as `ProgramEditor` does. The item editor has a Drug panel and
-  `ItemRequest` refuses a drug that is also software, deck hardware or a skillbook.
+  `ItemRequest` refuses a drug that is also software, deck hardware or an imprint.
 
 ### Implants
 
@@ -1505,7 +1505,7 @@ review.
   not a character. The gate is what guards them.
 - **No `show` route on any of the three.** The edit form *is* the detail view.
 - **Both loadout dropdowns are grouped.** Skills by `category`; items by deck hardware
-  (`Hardware::label()`), then the two inventories, then skillbooks. Decided in the
+  (`Hardware::label()`), then the two inventories, then imprints. Decided in the
   controller and rendered by `<x-grouped-options>`, shared by the four selects that need it.
 - **The archetype editor has no `create` and no `destroy`** — the roster arrives by
   migration and leaves the same way. Perks are displayed and edited nowhere.
@@ -1544,7 +1544,7 @@ to `HardwareEditor`.
 are the explanation. Five rules have **no** schema counterpart, because SQL cannot express
 them against one row:
 
-- **One book per skill** (`items.use_skill_id` unique), or `Skillbook::forSkill()` is
+- **One book per skill** (`items.use_skill_id` unique), or `Imprint::forSkill()` is
   ambiguous.
 - **A container cannot stack**, nor a cyberdeck — `stack_key` would merge two stackable
   containers and lose the second one's contents.
@@ -1556,7 +1556,7 @@ them against one row:
 editor can ask what *would* happen (`->with($id, $requires)->cycleThrough($id)`).
 `skills:validate` uses the same class.
 
-**`App\Inventory\Skillbook` is the one derivation.** Creating a skill creates its book.
+**`App\Inventory\Imprint` is the one derivation.** Creating a skill creates its book.
 `ItemSeeder` calls the same class. What follows the skill afterwards is narrow: **`base_cost`
 and `on_market` stay in step on every save; `tier`, `rarity` and `seed_quantity` are derived
 from rank once, at creation.**

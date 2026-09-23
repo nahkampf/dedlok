@@ -6,7 +6,7 @@
     Four selects in the archetype editor need the identical list — a row and a
     template each, for skills and for items — so the options live here rather
     than four times over. The grouping itself is decided in the controller:
-    Blade renders labels it is handed and does not know what a skillbook is.
+    Blade renders labels it is handed and does not know what an imprint is.
 
     $groups is [group label => [['id' => int, 'label' => string], ...]].
 --}}

@@ -223,8 +223,8 @@ final class EntityImageTest extends TestCase
         // Data on the card, a book in the filing cabinet: there is one book
         // per skill and they all look alike.
         $this->assertSame(
-            'items/skillbook',
-            Item::factory()->skillbookFor($skill)->create()->imageKind()
+            'items/imprint',
+            Item::factory()->imprintFor($skill)->create()->imageKind()
         );
         $this->assertSame(
             'items/physical',
@@ -262,7 +262,7 @@ final class EntityImageTest extends TestCase
             $this->assertContains($kind->value, $types);
         }
 
-        $this->assertContains(Item::IMAGE_SKILLBOOK, $types);
+        $this->assertContains(Item::IMAGE_IMPRINT, $types);
 
         foreach (Item::CONTAINERS as $container) {
             $this->assertContains($container, $types);

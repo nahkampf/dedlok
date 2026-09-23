@@ -177,7 +177,7 @@ class ItemAdminTest extends TestCase
     public function test_a_skill_cannot_have_two_books(): void
     {
         $skill = Skill::factory()->create();
-        Item::factory()->skillbookFor($skill)->create();
+        Item::factory()->imprintFor($skill)->create();
 
         $this->actingAs($this->admin)
             ->post('/admin/items', $this->payload([
@@ -194,7 +194,7 @@ class ItemAdminTest extends TestCase
     public function test_editing_a_book_does_not_collide_with_itself(): void
     {
         $skill = Skill::factory()->create();
-        $book = Item::factory()->skillbookFor($skill)->create();
+        $book = Item::factory()->imprintFor($skill)->create();
 
         $this->actingAs($this->admin)
             ->put("/admin/items/{$book->id}", $this->payload([

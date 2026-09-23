@@ -86,7 +86,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/deck/{entry}/equip', [DeckController::class, 'equip'])->name('deck.equip');
     Route::post('/deck/unequip', [DeckController::class, 'unequip'])->name('deck.unequip');
 
-    // Spending a skillbook is destructive and not idempotent, so it is a POST
+    // Spending an imprint is destructive and not idempotent, so it is a POST
     // with a confirmation in front of it.
     Route::post('/inventory/{entry}/inject', [InventoryController::class, 'inject'])
         ->name('inventory.inject');

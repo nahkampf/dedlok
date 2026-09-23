@@ -17,7 +17,7 @@ use Tests\TestCase;
 
 /**
  * The rule that joins the two systems: nothing can be trained until its
- * skillbook has been owned and spent.
+ * imprint has been owned and spent.
  *
  * A character_skills row is the whole gate. Injecting is the only thing that
  * creates one, and every training path refuses without one — so this tests
@@ -46,7 +46,7 @@ class TrainingGateTest extends TestCase
             ->governedBy('intellect', 'memory')
             ->create(['slug' => 'hacking', 'title' => 'Hacking']);
 
-        $this->book = Item::factory()->skillbookFor($this->hacking)->create();
+        $this->book = Item::factory()->imprintFor($this->hacking)->create();
     }
 
     private function queue(): TrainingQueueEntry

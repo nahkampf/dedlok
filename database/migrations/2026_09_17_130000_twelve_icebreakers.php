@@ -80,7 +80,7 @@ return new class extends Migration
                 'name' => 'Icebreaker '.$numeral,
                 'flavor' => 'Cuts at whatever is in the way, one pass at a time.',
                 'container' => 'data',
-                // Two steps, like the skillbooks: the bottom third is Tier One
+                // Two steps, like the imprints: the bottom third is Tier One
                 // and the rest is Tier Two. Tier is what a thing IS and carries
                 // nothing mechanical.
                 'tier' => $level <= 4 ? 1 : 2,

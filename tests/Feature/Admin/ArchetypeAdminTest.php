@@ -345,7 +345,7 @@ class ArchetypeAdminTest extends TestCase
     {
         $skill = Skill::factory()->create();
 
-        Item::factory()->skillbookFor($skill)->create();
+        Item::factory()->imprintFor($skill)->create();
         Item::factory()->physical()->cyberdeck()->create(['name' => 'Chipped Deck']);
         Item::factory()->physical()->create(['name' => 'Crowbar']);
         Item::factory()->data()->create(['name' => 'Loose File']);
@@ -357,7 +357,7 @@ class ArchetypeAdminTest extends TestCase
         $response->assertSee('<optgroup label="Carried">', false);
         $response->assertSee('<optgroup label="On the deck">', false);
         $response->assertSee('<optgroup label="Cyberdeck">', false);
-        $response->assertSee('<optgroup label="Skillbooks">', false);
+        $response->assertSee('<optgroup label="Imprints">', false);
     }
 
     public function test_a_group_with_nothing_in_it_is_not_offered(): void

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Admin;
 
-use App\Inventory\Skillbook;
+use App\Inventory\Imprint;
 use App\Models\ArchetypeItem;
 use App\Models\ArchetypeSkill;
 use App\Models\CharacterSkill;
@@ -64,7 +64,7 @@ final class DeletionImpact
 
         // A skill whose only book is deleted cannot be learned by anyone who
         // does not already know it. Worth saying out loud.
-        if ($item->isSkillbook()) {
+        if ($item->isImprint()) {
             $counts['orphans_skill'] = 1;
         }
 
@@ -83,7 +83,7 @@ final class DeletionImpact
      */
     public static function forSkill(Skill $skill): self
     {
-        $book = Skillbook::forSkill($skill);
+        $book = Imprint::forSkill($skill);
 
         $counts = [
             'characters' => CharacterSkill::where('skill_id', $skill->id)->count(),

@@ -293,7 +293,7 @@ class CharacterCreationController extends Controller
     /**
      * An archetype's starting items, by display name.
      *
-     * displayName() rather than the column, so a skillbook in a loadout reads
+     * displayName() rather than the column, so an imprint in a loadout reads
      * as the skill it teaches instead of as a blank.
      *
      * @return list<array{name: string, quantity: int}>

@@ -83,7 +83,7 @@
                                          anyone who does not already know it. That
                                          is the one status on this row worth an
                                          accent. --}}
-                                    @if ($skill->skillbook)
+                                    @if ($skill->imprint)
                                         <span class="muted">{{ Text::get('admin.skills.book.yes') }}</span>
                                     @else
                                         <span class="tag tag--crit">{{ Text::get('admin.skills.book.no') }}</span>

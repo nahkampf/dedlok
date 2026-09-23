@@ -11,7 +11,7 @@ use App\Models\Skill;
 /**
  * The one book per skill, and where its numbers come from.
  *
- * There is exactly one skillbook for every skill — that is what makes a book
+ * There is exactly one imprint for every skill — that is what makes a book
  * nameless (its name composes from the skill it teaches) and what makes
  * `hasInjected()` a meaningful gate. Keeping that true means the book cannot
  * be something someone remembers to create: it has to fall out of the skill
@@ -29,20 +29,20 @@ use App\Models\Skill;
  *   likely to be tuned by hand, and the seeder's rule holds here too: a value
  *   someone has deliberately set is not a value to overwrite.
  */
-final class Skillbook
+final class Imprint
 {
     /** Eight units of a memory shard's 64. Eight books to a shard. */
     public const SIZE = 8;
 
     public static function slugFor(Skill $skill): string
     {
-        return "skillbook_{$skill->slug}";
+        return "imprint_{$skill->slug}";
     }
 
     /** The book teaching this skill, if one has been made. */
     public static function forSkill(Skill $skill): ?Item
     {
-        return $skill->skillbook()->first();
+        return $skill->imprint()->first();
     }
 
     /**

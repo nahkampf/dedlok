@@ -152,7 +152,7 @@ final class ProgramAdminTest extends TestCase
     }
 
     /** Both are data with a job, and `use_op` already says which job. */
-    public function test_a_skillbook_cannot_also_be_a_program(): void
+    public function test_an_imprint_cannot_also_be_a_program(): void
     {
         $skill = Skill::factory()->create();
 
