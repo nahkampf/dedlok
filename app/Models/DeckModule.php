@@ -94,6 +94,6 @@ class DeckModule extends Model
                 : null,
         ]);
 
-        return implode(Text::get('decks.summary.separator'), $parts);
+        return implode(Text::get('items.summary.separator'), $parts);
     }
 }

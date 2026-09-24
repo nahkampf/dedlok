@@ -31,7 +31,7 @@
 
     <div class="row row--wrap" style="--gap:var(--s-3);align-items:center;padding:var(--s-3) 0">
         <a class="btn btn--ghost btn--sm cut" href="{{ route('cyberspace.index') }}">
-            &larr; {{ Text::get('cyberspace.title') }}
+            &larr; {{ Text::get('cyberspace.map.title') }}
         </a>
         @if ($backdoor)
             <span class="tag tag--ok">{{ Text::get('cyberspace.run.setup.held') }}</span>

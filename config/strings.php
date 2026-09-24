@@ -2010,6 +2010,21 @@ return [
     */
     'items' => [
         /*
+        | THE SPEC LINE, shared by every kind of item that has one.
+        |
+        | A deck's sockets, a module's measures, a program's three costs and a
+        | file's numbers are all one line of facts with something between them,
+        | so there is one separator and it lives here. It used to live under
+        | `decks` while three readers asked for it under `items`, which is the
+        | key Text::get() returned verbatim: cards read
+        | "4 QFLOPSITEMS.SUMMARY.SEPARATOR3 QB" until somebody looked.
+        */
+        'summary' => [
+            // A middle dot, so a spec line reads as one line rather than a list.
+            'separator' => ' · ',
+        ],
+
+        /*
         | What kind of thing an item is, as its card says it. Not the inventory
         | names ("Carried", "Deck"): those are places, and this is the item.
         | Deck hardware answers the same question with its own word — see
@@ -2337,8 +2352,9 @@ return [
 
         'summary' => [
             'times' => ':count× :label',
-            // A middle dot, so a spec line reads as one line rather than a list.
-            'separator' => ' · ',
+            // The separator lives in `items.summary` — a spec line is a spec
+            // line whether it is a deck's sockets, a program's costs or a
+            // file's numbers, and one middle dot is one decision.
         ],
 
         'no_slots' => 'No sockets yet.',
@@ -2632,6 +2648,9 @@ return [
                 'category' => 'Category',
                 'category_hint' => 'The lane it hangs in on the skill tree. Reuse an existing one to group it.',
                 'rank' => 'Rank',
+                // The rank as a VALUE rather than as a field label: the
+                // select's options and the listing's column each show one.
+                'rank_value' => 'Rank :rank',
                 'rank_hint' => 'A training-time multiplier, not a cost: rank 2 needs twice the points for the same level.',
                 'primary_attribute' => 'Primary attribute',
                 'secondary_attribute' => 'Secondary attribute',
@@ -2816,6 +2835,10 @@ return [
             'deck_needs_slots' => 'A cyberdeck with no sockets is a case. Give it at least a CPU socket and a power socket.',
             'slots_need_a_deck' => 'Only a cyberdeck has sockets. Set the hardware to Cyberdeck first.',
             'modifier_shape' => 'Each modifier must be an object, not a bare value.',
+            // The REASON slotted into modifier_invalid above. A target that
+            // reaches no stat would resolve, match nothing and change nothing
+            // for ever, so the editor names the row rather than saving it.
+            'modifier_target' => 'nothing in the game answers to :target',
             'modifier_invalid' => 'Modifier :index is not valid: :reason',
             'thermal_levels_pair' => 'Give both thermal levels or neither — a part with one and not the other has no meaning.',
             'thermal_levels_order' => 'A part cannot be destroyed before it is warned about. The limit must be at or above the warning.',

@@ -177,7 +177,7 @@ final class SlotLayout
                 : Text::get('decks.summary.times', ['count' => $count, 'label' => $type->label()]);
         }
 
-        return implode(Text::get('decks.summary.separator'), $parts);
+        return implode(Text::get('items.summary.separator'), $parts);
     }
 
     /** @return list<string> */

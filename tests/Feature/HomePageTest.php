@@ -76,8 +76,14 @@ class HomePageTest extends TestCase
         // What is left in config is the vocabulary every item shares. Anything
         // that belongs to ONE item belongs on its row, and a per-slug entry
         // here would be a second source of truth for a word the row already has.
+        //
+        // `summary` earns its place by that test: the punctuation between the
+        // facts on a spec line is the same punctuation for a deck's sockets, a
+        // module's measures, a program's costs and a file's numbers. It lived
+        // under `decks` while three readers asked for it here, and what those
+        // cards printed was the key.
         $this->assertSame(
-            ['kinds', 'tiers', 'rarities', 'imprint'],
+            ['summary', 'kinds', 'tiers', 'rarities', 'imprint'],
             array_keys(config('strings.items'))
         );
     }

@@ -116,7 +116,7 @@
 
     <p style="margin-top:var(--s-4)">
         <a class="btn btn--ghost btn--sm cut" href="{{ route('cyberspace.index') }}">
-            &larr; {{ Text::get('cyberspace.title') }}
+            &larr; {{ Text::get('cyberspace.map.title') }}
         </a>
     </p>
 @endsection

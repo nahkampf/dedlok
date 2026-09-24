@@ -75,7 +75,7 @@
                                 <td><a href="{{ route('admin.skills.edit', $skill) }}" class="num">{{ $skill->slug }}</a></td>
                                 <td>{{ $skill->title }}</td>
                                 <td class="muted">{{ $skill->category }}</td>
-                                <td class="t-right num">{{ Text::get('skills.rank', ['rank' => $skill->rank]) }}</td>
+                                <td class="t-right num">{{ Text::get('admin.skills.fields.rank_value', ['rank' => $skill->rank]) }}</td>
                                 <td class="t-right num">{{ $skill->prerequisites_count }}</td>
                                 <td class="t-right num">{{ $skill->unlocks_count }}</td>
                                 <td>

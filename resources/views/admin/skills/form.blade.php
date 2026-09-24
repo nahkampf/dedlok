@@ -89,7 +89,7 @@
                     <select class="select" id="rank" name="rank">
                         @foreach ($ranks as $rank)
                             <option value="{{ $rank }}" @selected((int) $value('rank', 1) === $rank)>
-                                {{ Text::get('skills.rank', ['rank' => $rank]) }}
+                                {{ Text::get('admin.skills.fields.rank_value', ['rank' => $rank]) }}
                             </option>
                         @endforeach
                     </select>
