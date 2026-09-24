@@ -20,6 +20,7 @@ use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemContent;
 use App\Stats\Resolver;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
@@ -532,7 +533,21 @@ final class FightTest extends TestCase
             ->assertOk()
             ->assertSee('trace__node', false)
             ->assertSee('--v:0.4', false)
-            ->assertSee('turns before it reaches you', false);
+            ->assertSee($this->turnsLeft($run), false);
+    }
+
+    /**
+     * How long the trace still needs, in the screen's own words.
+     *
+     * Worked out server-side by `Run::turnsUntilTraced()` and read through the
+     * config rather than matched as a phrase: what this test is about is that
+     * the chain carries the countdown, not how the countdown is worded.
+     */
+    private function turnsLeft(Run $run): string
+    {
+        $turns = (int) $run->fresh()->turnsUntilTraced();
+
+        return Text::plural('cyberspace.run.trace_turns', $turns, ['count' => $turns]);
     }
 
     // ---- the standing instructions -----------------------------------------

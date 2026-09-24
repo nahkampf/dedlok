@@ -341,6 +341,7 @@
             data-reading-pass="{{ Text::get('cyberspace.reading.pass_of', ['pass' => ':pass']) }}"
             data-reading-unread="{{ Text::get('cyberspace.reading.unread') }}"
             data-reading-complete="{{ Text::get('cyberspace.reading.complete') }}"
+            data-reading-filename="{{ Text::get('cyberspace.reading.filename') }}"
             data-reading-idle="{{ Text::get('cyberspace.reading.idle') }}"
             data-reading-gone="{{ Text::get('cyberspace.reading.no_file') }}"
             data-reading-os-known="{{ Text::get('cyberspace.reading.os_known') }}"
@@ -413,13 +414,17 @@
             </div>
         </div>
 
-        {{-- TWO WAYS OUT, AND NEITHER IS "CLOSE".
+        {{-- TWO WAYS OUT WHILE IT RUNS, AND NEITHER IS "CLOSE".
 
              A read carries on whether or not anybody is looking at it, so a button
              called Close would be naming the window instead of the thing in it.
              One button says what continues and the other says what stops — and
              what stops is worth confirming nothing, because the pass is already
-             spent either way and the file keeps what it found. --}}
+             spent either way and the file keeps what it found.
+
+             A FINISHED READ IS THE OTHER CASE. Nothing continues and nothing is
+             left to abandon, so both of those become lies and the only honest
+             button is the one that names the window. The poll does the swap. --}}
         <div class="panel__ft">
             <form method="POST" action="{{ route('cyberspace.abandon') }}" data-reading-abandon>
                 @csrf @method('DELETE')
@@ -427,7 +432,21 @@
                 <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('cyberspace.reading.abandon') }}</button>
             </form>
             <div class="spacer"></div>
-            <button type="button" class="btn btn--sm cut" data-close>{{ Text::get('cyberspace.reading.background') }}</button>
+            <button type="button" class="btn btn--sm cut" data-close data-reading-background>{{ Text::get('cyberspace.reading.background') }}</button>
+            {{-- What a finished read is FOR. It spends the read, so it is a
+                 press and never something the last pass does on its own — see
+                 App\Cyberspace\ScanExporter. The cost is on the button's own
+                 title rather than behind a confirmation: nothing is destroyed,
+                 the read simply becomes the thing you can sell. --}}
+            <form method="POST" action="{{ route('cyberspace.export') }}" data-reading-export hidden>
+                @csrf
+                <input type="hidden" name="address" data-reading-export-address value="">
+                <button type="submit" class="btn btn--sm cut"
+                        title="{{ Text::get('cyberspace.reading.export_hint') }}">
+                    {{ Text::get('cyberspace.reading.export') }}
+                </button>
+            </form>
+            <button type="button" class="btn btn--sm btn--ghost cut" data-close data-reading-done hidden>{{ Text::get('cyberspace.reading.close') }}</button>
         </div>
     </dialog>
 @endif

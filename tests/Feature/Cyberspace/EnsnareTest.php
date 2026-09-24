@@ -14,6 +14,7 @@ use App\Models\Ice;
 use App\Models\Run;
 use App\Models\System;
 use App\Stats\Resolver;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
@@ -208,7 +209,7 @@ final class EnsnareTest extends TestCase
             ->get(route('run.show'))
             ->assertOk()
             ->assertSee('Egress '.$expected.'%')
-            ->assertSee('has hold of you');
+            ->assertSee(Text::get('cyberspace.run.egress_snared'));
     }
 
     /**
@@ -234,11 +235,11 @@ final class EnsnareTest extends TestCase
             ->assertSee('Focus')
             ->assertSee('Intellect')
             // What it is up against, and what it comes to.
-            ->assertSee('Grade 1')
-            ->assertSee('ICE awake, level 6')
-            ->assertSee('Difficulty')
+            ->assertSee(Text::get('cyberspace.run.evasion_grade', ['grade' => 1]))
+            ->assertSee(Text::get('cyberspace.run.evasion_ice', ['level' => 6]))
+            ->assertSee(Text::get('cyberspace.run.evasion_difficulty'))
             ->assertSee((string) $report->difficulty)
-            ->assertSee('Chance of getting out');
+            ->assertSee(Text::get('cyberspace.run.evasion_result'));
     }
 
     /** With nothing carried, the card says so rather than showing an empty list. */
@@ -250,7 +251,7 @@ final class EnsnareTest extends TestCase
         $this->actingAs($this->character->user)
             ->get(route('run.show'))
             ->assertOk()
-            ->assertSee('Nothing you carry moves it.');
+            ->assertSee(Text::get('cyberspace.run.evasion_unmodified'));
     }
 
     /** Nothing holding, nothing said about being held. */
@@ -262,7 +263,7 @@ final class EnsnareTest extends TestCase
         $this->actingAs($this->character->user)
             ->get(route('run.show'))
             ->assertOk()
-            ->assertDontSee('has hold of you');
+            ->assertDontSee(Text::get('cyberspace.run.egress_snared'));
     }
 
     // ---- the other door out ------------------------------------------------

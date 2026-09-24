@@ -1,7 +1,7 @@
 # đƎĐŁØƘ
 *By Sebastian Utbult <kreuzweg@gmail.com>*
 
-A cyberpunk browser RPG, inspired by  BBS door games like LOD, LORD, Usurper and Darkness.
+A cyberpunk browser RPG, inspired by BBS door games like LOD, LORD, Usurper and Darkness - and heavily influenced by mechanics from EVE Online.
 
 You pick an archetype (geared towards certain specializations), and throw yourself into the harsh and unwelcoming future, using only your wits, skills and a plethora of shiny gadgets to carve out a living for yourself - be that as a deck jockey making intrusion runs of systems, an explorer selling probe data, a street hustler and brawler, a trader or whatever else pays the bills.
 

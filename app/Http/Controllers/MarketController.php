@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Market\OfferBook;
+use App\Market\OfferRefusal;
 use App\Market\Purchaser;
 use App\Models\Character;
+use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\MarketOffer;
 use App\Models\MarketStock;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
@@ -51,6 +55,12 @@ class MarketController extends Controller
             // afford is the one number every row on this screen is read
             // against, and Blade should not be doing division.
             'creds' => (int) $character->creds,
+            // The other market. Not grouped and not searched: it is whatever
+            // anybody happens to be holding today, and it is short.
+            'offers' => MarketOffer::query()
+                ->onOffer()
+                ->with(['row.item', 'seller'])
+                ->get(),
         ]);
     }
 
@@ -72,6 +82,89 @@ class MarketController extends Controller
             'quantity' => $result->quantity,
             'item' => $item->displayName(),
             'paid' => number_format($result->paid),
+        ]));
+    }
+
+    /**
+     * Put one of your own rows up for sale.
+     *
+     * Reached from the item's CARD rather than from this screen, because the
+     * thing being sold is a particular row and the card is the one place a
+     * player is looking at one.
+     */
+    public function list(Request $request, InventoryItem $entry, OfferBook $offers): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $data = $request->validate([
+            'price' => ['required', 'integer', 'min:0', 'max:99999999'],
+        ]);
+
+        $result = $offers->list($character, $entry, (int) $data['price']);
+
+        if ($result instanceof OfferRefusal) {
+            return back()->with('error', $result->message());
+        }
+
+        return back()->with('status', Text::get('market.offers.listed', [
+            'item' => $entry->item?->displayName(),
+            'price' => number_format($result->unit_price),
+        ]));
+    }
+
+    /** Take it back. Nothing was ever anywhere else, so nothing confirms it. */
+    public function withdraw(Request $request, MarketOffer $offer, OfferBook $offers): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($offer->seller_character_id === $character->id, 404);
+
+        $result = $offers->withdraw($character, $offer);
+
+        if ($result instanceof OfferRefusal) {
+            return back()->with('error', $result->message());
+        }
+
+        return back()->with('status', Text::get('market.offers.withdrawn', [
+            'item' => $result->item?->displayName(),
+        ]));
+    }
+
+    /**
+     * Buy what somebody else is holding.
+     *
+     * NOT `buy()`, which is the shelf. The two are different enough to want
+     * different names: one conjures a copy of a catalogue entry, this one
+     * hands over an object with a history written on it.
+     */
+    public function take(Request $request, MarketOffer $offer, OfferBook $offers): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        $data = $request->validate([
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:9999'],
+        ]);
+
+        $quantity = (int) ($data['quantity'] ?? 1);
+
+        // Read before the sale, because a sale that empties the pile deletes
+        // both the offer and the row, and a partial one may have merged what
+        // was bought into a pile of the buyer's own.
+        $name = $offer->row?->item?->displayName();
+        $price = $offer->total($quantity);
+
+        $result = $offers->buy($character, $offer, $quantity);
+
+        if ($result instanceof OfferRefusal) {
+            return back()->with('error', $result->message());
+        }
+
+        return back()->with('status', Text::get('market.offers.sold', [
+            'quantity' => $quantity,
+            'item' => $name,
+            'price' => number_format($price),
         ]));
     }
 

@@ -1242,7 +1242,17 @@ final class ProbeTest extends TestCase
         $message = Notification::query()->sole();
 
         $this->assertSame(Category::Cyberspace, $message->category);
-        $this->assertStringContainsString('finished', $message->body);
+
+        // Through the config rather than against a phrase. The sentence is
+        // rendered once at write time and stored, so what this checks is that
+        // the right key was rendered against the right machine — not the
+        // wording, which is `strings.php`'s to change.
+        $this->assertSame(
+            Text::get('notifications.messages.scan_complete', [
+                'system' => System::query()->sole()->displayName(),
+            ]),
+            $message->body,
+        );
     }
 
     /** A pass that learned nothing has nothing to say. */

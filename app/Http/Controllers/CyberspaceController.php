@@ -11,6 +11,8 @@ use App\Cyberspace\MapView;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Position;
 use App\Cyberspace\Probe;
+use App\Cyberspace\ScanExporter;
+use App\Cyberspace\ScanExportRefusal;
 use App\Cyberspace\SweepResult;
 use App\Cyberspace\TravelResult;
 use App\Models\Bookmark;
@@ -263,6 +265,35 @@ class CyberspaceController extends Controller
             $abandoned ? 'status' : 'error',
             Text::get($abandoned ? 'cyberspace.reading.abandoned' : 'cyberspace.reading.abandon_nothing'),
         );
+    }
+
+    /**
+     * File a finished read as something you can carry.
+     *
+     * THE ONE THING ON THIS SCREEN THAT COSTS SOMETHING. Every other button on
+     * the reading dialog either watches the instrument or stops it; this one
+     * spends the read to make an object out of it, and the machine stops being
+     * scanned on the map the moment it lands. No confirmation, because the
+     * button says what it does and the file it makes is not destroyed by
+     * making it — it is in the stash, and destroying it is its own dialog.
+     */
+    public function export(Request $request, ScanExporter $exporter): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        $data = $request->validate([
+            'address' => ['required', 'string', 'max:32'],
+        ]);
+
+        $result = $exporter->export($character, $data['address']);
+
+        if ($result instanceof ScanExportRefusal) {
+            return back()->with('error', $result->message());
+        }
+
+        return back()->with('status', Text::get('cyberspace.reading.exported', [
+            'file' => $result->scanFile()?->filename() ?? strtoupper($data['address']),
+        ]));
     }
 
     /**

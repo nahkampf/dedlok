@@ -97,6 +97,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/take', [InventoryController::class, 'take'])
         ->name('inventory.take');
 
+    // Reading a scan file into your own records. Spends the file, like every
+    // other door on this screen that turns an object into something you know
+    // or something you are — see App\Cyberspace\ScanImporter.
+    Route::post('/inventory/{entry}/read', [InventoryController::class, 'read'])
+        ->name('inventory.read');
+
     /*
      * Destroying something you own. Real and irreversible, and the
      * confirmation in front of it is the only brake — the same decision the
@@ -209,6 +215,11 @@ Route::middleware('auth')->group(function () {
     // owner walking away from the machine it is reading.
     Route::delete('/cyberspace/reading', [CyberspaceController::class, 'abandon'])->name('cyberspace.abandon');
 
+    // Turning a finished read into something somebody can carry and sell. It
+    // SPENDS the read, which is why it is a press rather than something that
+    // happens when the last pass lands — see App\Cyberspace\ScanExporter.
+    Route::post('/cyberspace/reading/export', [CyberspaceController::class, 'export'])->name('cyberspace.export');
+
     /*
      * A character's own skills, and the queue that trains them. It was the
      * CATALOGUE once — every skill in the game, public, because it described
@@ -241,6 +252,16 @@ Route::middleware('auth')->group(function () {
      */
     Route::get('/market', [MarketController::class, 'index'])->name('market.index');
     Route::post('/market/{item}', [MarketController::class, 'buy'])->name('market.buy');
+
+    /*
+     * The other half of the market: players selling to each other. An offer is
+     * one ROW out of one stash rather than a catalogue entry, which is why
+     * listing is reached from the item's own card and buying is reached from
+     * the offer. See App\Market\OfferBook.
+     */
+    Route::post('/inventory/{entry}/list', [MarketController::class, 'list'])->name('market.list');
+    Route::delete('/market/offers/{offer}', [MarketController::class, 'withdraw'])->name('market.withdraw');
+    Route::post('/market/offers/{offer}', [MarketController::class, 'take'])->name('market.take');
 
     /*
      * Achievements. THE ONE SCREEN THAT BELONGS TO THE ACCOUNT rather than to
