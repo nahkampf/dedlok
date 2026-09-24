@@ -2,6 +2,45 @@
 
 ## [Unreleased]
 
+## [0.19.1] — 2026-09-24
+
+Words and records. Nothing a deploy needs beyond a pull.
+
+### Changed
+
+- **The grid is EXPLORED, not swept.** A pass over the player-visible
+  vocabulary: systems rather than machines, explored rather than swept, jacked
+  in rather than in. The map's lede, several refusals and the two file-name
+  lists all read plainer. **Not one test moved**, because the assertions that
+  used to quote these sentences were rewritten to read them through
+  `Text::get()` in 0.18.0 — which is exactly the pass that change was made for.
+- **`TODO.md` stops designing missions and starts recording them.** The entry
+  was 355 lines of design for something that now exists; it keeps the shape
+  every built entry in that file keeps — a status line, what the design got
+  right, what it got wrong, and what is left. What is left is retrieval, the
+  loyalty store, listing part of a pile, and every number in
+  `config/missions.php`.
+- **The mistake is kept on purpose.** `mission_targets.system_id` cascaded, so
+  a demolition deleted its own target row and a job whose targets had all been
+  burned by other players read as *finished*. The general shape generalises and
+  is now written down in both files: **a row that exists to REMEMBER something
+  must not cascade from the thing it remembers.**
+- **`CLAUDE.md` gains a Missions section**, because that file explains a built
+  mechanic and `TODO.md` argues about an unbuilt one. The entities entry moves
+  from *none of it built* to *built except the store*, and its phasing list now
+  names the one step left — with the warning it carried coming true one step
+  later: loyalty is earnable now and has nowhere to go, exactly as standing had
+  nowhere to come from before missions existed.
+
+### Fixed
+
+- **A duplicated file name.** The relay word list had gained a second *Routing
+  tables*, which would have doubled that name's odds against every other word
+  in it.
+- **The placement hint contradicted itself**, saying the door is not yours and
+  then that you get paid rather than a backdoor — the same half of the sentence
+  twice. It says what the entity gets instead.
+
 ## [0.19.0] — 2026-09-24
 
 The Exchange stops saying *Not yet*. Agents hand out work, and finishing it
@@ -1284,7 +1323,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.1...HEAD
+[0.19.1]: https://github.com/nahkampf/dedlok/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/nahkampf/dedlok/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/nahkampf/dedlok/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/nahkampf/dedlok/compare/v0.16.0...v0.17.0

@@ -291,7 +291,7 @@ return [
         | catalogue entry behind it.
         */
         'offers' => [
-            'heading' => 'What runners are selling',
+            'heading' => 'Sales orders',
             'empty' => 'Nobody is selling anything right now.',
             'seller' => 'Sold by :name',
             'yours' => 'Yours',
@@ -310,7 +310,7 @@ return [
 
             'refused' => [
                 'not_yours' => 'That is not yours to sell.',
-                'not_to_hand' => 'That is spoken for. Take it out of whatever it is in first.',
+                'not_to_hand' => 'That item is occupied. Take it out of whatever it is in first.',
                 'equipped' => 'You are carrying that deck. Put it down before you sell it.',
                 'gone' => 'That one has gone. Somebody got there first.',
                 'your_own' => 'You are already holding that one.',
@@ -385,7 +385,7 @@ return [
             // A FILE DIES WITH NOBODY LOOKING AT IT. Says it is still there,
             // because nothing deletes one - destroying it is the player's call
             // from the card, like every other row they own.
-            'file_stale' => ':file is stale. Nobody will pay for a read of :system now.',
+            'file_stale' => ':file is stale. Nobody will pay for a scan of :system now.',
             // WHAT SOMEBODY IS NOT THERE TO SEE. A listing is left up and
             // walked away from, so the sale lands on nobody's screen - and
             // creds arriving with nothing to explain them is the gap.
@@ -451,9 +451,9 @@ return [
         ],
 
         'action_hint' => [
-            'scan' => 'Read every system named and bring the files back. The safest work there is, and the slowest.',
-            'burn' => 'Take these systems out of the world. Nothing comes back from one, including the address.',
-            'plant' => 'Leave our way in on these systems. The door is ours, not yours - you get paid, not a backdoor.',
+            'scan' => 'Scan every system named and bring the files back. The safest work there is, and the slowest.',
+            'burn' => 'We want these systems gone. Burned. Shut down.',
+            'plant' => 'Leave a backdoor on these systems. The door is ours, not yours - you get paid, and we get the way in.',
             'supply' => 'Bring us complete scan files. We do not care which systems, only that the picture is whole.',
         ],
 
@@ -580,7 +580,7 @@ return [
         ],
 
         'empty' => 'Empty space',
-        'unknown' => 'Unswept',
+        'unknown' => 'Unexplored',
 
         /*
         | What a grade is CALLED, once something has earned the right to show
@@ -1099,7 +1099,7 @@ return [
             | because what it costs is written on it.
             */
             'export' => 'Save to stash',
-            'export_hint' => 'Files this read into your data stash. It leaves your own map — a file IS the read, not a copy of it.',
+            'export_hint' => 'Files this scan into your data stash. It leaves your own map — a file IS the read, not a copy of it.',
             'exported' => 'Saved as :file. It is in your data stash, and this machine is no longer scanned.',
             'export_gone' => 'That file is gone. It was spent, or it went stale.',
             'export_incomplete' => 'An incomplete file is not intel. Finish the read first.',
@@ -1186,16 +1186,18 @@ return [
                     'Payroll ledger', 'Personnel files', 'Audit trail', 'Client register',
                     'Board minutes', 'Insurance claims', 'Medical records', 'Tax filings',
                     'Legal hold', 'Asset registry', 'Pension schedules', 'Deed archive',
+                    'Debug logs', 'Transaction logs', 'Design brief', 'User database',
+                    'Testing data', 'Project notes',
                 ],
                 'compute' => [
                     'Research data', 'Design notes', 'Simulation output', 'Model weights',
                     'Site surveys', 'Patent drafts', 'Failure analyses', 'Yield reports',
-                    'Test harness logs', 'Materials trials',
+                    'Test harness logs', 'Materials trials', 'Algorithm writeup', 'Patent data',
                 ],
                 'relay' => [
                     'Access logs', 'Shipping manifests', 'Supplier contracts', 'Incident reports',
                     'Routing tables', 'Handshake captures', 'Courier schedules', 'Freight waybills',
-                    'Switch diagnostics', 'Peering agreements',
+                    'Switch diagnostics', 'Peering agreements', 'Topology graphs',
                 ],
             ],
         ],
@@ -1203,8 +1205,8 @@ return [
         'travel' => [
             'no_deck' => 'You are carrying no deck. There is nothing to jack in with.',
             'deck_not_ready' => 'That deck will not run. It is short of what it needs.',
-            'already_jacked_in' => 'You are already in.',
-            'not_jacked_in' => 'You are not in cyberspace.',
+            'already_jacked_in' => 'You are already jacked in.',
+            'not_jacked_in' => 'You are not jacked in.',
             'not_a_step' => 'That is not one step from where you are standing.',
             'off_the_grid' => 'There is nothing that way. The grid ends here.',
             'not_an_address' => 'An address is eight hexadecimal characters. That is not one.',
@@ -1226,7 +1228,7 @@ return [
         */
         'map' => [
             'title' => 'Cyberspace',
-            'lede' => 'What you have swept, and the last thing you saw in it.',
+            'lede' => 'Your view of the cyberspace matrix.',
             'nav' => 'Cyberspace',
 
             'out' => 'You are not jacked in.',
@@ -1242,7 +1244,7 @@ return [
             'scanned' => 'Scanned',
             'grade_key' => 'Grade, once scanned',
             'position' => 'Position',
-            'swept' => 'Swept',
+            'swept' => 'Explored',
             // No maximum is shown beside it on purpose: the size of the grid
             // is not a thing the player is told, and a progress bar towards
             // four million would be a promise that exploration ends.
@@ -1253,7 +1255,7 @@ return [
             'jump_hint' => 'Eight hexadecimal characters. Anyone can give you one.',
 
             'empty' => 'Empty space',
-            'unswept' => 'Unswept',
+            'unswept' => 'Unexplored',
             // Not "unknown" or "undiscovered": the point is that it was not
             // here last time, which is a statement about the world changing
             // rather than about the player's ignorance.
@@ -1273,7 +1275,7 @@ return [
             'label_hint' => 'Optional.',
             'recall' => 'Go',
             'forget' => 'Forget',
-            'dead' => 'Nothing answers to it',
+            'dead' => 'This is a dead address',
             'save' => 'Save',
 
             'kind' => [
@@ -1303,14 +1305,14 @@ return [
         */
         'status' => [
             'jacked_in' => 'You are in. The portal hums around you.',
-            'jacked_out' => 'You are out.',
+            'jacked_out' => 'You are jacked out.',
             'saved' => 'Saved.',
             'forgotten' => 'Forgotten.',
 
             'swept' => [
                 'zero' => '',
-                'one' => ':count new position swept.',
-                'many' => ':count new positions swept.',
+                'one' => ':count new position explored.',
+                'many' => ':count new positions explored.',
             ],
 
             // The world having moved on while they were away, which is the
@@ -1361,7 +1363,7 @@ return [
     */
     'implants' => [
         'title' => 'Implants',
-        'lede' => 'What is installed in you, and what room is left.',
+        'lede' => 'Better living through implants.',
         'nav' => 'Implants',
 
         'regions' => [
