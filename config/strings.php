@@ -2516,7 +2516,10 @@ return [
                 'multithreaded_hint' => 'Whether a character may point two copies at two things at once. How many they may run is their own skill; this is whether it is a question at all.',
                 'implant_region' => 'Implant region',
                 'implant_region_none' => 'Not an implant',
-                'implant_region_hint' => 'Where in a body this goes. Setting it is what makes an item an implant.',
+                'implant_region_hint' => 'Where in a body this goes, and the only thing that makes an item an implant. What it DOES is the effects above; how many fit belongs to the region.',
+                // The capacity beside each region, because "how many of these can
+                // I have" is the question somebody authoring one is really asking.
+                'implant_slots' => ['zero' => 'no slots', 'one' => ':count slot', 'many' => ':count slots'],
                 'qflops' => 'Compute',
                 'qflops_hint' => 'Raw throughput, in qFLOPS.',
                 'quantabits' => 'Memory',
@@ -2537,6 +2540,7 @@ return [
                 'hardware' => 'Deck hardware',
                 'software' => 'Software',
                 'drug' => 'Drug',
+                'implant' => 'Implant',
                 'sockets' => 'Sockets',
                 'board' => 'Board arrangement',
                 'module' => 'Module specification',

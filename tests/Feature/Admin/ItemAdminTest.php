@@ -62,7 +62,110 @@ class ItemAdminTest extends TestCase
         ], $overrides);
     }
 
+    /**
+     * What the FORM actually posts, which is not what `payload()` posts.
+     *
+     * The editor renders every panel whatever is being edited, and the
+     * software and drug panels default their numbers to ZERO rather than to
+     * blank. Every test here had been hand-building a payload without them,
+     * which is why the suite never noticed that those six fields are
+     * `prohibited` for an item that is neither — and that creating anything
+     * else through the real form was therefore impossible.
+     *
+     * @return array<string, mixed>
+     */
+    private function asTheFormPosts(array $overrides = []): array
+    {
+        return $this->payload(array_merge([
+            'program_kind' => '',
+            'qflops_cost' => 0,
+            'memory_cost' => 0,
+            'storage_size' => 0,
+            'drug_family' => '',
+            'duration_minutes' => 0,
+            'addictive' => 0,
+            'tolerance_gain' => 0,
+            'implant_region' => '',
+        ], $overrides));
+    }
+
     // ---- creating ---------------------------------------------------------
+
+    /**
+     * AN ORDINARY ITEM SAVES FROM THE REAL FORM.
+     *
+     * The regression: the empty software and drug panels arrived as six
+     * present zeroes and every one of them was refused, so the editor could
+     * not create an implant, a module, or anything that was not itself a
+     * program or a drug.
+     */
+    public function test_an_item_saves_with_the_empty_panels_the_form_sends(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/items', $this->asTheFormPosts())
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertNotNull(Item::query()->where('slug', 'monowire')->first());
+    }
+
+    public function test_an_implant_is_authored_by_picking_a_region(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/items', $this->asTheFormPosts([
+                'slug' => 'cortex_shunt',
+                'name' => 'Cortex Shunt',
+                'implant_region' => 'spine',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $item = Item::query()->where('slug', 'cortex_shunt')->firstOrFail();
+
+        // The region is the WHOLE declaration: nothing else on the row says an
+        // item is an implant.
+        $this->assertSame('spine', $item->implant_region->value);
+        $this->assertNull($item->program);
+        $this->assertNull($item->drug);
+    }
+
+    /**
+     * A TYPED value on a panel that is off is still refused.
+     *
+     * Only the form's own zeroes are dropped. Somebody who puts a compute cost
+     * on a thing that is not a program has made a mistake worth a sentence,
+     * not one to discard behind their back — the distinction `positiveCounts()`
+     * already draws for the socket counters.
+     */
+    public function test_a_typed_cost_on_a_non_program_is_still_refused(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/items', $this->asTheFormPosts(['qflops_cost' => 5]))
+            ->assertSessionHasErrors('qflops_cost');
+    }
+
+    /** The panel's own gate still decides: a real drug keeps its numbers. */
+    public function test_a_drug_still_saves_its_own_figures(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/admin/items', $this->asTheFormPosts([
+                'slug' => 'blue_nine',
+                'name' => 'Blue Nine',
+                'drug_family' => 'stimulant',
+                'duration_minutes' => 45,
+                // Zero is a real answer here — a drug that does not addict —
+                // which is why the fix gates on the panel rather than dropping
+                // zeroes.
+                'addictive' => 0,
+                'tolerance_gain' => 2.5,
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $drug = Item::query()->where('slug', 'blue_nine')->firstOrFail()->drug;
+
+        $this->assertNotNull($drug);
+        $this->assertSame(45, (int) $drug->duration_minutes);
+        $this->assertSame(0.0, (float) $drug->addictive);
+    }
 
     public function test_an_admin_can_create_an_item(): void
     {
