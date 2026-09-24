@@ -361,6 +361,7 @@ Route::middleware(['auth', 'can:admin'])
         Route::get('entities', [AdminEntityOfferController::class, 'index'])->name('entities.index');
         Route::get('entities/{entity}', [AdminEntityOfferController::class, 'edit'])->name('entities.edit');
         Route::post('entities/{entity}/offers', [AdminEntityOfferController::class, 'store'])->name('entities.offers.store');
-        Route::put('entities/{entity}/offers/{offer}', [AdminEntityOfferController::class, 'update'])->name('entities.offers.update');
+        Route::put('entities/{entity}', [AdminEntityOfferController::class, 'update'])->name('entities.update');
+        Route::put('entities/{entity}/offers/{offer}', [AdminEntityOfferController::class, 'updateOffer'])->name('entities.offers.update');
         Route::delete('entities/{entity}/offers/{offer}', [AdminEntityOfferController::class, 'destroy'])->name('entities.offers.destroy');
     });

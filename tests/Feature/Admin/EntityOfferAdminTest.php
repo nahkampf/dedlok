@@ -172,6 +172,57 @@ final class EntityOfferAdminTest extends TestCase
         $this->assertSame(1, EntityOffer::query()->count());
     }
 
+    /**
+     * WHAT THEY SAY ABOUT THEMSELVES IS EDITABLE; what they ARE is not.
+     *
+     * Both lines are player-visible flavour with no mechanical weight, and
+     * until this screen a typo in either was unfixable without a migration.
+     */
+    public function test_the_flavour_can_be_rewritten(): void
+    {
+        $this->actingAs($this->admin)
+            ->put(route('admin.entities.update', $this->entity), [
+                'business' => 'Private security, mostly.',
+                'description' => 'They answer the phone at four in the morning.',
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->entity->refresh();
+
+        $this->assertSame('Private security, mostly.', $this->entity->business);
+        $this->assertSame('They answer the phone at four in the morning.', $this->entity->description);
+    }
+
+    /** Blank is NULL, not an empty string: scenery has no long form at all. */
+    public function test_clearing_the_long_form_writes_null(): void
+    {
+        $this->actingAs($this->admin)
+            ->put(route('admin.entities.update', $this->entity), [
+                'business' => 'Still something.',
+                'description' => '',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull($this->entity->fresh()->description);
+    }
+
+    /** The shelf screen shows who it belongs to, not only what they sell. */
+    public function test_the_shelf_screen_carries_the_entitys_own_words(): void
+    {
+        $this->entity->update([
+            'business' => 'A memorable line.',
+            'description' => 'And a longer one underneath it.',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.entities.edit', $this->entity))
+            ->assertOk()
+            ->assertSee('A memorable line.', false)
+            ->assertSee('And a longer one underneath it.', false)
+            ->assertSeeText($this->entity->category->label());
+    }
+
     public function test_it_is_behind_the_admin_gate(): void
     {
         $player = User::factory()->create();

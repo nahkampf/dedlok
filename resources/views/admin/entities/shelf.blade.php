@@ -9,11 +9,58 @@
         {{ Text::get('admin.entities.shelf_lede') }}
     </p>
 
+    {{-- WHO THEY ARE. Name, category and whether they deal with players are
+         set by the migration that made them and shown here as facts: the first
+         is quoted in stored inbox sentences, and the other two change what an
+         entity IS rather than how it reads.
+
+         What they SAY about themselves is flavour with no mechanical weight,
+         and until this screen a typo in either line was unfixable without a
+         migration. --}}
+    <form method="POST" action="{{ route('admin.entities.update', $entity) }}" class="panel" style="margin-top:var(--s-5)">
+        @csrf @method('PUT')
+
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('admin.entities.about') }}</span>
+            <div class="spacer"></div>
+            <span class="tag tag--warn">{{ $entity->category->label() }}</span>
+            @if ($entity->interactable)
+                <span class="tag tag--ok">{{ Text::get('admin.entities.interactable') }}</span>
+            @else
+                <span class="tag">{{ Text::get('admin.entities.scenery') }}</span>
+            @endif
+            <span class="micro" style="color:var(--ink-3)">{{ Text::get('admin.entities.fixed') }}</span>
+        </div>
+
+        <div class="panel__bd stack" style="--gap:var(--s-4)">
+            <div class="field" @error('business') data-invalid @enderror>
+                <label class="field__label" for="business">{{ Text::get('admin.entities.business') }}</label>
+                <input class="input" id="business" name="business" type="text" maxlength="255"
+                       value="{{ old('business', $entity->business) }}">
+                <span class="field__hint">{{ Text::get('admin.entities.business_hint') }}</span>
+                @error('business') <span class="field__error">{{ $message }}</span> @enderror
+            </div>
+
+            <div class="field" @error('description') data-invalid @enderror>
+                <label class="field__label" for="description">{{ Text::get('admin.entities.description') }}</label>
+                <textarea class="textarea" id="description" name="description" rows="5"
+                          maxlength="5000">{{ old('description', $entity->description) }}</textarea>
+                <span class="field__hint">{{ Text::get('admin.entities.description_hint') }}</span>
+                @error('description') <span class="field__error">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        <div class="panel__ft">
+            <div class="spacer"></div>
+            <button type="submit" class="btn btn--sm cut">{{ Text::get('admin.entities.describe') }}</button>
+        </div>
+    </form>
+
     {{-- WHAT IS ON IT. An offer is four numbers and an item, which is small
          enough to edit in place — so the listing IS the editor and there is no
          page per row. Each line is its own form, because a single form around
          the table would save every row on every press. --}}
-    <div class="panel" style="margin-top:var(--s-5)">
+    <div class="panel" style="margin-top:var(--s-4)">
         <div class="panel__hd">
             <span class="micro">{{ Text::get('admin.entities.offers') }}</span>
             <span class="tag">{{ count($offers) }}</span>

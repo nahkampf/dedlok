@@ -2752,6 +2752,15 @@ return [
                 'many' => ':count entities with nothing to sell',
             ],
 
+            'about' => 'About them',
+            'business' => 'What they do',
+            'business_hint' => 'One line. Shown wherever the entity is named in passing.',
+            'description' => 'The long form',
+            'description_hint' => 'Shown on the Exchange screen, where somebody is standing in front of them. Blank for scenery nobody can work for.',
+            'describe' => 'Save',
+            'described' => ':entity updated.',
+            'fixed' => 'Set by migration',
+
             'added' => ':item is on the shelf.',
             'saved' => ':item updated.',
             'removed' => ':item is off the shelf.',
