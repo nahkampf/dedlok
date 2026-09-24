@@ -866,8 +866,8 @@ and extraction are built. See below for what is not.
   who RUNS it are different questions. `entities.category` is a fixed vocabulary read as
   `App\Entities\EntityCategory` (corporation, government, military, fringe), and
   **`entities.interactable` is the whole difference between scenery and somebody you can
-  work for** — false by default, the call `archetypes.playable` makes. Standing, missions
-  and the Exchange are designed in TODO.md and not built.
+  work for** — false by default, the call `archetypes.playable` makes. Standing, the
+  Exchange and missions are all built; the loyalty store is what is left.
 - **Standing is what an entity thinks of you, and `App\Standing\StandingLedger` is its
   only writer.** Two tables: `entity_books` (one row per character and entity, standing as
   `DECIMAL(6,3)` and loyalty as an integer) and `entity_ledger` (immutable, one row per
@@ -889,8 +889,8 @@ and extraction are built. See below for what is not.
   run by hand: higher grades sit deeper, and a desk that exists is never moved, shut or
   re-rolled. **ONE GATE, NOT TWO** — `exchanges.min_standing` (0/5/20/40/60 by grade) is
   read by the work and the shelf alike. `/exchange` is the Missions & Loyalty screen,
-  reached by standing on the desk; missions and the store are designed in TODO.md and say
-  *Not yet*.
+  reached by standing on the desk. The board is real — see *Missions* below — and the
+  loyalty store is the one half still saying *Not yet*.
 - **A name is composed, never stored** — `<Type> - <entity> NNN`. `systems.name` is the
   authored-name override (NULL on nearly every row) and `systems.designation` the only
   stored part. `App\Cyberspace\SystemNamer` decides.
@@ -1457,6 +1457,83 @@ loadout says what it *gives*, granted once at creation.
 - **The roster cache stays lean.** `Archetype::roster()` is read on nearly every request and
   holds perks only; `Archetype::withLoadout()` is the uncached read for the two screens that
   need grants.
+
+### Missions
+
+**Work done for an entity: a designated set of systems, an action required of
+each, and a clock.** `App\Missions\MissionBoard` rolls them,
+`App\Missions\MissionLedger` does everything afterwards, and the two never
+overlap.
+
+- **A BOARD IS ROLLED PER CHARACTER AND NEVER SHARED**, refreshed on the hour
+  and **lazily** — `Probe::settle()`'s shape rather than a sweep, because a
+  scheduled refresher would roll boards for every character at every desk they
+  have ever walked past. Nobody can take your job and two players at one desk
+  see different work.
+- **Declining DELETES the offer**, and it stays gone until the hour comes
+  round. That is what makes turning something down a decision. An offer nobody
+  took is not history; only accepted work has a story worth keeping. **An empty
+  board is stale by definition**, which is what makes the floor work — somebody
+  who declined everything gets a fresh roll rather than an empty desk.
+- **Four actions, and each is a different kind of EVIDENCE.**
+  `mission_targets.satisfied_at` is one column filled several ways, and an
+  action is what decides which way. A **survey** carries files in and spends
+  them at the desk; a **demolition** and a **placement** are satisfied by the
+  act, in the transaction that performs it; **supply** names no systems at all.
+- **The act reaches the ledger, not the other way round.** `Simulator` calls
+  `MissionLedger::recordAgainst()` inside its own transaction, and it is
+  deliberately quiet: a runner who burns a machine they happen to owe somebody
+  is not interrupted to be told, and the desk is where they find out it
+  counted.
+- **A PLACEMENT IS NOT AN INSTALL.** No `backdoors` row is written for the
+  runner — the door belongs to the entity, so it pays nobody nightly, is not a
+  routing hop, never enters `ChainBuilder`'s chain, and none of the four things
+  that take a backdoor away has anything to take. **The flag on the target row
+  IS the record.** It is still an install for the one consequence that is not
+  about ownership: `runs.backdoored` is set, so the machine does not lock down.
+  A run installs once, so a run spent planting for somebody else is a run not
+  spent planting for yourself.
+- **Three endings and three prices.** Completing pays; failing charges;
+  **abandoning charges exactly what failing charges**, because if giving up
+  were free nobody would ever do it — they would sit on the job and let it run
+  out. **Voiding costs nothing at all.**
+- **A target that stops existing VOIDS the job**, detected by the snapshot
+  rather than watched: the id resolves to nothing, or to a row wearing a
+  different address. A lockdown's close is a relocation, so it is the same
+  case.
+- **`mission_targets.system_id` NULLS and never cascades.** A burn deletes a
+  system, and a cascade would take the target row with it — leaving a job with
+  nothing outstanding, which reads as *finished*. The row has to survive its
+  own subject. **The general rule: a row that exists to REMEMBER something must
+  not cascade from the thing it remembers.**
+- **The rewards are snapshotted at the OFFER**, so retuning
+  `config/missions.php` never changes a job somebody already took. The same
+  call `market_purchases.unit_price` makes.
+- **The reward is a RESOLVED stat and the penalty is not.** `standing_gain` is
+  declared in `config/stats.php` and deliberately NOT in `stats.bases` — there
+  is no such thing as a character's standing gain in the abstract, only what
+  this job at this desk was worth — so the base is handed in at the call site
+  the way `scan_duration` is. The penalty is flat: being bad at consequences is
+  not a thing to be good at.
+- **One active mission per ENTITY**, not per character. Three desks can have
+  you working at once; one agent cannot hand you two jobs.
+- **The window is 4–24 hours and starts on ACCEPT**, never at the offer.
+  `accepted_at` and `expires_at` are null together and set together, which a
+  CHECK enforces. **It must stay under `cyberspace.scan.lifetime_hours`** or a
+  file's expiry becomes a second, invisible deadline.
+- **`missions:expire` sweeps every five minutes**, the lockdown sweep's cadence
+  and its reason: the penalty has to land whether or not the player ever comes
+  back. A job whose target has gone voids rather than fails, even there.
+- **Supply spends complete, unexpired files only**, and the target rows are
+  written AT HAND-IN as the receipt — one per file accepted — so the job still
+  records which systems were sold. Asking for more than is held is refused
+  rather than partly taken.
+- **The same gate guards the work and the shelf.** `exchanges.min_standing` is
+  read by both: an agent who will not sell to somebody will not employ them
+  either.
+- **There is no mission index and never will be.** A board belongs to a DESK,
+  and a desk is reached by standing on it — the whole of the permission, the
+  same call the run briefing makes.
 
 ### The inbox
 
