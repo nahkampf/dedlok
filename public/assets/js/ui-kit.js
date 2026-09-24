@@ -678,8 +678,8 @@
       // Abandoning posts an address, and the dialog is rendered once for
       // whichever read is being watched — so the form has to follow the poll
       // rather than the page it was rendered on.
-      const target = dlg.querySelector("[data-reading-abandon-address]");
-      if (target && data.address) target.value = data.address;
+      dlg.querySelectorAll("[data-reading-abandon-address], [data-reading-export-address]")
+        .forEach((field) => { if (data.address) field.value = data.address; });
       set("instrument", data.instrument);
       set("pass", dlg.dataset.readingPass.replace(":pass", data.pass));
       set("ready", data.running && data.readyIn ? "· " + data.readyIn : "");
@@ -714,9 +714,21 @@
       /* A read goes round by itself until the file is whole or the file goes
          stale, so a stopped read that is not complete stopped for the one
          remaining reason: nothing is running at it. */
+      const filename = (dlg.dataset.readingFilename || "").replace(":address", data.address || "");
+
       set("note", data.complete
-        ? dlg.dataset.readingComplete
+        ? dlg.dataset.readingComplete.replace(":file", filename)
         : (data.running ? "" : dlg.dataset.readingIdle));
+
+      /* Once the file is whole, Abandon and Run in background both describe
+         something that is no longer happening. They go, and what takes their
+         place is the only thing left to decide about a finished read: file it
+         as something you can carry and sell, or shut the window. */
+      const done = !!data.complete;
+      dlg.querySelectorAll("[data-reading-abandon], [data-reading-background]")
+        .forEach((el) => { el.hidden = done; });
+      dlg.querySelectorAll("[data-reading-export], [data-reading-done]")
+        .forEach((el) => { el.hidden = !done; });
 
       // Nothing left to watch: the read stopped, and the dialog stays open
       // showing what it found — it is the polling that stops.

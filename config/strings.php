@@ -170,7 +170,7 @@ return [
             'no_deck_equipped' => 'Equip a deck first. Software runs on the machine you are carrying.',
             'deck_not_ready' => 'That deck will not run. Finish building it first.',
             'not_enough_compute' => 'Not enough compute left. Stop something, or fit a better processor.',
-            'not_enough_memory' => 'Not enough memory left. Stop something, or fit more.',
+            'not_enough_memory' => 'Not enough memory left. Stop something, or fit more RAM.',
             'run_only' => 'This only does anything during an intrusion, and the run starts it, not you.',
         ],
     ],
@@ -255,7 +255,7 @@ return [
 
     'market' => [
         'title' => 'Market',
-        'lede' => 'What somebody is holding today. Stock arrives on its own schedule and what sells gets restocked deeper, so an empty shelf is a shelf rather than an error.',
+        'lede' => 'A glowing web of pulsating transactional threads, billions of credits changing hands every second.',
 
         'shelf' => 'On the shelf',
         'empty' => 'Nothing for sale right now. Come back — the shelves refill on their own.',
@@ -281,6 +281,41 @@ return [
             'not_stocked' => 'Nobody is holding that today.',
             'not_enough_left' => 'There are not that many left.',
             'cannot_afford' => 'You cannot afford that.',
+        ],
+
+        /*
+        | THE OTHER MARKET. The shelf sells a KIND of thing and conjures a copy
+        | on payment; an offer sells one particular row out of one particular
+        | stash, which is why everything here names the object rather than the
+        | catalogue entry behind it.
+        */
+        'offers' => [
+            'heading' => 'What runners are selling',
+            'empty' => 'Nobody is selling anything right now.',
+            'seller' => 'Sold by :name',
+            'yours' => 'Yours',
+            'buy' => 'Buy',
+            'list' => 'Show on market',
+            'price_label' => 'Asking price, each',
+            'quantity' => 'How many',
+            'available' => ['zero' => 'none left', 'one' => ':count on offer', 'many' => ':count on offer'],
+            'withdraw' => 'Take off the market',
+            'listed' => ':item is on the market at :price ¤ each.',
+            'withdrawn' => ':item is back in your stash.',
+            'sold' => 'You bought :quantity × :item for :price ¤.',
+            // A listed row is still yours and still in the stash — it simply
+            // cannot be used while somebody might be about to buy it.
+            'on_market' => 'On the market at :price ¤ each',
+
+            'refused' => [
+                'not_yours' => 'That is not yours to sell.',
+                'not_to_hand' => 'That is spoken for. Take it out of whatever it is in first.',
+                'equipped' => 'You are carrying that deck. Put it down before you sell it.',
+                'gone' => 'That one has gone. Somebody got there first.',
+                'your_own' => 'You are already holding that one.',
+                'not_enough_left' => 'They are not selling that many.',
+                'cannot_afford' => 'You cannot afford that.',
+            ],
         ],
     ],
 
@@ -319,7 +354,7 @@ return [
 
     'notifications' => [
         'title' => 'Messages',
-        'lede' => 'What happened while you were somewhere else. Nothing here needs answering — it is the record of what the world did on its own.',
+        'lede' => 'Notifications and messages.',
 
         'inbox' => 'Inbox',
         'empty' => 'Nothing yet. This fills up while you are away.',
@@ -342,8 +377,8 @@ return [
         ],
 
         'messages' => [
-            'scan_complete' => 'Your read of :system finished. Everything that machine will give up is in the file.',
-            'backdoor_found' => 'Your way into :system was found. The machine is not where you left it.',
+            'scan_complete' => 'Your scan of :system completed. The specifications are saved to a file.',
+            'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
             'skill_level' => ':skill reached level :level.',
             'achievement_unlocked' => 'Achievement unlocked: :name.',
             // Heat's first consequence, and deliberately vague: there is no
@@ -356,7 +391,7 @@ return [
 
     'achievements' => [
         'title' => 'Achievements',
-        'lede' => 'Goota catch \'em all.',
+        'lede' => 'Gotta catch \'em all.',
 
         // The two headers. The design only names the first — but a list with
         // no header above it reads as a continuation of the one before it.
@@ -448,7 +483,7 @@ return [
         */
         'portal' => [
             'name' => 'Cyberspace Portal',
-            'flavor' => 'Where everyone arrives. Nothing here can be touched, and nothing here touches you.',
+            'flavor' => 'Where everyone arrives. This system is .',
         ],
 
         'empty' => 'Empty space',
@@ -505,33 +540,33 @@ return [
         'scan' => [
             'action' => 'Scan',
             'not_jacked_in' => 'You are not in cyberspace.',
-            'nothing_there' => 'There is nothing here to read.',
-            'not_scannable' => 'The portal answers nothing. There is nothing here to find out.',
+            'nothing_there' => 'There is nothing here to scan.',
+            'not_scannable' => 'The portal returns nothing. There is nothing here to scan.',
             'no_analyser' => 'You have no scanner running. Start one on the deck you are carrying.',
-            'busy' => 'Your scanner is still reading this machine.',
-            'all_busy' => 'Every scanner you have running is reading something else. Start another instance to read two machines at once.',
-            'begun' => 'Reading. The instrument will have something in :when.',
-            'reading' => 'Reading',
+            'busy' => 'Your scanner is still reading this system.',
+            'all_busy' => 'Every scanner you have running is reading something else. Start another instance to read two systems simultaneously.',
+            'begun' => 'Scanning. The instrument will have something in :when.',
+            'reading' => 'Scanning',
             'ready_in' => 'Answer in :when',
-            'gone' => 'The machine stopped answering before the read finished.',
-            'voided' => 'Your scanner stopped before the read finished. That pass is gone.',
+            'gone' => 'The system stopped answering before the scan finished.',
+            'voided' => 'Your scanner stopped before the scan finished. That pass is gone.',
             'lost' => [
                 'zero' => '',
-                'one' => 'A read was lost: the scanner stopped before it finished.',
-                'many' => ':count reads were lost: their scanners stopped before they finished.',
+                'one' => 'A scan was lost: the scanner stopped before it finished.',
+                'many' => ':count scans were lost: their scanners stopped before they finished.',
             ],
             'duration' => 'A pass here takes about :when',
-            'already_known' => 'You already have everything this machine will tell you.',
+            'already_known' => 'This system is already fully scanned.',
             'found' => [
-                'zero' => 'Nothing new. The machine gives up none of itself.',
-                'one' => 'One thing more about this machine.',
-                'many' => ':count things more about this machine.',
+                'zero' => 'Nothing new. Probe unable to reveal anything new.',
+                'one' => 'One thing more about this system.',
+                'many' => ':count things more about this system.',
             ],
             'grade' => 'Grade',
             'os' => 'Operating system',
-            'unknown' => 'Unread',
+            'unknown' => 'Unscanned',
             'expires' => 'Goes stale :when',
-            'chance' => 'About :percent% to read something',
+            'chance' => 'About :percent% to scan something',
         ],
 
         /*
@@ -551,7 +586,7 @@ return [
         */
         'run' => [
             'title' => 'Intrusion',
-            'heading' => 'In the machine',
+            'heading' => 'In the system',
             'turn' => 'Turn :turn',
             'begin' => 'Begin run',
             'locked' => 'You are in a run. It does not stop because you looked away.',
@@ -580,15 +615,15 @@ return [
             | for why there is nothing to pick.
             */
             'setup' => [
-                'heading' => 'Go in',
+                'heading' => 'Making a run',
                 'title' => 'Before you go in',
                 'open' => 'Plan a run',
-                'purpose' => 'What for',
+                'purpose' => 'End goal of run',
                 'kind' => 'What to leave behind',
                 'chain' => 'Routed through',
                 'chain_none' => 'Nothing. A trace comes straight at you.',
                 'chain_untrained' => 'You cannot route a run. Routing is the skill for it.',
-                'chain_cost' => 'A trace has to come through all of these. Reach you, and it takes every one of them.',
+                'chain_cost' => 'A trace has to come through all of these. If the trace completes, it burns every one of them.',
                 'hop' => 'Grade :grade',
                 'begin' => 'Begin run',
 
@@ -600,9 +635,9 @@ return [
                 | blank space to be read as nothing there.
                 */
                 'known' => 'What you know',
-                'unknown' => 'Not read',
-                'unread' => 'You have read nothing off this machine. Everything in it is a surprise.',
-                'partial' => 'Your file on this machine is incomplete.',
+                'unknown' => 'Unknown',
+                'unread' => 'This system has not been scanned. Everything in it will be a surprise.',
+                'partial' => 'Your file on this system is incomplete.',
                 'complete' => 'Your file is complete.',
 
                 // The deck, and the two things about it that end runs.
@@ -614,7 +649,7 @@ return [
                 'thermal_safe' => 'Thermals are fine.',
 
                 'running' => 'Running',
-                'running_none' => 'Nothing is running. You cannot cut, and you cannot read.',
+                'running_none' => 'Nothing is running. You cannot make a run, and you cannot scan.',
                 'no_icebreaker' => 'No icebreaker. If something wakes up, you cannot fight it.',
 
                 /*
@@ -624,22 +659,22 @@ return [
                 | additionally decides a permanent property of the machine.
                 */
                 'intent' => 'What you came to do',
-                'intent_extraction' => 'Take what it holds',
-                'intent_siphon' => 'Leave a siphon',
-                'intent_routing' => 'Leave a routing hop',
+                'intent_extraction' => 'Extract data',
+                'intent_siphon' => 'Install a siphon',
+                'intent_routing' => 'Put it in your routing chain',
                 'intent_burn' => 'Burn it',
                 'intent_extraction_hint' => 'Clean, it leaves no lockdown behind. Caught, it locks down like anything else.',
-                'intent_siphon_hint' => 'A little every night, from a machine with something worth taking.',
-                'intent_routing_hint' => 'A hop in the chain a trace has to walk. Worth holding on a machine worth nothing.',
-                'intent_burn_hint' => 'It stops existing, and so does everything in it. No haul, no way back.',
-                'held' => 'You already hold a way into this one. Nothing looks up when you arrive.',
+                'intent_siphon_hint' => 'Leeching a little every night, from a system with something worth taking.',
+                'intent_routing_hint' => 'A hop in the chain a trace has to traverse. Worth holding on a system that is otherwise worth nothing.',
+                'intent_burn_hint' => 'Complete system wipe. No haul, no way back.',
+                'held' => 'You already hold a backdoor into this one. Security systems bypassed when you connect.',
                 'held_kind' => 'It is a :kind, and that cannot be changed.',
             ],
             // The odds, quoted on the button. The same number the roll uses —
             // `Simulator::egressChance()` answers both, which is why it is
             // public and separate from the roll.
             'egress_chance' => 'Egress :chance%',
-            'egress_snared' => 'Something in here has hold of you.',
+            'egress_snared' => 'Coils of machine code grab a hold of your avatar, and prevents you from egressing.',
 
             /*
             | THE SCORE, AND WHY IT IS WHAT IT IS.
@@ -661,8 +696,8 @@ return [
             'evasion_unmodified' => 'Nothing you carry moves it.',
             'evasion_against' => 'What you are up against',
             'evasion_grade' => 'Grade :grade',
-            'evasion_ice' => 'ICE awake, level :level',
-            'evasion_ice_none' => 'Nothing awake',
+            'evasion_ice' => 'ICE activated, level :level',
+            'evasion_ice_none' => 'Nothing activated',
             'evasion_difficulty' => 'Difficulty',
             'evasion_snare' => 'Ensnare :level',
             'evasion_snare_cost' => ':points points of chance',
@@ -679,7 +714,7 @@ return [
                 // Names the kind, because it is permanent once it lands and
                 // the player chose it a screen ago.
                 'install' => 'Install :kind',
-                'install_done' => 'Way in installed',
+                'install_done' => ':kind installed',
                 // The one action that ends the run by succeeding, so it says
                 // what it does rather than what it is aimed at.
                 'burn' => 'Burn it',
@@ -701,19 +736,19 @@ return [
             'log' => [
                 'attack' => 'Your icebreaker cuts for :damage.',
                 'attack_fails' => 'Your pass finds nothing to cut.',
-                'hold' => 'You wait, and the machine waits with you.',
-                'egress' => 'You pull out.',
+                'hold' => 'You wait, and the system waits with you.',
+                'egress' => 'You egress.',
                 // HELD, and one line for both reasons — the machine out-rolled
                 // them, or something in it has hold of them. Which it was is
                 // already on the screen in the chance itself.
-                'egress_held' => 'You reach for the way out and the machine does not let go.',
+                'egress_held' => 'You reach for the way out and the system does not let go.',
                 'ice_broken' => 'The ICE comes apart.',
                 'ice_hits' => 'It gets through for :damage.',
                 'ice_misses' => 'It reaches for you and misses.',
                 'ice_silent' => 'Whatever was fighting you is no longer there.',
                 'traced' => 'The trace reaches you. Somebody knows who was in here.',
                 'trace_held' => 'The route holds it up another turn.',
-                'threshold' => 'You hit your own mark, and pull out.',
+                'threshold' => 'You hit your set threshold, and pull out.',
 
                 /*
                 | ARRIVING, and whether anything looked up. Said first and said
@@ -721,16 +756,16 @@ return [
                 | run will tell a player: an unnoticed run walks past the ICE
                 | and the tracer both, and a noticed one is a different night.
                 */
-                'unnoticed' => 'You are in, and nothing looked up.',
+                'unnoticed' => 'You are in, and nothing seems to have reacted.',
                 // THE BACKDOOR'S HALF OF THE RISK. Said differently from an
                 // ordinary quiet arrival, because it is not luck — it is the
                 // thing they went to the trouble of installing, working.
-                'unnoticed_backdoor' => 'Your way in is still open. Nothing looks up.',
+                'unnoticed_backdoor' => 'Your backdoor is still open. Nothing will detect you.',
                 // INSTALLING. One line for every reason it can fail, the same
                 // discipline the core touch already keeps: naming the cause
                 // would hand over the operating system for free.
                 'install' => 'You leave a way back in. :kind.',
-                'install_already' => 'Your way in is already here, and it is the one you left.',
+                'install_already' => 'Your backdoor is already here, and it is the one you left.',
                 'install_fails' => 'You reach for the core and find nothing you can use.',
                 /*
                 | BURNING. The machine is named because it is the last thing
@@ -740,8 +775,8 @@ return [
                 */
                 'burn' => ':name comes apart under you. There will be nothing here.',
                 'burn_fails' => 'You reach for the core and it is not there to break.',
-                'noticed' => 'Something registers you on the way in.',
-                'noticed_ice' => 'Something registers you on the way in, and the ICE comes awake.',
+                'noticed' => 'Something detects you on the way in.',
+                'noticed_ice' => 'Something detects you on the way in, and the ICE activates.',
 
                 /*
                 | THE SECOND CHANCE, ON TOUCHING THE CORE. The same event as
@@ -749,8 +784,8 @@ return [
                 | gets its own words: this is what a machine says when it was
                 | quiet on the way in and then felt the extraction.
                 */
-                'core_noticed' => 'Something notices, this time.',
-                'core_noticed_ice' => 'Something notices, this time, and the ICE comes awake.',
+                'core_noticed' => 'Something deep withing the core of the system notices, this time.',
+                'core_noticed_ice' => 'Something deep withing the core of the system notices, this time, and the ICE activates.',
 
                 /*
                 | WHAT A DEFEAT ACTUALLY COST. Said in the past tense and in
@@ -759,8 +794,8 @@ return [
                 | on the waiting screen as the reason it was worth losing to.
                 */
                 'defeat' => [
-                    'flatline' => 'Your ceiling gives a little: :points points of maximum Synaptic Integrity, gone for good.',
-                    'neural_shock' => 'The feedback comes back down the wire: :points hit points.',
+                    'flatline' => 'Whiteout, static, and your mind goes blank for a while. Flatlined. :points points of maximum Synaptic Integrity permanently gone.',
+                    'neural_shock' => 'A torrent of neuroelectrical impulses ravages your body: :points hit points.',
                     'surge' => ':count of your fitted modules burn out.',
                     'erase' => ':count file(s) or program(s) on your deck are wiped.',
                     'skim' => ':creds creds go missing from what you were carrying.',
@@ -777,7 +812,7 @@ return [
                 | which is exactly the scan fact the OS gate exists to
                 | withhold.
                 */
-                'extract_fails' => 'You get nowhere near what it is holding.',
+                'extract_fails' => 'Extraction failed, retrying.',
                 'extract' => 'You pull :summary out.',
 
                 /*
@@ -792,9 +827,9 @@ return [
                 | `extract_fails` — losing a race is an ordinary outcome, not a
                 | fact worth hiding the way a scan gate is.
                 */
-                'transfer_begins' => 'The pull starts: :qb QB queued, at :bandwidth a turn.',
+                'transfer_begins' => 'Downloading extracted data: :qb QB queued, at :bandwidth a turn.',
                 'transfer_continues' => ':remaining QB left to pull.',
-                'transfer_gone' => 'The pull finishes, and finds the machine already stripped bare.',
+                'transfer_gone' => 'The download finishes, and finds the system already stripped bare.',
 
                 /*
                 | THE PIECES A SUMMARY IS BUILT FROM. Assembled in the
@@ -815,12 +850,12 @@ return [
             | in their head while something is hitting them.
             */
             'trace' => 'Trace',
-            'trace_none' => 'Nothing is following you.',
+            'trace_none' => 'Nothing is tracing you.',
             'trace_turns' => [
-                'one' => 'One turn before it reaches you',
-                'many' => ':count turns before it reaches you',
+                'one' => 'One turn before the trace catches up to you',
+                'many' => ':count turns before the trace catches up to you',
             ],
-            'trace_done' => 'It has you.',
+            'trace_done' => 'The tracer has a fix on you.',
             'trace_you' => 'You',
 
             /*
@@ -830,7 +865,7 @@ return [
             */
             'thresholds' => [
                 'heading' => 'When to pull out',
-                'hint' => 'Set once. A run that crosses either of these leaves on its own, whatever you were doing.',
+                'hint' => 'Set once. A run that crosses either of these threshold will attempt to egress on its own, whatever you were doing.',
                 'trace' => 'Egress when the trace passes',
                 'si' => 'Egress when Synaptic Integrity falls below',
                 'off' => 'Zero turns one off.',
@@ -839,13 +874,13 @@ return [
             ],
 
             'ice' => 'ICE',
-            'ice_none' => 'Nothing is fighting you.',
+            'ice_none' => 'No active ICE is engaged.',
 
             /* THE COUNTDOWN A PULL LEAVES ON SCREEN, read off runs.extracting_qb
                directly rather than composed in the simulator — it is a status,
                not an account of what happened, and every other status line on
                this screen (the trace, the fight) is read the same way. */
-            'transferring' => 'Pulling data — :qb QB left.',
+            'transferring' => 'Downloading data — :qb QB left.',
 
             'log_heading' => 'What happened',
 
@@ -856,34 +891,34 @@ return [
             ],
 
             'purpose_hint' => [
-                'extraction' => 'Take what it is holding. Clean, it never knows you were here.',
-                'backdoor' => 'Keep access. Cleans up after itself, however loudly it went.',
-                'burn' => 'Destroy it. Nothing subtle about it and nothing left afterwards.',
+                'extraction' => 'Pilfer sensitive data from this system. Often a low risk operation.',
+                'backdoor' => 'Install a backdoor, to assert covert control over this system. If successful, will erase all logs to make it seem like this never happened.',
+                'burn' => 'Destroy the system. A very hostile act with no subtlety.',
             ],
 
             'refused' => [
-                'not_jacked_in' => 'You are not in cyberspace.',
+                'not_jacked_in' => 'You are not jacked in.',
                 'nothing_there' => 'There is nothing here to break into.',
-                'not_intrudable' => 'The portal is not a machine you can enter.',
+                'not_intrudable' => 'The portal is not a system you can make an intrusion into.',
                 'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
                 'already_running' => 'You are already in a run.',
                 // Said plainly: a lockdown is a consequence of something
                 // somebody did, not a scan fact being given away. And it is
-                // worth knowing the machine will not be there afterwards.
-                'locked_down' => 'It is locked down. Whatever it found out, it has shut — and when it opens it will be somewhere else.',
+                // worth knowing the system will not be there afterwards.
+                'locked_down' => 'This system is locked down. System purging is in progress, and this system will relocate when it comes back online.',
             ],
 
             'ended' => [
-                'egress' => 'You pulled out.',
-                'defeat' => 'It beat you.',
-                'burnout' => 'Your deck cooked a module and threw you through the wall.',
+                'egress' => 'You egressed the run.',
+                'defeat' => 'You were defeated.',
+                'burnout' => 'Your deck cooked a module and unsafely dropped you out of cyberspace.',
                 // WHAT ACTUALLY HAPPENED, because a player thrown out of a run
                 // they were winning, by something they could not see, with no
                 // account of it, has been handed a bug rather than a
                 // consequence. Until a notification centre exists, the screen
                 // they land on IS the notification — which the run lock
                 // guarantees they land on.
-                'cancelled' => 'It went into lockdown while you were inside. The run is over, and nothing you had already taken is lost.',
+                'cancelled' => 'The system went into lockdown while you were inside. The run is over, but nothing you had already taken is lost.',
                 'completed' => 'Done.',
             ],
         ],
@@ -905,11 +940,11 @@ return [
         */
         'reading' => [
             'title' => 'Scanning a system',
-            'open' => 'Show the read',
+            'open' => 'Show the scan',
             'instrument' => 'Instrument',
             'target' => 'Target',
             'pass_of' => 'Pass :pass',
-            'idle' => 'Nothing running. The file is what it is until it goes stale.',
+            'idle' => 'Idle. The file is what it is until it goes stale.',
             /*
             | NOT FOUND OUT, and it wears the same box as `not_yet` on purpose.
             | The two are different facts — nobody can read this yet, versus
@@ -935,7 +970,11 @@ return [
             | behind it does not exist yet.
             */
             'ice_bounty' => ':name · Bounty',
-            'complete' => 'Everything this machine will tell you.',
+            // A finished read is a file, so the screen names it. The name is
+            // composed from the address, which is the only part of a read that
+            // is both stable and meaningless — see `filename`.
+            'complete' => 'Scan complete. Data saved to :file',
+            'filename' => ':address.scn',
 
             /*
             | THE TWO WAYS OUT OF A READ, and neither of them is "close".
@@ -948,9 +987,40 @@ return [
             | background process lives once you have walked away from it.
             */
             'background' => 'Run in background',
+            // Once the file is whole there is nothing to abandon and nothing to
+            // leave running, so both those buttons go — and what stands in
+            // their place is the one thing left to decide about a finished read.
+            'close' => 'Close window',
             'abandon' => 'Abandon scan',
+
+            /*
+            | EXPORTING, AND WHY IT IS A DECISION RATHER THAN SOMETHING THAT
+            | HAPPENS. A file is the only form of a read anybody else can buy,
+            | and making one spends the read: the machine stops being scanned
+            | on your own map the moment you have something to sell. Saying so
+            | on the button is the whole warning — there is no confirmation,
+            | because what it costs is written on it.
+            */
+            'export' => 'Save to stash',
+            'export_hint' => 'Files this read into your data stash. It leaves your own map — a file IS the read, not a copy of it.',
+            'exported' => 'Saved as :file. It is in your data stash, and this machine is no longer scanned.',
+            'export_gone' => 'That file is gone. It was spent, or it went stale.',
+            'export_incomplete' => 'An incomplete file is not intel. Finish the read first.',
+
+            /*
+            | READING ONE IN, which is the other half and the reason anybody
+            | buys a file. It spends the file for exporting's reason: one read
+            | is one object, and a copy that could be read AND sold on would
+            | let a single pass supply a district.
+            */
+            'import' => 'Read the file',
+            'imported' => ':system is on your map. The file is spent.',
+            'import_not_a_file' => 'There is nothing to read in that.',
+            'import_stale' => 'That file is stale. Nobody can get anything out of it now.',
+            'import_gone' => 'Whatever that file describes is not there any more.',
+            'import_already_known' => 'You already know everything in it, and your own file is still good.',
             'abandoned' => 'Scan abandoned. The pass it had begun is spent.',
-            'abandon_nothing' => 'Nothing is reading that machine.',
+            'abandon_nothing' => 'Nothing is scanning that system.',
             'running_label' => 'Running scan',
 
             /*
@@ -980,8 +1050,8 @@ return [
             | which side of it you are on rather than leaving the player to go
             | and check the tree.
             */
-            'os_known' => 'You have trained this operating system.',
-            'os_unknown' => 'You have not trained this operating system.',
+            'os_known' => 'You have some skill in dealing with this operating system.',
+            'os_unknown' => 'You do not have the skills to use this operating system.',
 
             'position' => 'Position',
         ],
@@ -1728,6 +1798,16 @@ return [
             'unencrypted' => 'unsealed',
             'unknown_encryption' => 'an encryption nobody names any more',
             'sealed_value' => 'worth :value sealed',
+        ],
+
+        /*
+        | A SCAN FILE'S OWN LINE. Every one of them is the same catalogue row
+        | and a different machine, so the card reads off the inventory row the
+        | way an extracted file's does. The clock is on it because a file's
+        | whole worth is that it is still true.
+        */
+        'scans' => [
+            'stale' => 'Stale. Worth nothing to anybody.',
         ],
 
         // The equipped deck is not in either inventory — it is on you. This is
