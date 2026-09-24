@@ -2,6 +2,68 @@
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-09-24
+
+Loyalty has somewhere to go, and the deploy finishes what it starts.
+
+### Added
+
+- **The loyalty store.** Loyalty has been earnable since missions landed this
+  morning with nothing to spend it on — the same trap standing was in before
+  missions existed, one step later, in the order the phasing list predicted.
+  `entity_offers` is the shelf and **a shelf is an (entity, GRADE) pair** rather
+  than a desk: an entity keeps up to five desks and two of the same grade are
+  the same shop, so `exchanges` is not referenced at all. The items are
+  ordinary catalogue rows, usually with `on_market` false — **a second DOOR
+  onto the catalogue rather than a second catalogue**. No stock column: loyalty
+  never decays and is earned only by finishing work, so it is the whole
+  scarcity.
+- **Two gates, asked in order.** `exchanges.min_standing` decides whether an
+  agent deals with somebody at all, which is the same gate their work reads —
+  a desk that will not employ you does not sell to you either. Then the ROW may
+  ask for more, and almost never does: `entity_offers.min_standing` defaults to
+  0, and a gruff agent keeping something back is a row with 25 in it.
+- **`App\Standing\LoyaltyExchange` is the only thing that spends loyalty**, and
+  it lives beside `StandingLedger` rather than in `App\Market` because the two
+  currencies never meet: nothing converts loyalty to creds or back. Spending
+  moves the books through the LEDGER like everything else, so `standing:verify`
+  still finds them equal to the sum of their entries — `LoyaltyStoreTest`
+  asserts exactly that after a purchase.
+- **Spending earns a little standing**, through the `StoreSpend` reason that
+  has sat unused since standing was built. The ratio lives with the store, as
+  its config comment always said it would: a thousand loyalty for one point, so
+  buying is a courtesy and never a way to BUY standing.
+
+### Changed
+
+- **The deploy worker runs the post-pull steps.** `git_worker.php` pulled and
+  stopped there — its own comment said *"Optional: Run build commands here"* —
+  so `composer install`, cache clearing and migrations were a human's job on a
+  deploy nobody performs, which is a job nobody does. It now decides from the
+  diff between the old and new `HEAD`: `composer.lock` moving runs Composer,
+  anything under `database/migrations/` runs `migrate --force`, and the caches
+  are cleared on every pull because compiled Blade from the previous commit is
+  stale on all of them. Dependencies first, then caches, then schema — a
+  migration may use a class that arrived with the dependencies, and Artisan
+  should read the config that was just pulled. Everything is something `dedlok`
+  can do without sudo, which is the whole constraint. **A failed step is logged
+  and the loop continues**: a daemon that dies on a bad release stops deploying
+  silently, and nobody is watching its output either way.
+- **It pulls over itself, which is worth knowing.** The file lives in the repo
+  root, and that IS `/var/www/dedlok` on the server, so a deploy overwrites the
+  script doing the deploying. PHP reads a script once at startup and this is a
+  `while(true)` loop, so **a change lands on disk at the next push and takes
+  effect at the next RESTART** — two events, and forgetting the second is how a
+  fixed worker goes on behaving like the broken one.
+- **The Exchange screen is finished.** Both halves of a desk are real now, and
+  `ExchangeTest` asserts *Not yet* appears NOWHERE on it rather than simply
+  dropping the old assertion — an assertion quietly deleted is one that stops
+  meaning anything.
+
+### Migrations
+
+- `2026_09_24_160000_an_entity_keeps_a_private_shelf`
+
 ## [0.19.5] — 2026-09-24
 
 Four string keys that nothing had ever defined, and the test that will not let
@@ -1451,7 +1513,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.5...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/nahkampf/dedlok/compare/v0.19.5...v0.20.0
 [0.19.5]: https://github.com/nahkampf/dedlok/compare/v0.19.4...v0.19.5
 [0.19.4]: https://github.com/nahkampf/dedlok/compare/v0.19.3...v0.19.4
 [0.19.3]: https://github.com/nahkampf/dedlok/compare/v0.19.2...v0.19.3
