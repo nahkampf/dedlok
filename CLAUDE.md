@@ -1788,19 +1788,46 @@ configuration.)
   * * * * * cd /var/www/dedlok && php artisan schedule:run >> /dev/null 2>&1
   ```
 
-### The deploy itself
+### The deploy itself: a daemon that pulls
 
-- **A patch release is `git pull` and nothing more.** A **minor changes the schema**, so it
-  is `git pull` then `sudo -u dedlok php artisan migrate --force` — the changelog's
-  **Migrations** section names exactly what will run.
-- **`composer install` when `composer.lock` moved.** A release that adds classes to an
-  already-optimised autoloader needs `composer dump-autoload -o` at minimum.
-- **`APP_DEBUG` stays `false`.** Turning it on is the fastest way to read a production
-  fault and it prints the environment to the public internet; turn it back the moment the
-  trace has been read.
-- **Config and routes are deliberately NOT cached** on that host today. If that changes,
-  `config:cache` and `route:cache` have to be re-run on **every** deploy, and a stale cache
-  is its own silent outage.
+**NOBODY DEPLOYS. `git_worker.php` does**, running daemonised on the server: every
+60 seconds it fetches `origin/main`, compares `HEAD` against it, and pulls when they
+differ. A copy lives in the repo root as the source of truth for what is running; the
+deployed one is at `/home/dedlok/scripts/`. It is not web-reachable — `public/` is the
+DocumentRoot and this sits above it.
+
+**So a deploy is a push to `main`, and it happens within a minute.** Not a tag: the tag
+is how a release is RECORDED, and it has nothing to do with what the server picks up.
+Pushing a commit to `main` without tagging it deploys it just the same.
+
+**THE WORKER PULLS AND DOES NOTHING ELSE.** Its own comment says *"Optional: Run build
+commands here"* and nothing is there, so every one of these is still a human's job:
+
+- **Migrations.** A minor release's schema change is NOT applied by the deploy.
+  `sudo -u dedlok php artisan migrate --force`. This is masked today because production
+  and development share one database — see *Housekeeping* in TODO.md — so migrations are
+  already applied from a laptop before the code arrives. **The day those are two
+  databases, a minor release will ship code against a schema that does not exist.**
+- **`composer install`.** A release that moves `composer.lock` leaves the server running
+  the old dependency tree, and one that adds a class to an optimised autoloader needs at
+  least `composer dump-autoload -o`.
+- **Cache clearing.** Config and routes are deliberately NOT cached on that host, which
+  is the only reason a pure pull works at all. If that ever changes, `config:cache` and
+  `route:cache` must run on **every** deploy or a stale cache is its own silent outage.
+
+**WHICH USER THE DAEMON RUNS AS IS THE WHOLE STORAGE QUESTION AGAIN.** `git pull` writes
+files as whoever is running it, and PHP-FPM runs as `dedlok`. A worker started as root
+leaves root-owned files in the tree on every deploy, which is the outage this document's
+first section is about. It has to be `dedlok`.
+
+**`.github/workflows/manual.yml` is dead and should go.** It POSTs to
+`https://dedlok.online/deploy.php` on any tag push, and `deploy.php` has been removed —
+so it now fails on every release rather than doing anything. The polling worker replaced
+it.
+
+**`APP_DEBUG` stays `false`.** Turning it on is the fastest way to read a production
+fault and it prints the environment to the public internet; turn it back the moment the
+trace has been read.
 
 ## Constraints imposed by php.ini
 
