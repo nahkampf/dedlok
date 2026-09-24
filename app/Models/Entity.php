@@ -44,6 +44,19 @@ class Entity extends Model
         $query->where('interactable', true);
     }
 
+    /**
+     * What this entity will hand over for loyalty.
+     *
+     * A shelf, spanning desk grades rather than belonging to one desk — see
+     * App\Models\EntityOffer. Authored in the admin; read by the Exchange.
+     *
+     * @return HasMany<EntityOffer, $this>
+     */
+    public function offers(): HasMany
+    {
+        return $this->hasMany(EntityOffer::class);
+    }
+
     /** @return HasMany<System, $this> */
     public function systems(): HasMany
     {

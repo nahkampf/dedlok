@@ -54,6 +54,27 @@
 
         <div class="card">
             <div class="card__hd">
+                <div class="card__title">{{ Text::get('admin.entities.title') }}</div>
+                <div class="card__meta">{{ $entities }}</div>
+            </div>
+            <div class="card__bd">{{ Text::get('admin.entities.lede') }}</div>
+            @if ($entitiesWithoutShelf > 0)
+                {{-- A desk that deals with players and sells them nothing is
+                     one that takes loyalty and hands back nothing. --}}
+                <div class="card__stats">
+                    <div class="card__stat">
+                        <span>{{ Text::get('admin.entities.offers') }}</span>
+                        <b>{{ Text::plural('admin.entities.without_shelf', $entitiesWithoutShelf) }}</b>
+                    </div>
+                </div>
+            @endif
+            <div class="card__ft">
+                <a class="btn btn--sm" href="{{ route('admin.entities.index') }}">{{ Text::get('admin.entities.title') }}</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__hd">
                 <div class="card__title">{{ Text::get('admin.skills.title') }}</div>
                 <div class="card__meta">{{ $skills }}</div>
             </div>

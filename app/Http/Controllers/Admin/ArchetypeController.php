@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Admin\ItemOptions;
 use App\Archetypes\LoadoutEditor;
-use App\Decks\Hardware;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ArchetypeRequest;
 use App\Models\Archetype;
@@ -87,7 +87,7 @@ class ArchetypeController extends Controller
             // game is a scroll rather than a choice. Still <select>s: when
             // grouping stops being enough, this becomes a search field.
             'skills' => $this->skillOptions(),
-            'items' => $this->itemOptions(),
+            'items' => ItemOptions::grouped(),
             'grantedSkills' => $archetype->startingSkills
                 ->sortBy(fn ($grant) => $grant->skill?->title ?? '')
                 ->values(),
@@ -120,77 +120,5 @@ class ArchetypeController extends Controller
                 ])
                 ->all())
             ->all();
-    }
-
-    /**
-     * Every item, labelled the way a player would see it and grouped by what
-     * kind of thing it is.
-     *
-     * displayName() rather than the column, so the hundreds of imprints read
-     * as the skills they teach instead of as a list of blanks — which means
-     * the sort has to happen after the names exist, not in SQL.
-     *
-     * The groups are the item's own vocabulary rather than a new one: deck
-     * hardware by its `hardware` kind, then the two inventories for everything
-     * else. Imprints come out of the data inventory and last, because there
-     * is one per skill and they would otherwise bury every other choice.
-     *
-     * @return array<string, list<array{id: int, label: string}>>
-     */
-    private function itemOptions(): array
-    {
-        $items = Item::query()
-            ->with('useSkill:id,title')
-            ->get(['id', 'slug', 'name', 'use_op', 'use_skill_id', 'container', 'hardware'])
-            ->sortBy(fn (Item $item): string => $item->displayName());
-
-        $groups = [];
-
-        foreach ($items as $item) {
-            $groups[$this->itemGroup($item)][] = [
-                'id' => $item->id,
-                'label' => "{$item->displayName()} ({$item->slug})",
-            ];
-        }
-
-        // Ordered here rather than by however the rows arrived: the generic
-        // buckets first because most items are in them, hardware next, and the
-        // books at the bottom. Empty groups never reach the markup.
-        return array_filter(array_merge(
-            array_fill_keys($this->groupOrder(), []),
-            $groups,
-        ));
-    }
-
-    /** Which optgroup an item belongs in. */
-    private function itemGroup(Item $item): string
-    {
-        if ($item->isImprint()) {
-            return Text::get('admin.archetypes.items.groups.imprints');
-        }
-
-        if ($item->hardware !== null) {
-            return $item->hardware->label();
-        }
-
-        return Text::get('admin.archetypes.items.groups.'.$item->container);
-    }
-
-    /**
-     * The order the groups are offered in.
-     *
-     * @return list<string>
-     */
-    private function groupOrder(): array
-    {
-        return [
-            Text::get('admin.archetypes.items.groups.physical'),
-            Text::get('admin.archetypes.items.groups.data'),
-            ...array_map(
-                static fn (Hardware $hardware): string => $hardware->label(),
-                Hardware::cases(),
-            ),
-            Text::get('admin.archetypes.items.groups.imprints'),
-        ];
     }
 }

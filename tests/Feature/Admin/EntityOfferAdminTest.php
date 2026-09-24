@@ -1,0 +1,194 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Admin;
+
+use App\Models\Entity;
+use App\Models\EntityOffer;
+use App\Models\Item;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+/**
+ * Authoring a loyalty shelf.
+ *
+ * THE POINT OF THE SCREEN: content that cannot be authored is content only a
+ * developer can add. The shelf shipped before its editor did, and every desk
+ * read "holding nothing for you today" because the only way to fill one was a
+ * direct write to the database.
+ */
+final class EntityOfferAdminTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private User $admin;
+
+    private Entity $entity;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->admin = User::factory()->create();
+        $this->admin->forceFill(['is_admin' => true])->save();
+
+        $this->entity = Entity::query()->interactable()->firstOrFail();
+    }
+
+    public function test_the_index_lists_entities_and_what_they_keep(): void
+    {
+        $this->shelve(price: 25);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.entities.index'))
+            ->assertOk()
+            ->assertSeeText($this->entity->name);
+    }
+
+    public function test_a_row_goes_onto_the_shelf(): void
+    {
+        $item = Item::factory()->create(['on_market' => false]);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.entities.offers.store', $this->entity), [
+                'item_id' => $item->id,
+                'loyalty_price' => 250,
+                'min_grade' => 2,
+                'max_grade' => 4,
+                'min_standing' => 0,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $offer = EntityOffer::query()->sole();
+
+        $this->assertSame($this->entity->id, $offer->entity_id);
+        $this->assertSame(250, $offer->loyalty_price);
+        $this->assertSame([2, 4], [$offer->min_grade, $offer->max_grade]);
+    }
+
+    /**
+     * THE BLANK ROW IS THE COMMON ROW.
+     *
+     * A shelf entry is usually an item and a price: available at every desk,
+     * with no standing gate beyond the desk's own. Leaving those three empty
+     * has to mean the default rather than a zero, or the common case is the
+     * one that needs the most typing.
+     */
+    public function test_the_span_and_the_gate_default(): void
+    {
+        $item = Item::factory()->create();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.entities.offers.store', $this->entity), [
+                'item_id' => $item->id,
+                'loyalty_price' => 10,
+                'min_grade' => '',
+                'max_grade' => '',
+                'min_standing' => '',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $offer = EntityOffer::query()->sole();
+
+        $this->assertSame([1, 5], [$offer->min_grade, $offer->max_grade], 'every desk');
+        $this->assertSame(0.0, $offer->min_standing);
+    }
+
+    public function test_an_inverted_span_is_refused(): void
+    {
+        $item = Item::factory()->create();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.entities.offers.store', $this->entity), [
+                'item_id' => $item->id,
+                'loyalty_price' => 10,
+                'min_grade' => 4,
+                'max_grade' => 2,
+            ])
+            ->assertSessionHasErrors('min_grade');
+
+        $this->assertSame(0, EntityOffer::query()->count());
+    }
+
+    /** One offer per item per entity — the rule the unique key keeps. */
+    public function test_the_same_item_cannot_be_shelved_twice(): void
+    {
+        $offer = $this->shelve(price: 10);
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.entities.offers.store', $this->entity), [
+                'item_id' => $offer->item_id,
+                'loyalty_price' => 5,
+            ])
+            ->assertSessionHasErrors('item_id');
+
+        $this->assertSame(1, EntityOffer::query()->count());
+    }
+
+    /** Editing a row must not trip over its own uniqueness. */
+    public function test_a_row_can_be_repriced(): void
+    {
+        $offer = $this->shelve(price: 10);
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.entities.offers.update', [$this->entity, $offer]), [
+                'item_id' => $offer->item_id,
+                'loyalty_price' => 999,
+                'min_grade' => 1,
+                'max_grade' => 1,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $offer->refresh();
+
+        $this->assertSame(999, $offer->loyalty_price);
+        $this->assertSame([1, 1], [$offer->min_grade, $offer->max_grade]);
+    }
+
+    public function test_a_row_can_be_taken_off(): void
+    {
+        $offer = $this->shelve(price: 10);
+
+        $this->actingAs($this->admin)
+            ->delete(route('admin.entities.offers.destroy', [$this->entity, $offer]))
+            ->assertRedirect();
+
+        $this->assertSame(0, EntityOffer::query()->count());
+    }
+
+    /** Somebody else's shelf is a row that does not exist as far as this entity is concerned. */
+    public function test_another_entitys_row_is_a_404(): void
+    {
+        $other = Entity::query()->where('id', '!=', $this->entity->id)->firstOrFail();
+        $offer = $this->shelve(price: 10);
+
+        $this->actingAs($this->admin)
+            ->delete(route('admin.entities.offers.destroy', [$other, $offer]))
+            ->assertNotFound();
+
+        $this->assertSame(1, EntityOffer::query()->count());
+    }
+
+    public function test_it_is_behind_the_admin_gate(): void
+    {
+        $player = User::factory()->create();
+
+        $this->actingAs($player)
+            ->get(route('admin.entities.index'))
+            ->assertForbidden();
+    }
+
+    private function shelve(int $price): EntityOffer
+    {
+        return $this->entity->offers()->create([
+            'item_id' => Item::factory()->create()->id,
+            'min_grade' => 1,
+            'max_grade' => 5,
+            'loyalty_price' => $price,
+            'min_standing' => 0,
+        ]);
+    }
+}

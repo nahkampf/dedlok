@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\Admin\ArchetypeController as AdminArchetypeController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EntityOfferController as AdminEntityOfferController;
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
 use App\Http\Controllers\AvailableHandlesController;
@@ -346,4 +347,20 @@ Route::middleware(['auth', 'can:admin'])
          */
         Route::resource('archetypes', AdminArchetypeController::class)
             ->only(['index', 'edit', 'update']);
+
+        /*
+         * The loyalty shelves. Entities are listed and edited, never created
+         * or destroyed — systems point at an owner, so an entity cannot be
+         * deleted without orphaning a district of the grid, and the roster
+         * arrives by migration for the reason the archetypes do.
+         *
+         * What is edited here is what they SELL. A shelf belongs to an entity,
+         * so the offers are nested under one rather than living in a flat list
+         * whose first column would be the only one that mattered.
+         */
+        Route::get('entities', [AdminEntityOfferController::class, 'index'])->name('entities.index');
+        Route::get('entities/{entity}', [AdminEntityOfferController::class, 'edit'])->name('entities.edit');
+        Route::post('entities/{entity}/offers', [AdminEntityOfferController::class, 'store'])->name('entities.offers.store');
+        Route::put('entities/{entity}/offers/{offer}', [AdminEntityOfferController::class, 'update'])->name('entities.offers.update');
+        Route::delete('entities/{entity}/offers/{offer}', [AdminEntityOfferController::class, 'destroy'])->name('entities.offers.destroy');
     });

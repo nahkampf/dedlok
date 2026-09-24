@@ -2715,6 +2715,48 @@ return [
             ],
         ],
 
+        /*
+        | THE LOYALTY SHELVES. What an entity hands over for loyalty, which is
+        | content and therefore authored — the roster of entities themselves
+        | arrives by migration, like the archetypes and for the same reason.
+        */
+        'entities' => [
+            'title' => 'Entities',
+            'lede' => 'Who owns the grid, and what each of them will hand over for loyalty. The roster arrives by migration; what they sell is edited here.',
+
+            'name' => 'Entity',
+            'category' => 'Category',
+            'interactable' => 'Works with players',
+            'scenery' => 'Scenery',
+            'offers' => 'On the shelf',
+            'edit' => 'Shelf',
+
+            'shelf_title' => ":entity's shelf",
+            'shelf_lede' => 'A row is kept by every desk between its two grades, inclusive. One offer per item: widen the row rather than adding a second.',
+            'shelf_empty' => 'Nothing on this shelf yet.',
+
+            'item' => 'Item',
+            'grades' => 'Desks',
+            'grade_from' => 'From',
+            'grade_to' => 'To',
+            'price' => 'Loyalty',
+            'min_standing' => 'Standing',
+            'min_standing_hint' => 'On top of the desk\'s own gate. Almost always 0.',
+            'add' => 'Put it on the shelf',
+            'save' => 'Save',
+            'remove' => 'Take it off',
+
+            'without_shelf' => [
+                'zero' => '',
+                'one' => ':count entity with nothing to sell',
+                'many' => ':count entities with nothing to sell',
+            ],
+
+            'added' => ':item is on the shelf.',
+            'saved' => ':item updated.',
+            'removed' => ':item is off the shelf.',
+        ],
+
         'archetypes' => [
             'title' => 'Archetypes',
             'lede' => 'The seven starting roles, and what each one hands a character on the way in. An archetype cannot be created or deleted here: ids are permanent because every character row stores one.',
@@ -2854,6 +2896,10 @@ return [
             'deck_needs_slots' => 'A cyberdeck with no sockets is a case. Give it at least a CPU socket and a power socket.',
             'slots_need_a_deck' => 'Only a cyberdeck has sockets. Set the hardware to Cyberdeck first.',
             'modifier_shape' => 'Each modifier must be an object, not a bare value.',
+            // The loyalty shelf. One offer per item per entity: two rows would
+            // be two ranges, and an overlap is two prices at one desk.
+            'offer_twice' => 'This entity already offers that item. Widen the row it has instead of adding a second.',
+            'grades_inverted' => 'The lowest desk cannot be above the highest.',
             // The REASON slotted into modifier_invalid above. A target that
             // reaches no stat would resolve, match nothing and change nothing
             // for ever, so the editor names the row rather than saving it.
