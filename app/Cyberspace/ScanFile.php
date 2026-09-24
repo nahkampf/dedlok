@@ -50,6 +50,16 @@ final readonly class ScanFile
         public bool $iceBounty,
         public ?\DateTimeImmutable $madeAt,
         public ?\DateTimeImmutable $expiresAt,
+        /**
+         * Has its owner been told it went stale?
+         *
+         * A stale file is not deleted — it sits in the stash until somebody
+         * destroys it, which is the player's call — so the sweep that
+         * announces one has to remember that it did. A flag on the file
+         * rather than a table, because there is exactly one thing that reads
+         * it and it is already here. See `scans:stale`.
+         */
+        public bool $staleAnnounced = false,
     ) {}
 
     public static function fromScan(SystemScan $scan, ?string $name): self
@@ -84,6 +94,7 @@ final readonly class ScanFile
             'ice_bounty' => $this->iceBounty,
             'made_at' => $this->madeAt?->format(DATE_ATOM),
             'expires_at' => $this->expiresAt?->format(DATE_ATOM),
+            'stale_announced' => $this->staleAnnounced,
         ];
     }
 
@@ -108,6 +119,7 @@ final readonly class ScanFile
             iceBounty: (bool) ($stored['ice_bounty'] ?? false),
             madeAt: self::moment($stored['made_at'] ?? null),
             expiresAt: self::moment($stored['expires_at'] ?? null),
+            staleAnnounced: (bool) ($stored['stale_announced'] ?? false),
         );
     }
 
@@ -145,6 +157,30 @@ final readonly class ScanFile
     public function hasExpired(?\DateTimeInterface $now = null): bool
     {
         return $this->expiresAt !== null && $this->expiresAt < ($now ?? now());
+    }
+
+    /**
+     * The same file, with its owner told.
+     *
+     * A new instance rather than a mutation: this is a value object, and the
+     * row it came off is what actually changes — see `scans:stale`.
+     */
+    public function announced(): self
+    {
+        return new self(
+            address: $this->address,
+            name: $this->name,
+            grade: $this->grade,
+            osSkillId: $this->osSkillId,
+            idsDetection: $this->idsDetection,
+            tracerDetection: $this->tracerDetection,
+            tracerRate: $this->tracerRate,
+            iceLevel: $this->iceLevel,
+            iceBounty: $this->iceBounty,
+            madeAt: $this->madeAt,
+            expiresAt: $this->expiresAt,
+            staleAnnounced: true,
+        );
     }
 
     /** What the machine was called when the read finished, or its address if it never said. */

@@ -18,6 +18,10 @@ No local PHP, Composer or MySQL. Never run `composer install`/`update` on the ho
 `/var/www/cyberpunk` in `web`, so host edits are live; only dependency/image changes need
 a rebuild.
 
+**DEVELOPMENT is Docker; PRODUCTION is not.** The live site is Apache + PHP-FPM on bare
+metal at `/var/www/dedlok`, so several settings in `docker/` mean something different
+there — the path, the user, where errors go. See **Deploying**.
+
 ```bash
 docker compose up -d --build   # first run / after Dockerfile or composer.json changes
 docker compose up -d           # normal start
@@ -1635,6 +1639,91 @@ reports the state and proposes the version the schema rule implies. `--branch NA
 - **Never pushes.**
 
 Afterwards, run the migrations the changelog named and any seeder they need.
+
+## Deploying
+
+**The live site is not Docker.** `dedlok.online` is Apache + **PHP-FPM 8.4** on bare
+metal, with the checkout at **`/var/www/dedlok`** and the DocumentRoot at
+`/var/www/dedlok/public`. Development is entirely in containers and production is not, so
+every container-ism in `docker/` is a thing that means something different there — which
+has cost one outage already.
+
+### The FPM user is `dedlok`, and that is the whole of it
+
+**PHP runs as `dedlok`. Apache serves static files as `www-data`.** They are different
+users and only the first one matters for anything the application writes.
+
+```bash
+sudo -u dedlok php artisan migrate --force      # every artisan command
+sudo -u dedlok composer install --no-dev        # every composer command
+```
+
+**Anything run as root or as `www-data` leaves files the application cannot write**, which
+is the same rule `-u www-data` enforces in the container, with a different name. After a
+deploy that got it wrong:
+
+```bash
+sudo chown -R dedlok:dedlok /var/www/dedlok
+sudo find /var/www/dedlok/storage /var/www/dedlok/bootstrap/cache -type d -exec chmod 775 {} +
+sudo find /var/www/dedlok/storage /var/www/dedlok/bootstrap/cache -type f -exec chmod 664 {} +
+```
+
+**THE SYMPTOM IS AN EMPTY 500 WITH NOTHING IN ANY LOG**, and it is a double fault: Blade
+cannot write a compiled view, so a notice becomes an `ErrorException`, and Monolog cannot
+write `storage/logs/laravel.log` either, so the exception that says so is itself lost. The
+page returns zero bytes.
+
+**The diagnostic that localises it in one minute**: request a static asset, then
+`public/index.php`. Static 200 and PHP 500 means PHP, Apache, TLS and `open_basedir` are
+all fine and the application's WRITABLE paths are not. A `phpinfo()` in the docroot
+answering 200 says the same thing louder. (Delete it afterwards — it publishes the whole
+configuration.)
+
+### What differs from the container, setting by setting
+
+- **`open_basedir` lives in the FPM pool, not the vhost.** `php_admin_value` is a *mod_php*
+  directive; under FPM, Apache refuses to start on it. The pool spelling is
+  `php_admin_value[open_basedir] = /var/www/dedlok:/tmp`. It is set correctly there, and it
+  is **not** a suspect when something breaks — `docker/apache/vhost.conf` names
+  `/var/www/cyberpunk` and is irrelevant on that host.
+- **`error_log = /dev/stderr` is a Docker-ism.** Off Docker it means PHP errors go to the
+  worker's stderr, which FPM discards unless told otherwise. Set both, or the box is blind:
+
+  ```ini
+  ; /etc/php/8.4/fpm/pool.d/www.conf
+  catch_workers_output = yes
+  php_admin_flag[log_errors] = on
+  php_admin_value[error_log] = /var/log/php/dedlok-error.log
+  ```
+
+  Without them, the only trace is Apache's `proxy_fcgi` `AH01071` lines, which are
+  **truncated mid-stack-trace** and easy to mistake for nothing.
+- **`php artisan storage:link` cannot work** — `symlink` is in `disable_functions` and that
+  is `PHP_INI_SYSTEM`, so it binds the CLI too. Make it by hand, once:
+  `sudo -u dedlok ln -s /var/www/dedlok/storage/app/public /var/www/dedlok/public/storage`.
+- **`session.cookie_secure` must be on.** `docker/php/php.ini` leaves it commented out for
+  local HTTP; the live site is HTTPS.
+- **`docker/cron/cyberpunk` is a container cron and does nothing there.** The schedule runs
+  from `dedlok`'s crontab, and without it there are no training deposits, no lockdown
+  expiry, no nightly rolls and no `scans:stale`:
+
+  ```
+  * * * * * cd /var/www/dedlok && php artisan schedule:run >> /dev/null 2>&1
+  ```
+
+### The deploy itself
+
+- **A patch release is `git pull` and nothing more.** A **minor changes the schema**, so it
+  is `git pull` then `sudo -u dedlok php artisan migrate --force` — the changelog's
+  **Migrations** section names exactly what will run.
+- **`composer install` when `composer.lock` moved.** A release that adds classes to an
+  already-optimised autoloader needs `composer dump-autoload -o` at minimum.
+- **`APP_DEBUG` stays `false`.** Turning it on is the fastest way to read a production
+  fault and it prints the environment to the public internet; turn it back the moment the
+  trace has been read.
+- **Config and routes are deliberately NOT cached** on that host today. If that changes,
+  `config:cache` and `route:cache` have to be re-run on **every** deploy, and a stale cache
+  is its own silent outage.
 
 ## Constraints imposed by php.ini
 

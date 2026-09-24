@@ -17,6 +17,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MarketController;
+use App\Http\Controllers\MissionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
@@ -203,6 +204,16 @@ Route::middleware('auth')->group(function () {
      * high-grade agent worth making.
      */
     Route::get('/exchange', [ExchangeController::class, 'show'])->name('exchange.show');
+
+    /*
+     * Work. There is no index and never will be: a board belongs to a DESK,
+     * and a desk is reached by standing on it — which is the whole of the
+     * permission, the same call the run briefing makes.
+     */
+    Route::post('/missions/{mission}/accept', [MissionController::class, 'accept'])->name('missions.accept');
+    Route::delete('/missions/{mission}', [MissionController::class, 'decline'])->name('missions.decline');
+    Route::delete('/missions/{mission}/abandon', [MissionController::class, 'abandon'])->name('missions.abandon');
+    Route::post('/missions/{mission}/complete', [MissionController::class, 'complete'])->name('missions.complete');
 
     Route::get('/run/setup', [RunController::class, 'setup'])->name('run.setup');
     Route::get('/run', [RunController::class, 'show'])->name('run.show');

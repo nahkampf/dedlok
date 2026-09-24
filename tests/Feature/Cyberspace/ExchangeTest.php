@@ -241,9 +241,12 @@ final class ExchangeTest extends TestCase
             ->assertSeeText($this->entity->name)
             ->assertSeeText($this->entity->category->label())
             ->assertSeeText('Wren Achebe')
-            ->assertSeeText(Text::get('exchange.missions'))
+            // The work is real now and the board is rolled on the way past.
+            ->assertSeeText(Text::get('missions.board'))
+            ->assertSeeText(Text::get('missions.active'))
+            // The store is still designed and not built, so it says so — and
+            // it is the only half that does.
             ->assertSeeText(Text::get('exchange.store'))
-            // Both halves are designed and neither is built, so each says so.
             ->assertSeeText(Text::get('exchange.not_built'));
 
         $this->assertNotNull($system->exchange);

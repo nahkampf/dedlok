@@ -36,6 +36,7 @@ return [
             'cyberspace' => 'Cyberspace',
             'skills' => 'Skills',
             'market' => 'Market',
+            'mission' => 'Work',
             'achievements' => 'Achievements',
             // The inbox. "Messages" rather than "Notifications" because the
             // rail is 220px open and one word has to fit beside a glyph.
@@ -373,12 +374,27 @@ return [
             'cyberspace' => 'Cyberspace',
             'training' => 'Training',
             'achievement' => 'Achievement',
+            'market' => 'Market',
+            'mission' => 'Work',
             'street' => 'Street',
         ],
 
         'messages' => [
             'scan_complete' => 'Your scan of :system completed. The specifications are saved to a file.',
             'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
+            // A FILE DIES WITH NOBODY LOOKING AT IT. Says it is still there,
+            // because nothing deletes one - destroying it is the player's call
+            // from the card, like every other row they own.
+            'file_stale' => ':file is stale. Nobody will pay for a read of :system now.',
+            // WHAT SOMEBODY IS NOT THERE TO SEE. A listing is left up and
+            // walked away from, so the sale lands on nobody's screen - and
+            // creds arriving with nothing to explain them is the gap.
+            'offer_sold' => 'Sold: :quantity × :item, for :price ¤.',
+            // WORK THAT ENDED WITHOUT YOU THERE. Completing is not here:
+            // that happens at the desk with somebody pressing a button.
+            'mission_failed' => 'Your :action job for :entity ran out of time.',
+            'mission_abandoned' => 'You walked away from the :action job for :entity.',
+            'mission_voided' => 'The :action job for :entity is off: something it named is not there any more.',
             'skill_level' => ':skill reached level :level.',
             'achievement_unlocked' => 'Achievement unlocked: :name.',
             // Heat's first consequence, and deliberately vague: there is no
@@ -387,6 +403,83 @@ return [
             'withdrawal' => 'You need it. :family, and going without is starting to show.',
             'bounty_word' => "You've made enemies out there. Word is being put out on the street. There's going to be a price on your head.",
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Work done for an entity
+    |--------------------------------------------------------------------------
+    |
+    | A mission is a designated set of systems, an action required of each, and
+    | a clock. The vocabulary is deliberately plain: an agent hands out work,
+    | and the screen should read like a job board rather than a quest log.
+    |
+    */
+
+    'missions' => [
+        'heading' => 'Work',
+        'board' => 'On offer',
+        'board_empty' => 'Nothing on the board. Come back on the hour.',
+        'active' => 'What you are doing',
+        'active_none' => 'You are not working for this desk.',
+        'refresh' => 'The board turns over every hour.',
+
+        'accept' => 'Take it',
+        'decline' => 'Turn it down',
+        'abandon' => 'Give it up',
+        'complete' => 'Hand it in',
+
+        'pays' => 'Pays :creds ¤',
+        'standing' => ':amount standing',
+        'loyalty' => ':amount loyalty',
+        'penalty' => 'Failing costs :amount standing',
+        'window' => 'Time left: :time',
+        'expired' => 'Out of time',
+        'targets' => 'Targets',
+        'targets_done' => ':done of :total done',
+        'quantity' => ':count complete scan files',
+        'target_gone' => 'Not there any more',
+        'target_done' => 'Done',
+
+        // Said on the board and again on the row, because a player choosing
+        // between two jobs is choosing between two KINDS of evening.
+        'actions' => [
+            'scan' => 'Survey',
+            'burn' => 'Demolition',
+            'plant' => 'Placement',
+            'supply' => 'Supply',
+        ],
+
+        'action_hint' => [
+            'scan' => 'Read every system named and bring the files back. The safest work there is, and the slowest.',
+            'burn' => 'Take these systems out of the world. Nothing comes back from one, including the address.',
+            'plant' => 'Leave our way in on these systems. The door is ours, not yours - you get paid, not a backdoor.',
+            'supply' => 'Bring us complete scan files. We do not care which systems, only that the picture is whole.',
+        ],
+
+        'states' => [
+            'offered' => 'On offer',
+            'accepted' => 'In progress',
+            'completed' => 'Done',
+            'failed' => 'Failed',
+            'voided' => 'Called off',
+        ],
+
+        // Every one of these is something a player can reasonably try, which
+        // is why they are values rather than exceptions.
+        'refused' => [
+            'not_yours' => 'That is not your job.',
+            'gone' => 'That work is not on the board any more.',
+            'already_working' => 'You are already doing something for this agent. One job at a time.',
+            'not_welcome' => 'They will not deal with you yet.',
+            'not_done' => 'Not finished. Come back when it is.',
+            'expired' => 'That job ran out of time.',
+        ],
+
+        'accepted' => 'Taken. You have :time.',
+        'declined' => 'Turned down. The board turns over on the hour.',
+        'abandoned' => 'You walked away from it. It cost you standing.',
+        'completed' => 'Done. :creds ¤ and their goodwill.',
     ],
 
     'achievements' => [
@@ -766,6 +859,10 @@ return [
                 // would hand over the operating system for free.
                 'install' => 'You leave a way back in. :kind.',
                 'install_already' => 'Your backdoor is already here, and it is the one you left.',
+                // PLANTING. Says whose door it is, because that is the whole
+                // difference: the runner leaves with the standing and without
+                // a way back in.
+                'planted' => 'Their door is in. It answers to them, not to you.',
                 'install_fails' => 'You reach for the core and find nothing you can use.',
                 /*
                 | BURNING. The machine is named because it is the last thing
@@ -2434,6 +2531,7 @@ return [
                 'use' => 'Use',
                 'physical' => 'Bulk and containment',
                 'market' => 'Market',
+                'mission' => 'Work',
                 'hardware' => 'Deck hardware',
                 'software' => 'Software',
                 'drug' => 'Drug',
@@ -2530,6 +2628,7 @@ return [
                 'identity' => 'Identity',
                 'training' => 'Training',
                 'market' => 'Market',
+                'mission' => 'Work',
                 'prerequisites' => 'Requirements',
                 'book' => 'Imprint',
             ],

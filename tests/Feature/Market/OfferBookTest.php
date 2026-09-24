@@ -10,6 +10,9 @@ use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\MarketOffer;
+use App\Models\Notification;
+use App\Notifications\Category;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -77,6 +80,54 @@ final class OfferBookTest extends TestCase
         $this->assertSame(750, (int) $this->buyer->fresh()->creds);
         $this->assertSame(350, (int) $this->seller->fresh()->creds);
         $this->assertSame(0, MarketOffer::query()->count(), 'the listing goes with the goods');
+    }
+
+    /**
+     * THE SELLER IS TOLD, and only the seller.
+     *
+     * A listing is left up and walked away from, so the sale lands on nobody's
+     * screen — which is the inbox's whole test. The buyer pressed the button
+     * and already has a flash message.
+     */
+    public function test_a_sale_reaches_the_sellers_inbox(): void
+    {
+        $item = Item::factory()->create(['stackable' => true, 'name' => 'Ice Pick']);
+
+        $row = InventoryItem::query()->create([
+            'character_id' => $this->seller->id,
+            'item_id' => $item->id,
+            'quantity' => 5,
+        ]);
+
+        $offer = app(OfferBook::class)->list($this->seller, $row, 40);
+        $this->assertInstanceOf(MarketOffer::class, $offer);
+
+        app(OfferBook::class)->buy($this->buyer, $offer, 2);
+
+        $message = Notification::query()->sole();
+
+        $this->assertSame($this->seller->user_id, $message->user_id);
+        $this->assertSame(Category::Market, $message->category);
+        $this->assertSame(
+            Text::get('notifications.messages.offer_sold', [
+                'quantity' => '2',
+                'item' => 'Ice Pick',
+                'price' => '80',
+            ]),
+            $message->body,
+        );
+    }
+
+    /** A refused sale is not a sale, and says nothing to anybody. */
+    public function test_a_refused_sale_writes_no_message(): void
+    {
+        $row = $this->owned($this->seller);
+        $offer = app(OfferBook::class)->list($this->seller, $row, 5000);
+        $this->assertInstanceOf(MarketOffer::class, $offer);
+
+        app(OfferBook::class)->buy($this->buyer, $offer);
+
+        $this->assertSame(0, Notification::query()->count());
     }
 
     /**

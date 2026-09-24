@@ -8,6 +8,8 @@ use App\Inventory\ItemGranter;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\MarketOffer;
+use App\Notifications\Category;
+use App\Notifications\Notifier;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -49,6 +51,13 @@ use Illuminate\Support\Facades\DB;
  *
  * An unstackable row is a pile of one, so it needs no special case: one is
  * all anybody can ask for, and taking it empties the pile.
+ *
+ * ## The seller is TOLD, and the buyer is not
+ *
+ * A listing is left up and walked away from, so a sale is the definition of
+ * something that happened while nobody was looking — creds appearing in an
+ * account with nothing to explain them. The buyer pressed the button and has
+ * a flash message; only the seller gets an inbox row.
  *
  * ## Nothing here writes `market_purchases`
  *
@@ -191,7 +200,21 @@ final readonly class OfferBook
                 $live->delete();
             }
 
-            return $this->handOver($buyer, $row, $quantity);
+            // Read before the goods move: a pile bought out takes its row
+            // with it, and a message naming what was sold has to outlive it.
+            $sold = (string) $row->item->displayName();
+
+            $goods = $this->handOver($buyer, $row, $quantity);
+
+            // Inside the transaction, so a sale that rolls back cannot leave a
+            // message behind saying it happened.
+            (new Notifier)->send($seller, Category::Market, 'offer_sold', [
+                'quantity' => (string) $quantity,
+                'item' => $sold,
+                'price' => number_format($price),
+            ]);
+
+            return $goods;
         });
     }
 
