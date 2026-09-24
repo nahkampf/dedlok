@@ -2,6 +2,96 @@
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-09-24
+
+The Exchange stops saying *Not yet*. Agents hand out work, and finishing it
+is how an entity comes to think anything of you.
+
+### Added
+
+- **The mission board.** A job is a designated set of systems, an action
+  required of each, and a clock — designed in TODO.md the day before and built
+  here. **A board is rolled per character and never shared**, refreshed on the
+  hour and lazily, which is `Probe::settle()`'s shape rather than a sweep: a
+  scheduled refresher would roll boards for every character at every desk they
+  have ever walked past, nearly all of which nobody will look at. Nobody can
+  take your job, two players at one desk see different work, and **declining
+  clears the offer until the hour comes round** — which is what makes turning
+  something down a decision rather than a formality. The floor holds even then:
+  somebody who declines everything still finds work waiting, and it is not the
+  job they threw back.
+- **Four actions, and each is a different kind of EVIDENCE.** That is the whole
+  reason the list is fixed and short — `mission_targets.satisfied_at` is one
+  column filled several ways. A **survey** carries files in and spends them at
+  the desk. A **demolition** and a **placement** cannot carry anything, so the
+  act records itself where it happens: `Simulator` reaches the ledger inside
+  the transaction that burns or installs. **Supply** names no systems at all
+  and buys intel by the file, which is the sink scan files have never had and
+  the other half of scanning as an occupation.
+- **Placement is deliberately not an install.** No `backdoors` row is written
+  for the runner: the door belongs to the ENTITY, so it pays nobody nightly, it
+  is not a routing hop, it never enters a chain, and none of the four things
+  that take a backdoor away has anything to take. The flag on the target row IS
+  the record. A run installs once, so **a run spent planting for somebody else
+  is a run not spent planting for yourself** — which is the cost that makes the
+  type a choice rather than free standing. The system still forgives the visit
+  and does not lock down, exactly as `runs.backdoored` already says.
+- **Three endings, costing three different things.** Completing pays creds,
+  standing and loyalty. Failing charges standing, and **abandoning charges
+  exactly the same** — if giving up were free nobody would ever do it, they
+  would sit on the job and let it run out, and the game would have charged them
+  four hours for the same outcome. **Voiding costs nothing at all**, because a
+  machine somebody else burned was never this runner's fault.
+- **`missions:expire` sweeps every five minutes**, the cadence the lockdown
+  sweep already uses and for its reason: the penalty has to land whether or not
+  the player ever comes back. A job whose target has gone voids rather than
+  fails even here.
+- **A stale scan file says so.** A file's 48 hours ride along in the row's own
+  JSON and are read when something asks — that stays lazy. The MESSAGE cannot
+  be: a file dies at an arbitrary minute with nobody looking at it. `scans:stale`
+  runs hourly and deletes nothing; destroying a worthless file stays the
+  player's call. **Said once**, marked in the file's own JSON, because a stale
+  file sits in a stash indefinitely and an hourly sweep with no memory would
+  repeat itself for ever.
+- **A seller hears that their listing sold.** A listing is left up and walked
+  away from, so the sale lands on nobody's screen and creds appear with nothing
+  to explain them — the inbox's own test, word for word. `Category::Market` is
+  the fifth case and `Category::Mission` the sixth, each arriving with the
+  sender the enum's docblock demands. The buyer is told nothing: they pressed
+  the button, and a flash message already covered it.
+
+### Changed
+
+- **`standing_gain` joins the stat graph**, and deliberately NOT `stats.bases`:
+  there is no such thing as a character's standing gain in the abstract, only
+  what this job at this desk was worth when it was offered. So the base is
+  snapshotted onto the mission row and handed in at the call site the way
+  `scan_duration` is, and the first perk or implant that makes somebody better
+  at being liked is a modifier `MissionLedger` never learns about. The PENALTY
+  is flat on purpose — being bad at consequences is not a thing to be good at.
+- **Rewards are snapshotted at the offer**, so retuning `config/missions.php`
+  can never change a job somebody already took. The same call
+  `market_purchases.unit_price` makes about a price.
+- **`CLAUDE.md` gained a *Deploying* section.** Development is entirely in
+  Docker and production is not: Apache plus PHP-FPM on bare metal, where the
+  FPM user is `dedlok` rather than `www-data`, `open_basedir` lives in the pool
+  rather than the vhost, `error_log = /dev/stderr` discards every error, and
+  `storage:link` cannot work because `symlink` is disabled. Each of those cost
+  part of an outage.
+
+### Fixed
+
+- **A burned target no longer erases itself.** `mission_targets.system_id`
+  cascaded on delete, so a demolition deleted its own target row — which meant
+  a job whose targets had all been burned by OTHER players had nothing
+  outstanding left and read as *finished*, paying out for work nobody did. It
+  nulls instead: the row survives its own subject, keeps the address, and
+  `stillStands()` says what actually happened. `MissionTest` pins it.
+
+### Migrations
+
+- `2026_09_24_150000_work_done_for_an_entity`
+
 ## [0.18.0] — 2026-09-24
 
 Scanning becomes an occupation. A finished read is an object you can carry,
@@ -1194,7 +1284,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/nahkampf/dedlok/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/nahkampf/dedlok/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/nahkampf/dedlok/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/nahkampf/dedlok/compare/v0.15.1...v0.16.0
