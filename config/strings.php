@@ -373,12 +373,17 @@ return [
             'cyberspace' => 'Cyberspace',
             'training' => 'Training',
             'achievement' => 'Achievement',
+            'market' => 'Market',
             'street' => 'Street',
         ],
 
         'messages' => [
             'scan_complete' => 'Your scan of :system completed. The specifications are saved to a file.',
             'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
+            // WHAT SOMEBODY IS NOT THERE TO SEE. A listing is left up and
+            // walked away from, so the sale lands on nobody's screen - and
+            // creds arriving with nothing to explain them is the gap.
+            'offer_sold' => 'Sold: :quantity × :item, for :price ¤.',
             'skill_level' => ':skill reached level :level.',
             'achievement_unlocked' => 'Achievement unlocked: :name.',
             // Heat's first consequence, and deliberately vague: there is no

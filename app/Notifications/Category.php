@@ -21,10 +21,10 @@ use App\Support\Text;
  * something about a message that is not true of it. The word and the glyph are
  * the whole distinction.
  *
- * A CASE IS ONLY ADDED WITH A SENDER BEHIND IT. Every one of the four below
+ * A CASE IS ONLY ADDED WITH A SENDER BEHIND IT. Every one of the five below
  * is written by something that runs today — the grid, the training clock, the
- * achievement tail, the nightly bounty roll — and a fifth that nothing raises
- * would be a filter with nothing to filter.
+ * achievement tail, the nightly bounty roll, a sale going through — and a
+ * sixth that nothing raises would be a filter with nothing to filter.
  */
 enum Category: string
 {
@@ -36,6 +36,19 @@ enum Category: string
 
     /** The account's own record, from the tail of `Achievements::check()`. */
     case Achievement = 'achievement';
+
+    /**
+     * Somebody bought what you were selling.
+     *
+     * THE ONLY ONE ABOUT ANOTHER PLAYER, and the reason the market needed a
+     * category at all: a listing is left up and walked away from, so the sale
+     * happens to somebody who is not there. Money arriving in an account with
+     * nothing to explain it is exactly what an inbox is for.
+     *
+     * The shelf raises nothing — buying from a shop is something you did, and
+     * a flash message already covered it.
+     */
+    case Market = 'market';
 
     /**
      * The world outside, deciding things about you.
@@ -64,6 +77,8 @@ enum Category: string
             self::Cyberspace => "\u{25A6}",
             self::Training => "\u{2726}",
             self::Achievement => "\u{2605}",
+            // The scales, from the market's own rail item.
+            self::Market => "\u{2696}",
             // The one glyph not lifted from the rail, because the street
             // has no rail item. U+26A0 is the same Miscellaneous Symbols
             // block as the rest, with U+FE0E's job done by the escape.
@@ -89,6 +104,7 @@ enum Category: string
             self::Cyberspace => 'cyberspace.index',
             self::Training => 'skills.index',
             self::Achievement => 'achievements.index',
+            self::Market => 'market.index',
             self::Street => null,
         };
     }
