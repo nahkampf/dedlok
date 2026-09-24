@@ -2,6 +2,48 @@
 
 ## [Unreleased]
 
+## [0.19.2] — 2026-09-24
+
+The item editor could only ever make two kinds of thing. Now it makes all of
+them, and implants have somewhere to be authored.
+
+### Fixed
+
+- **Creating anything but a program or a drug was impossible.** Saving an
+  implant came back with six refusals at once — the qflops cost, memory cost,
+  storage size, duration, addictive and tolerance gain fields are all
+  prohibited. **The form was arguing with itself**: the editor renders every
+  panel whatever kind of item is being edited, and the software and drug panels
+  default their numbers to ZERO rather than to blank. `filled('0')` is true, so
+  those six arrived present on every save and each is `prohibited` for an item
+  that is not that kind. A deck module or a plain item would have failed
+  identically.
+- **A zero on a panel that is off is the form's own default**, and becomes
+  null. Anything else was TYPED and stays present, so a compute cost on
+  something that is not a program is still refused with a sentence rather than
+  quietly discarded — the distinction `positiveCounts()` has always drawn for
+  the fourteen socket counters. The first attempt at this fix dropped the
+  deliberate value too, and `ProgramAdminTest` refused it, correctly.
+- **The suite could not have caught it**, which is the part worth keeping:
+  every test in `ItemAdminTest` hand-built a payload without those fields.
+  `asTheFormPosts()` is what a browser actually sends, and the three new tests
+  around it fail without the fix.
+
+### Changed
+
+- **Implants have a panel of their own**, beside Hardware, Software and Drug.
+  The region select lived under *Bulk and containment*, which is where nobody
+  looked — an implant region is not bulk, it is what the item IS, and it is the
+  only thing that makes an item an implant at all. Each option now carries its
+  region's capacity (*Spine — 1 slot*, *Body — 4 slots*), because how many of a
+  thing you can have is the question somebody authoring one is really asking.
+- **Two things the deploy taught us are written down.** Production and
+  development share one database, which is why a release's migrations already
+  read as *Ran* on the host before anything was pulled — harmless while every
+  migration is additive, and the entry says exactly when it stops being. And
+  the scan-file loop is covered by tests and by nobody: a QA pass on the live
+  site is deferred deliberately rather than forgotten.
+
 ## [0.19.1] — 2026-09-24
 
 Words and records. Nothing a deploy needs beyond a pull.
@@ -1323,7 +1365,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.2...HEAD
+[0.19.2]: https://github.com/nahkampf/dedlok/compare/v0.19.1...v0.19.2
 [0.19.1]: https://github.com/nahkampf/dedlok/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/nahkampf/dedlok/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/nahkampf/dedlok/compare/v0.17.0...v0.18.0
