@@ -74,6 +74,35 @@ class ItemRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        /*
+         * WHICH PANELS THE FORM IS ACTUALLY FILLING IN.
+         *
+         * The editor renders every panel whatever kind of item is being
+         * edited, and the software and drug panels default their numbers to
+         * ZERO rather than to blank. `filled('0')` is true, so without this
+         * those six fields arrive present on every save — and each of them is
+         * `prohibited` for an item that is not that kind, which made creating
+         * an implant, a module or a plain item impossible.
+         *
+         * A panel's own gate decides: no `program_kind` means the software
+         * numbers are not values, no `drug_family` means the drug numbers are
+         * not. This is the decision `positiveCounts()` already makes for the
+         * fourteen socket counters, for exactly the same reason.
+         *
+         * A ZERO ON A PANEL THAT IS OFF IS THE FORM'S DEFAULT; anything else
+         * is somebody typing a number. So only the zeroes are dropped, and a
+         * cost of 5 posted with no program kind is still REFUSED rather than
+         * quietly thrown away — the same distinction `positiveCounts()` draws
+         * for the socket counters, which keeps a count of 3 on a non-deck an
+         * error and a count of 0 a no-op.
+         *
+         * When the panel IS on, every value passes through untouched, because
+         * zero is a real answer there: a drug that does not addict and a
+         * program that costs no compute are both things somebody may author.
+         */
+        $isProgramForm = $this->filled('program_kind');
+        $isDrugForm = $this->filled('drug_family');
+
         $this->merge([
             'stackable' => $this->boolean('stackable'),
             'on_market' => $this->boolean('on_market'),
@@ -114,13 +143,13 @@ class ItemRequest extends FormRequest
             'program_kind' => $this->filled('program_kind') ? $this->input('program_kind') : null,
             // Drugs, the same way: empty is no value.
             'drug_family' => $this->filled('drug_family') ? $this->input('drug_family') : null,
-            'duration_minutes' => $this->numberOrNull('duration_minutes'),
-            'addictive' => $this->numberOrNull('addictive'),
-            'tolerance_gain' => $this->numberOrNull('tolerance_gain'),
-            'lethal_at' => $this->numberOrNull('lethal_at'),
-            'qflops_cost' => $this->numberOrNull('qflops_cost'),
-            'memory_cost' => $this->numberOrNull('memory_cost'),
-            'storage_size' => $this->numberOrNull('storage_size'),
+            'duration_minutes' => $this->panelNumber('duration_minutes', $isDrugForm),
+            'addictive' => $this->panelNumber('addictive', $isDrugForm),
+            'tolerance_gain' => $this->panelNumber('tolerance_gain', $isDrugForm),
+            'lethal_at' => $this->panelNumber('lethal_at', $isDrugForm),
+            'qflops_cost' => $this->panelNumber('qflops_cost', $isProgramForm),
+            'memory_cost' => $this->panelNumber('memory_cost', $isProgramForm),
+            'storage_size' => $this->panelNumber('storage_size', $isProgramForm),
             'background_process' => $this->boolean('background_process'),
             'multithreaded' => $this->boolean('multithreaded'),
             // Rows from the effects editor, turned into modifier definitions
@@ -769,6 +798,30 @@ class ItemRequest extends FormRequest
     private function numberOrNull(string $field): ?string
     {
         return $this->filled($field) ? (string) $this->input($field) : null;
+    }
+
+    /**
+     * A number belonging to a panel that may not be in use.
+     *
+     * With the panel ON, whatever was typed — zero included, because zero is a
+     * real answer for a drug that does not addict or a program that costs no
+     * compute.
+     *
+     * With the panel OFF, a zero is the form's own default and means nothing
+     * was asked for, so it becomes null and the `prohibited` rule passes.
+     * Anything else was TYPED, and stays present so that rule can refuse it:
+     * a cost on something that is not a program is a mistake worth a sentence,
+     * not something to discard behind somebody's back.
+     */
+    private function panelNumber(string $field, bool $panelIsOn): ?string
+    {
+        $value = $this->numberOrNull($field);
+
+        if ($panelIsOn || $value === null) {
+            return $value;
+        }
+
+        return is_numeric($value) && (float) $value === 0.0 ? null : $value;
     }
 
     /**

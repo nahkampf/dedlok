@@ -702,6 +702,23 @@ targets can be tag sets, so comparing ids alone would undercount.
 - **Enable "block headless browsers" on the Cap site key** before launch. It is off on
   the local key because it breaks agent/QA browsers, and it is one of the two settings
   (with instrumentation, already on) that do most of the work against real bots.
+- **PRODUCTION AND DEVELOPMENT SHARE ONE DATABASE.** `dedlok.online` and the dev
+  container both point at the same remote MySQL, which is why the 0.18.0 and
+  0.19.0 migrations already read as *Ran* on the host before anything was
+  pulled — the deploy needed the code and the schema was already there. It has
+  been harmless so far because every migration this far has been additive.
+  **It stops being harmless the first time one is not**: a `dropColumn`, a
+  rename or a data backfill lands on the live game the moment it runs on a
+  laptop, with nothing in between to catch it. The fix is a second schema and a
+  second `.env`, not a rule anybody has to remember — and the local `db`
+  container already exists to be pointed at. Until then, read any destructive
+  migration twice and run it when nobody is playing.
+- **Nobody has played the scan-file loop end to end.** Export, list, buy,
+  import, take a job, hand it in: all of it is covered by tests and none of it
+  by a human. A `/qa` pass on the live site with a signed-in session is what
+  would catch the things tests structurally cannot — a button that is there but
+  unreachable, a number that reads wrong, a screen that says nothing when it
+  should. Deferred deliberately, not forgotten.
 
 ## The Street category is a placeholder, and it is meant to be the City
 

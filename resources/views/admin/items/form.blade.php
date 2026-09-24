@@ -223,23 +223,6 @@
                     @error('accepts') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
 
-                {{-- Where in a body it goes, if it goes in one at all. The
-                     column is the ONLY place a region is written down, so an
-                     implant that cannot be authored here is one that has to
-                     arrive by migration. --}}
-                <div class="field" @error('implant_region') data-invalid @enderror>
-                    <label class="field__label" for="implant_region">{{ Text::get('admin.items.fields.implant_region') }}</label>
-                    <select class="select" id="implant_region" name="implant_region">
-                        <option value="">{{ Text::get('admin.items.fields.implant_region_none') }}</option>
-                        @foreach (\App\Implants\BodyRegion::cases() as $region)
-                            <option value="{{ $region->value }}" @selected($value('implant_region') === $region->value)>
-                                {{ $region->label() }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <span class="field__hint">{{ Text::get('admin.items.fields.implant_region_hint') }}</span>
-                    @error('implant_region') <span class="field__error">{{ $message }}</span> @enderror
-                </div>
             </div>
 
             {{-- What the ITEM grants whoever has it, as opposed to the software
@@ -258,6 +241,33 @@
              as a modifier — you cannot fight ICE without a running icebreaker
              — so the kind is asked about by name, and no set of modifiers adds
              up to having one. --}}
+
+        {{-- IMPLANTS, and a panel of their own for the reason the other three
+             kinds have one: the field that DECIDES what an item is should not
+             be buried among weight and capacity. It lived under bulk once, and
+             nobody could find it.
+
+             One field, because there is one fact. What an implant DOES is the
+             modifiers panel above, read by `InstalledImplants`; how many fit
+             is `BodyRegion`'s answer and never the item's. --}}
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.implant') }}</span></div>
+            <div class="panel__bd">
+                <div class="field" @error('implant_region') data-invalid @enderror>
+                    <label class="field__label" for="implant_region">{{ Text::get('admin.items.fields.implant_region') }}</label>
+                    <select class="select" id="implant_region" name="implant_region">
+                        <option value="">{{ Text::get('admin.items.fields.implant_region_none') }}</option>
+                        @foreach (\App\Implants\BodyRegion::cases() as $region)
+                            <option value="{{ $region->value }}" @selected($value('implant_region') === $region->value)>
+                                {{ $region->label() }} &mdash; {{ Text::plural('admin.items.fields.implant_slots', $region->capacity()) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.implant_region_hint') }}</span>
+                    @error('implant_region') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+            </div>
+        </div>
 
         {{-- Drugs. The third thing an item can also be, and the only one that
              is physical: software is data and deck hardware is a component,
