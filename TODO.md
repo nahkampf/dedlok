@@ -357,11 +357,13 @@ A target is satisfied either by an act RECORDED WHEN IT HAPPENS or by evidence
 CARRIED IN. One column, filled two ways, and a new action picks whichever
 suits.
 
-- **Scan** — 3 to 10 DESIGNATED targets. The evidence is the scan file, and it
-  is checked at hand-in and then SPENT. `system_scans.used_at` has read *"Nothing spends
+- **Scan** — 3 to 10 DESIGNATED targets. The evidence is the scan file, checked
+  at hand-in and then SPENT. `system_scans.used_at` has read *"Nothing spends
   one yet"* since the table was created; this is what spends one, which also
   means one file cannot be sold to two agents. Perishable and losable: that is
-  the tension the action is for.
+  the tension the action is for. **Once files are tradeable the evidence is the
+  exported ITEM and `used_at` is spent at export instead** — see *Selling files
+  to other runners* below, which is the only place that decision lives.
 - **Burn** — one or two designated targets, and the evidence cannot be carried
   because the system is gone. See below.
 - **Plant** — one to three designated targets, and the evidence is the act:
@@ -463,6 +465,59 @@ analysers.
   minutes, a read runs per analyser and per thread, and files die at 48 hours.
   Throughput is bounded by hardware and by the grid, not by a rule anybody
   writes here.
+
+### Selling files to other runners, and the object that makes it possible
+
+**THE AGENT IS NOT THE ONLY BUYER.** A scanner should be able to make a living
+without ever running a system, and a runner should be able to buy the evidence
+a job wants rather than go and make it. That is a player selling to a player,
+and it is the half of this the section above does not cover.
+
+**A scan file has to become a POSSESSION first.** `system_scans` is keyed to a
+character and cannot be handed anywhere. A file somebody else can buy has to be
+a row in an inventory.
+
+- **It is the `ExtractedFile` pattern, second use.** One unstackable catalogue
+  item in the `data` inventory, the real numbers as JSON on `inventory_items` —
+  exactly the shape an extracted file already takes, and for the same reason.
+  It inherits the stash slot, the detail card, the memory shard and the destroy
+  path for nothing, and a player market lists inventory rows, so it needs no
+  code there either.
+- **`system_scans` stays the WORKING file** — the read in progress, what the
+  map draws a tick for, what the briefing reads. Scanning does not change.
+- **EXPORTING IS THE DOOR, AND IT SPENDS THE READ.** A complete file is
+  exported into an item, and `used_at` is stamped there. Three things fall out
+  of one column that already exists:
+  - **One read is one object, for ever.** Without it a scanner mints ten items
+    off a single pass and sells all ten. The read is the scarce thing; the item
+    is its only representation. That is what *the same scan cannot be traded
+    twice* means — not a rule the market enforces, a consequence of the read
+    being consumed the moment it becomes a thing you can hold.
+  - **Selling what you know costs you knowing it.** The exported system stops
+    being live on your own map and your own briefing. A real decision, and it
+    costs no code: `scopeLive` already honours `used_at`.
+  - **Nothing reaches two agents.** The item is one row — selling transfers it,
+    handing it in destroys it.
+- **Only a COMPLETE file exports.** `SystemScan::isComplete()`, the rule the
+  supply job already names, moved to the door where it is cheapest to keep.
+- **THE 48 HOURS TRAVELS WITH IT**, in the JSON, checked at hand-in. Not a
+  sweeper — a stale file is a worthless row somebody destroys. Drop the clock
+  and *throughput is bounded by hardware and by the grid* becomes a warehouse.
+- **The evidence a mission takes is the ITEM, never the scan row.** One shape
+  for evidence and one path to it, which is what makes exporting worth a click
+  on your own reads. This amends *Evidence differs by action* above: `used_at`
+  is spent at export rather than at hand-in.
+- **It is named for the address it was made against** — `<ADDRESS>.scn`, which
+  is what the reading dialog says the moment a file completes.
+
+**THE BLOCKER IS THE MARKET, NOT THE FILE.** There is no player-to-player trade
+of anything: `on_market` is the seeder's flag, `market_stock` is one row per
+catalogue item, and `Purchaser` spends creds against an NPC shelf. This wants
+the table of offers CLAUDE.md's *market's supply side* already promises in
+place of that flag — an offer row, the inventory row held out of the seller's
+hands while it is listed, and money and goods moving in one transaction the way
+`Purchaser` already does it. Scan-file-as-item is the small half and does
+nothing on its own.
 
 ### Handing in, failing, and being let off
 
