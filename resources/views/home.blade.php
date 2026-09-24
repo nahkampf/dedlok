@@ -23,8 +23,29 @@
          width="1120" height="448"
          style="display:block;width:min(560px,100%);height:auto;margin:0 auto var(--s-5)">
 
-    <br>
-    <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Become a supporter', '#a8146f', 'P2P527GQ4Z');kofiwidget2.draw();</script> 
+    {{-- Tied to the LOGO's box rather than to the content column, so the two
+         read as one block: the wordmark is 560px at most and centred, and this
+         sits on its right edge. --}}
+    <div style="width:min(560px,100%);margin:calc(var(--s-5) * -1) auto var(--s-5);text-align:right">
+        <span class="micro" style="color:var(--ink-3)">
+            {{ Text::get('home.version', ['version' => config('version.app')]) }}
+        </span>
+    </div>
+
+    {{-- An ordinary link, not the vendor's widget. The widget is a
+         third-party script that draws its own button with its own radius and
+         its own magenta, and rule 3 is that radius is 0-3px and character
+         comes from the notched corner. Same destination, nothing leaves the
+         origin, and it works with JavaScript off.
+
+         EMBER, and the only ember on the page — an outline that fills on
+         hover, which is the form rule 2 allows it. It is the one thing here
+         asking for something rather than telling you something. --}}
+    <p style="text-align:center;margin:0 0 var(--s-5)">
+        <a class="btn btn--sm btn--danger cut" href="https://ko-fi.com/dedlokgame"
+           target="_blank" rel="noopener">{{ Text::get('home.support') }}</a>
+    </p>
+
     {{-- One wide card over two. .grid--pair is two columns that become one
          below 640px, and a class rather than inline tracks because an inline
          track would beat the media query. --}}

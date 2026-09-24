@@ -2054,6 +2054,17 @@ return [
     'home' => [
         // The accordion's summary when NOTICE.md does not open with a heading.
         'notice' => 'Notice',
+
+        // Where the hosting money goes. An ordinary link rather than the
+        // vendor's widget: the widget is a third-party script with its own
+        // radius and its own magenta, and this page already has a wordmark
+        // doing the shouting.
+        'support' => 'Become a supporter',
+
+        // What is running, for anybody reporting something odd. `v` is part
+        // of the format rather than the value: config/version.php holds the
+        // number and nothing else.
+        'version' => 'v:version',
         'places' => [
             'city' => 'CITY',
             'cyberspace' => 'CYBERSPACE',
