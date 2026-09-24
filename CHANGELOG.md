@@ -2,6 +2,50 @@
 
 ## [Unreleased]
 
+## [0.19.5] — 2026-09-24
+
+Four string keys that nothing had ever defined, and the test that will not let
+a fifth happen quietly.
+
+### Fixed
+
+- **Item cards printed a key at players.** A spec line read
+  `4 QFLOPSITEMS.SUMMARY.SEPARATOR3 QB`: the separator was authored under
+  `decks` while three readers asked for it under `items`, so `implode()` glued
+  the key itself between the numbers. Every program, module and file spec line
+  has done this since the first release that had one. There is **one separator
+  now, in `items`** — a spec line is a spec line whether it is a deck's
+  sockets, a module's measures, a program's costs or a file's numbers — and
+  `decks.summary` keeps only the socket count.
+- **Two back-links rendered `CYBERSPACE.TITLE` under an arrow**, on the run
+  briefing and the Exchange. The key is `cyberspace.map.title`.
+- **The skill editor's rank select and listing column read `SKILLS.RANK`.**
+  There is no top-level `skills` block at all; both wanted a VALUE rather than
+  the field label beside them, so `admin.skills.fields.rank_value` is new.
+- **A modifier validation error read `ADMIN.VALIDATION.MODIFIER_TARGET`** in
+  place of its reason, turning a careful message into a key.
+
+### Added
+
+- **`StringKeysTest`, because this is the one failure mode `Text::get()` cannot
+  announce.** A missing key returns the key — deliberately, so a half-written
+  screen still renders — and nothing throws, nothing logs and no test fails. It
+  keeps happening until somebody looks at that particular card. So the grep is
+  the test: every literal `Text::get()` and `Text::plural()` in `app`,
+  `resources`, `routes`, `config` and `database`, resolved against
+  `config/strings.php`, with the files asking for anything missing named in the
+  failure. A second assertion pins that the scan finds keys at all, since a
+  scan that found none would pass while checking nothing.
+- Keys built at runtime — `'…intent_'.$purpose->value` — are deliberately out
+  of its scope: the enum behind each is its own guarantee.
+
+### Changed
+
+- **A GitHub workflow deploys on a tag push.** `.github/workflows/manual.yml`
+  POSTs to the server's own `deploy.php` when any tag reaches origin, so
+  `git push origin main --follow-tags` is now the whole deploy for a release
+  that needs no migration.
+
 ## [0.19.4] — 2026-09-24
 
 The landing page stops borrowing somebody else's button.
@@ -1407,7 +1451,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.4...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.5...HEAD
+[0.19.5]: https://github.com/nahkampf/dedlok/compare/v0.19.4...v0.19.5
 [0.19.4]: https://github.com/nahkampf/dedlok/compare/v0.19.3...v0.19.4
 [0.19.3]: https://github.com/nahkampf/dedlok/compare/v0.19.2...v0.19.3
 [0.19.2]: https://github.com/nahkampf/dedlok/compare/v0.19.1...v0.19.2
