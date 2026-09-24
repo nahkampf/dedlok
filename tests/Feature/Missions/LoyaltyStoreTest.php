@@ -16,6 +16,7 @@ use App\Standing\LoyaltyExchange;
 use App\Standing\LoyaltyRefusal;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
@@ -149,14 +150,14 @@ final class LoyaltyStoreTest extends TestCase
     }
 
     /**
-     * A SHELF IS AN (ENTITY, GRADE) PAIR, so another grade's row is not here.
+     * A ROW OUTSIDE THIS DESK'S GRADE IS NOT ON ITS SHELF.
      *
-     * What a grade 4 desk keeps must not be buyable at the grade 1 desk round
+     * What a grade 5 desk keeps must not be buyable at the grade 2 desk round
      * the corner, and as far as this desk is concerned the row does not exist.
      */
     public function test_another_grades_row_is_not_on_this_shelf(): void
     {
-        $offer = $this->offering(price: 1, grade: 5);
+        $offer = $this->offering(price: 1, minGrade: 5);
         $this->earn(loyalty: 500, standing: 5);
 
         $this->assertSame(
@@ -167,11 +168,54 @@ final class LoyaltyStoreTest extends TestCase
         $this->assertCount(0, app(LoyaltyExchange::class)->shelf($this->entity, (int) $this->desk->grade));
     }
 
+    /**
+     * AN OFFER SPANS A RANGE, so one row reaches several desks.
+     *
+     * Most of what an entity sells is available across several of its desks,
+     * and the common case should not be the one that needs a row each.
+     */
+    public function test_a_range_reaches_every_desk_inside_it(): void
+    {
+        $offer = $this->offering(price: 10, minGrade: 1, maxGrade: 3);
+        $this->earn(loyalty: 100, standing: 5);
+
+        // The desk in this fixture is grade 2, inside the span.
+        $this->assertTrue($offer->keptAtGrade(2));
+        $this->assertCount(1, app(LoyaltyExchange::class)->shelf($this->entity, 2));
+
+        // Both ends are inclusive, and grade 4 is outside.
+        $this->assertCount(1, app(LoyaltyExchange::class)->shelf($this->entity, 1));
+        $this->assertCount(1, app(LoyaltyExchange::class)->shelf($this->entity, 3));
+        $this->assertCount(0, app(LoyaltyExchange::class)->shelf($this->entity, 4));
+
+        $this->assertInstanceOf(
+            Item::class,
+            app(LoyaltyExchange::class)->buy($this->character, $this->desk, $offer),
+        );
+    }
+
+    /** One offer per item per entity: an overlap would be two prices at one desk. */
+    public function test_an_entity_cannot_offer_one_item_twice(): void
+    {
+        $offer = $this->offering(price: 10, minGrade: 1, maxGrade: 2);
+
+        $this->expectException(UniqueConstraintViolationException::class);
+
+        EntityOffer::query()->create([
+            'entity_id' => $this->entity->id,
+            'min_grade' => 3,
+            'max_grade' => 5,
+            'item_id' => $offer->item_id,
+            'loyalty_price' => 5,
+            'min_standing' => 0,
+        ]);
+    }
+
     public function test_the_shelf_lists_what_this_desk_keeps(): void
     {
         $this->offering(price: 90);
         $this->offering(price: 10);
-        $this->offering(price: 50, grade: 4);
+        $this->offering(price: 50, minGrade: 4);
 
         $shelf = app(LoyaltyExchange::class)->shelf($this->entity, (int) $this->desk->grade);
 
@@ -181,11 +225,15 @@ final class LoyaltyStoreTest extends TestCase
 
     // ---- fixtures -----------------------------------------------------------
 
-    private function offering(int $price, float $minStanding = 0, ?int $grade = null): EntityOffer
+    /** A row on the shelf. Kept by this desk's grade alone unless told otherwise. */
+    private function offering(int $price, float $minStanding = 0, ?int $minGrade = null, ?int $maxGrade = null): EntityOffer
     {
+        $low = $minGrade ?? (int) $this->desk->grade;
+
         return EntityOffer::query()->create([
             'entity_id' => $this->entity->id,
-            'grade' => $grade ?? (int) $this->desk->grade,
+            'min_grade' => $low,
+            'max_grade' => $maxGrade ?? $low,
             'item_id' => Item::factory()->create(['on_market' => false])->id,
             'loyalty_price' => $price,
             'min_standing' => $minStanding,

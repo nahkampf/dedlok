@@ -49,9 +49,10 @@ final readonly class LoyaltyExchange
     {
         $entity = $desk->entity();
 
-        if ($entity === null || $offer->entity_id !== $entity->getKey() || $offer->grade !== (int) $desk->grade) {
-            // Somebody else's shelf, or another grade's. Not a refusal worth
-            // explaining: as far as this desk is concerned the row is not here.
+        if ($entity === null || $offer->entity_id !== $entity->getKey() || ! $offer->keptAtGrade((int) $desk->grade)) {
+            // Somebody else's shelf, or a range this desk is not in. Not a
+            // refusal worth explaining: as far as this desk is concerned the
+            // row is not here.
             return LoyaltyRefusal::Gone;
         }
 

@@ -12,21 +12,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * One thing an entity will hand over for loyalty.
  *
- * A SHELF IS AN (ENTITY, GRADE) PAIR rather than a desk. An entity keeps up to
- * five desks, one per grade, and two desks of the same grade are the same shop
- * — so `exchanges` is not referenced here at all.
+ * A SHELF IS AN ENTITY AND A RANGE OF GRADES rather than a desk. An entity
+ * keeps up to five desks, one per grade, and two desks of the same grade are
+ * the same shop — so `exchanges` is not referenced here at all. Most of what
+ * an entity sells is available across several of its desks, which is why the
+ * range is the shape rather than a row per desk.
  *
  * Read by the Exchange screen, written by nobody yet: the shelf is authored,
  * the way items are. `App\Standing\LoyaltyExchange` is the only thing that
  * acts on one.
  */
-#[Fillable(['entity_id', 'grade', 'item_id', 'loyalty_price', 'min_standing'])]
+#[Fillable(['entity_id', 'min_grade', 'max_grade', 'item_id', 'loyalty_price', 'min_standing'])]
 class EntityOffer extends Model
 {
     protected function casts(): array
     {
         return [
-            'grade' => 'integer',
+            'min_grade' => 'integer',
+            'max_grade' => 'integer',
             'loyalty_price' => 'integer',
             'min_standing' => 'float',
         ];
@@ -56,19 +59,36 @@ class EntityOffer extends Model
         return $standing >= $this->min_standing;
     }
 
+    /** Does a desk of this grade keep it? Inclusive at both ends. */
+    public function keptAtGrade(int $grade): bool
+    {
+        return $grade >= $this->min_grade && $grade <= $this->max_grade;
+    }
+
+    /** How the range reads on a screen: one number when it is one desk. */
+    public function gradeSpan(): string
+    {
+        return $this->min_grade === $this->max_grade
+            ? (string) $this->min_grade
+            : $this->min_grade.'-'.$this->max_grade;
+    }
+
     /**
      * What one desk is holding.
      *
-     * An offer whose item has been deleted is filtered rather than trusted:
-     * the foreign key cascades, so it should not happen, and a shop that
-     * renders a blank line because one did is worse than one showing nothing.
+     * The grade is compared against the RANGE, so a desk sees everything whose
+     * span contains it. An offer whose item has been deleted is filtered
+     * rather than trusted: the foreign key cascades, so it should not happen,
+     * and a shop that renders a blank line because one did is worse than one
+     * showing nothing.
      *
      * @param  Builder<self>  $query
      */
     public function scopeOnShelf(Builder $query, int $entityId, int $grade): void
     {
         $query->where('entity_id', $entityId)
-            ->where('grade', $grade)
+            ->where('min_grade', '<=', $grade)
+            ->where('max_grade', '>=', $grade)
             ->whereHas('item')
             ->orderBy('loyalty_price');
     }
