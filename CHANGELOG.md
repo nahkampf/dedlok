@@ -2,6 +2,86 @@
 
 ## [Unreleased]
 
+## [0.18.0] — 2026-09-24
+
+Scanning becomes an occupation. A finished read is an object you can carry,
+and there is somebody to sell it to.
+
+### Added
+
+- **A finished scan is a file you can hold.** `system_scans` is keyed to a
+  character: a read could be looked at, gone stale and spent, but never handed
+  to anybody, so scanning was a profession with no income. A complete read now
+  **exports** to a Scan File — one unstackable `data` item with the facts as
+  JSON on the inventory row, the shape an extracted file already took, and the
+  second use of it that made the pattern worth having. Exporting stamps
+  `system_scans.used_at`, which had read *"Nothing spends one yet"* since the
+  table was created. **That one write is the whole mechanic**: it makes one
+  read exactly one object for ever — without it a scanner mints ten files off
+  a single pass — and it is why **selling what you know costs you knowing it**,
+  since `scopeLive` already skips a spent row and the machine leaves your own
+  map as the file is made. A file carries the ADDRESS and never a position: an
+  address is meaningless and trading one is expected, which is exactly the rule
+  `BookmarkKeeper` exists to protect.
+- **Reading one in**, which is the mirror and the half that makes a file worth
+  buying. `App\Cyberspace\ScanImporter` spends the file and writes the buyer
+  their own scan. **The clock does not restart** — `expires_at` is copied, so a
+  file bought at hour 47 is worth an hour, and that is the entire price signal
+  on second-hand intel. A partial read of your own is replaced; only a live and
+  complete one refuses, because that is the only case with nothing to learn.
+- **Runners sell to each other.** `market_offers` is the table of offers
+  `items.on_market` was never going to be — that flag is the SEEDER's question,
+  and CLAUDE.md has said since the shelf was built that player listings would
+  be a table instead. **An offer points at an inventory ROW rather than an
+  item**, which is the whole difference and what the scan file finally made
+  unavoidable: every one of them is the same catalogue entry and a different
+  machine, so *one Scan File, 400 creds* is not an offer anybody could act on.
+  Listing is reached from the item's own card, buying from the offer.
+- **Listed is a fifth way to be elsewhere.** `InventoryItem::scopeLoose()`
+  already excluded four — in a container, fitted, running, installed — and a
+  listed row joins them rather than gaining a column of its own, because the
+  offer row IS the fact. So a listed module cannot be fitted, a listed program
+  cannot be run and a listed file cannot be read in, and none of those three
+  learned that a market exists.
+- **A buyer takes what they want.** The price is per unit and the listed row is
+  the pile: three of twenty leaves seventeen on offer at the same figure, and
+  the last one taken deletes the row and the listing together. Asking for more
+  than is left is refused rather than quietly reduced, the rule the shelf
+  already keeps. **Unstackable rows TRANSFER** — what is written on them is the
+  thing being sold, and granting a fresh catalogue copy would hand over a blank
+  one — while **stackable rows merge** through `ItemGranter`, which is also
+  what stops two piles colliding on `stack_key`. Money and goods move in one
+  transaction with the offer and its pile locked inside it, because two buyers
+  reaching for the last three of five is every sale on this side of the market.
+
+### Changed
+
+- **`App\Market\OfferBook` is the only thing that moves creds between
+  characters.** `Purchaser` only ever spent them into the shop. It deliberately
+  writes no `market_purchases` row: that table is DEMAND, read by
+  `MarketSeeder` to decide what the shop restocks more of, and what one player
+  sold another says nothing about what a shop should order.
+- **The item card's *Show on market* button is real**, and the scan dialog's
+  footer now says what a finished read is for.
+- **Player-visible text is asserted through the config.** Nine tests matched
+  wording by hand and broke on a pass of rewriting; what they are about is that
+  the right key reaches the right screen, so they read through `Text::get()`
+  now.
+
+### Fixed
+
+- **A finished scan could not be shut away.** The reading dialog offered
+  *Abandon scan* and *Run in background* whatever state the read was in, and
+  both are untrue of one that has finished — there is nothing left to abandon
+  and nothing left running. They are swapped for *Close window* and *Save to
+  stash* the moment the file is whole, and the note names the file.
+
+### Migrations
+
+- `2026_09_24_120000_a_scan_file_is_a_thing_you_can_hold`
+- `2026_09_24_130000_something_spends_a_scan_now`
+- `2026_09_24_140000_runners_sell_to_each_other`
+
 ## [0.17.0] — 2026-09-23
 
 The icebreakers go on sale, and jacking in stops dying on the first desk
@@ -1114,7 +1194,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/nahkampf/dedlok/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/nahkampf/dedlok/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/nahkampf/dedlok/compare/v0.15.1...v0.16.0
 [0.15.1]: https://github.com/nahkampf/dedlok/compare/v0.15.0...v0.15.1
