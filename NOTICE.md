@@ -16,7 +16,7 @@ For in-depth tutorial and help please see HELP.md.
 ## Support this game
 This game is available and fully playable for free. I do this for the love of the game. But hosting costs are a real expense every month, and at some point I would love to be able to pay artists to create artwork for the game.
 
-If you want to I'd love it if you'd consider supporting the development of this game. You can do so by joining my Patreon. A one time, pay-what-you-want donation or a recurring payment, all of it helps and goes straight into the project.
+If you want to I'd love it if you'd consider supporting the development of this game. You can do so by becoming a [supporter on Ko-Fi](https://ko-fi.com/dedlokgame). A one time, pay-what-you-want donation or a recurring payment, all of it helps and goes straight into the project.
 
 As a thank you for supporting there are a few perks available (none of them "pay to win" and none of them makes you _better_ than people playing for free):
 

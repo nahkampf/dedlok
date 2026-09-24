@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [0.19.3] — 2026-09-24
+
+Somewhere to put the hosting money.
+
+### Added
+
+- **A supporter button on the landing page**, and `NOTICE.md` names Ko-Fi as
+  where it goes rather than a Patreon that was never linked. It is the first
+  third-party script the application loads — see below.
+
+### Fixed
+
+- **The support link in `NOTICE.md` was written as `[[text|url]]`**, which is
+  wiki syntax. Markdown renders that literally, brackets and pipe and all, so
+  the link was not a link.
+
 ## [0.19.2] — 2026-09-24
 
 The item editor could only ever make two kinds of thing. Now it makes all of
@@ -1365,7 +1381,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.3...HEAD
+[0.19.3]: https://github.com/nahkampf/dedlok/compare/v0.19.2...v0.19.3
 [0.19.2]: https://github.com/nahkampf/dedlok/compare/v0.19.1...v0.19.2
 [0.19.1]: https://github.com/nahkampf/dedlok/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/nahkampf/dedlok/compare/v0.18.0...v0.19.0

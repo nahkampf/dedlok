@@ -23,6 +23,8 @@
          width="1120" height="448"
          style="display:block;width:min(560px,100%);height:auto;margin:0 auto var(--s-5)">
 
+    <br>
+    <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Become a supporter', '#a8146f', 'P2P527GQ4Z');kofiwidget2.draw();</script> 
     {{-- One wide card over two. .grid--pair is two columns that become one
          below 640px, and a class rather than inline tracks because an inline
          track would beat the media query. --}}
