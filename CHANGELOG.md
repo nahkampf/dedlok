@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.21.1] — 2026-09-24
+
+### Added
+
+- **An entity's own words are editable, where its shelf is.** The shelf screen
+  said what an entity sells and nothing about who they are, which is the wrong
+  way round for a screen you arrive at in order to decide what they *should*
+  sell. `business` — the one-liner, shown wherever an entity is named in
+  passing — and `description`, the long form a player reads standing at the
+  desk, are both on it now. Until this, a typo in either was unfixable without
+  a migration: entities had no editor at all.
+- **What they ARE stays with the migration**, and is shown beside the fields as
+  fact rather than as a field. `name` is quoted inside stored inbox sentences
+  that must never be recomposed; `category` and `interactable` are design
+  decisions that change what an entity is rather than how it reads.
+- **Blank writes NULL, not an empty string.** A flavour entity has no long form
+  at all, and `''` would be a description that renders as nothing while reading
+  as present.
+
 ## [0.21.0] — 2026-09-24
 
 The shelves can be filled by somebody other than a developer.
@@ -1578,7 +1597,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.21.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.21.1...HEAD
+[0.21.1]: https://github.com/nahkampf/dedlok/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/nahkampf/dedlok/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/nahkampf/dedlok/compare/v0.19.5...v0.20.0
 [0.19.5]: https://github.com/nahkampf/dedlok/compare/v0.19.4...v0.19.5
