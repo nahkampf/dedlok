@@ -16,6 +16,7 @@ use App\Models\Run;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemScan;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
@@ -110,8 +111,8 @@ final class RunBriefingTest extends TestCase
 
         $this->visit()
             ->assertOk()
-            ->assertSee('You have read nothing off this machine')
-            ->assertSee('Not read');
+            ->assertSee(Text::get('cyberspace.run.setup.unread'))
+            ->assertSee(Text::get('cyberspace.run.setup.unknown'));
     }
 
     public function test_a_partial_file_is_called_incomplete(): void
@@ -121,9 +122,9 @@ final class RunBriefingTest extends TestCase
 
         $this->visit()
             ->assertOk()
-            ->assertSee('Your file on this machine is incomplete')
+            ->assertSee(Text::get('cyberspace.run.setup.partial'))
             // The fact that IS known is shown beside the ones that are not.
-            ->assertSee('Not read');
+            ->assertSee(Text::get('cyberspace.run.setup.unknown'));
     }
 
     public function test_a_complete_file_says_so(): void
@@ -143,7 +144,7 @@ final class RunBriefingTest extends TestCase
             'ice_bounty' => 0,
         ]);
 
-        $this->visit()->assertOk()->assertSee('Your file is complete');
+        $this->visit()->assertOk()->assertSee(Text::get('cyberspace.run.setup.complete'));
     }
 
     // ---- what the deck is about to do ---------------------------------------
@@ -203,10 +204,10 @@ final class RunBriefingTest extends TestCase
 
         $this->visit()
             ->assertOk()
-            ->assertSee('Take what it holds')
-            ->assertSee('Leave a siphon')
-            ->assertSee('Leave a routing hop')
-            ->assertSee('Burn it')
+            ->assertSee(Text::get('cyberspace.run.setup.intent_extraction'))
+            ->assertSee(Text::get('cyberspace.run.setup.intent_siphon'))
+            ->assertSee(Text::get('cyberspace.run.setup.intent_routing'))
+            ->assertSee(Text::get('cyberspace.run.setup.intent_burn'))
             // Every intention is a real submit now. Burn was the one shown
             // disabled with a "Not built yet" tag; it starts a run like the
             // rest, and the tag is gone rather than merely unasserted.
@@ -221,8 +222,10 @@ final class RunBriefingTest extends TestCase
 
         $this->visit()
             ->assertOk()
-            ->assertSee('You already hold a way into this one')
-            ->assertSee('that cannot be changed');
+            ->assertSee(Text::get('cyberspace.run.setup.held'))
+            ->assertSee(Text::get('cyberspace.run.setup.held_kind', [
+                'kind' => BackdoorKind::Siphon->label(),
+            ]));
     }
 
     /** A shut machine cannot be entered, and the briefing refuses before the run does. */
@@ -233,8 +236,8 @@ final class RunBriefingTest extends TestCase
 
         $this->visit()
             ->assertOk()
-            ->assertSee('It is locked down')
-            ->assertDontSee('Take what it holds');
+            ->assertSee(Text::get('cyberspace.run.refused.locked_down'))
+            ->assertDontSee(Text::get('cyberspace.run.setup.intent_extraction'));
     }
 
     // ---- fixtures ------------------------------------------------------------
