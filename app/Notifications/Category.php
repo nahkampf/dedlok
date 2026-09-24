@@ -21,10 +21,11 @@ use App\Support\Text;
  * something about a message that is not true of it. The word and the glyph are
  * the whole distinction.
  *
- * A CASE IS ONLY ADDED WITH A SENDER BEHIND IT. Every one of the five below
+ * A CASE IS ONLY ADDED WITH A SENDER BEHIND IT. Every one of the six below
  * is written by something that runs today — the grid, the training clock, the
- * achievement tail, the nightly bounty roll, a sale going through — and a
- * sixth that nothing raises would be a filter with nothing to filter.
+ * achievement tail, the nightly bounty roll, a sale going through, a job
+ * ending — and a seventh that nothing raises would be a filter with nothing
+ * to filter.
  */
 enum Category: string
 {
@@ -36,6 +37,16 @@ enum Category: string
 
     /** The account's own record, from the tail of `Achievements::check()`. */
     case Achievement = 'achievement';
+
+    /**
+     * A job ended without you there.
+     *
+     * The clock running out and a target ceasing to exist are both things that
+     * happen to somebody who is asleep, which is the inbox's whole test. Work
+     * COMPLETED raises nothing: that happens at the desk, with the player
+     * pressing the button, and a flash message already covers it.
+     */
+    case Mission = 'mission';
 
     /**
      * Somebody bought what you were selling.
@@ -79,6 +90,8 @@ enum Category: string
             self::Achievement => "\u{2605}",
             // The scales, from the market's own rail item.
             self::Market => "\u{2696}",
+            // The Exchange's own mark, from the same geometric set.
+            self::Mission => "\u{25C8}",
             // The one glyph not lifted from the rail, because the street
             // has no rail item. U+26A0 is the same Miscellaneous Symbols
             // block as the rest, with U+FE0E's job done by the escape.
@@ -105,6 +118,10 @@ enum Category: string
             self::Training => 'skills.index',
             self::Achievement => 'achievements.index',
             self::Market => 'market.index',
+            // The desk is reached by STANDING on it, so there is no route to
+            // one agent. The map is where a desk is found, which makes it the
+            // honest destination — the same answer `Cyberspace` gives.
+            self::Mission => 'cyberspace.index',
             self::Street => null,
         };
     }

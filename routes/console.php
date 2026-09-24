@@ -232,3 +232,20 @@ Schedule::command('cyberspace:lockdowns --quiet-when-idle')
 Schedule::command('scans:stale --quiet-when-idle')
     ->hourly()
     ->withoutOverlapping();
+
+/*
+ * Work whose clock ran out.
+ *
+ * The penalty has to land whether or not the player ever comes back: a job
+ * settled on the next visit would let somebody take work, never return, and
+ * keep the standing they were about to lose. The same reason the lockdown
+ * sweep cannot be lazy, and the same cadence — a window measured in hours does
+ * not need a finer one.
+ *
+ * A job whose target has gone VOIDS instead of failing, even here. The clock
+ * running out on something that had become impossible is still not the
+ * runner's fault.
+ */
+Schedule::command('missions:expire --quiet-when-idle')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

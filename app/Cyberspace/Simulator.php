@@ -10,6 +10,8 @@ use App\Characters\DownedCause;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
 use App\Decks\DeckTotals;
+use App\Missions\MissionAction;
+use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\Ice;
 use App\Models\Run;
@@ -951,6 +953,32 @@ final readonly class Simulator
             return $log;
         }
 
+        /*
+         * PLANTING FOR SOMEBODY ELSE COMES FIRST, and it is not an ordinary
+         * install: the door belongs to the ENTITY. No `backdoors` row is
+         * written for the runner, so it pays them nothing nightly, it is not a
+         * routing hop, it never appears in a chain, and none of the four
+         * things that take a backdoor away has anything to take. The flag on
+         * the target row IS the record.
+         *
+         * A run installs once — `runs.backdoor_kind` is chosen at the door —
+         * so a run spent planting for an entity is a run not spent planting
+         * for yourself. That is the cost that makes the job a choice rather
+         * than free standing. A door the runner already holds here is
+         * untouched, and its approach discount made the job easier.
+         */
+        if (app(MissionLedger::class)->recordAgainst($character, $system, MissionAction::Plant) > 0) {
+            // Still an install, so the one consequence that is not about
+            // ownership holds: the system forgives the visit and does not lock
+            // down, exactly as `runs.backdoored` already says. It just does
+            // not owe the visitor anything afterwards.
+            $run->backdoored = true;
+
+            $log[] = $this->line('cyberspace.run.log.planted', [], 'ok');
+
+            return $log;
+        }
+
         $backdoor = $this->backdoors->install($character, $system, $kind);
 
         // ALREADY HELD is not a failure and must not read as one: the machine
@@ -1020,6 +1048,13 @@ final readonly class Simulator
         // it. The ledger entry keeps the entity id, so a system that no
         // longer exists still cost its owner's opinion of you.
         $this->charge($character, $system, StandingReason::Burned);
+
+        // AND BEFORE IT TOO, for the same reason and a sharper one: the target
+        // row points at `systems.id`, and the cascade takes it with the
+        // machine. A demolition job is satisfied by the act because the
+        // evidence cannot be carried — there is nothing left to bring back.
+        // Quiet: the runner finds out it counted at the desk.
+        app(MissionLedger::class)->recordAgainst($character, $system, MissionAction::Burn);
 
         // LAST, because everybody else inside is thrown out by it and the line
         // above should read as the thing that caused that rather than a report

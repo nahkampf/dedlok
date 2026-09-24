@@ -359,6 +359,35 @@ return [
             'rounding' => 'tenth',
         ],
 
+        /*
+        | WHAT A JOB IS WORTH IN STANDING, before the entity rounds it.
+        |
+        | The base is not here: it arrives per mission, snapshotted onto the
+        | row when the job was offered, because the curve is per agent GRADE
+        | and lives in `config/missions.php`. This entry is what lets anything
+        | MOVE it — the first perk, implant or skill that makes somebody better
+        | at being liked is a modifier on this id, and `MissionLedger` never
+        | learns such a thing exists.
+        |
+        | ROUNDING IS `none`, which is the only honest answer here: a grade 1
+        | job is worth hundredths of a point, and the coarsest mode the stat
+        | graph offers is a tenth — which would round the whole bottom of the
+        | ladder to zero. `StandingLedger::record()` rounds to the column's
+        | three decimals before it writes anything, so the precision is kept
+        | exactly where the column is.
+        |
+        | Floored at 0. A modifier that took a REWARD negative would be a job
+        | that costs standing to finish, which is a different mechanic and not
+        | this one's to invent — failing already has its own number, and that
+        | one is deliberately flat.
+        */
+        'standing_gain' => [
+            'tags' => ['standing'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'none',
+        ],
+
         'routing_hops' => [
             'tags' => ['cyberspace'],
             'min' => 0,

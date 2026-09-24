@@ -61,35 +61,56 @@
         </div>
     </div>
 
-    {{-- The two halves of what a desk is for. Both are designed and neither is
-         built, so each says so with a tag rather than being absent — the call
-         the stash makes for an action that does nothing yet. --}}
-    <div class="grid grid--pair" style="margin-top:var(--s-4)">
-        <div class="panel">
+    {{-- WHAT THIS DESK IS FOR. The work is real; the store is designed and
+         not built, so it says so with a tag rather than being absent — the
+         call the stash makes for an action that does nothing yet. --}}
+    @if ($welcome)
+        {{-- WORK IN PROGRESS FIRST. A player who is mid-job is here to hand it
+             in or give it up, and a board above it would bury the one row they
+             came for. --}}
+        <div class="panel" style="margin-top:var(--s-4)">
             <div class="panel__hd">
-                <span class="micro">{{ Text::get('exchange.missions') }}</span>
-                <div class="spacer"></div>
-                <span class="tag">{{ Text::get('exchange.not_built') }}</span>
+                <span class="micro">{{ Text::get('missions.active') }}</span>
             </div>
+
             <div class="panel__bd">
-                <p class="muted" style="font-size:var(--fs-sm);margin:0">
-                    {{ Text::get('exchange.missions_soon', [
-                        'low' => $desk->targetGrades()[0],
-                        'high' => $desk->targetGrades()[1],
-                    ]) }}
-                </p>
+                @if ($active === null)
+                    <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('missions.active_none') }}</p>
+                @else
+                    <x-mission-card :mission="$active" :active="true" :files="$files" />
+                @endif
             </div>
         </div>
 
-        <div class="panel">
+        <div class="panel" style="margin-top:var(--s-4)">
             <div class="panel__hd">
-                <span class="micro">{{ Text::get('exchange.store') }}</span>
+                <span class="micro">{{ Text::get('missions.board') }}</span>
                 <div class="spacer"></div>
-                <span class="tag">{{ Text::get('exchange.not_built') }}</span>
+                <span class="micro" style="color:var(--ink-3)">{{ Text::get('missions.refresh') }}</span>
             </div>
+
             <div class="panel__bd">
-                <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('exchange.store_soon') }}</p>
+                @if (count($board) === 0)
+                    <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('missions.board_empty') }}</p>
+                @else
+                    <div class="stack" style="--gap:var(--s-3)">
+                        @foreach ($board as $offer)
+                            <x-mission-card :mission="$offer" :active="false" :files="$files" />
+                        @endforeach
+                    </div>
+                @endif
             </div>
+        </div>
+    @endif
+
+    <div class="panel" style="margin-top:var(--s-4)">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('exchange.store') }}</span>
+            <div class="spacer"></div>
+            <span class="tag">{{ Text::get('exchange.not_built') }}</span>
+        </div>
+        <div class="panel__bd">
+            <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('exchange.store_soon') }}</p>
         </div>
     </div>
 
