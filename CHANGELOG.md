@@ -2,6 +2,71 @@
 
 ## [Unreleased]
 
+## [0.21.0] — 2026-09-24
+
+The shelves can be filled by somebody other than a developer.
+
+### Added
+
+- **The loyalty shelves are authored in the admin.** The shelf shipped a
+  release before its editor, so the only way to put something on one was a
+  direct write to the database — **content that cannot be authored is content
+  only a developer can add**, which is the same wall implants hit earlier
+  today. `/admin/entities` lists who owns the grid and how much each is
+  holding; `/admin/entities/{entity}` is the shelf.
+- **One screen per shelf, not an edit page per row.** An offer is four numbers
+  and an item, small enough to edit in place, so the listing IS the editor —
+  the call the other three editors make by having no `show` route, arrived at
+  from the other side. Each line is its own form, because one form around the
+  table would save every row on every press.
+- **The blank row is the common row.** A shelf entry is usually an item and a
+  price, available at every desk with no gate beyond the desk's own, so the two
+  grades and the standing DEFAULT rather than reading as zeroes. The opposite
+  makes the common case the one that needs the most typing.
+- **Entities are listed and edited, never created or destroyed.** Systems point
+  at an owner, so one cannot be deleted without orphaning a district of the
+  grid — the roster arrives by migration for the reason the archetypes do. What
+  is edited here is what they SELL.
+- **The dashboard surfaces the one thing worth surfacing**: entities that deal
+  with players and sell them nothing, which is a desk that takes loyalty and
+  hands back nothing.
+
+### Changed
+
+- **An offer spans a RANGE of desk grades.** `entity_offers.grade` shipped as a
+  single number, which said that a thing kept by the grade 2 desk is a
+  different row from the same thing kept by the grade 3 desk — two rows, two
+  prices, and nothing to say they are the same offer. Most of what an entity
+  sells is available across several of its desks, and the common case should
+  not be the one that needs duplicating. `min_grade` and `max_grade` are
+  inclusive, and a row kept by one desk alone sets both to the same number.
+- **The unique key moves with it**: (entity, grade, item) becomes (entity,
+  item). **One offer per item per entity**, because two rows would be two
+  ranges and an overlap would be two prices at one desk with nothing to say
+  which applies. An entity that wants something cheaper at its better desks
+  wants a discount mechanic, which is a different feature.
+- **`ItemOptions` comes out of `ArchetypeController`**, which had it private.
+  Two editors now want the identical grouped list, and a second copy that
+  drifted would file an imprint in one bucket on one screen and another on the
+  next.
+
+### Fixed
+
+- **A migration that could not be re-run after failing halfway.**
+  `entity_id` carries a foreign key and MySQL refuses to drop the last index
+  covering one, so the obvious order — drop the old keys, add the new — got as
+  far as dropping the unique and then failed. **DDL auto-commits, so there was
+  no transaction to take that back**: the table sat half-changed with the
+  migration unrecorded, and re-running it failed differently because the first
+  statement had already succeeded. The new index now goes on BEFORE the old one
+  comes off, and every step asks whether it still has work to do. The repair is
+  in the same file rather than a second one — a migration that cannot be re-run
+  is one that has to be fixed by hand on every database it touches.
+
+### Migrations
+
+- `2026_09_24_170000_a_shelf_spans_grades`
+
 ## [0.20.0] — 2026-09-24
 
 Loyalty has somewhere to go, and the deploy finishes what it starts.
@@ -1513,7 +1578,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.20.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.21.0...HEAD
+[0.21.0]: https://github.com/nahkampf/dedlok/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/nahkampf/dedlok/compare/v0.19.5...v0.20.0
 [0.19.5]: https://github.com/nahkampf/dedlok/compare/v0.19.4...v0.19.5
 [0.19.4]: https://github.com/nahkampf/dedlok/compare/v0.19.3...v0.19.4
