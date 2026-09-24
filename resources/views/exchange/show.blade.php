@@ -103,14 +103,73 @@
         </div>
     @endif
 
+    {{-- THE LOYALTY STORE. One currency and only one: nothing converts
+         loyalty to creds or back, so a price here is never a number anybody
+         can compare to the market's. What is on the shelf belongs to this
+         entity at THIS grade — a grade 4 desk keeps things the grade 1 desk
+         round the corner does not. --}}
     <div class="panel" style="margin-top:var(--s-4)">
         <div class="panel__hd">
             <span class="micro">{{ Text::get('exchange.store') }}</span>
             <div class="spacer"></div>
-            <span class="tag">{{ Text::get('exchange.not_built') }}</span>
+            <span class="chip-stat num">{{ Text::get('exchange.store_have', ['loyalty' => Number::format($loyalty)]) }}</span>
         </div>
+
         <div class="panel__bd">
-            <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('exchange.store_soon') }}</p>
+            @if (! $welcome)
+                <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('exchange.store_soon') }}</p>
+            @elseif (count($shelf) === 0)
+                <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('exchange.store_empty') }}</p>
+            @else
+                <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
+                    @foreach ($shelf as $offer)
+                        @php($item = $offer->item)
+                        @php($affordable = $loyalty >= $offer->loyalty_price)
+                        @php($trusted = $offer->willPartWithIt($standing))
+
+                        <div class="card {{ $item->tierClass() }}">
+                            <x-entity-image :kind="$item->imageKind()" :id="$item->id" :alt="$item->displayName()" />
+
+                            <div class="card__hd">
+                                <div class="card__title">{{ $item->displayName() }}</div>
+                                <div class="card__meta">{{ $item->kindName() }}</div>
+                            </div>
+
+                            <div class="card__bd stack" style="--gap:var(--s-2)">
+                                @if ($item->displayFlavor())
+                                    <span class="micro" style="color:var(--ink-3)">{{ $item->displayFlavor() }}</span>
+                                @endif
+
+                                <span class="row row--wrap micro num" style="--gap:var(--s-3);color:var(--ink-3)">
+                                    <span>{{ Text::get('exchange.store_price', ['price' => Number::format($offer->loyalty_price)]) }}</span>
+                                    {{-- The SECOND gate, and only shown when it
+                                         is actually in the way: almost every row
+                                         asks for nothing beyond the desk's own
+                                         line. --}}
+                                    @unless ($trusted)
+                                        <span style="color:var(--warn)">
+                                            {{ Text::get('exchange.store_locked', ['standing' => number_format($offer->min_standing, 2)]) }}
+                                        </span>
+                                    @endunless
+                                </span>
+                            </div>
+
+                            <div class="card__ft">
+                                <form method="POST" action="{{ route('exchange.redeem', $offer) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn--sm cut" @disabled(! $affordable || ! $trusted)>
+                                        {{ Text::get('exchange.store_buy') }}
+                                    </button>
+                                </form>
+
+                                @if ($trusted && ! $affordable)
+                                    <span class="tag">{{ Text::get('market.too_dear') }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
     </div>
 

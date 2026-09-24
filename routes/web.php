@@ -205,6 +205,10 @@ Route::middleware('auth')->group(function () {
      */
     Route::get('/exchange', [ExchangeController::class, 'show'])->name('exchange.show');
 
+    // Spending loyalty at the desk you are standing on. Like the board, there
+    // is no id for the DESK in the route: being there is the permission.
+    Route::post('/exchange/store/{offer}', [ExchangeController::class, 'redeem'])->name('exchange.redeem');
+
     /*
      * Work. There is no index and never will be: a board belongs to a DESK,
      * and a desk is reached by standing on it — which is the whole of the

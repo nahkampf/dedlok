@@ -244,10 +244,12 @@ final class ExchangeTest extends TestCase
             // The work is real now and the board is rolled on the way past.
             ->assertSeeText(Text::get('missions.board'))
             ->assertSeeText(Text::get('missions.active'))
-            // The store is still designed and not built, so it says so — and
-            // it is the only half that does.
+            // And so is the shelf. BOTH halves of a desk are built now, so
+            // nothing on this screen wears the "Not yet" tag any more — which
+            // is the assertion that would have quietly stopped meaning
+            // anything if it were only deleted.
             ->assertSeeText(Text::get('exchange.store'))
-            ->assertSeeText(Text::get('exchange.not_built'));
+            ->assertDontSeeText(Text::get('exchange.not_built'));
 
         $this->assertNotNull($system->exchange);
     }

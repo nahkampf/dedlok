@@ -55,7 +55,8 @@ return [
         // the agent's grade — this is the floor it falls back to.
         'mission_completed' => 0.01,
 
-        // Proportional to what was spent; the ratio lives with the store.
+        // Proportional to what was spent; the ratio lives with the store,
+        // below. This is the floor it falls back to when nothing is passed.
         'store_spend' => 0.0,
 
         // Computed per row by the drift, never read from here.
@@ -108,6 +109,24 @@ return [
         ['at' => 5.0, 'band' => 'known'],
         ['at' => 20.0, 'band' => 'trusted'],
         ['at' => 60.0, 'band' => 'allied'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | The loyalty store
+    |--------------------------------------------------------------------------
+    |
+    | Spending at an entity's own shelf is a courtesy rather than a service, so
+    | it nudges their opinion without ever being a way to BUY standing.
+    |
+    | At this ratio it takes a thousand loyalty to move standing by a single
+    | point, and a thousand loyalty is a great many missions — which is the
+    | point. Loyalty never decays and is earned only by finishing work, so it
+    | is the store's whole scarcity; there is no stock column anywhere in it.
+    |
+    */
+    'store' => [
+        'standing_per_loyalty' => 0.001,
     ],
 
 ];

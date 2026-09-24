@@ -6,11 +6,15 @@ namespace App\Http\Controllers;
 
 use App\Missions\MissionBoard;
 use App\Models\Character;
+use App\Models\EntityOffer;
 use App\Models\InventoryItem;
 use App\Models\Mission;
 use App\Models\System;
 use App\Standing\Band;
+use App\Standing\LoyaltyExchange;
+use App\Standing\LoyaltyRefusal;
 use App\Standing\StandingLedger;
+use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -88,7 +92,44 @@ class ExchangeController extends Controller
             // Counted once here rather than per card: only a supply job reads
             // it, but the card should not be running a query to draw a meter.
             'files' => $this->completeFiles($character),
+
+            // The shelf. Asked for only when the desk will deal with somebody
+            // at all — the same reason the board is, and the same gate.
+            'shelf' => $welcome && $entity !== null
+                ? (new LoyaltyExchange)->shelf($entity, (int) $system->exchange->grade)
+                : collect(),
         ]);
+    }
+
+    /**
+     * Spend loyalty on one row of this desk's shelf.
+     *
+     * REACHED BY STANDING ON THE DESK, like everything else here: the offer is
+     * in the route and the desk is not, because which desk is a fact about
+     * where the character is rather than something a request may assert.
+     */
+    public function redeem(Request $request, EntityOffer $offer, LoyaltyExchange $store): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        $system = $character->isJackedIn()
+            ? System::query()->at($character->gridPosition())->with('owner', 'exchange')->first()
+            : null;
+
+        if ($system?->exchange === null || ! $system->type->isExchange()) {
+            return redirect()->route('cyberspace.index');
+        }
+
+        $result = $store->buy($character, $system->exchange, $offer);
+
+        if ($result instanceof LoyaltyRefusal) {
+            return back()->with('error', $result->message());
+        }
+
+        return back()->with('status', Text::get('exchange.store_bought', [
+            'item' => $result->displayName(),
+            'price' => number_format((int) $offer->loyalty_price),
+        ]));
     }
 
     /**

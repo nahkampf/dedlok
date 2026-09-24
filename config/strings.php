@@ -1721,6 +1721,25 @@ return [
         'not_built' => 'Not yet',
         'missions_soon' => 'This desk will hand out work against grade :low to :high systems.',
         'store_soon' => 'What this entity sells to the people it owes. Loyalty is earned by working for them.',
+
+        /*
+        | THE LOYALTY STORE, which takes one currency and only one. Nothing
+        | converts loyalty to creds or back, so a price here is never a number
+        | a player can compare to the market's.
+        */
+        'store_empty' => 'This desk is holding nothing for you today.',
+        'store_price' => ':price loyalty',
+        'store_buy' => 'Redeem',
+        'store_have' => 'You have :loyalty',
+        'store_locked' => 'Wants :standing standing',
+        'store_bought' => ':item is yours. :price loyalty spent.',
+
+        'store_refused' => [
+            'not_welcome' => 'They will not deal with you.',
+            'not_for_you' => 'They keep that one back for people they trust.',
+            'cannot_afford' => 'You have not earned that much from them.',
+            'gone' => 'That is not on the shelf.',
+        ],
         'unwelcome' => 'They will not deal with you.',
         'unwelcome_hint' => 'This desk wants :band standing — :standing — before it opens a file for somebody.',
         // On the map, where the desk is one step away.
