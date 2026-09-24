@@ -380,6 +380,10 @@ return [
         'messages' => [
             'scan_complete' => 'Your scan of :system completed. The specifications are saved to a file.',
             'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
+            // A FILE DIES WITH NOBODY LOOKING AT IT. Says it is still there,
+            // because nothing deletes one - destroying it is the player's call
+            // from the card, like every other row they own.
+            'file_stale' => ':file is stale. Nobody will pay for a read of :system now.',
             // WHAT SOMEBODY IS NOT THERE TO SEE. A listing is left up and
             // walked away from, so the sale lands on nobody's screen - and
             // creds arriving with nothing to explain them is the gap.
