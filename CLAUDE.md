@@ -1790,35 +1790,48 @@ configuration.)
 
 ### The deploy itself: a daemon that pulls
 
-**NOBODY DEPLOYS. `git_worker.php` does**, running daemonised on the server: every
-60 seconds it fetches `origin/main`, compares `HEAD` against it, and pulls when they
-differ. A copy lives in the repo root as the source of truth for what is running; the
-deployed one is at `/home/dedlok/scripts/`. It is not web-reachable — `public/` is the
-DocumentRoot and this sits above it.
+**NOBODY DEPLOYS. `git_worker.php` does**, running daemonised on the server as
+`dedlok`: every 60 seconds it fetches `origin/main`, compares `HEAD` against it, and
+pulls when they differ. It is not web-reachable — `public/` is the DocumentRoot and this
+sits above it.
+
+**IT PULLS OVER ITSELF.** The file lives in the repo root, which on that host IS
+`/var/www/dedlok`, so a deploy overwrites the script doing the deploying. PHP reads a
+script once at startup and this is a `while(true)` loop, so **a change to it lands on
+disk on the next push and takes effect on the next RESTART** — two separate events, and
+forgetting the second is how a fixed worker goes on behaving like the broken one. The
+consolation is the same fact from the other side: a bad edit cannot take deploys down by
+itself, because the running process carries on with the code it started with.
 
 **So a deploy is a push to `main`, and it happens within a minute.** Not a tag: the tag
 is how a release is RECORDED, and it has nothing to do with what the server picks up.
 Pushing a commit to `main` without tagging it deploys it just the same.
 
-**THE WORKER PULLS AND DOES NOTHING ELSE.** Its own comment says *"Optional: Run build
-commands here"* and nothing is there, so every one of these is still a human's job:
+**WHAT IT RUNS AFTER A PULL, and only when it has to.** The diff between the old and new
+`HEAD` decides: `composer.lock` moving runs `composer install`, anything under
+`database/migrations/` runs `migrate --force`, and the caches are cleared on every pull
+because compiled Blade from the previous commit is stale on all of them. Dependencies
+first (a migration may use a class that arrived with them), then the caches so Artisan
+reads the config that was just pulled, then the schema.
 
-- **Migrations.** A minor release's schema change is NOT applied by the deploy.
-  `sudo -u dedlok php artisan migrate --force`. This is masked today because production
-  and development share one database — see *Housekeeping* in TODO.md — so migrations are
-  already applied from a laptop before the code arrives. **The day those are two
-  databases, a minor release will ship code against a schema that does not exist.**
-- **`composer install`.** A release that moves `composer.lock` leaves the server running
-  the old dependency tree, and one that adds a class to an optimised autoloader needs at
-  least `composer dump-autoload -o`.
-- **Cache clearing.** Config and routes are deliberately NOT cached on that host, which
-  is the only reason a pure pull works at all. If that ever changes, `config:cache` and
-  `route:cache` must run on **every** deploy or a stale cache is its own silent outage.
+**A failed step is logged and the loop continues.** A deploy daemon that dies on a bad
+release stops deploying silently, which is worse than a loud failure nobody is watching
+either way.
 
-**WHICH USER THE DAEMON RUNS AS IS THE WHOLE STORAGE QUESTION AGAIN.** `git pull` writes
-files as whoever is running it, and PHP-FPM runs as `dedlok`. A worker started as root
-leaves root-owned files in the tree on every deploy, which is the outage this document's
-first section is about. It has to be `dedlok`.
+Three things it still cannot do, all of them because `dedlok` has no sudo:
+
+- **Restart itself**, per above.
+- **Restart PHP-FPM or Apache.** Nothing here needs it today — no opcache concerns have
+  surfaced — but a change that did would need a hand.
+- **Recover from wrong ownership.** `git pull` writes files as whoever runs it, which is
+  why the daemon runs as `dedlok`: PHP-FPM is that user, and a worker started as root
+  would leave root-owned files in the tree on **every** deploy — the outage this
+  document's first section is about.
+
+**Migrations are usually a no-op there anyway**, because production and development share
+one database — see *Housekeeping* in TODO.md — so a migration is already applied from a
+laptop before the code arrives. The step exists for the day those are two databases,
+which is the day its absence would ship code against a schema that does not exist.
 
 **`.github/workflows/manual.yml` is dead and should go.** It POSTs to
 `https://dedlok.online/deploy.php` on any tag push, and `deploy.php` has been removed —
