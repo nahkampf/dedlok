@@ -79,6 +79,14 @@
             <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">
                 {{ $item->programSummary() }}
             </div>
+        @elseif ($entry->scanFileSummary())
+            {{-- What machine this read was of, how hard it is, and how long the
+                 file is still true. Reads off $entry for the dump's reason:
+                 every "Scan File" is one catalogue row and a different
+                 machine. --}}
+            <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">
+                {{ $entry->scanFileSummary() }}
+            </div>
         @elseif ($entry->extractedFileSummary())
             {{-- A real file's own numbers, on the ROW rather than the item —
                  every "Encrypted Data Dump" is the same catalogue entry and a
@@ -213,6 +221,20 @@
                 </form>
             @endif
 
+            {{-- A file is read in, which spends it. Offered even when it is
+                 stale or describes a machine that has since gone, because
+                 every way it can fail is a refusal with a sentence attached —
+                 "nobody can get anything out of it now" teaches more than an
+                 absent button, and nothing is spent by being told. --}}
+            @if ($entry->scanFile())
+                <form method="POST" action="{{ route('inventory.read', $entry) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm btn--primary cut">
+                        {{ Text::get('cyberspace.reading.import') }}
+                    </button>
+                </form>
+            @endif
+
             @if ($entry->parent_id !== null)
                 <form method="POST" action="{{ route('inventory.place', $entry) }}">
                     @csrf
@@ -272,14 +294,45 @@
                 </form>
             @endif
 
-            {{-- Doors with nothing behind them yet, shown tagged rather than
+            {{-- SELLING IT. The price is asked for here rather than on a
+                 screen of its own: the thing being sold is this row, and this
+                 card is the one place anybody is looking at it.
+
+                 A listed row is still yours and still in the stash — it is
+                 simply spoken for, the way a fitted module is — so the card
+                 keeps rendering and swaps the button for the way back. --}}
+            @if ($entry->offer)
+                <span class="tag tag--ember">
+                    {{ Text::get('market.offers.on_market', ['price' => number_format($entry->offer->unit_price)]) }}
+                </span>
+                <form method="POST" action="{{ route('market.withdraw', $entry->offer) }}">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="btn btn--sm btn--ghost cut">
+                        {{ Text::get('market.offers.withdraw') }}
+                    </button>
+                </form>
+            @else
+                <form method="POST" action="{{ route('market.list', $entry) }}"
+                      class="row row--wrap" style="--gap:var(--s-2);align-items:center">
+                    @csrf
+                    <label class="field" style="flex:0 0 auto;margin:0">
+                        <span class="sr-only">{{ Text::get('market.offers.price_label') }}</span>
+                        <input class="input num" type="number" name="price"
+                               min="0" max="99999999" required
+                               style="width:min(110px, 100%)"
+                               value="{{ $item->base_cost > 0 ? $item->base_cost : '' }}"
+                               aria-label="{{ Text::get('market.offers.price_label') }}">
+                    </label>
+
+                    <button type="submit" class="btn btn--sm cut">
+                        {{ Text::get('market.offers.list') }}
+                    </button>
+                </form>
+            @endif
+
+            {{-- A door with nothing behind it yet, shown tagged rather than
                  hidden: a card that grows buttons as features land is a card
                  nobody learns. --}}
-            <button type="button" class="btn btn--sm btn--ghost" disabled>
-                {{ Text::get('inventory.actions.market') }}
-                <span class="tag">{{ Text::get('inventory.actions.not_yet') }}</span>
-            </button>
-
             <button type="button" class="btn btn--sm btn--ghost" disabled>
                 {{ Text::get('inventory.actions.disassemble') }}
                 <span class="tag">{{ Text::get('inventory.actions.not_yet') }}</span>

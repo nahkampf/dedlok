@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Cyberspace\ExtractedFile;
+use App\Cyberspace\ScanFact;
+use App\Cyberspace\ScanFile;
 use App\Support\Text;
+use Carbon\Carbon;
 use Database\Factories\InventoryItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * card is a physical row holding data rows — the item says what kind of thing
  * it is, the row says where it ended up.
  */
-#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'extracted_file'])]
+#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'extracted_file', 'scan_file'])]
 class InventoryItem extends Model
 {
     /** @use HasFactory<InventoryItemFactory> */
@@ -40,6 +43,7 @@ class InventoryItem extends Model
             'quantity' => 'integer',
             'started_at' => 'immutable_datetime',
             'extracted_file' => 'array',
+            'scan_file' => 'array',
         ];
     }
 
@@ -85,6 +89,65 @@ class InventoryItem extends Model
     {
         return Skill::query()->find($file->encryptionSkillId)?->title
             ?? Text::get('inventory.files.unknown_encryption');
+    }
+
+    /**
+     * The read this row used to be, before it became something sellable.
+     *
+     * Non-null only on a row of the "Scan File" item —
+     * App\Cyberspace\ScanExporter is the only writer, and
+     * App\Cyberspace\ScanFile is the shape.
+     */
+    public function scanFile(): ?ScanFile
+    {
+        return ScanFile::fromArray($this->scan_file);
+    }
+
+    /**
+     * What a file says about itself on its card.
+     *
+     * The machine, then the two facts anybody buying one is deciding on, then
+     * the clock — because a file's whole value is that it is still true. A
+     * stale one says so where the grade would be, since nothing else about it
+     * matters once it is.
+     */
+    public function scanFileSummary(): ?string
+    {
+        $file = $this->scanFile();
+
+        if ($file === null) {
+            return null;
+        }
+
+        $scan = $file->toScan();
+
+        $parts = [
+            $file->displayName(),
+            ScanFact::Grade->readFrom($scan) ?? Text::get('cyberspace.reading.unread'),
+            $this->scanFileClock($file),
+        ];
+
+        return implode(Text::get('items.summary.separator'), $parts);
+    }
+
+    /**
+     * How long it is still worth anything.
+     *
+     * The same sentence the scan screen uses for a live file — one wording for
+     * one fact, whether the file is still a read or already a possession. A
+     * file with no clock on it at all is treated as stale: every real one
+     * carries its 48 hours out of `system_scans`, so the absence is corruption
+     * rather than a file that lasts for ever.
+     */
+    private function scanFileClock(ScanFile $file): string
+    {
+        if ($file->expiresAt === null || $file->hasExpired()) {
+            return Text::get('inventory.scans.stale');
+        }
+
+        return Text::get('cyberspace.scan.expires', [
+            'when' => Carbon::instance($file->expiresAt)->diffForHumans(),
+        ]);
     }
 
     /**
@@ -174,6 +237,26 @@ class InventoryItem extends Model
     public function fitting(): HasOne
     {
         return $this->hasOne(DeckFitting::class, 'module_id');
+    }
+
+    /**
+     * The listing this row is on the market under, if it is.
+     *
+     * The FIFTH way of being spoken for, and the only one that is a promise to
+     * somebody else rather than a fact about where the thing is — which is why
+     * it belongs in scopeLoose() beside the other four rather than being
+     * checked wherever a screen happens to remember.
+     *
+     * @return HasOne<MarketOffer, $this>
+     */
+    public function offer(): HasOne
+    {
+        return $this->hasOne(MarketOffer::class, 'inventory_item_id');
+    }
+
+    public function isListed(): bool
+    {
+        return $this->offer()->exists();
     }
 
     /**
@@ -318,7 +401,13 @@ class InventoryItem extends Model
             // Installed in a body. Elsewhere in exactly the sense the other
             // three are: it is yours, and it is not in your hands.
             ->whereNull('installed_at')
-            ->whereDoesntHave('fitting');
+            ->whereDoesntHave('fitting')
+            // LISTED ON THE MARKET. The fifth, and the promise the offer makes
+            // to whoever is about to buy it: a listed module cannot be fitted,
+            // a listed program cannot be run, a listed file cannot be read in.
+            // The offer row is the fact — see App\Market\OfferBook — so there
+            // is no column to keep in step with it.
+            ->whereDoesntHave('offer');
     }
 
     /** @param  Builder<self>  $query */

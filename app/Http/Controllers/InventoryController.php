@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Cyberspace\ReadinessWatch;
+use App\Cyberspace\ScanImporter;
+use App\Cyberspace\ScanImportRefusal;
 use App\Decks\FittingRefusal;
 use App\Decks\ModuleFitter;
 use App\Drugs\DrugTaker;
@@ -13,6 +15,7 @@ use App\Inventory\SkillInjector;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\System;
 use App\Programs\ProgramRunner;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
@@ -64,6 +67,32 @@ class InventoryController extends Controller
         }
 
         return back()->with('status', Text::get('inventory.injected', ['skill' => $skillTitle]));
+    }
+
+    /**
+     * Read a scan file into your own records.
+     *
+     * The HTTP-shaped half of `App\Cyberspace\ScanImporter`. Nothing is
+     * confirmed: the file is spent, but what it is spent ON is the only thing
+     * it was ever for, and a dialog in front of it would be asking somebody to
+     * confirm using a thing by using it.
+     */
+    public function read(Request $request, InventoryItem $entry, ScanImporter $importer): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $result = $importer->import($character, $entry);
+
+        if ($result instanceof ScanImportRefusal) {
+            return back()->with('error', $result->message());
+        }
+
+        return back()->with('status', Text::get('cyberspace.reading.imported', [
+            'system' => System::query()->where('address', $result->address)->first()?->displayName()
+                ?? $result->address,
+        ]));
     }
 
     /**
