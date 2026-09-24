@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+## [0.19.4] — 2026-09-24
+
+The landing page stops borrowing somebody else's button.
+
+### Added
+
+- **The running version, under the wordmark.** Tied to the LOGO's 560px box
+  rather than to the content column, so the number sits on the wordmark's right
+  edge and the two read as one block — against the content edge it drifted a
+  quarter of the page away and looked like furniture. `v` is part of the format
+  string; `config/version.php` holds the number and nothing else, which is what
+  lets a running container report what it is.
+
+### Changed
+
+- **The supporter link is ours now.** The Ko-Fi widget was a third-party script
+  that drew its own button with its own radius and its own magenta, on the one
+  page every visitor sees first — and the fonts are self-hosted precisely so
+  nothing leaves the origin. It is an ordinary link: same destination, no
+  external request, and it works with JavaScript off.
+- **It wears the kit's own ember.** `.btn--danger` is an outline that fills on
+  hover, which is the form rule 2 allows the accent — and it is the only ember
+  on the page, on the only thing there asking for something rather than telling
+  you something.
+- Both sentences live in `config/strings.php` under `home.*`, not in the view.
+
 ## [0.19.3] — 2026-09-24
 
 Somewhere to put the hosting money.
@@ -1381,7 +1407,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.3...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.19.4...HEAD
+[0.19.4]: https://github.com/nahkampf/dedlok/compare/v0.19.3...v0.19.4
 [0.19.3]: https://github.com/nahkampf/dedlok/compare/v0.19.2...v0.19.3
 [0.19.2]: https://github.com/nahkampf/dedlok/compare/v0.19.1...v0.19.2
 [0.19.1]: https://github.com/nahkampf/dedlok/compare/v0.19.0...v0.19.1
