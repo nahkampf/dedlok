@@ -794,6 +794,10 @@ return [
         'bounty' => [
             'floor_below' => 5,
             'certain_at' => 100,
+            // Nights after word goes out before anybody is rolled again. A
+            // memory, not a softer curve: at a hundred heat the answer is still
+            // yes, it just is not news every morning. Unbalanced, like the rest.
+            'cooldown_days' => 7,
         ],
     ],
 

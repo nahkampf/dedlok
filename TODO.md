@@ -495,9 +495,11 @@ defend before there is a game to defend it against.
 
 - **What a bounty IS.** A row, a hunter, a price, somebody who can collect it.
   Until then the roll is a rumour with nothing behind it.
-- **A cooldown.** At high heat the roll is certain, so it says so every night.
-  That is honest about a manhunt and intolerable the day a bounty is a thing
-  you carry — the fix is a memory on the character, not a gentler curve.
+- ~~**A cooldown.**~~ Done 2026-09-28: `characters.bounty_word_at` remembers
+  the last time word went out, and nobody is rolled again for
+  `cyberspace.heat.bounty.cooldown_days` (7, unbalanced). When a bounty becomes
+  a thing you carry, the row that holds it may want to become the memory
+  instead.
 - **Faction standing falls** when the traced system belongs to one. Factions do
   not exist; this is the hook they arrive on.
 - **A player-owned system's owner learns who attacked them**, and that is the
@@ -707,7 +709,11 @@ targets can be tag sets, so comparing ids alone would undercount.
 - **Enable "block headless browsers" on the Cap site key** before launch. It is off on
   the local key because it breaks agent/QA browsers, and it is one of the two settings
   (with instrumentation, already on) that do most of the work against real bots.
-- **PRODUCTION AND DEVELOPMENT SHARE ONE DATABASE.** `dedlok.online` and the dev
+- ~~**PRODUCTION AND DEVELOPMENT SHARE ONE DATABASE.**~~ Done 2026-09-28: development
+  runs on the local `db` container (MySQL 8.0, like production), filled by
+  `bin/pull-db`. The shared database had also been running every scheduled job twice,
+  once from the laptop's scheduler and once from the server's crontab. The history,
+  kept for why: `dedlok.online` and the dev
   container both point at the same remote MySQL, which is why the 0.18.0 and
   0.19.0 migrations already read as *Ran* on the host before anything was
   pulled — the deploy needed the code and the schema was already there. It has

@@ -129,18 +129,44 @@ final class BountyTest extends TestCase
     }
 
     /**
-     * IT HAS NO MEMORY, which is honest about a manhunt and will want a
-     * cooldown the day a bounty is a thing you can carry. Pinned so that the
-     * day it changes, it changes on purpose.
+     * WORD THAT IS ALREADY OUT IS NOT NEWS. At a hundred heat the roll is
+     * certain, and without a memory that was the same sentence every morning.
      */
-    public function test_it_says_so_again_the_next_night(): void
+    public function test_it_does_not_say_so_again_the_next_night(): void
+    {
+        $character = $this->character(100);
+
+        $this->bounties(die: 10_000)->tonight();
+        $this->travel(1)->days();
+
+        $this->assertSame([], $this->bounties(die: 10_000)->tonight());
+        $this->assertSame(1, Notification::query()->count());
+        $this->assertNotNull($character->fresh()->bounty_word_at);
+    }
+
+    /** And once the cooldown has run, it is rolled like anybody else. */
+    public function test_it_is_rolled_again_once_the_cooldown_runs_out(): void
     {
         $this->character(100);
+        $days = (int) Config::get('cyberspace.heat.bounty.cooldown_days');
 
         $this->bounties(die: 10_000)->tonight();
-        $this->bounties(die: 10_000)->tonight();
+        $this->travel($days - 1)->days();
+        $this->assertSame([], $this->bounties(die: 10_000)->tonight(), 'a night short');
 
+        $this->travel(1)->days();
+        $this->assertCount(1, $this->bounties(die: 10_000)->tonight());
         $this->assertSame(2, Notification::query()->count());
+    }
+
+    /** A roll that misses writes nothing, so it starts no cooldown. */
+    public function test_a_miss_leaves_no_memory(): void
+    {
+        $character = $this->character(4);
+
+        $this->bounties(die: 10_000)->tonight();
+
+        $this->assertNull($character->fresh()->bounty_word_at);
     }
 
     // ---- the command -------------------------------------------------------
@@ -169,6 +195,18 @@ final class BountyTest extends TestCase
             ->assertSuccessful();
 
         $this->assertSame(0, Notification::query()->count());
+    }
+
+    public function test_a_dry_run_names_who_is_resting(): void
+    {
+        $this->character(100)->forceFill(['bounty_word_at' => now()])->save();
+
+        $this->instance(Bounties::class, $this->bounties(die: 1));
+
+        $this->artisan('characters:bounties --dry-run')
+            ->expectsOutputToContain('word already out')
+            ->expectsOutputToContain('0 character(s) would be rolled.')
+            ->assertSuccessful();
     }
 
     // ---- and the screen ----------------------------------------------------

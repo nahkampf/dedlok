@@ -77,6 +77,9 @@ class CharacterTest extends TestCase
             // describes is built, and columns modelled against an unwritten
             // simulator get modelled wrong.
             'waiting_until', 'waiting_cause',
+            // When word last went out that somebody would pay for them. The
+            // bounty roll's memory, so certain odds are not news every night.
+            'bounty_word_at',
             'created_at', 'updated_at',
         ];
 

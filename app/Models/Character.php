@@ -41,12 +41,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * spends it yet either: the market has a supply side and no storefront, so the
  * only writer today is App\Archetypes\LoadoutGranter at character creation.
  *
- * The two below are spelled out because casts() is composed with array_merge()
+ * The three below are spelled out because casts() is composed with array_merge()
  * from ATTRIBUTES and RESOURCES rather than written as a literal, so static
  * analysis cannot read it and would take both of these for the raw column.
  *
  * @property CarbonImmutable|null $waiting_until
  * @property array<string, mixed>|null $waiting_cause
+ * @property CarbonImmutable|null $bounty_word_at
  */
 #[Fillable([
     'user_id', 'handle', 'bio', 'archetype', 'creds', 'heat',
@@ -150,6 +151,7 @@ class Character extends Model
             // On the floor, and what put them there. The cause is an array
             // because none of what it describes is built — see the migration.
             ['waiting_until' => 'immutable_datetime', 'waiting_cause' => 'array'],
+            ['bounty_word_at' => 'immutable_datetime'],
         );
     }
 

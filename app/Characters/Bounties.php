@@ -47,9 +47,15 @@ use Illuminate\Support\Facades\Config;
  *
  * Nothing happens yet but the message. There is no bounty row, no hunter and
  * no price — those are heat's unfinished half — so this says the word is out
- * and stops there. It also has no memory: at high heat it will say so again
- * tomorrow, which is honest about a manhunt and will want a cooldown the day a
- * bounty is a thing you can carry.
+ * and stops there.
+ *
+ * ## Word that is already out is not news
+ *
+ * `characters.bounty_word_at` remembers the last time, and nobody is rolled
+ * again until `cooldown_days` have passed. A memory rather than a gentler
+ * curve: at a hundred heat the answer is still certain, it just stops being a
+ * new sentence every morning. The skipped nights are not rolled at all, so
+ * they are not made up either.
  */
 final class Bounties
 {
@@ -60,6 +66,7 @@ final class Bounties
         private readonly int $floorBelow,
         private readonly int $certainAt,
         private readonly Closure $roll,
+        private readonly int $cooldownDays = 0,
     ) {}
 
     /** @param  ?Closure(int, int): int  $roll */
@@ -74,7 +81,15 @@ final class Bounties
             (int) Config::get('cyberspace.heat.bounty.floor_below', 5),
             (int) Config::get('cyberspace.heat.bounty.certain_at', 100),
             $roll ?? static fn (int $min, int $max): int => random_int($min, $max),
+            (int) Config::get('cyberspace.heat.bounty.cooldown_days', 7),
         );
+    }
+
+    /** Is word still out from last time? Then there is nothing to roll. */
+    public function resting(Character $character): bool
+    {
+        return $character->bounty_word_at !== null
+            && $character->bounty_word_at->addDays($this->cooldownDays)->isFuture();
     }
 
     /**
@@ -113,10 +128,11 @@ final class Bounties
         $marked = [];
 
         foreach (Character::query()->where('heat', '>', 0)->orderBy('id')->cursor() as $character) {
-            if (! $this->decides((float) $character->heat)) {
+            if ($this->resting($character) || ! $this->decides((float) $character->heat)) {
                 continue;
             }
 
+            $character->forceFill(['bounty_word_at' => now()])->save();
             $this->notifier->send($character, Category::Street, 'bounty_word');
 
             $marked[] = $character;

@@ -66,7 +66,7 @@ class RollBounties extends Command
         $rows = Character::query()
             ->where('heat', '>', 0)
             ->orderByDesc('heat')
-            ->get(['handle', 'heat']);
+            ->get(['handle', 'heat', 'bounty_word_at']);
 
         if ($rows->isEmpty()) {
             $this->info('Nobody is carrying any heat.');
@@ -74,7 +74,17 @@ class RollBounties extends Command
             return self::SUCCESS;
         }
 
+        $rolled = 0;
+
         foreach ($rows as $character) {
+            if ($bounties->resting($character)) {
+                $this->line(sprintf('  %-24s heat %5.1f   word already out', $character->handle, (float) $character->heat));
+
+                continue;
+            }
+
+            $rolled++;
+
             $this->line(sprintf(
                 '  %-24s heat %5.1f   %5.2f%%',
                 $character->handle,
@@ -83,7 +93,7 @@ class RollBounties extends Command
             ));
         }
 
-        $this->info(sprintf('%d character(s) would be rolled. Nothing was written.', $rows->count()));
+        $this->info(sprintf('%d character(s) would be rolled. Nothing was written.', $rolled));
 
         return self::SUCCESS;
     }
