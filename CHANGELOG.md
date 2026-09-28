@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-09-28
+
+Five new skills fill the stats nothing reached, brought to scale before anyone trains them.
+
+### Added
+
+- **Five skills for stats nothing moved.** Attack Vectors (icebreaker damage),
+  Fractional Siphoning (siphon yield), Noise Seeding (heat decay), Memory
+  Optimization (deck memory) and Power Management (deck power supply, with a
+  heat cost). Their books are rare.
+
+### Fixed
+
+- **The new skills' numbers, before they reached anyone.** Noise Seeding removed
+  about 85 heat a night instead of 1.5; Attack Vectors did nothing at levels 1–4
+  for most icebreakers and tripled the weakest at level 5; Memory Optimization's
+  flat bonus more than doubled a small deck's RAM. Each is now even across its
+  levels, and Power Management costs the heat its description promised.
+
+### Migrations
+
+- `2026_09_28_160000_the_new_skills_brought_to_scale` (a data re-tune by slug;
+  the deploy worker runs it on pull)
+
 ## [0.23.1] — 2026-09-28
 
 The shop sells without reloading the page, and flash messages leave by themselves.
@@ -1719,7 +1743,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.23.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.24.0...HEAD
+[0.24.0]: https://github.com/nahkampf/dedlok/compare/v0.23.1...v0.24.0
 [0.23.1]: https://github.com/nahkampf/dedlok/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/nahkampf/dedlok/compare/v0.22.1...v0.23.0
 [0.22.1]: https://github.com/nahkampf/dedlok/compare/v0.22.0...v0.22.1
