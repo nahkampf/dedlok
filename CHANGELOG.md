@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.26.0] — 2026-09-28
+
+Loyalty buys more than things: Lockjaw will make your heat go quiet.
+
+### Added
+
+- **The loyalty store sells services.** An entity can do something for you
+  instead of handing something over. Nothing lands in your stash.
+- **Lockjaw makes heat go quiet**: 1000 loyalty takes 10 heat off, at every
+  Lockjaw desk. Heat never drops below zero, and the desk will not take your
+  loyalty if you have no heat to lose. Word that is already out stays out —
+  this only changes what the next bounty roll sees.
+- **Admins can put services on a shelf** in the entity editor: pick an item or
+  a service, and give a service an amount.
+
+### Migrations
+
+- `2026_09_28_210000_a_shelf_can_sell_a_service` — also puts Lockjaw's offer
+  on the shelf.
+
 ## [0.25.1] — 2026-09-28
 
 Standing earned is kept longer, and higher-grade work is where it is made.
@@ -1801,7 +1821,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.25.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.26.0...HEAD
+[0.26.0]: https://github.com/nahkampf/dedlok/compare/v0.25.1...v0.26.0
 [0.25.1]: https://github.com/nahkampf/dedlok/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/nahkampf/dedlok/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/nahkampf/dedlok/compare/v0.23.1...v0.24.0
