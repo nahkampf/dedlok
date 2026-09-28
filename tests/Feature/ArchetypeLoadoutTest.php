@@ -33,7 +33,7 @@ class ArchetypeLoadoutTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const POINTS = 75;
+    private const POINTS = 150;
 
     protected function setUp(): void
     {

@@ -20,7 +20,7 @@ class CharacterCreationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const POINTS = 75;
+    private const POINTS = 150;
 
     protected function setUp(): void
     {
@@ -181,7 +181,7 @@ class CharacterCreationTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('character.store'), array_merge(
-                // Max out every attribute at the creation cap: 500 against a pool of 75.
+                // Max out every attribute at the creation cap: 500 against a pool of 150.
                 array_fill_keys(Character::ATTRIBUTES, Character::CREATION_ATTRIBUTE_MAX),
                 ['handle' => 'cheater', 'archetype' => 1],
             ))
@@ -201,6 +201,20 @@ class CharacterCreationTest extends TestCase
         $this->assertDatabaseCount('characters', 0);
     }
 
+    public function test_an_attribute_cannot_be_dumped(): void
+    {
+        // One under the floor, with the point moved elsewhere so the sum
+        // still matches: the per-attribute rule is what refuses it.
+        $payload = $this->payload(['meat' => Character::CREATION_ATTRIBUTE_MIN - 1]);
+        $payload['intellect'] += $this->payload()['meat'] - $payload['meat'];
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('character.store'), $payload)
+            ->assertSessionHasErrors('meat');
+
+        $this->assertDatabaseCount('characters', 0);
+    }
+
     public function test_the_sliders_cannot_reach_zero(): void
     {
         $this->actingAs(User::factory()->create())
@@ -212,7 +226,7 @@ class CharacterCreationTest extends TestCase
 
     public function test_the_starting_spread_never_places_a_zero(): void
     {
-        foreach ([10, 11, 19, 75, 150, 500] as $pool) {
+        foreach ([100, 101, 199, 150, 155, 500] as $pool) {
             foreach (Character::startingAttributes($pool) as $attribute => $value) {
                 $this->assertGreaterThanOrEqual(
                     Character::CREATION_ATTRIBUTE_MIN,
@@ -225,15 +239,15 @@ class CharacterCreationTest extends TestCase
 
     public function test_a_pool_too_small_for_one_point_each_is_unsatisfiable(): void
     {
-        $this->assertFalse(Character::poolIsSatisfiable(9), 'ten attributes need at least ten points');
-        $this->assertTrue(Character::poolIsSatisfiable(10));
+        $this->assertFalse(Character::poolIsSatisfiable(99), 'ten attributes need at least a hundred points');
+        $this->assertTrue(Character::poolIsSatisfiable(100));
     }
 
     public function test_the_two_floors_are_distinct(): void
     {
         // 0 stays the lifetime floor: a debuff must be able to reach it.
         $this->assertSame(0, Character::ATTRIBUTE_MIN);
-        $this->assertSame(1, Character::CREATION_ATTRIBUTE_MIN);
+        $this->assertSame(10, Character::CREATION_ATTRIBUTE_MIN);
     }
 
     public function test_the_two_ceilings_are_distinct(): void
@@ -274,8 +288,8 @@ class CharacterCreationTest extends TestCase
 
     public function test_fifty_exactly_is_accepted(): void
     {
-        // Nine attributes at the floor of 1, plus meat at the ceiling of 50.
-        Setting::put(CharacterCreationController::POINTS_SETTING, '59', 'character_creation');
+        // Nine attributes at the floor of 10, plus meat at the ceiling of 50.
+        Setting::put(CharacterCreationController::POINTS_SETTING, '140', 'character_creation');
 
         $attributes = array_fill_keys(Character::ATTRIBUTES, Character::CREATION_ATTRIBUTE_MIN);
         $attributes['meat'] = Character::CREATION_ATTRIBUTE_MAX;
@@ -303,11 +317,11 @@ class CharacterCreationTest extends TestCase
 
     public function test_the_pool_is_spread_evenly_as_integers(): void
     {
-        // 75 over ten attributes is 7 each, with 5 left for the player.
-        $starting = Character::startingAttributes(75);
+        // 155 over ten attributes is 15 each, with 5 left for the player.
+        $starting = Character::startingAttributes(155);
 
-        $this->assertSame(array_fill_keys(Character::ATTRIBUTES, 7), $starting);
-        $this->assertSame(70, array_sum($starting));
+        $this->assertSame(array_fill_keys(Character::ATTRIBUTES, 15), $starting);
+        $this->assertSame(150, array_sum($starting));
     }
 
     public function test_the_sliders_open_on_the_distributed_value(): void
@@ -315,7 +329,7 @@ class CharacterCreationTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('character.create'))
             ->assertOk()
-            ->assertSee('value="7"', false);
+            ->assertSee('value="15"', false);
     }
 
     public function test_distribution_never_exceeds_the_cap(): void
