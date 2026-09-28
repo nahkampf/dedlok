@@ -93,6 +93,18 @@ class TrainingQueueController extends Controller
         foreach ($steps as $step) {
             $result = $queue->enqueue($character, $step);
 
+            // An imprint missing on the way to something else gets its own
+            // sentence: "you have not injected that skill" read as the skill
+            // the player planned, which they HAD injected.
+            if ($result === QueueRefusal::NotInjected && $step->isNot($skill)) {
+                return back()->with('status', Text::get('training.plan_needs_imprint', [
+                    'count' => $queued,
+                    'total' => count($steps),
+                    'skill' => $step->title,
+                    'target' => $skill->title,
+                ]));
+            }
+
             if ($result instanceof QueueRefusal) {
                 return back()->with('status', Text::get('training.plan_stopped', [
                     'count' => $queued,

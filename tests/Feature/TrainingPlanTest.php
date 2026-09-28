@@ -210,11 +210,11 @@ final class TrainingPlanTest extends TestCase
         $this->actingAs($this->user)
             ->from(route('skills.index'))
             ->post(route('training.plan'), ['skill' => $this->codebreaking->id, 'level' => 1])
-            ->assertSessionHas('status', Text::get('training.plan_stopped', [
+            ->assertSessionHas('status', Text::get('training.plan_needs_imprint', [
                 'count' => 3,
                 'total' => 9,
                 'skill' => 'Cryptography',
-                'reason' => Text::get('training.refused.not_injected'),
+                'target' => 'Codebreaking',
             ]));
 
         // What went in before the wall stays in: a partial route is still the

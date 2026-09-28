@@ -1914,6 +1914,7 @@ return [
         /*
         | Why a skill did not go in. Prerequisites are deliberately not here —
         | a queue is allowed to describe training that cannot happen yet, and
+        'plan_needs_imprint' => ':count of :total queued. :target needs :skill first, and you have not injected :skill — spend its imprint from the stash, then plan again.',
         | the warnings below are how it says so.
         */
         'refused' => [
