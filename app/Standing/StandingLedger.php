@@ -136,7 +136,7 @@ final class StandingLedger
      */
     public function drift(): int
     {
-        $rate = (float) Config::get('standing.drift.nightly', 0.005);
+        $rate = (float) Config::get('standing.drift.nightly', 0.0025);
 
         if ($rate <= 0.0) {
             return 0;

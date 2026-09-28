@@ -89,12 +89,25 @@ return [
     | Creds, standing and loyalty all climb, and so does what failing costs.
     | One table per grade so the whole curve is one thing to retune.
     |
-    | THE STANDING FIGURES ARE SMALL ON PURPOSE AND THE CLIMB IS LONG. At six
-    | to eight jobs a day against one entity this is roughly a month to the
-    | grade 2 desk and three to four months to the grade 5 desk — a browser
-    | game's arc, not a weekend's. The 0.5% nightly drift is what stops it
-    | being a straight line: grade 1 work alone settles around 30 and no amount
-    | of it reaches 60.
+    | FROM GRADE 2 UP, EACH GRADE PAYS ABOUT 2.3x THE ONE BELOW IT, so the top
+    | of the ladder is where standing is made rather than where the curve
+    | flattens. A grade 5 job is worth about forty grade 1 jobs.
+    |
+    | GRADE 1 IS HELD LOW ON PURPOSE, because it is the work anybody can take
+    | in unlimited amounts: at 0.01-0.03 it tops out near 56 even at seven
+    | jobs a day — past the grade 4 desk, never the grade 5 one.
+    |
+    | THE PENALTY IS ABOUT ONE AVERAGE JOB. Failing and abandoning cost the
+    | same, so a job taken and dropped is a job's worth given back — and a
+    | high-grade job is a bet at even stakes rather than a free roll.
+    |
+    | THE CLIMB, against the 0.25% nightly drift in config/standing.php, from
+    | nothing to the grade 5 desk working each rung in turn: about eight months
+    | at three jobs a day, about three at seven. Standing settles at 400x a
+    | day's earnings, so what one grade of work can reach alone depends on how
+    | much of it somebody does — grade 1 tops out near 24 at three a day and
+    | near 56 at seven. Above grade 1 the gates are enforced by time more than
+    | by ceilings.
     |
     | `standing` here is the BASE handed to the resolver as `standing_gain`,
     | never the figure that lands. A skill or an implant that makes somebody
@@ -104,10 +117,10 @@ return [
     */
     'grades' => [
         1 => ['creds' => [400, 900], 'standing' => [0.01, 0.03], 'loyalty' => [1, 2], 'penalty' => 0.02],
-        2 => ['creds' => [900, 2000], 'standing' => [0.03, 0.07], 'loyalty' => [2, 4], 'penalty' => 0.05],
-        3 => ['creds' => [2000, 4500], 'standing' => [0.07, 0.15], 'loyalty' => [4, 8], 'penalty' => 0.10],
-        4 => ['creds' => [4500, 9000], 'standing' => [0.15, 0.30], 'loyalty' => [8, 15], 'penalty' => 0.20],
-        5 => ['creds' => [9000, 18000], 'standing' => [0.30, 0.50], 'loyalty' => [15, 30], 'penalty' => 0.35],
+        2 => ['creds' => [900, 2000], 'standing' => [0.05, 0.09], 'loyalty' => [2, 4], 'penalty' => 0.07],
+        3 => ['creds' => [2000, 4500], 'standing' => [0.11, 0.21], 'loyalty' => [4, 8], 'penalty' => 0.16],
+        4 => ['creds' => [4500, 9000], 'standing' => [0.26, 0.48], 'loyalty' => [8, 15], 'penalty' => 0.37],
+        5 => ['creds' => [9000, 18000], 'standing' => [0.64, 1.06], 'loyalty' => [15, 30], 'penalty' => 0.85],
     ],
 
     /*

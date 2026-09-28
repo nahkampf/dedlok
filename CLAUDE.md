@@ -885,7 +885,7 @@ and extraction are built. See below for what is not.
   change, both kinds in one table). **THE BOOKS ARE ALWAYS THE SUM OF THE LEDGER** —
   clamping trims the DELTA rather than the total, so an act against somebody already at
   −100 writes a delta of 0, which says honestly that it changed nothing. `standing:verify`
-  asks; `standing:drift` takes 0.5% of what is carried toward zero nightly at 05:20 and
+  asks; `standing:drift` takes 0.25% of what is carried toward zero nightly at 05:20 and
   writes a `Decay` entry for every move. **Flavour entities keep no books**: a write
   against scenery is a no-op, not a refusal. Loyalty never decays and is spent at a store
   that is not built. The hooks are in `Simulator` (noticed, raided, burned — the burn

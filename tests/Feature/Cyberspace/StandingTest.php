@@ -192,7 +192,7 @@ final class StandingTest extends TestCase
         $this->ledger()->record($this->character, $this->entity, StandingReason::Burned, -40.0);
         $this->ledger()->drift();
 
-        $this->assertSame(-39.8, $this->ledger()->standingFor($this->character, $this->entity));
+        $this->assertSame(-39.9, $this->ledger()->standingFor($this->character, $this->entity));
     }
 
     public function test_the_drift_leaves_loyalty_alone(): void

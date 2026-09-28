@@ -174,16 +174,16 @@ rather than a mystery.
   the invariant for no reason; three decimals holds increments like 0.003 and
   the range −100.000 to +100.000.
 - **Clamped to [−100, 100]**, by trimming the delta rather than the total.
-- **Standing drifts toward zero nightly, PROPORTIONALLY: 0.5% of what is
-  carried, from both directions.** Not a flat rate, which at the size of a
-  mission's reward would be backwards — half a point a night is twenty-five
-  grade 1 jobs and nothing at all to somebody sitting at 60. A percentage costs
-  0.03 at standing 5 and 0.3 at standing 60, so low standing is stable and high
-  standing is a commitment, and it can never overshoot zero. **It also gives
-  every rung a soft ceiling for free**: standing settles where daily earnings
-  equal 0.5% of it, which is about 200× the daily rate — grade 1 work alone
-  tops out around 30, below the grade 4 desk, so the bands enforce themselves
-  without another rule. **The pass writes a `Decay` entry** for every standing
+- **Standing drifts toward zero nightly, PROPORTIONALLY: 0.25% of what is
+  carried, from both directions** (halved from 0.5% on 2026-09-28). Not a
+  flat rate, which at the size of a mission's reward would be backwards — half
+  a point a night is a dozen grade 1 jobs and nothing at all to somebody
+  sitting at 60. A percentage costs 0.0125 at standing 5 and 0.15 at standing
+  60, so low standing is stable and high standing needs keeping up, and it can
+  never overshoot zero. **It also gives every rung a soft ceiling for free**:
+  standing settles where daily earnings equal the drift, 400× the daily rate.
+  How high one grade of work reaches alone depends on how much of it somebody
+  does — see `config/missions.php`. **The pass writes a `Decay` entry** for every standing
   it moves, or the invariant stops being checkable. `ponytail:` one row per
   character per entity per night is the ceiling; collapsing entries older than
   N days is the fix when it bites.
