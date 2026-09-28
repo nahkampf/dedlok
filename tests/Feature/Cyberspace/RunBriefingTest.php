@@ -16,6 +16,7 @@ use App\Models\Run;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemScan;
+use App\Programs\ProgramKind;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -152,20 +153,21 @@ final class RunBriefingTest extends TestCase
     public function test_it_names_what_is_running_and_what_each_thing_is(): void
     {
         $this->machine();
-        $item = $this->runProgram('icebreaker-1');
+        $item = $this->runProgram('scanner-mk1');
 
         $this->visit()
             ->assertOk()
             ->assertSee($item->displayName())
-            ->assertSee('Icebreaker');
+            ->assertSee(ProgramKind::Analyser->label());
     }
 
     /**
-     * NO ICEBREAKER AMONG WHAT IS RUNNING is the warning that decides whether
-     * a fight is survivable — and it is worth saying even when something else
-     * is, because a deck full of analysers still cannot cut.
+     * NO ICEBREAKER TO LOAD is the warning that decides whether a fight is
+     * survivable — and it is worth saying even when something else is running,
+     * because a deck full of analysers still cannot cut. An icebreaker is
+     * never running here: the run starts it, from the loadout.
      */
-    public function test_it_warns_when_nothing_running_is_an_icebreaker(): void
+    public function test_it_warns_when_there_is_no_icebreaker_to_load(): void
     {
         $this->machine();
         $this->runProgram('scanner-mk1');
@@ -173,13 +175,17 @@ final class RunBriefingTest extends TestCase
         $this->visit()->assertOk()->assertSee('If something wakes up, you cannot fight it');
     }
 
-    /** And says nothing of the sort when one IS running. */
-    public function test_it_does_not_warn_when_an_icebreaker_is_running(): void
+    /** And offers it instead, when one is held. */
+    public function test_it_offers_an_icebreaker_that_is_held(): void
     {
         $this->machine();
-        $this->runProgram('icebreaker-1');
+        InventoryItem::query()->create([
+            'character_id' => $this->character->id,
+            'item_id' => Item::query()->where('slug', 'icebreaker-1')->value('id'),
+            'quantity' => 1,
+        ]);
 
-        $this->visit()->assertOk()->assertDontSee('you cannot fight it');
+        $this->visit()->assertOk()->assertDontSee('you cannot fight it')->assertSee('name="icebreaker"', false);
     }
 
     public function test_it_says_when_nothing_is_running_at_all(): void

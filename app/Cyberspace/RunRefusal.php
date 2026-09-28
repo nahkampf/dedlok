@@ -40,6 +40,8 @@ enum RunRefusal: string
 
     case AlreadyRunning = 'already_running';
 
+    case ProgramRefused = 'program_refused';
+
     public function message(): string
     {
         return Text::get("cyberspace.run.refused.{$this->value}");

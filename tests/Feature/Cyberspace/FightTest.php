@@ -784,7 +784,7 @@ final class FightTest extends TestCase
         $system = $this->machine(1);
         SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 500]);
         $this->ignoreThresholds();
-        $run = $this->begin();
+        $run = $this->beginUnnoticed();
 
         $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
 
@@ -799,32 +799,49 @@ final class FightTest extends TestCase
     /**
      * TOUCHING THE CORE IS THE IDS'S SECOND CHANCE, independent of what
      * happened on approach. Begun UNNOTICED, then the extraction itself is
-     * what gets caught.
+     * what gets caught — and the ICE it wakes stands between them and the
+     * core, so nothing is taken.
      */
-    public function test_extraction_can_be_the_thing_that_gets_you_noticed(): void
+    public function test_extraction_can_be_the_thing_that_wakes_the_ice(): void
     {
-        $system = $this->machine(9); // grade 1 machine but a real IDS via the ICE row's own detection value is not enough alone; force a real ids_detection too
+        $system = $this->machine(1);
         $system->forceFill(['ids_detection' => 50])->save();
         SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 10]);
         $this->ignoreThresholds();
-        $this->equipReadyDeck($this->character);
 
         $run = $this->beginUnnoticed();
         $this->assertFalse($run->detected);
 
-        // beginUnnoticed() bound CheckRoller to always evade, for the approach
-        // roll. Rebind it here to always FAIL evasion, so this turn's core
-        // touch is caught — simulator()'s own die only ever pins the OTHER
-        // rolls (damage, surge, and so on), never CheckRoller.
-        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 1.0));
+        // Rebound to always FAIL evasion, so this turn's core touch is caught.
+        $this->everyCheckFails();
         $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
 
         $this->assertTrue($result->run->detected, 'caught on the core touch, not on approach');
         $this->assertSame($system->ice_id, $result->run->ice_id);
+        $this->assertSame(0, $this->character->fresh()->creds, 'the ICE woke in time to stop it');
+        $this->assertContains(Text::get('cyberspace.run.log.ice_guards'), array_column($result->log, 'text'));
+    }
 
-        // And the extraction still succeeded — being noticed is a consequence
-        // of touching the core, not a block on the act itself.
-        $this->assertSame(10, $this->character->fresh()->creds);
+    /** AWAKE ICE GUARDS THE CORE: break it first, and then the take lands. */
+    public function test_awake_ice_must_be_broken_before_anything_is_taken(): void
+    {
+        $system = $this->machine(1);
+        SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 40]);
+        $this->ignoreThresholds();
+        $this->runIcebreaker(12);   // 20 a cut against ICE I's 30
+        $run = $this->begin();
+        $sim = $this->simulator(101);
+
+        $blocked = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+        $this->assertSame(0, $this->character->fresh()->creds, 'blocked while the ICE is awake');
+        $this->assertFalse($blocked->run->extracted);
+
+        $sim->take($this->character->fresh(), $blocked->run->fresh(), RunAction::Attack);
+        $broken = $sim->take($this->character->fresh(), $blocked->run->fresh(), RunAction::Attack);
+        $this->assertNull($broken->run->ice_id, 'broken');
+
+        $sim->take($this->character->fresh(), $broken->run->fresh(), RunAction::Extract);
+        $this->assertSame(40, $this->character->fresh()->creds);
     }
 
     /** An unspeakable operating system fails silently, the same line a wasted cut wears. */
@@ -868,7 +885,7 @@ final class FightTest extends TestCase
         $system = $this->machine(1);
         SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'creds', 'amount' => 50]);
         $this->ignoreThresholds();
-        $run = $this->begin();
+        $run = $this->beginUnnoticed();
 
         $afterExtract = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
 
@@ -903,18 +920,21 @@ final class FightTest extends TestCase
      * (see CarriesAWorkingDeck), so a 120 QB file takes three turns: begin,
      * one continue, and one that completes it.
      */
-    public function test_a_multi_turn_transfer_still_exposes_every_turn_to_the_ice(): void
+    /**
+     * A FILE COSTS TURNS. A pull can only begin with no ICE awake, and nothing
+     * can wake one mid-pull — continuing never touches the core again — so the
+     * countdown is a race against the trace rather than a fight.
+     */
+    public function test_a_multi_turn_transfer_counts_down_and_lands(): void
     {
-        $system = $this->machine(1); // ICE I: 15% to hit, 7 damage — simulator(1) always lands it
+        $system = $this->machine(1);
         SystemContent::query()->create([
             'system_id' => $system->id, 'kind' => 'data', 'label' => 'Ledger',
             'size_qb' => 120, 'value_sealed' => 10, 'value_broken' => 20,
         ]);
         $this->ignoreThresholds();
-        $run = $this->begin();
-        $sim = $this->simulator(1);
-
-        $before = $this->character->fresh()->current_synaptic_integrity;
+        $run = $this->beginUnnoticed();
+        $sim = $this->simulator(101);
 
         $first = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
         $this->assertSame(70, $first->run->extracting_qb);
@@ -922,15 +942,10 @@ final class FightTest extends TestCase
 
         $second = $sim->take($this->character->fresh(), $first->run->fresh(), RunAction::Extract);
         $this->assertSame(20, $second->run->extracting_qb);
-        $this->assertFalse($second->run->extracted);
 
         $third = $sim->take($this->character->fresh(), $second->run->fresh(), RunAction::Extract);
         $this->assertNull($third->run->extracting_qb, 'the countdown clears once the file lands');
         $this->assertTrue($third->run->extracted);
-
-        // Three turns spent, three swings landed — nothing about a transfer
-        // running skips the machine's half of the turn.
-        $this->assertSame($before - 21, $this->character->fresh()->current_synaptic_integrity);
 
         $this->assertSame(
             1,
@@ -940,8 +955,60 @@ final class FightTest extends TestCase
         );
     }
 
-    /** Spending a turn on Attack instead pauses a pull rather than losing it. */
-    public function test_attacking_mid_transfer_leaves_its_progress_untouched(): void
+    /**
+     * THE IDS WATCHES EVERY TURN OF A PULL. Unseen on the turn it began, caught
+     * on a later one: the ICE wakes, the pull stops where it was, and nothing
+     * more comes across until the ICE is broken.
+     */
+    public function test_the_ids_can_catch_a_pull_part_way_through(): void
+    {
+        $system = $this->machine(1);
+        $system->forceFill(['ids_detection' => 50])->save();
+        SystemContent::query()->create([
+            'system_id' => $system->id, 'kind' => 'data', 'label' => 'Ledger',
+            'size_qb' => 120, 'value_sealed' => 10, 'value_broken' => 20,
+        ]);
+        $this->ignoreThresholds();
+        $run = $this->beginUnnoticed();
+
+        $first = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+        $this->assertSame(70, $first->run->extracting_qb);
+        $this->assertFalse($first->run->detected);
+
+        $this->everyCheckFails();
+        $caught = $this->simulator(101)->take($this->character->fresh(), $first->run->fresh(), RunAction::Extract);
+
+        $this->assertTrue($caught->run->detected);
+        $this->assertSame($system->ice_id, $caught->run->ice_id, 'the ICE woke');
+        $this->assertSame(70, $caught->run->extracting_qb, 'kept, not advanced');
+        $this->assertContains(Text::get('cyberspace.run.log.pull_noticed_ice'), array_column($caught->log, 'text'));
+
+        $again = $this->simulator(101)->take($this->character->fresh(), $caught->run->fresh(), RunAction::Extract);
+        $this->assertSame(70, $again->run->extracting_qb, 'blocked while the ICE is awake');
+    }
+
+    /** A system with no IDS has nothing to watch a pull with. */
+    public function test_a_pull_on_a_system_with_no_ids_is_never_caught(): void
+    {
+        $system = $this->machine(1);   // tracer and ICE, no IDS
+        SystemContent::query()->create([
+            'system_id' => $system->id, 'kind' => 'data', 'label' => 'Ledger',
+            'size_qb' => 120, 'value_sealed' => 10, 'value_broken' => 20,
+        ]);
+        $this->ignoreThresholds();
+        $run = $this->beginUnnoticed();
+
+        $first = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+
+        $this->everyCheckFails();
+        $next = $this->simulator(101)->take($this->character->fresh(), $first->run->fresh(), RunAction::Extract);
+
+        $this->assertFalse($next->run->detected);
+        $this->assertSame(20, $next->run->extracting_qb);
+    }
+
+    /** Spending a turn on anything else pauses a pull rather than losing it. */
+    public function test_holding_mid_transfer_leaves_its_progress_untouched(): void
     {
         $system = $this->machine(1);
         SystemContent::query()->create([
@@ -949,13 +1016,13 @@ final class FightTest extends TestCase
             'size_qb' => 120, 'value_sealed' => 10, 'value_broken' => 20,
         ]);
         $this->ignoreThresholds();
-        $run = $this->begin();
-        $sim = $this->simulator(101); // misses every ICE swing, so SI is not what this test is about
+        $run = $this->beginUnnoticed();
+        $sim = $this->simulator(101);
 
         $afterBegin = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
         $this->assertSame(70, $afterBegin->run->extracting_qb);
 
-        $afterAttack = $sim->take($this->character->fresh(), $afterBegin->run->fresh(), RunAction::Attack);
+        $afterAttack = $sim->take($this->character->fresh(), $afterBegin->run->fresh(), RunAction::Hold);
         $this->assertSame(70, $afterAttack->run->extracting_qb, 'a turn spent elsewhere does not spend the transfer too');
 
         $afterContinue = $sim->take($this->character->fresh(), $afterAttack->run->fresh(), RunAction::Extract);
@@ -975,7 +1042,7 @@ final class FightTest extends TestCase
             'size_qb' => 60, 'value_sealed' => 10, 'value_broken' => 20,
         ]);
         $this->ignoreThresholds();
-        $run = $this->begin();
+        $run = $this->beginUnnoticed();
         $sim = $this->simulator(101);
 
         $afterBegin = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);

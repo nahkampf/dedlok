@@ -152,9 +152,22 @@ final class BurnTest extends TestCase
      * absent. Asserted with a run that was loudly noticed, which is the case
      * that would otherwise shut it.
      */
+    /** Awake ICE guards the core: nothing burns until it is broken. */
+    public function test_awake_ice_stops_a_burn(): void
+    {
+        $this->machine(iceLevel: 1);
+        $run = $this->begin(RunPurpose::Burn, noticed: true);
+
+        $result = $this->simulator()->take($this->character, $run, RunAction::Burn);
+
+        $this->assertNull($result->ending, 'the run goes on');
+        $this->assertSame(1, System::query()->count(), 'the system is still there');
+    }
+
     public function test_a_noticed_burn_leaves_no_lockdown_because_there_is_nothing_to_shut(): void
     {
-        $this->machine(iceLevel: 6);
+        // No ICE, or it would guard the core; the tracer is what notices.
+        $this->machine();
         $run = $this->begin(RunPurpose::Burn, noticed: true);
 
         $this->assertTrue((bool) $run->fresh()->detected, 'it saw them');

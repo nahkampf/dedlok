@@ -159,9 +159,23 @@ final class BackdoorTest extends TestCase
      * erases the logs and resets what it tripped, so the machine does not shut
      * EVEN THOUGH the IDS fired and the ICE woke up.
      */
+    /** Awake ICE guards the core: nothing is installed until it is broken. */
+    public function test_awake_ice_stops_an_install(): void
+    {
+        $this->machine(iceLevel: 1);
+        $run = $this->begin(BackdoorKind::Siphon, noticed: true);
+
+        $this->act($run, RunAction::Install);
+
+        $this->assertFalse((bool) $run->fresh()->backdoored);
+        $this->assertSame(0, Backdoor::query()->count());
+    }
+
     public function test_a_landed_install_leaves_no_lockdown_behind(): void
     {
-        $system = $this->machine(iceLevel: 3);
+        // No ICE: awake ICE would guard the core and the install could not
+        // land. The tracer is what sees them.
+        $system = $this->machine();
         $run = $this->begin(BackdoorKind::Routing, noticed: true);
 
         $this->assertTrue($run->fresh()->detected, 'it saw them on the way in');

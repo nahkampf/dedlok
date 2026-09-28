@@ -172,7 +172,8 @@ return [
             'deck_not_ready' => 'That deck will not run. Finish building it first.',
             'not_enough_compute' => 'Not enough compute left. Stop something, or fit a better processor.',
             'not_enough_memory' => 'Not enough memory left. Stop something, or fit more RAM.',
-            'run_only' => 'This only does anything during an intrusion, and the run starts it, not you.',
+            'run_only' => 'This only does anything during an intrusion. Choose it on the briefing and the run starts it.',
+            'one_icebreaker' => 'Only one icebreaker runs at a time.',
         ],
     ],
 
@@ -332,6 +333,7 @@ return [
             'opiate' => 'Opiate',
             'sedative' => 'Sedative',
             'psychedelic' => 'Psychedelic',
+            'nootropic' => 'Nootropic',
         ],
 
         // On the item card, so what a dose costs is readable before it is
@@ -713,6 +715,7 @@ return [
             | the player is owed is the chance, not the language.
             */
             'core_chance' => 'Core access :chance%.',
+            'core_guarded' => 'The ICE is awake and guarding the core. Break it before you can extract, install or burn — or egress and abort.',
             'core_hint' => 'A failed attempt spends the turn.',
 
             /*
@@ -759,11 +762,18 @@ return [
 
                 'running' => 'Running',
                 'running_none' => 'Nothing is running. You cannot make a run, and you cannot scan.',
-                'no_icebreaker' => 'No icebreaker. If something wakes up, you cannot fight it.',
+                'no_icebreaker' => 'You hold no icebreaker. If something wakes up, you cannot fight it.',
+
+                // Run-only software, started by the run and by nothing else.
+                'loadout' => 'Loadout',
+                'loadout_icebreaker' => 'Icebreaker — one at a time',
+                'loadout_other' => 'Other run-only software',
+                'loadout_none' => 'None',
+                'loadout_hint' => 'Started as you go in and stopped when you leave. It cannot be changed once you are inside. Your last loadout is chosen for you.',
 
                 /*
-                | THE INTENTIONS. Each is a separate form and a separate
-                | button, because they are not settings of one act — choosing
+                | THE INTENTIONS. Each is a separate button, because they are
+                | not settings of one act — choosing
                 | one decides what every turn afterwards can do, and a backdoor
                 | additionally decides a permanent property of the machine.
                 */
@@ -879,6 +889,8 @@ return [
                 // difference: the runner leaves with the standing and without
                 // a way back in.
                 'planted' => 'Their door is in. It answers to them, not to you.',
+                // Awake ICE blocks every core action until it is broken.
+                'ice_guards' => 'The ICE stands between you and the core. Break it, or get out.',
                 'install_fails' => 'You reach for the core and find nothing you can use.',
                 /*
                 | BURNING. The machine is named because it is the last thing
@@ -899,6 +911,9 @@ return [
                 */
                 'core_noticed' => 'Something deep withing the core of the system notices, this time.',
                 'core_noticed_ice' => 'Something deep withing the core of the system notices, this time, and the ICE activates.',
+                // The IDS catching a pull part-way through, on a later turn.
+                'pull_noticed' => 'The IDS catches the transfer.',
+                'pull_noticed_ice' => 'The IDS catches the transfer, and the ICE activates.',
 
                 /*
                 | WHAT A DEFEAT ACTUALLY COST. Said in the past tense and in
@@ -1015,6 +1030,7 @@ return [
                 'not_intrudable' => 'The portal is not a system you can make an intrusion into.',
                 'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
                 'already_running' => 'You are already in a run.',
+                'program_refused' => 'Something on your loadout would not start.',
                 // Said plainly: a lockdown is a consequence of something
                 // somebody did, not a scan fact being given away. And it is
                 // worth knowing the system will not be there afterwards.

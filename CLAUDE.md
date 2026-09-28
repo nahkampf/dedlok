@@ -715,8 +715,19 @@ what a bare `items` row cannot.
   than a total**. `ProgramRunner` counts running rows of the same item across every deck.
 - **`programs.multithreaded` decides whether more than one is a question at all** — a
   property of the software, false by default, exposed in the item editor.
-- **`$duringRun` is the gate nothing opens yet.** A run-only program is started BY the
-  simulator, which does not exist. Jacking in is NOT a run and must not pass `true`.
+- **Run-only software is the LOADOUT, chosen on the briefing.** `RunStarter::start()` is
+  the only caller passing `$duringRun`, and it starts the loadout BEFORE the arrival roll
+  (evasion that came up after the system looked hid nobody). A program that will not start
+  refuses the whole run with its own reason and anything already started is put back.
+  `RunStarter::end()` stops everything run-only (`ProgramRunner::stopRunOnly()`). **It
+  cannot be changed inside a run.** Jacking in is NOT a run and must not pass `true`.
+  **The last loadout that went in is remembered** in the `run_loadout` cookie, as ITEM ids
+  (a row id does not survive its stack splitting and merging) and ticked on the next
+  briefing. Per browser, deliberately — no column, no migration. A refused run is not
+  remembered.
+- **One icebreaker at a time**, whichever ones — `ProcessRefusal::OneIcebreaker`.
+  `icebreaker_damage` sums every running program, so two cheap ones would out-cut a dear
+  one and *twenty turns is never enough* would stop being true.
 - **Storage is stored and not enforced** — `DeckRequirement` has no storage case.
 - Screens: topbar count + modal, deck screen's Running and Storage tabs (storage split
   into two grids), `inventory.run` in both directions.
@@ -754,7 +765,7 @@ Nothing on `items` says an item is one. What a dose DOES stays on `items.modifie
 implant's; the row says which family, how long, and what it costs the books.
 
 - **`App\Drugs\Family` is a fixed vocabulary and not rows** — stimulant, opiate, sedative,
-  psychedelic. **A fifth family is a case and a withdrawal**: each needs its own
+  psychedelic, nootropic. **A new family is a case and a withdrawal**: each needs its own
   `config/effects.php` definition, because coming off a stimulant is not coming off an
   opiate and there is nothing generic to say about either.
 - **The books are per (character, family) and a missing row means clean.** Somebody can be
@@ -795,8 +806,8 @@ implant's; the row says which family, how long, and what it costs the books.
   `WaitingRoom::checkFloor()` is asked either way, which is the rule every bad ending
   follows.
 - **Lethality belongs to the FAMILY**, in `drugs.overdose.families`: opiates and sedatives
-  stop you at two past the line, a stimulant at three, a psychedelic never (`lethal_at`
-  null). **`drugs.lethal_at` is the per-drug override** and is nearly always NULL — null
+  stop you at two past the line, a stimulant at three, a psychedelic or a nootropic never
+  (`lethal_at` null). **`drugs.lethal_at` is the per-drug override** and is nearly always NULL — null
   asks the family and does not mean never, so a survivable drug in a lethal family sets a
   high number.
 - **`drugs:metabolise` takes a day off both figures nightly**, tolerance faster than
@@ -1152,6 +1163,12 @@ consequences and taking what a machine holds all roll.
   straight line draws. **No grade term** — a
   machine's grade already decides WHICH operating system it runs, via the skill's rank, so
   charging for it again would charge twice.
+- **AWAKE ICE GUARDS THE CORE.** Extract, Install and Burn each make the core touch
+  (the IDS's second look) and then, if any ICE is awake — woken now or on arrival — fail
+  with `ice_guards` BEFORE the operating system is rolled. The turn is spent and the ICE
+  swings. The runner breaks it or egresses; there is no third way to the core. Said out
+  loud, unlike the core's silent failures: the ICE is on screen, so naming it gives
+  nothing away. The run screen disables the three buttons while `Run::inAFight()`.
 - **A cut never asks.** An icebreaker against an ICE is one program against another; the
   vocabulary only matters when the MACHINE is being told to do something.
 - **`runs.os_locked` is the state of the door, not a verdict about the runner.** True from
@@ -1274,12 +1291,16 @@ consequences and taking what a machine holds all roll.
   running. `beginTransfer()` sets it from `totalFileQb()` minus one turn's bandwidth,
   `continueTransfer()` spends another each time Extract is chosen, `completeTransfer()`
   calls `takeFiles()` at zero. **Continuing is an ordinary call to `Simulator::extract()`
-  inside the ordinary turn** — no path skips the machine's half, so an ICE keeps swinging.
-  Choosing Attack simply does not call `extract()` that turn: a pull is paused by spending
-  the turn elsewhere, never lost.
-- **The core-touch detection roll fires only on the turn that BEGINS a pull.** Hence the
-  `extracting_qb === null` check ahead of the OS/purpose/empty-node check that shares
-  `extract_fails`.
+  inside the ordinary turn** — no path skips the machine's half. A pull can only BEGIN
+  with no ICE awake (see below). Continuing never touches the core again, but the IDS
+  still watches (below). Spending the turn elsewhere pauses a pull, never loses it.
+- **The core-touch detection roll fires only on the turn that BEGINS a pull**, every
+  watcher rolling. Hence the `extracting_qb === null` check ahead of the OS/purpose/
+  empty-node check that shares `extract_fails`.
+- **Every later turn of a pull, THE IDS ALONE rolls again** (`idsWatchesThePull()`) —
+  only while undetected, never on a system with no IDS. A long file is a gamble as well as
+  slow, which makes bandwidth a stealth stat. Caught, the ICE wakes and guards the core:
+  the pull stops where it was, KEPT, and resumes once the ICE is broken.
 - **Bandwidth is read through `DeckTotals::forCharacter()`, floored at one.** The floor is a
   degenerate-case guard, not a balance number.
 - **`transfer_gone` is its own log line** — losing a race after a countdown is an ordinary
@@ -1421,6 +1442,12 @@ consequences and taking what a machine holds all roll.
   anything crediting it can work off elapsed time. **`characters:regenerate` credits it
   every minute** and keeps NO stored clock — a minute lost to a restart is a point. It heals
   from ZERO.
+- **A dose can carry `synaptic_regen` too, and that is how healing is SOLD.** Rewire
+  (nootropic, by migration) is +2 a minute for ten minutes, −8% Intellect and Focus while it
+  runs, tolerance 10 a dose, not addictive. **Two a minute and not one because regen
+  FLOORS**: tolerance scales one point to 0.9, which floors to nothing. Tolerance scales
+  only the positive amounts, so a tolerant user heals at half the rate and pays the full
+  side effect.
 - **`Character::recover()` is `takeDamage()`'s mirror** — addition and a ceiling. **Capped
   at the maximum as it is NOW**, which is why it cannot be damage with a minus sign: healing
   must never climb past what injury lowered.
