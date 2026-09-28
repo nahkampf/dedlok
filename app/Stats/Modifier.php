@@ -33,6 +33,36 @@ final readonly class Modifier
     ) {}
 
     /**
+     * The same modifier, worth a share of itself.
+     *
+     * Additive amounts scale directly; a multiplier scales its distance from
+     * one (a ×1.2 at half is ×1.1), so a share never flips it into a penalty.
+     * An override is a value rather than a quantity and is left alone.
+     * Drawbacks scale with the benefit: a copy is a fraction of the whole
+     * program, not a fraction of its good side.
+     */
+    public function scaledBy(float $factor): self
+    {
+        $amount = match ($this->op) {
+            Op::Multiplier => 1.0 + ($this->amount - 1.0) * $factor,
+            Op::Override => $this->amount,
+            default => $this->amount * $factor,
+        };
+
+        return new self($this->op, $amount, $this->target, $this->source, $this->priority, $this->condition);
+    }
+
+    /**
+     * How far this is from doing nothing, whichever direction — the ranking a
+     * stack of diminishing modifiers is sorted by, strongest first. A −10%
+     * scan duration is as strong as a +10% anything.
+     */
+    public function magnitude(): float
+    {
+        return abs($this->op === Op::Multiplier ? $this->amount - 1.0 : $this->amount);
+    }
+
+    /**
      * Build from config data.
      *
      * Unknown keys are rejected rather than ignored, and so is an unknown

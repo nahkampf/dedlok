@@ -713,6 +713,15 @@ what a bare `items` row cannot.
 - **How many copies of one program may run is `program_threads`** — one by default
   (`config/programs.php`), raised by Multithreading, and **a ceiling per program rather
   than a total**. `ProgramRunner` counts running rows of the same item across every deck.
+- **Programs of one KIND diminish.** Every running program of one kind (two Surveyors, or a
+  Surveyor and any other analyser) is a stack per op and target: the PROGRAMS are ranked
+  strongest first (`Modifier::magnitude()` summed) and the Nth gives
+  `stats.diminishing[N-1]` of what it does there — 100%, 86%, 57%, 26%, 10%, 3%, then nothing — via
+  `Modifier::scaledBy()` (a multiplier scales its distance from one; an override is
+  untouched; drawbacks scale too). The unit is the program, never the modifier — a
+  program's five per-level grants do not penalise each other. Different kinds
+  never discount each other. **This is the game's rule for things of one type stacking
+  anywhere**: the next source that can hold two reads the same list.
 - **`programs.multithreaded` decides whether more than one is a question at all** — a
   property of the software, false by default, exposed in the item editor.
 - **Run-only software is the LOADOUT, chosen on the briefing.** `RunStarter::start()` is
@@ -1239,7 +1248,12 @@ consequences and taking what a machine holds all roll.
 - **`Simulator::burnTheChain()` shuts every machine on the route** through
   `Lockdown::shut()` — one call does "the backdoors are gone and the systems move".
 - **A completed trace puts heat on the character and burns the chain.** `characters.heat` is
-  persistent; **one point is a placeholder**, and what heat now DOES is attract attention:
+  persistent; **a trace costs the system's GRADE × 2** (`cyberspace.trace.heat_per_grade`),
+  **charged as the run ENDS** (`RunStarter::chargeTheTrace()`, any ending) rather than as
+  it lands, because **a landed burn REPLACES it — the two heats never compound**. The chain
+  still burns the moment the trace lands. A traced runner losing nothing else is
+  deliberate: heat is meant to become untenable once hunters and bounties have teeth.
+  What heat DOES today is attract attention (random encounters are the plan):
   `App\Characters\Bounties` rolls every character carrying any, once a night at five, against
   the chance somebody decides they are worth money. The uncertainty floor under five points,
   climbing in a straight line to **certain at a hundred** — a straight line because nothing
@@ -1381,8 +1395,10 @@ consequences and taking what a machine holds all roll.
   burner's own run as the exception. Lockdown calls it too — it used to be a
   private method there, and two copies would be two places for the ending order
   to drift.
-- **What it costs is heat and nothing else.** Two points against a completed
-  trace's one, the same placeholder on the same undesigned axis. No loot, no
+- **What it costs is heat and nothing else.** The system's grade × 2.5
+  (`cyberspace.burn.heat_per_grade`), against a trace's grade × 2 — burning a
+  system is always worse than being caught hacking it. A traced burn pays this and not
+  the trace's heat as well. No loot, no
   raid counted, no lockdown: the real price is everything the machine would
   ever have been worth again, which is the design's own answer to what a burn
   costs the runner.

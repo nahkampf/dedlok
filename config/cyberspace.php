@@ -605,27 +605,26 @@ return [
         ],
 
         /*
-        | What a completed trace puts on the character.
+        | What a completed trace puts on the character, PER GRADE of the system
+        | that traced them: two at grade 1, eighteen at grade 9. Being followed
+        | home by somebody serious is worth more than by a junk box.
         |
-        | ONE, AND IT IS A PLACEHOLDER. Heat is persistent and belongs to the
-        | person — it is what the world knows about them — and what it DOES is
-        | not designed: the decay, the thresholds it crosses, what it draws
-        | towards somebody moving through cyberspace. See TODO.md. What is
-        | built is that a trace which completes costs something and that the
-        | something accumulates.
+        | Heat is persistent and belongs to the person — it is what the world
+        | knows about them. What it will DO is random encounters, in cyberspace
+        | and on the street, that have to be beaten; until then it only drives
+        | the bounty roll. See TODO.md.
         */
-        'heat' => 1,
+        'heat_per_grade' => 2,
     ],
 
     /*
     | Burning a machine out of existence.
     |
-    | THE ONLY COST IS HEAT, and it is the same placeholder the trace carries
-    | for the same reason — what heat DOES is undesigned, and a burn is the
-    | loudest thing anybody can do to a machine, so it is the one axis that
-    | obviously belongs to it. Two points rather than the trace's one, because
-    | a completed trace is the world following somebody home and a burn is a
-    | machine missing from the grid in the morning.
+    | THE ONLY COST IS HEAT: the burned system's GRADE × 2.5, against a
+    | completed trace's grade × 2. Burning a system must always be worse than
+    | being caught hacking it — a trace is the world following somebody home,
+    | a burn is a system missing from the grid in the morning. Heat is a
+    | decimal to one place, so the half-points land as they are.
     |
     | Deliberately nothing else. A burn takes no loot, counts no raid and
     | leaves no lockdown — there is nothing left to shut — so what it spends is
@@ -635,7 +634,7 @@ return [
     | would be balancing against a number nobody has set.
     */
     'burn' => [
-        'heat' => 2,
+        'heat_per_grade' => 2.5,
     ],
 
     'defences' => [

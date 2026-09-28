@@ -621,6 +621,23 @@ return [
         'heat_decay' => 0.5,
     ],
 
+    /*
+    | DIMINISHING RETURNS ON THINGS OF ONE TYPE.
+    |
+    | The share the Nth modifier in a stack contributes, strongest first: two
+    | scanners are not twice one scanner, whether or not they are the same
+    | program. A stack is things of one TYPE (for software, one program kind)
+    | doing the same op to the same target. Past the end of the list: NOTHING.
+    | The first four are the design; the tail continues the same curve down to
+    | where it stops mattering.
+    |
+    | Read by `App\Stats\Sources\RunningPrograms` and applied through
+    | `Modifier::scaledBy()`. This is the rule for things of one type stacking
+    | ANYWHERE: the next source that can hold two reads this list rather than
+    | inventing its own.
+    */
+    'diminishing' => [1.0, 0.86, 0.57, 0.26, 0.10, 0.03],
+
     'pools' => [
 
         /*

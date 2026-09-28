@@ -620,19 +620,28 @@ final class FightTest extends TestCase
 
     // ---- what a completed trace costs --------------------------------------
 
-    /** Heat is persistent and belongs to the person. One point, for now. */
-    public function test_a_completed_trace_puts_heat_on_the_character(): void
+    /**
+     * Heat is persistent and belongs to the person: two per grade of the
+     * system. Charged as the run ENDS, not as the trace lands — a burn later
+     * in the same run would replace it.
+     */
+    public function test_a_completed_trace_puts_heat_on_the_character_as_the_run_ends(): void
     {
-        $this->machine(1);
+        $this->machine(1)->forceFill(['grade' => 4])->save();
         $this->ignoreThresholds();
         $run = $this->begin();
         $run->forceFill(['trace' => 98])->save();
 
-        $before = (int) $this->character->fresh()->heat;
+        $before = (float) $this->character->fresh()->heat;
 
         $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
 
-        $this->assertSame($before + 1, (int) $this->character->fresh()->heat);
+        $this->assertSame(100, (int) $run->fresh()->trace, 'it reached them');
+        $this->assertSame($before, (float) $this->character->fresh()->heat, 'nothing yet');
+
+        app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Egress);
+
+        $this->assertSame($before + 8, (float) $this->character->fresh()->heat);
     }
 
     /** And only once, however long they stay afterwards. */
@@ -647,7 +656,23 @@ final class FightTest extends TestCase
         $sim->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
         $sim->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
 
-        $this->assertSame(1, (int) $this->character->fresh()->heat);
+        app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Egress);
+        app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Egress);
+
+        $this->assertSame(2.0, (float) $this->character->fresh()->heat, 'grade 1, once');
+    }
+
+    /** A trace that never finished costs nothing. */
+    public function test_an_unfinished_trace_costs_no_heat(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $run->forceFill(['trace' => 60])->save();
+
+        app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Egress);
+
+        $this->assertSame(0.0, (float) $this->character->fresh()->heat);
     }
 
     // ---- walking the chain -------------------------------------------------

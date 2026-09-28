@@ -13,6 +13,7 @@ use App\Programs\ProcessRefusal;
 use App\Programs\ProgramRunner;
 use App\Stats\Resolver;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -213,6 +214,8 @@ final readonly class RunStarter
             // Nothing run-only outlives the run that started it.
             app(ProgramRunner::class)->stopRunOnly($character);
 
+            $this->chargeTheTrace($character, $run, $ending);
+
             /*
              * DOES THE MACHINE NOW KNOW?
              *
@@ -237,6 +240,37 @@ final readonly class RunStarter
         });
 
         return RunResult::ended($run);
+    }
+
+    /**
+     * A completed trace's heat, charged as the run ENDS rather than as the
+     * trace lands.
+     *
+     * THE TWO HEATS NEVER COMPOUND. A burn that landed has already charged its
+     * own heat (grade × 2.5), which is the worse of the two, so a traced burn
+     * pays that and not this as well — and that can only be known once the run
+     * is over. Every other ending pays: completed, egressed, downed, cancelled.
+     *
+     * `runs.trace` caps at 100, so 100 is "it reached you". The grade is read
+     * off the system as it stands now; one gone by the time the run ends
+     * (burned by somebody else, which cancels this run) is charged as the
+     * floor grade rather than nothing.
+     */
+    private function chargeTheTrace(Character $character, Run $run, RunEnding $ending): void
+    {
+        if ((int) $run->trace < 100) {
+            return;
+        }
+
+        if ($ending === RunEnding::Completed && $run->purpose === RunPurpose::Burn) {
+            return;
+        }
+
+        $grade = (int) ($run->system()?->grade ?? 1);
+
+        $character->forceFill([
+            'heat' => (float) $character->heat + $grade * (float) Config::get('cyberspace.trace.heat_per_grade', 2),
+        ])->save();
     }
 
     /**
