@@ -335,6 +335,72 @@ final class MarketPurchaseTest extends TestCase
             ->assertDontSee('data-inspect=', false);
     }
 
+    // ---- buying without a reload ---------------------------------------------
+
+    /**
+     * ASKED FOR JSON, IT ANSWERS WITH WHAT CHANGED: the money left, the shelf
+     * left, and the corner tick as it now reads — everything the page needs
+     * to redraw itself without a round trip for the whole screen.
+     */
+    public function test_a_json_purchase_says_what_changed(): void
+    {
+        $item = $this->stocked(quantity: 5, price: 100);
+
+        $this->actingAs($this->character->user)
+            ->postJson(route('market.buy', $item), ['quantity' => 2])
+            ->assertOk()
+            ->assertJson([
+                'creds' => 800,
+                'left' => 3,
+                'left_text' => Text::plural('market.on_shelf', 3),
+            ])
+            ->assertJsonPath('tick', fn (string $html): bool => str_contains($html, Text::get('market.tick.owned')))
+            ->assertJsonPath('message', fn (string $message): bool => str_contains($message, $item->displayName()));
+
+        $this->assertSame(800, (int) $this->character->fresh()->creds);
+    }
+
+    /** A refusal is a 422 with the same sentence the redirect would flash. */
+    public function test_a_json_refusal_is_a_422_with_the_reason(): void
+    {
+        $item = $this->stocked(quantity: 5, price: 600);
+
+        $this->actingAs($this->character->user)
+            ->postJson(route('market.buy', $item), ['quantity' => 2])
+            ->assertStatus(422)
+            ->assertJson(['message' => PurchaseRefusal::CannotAfford->message()]);
+
+        $this->assertSame(1000, (int) $this->character->fresh()->creds);
+    }
+
+    /** The shelf's form asks for it, and carries what the page re-reads. */
+    public function test_the_shelf_form_buys_without_a_reload(): void
+    {
+        $item = $this->stocked(quantity: 5, price: 100);
+
+        $this->actingAs($this->character->user)
+            ->get(route('market.index'))
+            ->assertOk()
+            ->assertSee('data-buy', false)
+            ->assertSee('data-price="100" data-left="5"', false)
+            ->assertSee('data-creds', false);
+    }
+
+    /** A flash after a redirect is the kind that glitches in and leaves. */
+    public function test_a_flash_is_marked_to_leave_by_itself(): void
+    {
+        $item = $this->stocked();
+
+        $this->actingAs($this->character->user)
+            ->from(route('market.index'))
+            ->post(route('market.buy', $item))
+            ->assertRedirect();
+
+        $this->actingAs($this->character->user)
+            ->get(route('market.index'))
+            ->assertSee('callout callout--ok callout--flash', false);
+    }
+
     public function test_an_empty_market_says_so(): void
     {
         $this->actingAs($this->character->user)

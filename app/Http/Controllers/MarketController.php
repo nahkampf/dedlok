@@ -14,8 +14,10 @@ use App\Models\MarketOffer;
 use App\Models\MarketStock;
 use App\Skills\SkillProgression;
 use App\Support\Text;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\View;
 
 /**
@@ -69,12 +71,7 @@ class MarketController extends Controller
             // skill id => level and points, for the tick and for a book's
             // <x-skill-detail>: the same map the skills screen reads, so a
             // skill is described identically wherever it is inspected.
-            'injected' => $character->characterSkills()
-                ->get(['skill_id', 'attained_level', 'skill_points'])
-                ->mapWithKeys(fn ($row): array => [
-                    (int) $row->skill_id => ['level' => (int) $row->attained_level, 'points' => (int) $row->skill_points],
-                ])
-                ->all(),
+            'injected' => $this->injected($character),
             'maxLevel' => SkillProgression::fromConfig()->maxLevel(),
             // The other market. Not grouped and not searched: it is whatever
             // anybody happens to be holding today, and it is short.
@@ -85,7 +82,7 @@ class MarketController extends Controller
         ]);
     }
 
-    public function buy(Request $request, Item $item, Purchaser $purchaser): RedirectResponse
+    public function buy(Request $request, Item $item, Purchaser $purchaser): RedirectResponse|JsonResponse
     {
         $character = $this->character($request);
 
@@ -95,15 +92,57 @@ class MarketController extends Controller
 
         $result = $purchaser->buy($character, $item, (int) ($data['quantity'] ?? 1));
 
-        if (! $result->succeeded()) {
-            return back()->with('error', $result->refusal->message());
+        $message = $result->succeeded()
+            ? Text::get('market.bought', [
+                'quantity' => $result->quantity,
+                'item' => $item->displayName(),
+                'paid' => number_format($result->paid),
+            ])
+            : $result->refusal->message();
+
+        // THE SHELF BUYS WITHOUT A RELOAD. ui-kit.js's [data-buy] asks for
+        // JSON and puts what changed on the page; anything else — a browser
+        // with no script, or the script's own fallback — gets the redirect
+        // this always was. Same purchase, same words, two ways of saying them.
+        if ($request->expectsJson()) {
+            if (! $result->succeeded()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            $left = (int) (MarketStock::query()->where('item_id', $item->id)->value('quantity') ?? 0);
+
+            return response()->json([
+                'message' => $message,
+                'creds' => (int) $character->fresh()->creds,
+                'left' => $left,
+                'left_text' => Text::plural('market.on_shelf', $left),
+                // The corner tick as it now reads, rendered by the same
+                // component the page used — they own one now by definition.
+                'tick' => Blade::render('<x-owned-tick :item="$item" :owned="$owned" :injected="$injected" />', [
+                    'item' => $item,
+                    'owned' => [$item->id => true],
+                    'injected' => $this->injected($character),
+                ]),
+            ]);
         }
 
-        return back()->with('status', Text::get('market.bought', [
-            'quantity' => $result->quantity,
-            'item' => $item->displayName(),
-            'paid' => number_format($result->paid),
-        ]));
+        return back()->with($result->succeeded() ? 'status' : 'error', $message);
+    }
+
+    /**
+     * skill id => level and points, for what the character knows: the owned
+     * tick's cyan and a book's <x-skill-detail>.
+     *
+     * @return array<int, array{level: int, points: int}>
+     */
+    private function injected(Character $character): array
+    {
+        return $character->characterSkills()
+            ->get(['skill_id', 'attained_level', 'skill_points'])
+            ->mapWithKeys(fn ($row): array => [
+                (int) $row->skill_id => ['level' => (int) $row->attained_level, 'points' => (int) $row->skill_points],
+            ])
+            ->all();
     }
 
     /**

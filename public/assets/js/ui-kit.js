@@ -790,5 +790,147 @@
   reading();
   document.addEventListener("DOMContentLoaded", reading);
 
-  window.UI = { toast, meter, log, type, esc, captcha, centreMap, modifierRows };
+  /* --- Flashes ------------------------------------------------------------
+     <div class="callout callout--ok callout--flash">Bought.</div>
+
+     A flash is an event, so it leaves: five seconds after it appears it is
+     marked [data-leaving], glitches out in CSS and is removed. The removal
+     waits for animationend, with a timer behind it for a browser that never
+     sends one (a hidden tab, an element already detached).
+
+     UI.flash(message, level) raises one into [data-flash-host] from script —
+     how an action that did not reload the page says what happened. */
+  const FLASH_HOLD = 5000;
+
+  function dismissFlash(el) {
+    if (el.hasAttribute("data-leaving")) return;
+    el.setAttribute("data-leaving", "");
+    const gone = () => el.remove();
+    el.addEventListener("animationend", gone, { once: true });
+    setTimeout(gone, 1000);
+  }
+
+  function timeFlashes() {
+    document.querySelectorAll(".callout--flash:not([data-timed])").forEach((el) => {
+      el.setAttribute("data-timed", "");
+      setTimeout(() => dismissFlash(el), FLASH_HOLD);
+    });
+  }
+
+  function flash(message, level = "ok") {
+    const host = document.querySelector("[data-flash-host]");
+    if (!host) return toast(message, { level });
+    const el = document.createElement("div");
+    el.className = "callout callout--" + level + " callout--flash";
+    el.textContent = message;
+    host.appendChild(el);
+    timeFlashes();
+    return el;
+  }
+
+  timeFlashes();
+  document.addEventListener("DOMContentLoaded", timeFlashes);
+
+  /* --- Buying without a reload ------------------------------------------
+     <form data-buy method="POST" action="/market/7">…</form>
+
+     Posts the form with fetch and asks for JSON; MarketController::buy()
+     answers with what changed, and this puts it on the page: the money
+     wherever [data-creds] shows it, the shelf's count, the owned tick, and
+     whether every other card on the page can still be afforded.
+
+     ANYTHING BUT THE JSON IT EXPECTS FALLS BACK TO AN ORDINARY SUBMIT. An
+     expired session answers 419 with a page, a server fault with another:
+     submitting the form normally lets the server say so the way it always
+     has, and a purchase is never lost to a script that did not understand
+     the answer. A refusal is JSON with a message, and is shown as one. */
+  function formatCreds(n, sep) {
+    return Math.round(n).toLocaleString("en-US").replace(/,/g, sep);
+  }
+
+  // Every card that carries a price: can it still be bought, and how many?
+  function reprice(creds) {
+    document.querySelectorAll("[data-price]").forEach((card) => {
+      const price = Number(card.dataset.price);
+      const left = Number(card.dataset.left);
+      const dear = price > creds;
+      const btn = card.querySelector("button[type=submit]");
+      const tag = card.querySelector("[data-too-dear]");
+      const qty = card.querySelector("input[name=quantity]");
+      if (btn) btn.disabled = dear;
+      if (tag) tag.hidden = !dear;
+      if (qty) {
+        const most = Math.min(left, Math.max(price > 0 ? Math.floor(creds / price) : left, 1));
+        qty.max = String(most);
+        if (Number(qty.value) > most) qty.value = String(most);
+      }
+    });
+  }
+
+  on("submit", "form[data-buy]", async (e, form) => {
+    e.preventDefault();
+    const btn = form.querySelector("button[type=submit]");
+    if (btn) btn.disabled = true;
+
+    let res = null;
+    let data = null;
+    try {
+      res = await fetch(form.action, {
+        method: "POST",
+        body: new FormData(form),
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+        credentials: "same-origin",
+      });
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+
+    if (!data || typeof data.message !== "string" || (res.status !== 200 && res.status !== 422)) {
+      form.submit();
+      return;
+    }
+
+    if (res.status === 422) {
+      if (btn) btn.disabled = false;
+      flash(data.message, "crit");
+      return;
+    }
+
+    flash(data.message, "ok");
+
+    document.querySelectorAll("[data-creds]").forEach((el) => {
+      el.textContent = formatCreds(data.creds, el.dataset.credsSep ?? ",");
+    });
+
+    const card = form.closest("[data-price]");
+    if (card) {
+      card.dataset.left = String(data.left);
+      const count = card.querySelector("[data-left-text]");
+      if (count) count.textContent = data.left_text;
+      if (data.tick) {
+        const old = card.querySelector(".tick");
+        const tpl = document.createElement("template");
+        tpl.innerHTML = data.tick.trim();
+        const tick = tpl.content.firstElementChild;
+        if (tick && old) old.replaceWith(tick);
+        else if (tick) card.insertBefore(tick, card.querySelector(".card__hd"));
+      }
+      // Sold out: the shelf lists what is left, so the card goes, and so
+      // does a group left with nothing in it.
+      if (data.left <= 0) {
+        const group = card.closest("[data-filter-group]");
+        card.remove();
+        const shown = group ? group.querySelectorAll("[data-price]").length : 1;
+        const tally = group && group.querySelector("[data-group-count]");
+        if (tally) tally.textContent = String(shown);
+        if (group && shown === 0) group.remove();
+      }
+    }
+
+    if (btn && btn.isConnected) btn.disabled = false;
+    reprice(data.creds);
+  });
+
+  window.UI = { toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows };
 })();

@@ -1760,6 +1760,9 @@ a.tab { text-decoration: none; }
 /* The filter's three kinds of thing. A card or a panel sets its own display,
    which beats the UA's [hidden] rule, so hiding has to be said outright. */
 [data-filter-text][hidden], [data-filter-group][hidden], [data-filter-empty][hidden] { display: none; }
+/* The market's "Not enough" tag, shown and hidden by a purchase that does not
+   reload the page — a .tag is inline-flex, which beats [hidden] the same way. */
+[data-too-dear][hidden] { display: none; }
 
 .pager { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-1); }
 .pager__item {
@@ -1810,6 +1813,38 @@ a.tab { text-decoration: none; }
 .callout--ok   { border-left-color: var(--ok);  background: var(--ok-a); }
 .callout--warn { border-left-color: var(--warn); background: var(--warn-a); }
 .callout--crit { border-left-color: var(--crit); background: var(--crit-a); }
+
+/* A callout that is an EVENT, not a state: the flash after an action. It
+   glitches in, holds for five seconds, glitches out and is removed — ui-kit.js
+   times the hold. A standing callout (a deck that will not run, a form's
+   errors) never takes this: it stays true until something changes it, and a
+   warning that leaves by itself is a warning nobody finished reading.
+
+   steps(1) between keyframes, so each frame is a hard cut rather than a fade:
+   a signal catching, not a screen dimming. The global reduced-motion rule
+   already collapses both to an instant. */
+.callout--flash { animation: callout-glitch-in var(--t-invert) steps(1, end) both; }
+.callout--flash[data-leaving] { animation: callout-glitch-out var(--t-invert) steps(1, end) both; }
+
+@keyframes callout-glitch-in {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; clip-path: inset(0 0 55% 0); transform: translateX(var(--s-1)); }
+  24%  { opacity: 0; }
+  38%  { opacity: 1; clip-path: inset(45% 0 0 0); transform: translateX(calc(var(--s-1) * -1)); }
+  52%  { opacity: .35; clip-path: none; transform: none; }
+  66%  { opacity: 1; }
+  78%  { opacity: 0; }
+  100% { opacity: 1; clip-path: none; transform: none; }
+}
+@keyframes callout-glitch-out {
+  0%   { opacity: 1; }
+  15%  { opacity: 0; }
+  28%  { opacity: 1; clip-path: inset(50% 0 0 0); transform: translateX(var(--s-1)); }
+  44%  { opacity: .35; clip-path: inset(0 0 40% 0); transform: translateX(calc(var(--s-1) * -1)); }
+  60%  { opacity: 0; clip-path: none; transform: none; }
+  72%  { opacity: .6; }
+  100% { opacity: 0; }
+}
 
 .empty {
   display: grid; place-items: center; gap: var(--s-3);

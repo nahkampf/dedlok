@@ -206,7 +206,9 @@
                      measurement. --}}
                 <span class="chip-stat" title="{{ Text::get('creds.name') }}">
                     <span class="chip-stat__glyph" aria-hidden="true">&#164;</span>
-                    <span class="num">{{ number_format($hud->creds, 0, '.', ' ') }}</span>
+                    {{-- data-creds so a purchase that does not reload the page
+                         can say what is left; the separator is this chip's own. --}}
+                    <span class="num" data-creds data-creds-sep=" ">{{ number_format($hud->creds, 0, '.', ' ') }}</span>
                     <span class="sr-only">{{ Text::get('creds.name') }}</span>
                 </span>
 
@@ -229,17 +231,20 @@
             @endguest
         </header>
 
-        @if (session('status'))
-            <div style="max-width:1100px;margin:var(--s-4) auto 0;padding-inline:var(--s-4)">
-                <div class="callout callout--ok">{{ session('status') }}</div>
-            </div>
-        @endif
+        {{-- Where flashes land: the session's after a redirect, and UI.flash()'s
+             after an action that did not reload the page (buying on the
+             market). Always present, because the second kind has nowhere else
+             to go. Each one glitches in, holds and leaves by itself. --}}
+        <div class="stack" data-flash-host role="status"
+             style="--gap:var(--s-2);max-width:1100px;margin:var(--s-4) auto 0;padding-inline:var(--s-4)">
+            @if (session('status'))
+                <div class="callout callout--ok callout--flash">{{ session('status') }}</div>
+            @endif
 
-        @if (session('error'))
-            <div style="max-width:1100px;margin:var(--s-4) auto 0;padding-inline:var(--s-4)">
-                <div class="callout callout--crit">{{ session('error') }}</div>
-            </div>
-        @endif
+            @if (session('error'))
+                <div class="callout callout--crit callout--flash">{{ session('error') }}</div>
+            @endif
+        </div>
 
         <main style="max-width:1100px;margin:0 auto;padding:var(--s-5) var(--s-4) var(--s-8)">
             @yield('content')

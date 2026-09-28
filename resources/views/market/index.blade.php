@@ -16,7 +16,7 @@
                  two should not be a scroll apart. --}}
             <span class="chip-stat num">
                 <span class="chip-stat__glyph" aria-hidden="true">&#164;</span>
-                <span>{{ Number::format($creds) }}</span>
+                <span data-creds>{{ Number::format($creds) }}</span>
             </span>
         </div>
 
@@ -43,7 +43,7 @@
                 <summary class="panel__hd">
                     <span class="micro">{{ $kind }}</span>
                     <div class="spacer"></div>
-                    <span class="micro num">{{ count($shelves) }}</span>
+                    <span class="micro num" data-group-count>{{ count($shelves) }}</span>
                 </summary>
 
                 <div class="panel__bd">
@@ -54,7 +54,11 @@
                             @php($affordable = $price > 0 ? intdiv($creds, $price) : $shelf->quantity)
                             @php($most = min($shelf->quantity, max($affordable, 1)))
 
+                            {{-- data-price and data-left are what a purchase
+                                 that does not reload the page re-reads, to say
+                                 whether this card can still be afforded. --}}
                             <div class="card ticked {{ $item->tierClass() }}"
+                                 data-price="{{ $price }}" data-left="{{ $shelf->quantity }}"
                                  data-filter-text="{{ $item->displayName() }} {{ $kind }} {{ $item->useSkill?->title }} {{ $item->flavor }}">
                                 <x-entity-image :kind="$item->imageKind()" :id="$item->id" :alt="$item->displayName()" />
                                 {{-- After the picture: both are positioned, so
@@ -71,7 +75,7 @@
 
                                     <span class="row row--wrap micro num" style="--gap:var(--s-3);color:var(--ink-3)">
                                         <span>{{ Text::get('market.price', ['price' => Number::format($price)]) }}</span>
-                                        <span>{{ Text::plural('market.on_shelf', $shelf->quantity) }}</span>
+                                        <span data-left-text>{{ Text::plural('market.on_shelf', $shelf->quantity) }}</span>
                                     </span>
                                 </div>
 
@@ -87,7 +91,7 @@
                                          something the writer would refuse — and the
                                          writer refuses it anyway, because a cap in
                                          a form is a courtesy rather than a rule. --}}
-                                    <form method="POST" action="{{ route('market.buy', $item) }}"
+                                    <form method="POST" action="{{ route('market.buy', $item) }}" data-buy
                                           class="row row--wrap" style="--gap:var(--s-2);align-items:center">
                                         @csrf
                                         <label class="field" style="flex:0 0 auto;margin:0">
@@ -103,9 +107,10 @@
                                             {{ Text::get('market.buy') }}
                                         </button>
 
-                                        @if ($price > $creds)
-                                            <span class="tag">{{ Text::get('market.too_dear') }}</span>
-                                        @endif
+                                        {{-- Always rendered, hidden while it is
+                                             not true: spending money here can
+                                             make it true without a reload. --}}
+                                        <span class="tag" data-too-dear @if ($price <= $creds) hidden @endif>{{ Text::get('market.too_dear') }}</span>
                                     </form>
                                 </div>
                             </div>
@@ -142,7 +147,11 @@
                         @php($item = $row->item)
                         @php($mine = $offer->seller_character_id === $character->id)
 
-                        <div class="card ticked {{ $item->tierClass() }}">
+                        {{-- Priced for the no-reload shelf purchase: spending
+                             money there can put this out of reach. Not on your
+                             own listing, whose only button is Withdraw. --}}
+                        <div class="card ticked {{ $item->tierClass() }}"
+                             @unless ($mine) data-price="{{ $offer->unit_price }}" data-left="{{ $row->quantity }}" @endunless>
                             <x-entity-image :kind="$item->imageKind()" :id="$item->id" :alt="$item->displayName()" />
                             <x-owned-tick :item="$item" :owned="$owned" :injected="$injected" />
 
@@ -210,9 +219,7 @@
                                             {{ Text::get('market.offers.buy') }}
                                         </button>
 
-                                        @if ($offer->unit_price > $creds)
-                                            <span class="tag">{{ Text::get('market.too_dear') }}</span>
-                                        @endif
+                                        <span class="tag" data-too-dear @if ($offer->unit_price <= $creds) hidden @endif>{{ Text::get('market.too_dear') }}</span>
                                     </form>
                                 @endif
                             </div>
