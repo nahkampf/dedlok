@@ -159,8 +159,8 @@ final class StealthTest extends TestCase
      * sources of "+x% stealth" are additive rather than multiplicative, and why
      * the order they were acquired in cannot matter.
      *
-     * Two skills at 3% a level and a program at 4.5% a level, all maxed, is
-     * 15 + 15 + 22.5 = 52.5% over base plus flat. Compounded it would be 61%,
+     * Two skills at 4% a level and a program at 4.5% a level, all maxed, is
+     * 20 + 20 + 22.5 = 62.5% over base plus flat. Compounded it would be 76%,
      * and the difference is the whole reason MECHANICS fixes the layer order.
      */
     public function test_three_percentage_sources_sum_rather_than_compounding(): void
@@ -169,14 +169,14 @@ final class StealthTest extends TestCase
         $this->equipReadyDeck($character);
 
         app(SkillInjector::class)->grant($character, $this->obfuscation(), 5);
-        app(SkillInjector::class)->grant($character->fresh(), $this->percentSkill('clandestineintrusion', 3), 5);
-        app(SkillInjector::class)->grant($character->fresh(), $this->percentSkill('polymorphiccode', 3), 5);
+        app(SkillInjector::class)->grant($character->fresh(), $this->percentSkill('clandestineintrusion', 4), 5);
+        app(SkillInjector::class)->grant($character->fresh(), $this->percentSkill('polymorphiccode', 4), 5);
 
         $this->runProgram($character->fresh(), 'evasion-piggyback');
         $this->runProgram($character->fresh(), 'evasion-payloadinjector');
 
-        // (9.41176 + 10 + 2) x 1.525
-        $this->assertSame(32.7, $character->fresh()->stat('stealth')->value);
+        // (9.41176 + 10 + 2) x 1.625
+        $this->assertSame(34.8, $character->fresh()->stat('stealth')->value);
     }
 
     /** A skill granting a percentage of stealth per level. */

@@ -969,7 +969,7 @@ and extraction are built. See below for what is not.
   read, so a dangerous machine is a row with different numbers. `systems.stock_rule` exists
   because CONTENTS are re-rolled nightly; defences never are.
 - **Everything hostile can notice you.** A tracer carries its own detection value (a fifth
-  of the IDS at grade 1, two-fifths at grade 9), so a machine with no IDS is quieter rather
+  of the IDS at grade 1, two-thirds at grade 9), so a machine with no IDS is quieter rather
   than safe. Detection is the EVENT, not the instrument.
 - **Zero means "has none"; null means "not looked".** On `systems` the three defence
   columns are NOT NULL and 0 is absence. On `system_scans` they are nullable — **a scan
