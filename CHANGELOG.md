@@ -2,6 +2,56 @@
 
 ## [Unreleased]
 
+## [0.27.0] — 2026-09-28
+
+Your deck has to hold what you carry, and skills point the right way.
+
+### Added
+
+- **Deck storage is real.** Everything in your data inventory — programs,
+  extracted files, eidetic imprints — lives on the deck you carry and has to
+  fit. Anything inside a memory shard does not count.
+- **Every deck has its own onboard storage**: 8 QB on the Kurogane Explorer,
+  10 on the Scout and NC-II, 12 on the Wayfarer and NC-III, 16 on the Aegis
+  Kader, 32 on the Monolith and Citadel, 64 on the Sturmlicht, Daimyo and
+  Nightjar. Storage modules and the Cyberdecks skill add to it; without a
+  deck you hold nothing.
+- **What will not fit is refused** — at the market, the player market, the
+  loyalty store, when exporting a scan and when taking something out of a
+  shard. On a run, what your deck cannot hold stays on the system, and a file
+  download is never started if the file would not fit.
+- **A deck carrying more than it holds will not jack in or start programs**
+  until you make room. Nothing is ever deleted for being over.
+- The deck screen shows a **Storage** bar beside Compute and Memory.
+- Admins set a deck's onboard storage in the item editor.
+
+### Changed
+
+- **An eidetic imprint takes as many QB as its skill's rank**: 1 QB for the
+  quickest skills, 16 for the slowest. The hardest skills need a better deck,
+  or a storage module, before their imprint can be carried.
+- **No attribute can start below 10.** Nothing can be dumped at creation;
+  play can still lower one.
+- **Mitigation Protocols** gives +2% icebreaker damage a level (it cost 1%).
+- **Advanced Routing** is +1 routing hop a level and nothing else; its dead
+  routing check, bandwidth and power-draw grants are gone.
+- **Power Management** still trades heat for power, and now also adds 2
+  thermal load at levels 4 and 5, beside their extra supply.
+
+### Fixed
+
+- A training plan that stops at a prerequisite whose imprint was never
+  injected now names that prerequisite, instead of reading as though the
+  skill being planned was not injected.
+
+### Migrations
+
+- `2026_09_28_220000_three_skills_point_the_right_way` (a data re-tune by slug)
+- `2026_09_28_230000_a_deck_carries_its_own_onboard_storage` (adds
+  `items.onboard_storage` and writes each deck's figure)
+- `2026_09_28_240000_an_imprint_is_as_big_as_its_rank` (rewrites imprint
+  sizes still at the old flat 8)
+
 ## [0.26.1] — 2026-09-28
 
 Scanners stop stacking for free, missions pay less, and heat scales with what you hit.
@@ -1842,7 +1892,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.26.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.27.0...HEAD
+[0.27.0]: https://github.com/nahkampf/dedlok/compare/v0.26.1...v0.27.0
 [0.26.1]: https://github.com/nahkampf/dedlok/compare/v0.26.0...v0.26.1
 [0.26.0]: https://github.com/nahkampf/dedlok/compare/v0.25.1...v0.26.0
 [0.25.1]: https://github.com/nahkampf/dedlok/compare/v0.25.0...v0.25.1
