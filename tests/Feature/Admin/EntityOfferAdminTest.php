@@ -287,6 +287,30 @@ final class EntityOfferAdminTest extends TestCase
             ->assertSeeText($this->entity->category->label());
     }
 
+    public function test_the_item_picker_marks_what_the_market_does_not_sell(): void
+    {
+        $sold = Item::factory()->create(['name' => 'Sold Thing', 'slug' => 'sold-thing', 'on_market' => true]);
+        $unsold = Item::factory()->create(['name' => 'Unsold Thing', 'slug' => 'unsold-thing', 'on_market' => false]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.entities.edit', $this->entity))
+            ->assertOk()
+            ->assertSee("⊘ Unsold Thing ({$unsold->slug})", false)
+            ->assertDontSee("⊘ Sold Thing ({$sold->slug})", false)
+            ->assertSee("Sold Thing ({$sold->slug})", false);
+    }
+
+    public function test_a_shelved_row_is_marked_when_the_market_does_not_sell_it(): void
+    {
+        $unsold = Item::factory()->create(['name' => 'Unsold Thing', 'on_market' => false]);
+        $this->entity->offers()->create(['item_id' => $unsold->id, 'loyalty_price' => 10, 'min_grade' => 1, 'max_grade' => 5, 'min_standing' => 0]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.entities.edit', $this->entity))
+            ->assertOk()
+            ->assertSeeInOrder(['<td>', '⊘</span>', 'Unsold Thing'], false);
+    }
+
     public function test_it_is_behind_the_admin_gate(): void
     {
         $player = User::factory()->create();

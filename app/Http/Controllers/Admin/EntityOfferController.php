@@ -144,7 +144,7 @@ class EntityOfferController extends Controller
                 ->get()
                 ->sortBy(fn (EntityOffer $offer): string => $offer->displayName())
                 ->values(),
-            'items' => ItemOptions::grouped(),
+            'items' => ItemOptions::grouped(markOffMarket: true),
             'services' => Service::cases(),
         ];
     }

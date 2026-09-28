@@ -26,23 +26,28 @@ use App\Support\Text;
  * hardware by its `hardware` kind, then the two inventories for everything
  * else. Imprints come out of the data inventory and go last, because there is
  * one per skill and they would otherwise bury every other choice.
+ *
+ * `$markOffMarket` prefixes a glyph to anything not on the market — the shelf
+ * wants to see which of its offers can only be had there. The loadout does
+ * not ask, because a starting item's availability elsewhere is beside the point.
  */
 final class ItemOptions
 {
     /** @return array<string, list<array{id: int, label: string}>> */
-    public static function grouped(): array
+    public static function grouped(bool $markOffMarket = false): array
     {
         $items = Item::query()
             ->with('useSkill:id,title')
-            ->get(['id', 'slug', 'name', 'use_op', 'use_skill_id', 'container', 'hardware'])
+            ->get(['id', 'slug', 'name', 'use_op', 'use_skill_id', 'container', 'hardware', 'on_market'])
             ->sortBy(fn (Item $item): string => $item->displayName());
 
         $groups = [];
+        $mark = Text::get('admin.entities.off_market').' ';
 
         foreach ($items as $item) {
             $groups[self::groupFor($item)][] = [
                 'id' => $item->id,
-                'label' => "{$item->displayName()} ({$item->slug})",
+                'label' => ($markOffMarket && ! $item->on_market ? $mark : '')."{$item->displayName()} ({$item->slug})",
             ];
         }
 

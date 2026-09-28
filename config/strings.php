@@ -2800,6 +2800,8 @@ return [
 
             'item' => 'Item',
             'no_item' => '— none (a service) —',
+            'off_market' => '⊘',
+            'off_market_hint' => '⊘ marks an item that is not on the market.',
             'service' => 'Or a service',
             'no_service' => '— none (an item) —',
             'service_amount' => 'Amount',
