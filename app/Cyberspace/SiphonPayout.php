@@ -8,9 +8,12 @@ use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\Models\Backdoor;
 use App\Models\Character;
+use App\Notifications\Category;
+use App\Notifications\Notifier;
 use App\Stats\Resolver;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Number;
 
 /**
  * A little from every machine somebody is draining, once a night.
@@ -82,6 +85,7 @@ final readonly class SiphonPayout
              */
             $modifiers = $character->modifiers();
             $byGrade = [];
+            $lines = [];
 
             foreach ($backdoors as $backdoor) {
                 $grade = (int) $backdoor->system->grade;
@@ -92,7 +96,29 @@ final readonly class SiphonPayout
 
                 $amount += $byGrade[$grade];
                 $counted++;
+
+                // What the report says about this system, as true tonight. A
+                // snapshot: by morning it may have moved or burned.
+                $lines[] = [
+                    'system' => $backdoor->system->displayName(),
+                    'address' => (string) $backdoor->system->address,
+                    'grade' => $grade,
+                    'creds' => $byGrade[$grade],
+                ];
             }
+
+            /*
+             * ONE REPORT PER CHARACTER, NOT A MESSAGE PER SIPHON. It happened
+             * while they slept, which is the inbox's whole test — and ten
+             * siphons as ten messages would bury everything else in it. Sent
+             * even on a night that paid nothing, because holding a siphon that
+             * paid nothing is itself worth knowing.
+             */
+            usort($lines, static fn (array $a, array $b): int => $b['creds'] <=> $a['creds']);
+
+            (new Notifier)->send($character, Category::Cyberspace, 'siphons_ran', [
+                'creds' => Number::format($amount),
+            ], $lines);
 
             if ($amount <= 0) {
                 continue;

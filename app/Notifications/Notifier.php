@@ -45,8 +45,14 @@ final class Notifier
      *
      * Returns null when there was nobody to write it to, which is not an error
      * — the same answer `Achievements::move()` gives for the same fixture.
+     *
+     * `$details` is a list drawn under the sentence, stored as given and never
+     * recomposed, exactly like the body. The sender owns its shape and the
+     * inbox renders it; today only the siphon report writes one.
+     *
+     * @param  list<array<string, mixed>>|null  $details
      */
-    public function send(Character|User $who, Category $category, string $key, array $replace = []): ?Notification
+    public function send(Character|User $who, Category $category, string $key, array $replace = [], ?array $details = null): ?Notification
     {
         $userId = $who instanceof User ? $who->getKey() : $who->user_id;
 
@@ -61,6 +67,7 @@ final class Notifier
             // is a copy problem, and losing the whole notification over one
             // would be a worse answer than a clipped sentence.
             'body' => mb_substr(Text::get("notifications.messages.{$key}", $replace), 0, self::MAX_BODY),
+            'details' => $details,
         ]);
     }
 

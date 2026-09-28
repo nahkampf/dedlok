@@ -17,13 +17,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * writes one and the only thing that marks one read, so there is no method
  * here that changes anything.
  */
-#[Fillable(['user_id', 'category', 'body', 'read_at'])]
+#[Fillable(['user_id', 'category', 'body', 'details', 'read_at'])]
 class Notification extends Model
 {
     protected function casts(): array
     {
         return [
             'category' => Category::class,
+            'details' => 'array',
             'read_at' => 'immutable_datetime',
         ];
     }

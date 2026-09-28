@@ -366,6 +366,10 @@ return [
         'empty' => 'Nothing yet. This fills up while you are away.',
         'new' => 'New',
         'mark_read' => 'Mark all read',
+        // Pieces of a line in a message's list (the siphon report's).
+        'details' => [
+            'grade' => 'grade :grade',
+        ],
         'unread' => ['zero' => '', 'one' => ':count unread', 'many' => ':count unread'],
         'marked' => [
             'zero' => 'Nothing was unread.',
@@ -390,6 +394,9 @@ return [
             // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
             // a burn: the holder was not there, and naming the cause would tell
             // them about a stranger's run they could not otherwise know of.
+            // THE NIGHT'S TAKE, one report per character. The systems it came
+            // from are the message's list, drawn under this line.
+            'siphons_ran' => 'Siphons ran: :creds ¤',
             'backdoor_lost' => 'Your backdoor into :system is gone. The system shut its doors while you were elsewhere.',
             // A FILE DIES WITH NOBODY LOOKING AT IT. Says it is still there,
             // because nothing deletes one - destroying it is the player's call
@@ -1829,6 +1836,10 @@ return [
         // What the whole queue costs, at the rate it earns this instant.
         'queue_total' => 'The whole queue: :duration',
         'queue_total_stalled' => 'The whole queue cannot be timed while something in it earns nothing.',
+        // One entry's own time, beside its target level.
+        'entry_stalled' => 'earns nothing',
+        // Its points are already banked; it completes when the clock next ticks.
+        'entry_done' => 'any moment',
 
         // <x-skill-detail>: everything about one skill, on one card.
         'card' => [
@@ -1836,10 +1847,6 @@ return [
             'primary' => 'Primary',
             'secondary' => 'Secondary',
             'requires' => 'Requires',
-        // One entry's own time, beside its target level.
-        'entry_stalled' => 'earns nothing',
-        // Its points are already banked; it completes when the clock next ticks.
-        'entry_done' => 'any moment',
             'requires_none' => 'Nothing',
             'effects' => 'Effects',
             'effects_none' => 'Knowing it changes nothing on its own.',

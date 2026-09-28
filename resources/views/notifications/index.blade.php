@@ -1,4 +1,5 @@
 @use('App\Support\Text')
+@use('Illuminate\Support\Number')
 @extends('layouts.app')
 @section('title', Text::get('notifications.title'))
 
@@ -61,6 +62,33 @@
                                 @endif
                             </button>
                         </form>
+
+                        {{-- THE LIST UNDER THE SENTENCE, outside the row's
+                             button because an address in it is a copy button
+                             of its own, and a button inside a button is not
+                             something a browser will draw. Snapshotted with
+                             the body — a system named here may have moved by
+                             now, and the line still says what it paid.
+
+                             ponytail: drawn in the siphon report's shape, the
+                             only sender with a list. A second sender with a
+                             different shape makes this a per-category partial. --}}
+                        @if ($message->details)
+                            <div class="prose micro" style="margin:0 0 var(--s-2) var(--s-5);color:var(--ink-2)">
+                                <ul>
+                                    @foreach ($message->details as $line)
+                                        <li>
+                                            {{ $line['system'] ?? '' }}
+                                            @if (! empty($line['address']))
+                                                · <x-address :address="$line['address']" />
+                                            @endif
+                                            · {{ Text::get('notifications.details.grade', ['grade' => $line['grade'] ?? '?']) }}
+                                            · <span class="num">{{ Number::format((int) ($line['creds'] ?? 0)) }} ¤</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                     @endforeach
                 </div>
             @endif

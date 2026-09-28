@@ -9,7 +9,10 @@ use App\Cyberspace\Backdoors;
 use App\Cyberspace\SiphonPayout;
 use App\Models\Character;
 use App\Models\CharacterModifier;
+use App\Models\Notification;
 use App\Models\System;
+use App\Notifications\Category;
+use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
@@ -158,6 +161,71 @@ final class SiphonTest extends TestCase
     }
 
     // ---- fixtures ------------------------------------------------------------
+
+    // ---- the night's report ------------------------------------------------
+
+    /**
+     * ONE REPORT PER CHARACTER, NOT A MESSAGE PER SIPHON: the total in the
+     * sentence, and a line per system under it, as true that night.
+     */
+    public function test_a_night_is_one_report_listing_every_system(): void
+    {
+        $nine = $this->machine(1, 9);
+        $four = $this->machine(2, 4);
+        $this->hold($nine);
+        $this->hold($four);
+
+        SiphonPayout::fromConfig()->run();
+
+        $report = Notification::query()->sole();
+
+        $this->assertSame($this->character->user_id, $report->user_id);
+        $this->assertSame(Category::Cyberspace, $report->category);
+        $this->assertSame(Text::get('notifications.messages.siphons_ran', ['creds' => '390']), $report->body);
+        $this->assertSame([
+            ['system' => $nine->displayName(), 'address' => 'SIPHON01', 'grade' => 9, 'creds' => 270],
+            ['system' => $four->displayName(), 'address' => 'SIPHON02', 'grade' => 4, 'creds' => 120],
+        ], $report->details);
+    }
+
+    /** Each holder gets their own report, of their own systems. */
+    public function test_every_holder_gets_their_own_report(): void
+    {
+        $stranger = Character::factory()->create(['archetype' => 3, 'creds' => 0]);
+
+        $this->hold($this->machine(1, 9));
+        (new Backdoors)->install($stranger, $this->machine(2, 4), BackdoorKind::Siphon);
+
+        SiphonPayout::fromConfig()->run();
+
+        $this->assertSame(2, Notification::query()->count());
+        $this->assertSame(120, Notification::query()->where('user_id', $stranger->user_id)->sole()->details[0]['creds']);
+    }
+
+    /** Nobody draining anything hears nothing. */
+    public function test_a_routing_hop_alone_sends_no_report(): void
+    {
+        $this->hold($this->machine(1, 9), BackdoorKind::Routing);
+
+        SiphonPayout::fromConfig()->run();
+
+        $this->assertSame(0, Notification::query()->count());
+    }
+
+    /** The inbox draws the list under the sentence, each address a copy button. */
+    public function test_the_inbox_lists_each_system_with_a_copyable_address(): void
+    {
+        $this->hold($this->machine(1, 9));
+        SiphonPayout::fromConfig()->run();
+
+        $this->actingAs($this->character->user)
+            ->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSeeText(Text::get('notifications.messages.siphons_ran', ['creds' => '270']))
+            ->assertSee('data-copy="SIPHON01"', false)
+            ->assertSeeText(Text::get('notifications.details.grade', ['grade' => 9]))
+            ->assertSeeText('270 ¤');
+    }
 
     private function machine(int $n, int $grade): System
     {
