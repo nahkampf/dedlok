@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.21.2] — 2026-09-28
+
+A stranger's bad night now tells you what it cost.
+
+### Added
+
+- **Losing a backdoor to somebody else reaches the inbox.** Only the nightly
+  ageing roll ever said a door was gone, and only to the holder whose door it
+  rolled. A lockdown a stranger caused, a relocation, a burn and every other
+  door on a system the roll moved all took access in silence — the first sign
+  was a siphon that stopped paying, or a route one hop shorter.
+  `Backdoors::loseAllOn()` now messages every holder before it deletes.
+- **One sentence whatever the cause.** The holder was not there, and naming a
+  stranger's run would tell them about something they could not otherwise know.
+- **A burn asks first rather than leaving it to the cascade**, which deletes
+  the rows and tells nobody.
+- **Nobody hears twice.** The door the roll found is gone before the move
+  reaches the others, and a lockdown's later relocation finds nothing left.
+
 ## [0.21.1] — 2026-09-24
 
 ### Added
@@ -1597,7 +1616,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.21.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.21.2...HEAD
+[0.21.2]: https://github.com/nahkampf/dedlok/compare/v0.21.1...v0.21.2
 [0.21.1]: https://github.com/nahkampf/dedlok/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/nahkampf/dedlok/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/nahkampf/dedlok/compare/v0.19.5...v0.20.0
