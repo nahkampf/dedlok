@@ -13,6 +13,7 @@ use App\Stats\Sheet;
 use App\Stats\SkillStats;
 use App\Stats\StatRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -225,5 +226,48 @@ final class StatSheetTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
 
         $this->character()->stat('check.nothing_of_the_sort');
+    }
+
+    /**
+     * THE CONTEXT'S SHEET AND THE REAL ONE ASK ONCE BETWEEN THEM. What acts on
+     * a character does not depend on the context, so the sheet that works the
+     * context out hands over what it gathered. Before, every sheet built
+     * without a context queried all six sources twice, and the top bar built
+     * four of them on every page.
+     */
+    public function test_a_sheet_asks_the_character_once(): void
+    {
+        $character = $this->character();
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $sheet = Sheet::for($character);
+        $sheet->get('hitpoints_max');
+        $sheet->get('synaptic_integrity_max');
+
+        // Nothing asked twice. Two different questions of one table are fine
+        // (the skill levels and the skill-effects source both read
+        // character_skills); the same question twice is the bug.
+        $repeated = collect(DB::getQueryLog())
+            ->map(fn (array $query): string => $query['query'].json_encode($query['bindings']))
+            ->countBy()
+            ->filter(fn (int $times): bool => $times > 1);
+
+        $this->assertSame([], $repeated->all());
+        $this->assertNotEmpty(DB::getQueryLog(), 'and it did ask');
+    }
+
+    /** And the answers are the ones a sheet with its own questions gets. */
+    public function test_the_handed_over_sheet_agrees_with_a_fresh_one(): void
+    {
+        $character = $this->character(['current_synaptic_integrity' => 3]);
+
+        $given = Sheet::for($character);
+        $fresh = Sheet::for($character, Sheet::contextFor($character));
+
+        $this->assertEquals($fresh->context(), $given->context());
+        $this->assertSame($fresh->value('hitpoints_max'), $given->value('hitpoints_max'));
+        $this->assertSame($fresh->value('synaptic_integrity_max'), $given->value('synaptic_integrity_max'));
     }
 }

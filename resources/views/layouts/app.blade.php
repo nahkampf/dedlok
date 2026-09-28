@@ -169,14 +169,15 @@
                      value inside it.
 
                      The maxima are derived, never stored, so they are resolved
-                     per request like every other stat. --}}
+                     per request like every other stat — from ONE sheet, held
+                     for the loop: every page draws this bar, and a sheet per
+                     read was four sheets a page. --}}
+                @php($hudSheet = $hud->sheet())
                 @foreach (Character::RESOURCES as $resource => $statId)
                     @php($current = (int) $hud->{$resource})
-                    @php($max = $hud->maximumFor($resource))
+                    @php($max = $hud->maximumFor($resource, $hudSheet))
                     @php($label = Text::get("character.abbreviations.{$statId}"))
-                    {{-- Once, not once per read: every maximum is derived, so
-                         each one runs the resolver. --}}
-                    @php($ratio = $hud->resourceRatio($resource))
+                    @php($ratio = $hud->resourceRatio($resource, $hudSheet))
 
                     {{-- data-hot-low, not a class decided here: ui-kit.js owns
                          what "low" is, so the threshold is one number in one

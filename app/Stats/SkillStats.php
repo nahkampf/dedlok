@@ -36,6 +36,9 @@ use Illuminate\Support\Str;
  */
 final class SkillStats
 {
+    /** @var Collection<string, Skill>|null  see skills() */
+    private static ?Collection $roster = null;
+
     public const SKILL_PREFIX = 'skill.';
 
     public const CHECK_PREFIX = 'check.';
@@ -98,6 +101,7 @@ final class SkillStats
     public static function forget(): void
     {
         Cache::forget(self::CACHE_KEY);
+        self::$roster = null;
 
         // Resolver is in the list because it HOLDS a StatRegistry rather than
         // resolving one per call — forgetting the registry alone would leave
@@ -158,10 +162,18 @@ final class SkillStats
         return $value;
     }
 
-    /** @return Collection<int, Skill> */
+    /**
+     * The skill roster the stat graph is built from, read once per process.
+     *
+     * The graph and every Sheet both need it, and asked separately it was two
+     * identical queries on every page. `forget()` drops it with everything
+     * else built from the list, so a saved skill is seen at once.
+     *
+     * @return Collection<string, Skill> keyed by slug
+     */
     public static function skills()
     {
-        return Skill::query()
+        return self::$roster ??= Skill::query()
             ->get(['id', 'slug', 'title', 'category', 'rank', 'primary_attribute', 'secondary_attribute'])
             ->keyBy('slug');
     }

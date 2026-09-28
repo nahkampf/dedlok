@@ -671,14 +671,20 @@ class Character extends Model
         return Sheet::for($this, $context);
     }
 
-    /** The resolved ceiling for a resource column. */
-    public function maximumFor(string $resource): int
+    /**
+     * The resolved ceiling for a resource column.
+     *
+     * Pass a sheet when asking more than once — the top bar asks for both
+     * resources on every page, and a sheet per question is six modifier
+     * sources queried per question.
+     */
+    public function maximumFor(string $resource, ?Sheet $sheet = null): int
     {
         $statId = self::RESOURCES[$resource] ?? throw new \InvalidArgumentException(
             "[{$resource}] is not a resource. Known: ".implode(', ', array_keys(self::RESOURCES)).'.'
         );
 
-        return (int) $this->stat($statId)->value;
+        return (int) ($sheet ?? $this->sheet())->get($statId)->value;
     }
 
     /**
@@ -688,9 +694,9 @@ class Character extends Model
      * whose ceiling has been driven to nothing reads as empty, which is what
      * an empty bar already means.
      */
-    public function resourceRatio(string $resource): float
+    public function resourceRatio(string $resource, ?Sheet $sheet = null): float
     {
-        $max = $this->maximumFor($resource);
+        $max = $this->maximumFor($resource, $sheet);
 
         if ($max <= 0) {
             return 0.0;

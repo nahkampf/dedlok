@@ -85,13 +85,22 @@ final class Sheet
      */
     public static function for(Character $character, ?Context $context = null, ?array $modifiers = null): self
     {
-        return new self(
-            $character,
-            app(Resolver::class),
-            app(StatGraph::class),
-            $context ?? self::contextFor($character),
-            $modifiers,
-        );
+        if ($context !== null) {
+            return new self($character, app(Resolver::class), app(StatGraph::class), $context, $modifiers);
+        }
+
+        // THE CONTEXT IS WORKED OUT BY A BARE SHEET, and that sheet has
+        // already asked all six modifier sources and read the skill levels to
+        // do it. What acts on the character does not depend on the context —
+        // only what a CONDITIONAL modifier makes of it does — so the real
+        // sheet inherits both rather than asking a second time. It halved the
+        // queries behind every sheet built without a context.
+        $bare = new self($character, app(Resolver::class), app(StatGraph::class), Context::empty(), $modifiers);
+
+        $sheet = new self($character, app(Resolver::class), app(StatGraph::class), self::contextFrom($bare), $bare->modifiers());
+        $sheet->levels = $bare->levels();
+
+        return $sheet;
     }
 
     /**
@@ -122,7 +131,13 @@ final class Sheet
      */
     public static function contextFor(Character $character): Context
     {
-        $bare = new self($character, app(Resolver::class), app(StatGraph::class), Context::empty());
+        return self::contextFrom(new self($character, app(Resolver::class), app(StatGraph::class), Context::empty()));
+    }
+
+    /** contextFor(), from a bare sheet the caller may want to keep. */
+    private static function contextFrom(self $bare): Context
+    {
+        $character = $bare->character;
 
         $values = [];
 
