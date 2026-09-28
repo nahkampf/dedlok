@@ -109,6 +109,9 @@ return [
     | near 56 at seven. Above grade 1 the gates are enforced by time more than
     | by ceilings.
     |
+    | CREDS WERE CUT TENFOLD on 2026-09-28, every grade alike; the ratios
+    | between grades are unchanged.
+    |
     | `standing` here is the BASE handed to the resolver as `standing_gain`,
     | never the figure that lands. A skill or an implant that makes somebody
     | better at being liked is a modifier, and the mission writer never learns
@@ -116,11 +119,11 @@ return [
     |
     */
     'grades' => [
-        1 => ['creds' => [400, 900], 'standing' => [0.01, 0.03], 'loyalty' => [1, 2], 'penalty' => 0.02],
-        2 => ['creds' => [900, 2000], 'standing' => [0.05, 0.09], 'loyalty' => [2, 4], 'penalty' => 0.07],
-        3 => ['creds' => [2000, 4500], 'standing' => [0.11, 0.21], 'loyalty' => [4, 8], 'penalty' => 0.16],
-        4 => ['creds' => [4500, 9000], 'standing' => [0.26, 0.48], 'loyalty' => [8, 15], 'penalty' => 0.37],
-        5 => ['creds' => [9000, 18000], 'standing' => [0.64, 1.06], 'loyalty' => [15, 30], 'penalty' => 0.85],
+        1 => ['creds' => [40, 90], 'standing' => [0.01, 0.03], 'loyalty' => [1, 2], 'penalty' => 0.02],
+        2 => ['creds' => [90, 200], 'standing' => [0.05, 0.09], 'loyalty' => [2, 4], 'penalty' => 0.07],
+        3 => ['creds' => [200, 450], 'standing' => [0.11, 0.21], 'loyalty' => [4, 8], 'penalty' => 0.16],
+        4 => ['creds' => [450, 900], 'standing' => [0.26, 0.48], 'loyalty' => [8, 15], 'penalty' => 0.37],
+        5 => ['creds' => [900, 1800], 'standing' => [0.64, 1.06], 'loyalty' => [15, 30], 'penalty' => 0.85],
     ],
 
     /*
