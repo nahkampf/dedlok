@@ -1226,8 +1226,11 @@ consequences and taking what a machine holds all roll.
 - **Zero heat is not rolled at all.** A floor is what an attempt keeps, not something the
   world owes somebody who has done nothing.
 - **What a hit IS has not been built.** No bounty row, no hunter, no price — the message
-  says the word is out and stops where the mechanic stops. It has no memory either, so high
-  heat says so again tomorrow; that wants a cooldown the day a bounty is a thing you carry.
+  says the word is out and stops where the mechanic stops.
+- **Word already out is not news.** `characters.bounty_word_at` remembers the last time,
+  and nobody is rolled again until `cyberspace.heat.bounty.cooldown_days` have passed — a
+  memory on the character, never a gentler curve, and a column rather than a look through
+  the inbox, because a player clearing their messages must not reset the world's opinion.
 - **And it comes off again, slowly.** `App\Characters\HeatDecay` takes half a point a
   night at 05:10, **after** the bounty roll — a character answers for the heat the night
   ended with, and the cooling is the morning after rather than a discount applied before
@@ -1830,10 +1833,10 @@ Three things it still cannot do, all of them because `dedlok` has no sudo:
   would leave root-owned files in the tree on **every** deploy — the outage this
   document's first section is about.
 
-**Migrations are usually a no-op there anyway**, because production and development share
-one database — see *Housekeeping* in TODO.md — so a migration is already applied from a
-laptop before the code arrives. The step exists for the day those are two databases,
-which is the day its absence would ship code against a schema that does not exist.
+**THIS IS HOW A MIGRATION REACHES PRODUCTION**, since 2026-09-28. Development used to
+share the live database, so a migration had already run from a laptop before the code
+arrived. Now development has its own copy (see *Two databases*), and the worker's
+`migrate --force` after the pull is the only way a schema change reaches the live game.
 
 **`.github/workflows/manual.yml` is dead and should go.** It POSTs to
 `https://dedlok.online/deploy.php` on any tag push, and `deploy.php` has been removed —
@@ -1900,17 +1903,33 @@ is missing, so it can sit in CI.
 - **Do not edit `2026_09_04_190000_comment_every_column`** — it is history.
 - **Nothing enforces this.** A missing comment fails no test, which is why it is written down.
 
-### The remote database
+### Two databases: a local copy, and production
 
-**The application uses a remote MySQL server, not the local `db` container.** `.env`
-(gitignored) holds the credentials; `.env.sample` is the committed template and must never
-contain real values.
+**Development runs against the local `db` container, which holds a copy of production.**
+Until 2026-09-28 the laptop and the live site shared one remote MySQL, so every migration
+reached the live game the moment it ran here, and the dev scheduler ran every job a second
+time against production, beside the server's own crontab. Bounties rolled twice, siphons
+paid twice and the market restocked twice. A dev `training:deposit` holding a transaction
+open across the internet also stalled a migration's `ALTER TABLE characters`, and that
+stalled every production query queued behind it.
 
-The remote is **MySQL 8.0.46** — older than the 8.4 image — so target 8.0 syntax.
+- **`DB_*` in `.env` is the container.** `REMOTE_DB_*` is production, and **only
+  `bin/pull-db` reads it** — the app never connects there from a laptop.
+- **`bin/pull-db` replaces the local database with a fresh dump of production.** Content
+  is authored in the live admin, so this is how the laptop learns what items, skills and
+  entities exist. It REPLACES: anything made locally since the last pull is gone. The dump
+  is `--single-transaction` and takes no locks production would feel. It includes player
+  accounts and password hashes, which stay on this machine.
+- **When a question is about what content EXISTS, pull first** — a stale copy is exactly
+  how a seeder gets written for an item that is not there.
+- **The container is MySQL 8.0, pinned to match production (8.0.46).** 8.4 accepts syntax
+  8.0 refuses, and a migration that passes here must pass there.
+- **A migration now reaches production by DEPLOY**, through the worker's
+  `migrate --force` after the pull — not from a laptop. Test it here first; that is the
+  whole reason for having two databases.
 
-The `db` service is **not what the app connects to**. `docker compose exec db mysql …`
-reaches the local scratch instance, not production. To reach the real database, go through
-Artisan or Eloquent in `web`. Keep the service — it is the safe target for destructive work.
+`.env` (gitignored) holds the credentials; `.env.sample` is the committed template and must
+never contain real values.
 
 **Quote any value in `.env` that contains a `#`, and use SINGLE quotes.** phpdotenv reads
 an unquoted `#` as the start of an inline comment and truncates the value there, so a
@@ -1945,16 +1964,9 @@ Two findings from that audit still stand, and they are what is left to do:
   clear text. Enable TLS (`DB_SSLMODE` / `MYSQL_ATTR_SSL_CA` in `config/database.php`)
   before this goes anywhere near production.
 
-**Never run `migrate:fresh`, `migrate:reset` or `db:wipe` against the remote.** The scoping
-means they can no longer reach another project's data, so this is now a rule about losing
-your own — reason enough. Point destructive commands at the local container:
-
-```bash
-docker compose exec -u www-data \
-  -e DB_HOST=db -e DB_DATABASE=cyberpunk_db \
-  -e DB_USERNAME=cyberpunk_user -e DB_PASSWORD=cyberpunk_password \
-  web php artisan migrate:fresh
-```
+**Never run `migrate:fresh`, `migrate:reset` or `db:wipe` against the remote.** Locally they
+are harmless now — the app's own connection IS the container, and `bin/pull-db` puts the
+data back.
 
 ## Dependencies
 

@@ -51,8 +51,11 @@ services:
     # Use sh -c and sequential execution (&&) without trailing & to prevent the container from exiting immediately
     command: sh -c "git config --global --add safe.directory /var/www/cyberpunk && composer install"
 
+  # THE DATABASE DEVELOPMENT USES: a copy of production, refreshed by bin/pull-db.
+  # Pinned to 8.0 because the live server runs 8.0 -- 8.4 accepts syntax 8.0
+  # refuses, and a migration that passes here must pass there.
   db:
-    image: mysql:8.4
+    image: mysql:8.0
     container_name: cyberpunk-db
     restart: always
     ports:

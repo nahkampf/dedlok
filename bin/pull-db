@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+#
+# Replace the local database with a copy of production.
+#
+# Development runs against the `db` container; production runs against the
+# remote MySQL that REMOTE_DB_* in .env names. Content is authored in the live
+# admin, so this is how a laptop gets the items, skills and entities that exist.
+#
+# ONE DIRECTION ONLY. It reads the remote and never writes to it — the dump is
+# a --single-transaction snapshot, which takes no locks production would feel.
+# Everything local is REPLACED: anything made on the laptop since the last pull
+# is gone, which is the point of a scratch copy.
+#
+# The dump lands in a file inside the container before anything local is
+# touched, so a dump that fails half-way leaves the old copy standing.
+#
+# Includes player accounts and password hashes. They stay on this machine.
+#
+#   bin/pull-db
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# A value from .env, with one layer of quotes taken off — CLAUDE.md asks for
+# single quotes round anything carrying a '#'.
+env_value() {
+    sed -nE "s/^$1=//p" .env | tail -n 1 | sed -E "s/^'(.*)'\$/\1/; s/^\"(.*)\"\$/\1/"
+}
+
+host=$(env_value REMOTE_DB_HOST)
+port=$(env_value REMOTE_DB_PORT)
+name=$(env_value REMOTE_DB_DATABASE)
+user=$(env_value REMOTE_DB_USERNAME)
+
+[[ -n $host && -n $name && -n $user ]] || { echo "REMOTE_DB_* is not set in .env" >&2; exit 1; }
+
+local_db=$(env_value DB_DATABASE)
+[[ $(env_value DB_HOST) == db ]] || { echo "DB_HOST is not the local container; refusing" >&2; exit 1; }
+
+# Handed to the container by NAME (-e MYSQL_PWD), so the password never appears
+# in a process list on this machine.
+export MYSQL_PWD
+MYSQL_PWD=$(env_value REMOTE_DB_PASSWORD)
+
+echo "Dumping ${name} from ${host}..."
+docker compose exec -T -e MYSQL_PWD db sh -c "mysqldump \
+    -h '$host' -P '${port:-3306}' -u '$user' \
+    --single-transaction --no-tablespaces --set-gtid-purged=OFF \
+    --routines --triggers --hex-blob \
+    '$name' > /tmp/pull.sql"
+
+MYSQL_PWD=cyberpunk_root_password
+
+echo "Loading into ${local_db}..."
+docker compose exec -T -e MYSQL_PWD db sh -c "
+    mysql -uroot -e 'DROP DATABASE IF EXISTS \`$local_db\`; CREATE DATABASE \`$local_db\`;' &&
+    mysql -uroot '$local_db' < /tmp/pull.sql &&
+    rm /tmp/pull.sql"
+
+echo "Done. $(docker compose exec -T -e MYSQL_PWD db mysql -uroot -N -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '$local_db'") tables."
