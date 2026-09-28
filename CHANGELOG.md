@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.25.1] — 2026-09-28
+
+Standing earned is kept longer, and higher-grade work is where it is made.
+
+### Changed
+
+- **Standing fades half as fast.** It drifts toward neutral by 0.25% a night
+  instead of 0.5% — a month away from 60 now costs about four points, not
+  eight. Grudges fade at the same slower rate.
+- **Higher-grade missions pay much more standing.** From grade 2 up each grade
+  pays about 2.3× the one below: a grade 5 job is now 0.64–1.06 (was 0.30–0.50),
+  grade 4 is 0.26–0.48. Grade 1 is unchanged, so the bottom desks still cannot
+  carry anyone to the top one.
+- **Failing or abandoning a job costs about one average job's standing**, so
+  penalties rise with the rewards — a grade 5 failure now costs 0.85.
+
+Jobs already offered or taken keep the rewards and penalties they were offered
+with.
+
 ## [0.25.0] — 2026-09-28
 
 Stealth can beat the top of the grid, runs carry a loadout, and the first drug that heals.
@@ -1782,7 +1801,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.25.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.25.1...HEAD
+[0.25.1]: https://github.com/nahkampf/dedlok/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/nahkampf/dedlok/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/nahkampf/dedlok/compare/v0.23.1...v0.24.0
 [0.23.1]: https://github.com/nahkampf/dedlok/compare/v0.23.0...v0.23.1

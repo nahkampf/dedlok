@@ -11,14 +11,15 @@ use Illuminate\Support\Facades\Config;
 /**
  * Opinions fade, from both directions.
  *
- * HALF A PERCENT OF WHAT IS CARRIED, toward zero and never past it. A flat
- * rate would be backwards at the size of what earns standing: a mission is
- * worth hundredths of a point, so half a point a night would erase a day's
- * work at the bottom of the ladder and cost nothing at the top.
+ * A QUARTER OF A PERCENT OF WHAT IS CARRIED, toward zero and never past it
+ * (`standing.drift.nightly`). A flat rate would be backwards at the size of
+ * what earns standing: a mission is worth hundredths of a point, so half a
+ * point a night would erase a day's work at the bottom of the ladder and cost
+ * nothing at the top.
  *
  * It is also the only balance this system has. Standing settles where a day's
- * earnings equal the drift — about 200x the daily rate — so each grade of
- * work has a ceiling nobody had to write a rule for.
+ * earnings equal the drift — 400x the daily rate — so each grade of work has
+ * a ceiling nobody had to write a rule for.
  *
  * ## Every move writes a ledger entry
  *
@@ -45,7 +46,7 @@ class DriftStanding extends Command
             return self::SUCCESS;
         }
 
-        $rate = (float) Config::get('standing.drift.nightly', 0.005);
+        $rate = (float) Config::get('standing.drift.nightly', 0.0025);
 
         $this->info($moved === 0
             ? 'No standing to drift.'

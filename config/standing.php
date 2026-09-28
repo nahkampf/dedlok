@@ -68,20 +68,22 @@ return [
     | The nightly drift
     |--------------------------------------------------------------------------
     |
-    | PROPORTIONAL, not flat: half a percent of what is carried, toward zero,
-    | from both directions. A flat rate at the size of a mission's reward would
-    | be backwards — it would erase a day's work at the bottom of the ladder
-    | and cost nothing at the top.
+    | PROPORTIONAL, not flat: a quarter of a percent of what is carried, toward
+    | zero, from both directions. A flat rate at the size of a mission's reward
+    | would be backwards — it would erase a day's work at the bottom of the
+    | ladder and cost nothing at the top.
     |
-    | It also gives every rung a soft ceiling without another rule. Standing
-    | settles where a day's earnings equal the drift, which is about 200x the
-    | daily rate: work from the lowest desks alone tops out around 30, below
-    | the standing the grade 4 desks will want.
+    | Standing settles where a day's earnings equal the drift, which is 400x
+    | the daily rate — a soft ceiling on every rung without another rule. It
+    | was half a percent, and halved so that standing once earned is kept:
+    | a month away from 60 costs about four points, and half of anything
+    | carried takes some nine months to fade. The same holds for a grudge.
+    | See config/missions.php for what the climb looks like against it.
     |
     */
 
     'drift' => [
-        'nightly' => 0.005,
+        'nightly' => 0.0025,
     ],
 
     /*
