@@ -2,6 +2,45 @@
 
 ## [Unreleased]
 
+## [0.25.0] — 2026-09-28
+
+Stealth can beat the top of the grid, runs carry a loadout, and the first drug that heals.
+
+### Added
+
+- **A run's loadout is chosen on the briefing.** Run-only software — icebreakers
+  and the rest — is picked before going in, started as the run begins and stopped
+  as it ends. It cannot be changed from inside. One icebreaker runs at a time, and
+  the last loadout you took in is ticked for you next time.
+- **Rewire**, a nootropic: +2 Synaptic Integrity a minute for ten minutes, at the
+  cost of 8% Intellect and Focus while it runs. Tolerance builds; it is not
+  addictive.
+
+### Changed
+
+- **Awake ICE guards the core.** Extract, install and burn all fail while an ICE
+  is awake — break it or egress. The run screen disables the three buttons during
+  a fight.
+- **The IDS watches a file transfer.** Every turn after the first of a multi-turn
+  pull, the IDS rolls again. If it catches you the ICE wakes and the pull waits,
+  kept, until the ICE is broken.
+
+### Fixed
+
+- **A grade 9 IDS was nearly impossible to slip.** The IDS table now flattens at
+  the top (grade 9 from 92 to 58), so the best build a player can reach gets past
+  a grade 9 system about half the time per look. Grades 2–8 come down with it;
+  grade 1 is unchanged. Existing systems are rewritten to match.
+- **Clandestine Intrusion Methods and Polymorphic Code** now give 4% stealth a
+  level instead of 3%.
+
+### Migrations
+
+- `2026_09_28_180000_rewire` (adds the drug; the deploy worker runs it on pull)
+- `2026_09_28_190000_stealth_percentages_raised` (a data re-tune by slug)
+- `2026_09_28_200000_the_ids_table_comes_down` (rewrites `systems.ids_detection`
+  where it still holds its grade's old value)
+
 ## [0.24.0] — 2026-09-28
 
 Five new skills fill the stats nothing reached, brought to scale before anyone trains them.
@@ -1743,7 +1782,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.24.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.25.0...HEAD
+[0.25.0]: https://github.com/nahkampf/dedlok/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/nahkampf/dedlok/compare/v0.23.1...v0.24.0
 [0.23.1]: https://github.com/nahkampf/dedlok/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/nahkampf/dedlok/compare/v0.22.1...v0.23.0

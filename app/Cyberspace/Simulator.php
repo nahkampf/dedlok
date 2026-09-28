@@ -540,15 +540,26 @@ final readonly class Simulator
     private function extract(Character $character, Run $run): array
     {
         // CONTINUING. Spends this turn's bandwidth against what is already
-        // owed and never re-rolls detection — the core was already touched on
-        // the turn that started this.
+        // owed. The core is not touched again, but the IDS watches every turn
+        // a pull runs — so a long file is a gamble as well as slow. ICE it
+        // wakes guards the core like any other, and the pull waits, kept.
         if ($run->extracting_qb !== null) {
-            return $this->continueTransfer($character, $run);
+            $log = $this->idsWatchesThePull($character, $run);
+
+            if ($run->inAFight()) {
+                return [...$log, $this->iceGuardsTheCore()];
+            }
+
+            return [...$log, ...$this->continueTransfer($character, $run)];
         }
 
         $system = System::query()->where('address', $run->address)->first();
 
         $log = $this->touchTheCore($character, $run, $system);
+
+        if ($run->inAFight()) {
+            return [...$log, $this->iceGuardsTheCore()];
+        }
 
         if ($system === null || ! $this->opensTheCore($character, $run, $system) || $run->purpose !== RunPurpose::Extraction) {
             $log[] = $this->line('cyberspace.run.log.extract_fails');
@@ -896,6 +907,44 @@ final readonly class Simulator
             return [];
         }
 
+        return $this->noticedAtTheCore($character, $run, $system, 'core_noticed');
+    }
+
+    /**
+     * THE IDS WATCHES A PULL, one roll for every turn it continues.
+     *
+     * Only the IDS, and only while nothing has noticed yet: the tracer and the
+     * ICE had their look on arrival and at the touch, and a run already seen
+     * has nothing left to discover. A system with no IDS never rolls here.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function idsWatchesThePull(Character $character, Run $run): array
+    {
+        if ($run->detected) {
+            return [];
+        }
+
+        $system = System::query()->where('address', $run->address)->first();
+
+        if ($system === null || (int) $system->ids_detection <= 0) {
+            return [];
+        }
+
+        if ($this->checks->roll($character->stat('stealth')->value, (float) $system->ids_detection, 'detection')->passed) {
+            return [];
+        }
+
+        return $this->noticedAtTheCore($character, $run, $system, 'pull_noticed');
+    }
+
+    /**
+     * Seen at the core: the run is detected, its ICE wakes, its owner minds.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function noticedAtTheCore(Character $character, Run $run, System $system, string $line): array
+    {
         $run->forceFill([
             'detected' => true,
             'ice_id' => $system->ice_id,
@@ -907,9 +956,27 @@ final readonly class Simulator
         $this->charge($character, $system, StandingReason::Noticed);
 
         return [$this->line(
-            $system->ice_id === null ? 'cyberspace.run.log.core_noticed' : 'cyberspace.run.log.core_noticed_ice',
+            'cyberspace.run.log.'.$line.($system->ice_id === null ? '' : '_ice'),
             tone: 'crit',
         )];
+    }
+
+    /**
+     * AWAKE ICE STANDS BETWEEN THE RUNNER AND THE CORE.
+     *
+     * Asked by extraction, an install and a burn, AFTER the core touch — so the
+     * attempt is what can wake it — and BEFORE the operating system is rolled,
+     * because nothing reached the core to be answered. The turn is spent and
+     * the ICE gets its swing. What is left is to break it or to leave.
+     *
+     * Said out loud, unlike the core's silent failures: the ICE is on the
+     * screen already, so naming it gives nothing away.
+     *
+     * @return array{text: string, tone: string}
+     */
+    private function iceGuardsTheCore(): array
+    {
+        return $this->line('cyberspace.run.log.ice_guards', tone: 'warn');
     }
 
     /**
@@ -944,6 +1011,10 @@ final readonly class Simulator
         $system = System::query()->where('address', $run->address)->first();
 
         $log = $this->touchTheCore($character, $run, $system);
+
+        if ($run->inAFight()) {
+            return [...$log, $this->iceGuardsTheCore()];
+        }
 
         $kind = $run->backdoorKind();
 
@@ -1031,6 +1102,10 @@ final readonly class Simulator
         $system = System::query()->where('address', $run->address)->first();
 
         $log = $this->touchTheCore($character, $run, $system);
+
+        if ($run->inAFight()) {
+            return [[...$log, $this->iceGuardsTheCore()], false];
+        }
 
         if ($system === null || ! $this->opensTheCore($character, $run, $system) || $run->purpose !== RunPurpose::Burn) {
             $log[] = $this->line('cyberspace.run.log.burn_fails');

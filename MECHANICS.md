@@ -50,7 +50,7 @@ down so the implementation has something to be checked against.
 | Skills as a `ModifierSource` | **built** — `skills.modifiers` as JSON on the row, read by `App\Stats\Sources\SkillEffects`; there is no `skill_effects` table, for the reason an implant has none |
 | `character_modifiers` table | **built** — instances in the database, definitions in `config/effects.php`, stacking collapsed at read time by `App\Stats\Stacking` |
 | Item *modifiers* — items that change a stat | **built** — software. `programs`, `App\Programs\ProgramRunner`, `App\Stats\Sources\RunningPrograms`, authored in the item editor |
-| A program's KIND as a gate | **specified only**; nothing asks whether an icebreaker is running until the run simulator does |
+| A program's KIND as a gate | **built** — `Simulator::attack()` asks whether an icebreaker is running; the run starts it from the briefing's loadout, one icebreaker at a time |
 | Implants | **built** — `items.implant_region`, `inventory_items.installed_at`, `App\Implants\ImplantFitter`, and the body map at `/implants` |
 | Injuries | **partly built** — `App\Stats\InjuryLedger` deepens one row per injury and `config/effects.php` defines two; nothing inflicts one yet. Resource damage is a different thing and does now happen: a deck that stops running while its owner is inside costs them 1 SI |
 | Drugs | **specified only** — the timed half of `character_modifiers` is built and nothing writes one |

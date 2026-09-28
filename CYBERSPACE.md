@@ -34,7 +34,7 @@ system.
 | The fight | **built**; `App\Cyberspace\Simulator` resolves one turn — the player acts, then the machine does. An icebreaker grinds integrity down, a miss does nothing at all, and a defeat ejects before the waiting screen |
 | Detection, on approach | **built**; every watcher on the machine rolls against the runner's `stealth` and any one success detects them. Nothing is woken by a run that goes unnoticed. The global certainty floor, not a kind of its own |
 | Detection, on the core | **built**; extraction touches the core, so it is the second roll — every watcher gets a fresh look, independent of what happened on approach, and the roll fires whether or not the extraction it accompanies goes on to succeed |
-| Extraction | **built**; `App\Cyberspace\Extractor` takes creds and catalogue items the moment the core is touched, a catalogue item merging the way an archetype loadout does. A file becomes one unstackable "Encrypted Data Dump" carrying its real numbers as JSON, and costs turns to match its size in QB, cut back down by the deck's resolved bandwidth — `runs.extracting_qb` is the countdown, and `App\Cyberspace\Simulator` spends it a bandwidth's worth per turn, so the ICE (if anything woke) keeps swinging on every turn a pull runs |
+| Extraction | **built**; `App\Cyberspace\Extractor` takes creds and catalogue items the moment the core is touched, a catalogue item merging the way an archetype loadout does. A file becomes one unstackable "Encrypted Data Dump" carrying its real numbers as JSON, and costs turns to match its size in QB, cut back down by the deck's resolved bandwidth — `runs.extracting_qb` is the countdown, and `App\Cyberspace\Simulator` spends it a bandwidth's worth per turn, and a pull can only begin with no ICE awake. **Awake ICE guards the core**: extraction, an install and a burn all fail while it lives, so a detected runner breaks it or egresses |
 | `RunEnding::Completed` | **built**; egress after a successful extraction ends this way rather than as a plain egress — "they did what they came to do" is only true from that point on. `runs.extracted` is the flag both doors to leaving check |
 | The trace | **advances**, once something has noticed: the machine's `tracer_rate` a turn, and it WALKS the routing chain, one hop a turn: a single attempt at the next system, passed or not, and a hop once passed is behind it for good. Grade 1 never holds it, grade 9 holds it four turns in five. Drawn on the run screen as the chain it walks, with an estimate of the turns left |
 | A completed trace | **built**; puts heat on the character (one point, a placeholder) and burns the chain, shutting every machine the route ran through. Heat is no longer inert — see *what heat does* — but what it buys is one nightly roll and a message, not yet a consequence |
@@ -794,6 +794,11 @@ What a turn offers: an action against the system, **loading or dropping
 software**, using something carried — a drug, a patch, a one-shot — and
 **trying to egress**, which is always on the list. Nothing here is free: every
 one of them spends the turn, and a turn is trace and thermal load.
+
+**As built, the software loadout is chosen on the briefing and fixed for the
+run** — loading or dropping mid-run is not a turn action. One icebreaker at a
+time, whichever ones a player holds; the run starts the loadout before anything
+rolls and stops it as the run ends.
 
 **MAPPING IS NOT A RUN, and scanning is not a turn.** It used to be a purpose
 of its own — scan only, never touch the core — and the probe took that job the
@@ -1741,9 +1746,9 @@ All of it. In the order it should be built:
    gates and modifiers that resolve; the admin editor; the topbar's readout;
    the deck screen's Running and Storage tabs, where a program is stopped
    beside the compute and memory it is spending. A program is running or it is
-   not, running spends compute and memory, and owning it spends storage. Still missing: anything that READS the kind — the gate half waits
-   on the run simulator, which is what will pass `duringRun` and start an
-   icebreaker.
+   not, running spends compute and memory, and owning it spends storage. The kind is read by the simulator, and run-only software is started by
+   `RunStarter` from the loadout chosen on the briefing — the only caller that
+   passes `duringRun`.
 3. **The grid.** Positions, systems, addresses, movement, discovery, the map,
    bookmarks, jumping. No intrusion at all — a walkable, empty world.
 
@@ -1822,8 +1827,11 @@ All of it. In the order it should be built:
    Creds and items come out the moment the core is touched; a file costs
    turns to match its size in QB, cut back down by the deck's resolved
    bandwidth — `runs.extracting_qb` is the countdown and `Simulator` spends it
-   down one bandwidth's worth per turn, through the ordinary turn cycle, so an
-   ICE that woke on the touch keeps swinging on every turn a pull runs.
+   down one bandwidth's worth per turn, through the ordinary turn cycle. ICE
+   that wakes on the touch blocks the pull from beginning at all: awake ICE
+   guards the core, and must be broken or escaped. Every later turn of a pull
+   the IDS alone rolls again, so a large file is a gamble as well as slow; if
+   it wakes the ICE, the pull stops where it was and waits.
 
    **Still missing**: selling a scan, which needs a storefront the market does
    not have.
@@ -1844,8 +1852,8 @@ All of it. In the order it should be built:
    the picture or the window closes.
 
    The analyser is a BACKGROUND program, not a run-only one: mapping happens on
-   the open grid. So `$duringRun` still has no caller passing `true`, and the
-   simulator remains the only thing that ever should.
+   the open grid, so it never needs `$duringRun`. Only `RunStarter`, starting a
+   run's loadout, ever passes it.
 5. **The intrusion.** The simulator, the log, extraction, the defeat tags.
    Single-player only — cooperative runs are phase 7.
 

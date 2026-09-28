@@ -266,7 +266,7 @@
                  the wrong purpose would promise something the turn would
                  silently waste. --}}
             @if ($run->purpose === RunPurpose::Extraction)
-                <button type="submit" name="action" value="extract" class="btn cut">
+                <button type="submit" name="action" value="extract" class="btn cut" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get($run->extracting_qb !== null ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
                 </button>
             @endif
@@ -275,7 +275,7 @@
                  about to leave rather than asking again mid-fight. --}}
             @if ($run->purpose === RunPurpose::Backdoor)
                 <button type="submit" name="action" value="install" class="btn cut"
-                        @if ($run->backdoored) disabled @endif>
+                        @if ($run->backdoored || $run->inAFight()) disabled @endif>
                     {{ Text::get($run->backdoored ? 'cyberspace.run.action.install_done' : 'cyberspace.run.action.install', [
                         'kind' => $run->backdoorKind()?->label() ?? '',
                     ]) }}
@@ -287,7 +287,7 @@
                  be pressed twice — the machine is gone and the run is over the
                  moment it lands. --}}
             @if ($run->purpose === RunPurpose::Burn)
-                <button type="submit" name="action" value="burn" class="btn btn--danger cut">
+                <button type="submit" name="action" value="burn" class="btn btn--danger cut" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get('cyberspace.run.action.burn') }}
                 </button>
             @endif
@@ -302,7 +302,11 @@
                 {{ Text::get('cyberspace.run.egress_chance', ['chance' => $egress->percent()]) }}
             </button>
         </div>
-        @if ($core !== null)
+        @if ($run->inAFight())
+            <p class="micro" style="color:var(--warn);margin:var(--s-2) 0 0">
+                {{ Text::get('cyberspace.run.core_guarded') }}
+            </p>
+        @elseif ($core !== null)
             <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
                 {{ Text::get('cyberspace.run.core_chance', ['chance' => $core]) }}
                 {{ Text::get('cyberspace.run.core_hint') }}

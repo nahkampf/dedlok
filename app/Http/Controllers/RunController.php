@@ -17,9 +17,11 @@ use App\Cyberspace\TurnResult;
 use App\Decks\DeckTotals;
 use App\Decks\ThermalExposure;
 use App\Models\Character;
+use App\Models\InventoryItem;
 use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemScan;
+use App\Programs\ProgramKind;
 use App\Standing\StandingLedger;
 use App\Stats\Resolver;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +43,11 @@ use Illuminate\View\View;
  */
 class RunController extends Controller
 {
+    /** The last loadout that went into a run, as item ids. Per browser. */
+    private const LOADOUT_COOKIE = 'run_loadout';
+
+    private const LOADOUT_MINUTES = 60 * 24 * 365;
+
     public function __construct(private readonly RunStarter $runs) {}
 
     /**
@@ -78,6 +85,13 @@ class RunController extends Controller
         $deck = $character->equippedDeck;
         $totals = $deck === null ? null : DeckTotals::forCharacter($character, $deck, $resolver);
 
+        $loadout = InventoryItem::query()
+            ->where('character_id', $character->id)
+            ->whereNull('running_on_deck_id')
+            ->whereHas('item.program', static fn ($q) => $q->where('background_process', false))
+            ->with('item.program')
+            ->get();
+
         return view('run.setup', [
             // What the system's owner makes of you, on the screen where the
             // run is decided rather than after it.
@@ -101,6 +115,17 @@ class RunController extends Controller
             // decryptor are both "a program" until the moment one of them is
             // the only thing standing between you and an ICE.
             'processes' => $character->runningProcesses(),
+            // What the run could start: run-only software they hold and are
+            // not running. Icebreakers apart, since only one may go in.
+            'loadout' => $loadout->partition(static fn (InventoryItem $row): bool => $row->item->program->kind === ProgramKind::Icebreaker),
+            // The last loadout that went in, ticked again. Remembered as ITEMS,
+            // one row each, because a row id does not survive its stack being
+            // split and merged back.
+            'chosen' => $loadout
+                ->filter(static fn (InventoryItem $row): bool => in_array($row->item_id, self::rememberedLoadout($request), true))
+                ->unique('item_id')
+                ->pluck('id')
+                ->all(),
             'totals' => $totals,
             'ready' => $totals?->isReady() ?? false,
             // A deck's tolerance is its weakest part, not the sum of its
@@ -126,19 +151,44 @@ class RunController extends Controller
             // Only a backdoor run carries one, and `RunStarter` drops it for
             // every other purpose rather than trusting the form.
             'backdoor_kind' => ['nullable', Rule::in(BackdoorKind::values())],
+            // The loadout: inventory rows of run-only software. One icebreaker
+            // by radio, anything else by checkbox. Ownership and every other
+            // rule is `ProgramRunner`'s, asked when the run starts them.
+            'icebreaker' => ['nullable', 'integer'],
+            'programs' => ['nullable', 'array', 'max:20'],
+            'programs.*' => ['integer', 'distinct'],
         ]);
+
+        $ids = array_values(array_filter([$data['icebreaker'] ?? null, ...($data['programs'] ?? [])]));
+        $rows = $ids === [] ? collect() : InventoryItem::query()->whereKey($ids)->with('item.program')->get();
 
         $result = $this->runs->start(
             $character,
             RunPurpose::from($data['purpose']),
             ($data['backdoor_kind'] ?? null) === null ? null : BackdoorKind::from($data['backdoor_kind']),
+            $rows,
         );
 
         if (! $result->succeeded()) {
-            return back()->with('error', $result->refusal->message());
+            return back()->with('error', $result->message());
         }
 
-        return redirect()->route('run.show');
+        // A loadout that WENT IN is remembered, so the next briefing starts
+        // from it — including an empty one, which is a choice too.
+        return redirect()->route('run.show')->withCookie(cookie(
+            self::LOADOUT_COOKIE,
+            $rows->pluck('item_id')->unique()->implode(','),
+            self::LOADOUT_MINUTES,
+        ));
+    }
+
+    /** @return list<int> */
+    private static function rememberedLoadout(Request $request): array
+    {
+        return array_values(array_map('intval', array_filter(
+            explode(',', (string) $request->cookie(self::LOADOUT_COOKIE, '')),
+            'is_numeric',
+        )));
     }
 
     /**

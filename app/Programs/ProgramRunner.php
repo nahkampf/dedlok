@@ -47,13 +47,13 @@ final class ProgramRunner
     /**
      * Start a program on the character's equipped deck.
      *
-     * @param  bool  $duringRun  whether an INTRUSION RUN is in progress. Run-only
+     * @param  bool  $duringRun  whether an INTRUSION RUN is beginning. Run-only
      *                           programs are started BY the run and never by a
      *                           player pressing a button, so this defaults to
-     *                           false and the simulator passes true. The
-     *                           simulator is the only caller that ever may.
-     *                           Jacking into cyberspace is not a run — that is
-     *                           built now, and it does not pass true.
+     *                           false and `RunStarter::start()` passes true for
+     *                           the loadout chosen on the briefing. It is the
+     *                           only caller that ever may. Jacking into
+     *                           cyberspace is not a run and does not pass true.
      */
     public function start(Character $character, InventoryItem $row, bool $duringRun = false): ProcessResult
     {
@@ -73,6 +73,16 @@ final class ProgramRunner
 
         if (! $duringRun && ! $program->background_process) {
             return ProcessResult::refused(ProcessRefusal::RunOnly);
+        }
+
+        /*
+         * ONE ICEBREAKER AT A TIME, whichever ones they are. `icebreaker_damage`
+         * sums every running program, so two cheap ones would out-cut a dear
+         * one and TWENTY TURNS IS NEVER ENOUGH would stop being true. The
+         * upgrade is a bigger icebreaker, never a second one.
+         */
+        if ($program->kind === ProgramKind::Icebreaker && $this->icebreakerRunning($character)) {
+            return ProcessResult::refused(ProcessRefusal::OneIcebreaker);
         }
 
         /*
@@ -176,6 +186,36 @@ final class ProgramRunner
             ->where('item_id', $itemId)
             ->whereNotNull('running_on_deck_id')
             ->count();
+    }
+
+    /** Whether any icebreaker is going, on any deck — the same reach threads have. */
+    private function icebreakerRunning(Character $character): bool
+    {
+        return InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->whereNotNull('running_on_deck_id')
+            ->whereHas('item.program', static fn ($q) => $q->where('kind', ProgramKind::Icebreaker->value))
+            ->exists();
+    }
+
+    /**
+     * Stop everything that only runs during an intrusion.
+     *
+     * What ending a run calls. Nothing run-only may outlive the run that
+     * started it, or an icebreaker would sit on the deck spending compute on
+     * an open grid it can do nothing to.
+     */
+    public function stopRunOnly(Character $character): void
+    {
+        $rows = InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->whereNotNull('running_on_deck_id')
+            ->whereHas('item.program', static fn ($q) => $q->where('background_process', false))
+            ->get();
+
+        foreach ($rows as $row) {
+            $this->putBack($row);
+        }
     }
 
     /**

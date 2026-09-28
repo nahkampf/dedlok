@@ -137,6 +137,8 @@ return [
             'opiate' => ['hp_per_excess' => 3, 'lethal_at' => 2],
             'sedative' => ['hp_per_excess' => 3, 'lethal_at' => 2],
             'psychedelic' => ['hp_per_excess' => 2, 'lethal_at' => null],
+            // Too much makes you ill and never stops a heart.
+            'nootropic' => ['hp_per_excess' => 1, 'lethal_at' => null],
         ],
     ],
 ];

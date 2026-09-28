@@ -681,36 +681,45 @@ return [
         /*
         | HOW HARD THE INTRUSION DETECTION IS TO GET PAST.
         |
-        | A difficulty handed to App\Checks\CheckRoller, so it is directly
-        | comparable to `scan.difficulty` below — and deliberately the same
-        | table. Reading a machine and hiding from its watchdog being equally
-        | hard at a given grade is an anchor a designer can hold in their head,
-        | and one curve to tune beats two that drift apart.
+        | A difficulty handed to App\Checks\CheckRoller against `stealth`.
         |
-        | Against a mid-career runner (a check around 51, at the default spread)
-        | that is the certainty floor at grade 1, about three in ten at grade 5,
-        | and the floor at the other end by grade 9 — which is exactly the
-        | "trips a household IDS about once in every hundred and twenty
-        | attempts" CYBERSPACE.md claims for the bottom of the range.
+        | EACH GRADE IS A COIN FLIP FOR WHOEVER OUGHT TO BE STANDING THERE:
+        |
+        |   grade 1    10   an untrained runner (stealth ~9)       48%
+        |   grade 5    36   fully trained, average attributes (~35) 46%
+        |   grade 9    58   the best reachable build (~61)          59%
+        |
+        | — the last is the IDS alone; with a grade 9 tracer and ICE also
+        | looking it is 52-54% a look, and about a quarter for a whole run,
+        | since the core touch rolls again. The steps narrow towards the top
+        | because the stealth range does.
+        |
+        | IT USED TO BE `scan.difficulty`'S TABLE, and ran to 92: the best
+        | build anybody can actually reach was seen by a grade 9 IDS nearly
+        | every time. The two roll different stats with different ceilings, so
+        | they are two curves now. The scan table did not move.
+        |
+        | STORED ON THE ROW AT CREATION, so changing this moves new machines
+        | only — the migration that set these values rewrote the old ones.
         */
         'ids' => [
             1 => 10,
-            2 => 18,
-            3 => 26,
-            4 => 34,
-            5 => 44,
-            6 => 54,
-            7 => 66,
-            8 => 78,
-            9 => 92,
+            2 => 17,
+            3 => 24,
+            4 => 30,
+            5 => 36,
+            6 => 42,
+            7 => 48,
+            8 => 53,
+            9 => 58,
         ],
 
         'tracer' => [
 
             /*
-            | WHAT A TRACER NOTICES, and it is MUCH LOWER than an IDS at the
-            | same grade — a fifth of it at the bottom, widening to a little
-            | over two-fifths at the top.
+            | WHAT A TRACER NOTICES, and it is LOWER than an IDS at the same
+            | grade — a fifth of it at the bottom, widening to about
+            | two-thirds at the top.
             |
             | Shaped rather than a flat fraction, because the curve says
             | something: a cheap tracer is following traffic and not looking for

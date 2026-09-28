@@ -632,8 +632,8 @@ return [
         | already touched (memory), and noticing what is watching (perception).
         |
         | 8.5 puts a starting character around 9 and a very good one around 12,
-        | which against the IDS table is a coin flip at grade 1 and nothing at
-        | all above grade 3 — so the base is a floor to build on rather than a
+        | which against the IDS table is a coin flip at grade 1 and next to
+        | nothing by grade 5 — so the base is a floor to build on rather than a
         | way past anything. Obfuscation adds to it flat and evasion programs
         | are meant to carry the rest.
         */

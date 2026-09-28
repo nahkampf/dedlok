@@ -71,6 +71,8 @@ enum ProcessRefusal: string
      */
     case RunOnly = 'run_only';
 
+    case OneIcebreaker = 'one_icebreaker';
+
     public function message(): string
     {
         return Text::get("programs.refused.{$this->value}");

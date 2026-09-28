@@ -6,8 +6,11 @@ namespace App\Cyberspace;
 
 use App\Decks\DeckTotals;
 use App\Models\Character;
+use App\Models\InventoryItem;
 use App\Models\Run;
 use App\Models\System;
+use App\Programs\ProcessRefusal;
+use App\Programs\ProgramRunner;
 use App\Stats\Resolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -55,8 +58,17 @@ final readonly class RunStarter
      * something you decide from the map with a scan in front of you, not
      * mid-fight; and the kind is permanent once installed, so the decision
      * wants to be made where the information is.
+     *
+     * THE LOADOUT IS STARTED HERE TOO, and FIRST — before the arrival roll,
+     * because evasion software that came up a moment after the machine looked
+     * would have hidden nobody. This is the one caller that starts run-only
+     * programs; `end()` is the one that stops them. A program that will not
+     * start refuses the whole run with its own reason, and anything already
+     * started for it is put back.
+     *
+     * @param  iterable<InventoryItem>  $loadout
      */
-    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null): RunResult
+    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = []): RunResult
     {
         if ($character->current_run_id !== null) {
             return RunResult::refused(RunRefusal::AlreadyRunning);
@@ -93,7 +105,24 @@ final readonly class RunStarter
             return RunResult::refused(RunRefusal::DeckNotReady);
         }
 
-        $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind): Run {
+        $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout): Run|ProcessRefusal {
+            $runner = app(ProgramRunner::class);
+            $started = [];
+
+            foreach ($loadout as $row) {
+                $result = $runner->start($character, $row, duringRun: true);
+
+                if (! $result->succeeded()) {
+                    foreach ($started as $process) {
+                        $runner->stop($character, $process);
+                    }
+
+                    return $result->refusal;
+                }
+
+                $started[] = $result->process;
+            }
+
             $run = Run::query()->create([
                 'character_id' => $character->getKey(),
                 'address' => $system->address,
@@ -149,6 +178,10 @@ final readonly class RunStarter
             return $run;
         });
 
+        if ($run instanceof ProcessRefusal) {
+            return RunResult::programRefused($run);
+        }
+
         return RunResult::started($run);
     }
 
@@ -176,6 +209,9 @@ final readonly class RunStarter
             if ($character->current_run_id === $run->getKey()) {
                 $character->forceFill(['current_run_id' => null])->save();
             }
+
+            // Nothing run-only outlives the run that started it.
+            app(ProgramRunner::class)->stopRunOnly($character);
 
             /*
              * DOES THE MACHINE NOW KNOW?

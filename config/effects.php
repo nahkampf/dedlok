@@ -134,6 +134,17 @@ return [
         ],
     ],
 
+    // Nothing in the catalogue hooks anybody yet (Rewire is not addictive),
+    // but every family answers for its own withdrawal.
+    'withdrawal_nootropic' => [
+        'label' => 'Foggy',
+        'stacking' => 'unique',
+        'modifiers' => [
+            ['op' => 'add', 'amount' => -2, 'target' => ['id' => 'memory']],
+            ['op' => 'add', 'amount' => -2, 'target' => ['id' => 'focus']],
+        ],
+    ],
+
     'withdrawal_psychedelic' => [
         'label' => 'Flat',
         'stacking' => 'unique',
