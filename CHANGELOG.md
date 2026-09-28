@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## [0.26.1] — 2026-09-28
+
+Scanners stop stacking for free, missions pay less, and heat scales with what you hit.
+
+### Changed
+
+- **Running several programs of one kind has diminishing returns.** Two
+  scanners are not twice one scanner, whether or not they are the same
+  program: the strongest gives its full effect, the next 86%, then 57%, 26%,
+  10%, 3%, and any more give nothing. Different kinds of program — a scanner
+  and an evasion suite — never reduce each other.
+- **Mission payouts in creds are a tenth of what they were**, at every grade.
+  Standing and loyalty rewards are unchanged. Jobs already offered or taken
+  keep what they were offered with.
+- **Being traced costs heat by grade**: twice the system's grade (2 at grade 1,
+  18 at grade 9), up from a flat 1. It lands when the run ends, however it
+  ends.
+- **Burning a system costs 2.5 × its grade in heat**, up from a flat 2 — always
+  more than being traced off the same system. A burn that lands replaces the
+  trace's heat rather than adding to it.
+
 ## [0.26.0] — 2026-09-28
 
 Loyalty buys more than things: Lockjaw will make your heat go quiet.
@@ -1821,7 +1842,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.26.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.26.1...HEAD
+[0.26.1]: https://github.com/nahkampf/dedlok/compare/v0.26.0...v0.26.1
 [0.26.0]: https://github.com/nahkampf/dedlok/compare/v0.25.1...v0.26.0
 [0.25.1]: https://github.com/nahkampf/dedlok/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/nahkampf/dedlok/compare/v0.24.0...v0.25.0
