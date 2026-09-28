@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+## [0.22.1] — 2026-09-28
+
+The market explains its books, and every page asks the database less than half as much.
+
+### Added
+
+- **A skill book on the market is inspected as the skill it teaches.** Pointing at
+  a book's header floats the same card the skills screen uses: description, whether
+  it's injected and how far, the attributes, requirements and each level's effect.
+  A click or tap opens it as a modal. It works on both the shelf and the players'
+  offers. It's the header rather than the whole card, because pressing Buy must buy.
+
+### Changed
+
+- **Every signed-in page runs roughly 60% fewer queries.** The top bar built four
+  character sheets per page, one for each read of a resource's maximum. Each sheet
+  asked all six modifier sources twice: once to work out the context, then again
+  for itself. Now there is one sheet for the bar, and it inherits what the context
+  gathered. The market also loads each card's program with the shelf instead of
+  one at a time, and the skill roster is read once per request. Market 168 → 51
+  queries, character 156 → 65, skills 128 → 53, inventory 102 → 43.
+
 ## [0.22.0] — 2026-09-28
 
 Development stops sharing the live database, and the market says what you already have.
@@ -1650,7 +1672,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.22.1...HEAD
+[0.22.1]: https://github.com/nahkampf/dedlok/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/nahkampf/dedlok/compare/v0.21.2...v0.22.0
 [0.21.2]: https://github.com/nahkampf/dedlok/compare/v0.21.1...v0.21.2
 [0.21.1]: https://github.com/nahkampf/dedlok/compare/v0.21.0...v0.21.1
