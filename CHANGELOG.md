@@ -2,6 +2,40 @@
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-09-28
+
+Development stops sharing the live database, and the market says what you already have.
+
+### Added
+
+- **The market marks what you already have.** A listing gets the kit's corner tick,
+  green for anything you hold a row of anywhere (loose, in a container, fitted,
+  running or installed) and cyan for a book whose skill is already injected. Cyan
+  wins, because injecting spent the copy. It appears on both the shelf and the
+  players' offers.
+- **`bin/pull-db`** replaces the local database with a fresh copy of production.
+  It only reads the remote, as a `--single-transaction` dump that takes no locks
+  production would feel.
+
+### Changed
+
+- **Word already out is not news.** At high heat the bounty roll is certain, so it
+  put the same message in the inbox every night. `characters.bounty_word_at`
+  remembers the last time, and nobody is rolled again for
+  `cyberspace.heat.bounty.cooldown_days` (7). It is a memory on the character
+  rather than a gentler curve, and a column rather than the inbox, so clearing
+  your messages does not reset it.
+- **Development runs on a local copy of production.** The laptop and the live site
+  shared one MySQL, so a migration reached the live game the moment it ran on a
+  laptop. Every scheduled job also ran twice, once from each scheduler, so bounties,
+  siphons and restocks happened twice. `db` is pinned to MySQL 8.0 to match the
+  server. From here on, **a migration reaches production through the deploy
+  worker**, not from a laptop.
+
+### Migrations
+
+- `2026_09_28_120000_word_goes_out_once_a_while` (already applied on production)
+
 ## [0.21.2] — 2026-09-28
 
 A stranger's bad night now tells you what it cost.
@@ -1616,7 +1650,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.21.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/nahkampf/dedlok/compare/v0.21.2...v0.22.0
 [0.21.2]: https://github.com/nahkampf/dedlok/compare/v0.21.1...v0.21.2
 [0.21.1]: https://github.com/nahkampf/dedlok/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/nahkampf/dedlok/compare/v0.20.0...v0.21.0
