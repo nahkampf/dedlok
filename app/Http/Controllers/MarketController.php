@@ -55,6 +55,13 @@ class MarketController extends Controller
             // afford is the one number every row on this screen is read
             // against, and Blade should not be doing division.
             'creds' => (int) $character->creds,
+            // What the corner tick says. EVERY row the character owns, not
+            // only the loose ones: a module fitted into a deck, a program
+            // running, an implant in a body are all still yours, and
+            // `scopeLoose()` is the stash's question rather than this one.
+            // Keyed for isset() so a shelf of forty is forty lookups.
+            'owned' => $character->inventory()->distinct()->pluck('item_id')->flip()->all(),
+            'injected' => $character->characterSkills()->pluck('skill_id')->flip()->all(),
             // The other market. Not grouped and not searched: it is whatever
             // anybody happens to be holding today, and it is short.
             'offers' => MarketOffer::query()

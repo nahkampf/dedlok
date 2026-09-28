@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Inventory\Imprint;
+use App\Inventory\ItemGranter;
 use App\Market\Purchaser;
 use App\Market\PurchaseRefusal;
 use App\Models\Character;
+use App\Models\CharacterSkill;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\MarketPurchase;
 use App\Models\MarketStock;
+use App\Models\Skill;
 use App\Programs\ProgramKind;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -246,6 +250,55 @@ final class MarketPurchaseTest extends TestCase
 
         $this->assertGreaterThan($byRarity['ultra_rare'], $byRarity['common']);
         $this->assertGreaterThanOrEqual($byRarity['rare'], $byRarity['uncommon']);
+    }
+
+    // ---- the corner tick ---------------------------------------------------
+
+    /** Anything they hold a row of, wherever the row is, wears the kit's --ok. */
+    public function test_a_thing_you_own_is_ticked(): void
+    {
+        $item = $this->stocked();
+        ItemGranter::grant($this->character, $item);
+
+        $this->actingAs($this->character->user)
+            ->get(route('market.index'))
+            ->assertOk()
+            ->assertSee('title="'.Text::get('market.tick.owned').'"', false);
+    }
+
+    public function test_a_thing_you_do_not_own_is_not(): void
+    {
+        $this->stocked();
+
+        $this->actingAs($this->character->user)
+            ->get(route('market.index'))
+            ->assertOk()
+            ->assertDontSee('class="tick"', false);
+    }
+
+    /**
+     * A BOOK FOR A SKILL ALREADY INJECTED says so in cyan — and without owning
+     * a copy, because injecting spent the one they had.
+     */
+    public function test_a_book_for_a_skill_you_have_is_ticked_cyan(): void
+    {
+        $skill = Skill::factory()->create();
+        $book = Imprint::ensureFor($skill);
+        $book->forceFill(['on_market' => true])->save();
+
+        MarketStock::query()->create(['item_id' => $book->id, 'quantity' => 3, 'last_seeded_at' => now()]);
+        CharacterSkill::query()->create([
+            'character_id' => $this->character->id,
+            'skill_id' => $skill->id,
+            'skill_points' => 0,
+            'attained_level' => 0,
+        ]);
+
+        $this->actingAs($this->character->user)
+            ->get(route('market.index'))
+            ->assertOk()
+            ->assertSee('style="--tick:var(--cyan)" title="'.Text::get('market.tick.injected').'"', false)
+            ->assertDontSee(Text::get('market.tick.owned'));
     }
 
     public function test_an_empty_market_says_so(): void

@@ -54,9 +54,12 @@
                             @php($affordable = $price > 0 ? intdiv($creds, $price) : $shelf->quantity)
                             @php($most = min($shelf->quantity, max($affordable, 1)))
 
-                            <div class="card {{ $item->tierClass() }}"
+                            <div class="card ticked {{ $item->tierClass() }}"
                                  data-filter-text="{{ $item->displayName() }} {{ $kind }} {{ $item->useSkill?->title }} {{ $item->flavor }}">
                                 <x-entity-image :kind="$item->imageKind()" :id="$item->id" :alt="$item->displayName()" />
+                                {{-- After the picture: both are positioned, so
+                                     the later one paints on top. --}}
+                                <x-owned-tick :item="$item" :owned="$owned" :injected="$injected" />
 
                                 <div class="card__hd">
                                     <div class="card__title">{{ $item->displayName() }}</div>
@@ -141,8 +144,9 @@
                         @php($item = $row->item)
                         @php($mine = $offer->seller_character_id === $character->id)
 
-                        <div class="card {{ $item->tierClass() }}">
+                        <div class="card ticked {{ $item->tierClass() }}">
                             <x-entity-image :kind="$item->imageKind()" :id="$item->id" :alt="$item->displayName()" />
+                            <x-owned-tick :item="$item" :owned="$owned" :injected="$injected" />
 
                             <div class="card__hd">
                                 <div class="card__title">{{ $item->displayName() }}</div>

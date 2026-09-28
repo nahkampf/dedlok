@@ -269,6 +269,11 @@ return [
         'search' => 'Search the market',
         'search_placeholder' => 'Name, kind or skill',
         'no_match' => 'Nothing on the shelves matches that.',
+        // The corner tick's title, on hover.
+        'tick' => [
+            'owned' => 'You have one of these',
+            'injected' => 'Skill already injected',
+        ],
 
         'bought' => ':quantity × :item, for :paid ¤.',
 
