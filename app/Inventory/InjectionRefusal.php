@@ -10,7 +10,7 @@ use App\Support\Text;
  * Why an injection did not happen.
  *
  * An enum rather than an exception because every one of these is an ordinary
- * thing a player can do — clicking Inject on a book for a skill they already
+ * thing a player can do — clicking Inject on an imprint for a skill they already
  * know is not exceptional, it is Tuesday. The controller turns the case into a
  * translated message; nothing needs a stack trace.
  */

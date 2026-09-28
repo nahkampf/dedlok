@@ -21,13 +21,13 @@ use Illuminate\View\View;
  * The skill creator and editor.
  *
  * A skill is never only a skill: it is a row, a set of graph edges, and a
- * book. The book is created here rather than left to the seeder, because
- * "exactly one book per skill" is what makes a book nameless and what makes
+ * imprint. The imprint is created here rather than left to the seeder, because
+ * "exactly one imprint per skill" is what makes an imprint nameless and what makes
  * the injection gate meaningful — a skill made through this screen with no
- * book would be a skill nobody could ever learn.
+ * imprint would be a skill nobody could ever learn.
  *
  * Everything that writes more than one table does it in a transaction, so a
- * skill can never exist with half its prerequisites or without its book.
+ * skill can never exist with half its prerequisites or without its imprint.
  */
 class SkillController extends Controller
 {
@@ -71,7 +71,7 @@ class SkillController extends Controller
 
             $this->replacePrerequisites($skill, $request->prerequisites());
 
-            // The book is not optional. See the class comment.
+            // The imprint is not optional. See the class comment.
             Imprint::ensureFor($skill);
 
             return $skill;
@@ -108,9 +108,9 @@ class SkillController extends Controller
     }
 
     /**
-     * Destroy the skill, its book, and everyone's progress in it.
+     * Destroy the skill, its imprint, and everyone's progress in it.
      *
-     * The book has to go FIRST: items.use_skill_id is restrictOnDelete, so a
+     * The imprint has to go FIRST: items.use_skill_id is restrictOnDelete, so a
      * skill something still points at cannot be dropped — the database would
      * refuse with a foreign key error rather than cascade. Everything else
      * (character_skills, training_queue, both directions of

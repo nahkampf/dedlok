@@ -1914,6 +1914,7 @@ return [
             'many' => ':count levels queued, on the way to :skill :level.',
         ],
         'plan_stopped' => ':count of :total queued. Stopped at :skill — :reason',
+        'plan_needs_imprint' => ':count of :total queued. :target needs :skill first, and you have not injected :skill — spend its imprint from the stash, then plan again.',
 
         'queued' => ':skill queued for level :level.',
         'dequeued' => ':skill level :level taken out of the queue.',
@@ -1921,7 +1922,6 @@ return [
         /*
         | Why a skill did not go in. Prerequisites are deliberately not here —
         | a queue is allowed to describe training that cannot happen yet, and
-        'plan_needs_imprint' => ':count of :total queued. :target needs :skill first, and you have not injected :skill — spend its imprint from the stash, then plan again.',
         | the warnings below are how it says so.
         */
         'refused' => [
@@ -2714,18 +2714,18 @@ return [
             'search_hint' => 'Slug or title',
             'all_categories' => 'Every category',
             'without_books' => [
-                'one' => ':count skill has no book.',
-                'many' => ':count skills have no book.',
+                'one' => ':count skill has no imprint.',
+                'many' => ':count skills have no imprint.',
             ],
 
             'fields' => [
                 'modifiers' => 'What knowing it grants',
                 'modifiers_hint' => 'Effects a character gets for having this skill — not the check it feeds, which exists for everybody. Each row applies from the level you give it.',
                 'slug' => 'Slug',
-                'slug_hint' => 'Permanent. Lower case, digits and underscores. The book is named from it.',
+                'slug_hint' => 'Permanent. Lower case, digits and underscores. The imprint is named from it.',
                 'slug_locked' => 'Permanent — saved progress references it.',
                 'title' => 'Title',
-                'title_hint' => 'What a player reads. The book reads from it too.',
+                'title_hint' => 'What a player reads. The imprint reads from it too.',
                 'description' => 'Description',
                 'category' => 'Category',
                 'category_hint' => 'The lane it hangs in on the skill tree. Reuse an existing one to group it.',
@@ -2739,7 +2739,7 @@ return [
                 'attribute_hint' => 'Together these decide skill points per minute. They should differ.',
                 'base_cost' => 'Cost',
                 'base_cost_hint' => 'What the imprint sells for. Kept in step with it on every save.',
-                'on_market' => 'Book listed on the market',
+                'on_market' => 'Imprint listed on the market',
             ],
 
             'sections' => [
@@ -2903,7 +2903,7 @@ return [
                 /*
                 | The optgroups the item list is offered in. Deck hardware
                 | names itself through App\Decks\Hardware::label(); these are
-                | the buckets for everything else, and the books get their own
+                | the buckets for everything else, and the imprints get their own
                 | because there is one per skill.
                 */
                 'groups' => [
@@ -2924,7 +2924,7 @@ return [
         /*
         | What a delete would destroy, counted at the moment it is asked. Every
         | one of these is a cascade the schema performs on its own, except a
-        | skill's book, which the controller deletes first because the foreign
+        | skill's imprint, which the controller deletes first because the foreign
         | key restricts rather than cascades.
         */
         'impact' => [
@@ -2947,7 +2947,7 @@ return [
             'dependents' => ['one' => ':count skill that requires it', 'many' => ':count skills that require it'],
             'own_prerequisites' => ['one' => ':count requirement of its own', 'many' => ':count requirements of its own'],
             'books' => ['one' => 'its imprint', 'many' => 'its imprint'],
-            'book_copies' => ['one' => ':count copy of the book players hold', 'many' => ':count copies of the book players hold'],
+            'book_copies' => ['one' => ':count copy of the imprint players hold', 'many' => ':count copies of the imprint players hold'],
             'archetype_loadouts' => [
                 'one' => ':count archetype stops handing it to new characters',
                 'many' => ':count archetypes stop handing it to new characters',
@@ -2963,9 +2963,9 @@ return [
             'slug_immutable' => 'A slug is permanent and cannot be changed.',
             'name_required' => 'Give it a name. Only an imprint may go without one.',
             'container_stacks' => 'A container cannot stack: two of them would merge into one row and the contents of the second would be lost. Untick stackable.',
-            'book_needs_skill' => 'A book that teaches nothing is not a book. Choose the skill it injects.',
+            'book_needs_skill' => 'An imprint that teaches nothing is not an imprint. Choose the skill it injects.',
             'skill_without_book' => 'Only an injecting item may name a skill.',
-            'skill_has_a_book' => 'That skill already has a book. There is exactly one per skill.',
+            'skill_has_a_book' => 'That skill already has an imprint. There is exactly one per skill.',
             'capacity_needs_kind' => 'A container has to say what it holds.',
             'kind_needs_capacity' => 'This holds nothing, so it cannot name a kind. Give it a capacity first.',
             'deck_stacks' => 'A cyberdeck cannot stack: two of them would merge into one row, and only one of them could carry what is fitted in it. Untick stackable.',

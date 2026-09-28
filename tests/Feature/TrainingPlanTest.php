@@ -24,7 +24,7 @@ use Tests\TestCase;
  * TrainingQueue::enqueue(), and everything TrainingQueueScreenTest pins about
  * what a single press does is unchanged. What is asserted here is the ORDER and
  * the COUNT, and the two things that make a plan a partial answer rather than a
- * failure: the queue holds five, and a book that was never spent is a wall.
+ * failure: the queue holds five, and an imprint that was never spent is a wall.
  */
 final class TrainingPlanTest extends TestCase
 {
@@ -199,7 +199,7 @@ final class TrainingPlanTest extends TestCase
     }
 
     /**
-     * A BOOK THAT WAS NEVER SPENT IS A WALL, and being told which one is the
+     * AN IMPRINT THAT WAS NEVER SPENT IS A WALL, and being told which one is the
      * whole value of asking — a plan that quietly routed around it would
      * describe a route that does not exist.
      */

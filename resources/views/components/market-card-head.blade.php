@@ -1,6 +1,6 @@
 @props([
     'item',
-    // Unique on the page: the same book can be on the shelf and on offer.
+    // Unique on the page: the same imprint can be on the shelf and on offer.
     'detailId',
     'owned' => [],
     // skill id => ['level' => int, 'points' => int], for what the character knows.
@@ -8,7 +8,7 @@
     'maxLevel' => 0,
 ])
 @php($skill = $item->useSkill)
-{{-- A listing's name and kind. For a BOOK the header is also the way in to the
+{{-- A listing's name and kind. For an IMPRINT the header is also the way in to the
      skill it teaches: hover floats <x-skill-detail> beside it, a click or tap
      opens it as a modal — the same card and the same device as a row on the
      skills screen. The header and not the whole card, because the card holds a

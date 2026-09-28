@@ -106,7 +106,7 @@ final class EgressProtocolsTest extends TestCase
         $this->assertSame(3, $row->required_level);
     }
 
-    /** One book per skill is what makes the injection gate mean anything. */
+    /** One imprint per skill is what makes the injection gate mean anything. */
     public function test_its_book_is_on_the_shelf(): void
     {
         $book = Imprint::forSkill($this->skill());
@@ -214,7 +214,7 @@ final class EgressProtocolsTest extends TestCase
         return Skill::query()->where('slug', 'egressprotocols')->sole();
     }
 
-    /** Know it, at this level. The book is the player's gate, not this test's. */
+    /** Know it, at this level. The imprint is the player's gate, not this test's. */
     private function train(int $level): void
     {
         CharacterSkill::query()->updateOrCreate(

@@ -66,7 +66,7 @@ final class TrainingQueue
                 return QueueRefusal::QueueFull;
             }
 
-            // A character_skills row is what injecting the book creates, and
+            // A character_skills row is what injecting the imprint creates, and
             // training can never create one — TrainingDeposit refuses and logs
             // rather than granting the skill. So the absence of a row here is
             // the whole gate, and reading its level would be the wrong test:

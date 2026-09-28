@@ -41,10 +41,10 @@ use App\Models\Skill;
  *
  * ## What it does NOT do is check whether a skill can be trained at all
  *
- * A book that has never been spent is a hard gate — `SkillInjector` is the only
+ * An imprint that has never been spent is a hard gate — `SkillInjector` is the only
  * thing that opens it, and `enqueue()` refuses `NotInjected` for everything
  * else. A plan that walks through a skill the character does not own is
- * therefore a plan that stops at it, and being TOLD which book is missing is
+ * therefore a plan that stops at it, and being TOLD which imprint is missing is
  * the whole value of asking. Silently planning around it would describe a route
  * that does not exist.
  */
@@ -115,7 +115,7 @@ final class TrainingPlanner
      * of "Hacking queued to III" starts at IV.
      *
      * A skill with no row at all is absent, and reads as zero: level 0 is a
-     * real state (injected, untrained) and so is never having owned the book,
+     * real state (injected, untrained) and so is never having owned the imprint,
      * and telling them apart is `enqueue()`'s job rather than this one's.
      *
      * @return array<int, int>

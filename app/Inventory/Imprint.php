@@ -9,11 +9,11 @@ use App\Models\Item;
 use App\Models\Skill;
 
 /**
- * The one book per skill, and where its numbers come from.
+ * The one imprint per skill, and where its numbers come from.
  *
- * There is exactly one imprint for every skill — that is what makes a book
+ * There is exactly one imprint for every skill — that is what makes an imprint
  * nameless (its name composes from the skill it teaches) and what makes
- * `hasInjected()` a meaningful gate. Keeping that true means the book cannot
+ * `hasInjected()` a meaningful gate. Keeping that true means the imprint cannot
  * be something someone remembers to create: it has to fall out of the skill
  * existing.
  *
@@ -36,14 +36,14 @@ final class Imprint
         return "imprint_{$skill->slug}";
     }
 
-    /** The book teaching this skill, if one has been made. */
+    /** The imprint teaching this skill, if one has been made. */
     public static function forSkill(Skill $skill): ?Item
     {
         return $skill->imprint()->first();
     }
 
     /**
-     * Every column of the book a skill implies.
+     * Every column of the imprint a skill implies.
      *
      * @return array<string, mixed>
      */
@@ -53,9 +53,9 @@ final class Imprint
 
         return [
             'container' => Item::CONTAINER_DATA,
-            // Rank is a training-time multiplier, so a book for a slower skill
+            // Rank is a training-time multiplier, so an imprint for a slower skill
             // is the better article. Ranks are 1,2,4,8,16, and the scale is
-            // two steps: the quickest skill's book is Tier One, the rest Two.
+            // two steps: the quickest skill's imprint is Tier One, the rest Two.
             'tier' => min(Item::MAX_TIER, (int) log(max(1, $rank), 2) + 1),
             'rarity' => self::rarityForRank($rank),
             'stackable' => true,
@@ -68,7 +68,7 @@ final class Imprint
             'size' => self::sizeForRank($rank),
             'base_cost' => (int) $skill->base_cost,
             'on_market' => (bool) $skill->on_market,
-            // Halving per rank: 32 of the commonest book on the shelf, 2 of
+            // Halving per rank: 32 of the commonest imprint on the shelf, 2 of
             // the rank 16 ones.
             'seed_quantity' => max(2, (int) round(32 / max(1, $rank))),
         ];
@@ -80,10 +80,10 @@ final class Imprint
     }
 
     /**
-     * The book for this skill, made if it was not there.
+     * The imprint for this skill, made if it was not there.
      *
-     * firstOrCreate by slug rather than by use_skill_id, so a book that was
-     * seeded before and a book made here are the same row.
+     * firstOrCreate by slug rather than by use_skill_id, so an imprint that was
+     * seeded before and an imprint made here are the same row.
      */
     public static function ensureFor(Skill $skill): Item
     {
@@ -94,11 +94,11 @@ final class Imprint
     }
 
     /**
-     * Put the book's cost and availability back in step with the skill.
+     * Put the imprint's cost and availability back in step with the skill.
      *
      * Deliberately narrow — see the class comment for what is left alone and
-     * why. Returns the book, or null when the skill has none, which is a state
-     * the admin editor allows: a book can be deleted on purpose.
+     * why. Returns the imprint, or null when the skill has none, which is a state
+     * the admin editor allows: an imprint can be deleted on purpose.
      */
     public static function syncFor(Skill $skill): ?Item
     {
@@ -117,11 +117,11 @@ final class Imprint
     }
 
     /**
-     * A book for a slower skill is a rarer find.
+     * An imprint for a slower skill is a rarer find.
      *
      * Five ranks, four rarities: the two slowest share the top one, because
      * what separates rank 8 from rank 16 is the months of training, not how
-     * hard the book is to come by.
+     * hard the imprint is to come by.
      */
     private static function rarityForRank(int $rank): Rarity
     {

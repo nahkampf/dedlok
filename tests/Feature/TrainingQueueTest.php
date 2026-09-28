@@ -62,7 +62,7 @@ class TrainingQueueTest extends TestCase
     /**
      * Injected but untrained: level 0, no points.
      *
-     * The state every skill starts in once its book is spent, and the state a
+     * The state every skill starts in once its imprint is spent, and the state a
      * queue entry needs before it may name that skill at all.
      */
     private function injected(Skill ...$skills): void
@@ -78,7 +78,7 @@ class TrainingQueueTest extends TestCase
      * @param  list<array{0: Skill, 1: int}>  $entries
      *
      * Injects every skill named, unless the test is specifically about the
-     * uninjected case — building a queue for a skill with no book spent is
+     * uninjected case — building a queue for a skill with no imprint spent is
      * exactly what the validator now refuses.
      */
     private function queue(array $entries, bool $inject = true): void

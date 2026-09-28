@@ -227,7 +227,7 @@ class InventoryController extends Controller
          * RESTRICT rather than a cascade because losing the machine must not
          * delete the software, and rather than SET NULL because MySQL will not
          * allow the "both or neither" CHECK beside a referential action. The
-         * same shape a skill and its book already use: the database refuses,
+         * same shape a skill and its imprint already use: the database refuses,
          * and the controller clears the dependant inside the transaction.
          */
         DB::transaction(function () use ($entry, $character, $runner): void {

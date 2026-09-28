@@ -19,10 +19,10 @@ use Tests\TestCase;
 /**
  * Two inventories, and the one thing you can do from them.
  *
- * The gate this establishes: a skill cannot be trained until its book has been
+ * The gate this establishes: a skill cannot be trained until its imprint has been
  * bought and spent. Injecting is the only path onto the sheet, so most of what
  * matters here is that the path cannot be walked twice, walked with someone
- * else's book, or walked around.
+ * else's imprint, or walked around.
  */
 class InventoryTest extends TestCase
 {
@@ -147,13 +147,13 @@ class InventoryTest extends TestCase
         $first = $this->give($this->book);
         $this->injector->inject($this->character, $first);
 
-        // A second copy of the same book, bought later.
+        // A second copy of the same imprint, bought later.
         $second = $this->give($this->book);
         $result = $this->injector->inject($this->character, $second);
 
         $this->assertFalse($result->succeeded());
         $this->assertSame(InjectionRefusal::AlreadyKnown, $result->refusal);
-        $this->assertNotNull($second->fresh(), 'a refused injection keeps the book');
+        $this->assertNotNull($second->fresh(), 'a refused injection keeps the imprint');
         $this->assertSame(1, CharacterSkill::count());
     }
 
@@ -319,7 +319,7 @@ class InventoryTest extends TestCase
 
     public function test_an_imprint_is_named_from_the_skill_it_teaches(): void
     {
-        // One lang entry covers every book, so adding a skill never means
+        // One lang entry covers every imprint, so adding a skill never means
         // editing a locale.
         $this->assertSame('Eidetic Imprint: Hacking', $this->book->displayName());
         $this->assertSame(Text::get('items.imprint.flavor'), $this->book->displayFlavor());

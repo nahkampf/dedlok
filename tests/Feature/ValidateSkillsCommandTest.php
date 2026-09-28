@@ -161,7 +161,7 @@ class ValidateSkillsCommandTest extends TestCase
         foreach ([1, 2, 3] as $position) {
             $skill = Skill::factory()->create();
 
-            // Each book spent, each skill on the sheet at level 0. A queue
+            // Each imprint spent, each skill on the sheet at level 0. A queue
             // entry for a skill that skipped this is what the next test is.
             $this->inject($character, $skill);
 

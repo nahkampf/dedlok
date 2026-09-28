@@ -366,7 +366,7 @@ final class TrainingDeposit
      * been injected", and the only thing allowed to create that is
      * App\Inventory\SkillInjector — spending the imprint is the gate in
      * front of training. A deposit that created the row on demand would let
-     * anything that can write a queue entry skip the book entirely.
+     * anything that can write a queue entry skip the imprint entirely.
      */
     private function progressRow(Character $character, TrainingQueueEntry $entry): ?CharacterSkill
     {

@@ -337,7 +337,7 @@ final class TrainingQueueScreenTest extends TestCase
 
     /**
      * Each known skill carries its whole card in a template: requirements,
-     * effects in words, the book, and the level being earned breathing.
+     * effects in words, the imprint, and the level being earned breathing.
      */
     public function test_every_known_skill_has_its_card(): void
     {

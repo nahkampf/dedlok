@@ -34,8 +34,8 @@ use Illuminate\Validation\Validator;
  * Some rules here have NO counterpart in the schema, because they are cases
  * SQL cannot express against a single row:
  *
- * - One book per skill. `use_skill_id` is unique across items, because a
- *   second book teaching the same skill would make Imprint::forSkill()
+ * - One imprint per skill. `use_skill_id` is unique across items, because a
+ *   second imprint teaching the same skill would make Imprint::forSkill()
  *   ambiguous and give the skill two names.
  * - A container cannot stack, and neither does a cyberdeck. InventoryItem
  *   derives `stack_key` from (character, item, parent), so two stackable
@@ -287,7 +287,7 @@ class ItemRequest extends FormRequest
              *
              * An imprint is not a program either. Both are data with a job,
              * and `use_op` already says which job; a row claiming both would
-             * be a book that runs and a program that teaches.
+             * be an imprint that runs and a program that teaches.
              */
             'program_kind' => $hardware !== null || $isImprint
                 ? ['prohibited']

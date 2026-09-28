@@ -92,7 +92,7 @@ class Item extends Model
     }
 
     /**
-     * For inject_skill items: what the book teaches.
+     * For inject_skill items: what the imprint teaches.
      *
      * @return BelongsTo<Skill, $this>
      */
@@ -320,8 +320,8 @@ class Item extends Model
     /**
      * The name a player sees.
      *
-     * An imprint has none of its own: there is exactly one book per skill, so
-     * storing a name per book would be a second copy of the skill's title
+     * An imprint has none of its own: there is exactly one imprint per skill, so
+     * storing a name per imprint would be a second copy of the skill's title
      * waiting to disagree with it. The slug is the last resort — visible and
      * wrong beats blank and mysterious.
      */
@@ -383,8 +383,8 @@ class Item extends Model
      * is a filing system rather than a sentence:
      *
      *  - an imprint files itself, though it CALLS itself data: there is one
-     *    book per skill and they all look alike, so one picture in one folder
-     *    covers every book in the game;
+     *    imprint per skill and they all look alike, so one picture in one folder
+     *    covers every imprint in the game;
      *  - a container's kind is the inventory it lives in, which is the same
      *    fallback kindName() ends on.
      *

@@ -171,16 +171,16 @@
             @endforelse
 
             @if ($entry->children->contains(fn ($child) => $child->item->isImprint()))
-                {{-- Once for the whole list rather than once per book: the
+                {{-- Once for the whole list rather than once per imprint: the
                      sentence is the same one every time, and a card holding
-                     four books would otherwise say it four times. --}}
+                     four imprints would otherwise say it four times. --}}
                 <p class="item-card__note" data-act>{{ Text::get('inventory.inject_confirm_any') }}</p>
             @endif
         </div>
     @endif
 
     @if ($item->isImprint() && $item->useSkill)
-        {{-- Spending a book cannot be undone, so the sentence that says so is
+        {{-- Spending an imprint cannot be undone, so the sentence that says so is
              part of the card rather than a second dialog on top of this one. --}}
         <p class="item-card__note" data-act>
             {{ Text::get('inventory.inject_confirm', ['skill' => $item->useSkill->title]) }}

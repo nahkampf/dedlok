@@ -220,7 +220,7 @@ final class NodeContentsTest extends TestCase
     // ---- how good the drop is ------------------------------------------------
 
     /**
-     * A NODE HOLDS WHAT A MACHINE CAN HOLD. Software, files, books — never a
+     * A NODE HOLDS WHAT A MACHINE CAN HOLD. Software, files, imprints — never a
      * cyberdeck or an implant, because those are objects in the world and a
      * node is not somewhere a player's hands reach.
      */

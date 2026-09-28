@@ -17,7 +17,7 @@ use Tests\TestCase;
  * The skill creator and editor.
  *
  * A skill is never only a skill: it is a row, a set of graph edges, and a
- * book. The book is the part most easily forgotten and the part that decides
+ * imprint. The imprint is the part most easily forgotten and the part that decides
  * whether the skill can be learned at all, so most of this is about the two
  * staying together — and about the graph staying acyclic, which is the one
  * error no single row can show.
@@ -54,7 +54,7 @@ class SkillAdminTest extends TestCase
         ], $overrides);
     }
 
-    // ---- creating, and the book that comes with it ------------------------
+    // ---- creating, and the imprint that comes with it ------------------------
 
     public function test_creating_a_skill_creates_its_book(): void
     {
@@ -306,7 +306,7 @@ class SkillAdminTest extends TestCase
     // ---- deleting ---------------------------------------------------------
 
     /**
-     * items.use_skill_id restricts rather than cascades, so the book has to go
+     * items.use_skill_id restricts rather than cascades, so the imprint has to go
      * first or the database refuses the whole delete.
      */
     public function test_deleting_a_skill_takes_its_book_and_everyones_progress(): void
@@ -365,7 +365,7 @@ class SkillAdminTest extends TestCase
             ->assertSee("1 character's progress in it");
     }
 
-    /** A skill with no book cannot be learned; the screen has to say so. */
+    /** A skill with no imprint cannot be learned; the screen has to say so. */
     public function test_a_skill_without_a_book_is_flagged(): void
     {
         $skill = Skill::factory()->create(['slug' => 'orphan']);

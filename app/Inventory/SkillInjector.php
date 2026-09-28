@@ -18,18 +18,18 @@ use Illuminate\Support\Facades\DB;
  * This is the ONLY way a character_skills row comes into existence. Training
  * does not create one — a queue entry for a skill that was never injected is a
  * data error, not an instruction to learn it — so owning and injecting the
- * book is a hard gate in front of every skill in the game.
+ * imprint is a hard gate in front of every skill in the game.
  *
  * There are two doors into that row, not two writers. inject() is the one a
- * player uses: a book is spent, and the skill lands at 0 points. grant() is
+ * player uses: an imprint is spent, and the skill lands at 0 points. grant() is
  * the one character creation uses for an archetype's starting skills, where
- * there is no book to spend and the level is whatever the archetype says. They
+ * there is no imprint to spend and the level is whatever the archetype says. They
  * are on the same class so the gate stays a single place to read — if a third
  * origin ever appears, it belongs here too rather than beside it.
  *
- * The book is consumed and the row is created in one transaction. Either the
- * player spends the book and gets the skill or neither happens; a crash
- * between the two would otherwise eat the book for nothing.
+ * The imprint is consumed and the row is created in one transaction. Either the
+ * player spends the imprint and gets the skill or neither happens; a crash
+ * between the two would otherwise eat the imprint for nothing.
  */
 final class SkillInjector
 {
@@ -53,7 +53,7 @@ final class SkillInjector
 
         return DB::transaction(function () use ($character, $entry, $item, $skill): InjectionResult {
             // Re-read inside the transaction and lock it: two taps on the same
-            // button must not spend two books, and must not race the uniqueness
+            // button must not spend two imprints, and must not race the uniqueness
             // check below either.
             $locked = InventoryItem::whereKey($entry->getKey())->lockForUpdate()->first();
 
@@ -68,7 +68,7 @@ final class SkillInjector
 
             // Injecting a skill already on the sheet would either wipe its
             // points or do nothing at all. Both are worse than refusing and
-            // leaving the book in the player's hands.
+            // leaving the imprint in the player's hands.
             if ($known) {
                 return InjectionResult::refused(InjectionRefusal::AlreadyKnown);
             }
@@ -89,9 +89,9 @@ final class SkillInjector
     }
 
     /**
-     * Put a skill on the sheet without a book, at a level.
+     * Put a skill on the sheet without an imprint, at a level.
      *
-     * What an archetype's loadout does. No book is consumed because none is
+     * What an archetype's loadout does. No imprint is consumed because none is
      * owned: the skill is part of who the character already is, and the level
      * is the archetype saying the training happened before the game started.
      *

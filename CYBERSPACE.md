@@ -99,7 +99,7 @@ system.
 | Jack in / sign in — the vocabulary split | **done**; auth reads Sign in / Sign out, and `ui.action.jack_*` is reserved for cyberspace |
 | Operating System skills — AuraOS, Prism-V, IRONCLAD, Lattice | **built** as skill rows; nothing reads them |
 | Network Topology, System Profiling, Advanced System Profiling | **built** as skill rows; nothing reads them |
-| Encryption skills — Cinder, Halcyon-3, BLACKGLASS, Ouroboros | **built** as skill rows with books; placeholder descriptions, no prerequisites yet |
+| Encryption skills — Cinder, Halcyon-3, BLACKGLASS, Ouroboros | **built** as skill rows with imprints; placeholder descriptions, no prerequisites yet |
 | `DeckTotals::isReady()` — the readiness gate | **built**; jacking in is what will call it |
 | The waiting screen | **built**; `App\Characters\WaitingRoom`, one minute through the `recovery_minutes` stat, released lazily on the next request. **Zero to one, and no further** — getting up is not healing. `ReadinessWatch` is its first caller, and the ejection happens before it |
 | Synaptic Integrity as a resource | **built**, and the readiness dump is the first thing that damages it. Damage resolves like any other number — origin and resource are both tags, so a resistance is a modifier; see MECHANICS.md. Reaching zero has no consequence yet: there is no waiting screen |
@@ -110,7 +110,7 @@ system.
 | The order a bad ending resolves in | **specified only**; damage, then consequence, then ejection, then the waiting screen — one order for defeats, burnouts and readiness losses alike, and **a consequence never becomes a new cause of damage within it**. That is what says a Surge carries its own tag and nothing else |
 | Radiator cooling, recalibrated for accumulation | **done** as data — the eight radiators, compressed to 90–520 TU |
 | `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
-| Routing, Advanced Routing | **built** as skill rows with books and prerequisites; nothing reads them |
+| Routing, Advanced Routing | **built** as skill rows with imprints and prerequisites; nothing reads them |
 | Radiator power draw, raised alongside cooling | **done** as data — 25–300 W |
 | Everything a deck's numbers do | **specified only** — see MECHANICS.md |
 
@@ -334,7 +334,7 @@ way out.
 
 There are **four encryption types**, ranks 2, 4, 8 and 16, one skill each, the
 same shape as the operating systems: cheap at level 1, worth training past it,
-and gated by owning the book. Cinder, Halcyon-3, BLACKGLASS and Ouroboros exist
+and gated by owning the imprint. Cinder, Halcyon-3, BLACKGLASS and Ouroboros exist
 as rows today with placeholder descriptions.
 
 Decryption is where a sell-it-now player and a sit-on-it player diverge: one

@@ -177,7 +177,7 @@ class ItemFactory extends Factory
         return $this->state(['stackable' => false]);
     }
 
-    /** A book that teaches one skill. Always data: it is injected, not carried. */
+    /** An imprint that teaches one skill. Always data: it is injected, not carried. */
     public function imprintFor(Skill $skill): static
     {
         return $this->state([
