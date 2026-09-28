@@ -166,7 +166,7 @@ return [
         | modifier whose target reaches nothing.
         */
         /*
-        | How long somebody stays on the floor, in minutes.
+        | How long somebody stays on the floor, in seconds.
         |
         | ONE MINUTE, and it is the floor under every defeat: whatever the
         | program that beat you carried, and whether it carried anything at all,
@@ -179,7 +179,7 @@ return [
         | get straight back up has earned it, and nothing breaks if the wait is
         | over before it began.
         */
-        'recovery_minutes' => [
+        'recovery_seconds' => [
             'tags' => ['derived', 'vital'],
             'min' => 0,
             'max' => null,

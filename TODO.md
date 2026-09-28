@@ -653,7 +653,8 @@ somewhere to start.
 **Vitals.**
 
 - `hitpoints_max` — Neural Sheathing raises max SI and nothing raises max HP.
-- `recovery_minutes` — how long somebody lies on the floor.
+- `recovery_seconds` — how long somebody lies on the floor. In seconds so a
+  percentage can move it; on a base of one minute rounding up swallowed any cut.
 
 **Deck measures — seven of ten.**
 
