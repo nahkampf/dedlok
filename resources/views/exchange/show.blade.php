@@ -126,17 +126,28 @@
                         @php($item = $offer->item)
                         @php($affordable = $loyalty >= $offer->loyalty_price)
                         @php($trusted = $offer->willPartWithIt($standing))
+                        @php($service = $offer->service)
+                        {{-- A service is something they DO, so it has no
+                             picture, no tier and no kind: what it would do for
+                             this character stands where those would. --}}
+                        @php($wanted = $service?->wantedBy($character) ?? true)
 
-                        <div class="card {{ $item->tierClass() }}">
-                            <x-entity-image :kind="$item->imageKind()" :id="$item->id" :alt="$item->displayName()" />
+                        <div class="card {{ $item?->tierClass() }}">
+                            @if ($item)
+                                <x-entity-image :kind="$item->imageKind()" :id="$item->id" :alt="$item->displayName()" />
+                            @endif
 
                             <div class="card__hd">
-                                <div class="card__title">{{ $item->displayName() }}</div>
-                                <div class="card__meta">{{ $item->kindName() }}</div>
+                                <div class="card__title">{{ $offer->displayName() }}</div>
+                                <div class="card__meta num">
+                                    {{ $service ? Text::get('exchange.store_heat', ['heat' => number_format((float) $character->heat, 1)]) : $item->kindName() }}
+                                </div>
                             </div>
 
                             <div class="card__bd stack" style="--gap:var(--s-2)">
-                                @if ($item->displayFlavor())
+                                @if ($service)
+                                    <span class="micro" style="color:var(--ink-3)">{{ $service->describe((float) $offer->service_amount) }}</span>
+                                @elseif ($item->displayFlavor())
                                     <span class="micro" style="color:var(--ink-3)">{{ $item->displayFlavor() }}</span>
                                 @endif
 
@@ -157,7 +168,7 @@
                             <div class="card__ft">
                                 <form method="POST" action="{{ route('exchange.redeem', $offer) }}">
                                     @csrf
-                                    <button type="submit" class="btn btn--sm cut" @disabled(! $affordable || ! $trusted)>
+                                    <button type="submit" class="btn btn--sm cut" @disabled(! $affordable || ! $trusted || ! $wanted)>
                                         {{ Text::get('exchange.store_buy') }}
                                     </button>
                                 </form>

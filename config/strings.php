@@ -1765,11 +1765,22 @@ return [
         'store_have' => 'You have :loyalty',
         'store_locked' => 'Wants :standing standing',
         'store_bought' => ':item is yours. :price loyalty spent.',
+        'store_served' => ':item: done. :price loyalty spent.',
+        'store_heat' => 'You carry :heat heat',
+
+        // What an entity DOES for loyalty, as App\Standing\Service.
+        'services' => [
+            'shed_heat' => [
+                'name' => 'Make it go quiet',
+                'does' => 'Takes :amount heat off you. Word already out stays out.',
+            ],
+        ],
 
         'store_refused' => [
             'not_welcome' => 'They will not deal with you.',
             'not_for_you' => 'They keep that one back for people they trust.',
             'cannot_afford' => 'You have not earned that much from them.',
+            'nothing_to_do' => 'There is nothing for them to clean up.',
             'gone' => 'That is not on the shelf.',
         ],
         'unwelcome' => 'They will not deal with you.',
@@ -2772,6 +2783,11 @@ return [
             'shelf_empty' => 'Nothing on this shelf yet.',
 
             'item' => 'Item',
+            'no_item' => '— none (a service) —',
+            'service' => 'Or a service',
+            'no_service' => '— none (an item) —',
+            'service_amount' => 'Amount',
+            'service_amount_hint' => 'How much one purchase of the service does. Heat: points taken off.',
             'grades' => 'Desks',
             'grade_from' => 'From',
             'grade_to' => 'To',

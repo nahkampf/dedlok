@@ -8,6 +8,7 @@ use App\Models\Entity;
 use App\Models\EntityOffer;
 use App\Models\Item;
 use App\Models\User;
+use App\Standing\Service;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,6 +36,10 @@ final class EntityOfferAdminTest extends TestCase
         $this->admin->forceFill(['is_admin' => true])->save();
 
         $this->entity = Entity::query()->interactable()->firstOrFail();
+
+        // Start from empty shelves: a migration puts Lockjaw's heat service
+        // on one, and these tests count rows.
+        EntityOffer::query()->delete();
     }
 
     public function test_the_index_lists_entities_and_what_they_keep(): void
@@ -146,6 +151,65 @@ final class EntityOfferAdminTest extends TestCase
 
         $this->assertSame(999, $offer->loyalty_price);
         $this->assertSame([1, 1], [$offer->min_grade, $offer->max_grade]);
+    }
+
+    /** A service row carries no item, and says how much it does. */
+    public function test_a_service_goes_onto_the_shelf(): void
+    {
+        $this->actingAs($this->admin)
+            ->post(route('admin.entities.offers.store', $this->entity), [
+                'item_id' => '',
+                'service' => 'shed_heat',
+                'service_amount' => 10,
+                'loyalty_price' => 1000,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $offer = EntityOffer::query()->sole();
+
+        $this->assertNull($offer->item_id);
+        $this->assertSame(Service::ShedHeat, $offer->service);
+        $this->assertSame(10.0, $offer->service_amount);
+
+        // And it can be repriced from the table, which posts its hidden fields back.
+        $this->actingAs($this->admin)
+            ->put(route('admin.entities.offers.update', [$this->entity, $offer]), [
+                'item_id' => '',
+                'service' => 'shed_heat',
+                'service_amount' => '10.0',
+                'loyalty_price' => 800,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(800, $offer->fresh()->loyalty_price);
+    }
+
+    /** An item OR a service — never both, never neither. */
+    public function test_a_row_is_one_kind_or_the_other(): void
+    {
+        $item = Item::factory()->create();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.entities.offers.store', $this->entity), [
+                'item_id' => $item->id,
+                'service' => 'shed_heat',
+                'service_amount' => 10,
+                'loyalty_price' => 10,
+            ])
+            ->assertSessionHasErrors('item_id');
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.entities.offers.store', $this->entity), ['loyalty_price' => 10])
+            ->assertSessionHasErrors('item_id');
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.entities.offers.store', $this->entity), [
+                'service' => 'shed_heat',
+                'loyalty_price' => 10,
+            ])
+            ->assertSessionHasErrors('service_amount');
+
+        $this->assertSame(0, EntityOffer::query()->count());
     }
 
     public function test_a_row_can_be_taken_off(): void

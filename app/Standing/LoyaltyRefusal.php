@@ -35,6 +35,9 @@ enum LoyaltyRefusal: string
     /** Not enough loyalty. The only currency this shop takes. */
     case CannotAfford = 'cannot_afford';
 
+    /** A service that would do nothing for them — heat removal at no heat. */
+    case NothingToDo = 'nothing_to_do';
+
     /** Withdrawn from the shelf, or its item deleted, between the screen and the press. */
     case Gone = 'gone';
 

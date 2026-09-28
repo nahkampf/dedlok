@@ -14,6 +14,7 @@ use App\Models\System;
 use App\Standing\LedgerKind;
 use App\Standing\LoyaltyExchange;
 use App\Standing\LoyaltyRefusal;
+use App\Standing\Service;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -223,7 +224,81 @@ final class LoyaltyStoreTest extends TestCase
         $this->assertSame([10, 90], $shelf->pluck('loyalty_price')->all(), 'cheapest first');
     }
 
+    /**
+     * A SERVICE IS DONE, NOT HANDED OVER: heat comes down, nothing lands in
+     * the stash, and the books still balance.
+     */
+    public function test_a_service_sheds_heat_and_floors_at_nothing(): void
+    {
+        $offer = $this->servicing(price: 1000, amount: 10);
+        $this->earn(loyalty: 2000, standing: 5);
+        $this->character->forceFill(['heat' => 13.5])->save();
+
+        $store = app(LoyaltyExchange::class);
+
+        $this->assertSame(Service::ShedHeat, $store->buy($this->character, $this->desk, $offer));
+        $this->assertSame(3.5, (float) $this->character->fresh()->heat);
+
+        // Less left than the service takes: it floors, and costs the same.
+        $this->assertSame(Service::ShedHeat, $store->buy($this->character, $this->desk, $offer));
+        $this->assertSame(0.0, (float) $this->character->fresh()->heat);
+
+        $this->assertSame(0, InventoryItem::query()->where('character_id', $this->character->id)->count());
+        $this->assertSame(0, (new StandingLedger)->loyaltyFor($this->character, $this->entity));
+        $this->assertSame([], (new StandingLedger)->verify());
+    }
+
+    /** Loyalty spent on nothing is refused, and none of it is taken. */
+    public function test_a_service_that_would_do_nothing_is_refused(): void
+    {
+        $offer = $this->servicing(price: 1000, amount: 10);
+        $this->earn(loyalty: 1000, standing: 5);
+        $this->character->forceFill(['heat' => 0])->save();
+
+        $this->assertSame(
+            LoyaltyRefusal::NothingToDo,
+            app(LoyaltyExchange::class)->buy($this->character, $this->desk, $offer),
+        );
+
+        $this->assertSame(1000, (new StandingLedger)->loyaltyFor($this->character, $this->entity));
+    }
+
+    /** It has no item, and must not be filtered off the shelf for that. */
+    public function test_a_service_is_on_the_shelf(): void
+    {
+        $this->servicing(price: 1000, amount: 10);
+
+        $this->assertCount(1, app(LoyaltyExchange::class)->shelf($this->entity, (int) $this->desk->grade));
+    }
+
+    /** Lockjaw's arrives with the schema. */
+    public function test_lockjaw_sells_ten_heat_for_a_thousand(): void
+    {
+        $offer = EntityOffer::query()
+            ->whereHas('entity', fn ($q) => $q->where('name', 'Lockjaw'))
+            ->where('service', Service::ShedHeat->value)
+            ->sole();
+
+        $this->assertSame([1000, 10.0, 1, 5], [$offer->loyalty_price, $offer->service_amount, $offer->min_grade, $offer->max_grade]);
+    }
+
     // ---- fixtures -----------------------------------------------------------
+
+    private function servicing(int $price, float $amount): EntityOffer
+    {
+        // Clear whatever a migration already put on this entity's shelf.
+        EntityOffer::query()->where('entity_id', $this->entity->id)->where('service', Service::ShedHeat->value)->delete();
+
+        return EntityOffer::query()->create([
+            'entity_id' => $this->entity->id,
+            'min_grade' => 1,
+            'max_grade' => 5,
+            'service' => Service::ShedHeat,
+            'service_amount' => $amount,
+            'loyalty_price' => $price,
+            'min_standing' => 0,
+        ]);
+    }
 
     /** A row on the shelf. Kept by this desk's grade alone unless told otherwise. */
     private function offering(int $price, float $minStanding = 0, ?int $minGrade = null, ?int $maxGrade = null): EntityOffer

@@ -13,6 +13,7 @@ use App\Models\System;
 use App\Standing\Band;
 use App\Standing\LoyaltyExchange;
 use App\Standing\LoyaltyRefusal;
+use App\Standing\Service;
 use App\Standing\StandingLedger;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
@@ -126,8 +127,9 @@ class ExchangeController extends Controller
             return back()->with('error', $result->message());
         }
 
-        return back()->with('status', Text::get('exchange.store_bought', [
-            'item' => $result->displayName(),
+        // "Is yours" is a lie about a service, which lands nowhere.
+        return back()->with('status', Text::get($result instanceof Service ? 'exchange.store_served' : 'exchange.store_bought', [
+            'item' => $offer->displayName(),
             'price' => number_format((int) $offer->loyalty_price),
         ]));
     }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\EntityOfferRequest;
 use App\Models\Entity;
 use App\Models\EntityOffer;
+use App\Standing\Service;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -99,7 +100,7 @@ class EntityOfferController extends Controller
         $offer = $entity->offers()->create($request->columns());
 
         return back()->with('status', Text::get('admin.entities.added', [
-            'item' => $offer->item?->displayName() ?? '',
+            'item' => $offer->displayName(),
         ]));
     }
 
@@ -110,7 +111,7 @@ class EntityOfferController extends Controller
         $offer->update($request->columns());
 
         return back()->with('status', Text::get('admin.entities.saved', [
-            'item' => $offer->fresh()?->item?->displayName() ?? '',
+            'item' => $offer->fresh()?->displayName() ?? '',
         ]));
     }
 
@@ -126,7 +127,7 @@ class EntityOfferController extends Controller
     {
         abort_unless($offer->entity_id === $entity->getKey(), 404);
 
-        $name = $offer->item?->displayName() ?? '';
+        $name = $offer->displayName();
 
         $offer->delete();
 
@@ -141,9 +142,10 @@ class EntityOfferController extends Controller
             'offers' => $entity->offers()
                 ->with('item')
                 ->get()
-                ->sortBy(fn (EntityOffer $offer): string => $offer->item?->displayName() ?? '')
+                ->sortBy(fn (EntityOffer $offer): string => $offer->displayName())
                 ->values(),
             'items' => ItemOptions::grouped(),
+            'services' => Service::cases(),
         ];
     }
 }

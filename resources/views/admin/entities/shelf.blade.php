@@ -87,8 +87,10 @@
                         @foreach ($offers as $offer)
                             <tr>
                                 <td>
-                                    {{ $offer->item?->displayName() }}
-                                    <span class="micro" style="color:var(--ink-3)">{{ $offer->item?->slug }}</span>
+                                    {{ $offer->displayName() }}
+                                    <span class="micro" style="color:var(--ink-3)">
+                                        {{ $offer->service ? $offer->service->describe((float) $offer->service_amount) : $offer->item?->slug }}
+                                    </span>
                                 </td>
                                 <td class="t-right">
                                     <input form="offer-{{ $offer->id }}" class="input num" type="number"
@@ -124,6 +126,8 @@
                                               action="{{ route('admin.entities.offers.update', [$entity, $offer]) }}">
                                             @csrf @method('PUT')
                                             <input type="hidden" name="item_id" value="{{ $offer->item_id }}">
+                                            <input type="hidden" name="service" value="{{ $offer->service?->value }}">
+                                            <input type="hidden" name="service_amount" value="{{ $offer->service_amount }}">
                                             <button type="submit" class="btn btn--sm cut">
                                                 {{ Text::get('admin.entities.save') }}
                                             </button>
@@ -157,9 +161,31 @@
                 <div class="field" @error('item_id') data-invalid @enderror>
                     <label class="field__label" for="item_id">{{ Text::get('admin.entities.item') }}</label>
                     <select class="select" id="item_id" name="item_id">
+                        <option value="">{{ Text::get('admin.entities.no_item') }}</option>
                         <x-grouped-options :groups="$items" :selected="old('item_id')" />
                     </select>
                     @error('item_id') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+
+                {{-- OR A SERVICE: something the entity does rather than hands
+                     over. One or the other; the request refuses both. --}}
+                <div class="field" @error('service') data-invalid @enderror>
+                    <label class="field__label" for="service">{{ Text::get('admin.entities.service') }}</label>
+                    <select class="select" id="service" name="service">
+                        <option value="">{{ Text::get('admin.entities.no_service') }}</option>
+                        @foreach ($services as $service)
+                            <option value="{{ $service->value }}" @selected(old('service') === $service->value)>{{ $service->label() }}</option>
+                        @endforeach
+                    </select>
+                    @error('service') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="field" @error('service_amount') data-invalid @enderror>
+                    <label class="field__label" for="service_amount">{{ Text::get('admin.entities.service_amount') }}</label>
+                    <input class="input num" id="service_amount" name="service_amount" type="number" min="0.1" step="0.1"
+                           value="{{ old('service_amount') }}">
+                    <span class="field__hint">{{ Text::get('admin.entities.service_amount_hint') }}</span>
+                    @error('service_amount') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="field" @error('loyalty_price') data-invalid @enderror>

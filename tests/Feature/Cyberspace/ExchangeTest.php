@@ -14,9 +14,14 @@ use App\Cyberspace\RunStarter;
 use App\Cyberspace\SystemType;
 use App\Models\Character;
 use App\Models\Entity;
+use App\Models\EntityOffer;
 use App\Models\Exchange;
 use App\Models\System;
 use App\Models\SystemContact;
+use App\Standing\LedgerKind;
+use App\Standing\Service;
+use App\Standing\StandingLedger;
+use App\Standing\StandingReason;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -252,6 +257,35 @@ final class ExchangeTest extends TestCase
             ->assertDontSeeText(Text::get('exchange.not_built'));
 
         $this->assertNotNull($system->exchange);
+    }
+
+    /** A service card renders without an item, and redeeming it sheds the heat. */
+    public function test_a_service_is_sold_across_the_desk(): void
+    {
+        $this->desk(1);
+        $this->equipReadyDeck($this->character);
+        $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8, 'heat' => 12])->save();
+
+        EntityOffer::query()->where('entity_id', $this->entity->id)->delete();
+        $offer = EntityOffer::query()->create([
+            'entity_id' => $this->entity->id,
+            'service' => Service::ShedHeat,
+            'service_amount' => 10,
+            'loyalty_price' => 1000,
+        ]);
+        (new StandingLedger)->record($this->character, $this->entity, StandingReason::MissionCompleted, 1000, LedgerKind::Loyalty);
+
+        $this->actingAs($this->character->user)
+            ->get(route('exchange.show'))
+            ->assertOk()
+            ->assertSeeText(Service::ShedHeat->label())
+            ->assertSeeText(Service::ShedHeat->describe(10));
+
+        $this->actingAs($this->character->user)
+            ->post(route('exchange.redeem', $offer))
+            ->assertSessionHas('status');
+
+        $this->assertSame(2.0, (float) $this->character->fresh()->heat);
     }
 
     /** ONE GATE: an agent who will not talk to you will not sell to you. */
