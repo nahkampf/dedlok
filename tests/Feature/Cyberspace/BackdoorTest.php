@@ -7,6 +7,7 @@ namespace Tests\Feature\Cyberspace;
 use App\Checks\CheckRoller;
 use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\Backdoors;
+use App\Cyberspace\Burner;
 use App\Cyberspace\Lockdown;
 use App\Cyberspace\MapCell;
 use App\Cyberspace\MapView;
@@ -474,5 +475,57 @@ final class BackdoorTest extends TestCase
         $this->assertSame($this->character->user_id, $message->user_id);
         $this->assertSame(Category::Cyberspace, $message->category);
         $this->assertStringContainsString($system->displayName(), $message->body);
+    }
+
+    /**
+     * A STRANGER'S BAD NIGHT IS SOMETHING THAT HAPPENED WHILE NOBODY WAS
+     * LOOKING. Every holder hears, once, and in one sentence whatever the cause.
+     */
+    public function test_losing_a_door_to_a_lockdown_reaches_every_holder(): void
+    {
+        $system = $this->machine();
+        $stranger = Character::factory()->create(['archetype' => 3]);
+
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+        (new Backdoors)->install($stranger, $system, BackdoorKind::Routing);
+
+        // The lockdown shuts, and its close relocates: two askers, one message each.
+        Lockdown::fromConfig(static fn (int $min, int $max): int => $max)->shut($system);
+        RaidLedger::fromConfig(static fn (int $min, int $max): int => $max)->relocate($system->fresh());
+
+        $this->assertEqualsCanonicalizing(
+            [$this->character->user_id, $stranger->user_id],
+            Notification::query()->pluck('user_id')->all(),
+        );
+        $this->assertStringContainsString($system->displayName(), Notification::query()->first()->body);
+    }
+
+    public function test_a_burn_tells_the_holder_before_the_cascade_would_not(): void
+    {
+        $system = $this->machine();
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+
+        (new Burner)->burn($system);
+
+        $this->assertSame(0, Backdoor::query()->count());
+        $this->assertSame($this->character->user_id, Notification::query()->sole()->user_id);
+    }
+
+    /** The door that was found is told it was found, and the one beside it that it is gone. */
+    public function test_being_found_tells_the_other_holders_once_each(): void
+    {
+        $system = $this->machine();
+        $stranger = Character::factory()->create(['archetype' => 3]);
+
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon)
+            ->forceFill(['installed_at' => now()->subDays(100)])->save();
+        (new Backdoors)->install($stranger, $system, BackdoorKind::Routing);
+
+        // Only the older door rolls low enough; the stranger's goes with the machine.
+        $this->instance(Backdoors::class, $this->ageing(rolling: 550));
+        $this->artisan('cyberspace:age-backdoors')->assertSuccessful();
+
+        $this->assertSame(1, Notification::query()->where('user_id', $this->character->user_id)->count());
+        $this->assertSame(1, Notification::query()->where('user_id', $stranger->user_id)->count());
     }
 }

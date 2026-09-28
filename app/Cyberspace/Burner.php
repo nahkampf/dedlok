@@ -50,7 +50,9 @@ use Illuminate\Support\Facades\DB;
  *
  * `backdoors.system_id` is a real foreign key and cascades, which is exactly
  * the call that column was making — access to a machine that has gone is
- * nothing at all, unlike a memory of one. Everything keyed by ADDRESS instead
+ * nothing at all, unlike a memory of one. `Backdoors::loseAllOn()` is asked
+ * first all the same, because a cascade tells nobody and every holder is owed a
+ * message. Everything keyed by ADDRESS instead
  * survives and stops describing anything, which is what those tables are for:
  * a scan, a sighting and a run all outlive their target on purpose.
  */
@@ -70,6 +72,10 @@ class Burner
         $address = $system->address;
 
         DB::transaction(function () use ($system, $address, $except): void {
+            // The cascade would take the doors anyway; asking first is what
+            // tells the people holding them.
+            (new Backdoors)->loseAllOn($system);
+
             $system->delete();
 
             Simulator::fromConfig()->cancelEveryRunOn($address, $except);

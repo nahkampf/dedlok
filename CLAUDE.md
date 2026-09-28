@@ -1559,8 +1559,10 @@ stood on this not existing.
   severity and no colour on them — the kit's aliases mean good, careful and bad, and
   painting Training green would say something untrue about it. The category also decides
   where reading one takes you (`route()`), so no URL is ever stored.
-- **Four senders, and all four are things nobody pressed a button for**: a read finishing
+- **Five senders, and all five are things nobody pressed a button for**: a read finishing
   (`Probe::resolve()`), a backdoor found by the nightly roll (`cyberspace:age-backdoors`),
+  a door lost to somebody else's lockdown, a relocation or a burn
+  (`Backdoors::loseAllOn()`, which a burn asks before its cascade could say nothing),
   a skill crossing a level (`App\Listeners\NotifyOfSkillLevel`), an achievement unlocking
   (the tail of `Achievements::check()`, where `insertOrIgnore`'s row count is what makes
   "said once" true without a column recording it).

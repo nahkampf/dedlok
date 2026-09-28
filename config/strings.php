@@ -382,6 +382,10 @@ return [
         'messages' => [
             'scan_complete' => 'Your scan of :system completed. The specifications are saved to a file.',
             'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
+            // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
+            // a burn: the holder was not there, and naming the cause would tell
+            // them about a stranger's run they could not otherwise know of.
+            'backdoor_lost' => 'Your backdoor into :system is gone. The system shut its doors while you were elsewhere.',
             // A FILE DIES WITH NOBODY LOOKING AT IT. Says it is still there,
             // because nothing deletes one - destroying it is the player's call
             // from the card, like every other row they own.

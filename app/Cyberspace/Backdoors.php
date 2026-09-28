@@ -7,6 +7,8 @@ namespace App\Cyberspace;
 use App\Models\Backdoor;
 use App\Models\Character;
 use App\Models\System;
+use App\Notifications\Category;
+use App\Notifications\Notifier;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Eloquent\Collection;
@@ -146,12 +148,29 @@ final readonly class Backdoors
      * `RaidLedger::relocate()`, which is the physical fact — a door into a box
      * that has moved is not a door. Deleting nothing is an ordinary answer, so
      * asking twice costs nothing and neither caller has to know about the
-     * other. A BURN needs no entry here at all: it destroys the row, and the
-     * foreign key cascades.
+     * other. A BURN asks too, before the delete, although the foreign key
+     * would cascade the rows anyway: a cascade tells nobody.
+     *
+     * EVERY HOLDER IS TOLD, because this is the inbox's own test — something
+     * happened while nobody was looking, and the only other way to find out is
+     * a siphon that stops paying. One sentence for every cause: the holder was
+     * not there, and naming a stranger's run would be telling them something
+     * they could not otherwise know. The ageing roll's own hit has already
+     * been deleted by `lose()` and told by its command, so it is not here.
      */
     public function loseAllOn(System $system): int
     {
-        return Backdoor::query()->where('system_id', $system->getKey())->delete();
+        $held = Backdoor::query()->where('system_id', $system->getKey())->with('character')->get();
+
+        foreach ($held as $backdoor) {
+            if ($backdoor->character !== null) {
+                (new Notifier)->send($backdoor->character, Category::Cyberspace, 'backdoor_lost', [
+                    'system' => $system->displayName(),
+                ]);
+            }
+        }
+
+        return Backdoor::query()->whereKey($held->modelKeys())->delete();
     }
 
     /**

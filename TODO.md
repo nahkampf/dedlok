@@ -612,6 +612,11 @@ routing hop goes on the route, and four separate things can take one away.
   roll sends an inbox message (`App\Notifications\Category::Cyberspace`) beside
   the log line it already wrote. The log is for whoever reads the nightly job's
   output; the message is for the player, who is asleep.
+- ~~**Nobody is told when SOMEBODY ELSE'S bad night takes their door.**~~ Done
+  2026-09-28: `Backdoors::loseAllOn()` messages every holder before it deletes
+  (`backdoor_lost`), and `Burner` asks it before its delete rather than leaving
+  the rows to a silent cascade. Lockdown, relocation, burn and the other doors
+  on a machine the ageing roll moved all go through it.
 - **Each hop hinders by its grade and nothing else**, which is decided rather
   than missing — see CYBERSPACE.md, *The routing chain*.
 - ~~**What a siphon pays is undecided.**~~ Decided and paying: 30 a night per
