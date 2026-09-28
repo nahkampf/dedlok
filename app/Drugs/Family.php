@@ -34,6 +34,8 @@ enum Family: string
     /** Sideways. Sees more, holds less. */
     case Psychedelic = 'psychedelic';
 
+    case Nootropic = 'nootropic';
+
     public function label(): string
     {
         return Text::get("drugs.families.{$this->value}");
