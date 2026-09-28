@@ -14,7 +14,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Spending loyalty at an entity's own shelf.
+ * Spending loyalty at an entity's own shelf — on an item, or on a service
+ * (`Service`), which the entity performs rather than hands over.
  *
  * THE ONLY THING THAT SPENDS LOYALTY. Missions are the only thing that earns
  * it, `StandingLedger` is the only thing that writes either book, and this
@@ -45,7 +46,7 @@ use Illuminate\Support\Facades\DB;
  */
 final readonly class LoyaltyExchange
 {
-    public function buy(Character $character, Exchange $desk, EntityOffer $offer): LoyaltyRefusal|Item
+    public function buy(Character $character, Exchange $desk, EntityOffer $offer): LoyaltyRefusal|Item|Service
     {
         $entity = $desk->entity();
 
@@ -56,11 +57,17 @@ final readonly class LoyaltyExchange
             return LoyaltyRefusal::Gone;
         }
 
-        return DB::transaction(function () use ($character, $desk, $offer, $entity): LoyaltyRefusal|Item {
+        return DB::transaction(function () use ($character, $desk, $offer, $entity): LoyaltyRefusal|Item|Service {
             $live = EntityOffer::query()->whereKey($offer->getKey())->with('item')->lockForUpdate()->first();
 
-            if ($live === null || $live->item === null) {
+            if ($live === null || ($live->item === null && $live->service === null)) {
                 return LoyaltyRefusal::Gone;
+            }
+
+            // A service reads the character (heat), and the nightly cooling
+            // writes the same column — so read it under a lock like the books.
+            if ($live->service !== null) {
+                $character = Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail();
             }
 
             $ledger = new StandingLedger;
@@ -85,6 +92,10 @@ final readonly class LoyaltyExchange
                 return LoyaltyRefusal::CannotAfford;
             }
 
+            if ($live->service !== null && ! $live->service->wantedBy($character)) {
+                return LoyaltyRefusal::NothingToDo;
+            }
+
             // Loyalty out, as a ledger entry like everything else that moves a
             // book — so `standing:verify` still finds the books equal to the
             // sum of their entries afterwards.
@@ -94,6 +105,12 @@ final readonly class LoyaltyExchange
 
             if ($courtesy > 0.0) {
                 $ledger->record($character, $entity, StandingReason::StoreSpend, $courtesy);
+            }
+
+            if ($live->service !== null) {
+                $live->service->perform($character, (float) $live->service_amount);
+
+                return $live->service;
             }
 
             // The same merge-or-create every other way of acquiring something

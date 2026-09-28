@@ -878,7 +878,7 @@ and extraction are built. See below for what is not.
   `App\Entities\EntityCategory` (corporation, government, military, fringe), and
   **`entities.interactable` is the whole difference between scenery and somebody you can
   work for** — false by default, the call `archetypes.playable` makes. Standing, the
-  Exchange and missions are all built; the loyalty store is what is left.
+  Exchange, missions and the loyalty store are all built.
 - **Standing is what an entity thinks of you, and `App\Standing\StandingLedger` is its
   only writer.** Two tables: `entity_books` (one row per character and entity, standing as
   `DECIMAL(6,3)` and loyalty as an integer) and `entity_ledger` (immutable, one row per
@@ -887,8 +887,8 @@ and extraction are built. See below for what is not.
   −100 writes a delta of 0, which says honestly that it changed nothing. `standing:verify`
   asks; `standing:drift` takes 0.25% of what is carried toward zero nightly at 05:20 and
   writes a `Decay` entry for every move. **Flavour entities keep no books**: a write
-  against scenery is a no-op, not a refusal. Loyalty never decays and is spent at a store
-  that is not built. The hooks are in `Simulator` (noticed, raided, burned — the burn
+  against scenery is a no-op, not a refusal. Loyalty never decays and is spent at the
+  store. The hooks are in `Simulator` (noticed, raided, burned — the burn
   BEFORE `Burner` deletes the row) and `cyberspace:age-backdoors`.
 - **An Exchange is a system that is not one.** `SystemType::Exchange`, with an `exchanges`
   row carrying grade 1–5, the agent's name and `min_standing`. **That grade is NOT
@@ -900,8 +900,17 @@ and extraction are built. See below for what is not.
   run by hand: higher grades sit deeper, and a desk that exists is never moved, shut or
   re-rolled. **ONE GATE, NOT TWO** — `exchanges.min_standing` (0/5/20/40/60 by grade) is
   read by the work and the shelf alike. `/exchange` is the Missions & Loyalty screen,
-  reached by standing on the desk. The board is real — see *Missions* below — and the
-  loyalty store is the one half still saying *Not yet*.
+  reached by standing on the desk. The board is real — see *Missions* below — and so is
+  the store.
+- **The loyalty store is `entity_offers`, and `App\Standing\LoyaltyExchange` is the only
+  thing that spends loyalty.** A row is an entity, a grade span, a price and EITHER an item
+  OR a service — `App\Standing\Service`, something the entity DOES and hands nothing
+  over for (`ShedHeat`: `service_amount` points of heat off, floored, `bounty_word_at`
+  untouched). A fixed vocabulary like `Drugs\Family`: a new service is a case. **Item XOR
+  service is not a CHECK** — `item_id` cascades and MySQL refuses a CHECK on such a column
+  (3823), so `EntityOfferRequest` holds it. A service that would do nothing is refused
+  (`LoyaltyRefusal::NothingToDo`) rather than charged. Lockjaw's 1000-for-10-heat arrived
+  by migration.
 - **A name is composed, never stored** — `<Type> - <entity> NNN`. `systems.name` is the
   authored-name override (NULL on nearly every row) and `systems.designation` the only
   stored part. `App\Cyberspace\SystemNamer` decides.

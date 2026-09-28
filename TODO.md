@@ -117,11 +117,11 @@ clear error, so keep them commented until the screens are written.
 
 ## Entities, standing, loyalty and the Exchange
 
-**Status: built 2026-09-23 and 2026-09-24, except the store.** Entities own
+**Status: built 2026-09-23 and 2026-09-24; the store since.** Entities own
 the grid and remember what you did to them; exchanges are placed and
 reachable; missions land in the entry below and are what finally made standing
-go UP. The loyalty store is the one half still designed and not built — see
-the phasing list at the end of this entry.
+go UP. The loyalty store sells items and, since 2026-09-28, services
+(`App\Standing\Service` — Lockjaw's heat removal is the first).
 
 ### Entities are `corps`, renamed and grown
 
@@ -348,9 +348,6 @@ to REMEMBER something must not cascade from the thing it remembers.
 
 - **Retrieval, the fifth action.** See below. It is the only action designed
   and not built.
-- **The loyalty store.** `entity_offers` is designed in the entities entry
-  above and nothing spends loyalty yet, so the currency accumulates with
-  nowhere to go. That is the next thing an Exchange owes a player.
 - **A seller cannot list part of a pile.** Buying divides — three of twenty
   leaves seventeen listed — but listing does not, so it is the whole stack or
   nothing. The `ponytail:` note in `App\Market\OfferBook` names the fix:
