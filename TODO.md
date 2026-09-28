@@ -634,6 +634,16 @@ routing hop goes on the route, and four separate things can take one away.
 ## Author skills until every value has one behind it
 
 **Status: counted 2026-09-23. 104 stats in the registry, 16 moved by a skill.**
+Five more since, all 2026-09-28 and tuned by `the_new_skills_brought_to_scale`:
+Attack Vectors (`icebreaker_damage`), Fractional Siphoning (`siphon_yield`),
+Noise Seeding (`heat_decay`), Memory Optimization (`deck_quantabits`) and Power
+Management (`deck_power_supply`, with a heat cost). Struck through below.
+
+**Mind the floor when authoring.** Nearly every stat rounds down (`heat_decay`
+rounds to a tenth), so a small percentage on a small base vanishes and a flat
+amount on a small base swamps it: +10% on a bite of 1 is still 1, and +2.5 flat
+on it is triple. Resolve a skill level by level against the smallest and largest
+real base before shipping it.
 This is authoring work, not engineering — a grant is a row, the editor writes
 one, and the three re-tunes so far arrived by migration because the skills did.
 What follows is the list of what nothing reaches, so the authoring has
@@ -648,10 +658,10 @@ somewhere to start.
 - `hitpoints_max` — Neural Sheathing raises max SI and nothing raises max HP.
 - `recovery_minutes` — how long somebody lies on the floor.
 
-**Deck measures — five of ten.**
+**Deck measures — seven of ten.**
 
-- `deck_quantabits` and `deck_power_supply`, the two totals no skill helps with
-  while compute, storage, bandwidth and draw all have something.
+- ~~`deck_quantabits` and `deck_power_supply`~~ — Memory Optimization and Power
+  Management, 2026-09-28.
 - `deck_cooling` — it had Thermal Management's level-5 grant until 0.15.0 made
   that skill −2% thermal load at every level instead. Emptied by a re-tune
   rather than never filled, and worth refilling.
@@ -661,13 +671,9 @@ somewhere to start.
 
 **One each, and each one load-bearing.**
 
-- `icebreaker_damage` — nothing makes anybody better at the fight the game is
-  built around. It is a program's number today; a skill behind it is the
-  obvious first thing here.
-- `siphon_yield` — `config/cyberspace.php` says in its own comment that no
-  skill moves it.
-- `heat_decay` — half a point a night, and the first skill to speed it up needs
-  no code in `characters:cool`.
+- ~~`icebreaker_damage`~~ — Attack Vectors, 2026-09-28.
+- ~~`siphon_yield`~~ — Fractional Siphoning, 2026-09-28.
+- ~~`heat_decay`~~ — Noise Seeding, 2026-09-28.
 
 **The checks: thirty-two of thirty-four.** Every skill has a `check.<slug>`
 stat. Two are raised — Advanced System Profiling raises `check.systemprofiling`
