@@ -8,6 +8,7 @@ use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Stats\Modifier;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Config;
 
 /**
  * The modifiers a character gets from the software they are running.
@@ -48,7 +49,18 @@ final readonly class RunningPrograms implements ModifierSource
             return [];
         }
 
-        $modifiers = [];
+        // DIMINISHING RETURNS BY KIND. Every running program of one kind —
+        // two Surveyors, or a Surveyor and anything else that scans — is a
+        // stack per (op, target): its programs are ranked strongest first and
+        // the Nth gives `stats.diminishing[N-1]` of what it does there,
+        // nothing past the end of the list. Ranked per target rather than per
+        // program, so a program strong on one stat and weak on another is first
+        // where it is best. Kinds never discount each other.
+        //
+        // The unit is the PROGRAM, not the modifier: "per level" is five
+        // modifiers on one row (see MECHANICS), and those must not penalise
+        // each other.
+        $stacks = [];
 
         foreach (self::processesOn($this->character, $deckId, $this->asAt) as $row) {
             $program = $row->item?->program;
@@ -58,11 +70,41 @@ final readonly class RunningPrograms implements ModifierSource
             }
 
             foreach ($program->modifiers($row->item?->name) as $modifier) {
-                $modifiers[] = $modifier;
+                $target = $modifier->target->id ?? implode('+', $modifier->target->allOf);
+                $stacks[$program->kind->value.'|'.$modifier->op->value.'|'.$target][$row->id][] = $modifier;
+            }
+        }
+
+        $shares = (array) Config::get('stats.diminishing', [1.0]);
+        $modifiers = [];
+
+        foreach ($stacks as $stack) {
+            // ponytail: ranks by every modifier a program carries there, live
+            // or not; a per-level program the character is low in can outrank
+            // a stronger flat one. Rank on live modifiers once a Context
+            // reaches this source.
+            usort($stack, fn (array $a, array $b): int => self::strength($b) <=> self::strength($a));
+
+            foreach ($stack as $nth => $programs) {
+                $share = (float) ($shares[$nth] ?? 0.0);
+
+                if ($share <= 0.0) {
+                    break;
+                }
+
+                foreach ($programs as $modifier) {
+                    $modifiers[] = $share < 1.0 ? $modifier->scaledBy($share) : $modifier;
+                }
             }
         }
 
         return $modifiers;
+    }
+
+    /** @param  list<Modifier>  $modifiers */
+    private static function strength(array $modifiers): float
+    {
+        return array_sum(array_map(fn (Modifier $m): float => $m->magnitude(), $modifiers));
     }
 
     /**
