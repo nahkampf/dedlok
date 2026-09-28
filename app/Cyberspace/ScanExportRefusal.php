@@ -33,6 +33,9 @@ enum ScanExportRefusal: string
      */
     case Incomplete = 'incomplete';
 
+    /** The equipped deck has no room for it — see App\Decks\Storage. */
+    case NoStorage = 'no_storage';
+
     public function message(): string
     {
         return Text::get("cyberspace.reading.export_{$this->value}");

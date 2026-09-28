@@ -20,6 +20,7 @@ use App\Standing\StandingReason;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Tests\Concerns\HasRoomForData;
 use Tests\TestCase;
 
 /**
@@ -32,6 +33,7 @@ use Tests\TestCase;
  */
 final class LoyaltyStoreTest extends TestCase
 {
+    use HasRoomForData;
     use RefreshDatabase;
 
     private Character $character;
@@ -62,6 +64,8 @@ final class LoyaltyStoreTest extends TestCase
 
     public function test_loyalty_buys_the_thing_and_the_books_still_balance(): void
     {
+        $this->giveRoomForData($this->character);
+
         $offer = $this->offering(price: 40);
         $this->earn(loyalty: 100, standing: 5);
 
@@ -71,7 +75,7 @@ final class LoyaltyStoreTest extends TestCase
 
         // It lands LOOSE, through the same granter every other way of
         // acquiring something uses.
-        $row = InventoryItem::query()->where('character_id', $this->character->id)->sole();
+        $row = InventoryItem::query()->where('character_id', $this->character->id)->whereKeyNot($this->character->equipped_deck_id)->sole();
         $this->assertSame($offer->item_id, $row->item_id);
         $this->assertNull($row->parent_id);
 
@@ -87,6 +91,8 @@ final class LoyaltyStoreTest extends TestCase
     /** Spending is a courtesy, so it nudges their opinion — and only just. */
     public function test_spending_earns_a_little_standing(): void
     {
+        $this->giveRoomForData($this->character);
+
         Config::set('standing.store.standing_per_loyalty', 0.001);
 
         $offer = $this->offering(price: 1000);
@@ -133,6 +139,8 @@ final class LoyaltyStoreTest extends TestCase
     /** The ROW's gate, asked second and almost always nothing. */
     public function test_a_row_can_ask_for_more_than_the_desk_does(): void
     {
+        $this->giveRoomForData($this->character);
+
         $offer = $this->offering(price: 1, minStanding: 25);
         $this->earn(loyalty: 500, standing: 5);
 
@@ -177,6 +185,8 @@ final class LoyaltyStoreTest extends TestCase
      */
     public function test_a_range_reaches_every_desk_inside_it(): void
     {
+        $this->giveRoomForData($this->character);
+
         $offer = $this->offering(price: 10, minGrade: 1, maxGrade: 3);
         $this->earn(loyalty: 100, standing: 5);
 

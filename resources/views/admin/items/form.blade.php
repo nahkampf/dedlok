@@ -415,6 +415,15 @@
 
                 @error('slots') <span class="field__error">{{ $message }}</span> @enderror
 
+                <div class="field" style="max-width:min(240px,100%)" @error('onboard_storage') data-invalid @enderror>
+                    <label class="field__label" for="onboard_storage">{{ Text::get('admin.items.onboard_storage.label') }}</label>
+                    <input class="input num" id="onboard_storage" name="onboard_storage" type="number" min="0" max="65535"
+                           value="{{ old('onboard_storage', $item?->onboard_storage) }}"
+                           placeholder="{{ config('decks.onboard_storage') }}">
+                    <span class="field__hint">{{ Text::get('admin.items.onboard_storage.hint', ['fallback' => config('decks.onboard_storage')]) }}</span>
+                    @error('onboard_storage') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+
                 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr))">
                     @foreach ($slotTypes as $type)
                         <div class="field" @error('slots.'.$type->key()) data-invalid @enderror>

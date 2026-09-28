@@ -209,8 +209,8 @@ rather than a broken one. `App\Support\Image` resolves, `<x-entity-image>` rende
   `items/icebreaker/`, `items/imprint/`, `items/physical/`. `Item::imageType()` names
   it, `Item::imageTypes()` is the list composed from `Hardware`, `ProgramKind`, the book
   and the two inventories, so a new kind brings its folder with it.
-- **An imprint calls itself data and files itself as a book** — one book per skill, one
-  picture for all of them.
+- **An imprint calls itself data and files itself under `imprint/`** — one imprint per
+  skill, one picture for all of them.
 - **Only the default walks back up the path.** An item's own picture is looked for in its
   type's folder and nowhere else.
 - **A missing full version means no modal**, which is why `card()` and `full()` are
@@ -471,8 +471,9 @@ registration and password-reset request.
   choosing the module and not the place. It distinguishes "no socket takes it" from "every
   socket that takes it is full". **There is no skill check** — when one exists, that
   method is where it goes.
-- `size` is enforced only as contents against a container's capacity. `weight` is stored
-  and unenforced; neither inventory has an overall capacity.
+- `size` is enforced against a container's capacity, and for DATA against the equipped
+  deck's storage (see *Programs*). `weight` is stored and unenforced; the physical
+  inventory has no overall capacity.
 
 ### Skills, and the training queue
 
@@ -737,7 +738,18 @@ what a bare `items` row cannot.
 - **One icebreaker at a time**, whichever ones — `ProcessRefusal::OneIcebreaker`.
   `icebreaker_damage` sums every running program, so two cheap ones would out-cut a dear
   one and *twenty turns is never enough* would stop being true.
-- **Storage is stored and not enforced** — `DeckRequirement` has no storage case.
+- **Storage IS enforced, on the equipped deck.** `App\Decks\Storage` is the one measure:
+  every loose data row counts (programs at `storage_size`, a file at its own QB, anything
+  else at `items.size`, idle, running or listed alike), a row inside a shard does not.
+  Capacity is the resolved `deck_storage`, which starts from the deck's own
+  `items.onboard_storage` (8 QB on an Explorer, 64 on the top three) — NULL falls back to
+  `decks.onboard_storage` (16), and only a deck may carry one. No deck holds nothing. **Every door that adds data asks `fits()`** —
+  market, player market, loyalty store, scan export, taking out of a shard, extraction —
+  and refuses with its own `NoStorage`; the archetype loadout does not. Extraction leaves
+  what does not fit ON THE SYSTEM, and files are all-or-nothing because the pull was
+  priced on their total. **Nothing is ever deleted for being over**: a smaller deck may
+  be equipped, and `DeckRequirement::Storage` then keeps it from jacking in or starting
+  programs until the player makes room.
 - Screens: topbar count + modal, deck screen's Running and Storage tabs (storage split
   into two grids), `inventory.run` in both directions.
 

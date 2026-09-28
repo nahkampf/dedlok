@@ -566,7 +566,7 @@ final readonly class Simulator
         $instant = $this->extractor->takeCredsAndItems($character, $run->address);
         $fileQb = $this->extractor->totalFileQb($run->address);
 
-        if ($instant->tookNothing() && $fileQb <= 0) {
+        if ($instant->tookNothing() && $fileQb <= 0 && ! $instant->leftBehind) {
             $log[] = $this->line('cyberspace.run.log.extract_fails');
 
             return $log;
@@ -577,7 +577,15 @@ final readonly class Simulator
             $log[] = $this->line('cyberspace.run.log.extract', ['summary' => $this->summarize($instant)], 'ok');
         }
 
-        if ($fileQb > 0) {
+        // Asked BEFORE the countdown: turns spent pulling a file the deck
+        // cannot hold would be turns spent exposed for nothing.
+        $filesFit = $fileQb <= 0 || $this->extractor->filesFit($character, $run->address);
+
+        if ($instant->leftBehind || ! $filesFit) {
+            $log[] = $this->line('cyberspace.run.log.no_room', tone: 'warn');
+        }
+
+        if ($fileQb > 0 && $filesFit) {
             $log = [...$log, ...$this->beginTransfer($character, $run, $fileQb)];
         }
 
@@ -642,6 +650,10 @@ final readonly class Simulator
         $run->extracting_qb = null;
 
         $result = $this->extractor->takeFiles($character, $run->address);
+
+        if ($result->leftBehind) {
+            return [$this->line('cyberspace.run.log.no_room', tone: 'warn')];
+        }
 
         if ($result->tookNothing()) {
             return [$this->line('cyberspace.run.log.transfer_gone')];

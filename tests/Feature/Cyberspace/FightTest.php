@@ -50,6 +50,8 @@ final class FightTest extends TestCase
             ['archetype' => 3],
         ));
 
+        // Files here run to thousands of QB; storage is not what these test.
+        config(['decks.onboard_storage' => 1_000_000]);
         $this->equipReadyDeck($this->character);
 
         $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();

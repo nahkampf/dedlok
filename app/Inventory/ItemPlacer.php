@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Inventory;
 
+use App\Decks\Storage;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,7 @@ final class ItemPlacer
         }
 
         if ($into === null) {
-            return $this->eject($row);
+            return $this->eject($character, $row);
         }
 
         if ($into->character_id !== $character->id) {
@@ -85,10 +86,15 @@ final class ItemPlacer
     }
 
     /** Take a row out of whatever holds it. Already-loose rows are a no-op. */
-    private function eject(InventoryItem $row): PlacementResult
+    private function eject(Character $character, InventoryItem $row): PlacementResult
     {
         if ($row->parent_id === null) {
             return PlacementResult::placed($row);
+        }
+
+        // Out of a shard is onto the deck, and the deck has to hold it.
+        if (! Storage::fits($character, Storage::sizeOfRow($row))) {
+            return PlacementResult::refused(PlacementRefusal::NoStorage);
         }
 
         return DB::transaction(fn () => PlacementResult::placed($this->moveInto($row, null)));

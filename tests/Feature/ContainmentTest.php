@@ -12,6 +12,7 @@ use App\Models\Skill;
 use App\Support\Text;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\HasRoomForData;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,7 @@ use Tests\TestCase;
  */
 class ContainmentTest extends TestCase
 {
+    use HasRoomForData;
     use RefreshDatabase;
 
     private Character $character;
@@ -106,6 +108,8 @@ class ContainmentTest extends TestCase
 
     public function test_ejecting_puts_it_back_in_the_loose_pile(): void
     {
+        $this->giveRoomForData($this->character);
+
         $card = $this->give($this->card);
         $stored = $this->give($this->book, inside: $card);
 
@@ -295,6 +299,8 @@ class ContainmentTest extends TestCase
 
     public function test_storing_and_ejecting_over_http(): void
     {
+        $this->giveRoomForData($this->character);
+
         $card = $this->give($this->card);
         $loose = $this->give($this->book);
 

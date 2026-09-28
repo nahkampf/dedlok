@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Standing;
 
+use App\Decks\Storage;
 use App\Inventory\ItemGranter;
 use App\Models\Character;
 use App\Models\Entity;
@@ -94,6 +95,10 @@ final readonly class LoyaltyExchange
 
             if ($live->service !== null && ! $live->service->wantedBy($character)) {
                 return LoyaltyRefusal::NothingToDo;
+            }
+
+            if ($live->item !== null && ! Storage::fits($character, Storage::sizeOf($live->item))) {
+                return LoyaltyRefusal::NoStorage;
             }
 
             // Loyalty out, as a ledger entry like everything else that moves a

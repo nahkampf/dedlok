@@ -288,6 +288,7 @@ return [
             'not_stocked' => 'Nobody is holding that today.',
             'not_enough_left' => 'There are not that many left.',
             'cannot_afford' => 'You cannot afford that.',
+            'no_storage' => 'Your deck has no room for it. Make room in its storage first.',
         ],
 
         /*
@@ -322,6 +323,7 @@ return [
                 'your_own' => 'You are already holding that one.',
                 'not_enough_left' => 'They are not selling that many.',
                 'cannot_afford' => 'You cannot afford that.',
+                'no_storage' => 'Your deck has no room for it. Make room in its storage first.',
             ],
         ],
     ],
@@ -958,6 +960,9 @@ return [
                 'transfer_begins' => 'Downloading extracted data: :qb QB queued, at :bandwidth a turn.',
                 'transfer_continues' => ':remaining QB left to pull.',
                 'transfer_gone' => 'The download finishes, and finds the system already stripped bare.',
+                // Past the core, so saying why gives nothing away. What does
+                // not fit stays on the system; nothing already taken is lost.
+                'no_room' => 'Your deck has no room for the rest. It stays on the system.',
 
                 /*
                 | THE PIECES A SUMMARY IS BUILT FROM. Assembled in the
@@ -1135,6 +1140,7 @@ return [
             'exported' => 'Saved as :file. It is in your data stash, and this machine is no longer scanned.',
             'export_gone' => 'That file is gone. It was spent, or it went stale.',
             'export_incomplete' => 'An incomplete file is not intel. Finish the read first.',
+            'export_no_storage' => 'Your deck has no room for the file. Make room in its storage first.',
 
             /*
             | READING ONE IN, which is the other half and the reason anybody
@@ -1782,6 +1788,7 @@ return [
             'cannot_afford' => 'You have not earned that much from them.',
             'nothing_to_do' => 'There is nothing for them to clean up.',
             'gone' => 'That is not on the shelf.',
+            'no_storage' => 'Your deck has no room for it. Make room in its storage first.',
         ],
         'unwelcome' => 'They will not deal with you.',
         'unwelcome_hint' => 'This desk wants :band standing — :standing — before it opens a file for somebody.',
@@ -2061,6 +2068,7 @@ return [
             'wrong_kind' => 'That will not go on there.',
             'no_room' => 'There is no room left on it.',
             'containers_do_not_nest' => 'That already holds things. It cannot go inside something else.',
+            'no_storage' => 'Your deck has no room for it. Make room in its storage before you take it out.',
         ],
 
         'refused' => [
@@ -2285,6 +2293,8 @@ return [
             // 76px and "Thermal load" overflows it.
             'compute' => 'Compute',
             'memory' => 'Memory',
+            // Everything in the data inventory, against what the deck holds.
+            'storage' => 'Storage',
             'thermal' => 'Thermal',
             'used' => ':used of :total',
             // One sentence per module, in the thermal bar's title: the ticks
@@ -2334,6 +2344,7 @@ return [
                 // Short on purpose: .tag is a fixed-height chip and cannot
                 // wrap, so a long one overflows its callout on a phone.
                 'budget' => 'Enough power',
+                'storage' => 'Room for your data',
             ],
         ],
 
@@ -2680,6 +2691,10 @@ return [
                 'automatic' => 'Not arranged — showing the automatic ring.',
             ],
 
+            'onboard_storage' => [
+                'label' => 'Onboard storage (QB)',
+                'hint' => 'What the deck holds before a storage module. Empty uses the default of :fallback QB.',
+            ],
             'sockets' => [
                 'help' => 'How many of each socket this deck presents. A deck needs somewhere to put a CPU and somewhere to draw power; everything else is optional. Sockets are what a module is fitted into, so the numbers here are the deck.',
                 'none' => 'No sockets. This deck cannot be built yet.',

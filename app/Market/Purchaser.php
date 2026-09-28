@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Market;
 
+use App\Decks\Storage;
 use App\Inventory\ItemGranter;
 use App\Models\Character;
 use App\Models\Item;
@@ -77,6 +78,10 @@ final class Purchaser
 
             if ((int) $character->creds < $total) {
                 return PurchaseResult::refused(PurchaseRefusal::CannotAfford);
+            }
+
+            if (! Storage::fits($character, Storage::sizeOf($item) * $quantity)) {
+                return PurchaseResult::refused(PurchaseRefusal::NoStorage);
             }
 
             $shelf->forceFill(['quantity' => $onHand - $quantity])->save();

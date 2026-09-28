@@ -12,6 +12,7 @@ use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\HasRoomForData;
 use Tests\TestCase;
 
 /**
@@ -23,14 +24,19 @@ use Tests\TestCase;
  */
 final class ExtractorTest extends TestCase
 {
+    use HasRoomForData;
     use RefreshDatabase;
 
     private function character(): Character
     {
-        return Character::factory()->create(array_merge(
+        $character = Character::factory()->create(array_merge(
             array_fill_keys(Character::ATTRIBUTES, 20),
             ['archetype' => 3, 'creds' => 0],
         ));
+
+        $this->giveRoomForData($character);
+
+        return $character;
     }
 
     private function system(): System

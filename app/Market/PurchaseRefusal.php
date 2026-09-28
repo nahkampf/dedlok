@@ -24,6 +24,9 @@ enum PurchaseRefusal: string
     /** The money is not there. */
     case CannotAfford = 'cannot_afford';
 
+    /** The equipped deck has no room for it — see App\Decks\Storage. */
+    case NoStorage = 'no_storage';
+
     public function message(): string
     {
         return Text::get("market.refused.{$this->value}");

@@ -17,6 +17,8 @@ final readonly class ExtractionResult
         public int $creds = 0,
         public int $items = 0,
         public int $files = 0,
+        /** Something did not fit the deck's storage and stayed on the system. */
+        public bool $leftBehind = false,
     ) {}
 
     public static function empty(): self

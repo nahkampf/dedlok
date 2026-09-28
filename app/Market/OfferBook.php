@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Market;
 
+use App\Decks\Storage;
 use App\Inventory\ItemGranter;
 use App\Models\Character;
 use App\Models\InventoryItem;
@@ -189,6 +190,16 @@ final readonly class OfferBook
 
             if ($funds < $price) {
                 return OfferRefusal::CannotAfford;
+            }
+
+            // An unstackable row travels whole, and a file on it carries its
+            // own size rather than its item's.
+            $size = $row->item->stackable
+                ? Storage::sizeOf($row->item) * $quantity
+                : Storage::sizeOfRow($row);
+
+            if (! Storage::fits($buyer, $size)) {
+                return OfferRefusal::NoStorage;
             }
 
             $buyer->forceFill(['creds' => $funds - $price])->save();

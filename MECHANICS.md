@@ -80,7 +80,7 @@ down so the implementation has something to be checked against.
 | Routing, Advanced Routing — how long a chain may be | **built** as skill rows with prerequisites; nothing reads them |
 | Radiator cooling, recalibrated for accumulation | **done** as data — eight rows, 15–480 compressed to 90–520 |
 | Actually destroying a module | **not built**; running a deck is not built either |
-| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, storage, a power budget | **specified only**; stored as bases, read by nothing, and resolved rather than read when they are. All five have jobs waiting for them in CYBERSPACE.md |
+| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, storage, a power budget | **built for storage** — `App\Decks\Storage` holds the data inventory against the resolved `deck_storage`, starting from each deck's own `items.onboard_storage` (fallback `decks.onboard_storage`). The others are read by their own mechanics in CYBERSPACE.md |
 | Inventory capacity — an overall limit per inventory | **specified only**; `weight` is stored and unenforced |
 
 Do not describe anything below as working until it appears in the table above.

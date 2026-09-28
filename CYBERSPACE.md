@@ -94,7 +94,7 @@ system.
 | The map screen | **built**; `/cyberspace`, drawn from memory and never from `systems` |
 | Marking a machine you have not seen before | **built**; `system_contacts.first_seen_at`, carried through a sweep and restarted when a different address appears at a position |
 | Moving by tap, click and key | **built**; the eight around you are buttons, arrows and the numpad reach the same eight |
-| The storage socket and its measure | **built**; every deck has one, and nothing reads the totals yet |
+| The storage socket and its measure | **built and enforced** — `App\Decks\Storage`; every door that adds data asks it, and an overfull deck is not ready |
 | The check layer it all resolves through | **built** — the stats, the graph, conditional modifiers, `character_modifiers`, skill effects, and now the die: `App\Checks\CheckRoller`. Nothing calls it, because nothing has a difficulty yet. See MECHANICS.md |
 | Jack in / sign in — the vocabulary split | **done**; auth reads Sign in / Sign out, and `ui.action.jack_*` is reserved for cyberspace |
 | Operating System skills — AuraOS, Prism-V, IRONCLAD, Lattice | **built** as skill rows; nothing reads them |

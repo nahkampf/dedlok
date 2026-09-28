@@ -85,6 +85,7 @@ class SkillAdminTest extends TestCase
         $this->assertSame('rare', $book->rarity->value); // rank 4
         $this->assertSame(900, $book->base_cost);        // from the skill
         $this->assertSame(8, $book->seed_quantity);      // 32 / 4
+        $this->assertSame(4, $book->size);               // QB equal to the rank
     }
 
     public function test_a_book_has_no_name_of_its_own(): void

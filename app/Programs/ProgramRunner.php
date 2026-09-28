@@ -342,7 +342,7 @@ final class ProgramRunner
 
     private function totals(Character $character, InventoryItem $deck): DeckTotals
     {
-        return DeckTotals::of($deck->fittings()->with('module.item.deckModule')->get())
+        return DeckTotals::of($deck->fittings()->with('module.item.deckModule')->get(), $deck->item)
             ->resolvedWith($character->modifiers(), app(Resolver::class));
     }
 }

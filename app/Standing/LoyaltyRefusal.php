@@ -41,6 +41,9 @@ enum LoyaltyRefusal: string
     /** Withdrawn from the shelf, or its item deleted, between the screen and the press. */
     case Gone = 'gone';
 
+    /** The equipped deck has no room for it — see App\Decks\Storage. */
+    case NoStorage = 'no_storage';
+
     public function message(): string
     {
         return Text::get("exchange.store_refused.{$this->value}");

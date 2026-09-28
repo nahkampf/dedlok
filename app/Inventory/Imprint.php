@@ -24,16 +24,13 @@ use App\Models\Skill;
  *
  * - `base_cost` and `on_market` are the skill's own answers to "what does this
  *   cost" and "is it sold", so they are kept in step on every save.
- * - `tier`, `rarity` and `seed_quantity` are derived from rank ONCE, at
+ * - `tier`, `rarity`, `size` and `seed_quantity` are derived from rank ONCE, at
  *   creation, and then belong to the item editor. They are the numbers most
  *   likely to be tuned by hand, and the seeder's rule holds here too: a value
  *   someone has deliberately set is not a value to overwrite.
  */
 final class Imprint
 {
-    /** Eight units of a memory shard's 64. Eight books to a shard. */
-    public const SIZE = 8;
-
     public static function slugFor(Skill $skill): string
     {
         return "imprint_{$skill->slug}";
@@ -64,13 +61,22 @@ final class Imprint
             'stackable' => true,
             'use_op' => Item::USE_INJECT_SKILL,
             'use_skill_id' => $skill->id,
-            'size' => self::SIZE,
+            // QB equal to the rank: 1 for the quickest skill, 16 for the
+            // slowest. A rank 16 imprint will not fit a starter deck beside
+            // anything else, so learning the hardest skills takes a better
+            // deck or a storage module first.
+            'size' => self::sizeForRank($rank),
             'base_cost' => (int) $skill->base_cost,
             'on_market' => (bool) $skill->on_market,
             // Halving per rank: 32 of the commonest book on the shelf, 2 of
             // the rank 16 ones.
             'seed_quantity' => max(2, (int) round(32 / max(1, $rank))),
         ];
+    }
+
+    public static function sizeForRank(int $rank): int
+    {
+        return max(1, $rank);
     }
 
     /**

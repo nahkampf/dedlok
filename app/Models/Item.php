@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 #[Fillable([
     'slug', 'name', 'flavor', 'container', 'tier', 'rarity', 'stackable', 'use_op', 'use_skill_id',
-    'weight', 'size', 'capacity', 'accepts', 'hardware', 'board_layout', 'base_cost', 'on_market', 'seed_quantity',
+    'weight', 'size', 'capacity', 'accepts', 'hardware', 'board_layout', 'onboard_storage', 'base_cost', 'on_market', 'seed_quantity',
     'implant_region', 'modifiers',
 ])]
 class Item extends Model
@@ -56,8 +56,9 @@ class Item extends Model
     public const IMAGE_ROOT = 'items';
 
     /**
-     * The one image type that is not an enum case: a book is data on the card
-     * and a book in the filing cabinet, and every book looks the same.
+     * The one image type that is not an enum case: an imprint is data on the
+     * card and an imprint in the filing cabinet, and every imprint looks the
+     * same.
      */
     public const IMAGE_IMPRINT = 'imprint';
 
@@ -83,6 +84,7 @@ class Item extends Model
             'capacity' => 'integer',
             'hardware' => Hardware::class,
             'board_layout' => 'array',
+            'onboard_storage' => 'integer',
             'base_cost' => 'integer',
             'on_market' => 'boolean',
             'seed_quantity' => 'integer',
@@ -214,6 +216,19 @@ class Item extends Model
     public function isCyberdeck(): bool
     {
         return $this->hardware === Hardware::Deck;
+    }
+
+    /**
+     * QB this deck holds before any storage module — its own figure, or the
+     * `decks.onboard_storage` fallback. Nothing that is not a deck holds any.
+     */
+    public function onboardStorage(): int
+    {
+        if (! $this->isCyberdeck()) {
+            return 0;
+        }
+
+        return $this->onboard_storage ?? (int) config('decks.onboard_storage', 0);
     }
 
     /** A module of some kind — a CPU, a stick of RAM, a power supply. */

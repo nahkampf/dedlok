@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Decks\Storage;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -83,6 +84,10 @@ final readonly class ScanExporter
             // The machine's name is COPIED, not referenced. It may burn or
             // relocate the minute after, and a file that reached through to a
             // gone row would describe nothing — see ScanFile.
+            if (! Storage::fits($character, Storage::sizeOf($item))) {
+                return ScanExportRefusal::NoStorage;
+            }
+
             $name = System::query()->where('address', $address)->first()?->displayName();
 
             $scan->forceFill(['used_at' => now()])->save();
