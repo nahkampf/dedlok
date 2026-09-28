@@ -1836,6 +1836,10 @@ return [
             'primary' => 'Primary',
             'secondary' => 'Secondary',
             'requires' => 'Requires',
+        // One entry's own time, beside its target level.
+        'entry_stalled' => 'earns nothing',
+        // Its points are already banked; it completes when the clock next ticks.
+        'entry_done' => 'any moment',
             'requires_none' => 'Nothing',
             'effects' => 'Effects',
             'effects_none' => 'Knowing it changes nothing on its own.',

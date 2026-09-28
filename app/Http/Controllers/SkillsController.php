@@ -50,6 +50,7 @@ class SkillsController extends Controller
             ->get();
 
         $queue = $character->trainingQueue()->with('skill')->get();
+        $entryMinutes = $this->entryMinutes($character, $queue, $levels);
 
         return view('skills.index', [
             'skills' => $skills,
@@ -69,7 +70,9 @@ class SkillsController extends Controller
             // What the WHOLE queue costs, at the rates it earns this instant —
             // the same honesty the active entry's estimate has, and the same
             // limit: nothing here models a modifier that changes tonight.
-            'queueMinutes' => $this->queueMinutes($character, $queue, $levels),
+            'queueMinutes' => $this->queueMinutes($entryMinutes),
+            // And each entry's share of it, so a row says what it costs.
+            'entryMinutes' => $entryMinutes,
             // The queue is allowed to describe training that cannot happen
             // yet, so these are warnings on the screen and never a refusal.
             'problems' => (new TrainingQueueValidator)->problemsFor($character),
@@ -150,47 +153,64 @@ class SkillsController extends Controller
     }
 
     /**
-     * How long the whole queue takes at the rates it earns now, in minutes.
+     * How long each entry takes at the rates it earns now, in minutes, keyed
+     * by entry id. Null for an entry whose skill earns nothing.
      *
-     * Per SKILL and not per entry: reaching level 4 costs `pointsForLevel(4)`
-     * altogether, so three entries taking one skill from 1 to 4 are one sum
-     * against what is already banked — counting each entry from zero would
-     * charge for the same points three times.
+     * AN ENTRY COSTS WHAT IS LEFT, NOT ITS LEVEL. Points accumulate per skill,
+     * so an entry pays from whatever is already covered — banked, or reached
+     * by an earlier entry for the same skill — up to its own target. Counting
+     * each entry from its level's floor would drop the cost of a level whose
+     * entry was removed (removing one is allowed to break the rest), and
+     * counting from zero would charge for the same points again. Walked in
+     * queue order, the entries sum to exactly what the whole queue costs.
+     *
+     * @param  Collection<int, TrainingQueueEntry>  $queue
+     * @param  array<int, array{level: int, points: int}>  $levels
+     * @return array<int, float|null>
+     */
+    private function entryMinutes(Character $character, Collection $queue, array $levels): array
+    {
+        $covered = [];
+        $rates = [];
+        $minutes = [];
+
+        foreach ($queue as $entry) {
+            $skill = $entry->skill;
+
+            if ($skill === null) {
+                continue;
+            }
+
+            $id = (int) $skill->id;
+            $rates[$id] ??= $character->trainingRateFor($skill);
+            $covered[$id] ??= $levels[$id]['points'] ?? 0;
+
+            $ceiling = $skill->pointsForLevel((int) $entry->target_level);
+            $cost = max(0, $ceiling - $covered[$id]);
+            $covered[$id] = max($covered[$id], $ceiling);
+
+            $minutes[(int) $entry->id] = $rates[$id] > 0 ? $cost / $rates[$id] : null;
+        }
+
+        return $minutes;
+    }
+
+    /**
+     * The whole queue, as the sum of its entries.
      *
      * Null when anything in it earns nothing: a queue with a stalled skill in
      * it has no finishing time, and a number that left the stalled part out
      * would be an estimate that quietly excludes the reason it is wrong.
      *
-     * @param  Collection<int, TrainingQueueEntry>  $queue
-     * @param  array<int, array{level: int, points: int}>  $levels
+     * @param  array<int, float|null>  $entryMinutes
      */
-    private function queueMinutes(Character $character, Collection $queue, array $levels): ?float
+    private function queueMinutes(array $entryMinutes): ?float
     {
-        $targets = [];
-
-        foreach ($queue as $entry) {
-            if ($entry->skill === null) {
-                continue;
-            }
-
-            $id = (int) $entry->skill_id;
-            $targets[$id] = max($targets[$id] ?? 0, (int) $entry->target_level);
+        if ($entryMinutes === [] || in_array(null, $entryMinutes, true)) {
+            return null;
         }
 
-        $minutes = 0.0;
-
-        foreach ($targets as $id => $target) {
-            $skill = $queue->firstWhere('skill_id', $id)->skill;
-            $rate = $character->trainingRateFor($skill);
-
-            if ($rate <= 0) {
-                return null;
-            }
-
-            $minutes += max(0, $skill->pointsForLevel($target) - ($levels[$id]['points'] ?? 0)) / $rate;
-        }
-
-        return $queue->isEmpty() ? null : $minutes;
+        return array_sum($entryMinutes);
     }
 
     /**

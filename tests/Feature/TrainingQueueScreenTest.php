@@ -276,6 +276,51 @@ final class TrainingQueueScreenTest extends TestCase
             ->assertSeeText(Text::get('training.queue_total', ['duration' => $expected]));
     }
 
+    /**
+     * EACH ROW SAYS WHAT IT COSTS ON ITS OWN: from what the entries above it
+     * reach, not from zero — so level 2's row is the points between 1 and 2,
+     * and the rows add up to the total.
+     */
+    public function test_each_queued_entry_says_how_long_it_takes(): void
+    {
+        $this->inject($this->character, $this->hacking);
+        $this->queue()->enqueue($this->character, $this->hacking);
+        $this->queue()->enqueue($this->character, $this->hacking);
+
+        $rate = $this->character->trainingRateFor($this->hacking);
+        $human = fn (float $minutes): string => CarbonInterval::minutes((int) ceil($minutes))->cascade()->forHumans(['parts' => 2]);
+
+        $first = $this->hacking->pointsForLevel(1) / $rate;
+        $second = ($this->hacking->pointsForLevel(2) - $this->hacking->pointsForLevel(1)) / $rate;
+
+        $this->assertNotSame($human($first), $human($second), 'the fixture must tell the two rows apart');
+
+        $this->actingAs($this->user)
+            ->get(route('skills.index'))
+            ->assertOk()
+            ->assertSeeTextInOrder([
+                Text::get('training.target', ['level' => 1]), $human($first),
+                Text::get('training.target', ['level' => 2]), $human($second),
+            ]);
+    }
+
+    /** A skill that earns nothing says so on its row rather than a duration. */
+    public function test_a_stalled_entry_says_it_earns_nothing(): void
+    {
+        $this->inject($this->character, $this->hacking);
+        $this->queue()->enqueue($this->character, $this->hacking);
+
+        // Every attribute at zero: nothing to learn with, so nothing earned.
+        $this->character->forceFill(array_fill_keys(Character::ATTRIBUTES, 0))->save();
+
+        $this->assertLessThanOrEqual(0, $this->character->fresh()->trainingRateFor($this->hacking), 'the fixture must stall');
+
+        $this->actingAs($this->user)
+            ->get(route('skills.index'))
+            ->assertOk()
+            ->assertSeeText(Text::get('training.entry_stalled'));
+    }
+
     /** What is training and what is queued reach the same card the list does. */
     public function test_the_training_name_and_the_queue_rows_open_the_card(): void
     {

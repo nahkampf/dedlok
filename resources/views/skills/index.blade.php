@@ -164,8 +164,19 @@
                                     <button type="button" class="link item-row__name" style="text-align:left;cursor:help"
                                             data-inspect="#skill-{{ $entry->skill->id }}">{{ $entry->skill->title }}</button>
                                 @endif
+                                {{-- What this entry costs on its own, at today's
+                                     rate: from what is banked or reached by the
+                                     entries above it, so the rows add up to the
+                                     total at the top. --}}
+                                @php($entryEta = $entryMinutes[$entry->id] ?? null)
                                 <span class="micro" style="color:var(--ink-3)">
                                     {{ Text::get('training.target', ['level' => $entry->target_level]) }}
+                                    ·
+                                    {{ $entryEta === null
+                                        ? Text::get('training.entry_stalled')
+                                        : ($entryEta <= 0
+                                            ? Text::get('training.entry_done')
+                                            : CarbonInterval::minutes((int) ceil($entryEta))->cascade()->forHumans(['parts' => 2])) }}
                                 </span>
                             </span>
 
