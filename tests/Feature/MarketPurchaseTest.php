@@ -301,6 +301,40 @@ final class MarketPurchaseTest extends TestCase
             ->assertDontSee(Text::get('market.tick.owned'));
     }
 
+    // ---- a book's hover card -----------------------------------------------
+
+    /**
+     * A BOOK IS INSPECTED AS ITS SKILL. The header floats <x-skill-detail>,
+     * the same card the skills screen uses, rather than the card having to
+     * describe a skill in the words of an item.
+     */
+    public function test_a_book_on_the_shelf_opens_its_skill(): void
+    {
+        $skill = Skill::factory()->create(['description' => 'Split the work and run it twice.']);
+        $book = Imprint::ensureFor($skill);
+        $book->forceFill(['on_market' => true])->save();
+        $shelf = MarketStock::query()->create(['item_id' => $book->id, 'quantity' => 3, 'last_seeded_at' => now()]);
+
+        $this->actingAs($this->character->user)
+            ->get(route('market.index'))
+            ->assertOk()
+            ->assertSee('data-inspect="#shelf-skill-'.$shelf->id.'"', false)
+            ->assertSee('<template id="shelf-skill-'.$shelf->id.'">', false)
+            ->assertSeeText('Split the work and run it twice.')
+            ->assertSeeText(Text::get('training.card.not_injected'));
+    }
+
+    /** Anything that is not a book has no skill to show, and no hover card. */
+    public function test_an_ordinary_item_has_no_hover_card(): void
+    {
+        $this->stocked();
+
+        $this->actingAs($this->character->user)
+            ->get(route('market.index'))
+            ->assertOk()
+            ->assertDontSee('data-inspect=', false);
+    }
+
     public function test_an_empty_market_says_so(): void
     {
         $this->actingAs($this->character->user)

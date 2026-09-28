@@ -12,6 +12,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\MarketOffer;
 use App\Models\MarketStock;
+use App\Skills\SkillProgression;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,7 +38,11 @@ class MarketController extends Controller
 
         $shelves = MarketStock::query()
             ->available()
-            ->with('item.useSkill')
+            // A book's hover card lists what the skill requires, and every card
+            // asks its program what kind of thing it is and where its picture
+            // lives (kindName(), imageType()) — so both come along, one query
+            // for the shelf rather than one per card.
+            ->with(['item.useSkill.prerequisites.requiredSkill', 'item.program'])
             ->get()
             ->filter(fn (MarketStock $shelf): bool => $shelf->item !== null && $shelf->item->on_market)
             ->sortBy(fn (MarketStock $shelf): string => (string) $shelf->item?->displayName())
@@ -61,12 +66,21 @@ class MarketController extends Controller
             // `scopeLoose()` is the stash's question rather than this one.
             // Keyed for isset() so a shelf of forty is forty lookups.
             'owned' => $character->inventory()->distinct()->pluck('item_id')->flip()->all(),
-            'injected' => $character->characterSkills()->pluck('skill_id')->flip()->all(),
+            // skill id => level and points, for the tick and for a book's
+            // <x-skill-detail>: the same map the skills screen reads, so a
+            // skill is described identically wherever it is inspected.
+            'injected' => $character->characterSkills()
+                ->get(['skill_id', 'attained_level', 'skill_points'])
+                ->mapWithKeys(fn ($row): array => [
+                    (int) $row->skill_id => ['level' => (int) $row->attained_level, 'points' => (int) $row->skill_points],
+                ])
+                ->all(),
+            'maxLevel' => SkillProgression::fromConfig()->maxLevel(),
             // The other market. Not grouped and not searched: it is whatever
             // anybody happens to be holding today, and it is short.
             'offers' => MarketOffer::query()
                 ->onOffer()
-                ->with(['row.item', 'seller'])
+                ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'seller'])
                 ->get(),
         ]);
     }

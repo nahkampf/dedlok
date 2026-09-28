@@ -61,10 +61,8 @@
                                      the later one paints on top. --}}
                                 <x-owned-tick :item="$item" :owned="$owned" :injected="$injected" />
 
-                                <div class="card__hd">
-                                    <div class="card__title">{{ $item->displayName() }}</div>
-                                    <div class="card__meta">{{ $item->kindName() }}</div>
-                                </div>
+                                <x-market-card-head :item="$item" :detail-id="'shelf-skill-'.$shelf->id"
+                                                    :owned="$owned" :injected="$injected" :max-level="$maxLevel" />
 
                                 <div class="card__bd stack" style="--gap:var(--s-2)">
                                     @if ($item->flavor)
@@ -148,10 +146,8 @@
                             <x-entity-image :kind="$item->imageKind()" :id="$item->id" :alt="$item->displayName()" />
                             <x-owned-tick :item="$item" :owned="$owned" :injected="$injected" />
 
-                            <div class="card__hd">
-                                <div class="card__title">{{ $item->displayName() }}</div>
-                                <div class="card__meta">{{ $item->kindName() }}</div>
-                            </div>
+                            <x-market-card-head :item="$item" :detail-id="'offer-skill-'.$offer->id"
+                                                :owned="$owned" :injected="$injected" :max-level="$maxLevel" />
 
                             <div class="card__bd">
                                 {{-- What is written ON the row, which is the
