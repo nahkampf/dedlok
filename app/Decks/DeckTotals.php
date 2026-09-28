@@ -7,6 +7,7 @@ namespace App\Decks;
 use App\Models\Character;
 use App\Models\DeckFitting;
 use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Stats\Modifier;
 use App\Stats\Resolver;
 use Illuminate\Support\Collection;
@@ -74,6 +75,11 @@ final class DeckTotals
         /** Where files and unloaded programs live. Not memory — see Hardware. */
         public readonly int $storage,
         private readonly array $counts,
+        /**
+         * QB of data the character keeps on it — see Storage. Null for every
+         * deck but the equipped one, since only that one holds anything.
+         */
+        public readonly ?int $stored = null,
     ) {}
 
     /**
@@ -93,15 +99,20 @@ final class DeckTotals
      */
     public static function forCharacter(Character $character, InventoryItem $deck, Resolver $resolver): self
     {
-        $totals = self::of($deck->fittings);
+        $totals = self::of($deck->fittings, $deck->item);
 
         return $character->hasEquipped($deck)
-            ? $totals->resolvedWith($character->modifiers(), $resolver)
+            ? $totals->resolvedWith($character->modifiers(), $resolver)->holding(Storage::used($character))
             : $totals;
     }
 
-    /** @param  Collection<int, DeckFitting>  $fittings */
-    public static function of(Collection $fittings): self
+    /**
+     * The deck's own onboard storage joins the sum when the deck is given;
+     * without it this is the fitted modules and nothing else.
+     *
+     * @param  Collection<int, DeckFitting>  $fittings
+     */
+    public static function of(Collection $fittings, ?Item $deck = null): self
     {
         $sums = [
             'qflops' => 0, 'quantabits' => 0, 'bandwidth' => 0,
@@ -136,7 +147,9 @@ final class DeckTotals
             thermalLoad: $sums['thermal_load'],
             // And the mirror: a thermal module cools and heats none.
             cooling: $sums['cooling'],
-            storage: $sums['storage'],
+            // Every deck holds a little before anything is fitted, so a
+            // runner without a storage module can still carry their software.
+            storage: ($deck?->onboardStorage() ?? 0) + $sums['storage'],
             counts: $counts,
         );
     }
@@ -173,7 +186,23 @@ final class DeckTotals
             cooling: $resolved['cooling'],
             storage: $resolved['storage'],
             counts: $this->counts,
+            stored: $this->stored,
         );
+    }
+
+    /** The same totals, with what the character keeps on the deck. */
+    private function holding(int $stored): self
+    {
+        return new self(
+            $this->qflops, $this->quantabits, $this->bandwidth, $this->draw, $this->supply,
+            $this->thermalLoad, $this->cooling, $this->storage, $this->counts, $stored,
+        );
+    }
+
+    /** More data than the deck holds. Nothing is deleted for it; the deck just will not run. */
+    public function isOverfull(): bool
+    {
+        return $this->stored !== null && $this->stored > $this->storage;
     }
 
     /** How many modules of a kind are fitted. */

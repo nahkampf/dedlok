@@ -79,7 +79,7 @@
                                 <td class="t-right num">{{ $skill->prerequisites_count }}</td>
                                 <td class="t-right num">{{ $skill->unlocks_count }}</td>
                                 <td>
-                                    {{-- A skill with no book cannot be learned by
+                                    {{-- A skill with no imprint cannot be learned by
                                          anyone who does not already know it. That
                                          is the one status on this row worth an
                                          accent. --}}

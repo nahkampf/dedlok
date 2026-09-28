@@ -228,7 +228,7 @@ class InventoryItem extends Model
     /**
      * The socket this row is installed in, if it is a module in a deck.
      *
-     * A module is never "inside" a deck the way a book is inside a shard —
+     * A module is never "inside" a deck the way an imprint is inside a shard —
      * see App\Decks\ModuleFitter. `parent_id` stays null for a fitted module;
      * what takes it out of the player's hands is this relation.
      *
@@ -332,7 +332,7 @@ class InventoryItem extends Model
     /**
      * How much of this container is spoken for.
      *
-     * `size` is per object, so a stack of three 8-unit books occupies 24. This
+     * `size` is per object, so a stack of three 8-unit imprints occupies 24. This
      * is the first thing to read `size` at all: it has been stored and
      * unenforced since the table was created.
      */

@@ -277,7 +277,7 @@ final class MarketPurchaseTest extends TestCase
     }
 
     /**
-     * A BOOK FOR A SKILL ALREADY INJECTED says so in cyan — and without owning
+     * AN IMPRINT FOR A SKILL ALREADY INJECTED says so in cyan — and without owning
      * a copy, because injecting spent the one they had.
      */
     public function test_a_book_for_a_skill_you_have_is_ticked_cyan(): void
@@ -301,10 +301,10 @@ final class MarketPurchaseTest extends TestCase
             ->assertDontSee(Text::get('market.tick.owned'));
     }
 
-    // ---- a book's hover card -----------------------------------------------
+    // ---- an imprint's hover card -----------------------------------------------
 
     /**
-     * A BOOK IS INSPECTED AS ITS SKILL. The header floats <x-skill-detail>,
+     * AN IMPRINT IS INSPECTED AS ITS SKILL. The header floats <x-skill-detail>,
      * the same card the skills screen uses, rather than the card having to
      * describe a skill in the words of an item.
      */
@@ -324,7 +324,7 @@ final class MarketPurchaseTest extends TestCase
             ->assertSeeText(Text::get('training.card.not_injected'));
     }
 
-    /** Anything that is not a book has no skill to show, and no hover card. */
+    /** Anything that is not an imprint has no skill to show, and no hover card. */
     public function test_an_ordinary_item_has_no_hover_card(): void
     {
         $this->stocked();

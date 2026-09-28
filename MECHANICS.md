@@ -75,12 +75,12 @@ down so the implementation has something to be checked against.
 | `characters.heat` — what the world knows about you | **specified only**; see CYBERSPACE.md |
 | A sixth deck measure — storage, to hold data and programs | **built** — `SlotKind::Storage`, `deck_modules.storage`, `deck_storage` |
 | Cyberspace — the grid, systems, intrusion | **partly built** — the world is walkable: jacking in, stepping, jumping, bookmarks, discovery and the map screen. No system can be entered and nothing is inside one. CYBERSPACE.md is the document and carries the detail |
-| Encryption skills — four, ranks 2/4/8/16, with books | **built** as rows; placeholder descriptions, nothing reads them |
+| Encryption skills — four, ranks 2/4/8/16, with imprints | **built** as rows; placeholder descriptions, nothing reads them |
 | `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
 | Routing, Advanced Routing — how long a chain may be | **built** as skill rows with prerequisites; nothing reads them |
 | Radiator cooling, recalibrated for accumulation | **done** as data — eight rows, 15–480 compressed to 90–520 |
 | Actually destroying a module | **not built**; running a deck is not built either |
-| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, storage, a power budget | **specified only**; stored as bases, read by nothing, and resolved rather than read when they are. All five have jobs waiting for them in CYBERSPACE.md |
+| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, storage, a power budget | **built for storage** — `App\Decks\Storage` holds the data inventory against the resolved `deck_storage`, starting from each deck's own `items.onboard_storage` (fallback `decks.onboard_storage`). The others are read by their own mechanics in CYBERSPACE.md |
 | Inventory capacity — an overall limit per inventory | **specified only**; `weight` is stored and unenforced |
 
 Do not describe anything below as working until it appears in the table above.
@@ -305,7 +305,7 @@ values that is not a character yet and has no modifiers to resolve.
 ### Every skill is a stat, and implies a check
 
 `App\Stats\SkillStats` generates two stats per skill row, for the same reason
-`Imprint` generates a book per skill: there will be hundreds, they live in the
+`Imprint` generates an imprint per skill: there will be hundreds, they live in the
 database, and a per-skill entry in `config/stats.php` would be a second place to
 remember.
 
@@ -329,7 +329,7 @@ want to tune.
 
 Consequences worth stating:
 
-- **Adding a skill adds its check for free**, the way it already adds its book.
+- **Adding a skill adds its check for free**, the way it already adds its imprint.
 - **A modifier can target a group.** "+1 level in every Systems skill" is one
   modifier against a tag, not a list that goes stale.
 - **A check is not permission.** It resolves for every skill in the game whether
@@ -1537,7 +1537,7 @@ thermal load.
 
 Every file taken off a system is encrypted, and there is a skill per encryption
 type — the same shape as the skill-per-operating-system gate. Both are cheap at
-level 1 and worth training past it, and both are gated by owning the book rather
+level 1 and worth training past it, and both are gated by owning the imprint rather
 than by the training time.
 
 Two gates of identical shape is a pattern, not a coincidence, and it should be
@@ -1606,23 +1606,23 @@ reaches the market by being forgotten.
 directions, so an item cannot claim capacity without a kind or a kind
 without capacity. Depth is capped at one: containers do not nest.
 
-**Imprints need neither step.** There is exactly one book per skill, so
+**Imprints need neither step.** There is exactly one imprint per skill, so
 `ItemSeeder` generates them from the skills table and their name composes from
 the skill's own title through `strings.items.imprint.name`. Adding a skill
-adds its book, named for free.
+adds its imprint, named for free.
 
 ### Imprints and the training gate
 
-A skill cannot be trained until its book has been owned and spent.
+A skill cannot be trained until its imprint has been owned and spent.
 
 - A `character_skills` row means **this skill has been injected**, and
   `App\Inventory\SkillInjector` is the only thing that creates one. Injecting
-  consumes one copy of the book and writes the row at 0 points, level 0, in a
+  consumes one copy of the imprint and writes the row at 0 points, level 0, in a
   single transaction.
 - **Level 0 is a real state**: injected, not yet trained. That is why the gate
   is a row-exists check and never a level check.
 - Injecting a skill already on the sheet is **refused**, not repeated — it
-  would either wipe the points or do nothing, and the player keeps the book.
+  would either wipe the points or do nothing, and the player keeps the imprint.
 - `TrainingDeposit` will **not** create the row. A queue entry naming an
   uninjected skill is a data error: the deposit refuses and logs it, the queue
   validator reports it, and `skills:validate` fails on it.

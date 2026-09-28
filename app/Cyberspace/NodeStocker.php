@@ -377,7 +377,7 @@ final class NodeStocker
      * world.
      *
      * And DATA ONLY. A machine on the grid holds what a machine can hold —
-     * software, files, books. It cannot hand somebody a cyberdeck or an
+     * software, files, imprints. It cannot hand somebody a cyberdeck or an
      * implant, because those are objects in the world and a node is not a
      * place a player's hands can reach. `items.container` is the column that
      * already says which is which, so this is one clause rather than a new

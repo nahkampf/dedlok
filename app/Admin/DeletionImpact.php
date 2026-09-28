@@ -62,7 +62,7 @@ final class DeletionImpact
             )->count();
         }
 
-        // A skill whose only book is deleted cannot be learned by anyone who
+        // A skill whose only imprint is deleted cannot be learned by anyone who
         // does not already know it. Worth saying out loud.
         if ($item->isImprint()) {
             $counts['orphans_skill'] = 1;
@@ -72,13 +72,13 @@ final class DeletionImpact
     }
 
     /**
-     * A skill takes its book, everyone's progress in it, every queued level of
+     * A skill takes its imprint, everyone's progress in it, every queued level of
      * it, and every requirement naming it.
      *
-     * The book is the one thing that does not cascade: items.use_skill_id is
+     * The imprint is the one thing that does not cascade: items.use_skill_id is
      * restrictOnDelete, so the database refuses to drop a skill something
-     * still points at. The controller deletes the book first, inside the same
-     * transaction — which means the book's own inventory rows are in scope
+     * still points at. The controller deletes the imprint first, inside the same
+     * transaction — which means the imprint's own inventory rows are in scope
      * here too.
      */
     public static function forSkill(Skill $skill): self
@@ -96,7 +96,7 @@ final class DeletionImpact
             'book_copies' => $book === null
                 ? 0
                 : (int) InventoryItem::where('item_id', $book->id)->sum('quantity'),
-            // Both halves of the loadout: the skill itself, and the book for
+            // Both halves of the loadout: the skill itself, and the imprint for
             // it that an archetype might hand out instead.
             'archetype_loadouts' => ArchetypeSkill::where('skill_id', $skill->id)->count()
                 + ($book === null ? 0 : ArchetypeItem::where('item_id', $book->id)->count()),

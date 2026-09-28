@@ -57,8 +57,8 @@ class SkillsController extends Controller
             'levels' => $levels,
             'max' => $progression->maxLevel(),
             'queue' => $queue,
-            // Which skills they hold a book for, anywhere they carry it — a
-            // book in a shard is still owned. One query for every card.
+            // Which skills they hold an imprint for, anywhere they carry it — a
+            // imprint in a shard is still owned. One query for every card.
             'books' => $character->inventory()
                 ->join('items', 'items.id', '=', 'inventory_items.item_id')
                 ->whereNotNull('items.use_skill_id')

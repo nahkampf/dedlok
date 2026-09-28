@@ -276,7 +276,7 @@ class ItemAdminTest extends TestCase
             ->assertSessionHasErrors('stackable');
     }
 
-    /** One book per skill, or a skill has two names and forSkill() is ambiguous. */
+    /** One imprint per skill, or a skill has two names and forSkill() is ambiguous. */
     public function test_a_skill_cannot_have_two_books(): void
     {
         $skill = Skill::factory()->create();
@@ -293,7 +293,7 @@ class ItemAdminTest extends TestCase
             ->assertSessionHasErrors('use_skill_id');
     }
 
-    /** Editing the book that already exists must not trip its own uniqueness. */
+    /** Editing the imprint that already exists must not trip its own uniqueness. */
     public function test_editing_a_book_does_not_collide_with_itself(): void
     {
         $skill = Skill::factory()->create();
@@ -326,7 +326,7 @@ class ItemAdminTest extends TestCase
         $this->assertSame('New name', $item->fresh()->name);
     }
 
-    /** A slug is permanent: inventory rows and the book naming both use it. */
+    /** A slug is permanent: inventory rows and the imprint naming both use it. */
     public function test_a_slug_cannot_be_changed(): void
     {
         $item = Item::factory()->create(['slug' => 'shard']);

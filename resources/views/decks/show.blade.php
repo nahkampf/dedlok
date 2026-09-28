@@ -182,6 +182,7 @@
                 @php($bars = [
                     ['label' => 'decks.fitting.compute', 'used' => $spent['qflops'], 'total' => $totals->qflops],
                     ['label' => 'decks.fitting.memory', 'used' => $spent['memory'], 'total' => $totals->quantabits],
+                    ...($totals->stored === null ? [] : [['label' => 'decks.fitting.storage', 'used' => $totals->stored, 'total' => $totals->storage]]),
                 ])
                 @php($scale = $thermal->scale())
                 @php($load = $totals->netThermalLoad())

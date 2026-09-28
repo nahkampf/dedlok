@@ -38,7 +38,7 @@ class DepositTrainingCommandTest extends TestCase
             ['archetype' => 3],
         ));
 
-        // The book has been spent; that is what makes the skill trainable.
+        // The imprint has been spent; that is what makes the skill trainable.
         $this->inject($character, $this->hacking);
 
         TrainingQueueEntry::create([

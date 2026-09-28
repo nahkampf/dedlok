@@ -44,11 +44,11 @@ class Skill extends Model
     }
 
     /**
-     * The one book that teaches this skill.
+     * The one imprint that teaches this skill.
      *
      * A relation rather than a lookup because it is the shape of the
-     * invariant: exactly one book per skill, which is what lets a book have
-     * no name of its own. The use_op filter is what makes it "the book"
+     * invariant: exactly one imprint per skill, which is what lets an imprint have
+     * no name of its own. The use_op filter is what makes it "the imprint"
      * rather than "an item that happens to point here" — use_skill_id is
      * only ever set alongside inject_skill, and the schema says so.
      *

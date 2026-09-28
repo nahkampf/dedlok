@@ -1,8 +1,8 @@
 @use('App\Support\Text')
 @props(['item', 'owned' => [], 'injected' => []])
-{{-- The kit's corner tick on a listing: ONE YOU HAVE, and nothing else. A book
+{{-- The kit's corner tick on a listing: ONE YOU HAVE, and nothing else. An imprint
      whose skill is already injected says so first, in cyan — that is the answer
-     a shopper needs about a book, and owning a spare copy of one is the lesser
+     a shopper needs about an imprint, and owning a spare copy of one is the lesser
      fact. Anything else they hold a row of, anywhere, is the default --ok.
 
      Renders nothing for a thing they do not have. The parent carries .ticked. --}}

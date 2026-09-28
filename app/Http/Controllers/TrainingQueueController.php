@@ -62,7 +62,7 @@ class TrainingQueueController extends Controller
      *
      * IT STOPS AT THE FIRST REFUSAL AND SAYS WHICH ONE. A plan is routinely
      * longer than the five entries a queue holds, and it can name a skill
-     * whose book has never been spent — both are ordinary, neither is a
+     * whose imprint has never been spent — both are ordinary, neither is a
      * failure, and the queue already has the words for them. What lands is
      * everything up to that point, because a partial route is still the
      * beginning of the route.
@@ -93,6 +93,18 @@ class TrainingQueueController extends Controller
         foreach ($steps as $step) {
             $result = $queue->enqueue($character, $step);
 
+            // An imprint missing on the way to something else gets its own
+            // sentence: "you have not injected that skill" read as the skill
+            // the player planned, which they HAD injected.
+            if ($result === QueueRefusal::NotInjected && $step->isNot($skill)) {
+                return back()->with('status', Text::get('training.plan_needs_imprint', [
+                    'count' => $queued,
+                    'total' => count($steps),
+                    'skill' => $step->title,
+                    'target' => $skill->title,
+                ]));
+            }
+
             if ($result instanceof QueueRefusal) {
                 return back()->with('status', Text::get('training.plan_stopped', [
                     'count' => $queued,
@@ -117,7 +129,7 @@ class TrainingQueueController extends Controller
 
         // Somebody else's entry is not a refusal to explain, it is a row that
         // does not exist as far as this player is concerned — the same answer
-        // inventory.inject gives for somebody else's book.
+        // inventory.inject gives for somebody else's imprint.
         abort_unless($entry->character_id === $character->id, 404);
 
         $title = $entry->skill?->title;

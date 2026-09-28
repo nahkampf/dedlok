@@ -224,7 +224,7 @@
     </form>
 
     @unless ($creating)
-        {{-- The book is not part of the form: it is a separate row with its own
+        {{-- The imprint is not part of the form: it is a separate row with its own
              editor, and half of its columns stopped following the skill the
              moment it was created. --}}
         <div class="panel" style="margin-top:var(--s-6)">

@@ -33,7 +33,7 @@ class ArchetypeLoadoutTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const POINTS = 75;
+    private const POINTS = 150;
 
     protected function setUp(): void
     {
@@ -134,8 +134,8 @@ class ArchetypeLoadoutTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->post(route('character.store'), $this->payload(1));
 
-        // No book was owned and none is left behind: the grant is not an
-        // injection with the book quietly handed over first.
+        // No imprint was owned and none is left behind: the grant is not an
+        // injection with the imprint quietly handed over first.
         $this->assertSame(0, Character::firstOrFail()->inventory()->count());
     }
 

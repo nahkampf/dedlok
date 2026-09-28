@@ -189,7 +189,7 @@ class ItemController extends Controller
             'rarities' => Rarity::cases(),
             'useOps' => Item::USE_OPS,
             'maxTier' => Item::MAX_TIER,
-            // Every skill, so a book can be pointed at one. Small enough to
+            // Every skill, so an imprint can be pointed at one. Small enough to
             // be a <select>; when it is not, this becomes a search field.
             'skills' => Skill::orderBy('title')->get(['id', 'slug', 'title']),
             'hardwareKinds' => Hardware::cases(),

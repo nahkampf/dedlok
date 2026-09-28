@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
  * They are generated for the same reason imprints are: there are hundreds of
  * skills, they live in the database, and a per-skill entry in config/stats.php
  * would be a second place to remember. Adding a skill adds its stat and its
- * check for free, exactly as it adds its book.
+ * check for free, exactly as it adds its imprint.
  *
  * WHAT A CHECK IS NOT: it is not permission. A `check.*` value exists for every
  * skill in the game whether or not the character has ever injected it, and it

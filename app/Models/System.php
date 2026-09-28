@@ -171,7 +171,7 @@ class System extends Model
      * What it runs, as the skill that gates it.
      *
      * A foreign key rather than a word, because the operating system IS a
-     * skill gate: the name, the description and the book all live on that row,
+     * skill gate: the name, the description and the imprint all live on that row,
      * and a varchar here would be a second spelling of it. NULL is the portal
      * — and a world seeded before the skills existed, which is a content gap
      * rather than a secret.

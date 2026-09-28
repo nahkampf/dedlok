@@ -12,7 +12,7 @@ use App\Models\Skill;
  * Since the imprint gate went in, a character_skills row is the only thing
  * that makes a skill trainable, and App\Inventory\SkillInjector is the only
  * thing that creates one. Tests *about* training want that state without
- * buying a book first, so they write the row directly; tests about the gate
+ * buying an imprint first, so they write the row directly; tests about the gate
  * go through the injector, which is what InventoryTest does.
  */
 trait InjectsSkills

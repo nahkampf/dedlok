@@ -14,6 +14,7 @@ use App\Models\Notification;
 use App\Notifications\Category;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\HasRoomForData;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,7 @@ use Tests\TestCase;
  */
 final class OfferBookTest extends TestCase
 {
+    use HasRoomForData;
     use RefreshDatabase;
 
     private Character $seller;
@@ -69,6 +71,8 @@ final class OfferBookTest extends TestCase
 
     public function test_money_and_goods_move_together(): void
     {
+        $this->giveRoomForData($this->buyer);
+
         $row = $this->owned($this->seller);
         $offer = app(OfferBook::class)->list($this->seller, $row, 250);
         $this->assertInstanceOf(MarketOffer::class, $offer);
@@ -91,6 +95,8 @@ final class OfferBookTest extends TestCase
      */
     public function test_a_sale_reaches_the_sellers_inbox(): void
     {
+        $this->giveRoomForData($this->buyer);
+
         $item = Item::factory()->create(['stackable' => true, 'name' => 'Ice Pick']);
 
         $row = InventoryItem::query()->create([
@@ -185,6 +191,8 @@ final class OfferBookTest extends TestCase
     /** Taking the last of a pile takes the listing with it. */
     public function test_buying_the_whole_pile_ends_the_listing(): void
     {
+        $this->giveRoomForData($this->buyer);
+
         $item = Item::factory()->create(['stackable' => true]);
 
         $row = InventoryItem::query()->create([
@@ -201,7 +209,7 @@ final class OfferBookTest extends TestCase
         $this->assertNull(InventoryItem::query()->find($row->id));
         $this->assertSame(0, MarketOffer::query()->count());
         $this->assertSame(4, (int) InventoryItem::query()
-            ->where('character_id', $this->buyer->id)->sole()->quantity);
+            ->where('character_id', $this->buyer->id)->where('item_id', $item->id)->sole()->quantity);
     }
 
     /** Asking for more than is left is refused, never quietly reduced. */
@@ -230,6 +238,8 @@ final class OfferBookTest extends TestCase
     /** Two piles of one stackable thing in one place are one pile, however each arrived. */
     public function test_a_stackable_row_merges_into_what_the_buyer_already_has(): void
     {
+        $this->giveRoomForData($this->buyer);
+
         $item = Item::factory()->create(['stackable' => true]);
 
         $theirs = InventoryItem::query()->create([
@@ -253,7 +263,7 @@ final class OfferBookTest extends TestCase
         $this->assertNull(InventoryItem::query()->find($row->id));
         $this->assertSame(
             1,
-            InventoryItem::query()->where('character_id', $this->buyer->id)->count(),
+            InventoryItem::query()->where('character_id', $this->buyer->id)->where('item_id', $item->id)->count(),
         );
     }
 

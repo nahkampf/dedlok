@@ -288,6 +288,7 @@ return [
             'not_stocked' => 'Nobody is holding that today.',
             'not_enough_left' => 'There are not that many left.',
             'cannot_afford' => 'You cannot afford that.',
+            'no_storage' => 'Your deck has no room for it. Make room in its storage first.',
         ],
 
         /*
@@ -322,6 +323,7 @@ return [
                 'your_own' => 'You are already holding that one.',
                 'not_enough_left' => 'They are not selling that many.',
                 'cannot_afford' => 'You cannot afford that.',
+                'no_storage' => 'Your deck has no room for it. Make room in its storage first.',
             ],
         ],
     ],
@@ -958,6 +960,9 @@ return [
                 'transfer_begins' => 'Downloading extracted data: :qb QB queued, at :bandwidth a turn.',
                 'transfer_continues' => ':remaining QB left to pull.',
                 'transfer_gone' => 'The download finishes, and finds the system already stripped bare.',
+                // Past the core, so saying why gives nothing away. What does
+                // not fit stays on the system; nothing already taken is lost.
+                'no_room' => 'Your deck has no room for the rest. It stays on the system.',
 
                 /*
                 | THE PIECES A SUMMARY IS BUILT FROM. Assembled in the
@@ -1135,6 +1140,7 @@ return [
             'exported' => 'Saved as :file. It is in your data stash, and this machine is no longer scanned.',
             'export_gone' => 'That file is gone. It was spent, or it went stale.',
             'export_incomplete' => 'An incomplete file is not intel. Finish the read first.',
+            'export_no_storage' => 'Your deck has no room for the file. Make room in its storage first.',
 
             /*
             | READING ONE IN, which is the other half and the reason anybody
@@ -1782,6 +1788,7 @@ return [
             'cannot_afford' => 'You have not earned that much from them.',
             'nothing_to_do' => 'There is nothing for them to clean up.',
             'gone' => 'That is not on the shelf.',
+            'no_storage' => 'Your deck has no room for it. Make room in its storage first.',
         ],
         'unwelcome' => 'They will not deal with you.',
         'unwelcome_hint' => 'This desk wants :band standing — :standing — before it opens a file for somebody.',
@@ -1907,6 +1914,7 @@ return [
             'many' => ':count levels queued, on the way to :skill :level.',
         ],
         'plan_stopped' => ':count of :total queued. Stopped at :skill — :reason',
+        'plan_needs_imprint' => ':count of :total queued. :target needs :skill first, and you have not injected :skill — spend its imprint from the stash, then plan again.',
 
         'queued' => ':skill queued for level :level.',
         'dequeued' => ':skill level :level taken out of the queue.',
@@ -2060,6 +2068,7 @@ return [
             'wrong_kind' => 'That will not go on there.',
             'no_room' => 'There is no room left on it.',
             'containers_do_not_nest' => 'That already holds things. It cannot go inside something else.',
+            'no_storage' => 'Your deck has no room for it. Make room in its storage before you take it out.',
         ],
 
         'refused' => [
@@ -2284,6 +2293,8 @@ return [
             // 76px and "Thermal load" overflows it.
             'compute' => 'Compute',
             'memory' => 'Memory',
+            // Everything in the data inventory, against what the deck holds.
+            'storage' => 'Storage',
             'thermal' => 'Thermal',
             'used' => ':used of :total',
             // One sentence per module, in the thermal bar's title: the ticks
@@ -2333,6 +2344,7 @@ return [
                 // Short on purpose: .tag is a fixed-height chip and cannot
                 // wrap, so a long one overflows its callout on a phone.
                 'budget' => 'Enough power',
+                'storage' => 'Room for your data',
             ],
         ],
 
@@ -2679,6 +2691,10 @@ return [
                 'automatic' => 'Not arranged — showing the automatic ring.',
             ],
 
+            'onboard_storage' => [
+                'label' => 'Onboard storage (QB)',
+                'hint' => 'What the deck holds before a storage module. Empty uses the default of :fallback QB.',
+            ],
             'sockets' => [
                 'help' => 'How many of each socket this deck presents. A deck needs somewhere to put a CPU and somewhere to draw power; everything else is optional. Sockets are what a module is fitted into, so the numbers here are the deck.',
                 'none' => 'No sockets. This deck cannot be built yet.',
@@ -2698,18 +2714,18 @@ return [
             'search_hint' => 'Slug or title',
             'all_categories' => 'Every category',
             'without_books' => [
-                'one' => ':count skill has no book.',
-                'many' => ':count skills have no book.',
+                'one' => ':count skill has no imprint.',
+                'many' => ':count skills have no imprint.',
             ],
 
             'fields' => [
                 'modifiers' => 'What knowing it grants',
                 'modifiers_hint' => 'Effects a character gets for having this skill — not the check it feeds, which exists for everybody. Each row applies from the level you give it.',
                 'slug' => 'Slug',
-                'slug_hint' => 'Permanent. Lower case, digits and underscores. The book is named from it.',
+                'slug_hint' => 'Permanent. Lower case, digits and underscores. The imprint is named from it.',
                 'slug_locked' => 'Permanent — saved progress references it.',
                 'title' => 'Title',
-                'title_hint' => 'What a player reads. The book reads from it too.',
+                'title_hint' => 'What a player reads. The imprint reads from it too.',
                 'description' => 'Description',
                 'category' => 'Category',
                 'category_hint' => 'The lane it hangs in on the skill tree. Reuse an existing one to group it.',
@@ -2723,7 +2739,7 @@ return [
                 'attribute_hint' => 'Together these decide skill points per minute. They should differ.',
                 'base_cost' => 'Cost',
                 'base_cost_hint' => 'What the imprint sells for. Kept in step with it on every save.',
-                'on_market' => 'Book listed on the market',
+                'on_market' => 'Imprint listed on the market',
             ],
 
             'sections' => [
@@ -2887,7 +2903,7 @@ return [
                 /*
                 | The optgroups the item list is offered in. Deck hardware
                 | names itself through App\Decks\Hardware::label(); these are
-                | the buckets for everything else, and the books get their own
+                | the buckets for everything else, and the imprints get their own
                 | because there is one per skill.
                 */
                 'groups' => [
@@ -2908,7 +2924,7 @@ return [
         /*
         | What a delete would destroy, counted at the moment it is asked. Every
         | one of these is a cascade the schema performs on its own, except a
-        | skill's book, which the controller deletes first because the foreign
+        | skill's imprint, which the controller deletes first because the foreign
         | key restricts rather than cascades.
         */
         'impact' => [
@@ -2931,7 +2947,7 @@ return [
             'dependents' => ['one' => ':count skill that requires it', 'many' => ':count skills that require it'],
             'own_prerequisites' => ['one' => ':count requirement of its own', 'many' => ':count requirements of its own'],
             'books' => ['one' => 'its imprint', 'many' => 'its imprint'],
-            'book_copies' => ['one' => ':count copy of the book players hold', 'many' => ':count copies of the book players hold'],
+            'book_copies' => ['one' => ':count copy of the imprint players hold', 'many' => ':count copies of the imprint players hold'],
             'archetype_loadouts' => [
                 'one' => ':count archetype stops handing it to new characters',
                 'many' => ':count archetypes stop handing it to new characters',
@@ -2947,9 +2963,9 @@ return [
             'slug_immutable' => 'A slug is permanent and cannot be changed.',
             'name_required' => 'Give it a name. Only an imprint may go without one.',
             'container_stacks' => 'A container cannot stack: two of them would merge into one row and the contents of the second would be lost. Untick stackable.',
-            'book_needs_skill' => 'A book that teaches nothing is not a book. Choose the skill it injects.',
+            'book_needs_skill' => 'An imprint that teaches nothing is not an imprint. Choose the skill it injects.',
             'skill_without_book' => 'Only an injecting item may name a skill.',
-            'skill_has_a_book' => 'That skill already has a book. There is exactly one per skill.',
+            'skill_has_a_book' => 'That skill already has an imprint. There is exactly one per skill.',
             'capacity_needs_kind' => 'A container has to say what it holds.',
             'kind_needs_capacity' => 'This holds nothing, so it cannot name a kind. Give it a capacity first.',
             'deck_stacks' => 'A cyberdeck cannot stack: two of them would merge into one row, and only one of them could carry what is fitted in it. Untick stackable.',

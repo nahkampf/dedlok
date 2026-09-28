@@ -11,6 +11,7 @@ use App\Models\Item;
 use App\Models\MarketOffer;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\HasRoomForData;
 use Tests\TestCase;
 
 /**
@@ -22,6 +23,7 @@ use Tests\TestCase;
  */
 final class OfferScreenTest extends TestCase
 {
+    use HasRoomForData;
     use RefreshDatabase;
 
     private Character $seller;
@@ -181,9 +183,13 @@ final class OfferScreenTest extends TestCase
 
     private function aRunner(int $creds): Character
     {
-        return Character::factory()->create(array_merge(
+        $runner = Character::factory()->create(array_merge(
             array_fill_keys(Character::ATTRIBUTES, 10),
             ['archetype' => 3, 'creds' => $creds],
         ));
+
+        $this->giveRoomForData($runner);
+
+        return $runner;
     }
 }

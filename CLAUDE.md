@@ -207,10 +207,10 @@ rather than a broken one. `App\Support\Image` resolves, `<x-entity-image>` rende
   archetype cards), and looking at a picture must not also pick the thing.
 - **A kind may be a path; items are one subdirectory per TYPE** — `items/cpu/`,
   `items/icebreaker/`, `items/imprint/`, `items/physical/`. `Item::imageType()` names
-  it, `Item::imageTypes()` is the list composed from `Hardware`, `ProgramKind`, the book
+  it, `Item::imageTypes()` is the list composed from `Hardware`, `ProgramKind`, the imprint
   and the two inventories, so a new kind brings its folder with it.
-- **An imprint calls itself data and files itself as a book** — one book per skill, one
-  picture for all of them.
+- **An imprint calls itself data and files itself under `imprint/`** — one imprint per
+  skill, one picture for all of them.
 - **Only the default walks back up the path.** An item's own picture is looked for in its
   type's folder and nowhere else.
 - **A missing full version means no modal**, which is why `card()` and `full()` are
@@ -427,12 +427,12 @@ registration and password-reset request.
   are the two inventories; `Character::inventoryIn()` filters through the item.
 - **A `character_skills` row means the skill has been injected**, and
   `App\Inventory\SkillInjector` is the only thing that creates one — consuming one copy of
-  the book and writing the row at 0 points, level 0, in one transaction.
+  the imprint and writing the row at 0 points, level 0, in one transaction.
 - **`TrainingDeposit` does not create that row** — it refuses and logs. Owning and
-  spending the book is a hard gate.
+  spending the imprint is a hard gate.
 - **Level 0 is a real state** (injected, untrained), so the gate is
   `Character::hasInjected()`, never a level check.
-- **Injecting a skill already known is refused**, and the player keeps the book.
+- **Injecting a skill already known is refused**, and the player keeps the imprint.
 - **Items can hold items.** `capacity > 0` plus an `accepts` kind is a container — the
   memory shard is a `physical` object that `accepts` `data`. `container` says what kind of
   thing an item is; `inventory_items.parent_id` says where a row sits.
@@ -471,8 +471,9 @@ registration and password-reset request.
   choosing the module and not the place. It distinguishes "no socket takes it" from "every
   socket that takes it is full". **There is no skill check** — when one exists, that
   method is where it goes.
-- `size` is enforced only as contents against a container's capacity. `weight` is stored
-  and unenforced; neither inventory has an overall capacity.
+- `size` is enforced against a container's capacity, and for DATA against the equipped
+  deck's storage (see *Programs*). `weight` is stored and unenforced; the physical
+  inventory has no overall capacity.
 
 ### Skills, and the training queue
 
@@ -480,7 +481,7 @@ registration and password-reset request.
 `SkillTree`, `SkillTreeNode`, `<x-skill-node>`) is gone. The route is behind `auth`, so
 `RequireCharacter` guarantees a character.
 
-**HOW A PLAYER FINDS OUT A SKILL EXISTS IS THE MARKET.** One book per skill, so the shelf
+**HOW A PLAYER FINDS OUT A SKILL EXISTS IS THE MARKET.** One imprint per skill, so the shelf
 IS the list — and deliberately not the whole list: **a skill off the market is content
 found rather than bought**, and `Imprint` keeps `on_market` in step with the skill on
 every save. The skill EDITOR is the only place all of them are visible.
@@ -505,7 +506,7 @@ every save. The skill EDITOR is the only place all of them are visible.
   front of its first level and nothing interleaves. That is what makes the plan a flat
   list rather than a schedule.
 - **Stopping part-way is the ORDINARY outcome, and it is a status rather than an error.**
-  Nine entries into a queue that holds five, or a route through a book that was never
+  Nine entries into a queue that holds five, or a route through an imprint that was never
   spent: the loop stops at the first `QueueRefusal`, keeps what landed, and names both the
   skill it stopped at and why. A plan is never refused as a whole.
 - **The plan picker offers only INJECTED skills**, like every other list on this screen —
@@ -534,7 +535,7 @@ side; this is where the stock comes from.
 - **An item is stocked only with `on_market` AND `seed_quantity > 0`.** The default shelf
   size is 0, so nothing reaches the market by being forgotten. `Item::restockable()`.
 - **`on_market` is the SEEDER's question and will not be the player's.** Player listings
-  will be a table of offers, not this flag. **A listable book is an UN-INJECTED one, and
+  will be a table of offers, not this flag. **A listable imprint is an UN-INJECTED one, and
   that needs no rule** — `SkillInjector` consumes the copy it spends.
 - **`market_stock` is one row per item; a missing row is a shelf of zero**, not an error.
   `Item::stockOnHand()` treats absent and empty alike.
@@ -737,7 +738,18 @@ what a bare `items` row cannot.
 - **One icebreaker at a time**, whichever ones — `ProcessRefusal::OneIcebreaker`.
   `icebreaker_damage` sums every running program, so two cheap ones would out-cut a dear
   one and *twenty turns is never enough* would stop being true.
-- **Storage is stored and not enforced** — `DeckRequirement` has no storage case.
+- **Storage IS enforced, on the equipped deck.** `App\Decks\Storage` is the one measure:
+  every loose data row counts (programs at `storage_size`, a file at its own QB, anything
+  else at `items.size`, idle, running or listed alike), a row inside a shard does not.
+  Capacity is the resolved `deck_storage`, which starts from the deck's own
+  `items.onboard_storage` (8 QB on an Explorer, 64 on the top three) — NULL falls back to
+  `decks.onboard_storage` (16), and only a deck may carry one. No deck holds nothing. **Every door that adds data asks `fits()`** —
+  market, player market, loyalty store, scan export, taking out of a shard, extraction —
+  and refuses with its own `NoStorage`; the archetype loadout does not. Extraction leaves
+  what does not fit ON THE SYSTEM, and files are all-or-nothing because the pull was
+  priced on their total. **Nothing is ever deleted for being over**: a smaller deck may
+  be equipped, and `DeckRequirement::Storage` then keeps it from jacking in or starting
+  programs until the player makes room.
 - Screens: topbar count + modal, deck screen's Running and Storage tabs (storage split
   into two grids), `inventory.run` in both directions.
 
@@ -1682,7 +1694,7 @@ to `HardwareEditor`.
 are the explanation. Five rules have **no** schema counterpart, because SQL cannot express
 them against one row:
 
-- **One book per skill** (`items.use_skill_id` unique), or `Imprint::forSkill()` is
+- **One imprint per skill** (`items.use_skill_id` unique), or `Imprint::forSkill()` is
   ambiguous.
 - **A container cannot stack**, nor a cyberdeck — `stack_key` would merge two stackable
   containers and lose the second one's contents.
@@ -1694,7 +1706,7 @@ them against one row:
 editor can ask what *would* happen (`->with($id, $requires)->cycleThrough($id)`).
 `skills:validate` uses the same class.
 
-**`App\Inventory\Imprint` is the one derivation.** Creating a skill creates its book.
+**`App\Inventory\Imprint` is the one derivation.** Creating a skill creates its imprint.
 `ItemSeeder` calls the same class. What follows the skill afterwards is narrow: **`base_cost`
 and `on_market` stay in step on every save; `tier`, `rarity` and `seed_quantity` are derived
 from rank once, at creation.**
@@ -1705,8 +1717,8 @@ copies, shelf stock, purchase history, container contents, character progress, q
 training, requirements naming it — and the dialog spends that count before offering the
 button. It is a description, never a guard. To retire content, set `on_market = false`.
 
-**A skill's book must be deleted first.** `items.use_skill_id` is `restrictOnDelete`; the
-controller drops the book in the same transaction. Everything else cascades.
+**A skill's imprint must be deleted first.** `items.use_skill_id` is `restrictOnDelete`; the
+controller drops the imprint in the same transaction. Everything else cascades.
 
 ## Events
 

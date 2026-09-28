@@ -93,7 +93,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/inject', [InventoryController::class, 'inject'])
         ->name('inventory.inject');
 
-    // Taking one. The same shape as injecting a book — one copy spent, one
+    // Taking one. The same shape as injecting an imprint — one copy spent, one
     // consequence — except that the consequence is in your blood for a while
     // and the books remember it afterwards.
     Route::post('/inventory/{entry}/take', [InventoryController::class, 'take'])

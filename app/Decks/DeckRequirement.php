@@ -9,7 +9,7 @@ use App\Support\Text;
 /**
  * What a deck needs before it will run at all.
  *
- * Five things, and each one is a case here plus an arm in the match below —
+ * Six things, and each one is a case here plus an arm in the match below —
  * so a sixth is two lines and a string, not a condition threaded through a
  * screen. The rule lives with the requirement rather than in whatever happens
  * to be rendering it.
@@ -46,6 +46,12 @@ enum DeckRequirement: string
     /** And enough of it. */
     case Budget = 'budget';
 
+    /**
+     * Room for what the character carries. Only the equipped deck holds
+     * anything, so only it can fail this — see Storage.
+     */
+    case Storage = 'storage';
+
     public function metBy(DeckTotals $totals): bool
     {
         return match ($this) {
@@ -56,6 +62,7 @@ enum DeckRequirement: string
             self::Link => $totals->countOf(Hardware::Nic) > 0,
             self::Power => $totals->countOf(Hardware::Psu) > 0,
             self::Budget => ! $totals->isOver(),
+            self::Storage => ! $totals->isOverfull(),
         };
     }
 

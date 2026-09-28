@@ -17,7 +17,7 @@ use Illuminate\Queue\SerializesModels;
  * character gaining access to something hangs here rather than off the first
  * deposit.
  *
- * `book` is the copy that was spent, and it is null when there was none: an
+ * `imprint` is the copy that was spent, and it is null when there was none: an
  * archetype's starting skills are granted at creation rather than bought, and
  * a listener that cares which it was can ask. `points` is where the skill
  * starts — 0 for an injection, and whatever the granted level costs for a

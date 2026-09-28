@@ -34,8 +34,8 @@ use Illuminate\Validation\Validator;
  * Some rules here have NO counterpart in the schema, because they are cases
  * SQL cannot express against a single row:
  *
- * - One book per skill. `use_skill_id` is unique across items, because a
- *   second book teaching the same skill would make Imprint::forSkill()
+ * - One imprint per skill. `use_skill_id` is unique across items, because a
+ *   second imprint teaching the same skill would make Imprint::forSkill()
  *   ambiguous and give the skill two names.
  * - A container cannot stack, and neither does a cyberdeck. InventoryItem
  *   derives `stack_key` from (character, item, parent), so two stackable
@@ -139,6 +139,8 @@ class ItemRequest extends FormRequest
             // can read its shape; a string that is not an object stays a
             // string and fails `array`, which is the message we want.
             'board_layout' => $this->boardLayout(),
+            // Empty is "use the fallback", not zero.
+            'onboard_storage' => $this->numberOrNull('onboard_storage'),
             // Software. Empty is no value, the same as every measure above.
             'program_kind' => $this->filled('program_kind') ? $this->input('program_kind') : null,
             // Drugs, the same way: empty is no value.
@@ -270,6 +272,9 @@ class ItemRequest extends FormRequest
             'board_layout' => $hardware?->isDeck()
                 ? ['nullable', 'array']
                 : ['prohibited'],
+            'onboard_storage' => $hardware?->isDeck()
+                ? ['nullable', 'integer', 'min:0', 'max:65535']
+                : ['prohibited'],
             'board_layout.*' => ['array', 'size:2'],
             'board_layout.*.0' => ['numeric', 'between:'.BoardLayout::MIN.','.BoardLayout::MAX],
             'board_layout.*.1' => ['numeric', 'between:'.BoardLayout::MIN.','.BoardLayout::MAX],
@@ -282,7 +287,7 @@ class ItemRequest extends FormRequest
              *
              * An imprint is not a program either. Both are data with a job,
              * and `use_op` already says which job; a row claiming both would
-             * be a book that runs and a program that teaches.
+             * be an imprint that runs and a program that teaches.
              */
             'program_kind' => $hardware !== null || $isImprint
                 ? ['prohibited']
@@ -661,6 +666,12 @@ class ItemRequest extends FormRequest
         // from being stored as the truth.
         $data['board_layout'] = ($this->hardware()?->isDeck() ?? false)
             ? (BoardLayout::clean((array) ($data['board_layout'] ?? [])) ?: null)
+            : null;
+
+        // Always written, for the board's reason: an item that stops being a
+        // deck stops holding anything.
+        $data['onboard_storage'] = ($this->hardware()?->isDeck() ?? false)
+            ? (isset($data['onboard_storage']) ? (int) $data['onboard_storage'] : null)
             : null;
 
         foreach (self::MEASURES as $column) {

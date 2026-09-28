@@ -28,7 +28,7 @@ use Illuminate\View\View;
  * catalogue with the stock counts laid over the top, because an item nobody
  * can buy today is not something a shop is holding.
  *
- * THIS IS ALSO HOW A PLAYER FINDS OUT A SKILL EXISTS. One book per skill and a
+ * THIS IS ALSO HOW A PLAYER FINDS OUT A SKILL EXISTS. One imprint per skill and a
  * skill off the market is content found rather than bought, so the shelf is
  * deliberately not the whole list — see CLAUDE.md on skills.
  */
@@ -40,7 +40,7 @@ class MarketController extends Controller
 
         $shelves = MarketStock::query()
             ->available()
-            // A book's hover card lists what the skill requires, and every card
+            // An imprint's hover card lists what the skill requires, and every card
             // asks its program what kind of thing it is and where its picture
             // lives (kindName(), imageType()) — so both come along, one query
             // for the shelf rather than one per card.
@@ -68,7 +68,7 @@ class MarketController extends Controller
             // `scopeLoose()` is the stash's question rather than this one.
             // Keyed for isset() so a shelf of forty is forty lookups.
             'owned' => $character->inventory()->distinct()->pluck('item_id')->flip()->all(),
-            // skill id => level and points, for the tick and for a book's
+            // skill id => level and points, for the tick and for an imprint's
             // <x-skill-detail>: the same map the skills screen reads, so a
             // skill is described identically wherever it is inspected.
             'injected' => $this->injected($character),
@@ -131,7 +131,7 @@ class MarketController extends Controller
 
     /**
      * skill id => level and points, for what the character knows: the owned
-     * tick's cyan and a book's <x-skill-detail>.
+     * tick's cyan and an imprint's <x-skill-detail>.
      *
      * @return array<int, array{level: int, points: int}>
      */

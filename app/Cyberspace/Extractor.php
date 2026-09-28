@@ -6,6 +6,7 @@ namespace App\Cyberspace;
 
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
+use App\Decks\Storage;
 use App\Inventory\ItemGranter;
 use App\Models\Character;
 use App\Models\Item;
@@ -63,7 +64,12 @@ final readonly class Extractor
             $instant = $this->takeCredsAndItems($character, $address);
             $files = $this->takeFiles($character, $address);
 
-            return new ExtractionResult(creds: $instant->creds, items: $instant->items, files: $files->files);
+            return new ExtractionResult(
+                creds: $instant->creds,
+                items: $instant->items,
+                files: $files->files,
+                leftBehind: $instant->leftBehind || $files->leftBehind,
+            );
         });
     }
 
@@ -76,6 +82,11 @@ final readonly class Extractor
      * finished taking first sees that honestly rather than trusting a number
      * from turns ago.
      */
+    public function filesFit(Character $character, string $address): bool
+    {
+        return Storage::fits($character, $this->totalFileQb($address));
+    }
+
     public function totalFileQb(string $address): int
     {
         return (int) SystemContent::query()
@@ -107,8 +118,24 @@ final readonly class Extractor
 
             $creds = 0;
             $items = 0;
+            $room = Storage::free($character);
+            $left = [];
 
             foreach ($contents as $content) {
+                // What the deck cannot hold stays on the system, still there
+                // for the next run — never taken and lost.
+                if ($content->kind === ContentKind::Item) {
+                    $size = $content->item === null ? 0 : Storage::sizeOf($content->item) * (int) $content->quantity;
+
+                    if ($size > $room) {
+                        $left[] = $content->id;
+
+                        continue;
+                    }
+
+                    $room -= $size;
+                }
+
                 match ($content->kind) {
                     ContentKind::Creds => $creds += $this->takeCreds($character, $content),
                     ContentKind::Item => $items += $this->takeItem($character, $content),
@@ -116,9 +143,9 @@ final readonly class Extractor
                 };
             }
 
-            SystemContent::query()->whereIn('id', $contents->pluck('id'))->delete();
+            SystemContent::query()->whereIn('id', $contents->pluck('id')->diff($left))->delete();
 
-            return new ExtractionResult(creds: $creds, items: $items);
+            return new ExtractionResult(creds: $creds, items: $items, leftBehind: $left !== []);
         });
     }
 
@@ -140,6 +167,11 @@ final readonly class Extractor
 
             if ($contents->isEmpty()) {
                 return ExtractionResult::empty();
+            }
+
+            // All or nothing, because the pull was priced on the total.
+            if (! Storage::fits($character, (int) $contents->sum('size_qb'))) {
+                return new ExtractionResult(leftBehind: true);
             }
 
             $files = 0;

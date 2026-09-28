@@ -240,7 +240,7 @@ final class OperatingSystemTest extends TestCase
         $this->character->characterSkills()->where('skill_id', $this->os->id)->delete();
 
         // Level 0 is a real state — injected, untrained — and it reads as
-        // zero here exactly as never having owned the book does.
+        // zero here exactly as never having owned the imprint does.
         $this->inject($this->character, $this->os, $this->os->pointsForLevel(max($level, 1)), $level);
     }
 

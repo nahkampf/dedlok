@@ -45,13 +45,13 @@
             <p style="margin:0">{{ $skill->description }}</p>
         @endif
 
-        {{-- Where they stand with it: owning the book, having spent it, and
+        {{-- Where they stand with it: owning the imprint, having spent it, and
              how far it has been trained since. --}}
         <span class="row row--wrap" style="--gap:var(--s-2)">
             <span class="tag {{ $level === null ? '' : 'tag--ok' }}">
                 {{ Text::get($level === null ? 'training.card.not_injected' : 'training.card.injected') }}
             </span>
-            {{-- Not owning the book says nothing once it has been spent. --}}
+            {{-- Not owning the imprint says nothing once it has been spent. --}}
             @if ($ownsBook || $level === null)
                 <span class="tag {{ $ownsBook ? 'tag--ok' : '' }}">
                     {{ Text::get('training.card.book') }} · {{ Text::get($ownsBook ? 'training.card.book_owned' : 'training.card.book_not_owned') }}

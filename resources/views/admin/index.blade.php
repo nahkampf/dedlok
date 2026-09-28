@@ -6,7 +6,7 @@
     <h1>{{ Text::get('admin.title') }}</h1>
     <p class="muted" style="margin-top:var(--s-2);max-width:60ch">{{ Text::get('admin.lede') }}</p>
 
-    {{-- A skill with no book cannot be learned by anyone who does not already
+    {{-- A skill with no imprint cannot be learned by anyone who does not already
          know it, so it is a content bug rather than a preference. Warn, not
          crit: the game still runs. --}}
     @if ($skillsWithoutBooks > 0)

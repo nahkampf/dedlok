@@ -926,7 +926,7 @@ return [
         | The skill a scan is read with, by slug.
         |
         | Here rather than in the Probe because it names a ROW: System Profiling
-        | is content, it has a book and a tree position, and a game that decided
+        | is content, it has an imprint and a tree position, and a game that decided
         | to read machines with something else should not need a deploy.
         */
         'skill' => 'systemprofiling',

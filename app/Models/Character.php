@@ -115,12 +115,14 @@ class Character extends Model
     /**
      * Floor for a single attribute AT CHARACTER CREATION.
      *
-     * A character may never be created with 0 in anything: a skill governed by
-     * a zeroed attribute would train at a rate of 0 SP/minute and could never
-     * complete. Play may still reduce an attribute to 0 later; starting there
-     * is what is forbidden.
+     * Ten, so nothing can be dumped. A zero would make a skill governed by it
+     * untrainable, but the floor is set higher than that for a second reason:
+     * attributes with no mechanic yet (the physical half, mostly) will matter
+     * later, and a character built by starving them must not exist when they
+     * do. Play may still reduce an attribute below this; starting there is
+     * what is forbidden.
      */
-    public const CREATION_ATTRIBUTE_MIN = 1;
+    public const CREATION_ATTRIBUTE_MIN = 10;
 
     /**
      * Lifetime ceiling for a single attribute.
@@ -182,13 +184,12 @@ class Character extends Model
         return array_fill_keys(self::ATTRIBUTES, $base);
     }
 
-    /** Can the pool be spent at all without breaching the per-attribute cap? */
     /**
      * Can the pool be spent with every attribute inside its creation bounds?
      *
-     * The floor matters as much as the ceiling now: with a minimum of 1 per
-     * attribute, a pool below ten cannot be spent at all, and the starting
-     * spread would open already over budget.
+     * The floor matters as much as the ceiling: with a minimum of 10 per
+     * attribute, a pool below a hundred cannot be spent at all, and the
+     * starting spread would open already over budget.
      */
     public static function poolIsSatisfiable(int $pool): bool
     {

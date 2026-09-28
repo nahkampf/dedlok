@@ -68,7 +68,7 @@ class TrainingGateTest extends TestCase
         (new SkillInjector)->inject($this->character, $entry);
     }
 
-    // ---- before the book is spent -----------------------------------------
+    // ---- before the imprint is spent -----------------------------------------
 
     public function test_owning_the_book_is_not_knowing_the_skill(): void
     {
@@ -89,7 +89,7 @@ class TrainingGateTest extends TestCase
     }
 
     /**
-     * The path around the UI: a queue row written directly, with no book ever
+     * The path around the UI: a queue row written directly, with no imprint ever
      * bought. The deposit must refuse rather than create the progress row,
      * which would hand over the skill for free.
      */
@@ -107,7 +107,7 @@ class TrainingGateTest extends TestCase
         $this->assertSame(0, CharacterSkill::count(), 'training must not be a way to learn a skill');
     }
 
-    // ---- after the book is spent ------------------------------------------
+    // ---- after the imprint is spent ------------------------------------------
 
     public function test_injecting_opens_the_gate(): void
     {
@@ -136,7 +136,7 @@ class TrainingGateTest extends TestCase
 
     public function test_the_whole_path_end_to_end(): void
     {
-        // Buy the book.
+        // Buy the imprint.
         $entry = InventoryItem::factory()->ownedBy($this->character)->of($this->book)->create();
 
         // Spend it through the screen.
@@ -144,7 +144,7 @@ class TrainingGateTest extends TestCase
             ->post(route('inventory.inject', $entry))
             ->assertSessionHas('status');
 
-        $this->assertNull($entry->fresh(), 'the book is gone');
+        $this->assertNull($entry->fresh(), 'the imprint is gone');
 
         // Queue it and let an hour of the scheduler happen.
         $this->queue();

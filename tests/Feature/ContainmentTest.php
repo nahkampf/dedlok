@@ -12,6 +12,7 @@ use App\Models\Skill;
 use App\Support\Text;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\HasRoomForData;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,7 @@ use Tests\TestCase;
  */
 class ContainmentTest extends TestCase
 {
+    use HasRoomForData;
     use RefreshDatabase;
 
     private Character $character;
@@ -86,7 +88,7 @@ class ContainmentTest extends TestCase
         $card = $this->give($this->card);
         $this->give($this->book, inside: $card);
 
-        // The card is carried; the book is on the card and nowhere else.
+        // The card is carried; the imprint is on the card and nowhere else.
         $this->assertCount(1, $this->character->inventoryIn(Item::CONTAINER_PHYSICAL));
         $this->assertCount(0, $this->character->inventoryIn(Item::CONTAINER_DATA));
         $this->assertCount(1, $card->fresh()->children);
@@ -106,6 +108,8 @@ class ContainmentTest extends TestCase
 
     public function test_ejecting_puts_it_back_in_the_loose_pile(): void
     {
+        $this->giveRoomForData($this->character);
+
         $card = $this->give($this->card);
         $stored = $this->give($this->book, inside: $card);
 
@@ -130,7 +134,7 @@ class ContainmentTest extends TestCase
 
     public function test_capacity_is_enforced(): void
     {
-        // 16 units of card, 8 per book: the third will not go on.
+        // 16 units of card, 8 per imprint: the third will not go on.
         $card = $this->give($this->card);
         $this->give($this->book, 2, inside: $card);
 
@@ -144,7 +148,7 @@ class ContainmentTest extends TestCase
     {
         $card = $this->give($this->card);
 
-        // Three books at 8 units each is 24 against a capacity of 16.
+        // Three imprints at 8 units each is 24 against a capacity of 16.
         $result = $this->placer->place($this->character, $this->give($this->book, 3), $card);
 
         $this->assertFalse($result->succeeded());
@@ -273,7 +277,7 @@ class ContainmentTest extends TestCase
             ->get(route('inventory.index'))
             ->assertOk()
             ->assertSee(Text::get('inventory.contents'))
-            // 16 units of capacity, one 8-unit book on it.
+            // 16 units of capacity, one 8-unit imprint on it.
             ->assertSee(Text::get('inventory.contents_free', ['free' => 8, 'capacity' => 16]));
     }
 
@@ -284,7 +288,7 @@ class ContainmentTest extends TestCase
 
         $response = $this->actingAs($this->character->user)->get(route('inventory.index'));
 
-        // The grid shows loose rows only, so a book on a card is reachable
+        // The grid shows loose rows only, so an imprint on a card is reachable
         // only through the card's detail — which is therefore where its two
         // actions have to be, or ejecting it becomes impossible from the UI.
         $response->assertSee('data-inspect="#detail-'.$card->id.'"', false);
@@ -295,6 +299,8 @@ class ContainmentTest extends TestCase
 
     public function test_storing_and_ejecting_over_http(): void
     {
+        $this->giveRoomForData($this->character);
+
         $card = $this->give($this->card);
         $loose = $this->give($this->book);
 

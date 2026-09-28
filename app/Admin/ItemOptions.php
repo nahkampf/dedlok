@@ -48,7 +48,7 @@ final class ItemOptions
 
         // Ordered here rather than by however the rows arrived: the generic
         // buckets first because most items are in them, hardware next, and the
-        // books at the bottom. Empty groups never reach the markup.
+        // imprints at the bottom. Empty groups never reach the markup.
         return array_filter(array_merge(array_fill_keys(self::order(), []), $groups));
     }
 

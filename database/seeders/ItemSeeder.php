@@ -21,7 +21,7 @@ class ItemSeeder extends Seeder
      * has to stay deleted.
      *
      * Imprints are the exception because they are DERIVED, not authored:
-     * there is exactly one book per skill by definition, so listing them would
+     * there is exactly one imprint per skill by definition, so listing them would
      * be a second place to forget when a skill is added. They carry no name of
      * their own — it composes from the skill they teach.
      */
@@ -29,7 +29,7 @@ class ItemSeeder extends Seeder
     {
         Skill::query()->each(function (Skill $skill): void {
             // The derivation lives in App\Inventory\Imprint, because the
-            // admin skill editor creates books too and two copies of these
+            // admin skill editor creates imprints too and two copies of these
             // rules would be two copies to keep in step.
             $this->fillInMarketValues(
                 Imprint::ensureFor($skill),
@@ -39,12 +39,12 @@ class ItemSeeder extends Seeder
     }
 
     /**
-     * Give a book that predates the market its rarity and shelf size.
+     * Give an imprint that predates the market its rarity and shelf size.
      *
-     * Creating a book never touches an existing row, so a shelf size tuned in
+     * Creating an imprint never touches an existing row, so a shelf size tuned in
      * place survives a re-run. These two are the exception while they are
      * still absent: a seed quantity of 0 is not a tuned value, it is a column
-     * that did not exist when the row was written, and leaving it means a book
+     * that did not exist when the row was written, and leaving it means an imprint
      * nobody can ever buy.
      *
      * Once it is non-zero this stops touching it, so a tuned value is as safe

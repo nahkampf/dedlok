@@ -38,7 +38,11 @@ class ItemFactory extends Factory
             'use_op' => null,
             'use_skill_id' => null,
             'weight' => fake()->randomFloat(2, 0, 20),
-            'size' => fake()->numberBetween(0, 512),
+            // Not randomised either, for rarity's reason: a data item's size
+            // is what the deck's storage is asked about, so a random one
+            // would make any test that grants a data item roll whether it
+            // fits. A test about size says `->size()`.
+            'size' => 0,
             'capacity' => 0,
             'accepts' => null,
             'hardware' => null,
@@ -173,7 +177,7 @@ class ItemFactory extends Factory
         return $this->state(['stackable' => false]);
     }
 
-    /** A book that teaches one skill. Always data: it is injected, not carried. */
+    /** An imprint that teaches one skill. Always data: it is injected, not carried. */
     public function imprintFor(Skill $skill): static
     {
         return $this->state([
