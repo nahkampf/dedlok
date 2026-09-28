@@ -291,7 +291,7 @@ final readonly class Simulator
             return [];
         }
 
-        return $this->traceLands($character, $run);
+        return $this->traceLands($run);
     }
 
     /**
@@ -394,10 +394,10 @@ final readonly class Simulator
     /**
      * It reached you.
      *
-     * The order the design fixes: heat on the character, then the chain burns.
-     * **What heat DOES is not designed** — see TODO.md — so what is built is
-     * that a completed trace costs something and that the something
-     * accumulates. One point, and the number is in config to be moved.
+     * The chain burns now. The HEAT does not land here: it is charged as the
+     * run ends, by `RunStarter::chargeTheTrace()`, because a burn that lands
+     * later in the same run replaces it rather than adding to it — and that is
+     * not known until the run is over.
      *
      * Burning the chain is a no-op with nothing in it: a completed trace takes
      * every backdoor on the route, and there are no backdoors. It is called
@@ -406,12 +406,8 @@ final readonly class Simulator
      *
      * @return list<array{text: string, tone: string}>
      */
-    private function traceLands(Character $character, Run $run): array
+    private function traceLands(Run $run): array
     {
-        $heat = (int) Config::get('cyberspace.trace.heat', 1);
-
-        $character->forceFill(['heat' => (float) $character->heat + $heat])->save();
-
         $this->burnTheChain($run);
 
         return [$this->line('cyberspace.run.log.traced', tone: 'crit')];
@@ -1114,7 +1110,8 @@ final readonly class Simulator
         }
 
         $character->forceFill([
-            'heat' => (float) $character->heat + (float) Config::get('cyberspace.burn.heat', 2),
+            // The GRADE of what burned, and more per grade than a trace.
+            'heat' => (float) $character->heat + $system->grade * (float) Config::get('cyberspace.burn.heat_per_grade', 2.5),
         ])->save();
 
         $log[] = $this->line('cyberspace.run.log.burn', ['name' => $system->displayName()], 'crit');

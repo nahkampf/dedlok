@@ -179,17 +179,49 @@ final class BurnTest extends TestCase
 
     // ---- what it costs -----------------------------------------------------
 
+    /** Grade × 2.5, and always more than a trace off the same system would cost. */
     public function test_burning_puts_heat_on_the_character(): void
     {
-        Config::set('cyberspace.burn.heat', 3);
-
-        $this->machine();
-        $heat = (int) $this->character->heat;
+        $this->machine()->forceFill(['grade' => 3])->save();
+        $heat = (float) $this->character->heat;
         $run = $this->begin(RunPurpose::Burn);
 
         $this->simulator()->take($this->character, $run, RunAction::Burn);
 
-        $this->assertSame($heat + 3, (int) $this->character->fresh()->heat);
+        $this->assertSame($heat + 7.5, (float) $this->character->fresh()->heat);
+        $this->assertGreaterThan(
+            (float) Config::get('cyberspace.trace.heat_per_grade'),
+            (float) Config::get('cyberspace.burn.heat_per_grade'),
+            'burning is worse than being traced',
+        );
+    }
+
+    /**
+     * THE TWO HEATS NEVER COMPOUND. Traced and then burned is the burn's heat
+     * alone: grade × 2.5, not that plus the trace's grade × 2.
+     */
+    public function test_a_traced_burn_pays_the_burn_heat_only(): void
+    {
+        $this->machine()->forceFill(['grade' => 3])->save();
+        $run = $this->begin(RunPurpose::Burn);
+        $run->forceFill(['detected' => true, 'trace' => 100])->save();
+
+        $result = $this->simulator()->take($this->character, $run->fresh(), RunAction::Burn);
+
+        $this->assertSame(RunEnding::Completed, $result->ending);
+        $this->assertSame(7.5, (float) $this->character->fresh()->heat);
+    }
+
+    /** Traced on a burn run that never burned: the trace's heat, as it ends. */
+    public function test_a_traced_burn_run_that_leaves_pays_the_trace_heat(): void
+    {
+        $this->machine()->forceFill(['grade' => 3])->save();
+        $run = $this->begin(RunPurpose::Burn);
+        $run->forceFill(['detected' => true, 'trace' => 100])->save();
+
+        app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Egress);
+
+        $this->assertSame(6.0, (float) $this->character->fresh()->heat);
     }
 
     // ---- and who else was in there -----------------------------------------
