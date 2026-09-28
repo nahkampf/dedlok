@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.23.1] — 2026-09-28
+
+The shop sells without reloading the page, and flash messages leave by themselves.
+
+### Added
+
+- **Buying from the market shelf no longer reloads the page.** The money in the top
+  bar and on the market, the shelf's count, the owned tick and the quantity cap all
+  update in place. Every other card on the screen is re-checked against what is left,
+  and one you can no longer afford switches to "Not enough". A sold-out card is
+  removed, and a refusal shows as a red flash. If the server answers anything
+  unexpected, such as an expired session, the form falls back to an ordinary submit,
+  so a purchase is never lost. Taking a player's offer still reloads.
+
+### Changed
+
+- **Flash messages glitch in, hold for five seconds, then glitch out and go.** Only
+  the messages that follow an action do this. A standing warning (form errors, a deck
+  that will not run, stalled training) stays until what it describes changes.
+
 ## [0.23.0] — 2026-09-28
 
 The night's siphons send a report, and the training queue says what each entry costs.
@@ -1699,7 +1719,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.23.1...HEAD
+[0.23.1]: https://github.com/nahkampf/dedlok/compare/v0.23.0...v0.23.1
 [0.23.0]: https://github.com/nahkampf/dedlok/compare/v0.22.1...v0.23.0
 [0.22.1]: https://github.com/nahkampf/dedlok/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/nahkampf/dedlok/compare/v0.21.2...v0.22.0
