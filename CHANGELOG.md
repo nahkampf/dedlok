@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-09-28
+
+The night's siphons send a report, and the training queue says what each entry costs.
+
+### Added
+
+- **One siphon report per character, every night.** The siphon job used to pay
+  silently. Now each character holding a siphon gets one message: "Siphons ran:
+  N ¤", with a line per system drained giving its name, address, grade and creds.
+  Each address is a copy button. The lines are a snapshot of that night, so a
+  system that moves or burns by morning still reads as what it paid.
+- **Each queued training entry shows how long it takes**, beside its target level,
+  at the rate the skill earns now. An entry counts from what is already banked or
+  reached by the entries above it, so the rows add up to the whole-queue total.
+  A stalled skill says "earns nothing".
+
+### Changed
+
+- **A notification may carry a list under its sentence.** `notifications.details`
+  holds structured lines beside the body, written once and never recomposed.
+  Only the siphon report uses it so far.
+
+### Migrations
+
+- `2026_09_28_140000_a_message_can_carry_a_list` — **must reach production before
+  the nightly siphon job runs.** The deploy worker runs it on pull.
+
 ## [0.22.1] — 2026-09-28
 
 The market explains its books, and every page asks the database less than half as much.
@@ -1672,7 +1699,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.22.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.23.0...HEAD
+[0.23.0]: https://github.com/nahkampf/dedlok/compare/v0.22.1...v0.23.0
 [0.22.1]: https://github.com/nahkampf/dedlok/compare/v0.22.0...v0.22.1
 [0.22.0]: https://github.com/nahkampf/dedlok/compare/v0.21.2...v0.22.0
 [0.21.2]: https://github.com/nahkampf/dedlok/compare/v0.21.1...v0.21.2
