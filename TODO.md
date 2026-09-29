@@ -673,18 +673,24 @@ somewhere to start.
 - ~~`siphon_yield`~~ — Fractional Siphoning, 2026-09-28.
 - ~~`heat_decay`~~ — Noise Seeding, 2026-09-28.
 
-**The checks: thirty-two of thirty-four.** Every skill has a `check.<slug>`
-stat. Two are raised — Advanced System Profiling raises `check.systemprofiling`
-and Advanced Routing raises `check.routing` — and nothing raises a combat
-check, an operating-system check, or the rest. That is the same hole from the
-other side: **sixteen skills grant nothing at all** (the eight OS skills, the
-six combat skills, Leadership and Network Topology).
+**The checks.** Every skill has a `check.<slug>` stat, and `check.*` stopped
+rounding down 2026-09-29 — every reader takes the float, so flooring only
+threw away a fraction of every small check modifier. Advanced System Profiling
+raises `check.systemprofiling`, Advanced Routing raises `check.routing`, and
+**the four operating-system skills now raise `check.<os-slug>` too** — each is
++1% of base a level on the whole `check+operating-systems` tag, and **Kernel
+Exploitation** (a fifth skill, built for the purpose) is +2% a level on the
+same tag, so training any OS deeply carries a little to the others. The gate
+is untouched: a percentage of an untrained OS's base (0) is still 0.
+`Simulator::opensTheCore()` learned none of this. Nothing raises a combat
+check or the rest — **fourteen skills still grant nothing at all** (six
+combat skills, the four encryption skills, Leadership, Network Topology,
+Coordinated Strike and Advanced Coordination).
 
-**What NOT to invent.** The OS skills gate what may be attempted and gating is
-not a modifier — see the migration that granted the first effects. The combat
-skills have nothing true to grant until combat exists, and Leadership the same
-until factions or crews do. So this entry is about the ~15 values above, and
-the sixteen empty skills stay empty until the mechanics under them arrive.
+**What NOT to invent.** The combat skills have nothing true to grant until
+combat exists, and Leadership the same until factions or crews do. So this
+entry is about the ~15 values above, and the fourteen empty skills stay empty
+until the mechanics under them arrive.
 
 **Deliberately not in the count:** the 34 `skill.*` level stats, which are read
 rather than modified, and the 10 damage stats, where a resistance is written

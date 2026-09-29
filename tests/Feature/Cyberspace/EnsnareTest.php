@@ -12,12 +12,14 @@ use App\Cyberspace\Simulator;
 use App\Models\Character;
 use App\Models\Ice;
 use App\Models\Run;
+use App\Models\Skill;
 use App\Models\System;
 use App\Stats\Resolver;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
+use Tests\Concerns\InjectsSkills;
 use Tests\TestCase;
 
 /**
@@ -30,6 +32,7 @@ use Tests\TestCase;
 final class EnsnareTest extends TestCase
 {
     use CarriesAWorkingDeck;
+    use InjectsSkills;
     use RefreshDatabase;
 
     private Character $character;
@@ -131,6 +134,33 @@ final class EnsnareTest extends TestCase
         $snared = round($this->simulator()->egressChance($this->character->fresh(), $run->fresh()), 4);
 
         $this->assertSame(round($bare * 0.6, 4), $snared);
+    }
+
+    /**
+     * ENSNARE'S BITE IS RESOLVED, not a bare number any more —
+     * `ensnare_reduction` is the base a modifier reaches. `AttackTag::
+     * multiplier()` itself stays pure (see the tests above); this is
+     * `Simulator::ensnareMultiplier()`, the one place a character's own
+     * modifiers get a say.
+     */
+    public function test_a_skill_can_blunt_ensnare(): void
+    {
+        $system = $this->machine(12);
+        $this->snare($system->ice, 3);
+
+        $skill = Skill::factory()->rank(1)->governedBy('memory', 'intellect')->create([
+            'slug' => 'a_severance_skill',
+            'modifiers' => [['op' => 'percentage_of_base', 'level' => 1, 'amount' => -25, 'target' => ['id' => 'ensnare_reduction']]],
+        ]);
+        $this->inject($this->character, $skill, $skill->pointsForLevel(1), 1);
+
+        $run = $this->begin();
+
+        $bare = $this->chanceAgainst(grade: 1, iceLevel: 12);
+        $blunted = round($this->simulator()->egressChance($this->character->fresh(), $run->fresh()), 4);
+
+        // 55% off at Ensnare III, cut by a quarter, is 41.25% off: ×0.5875.
+        $this->assertSame(round($bare * 0.5875, 4), $blunted);
     }
 
     /**

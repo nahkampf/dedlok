@@ -1681,6 +1681,7 @@ return [
             'damage' => 'damage taken',
             'damage+hitpoints' => 'physical damage taken',
             'damage+synaptic_integrity' => 'neural damage taken',
+            'check+operating-systems' => 'operating-system access checks',
         ],
     ],
 

@@ -188,8 +188,10 @@ class DeckHardwareTest extends TestCase
         HardwareEditor::apply($deck, null, SlotLayout::empty());
         HardwareEditor::apply($module, null, SlotLayout::empty());
 
-        $this->assertSame(0, DeckSlot::count());
-        $this->assertSame(0, DeckModule::count());
+        // Scoped to these two items — real hardware (the expansion cards)
+        // lives in these tables now too, not only what a test creates.
+        $this->assertSame(0, DeckSlot::query()->where('item_id', $deck->id)->count());
+        $this->assertSame(0, DeckModule::query()->where('item_id', $module->id)->count());
     }
 
     public function test_deleting_the_item_takes_its_hardware_with_it(): void
@@ -197,11 +199,14 @@ class DeckHardwareTest extends TestCase
         $deck = Item::factory()->cyberdeck()->create();
         $module = Item::factory()->module(Hardware::Psu, measure: 400)->create();
 
+        $deckId = $deck->id;
+        $moduleId = $module->id;
+
         $deck->delete();
         $module->delete();
 
-        $this->assertSame(0, DeckSlot::count());
-        $this->assertSame(0, DeckModule::count());
+        $this->assertSame(0, DeckSlot::query()->where('item_id', $deckId)->count());
+        $this->assertSame(0, DeckModule::query()->where('item_id', $moduleId)->count());
     }
 
     public function test_re_saving_an_unchanged_layout_writes_the_same_positions(): void

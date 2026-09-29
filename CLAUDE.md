@@ -1454,6 +1454,12 @@ consequences and taking what a machine holds all roll.
   the game is one. **`CheckRoller` owns the multiplication** (a third argument to `chance()`
   and `roll()`), because the factor applies to the raw curve and the floor applies AGAIN
   after it. Ensnare makes leaving expensive; it can never close the door.
+- **The REDUCTION is a stat (`ensnare_reduction`), the MULTIPLIER stays a plain float.**
+  `AttackTag::multiplier()` is still pure — the table value, untouched, and what the tests
+  above pin. `Simulator::ensnareMultiplier()` is the one place a character's own modifiers
+  reach it: the tag's raw reduction is resolved with `character->modifiers()` before it
+  becomes `max(0, 1 − reduction/100)`. **Signature Scrambling** (rank 16, needs Egress
+  Protocols 3) is the first skill on it, −5%/level.
 - **It is PASSIVE while the ICE lives and nothing is stored on the run** — read off
   `runs.ice_id`, so there is nothing to expire and no condition outliving its cause.
 - **`App\Cyberspace\DefeatResolver` is what makes the tag set real.** Called from
@@ -1959,10 +1965,9 @@ share the live database, so a migration had already run from a laptop before the
 arrived. Now development has its own copy (see *Two databases*), and the worker's
 `migrate --force` after the pull is the only way a schema change reaches the live game.
 
-**`.github/workflows/manual.yml` is dead and should go.** It POSTs to
-`https://dedlok.online/deploy.php` on any tag push, and `deploy.php` has been removed —
-so it now fails on every release rather than doing anything. The polling worker replaced
-it.
+There is no GitHub Actions workflow. `.github/workflows/manual.yml` used to POST to
+`https://dedlok.online/deploy.php` on any tag push; `deploy.php` was removed, so it failed
+on every release doing nothing, and was deleted 2026-09-29. The polling worker replaced it.
 
 **`APP_DEBUG` stays `false`.** Turning it on is the fastest way to read a production
 fault and it prints the environment to the public internet; turn it back the moment the

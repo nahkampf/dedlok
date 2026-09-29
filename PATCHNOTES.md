@@ -1,3 +1,9 @@
+## 0.31.0 (2026-09-29)
+
+- Minor rework for OS on systems you make a run on. Added skill `Kernel Exploitation` that gives a general boost against all OSes. OS skills repriced.
+- New skill `Signature Scrambling`, to decrease the risk of Ensnare.
+- Two new expansion cards: `BlackBox II` and `Pandora SC-652`, both boosting icebreaker damage.
+
 ## 0.30.0 (2026-09-29)
 
 - More tuning of ICE damage.

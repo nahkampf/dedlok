@@ -2,6 +2,55 @@
 
 ## [Unreleased]
 
+## [0.31.0] — 2026-09-30
+
+The operating-system roll and Ensnare open up to skills, expansion cards exist, and a dead workflow is gone.
+
+### Added
+
+- **Kernel Exploitation** (rank 8, Intellect/Focus, needs Cyberdecks 3, 9,000 creds, on
+  the market): +2% a level on the whole `check+operating-systems` tag, 10% trained out —
+  one skill reaching whichever OS check a run actually rolls, rather than one per OS.
+- **The four operating-system skills each grant a small universal bonus of their own**:
+  +1% a level (5% trained out) on the same tag, so training any OS deeply carries a
+  little to the others. The gate is untouched — `percentage_of_base` scales what's
+  already there, and an untrained OS's table value is 0.
+- **`ensnare_reduction`** is a stat now: the active ICE's Ensnare reduction (25/40/55 by
+  level), resolved with the runner's modifiers before it becomes the egress multiplier.
+  `AttackTag::multiplier()` stays a pure, unmodified lookup; `Simulator::
+  ensnareMultiplier()` is the one place a character's modifiers reach it.
+- **Signature Scrambling** (rank 16, needs Egress Protocols 3, 35,000 creds, on the
+  market): −5% `ensnare_reduction` a level, −25% trained out. An Ensnare III snare (55%
+  off egress) comes down to about 41%.
+- **Two expansion cards**, the first content to fill that socket: **BlackBox II**
+  (uncommon, 6,000 creds, +6% `icebreaker_damage`) and **Pandora SC-652** (rare, 9,000,
+  +9%).
+
+### Changed
+
+- **AuraOS, Prism-V, IRONCLAD and Lattice repriced** against what they actually gate:
+  5,000/5,000/15,000/250,000 → 3,000/8,000/20,000/200,000, tracking both rank and how
+  much of the grid each one opens (1,880/639/289/58 systems).
+
+### Fixed
+
+- Five tests that assumed the hardware and deck_modules tables start empty in every
+  fresh database — true only by accident until real hardware content went through a
+  migration for the first time. Scoped to the item under test instead.
+
+### Removed
+
+- `.github/workflows/manual.yml`, which POSTed to a `deploy.php` that no longer exists
+  and failed on every tag push. The polling deploy worker replaced it long ago.
+
+### Migrations
+
+- `2026_09_29_230000_kernel_exploitation` (a skill and its imprint)
+- `2026_09_30_100000_operating_systems_reflect_what_they_gate` (a data re-tune by slug)
+- `2026_09_30_110000_two_expansion_cards` (two items and their deck_modules rows)
+- `2026_09_30_120000_signature_scrambling` (a skill and its imprint)
+
+
 ## [0.30.0] — 2026-09-29
 
 ICE hits on a flatter curve, traces and operating systems open up to skills, and small percentage skills stop rounding away to nothing.
@@ -2016,7 +2065,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.31.0...HEAD
+[0.31.0]: https://github.com/nahkampf/dedlok/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/nahkampf/dedlok/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/nahkampf/dedlok/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/nahkampf/dedlok/compare/v0.27.0...v0.28.0

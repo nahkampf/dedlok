@@ -163,7 +163,7 @@ final readonly class Simulator
                     $character->stat('egress')->value,
                     $this->egressDifficulty($run),
                     'egress',
-                    $this->egressMultiplier($run),
+                    $this->egressMultiplier($character, $run),
                 )->passed) {
                     $log[] = $this->line('cyberspace.run.log.egress');
 
@@ -838,7 +838,7 @@ final readonly class Simulator
 
         $ice = $run->ice_id === null ? null : Ice::query()->find($run->ice_id);
         $snare = $ice?->attackLevel(AttackTag::Ensnare);
-        $multiplier = $snare === null ? 1.0 : AttackTag::Ensnare->multiplier($snare);
+        $multiplier = $this->ensnareMultiplier($character, $snare);
         $difficulty = (int) $this->egressDifficulty($run);
 
         return new EgressReport(
@@ -899,16 +899,38 @@ final readonly class Simulator
      *
      * 1.0 is the ordinary answer — nothing fighting, or nothing that holds.
      */
-    private function egressMultiplier(Run $run): float
+    private function egressMultiplier(Character $character, Run $run): float
     {
         if ($run->ice_id === null) {
             return 1.0;
         }
 
         $ice = Ice::query()->find($run->ice_id);
-        $level = $ice?->attackLevel(AttackTag::Ensnare);
 
-        return $level === null ? 1.0 : AttackTag::Ensnare->multiplier($level);
+        return $this->ensnareMultiplier($character, $ice?->attackLevel(AttackTag::Ensnare));
+    }
+
+    /**
+     * Ensnare's bite, RESOLVED — the one place the tag's raw table value
+     * (`AttackTag::multiplier()`, still pure and untouched) becomes a number
+     * this character's own modifiers can move.
+     *
+     * The REDUCTION is the base, not the multiplier: `ensnare_reduction`
+     * reads in per cent, same as the table, so a skill writes a plain
+     * `percentage_of_base -10` rather than reasoning about a factor. Floored
+     * at 0 by the stat itself, so the worst a build can do is blunt Ensnare
+     * to nothing — never turn it into a bonus on top of leaving.
+     */
+    private function ensnareMultiplier(Character $character, ?int $snareLevel): float
+    {
+        if ($snareLevel === null) {
+            return 1.0;
+        }
+
+        $reduction = (float) (AttackTag::Ensnare->levelValue($snareLevel)['reduction'] ?? 0);
+        $resolved = $this->resolver->resolve('ensnare_reduction', $reduction, $character->modifiers())->value;
+
+        return max(0.0, 1.0 - ($resolved / 100));
     }
 
     /**
