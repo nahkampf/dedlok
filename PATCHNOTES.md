@@ -1,3 +1,11 @@
+## 0.30.0 (2026-09-29)
+
+- More tuning of ICE damage.
+- Big rebalancing of many, many stats, attribvutes and derived values for, hopefully, more meaningfull skill modifiers.
+- Rebalanced Reactive Firewalling, Mitigation Protocols and Neural Sheathing (dead at level 1).
+- SI slowly regenerates over time.
+- Added skill `Opaque Routing Protocols`, for creating sturdier hop chains to protect against tracing.
+
 ## 0.29.0 (2026-09-29)
 
 - `ORACLE` scanner buffed to +19% chan checks, and +25% scan speed, but is not available on market (only through loyalty stores).
