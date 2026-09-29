@@ -131,6 +131,11 @@ class CyberdeckAdminTest extends TestCase
 
     public function test_a_deck_needs_somewhere_to_put_a_cpu_and_somewhere_to_draw_power(): void
     {
+        // No CYBERDECK was created — a delta against the baseline, not an
+        // absolute zero, because a fresh database carries real hardware
+        // content now (the expansion cards), not only placeholder implants.
+        $before = Item::query()->whereNotNull('hardware')->count();
+
         $this->actingAs($this->admin)
             ->post('/admin/items', $this->deck(['ram_opto' => 2]))
             ->assertSessionHasErrors('slots');
@@ -139,9 +144,7 @@ class CyberdeckAdminTest extends TestCase
             ->post('/admin/items', $this->deck(['cpu_socket_g' => 1]))
             ->assertSessionHasErrors('slots');
 
-        // No CYBERDECK was created. Counting the whole table stopped meaning
-        // that once a fresh database began shipping the placeholder implants.
-        $this->assertSame(0, Item::query()->whereNotNull('hardware')->count());
+        $this->assertSame($before, Item::query()->whereNotNull('hardware')->count());
     }
 
     public function test_a_deck_with_no_sockets_at_all_is_refused(): void
@@ -413,7 +416,9 @@ class CyberdeckAdminTest extends TestCase
         $this->assertSame(4_096, $spec->bandwidth);
         $this->assertNull($spec->qflops);
         $this->assertNull($spec->variant);
-        $this->assertSame(1, DeckModule::count());
+        // Scoped to this item, not the whole table — real hardware content
+        // (the expansion cards) lives there now too.
+        $this->assertSame(1, DeckModule::query()->where('item_id', $item->id)->count());
     }
 
     public function test_a_deck_re_saved_as_a_module_loses_its_sockets(): void
@@ -442,8 +447,9 @@ class CyberdeckAdminTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertNull($deck->fresh()->hardware);
-        $this->assertSame(0, DeckSlot::count());
-        $this->assertSame(0, DeckModule::count());
+        $this->assertSame(0, DeckSlot::query()->where('item_id', $deck->id)->count());
+        // Scoped, not global — the expansion cards keep their own module rows.
+        $this->assertSame(0, DeckModule::query()->where('item_id', $deck->id)->count());
     }
 
     // ---- the screens ------------------------------------------------------
