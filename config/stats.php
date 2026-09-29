@@ -433,6 +433,26 @@ return [
             'rounding' => 'none',
         ],
 
+        /*
+        | ENSNARE'S CUT to the egress chance, in per cent, before it is turned
+        | into a multiplier. The base is the active ICE's own reduction off
+        | `cyberspace.attack_tags.ensnare` (25/40/55 by level), handed in where
+        | the multiplier is built — deliberately not in `stats.bases`, for the
+        | same reason `trace_hop_chance` is not there: there is no such thing
+        | as a character's ensnare reduction apart from a specific fight.
+        |
+        | NEGATIVE HELPS, exactly as `trace_hop_chance` reads: this is what
+        | Ensnare takes FROM you, so a skill that makes it bite less is
+        | `percentage_of_base` with a negative amount. Floored at 0 — Ensnare
+        | can be blunted to nothing, never turned into a bonus.
+        */
+        'ensnare_reduction' => [
+            'tags' => ['cyberspace', 'ensnare'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'none',
+        ],
+
         'scan_duration' => [
             'tags' => ['scan'],
             'min' => 1,

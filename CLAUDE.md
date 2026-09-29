@@ -1454,6 +1454,12 @@ consequences and taking what a machine holds all roll.
   the game is one. **`CheckRoller` owns the multiplication** (a third argument to `chance()`
   and `roll()`), because the factor applies to the raw curve and the floor applies AGAIN
   after it. Ensnare makes leaving expensive; it can never close the door.
+- **The REDUCTION is a stat (`ensnare_reduction`), the MULTIPLIER stays a plain float.**
+  `AttackTag::multiplier()` is still pure — the table value, untouched, and what the tests
+  above pin. `Simulator::ensnareMultiplier()` is the one place a character's own modifiers
+  reach it: the tag's raw reduction is resolved with `character->modifiers()` before it
+  becomes `max(0, 1 − reduction/100)`. **Severance Protocols** (rank 16, needs Egress
+  Protocols 3) is the first skill on it, −5%/level.
 - **It is PASSIVE while the ICE lives and nothing is stored on the run** — read off
   `runs.ice_id`, so there is nothing to expire and no condition outliving its cause.
 - **`App\Cyberspace\DefeatResolver` is what makes the tag set real.** Called from
