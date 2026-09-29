@@ -111,8 +111,8 @@ final class StatSheetTest extends TestCase
         $skill = Skill::factory()->governedBy('perception', 'memory')->create(['slug' => 'coldread']);
         $character = $this->character(['perception' => 40, 'memory' => 30]);
 
-        // 0.5*40 + 0.25*30 + 8*0 = 27.5, floored.
-        $this->assertSame(27.0, $character->stat(SkillStats::checkId('coldread'))->value);
+        // 0.5*40 + 0.25*30 + 8*0 = 27.5, unrounded.
+        $this->assertSame(27.5, $character->stat(SkillStats::checkId('coldread'))->value);
         $this->assertFalse($character->hasInjected($skill), 'the gate is still the row, not the number');
     }
 
@@ -128,8 +128,8 @@ final class StatSheetTest extends TestCase
             'attained_level' => 3,
         ]);
 
-        // 0.5*40 + 0.25*30 + 8*3 = 20 + 7.5 + 24 = 51.5, floored.
-        $this->assertSame(51.0, $character->fresh()->stat(SkillStats::checkId('probe'))->value);
+        // 0.5*40 + 0.25*30 + 8*3 = 20 + 7.5 + 24 = 51.5, unrounded.
+        $this->assertSame(51.5, $character->fresh()->stat(SkillStats::checkId('probe'))->value);
     }
 
     /**

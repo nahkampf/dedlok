@@ -1037,7 +1037,21 @@ and extraction are built. See below for what is not.
   smaller figure rounded away to nothing at level 1 against every grade once attack shrank
   this far; mind the floor whenever a percentage skill targets a stat this small.
 - **An icebreaker is a GATE before it is a number** — `icebreaker_damage` floors at 0. Its
-  bite is a modifier on `programs.modifiers`.
+  bite is a modifier on `programs.modifiers`. **It also floors at every point above zero**
+  — `icebreaker_damage` rounds DOWN, so a percentage modifier needs a full point of headroom
+  to show anything, not half: **Mitigation Protocols** (rank 16) did nothing at levels 1–2
+  against any icebreaker, so it is now `add +1` at levels 1–2 and `percentage_of_base` +4/+4/+6
+  at 3–5 (`2026_09_29_210000_mitigation_protocols_below_the_floor`), the same flat-then-percent
+  shape Attack Vectors already used for the same reason.
+- **`check.<slug>` no longer floors either** — `App\Stats\SkillStats` rounds it `'none'`,
+  because both readers (`CheckRoller`, the OS roll) take the float and nothing ever
+  truncated it on purpose; flooring only threw away a fraction of every small check modifier.
+  The OS table (`cyberspace.os.values`) is back to its original decimals now that nothing
+  forces it to whole numbers.
+- **`synaptic_integrity_max` floors too, same trap.** Neural Sheathing at +1%/level did
+  nothing until level 4 for a typically-built starting character. Raised to +5%/level
+  (`2026_09_29_220000_neural_sheathing_retuned`) — enough to move even the lowest legal
+  attribute spread by a point at level 1.
 
 #### Node contents
 
@@ -1198,10 +1212,10 @@ consequences and taking what a machine holds all roll.
   asked by Extract, Install and Burn — the three actions that already share
   `touchTheCore()` — and by nothing else. The check value is the runner's **LEVEL** in
   `systems.os_skill_id`, read off the `cyberspace.os.values` table, against a flat
-  difficulty: 4.7% / 18% / 47% / 78% / 89%, and the certainty floor at level 5. **The table
+  difficulty: 4.7% / 18% / 48% / 77% / 89%, and the certainty floor at level 5. **The table
   value is the BASE of that skill's `check.<slug>`**, resolved with the runner's
-  modifiers, so a program or implant that helps with an OS is a modifier on the check —
-  and the table holds whole numbers because checks round down. **A table
+  modifiers, so a program or implant that helps with an OS is a modifier on the check.
+  **A table
   and not a multiplier** — the first level is worth nearly twice the fourth, which no
   straight line draws. **No grade term** — a
   machine's grade already decides WHICH operating system it runs, via the skill's rank, so

@@ -87,7 +87,7 @@ final class OperatingSystemTest extends TestCase
         $this->machine();
         $run = $this->begin();
 
-        $expected = [0 => 4.74, 1 => 18.24, 2 => 46.88, 3 => 77.73, 4 => 89.33, 5 => 99.15];
+        $expected = [0 => 4.74, 1 => 18.06, 2 => 48.13, 3 => 77.07, 4 => 88.97, 5 => 99.15];
 
         foreach ($expected as $level => $percent) {
             $this->knowsTheOs($level);
@@ -234,7 +234,7 @@ final class OperatingSystemTest extends TestCase
         $this->actingAs($this->character->user)
             ->get(route('run.show'))
             ->assertOk()
-            ->assertSeeText('Core access 78%');
+            ->assertSeeText('Core access 77%');
     }
 
     // ---- fixtures ----------------------------------------------------------

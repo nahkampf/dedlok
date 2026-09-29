@@ -671,7 +671,7 @@ not refused — it is entered, and then the core has to be talked into opening.
 
 **It is a roll on the LEVEL, not a wall at level 1.** The level is the check
 value: no skill at all is 4.7% a turn, level 2 is near enough a coin flip at
-47%, and level 5 sits on the certainty floor, which is as close to certain as
+48%, and level 5 sits on the certainty floor, which is as close to certain as
 anything in this game gets. The steps between are deliberately uneven — the
 first level is worth nearly twice the fourth, because that is the shape of
 learning a system rather than the shape of a formula. That curve is `config/cyberspace.os` and the roll is

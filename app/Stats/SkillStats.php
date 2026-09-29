@@ -206,6 +206,15 @@ final class SkillStats
              * is whatever rolls it, against an opposing number, under the floor
              * in config/checks.php. Capping it here would silently flatten
              * every advantage past the cap.
+             *
+             * UNROUNDED, deliberately: every reader (`CheckRoller`, the
+             * operating-system roll) takes the float and never truncates it,
+             * so `'floor'` bought nothing but a lost fraction of a point on
+             * every small skill modifier that targets a check — the same
+             * rounding-to-nothing trap `recovery_seconds` and Reactive
+             * Firewalling hit. A check was never a whole number to begin
+             * with; it only looked like one because nothing needed the
+             * fraction yet.
              */
             $definitions[self::checkId($skill->slug)] = [
                 'tags' => array_values(array_unique([
@@ -217,7 +226,7 @@ final class SkillStats
                 ])),
                 'min' => 0,
                 'max' => null,
-                'rounding' => 'floor',
+                'rounding' => 'none',
             ];
         }
 
