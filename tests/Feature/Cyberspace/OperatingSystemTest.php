@@ -14,6 +14,10 @@ use App\Models\Run;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContent;
+use App\Stats\Modifier;
+use App\Stats\Resolver;
+use App\Stats\Sheet;
+use App\Stats\SkillStats;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
@@ -123,6 +127,56 @@ final class OperatingSystemTest extends TestCase
             app(Simulator::class)->coreChance($this->character->fresh(), $run),
             0.001,
         );
+    }
+
+    /**
+     * A SKILL BUILT ON THE CATEGORY TAG, not the id — Kernel Exploitation
+     * targets `all_of: ['check', 'operating-systems']` rather than naming
+     * four skills, so it reaches whichever OS check a run actually rolls.
+     * Pinned here because the tag is `Str::slug()` of the category and not
+     * the literal string, which is exactly the kind of thing a rename of
+     * `skills.category` could silently break.
+     */
+    public function test_kernel_exploitation_reaches_every_os_check_and_nothing_else(): void
+    {
+        $kernel = Skill::where('slug', 'kernel_exploitation')->first();
+
+        if ($kernel === null) {
+            $this->markTestSkipped('Kernel Exploitation is not migrated.');
+        }
+
+        $this->machine();
+        $run = $this->begin();
+        // Level 2, not 0: at zero the chance is already pinned to the
+        // certainty floor and a modifier has nothing left to move.
+        $this->knowsTheOs(2);
+
+        $bare = app(Simulator::class)->coreChance($this->character->fresh(), $run);
+
+        $this->inject($this->character, $kernel, $kernel->pointsForLevel(5), 5);
+
+        $withKernel = app(Simulator::class)->coreChance($this->character->fresh(), $run);
+
+        $this->assertGreaterThan($bare, $withKernel, 'Kernel Exploitation should raise the odds');
+
+        // And it changes nothing on a check outside the Operating Systems
+        // category — the tag set is narrow, not "every check in the game".
+        // (Already trained to 5 above; injecting it twice would collide.)
+        SkillStats::forget();
+        Sheet::forgetSkills();
+        Skill::factory()->rank(1)->governedBy('intellect', 'memory')->create(['slug' => 'unrelated_check']);
+
+        $mods = array_map(
+            function (array $m): Modifier {
+                unset($m['level']);
+
+                return Modifier::fromArray($m);
+            },
+            $kernel->modifiers,
+        );
+        $r = app(Resolver::class);
+
+        $this->assertSame(40.0, $r->resolve('check.unrelated_check', 40.0, $mods)->value);
     }
 
     /** NOT CERTAIN, EVER. The top of the curve is the floor, from the other side. */
