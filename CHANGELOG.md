@@ -2,6 +2,44 @@
 
 ## [Unreleased]
 
+## [0.28.0] — 2026-09-29
+
+ICE can be resisted, getting up can be trained, and being liked can be learned.
+
+### Added
+
+- **Reactive Firewalling** (rank 8, 4,500 creds, on the market, needs
+  Cyberdecks 3): 2.5% less damage from ICE a level.
+- **Defensive Compartmentalization** (rank 16, 35,000 creds, needs Reactive
+  Firewalling 3): 6% less damage from ICE a level. Not sold on the market; it
+  will be found at Exchanges.
+- **Spectral (alpha 0.3)**, an experimental daemon: 8% less damage from ICE
+  while it runs, at a heavy memory cost. Joint Signals Command keeps it on
+  their loyalty shelf.
+- **Joint Signals Command's loyalty shelf** also carries Palantír and the THO
+  Nightjar.
+- **Trauma Recovery** (rank 8, 3,000 creds): 10% less time on the floor after
+  a defeat, per level.
+- **Showmanship** (rank 8, 2,500 creds): 3% more standing from missions, per
+  level.
+- In the admin shelf editor, **⊘ marks an item that is not on the market**,
+  in the item picker and on rows already on the shelf.
+
+### Changed
+
+- **Routing** is +1 routing hop a level and nothing else; its bandwidth grant
+  at level 2 is gone.
+- The time spent on the floor after a defeat is measured in seconds
+  (`recovery_seconds`, 60) instead of minutes, so a percentage can shorten
+  it. The wait itself is unchanged.
+
+### Migrations
+
+- `2026_09_29_120000_reactive_firewalling` (a skill and its imprint)
+- `2026_09_29_130000_defensive_compartmentalization` (a skill and its imprint)
+- `2026_09_29_140000_content_authored_on_localhost` (Spectral, Trauma
+  Recovery, Showmanship, three shelf rows and Routing, upserted by slug)
+
 ## [0.27.0] — 2026-09-28
 
 Your deck has to hold what you carry, and skills point the right way.
@@ -1892,7 +1930,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.27.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.28.0...HEAD
+[0.28.0]: https://github.com/nahkampf/dedlok/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/nahkampf/dedlok/compare/v0.26.1...v0.27.0
 [0.26.1]: https://github.com/nahkampf/dedlok/compare/v0.26.0...v0.26.1
 [0.26.0]: https://github.com/nahkampf/dedlok/compare/v0.25.1...v0.26.0
