@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Support\PatchNotes;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -38,9 +39,15 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        return User::create([
+        // A new player has read everything so far: the patch notes are for
+        // what changes after they arrive, never a history lesson on the way in.
+        $user = User::create([
             'email' => $input['email'],
             'password' => Hash::make($input['password']),
         ]);
+
+        $user->forceFill(['last_seen_changelog' => PatchNotes::latest()])->save();
+
+        return $user;
     }
 }
