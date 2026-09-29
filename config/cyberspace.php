@@ -846,12 +846,12 @@ return [
         | THE CHECK VALUE PER LEVEL, and the curve it makes against the
         | difficulty below at the default spread of 8:
         |
-        |   level 0     0.0    4.7%     never trained it, and it shows
-        |   level 1    11.9     18%     you have seen one before
-        |   level 2    23.4     48%     near enough a coin flip
-        |   level 3    33.7     77%
-        |   level 4    40.7     89%
-        |   level 5    65.0   99.15%    the certainty floor answers, not this number
+        |   level 0       0    4.7%     never trained it, and it shows
+        |   level 1      12     18%     you have seen one before
+        |   level 2      23     47%     near enough a coin flip
+        |   level 3      34     78%
+        |   level 4      41     89%
+        |   level 5      65   99.15%    the certainty floor answers, not this number
         |
         | A TABLE RATHER THAN A MULTIPLIER, because the curve is hand-shaped
         | and a straight line cannot draw it: the step from 0 to 1 is worth
@@ -868,14 +868,18 @@ return [
         | The chances move if `checks.spread` moves, which is correct: that
         | number is how decisive the whole game is, and an OS curve that held
         | still while everything else loosened would be opting out of it.
+        |
+        | WHOLE NUMBERS, because each is the BASE of the skill's `check.<slug>`
+        | stat and checks round down: 11.9 would arrive as 11. Anything else that
+        | helps with an operating system is a modifier on that check.
         */
         'values' => [
-            0 => 0.0,
-            1 => 11.9,
-            2 => 23.4,
-            3 => 33.7,
-            4 => 40.7,
-            5 => 65.0,
+            0 => 0,
+            1 => 12,
+            2 => 23,
+            3 => 34,
+            4 => 41,
+            5 => 65,
         ],
 
         'difficulty' => 24,

@@ -20,6 +20,8 @@ use App\Models\Run;
 use App\Models\Skill;
 use App\Models\System;
 use App\Stats\Resolver;
+use App\Stats\Sheet;
+use App\Stats\SkillStats;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
@@ -190,6 +192,30 @@ final class RoutingChainTest extends TestCase
         $this->assertSame(2, $run->fresh()->trace_hop, 'past the gap and past the hop');
     }
 
+    /**
+     * A HOP HOLDS BETTER BY A MODIFIER. The grade sets the trace's chance and
+     * the runner's modifiers move it: a grade 1 hop at 95, halved, is 47.5, so
+     * a roll of 60 that would have got through is held.
+     */
+    public function test_a_modifier_makes_a_hop_hold_better(): void
+    {
+        $this->trainRouting(1);
+        $this->hold($this->relay(1, 1));
+        $this->machine();
+
+        $run = $this->begin(noticed: true);
+        $this->simulator(60)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $this->assertSame(1, $run->fresh()->trace_hop, 'through at the grade\'s own 95');
+
+        $run->refresh()->forceFill(['trace_hop' => 0])->save();
+        $this->train('a_steady_chain', [
+            ['op' => 'percentage_of_base', 'level' => 1, 'amount' => -50, 'target' => ['id' => 'trace_hop_chance']],
+        ]);
+
+        $this->simulator(60)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $this->assertSame(0, $run->fresh()->trace_hop, 'held at 47.5');
+    }
+
     // ---- and losing all of it -----------------------------------------------
 
     /**
@@ -299,6 +325,27 @@ final class RoutingChainTest extends TestCase
             'character_id' => $this->character->id,
             'skill_id' => $skill->id,
             'attained_level' => $level,
+            'skill_points' => 0,
+        ]);
+
+        $this->character->refresh();
+    }
+
+    /** A skill of this test's own at level 1, carrying whatever it is handed. */
+    private function train(string $slug, array $modifiers): void
+    {
+        SkillStats::forget();
+        Sheet::forgetSkills();
+
+        $skill = Skill::factory()->rank(1)->governedBy('intellect', 'memory')->create([
+            'slug' => $slug,
+            'modifiers' => $modifiers,
+        ]);
+
+        CharacterSkill::query()->create([
+            'character_id' => $this->character->id,
+            'skill_id' => $skill->id,
+            'attained_level' => 1,
             'skill_points' => 0,
         ]);
 

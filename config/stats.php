@@ -189,12 +189,9 @@ return [
         /*
         | Synaptic Integrity recovered per minute, on its own.
         |
-        | ZERO BY DEFAULT, AND THAT IS THE RULE RATHER THAN A STARTING VALUE:
-        | nothing in this game heals by waiting. Synaptic Integrity and hit
-        | points come back through things a player DOES, and the one exception
-        | is bought with a rank 16 skill — Neuroplasticity, a point a minute per
-        | level. A character who has not trained it recovers nothing by sitting
-        | still, ever.
+        | ZERO BY DEFAULT: the fast trickle is paid for. Everybody mends a point
+        | every four hours (`synaptic_mend_minutes`, below); anything quicker is
+        | bought — Neuroplasticity, a point a minute per level, or a dose.
         |
         | Per MINUTE rather than per tick, so whatever eventually credits it can
         | do so lazily off elapsed time the way a training deposit does. Nothing
@@ -205,6 +202,23 @@ return [
             'min' => 0,
             'max' => null,
             'rounding' => 'floor',
+        ],
+
+        /*
+        | Minutes between points of Synaptic Integrity that come back ON THEIR
+        | OWN, for everybody: the slow floor under healing, a point every four
+        | hours. `synaptic_regen` above is the fast trickle somebody pays for.
+        |
+        | An INTERVAL rather than a rate, because a rate of 1/240 a minute
+        | floors to nothing — the trap `recovery_minutes` fell into. So an
+        | implant that heals a quarter faster is −25% here, and lands.
+        | Rounded up and at least one minute, so nothing divides by zero.
+        */
+        'synaptic_mend_minutes' => [
+            'tags' => ['derived', 'vital'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'ceil',
         ],
 
         /*
@@ -400,6 +414,23 @@ return [
             'min' => 0,
             'max' => null,
             'rounding' => 'floor',
+        ],
+
+        /*
+        | The TRACE'S chance, in per cent, of getting past one hop of the
+        | routing chain. The base is the hop's grade off
+        | `cyberspace.trace.advance` (95 at grade 1 down to 20 at grade 9),
+        | handed in where the hop is rolled — deliberately not in
+        | `stats.bases`, because there is no such thing as a character's hop
+        | chance apart from a hop. It is the trace's number, so a skill that
+        | makes a chain hold better is NEGATIVE: −10% of base is a grade 1 hop
+        | at 85.5.
+        */
+        'trace_hop_chance' => [
+            'tags' => ['cyberspace', 'trace'],
+            'min' => 0,
+            'max' => 100,
+            'rounding' => 'none',
         ],
 
         'scan_duration' => [
@@ -619,6 +650,9 @@ return [
         // the catalogue raises it yet; when something does, it is a modifier
         // on this id and nothing else changes.
         'heat_decay' => 0.5,
+
+        // A point of Synaptic Integrity every four hours, for everybody.
+        'synaptic_mend_minutes' => 240,
     ],
 
     /*

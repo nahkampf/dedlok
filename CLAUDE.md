@@ -1026,6 +1026,16 @@ and extraction are built. See below for what is not.
   ICE I, which deals ~1.05 SI a turn against a starting pool of 31.
 - **Integrity and attack are BASES and expect to move.** A fight should run 2–10 turns; the
   twelve pieces climb together so the ratio survives recalibration.
+- **Damage climbs on a FLAT curve: attack 7 → 13, hit chance 15% → 50%.** A fight's cost is
+  attack × hit × swings, and fights last 6–16 turns (integrity is pinned by the twenty-turn
+  rule), so both had to come down — the old curve grew damage a turn fifty-fold against a
+  pool that grows three-fold. Modelled with the matching icebreaker and Attack Vectors 5: a
+  fight costs roughly a sixth of a starting pool at ICE I and nearly a whole maxed pool at
+  ICE XII, about halved by every ICE resistance at once
+  (`2026_09_29_190000_ice_hits_on_a_flatter_curve`). **Reactive Firewalling is −5% a level**
+  (raised from −2.5% the same day, `2026_09_29_200000_reactive_firewalling_retuned`) — the
+  smaller figure rounded away to nothing at level 1 against every grade once attack shrank
+  this far; mind the floor whenever a percentage skill targets a stat this small.
 - **An icebreaker is a GATE before it is a number** — `icebreaker_damage` floors at 0. Its
   bite is a modifier on `programs.modifiers`.
 
@@ -1188,7 +1198,10 @@ consequences and taking what a machine holds all roll.
   asked by Extract, Install and Burn — the three actions that already share
   `touchTheCore()` — and by nothing else. The check value is the runner's **LEVEL** in
   `systems.os_skill_id`, read off the `cyberspace.os.values` table, against a flat
-  difficulty: 4.7% / 18% / 48% / 77% / 89%, and the certainty floor at level 5. **A table
+  difficulty: 4.7% / 18% / 47% / 78% / 89%, and the certainty floor at level 5. **The table
+  value is the BASE of that skill's `check.<slug>`**, resolved with the runner's
+  modifiers, so a program or implant that helps with an OS is a modifier on the check —
+  and the table holds whole numbers because checks round down. **A table
   and not a multiplier** — the first level is worth nearly twice the fourth, which no
   straight line draws. **No grade term** — a
   machine's grade already decides WHICH operating system it runs, via the skill's rank, so
@@ -1241,8 +1254,9 @@ consequences and taking what a machine holds all roll.
   trace moves up, fail and it stays — the turn ends either way. **A hop once passed is
   behind it** (`runs.trace_hop`). Rolling every hop every turn would make a long chain
   impassable rather than slow.
-- **The chance is what the hop's GRADE allows** — 95% at grade 1 down to 20% at grade 9, and
-  **grade is the only thing a hop reads**.
+- **The hop's GRADE sets the trace's chance** — 95% at grade 1 down to 20% at grade 9 —
+  as the base of `trace_hop_chance`, resolved with the runner's modifiers. It is the
+  TRACE's number, so a skill that makes a chain hold better is a negative modifier.
 - **A hop only delays by FAILING**, so **grade 1 is 95 rather than 100**: at 100 a junk hop
   could never delay anything. Ten junk hops is a 40% chance of one held turn.
 - **`routing_hops` is the ceiling, and it is all skill** — base zero, one per level of
@@ -1474,8 +1488,12 @@ consequences and taking what a machine holds all roll.
 
 ### Recovery
 
-- **Nothing heals by waiting, and `synaptic_regen` floors at 0 to say so.** The single
-  exception is **Neuroplasticity** (rank 16), a point a minute per level. Per MINUTE so
+- **Everybody mends a point of SI every four hours** — `synaptic_mend_minutes`, base
+  240 in `stats.bases`, an INTERVAL so a percentage off it lands (a rate of 1/240 a
+  minute would floor to nothing). `characters:regenerate` credits it with no clock: the
+  point lands on the minute whose epoch number divides by the character's interval.
+- **Anything faster is paid for, and `synaptic_regen` floors at 0 to say so.**
+  **Neuroplasticity** (rank 16) is a point a minute per level. Per MINUTE so
   anything crediting it can work off elapsed time. **`characters:regenerate` credits it
   every minute** and keeps NO stored clock — a minute lost to a restart is a point. It heals
   from ZERO.
