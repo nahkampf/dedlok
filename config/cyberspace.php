@@ -967,10 +967,12 @@ return [
     | Percentages, 0-100, like `occupancy` above.
     */
     /*
-    | HOW LONG A DEFEAT KEEPS YOU DOWN, in minutes, before modifiers.
+    | HOW LONG A DEFEAT KEEPS YOU DOWN, in seconds, before modifiers.
     |
-    | One. The base of the `recovery_minutes` stat, so implants and skills can
-    | cut it the way they cut everything else.
+    | Sixty. The base of the `recovery_seconds` stat, so implants and skills can
+    | cut it the way they cut everything else. SECONDS rather than minutes
+    | because the stat rounds UP: on a base of one minute, any percentage short
+    | of −100% rounded straight back to the whole minute and did nothing.
     |
     | Short on purpose: the wait is not the punishment. What losing actually
     | costs is whatever the defeat tags carried — a piece of a ceiling, a
@@ -978,7 +980,7 @@ return [
     | defeat carrying NOTHING still costs something. A long wait would punish
     | the player who lost to a harmless guard hardest, which is backwards.
     */
-    'recovery_minutes' => 1,
+    'recovery_seconds' => 60,
 
     'freeze' => [
 

@@ -60,14 +60,14 @@ final readonly class WaitingRoom
             return;
         }
 
-        $minutes = $this->resolver->resolve(
-            'recovery_minutes',
-            (float) Config::get('cyberspace.recovery_minutes', 1),
+        $seconds = $this->resolver->resolve(
+            'recovery_seconds',
+            (float) Config::get('cyberspace.recovery_seconds', 60),
             $character->modifiers(),
         )->toInt();
 
         $character->forceFill([
-            'waiting_until' => CarbonImmutable::now()->addMinutes(max(0, $minutes)),
+            'waiting_until' => CarbonImmutable::now()->addSeconds(max(0, $seconds)),
             'waiting_cause' => $cause->toArray(),
         ])->save();
     }

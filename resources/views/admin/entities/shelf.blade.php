@@ -87,6 +87,9 @@
                         @foreach ($offers as $offer)
                             <tr>
                                 <td>
+                                    @if ($offer->item && ! $offer->item->on_market)
+                                        <span title="{{ Text::get('admin.entities.off_market_hint') }}">{{ Text::get('admin.entities.off_market') }}</span>
+                                    @endif
                                     {{ $offer->displayName() }}
                                     <span class="micro" style="color:var(--ink-3)">
                                         {{ $offer->service ? $offer->service->describe((float) $offer->service_amount) : $offer->item?->slug }}
@@ -164,6 +167,7 @@
                         <option value="">{{ Text::get('admin.entities.no_item') }}</option>
                         <x-grouped-options :groups="$items" :selected="old('item_id')" />
                     </select>
+                    <span class="field__hint">{{ Text::get('admin.entities.off_market_hint') }}</span>
                     @error('item_id') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
 

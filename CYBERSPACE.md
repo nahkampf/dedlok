@@ -101,7 +101,7 @@ system.
 | Network Topology, System Profiling, Advanced System Profiling | **built** as skill rows; nothing reads them |
 | Encryption skills — Cinder, Halcyon-3, BLACKGLASS, Ouroboros | **built** as skill rows with imprints; placeholder descriptions, no prerequisites yet |
 | `DeckTotals::isReady()` — the readiness gate | **built**; jacking in is what will call it |
-| The waiting screen | **built**; `App\Characters\WaitingRoom`, one minute through the `recovery_minutes` stat, released lazily on the next request. **Zero to one, and no further** — getting up is not healing. `ReadinessWatch` is its first caller, and the ejection happens before it |
+| The waiting screen | **built**; `App\Characters\WaitingRoom`, one minute through the `recovery_seconds` stat (base 60), released lazily on the next request. **Zero to one, and no further** — getting up is not healing. `ReadinessWatch` is its first caller, and the ejection happens before it |
 | Synaptic Integrity as a resource | **built**, and the readiness dump is the first thing that damages it. Damage resolves like any other number — origin and resource are both tags, so a resistance is a modifier; see MECHANICS.md. Reaching zero has no consequence yet: there is no waiting screen |
 | AuraOS in the Deck Jockey loadout | **done**; granted at level 1 alongside the deck |
 | The thermal rename | **done**. Accumulation itself is **specified only** — nothing runs a deck yet |
@@ -1508,7 +1508,7 @@ oversight.
 
 Underneath all of them: **reaching 0 SI or 0 HP puts the character on a waiting
 screen for a minute**, shortenable by implants and skills through the
-`recovery_minutes` stat. **You come back on ONE point of whatever emptied** —
+`recovery_seconds` stat. **You come back on ONE point of whatever emptied** —
 getting up is not healing, and the way back from one is Neuroplasticity, a
 clinic, or something a player does. It is the floor
 that makes every defeat cost something even when the program that beat you was
