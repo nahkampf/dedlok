@@ -182,11 +182,11 @@ Schedule::command('market:seed')
  * happened. Nobody is waiting on it.
  */
 /*
- * The only thing in the game that heals by waiting.
+ * Healing by waiting: the four-hourly mend everybody gets, and the per-minute
+ * trickle Neuroplasticity and doses grant.
  *
- * Every minute, because the rate IS per minute — Neuroplasticity grants a point
- * a minute per level and nothing else grants any. On a world of untrained
- * characters this resolves a few stats and writes nothing.
+ * Every minute, because the trickle IS per minute, and the mend lands on the
+ * minute its interval divides.
  *
  * No stored clock and a missed minute is never made up: market:seed's stance
  * rather than the training heartbeat's, because a training deposit is credited

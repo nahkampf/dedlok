@@ -30,6 +30,9 @@ final class RewireTest extends TestCase
     {
         parent::setUp();
 
+        // Off the four-hourly mend's mark, so only the dose heals here.
+        $this->travelTo(now()->setTime(12, 1));
+
         $this->character = Character::factory()->create(array_merge(
             array_fill_keys(Character::ATTRIBUTES, 25),
             ['archetype' => 3],

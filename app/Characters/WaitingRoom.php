@@ -22,10 +22,9 @@ use Illuminate\Support\Facades\DB;
  *
  * ## Zero to one, and no further
  *
- * Nothing in this game heals by waiting. Getting up is not healing: it is
- * getting up. A character comes back on **one** point of whatever put them
+ * Getting up is not healing: it is getting up. A character comes back on **one** point of whatever put them
  * down, which is enough to act and not enough to be safe — and the way back
- * from there is Neuroplasticity, a clinic, or something a player does.
+ * from there is the four-hourly mend, Neuroplasticity, or something a player does.
  *
  * Both resources are checked, and both are brought to one if both were at
  * zero: waking up still broken in the other half would put somebody straight
