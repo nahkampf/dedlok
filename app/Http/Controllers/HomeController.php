@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Support\PatchNotes;
 use App\Support\Text;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -43,7 +44,14 @@ class HomeController extends Controller
             'allow_unsafe_links' => false,
         ]);
 
+        $patchNotes = PatchNotes::all();
+        $user = request()->user();
+
         return view('home', [
+            // Every note, for the version link, and what this player has not
+            // read, which opens by itself. Nobody signed in is asked nothing.
+            'patchNotes' => $patchNotes,
+            'unseenNotes' => $user === null ? [] : PatchNotes::unseen($patchNotes, $user->last_seen_changelog),
             'title' => $title,
             'notice' => $notice,
             // What a closed notice shows: its first 250 characters as plain

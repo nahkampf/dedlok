@@ -28,6 +28,12 @@
 # the DRAFT marker and the script backs out, leaving the working tree — and the
 # branches — as it found them.
 #
+# THEN THE PATCH NOTES. PATCHNOTES.md is the players' changelog, in plain
+# words, and a release gets an entry there too: a `## X.Y.Z (YYYY-MM-DD)`
+# heading is drafted from the changelog entry just written (or from
+# --patchnotes), and nano opens on it. Same DRAFT marker, same backing out.
+# Nano needs a terminal, so run this in one.
+#
 # Flags:
 #   --branch NAME  name the feature branch instead of being asked for one
 #   --no-branch    release in place, on whatever branch you are on
@@ -35,10 +41,19 @@
 #   --no-merge     commit and tag on the current branch, do not merge to main.
 #                  Implies --no-branch: moving the work off main and then not
 #                  merging it back would leave the release on a branch of its own.
+#   --changelog FILE   use FILE as the finished changelog entry, headed
+#                  `## [X.Y.Z] — YYYY-MM-DD`, instead of drafting one and opening
+#                  an editor on it — for an entry written ahead of time.
+#   --patchnotes FILE  start the patch notes from FILE (the body, no heading)
+#                  rather than from the changelog entry. Nano still opens on it.
+#
+# PATCHNOTES_EDITOR overrides nano for the patch notes; EDITOR (default nano)
+# is the changelog's.
 #
 set -euo pipefail
 
 CHANGELOG="CHANGELOG.md"
+PATCHNOTES="PATCHNOTES.md"
 VERSION_FILE="config/version.php"
 MAIN_BRANCH="main"
 DRAFT_MARKER="<!-- DRAFT: rewrite the entries below, then delete this line. -->"
@@ -60,6 +75,8 @@ RUN_TESTS=1
 DO_MERGE=1
 DO_BRANCH=1
 FEATURE=""
+CHANGELOG_ENTRY=""
+PATCHNOTES_ENTRY=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -68,6 +85,8 @@ while [[ $# -gt 0 ]]; do
         --no-branch) DO_BRANCH=0 ;;
         --branch) shift; [[ $# -gt 0 ]] || die "--branch needs a name"; FEATURE="$1" ;;
         --branch=*) FEATURE="${1#*=}" ;;
+        --changelog) shift; [[ $# -gt 0 ]] || die "--changelog needs a file"; CHANGELOG_ENTRY="$1" ;;
+        --patchnotes) shift; [[ $# -gt 0 ]] || die "--patchnotes needs a file"; PATCHNOTES_ENTRY="$1" ;;
         # The header block is the help text, so it cannot drift from the flags.
         -h|--help) sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*) die "unknown flag: $1" ;;
@@ -77,6 +96,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n $FEATURE && $DO_BRANCH == 0 ]] && die "--branch and --no-branch (or --no-merge) contradict each other"
+[[ -z $CHANGELOG_ENTRY || -f $CHANGELOG_ENTRY ]] || die "no such file: $CHANGELOG_ENTRY"
+[[ -z $PATCHNOTES_ENTRY || -f $PATCHNOTES_ENTRY ]] || die "no such file: $PATCHNOTES_ENTRY"
 
 # ---- preflight -------------------------------------------------------------
 
@@ -185,11 +206,17 @@ MOVED=0
 ORIGINAL_HEAD=""
 
 cleanup() {
-    rm -f "$DRAFT" "$CHANGELOG.tmp"
+    rm -f "$DRAFT" "$CHANGELOG.tmp" "$PATCHNOTES.tmp"
     [[ $COMMITTED == 1 ]] && return 0
 
     if [[ $MODIFIED == 1 ]]; then
         git checkout -- "$CHANGELOG" "$VERSION_FILE" 2>/dev/null || true
+        # A patch notes file this release created has nothing to go back to.
+        if git ls-files --error-unmatch "$PATCHNOTES" >/dev/null 2>&1; then
+            git checkout -- "$PATCHNOTES" 2>/dev/null || true
+        else
+            rm -f "$PATCHNOTES"
+        fi
         warn "nothing was committed; working tree restored"
     fi
 
@@ -308,6 +335,10 @@ bullets() {   # hash<TAB>subject  ->  "- subject (hash)"
     printf '%s\n' "$1" | awk -F'\t' '{ printf "- %s (%s)\n", $2, $1 }'
 }
 
+if [[ -n $CHANGELOG_ENTRY ]]; then
+    grep -q "^## \[$VERSION\]" "$CHANGELOG_ENTRY" || die "$CHANGELOG_ENTRY has no '## [$VERSION]' heading"
+    { cat "$CHANGELOG_ENTRY"; echo; } > "$DRAFT"
+else
 {
     echo "## [$VERSION] — $(date +%Y-%m-%d)"
     echo "$DRAFT_MARKER"
@@ -327,6 +358,7 @@ bullets() {   # hash<TAB>subject  ->  "- subject (hash)"
     fi
     echo
 } > "$DRAFT"
+fi
 
 # Slot it in under [Unreleased], which stays where it is and stays empty.
 awk -v draft="$DRAFT" '
@@ -357,11 +389,51 @@ grep -q "'$VERSION'" "$VERSION_FILE" || die "could not bump $VERSION_FILE — ch
 
 # ---- your turn -------------------------------------------------------------
 
-note "Opening $CHANGELOG. Rewrite the draft, delete the DRAFT line, save and quit."
-"${EDITOR:-nano}" "$CHANGELOG" || die "editor exited non-zero"
+if [[ -z $CHANGELOG_ENTRY ]]; then
+    note "Opening $CHANGELOG. Rewrite the draft, delete the DRAFT line, save and quit."
+    "${EDITOR:-nano}" "$CHANGELOG" || die "editor exited non-zero"
+fi
 
 grep -qF "$DRAFT_MARKER" "$CHANGELOG" && die "the DRAFT marker is still there"
 grep -q "^## \[$VERSION\]" "$CHANGELOG" || die "no '## [$VERSION]' heading left in $CHANGELOG"
+
+# ---- the players' version ----------------------------------------------------
+#
+# Drafted from the changelog entry as it now stands, minus what a player has no
+# use for: the section headings and the Migrations list. Raw material for
+# rewriting in plain words, never the entry itself — hence the marker.
+
+{
+    echo "## $VERSION ($(date +%Y-%m-%d))"
+    echo "$DRAFT_MARKER"
+    echo
+    if [[ -n $PATCHNOTES_ENTRY ]]; then
+        cat "$PATCHNOTES_ENTRY"
+    else
+        awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { on = 1; next }
+            on && /^## \[/ { exit }
+            on && /^### Migrations/ { skip = 1; next }
+            on && /^### / { skip = 0; next }
+            on && !skip { print }
+        ' "$CHANGELOG" | sed -e '/./,$!d'
+    fi
+    echo
+} > "$DRAFT"
+
+# On top, above the release before it; the file may not exist yet.
+{ cat "$DRAFT"; [[ -f $PATCHNOTES ]] && cat "$PATCHNOTES"; } > "$PATCHNOTES.tmp"
+mv "$PATCHNOTES.tmp" "$PATCHNOTES"
+
+if [[ -z ${PATCHNOTES_EDITOR:-} ]]; then
+    [[ -t 0 && -t 1 ]] || die "the patch notes open in nano, which needs a terminal — run this in one"
+fi
+note "Opening $PATCHNOTES. Write what changed for the players, delete the DRAFT line, save and quit."
+"${PATCHNOTES_EDITOR:-nano}" "$PATCHNOTES" || die "editor exited non-zero"
+
+grep -qF "$DRAFT_MARKER" "$PATCHNOTES" && die "the DRAFT marker is still in $PATCHNOTES"
+grep -qE "^## ${VERSION//./[.]} \([0-9]{4}-[0-9]{2}-[0-9]{2}\):?[[:space:]]*$" "$PATCHNOTES" \
+    || die "no '## $VERSION (YYYY-MM-DD)' heading left in $PATCHNOTES"
 
 # ---- verify ----------------------------------------------------------------
 
@@ -377,10 +449,10 @@ fi
 
 # ---- commit, merge, tag ----------------------------------------------------
 
-git --no-pager diff --stat -- "$CHANGELOG" "$VERSION_FILE"
+git --no-pager diff --stat -- "$CHANGELOG" "$VERSION_FILE" "$PATCHNOTES"
 confirm "Commit and tag $TAG?" || die "aborted"
 
-git add "$CHANGELOG" "$VERSION_FILE"
+git add "$CHANGELOG" "$VERSION_FILE" "$PATCHNOTES"
 git commit -q -m "docs: release $VERSION"
 COMMITTED=1
 

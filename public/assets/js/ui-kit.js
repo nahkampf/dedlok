@@ -45,6 +45,26 @@
     if (dlg) dlg.close();
   });
 
+  /* A dialog that opens by itself: <dialog data-show-on-load>. A form inside
+     it marked data-post-on-close is sent however the dialog closes — button,
+     Esc or backdrop — with keepalive, so a close that navigates away still
+     arrives. The patch notes are the first. */
+  document.querySelectorAll("dialog[data-show-on-load]").forEach((dlg) => {
+    const form = dlg.querySelector("form[data-post-on-close]");
+    if (form) {
+      dlg.addEventListener("close", () => {
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+          keepalive: true,
+        }).catch(() => {});
+      }, { once: true });
+    }
+    if (dlg.showModal) dlg.showModal();
+  });
+
   /* --- Dock -------------------------------------------------------------
      <nav class="dock">
        <button class="dock__item" data-dock-toggle aria-expanded="false">…
