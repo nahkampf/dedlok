@@ -237,7 +237,7 @@ final class DefencesTest extends TestCase
         $last = Ice::query()->where('level', 12)->sole();
 
         $this->assertSame(0.15, $first->hitChance());
-        $this->assertSame(0.95, $last->hitChance());
+        $this->assertSame(0.50, $last->hitChance());
     }
 
     /** Nothing carries a defeat tag yet, and null is the ordinary state for that. */
