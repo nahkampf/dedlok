@@ -1959,10 +1959,9 @@ share the live database, so a migration had already run from a laptop before the
 arrived. Now development has its own copy (see *Two databases*), and the worker's
 `migrate --force` after the pull is the only way a schema change reaches the live game.
 
-**`.github/workflows/manual.yml` is dead and should go.** It POSTs to
-`https://dedlok.online/deploy.php` on any tag push, and `deploy.php` has been removed —
-so it now fails on every release rather than doing anything. The polling worker replaced
-it.
+There is no GitHub Actions workflow. `.github/workflows/manual.yml` used to POST to
+`https://dedlok.online/deploy.php` on any tag push; `deploy.php` was removed, so it failed
+on every release doing nothing, and was deleted 2026-09-29. The polling worker replaced it.
 
 **`APP_DEBUG` stays `false`.** Turning it on is the fastest way to read a production
 fault and it prints the environment to the public internet; turn it back the moment the
