@@ -2145,6 +2145,16 @@ return [
         // The accordion's summary when NOTICE.md does not open with a heading.
         'notice' => 'Notice',
 
+        // PATCHNOTES.md in a modal. `all` is the version link's copy, `new`
+        // the one that opens by itself with what a player has not read.
+        'patch_notes' => [
+            'all' => 'Patch notes',
+            'new' => 'What changed since you were last here',
+            'heading' => ':version · :date',
+            'open' => 'Read the patch notes',
+            'close' => 'Close',
+        ],
+
         // Where the hosting money goes. An ordinary link rather than the
         // vendor's widget: the widget is a third-party script with its own
         // radius and its own magenta, and this page already has a wordmark

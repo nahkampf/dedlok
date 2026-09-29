@@ -27,10 +27,28 @@
          read as one block: the wordmark is 560px at most and centred, and this
          sits on its right edge. --}}
     <div style="width:min(560px,100%);margin:calc(var(--s-5) * -1) auto var(--s-5);text-align:right">
-        <span class="micro" style="color:var(--ink-3)">
-            {{ Text::get('home.version', ['version' => config('version.app')]) }}
-        </span>
+        {{-- The version is the way back into the patch notes, once there are
+             any to read. A link-styled button: it opens a dialog, it goes
+             nowhere, so an <a href> would be a lie. --}}
+        @if ($patchNotes === [])
+            <span class="micro" style="color:var(--ink-3)">
+                {{ Text::get('home.version', ['version' => config('version.app')]) }}
+            </span>
+        @else
+            <button type="button" class="link micro" data-open="#patch-notes"
+                    title="{{ Text::get('home.patch_notes.open') }}">
+                {{ Text::get('home.version', ['version' => config('version.app')]) }}
+            </button>
+        @endif
     </div>
+
+    @if ($patchNotes !== [])
+        <x-patch-notes id="patch-notes" :notes="$patchNotes" :title="Text::get('home.patch_notes.all')" />
+    @endif
+
+    @if ($unseenNotes !== [])
+        <x-patch-notes id="patch-notes-new" :notes="$unseenNotes" :title="Text::get('home.patch_notes.new')" unseen />
+    @endif
 
     {{-- An ordinary link, not the vendor's widget. The widget is a
          third-party script that draws its own button with its own radius and

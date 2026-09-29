@@ -1755,6 +1755,22 @@ Three places carry the number and are bumped together:
 
 The last is the only copy that can drift — bump it in the changelog commit.
 
+### Patch notes
+
+**`PATCHNOTES.md` is the players' changelog**, written by hand in plain words;
+`CHANGELOG.md` stays the technical record. One `## X.Y.Z (YYYY-MM-DD)` heading per
+release (a trailing colon is allowed), read by `App\Support\PatchNotes`, rendered with
+raw HTML stripped.
+
+- **What is new is decided by the newest NOTE, never the app version** — a release
+  nobody wrote a note for opens nothing.
+- **Signed in only.** A signed-in player sees everything newer than
+  `users.last_seen_changelog` in a modal that opens by itself; NULL sees the latest
+  release alone. The version on the front page reopens every note.
+- **Seen is written on CLOSE**, by a POST the dialog sends however it is closed
+  (`data-show-on-load` / `data-post-on-close` in `ui-kit.js`), and it never moves
+  backwards.
+
 ### Cutting a release
 
 **Work on `main`. Branching is the release script's job.**
@@ -1781,6 +1797,15 @@ reports the state and proposes the version the schema rule implies. `--branch NA
 - **Enforces the schema rule** — new migrations are listed under **Migrations**, and a patch
   release that adds one must be confirmed.
 - **Tags on `main`**, after the merge.
+- **Then drafts the PATCH NOTES** — a `## X.Y.Z (YYYY-MM-DD)` entry on top of
+  `PATCHNOTES.md`, from the changelog entry minus headings and migrations — and opens
+  **nano** on it (`PATCHNOTES_EDITOR` overrides). Same marker, same backing out. Nano
+  needs a terminal, so the script refuses to run without one.
+- **`--changelog FILE` / `--patchnotes FILE`** hand it entries written ahead of time:
+  the first skips the changelog editor, the second seeds the patch notes nano opens on.
+  **This is how a release is cut when Claude is asked to**: Claude writes both entries,
+  and the user runs the command in their own terminal, because nano cannot open inside
+  Claude's shell.
 - **Restores the tree and the branches on any exit that is not a successful commit.**
 - **Never pushes.**
 

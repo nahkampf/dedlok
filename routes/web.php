@@ -20,6 +20,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MarketController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PatchNotesController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
 use App\Http\Controllers\TrainingQueueController;
@@ -39,6 +40,9 @@ Route::get('/handles/available', AvailableHandlesController::class)
 // Character creation. RequireCharacter sends every signed-in player here until
 // they have one, so these two must stay reachable without a character.
 Route::middleware('auth')->group(function () {
+    // Closing the patch notes on the front page. See PatchNotesController.
+    Route::post('/patch-notes/seen', PatchNotesController::class)->name('patch-notes.seen');
+
     /*
      * Character creation, and the one place ForbidSecondCharacter applies. It
      * is the mirror of RequireCharacter, which runs globally and lets these two
