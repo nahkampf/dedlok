@@ -1,3 +1,7 @@
+## 0.29.0 (2026-09-29)
+
+- `ORACLE` scanner buffed to +19% chan checks, and +25% scan speed, but is not available on market (only through loyalty stores).
+
 ## 0.28.0 (2026-09-29)
 
 - Reduced the gradient for how much ICE damages you (higher grades were not survivable).

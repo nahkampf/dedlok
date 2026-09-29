@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+## [0.29.0] — 2026-09-29
+
+ORACLE earns its price, and the game tells players what changed.
+
+### Added
+
+- **Patch notes.** `PATCHNOTES.md` is the players' changelog, one
+  `## X.Y.Z (YYYY-MM-DD)` heading per release, backfilled to 0.1.0. A signed-in
+  player sees what they have not read in a modal on the front page, opened by
+  itself; a new account sees the latest release alone. Closing it, however it
+  is closed, records the newest release in `users.last_seen_changelog`, which
+  never moves backwards. The version under the logo reopens every note.
+  Signed-out visitors are shown nothing.
+- **`bin/release` drafts the patch notes too**, from the changelog entry, and
+  opens nano on them before committing. `--changelog` and `--patchnotes` take
+  entries written ahead of time.
+
+### Changed
+
+- **ORACLE** is +19% to scan checks (was +9%, below the common Surveyor Mk II's
+  +10%) and −25% scan time, and is no longer sold on the market.
+
+### Migrations
+
+- `2026_09_29_150000_oracle_earns_its_price` (a data re-tune by slug)
+- `2026_09_29_160000_a_user_remembers_the_patch_notes_they_read` (adds
+  `users.last_seen_changelog`)
+
+
 ## [0.28.0] — 2026-09-29
 
 ICE can be resisted, getting up can be trained, and being liked can be learned.
@@ -1930,7 +1959,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.28.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.29.0...HEAD
+[0.29.0]: https://github.com/nahkampf/dedlok/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/nahkampf/dedlok/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/nahkampf/dedlok/compare/v0.26.1...v0.27.0
 [0.26.1]: https://github.com/nahkampf/dedlok/compare/v0.26.0...v0.26.1
