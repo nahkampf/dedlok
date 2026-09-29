@@ -63,16 +63,16 @@ final class CheckRollTest extends TestCase
         $character = $this->character(['perception' => 40, 'memory' => 30]);
         $this->trained($character, $skill, 3);
 
-        // 0.5*40 + 0.25*30 + 8*3 = 51.5, floored to 51.
+        // 0.5*40 + 0.25*30 + 8*3 = 51.5, unrounded.
         $value = $character->fresh()->stat(SkillStats::checkId('probe'))->value;
-        $this->assertSame(51.0, $value);
+        $this->assertSame(51.5, $value);
 
-        // Evenly matched against a difficulty of 51: a coin flip, whatever the
-        // numbers happen to be.
+        // Evenly matched against a difficulty of 51.5: a coin flip, whatever
+        // the numbers happen to be.
         $roller = CheckRoller::fromConfig(static fn (): float => 0.49);
 
-        $this->assertSame(0.5, $roller->chance($value, 51));
-        $this->assertTrue($roller->roll($value, 51)->passed);
+        $this->assertSame(0.5, $roller->chance($value, 51.5));
+        $this->assertTrue($roller->roll($value, 51.5)->passed);
     }
 
     /**
@@ -113,11 +113,11 @@ final class CheckRollTest extends TestCase
         $value = $character->stat(SkillStats::checkId('probe'))->value;
         $floor = (float) config('checks.certainty_floor');
 
-        // 27 against 80 is a margin of -53: the curve gives about 0.13%, which
-        // the floor lifts back to 0.85%. Hopeless, and never quite impossible.
+        // 27.5 against 80 is a margin of -52.5: the curve gives a hair under
+        // 0.14%, which the floor lifts back to 0.85%. Hopeless, never impossible.
         $outcome = CheckRoller::fromConfig(static fn (): float => $floor / 2)->roll($value, 80);
 
-        $this->assertSame(27.0, $value);
+        $this->assertSame(27.5, $value);
         $this->assertSame($floor, $outcome->chance);
         $this->assertTrue($outcome->passed, 'hopeless, and the floor is still open');
         $this->assertTrue($outcome->wasFloored($floor), 'that was luck, not skill');

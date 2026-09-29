@@ -7,21 +7,29 @@ namespace Tests\Feature;
 use App\Inventory\SkillInjector;
 use App\Models\Character;
 use App\Models\Skill;
+use App\Stats\Modifier;
+use App\Stats\Resolver;
 use App\Stats\Sheet;
 use App\Stats\SkillStats;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * The one thing in the game that heals by waiting.
- *
- * Everything else comes back through things a player does. This is bought at
- * the top of the ladder and nowhere else, which is why most of these tests are
- * about somebody NOT recovering.
+ * Healing by waiting: a slow mend for everybody, and a fast trickle bought at
+ * the top of the ladder.
  */
 final class SynapticRegenTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Off the four-hourly mark, so the mend everybody gets stays out of
+        // tests about the trained trickle. See the mend tests below.
+        $this->travelTo(now()->setTime(12, 1));
+    }
 
     private function character(): Character
     {
@@ -136,5 +144,53 @@ final class SynapticRegenTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
 
         $this->character()->recover('current_synaptic_integrity', -1);
+    }
+
+    /** EVERYBODY MENDS: a point on each four-hourly mark, trained or not. */
+    public function test_everybody_mends_a_point_on_the_four_hourly_mark(): void
+    {
+        $character = $this->character();
+        $character->forceFill(['current_synaptic_integrity' => 1])->save();
+
+        $this->travelTo(now()->setTime(12, 0));
+        $this->artisan('characters:regenerate')->assertSuccessful();
+        $this->assertSame(2, $character->fresh()->current_synaptic_integrity);
+
+        // Every other minute of the four hours brings nothing.
+        foreach ([[12, 1], [13, 0], [15, 59]] as [$h, $m]) {
+            $this->travelTo(now()->setTime($h, $m));
+            $this->artisan('characters:regenerate')->assertSuccessful();
+        }
+        $this->assertSame(2, $character->fresh()->current_synaptic_integrity);
+
+        $this->travelTo(now()->setTime(16, 0));
+        $this->artisan('characters:regenerate')->assertSuccessful();
+        $this->assertSame(3, $character->fresh()->current_synaptic_integrity);
+    }
+
+    public function test_mending_never_passes_the_maximum(): void
+    {
+        $character = $this->character();
+        $max = $character->maximumFor('current_synaptic_integrity');
+        $character->forceFill(['current_synaptic_integrity' => $max])->save();
+
+        $this->travelTo(now()->setTime(12, 0));
+        $this->artisan('characters:regenerate')->assertSuccessful();
+
+        $this->assertSame($max, $character->fresh()->current_synaptic_integrity);
+    }
+
+    /** An interval, so a percentage off it lands: −25% is a point every three hours. */
+    public function test_the_interval_is_a_stat_a_modifier_can_shorten(): void
+    {
+        $character = $this->character();
+        $base = $character->stat('synaptic_mend_minutes')->toInt();
+
+        $faster = app(Resolver::class)->resolve('synaptic_mend_minutes', (float) $base, [
+            Modifier::fromArray(['op' => 'percentage_of_base', 'amount' => -25, 'target' => ['id' => 'synaptic_mend_minutes']]),
+        ])->toInt();
+
+        $this->assertSame(240, $base);
+        $this->assertSame(180, $faster);
     }
 }

@@ -2,6 +2,63 @@
 
 ## [Unreleased]
 
+## [0.30.0] — 2026-09-29
+
+ICE hits on a flatter curve, traces and operating systems open up to skills, and small percentage skills stop rounding away to nothing.
+
+### Added
+
+- **`trace_hop_chance`** is a stat now: the hop's grade still sets the base (95% at grade
+  1 down to 20% at grade 9), and a runner's modifiers move it. Negative lowers the
+  trace's chance of getting through.
+- **The operating-system roll goes through the skill's own `check.<slug>` stat.** The
+  level still sets the base off `cyberspace.os.values`, and anything targeting the check
+  reaches the roll.
+- **Opaque Routing Protocols** (rank 8, Intellect/Focus, needs Routing 3, 15,000 creds,
+  on the market): −4% `trace_hop_chance` a level, −20% trained out.
+- **Everybody mends 1 point of Synaptic Integrity every four hours**, trained or not,
+  through the new `synaptic_mend_minutes` stat (base 240, an interval so a percentage
+  off it lands). Neuroplasticity and doses still stack on top as the fast trickle.
+- **New accounts start caught up on the patch notes.** Registering sets
+  `last_seen_changelog` to the latest release, so a first visit shows nothing.
+- **Existing accounts are backfilled from when they were last active** — the newest
+  release note dated before their last recorded action (a run, a purchase, a mission,
+  training, a dose, or reading a message; falling back to account creation), so
+  everything from that day on opens once.
+
+### Fixed
+
+- **ICE damage is on a flatter curve.** Attack ran 7 → 57 and hit chance 15% → 95% across
+  the twelve levels, so damage a turn grew about fifty-fold while a Synaptic Integrity
+  pool only grows about three-fold — a landed ICE XII hit cost more than a fully built
+  character's whole pool. Attack now runs 7 → 13 and hit chance 15% → 50%. Integrity is
+  untouched, so fight length and the twenty-turn rule are unchanged.
+- **`check.<slug>` no longer rounds down.** Both places that read a check
+  (`CheckRoller`, the operating-system roll) already used it as a float, so flooring it
+  only threw away a fraction of every small skill modifier that targeted one. The
+  operating-system table is back to its exact original decimals now that nothing forces
+  it to whole numbers.
+- **Three skills that rounded away to nothing at low levels, the same bug in three
+  places.** A percentage of a small, floored or rounded stat can vanish below level 3
+  or 4 — this is what made Reactive Firewalling inert at level 1 last release, and the
+  same check turned up two more:
+  - **Reactive Firewalling** raised to −5% a level (was −2.5%).
+  - **Mitigation Protocols** is `+1`/`+1` flat at levels 1–2, then `+4%`/`+4%`/`+6%` at
+    3–5 (was a uniform +2%/level that did nothing until level 3, and even then only
+    against the strongest icebreakers).
+  - **Neural Sheathing** raised to +5% Synaptic Integrity max a level (was +1%, which
+    did nothing for a typical starting character until level 4).
+
+### Migrations
+
+- `2026_09_29_170000_existing_players_catch_up_on_the_patch_notes` (data only)
+- `2026_09_29_180000_opaque_routing_protocols` (a skill and its imprint)
+- `2026_09_29_190000_ice_hits_on_a_flatter_curve` (rewrites the twelve `ice` rows)
+- `2026_09_29_200000_reactive_firewalling_retuned` (a data re-tune by slug)
+- `2026_09_29_210000_mitigation_protocols_below_the_floor` (a data re-tune by slug)
+- `2026_09_29_220000_neural_sheathing_retuned` (a data re-tune by slug)
+
+
 ## [0.29.0] — 2026-09-29
 
 ORACLE earns its price, and the game tells players what changed.
@@ -1959,7 +2016,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.29.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.30.0...HEAD
+[0.30.0]: https://github.com/nahkampf/dedlok/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/nahkampf/dedlok/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/nahkampf/dedlok/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/nahkampf/dedlok/compare/v0.26.1...v0.27.0

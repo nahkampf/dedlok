@@ -19,7 +19,7 @@ class PatchNotesController extends Controller
 {
     public function __invoke(Request $request): Response
     {
-        $latest = PatchNotes::all()[0]['version'] ?? null;
+        $latest = PatchNotes::latest();
         $user = $request->user();
         $seen = $user->last_seen_changelog;
 

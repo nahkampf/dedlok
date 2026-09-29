@@ -23,6 +23,7 @@ use App\Stats\Damage;
 use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
 use App\Stats\Resolver;
+use App\Stats\SkillStats;
 use App\Support\Text;
 use Closure;
 use Illuminate\Support\Facades\Config;
@@ -278,7 +279,7 @@ final readonly class Simulator
             return [];
         }
 
-        if (! $this->traceGetsThrough($run)) {
+        if (! $this->traceGetsThrough($character, $run)) {
             return [$this->line('cyberspace.run.log.trace_held')];
         }
 
@@ -345,7 +346,7 @@ final readonly class Simulator
      * comes on unopposed. An EMPTY chain is that case from the first turn,
      * which is the only one that exists today.
      */
-    private function traceGetsThrough(Run $run): bool
+    private function traceGetsThrough(Character $character, Run $run): bool
     {
         $grades = $run->routingGrades();
 
@@ -381,7 +382,13 @@ final readonly class Simulator
         /** @var array<int, int> $table */
         $table = Config::get('cyberspace.trace.advance', []);
 
-        if (($this->roll)(1, 100) > ($table[$next] ?? 100)) {
+        // The hop's GRADE sets the base; the runner's modifiers move it. A skill
+        // that makes a chain hold better is a negative modifier on this stat.
+        $chance = $this->resolver
+            ->resolve('trace_hop_chance', (float) ($table[$next] ?? 100), $character->modifiers())
+            ->value;
+
+        if (($this->roll)(1, 100) > $chance) {
             return false;
         }
 
@@ -766,7 +773,14 @@ final readonly class Simulator
             return 0.0;
         }
 
-        return (float) ($values[$level] ?? ($level > array_key_last($values) ? end($values) : reset($values)));
+        $base = (float) ($values[$level] ?? ($level > array_key_last($values) ? end($values) : reset($values)));
+
+        // The LEVEL sets the base off the table; anything else that helps — a
+        // program, an implant, a dose — is a modifier on the skill's own check,
+        // and the roll never learns it exists.
+        return $this->resolver
+            ->resolve(SkillStats::checkId($skill->slug), $base, $character->modifiers())
+            ->value;
     }
 
     private function osDifficulty(): float

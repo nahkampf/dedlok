@@ -868,6 +868,12 @@ return [
         | The chances move if `checks.spread` moves, which is correct: that
         | number is how decisive the whole game is, and an OS curve that held
         | still while everything else loosened would be opting out of it.
+        |
+        | DECIMAL, because each is the BASE of the skill's `check.<slug>` stat
+        | and that stat no longer rounds down (`App\Stats\SkillStats`) — a
+        | check was never really a whole number, and truncating it here bought
+        | nothing but a slightly-off curve. Anything else that helps with an
+        | operating system is a modifier on that same check.
         */
         'values' => [
             0 => 0.0,

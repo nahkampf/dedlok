@@ -46,13 +46,11 @@ class StatConfigTest extends TestCase
     }
 
     /**
-     * NOTHING HEALS BY WAITING, and the zero base is where that rule lives.
+     * THE FAST TRICKLE IS PAID FOR, and the zero base is where that rule lives.
      *
-     * Synaptic Integrity and hit points come back through things a player does.
-     * The single exception is bought with a rank 16 skill — Neuroplasticity, a
-     * point a minute per level — so a character who has not trained it recovers
-     * nothing by sitting still, ever. Raising this base would hand passive
-     * healing to everybody and quietly delete the reason healing exists.
+     * Everybody mends a point every four hours through `synaptic_mend_minutes`.
+     * A point a minute is bought — Neuroplasticity or a dose. Raising this base
+     * would hand fast healing to everybody and delete the reason it is sold.
      */
     public function test_nobody_recovers_by_waiting_unless_they_trained_for_it(): void
     {

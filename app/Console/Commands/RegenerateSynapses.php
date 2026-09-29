@@ -12,13 +12,10 @@ use Illuminate\Support\Facades\Log;
 /**
  * Credit a minute of Synaptic Integrity to anybody who has trained for it.
  *
- * ## Nobody gets this for free
+ * ## The fast trickle is paid for
  *
- * `synaptic_regen` is zero by default and that is the rule rather than a
- * starting value: nothing in this game heals by waiting. The one exception is
- * bought with a rank 16 skill — Neuroplasticity, a point a minute per level —
- * so on a world of untrained characters this command resolves a handful of
- * stats and writes nothing at all.
+ * `synaptic_regen` is zero by default: a point a minute is bought with a rank
+ * 16 skill — Neuroplasticity, a point a minute per level — or a dose.
  *
  * ## No stored clock, and a missed minute is never made up
  *
@@ -32,6 +29,14 @@ use Illuminate\Support\Facades\Log;
  * `market:seed` by hand makes a delivery. `withoutOverlapping()` keeps two
  * scheduled passes from landing together; nothing defends against somebody
  * choosing to run it twice, and nothing should.
+ *
+ * ## And everybody mends, slowly
+ *
+ * On top of that, a point every `synaptic_mend_minutes` (four hours) for
+ * everybody, trained or not. Still no clock: the point lands on the minute
+ * whose number since the epoch divides by the character's interval, so the
+ * four-hourly marks are the same for everybody on the same interval, and a
+ * minute the scheduler missed is a point missed — this command's stance.
  *
  * ## It heals from zero
  *
@@ -50,7 +55,7 @@ class RegenerateSynapses extends Command
                             {--dry-run : Work out what would be credited and write nothing}
                             {--quiet-when-idle : Print nothing unless something healed}';
 
-    protected $description = 'Credit a minute of Synaptic Integrity regeneration to every character who has trained it';
+    protected $description = 'Credit a minute of Synaptic Integrity regeneration, and the four-hourly mend everybody gets';
 
     public function handle(Resolver $resolver): int
     {
@@ -58,10 +63,17 @@ class RegenerateSynapses extends Command
 
         $healed = 0;
         $points = 0;
+        $minute = intdiv(now()->getTimestamp(), 60);
 
-        Character::query()->chunkById(200, function ($characters) use ($resolver, $dryRun, &$healed, &$points): void {
+        Character::query()->chunkById(200, function ($characters) use ($resolver, $dryRun, $minute, &$healed, &$points): void {
             foreach ($characters as $character) {
                 $rate = $resolver->resolve('synaptic_regen', 0.0, $character->modifiers())->toInt();
+
+                // The slow floor: through the Sheet, because its base lives in
+                // `stats.bases`, which only the Sheet walks.
+                if ($minute % max(1, $character->stat('synaptic_mend_minutes')->toInt()) === 0) {
+                    $rate++;
+                }
 
                 if ($rate <= 0) {
                     continue;

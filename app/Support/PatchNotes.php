@@ -56,11 +56,20 @@ final class PatchNotes
         return $notes;
     }
 
+    /** The newest release with a note, or null when there is none. */
+    public static function latest(?string $path = null): ?string
+    {
+        return self::all($path)[0]['version'] ?? null;
+    }
+
     /**
-     * What somebody who last saw `$seen` has not read yet, newest first.
+     * What somebody who last saw `$seen` has not read yet, newest first: every
+     * release since, however many.
      *
-     * NULL — a new account, or one from before this existed — is the latest
-     * release alone: a first visit is not a history lesson.
+     * NULL is nothing. A new account is given the latest release as it is
+     * made, and accounts from before this existed were backfilled from when
+     * they were last active, so a null is an account nobody could place — and
+     * a modal of the whole history is not a guess worth making at them.
      *
      * @param  list<array{version: string, date: string, html: string}>  $notes
      * @return list<array{version: string, date: string, html: string}>
@@ -68,7 +77,7 @@ final class PatchNotes
     public static function unseen(array $notes, ?string $seen): array
     {
         if ($seen === null) {
-            return array_slice($notes, 0, 1);
+            return [];
         }
 
         return array_values(array_filter(

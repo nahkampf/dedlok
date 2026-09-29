@@ -101,6 +101,30 @@ final class OperatingSystemTest extends TestCase
         }
     }
 
+    /**
+     * THE LEVEL IS THE BASE, NOT THE WHOLE STORY. Anything else that helps with
+     * an operating system is a modifier on the skill's own check: +12 flat
+     * lifts somebody who never trained it to where level 1 stands.
+     */
+    public function test_a_modifier_on_the_check_reaches_the_roll(): void
+    {
+        $this->machine();
+        $run = $this->begin();
+        $this->knowsTheOs(0);
+
+        $helper = Skill::factory()->rank(1)->governedBy('intellect', 'memory')->create([
+            'slug' => 'an_exploit_kit',
+            'modifiers' => [['op' => 'add', 'level' => 1, 'amount' => 12, 'target' => ['id' => 'check.'.$this->os->slug]]],
+        ]);
+        $this->inject($this->character, $helper, $helper->pointsForLevel(1), 1);
+
+        $this->assertEqualsWithDelta(
+            0.1824,
+            app(Simulator::class)->coreChance($this->character->fresh(), $run),
+            0.001,
+        );
+    }
+
     /** NOT CERTAIN, EVER. The top of the curve is the floor, from the other side. */
     public function test_the_best_runner_alive_can_still_fumble_it(): void
     {
