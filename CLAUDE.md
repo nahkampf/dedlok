@@ -1458,7 +1458,7 @@ consequences and taking what a machine holds all roll.
   `AttackTag::multiplier()` is still pure — the table value, untouched, and what the tests
   above pin. `Simulator::ensnareMultiplier()` is the one place a character's own modifiers
   reach it: the tag's raw reduction is resolved with `character->modifiers()` before it
-  becomes `max(0, 1 − reduction/100)`. **Severance Protocols** (rank 16, needs Egress
+  becomes `max(0, 1 − reduction/100)`. **Signature Scrambling** (rank 16, needs Egress
   Protocols 3) is the first skill on it, −5%/level.
 - **It is PASSIVE while the ICE lives and nothing is stored on the run** — read off
   `runs.ice_id`, so there is nothing to expire and no condition outliving its cause.

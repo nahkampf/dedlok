@@ -8,7 +8,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Severance Protocols — the first thing that blunts Ensnare.
+ * Signature Scrambling — the first thing that blunts Ensnare.
  *
  * Ensnare was the one number in a fight nothing could ever reach: a plain
  * float read straight out of `cyberspace.attack_tags.ensnare`, multiplied
@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
  */
 return new class extends Migration
 {
-    private const SLUG = 'severance_protocols';
+    private const SLUG = 'signature_scrambling';
 
     /** What it needs, and how far trained. */
     private const REQUIRES = ['egressprotocols' => 3];
@@ -34,11 +34,11 @@ return new class extends Migration
     public function up(): void
     {
         $skill = Skill::query()->updateOrCreate(['slug' => self::SLUG], [
-            'title' => 'Severance Protocols',
-            'description' => 'Ensnare works by making the disconnect itself expensive — the buffers it takes to '
-                .'tear the link clean rather than let it stall. This is the drilled sequence for forcing that '
-                .'severance anyway: which handshake to abandon, which acknowledgement to never send. Each level '
-                .'takes a share off however hard something currently holds you.',
+            'title' => 'Signature Scrambling',
+            'description' => 'Ensnare holds on by locking onto the shape of your own connection — the timing, '
+                .'the handshake, the signature it grabbed the moment it noticed you. This keeps that signature '
+                .'moving, randomised enough that the grip has to keep re-acquiring what it already caught. Each '
+                .'level takes a share off however hard something currently holds you.',
             'category' => 'Evasion Techniques',
             'rank' => 16,
             'primary_attribute' => 'memory',
