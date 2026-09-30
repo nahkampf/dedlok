@@ -1,3 +1,8 @@
+## 0.32.1 (2026-09-30)
+
+- Fixed the "Close window" button on the scan-reading screen not working on narrow screens
+- Updated Laravel to patch a security advisory.
+
 ## 0.32.0 (2026-09-30)
 
 - Heat now triggers "Hunters" jumping you in cyberspace. This triggers a straight up fight, like a run but without the trace, IDS etc.

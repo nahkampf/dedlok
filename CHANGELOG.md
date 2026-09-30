@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+## [0.32.1] — 2026-09-30
+
+A hidden button that wasn't, and a framework bump past a security advisory.
+
+### Fixed
+
+- **`.btn` ignored its own `hidden` attribute.** `.btn`'s unconditional
+  `display: inline-flex` beat the browser's UA `[hidden]` rule regardless of
+  specificity — the same failure already patched for `.tabpanel`, the filter
+  chips and `[data-too-dear]`, just missed here. On the scan-reading dialog
+  this meant "Run in background" never actually hid itself once a read
+  completed, so three footer buttons tried to render at once; with no
+  `flex-wrap` on `.panel__ft`, at phone width that pushed "Close window" off
+  the visible edge of the dialog, outside the tappable area. Fixed with
+  `.btn[hidden] { display: none }` and `flex-wrap` on `.panel__ft`.
+
+### Changed
+
+- **`laravel/framework` updated to v13.34.0**, past the security advisory
+  fixed in 13.30.0. `composer.json`'s existing `^13.17` constraint already
+  allowed it; only `composer.lock` moved.
+
+
 ## [0.32.0] — 2026-09-30
 
 Heat stops being inert. Cross a threshold and it starts finding you.
@@ -2101,7 +2124,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.32.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.32.1...HEAD
+[0.32.1]: https://github.com/nahkampf/dedlok/compare/v0.32.0...v0.32.1
 [0.32.0]: https://github.com/nahkampf/dedlok/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/nahkampf/dedlok/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/nahkampf/dedlok/compare/v0.29.0...v0.30.0
