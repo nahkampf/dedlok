@@ -585,6 +585,36 @@ final class ProgramTest extends TestCase
     }
 
     /**
+     * The layout's own processes dialog, reachable from every page — it
+     * posts to the same `inventory.run` route the deck screen's Stop button
+     * does, since `ProgramRunner::stop()` is the only writer either way.
+     */
+    public function test_a_running_program_is_stopped_from_the_processes_dialog(): void
+    {
+        $item = $this->programItem(qflops: 12, memory: 8);
+        $this->runner->start($this->character, $this->own($item));
+
+        $process = InventoryItem::query()->running()->firstOrFail();
+
+        $this->actingAs($this->character->user)
+            ->get(route('inventory.index'))
+            ->assertOk()
+            ->assertSee('<dialog id="processes"', false)
+            ->assertSee($item->displayName())
+            ->assertSee(Text::get('programs.action.stop'))
+            ->assertSee(route('inventory.run', $process), false);
+
+        $this->actingAs($this->character->user)
+            ->post(route('inventory.run', $process))
+            ->assertRedirect();
+
+        $this->assertTrue(
+            InventoryItem::query()->loose()->whereKey($process->getKey())->exists(),
+            'stopping from the dialog merges the program back into the stash, same as the deck screen'
+        );
+    }
+
+    /**
      * The other tab. Storage is split because a program and a file are not the
      * same kind of thing: one is something you run, the other something you
      * hold.
