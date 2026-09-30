@@ -643,6 +643,12 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
 }
 .btn:hover  { background-color: var(--bg-3); border-color: var(--line-2); }
 .btn:active { transform: translateY(1px); background-color: var(--bg-4); }
+/* An unconditional display wins over the UA's [hidden] rule regardless of
+   specificity — the same reason dialog.modal keeps display scoped to [open].
+   Without this a hidden .btn stays visible and its neighbours crowd it
+   off-screen. Same failure as .tabpanel, the filter chips and
+   [data-too-dear] — a button toggled by JS needs this said outright. */
+.btn[hidden] { display: none; }
 
 .btn--primary {
   background: var(--ink-0);
@@ -1114,7 +1120,7 @@ cap-widget {
 .panel__hd > .micro { flex: 1; }
 .panel__bd { padding: var(--s-4); }
 .panel__ft {
-  display: flex; align-items: center; gap: var(--s-3);
+  display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3);
   padding: var(--s-3) var(--s-4);
   border-top: var(--hair) solid var(--line-1);
   background: rgba(0,0,0,.18);
