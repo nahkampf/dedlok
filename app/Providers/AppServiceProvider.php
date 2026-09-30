@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Checks\CheckRoller;
 use App\Cyberspace\ChainBuilder;
+use App\Cyberspace\HunterCombat;
+use App\Cyberspace\Hunters;
 use App\Cyberspace\Lockdown;
 use App\Cyberspace\Probe;
 use App\Cyberspace\Simulator;
@@ -94,6 +96,17 @@ class AppServiceProvider extends ServiceProvider
             null,
             $app->make(Resolver::class),
             $app->make(CheckRoller::class),
+        ));
+
+        // A hunter's own two dice, for the same reason as every other one
+        // above: each takes an injected die, so the container cannot build
+        // one by reflection, and binding lets a test pin where a hunter's
+        // grade lands or how a fight rolls and have the SCREEN use it too.
+        $this->app->bind(Hunters::class, static fn ($app): Hunters => Hunters::fromConfig(
+            $app->make(Resolver::class),
+        ));
+        $this->app->bind(HunterCombat::class, static fn ($app): HunterCombat => HunterCombat::fromConfig(
+            $app->make(Resolver::class),
         ));
 
         /*

@@ -2145,6 +2145,21 @@ details.panel > summary.panel__hd:focus-visible {
 }
 .hud-alert__code { font: 700 var(--fs-xs)/1 var(--font-mono); color: var(--ember); letter-spacing: .12em; }
 
+/* Hazard stripe — full-width caution tape, ember filled rather than
+   outlined. .hud-alert's exception spent on a different shape: this marks a
+   screen as a HUNTER attacking you, not a system you are running against —
+   there is no trace, no IDS, nothing else on the page to say so, so the
+   stripe says it before any text does. One per screen, same licence. */
+.hazard-stripe {
+  height: 32px;
+  width: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--ember) 0 16px,
+    var(--bg-0) 16px 32px
+  );
+}
+
 /* Framed viewport — minimap, portrait, camera feed */
 .frame {
   position: relative;

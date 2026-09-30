@@ -2,6 +2,42 @@
 
 ## [Unreleased]
 
+## [0.32.0] — 2026-09-30
+
+Heat stops being inert. Cross a threshold and it starts finding you.
+
+### Added
+
+- **Hunters.** Moving in cyberspace — a step, a jump, a recall, jacking in —
+  now rolls a low, heat-scaled chance of a hunter: not a run against a
+  system, but a straight exchange against ICE generated on the fly from the
+  real catalogue. No trace, no IDS, and no door out until it is settled — the
+  screen locks the same way a run does, and the two locks refuse each other.
+- **The chance is a straight line on heat**, from 0.5% at 5 heat to a capped
+  35% at 100, and deliberately has no cooldown: a hunter just beaten is
+  exactly as likely to come again on the very next step.
+- **Five hunter grades**, tied to the heat that spawned them. Grade 5 draws
+  ICE from the same level range a grade 8-9 system does — the top of the
+  curve is meant to hurt.
+- **The strongest owned icebreaker starts itself** — there is no briefing to
+  choose one at. Every existing ICE resistance and Ensnare reach a hunter for
+  free, since the damage is the same `damage.synaptic_integrity.ice` a system
+  fight deals.
+- **Winning pays creds by grade (roughly 300 to 1,000) and trims heat by a
+  flat, grade-scaled amount**, plus a low chance of a program, silently
+  skipped if the deck has no room. **Losing costs a random 5-15% slice of
+  heat rather than resetting it**, and risks real Synaptic Integrity and the
+  waiting screen.
+- **A hazard-stripe UI kit component** — 45° caution tape between `--ember`
+  and the page background — marks the hunt screen so it never reads as an
+  ordinary run.
+
+### Migrations
+
+- `2026_09_30_130000_hunters_answer_the_heat` (creates `hunts`, adds
+  `characters.current_hunt_id`)
+
+
 ## [0.31.0] — 2026-09-30
 
 The operating-system roll and Ensnare open up to skills, expansion cards exist, and a dead workflow is gone.
@@ -2065,7 +2101,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/nahkampf/dedlok/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/nahkampf/dedlok/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/nahkampf/dedlok/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/nahkampf/dedlok/compare/v0.28.0...v0.29.0

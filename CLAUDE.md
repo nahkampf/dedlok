@@ -1486,6 +1486,70 @@ consequences and taking what a machine holds all roll.
 - **`cyberspace:tag-ice` is a console command, not a migration** — a fresh clone's ICE
   carries no tags until it is run, so tests write tags onto the row directly.
 
+### Hunters
+
+**Heat becomes an encounter, checked on every move.** A hunter is not a run against a
+system — no trace, no IDS, nothing snapshotted at a briefing. It is a straight exchange
+against ICE generated on the fly, and it locks the screen until it is settled.
+
+- **A HUNTER IS AN ICE, ON THE FLY.** `hunts.ice_id` points at a real row from the twelve
+  in the catalogue, drawn from the level range its grade allows — never invented numbers.
+  That is what makes every existing ICE resistance (Reactive Firewalling, Defensive
+  Compartmentalization, Spectral) and Ensnare reach a hunter for free: the damage is
+  `damage.synaptic_integrity.ice`, because it IS that damage, and `HunterCombat` is the
+  same exchange shape `Simulator::iceStrikes()` already is, not a second one invented
+  beside it.
+- **`App\Cyberspace\Hunters::rolls()` is the die, checked in `Navigator::arrive()` after
+  every sweep** — jacking in, a step, a jump, a recall, all funnel through the one
+  `arrive()` hook a system sweep already uses. **The chance is a straight line on heat**,
+  capped, never certain: `cyberspace.heat.hunt.floor_below` (5) to `certain_at` (100)
+  maps `chance_at_floor` (0.5%) to `cap` (35%). Below the floor it is not rolled at all —
+  the same shape `Bounties::chanceFor()` uses, deliberately **without** its cooldown: a
+  hunter just beaten is exactly as likely on the very next step as the curve says.
+- **Five grades, not the ICE's own level.** `hunts.grade` is the difficulty band the
+  spawning heat fell into (`cyberspace.heat.hunt.grades`), kept alongside the ICE it
+  happened to draw so creds and the heat reduction on a win can be priced by band without
+  re-deriving one from a level two grades might share. Grade 5 draws from the same level
+  range (10-12) a grade 8-9 SYSTEM does.
+- **`characters.current_hunt_id` is what "in a hunt" means** — a column, `current_run_id`'s
+  own shape. `App\Cyberspace\Hunters::spawn()` is the only writer, inside one transaction
+  with the character's pointer.
+- **NO DOOR OUT UNTIL IT IS SETTLED.** `App\Http\Middleware\EnsureHuntIsResolved` is
+  `EnsureRunIsFinished`'s own shape — named allow-list, 409 JSON for API, redirect for
+  web, admin not exempt. `RunStarter` refuses with `RunRefusal::Hunted` and
+  `Navigator::jackOut()` refuses with `TravelRefusal::Hunted`; `EnsureDeckStillRuns` stands
+  down for a live hunt exactly as it does for a live run, since a hunt can only exist while
+  jacked in.
+- **THE FIGHT PICKS ITS OWN LOADOUT.** `Hunters::spawn()` calls
+  `startBestIcebreaker()`, which ranks every owned, idle icebreaker by its resolved
+  `icebreaker_damage` and starts the strongest one `ProgramRunner::start()` will accept —
+  the player chooses nothing, because there is no briefing to choose it at. Owning none
+  starts nothing, and a fight with nothing running still resolves: zero damage a turn is
+  a turn the hunter still gets to swing back.
+- **THE PLAYER ACTS, THEN THE HUNTER DOES** — the same order every fight in this game
+  keeps. `HunterCombat::fight()` deals the running icebreaker's damage first; if that
+  breaks the ICE the hunter never swings. Otherwise the hunter's `skill` is a hit chance
+  the same way a system's ICE is, and a hit goes through `DamageResolver` under
+  `DamageOrigin::Ice` like any other.
+- **Winning is priced by GRADE, losing is not.** A win reduces heat by a flat
+  `grade × win_heat_reduction_per_grade` (5) and pays creds from the grade's own band
+  (`cyberspace.heat.hunt.grades.*.creds`, ~300 at grade 1 to ~1000 at grade 5), plus a low
+  chance (`program_chance`, 8%) of a program — silently skipped if it would not fit,
+  `Storage::fits()` the same gate extraction uses, nothing forced. **A loss does NOT reset
+  heat to zero** — it drops a random `cyberspace.heat.hunt.defeat_heat_loss` slice (5-15%)
+  of whatever it currently is, deliberately less generous and less predictable than a win,
+  so losing is never the cheap way to manage heat. Either way `ProgramRunner::stopRunOnly()`
+  clears the loadout the hunt started, and a loss calls `WaitingRoom::checkFloor()` exactly
+  as a system fight's defeat does.
+- **One transaction per exchange.** A hunt fought halfway and left unsaved is a fight the
+  next request would have to guess the middle of — `hunt.log` (JSON, append-only) is what
+  `hunt/show.blade.php` replays, `runs.log`'s own shape.
+- **The hazard stripe is the one place ember fills rather than outlines.** `.hazard-stripe`
+  in the UI kit (a 45° repeating-linear-gradient between `--ember` and `--bg-0`, 32px tall,
+  full width) marks the screen as a hunter attacking the player rather than a run against a
+  system — the same licence `.hud-alert` spends, on a different shape, because nothing
+  else on a hunt screen says so: no trace, no IDS, no briefing to read it off of.
+
 ### Being on the floor
 
 **Reaching 0 in either resource puts a character on the waiting screen** —

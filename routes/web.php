@@ -15,6 +15,7 @@ use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\ExchangeController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\HunterController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MarketController;
@@ -228,6 +229,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/run', [RunController::class, 'show'])->name('run.show');
     Route::post('/run/act', [RunController::class, 'act'])->name('run.act');
     Route::post('/run/egress', [RunController::class, 'egress'])->name('run.egress');
+
+    /*
+     * Cyberspace combat. Two routes, and they are the only ones a hunted
+     * player may reach — see App\Http\Middleware\EnsureHuntIsResolved. No
+     * setup route: a hunter does not wait for a briefing, and there is
+     * nothing to choose beyond pressing Fight.
+     */
+    Route::get('/hunt', [HunterController::class, 'show'])->name('hunt.show');
+    Route::post('/hunt/act', [HunterController::class, 'act'])->name('hunt.act');
 
     // Stopping a read. NOT jacking out and not unloading the analyser — it
     // stops pointing the instrument at one machine and frees it for another.

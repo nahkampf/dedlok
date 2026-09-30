@@ -52,7 +52,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'user_id', 'handle', 'bio', 'archetype', 'creds', 'heat',
     'egress_trace_at', 'egress_si_at',
-    'current_hitpoints', 'current_synaptic_integrity', 'waiting_until', 'waiting_cause', 'current_run_id',
+    'current_hitpoints', 'current_synaptic_integrity', 'waiting_until', 'waiting_cause', 'current_run_id', 'current_hunt_id',
     'intellect', 'memory', 'perception', 'reflex', 'focus',
     'social', 'meat', 'motor', 'senses', 'muscle',
 ])]
@@ -453,6 +453,20 @@ class Character extends Model
     public function currentRun(): BelongsTo
     {
         return $this->belongsTo(Run::class, 'current_run_id');
+    }
+
+    /**
+     * The hunter this character is fighting, if any.
+     *
+     * A COLUMN AND NOT A FLAG on the hunts table, the same call `current_run_id`
+     * makes. Written only by App\Cyberspace\Hunters (spawning) and
+     * App\Cyberspace\HunterCombat (resolving).
+     *
+     * @return BelongsTo<Hunt, $this>
+     */
+    public function currentHunt(): BelongsTo
+    {
+        return $this->belongsTo(Hunt::class, 'current_hunt_id');
     }
 
     /**

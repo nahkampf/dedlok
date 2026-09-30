@@ -75,6 +75,10 @@ final readonly class RunStarter
             return RunResult::refused(RunRefusal::AlreadyRunning);
         }
 
+        if ($character->current_hunt_id !== null) {
+            return RunResult::refused(RunRefusal::Hunted);
+        }
+
         $at = $character->gridPosition();
 
         if ($at === null) {

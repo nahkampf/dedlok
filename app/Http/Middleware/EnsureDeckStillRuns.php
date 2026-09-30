@@ -55,7 +55,7 @@ class EnsureDeckStillRuns
         }
 
         /*
-         * THE NET STANDS DOWN INSIDE A RUN.
+         * THE NET STANDS DOWN INSIDE A RUN, OR A HUNT.
          *
          * A burnout is SUPPOSED to break the deck, and a Surge is supposed to
          * destroy what is fitted in it — both while somebody is standing in it,
@@ -63,13 +63,15 @@ class EnsureDeckStillRuns
          * too, two things would be racing to end one run and the one that knows
          * least would usually win: this would eject for a flat point of
          * Synaptic Integrity and call it a readiness loss, throwing away the
-         * defeat that actually occurred.
+         * defeat that actually occurred. A hunt is the same shape: its own
+         * icebreaker fighting its own ICE must not have this net eject the
+         * character out from under a fight that has its own ending.
          *
          * The rule is the deck lock's, said about a different subject: the net
          * is for what happens to somebody standing still, never for what
          * happens to somebody in a fight.
          */
-        if ($character->current_run_id !== null) {
+        if ($character->current_run_id !== null || $character->current_hunt_id !== null) {
             return $next($request);
         }
 

@@ -1035,6 +1035,7 @@ return [
                 'not_intrudable' => 'The portal is not a system you can make an intrusion into.',
                 'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
                 'already_running' => 'You are already in a run.',
+                'hunted' => 'Somebody is on you. Deal with that first.',
                 'program_refused' => 'Something on your loadout would not start.',
                 // Said plainly: a lockdown is a consequence of something
                 // somebody did, not a scan fact being given away. And it is
@@ -1240,6 +1241,30 @@ return [
             ],
         ],
 
+        /*
+        | Cyberspace combat. One screen, one action — see App\Http\Middleware\
+        | EnsureHuntIsResolved and App\Http\Controllers\HunterController.
+        */
+        'hunt' => [
+            'title' => 'Hunted',
+            'heading' => 'Cyberspace combat',
+            'grade' => 'Grade :grade',
+            'locked' => 'Somebody is on you. It does not stop because you looked away.',
+            'log_heading' => 'The exchange',
+            'action' => [
+                'fight' => 'Fight',
+            ],
+            'log' => [
+                'hit' => 'You land :damage.',
+                'no_program' => 'Nothing is running that can touch it.',
+                'miss' => 'It misses.',
+                'hunter_hits' => 'It lands :damage.',
+                'won' => 'It breaks. +:creds creds, heat down to :heat.',
+                'program' => 'You pull :item off it on the way out.',
+                'lost' => 'You go down. Heat drops to :heat.',
+            ],
+        ],
+
         'travel' => [
             'no_deck' => 'You are carrying no deck. There is nothing to jack in with.',
             'deck_not_ready' => 'That deck will not run. It is short of what it needs.',
@@ -1252,6 +1277,7 @@ return [
             // Not a failure. The system that wore it has moved or burned, and
             // an address is a fact about right now rather than a name.
             'no_such_address' => 'Nothing answers to that address any more.',
+            'hunted' => 'Somebody is on you. There is no leaving cyberspace until this is settled.',
         ],
 
         /*
@@ -1524,6 +1550,7 @@ return [
                 'defeat' => 'Beaten in a run.',
                 'burnout' => 'Your deck cooked a module and threw you through the wall.',
                 'readiness' => 'Your deck stopped running while you were inside it.',
+                'hunter' => 'Somebody came looking for you, and found you.',
                 'unknown' => 'Something finished you.',
             ],
 

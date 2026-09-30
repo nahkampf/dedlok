@@ -1,3 +1,10 @@
+## 0.32.0 (2026-09-30)
+
+- Heat now triggers "Hunters" jumping you in cyberspace. This triggers a straight up fight, like a run but without the trace, IDS etc.
+- Automatically loads the best icebreaker available (that the deck can run) for a Hunter fight
+- If an encounter with a Hunter is won, gain some creds and some heat disappears. Lose, and take damage (and lose a chunk of heat as well).
+- Hunters have "grades" that are relative to the amount of Heat you have.
+
 ## 0.31.0 (2026-09-29)
 
 - Minor rework for OS on systems you make a run on. Added skill `Kernel Exploitation` that gives a general boost against all OSes. OS skills repriced.
