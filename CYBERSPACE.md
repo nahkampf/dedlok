@@ -37,8 +37,10 @@ system.
 | Extraction | **built**; `App\Cyberspace\Extractor` takes creds and catalogue items the moment the core is touched, a catalogue item merging the way an archetype loadout does. A file becomes one unstackable "Encrypted Data Dump" carrying its real numbers as JSON, and costs turns to match its size in QB, cut back down by the deck's resolved bandwidth — `runs.extracting_qb` is the countdown, and `App\Cyberspace\Simulator` spends it a bandwidth's worth per turn, and a pull can only begin with no ICE awake. **Awake ICE guards the core**: extraction, an install and a burn all fail while it lives, so a detected runner breaks it or egresses |
 | `RunEnding::Completed` | **built**; egress after a successful extraction ends this way rather than as a plain egress — "they did what they came to do" is only true from that point on. `runs.extracted` is the flag both doors to leaving check |
 | The trace | **advances**, once something has noticed: the machine's `tracer_rate` a turn, and it WALKS the routing chain, one hop a turn: a single attempt at the next system, passed or not, and a hop once passed is behind it for good. Grade 1 never holds it, grade 9 holds it four turns in five. Drawn on the run screen as the chain it walks, with an estimate of the turns left |
-| A completed trace | **built**; puts heat on the character (the system's grade × 2, charged as the run ends and replaced by the burn's grade × 2.5 if a burn landed) and burns the chain, shutting every machine the route ran through. Heat is no longer inert — see *what heat does* — but what it buys is one nightly roll and a message, not yet a consequence |
+| A completed trace | **built**; puts heat on the character (the system's grade × 2, charged as the run ends and replaced by the burn's grade × 2.5 if a burn landed) and burns the chain, shutting every machine the route ran through. Heat is no longer inert — see *Hunters* — it buys the nightly bounty roll and message, and now a real encounter that can hurt or reward |
 | Burning a machine | **built**; `RunPurpose::Burn` and `RunAction::Burn`, a core touch like the other two. `App\Cyberspace\Burner` deletes the row — the address goes out of existence, backdoors cascade, contents go with it, the position is simply empty, and the run ends `Completed`. It costs heat and nothing else |
+| Hunters — heat becomes an encounter | **built**; `App\Cyberspace\Hunters::rolls()` is checked on every arrival (a step, a jump, a recall, jacking in) once heat crosses a floor, a straight line from 0.5% at 5 heat to a capped 35% at 100. Not a run — no trace, no IDS, straight into an exchange against ICE drawn from the real catalogue by the hunter's own grade (1-5, tied to the heat band that spawned it), and the screen locks (`EnsureHuntIsResolved`) until it is settled |
+| A hunter fight | **built**; the strongest owned, idle icebreaker auto-starts — there is no briefing to choose one at — and `App\Cyberspace\HunterCombat` runs the same player-then-hunter exchange a system fight does, against ordinary `damage.synaptic_integrity.ice`. Winning pays creds and trims heat by the hunter's grade, plus a low chance of a program; losing costs a random 5-15% slice of heat rather than resetting it, and risks the waiting screen |
 | The two thresholds | **built**; they ACT before the player's choice, every character is born with 70% and 30%, and they are set in an accordion on the map. Zero turns one off |
 | The run lock | **built**; `EnsureRunIsFinished` sends every request but signing in, signing out and the run's own routes back to it. Admin routes are NOT exempt, unlike `RequireCharacter` — a run is a character in jeopardy |
 | The readiness net inside a run | **built**; `EnsureDeckStillRuns` stands down while `current_run_id` is set, so a burnout resolves its own ending instead of racing a middleware that would call it a readiness loss |
@@ -1551,8 +1553,9 @@ What a completed trace does:
   is what makes stealth worth investing in on both sides of it.
 - **The whole routing chain is exposed and locked down.** Every backdoor on it
   is gone. See *The routing chain* — this is the price of the protection.
-- **Later: heat draws rogue programs** while moving through cyberspace, and
-  especially through subnets.
+- **Heat draws hunters** while moving through cyberspace — see *Hunters*,
+  next. Subnets are still their own thing: a rogue program there attacks
+  independent of heat entirely.
 
 **Heat decays on its own, slowly.** Doing nothing is a valid way to cool off and
 a slow one. It can also be **cleaned** through processes not yet designed —
@@ -1561,6 +1564,66 @@ rather than a punishment to endure.
 
 Routing through backdoored relays is what slows a trace down, which is what
 makes a backdoor run worth doing for its own sake.
+
+---
+
+## Hunters
+
+**Heat becomes an encounter.** A hunter is not a run against a system — there
+is no trace, no IDS, nothing snapshotted at a briefing. It is a straight
+exchange against ICE, generated on the fly, and the only way it starts is
+heat.
+
+**The chance is checked on every arrival** — a step, a jump, a recall, jacking
+in — never on its own clock. Below a floor (5 heat) it is not rolled at all;
+above it the odds climb on a straight line to a hard cap (35% at 100 heat and
+beyond). Nothing about the roll is certain, and nothing about it depends on
+where you are standing — only on how much heat you are carrying.
+
+**Five grades, tied to the heat that spawned the hunter, not to the ICE it
+turns out to be.** A hunter's own difficulty band decides which LEVELS of the
+real ICE catalogue it may draw from — grade 5 reaches into the same range
+(level 10-12) a grade 8-9 SYSTEM does, so the top of the heat curve is
+genuinely dangerous. That is deliberate: heat was inert for four releases, and
+the thing that makes it worth managing has to be able to hurt.
+
+**No door out until it is settled.** No egress, no jacking out, nothing else
+on the request — the screen a hunted player is sent to has exactly one
+button. Locked the same way a run is locked, and the two locks refuse each
+other: a run cannot be started while hunted, and jacking out is refused the
+same way.
+
+**The fight picks its own loadout.** There is no briefing to choose one at —
+the strongest icebreaker the player owns and can run starts itself the moment
+the hunter appears. Owning none is not a refusal; the fight still happens,
+and a hunter that never takes damage still gets to swing back every turn.
+
+**The player acts, then the hunter does** — the same order every fight in
+this game keeps. The hunter's `skill` is a hit chance exactly like a system's
+ICE, and a hit is ordinary `damage.synaptic_integrity.ice`, so every
+resistance already built for ICE — Reactive Firewalling, Defensive
+Compartmentalization, Spectral — and Ensnare reach a hunter for free.
+
+**Winning is priced by grade; losing is not.** A win pays creds from the
+grade's own band (roughly 300 at grade 1 to 1,000 at grade 5) and trims heat
+by a flat amount scaled to the grade, plus a low chance of a program —
+silently skipped if the deck has no room, nothing forced. **A loss does not
+reset heat to zero** — it costs a random 5-15% slice of whatever heat
+currently is, deliberately less generous and less predictable than winning,
+so losing is never the cheap way to manage it. Either way risks real Synaptic
+Integrity, and a loss can put a character on the waiting screen exactly as a
+system fight can.
+
+**Deliberately no cooldown**, unlike the nightly bounty roll. A hunter just
+beaten is exactly as likely to come again on the very next step as the curve
+says — heat earned a real consequence, and softening it with a grace period
+was not part of the ask.
+
+> **Built.** `hunts` is durable state, `characters.current_hunt_id` is what
+> "in a hunt" means, `App\Cyberspace\Hunters` the spawner and
+> `App\Cyberspace\HunterCombat` the exchange — `Simulator::iceStrikes()`'s
+> own shape, not a second one invented beside it.
+> `App\Http\Middleware\EnsureHuntIsResolved` is the lock.
 
 ---
 
