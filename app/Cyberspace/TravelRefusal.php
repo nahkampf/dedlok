@@ -79,6 +79,13 @@ enum TravelRefusal: string
     /** Somebody else's bookmark. */
     case NotYours = 'not_yours';
 
+    /**
+     * A hunter is on you, and there is no door out of cyberspace combat
+     * until it is settled — the same rule a live run enforces, said about a
+     * different fight.
+     */
+    case Hunted = 'hunted';
+
     public function message(): string
     {
         return Text::get("cyberspace.travel.{$this->value}");

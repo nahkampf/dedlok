@@ -40,6 +40,9 @@ enum RunRefusal: string
 
     case AlreadyRunning = 'already_running';
 
+    /** A hunter is on you. Cyberspace combat owns the screen until it is settled. */
+    case Hunted = 'hunted';
+
     case ProgramRefused = 'program_refused';
 
     public function message(): string

@@ -793,9 +793,14 @@ return [
     | which is the same shape the market's rarity roll and the backdoor ageing
     | roll have, and those reach certainty too.
     |
-    | The rest of what CYBERSPACE.md asks of heat is still unbuilt: the decay,
-    | faction standing, telling a player-owned system's owner who hit them, and
-    | what a bounty IS once one exists. See TODO.md.
+    | THE SECOND THING IT DOES IS SEND SOMEBODY. `hunt` below is the answer to
+    | "what a bounty IS" — a hunter, rolled on every move rather than once a
+    | night, because the bounty message is a warning and this is the thing it
+    | warned about.
+    |
+    | The rest of what CYBERSPACE.md asks of heat is still unbuilt: faction
+    | standing, and telling a player-owned system's owner who hit them. See
+    | TODO.md.
     |
     */
     'heat' => [
@@ -806,6 +811,79 @@ return [
             // memory, not a softer curve: at a hundred heat the answer is still
             // yes, it just is not news every morning. Unbalanced, like the rest.
             'cooldown_days' => 7,
+        ],
+
+        /*
+        | A HUNTER, ROLLED ON EVERY MOVE — `App\Cyberspace\Navigator::arrive()`,
+        | the one place all four ways of moving already meet. Deliberately NOT
+        | the bounty curve: that one reaches certainty by design, checked once a
+        | night, and a chance that reaches 100% checked on every step would be a
+        | hunter on your very next move. This has its own floor and its own CAP,
+        | never certain, because you keep moving through a hot patch rather than
+        | being walled by it.
+        |
+        | THE CURVE IS A STRAIGHT LINE, the same call the bounty roll makes and
+        | for the same reason: nothing is balanced against this yet.
+        |
+        |   heat   5   ->  0.5%   the same floor logic as the bounty roll
+        |   heat 100   -> 35.0%   and it stops climbing there
+        |
+        | ROLLED THE SAME WAY AS EVERYTHING ELSE THAT IS THE WORLD DECIDING
+        | ABOUT YOU rather than a check: an injected die, in thousandths, so a
+        | chance of nothing never fires and a chance of everything always does.
+        */
+        'hunt' => [
+            'floor_below' => 5,
+            'chance_at_floor' => 0.5,
+            'certain_at' => 100,
+            'cap' => 35.0,
+
+            /*
+            | FIVE GRADES, each a heat band and the ICE LEVELS it draws from —
+            | not new numbers, the real catalogue. A hunter IS an ICE, on the
+            | fly, which is what makes Ensnare and every existing resistance
+            | (Reactive Firewalling, Defensive Compartmentalization, Spectral)
+            | reach it for free: the damage goes through the ordinary
+            | `damage.synaptic_integrity.ice` stat, because it is that damage.
+            |
+            | GRADE 5 IS DELIBERATELY THE SAME RANGE A GRADE 8-9 SYSTEM DRAWS
+            | FROM (levels 10-12) — "comparable to a grade 8 or 9 system" was
+            | the design brief, and reusing the range makes that exactly true
+            | rather than approximately true.
+            |
+            | The top band's heat range is open-ended: heat has no ceiling, and
+            | grade 5 is simply "as hard as this gets" from 81 up.
+            */
+            'grades' => [
+                1 => ['heat' => [5, 24], 'ice_levels' => [1, 2], 'creds' => [250, 350]],
+                2 => ['heat' => [24, 43], 'ice_levels' => [3, 4], 'creds' => [400, 550]],
+                3 => ['heat' => [43, 62], 'ice_levels' => [5, 7], 'creds' => [550, 700]],
+                4 => ['heat' => [62, 81], 'ice_levels' => [8, 9], 'creds' => [700, 850]],
+                5 => ['heat' => [81, null], 'ice_levels' => [10, 12], 'creds' => [850, 1000]],
+            ],
+
+            // Winning is the meaningful way to manage heat: a flat amount per
+            // grade, not a percentage, so it does not shrink to nothing at low
+            // heat the way a percentage would. 5/10/15/20/25 by grade.
+            'win_heat_reduction_per_grade' => 5,
+
+            // Losing still costs SOMETHING (see App\Cyberspace\HunterCombat),
+            // but is deliberately cheaper and less predictable than winning —
+            // a random slice of what you were carrying, not a fixed amount and
+            // never the whole of it.
+            'defeat_heat_loss' => [0.05, 0.15],
+
+            // A LOW CHANCE of a program on top of the creds. Drawn from
+            // whatever is on the market today rather than a dedicated loot
+            // table — a simpler first pass, worth a proper table once hunters
+            // have been played.
+            //
+            // NO COOLDOWN, unlike the bounty roll. A hunter just beaten is
+            // exactly as likely to come again on your next step as the curve
+            // says — staying hot is the risk, and nothing here softens it.
+            // `Bounties::chanceFor()`'s cooldown is the pattern to copy if
+            // chaining turns out to feel wrong once this is played.
+            'program_chance' => 8,
         ],
     ],
 

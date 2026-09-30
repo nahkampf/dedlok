@@ -67,6 +67,10 @@ class CharacterTest extends TestCase
             // what App\Http\Middleware\EnsureRunIsFinished reads on every
             // request, which is why it is a column and not a lookup.
             'current_run_id',
+            // The hunter they are fighting, or NULL. Same reason as
+            // current_run_id: App\Http\Middleware\EnsureHuntIsResolved reads
+            // it on every request.
+            'current_hunt_id',
             // The two standing instructions: when to pull out of a run. A play
             // style rather than a per-run choice, which is why they live on the
             // character and persist. Zero turns one off.

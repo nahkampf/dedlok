@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Models\Hunt;
+
 /**
  * What came of trying to go somewhere.
  *
@@ -15,6 +17,11 @@ namespace App\Cyberspace;
  * looking around are one act and the screen wants both halves — where you now
  * are, and what that revealed. Jacking out is the one success with neither: it
  * has no position and it sees nothing.
+ *
+ * AN ARRIVAL MAY ALSO CARRY A HUNT. Getting there and being ambushed are two
+ * separate facts — you did arrive, the sweep did happen, and THEN somebody was
+ * waiting. `$hunt` is null on every ordinary arrival, which is most of them:
+ * `App\Cyberspace\Hunters::rolls()` decides, and this only reports it.
  */
 final class TravelResult
 {
@@ -22,11 +29,12 @@ final class TravelResult
         public readonly ?Position $position,
         public readonly ?SweepResult $sweep,
         public readonly ?TravelRefusal $refusal,
+        public readonly ?Hunt $hunt = null,
     ) {}
 
-    public static function arrived(Position $position, SweepResult $sweep): self
+    public static function arrived(Position $position, SweepResult $sweep, ?Hunt $hunt = null): self
     {
-        return new self($position, $sweep, null);
+        return new self($position, $sweep, null, $hunt);
     }
 
     /** Out. No position, nothing seen, and nothing wrong. */
@@ -43,5 +51,11 @@ final class TravelResult
     public function succeeded(): bool
     {
         return $this->refusal === null;
+    }
+
+    /** Arrived, but not alone. */
+    public function wasAmbushed(): bool
+    {
+        return $this->hunt !== null;
     }
 }

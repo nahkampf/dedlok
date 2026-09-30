@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureCaptchaIsSolved;
 use App\Http\Middleware\EnsureCharacterIsStanding;
 use App\Http\Middleware\EnsureDeckStillRuns;
+use App\Http\Middleware\EnsureHuntIsResolved;
 use App\Http\Middleware\EnsureRunIsFinished;
 use App\Http\Middleware\RequireCharacter;
 use App\Support\Text;
@@ -35,6 +36,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // in no position to take a turn. It also releases on the way past,
             // which is what makes the wait need no scheduler.
             EnsureCharacterIsStanding::class,
+            // A live hunter owns the screen the same way a live run does —
+            // checked alongside it, since a character is never in both at
+            // once and the order between the two never matters.
+            EnsureHuntIsResolved::class,
             // A live run owns the screen. Last, because it is the narrowest
             // gate: everything before it decides whether the player may be
             // here at all, and this decides where "here" is.

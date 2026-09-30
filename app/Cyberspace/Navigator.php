@@ -8,6 +8,7 @@ use App\Decks\DeckTotals;
 use App\Models\Bookmark;
 use App\Models\Character;
 use App\Stats\Resolver;
+use Closure;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -26,6 +27,13 @@ use Illuminate\Support\Facades\DB;
  * move that recorded a position but not what it revealed would be a position
  * the map cannot explain.
  *
+ * ARRIVING ANYWHERE ALSO ROLLS FOR A HUNTER, after the sweep and deliberately
+ * outside its transaction — `App\Cyberspace\Hunters::spawn()` is its own
+ * complete write (the row, the lock, the loadout) and a hunter's own
+ * transaction failing must never take the sweep that already happened back.
+ * Heat carries no ceiling, so this is the one thing every arrival risks that
+ * jacking in used to risk nothing.
+ *
  * READINESS IS THE GATE AND IT IS CHECKED HERE. `DeckTotals::isReady()` is the
  * whole of it — compute, memory, link, power, and draw within supply — and
  * there is no second list. CYBERSPACE.md names one more caller, the start of
@@ -43,11 +51,13 @@ final class Navigator
         private readonly Grid $grid,
         private readonly Sweep $sweep,
         private readonly Resolver $resolver,
+        private readonly Hunters $hunters,
     ) {}
 
-    public static function fromConfig(Resolver $resolver): self
+    /** @param  ?Closure(int, int): int  $roll  Threaded to the hunter roll, so a test can pin it. */
+    public static function fromConfig(Resolver $resolver, ?Closure $roll = null): self
     {
-        return new self(Grid::fromConfig(), Sweep::fromConfig(), $resolver);
+        return new self(Grid::fromConfig(), Sweep::fromConfig(), $resolver, Hunters::fromConfig($resolver, $roll));
     }
 
     /**
@@ -80,15 +90,22 @@ final class Navigator
     /**
      * Back out, and the position goes with it.
      *
-     * Nothing is checked and nothing can refuse this beyond not being in:
-     * leaving is always allowed. Extraction — leaving in the middle of an
-     * intrusion, which can fail — is a different act belonging to a run that
-     * does not exist yet, and it must not be folded into this one.
+     * ORDINARILY NOTHING ELSE IS CHECKED: leaving is always allowed. A live
+     * RUN is deliberately not one of the things that refuses this — extraction
+     * is its own act, belonging to `RunController::egress()`, and a run in
+     * progress is guarded by `EnsureRunIsFinished` before a request ever
+     * reaches here. A live HUNT is the one thing that does refuse it: there is
+     * no door out of cyberspace combat until it is settled, the same way
+     * `EnsureHuntIsResolved` already stops the request from arriving.
      */
     public function jackOut(Character $character): TravelResult
     {
         if (! $character->isJackedIn()) {
             return TravelResult::refused(TravelRefusal::NotJackedIn);
+        }
+
+        if ($character->current_hunt_id !== null) {
+            return TravelResult::refused(TravelRefusal::Hunted);
         }
 
         $character->forceFill(['grid_x' => null, 'grid_y' => null])->save();
@@ -166,9 +183,12 @@ final class Navigator
      *
      * The other half of *you walk, you bookmark the frontier, you come back* —
      * and the reason a waypoint is worth setting at all. **Returning to one is
-     * free**: no cost, no roll, no turn. Walking is what buys new ground, and a
-     * waypoint only saves re-walking ground already bought, so charging for it
-     * would tax the player for having explored rather than for exploring.
+     * free**: no travel cost, no turn, and no roll over whether you ARRIVE.
+     * Walking is what buys new ground, and a waypoint only saves re-walking
+     * ground already bought, so charging for it would tax the player for
+     * having explored rather than for exploring. The one roll every arrival
+     * still carries — whether a hunter is there when you land — is not an
+     * exception: heat does not know how you got somewhere.
      *
      * The two kinds arrive differently, which is the whole of the difference
      * between them:
@@ -216,6 +236,12 @@ final class Navigator
             return $this->sweep->from($character, $position);
         });
 
-        return TravelResult::arrived($position, $sweep);
+        // OUTSIDE the sweep's transaction and deliberately so — spawning a
+        // hunter is its own complete write (the row, the lock, the loadout),
+        // and it failing must never take back an arrival that already
+        // happened.
+        $hunt = $this->hunters->rolls($character) ? $this->hunters->spawn($character) : null;
+
+        return TravelResult::arrived($position, $sweep, $hunt);
     }
 }

@@ -440,6 +440,13 @@ class CyberspaceController extends Controller
             return back()->with('error', $result->refusal->message());
         }
 
+        // Arrived, but not alone. Whatever the move would ordinarily have
+        // said is moot — the hunt screen is the only place left to go, and
+        // EnsureHuntIsResolved would send the next request there anyway.
+        if ($result->wasAmbushed()) {
+            return redirect()->route('hunt.show');
+        }
+
         $said = $success ?? $this->reportSweep($result->sweep);
 
         return $said === null ? back() : back()->with('status', $said);
