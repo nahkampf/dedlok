@@ -95,20 +95,22 @@ Anything that lands while the player is away goes to the inbox under `Category::
 
 - **A route is built, not picked.** `App\City\Router` is pure (district ids, links and
   travel weights, never models) and returns the QUICKEST route: lowest total weight of the
-  districts entered, ties broken by fewer districts. No route is a refusal, not an error.
-- **A travel is one pass per district on the route, origin excluded.** Each pass takes
-  `travel_duration` (base **30 seconds** × that district's `travel_weight`, resolved with
-  the character's modifiers). **While a pass runs the body is IN that district** —
-  `district_id` is set when the pass BEGINS and the route is walked from there, so it is
-  never null and always names the district being crossed. Leaving the origin is instant.
-  A route A→B→C→D is three passes.
+  districts crossed, ties broken by fewer districts. No route is a refusal, not an error.
+- **A travel is one pass in every district on the route EXCEPT the destination, origin
+  included**, and then you arrive. Each pass takes `travel_duration` (base **30 seconds**
+  × the `travel_weight` of the district it is in, resolved with the character's
+  modifiers). **You MOVE along the route: `district_id` is the district whose pass is
+  running**, so it is never null. Starting from A to reach D by B and C: the first pass is
+  in A, the second in B, the third in C, and when that finishes you are in D. Three
+  passes for four districts.
 - **The route is snapshotted at the start** and never rewritten, as `runs.chain` is.
 - **Two modes.** *Walk* is free and takes the full time. *Hail a pod* takes **half** of
-  each pass (applied after the modifiers) and costs **25 creds per district on the
-  route**, charged up front through `Wallet::move()` (`Reason::Pod`).
-- **Cancelling waits for the pass in progress to finish.** The player is left in the
-  district that pass is crossing, which is where `district_id` already says they are, and
-  any pod districts not yet entered are refunded.
+  each pass (applied after the modifiers) and costs **25 creds per pass** — per district
+  crossed, so 75 for A→D above, the destination not counting — charged up front through
+  `Wallet::move()` (`Reason::Pod`).
+- **Cancelling waits for the pass in progress to finish, then leaves you in the district
+  that pass was in** — cancel in B and you stay in B, you do not go on to C. The passes
+  not yet run are refunded on a pod.
 - **Planned hook, not built:** a travel pass may roll for an encounter in the district it
   reaches, and an encounter stops the travel there.
 
