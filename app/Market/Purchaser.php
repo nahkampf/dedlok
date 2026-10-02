@@ -10,6 +10,8 @@ use App\Models\Character;
 use App\Models\Item;
 use App\Models\MarketPurchase;
 use App\Models\MarketStock;
+use App\Wallet\Reason;
+use App\Wallet\Wallet;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -86,7 +88,7 @@ final class Purchaser
 
             $shelf->forceFill(['quantity' => $onHand - $quantity])->save();
 
-            $character->forceFill(['creds' => (int) $character->creds - $total])->save();
+            Wallet::move($character, -$total, Reason::Market, $item->displayName().' × '.$quantity);
 
             ItemGranter::grant($character, $item, $quantity);
 

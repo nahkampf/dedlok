@@ -61,7 +61,7 @@
                  U+FE0E so it is drawn as text rather than handed to an emoji
                  font. --}}
             <a class="dock__item" href="{{ route('character.index') }}"
-               @if (request()->routeIs('character.index', 'skills.*', 'implants.*', 'achievements.*')) aria-current="page" @endif>
+               @if (request()->routeIs('character.index', 'skills.*', 'implants.*', 'standing.*', 'achievements.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9823;&#65038;</span>
                 <span class="dock__label">{{ Text::get('ui.nav.character') }}</span>
             </a>
@@ -103,6 +103,12 @@
                 <span class="dock__label">{{ Text::get('ui.nav.market') }}</span>
             </a>
 
+            {{-- The wallet. The currency sign is the glyph the topbar's money chip already draws. --}}
+            <a class="dock__item" href="{{ route('wallet.index') }}"
+               @if (request()->routeIs('wallet.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#164;</span>
+                <span class="dock__label">{{ Text::get('ui.nav.wallet') }}</span>
+            </a>
 
             {{-- The inbox, beside the other page that belongs to the account
                  rather than the character. An envelope from the same

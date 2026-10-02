@@ -18,6 +18,8 @@ use App\Stats\DamageResolver;
 use App\Stats\InjuryLedger;
 use App\Stats\Resolver;
 use App\Support\Text;
+use App\Wallet\Reason;
+use App\Wallet\Wallet;
 use Closure;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -302,7 +304,7 @@ final readonly class DefeatResolver
             return null;
         }
 
-        $character->forceFill(['creds' => $character->creds - $taken])->save();
+        Wallet::move($character, -$taken, Reason::Skim);
 
         return $this->line('skim', ['creds' => $taken]);
     }

@@ -811,6 +811,14 @@ return [
             // memory, not a softer curve: at a hundred heat the answer is still
             // yes, it just is not news every morning. Unbalanced, like the rest.
             'cooldown_days' => 7,
+            // What each hit ADDS to the price on a head: heat × per_heat, times
+            // (1 + per_grade × (grade − 1)) for the highest grade that cost them
+            // heat since the last hit. Heat 20 at grade 1 is 1000; at grade 9, 3000.
+            // Unbalanced.
+            'amount' => [
+                'per_heat' => 50,
+                'per_grade' => 0.25,
+            ],
         ],
 
         /*

@@ -24,8 +24,10 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PatchNotesController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
+use App\Http\Controllers\StandingController;
 use App\Http\Controllers\TrainingQueueController;
 use App\Http\Controllers\WaitingController;
+use App\Http\Controllers\WalletController;
 use App\Http\Middleware\ForbidSecondCharacter;
 use Illuminate\Support\Facades\Route;
 
@@ -270,6 +272,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/character', [CharacterController::class, 'index'])->name('character.index');
     Route::post('/character/bio', [CharacterController::class, 'bio'])->name('character.bio');
 
+    Route::get('/standing', [StandingController::class, 'index'])->name('standing.index');
+
     Route::get('/skills', SkillsController::class)->name('skills.index');
 
     /*
@@ -292,6 +296,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/list', [MarketController::class, 'list'])->name('market.list');
     Route::delete('/market/offers/{offer}', [MarketController::class, 'withdraw'])->name('market.withdraw');
     Route::post('/market/offers/{offer}', [MarketController::class, 'take'])->name('market.take');
+
+    // The wallet: the ledger of every movement of creds, and sending some on.
+    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
+    Route::post('/wallet/transfer', [WalletController::class, 'transfer'])->name('wallet.transfer');
 
     /*
      * Achievements. THE ONE SCREEN THAT BELONGS TO THE ACCOUNT rather than to

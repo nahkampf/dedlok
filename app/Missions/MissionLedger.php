@@ -16,6 +16,8 @@ use App\Standing\LedgerKind;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
 use App\Stats\Resolver;
+use App\Wallet\Reason;
+use App\Wallet\Wallet;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -356,9 +358,7 @@ final readonly class MissionLedger
     {
         $entity = $mission->entity()->first();
 
-        $character->forceFill([
-            'creds' => (int) $character->creds + (int) $mission->creds_reward,
-        ])->save();
+        Wallet::move($character, (int) $mission->creds_reward, Reason::Mission, $entity?->name);
 
         $ledger = new StandingLedger;
 

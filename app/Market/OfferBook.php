@@ -11,6 +11,8 @@ use App\Models\InventoryItem;
 use App\Models\MarketOffer;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Wallet\Reason;
+use App\Wallet\Wallet;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -202,8 +204,9 @@ final readonly class OfferBook
                 return OfferRefusal::NoStorage;
             }
 
-            $buyer->forceFill(['creds' => $funds - $price])->save();
-            $seller->forceFill(['creds' => (int) $seller->creds + $price])->save();
+            $buyer->creds = $funds;
+            Wallet::move($buyer, -$price, Reason::PlayerMarket, $row->item->displayName().' × '.$quantity);
+            Wallet::move($seller, $price, Reason::PlayerMarket, $row->item->displayName().' × '.$quantity);
 
             // The listing outlives a partial sale: what is left is still for
             // sale, at the same figure, and `available()` reads it off the row.

@@ -10,6 +10,8 @@ use App\Models\Archetype;
 use App\Models\ArchetypeItem;
 use App\Models\ArchetypeSkill;
 use App\Models\Character;
+use App\Wallet\Reason;
+use App\Wallet\Wallet;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -43,8 +45,7 @@ final class LoadoutGranter
         }
 
         if ($archetype->starting_creds > 0) {
-            $character->creds += $archetype->starting_creds;
-            $character->save();
+            Wallet::move($character, (int) $archetype->starting_creds, Reason::Starting);
         }
 
         foreach ($archetype->startingSkills as $grant) {

@@ -43,11 +43,12 @@ use Illuminate\Support\Facades\Config;
  * has done nothing. A character who has never been traced attracts nobody, and
  * the first point of heat is what puts them on the list.
  *
- * ## What a hit IS has not been built
+ * ## What a hit is
  *
- * Nothing happens yet but the message. There is no bounty row, no hunter and
- * no price — those are heat's unfinished half — so this says the word is out
- * and stops there.
+ * Creds added to `characters.bounty`: heat × `amount.per_heat`, scaled up by
+ * the highest grade that cost the character heat since the last hit
+ * (`bounty_grade`, reset to 0 here). Nothing collects the sum yet — that is
+ * for the player-versus-player mechanic to come.
  *
  * ## Word that is already out is not news
  *
@@ -67,6 +68,8 @@ final class Bounties
         private readonly int $certainAt,
         private readonly Closure $roll,
         private readonly int $cooldownDays = 0,
+        private readonly float $perHeat = 50.0,
+        private readonly float $perGrade = 0.25,
     ) {}
 
     /** @param  ?Closure(int, int): int  $roll */
@@ -82,6 +85,8 @@ final class Bounties
             (int) Config::get('cyberspace.heat.bounty.certain_at', 100),
             $roll ?? static fn (int $min, int $max): int => random_int($min, $max),
             (int) Config::get('cyberspace.heat.bounty.cooldown_days', 7),
+            (float) Config::get('cyberspace.heat.bounty.amount.per_heat', 50),
+            (float) Config::get('cyberspace.heat.bounty.amount.per_grade', 0.25),
         );
     }
 
@@ -118,6 +123,12 @@ final class Bounties
         return $this->floor + (($heat - $this->floorBelow) / $span) * (1 - $this->floor);
     }
 
+    /** Creds a hit adds: heat, scaled up for the highest grade that earned it. */
+    public function amountFor(float $heat, int $grade): int
+    {
+        return (int) round($heat * $this->perHeat * (1 + $this->perGrade * (max(1, $grade) - 1)));
+    }
+
     /**
      * Roll every character who has anything to answer for.
      *
@@ -132,8 +143,12 @@ final class Bounties
                 continue;
             }
 
-            $character->forceFill(['bounty_word_at' => now()])->save();
-            $this->notifier->send($character, Category::Street, 'bounty_word');
+            $character->forceFill([
+                'bounty_word_at' => now(),
+                'bounty' => (int) $character->bounty + $this->amountFor((float) $character->heat, (int) $character->bounty_grade),
+                'bounty_grade' => 0,
+            ])->save();
+            $this->notifier->send($character, Category::Street, 'bounty_word', ['bounty' => number_format($character->bounty)]);
 
             $marked[] = $character;
         }

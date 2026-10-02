@@ -97,6 +97,20 @@
             </div>
         </div>
 
+        {{-- THE PRICE ON THEIR HEAD, in creds. Always drawn: zero is an answer. --}}
+        <div class="stack" style="--gap:var(--s-2);margin-top:var(--s-5)">
+            <span class="micro">{{ Text::get('character.bounty_heading') }}</span>
+            <div class="card" style="max-width:min(320px,100%)">
+                <div class="card__bd stack" style="--gap:var(--s-2)">
+                    <div class="readout">
+                        <span class="readout__label">{{ Text::get('character.bounty_heading') }}</span>
+                        <span class="readout__value num">¤ {{ number_format((int) $character->bounty) }}</span>
+                    </div>
+                    <span class="micro" style="color:var(--ink-3)">{{ $character->bounty > 0 ? Text::get('character.bounty_hint') : Text::get('character.bounty_none') }}</span>
+                </div>
+            </div>
+        </div>
+
         {{-- WHAT IS IN THEM RIGHT NOW. Absent for nearly everybody, because a
              family with nothing in it and clean books is left out — a row of
              zeroes would say somebody has a drug problem they do not have.

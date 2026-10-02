@@ -84,6 +84,8 @@ class CharacterTest extends TestCase
             // When word last went out that somebody would pay for them. The
             // bounty roll's memory, so certain odds are not news every night.
             'bounty_word_at',
+            // The sum on their head, and the grade it will be priced from.
+            'bounty', 'bounty_grade',
             'created_at', 'updated_at',
         ];
 

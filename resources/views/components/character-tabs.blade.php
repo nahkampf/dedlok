@@ -23,6 +23,7 @@
         'character' => 'character.index',
         'skills' => 'skills.index',
         'implants' => 'implants.index',
+        'standing' => 'standing.index',
         'achievements' => 'achievements.index',
     ] as $tab => $route)
         <a class="tab" href="{{ route($route) }}"
