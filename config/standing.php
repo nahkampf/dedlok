@@ -49,6 +49,8 @@ return [
         'noticed' => -0.02,
         'raided' => -0.10,
         'backdoor_found' => -0.05,
+        // A completed trace: they know who you are. Between a raid and a burn.
+        'traced' => -0.50,
         'burned' => -1.00,
 
         // Written by the mission writer with an amount of its own, scaled by

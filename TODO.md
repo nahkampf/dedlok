@@ -516,8 +516,11 @@ defend before there is a game to defend it against.
   `cyberspace.heat.bounty.cooldown_days` (7, unbalanced). When a bounty becomes
   a thing you carry, the row that holds it may want to become the memory
   instead.
-- **Faction standing falls** when the traced system belongs to one. Factions do
-  not exist; this is the hook they arrive on.
+- ~~**Faction standing falls** when a system an entity owns traces you.~~ Done
+  2026-10-02: `StandingReason::Traced`, −0.50 (`standing.reasons.traced`), written
+  by `RunStarter::chargeTheTrace()` beside the heat. A traced burn pays the burn
+  and not this, the same no-compounding rule heat follows. A gone or ownerless
+  system charges nothing.
 - **A player-owned system's owner learns who attacked them**, and that is the
   *only* way they find out. An untraced raid is anonymous, which is what makes
   stealth worth investing in on both sides. The inbox is where that message

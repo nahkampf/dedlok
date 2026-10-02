@@ -11,6 +11,8 @@ use App\Models\Run;
 use App\Models\System;
 use App\Programs\ProcessRefusal;
 use App\Programs\ProgramRunner;
+use App\Standing\StandingLedger;
+use App\Standing\StandingReason;
 use App\Stats\Resolver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Config;
@@ -270,7 +272,12 @@ final readonly class RunStarter
             return;
         }
 
-        $grade = (int) ($run->system()?->grade ?? 1);
+        $system = $run->system();
+        $grade = (int) ($system?->grade ?? 1);
+
+        // Whoever owns the machine that traced you now knows who you are. Gone
+        // system, no owner to ask, and scenery is a no-op inside the ledger.
+        (new StandingLedger)->record($character, $system?->owner, StandingReason::Traced);
 
         $character->forceFill([
             'heat' => (float) $character->heat + $grade * (float) Config::get('cyberspace.trace.heat_per_grade', 2),

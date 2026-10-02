@@ -30,6 +30,9 @@ enum StandingReason: string
     /** You burned one of their systems out of existence. */
     case Burned = 'burned';
 
+    /** One of their systems finished tracing you. Identified is worse than seen, short of a burn. */
+    case Traced = 'traced';
+
     /** A door of yours on one of their systems was found. */
     case BackdoorFound = 'backdoor_found';
 

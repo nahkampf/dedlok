@@ -13,12 +13,15 @@ use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
 use App\Models\Character;
+use App\Models\Entity;
+use App\Models\EntityLedgerEntry;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemContent;
+use App\Standing\StandingReason;
 use App\Stats\Resolver;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -644,6 +647,29 @@ final class FightTest extends TestCase
         app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Egress);
 
         $this->assertSame($before + 8, (float) $this->character->fresh()->heat);
+    }
+
+    /** The entity that owns the tracing system thinks less of you for it, once. */
+    public function test_a_completed_trace_costs_standing_with_the_owner(): void
+    {
+        $owner = Entity::query()->interactable()->firstOrFail();
+        $this->machine(1)->forceFill(['owner_id' => $owner->id])->save();
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $run->forceFill(['trace' => 98])->save();
+
+        $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        app(RunStarter::class)->end($this->character->fresh(), $run->fresh(), RunEnding::Egress);
+
+        // Counted by reason: being noticed on the way in costs its own entry.
+        $traced = EntityLedgerEntry::query()
+            ->where('character_id', $this->character->id)
+            ->where('entity_id', $owner->id)
+            ->where('reason', StandingReason::Traced)
+            ->get();
+
+        $this->assertCount(1, $traced);
+        $this->assertEqualsWithDelta(-0.5, $traced->sole()->delta, 0.0001);
     }
 
     /** And only once, however long they stay afterwards. */

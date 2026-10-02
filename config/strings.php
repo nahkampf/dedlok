@@ -1815,6 +1815,7 @@ return [
             'noticed' => 'Seen on their system',
             'raided' => 'Took from their system',
             'backdoor_found' => 'Your door was found',
+            'traced' => 'Traced by their system',
             'burned' => 'Burned their system',
             'mission_completed' => 'Work completed',
             'store_spend' => 'Traded with them',
