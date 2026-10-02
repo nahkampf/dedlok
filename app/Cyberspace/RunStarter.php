@@ -277,7 +277,7 @@ final readonly class RunStarter
 
         // Whoever owns the machine that traced you now knows who you are. Gone
         // system, no owner to ask, and scenery is a no-op inside the ledger.
-        (new StandingLedger)->record($character, $system?->owner, StandingReason::Traced);
+        (new StandingLedger)->record($character, $system?->owner, StandingReason::Traced, StandingReason::Traced->amount() * $grade);
 
         $character->forceFill([
             'heat' => (float) $character->heat + $grade * (float) Config::get('cyberspace.trace.heat_per_grade', 2),

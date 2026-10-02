@@ -49,8 +49,10 @@ return [
         'noticed' => -0.02,
         'raided' => -0.10,
         'backdoor_found' => -0.05,
-        // A completed trace: they know who you are. Between a raid and a burn.
-        'traced' => -0.50,
+        // A completed trace: they know who you are. PER GRADE of the tracing
+        // system (grade 1 is -0.05, grade 9 is -0.45), so it stays in step with
+        // what the same grade's missions pay. Heat scales the same way.
+        'traced' => -0.05,
         'burned' => -1.00,
 
         // Written by the mission writer with an amount of its own, scaled by

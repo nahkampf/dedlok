@@ -649,11 +649,11 @@ final class FightTest extends TestCase
         $this->assertSame($before + 8, (float) $this->character->fresh()->heat);
     }
 
-    /** The entity that owns the tracing system thinks less of you for it, once. */
+    /** The entity that owns the tracing system thinks less of you for it, once, by 0.05 a grade. */
     public function test_a_completed_trace_costs_standing_with_the_owner(): void
     {
         $owner = Entity::query()->interactable()->firstOrFail();
-        $this->machine(1)->forceFill(['owner_id' => $owner->id])->save();
+        $this->machine(1)->forceFill(['owner_id' => $owner->id, 'grade' => 4])->save();
         $this->ignoreThresholds();
         $run = $this->begin();
         $run->forceFill(['trace' => 98])->save();
@@ -669,7 +669,7 @@ final class FightTest extends TestCase
             ->get();
 
         $this->assertCount(1, $traced);
-        $this->assertEqualsWithDelta(-0.5, $traced->sole()->delta, 0.0001);
+        $this->assertEqualsWithDelta(-0.2, $traced->sole()->delta, 0.0001);
     }
 
     /** And only once, however long they stay afterwards. */

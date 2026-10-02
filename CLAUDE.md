@@ -941,7 +941,7 @@ and extraction are built. See below for what is not.
   writes a `Decay` entry for every move. **Flavour entities keep no books**: a write
   against scenery is a no-op, not a refusal. Loyalty never decays and is spent at the
   store. The hooks are in `Simulator` (noticed, raided, burned — the burn
-  BEFORE `Burner` deletes the row) and `RunStarter::chargeTheTrace()` (traced, −0.50, once
+  BEFORE `Burner` deletes the row) and `RunStarter::chargeTheTrace()` (traced, −0.05 × the system's grade, once
   per completed trace, never beside a landed burn) and `cyberspace:age-backdoors`.
 - **An Exchange is a system that is not one.** `SystemType::Exchange`, with an `exchanges`
   row carrying grade 1–5, the agent's name and `min_standing`. **That grade is NOT

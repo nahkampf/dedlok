@@ -517,7 +517,7 @@ defend before there is a game to defend it against.
   a thing you carry, the row that holds it may want to become the memory
   instead.
 - ~~**Faction standing falls** when a system an entity owns traces you.~~ Done
-  2026-10-02: `StandingReason::Traced`, −0.50 (`standing.reasons.traced`), written
+  2026-10-02: `StandingReason::Traced`, −0.05 per grade of the tracing system (`standing.reasons.traced`), written
   by `RunStarter::chargeTheTrace()` beside the heat. A traced burn pays the burn
   and not this, the same no-compounding rule heat follows. A gone or ownerless
   system charges nothing.
