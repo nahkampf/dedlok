@@ -823,8 +823,11 @@ never a `forceFill(['creds' => …])`.
   `concealment` to the second and `required_flag` to the third. Names and descriptions are
   ON the rows; UI chrome is `strings.city.*`.
 - **The maps are the deck board's classes** through `<x-city-map>`: percentage coordinates,
-  wires from `district_links`, `.board__node--here` for where you stand. Keep coordinates
-  inset (a label is cut off at the edge), and a node's name wraps. City screens redirect a
+  wires from `district_links`, `.board__node--here` for where you stand. **Audited at 320px**
+  (a 288px board, so 1cqw is 2.9px): a name box is at most 120px wide (the `.board__name`
+  floor, so "Knightsbridge" is one line) and 45px tall, so keep one or two nodes to a row of
+  the board, rows 20%+ of the height apart, and centres 20–80% across — an edge or a
+  neighbour is the failure. City screens redirect a
   jacked-in character to cyberspace with an `error` flash.
 - **The starter city's links, weights and every location are placeholders** in
   `2026_10_03_110000_the_starter_city`; only the seven district names are the author's.
@@ -1787,8 +1790,9 @@ stood on this not existing.
   column rather than a query.
 - **`App\Notifications\Category` says where a message came from and never how loud it is.**
   Each case has a sender that runs today: `Cyberspace`, `Training`, `Achievement`, `Market`,
-  `Mission`, `City` and `Wallet` (somebody sent you cash). **`route()` may be null** — a message about the street has nowhere to lead until
-  there is a street, and the row stops being a link rather than pointing somewhere unrelated.
+  `Mission`, `City` and `Wallet` (somebody sent you cash). **`route()` is a string** — every category leads somewhere now (`City` was the last to
+  have nowhere to go). A category that ever has nowhere should make it nullable again rather
+  than point at something unrelated.
   **A case without a sender would be a filter with nothing to filter.** There is no
   severity and no colour on them — the kit's aliases mean good, careful and bad, and
   painting Training green would say something untrue about it. The category also decides

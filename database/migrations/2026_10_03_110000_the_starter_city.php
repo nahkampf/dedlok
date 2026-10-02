@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\DB;
  * Seven districts and a few places to find in them.
  *
  * THE DISTRICT NAMES ARE THE AUTHOR'S. The map positions, the links between
- * districts and every location are PLACEHOLDERS: the links decide which routes
+ * districts and every location are PLACEHOLDERS (the positions are laid out so
+ * that no two name boxes touch on a 320px phone — see CLAUDE.md's map rules): the links decide which routes
  * travel will build, so they want a deliberate pass. Content is authored in
  * the admin once the editors exist; this only gives the City something to
  * stand on.
@@ -18,13 +19,13 @@ return new class extends Migration
 {
     /** @var array<string, array{0: string, 1: int, 2: int, 3: string}> slug => [name, x, y, description] */
     private const DISTRICTS = [
-        'old-town' => ['Old Town', 46, 56, 'Narrow streets and older money gone to seed. Everybody starts somewhere.'],
-        'dockside' => ['Dockside', 20, 80, 'Cranes, containers and people who do not ask what is in them.'],
-        'eastside' => ['Eastside', 80, 52, 'Night markets, noodle smoke and a lot of quiet deals.'],
-        'downtown' => ['Downtown', 50, 24, 'Glass, ad-light and the offices that run everything else.'],
-        'little-moscow' => ['Little Moscow', 78, 82, 'A neighbourhood that kept its own language and its own rules.'],
-        'crystal-heights' => ['Crystal Heights', 82, 20, 'Towers above the smog. You are not supposed to be here.'],
-        'knightsbridge-projects' => ['Knightsbridge Projects', 20, 30, 'Concrete blocks stacked against the sky. The lifts rarely work.'],
+        'old-town' => ['Old Town', 33, 63, 'Narrow streets and older money gone to seed. Everybody starts somewhere.'],
+        'dockside' => ['Dockside', 22, 86, 'Cranes, containers and people who do not ask what is in them.'],
+        'eastside' => ['Eastside', 80, 63, 'Night markets, noodle smoke and a lot of quiet deals.'],
+        'downtown' => ['Downtown', 50, 42, 'Glass, ad-light and the offices that run everything else.'],
+        'little-moscow' => ['Little Moscow', 76, 86, 'A neighbourhood that kept its own language and its own rules.'],
+        'crystal-heights' => ['Crystal Heights', 78, 20, 'Towers above the smog. You are not supposed to be here.'],
+        'knightsbridge-projects' => ['Knightsbridge Projects', 25, 20, 'Concrete blocks stacked against the sky. The lifts rarely work.'],
     ];
 
     /** @var list<array{0: string, 1: string}> */
@@ -50,8 +51,8 @@ return new class extends Migration
         ['downtown', 'server-farm-annex', 'Server Farm Annex', 'Rows of humming racks nobody seems to maintain.', 70, 30, 'explorable', 'obscure', null],
         ['little-moscow', 'cafe-baikal', 'Café Baikal', 'Strong tea, strong opinions, and a back room.', 45, 45, 'open', null, null],
         ['crystal-heights', 'skybridge-lounge', 'Skybridge Lounge', 'Members only. The list is not written down anywhere you can read it.', 55, 50, 'explored_by_flag', null, 'crystal_heights_invite'],
-        ['knightsbridge-projects', 'the-stairwell-market', 'The Stairwell Market', 'Trade on every landing, because the lifts do not work.', 40, 60, 'explorable', 'trivial', null],
-        ['knightsbridge-projects', 'the-sub-basement', 'The Sub-Basement', 'Below the lowest floor on the plans.', 70, 72, 'explorable', 'secretive', null],
+        ['knightsbridge-projects', 'the-stairwell-market', 'The Stairwell Market', 'Trade on every landing, because the lifts do not work.', 35, 40, 'explorable', 'trivial', null],
+        ['knightsbridge-projects', 'the-sub-basement', 'The Sub-Basement', 'Below the lowest floor on the plans.', 72, 78, 'explorable', 'secretive', null],
     ];
 
     public function up(): void

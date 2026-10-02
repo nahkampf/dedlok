@@ -13,7 +13,7 @@
 @php($at = collect($nodes)->keyBy('key'))
 
 <div class="board-wrap">
-    <div class="frame scanlines brackets board" aria-label="{{ $label }}">
+    <div class="frame scanlines brackets board" role="group" aria-label="{{ $label }}">
         <span class="frame__label">{{ $label }}</span>
 
         @if (count($nodes) === 0)

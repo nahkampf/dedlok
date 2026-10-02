@@ -24,7 +24,8 @@ return new class extends Migration
             $table->unsignedTinyInteger('map_x')->comment('Percentage across the city map, 0-100. Inset from the edges so a label is never cut off.');
             $table->unsignedTinyInteger('map_y')->comment('Percentage down the city map, 0-100.');
             $table->decimal('travel_weight', 4, 2)->default(1)->comment('Multiplier on how long crossing THIS district takes when travelling. 1 is the base. Read by the router in phase 2; nothing reads it yet.');
-            $table->timestamps();
+            $table->timestamp('created_at')->nullable()->comment('Laravel bookkeeping: when the row was created.');
+            $table->timestamp('updated_at')->nullable()->comment('Laravel bookkeeping: when the row was last changed.');
         });
 
         Schema::create('district_links', function (Blueprint $table): void {
@@ -46,7 +47,8 @@ return new class extends Migration
             $table->string('discovery', 20)->default('open')->comment('App\\City\\DiscoveryRule: open, explorable or explored_by_flag.');
             $table->string('concealment', 20)->nullable()->comment('App\\City\\Concealment. Set exactly when discovery is explorable, NULL otherwise.');
             $table->string('required_flag', 60)->nullable()->comment('The character flag that makes it visible. Set exactly when discovery is explored_by_flag, NULL otherwise.');
-            $table->timestamps();
+            $table->timestamp('created_at')->nullable()->comment('Laravel bookkeeping: when the row was created.');
+            $table->timestamp('updated_at')->nullable()->comment('Laravel bookkeeping: when the row was last changed.');
 
             $table->index('district_id');
         });

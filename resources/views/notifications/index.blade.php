@@ -34,9 +34,7 @@
                     @foreach ($messages as $message)
                         {{-- THE ROW IS A BUTTON, because opening a message
                              writes: it marks that one read and then goes
-                             wherever its category leads. A category with
-                             nowhere to lead — the street, until there is a
-                             street — still reads, and simply stays put.
+                             wherever its category leads.
 
                              A read message is DIMMED rather than marked. The
                              kit's live dot is ember and pulses, and an inbox
