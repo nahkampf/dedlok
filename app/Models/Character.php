@@ -50,6 +50,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $bounty_word_at
  * @property int $bounty
  * @property int $bounty_grade
+ * @property int $district_id
  */
 #[Fillable([
     'user_id', 'handle', 'bio', 'archetype', 'creds', 'heat', 'bounty', 'bounty_grade',
@@ -157,6 +158,12 @@ class Character extends Model
             ['waiting_until' => 'immutable_datetime', 'waiting_cause' => 'array'],
             ['bounty_word_at' => 'immutable_datetime'],
         );
+    }
+
+    /** @return BelongsTo<District, $this> */
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class);
     }
 
     /** @return BelongsTo<User, $this> */
@@ -853,6 +860,12 @@ class Character extends Model
         // which is why the columns are nullable — it keeps a brand new
         // character distinguishable from one on 0 hit points.
         static::creating(function (self $character): void {
+            // Every body is somewhere. One hook, so the factory, creation and
+            // anything else that makes a character agree on the answer.
+            if ($character->getAttribute('district_id') === null) {
+                $character->setAttribute('district_id', District::startId());
+            }
+
             foreach (self::RESOURCES as $resource => $statId) {
                 if ($character->getAttribute($resource) === null) {
                     $character->setAttribute($resource, (int) $character->stat($statId)->value);

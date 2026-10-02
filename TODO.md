@@ -763,38 +763,18 @@ targets can be tag sets, so comparing ids alone would undercount.
   unreachable, a number that reads wrong, a screen that says nothing when it
   should. Deferred deliberately, not forgotten.
 
-## The Street category is a placeholder, and it is meant to be the City
+## ~~The Street category is a placeholder~~
 
-**Status: named wrong on purpose, because the thing it names does not exist.**
-`App\Notifications\Category::Street` was added for heat's first consequence —
-word going out that somebody is worth money — and it is the only category
-whose `route()` is null, because there is nowhere to send a reader.
-
-**It should be called City**, and the City is the screen the physical side of
-the game hangs off (see *The physical side of the game* below): districts,
-locations found by walking, clinics, markets, fixers, the people who put a
-price on your head in the first place. A category named for a street is a
-category named after one sentence in one message.
-
-**What has to happen, and none of it is hard:**
-
-- **Rename the case to `City`.** The enum's backed value is written into
-  `notifications.category` on every row, so renaming the case means either a
-  data migration over that column or a deliberate decision to leave old rows
-  reading `street`. Do the migration — the whole point of that column is that a
-  reader can group by it.
-- **Give it a route** once there is a City screen, and the inbox stops
-  rendering those rows as dead ends. `route()` returning null is deliberate and
-  should go back to being impossible.
-- **Then reconsider what belongs in it.** A bounty, a fixer's offer, an
-  invitation, a debt coming due are all the same category today because none of
-  them exists. When two of them do, this may want splitting.
-
-**Do not flesh the City out from this entry.** It is a note about a name and a
-null route; the design lives below, and that is a bigger conversation than a
-category label.
+**Done 2026-10-03.** `Category::Street` is `Category::City`, the stored rows were moved
+by `2026_10_03_130000_the_street_becomes_the_city`, and `route()` points at the city map,
+so no category leads nowhere. **Still open:** reconsider what belongs in it. A bounty, a
+fixer's offer, an invitation and a debt coming due are all one category today; when two
+of them exist, it may want splitting.
 
 ## The physical side of the game
+
+**Designed in `CITY.md`; phase 1 (the maps) built 2026-10-03.** What is below is the original brain-dump; the document is the agreed shape.
+
 Some ideas to develop later: A city map showing locations. Most locations are hidden from the player and must be discovered by exploring. This map shouldn't be a grid like the cyberspace map, but rather just districts that you can travel to and "walk the streets" (an action) to discover new stuff (can also be helped by skills later). Locations can hold certain specific markets (selling certain items), places where you can get treatment (heal HP/max HP, heal neural damage/SI etc), get cyber implants or augmentations etc. There can also be "random events" and quest chains in the city. And, of course, fighting NPCs (and even PVP later once we figure that out). Maybe heists/robberies/missions (similar to runs on a node but more demanding).
 
 Maybe players can also buy "houses" and "apartments" - figure out what this would be more than "cosmetics". Also possibly buying into existing businesses to generate passive income (investments). Maybe crafting of items?

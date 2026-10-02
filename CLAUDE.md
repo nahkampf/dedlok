@@ -9,7 +9,7 @@ Two systems are already binding: the Laravel app and the **Ash & Ember** UI kit.
 both before writing code.
 
 Companion docs: `MECHANICS.md` (anything producing a number), `CYBERSPACE.md` (the grid,
-systems, runs), `CITY.md` (districts, travel, explore — designed, not built),
+systems, runs), `CITY.md` (districts, travel, explore — phase 1 built),
 `WORLDBUILDING.md`, `TODO.md`.
 
 ## Everything runs in Docker
@@ -802,6 +802,32 @@ never a `forceFill(['creds' => …])`.
 - **Balances before the ledger existed have no history**; the first entry carries the
   balance it left.
 - `/wallet` shows the newest 100 with no pager.
+
+### The City
+
+**`CITY.md` is the document**; phase 1 (the maps) is built, travel and exploring are not.
+
+- **`characters.district_id` is where the body is, and is always set.** The `Character`
+  creating hook fills it from `config('city.start')` (a slug), so the factory, creation and
+  anything else agree. NOT NULL on MySQL, RESTRICT on delete; on SQLite the migration skips
+  the NOT NULL step. Being jacked in is still only the grid position.
+- **Visibility is a READ, in one place: `Location::scopeVisibleTo()`.** Open, or a
+  `character_locations` row (found), or `required_flag` set in `character_flags`. A flag
+  needs no unlock step. Nothing else may decide it, and **no count of what is hidden is ever
+  drawn**.
+- **`App\City\Discovery::unlock()` is the only writer of `character_locations`** and only
+  for `explorable` locations; **`App\Characters\Flags::set()` is the only writer of
+  `character_flags`** (permanent, a lower-case slug). `flag:set <handle> <flag>` is the only
+  caller until quests and encounters exist.
+- **`locations.discovery` is `open`, `explorable` or `explored_by_flag`**, and a CHECK ties
+  `concealment` to the second and `required_flag` to the third. Names and descriptions are
+  ON the rows; UI chrome is `strings.city.*`.
+- **The maps are the deck board's classes** through `<x-city-map>`: percentage coordinates,
+  wires from `district_links`, `.board__node--here` for where you stand. Keep coordinates
+  inset (a label is cut off at the edge), and a node's name wraps. City screens redirect a
+  jacked-in character to cyberspace with an `error` flash.
+- **The starter city's links, weights and every location are placeholders** in
+  `2026_10_03_110000_the_starter_city`; only the seven district names are the author's.
 
 ### Standing, as a tab
 
@@ -1761,7 +1787,7 @@ stood on this not existing.
   column rather than a query.
 - **`App\Notifications\Category` says where a message came from and never how loud it is.**
   Each case has a sender that runs today: `Cyberspace`, `Training`, `Achievement`, `Market`,
-  `Mission`, `Street` and `Wallet` (somebody sent you cash). **`route()` may be null** — a message about the street has nowhere to lead until
+  `Mission`, `City` and `Wallet` (somebody sent you cash). **`route()` may be null** — a message about the street has nowhere to lead until
   there is a street, and the row stops being a link rather than pointing somewhere unrelated.
   **A case without a sender would be a filter with nothing to filter.** There is no
   severity and no colour on them — the kit's aliases mean good, careful and bad, and

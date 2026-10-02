@@ -62,14 +62,13 @@ enum Category: string
     case Market = 'market';
 
     /**
-     * The world outside, deciding things about you.
+     * The City, and the world outside deciding things about you.
      *
-     * Heat's first consequence is the only sender today: word going out that
-     * somebody is worth money. It is the one category with nowhere to send a
-     * reader yet — the street is a screen the game does not have — which is
-     * what `route()` returning null is for.
+     * Word going out that somebody is worth money, and a drug's withdrawal
+     * coming on. It was `Street` until the City existed, and its rows were moved
+     * with it; reading one now takes you to the city map.
      */
-    case Street = 'street';
+    case City = 'city';
 
     /** Somebody sent you cash. The only wallet message: everything else in it is something you did. */
     case Wallet = 'wallet';
@@ -95,10 +94,10 @@ enum Category: string
             self::Market => "\u{2696}",
             // The Exchange's own mark, from the same geometric set.
             self::Mission => "\u{25C8}",
-            // The one glyph not lifted from the rail, because the street
-            // has no rail item. U+26A0 is the same Miscellaneous Symbols
-            // block as the rest, with U+FE0E's job done by the escape.
-            self::Street => "\u{26A0}",
+            // The one glyph not lifted from the rail. U+26A0 is the same
+            // Miscellaneous Symbols block as the rest, with U+FE0E's job done
+            // by the escape.
+            self::City => "\u{26A0}",
             // The currency sign, as on the wallet's rail item.
             self::Wallet => "\u{00A4}",
         };
@@ -112,11 +111,11 @@ enum Category: string
      * first time a route moved — and there is nothing more specific to point
      * at anyway: cyberspace is a map rather than a page per machine.
      *
-     * NULL IS AN ORDINARY ANSWER. A message about the street has nowhere to
-     * lead until there is a street, and a link to somewhere unrelated would be
-     * worse than no link: the row simply stops being one.
+     * EVERY CATEGORY LEADS SOMEWHERE NOW. `City` was the last with nowhere to
+     * go, until the city map existed; a category that ever has nowhere again
+     * should make this nullable rather than point at something unrelated.
      */
-    public function route(): ?string
+    public function route(): string
     {
         return match ($this) {
             self::Cyberspace => 'cyberspace.index',
@@ -127,7 +126,7 @@ enum Category: string
             // one agent. The map is where a desk is found, which makes it the
             // honest destination — the same answer `Cyberspace` gives.
             self::Mission => 'cyberspace.index',
-            self::Street => null,
+            self::City => 'city.index',
             self::Wallet => 'wallet.index',
         };
     }

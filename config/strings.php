@@ -42,6 +42,7 @@ return [
             // rail is 220px open and one word has to fit beside a glyph.
             'messages' => 'Messages',
             'wallet' => 'Wallet',
+            'city' => 'City',
             'contracts' => 'Contracts',
             'profile' => 'Profile',
 
@@ -256,6 +257,21 @@ return [
     |
     */
 
+    'city' => [
+        'title' => 'City',
+        'lede' => 'Your body is out here, in one district at a time.',
+        'map' => 'The city',
+        'district_map' => 'District map',
+        'here' => 'You are here',
+        'in_district' => 'You are in :district.',
+        'back' => '← City',
+        'jack_out_first' => 'Jack out before you do anything in the City.',
+        'districts' => 'Districts',
+        'locations' => 'Places you know here',
+        'no_locations' => 'Nothing you know of yet.',
+        'map_empty' => 'Nothing to show.',
+    ],
+
     'standing' => [
         'title' => 'Standing',
         'heading' => 'Who thinks what of you',
@@ -440,7 +456,7 @@ return [
             'achievement' => 'Achievement',
             'market' => 'Market',
             'mission' => 'Work',
-            'street' => 'Street',
+            'city' => 'City',
             'wallet' => 'Wallet',
         ],
 

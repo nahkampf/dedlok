@@ -124,7 +124,7 @@ final class BountyTest extends TestCase
         $message = Notification::query()->sole();
 
         $this->assertSame($character->user_id, $message->user_id);
-        $this->assertSame(Category::Street, $message->category);
+        $this->assertSame(Category::City, $message->category);
         $this->assertStringContainsString('price on your head', $message->body);
     }
 
@@ -240,7 +240,7 @@ final class BountyTest extends TestCase
             ['user_id' => $user->id, 'archetype' => 3, 'heat' => 100],
         ));
 
-        (new Notifier)->send($character, Category::Street, 'bounty_word');
+        (new Notifier)->send($character, Category::City, 'bounty_word');
 
         $this->actingAs($user)
             ->get(route('notifications.index'))

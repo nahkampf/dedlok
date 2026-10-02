@@ -40,6 +40,8 @@ class CharacterTest extends TestCase
             // player's own words about themselves.
             'bio',
             'archetype',
+            // Where the body is: always set. See CITY.md.
+            'district_id',
             ...Character::ATTRIBUTES,
             ...array_keys(Character::RESOURCES),
             // Money, named on its own because it is neither: stored and

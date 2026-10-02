@@ -85,6 +85,14 @@
                  map, so a rail item that appeared only once you were already
                  inside would be one nobody could find. Same rule as the deck
                  link. --}}
+            {{-- The City. U+25C8, a glyph already proved to render (the Work
+                 category's), because the rail may only draw from that set. --}}
+            <a class="dock__item" href="{{ route('city.index') }}"
+               @if (request()->routeIs('city.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#9672;</span>
+                <span class="dock__label">{{ Text::get('ui.nav.city') }}</span>
+            </a>
+
             <a class="dock__item" href="{{ route('cyberspace.index') }}"
                @if (request()->routeIs('cyberspace.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9638;</span>

@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\SkillController as AdminSkillController;
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterCreationController;
+use App\Http\Controllers\CityController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\ExchangeController;
@@ -296,6 +297,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/list', [MarketController::class, 'list'])->name('market.list');
     Route::delete('/market/offers/{offer}', [MarketController::class, 'withdraw'])->name('market.withdraw');
     Route::post('/market/offers/{offer}', [MarketController::class, 'take'])->name('market.take');
+
+    // The City: a map of districts, and behind each a map of its places.
+    Route::get('/city', [CityController::class, 'index'])->name('city.index');
+    Route::get('/city/{district}', [CityController::class, 'district'])->name('city.district');
 
     // The wallet: the ledger of every movement of creds, and sending some on.
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');

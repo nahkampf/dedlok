@@ -1161,6 +1161,25 @@ public/assets/
       </template>
     </div>
     <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Map of places</h3><p>The deck board's own frame, wires and percentage coordinates, with a <em>name</em> in each box instead of sockets. <code class="inl">.board__name</code> wraps rather than overflowing, so keep coordinates inset from the edges. A node that is a link is an <code class="inl">&lt;a class="board__node"&gt;</code>; <code class="inl">.board__node--here</code> steps the box up to the hub's fill for where you are standing. No glow and no ember: a map is not an alarm.</p></div>
+      <template class="demo-src">
+        <div class="board-wrap">
+          <div class="frame scanlines brackets board" aria-label="The city">
+            <span class="frame__label">The city</span>
+            <svg class="board__wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <line class="board__wire" x1="46" y1="56" x2="50" y2="24"></line>
+              <line class="board__wire" x1="46" y1="56" x2="20" y2="80"></line>
+              <line class="board__wire" x1="46" y1="56" x2="80" y2="52"></line>
+            </svg>
+            <a class="board__node board__node--here" href="#" aria-current="location" style="left:46%;top:56%"><span class="board__box"><span class="board__name">Old Town</span></span></a>
+            <a class="board__node" href="#" style="left:50%;top:24%"><span class="board__box"><span class="board__name">Downtown</span></span></a>
+            <a class="board__node" href="#" style="left:20%;top:80%"><span class="board__box"><span class="board__name">Dockside</span></span></a>
+            <a class="board__node" href="#" style="left:80%;top:52%"><span class="board__box"><span class="board__name">Knightsbridge Projects</span></span></a>
+          </div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
       <div class="demo__hd"><h3 class="h3">Item card &amp; rows</h3></div>
       <template class="demo-src">
         <div class="row row--wrap" style="--gap:var(--s-5);align-items:flex-start">

@@ -148,7 +148,7 @@ final class Bounties
                 'bounty' => (int) $character->bounty + $this->amountFor((float) $character->heat, (int) $character->bounty_grade),
                 'bounty_grade' => 0,
             ])->save();
-            $this->notifier->send($character, Category::Street, 'bounty_word', ['bounty' => number_format($character->bounty)]);
+            $this->notifier->send($character, Category::City, 'bounty_word', ['bounty' => number_format($character->bounty)]);
 
             $marked[] = $character;
         }

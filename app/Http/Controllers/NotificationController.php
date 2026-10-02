@@ -65,9 +65,7 @@ class NotificationController extends Controller
      * for messages nobody looked at — arriving on the screen is not reading
      * thirty of them, but clicking this row is reading this one.
      *
-     * A POST and not a link, even though it navigates: it writes. A category
-     * with nowhere to lead still reads — `Category::route()` may be null, and
-     * a message about the street is still a message somebody opened.
+     * A POST and not a link, even though it navigates: it writes.
      */
     public function open(Request $request, Notification $message, Notifier $notifier): RedirectResponse
     {
@@ -77,9 +75,7 @@ class NotificationController extends Controller
 
         $notifier->markRead($message);
 
-        $target = $message->category->route();
-
-        return $target === null ? back() : redirect()->route($target);
+        return redirect()->route($message->category->route());
     }
 
     public function read(Request $request, Notifier $notifier): RedirectResponse

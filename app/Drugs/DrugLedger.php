@@ -141,7 +141,7 @@ final class DrugLedger
                 'definition_key' => $key,
             ]);
 
-            $this->notifier->send($character, Category::Street, 'withdrawal', [
+            $this->notifier->send($character, Category::City, 'withdrawal', [
                 'family' => $family->label(),
             ]);
         }

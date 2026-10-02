@@ -178,17 +178,16 @@ final class NotificationTest extends TestCase
         $this->assertSame(1, $this->notifier()->unreadFor($this->user));
     }
 
-    /** A category with nowhere to lead still reads, and stays put. */
-    public function test_opening_a_message_that_leads_nowhere_still_reads_it(): void
+    /** A City message reads, and leads to the city map. */
+    public function test_opening_a_city_message_reads_it_and_goes_to_the_map(): void
     {
-        $message = $this->notifier()->send($this->character, Category::Street, 'bounty_posted', []);
+        $message = $this->notifier()->send($this->character, Category::City, 'bounty_posted', []);
 
-        $this->assertNull(Category::Street->route());
+        $this->assertSame('city.index', Category::City->route());
 
         $this->actingAs($this->user)
-            ->from(route('notifications.index'))
             ->post(route('notifications.open', $message))
-            ->assertRedirect(route('notifications.index'));
+            ->assertRedirect(route('city.index'));
 
         $this->assertNotNull($message->fresh()->read_at);
     }

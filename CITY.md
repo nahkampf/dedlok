@@ -8,8 +8,18 @@ Read MECHANICS.md first for anything that produces a number. Every duration, cha
 modifier named here resolves through the one resolver, and none of the arithmetic lives
 in this file.
 
-**Status: designed, nothing built.** Agreed 2026-10-02. Every figure below is
-unbalanced.
+**Status: phase 1 built (2026-10-03); everything else designed.** Agreed 2026-10-02.
+Every figure below is unbalanced.
+
+| Piece | State |
+| --- | --- |
+| Everything below, unless a row here says otherwise | **specified only** |
+| Districts, links, locations, `character_locations`, `character_flags`, `characters.district_id` | **built**; seven districts and ten placeholder locations arrive by migration |
+| The city map and the district map (`/city`, `/city/{district}`) | **built**, view only; a jacked-in character is redirected to cyberspace |
+| `Location::scopeVisibleTo()`, `Discovery::unlock()`, `Flags::set()`, `flag:set` | **built**; nothing in the game calls `Discovery` yet |
+| `Category::Street` → `Category::City` | **built**; stored rows moved by migration, the route is the city map |
+| Travel, explore, `city_activities`, the three stats, the pod | **specified only** (phase 2) |
+| Admin editors for districts, links and locations | **specified only**, with phase 2 |
 
 Vocabulary, because it was corrected: moving between districts is **travel**, finding
 places is **explore**. *Walk* is only the free MODE of travel (the other is *Hail a

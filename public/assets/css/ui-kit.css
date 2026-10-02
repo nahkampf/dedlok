@@ -2621,7 +2621,20 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
   border: var(--hair) solid var(--line-1);
   border-radius: var(--r-1);
 }
-.board__node--cpu .board__box { background: var(--bg-2); border-color: var(--line-2); }
+.board__node--cpu .board__box,
+.board__node--here .board__box { background: var(--bg-2); border-color: var(--line-2); }
+/* A map's node is a NAME in the box, wrapping rather than overflowing: the
+   coordinates are inset from the edges, but a long name is still wider than a
+   socket. A link gets the kit's hover step and nothing glows. */
+.board__name {
+  display: block; text-align: center; max-width: clamp(84px, 26cqw, 150px);
+  padding: 2px clamp(4px, 1.4cqw, 8px);
+  font-family: var(--font-label); font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: var(--tracking-caps); text-transform: uppercase;
+  color: var(--ink-0); overflow-wrap: anywhere;
+}
+a.board__node { text-decoration: none; }
+a.board__node:hover .board__box { border-color: var(--ink-2); }
 /* Sockets are the thing on this screen, so they are drawn at a size you can
    read rather than a size that fits. Everything inside one scales with it — a
    fixed 20px glyph in a 60px socket is a stamp in the middle of a box, and the
