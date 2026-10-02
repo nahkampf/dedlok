@@ -7,6 +7,10 @@
     <p class="lede" style="margin-top:var(--s-3);max-width:70ch">{{ Text::get('city.lede') }}</p>
 
     <div class="stack" style="--gap:var(--s-5);margin-top:var(--s-5)">
+        @if ($activity)
+            <x-city-activity :activity="$activity" :remaining="$remaining" :route="$route" :in-pass="$inPass" />
+        @endif
+
         <x-city-map :label="Text::get('city.map')"
             :links="collect($links)->map(fn ($pair) => ['d'.$pair[0], 'd'.$pair[1]])->all()"
             :nodes="$districts->map(fn ($district) => [

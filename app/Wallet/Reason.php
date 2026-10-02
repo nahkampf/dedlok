@@ -19,6 +19,7 @@ enum Reason: string
     case Skim = 'skim';
     case TransferOut = 'transfer_out';
     case TransferIn = 'transfer_in';
+    case Pod = 'pod';
 
     public function label(): string
     {

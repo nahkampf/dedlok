@@ -453,6 +453,34 @@ return [
             'rounding' => 'none',
         ],
 
+        /*
+        | How good somebody is at finding places in the City: a POOL, read
+        | through the Sheet like stealth and egress (`Character::stat()` — outside
+        | a Sheet a pool reads as zero). See `pools` below.
+        */
+        'exploration' => [
+            'tags' => ['city'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'tenth',
+        ],
+
+        // Seconds. The base is config/city.php and is handed in at the call
+        // site, as scan_duration's is: travel's varies with the district.
+        'explore_duration' => [
+            'tags' => ['city', 'explore'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        'travel_duration' => [
+            'tags' => ['city', 'travel'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'scan_duration' => [
             'tags' => ['scan'],
             'min' => 1,
@@ -742,6 +770,19 @@ return [
         */
         'egress' => [
             'attributes' => ['reflex', 'focus', 'intellect'],
+            'divisor' => 4.0,
+        ],
+
+        /*
+        | Exploration = (Focus + Perception + Senses) / 4.
+        |
+        | Noticing what is there, holding attention on it, and the raw senses
+        | that take it in. Four is egress's own divisor for three attributes,
+        | which puts a starting character near 14 — what the concealment
+        | difficulties in config/city.php are measured against.
+        */
+        'exploration' => [
+            'attributes' => ['focus', 'perception', 'senses'],
             'divisor' => 4.0,
         ],
     ],

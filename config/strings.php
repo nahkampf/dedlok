@@ -266,6 +266,27 @@ return [
         'in_district' => 'You are in :district.',
         'back' => '← City',
         'jack_out_first' => 'Jack out before you do anything in the City.',
+        'under_way' => 'Under way',
+        'travelling' => 'You are in :district, on your way to :to (:mode).',
+        'stopping' => 'You will stop in :district when this pass ends.',
+        'exploring' => 'You are exploring :district.',
+        'cancel' => 'Cancel',
+        'cancelled' => 'Cancelled.',
+        'travel_begun' => 'You set off for :district.',
+        'explore_begun' => 'You start looking around.',
+        'explore' => 'Explore',
+        'walk' => 'Walk',
+        'pod' => 'Hail a pod — :fare ¤',
+        'takes' => 'about :time',
+        'mode' => ['walk' => 'on foot', 'pod' => 'by pod'],
+        'refused' => [
+            'jacked_in' => 'Jack out first.',
+            'busy' => 'You are already doing something.',
+            'already_there' => 'You are already there.',
+            'no_route' => 'There is no way to get there from here.',
+            'cannot_afford' => 'You cannot afford the fare.',
+            'nothing_to_cancel' => 'Nothing to cancel.',
+        ],
         'districts' => 'Districts',
         'locations' => 'Places you know here',
         'no_locations' => 'Nothing you know of yet.',
@@ -301,6 +322,8 @@ return [
         'notes' => [
             'sent' => 'To :handle',
             'received' => 'From :handle',
+            'pod' => 'Pod to :district',
+            'pod_refund' => 'Pod fare refunded for districts not reached',
         ],
         'reasons' => [
             'starting' => 'Starting funds',
@@ -313,6 +336,7 @@ return [
             'skim' => 'Skimmed by ICE',
             'transfer_out' => 'Transfer sent',
             'transfer_in' => 'Transfer received',
+            'pod' => 'Pod fare',
         ],
         'refused' => [
             'amount' => 'Send at least 1 ¤.',
@@ -486,6 +510,12 @@ return [
             'skill_level' => ':skill reached level :level.',
             'achievement_unlocked' => 'Achievement unlocked: :name.',
             'withdrawal' => 'You need it. :family, and going without is starting to show.',
+            // The City. "found nothing" is ONE sentence whether every roll failed
+            // or there was nothing to find: it must never say how much is hidden.
+            'travel_arrived' => 'You arrived in :district.',
+            'travel_stopped' => 'You stopped in :district.',
+            'explore_found' => 'You found a place: :place.',
+            'explore_nothing' => 'You found nothing new.',
             'transfer_received' => ':handle sent you :amount ¤.',
             'bounty_word' => "You've made enemies out there. Word is being put out on the street. There's a price on your head now: ¤:bounty.",
         ],
@@ -1753,10 +1783,13 @@ return [
             // pays for is called egress everywhere a player sees it.
             'egress' => 'Evasion',
             'stealth' => 'Stealth',
+            'exploration' => 'Exploration',
 
             // What skill effects reach, named so a skill's card can say what
             // it changes. Unnamed, an effect renders as a bare amount.
             'scan_duration' => 'scan time',
+            'explore_duration' => 'exploring time',
+            'travel_duration' => 'travel time',
             'check.systemprofiling' => 'System Profiling checks',
             'check.routing' => 'Routing checks',
             'deck_storage' => 'deck storage',

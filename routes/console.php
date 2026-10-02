@@ -249,3 +249,13 @@ Schedule::command('scans:stale --quiet-when-idle')
 Schedule::command('missions:expire --quiet-when-idle')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+/*
+ * The City's rows, every five minutes: a travel or exploring pass that matured
+ * while nobody was looking. Lazy settling is what makes an activity finish when
+ * somebody IS looking; this makes the rows true in between and tells the player
+ * what they missed — the same arrangement as `cyberspace:settle`.
+ */
+Schedule::command('city:settle')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

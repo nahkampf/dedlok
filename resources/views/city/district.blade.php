@@ -1,4 +1,5 @@
 @use('App\Support\Text')
+@use('Carbon\CarbonInterval')
 @extends('layouts.app')
 @section('title', $district->name)
 
@@ -13,6 +14,32 @@
     @endif
 
     <div class="stack" style="--gap:var(--s-5);margin-top:var(--s-5)">
+        @if ($activity)
+            <x-city-activity :activity="$activity" :remaining="$remaining" :route="$route" :in-pass="$inPass" />
+        @elseif ($here && $exploreSeconds !== null)
+            <form method="POST" action="{{ route('city.explore') }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                @csrf
+                <button type="submit" class="btn cut">{{ Text::get('city.explore') }}</button>
+                <span class="micro" style="color:var(--ink-3)">{{ Text::get('city.takes', ['time' => CarbonInterval::seconds($exploreSeconds)->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}</span>
+            </form>
+        @elseif (is_array($quote))
+            <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                <form method="POST" action="{{ route('city.travel', $district) }}">
+                    @csrf
+                    <input type="hidden" name="mode" value="walk">
+                    <button type="submit" class="btn cut">{{ Text::get('city.walk') }}</button>
+                </form>
+                <span class="micro" style="color:var(--ink-3)">{{ Text::get('city.takes', ['time' => CarbonInterval::seconds($quote['walk'])->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}</span>
+
+                <form method="POST" action="{{ route('city.travel', $district) }}">
+                    @csrf
+                    <input type="hidden" name="mode" value="pod">
+                    <button type="submit" class="btn cut" @disabled($character->creds < $quote['fare'])>{{ Text::get('city.pod', ['fare' => number_format($quote['fare'])]) }}</button>
+                </form>
+                <span class="micro" style="color:var(--ink-3)">{{ Text::get('city.takes', ['time' => CarbonInterval::seconds($quote['pod'])->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}</span>
+            </div>
+        @endif
+
         <x-city-map :label="Text::get('city.district_map')"
             :nodes="$locations->map(fn ($location) => [
                 'key' => 'l'.$location->id,

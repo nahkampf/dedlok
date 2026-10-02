@@ -8,7 +8,7 @@ Read MECHANICS.md first for anything that produces a number. Every duration, cha
 modifier named here resolves through the one resolver, and none of the arithmetic lives
 in this file.
 
-**Status: phase 1 built (2026-10-03); everything else designed.** Agreed 2026-10-02.
+**Status: phases 1 and 2a built (2026-10-03); the rest designed.** Agreed 2026-10-02.
 Every figure below is unbalanced.
 
 | Piece | State |
@@ -18,8 +18,9 @@ Every figure below is unbalanced.
 | The city map and the district map (`/city`, `/city/{district}`) | **built**, view only; a jacked-in character is redirected to cyberspace |
 | `Location::scopeVisibleTo()`, `Discovery::unlock()`, `Flags::set()`, `flag:set` | **built**; nothing in the game calls `Discovery` yet |
 | `Category::Street` → `Category::City` | **built**; stored rows moved by migration, the route is the city map |
-| Travel, explore, `city_activities`, the three stats, the pod | **specified only** (phase 2) |
-| Admin editors for districts, links and locations | **specified only**, with phase 2 |
+| Travel (walk and pod), explore, cancelling, `city_activities`, `Router`, the lazy settle and `city:settle` | **built** (phase 2a) |
+| `exploration`, `explore_duration`, `travel_duration`; `checks.floors.exploration` = 0 | **built**; the pool reads about 13 on the six characters in the local copy of production, against the 14 the difficulties assume (Trivial ~48%, Difficult ~19%, Obscure ~4%, Secretive ~0.9%) |
+| Admin editors for districts, links and locations | **specified only** (phase 2b) |
 
 Vocabulary, because it was corrected: moving between districts is **travel**, finding
 places is **explore**. *Walk* is only the free MODE of travel (the other is *Hail a
@@ -186,11 +187,11 @@ An open encounter locks the screen, `EnsureRunIsFinished`'s shape.
 
 ## Phases
 
-1. **Foundation.** Schema, `district_id`, the presence rule, the city map and district
+1. **Foundation.** *(built)* Schema, `district_id`, the presence rule, the city map and district
    map, `Discovery`, `Flags`, the `Street` → `City` rename (a data migration over
    `notifications.category`), a starter city by migration, and a minimal admin editor for
    districts, links and locations.
-2. **Travel and explore.** `Router`, `city_activities`, the settle and its sweep, the three
+2. **Travel and explore.** *(2a built; the editors are 2b)* `Router`, `city_activities`, the settle and its sweep, the three
    stats, the pod fare.
 3. **Shops and clinics.**
 4. **Narrative encounters**, spawned by travel and explore and fixed at locations.

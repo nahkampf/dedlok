@@ -301,6 +301,9 @@ Route::middleware('auth')->group(function () {
     // The City: a map of districts, and behind each a map of its places.
     Route::get('/city', [CityController::class, 'index'])->name('city.index');
     Route::get('/city/{district}', [CityController::class, 'district'])->name('city.district');
+    Route::post('/city/{district}/travel', [CityController::class, 'travel'])->name('city.travel');
+    Route::post('/city-explore', [CityController::class, 'explore'])->name('city.explore');
+    Route::post('/city-cancel', [CityController::class, 'cancel'])->name('city.cancel');
 
     // The wallet: the ledger of every movement of creds, and sending some on.
     Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');

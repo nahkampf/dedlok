@@ -819,6 +819,28 @@ never a `forceFill(['creds' => …])`.
   for `explorable` locations; **`App\Characters\Flags::set()` is the only writer of
   `character_flags`** (permanent, a lower-case slug). `flag:set <handle> <flag>` is the only
   caller until quests and encounters exist.
+- **`App\City\Traveller` is the only writer of `characters.district_id` after creation**,
+  and of a travel's `city_activities` row; **`Explorer` writes an explore's.** One row per
+  character (the primary key is the whole "one thing at a time" rule). `begin()` itself
+  refuses a jacked-in or busy character — the controller is not the guard — and **the
+  screen's quote and what is charged are the same call** (`Traveller::quote()`).
+- **A travel is one pass in every district on the route EXCEPT the destination, origin
+  included**; `district_id` is the district whose pass is running. `Router` is pure and
+  deterministic (cheapest, then fewest districts, then lowest ids). **Cancelling waits for
+  the pass in progress and leaves you in that district.** A pod's fare is charged up front
+  and **snapshotted on the row** (`paid`), so a refund returns what was paid.
+- **Settling is lazy, catches up (each pass begins when the previous matured) and runs
+  under a lock on the activity row**, because the five-minute `city:settle` sweep and a
+  player's request can settle the same trip at once and a refund is real money. The sweep
+  also writes the inbox message; a request flashes it instead.
+- **`exploration` is a POOL: read it with `$character->stat('exploration')`**, never
+  `Resolver::resolve` (outside a Sheet a pool is zero). The two durations are seconds with
+  their base handed in from `config/city.php`, as `scan_duration`'s is. **Exploring is never
+  refused for there being nothing left, and "found nothing" is one sentence either way** —
+  it must not say how much is hidden. `checks.floors.exploration` is `0.0`, so there is no
+  certainty floor *or ceiling*: a strong explorer is certain of a Trivial place.
+- **`[data-countdown="SECONDS"]`** in `ui-kit.js` ticks as m:ss and reloads shortly after
+  zero. It is seconds REMAINING from the server, never an absolute time.
 - **A district has a `color`** (`App\City\DistrictColor`): a decoration token naming WHICH
   district, set as `--hue` on a map node and `--tier` on a list row. Violet, clay and moss
   joined the palette for it. Never ember, never a semantic alias.

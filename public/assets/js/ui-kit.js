@@ -952,5 +952,29 @@
     reprice(data.creds);
   });
 
+  /* --- A countdown that reloads the page when it ends ----------------------
+     <span data-countdown="95">1:35</span> — the value is SECONDS REMAINING,
+     sent by the server, never an absolute time: a phone's clock can be wrong
+     and the server's is the one that settles anything. It ticks once a second
+     as m:ss and, a moment after zero, reloads, because the server's lazy
+     settle on that request is what actually moves the City along. */
+  function countdowns() {
+    document.querySelectorAll("[data-countdown]").forEach((el) => {
+      if (el.dataset.ticking) return;
+      el.dataset.ticking = "1";
+      const end = Date.now() + Number(el.dataset.countdown) * 1000;
+      const tick = () => {
+        const left = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+        el.textContent = Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0");
+        if (left > 0) return setTimeout(tick, 1000);
+        setTimeout(() => location.reload(), 1500);
+      };
+      tick();
+    });
+  }
+
+  countdowns();
+  document.addEventListener("DOMContentLoaded", countdowns);
+
   window.UI = { toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows };
 })();
