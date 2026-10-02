@@ -20,6 +20,8 @@ enum Reason: string
     case TransferOut = 'transfer_out';
     case TransferIn = 'transfer_in';
     case Pod = 'pod';
+    case Shop = 'shop';
+    case Clinic = 'clinic';
 
     public function label(): string
     {

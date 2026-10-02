@@ -43,7 +43,7 @@
         <x-city-map :label="Text::get('city.district_map')"
             :nodes="$locations->map(fn ($location) => [
                 'key' => 'l'.$location->id,
-                'label' => $location->name,
+                'label' => $location->name.($location->features() === [] ? '' : ' · '.implode(', ', array_map(fn ($f) => $f->label(), $location->features()))),
                 'x' => $location->map_x,
                 'y' => $location->map_y,
                 'href' => null,
@@ -57,7 +57,14 @@
             <div class="panel__bd stack" style="--gap:var(--s-3)">
                 @forelse ($locations as $location)
                     <div class="stack" style="--gap:2px">
-                        <span class="item-row__name">{{ $location->name }}</span>
+                        <a class="item-row__name" href="{{ route('city.place', $location->slug) }}">{{ $location->name }}</a>
+                        @if ($location->features() !== [])
+                            <span class="row row--wrap" style="--gap:var(--s-2)">
+                                @foreach ($location->features() as $feature)
+                                    <span class="tag">{{ $feature->label() }}</span>
+                                @endforeach
+                            </span>
+                        @endif
                         @if ($location->description)
                             <span class="muted" style="font-size:var(--fs-sm)">{{ $location->description }}</span>
                         @endif

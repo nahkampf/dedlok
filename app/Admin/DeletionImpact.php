@@ -11,6 +11,7 @@ use App\Models\CharacterSkill;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\MarketPurchase;
+use App\Models\ShopItem;
 use App\Models\Skill;
 use App\Models\SkillPrerequisite;
 use App\Models\TrainingQueueEntry;
@@ -53,6 +54,7 @@ final class DeletionImpact
             'shelf' => $item->stockOnHand(),
             'purchases' => MarketPurchase::where('item_id', $item->id)->count(),
             'archetype_loadouts' => ArchetypeItem::where('item_id', $item->id)->count(),
+            'shop_listings' => ShopItem::where('item_id', $item->id)->count(),
         ];
 
         if ($item->isContainer()) {

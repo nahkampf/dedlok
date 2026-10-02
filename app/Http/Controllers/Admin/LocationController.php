@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Admin\ItemOptions;
+use App\City\ClinicService;
 use App\City\Concealment;
 use App\City\DiscoveryRule;
+use App\City\FeatureEditor;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LocationRequest;
 use App\Models\District;
 use App\Models\Location;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -35,7 +39,12 @@ class LocationController extends Controller
 
     public function store(LocationRequest $request): RedirectResponse
     {
-        $location = Location::create($request->columns());
+        $location = DB::transaction(function () use ($request): Location {
+            $location = Location::create($request->columns());
+            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows());
+
+            return $location;
+        });
 
         return redirect()->route('admin.locations.edit', $location)->with('status', Text::get('admin.locations.created'));
     }
@@ -47,7 +56,10 @@ class LocationController extends Controller
 
     public function update(LocationRequest $request, Location $location): RedirectResponse
     {
-        $location->update($request->columns());
+        DB::transaction(function () use ($request, $location): void {
+            $location->update($request->columns());
+            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows());
+        });
 
         return back()->with('status', Text::get('admin.locations.updated'));
     }
@@ -67,6 +79,10 @@ class LocationController extends Controller
             'districts' => District::query()->orderBy('name')->get(['id', 'name']),
             'rules' => DiscoveryRule::cases(),
             'concealments' => Concealment::cases(),
+            'items' => ItemOptions::grouped(),
+            'services' => ClinicService::cases(),
+            'shop' => $location?->shopItems()->orderBy('id')->get(['item_id', 'price'])->map(fn ($r): array => ['item_id' => $r->item_id, 'price' => $r->price])->all() ?? [],
+            'clinic' => $location?->clinicServices()->pluck('price', 'service')->mapWithKeys(fn ($p, $s): array => [$s instanceof ClinicService ? $s->value : (string) $s => $p])->all() ?? [],
         ];
     }
 }

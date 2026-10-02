@@ -25,6 +25,7 @@ use App\Http\Controllers\MarketController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PatchNotesController;
+use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
 use App\Http\Controllers\StandingController;
@@ -304,6 +305,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/city', [CityController::class, 'index'])->name('city.index');
     Route::get('/city/{district}', [CityController::class, 'district'])->name('city.district');
     Route::post('/city/{district}/travel', [CityController::class, 'travel'])->name('city.travel');
+    Route::get('/city/place/{slug}', [PlaceController::class, 'show'])->name('city.place');
+    Route::post('/city/place/{slug}/buy/{item}', [PlaceController::class, 'buy'])->name('city.buy');
+    Route::post('/city/place/{slug}/treat/{service}', [PlaceController::class, 'treat'])->name('city.treat');
     Route::post('/city-explore', [CityController::class, 'explore'])->name('city.explore');
     Route::post('/city-cancel', [CityController::class, 'cancel'])->name('city.cancel');
 

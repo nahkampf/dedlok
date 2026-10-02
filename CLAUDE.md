@@ -847,6 +847,14 @@ never a `forceFill(['creds' => …])`.
   and replaced wholesale per district, and **a district is refused deletion while anybody
   stands in it or it is `city.start`**. A trip whose route names a deleted district stops
   where the traveller is and refunds the rest (`Traveller::settle()`).
+- **A location is a shop by having `shop_items` rows and a clinic by having
+  `clinic_services` rows; `FeatureEditor` is the only writer of both**, replacing them
+  wholesale. **`ShopKeeper` is the only door from a City shop to a stash** and writes
+  neither of the market's tables nor looks at `on_market`; **`Clinic` prices per point
+  restored**, and its `quote()` and `treat()` share one `owed()`. Both ask `Presence` inside
+  their own lock — the page hiding a button guards nothing. A hidden place is the same 404
+  as a missing one (`PlaceController` resolves through `visibleTo`). Money moves under a
+  lock on the character row and recovery happens on that same locked instance.
 - **A district has a `color`** (`App\City\DistrictColor`): a decoration token naming WHICH
   district, set as `--hue` on a map node and `--tier` on a list row. Violet, clay and moss
   joined the palette for it. Never ember, never a semantic alias.

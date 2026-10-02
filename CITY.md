@@ -8,7 +8,7 @@ Read MECHANICS.md first for anything that produces a number. Every duration, cha
 modifier named here resolves through the one resolver, and none of the arithmetic lives
 in this file.
 
-**Status: phases 1 and 2 built (2026-10-03); the rest designed.** Agreed 2026-10-02.
+**Status: phases 1, 2 and 3 built (2026-10-03); the rest designed.** Agreed 2026-10-02.
 Every figure below is unbalanced.
 
 | Piece | State |
@@ -20,6 +20,7 @@ Every figure below is unbalanced.
 | `Category::Street` → `Category::City` | **built**; stored rows moved by migration, the route is the city map |
 | Travel (walk and pod), explore, cancelling, `city_activities`, `Router`, the lazy settle and `city:settle` | **built** (phase 2a) |
 | `exploration`, `explore_duration`, `travel_duration`; `checks.floors.exploration` = 0 | **built**; the pool reads about 13 on the six characters in the local copy of production, against the 14 the difficulties assume (Trivial ~48%, Difficult ~19%, Obscure ~4%, Secretive ~0.9%) |
+| Shops and clinics: `/city/place/{slug}`, `ShopKeeper`, `Clinic`, `shop_items`, `clinic_services` | **built** (phase 3); one clinic arrives by migration, shops are stocked in the editor |
 | Admin editors for districts (with their links) and locations | **built** (phase 2b): `/admin/districts`, `/admin/locations` |
 
 Vocabulary, because it was corrected: moving between districts is **travel**, finding
@@ -167,6 +168,28 @@ stealth and egress comments rather than measured) and `checks.spread` 8:
 
 ## Interactables
 
+**Phase 3 decisions, all defaults the author has not yet seen** — each is one number or
+one line to change:
+
+- **A shop's stock is unlimited**, so there is no restock clock. A listing is a row
+  (`shop_items`) with a nullable price that falls back to `items.base_cost`, and **it
+  ignores `items.on_market`**: selling what the market does not is the point.
+- **A shop writes neither `market_purchases` nor `market_stock`** — the first is the
+  seeder's demand signal and `Purchaser` is its only writer. `ShopKeeper` is the door.
+- **Players cannot sell to a shop.**
+- **Treatment is instant and priced PER POINT** (`clinic_services.price`): restoring
+  charges `maximum − current`, worked out under the lock. Four services — restore hit
+  points, restore Synaptic Integrity, mend neural damage, mend physical trauma. Mending
+  an injury raises a maximum and does not fill anything, so the screen says to mend first
+  and restore after. Implant surgery stays free and is not a clinic service.
+- **Shops and clinics refuse while any City activity runs**, while jacked in, and unless
+  the body is in the place's district. A place is a feature by having rows; there is no
+  feature table.
+- **The place page is the first door that addresses a location**, so a hidden place is the
+  same 404 as one that does not exist.
+- Pins keep one icon; a place's features appear in its tooltip and as tags in the list.
+
+
 Typed features on a location, a fixed vocabulary like `Drugs\Family`; each kind gets its
 own table when it is built, never a JSON bag. First are **shops** (a per-location stock,
 paid through `Wallet`) and **clinics** (HP, SI and injury treatment, using
@@ -193,7 +216,7 @@ An open encounter locks the screen, `EnsureRunIsFinished`'s shape.
    districts, links and locations.
 2. **Travel and explore.** *(built, with the editors)* `Router`, `city_activities`, the settle and its sweep, the three
    stats, the pod fare.
-3. **Shops and clinics.**
+3. **Shops and clinics.** *(built)*
 4. **Narrative encounters**, spawned by travel and explore and fixed at locations.
 5. **Physical combat**, after weapons and armour are designed.
 6. **Hooks.** Authored quests that set flags, hunters on the street, PvP.

@@ -6,10 +6,12 @@ namespace App\Models;
 
 use App\City\Concealment;
 use App\City\DiscoveryRule;
+use App\City\Feature;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,6 +27,8 @@ use Illuminate\Support\Facades\DB;
  * @property DiscoveryRule $discovery
  * @property Concealment|null $concealment
  * @property string|null $required_flag
+ * @property bool|null $shop_items_exists
+ * @property bool|null $clinic_services_exists
  */
 #[Fillable(['district_id', 'slug', 'name', 'description', 'map_x', 'map_y', 'discovery', 'concealment', 'required_flag'])]
 class Location extends Model
@@ -37,6 +41,33 @@ class Location extends Model
             'discovery' => DiscoveryRule::class,
             'concealment' => Concealment::class,
         ];
+    }
+
+    /** @return HasMany<ShopItem, $this> */
+    public function shopItems(): HasMany
+    {
+        return $this->hasMany(ShopItem::class);
+    }
+
+    /** @return HasMany<ClinicOffer, $this> */
+    public function clinicServices(): HasMany
+    {
+        return $this->hasMany(ClinicOffer::class);
+    }
+
+    /**
+     * What this place can do: it has the feature when it has the rows. Reads the
+     * `withExists` columns when the query asked for them, so a map of pins does
+     * not run two queries a pin.
+     *
+     * @return list<Feature>
+     */
+    public function features(): array
+    {
+        return array_values(array_filter([
+            ($this->shop_items_exists ?? $this->shopItems()->exists()) ? Feature::Shop : null,
+            ($this->clinic_services_exists ?? $this->clinicServices()->exists()) ? Feature::Clinic : null,
+        ]));
     }
 
     /** @return BelongsTo<District, $this> */

@@ -89,6 +89,37 @@
             </div>
         </div>
 
+        @php($shopRows = old('shop', $shop))
+        @php($shopRows = array_pad(array_values($shopRows), count($shopRows) + 3, ['item_id' => null, 'price' => null]))
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.locations.shop') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-3)">
+                <span class="field__hint">{{ Text::get('admin.locations.shop_hint') }}</span>
+                @foreach ($shopRows as $i => $row)
+                    <div class="row row--wrap" style="--gap:var(--s-3)">
+                        <select class="select" name="shop[{{ $i }}][item_id]" style="flex:1 1 220px;min-width:0" aria-label="{{ Text::get('admin.locations.item') }}">
+                            <option value=""></option>
+                            <x-grouped-options :groups="$items" :selected="$row['item_id'] ?? null" />
+                        </select>
+                        <input class="input num" type="number" min="0" name="shop[{{ $i }}][price]" value="{{ $row['price'] ?? '' }}" placeholder="{{ Text::get('admin.locations.price_default') }}" style="width:9rem" aria-label="{{ Text::get('admin.locations.price') }}">
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.locations.clinic') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-3)">
+                <span class="field__hint">{{ Text::get('admin.locations.clinic_hint') }}</span>
+                @foreach ($services as $service)
+                    <label class="field row row--wrap" style="--gap:var(--s-3);align-items:center;margin:0">
+                        <span style="flex:1 1 220px">{{ $service->label() }}</span>
+                        <input class="input num" type="number" min="0" name="clinic[{{ $service->value }}]" value="{{ old('clinic.'.$service->value, $clinic[$service->value] ?? '') }}" style="width:9rem">
+                    </label>
+                @endforeach
+            </div>
+        </div>
+
         <div class="row" style="--gap:var(--s-3)">
             <button type="submit" class="btn btn--primary cut">{{ Text::get('admin.locations.save') }}</button>
         </div>

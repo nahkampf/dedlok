@@ -27,6 +27,18 @@ enum CityRefusal: string
     /** Nothing to cancel. */
     case NothingToCancel = 'nothing_to_cancel';
 
+    /** Not in that district, or the place is not one you know. The same answer either way. */
+    case NotHere = 'not_here';
+
+    /** The shop does not sell that. */
+    case NotSold = 'not_sold';
+
+    /** The equipped deck has no room for it. */
+    case NoStorage = 'no_storage';
+
+    /** Nothing to mend or restore. */
+    case NothingToTreat = 'nothing_to_treat';
+
     public function message(): string
     {
         return Text::get("city.refused.{$this->value}");

@@ -69,6 +69,7 @@ class CityController extends Controller
             'locations' => Location::query()
                 ->where('district_id', $district->getKey())
                 ->visibleTo($character)
+                ->withExists(['shopItems', 'clinicServices'])
                 ->orderBy('name')
                 ->get(),
             // What each way of getting there would cost, from the same call

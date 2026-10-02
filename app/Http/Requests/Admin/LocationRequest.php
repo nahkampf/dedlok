@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\City\ClinicService;
 use App\City\Concealment;
 use App\City\DiscoveryRule;
 use App\Models\Location;
@@ -44,6 +45,12 @@ class LocationRequest extends FormRequest
                 Rule::enum(Concealment::class),
                 'prohibited_unless:discovery,'.DiscoveryRule::Explorable->value,
             ],
+            // What the place does. Blank rows are skipped, not errors.
+            'shop' => ['nullable', 'array', 'max:60'],
+            'shop.*.item_id' => ['nullable', 'integer', 'exists:items,id'],
+            'shop.*.price' => ['nullable', 'integer', 'between:0,1000000'],
+            'clinic' => ['nullable', 'array'],
+            'clinic.*' => ['nullable', 'integer', 'between:0,1000000'],
             // The same slug shape `Flags::set()` insists on.
             'required_flag' => [
                 Rule::requiredIf(fn () => $this->input('discovery') === DiscoveryRule::ExploredByFlag->value),
@@ -52,6 +59,45 @@ class LocationRequest extends FormRequest
                 'prohibited_unless:discovery,'.DiscoveryRule::ExploredByFlag->value,
             ],
         ];
+    }
+
+    /**
+     * The shop's rows: one per item, blank rows dropped, the last price wins.
+     *
+     * @return list<array{item_id: int, price: int|null}>
+     */
+    public function shopRows(): array
+    {
+        $rows = [];
+
+        foreach ((array) $this->input('shop', []) as $row) {
+            if (! empty($row['item_id'])) {
+                $rows[(int) $row['item_id']] = [
+                    'item_id' => (int) $row['item_id'],
+                    'price' => ($row['price'] ?? '') === '' ? null : (int) $row['price'],
+                ];
+            }
+        }
+
+        return array_values($rows);
+    }
+
+    /**
+     * The clinic's services: a blank price means not offered. Only real services.
+     *
+     * @return array<string, int>
+     */
+    public function clinicRows(): array
+    {
+        $rows = [];
+
+        foreach ((array) $this->input('clinic', []) as $service => $price) {
+            if (ClinicService::tryFrom((string) $service) !== null && $price !== null && $price !== '') {
+                $rows[(string) $service] = (int) $price;
+            }
+        }
+
+        return $rows;
     }
 
     /** @return array<string, mixed> */
