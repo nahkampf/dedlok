@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'  # Triggers when a version tag is pushed (e.g., v0.32.1, v1.0.0-rc1)
+  workflow_dispatch:  # Manual run from the Actions tab, for a release whose tag was pushed before this existed
+    inputs:
+      version:
+        description: 'Version to announce (e.g. 0.33.0)'
+        required: true
 
 jobs:
   notify-discord:
@@ -14,9 +19,11 @@ jobs:
 
       - name: Extract Patchnotes for Tag
         id: extract_notes
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           # Strip 'refs/tags/' or leading 'v' to isolate the version string (e.g., 0.32.1)
-          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          TAG_NAME="${INPUT_VERSION:-${GITHUB_REF#refs/tags/}}"
           VERSION="${TAG_NAME#v}"
 
           echo "Target Version: $VERSION"
