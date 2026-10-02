@@ -30,7 +30,7 @@
                     <div class="stack" style="--gap:2px">
                         <span class="item-row__name">{{ $location->name }}</span>
                         @if ($location->description)
-                            <span class="micro" style="color:var(--ink-3)">{{ $location->description }}</span>
+                            <span class="muted" style="font-size:var(--fs-sm)">{{ $location->description }}</span>
                         @endif
                     </div>
                 @empty

@@ -23,10 +23,11 @@
             <div class="panel__bd stack" style="--gap:var(--s-3)">
                 @foreach ($districts as $district)
                     <a class="item-row" href="{{ route('city.district', $district) }}">
+                        <span class="slot__icon" aria-hidden="true">&#9672;</span>
                         <span class="stack" style="--gap:2px;min-width:0">
                             <span class="item-row__name">{{ $district->name }}</span>
                             @if ($district->description)
-                                <span class="micro" style="color:var(--ink-3)">{{ $district->description }}</span>
+                                <span class="muted" style="font-size:var(--fs-sm)">{{ $district->description }}</span>
                             @endif
                         </span>
                         @if ($district->id === $character->district_id)
