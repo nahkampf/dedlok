@@ -9,7 +9,8 @@ Two systems are already binding: the Laravel app and the **Ash & Ember** UI kit.
 both before writing code.
 
 Companion docs: `MECHANICS.md` (anything producing a number), `CYBERSPACE.md` (the grid,
-systems, runs), `WORLDBUILDING.md`, `TODO.md`.
+systems, runs), `CITY.md` (districts, travel, explore — designed, not built),
+`WORLDBUILDING.md`, `TODO.md`.
 
 ## Everything runs in Docker
 
