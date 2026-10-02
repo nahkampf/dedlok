@@ -551,7 +551,8 @@ side; this is where the stock comes from.
 
 ### Buying
 
-**`App\Market\Purchaser` is the only thing that spends `characters.creds`**, the only
+**`App\Market\Purchaser` is the only thing that spends creds AT THE SHELF** (every creds
+change goes through `App\Wallet\Wallet` — see *The wallet*), the only
 writer of `market_purchases`, and the only thing besides `MarketSeeder` that touches a
 shelf. Money existed for four releases with nothing to spend it on.
 
@@ -756,10 +757,11 @@ what a bare `items` row cannot.
 ### The character sheet
 
 **One rail item stands where four did.** Skills, Implants and Achievements each had their
-own, and are tabs of `/character` now — because to a player they are one screen: who you
+own, and are tabs of `/character` now (as is Standing, below) — because to a player they are one screen: who you
 are, rather than what you are carrying.
 
-- **THE TABS ARE FOUR ROUTES, NOT FOUR PANELS.** Each kept its URL, its controller and its
+- **THE TABS ARE ROUTES, NOT PANELS** (five now: character, skills, implants, standing,
+  achievements). Each kept its URL, its controller and its
   tests; `<x-character-tabs>` is a nav of LINKS and the current one is `aria-current`,
   never `role="tab"` with `aria-selected` — promising a tablist and then reloading the page
   is a lie a screen reader acts on. A client-side window would run four screens' worth of
@@ -778,6 +780,35 @@ are, rather than what you are carrying.
   MEDIUMTEXT because the form allows 65,000 CHARACTERS and TEXT holds 65,535 BYTES — a bio
   in Japanese is three bytes a character. Clearing the box writes NULL: empty and absent
   are one state, and a row of spaces is not a bio.
+
+### The wallet
+
+**Every movement of creds is a line in `wallet_entries`, and `App\Wallet\Wallet::move()` is
+the only thing that writes `characters.creds`.** Starting funds, shelf and player-market
+trades, mission rewards, siphons, extraction, hunter wins and ICE skim all call it. A new
+way for money to move is a `Wallet\Reason` case, a label under `wallet.reasons`, and a call —
+never a `forceFill(['creds' => …])`.
+
+- **The ledger is immutable and carries the balance after**, so it reads as a statement.
+  No `updated_at`. The `note` is composed at write time and never recomposed, the
+  notification rule. Rows cascade with the character; unlike a sighting there is nothing
+  here that must outlive its owner.
+- **`move()` does not check funds.** The caller owns the transaction and the refusal
+  (`Purchaser`, `OfferBook` and `Transfers` lock first). It only floors the balance at 0.
+- **`App\Wallet\Transfers` sends cash by handle**, locking both rows in id order against
+  deadlock, no fee and no cooldown (a known gap for multi-account funnelling). The
+  recipient gets a `Category::Wallet` message.
+- **Balances before the ledger existed have no history**; the first entry carries the
+  balance it left.
+- `/wallet` shows the newest 100 with no pager.
+
+### Standing, as a tab
+
+`/standing` is the fifth character tab: entities with a non-zero `entity_books.standing`
+(band word and figure), and the `entity_ledger` standing entries newest first. **Loyalty is
+not shown** — it is spent at the store and has its own story. Zero-delta entries (an act
+against somebody already at −100) are hidden. Read-only: `StandingLedger` stays the only
+writer.
 
 ### Drugs
 
@@ -1305,8 +1336,14 @@ consequences and taking what a machine holds all roll.
   strictly inside the bound, so nothing never fires and everything always does.
 - **Zero heat is not rolled at all.** A floor is what an attempt keeps, not something the
   world owes somebody who has done nothing.
-- **What a hit IS has not been built.** No bounty row, no hunter, no price — the message
-  says the word is out and stops where the mechanic stops.
+- **A hit adds to the bounty.** `characters.bounty` is creds on the character's head and
+  ACCUMULATES: each hit adds `heat × cyberspace.heat.bounty.amount.per_heat` (50), scaled
+  `1 + per_grade (0.25) × (grade − 1)`. The grade is `characters.bounty_grade` — the highest
+  grade of system that cost heat since the last hit, written beside `heat` by
+  `RunStarter::chargeTheTrace()` and the burn in `Simulator`, reset to 0 by the hit. Zero
+  grade prices as grade 1. `Bounties::amountFor()` is the sum. Shown on the character sheet;
+  the inbox message names the running total. **Nothing collects or clears it yet** — the
+  player-versus-player attack that pays it out is unbuilt. All figures unbalanced.
 - **Word already out is not news.** `characters.bounty_word_at` remembers the last time,
   and nobody is rolled again until `cyberspace.heat.bounty.cooldown_days` have passed — a
   memory on the character, never a gentler curve, and a column rather than a look through
@@ -1606,8 +1643,8 @@ loadout says what it *gives*, granted once at creation.
   radio half-lights itself) with a *Not yet* tag.
 - **`archetypes.starting_creds` is a column; the other two are tables.**
   `archetype_skills` and `archetype_items` point at the definition with a foreign key.
-- **`characters.creds` is the first money in the game**, and nothing spends it. No derived
-  maximum, so it is not in `Character::RESOURCES` and is not a stat.
+- **`characters.creds` is the first money in the game**, written only by `App\Wallet\Wallet`.
+  No derived maximum, so it is not in `Character::RESOURCES` and is not a stat.
 - **A starting skill is granted, not sold.** `SkillInjector::grant()` is the second door
   into `character_skills`, deliberately on the same class as `inject()`.
 - **A granted level seeds the points that level costs**, or `skills:validate` reports drift.
@@ -1721,8 +1758,8 @@ stood on this not existing.
   `Character|User` because every sender holds a character and `characters.user_id` is a
   column rather than a query.
 - **`App\Notifications\Category` says where a message came from and never how loud it is.**
-  Four cases, each with a sender that runs today: `Cyberspace`, `Training`, `Achievement`,
-  `Street`. **`route()` may be null** — a message about the street has nowhere to lead until
+  Each case has a sender that runs today: `Cyberspace`, `Training`, `Achievement`, `Market`,
+  `Mission`, `Street` and `Wallet` (somebody sent you cash). **`route()` may be null** — a message about the street has nowhere to lead until
   there is a street, and the row stops being a link rather than pointing somewhere unrelated.
   **A case without a sender would be a filter with nothing to filter.** There is no
   severity and no colour on them — the kit's aliases mean good, careful and bad, and
@@ -2029,9 +2066,13 @@ share the live database, so a migration had already run from a laptop before the
 arrived. Now development has its own copy (see *Two databases*), and the worker's
 `migrate --force` after the pull is the only way a schema change reaches the live game.
 
-There is no GitHub Actions workflow. `.github/workflows/manual.yml` used to POST to
-`https://dedlok.online/deploy.php` on any tag push; `deploy.php` was removed, so it failed
-on every release doing nothing, and was deleted 2026-09-29. The polling worker replaced it.
+The one GitHub Actions workflow is `.github/workflows/patchnotes.yml`: a `v*` tag push
+extracts that version's section of `PATCHNOTES.md` and posts it to Discord
+(`DISCORD_WEBHOOK_URL` repo secret). It deploys nothing. **It must live in
+`.github/workflows/`** — GitHub ignores it anywhere else — and the trigger needs the `v`
+because the tags carry one. `workflow_dispatch` with a version re-sends a release by hand.
+The old `manual.yml` that POSTed to `deploy.php` was deleted 2026-09-29; the polling
+worker replaced it.
 
 **`APP_DEBUG` stays `false`.** Turning it on is the fastest way to read a production
 fault and it prints the environment to the public internet; turn it back the moment the

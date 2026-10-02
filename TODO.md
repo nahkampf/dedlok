@@ -65,6 +65,20 @@ poll is a round trip to a MySQL host on the public internet.
 
 ---
 
+## Wallet follow-ups
+
+**Built 2026-10-02:** `wallet_entries` and `App\Wallet\Wallet`, the only writer
+of `characters.creds`, plus `/wallet` and cash transfers by handle.
+
+- **Transfers have no fee, cooldown or cap**, so funnelling cash between one
+  person's characters is open. One line in `Transfers::send()` when it matters.
+- **The ledger shows the newest 100 and has no pager**, like the inbox.
+- **No history before 2026-10-02**: the first entry carries the balance it left.
+- **Not checked on a phone** at 320px/360px — the four-column ledger table is
+  relied on to scroll inside its panel. The Standing tab's tables likewise.
+
+---
+
 ## Lock down the database account
 
 **Mostly done, re-verified 2026-09-21.** The 2026-09-01 audit's worst findings
@@ -468,10 +482,12 @@ any is rolled once a night at five against the chance somebody decides they
 are worth money. The uncertainty floor under five points, a straight line to
 certain at a hundred.
 
-**What lands is a notification and nothing else.** There is no bounty row, no
-hunter and no price. The message says the word is out and stops where the
-mechanic stops — which is the honest shape for a threshold whose consequence
-has not been designed, and the inbox is what made even that possible.
+**What lands is a price on the character's head.** Since 2026-10-02 a hit adds
+creds to `characters.bounty` (heat × 50, scaled 25% per grade above 1 of the
+highest-grade system that cost them heat since the last hit — see
+`cyberspace.heat.bounty.amount`), shown on the character sheet and named in the
+inbox message. Hunters, rolled on every move, are the other half. **Nobody can
+collect a bounty.**
 
 **What it is.** Heat is persistent, it belongs to the person, and it is what
 the world knows about them — the lasting half of being traced, where the burned
@@ -490,8 +506,11 @@ defend before there is a game to defend it against.
 
 **What is still missing, and it is most of it:**
 
-- **What a bounty IS.** A row, a hunter, a price, somebody who can collect it.
-  Until then the roll is a rumour with nothing behind it.
+- **Collecting a bounty.** The sum exists and grows; the mechanic that lets
+  another player attack the carrier and receive it does not. Undecided: how a
+  target is found, whether the sum is paid out of nowhere or by the carrier, and
+  whether it clears on collection (it should) or decays. Any payout is a
+  `Wallet::move()` — add a `Wallet\Reason` case.
 - ~~**A cooldown.**~~ Done 2026-09-28: `characters.bounty_word_at` remembers
   the last time word went out, and nobody is rolled again for
   `cyberspace.heat.bounty.cooldown_days` (7, unbalanced). When a bounty becomes
