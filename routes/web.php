@@ -5,8 +5,10 @@ declare(strict_types=1);
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\Admin\ArchetypeController as AdminArchetypeController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DistrictController as AdminDistrictController;
 use App\Http\Controllers\Admin\EntityOfferController as AdminEntityOfferController;
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
+use App\Http\Controllers\Admin\LocationController as AdminLocationController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterController;
@@ -368,6 +370,8 @@ Route::middleware(['auth', 'can:admin'])
 
         Route::resource('items', AdminItemController::class)->except(['show']);
         Route::resource('skills', AdminSkillController::class)->except(['show']);
+        Route::resource('districts', AdminDistrictController::class)->except(['show']);
+        Route::resource('locations', AdminLocationController::class)->except(['show']);
 
         /*
          * Archetypes are edited, never created or destroyed. Their ids are

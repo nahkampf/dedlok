@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Archetype;
+use App\Models\District;
 use App\Models\Entity;
 use App\Models\Item;
 use App\Models\Skill;
@@ -25,6 +26,7 @@ class DashboardController extends Controller
             'items' => Item::count(),
             'itemsOnMarket' => Item::onMarket()->count(),
             'skills' => Skill::count(),
+            'districts' => District::count(),
             'skillsWithoutBooks' => Skill::query()
                 ->whereDoesntHave('imprint')
                 ->count(),

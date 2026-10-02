@@ -841,6 +841,12 @@ never a `forceFill(['creds' => …])`.
   certainty floor *or ceiling*: a strong explorer is certain of a Trivial place.
 - **`[data-countdown="SECONDS"]`** in `ui-kit.js` ticks as m:ss and reloads shortly after
   zero. It is seconds REMAINING from the server, never an absolute time.
+- **The City editors are `admin/districts` and `admin/locations`** (`DistrictRequest`,
+  `LocationRequest` mirror every CHECK). Coordinates are held to the 320px audit — districts
+  20–80%, pins 25–75% — a slug is `prohibited` on update, links are stored lower id first
+  and replaced wholesale per district, and **a district is refused deletion while anybody
+  stands in it or it is `city.start`**. A trip whose route names a deleted district stops
+  where the traveller is and refunds the rest (`Traveller::settle()`).
 - **A district has a `color`** (`App\City\DistrictColor`): a decoration token naming WHICH
   district, set as `--hue` on a map node and `--tier` on a list row. Violet, clay and moss
   joined the palette for it. Never ember, never a semantic alias.
