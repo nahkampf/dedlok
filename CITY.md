@@ -49,8 +49,8 @@ numbers (`config/city.php`).
 
 | Table | Is |
 | --- | --- |
-| `districts` | slug (permanent), name, text, `map_x`/`map_y` on the city map |
-| `district_links` | an undirected link between two districts, with a `weight` (default 1, a multiplier on a hop's time). The graph the router walks |
+| `districts` | slug (permanent), name, text, `map_x`/`map_y` on the city map, and `travel_weight` (default 1): a multiplier on how long crossing THIS district takes |
+| `district_links` | an undirected link between two districts, nothing else. The graph the router walks |
 | `locations` | a place in a district: slug, name, kind, `map_x`/`map_y` on the district map, a discovery rule, and for `explorable` a `concealment` |
 | `character_locations` | one row per (character, location) meaning *found by exploring* |
 | `character_flags` | one row per (character, flag), `set_at`. A flag is a slug and is permanent |
@@ -93,19 +93,22 @@ Anything that lands while the player is away goes to the inbox under `Category::
 
 ### Travel
 
-- **A route is built, not picked.** `App\City\Router` is pure (district ids and link
-  weights, never models) and returns the QUICKEST route: lowest total weight, ties broken
-  by fewer districts. No route is a refusal, not an error.
+- **A route is built, not picked.** `App\City\Router` is pure (district ids, links and
+  travel weights, never models) and returns the QUICKEST route: lowest total weight of the
+  districts entered, ties broken by fewer districts. No route is a refusal, not an error.
 - **A travel is one pass per district on the route, origin excluded.** Each pass takes
-  `travel_duration` (base **30 seconds** × the link's weight, resolved with the
-  character's modifiers). **At the end of a pass the body is in that district** —
-  `district_id` is updated as the route is walked, so it is never null.
+  `travel_duration` (base **30 seconds** × that district's `travel_weight`, resolved with
+  the character's modifiers). **While a pass runs the body is IN that district** —
+  `district_id` is set when the pass BEGINS and the route is walked from there, so it is
+  never null and always names the district being crossed. Leaving the origin is instant.
+  A route A→B→C→D is three passes.
 - **The route is snapshotted at the start** and never rewritten, as `runs.chain` is.
 - **Two modes.** *Walk* is free and takes the full time. *Hail a pod* takes **half** of
   each pass (applied after the modifiers) and costs **25 creds per district on the
   route**, charged up front through `Wallet::move()` (`Reason::Pod`).
-- **Cancelling waits for the pass in progress to finish.** The player is then left in the
-  district that pass was heading to, and any pod hops not taken are refunded.
+- **Cancelling waits for the pass in progress to finish.** The player is left in the
+  district that pass is crossing, which is where `district_id` already says they are, and
+  any pod districts not yet entered are refunded.
 - **Planned hook, not built:** a travel pass may roll for an encounter in the district it
   reaches, and an encounter stops the travel there.
 
