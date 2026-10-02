@@ -826,7 +826,10 @@ never a `forceFill(['creds' => …])`.
   `concealment` to the second and `required_flag` to the third. Names and descriptions are
   ON the rows; UI chrome is `strings.city.*`.
 - **The maps are the deck board's classes** through `<x-city-map>`: percentage coordinates,
-  wires from `district_links`, `.board__node--here` for where you stand. **Audited at 320px**
+  wires from `district_links`, `.board__node--here` for where you stand. A LOCATION on a
+  district map is an icon, not a name box: `button.board__node` + `.board__pin` with the
+  kit's `[data-tip]` tooltip (also shown on `:focus`, because a tap is not a hover), and the
+  list under the map still names it. Keep pins 25–75% across or the tooltip clips. **Audited at 320px**
   (a 288px board, so 1cqw is 2.9px): a name box is at most 120px wide (the `.board__name`
   floor, so "Knightsbridge" is one line) and 45px tall, so keep one or two nodes to a row of
   the board, rows 20%+ of the height apart, and centres 20–80% across — an edge or a

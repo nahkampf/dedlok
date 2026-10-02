@@ -21,6 +21,7 @@
                 'y' => $location->map_y,
                 'href' => null,
                 'here' => false,
+                'pin' => true,
                 'hue' => $district->color->token(),
             ])->all()" />
 

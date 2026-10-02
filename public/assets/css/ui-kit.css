@@ -2642,6 +2642,19 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
   color: var(--hue, var(--ink-0)); overflow-wrap: break-word;
 }
 a.board__node { text-decoration: none; }
+/* A place as an ICON: the name is the kit's own [data-tip] tooltip. A button, so
+   a tap focuses it — hover does not exist on a phone — and focus shows the tip
+   as well as keyboard focus. The tooltip is wider than the icon, so keep pins
+   25-75% across a board or the wrapper clips it at an edge. */
+button.board__node { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.board__pin {
+  display: grid; place-items: center;
+  width: clamp(24px, 7cqw, 34px); aspect-ratio: 1;
+  font-size: clamp(14px, 4.5cqw, 20px); line-height: 1;
+  color: var(--hue, var(--ink-0));
+}
+.board__node[data-tip]:focus::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+.board__node[data-tip]:hover, .board__node[data-tip]:focus { z-index: 3; }
 a.board__node:hover .board__box { border-color: var(--hue, var(--ink-2)); background: var(--bg-3); }
 /* Sockets are the thing on this screen, so they are drawn at a size you can
    read rather than a size that fits. Everything inside one scales with it — a

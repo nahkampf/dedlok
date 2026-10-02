@@ -119,7 +119,8 @@ final class CityTest extends TestCase
             ->assertOk()->assertSeeText('Knightsbridge Projects');
 
         $this->actingAs($c->user)->get(route('city.district', 'old-town'))
-            ->assertOk()->assertSeeText('The Rusty Nail')->assertDontSeeText('Back-Alley Clinic');
+            ->assertOk()->assertSeeText('The Rusty Nail')->assertDontSeeText('Back-Alley Clinic')
+            ->assertSee('data-tip="The Rusty Nail"', false);
     }
 
     public function test_the_city_refuses_somebody_who_is_jacked_in(): void

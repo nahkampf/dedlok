@@ -1161,7 +1161,7 @@ public/assets/
       </template>
     </div>
     <div class="demo">
-      <div class="demo__hd"><h3 class="h3">Map of places</h3><p>The deck board's own frame, wires and percentage coordinates, with a <em>name</em> in each box instead of sockets. <code class="inl">.board__name</code> wraps rather than overflowing, so keep coordinates inset from the edges. A node that is a link is an <code class="inl">&lt;a class="board__node"&gt;</code>; <code class="inl">.board__node--here</code> steps the box up to the hub's fill for where you are standing. Set <code class="inl">--hue</code> on a node to a decoration token (<code class="inl">var(--jade)</code> and friends) and its border and name take that colour: it says <em>which</em> place this is and never what state it is in, so never ember and never a semantic alias. No glow: a map is not an alarm.</p></div>
+      <div class="demo__hd"><h3 class="h3">Map of places</h3><p>The deck board's own frame, wires and percentage coordinates, with a <em>name</em> in each box instead of sockets. <code class="inl">.board__name</code> wraps rather than overflowing, so keep coordinates inset from the edges. A node that is a link is an <code class="inl">&lt;a class="board__node"&gt;</code>; <code class="inl">.board__node--here</code> steps the box up to the hub's fill for where you are standing. Set <code class="inl">--hue</code> on a node to a decoration token (<code class="inl">var(--jade)</code> and friends) and its border and name take that colour: it says <em>which</em> place this is and never what state it is in, so never ember and never a semantic alias. A place on a district map is a <code class="inl">button.board__node</code> with <code class="inl">data-tip</code> and a <code class="inl">.board__pin</code> icon instead of a name: the kit's tooltip on hover, and on focus so a tap shows it on a phone. No glow: a map is not an alarm.</p></div>
       <template class="demo-src">
         <div class="board-wrap">
           <div class="frame scanlines brackets board" aria-label="The city">
@@ -1174,6 +1174,7 @@ public/assets/
             <a class="board__node board__node--here" href="#" aria-current="location" style="left:46%;top:56%;--hue:var(--steel)"><span class="board__box"><span class="board__name">Old Town</span></span></a>
             <a class="board__node" href="#" style="left:50%;top:24%;--hue:var(--violet)"><span class="board__box"><span class="board__name">Downtown</span></span></a>
             <a class="board__node" href="#" style="left:20%;top:80%;--hue:var(--cyan)"><span class="board__box"><span class="board__name">Dockside</span></span></a>
+            <button type="button" class="board__node" data-tip="Pier Nine Warehouse" aria-label="Pier Nine Warehouse" style="left:34%;top:42%;--hue:var(--cyan)"><span class="board__box"><span class="board__pin" aria-hidden="true">&#9672;</span></span></button>
             <a class="board__node" href="#" style="left:80%;top:52%;--hue:var(--moss)"><span class="board__box"><span class="board__name">Knightsbridge Projects</span></span></a>
           </div>
         </div>
