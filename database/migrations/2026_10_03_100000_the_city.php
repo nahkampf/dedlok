@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('slug', 50)->unique()->comment('Stable machine name. Permanent. config/city.php names the starting district by it.');
             $table->string('name', 100)->comment('What a player reads on the city map.');
             $table->text('description')->nullable()->comment('Flavour shown on the district map. NULL is ordinary.');
+            $table->string('color', 16)->default('steel')->comment('App\\City\\DistrictColor: a decoration token naming which district this is on the maps and lists. Says which, never what state.');
             $table->unsignedTinyInteger('map_x')->comment('Percentage across the city map, 0-100. Inset from the edges so a label is never cut off.');
             $table->unsignedTinyInteger('map_y')->comment('Percentage down the city map, 0-100.');
             $table->decimal('travel_weight', 4, 2)->default(1)->comment('Multiplier on how long crossing THIS district takes when travelling. 1 is the base. Read by the router in phase 2; nothing reads it yet.');
@@ -71,6 +72,7 @@ return new class extends Migration
 
         if (DB::getDriverName() === 'mysql') {
             DB::statement('ALTER TABLE districts ADD CONSTRAINT chk_districts_map CHECK (map_x <= 100 AND map_y <= 100 AND travel_weight > 0)');
+            DB::statement("ALTER TABLE districts ADD CONSTRAINT chk_districts_color CHECK (color IN ('steel', 'cyan', 'brass', 'violet', 'clay', 'jade', 'moss'))");
             DB::statement('ALTER TABLE locations ADD CONSTRAINT chk_locations_map CHECK (map_x <= 100 AND map_y <= 100)');
             DB::statement("ALTER TABLE locations ADD CONSTRAINT chk_locations_discovery CHECK (
                 discovery IN ('open', 'explorable', 'explored_by_flag')

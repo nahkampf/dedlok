@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\City\DistrictColor;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,16 +18,18 @@ use Illuminate\Support\Facades\DB;
  * @property string $slug
  * @property string $name
  * @property string|null $description
+ * @property DistrictColor $color
  * @property int $map_x
  * @property int $map_y
  * @property float $travel_weight
  */
-#[Fillable(['slug', 'name', 'description', 'map_x', 'map_y', 'travel_weight'])]
+#[Fillable(['slug', 'name', 'description', 'color', 'map_x', 'map_y', 'travel_weight'])]
 class District extends Model
 {
     protected function casts(): array
     {
         return [
+            'color' => DistrictColor::class,
             'map_x' => 'integer',
             'map_y' => 'integer',
             'travel_weight' => 'float',

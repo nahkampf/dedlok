@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
  * Seven districts and a few places to find in them.
  *
  * THE DISTRICT NAMES ARE THE AUTHOR'S. The map positions, the links between
- * districts and every location are PLACEHOLDERS (the positions are laid out so
+ * districts, every location and the colours are PLACEHOLDERS (the positions are laid out so
  * that no two name boxes touch on a 320px phone — see CLAUDE.md's map rules): the links decide which routes
  * travel will build, so they want a deliberate pass. Content is authored in
  * the admin once the editors exist; this only gives the City something to
@@ -17,15 +17,15 @@ use Illuminate\Support\Facades\DB;
  */
 return new class extends Migration
 {
-    /** @var array<string, array{0: string, 1: int, 2: int, 3: string}> slug => [name, x, y, description] */
+    /** @var array<string, array{0: string, 1: int, 2: int, 3: string, 4: string}> slug => [name, x, y, color, description] */
     private const DISTRICTS = [
-        'old-town' => ['Old Town', 33, 63, 'Narrow streets and older money gone to seed. Everybody starts somewhere.'],
-        'dockside' => ['Dockside', 22, 86, 'Cranes, containers and people who do not ask what is in them.'],
-        'eastside' => ['Eastside', 80, 63, 'Night markets, noodle smoke and a lot of quiet deals.'],
-        'downtown' => ['Downtown', 50, 42, 'Glass, ad-light and the offices that run everything else.'],
-        'little-moscow' => ['Little Moscow', 76, 86, 'A neighbourhood that kept its own language and its own rules.'],
-        'crystal-heights' => ['Crystal Heights', 78, 20, 'Towers above the smog. You are not supposed to be here.'],
-        'knightsbridge-projects' => ['Knightsbridge Projects', 25, 20, 'Concrete blocks stacked against the sky. The lifts rarely work.'],
+        'old-town' => ['Old Town', 33, 63, 'steel', 'Narrow streets and older money gone to seed. Everybody starts somewhere.'],
+        'dockside' => ['Dockside', 22, 86, 'cyan', 'Cranes, containers and people who do not ask what is in them.'],
+        'eastside' => ['Eastside', 80, 63, 'brass', 'Night markets, noodle smoke and a lot of quiet deals.'],
+        'downtown' => ['Downtown', 50, 42, 'violet', 'Glass, ad-light and the offices that run everything else.'],
+        'little-moscow' => ['Little Moscow', 76, 86, 'clay', 'A neighbourhood that kept its own language and its own rules.'],
+        'crystal-heights' => ['Crystal Heights', 78, 20, 'jade', 'Towers above the smog. You are not supposed to be here.'],
+        'knightsbridge-projects' => ['Knightsbridge Projects', 25, 20, 'moss', 'Concrete blocks stacked against the sky. The lifts rarely work.'],
     ];
 
     /** @var list<array{0: string, 1: string}> */
@@ -60,10 +60,10 @@ return new class extends Migration
         $now = now();
         $ids = [];
 
-        foreach (self::DISTRICTS as $slug => [$name, $x, $y, $description]) {
+        foreach (self::DISTRICTS as $slug => [$name, $x, $y, $color, $description]) {
             $ids[$slug] = DB::table('districts')->insertGetId([
                 'slug' => $slug, 'name' => $name, 'description' => $description,
-                'map_x' => $x, 'map_y' => $y, 'travel_weight' => 1,
+                'map_x' => $x, 'map_y' => $y, 'color' => $color, 'travel_weight' => 1,
                 'created_at' => $now, 'updated_at' => $now,
             ]);
         }

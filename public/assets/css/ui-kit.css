@@ -275,6 +275,12 @@
      DECORATION, like the rarity tiers: it says what a thing is and never what
      state it is in, which is why it has no semantic alias. */
   --cyan:   #5FC6CE;  --cyan-a:   rgba(95, 198, 206, 0.13);
+  /* Three more, for ONE job: telling the City's seven districts apart. Same
+     register as the four above — mid-saturation and light — and muted rather
+     than neon on purpose. DECORATION, so no semantic alias, and never ember. */
+  --violet: #9F8FCB;  --violet-a: rgba(159, 143, 203, 0.13);
+  --clay:   #C4896C;  --clay-a:   rgba(196, 137, 108, 0.13);
+  --moss:   #A9BE70;  --moss-a:   rgba(169, 190, 112, 0.13);
 
   /* Semantic aliases. Components speak through these, never through the
      palette directly, so re-pointing --ok re-skins every success state at
@@ -2619,11 +2625,11 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
   gap: clamp(4px, 1.4cqw, 7px);
   padding: clamp(4px, 1.4cqw, 8px);
   background: var(--bg-1);
-  border: var(--hair) solid var(--line-1);
+  border: var(--hair) solid var(--hue, var(--line-1));
   border-radius: var(--r-1);
 }
 .board__node--cpu .board__box,
-.board__node--here .board__box { background: var(--bg-2); border-color: var(--line-2); }
+.board__node--here .board__box { background: var(--bg-2); border-color: var(--hue, var(--line-2)); }
 /* A map's node is a NAME in the box, wrapping rather than overflowing: the
    coordinates are inset from the edges, but a long name is still wider than a
    socket. The 120px floor is what lets "Knightsbridge" sit on one line at 320px
@@ -2633,10 +2639,10 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
   padding: 2px clamp(4px, 1.4cqw, 8px);
   font-family: var(--font-label); font-size: var(--fs-xs); font-weight: 600;
   letter-spacing: var(--tracking-caps); text-transform: uppercase;
-  color: var(--ink-0); overflow-wrap: break-word;
+  color: var(--hue, var(--ink-0)); overflow-wrap: break-word;
 }
 a.board__node { text-decoration: none; }
-a.board__node:hover .board__box { border-color: var(--ink-2); }
+a.board__node:hover .board__box { border-color: var(--hue, var(--ink-2)); background: var(--bg-3); }
 /* Sockets are the thing on this screen, so they are drawn at a size you can
    read rather than a size that fits. Everything inside one scales with it — a
    fixed 20px glyph in a 60px socket is a stamp in the middle of a box, and the

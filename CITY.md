@@ -59,12 +59,20 @@ numbers (`config/city.php`).
 
 | Table | Is |
 | --- | --- |
-| `districts` | slug (permanent), name, text, `map_x`/`map_y` on the city map, and `travel_weight` (default 1): a multiplier on how long crossing THIS district takes |
+| `districts` | slug (permanent), name, text, a `color` (below), `map_x`/`map_y` on the city map, and `travel_weight` (default 1): a multiplier on how long crossing THIS district takes |
 | `district_links` | an undirected link between two districts, nothing else. The graph the router walks |
 | `locations` | a place in a district: slug, name, kind, `map_x`/`map_y` on the district map, a discovery rule, and for `explorable` a `concealment` |
 | `character_locations` | one row per (character, location) meaning *found by exploring* |
 | `character_flags` | one row per (character, flag), `set_at`. A flag is a slug and is permanent |
 | `city_activities` | one row per character at most: what they are doing right now |
+
+### District colour
+
+`districts.color` is a `DistrictColor` case: one of the kit's DECORATION tokens (steel,
+cyan, brass, violet, clay, jade, moss). It says **which** district something belongs to on
+the maps and lists, and never what state it is in — so ember and every semantic alias are
+out. Violet, clay and moss were added to the kit for this (muted, in the register of the
+other four). A district's locations are drawn in its colour.
 
 ### How a location becomes visible
 

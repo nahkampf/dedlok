@@ -819,6 +819,9 @@ never a `forceFill(['creds' => …])`.
   for `explorable` locations; **`App\Characters\Flags::set()` is the only writer of
   `character_flags`** (permanent, a lower-case slug). `flag:set <handle> <flag>` is the only
   caller until quests and encounters exist.
+- **A district has a `color`** (`App\City\DistrictColor`): a decoration token naming WHICH
+  district, set as `--hue` on a map node and `--tier` on a list row. Violet, clay and moss
+  joined the palette for it. Never ember, never a semantic alias.
 - **`locations.discovery` is `open`, `explorable` or `explored_by_flag`**, and a CHECK ties
   `concealment` to the second and `required_flag` to the third. Names and descriptions are
   ON the rows; UI chrome is `strings.city.*`.

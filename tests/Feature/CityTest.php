@@ -42,6 +42,15 @@ final class CityTest extends TestCase
         $this->assertSame('Old Town', District::query()->findOrFail(District::startId())->name);
     }
 
+    public function test_every_district_has_a_colour_and_the_map_draws_it(): void
+    {
+        $this->assertSame(7, District::query()->pluck('color')->unique()->count(), 'seven districts, seven colours');
+
+        $c = $this->character();
+        $this->actingAs($c->user)->get(route('city.index'))
+            ->assertOk()->assertSee('--hue:var(--violet)', false);
+    }
+
     public function test_every_character_starts_in_the_starting_district(): void
     {
         $this->assertSame(District::startId(), $this->character()->district_id);

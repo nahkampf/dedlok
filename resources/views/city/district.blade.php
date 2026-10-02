@@ -4,7 +4,7 @@
 
 @section('content')
     <p style="margin:0"><a href="{{ route('city.index') }}">{{ Text::get('city.back') }}</a></p>
-    <h1 style="margin-top:var(--s-2)">{{ $district->name }}</h1>
+    <h1 style="margin-top:var(--s-2)"><span aria-hidden="true" style="color:{{ $district->color->token() }}">&#9672;</span> {{ $district->name }}</h1>
     @if ($district->description)
         <p class="lede" style="margin-top:var(--s-3);max-width:70ch">{{ $district->description }}</p>
     @endif
@@ -21,6 +21,7 @@
                 'y' => $location->map_y,
                 'href' => null,
                 'here' => false,
+                'hue' => $district->color->token(),
             ])->all()" />
 
         <div class="panel">

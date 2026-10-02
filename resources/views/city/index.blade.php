@@ -15,6 +15,7 @@
                 'x' => $district->map_x,
                 'y' => $district->map_y,
                 'href' => route('city.district', $district),
+                'hue' => $district->color->token(),
                 'here' => $district->id === $character->district_id,
             ])->all()" />
 
@@ -22,8 +23,8 @@
             <div class="panel__hd"><span class="micro">{{ Text::get('city.districts') }}</span></div>
             <div class="panel__bd stack" style="--gap:var(--s-3)">
                 @foreach ($districts as $district)
-                    <a class="item-row" href="{{ route('city.district', $district) }}">
-                        <span class="slot__icon" aria-hidden="true">&#9672;</span>
+                    <a class="item-row" href="{{ route('city.district', $district) }}" style="--tier:{{ $district->color->token() }}">
+                        <span class="slot__icon" aria-hidden="true" style="color:var(--tier)">&#9672;</span>
                         <span class="stack" style="--gap:2px;min-width:0">
                             <span class="item-row__name">{{ $district->name }}</span>
                             @if ($district->description)

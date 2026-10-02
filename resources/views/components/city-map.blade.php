@@ -1,6 +1,7 @@
 @use('App\Support\Text')
 @props([
-    // list<array{key: string, label: string, x: int, y: int, href: ?string, here: bool}>
+    // list<array{key: string, label: string, x: int, y: int, href: ?string, here: bool, hue?: ?string}>
+    // `hue` is a CSS colour token such as `var(--jade)`: which district it is.
     'nodes',
     // list<array{0: string, 1: string}> — pairs of node keys, drawn as wires.
     'links' => [],
@@ -35,7 +36,7 @@
                     @class(['board__node', 'board__node--here' => $node['here']])
                     @if ($node['href']) href="{{ $node['href'] }}" @endif
                     @if ($node['here']) aria-current="location" @endif
-                    style="left:{{ $node['x'] }}%;top:{{ $node['y'] }}%">
+                    style="left:{{ $node['x'] }}%;top:{{ $node['y'] }}%@if (! empty($node['hue']));--hue:{{ $node['hue'] }}@endif">
                     <span class="board__box"><span class="board__name">{{ $node['label'] }}</span></span>
                 </{{ $node['href'] ? 'a' : 'div' }}>
             @endforeach
