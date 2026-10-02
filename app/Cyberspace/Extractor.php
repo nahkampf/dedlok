@@ -11,6 +11,8 @@ use App\Inventory\ItemGranter;
 use App\Models\Character;
 use App\Models\Item;
 use App\Models\SystemContent;
+use App\Wallet\Reason;
+use App\Wallet\Wallet;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -197,7 +199,7 @@ final readonly class Extractor
             return 0;
         }
 
-        $character->forceFill(['creds' => $character->creds + $amount])->save();
+        Wallet::move($character, $amount, Reason::Extraction);
 
         // Counted HERE rather than at either call site, because this is the
         // one place creds come off a system — `extract()` and the simulator's

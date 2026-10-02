@@ -48,9 +48,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $waiting_until
  * @property array<string, mixed>|null $waiting_cause
  * @property CarbonImmutable|null $bounty_word_at
+ * @property int $bounty
+ * @property int $bounty_grade
  */
 #[Fillable([
-    'user_id', 'handle', 'bio', 'archetype', 'creds', 'heat',
+    'user_id', 'handle', 'bio', 'archetype', 'creds', 'heat', 'bounty', 'bounty_grade',
     'egress_trace_at', 'egress_si_at',
     'current_hitpoints', 'current_synaptic_integrity', 'waiting_until', 'waiting_cause', 'current_run_id', 'current_hunt_id',
     'intellect', 'memory', 'perception', 'reflex', 'focus',
@@ -147,7 +149,7 @@ class Character extends Model
         return array_merge(
             array_fill_keys(self::ATTRIBUTES, 'integer'),
             array_fill_keys(array_keys(self::RESOURCES), 'integer'),
-            ['archetype' => 'integer', 'creds' => 'integer', 'heat' => 'float'],
+            ['archetype' => 'integer', 'creds' => 'integer', 'heat' => 'float', 'bounty' => 'integer', 'bounty_grade' => 'integer'],
             ['egress_trace_at' => 'integer', 'egress_si_at' => 'integer'],
             ['grid_x' => 'integer', 'grid_y' => 'integer'],
             // On the floor, and what put them there. The cause is an array

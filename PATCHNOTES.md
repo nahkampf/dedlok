@@ -1,3 +1,10 @@
+## 0.33.0 (2026-10-02)
+
+- Bounties now exist for real: creds are added to character bounties, growing with heat and grade of systems you made runs on. Nobody can collect it yet, though.
+- Wallet now in sidemenu. Every transaction is logged.
+- Transfer cash to other characters using the Wallet.
+- Standings now in Character sheet. Current standings + every standing "transaction" logged.
+
 ## 0.32.1 (2026-09-30)
 
 - Fixed the "Close window" button on the scan-reading screen not working on narrow screens

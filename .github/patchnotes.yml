@@ -1,0 +1,56 @@
+name: Send Patchnotes to Discord
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'  # Triggers when a version tag is pushed (e.g., v0.32.1, v1.0.0-rc1)
+
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract Patchnotes for Tag
+        id: extract_notes
+        run: |
+          # Strip 'refs/tags/' or leading 'v' to isolate the version string (e.g., 0.32.1)
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG_NAME#v}"
+
+          echo "Target Version: $VERSION"
+
+          # Extract text starting at '## VERSION' up to the next '## ' header or end of file
+          # We use awk to capture the matching section
+          awk -v ver="$VERSION" '
+            BEGIN { found=0 }
+            $0 ~ "^## " ver { found=1; print; next }
+            found && /^## / { exit }
+            found { print }
+          ' PATCHNOTES.md > current_release_notes.txt
+
+          # Fallback check if the version was not found in PATCHNOTES.md
+          if [ ! -s current_release_notes.txt ]; then
+            echo "Release notes for version $VERSION not found in PATCHNOTES.md" > current_release_notes.txt
+          fi
+
+          # Output multiline string safely to GitHub Actions step outputs
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "notes<<$EOF" >> "$GITHUB_OUTPUT"
+          cat current_release_notes.txt >> "$GITHUB_OUTPUT"
+          echo "$EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Send to Discord Webhook
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          NOTES: ${{ steps.extract_notes.outputs.notes }}
+        run: |
+          # Format JSON payload using jq to properly escape newlines and quotes
+          PAYLOAD=$(jq -n --arg content "$NOTES" '{content: $content}')
+
+          # POST to Discord
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "$PAYLOAD" \
+               "$DISCORD_WEBHOOK_URL"

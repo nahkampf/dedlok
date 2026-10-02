@@ -2,6 +2,41 @@
 
 ## [Unreleased]
 
+## [0.33.0] — 2026-10-02
+
+A price on your head, a wallet that remembers, and a tab for who likes you.
+
+### Added
+
+- **Bounties.** Every time the nightly roll puts word out about a character,
+  creds are added to a new `characters.bounty`: `heat × 50`, scaled up 25% for
+  each grade above 1 of the highest-grade system that cost them heat since the
+  last hit (`characters.bounty_grade`, written by a completed trace and a landed
+  burn, reset on a hit). Hits accumulate. Nothing collects or clears it yet —
+  that is for the player-versus-player mechanic. Tunable under
+  `cyberspace.heat.bounty.amount`. The bounty is shown on the character sheet,
+  and the inbox message now names the running total.
+- **Wallet.** A new rail item and `/wallet`: balance, a transfer form and a
+  ledger of every movement of creds. `wallet_entries` is immutable, one row per
+  movement with the signed amount, the balance after and a stored note.
+  `App\Wallet\Wallet` is now the only writer of `characters.creds` — starting
+  funds, market and player-market trades, mission rewards, siphons, extraction,
+  hunter wins and ICE skim all go through it.
+- **Transfers.** `App\Wallet\Transfers` sends creds to another character by
+  handle, locking both rows in id order. No fee or cooldown. The recipient gets
+  an inbox message (new `Wallet` category).
+- **Standing tab** on the character sheet (`/standing`): every entity you have
+  a non-zero standing with, and a log of standing changes (missions, runs,
+  nightly decay and the rest) read from `entity_ledger`.
+
+### Migrations
+
+- `2026_10_02_120000_a_price_on_your_head` (adds `characters.bounty`,
+  `characters.bounty_grade`)
+- `2026_10_02_130000_the_wallet_ledger` (creates `wallet_entries`)
+
+
+
 ## [0.32.1] — 2026-09-30
 
 A hidden button that wasn't, and a framework bump past a security advisory.
@@ -2124,7 +2159,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.32.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.33.0...HEAD
+[0.33.0]: https://github.com/nahkampf/dedlok/compare/v0.32.1...v0.33.0
 [0.32.1]: https://github.com/nahkampf/dedlok/compare/v0.32.0...v0.32.1
 [0.32.0]: https://github.com/nahkampf/dedlok/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/nahkampf/dedlok/compare/v0.30.0...v0.31.0

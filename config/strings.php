@@ -41,6 +41,7 @@ return [
             // The inbox. "Messages" rather than "Notifications" because the
             // rail is 220px open and one word has to fit beside a glyph.
             'messages' => 'Messages',
+            'wallet' => 'Wallet',
             'contracts' => 'Contracts',
             'profile' => 'Profile',
 
@@ -255,6 +256,56 @@ return [
     |
     */
 
+    'standing' => [
+        'title' => 'Standing',
+        'heading' => 'Who thinks what of you',
+        'empty' => 'Nobody has an opinion of you yet.',
+        'entity' => 'Entity',
+        'band' => 'Opinion',
+        'value' => 'Standing',
+        'log' => 'Changes',
+        'log_empty' => 'Nothing has changed yet.',
+    ],
+
+    'wallet' => [
+        'title' => 'Wallet',
+        'lede' => 'Every credit that came in or went out, and a way to send some to somebody else.',
+        'balance' => 'Balance',
+        'transfer' => 'Transfer cash',
+        'handle' => 'To (handle)',
+        'amount' => 'Amount',
+        'send' => 'Send',
+        'sent' => 'Sent :amount ¤ to :handle.',
+        'ledger' => 'Transactions',
+        'empty' => 'Nothing has moved yet.',
+        'when' => 'When',
+        'what' => 'What',
+        'change' => 'Change',
+        'after' => 'Balance',
+        'notes' => [
+            'sent' => 'To :handle',
+            'received' => 'From :handle',
+        ],
+        'reasons' => [
+            'starting' => 'Starting funds',
+            'market' => 'Market purchase',
+            'player_market' => 'Player market',
+            'mission' => 'Mission reward',
+            'siphon' => 'Siphon payout',
+            'extraction' => 'Taken from a system',
+            'hunt' => 'Hunter bounty',
+            'skim' => 'Skimmed by ICE',
+            'transfer_out' => 'Transfer sent',
+            'transfer_in' => 'Transfer received',
+        ],
+        'refused' => [
+            'amount' => 'Send at least 1 ¤.',
+            'no_such_character' => 'Nobody goes by that handle.',
+            'yourself' => 'You cannot send cash to yourself.',
+            'cannot_afford' => 'You do not have that much.',
+        ],
+    ],
+
     'market' => [
         'title' => 'Market',
         'lede' => 'A glowing web of pulsating transactional threads, billions of credits changing hands every second.',
@@ -390,6 +441,7 @@ return [
             'market' => 'Market',
             'mission' => 'Work',
             'street' => 'Street',
+            'wallet' => 'Wallet',
         ],
 
         'messages' => [
@@ -417,11 +469,9 @@ return [
             'mission_voided' => 'The :action job for :entity is off: something it named is not there any more.',
             'skill_level' => ':skill reached level :level.',
             'achievement_unlocked' => 'Achievement unlocked: :name.',
-            // Heat's first consequence, and deliberately vague: there is no
-            // bounty row, no hunter and no price yet, so it says the word is
-            // out and stops where the mechanic stops.
             'withdrawal' => 'You need it. :family, and going without is starting to show.',
-            'bounty_word' => "You've made enemies out there. Word is being put out on the street. There's going to be a price on your head.",
+            'transfer_received' => ':handle sent you :amount ¤.',
+            'bounty_word' => "You've made enemies out there. Word is being put out on the street. There's a price on your head now: ¤:bounty.",
         ],
     ],
 
@@ -1484,6 +1534,9 @@ return [
     ],
 
     'character' => [
+        'bounty_heading' => 'Bounty',
+        'bounty_none' => 'Nobody is paying for you.',
+        'bounty_hint' => 'Creds on your head. It grows each time word goes out about you.',
 
         /*
         | THE SHEET ITSELF. Skills, implants and achievements each had a rail
@@ -1496,6 +1549,7 @@ return [
             'character' => 'Character',
             'skills' => 'Skills',
             'implants' => 'Implants',
+            'standing' => 'Standing',
             'achievements' => 'Achievements',
         ],
 

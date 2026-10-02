@@ -11,6 +11,8 @@ use App\Models\Character;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
 use App\Stats\Resolver;
+use App\Wallet\Reason;
+use App\Wallet\Wallet;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Number;
@@ -125,7 +127,7 @@ final readonly class SiphonPayout
             }
 
             DB::transaction(static function () use ($character, $amount): void {
-                $character->forceFill(['creds' => (int) $character->creds + $amount])->save();
+                Wallet::move($character, $amount, Reason::Siphon);
             });
 
             // Siphoned creds are counted apart from raided ones on purpose:

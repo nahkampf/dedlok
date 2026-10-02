@@ -169,6 +169,26 @@ final class BountyTest extends TestCase
         $this->assertNull($character->fresh()->bounty_word_at);
     }
 
+    // ---- the price ---------------------------------------------------------
+
+    /** A hit adds heat × 50, scaled up 25% per grade above one, then forgets the grade. */
+    public function test_a_hit_adds_to_the_bounty_by_heat_and_grade(): void
+    {
+        $character = $this->character(20);
+        $character->forceFill(['bounty_grade' => 9])->save();
+
+        $this->bounties(die: 1)->tonight();
+        $character->refresh();
+
+        $this->assertSame(3000, $character->bounty);
+        $this->assertSame(0, $character->bounty_grade);
+
+        $this->travel(7)->days();
+        $this->bounties(die: 1)->tonight();
+
+        $this->assertSame(4000, $character->fresh()->bounty, 'grade 0 prices as grade 1, and it accumulates');
+    }
+
     // ---- the command -------------------------------------------------------
 
     public function test_the_command_rolls_and_reports(): void

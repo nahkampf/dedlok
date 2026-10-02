@@ -17,6 +17,8 @@ use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
 use App\Stats\Resolver;
 use App\Support\Text;
+use App\Wallet\Reason;
+use App\Wallet\Wallet;
 use Closure;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -148,10 +150,11 @@ final class HunterCombat
         $newHeat = max(0.0, (float) $character->heat - $reduction);
 
         $character->forceFill([
-            'creds' => $character->creds + $creds,
             'heat' => $newHeat,
             'current_hunt_id' => null,
         ])->save();
+
+        Wallet::move($character, $creds, Reason::Hunt);
 
         $hunt->forceFill(['won' => true, 'resolved_at' => now()])->save();
 

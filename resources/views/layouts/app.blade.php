@@ -61,7 +61,7 @@
                  U+FE0E so it is drawn as text rather than handed to an emoji
                  font. --}}
             <a class="dock__item" href="{{ route('character.index') }}"
-               @if (request()->routeIs('character.index', 'skills.*', 'implants.*', 'achievements.*')) aria-current="page" @endif>
+               @if (request()->routeIs('character.index', 'skills.*', 'implants.*', 'standing.*', 'achievements.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9823;&#65038;</span>
                 <span class="dock__label">{{ Text::get('ui.nav.character') }}</span>
             </a>
@@ -103,6 +103,12 @@
                 <span class="dock__label">{{ Text::get('ui.nav.market') }}</span>
             </a>
 
+            {{-- The wallet. The currency sign is the glyph the topbar's money chip already draws. --}}
+            <a class="dock__item" href="{{ route('wallet.index') }}"
+               @if (request()->routeIs('wallet.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#164;</span>
+                <span class="dock__label">{{ Text::get('ui.nav.wallet') }}</span>
+            </a>
 
             {{-- The inbox, beside the other page that belongs to the account
                  rather than the character. An envelope from the same
@@ -274,7 +280,7 @@
         <div class="panel__bd">
             @forelse ($processes as $process)
                 @php($program = $process->item?->program)
-                <div class="row" style="justify-content:space-between;gap:var(--s-3);align-items:flex-start;padding:var(--s-3) 0;border-top:var(--hair) solid var(--line-0)">
+                <div class="row row--wrap" style="justify-content:space-between;gap:var(--s-3);align-items:flex-start;padding:var(--s-3) 0;border-top:var(--hair) solid var(--line-0)">
                     <div style="min-width:0">
                         <div style="color:var(--ink-0)">{{ $process->item?->displayName() }}</div>
                         <div class="micro" style="color:var(--ink-2)">
@@ -311,12 +317,26 @@
                             </div>
                         @endif
                     </div>
-                    @if ($program)
-                        <div class="micro num" style="text-align:right;color:var(--ink-2);white-space:nowrap">
-                            <div>{{ Text::get('programs.costs.compute', ['value' => $program->qflops_cost]) }}</div>
-                            <div>{{ Text::get('programs.costs.memory', ['value' => $program->memory_cost]) }}</div>
-                        </div>
-                    @endif
+                    <div class="stack" style="--gap:var(--s-2);align-items:flex-end;flex:none">
+                        @if ($program)
+                            <div class="micro num" style="text-align:right;color:var(--ink-2);white-space:nowrap">
+                                <div>{{ Text::get('programs.costs.compute', ['value' => $program->qflops_cost]) }}</div>
+                                <div>{{ Text::get('programs.costs.memory', ['value' => $program->memory_cost]) }}</div>
+                            </div>
+                        @endif
+
+                        {{-- Stopping destroys nothing: the program goes back to
+                             storage, merging into the pile it came out of. Same
+                             route the deck screen's Stop button posts to — one
+                             writer, `ProgramRunner::stop()`, whichever screen
+                             asks. --}}
+                        <form method="POST" action="{{ route('inventory.run', $process) }}">
+                            @csrf
+                            <button type="submit" class="btn btn--sm btn--ghost cut">
+                                {{ Text::get('programs.action.stop') }}
+                            </button>
+                        </form>
+                    </div>
                 </div>
             @empty
                 <p class="muted" style="font-size:var(--fs-sm)">{{ Text::get('programs.running_none') }}</p>

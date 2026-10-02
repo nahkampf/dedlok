@@ -274,6 +274,7 @@ final readonly class RunStarter
 
         $character->forceFill([
             'heat' => (float) $character->heat + $grade * (float) Config::get('cyberspace.trace.heat_per_grade', 2),
+            'bounty_grade' => max((int) $character->bounty_grade, $grade),
         ])->save();
     }
 

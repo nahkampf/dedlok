@@ -1160,6 +1160,7 @@ final readonly class Simulator
         $character->forceFill([
             // The GRADE of what burned, and more per grade than a trace.
             'heat' => (float) $character->heat + $system->grade * (float) Config::get('cyberspace.burn.heat_per_grade', 2.5),
+            'bounty_grade' => max((int) $character->bounty_grade, $system->grade),
         ])->save();
 
         $log[] = $this->line('cyberspace.run.log.burn', ['name' => $system->displayName()], 'crit');

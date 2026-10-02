@@ -71,6 +71,9 @@ enum Category: string
      */
     case Street = 'street';
 
+    /** Somebody sent you cash. The only wallet message: everything else in it is something you did. */
+    case Wallet = 'wallet';
+
     public function label(): string
     {
         return Text::get("notifications.categories.{$this->value}");
@@ -96,6 +99,8 @@ enum Category: string
             // has no rail item. U+26A0 is the same Miscellaneous Symbols
             // block as the rest, with U+FE0E's job done by the escape.
             self::Street => "\u{26A0}",
+            // The currency sign, as on the wallet's rail item.
+            self::Wallet => "\u{00A4}",
         };
     }
 
@@ -123,6 +128,7 @@ enum Category: string
             // honest destination — the same answer `Cyberspace` gives.
             self::Mission => 'cyberspace.index',
             self::Street => null,
+            self::Wallet => 'wallet.index',
         };
     }
 }
