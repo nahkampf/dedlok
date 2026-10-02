@@ -105,12 +105,13 @@ Anything that lands while the player is away goes to the inbox under `Category::
   passes for four districts.
 - **The route is snapshotted at the start** and never rewritten, as `runs.chain` is.
 - **Two modes.** *Walk* is free and takes the full time. *Hail a pod* takes **half** of
-  each pass (applied after the modifiers) and costs **25 creds per pass** — per district
-  crossed, so 75 for A→D above, the destination not counting — charged up front through
-  `Wallet::move()` (`Reason::Pod`).
+  each pass (applied after the modifiers) and costs **25 creds per district on the
+  route, the destination and the origin both counting** — so 100 for A→D above — charged
+  up front through `Wallet::move()` (`Reason::Pod`).
 - **Cancelling waits for the pass in progress to finish, then leaves you in the district
-  that pass was in** — cancel in B and you stay in B, you do not go on to C. The passes
-  not yet run are refunded on a pod.
+  that pass was in** — cancel in B and you stay in B, you do not go on to C. On a pod
+  the districts not reached are refunded: A→D cancelled in B pays for A and B and gets
+  25 back for each of C and D.
 - **Planned hook, not built:** a travel pass may roll for an encounter in the district it
   reaches, and an encounter stops the travel there.
 
