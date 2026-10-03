@@ -2,6 +2,65 @@
 
 ## [Unreleased]
 
+## [0.34.0] — 2026-10-03
+
+The City: a body that stands in a district, places to go, and clinics that fit implants.
+
+### Added
+
+- **Districts and places.** Every character now has a body in a district
+  (`characters.district_id`, filled from `city.start`). The old Street screen
+  is the City: a city map, a map per district, and places on it shown as icons
+  with a tooltip. Districts carry a decoration colour. Seven districts and ten
+  placeholder places arrive by migration. A place can be open, found by exploring,
+  or unlocked by a flag (`Location::scopeVisibleTo()`).
+- **Travel and exploring.** Timed activities, one at a time (`city_activities`).
+  Travel by walking (free) or hailing a pod (25 creds per district on the route);
+  a pass takes time in every district on the route but the destination, and
+  cancelling waits for the pass in progress. Exploring is a roll on the new
+  `exploration` pool and may turn up hidden places. Settling is lazy and swept
+  every five minutes by `city:settle`. A jacked-in character cannot travel.
+- **Shops.** A place with `shop_items` sells to you, with an optional price,
+  optional stock and a lazy restock clock. A place with `location_buys` buys
+  from you. Both go through `ShopKeeper` and the wallet.
+- **Clinics.** A place with `clinic_services` restores HP, SI and treats
+  injuries, priced per point (`Clinic`).
+- **Implant surgery.** Implants are fitted and taken out at a clinic, not on the
+  Implants screen, which is now read-only. A surgery is a timed activity charged
+  up front; fitting is a roll of the clinic's rating against a difficulty set
+  by the implant's tier, with the chance quoted beforehand. A failure injures you
+  and the implant stays in your stash, never destroyed. Taking one out is a fee
+  and time, no roll. Nobody leaves the table, and a body on it cannot jack in.
+  A clinic fits any implant; its risk is its rating.
+- **Buy and fit.** An implant on a clinic's shelf has a second button that buys
+  it and goes straight onto the table, shelf price plus fitting fee in one
+  transaction. Any refusal, no room left in that part of the body included,
+  rolls the purchase back.
+- **Admin editors** for districts (with their links), locations, and a
+  location's shop, buy list, clinic services and surgery. The surgery panel
+  explains what a rating means at each tier.
+- **Standing.** A completed trace costs standing with the system's owner,
+  0.05 per grade of the tracing system.
+
+### Changed
+
+- Notification category `Street` is now `City`; stored rows are moved by migration.
+- The test suite's memory limit is raised; it ran out of 128M.
+
+### Migrations
+
+- `2026_10_03_100000_the_city`
+- `2026_10_03_110000_the_starter_city`
+- `2026_10_03_120000_every_character_has_a_body_in_a_district`
+- `2026_10_03_130000_the_street_becomes_the_city`
+- `2026_10_03_140000_what_somebody_is_doing_in_the_city`
+- `2026_10_03_150000_shops_and_clinics`
+- `2026_10_03_160000_the_back_alley_clinic_opens`
+- `2026_10_03_170000_clinic_surgery`
+- `2026_10_03_180000_clinic_surgery_fits_anything`
+
+
+
 ## [0.33.0] — 2026-10-02
 
 A price on your head, a wallet that remembers, and a tab for who likes you.
@@ -2159,7 +2218,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.33.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.34.0...HEAD
+[0.34.0]: https://github.com/nahkampf/dedlok/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/nahkampf/dedlok/compare/v0.32.1...v0.33.0
 [0.32.1]: https://github.com/nahkampf/dedlok/compare/v0.32.0...v0.32.1
 [0.32.0]: https://github.com/nahkampf/dedlok/compare/v0.31.0...v0.32.0

@@ -1,3 +1,11 @@
+## 0.34.0 (2026-10-03)
+
+- Basics of The City now exist. There are districts and locations, you can travel between them.
+- Some locations now interactable (clinics, shops).
+- Not all locations known from the start, but explorable (chance based). There are also locations not revealable through exploration, but through other means.
+- Implant surgery now happens at clinics. Clinics have different skill levels, making it risky to choose a back-alley clinic.
+- Cyberspace: A completed trace now cost you standing with the systems owner.
+
 ## 0.33.0 (2026-10-02)
 
 - Bounties now exist for real: creds are added to character bounties, growing with heat and grade of systems you made runs on. Nobody can collect it yet, though.
