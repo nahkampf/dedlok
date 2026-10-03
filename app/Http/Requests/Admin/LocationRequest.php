@@ -49,6 +49,12 @@ class LocationRequest extends FormRequest
             'shop' => ['nullable', 'array', 'max:60'],
             'shop.*.item_id' => ['nullable', 'integer', 'exists:items,id'],
             'shop.*.price' => ['nullable', 'integer', 'between:0,1000000'],
+            'shop.*.max_stock' => ['nullable', 'integer', 'between:0,1000000'],
+            'shop.*.restock_amount' => ['nullable', 'integer', 'between:0,1000000'],
+            'shop.*.restock_hours' => ['nullable', 'integer', 'between:1,65535'],
+            'buys' => ['nullable', 'array', 'max:60'],
+            'buys.*.item_id' => ['nullable', 'integer', 'exists:items,id'],
+            'buys.*.price' => ['nullable', 'integer', 'between:0,1000000'],
             'clinic' => ['nullable', 'array'],
             'clinic.*' => ['nullable', 'integer', 'between:0,1000000'],
             // The same slug shape `Flags::set()` insists on.
@@ -64,13 +70,39 @@ class LocationRequest extends FormRequest
     /**
      * The shop's rows: one per item, blank rows dropped, the last price wins.
      *
-     * @return list<array{item_id: int, price: int|null}>
+     * @return list<array{item_id: int, price: int|null, max_stock: int|null, restock_amount: int, restock_hours: int|null}>
      */
     public function shopRows(): array
     {
         $rows = [];
 
         foreach ((array) $this->input('shop', []) as $row) {
+            if (! empty($row['item_id'])) {
+                $blank = static fn (string $key): bool => ($row[$key] ?? '') === '';
+
+                $rows[(int) $row['item_id']] = [
+                    'item_id' => (int) $row['item_id'],
+                    'price' => $blank('price') ? null : (int) $row['price'],
+                    'max_stock' => $blank('max_stock') ? null : (int) $row['max_stock'],
+                    'restock_amount' => $blank('restock_amount') ? 0 : (int) $row['restock_amount'],
+                    'restock_hours' => $blank('restock_hours') ? null : (int) $row['restock_hours'],
+                ];
+            }
+        }
+
+        return array_values($rows);
+    }
+
+    /**
+     * What the place buys: one per item, blank rows dropped.
+     *
+     * @return list<array{item_id: int, price: int|null}>
+     */
+    public function buyRows(): array
+    {
+        $rows = [];
+
+        foreach ((array) $this->input('buys', []) as $row) {
             if (! empty($row['item_id'])) {
                 $rows[(int) $row['item_id']] = [
                     'item_id' => (int) $row['item_id'],

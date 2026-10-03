@@ -18,6 +18,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Selling to a place
+    |--------------------------------------------------------------------------
+    |
+    | What a place pays when its buy listing names no price: this fraction of the
+    | item's base cost. Kept well under what a shop charges so that buying and
+    | reselling cannot print money. Unbalanced.
+    |
+    */
+    'sell' => [
+        'fraction' => 0.4,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Travel, in seconds
     |--------------------------------------------------------------------------
     |

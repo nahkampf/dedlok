@@ -41,7 +41,7 @@ class LocationController extends Controller
     {
         $location = DB::transaction(function () use ($request): Location {
             $location = Location::create($request->columns());
-            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows());
+            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows());
 
             return $location;
         });
@@ -58,7 +58,7 @@ class LocationController extends Controller
     {
         DB::transaction(function () use ($request, $location): void {
             $location->update($request->columns());
-            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows());
+            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows());
         });
 
         return back()->with('status', Text::get('admin.locations.updated'));
@@ -81,7 +81,11 @@ class LocationController extends Controller
             'concealments' => Concealment::cases(),
             'items' => ItemOptions::grouped(),
             'services' => ClinicService::cases(),
-            'shop' => $location?->shopItems()->orderBy('id')->get(['item_id', 'price'])->map(fn ($r): array => ['item_id' => $r->item_id, 'price' => $r->price])->all() ?? [],
+            'shop' => $location?->shopItems()->orderBy('id')->get()->map(fn ($r): array => [
+                'item_id' => $r->item_id, 'price' => $r->price, 'max_stock' => $r->max_stock,
+                'restock_amount' => $r->restock_amount ?: null, 'restock_hours' => $r->restock_hours,
+            ])->all() ?? [],
+            'buys' => $location?->buys()->orderBy('id')->get(['item_id', 'price'])->map(fn ($r): array => ['item_id' => $r->item_id, 'price' => $r->price])->all() ?? [],
             'clinic' => $location?->clinicServices()->pluck('price', 'service')->mapWithKeys(fn ($p, $s): array => [$s instanceof ClinicService ? $s->value : (string) $s => $p])->all() ?? [],
         ];
     }

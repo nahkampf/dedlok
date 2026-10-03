@@ -36,6 +36,12 @@ enum CityRefusal: string
     /** The equipped deck has no room for it. */
     case NoStorage = 'no_storage';
 
+    /** The shelf holds fewer than were asked for. */
+    case SoldOut = 'sold_out';
+
+    /** Not something they take, or not yours to sell: installed, in a container, fitted, running, or the deck you carry. */
+    case CannotSell = 'cannot_sell';
+
     /** Nothing to mend or restore. */
     case NothingToTreat = 'nothing_to_treat';
 

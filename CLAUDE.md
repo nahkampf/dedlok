@@ -848,8 +848,13 @@ never a `forceFill(['creds' => …])`.
   stands in it or it is `city.start`**. A trip whose route names a deleted district stops
   where the traveller is and refunds the rest (`Traveller::settle()`).
 - **A location is a shop by having `shop_items` rows and a clinic by having
-  `clinic_services` rows; `FeatureEditor` is the only writer of both**, replacing them
-  wholesale. **`ShopKeeper` is the only door from a City shop to a stash** and writes
+  `clinic_services` rows, and buys from players by having `location_buys` rows;
+  `FeatureEditor` is the only writer of all three.** Shop listings are edited as a DIFF —
+  a listing carries a stock count, so saving the editor must not refill a shelf — and
+  the buy list and clinic are replaced wholesale. **Shop stock restocks lazily**
+  (`ShopItem::restock()`, settled under a lock by `ShopKeeper`); no `max_stock` is
+  unlimited. **What a place buys vanishes** and `ShopKeeper::sell()` only takes what is in
+  the character's hands. **`ShopKeeper` is the only door from a City shop to a stash** and writes
   neither of the market's tables nor looks at `on_market`; **`Clinic` prices per point
   restored**, and its `quote()` and `treat()` share one `owed()`. Both ask `Presence` inside
   their own lock — the page hiding a button guards nothing. A hidden place is the same 404

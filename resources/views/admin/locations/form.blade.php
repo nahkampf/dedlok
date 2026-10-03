@@ -101,7 +101,28 @@
                             <option value=""></option>
                             <x-grouped-options :groups="$items" :selected="$row['item_id'] ?? null" />
                         </select>
-                        <input class="input num" type="number" min="0" name="shop[{{ $i }}][price]" value="{{ $row['price'] ?? '' }}" placeholder="{{ Text::get('admin.locations.price_default') }}" style="width:9rem" aria-label="{{ Text::get('admin.locations.price') }}">
+                        <input class="input num" type="number" min="0" name="shop[{{ $i }}][price]" value="{{ $row['price'] ?? '' }}" placeholder="{{ Text::get('admin.locations.price_default') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.price') }}">
+                        <input class="input num" type="number" min="0" name="shop[{{ $i }}][max_stock]" value="{{ $row['max_stock'] ?? '' }}" placeholder="{{ Text::get('admin.locations.unlimited') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.max_stock') }}">
+                        <input class="input num" type="number" min="0" name="shop[{{ $i }}][restock_amount]" value="{{ $row['restock_amount'] ?? '' }}" placeholder="{{ Text::get('admin.locations.restock_amount') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.restock_amount') }}">
+                        <input class="input num" type="number" min="1" name="shop[{{ $i }}][restock_hours]" value="{{ $row['restock_hours'] ?? '' }}" placeholder="{{ Text::get('admin.locations.restock_hours') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.restock_hours') }}">
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        @php($buyRows = old('buys', $buys))
+        @php($buyRows = array_pad(array_values($buyRows), count($buyRows) + 3, ['item_id' => null, 'price' => null]))
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.locations.buys') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-3)">
+                <span class="field__hint">{{ Text::get('admin.locations.buys_hint') }}</span>
+                @foreach ($buyRows as $i => $row)
+                    <div class="row row--wrap" style="--gap:var(--s-3)">
+                        <select class="select" name="buys[{{ $i }}][item_id]" style="flex:1 1 220px;min-width:0" aria-label="{{ Text::get('admin.locations.item') }}">
+                            <option value=""></option>
+                            <x-grouped-options :groups="$items" :selected="$row['item_id'] ?? null" />
+                        </select>
+                        <input class="input num" type="number" min="0" name="buys[{{ $i }}][price]" value="{{ $row['price'] ?? '' }}" placeholder="{{ Text::get('admin.locations.buy_default') }}" style="width:9rem" aria-label="{{ Text::get('admin.locations.price') }}">
                     </div>
                 @endforeach
             </div>

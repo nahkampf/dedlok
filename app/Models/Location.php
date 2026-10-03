@@ -49,6 +49,12 @@ class Location extends Model
         return $this->hasMany(ShopItem::class);
     }
 
+    /** @return HasMany<LocationBuy, $this> */
+    public function buys(): HasMany
+    {
+        return $this->hasMany(LocationBuy::class);
+    }
+
     /** @return HasMany<ClinicOffer, $this> */
     public function clinicServices(): HasMany
     {

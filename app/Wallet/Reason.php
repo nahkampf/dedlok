@@ -21,6 +21,7 @@ enum Reason: string
     case TransferIn = 'transfer_in';
     case Pod = 'pod';
     case Shop = 'shop';
+    case Sale = 'sale';
     case Clinic = 'clinic';
 
     public function label(): string

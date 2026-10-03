@@ -307,6 +307,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/city/{district}/travel', [CityController::class, 'travel'])->name('city.travel');
     Route::get('/city/place/{slug}', [PlaceController::class, 'show'])->name('city.place');
     Route::post('/city/place/{slug}/buy/{item}', [PlaceController::class, 'buy'])->name('city.buy');
+    Route::post('/city/place/{slug}/sell/{row}', [PlaceController::class, 'sell'])->name('city.sell');
     Route::post('/city/place/{slug}/treat/{service}', [PlaceController::class, 'treat'])->name('city.treat');
     Route::post('/city-explore', [CityController::class, 'explore'])->name('city.explore');
     Route::post('/city-cancel', [CityController::class, 'cancel'])->name('city.cancel');

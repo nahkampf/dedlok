@@ -171,12 +171,21 @@ stealth and egress comments rather than measured) and `checks.spread` 8:
 **Phase 3 decisions, all defaults the author has not yet seen** — each is one number or
 one line to change:
 
-- **A shop's stock is unlimited**, so there is no restock clock. A listing is a row
-  (`shop_items`) with a nullable price that falls back to `items.base_cost`, and **it
-  ignores `items.on_market`**: selling what the market does not is the point.
+- **A listing has stock and a restock clock.** It is a row (`shop_items`) with a nullable
+  price that falls back to `items.base_cost`, a `max_stock` (NULL is unlimited), a
+  `restock_amount` and `restock_hours`. **Restocking is lazy**: each whole interval since
+  `restocked_at` adds the amount up to the maximum, settled under a lock by whoever looks
+  next, and the boundary advances by whole intervals so a full shelf banks nothing. A new
+  listing starts full. **It ignores `items.on_market`**: selling what the market does not is
+  the point.
 - **A shop writes neither `market_purchases` nor `market_stock`** — the first is the
   seeder's demand signal and `Purchaser` is its only writer. `ShopKeeper` is the door.
-- **Players cannot sell to a shop.**
+- **A place can BUY from players** (`location_buys`): only what its list names, at its
+  own price or `city.sell.fraction` (0.4) of the item's cost, kept under a shop's price so
+  buying and reselling cannot print money. **What is sold vanishes** — it does not join a
+  shelf. Only things in the character's hands can be sold: not installed, inside a
+  container, fitted, running, listed on the market, the deck being carried, or a container
+  holding anything.
 - **Treatment is instant and priced PER POINT** (`clinic_services.price`): restoring
   charges `maximum − current`, worked out under the lock. Four services — restore hit
   points, restore Synaptic Integrity, mend neural damage, mend physical trauma. Mending

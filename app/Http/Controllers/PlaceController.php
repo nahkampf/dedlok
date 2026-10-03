@@ -28,7 +28,7 @@ use Illuminate\View\View;
  */
 class PlaceController extends Controller
 {
-    public function show(Request $request, string $slug, CityClock $clock, Clinic $clinic): View|RedirectResponse
+    public function show(Request $request, string $slug, CityClock $clock, Clinic $clinic, ShopKeeper $shop): View|RedirectResponse
     {
         $character = $this->character($request);
 
@@ -45,7 +45,9 @@ class PlaceController extends Controller
             'character' => $character,
             'place' => $place->load('district'),
             'here' => $character->district_id === $place->district_id,
-            'wares' => $place->shopItems()->with('item')->orderBy('id')->get(),
+            // Stock brought up to date on the way past: a restock is lazy.
+            'wares' => $shop->wares($place),
+            'sellable' => $shop->sellable($character, $place),
             // The same call `treat()` charges from.
             'treatments' => $clinic->quote($character, $place),
         ]);
@@ -62,6 +64,19 @@ class PlaceController extends Controller
         return $result instanceof CityRefusal
             ? back()->with('error', $result->message())
             : back()->with('status', Text::get('city.shop.bought', ['quantity' => $result]));
+    }
+
+    public function sell(Request $request, string $slug, int $row, ShopKeeper $shop): RedirectResponse
+    {
+        $character = $this->character($request);
+        $place = $this->place($character, $slug);
+        $quantity = (int) $request->validate(['quantity' => ['required', 'integer', 'between:1,9999']])['quantity'];
+
+        $result = $shop->sell($character, $place, $row, $quantity);
+
+        return $result instanceof CityRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get('city.shop.sold', ['paid' => number_format($result)]));
     }
 
     public function treat(Request $request, string $slug, string $service, Clinic $clinic): RedirectResponse

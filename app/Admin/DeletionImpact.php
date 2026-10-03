@@ -10,6 +10,7 @@ use App\Models\ArchetypeSkill;
 use App\Models\CharacterSkill;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\LocationBuy;
 use App\Models\MarketPurchase;
 use App\Models\ShopItem;
 use App\Models\Skill;
@@ -55,6 +56,7 @@ final class DeletionImpact
             'purchases' => MarketPurchase::where('item_id', $item->id)->count(),
             'archetype_loadouts' => ArchetypeItem::where('item_id', $item->id)->count(),
             'shop_listings' => ShopItem::where('item_id', $item->id)->count(),
+            'shop_buys' => LocationBuy::where('item_id', $item->id)->count(),
         ];
 
         if ($item->isContainer()) {
