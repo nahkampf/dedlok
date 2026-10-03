@@ -20,6 +20,7 @@ final class CityClock
     public function __construct(
         private readonly Traveller $traveller,
         private readonly Explorer $explorer,
+        private readonly Surgeon $surgeon,
     ) {}
 
     /** @return list<array{0: string, 1: array<string, string>}> message key and replacements */
@@ -28,6 +29,7 @@ final class CityClock
         return [
             ...$this->traveller->settle($character, $now, $notify),
             ...$this->explorer->settle($character, $now, $notify),
+            ...$this->surgeon->settle($character, $now, $notify),
         ];
     }
 

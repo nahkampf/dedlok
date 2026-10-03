@@ -36,6 +36,15 @@ enum CityRefusal: string
     /** The equipped deck has no room for it. */
     case NoStorage = 'no_storage';
 
+    /** The clinic does not do that: not its regions, not its tiers, or no surgery at all. */
+    case NotOffered = 'not_offered';
+
+    /** Not an implant, or not in the state the operation needs. */
+    case CannotOperate = 'cannot_operate';
+
+    /** The region of the body is full. */
+    case NoRoom = 'no_room';
+
     /** The shelf holds fewer than were asked for. */
     case SoldOut = 'sold_out';
 

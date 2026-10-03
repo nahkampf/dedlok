@@ -12,7 +12,6 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\User;
 use App\Stats\Sources\InstalledImplants;
-use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -278,30 +277,17 @@ final class ImplantTest extends TestCase
         $response->assertSee('bodymap__figure', false);
     }
 
-    public function test_installing_and_removing_from_the_screen(): void
+    /** Surgery moved to the clinics: the screen shows a body and no longer writes one. */
+    public function test_the_screen_is_read_only_and_points_at_the_clinics(): void
     {
         $implant = $this->implant(BodyRegion::Spine);
 
-        $this->actingAs($this->user)
-            ->post(route('implants.install', $implant))
-            ->assertSessionHas('status');
+        $this->actingAs($this->user)->get(route('implants.index'))
+            ->assertOk()->assertSeeText('fitted and removed at a clinic');
 
-        $this->assertNotNull($implant->fresh()->installed_at);
-
-        $this->actingAs($this->user)
-            ->post(route('implants.remove', $implant))
-            ->assertSessionHas('status');
-
+        $this->assertFalse(\Route::has('implants.install'));
+        $this->assertFalse(\Route::has('implants.remove'));
         $this->assertNull($implant->fresh()->installed_at);
-    }
-
-    public function test_a_full_region_says_so_rather_than_failing_quietly(): void
-    {
-        $this->fitter()->install($this->character, $this->implant(BodyRegion::Spine));
-
-        $this->actingAs($this->user)
-            ->post(route('implants.install', $this->implant(BodyRegion::Spine)))
-            ->assertSessionHas('error', Text::get('implants.refused.no_room'));
     }
 
     public function test_every_refusal_has_a_string(): void

@@ -555,8 +555,7 @@ takes what a real request takes.
 named the deck screen's fitting and stripping forms, the implant body map, the
 stash's item actions and the admin editors' writes as unit-tested only. All
 four post to their routes: `ModuleFittingTest` alone makes eleven writes and
-twelve reads over HTTP, `ImplantTest` covers the body map and both surgery
-routes, `ItemActionsTest` the stash, and the seven files in `tests/Feature/Admin`
+twelve reads over HTTP, `ImplantTest` covers the body map (surgery is `CitySurgeryTest` now), `ItemActionsTest` the stash, and the seven files in `tests/Feature/Admin`
 hit the editors hard — including the delete that has to drop a skill's imprint
 first. The entry was written from an impression rather than a count.
 

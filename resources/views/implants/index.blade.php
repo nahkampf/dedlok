@@ -10,6 +10,10 @@
 
     <div class="tabpanel">
         <p class="micro" style="margin:0 0 var(--s-4);max-width:70ch">{{ Text::get('implants.lede') }}</p>
+        <p style="margin:0 0 var(--s-4);max-width:70ch">
+            {{ Text::get('city.surgery.only_here') }}
+            <a href="{{ route('city.index') }}">{{ Text::get('city.surgery.go') }}</a>
+        </p>
 
     <div class="bodymap" style="margin-top:var(--s-5)">
         <x-body-map :body="$body" />
@@ -41,33 +45,9 @@
                         @endfor
                     </div>
 
-                    @if ($installed->isNotEmpty())
-                        <div style="display:flex;flex-wrap:wrap;gap:var(--s-2);margin-top:var(--s-3)">
-                            @foreach ($installed as $row)
-                                <form method="POST" action="{{ route('implants.remove', $row) }}">
-                                    @csrf
-                                    <button type="submit" class="btn btn--sm btn--ghost cut">
-                                        {{ Text::get('implants.remove') }} — {{ $row->item?->displayName() }}
-                                    </button>
-                                </form>
-                            @endforeach
-                        </div>
-                    @endif
-
                     @if ($spare->isNotEmpty() && $installed->count() < $region->capacity())
-                        <div style="display:flex;flex-wrap:wrap;gap:var(--s-2);margin-top:var(--s-3)">
-                            @foreach ($spare as $row)
-                                <form method="POST" action="{{ route('implants.install', $row) }}">
-                                    @csrf
-                                    <button type="submit" class="btn btn--sm cut">
-                                        {{ Text::get('implants.install') }} — {{ $row->item?->displayName() }}
-                                    </button>
-                                </form>
-                            @endforeach
-                        </div>
-                    @elseif ($installed->isEmpty())
                         <p class="micro" style="color:var(--ink-2);margin-top:var(--s-2)">
-                            {{ Text::get('implants.none_to_install') }}
+                            {{ Text::get('implants.carrying', ['count' => $spare->count()]) }}
                         </p>
                     @endif
                 </section>

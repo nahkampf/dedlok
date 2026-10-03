@@ -148,13 +148,10 @@ Route::middleware('auth')->group(function () {
     /*
      * Implants: what is installed in a body.
      *
-     * One screen, and two writes that are the same act in both directions —
-     * an implant goes in or it comes out, and which one is being asked for is
-     * decided by the row rather than by a field.
+     * One screen, and READ ONLY. Fitting and removing are surgery now, done at a
+     * clinic that offers it (`city.operate`) — see CITY.md.
      */
     Route::get('/implants', [ImplantController::class, 'index'])->name('implants.index');
-    Route::post('/implants/{entry}/install', [ImplantController::class, 'install'])->name('implants.install');
-    Route::post('/implants/{entry}/remove', [ImplantController::class, 'remove'])->name('implants.remove');
 
     /*
      * Cyberspace: the map, and everything done from it.
@@ -307,6 +304,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/city/{district}/travel', [CityController::class, 'travel'])->name('city.travel');
     Route::get('/city/place/{slug}', [PlaceController::class, 'show'])->name('city.place');
     Route::post('/city/place/{slug}/buy/{item}', [PlaceController::class, 'buy'])->name('city.buy');
+    Route::post('/city/place/{slug}/operate/{row}/{operation}', [PlaceController::class, 'operate'])->name('city.operate');
     Route::post('/city/place/{slug}/sell/{row}', [PlaceController::class, 'sell'])->name('city.sell');
     Route::post('/city/place/{slug}/treat/{service}', [PlaceController::class, 'treat'])->name('city.treat');
     Route::post('/city-explore', [CityController::class, 'explore'])->name('city.explore');

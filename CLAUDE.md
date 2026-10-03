@@ -960,7 +960,11 @@ implant's; the row says which family, how long, and what it costs the books.
   does nothing, and neither can be installed without being taken out first.
 - **Installed is a fourth way to be elsewhere** (see `scopeLoose()`).
 - **An implant's effects live on `items.modifiers`**, read by `InstalledImplants`.
-- **Surgery is free.** When it costs, `ImplantFitter` is the class that knows both sides.
+- **Surgery happens at a clinic and the Implants screen is READ ONLY.** `ImplantFitter`
+  stays the only writer of `installed_at`, but the only door a player can reach is
+  `App\City\Surgeon` (see *The City*): a timed activity charged up front, a roll to fit one
+  (failure = injury and the implant is rejected, staying in the stash), no roll to take
+  one out, and no jacking in while on the table.
 - The screen is `<x-body-map>`: `public/images/body.gif` with the regions marked on it in SVG.
 
 ### Cyberspace
@@ -990,7 +994,8 @@ and extraction are built. See below for what is not.
   same transaction as the move.
 - **A deck that stops running throws its owner out**, for 1 point of Synaptic Integrity.
   `App\Cyberspace\ReadinessWatch`, asked in TWO places: **in place** by the screens that can
-  break a deck from inside (implants, programs), and by **middleware**
+  break a deck from inside (programs — implants stopped being one when surgery moved to
+  clinics, which a jacked-in character cannot reach), and by **middleware**
   (`EnsureDeckStillRuns`) on every jacked-in request. The order is the one every bad ending
   uses: damage, consequence, `jackOut()`. **It must never become the answer for something
   during a run.**

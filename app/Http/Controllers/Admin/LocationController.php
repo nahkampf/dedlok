@@ -11,6 +11,7 @@ use App\City\DiscoveryRule;
 use App\City\FeatureEditor;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LocationRequest;
+use App\Implants\BodyRegion;
 use App\Models\District;
 use App\Models\Location;
 use App\Support\Text;
@@ -41,7 +42,7 @@ class LocationController extends Controller
     {
         $location = DB::transaction(function () use ($request): Location {
             $location = Location::create($request->columns());
-            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows());
+            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows(), $request->surgeryRow());
 
             return $location;
         });
@@ -58,7 +59,7 @@ class LocationController extends Controller
     {
         DB::transaction(function () use ($request, $location): void {
             $location->update($request->columns());
-            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows());
+            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows(), $request->surgeryRow());
         });
 
         return back()->with('status', Text::get('admin.locations.updated'));
@@ -80,6 +81,9 @@ class LocationController extends Controller
             'rules' => DiscoveryRule::cases(),
             'concealments' => Concealment::cases(),
             'items' => ItemOptions::grouped(),
+            'regions' => BodyRegion::cases(),
+            'surgery' => $location?->surgery,
+            'surgeryRegions' => $location?->surgery?->regions() ?? [],
             'services' => ClinicService::cases(),
             'shop' => $location?->shopItems()->orderBy('id')->get()->map(fn ($r): array => [
                 'item_id' => $r->item_id, 'price' => $r->price, 'max_stock' => $r->max_stock,

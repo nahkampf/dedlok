@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\City\ActivityKind;
 use App\Decks\DeckTotals;
 use App\Models\Bookmark;
 use App\Models\Character;
+use App\Models\CityActivity;
 use App\Stats\Resolver;
 use Closure;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +74,11 @@ final class Navigator
     {
         if ($character->isJackedIn()) {
             return TravelResult::refused(TravelRefusal::AlreadyJackedIn);
+        }
+
+        // On the table. Surgery is the one City activity that cannot overlap a jack-in.
+        if (CityActivity::query()->whereKey($character->getKey())->where('kind', ActivityKind::Surgery->value)->exists()) {
+            return TravelResult::refused(TravelRefusal::UnderTheKnife);
         }
 
         $deck = $character->equippedDeck;

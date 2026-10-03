@@ -9,4 +9,5 @@ enum ActivityKind: string
 {
     case Travel = 'travel';
     case Explore = 'explore';
+    case Surgery = 'surgery';
 }

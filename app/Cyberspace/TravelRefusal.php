@@ -33,6 +33,9 @@ enum TravelRefusal: string
      */
     case DeckNotReady = 'deck_not_ready';
 
+    /** Under the knife: a surgery is in progress and a body on the table is not jacked in. */
+    case UnderTheKnife = 'under_the_knife';
+
     /** Already in cyberspace. Jacking in twice is not a thing. */
     case AlreadyJackedIn = 'already_jacked_in';
 

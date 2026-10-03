@@ -12,7 +12,9 @@
         <span class="tag"><span data-countdown="{{ $remaining }}">{{ intdiv($remaining, 60) }}:{{ str_pad((string) ($remaining % 60), 2, '0', STR_PAD_LEFT) }}</span></span>
     </div>
     <div class="panel__bd stack" style="--gap:var(--s-3)">
-        @if ($activity->kind === ActivityKind::Travel)
+        @if ($activity->kind === ActivityKind::Surgery)
+            <p style="margin:0">{{ Text::get('city.surgery.on_the_table') }}</p>
+        @elseif ($activity->kind === ActivityKind::Travel)
             <p style="margin:0">
                 {{ Text::get('city.travelling', ['district' => $inPass, 'to' => end($route) ?: '', 'mode' => $activity->mode?->label()]) }}
             </p>
@@ -24,7 +26,7 @@
             <p style="margin:0">{{ Text::get('city.exploring', ['district' => $inPass]) }}</p>
         @endif
 
-        @unless ($activity->cancelling)
+        @unless ($activity->cancelling || $activity->kind === ActivityKind::Surgery)
             <form method="POST" action="{{ route('city.cancel') }}">
                 @csrf
                 <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('city.cancel') }}</button>

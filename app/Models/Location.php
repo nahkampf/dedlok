@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,6 +30,7 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $required_flag
  * @property bool|null $shop_items_exists
  * @property bool|null $clinic_services_exists
+ * @property bool|null $surgery_exists
  */
 #[Fillable(['district_id', 'slug', 'name', 'description', 'map_x', 'map_y', 'discovery', 'concealment', 'required_flag'])]
 class Location extends Model
@@ -47,6 +49,12 @@ class Location extends Model
     public function shopItems(): HasMany
     {
         return $this->hasMany(ShopItem::class);
+    }
+
+    /** @return HasOne<ClinicSurgery, $this> */
+    public function surgery(): HasOne
+    {
+        return $this->hasOne(ClinicSurgery::class);
     }
 
     /** @return HasMany<LocationBuy, $this> */
@@ -72,7 +80,7 @@ class Location extends Model
     {
         return array_values(array_filter([
             ($this->shop_items_exists ?? $this->shopItems()->exists()) ? Feature::Shop : null,
-            ($this->clinic_services_exists ?? $this->clinicServices()->exists()) ? Feature::Clinic : null,
+            ($this->clinic_services_exists ?? $this->clinicServices()->exists()) || ($this->surgery_exists ?? $this->surgery()->exists()) ? Feature::Clinic : null,
         ]));
     }
 

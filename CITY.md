@@ -191,6 +191,7 @@ one line to change:
   points, restore Synaptic Integrity, mend neural damage, mend physical trauma. Mending
   an injury raises a maximum and does not fill anything, so the screen says to mend first
   and restore after. Implant surgery stays free and is not a clinic service.
+- **Implant surgery is its own section below.**
 - **Shops and clinics refuse while any City activity runs**, while jacked in, and unless
   the body is in the place's district. A place is a feature by having rows; there is no
   feature table.
@@ -203,6 +204,27 @@ Typed features on a location, a fixed vocabulary like `Drugs\Family`; each kind 
 own table when it is built, never a JSON bag. First are **shops** (a per-location stock,
 paid through `Wallet`) and **clinics** (HP, SI and injury treatment, using
 `Character::recover()` and `InjuryLedger`).
+
+## Implant surgery
+
+Decided 2026-10-03 and built the same day; every figure is unbalanced.
+
+- **Only at a clinic that offers it.** The Implants screen is read-only and points at the
+  City. `ImplantFitter` is still the only writer of `installed_at`; `Surgeon` is the only
+  door a player reaches it through.
+- **A clinic with surgery has a `clinic_surgeries` row**: a surgeon `rating`, a `max_tier`
+  (1 or 2), a price per tier to fit and to remove, and the body regions it will work on
+  (`clinic_surgery_regions`). Defined per clinic in the editor. The Back-Alley Clinic
+  fits tier 1 into the body, arms and legs and will not touch a head or a spine.
+- **A surgery is a timed City activity** (`city_activities.kind = surgery`), seconds
+  per tier through `surgery_duration` (300 to fit, 120 to remove), charged up front. **It
+  cannot be cancelled**, and a body on the table cannot jack in (`TravelRefusal::UnderTheKnife`).
+- **Fitting is a roll**: the clinic's rating against `city.surgery.difficulty` for the
+  implant's tier, through `CheckRoller` with its own chance quoted beforehand. **A failure
+  costs `injury_per_tier` points a tier** — neural damage for the head and spine, physical
+  trauma elsewhere — **and the implant is rejected: it stays in the stash.** Destroying a
+  rejected implant is the harsher variant left out. **Removing is a fee and time and no
+  roll.**
 
 ## Encounters
 

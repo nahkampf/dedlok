@@ -474,6 +474,13 @@ return [
             'rounding' => 'floor',
         ],
 
+        'surgery_duration' => [
+            'tags' => ['city', 'surgery'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
         'travel_duration' => [
             'tags' => ['city', 'travel'],
             'min' => 1,

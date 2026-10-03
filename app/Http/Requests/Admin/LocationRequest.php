@@ -7,6 +7,7 @@ namespace App\Http\Requests\Admin;
 use App\City\ClinicService;
 use App\City\Concealment;
 use App\City\DiscoveryRule;
+use App\Implants\BodyRegion;
 use App\Models\Location;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -55,6 +56,14 @@ class LocationRequest extends FormRequest
             'buys' => ['nullable', 'array', 'max:60'],
             'buys.*.item_id' => ['nullable', 'integer', 'exists:items,id'],
             'buys.*.price' => ['nullable', 'integer', 'between:0,1000000'],
+            'surgery' => ['nullable', 'array'],
+            'surgery.offered' => ['nullable', 'boolean'],
+            'surgery.rating' => ['nullable', 'integer', 'between:0,200', 'required_with:surgery.offered'],
+            'surgery.max_tier' => ['nullable', 'integer', 'in:1,2', 'required_with:surgery.offered'],
+            'surgery.install_price' => ['nullable', 'integer', 'between:0,1000000', 'required_with:surgery.offered'],
+            'surgery.removal_price' => ['nullable', 'integer', 'between:0,1000000', 'required_with:surgery.offered'],
+            'surgery.regions' => ['nullable', 'array'],
+            'surgery.regions.*' => [Rule::enum(BodyRegion::class)],
             'clinic' => ['nullable', 'array'],
             'clinic.*' => ['nullable', 'integer', 'between:0,1000000'],
             // The same slug shape `Flags::set()` insists on.
@@ -112,6 +121,26 @@ class LocationRequest extends FormRequest
         }
 
         return array_values($rows);
+    }
+
+    /**
+     * The clinic's surgery, or null when it does none.
+     *
+     * @return array{rating: int, max_tier: int, install_price: int, removal_price: int, regions: list<string>}|null
+     */
+    public function surgeryRow(): ?array
+    {
+        if (! $this->boolean('surgery.offered')) {
+            return null;
+        }
+
+        return [
+            'rating' => (int) $this->input('surgery.rating'),
+            'max_tier' => (int) $this->input('surgery.max_tier'),
+            'install_price' => (int) $this->input('surgery.install_price'),
+            'removal_price' => (int) $this->input('surgery.removal_price'),
+            'regions' => array_values(array_unique(array_map('strval', (array) $this->input('surgery.regions', [])))),
+        ];
     }
 
     /**

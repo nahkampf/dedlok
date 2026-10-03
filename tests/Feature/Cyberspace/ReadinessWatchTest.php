@@ -7,7 +7,6 @@ namespace Tests\Feature\Cyberspace;
 use App\Characters\WaitingRoom;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\ReadinessWatch;
-use App\Implants\BodyRegion;
 use App\Models\Character;
 use App\Models\CharacterModifier;
 use App\Models\Item;
@@ -340,34 +339,6 @@ final class ReadinessWatchTest extends TestCase
             ->assertSessionHas('error');
 
         $this->assertFalse($this->character->fresh()->isJackedIn());
-    }
-
-    /**
-     * Surgery is not refused while jacked in, so an implant whose modifiers
-     * reach a deck measure can be the thing that stops the machine. The player
-     * is told then and there, alongside what they actually asked for.
-     */
-    public function test_installing_an_implant_that_kills_the_deck_says_so_at_once(): void
-    {
-        $this->equipReadyDeck($this->character);
-        $this->jackIn();
-
-        $implant = $this->ownedBy($this->character, Item::factory()->create([
-            'implant_region' => BodyRegion::Spine,
-            'modifiers' => [
-                ['op' => 'override', 'amount' => 0, 'target' => ['id' => 'deck_power_supply']],
-            ],
-        ]));
-
-        $this->actingAs($this->character->user)
-            ->from(route('implants.index'))
-            ->post(route('implants.install', $implant))
-            ->assertRedirect(route('implants.index'))
-            ->assertSessionHas('status')
-            ->assertSessionHas('error');
-
-        $this->assertFalse($this->character->fresh()->isJackedIn());
-        $this->assertNotNull($implant->fresh()->installed_at, 'the surgery still happened');
     }
 
     /**

@@ -1,4 +1,5 @@
 @use('App\Support\Text')
+@use('Carbon\CarbonInterval')
 @extends('layouts.app')
 @section('title', $place->name)
 
@@ -59,6 +60,35 @@
             </div>
         @endif
 
+        @if ($surgeries !== [])
+            <div class="panel">
+                <div class="panel__hd"><span class="micro">{{ Text::get('city.surgery.heading') }}</span></div>
+                <div class="panel__bd stack" style="--gap:var(--s-3)">
+                    @foreach ($surgeries as $entry)
+                        <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            <span class="item-row__name" style="flex:1 1 160px;min-width:0">
+                                {{ $entry['row']->item->displayName() }}
+                                <span class="micro" style="color:var(--ink-3)">· {{ $entry['op']->label() }}</span>
+                            </span>
+                            <span class="micro" style="color:var(--ink-3)">
+                                {{ Text::get('city.surgery.fee', ['fee' => number_format($entry['quote']['fee'])]) }}
+                                · {{ Text::get('city.surgery.time', ['time' => CarbonInterval::seconds($entry['quote']['seconds'])->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}
+                                @if ($entry['quote']['chance'] !== null)
+                                    · {{ Text::get('city.surgery.chance', ['percent' => round($entry['quote']['chance'] * 100)]) }}
+                                @endif
+                            </span>
+                            @if ($here)
+                                <form method="POST" action="{{ route('city.operate', [$place->slug, $entry['row']->id, $entry['op']->value]) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn--sm cut" @disabled($character->creds < $entry['quote']['fee'])>{{ Text::get('city.surgery.begin') }}</button>
+                                </form>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         @if ($treatments !== [])
             <div class="panel">
                 <div class="panel__hd"><span class="micro">{{ Text::get('city.clinic.heading') }}</span></div>
@@ -82,7 +112,7 @@
             </div>
         @endif
 
-        @if ($wares->isEmpty() && $treatments === [] && $sellable === [])
+        @if ($wares->isEmpty() && $treatments === [] && $sellable === [] && $surgeries === [])
             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('city.nothing_to_do') }}</p>
         @endif
     </div>
