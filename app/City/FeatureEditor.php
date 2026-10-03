@@ -6,12 +6,10 @@ namespace App\City;
 
 use App\Models\Location;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 
 /**
  * The only writer of a place's listings: `shop_items`, `location_buys`,
- * `clinic_services` and `clinic_surgeries` with its regions.
+ * `clinic_services` and `clinic_surgeries`.
  *
  * SHOP LISTINGS ARE A DIFF, because a listing carries a stock count worth
  * keeping: saving the editor must not refill every shelf. An existing listing
@@ -26,7 +24,7 @@ final class FeatureEditor
      * @param  list<array{item_id: int, price: int|null, max_stock: int|null, restock_amount: int, restock_hours: int|null}>  $shop
      * @param  array<string, int>  $clinic  service value => creds per point
      * @param  list<array{item_id: int, price: int|null}>  $buys
-     * @param  array{rating: int, max_tier: int, install_price: int, removal_price: int, regions: list<string>}|null  $surgery
+     * @param  array{rating: int, install_price: int, removal_price: int}|null  $surgery
      */
     public static function apply(Location $location, array $shop, array $clinic, array $buys = [], ?array $surgery = null): void
     {
@@ -60,14 +58,9 @@ final class FeatureEditor
         }
 
         $location->surgery()->delete();
-        DB::table('clinic_surgery_regions')->where('location_id', $location->getKey())->delete();
 
         if ($surgery !== null) {
-            $location->surgery()->create(Arr::except($surgery, ['regions']));
-
-            foreach ($surgery['regions'] as $region) {
-                DB::table('clinic_surgery_regions')->insert(['location_id' => $location->getKey(), 'region' => $region]);
-            }
+            $location->surgery()->create($surgery);
         }
 
         foreach ($clinic as $service => $price) {

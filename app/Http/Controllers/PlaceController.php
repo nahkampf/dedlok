@@ -44,14 +44,21 @@ class PlaceController extends Controller
 
         $place = $this->place($character, $slug);
 
+        $wares = $shop->wares($place);
+
         return view('city.place', [
             'character' => $character,
             'place' => $place->load('district'),
             'here' => $character->district_id === $place->district_id,
             // Stock brought up to date on the way past: a restock is lazy.
-            'wares' => $shop->wares($place),
+            'wares' => $wares,
             'sellable' => $shop->sellable($character, $place),
             'surgeries' => $this->surgeries($character, $place, $surgeon),
+            // What buying-and-fitting each implant on the shelf would cost, or why not.
+            'fits' => $wares
+                ->filter(fn ($w): bool => $w->item?->implantRegion() !== null)
+                ->mapWithKeys(fn ($w): array => [$w->item_id => $surgeon->quoteFit($character, $place, $w->item)])
+                ->all(),
             // The same call `treat()` charges from.
             'treatments' => $clinic->quote($character, $place),
         ]);
@@ -68,6 +75,18 @@ class PlaceController extends Controller
         return $result instanceof CityRefusal
             ? back()->with('error', $result->message())
             : back()->with('status', Text::get('city.shop.bought', ['quantity' => $result]));
+    }
+
+    public function buyAndFit(Request $request, string $slug, int $item, Surgeon $surgeon): RedirectResponse
+    {
+        $character = $this->character($request);
+        $place = $this->place($character, $slug);
+
+        $result = $surgeon->buyAndFit($character, $place, $item);
+
+        return $result instanceof CityRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get('city.surgery.begun'));
     }
 
     public function operate(Request $request, string $slug, int $row, string $operation, Surgeon $surgeon): RedirectResponse

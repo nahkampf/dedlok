@@ -20,13 +20,13 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\Notification;
+use App\Models\ShopItem;
 use App\Models\User;
 use App\Models\WalletEntry;
 use App\Stats\InjuryLedger;
 use App\Stats\Resolver;
 use App\Wallet\Reason;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -141,11 +141,11 @@ final class CitySurgeryTest extends TestCase
         $this->assertSame(0.0, (new InjuryLedger)->carried($this->character->fresh(), InjuryLedger::TRAUMA));
     }
 
-    public function test_a_clinic_only_does_what_it_offers(): void
+    public function test_a_clinic_fits_any_implant_but_only_your_own(): void
     {
-        $this->assertSame(CityRefusal::NotOffered, $this->begin($this->implant(BodyRegion::Head)), 'not the head');
-        $this->assertSame(CityRefusal::NotOffered, $this->begin($this->implant(BodyRegion::Spine)), 'not the spine');
-        $this->assertSame(CityRefusal::NotOffered, $this->begin($this->implant(BodyRegion::Arms, tier: 2)), 'not tier 2');
+        foreach ([$this->implant(BodyRegion::Head), $this->implant(BodyRegion::Spine), $this->implant(BodyRegion::Arms, tier: 2)] as $row) {
+            $this->assertIsArray(app(Surgeon::class)->quote($this->character->fresh(), $this->clinic, $row->load('item'), SurgeryOperation::Install));
+        }
 
         $other = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3]));
         $theirs = InventoryItem::create(['character_id' => $other->id, 'item_id' => $this->implant()->item_id, 'quantity' => 1]);
@@ -206,6 +206,70 @@ final class CitySurgeryTest extends TestCase
         $as->get(route('city.index'))->assertOk()->assertSeeText('operating table');
     }
 
+    private function forSale(BodyRegion $region = BodyRegion::Arms, int $price = 100): Item
+    {
+        $item = Item::factory()->physical()->create(['implant_region' => $region->value, 'stackable' => false, 'tier' => 1]);
+        ShopItem::create(['location_id' => $this->clinic->id, 'item_id' => $item->id, 'price' => $price, 'max_stock' => null, 'stock' => 0, 'restock_amount' => 0, 'restock_hours' => null, 'restocked_at' => now()]);
+
+        return $item;
+    }
+
+    private function buyAndFit(Item $item): CityActivity|CityRefusal
+    {
+        return app(Surgeon::class)->buyAndFit($this->character->fresh(), $this->clinic, $item->id);
+    }
+
+    public function test_buy_and_fit_charges_the_price_and_the_fee_and_puts_you_on_the_table(): void
+    {
+        $item = $this->forSale();
+
+        $this->actingAs($this->character->user)->get(route('city.place', $this->clinic->slug))->assertOk()->assertSeeText('Buy and fit');
+        $this->assertInstanceOf(CityActivity::class, $this->buyAndFit($item));
+        $this->assertSame(1000 - 100 - 150, $this->character->fresh()->creds);
+        $this->assertSame(1, InventoryItem::query()->where('character_id', $this->character->id)->where('item_id', $item->id)->count());
+    }
+
+    public function test_buy_and_fit_with_no_room_for_it_refuses_and_charges_nothing(): void
+    {
+        foreach (range(1, 4) as $_) {
+            $this->implant(BodyRegion::Body)->forceFill(['installed_at' => now()])->save();
+        }
+        $item = $this->forSale(BodyRegion::Body);
+
+        $this->assertSame(CityRefusal::NoRoom, $this->buyAndFit($item));
+        $this->assertSame(1000, $this->character->fresh()->creds);
+        $this->assertSame(0, InventoryItem::query()->where('item_id', $item->id)->count());
+        $this->assertSame(0, WalletEntry::query()->count());
+    }
+
+    public function test_buy_and_fit_rolls_back_the_purchase_when_the_fee_cannot_be_paid(): void
+    {
+        $item = $this->forSale(price: 100);
+        $this->character->forceFill(['creds' => 200])->save();
+
+        $this->assertSame(CityRefusal::CannotAfford, $this->buyAndFit($item));
+        $this->assertSame(200, $this->character->fresh()->creds);
+        $this->assertSame(0, InventoryItem::query()->where('item_id', $item->id)->count());
+    }
+
+    public function test_an_implant_the_clinic_does_not_sell_cannot_be_bought_and_fitted(): void
+    {
+        $item = Item::factory()->physical()->create(['implant_region' => 'arms', 'stackable' => false, 'tier' => 1]);
+
+        $this->assertSame(CityRefusal::NotSold, $this->buyAndFit($item));
+    }
+
+    public function test_a_bought_implant_that_fails_to_take_stays_in_the_stash(): void
+    {
+        $this->die(0.999);
+        $item = $this->forSale();
+        $this->buyAndFit($item);
+
+        $this->assertSame('surgery_failed', $this->settle()[0][0]);
+        $row = InventoryItem::query()->where('item_id', $item->id)->firstOrFail();
+        $this->assertNull($row->installed_at);
+    }
+
     public function test_the_editor_gives_a_clinic_surgery_and_removing_it_takes_it_away(): void
     {
         $admin = User::factory()->create();
@@ -214,15 +278,13 @@ final class CitySurgeryTest extends TestCase
         $place = Location::create($base + ['slug' => 'better-clinic']);
 
         $this->actingAs($admin)->put(route('admin.locations.update', $place), $base + ['surgery' => [
-            'offered' => '1', 'rating' => '45', 'max_tier' => '2', 'install_price' => '300', 'removal_price' => '100', 'regions' => ['head', 'spine'],
+            'offered' => '1', 'rating' => '45', 'install_price' => '300', 'removal_price' => '100',
         ]])->assertSessionHasNoErrors();
 
         $surgery = $place->fresh()->surgery;
-        $this->assertSame([45, 2, 300], [$surgery->rating, $surgery->max_tier, $surgery->install_price]);
-        $this->assertEqualsCanonicalizing([BodyRegion::Head, BodyRegion::Spine], $surgery->regions());
+        $this->assertSame([45, 300], [$surgery->rating, $surgery->install_price]);
 
         $this->actingAs($admin)->put(route('admin.locations.update', $place), $base)->assertSessionHasNoErrors();
         $this->assertNull($place->fresh()->surgery);
-        $this->assertSame(0, DB::table('clinic_surgery_regions')->where('location_id', $place->id)->count());
     }
 }

@@ -32,6 +32,19 @@
                                     <input class="input num" type="number" name="quantity" min="1" max="99" value="1" style="width:5.5rem" aria-label="{{ Text::get('city.shop.quantity') }}">
                                     <button type="submit" class="btn btn--sm cut">{{ Text::get('city.shop.buy') }}</button>
                                 </form>
+                                @if (isset($fits[$ware->item_id]))
+                                    @php($fit = $fits[$ware->item_id])
+                                    @if (is_array($fit))
+                                        <form method="POST" action="{{ route('city.buy_and_fit', [$place->slug, $ware->item_id]) }}">
+                                            @csrf
+                                            <button type="submit" class="btn btn--sm cut" @disabled($character->creds < $ware->unitPrice() + $fit['fee'])>
+                                                {{ Text::get('city.surgery.buy_and_fit', ['total' => number_format($ware->unitPrice() + $fit['fee']), 'percent' => round($fit['chance'] * 100)]) }}
+                                            </button>
+                                        </form>
+                                    @elseif ($fit === \App\City\CityRefusal::NoRoom)
+                                        <span class="micro" style="color:var(--ink-3)">{{ Text::get('city.surgery.no_room') }}</span>
+                                    @endif
+                                @endif
                             @endif
                         </div>
                     @endforeach

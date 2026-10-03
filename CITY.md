@@ -212,10 +212,14 @@ Decided 2026-10-03 and built the same day; every figure is unbalanced.
 - **Only at a clinic that offers it.** The Implants screen is read-only and points at the
   City. `ImplantFitter` is still the only writer of `installed_at`; `Surgeon` is the only
   door a player reaches it through.
-- **A clinic with surgery has a `clinic_surgeries` row**: a surgeon `rating`, a `max_tier`
-  (1 or 2), a price per tier to fit and to remove, and the body regions it will work on
-  (`clinic_surgery_regions`). Defined per clinic in the editor. The Back-Alley Clinic
-  fits tier 1 into the body, arms and legs and will not touch a head or a spine.
+- **A clinic with surgery has a `clinic_surgeries` row**: a surgeon `rating`, and a price
+  per tier to fit and to remove. **A clinic fits any implant** — how risky it is to go there
+  is its rating, nothing else. **What a clinic SELLS is its shop listings**, like any
+  shop; the two are independent, except for **buy and fit**: an implant on a clinic's shelf
+  has a second button that buys it and goes straight onto the table, price plus fitting fee
+  in one transaction (`Surgeon::buyAndFit()`). **Any refusal at any step — no room left in
+  that region of the body included — rolls the purchase back**, and the button is not offered
+  when there is no room. Defined per clinic in the editor.
 - **A surgery is a timed City activity** (`city_activities.kind = surgery`), seconds
   per tier through `surgery_duration` (300 to fit, 120 to remove), charged up front. **It
   cannot be cancelled**, and a body on the table cannot jack in (`TravelRefusal::UnderTheKnife`).
@@ -223,7 +227,8 @@ Decided 2026-10-03 and built the same day; every figure is unbalanced.
   implant's tier, through `CheckRoller` with its own chance quoted beforehand. **A failure
   costs `injury_per_tier` points a tier** — neural damage for the head and spine, physical
   trauma elsewhere — **and the implant is rejected: it stays in the stash.** Destroying a
-  rejected implant is the harsher variant left out. **Removing is a fee and time and no
+  rejected implant is the harsher variant left out, and stays out: a bought implant that fails to
+  take is in the stash too. **Removing is a fee and time and no
   roll.**
 
 ## Encounters

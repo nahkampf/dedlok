@@ -11,6 +11,7 @@ use App\Models\Character;
 use App\Models\CityActivity;
 use App\Models\ClinicSurgery;
 use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\Location;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
@@ -44,6 +45,7 @@ final class Surgeon
         private readonly CheckRoller $roller,
         private readonly Resolver $resolver,
         private readonly ImplantFitter $fitter,
+        private readonly ShopKeeper $shop,
     ) {}
 
     /**
@@ -67,10 +69,6 @@ final class Surgeon
 
         $tier = max(1, (int) $item->tier);
 
-        if ($tier > $surgery->max_tier || ! in_array($region, $surgery->regions(), true)) {
-            return CityRefusal::NotOffered;
-        }
-
         if ($op === SurgeryOperation::Install) {
             if ($row->installed_at !== null || ! InventoryItem::query()->whereKey($row->getKey())->loose()->exists()) {
                 return CityRefusal::CannotOperate;
@@ -83,6 +81,40 @@ final class Surgeon
             return CityRefusal::CannotOperate;
         }
 
+        return $this->figures($character, $surgery, $item, $op);
+    }
+
+    /**
+     * What buying this implant here and having it fitted would cost and risk: the
+     * fitting's figures, or why it cannot be done. Asks the same questions `quote()`
+     * asks of an implant already carried, minus the ones about a row that does not exist yet.
+     *
+     * @return array{fee: int, seconds: int, chance: float|null, tier: int}|CityRefusal
+     */
+    public function quoteFit(Character $character, Location $place, Item $item): array|CityRefusal
+    {
+        $surgery = ClinicSurgery::query()->find($place->getKey());
+        $region = $item->implantRegion();
+
+        if ($surgery === null) {
+            return CityRefusal::NotOffered;
+        }
+
+        if ($region === null) {
+            return CityRefusal::CannotOperate;
+        }
+
+        if ($this->fitter->installedIn($character, $region)->count() >= $region->capacity()) {
+            return CityRefusal::NoRoom;
+        }
+
+        return $this->figures($character, $surgery, $item, SurgeryOperation::Install);
+    }
+
+    /** @return array{fee: int, seconds: int, chance: float|null, tier: int} */
+    private function figures(Character $character, ClinicSurgery $surgery, Item $item, SurgeryOperation $op): array
+    {
+        $tier = max(1, (int) $item->tier);
         $seconds = $this->resolver
             ->resolve('surgery_duration', (float) Config::get("city.surgery.seconds.{$op->value}", 300) * $tier, $character->modifiers())
             ->toInt();
@@ -95,6 +127,42 @@ final class Surgeon
                 : null,
             'tier' => $tier,
         ];
+    }
+
+    /**
+     * Buy one of this clinic's implants and go straight onto the table with it.
+     *
+     * One transaction: the shelf's price and the surgeon's fee are charged together
+     * or not at all, and a refusal at ANY step — no room in that part of the body
+     * included — rolls the purchase back. A fitting that fails leaves the implant in
+     * the stash, as any failed fitting does.
+     */
+    public function buyAndFit(Character $character, Location $place, int $itemId): CityActivity|CityRefusal
+    {
+        try {
+            return DB::transaction(function () use ($character, $place, $itemId): CityActivity|CityRefusal {
+                $item = Item::query()->find($itemId);
+                $quote = $item === null ? CityRefusal::NotSold : $this->quoteFit($character->fresh(), $place, $item);
+
+                if ($quote instanceof CityRefusal) {
+                    return $quote;
+                }
+
+                $bought = $this->shop->buy($character, $place, $itemId, 1);
+
+                if ($bought instanceof CityRefusal) {
+                    return $bought;
+                }
+
+                $row = InventoryItem::query()->with('item')->where('character_id', $character->getKey())
+                    ->where('item_id', $itemId)->loose()->latest('id')->firstOrFail();
+                $result = $this->begin($character, $place, $row, SurgeryOperation::Install);
+
+                return $result instanceof CityRefusal ? throw new RefusedUnderTheKnife($result) : $result;
+            });
+        } catch (RefusedUnderTheKnife $e) {
+            return $e->refusal;
+        }
     }
 
     public function begin(Character $character, Location $place, InventoryItem $row, SurgeryOperation $op): CityActivity|CityRefusal

@@ -141,7 +141,7 @@
             </div>
         </div>
 
-        @php($sg = old('surgery', $surgery ? ['offered' => 1, 'rating' => $surgery->rating, 'max_tier' => $surgery->max_tier, 'install_price' => $surgery->install_price, 'removal_price' => $surgery->removal_price, 'regions' => array_map(fn ($r) => $r->value, $surgeryRegions)] : ['regions' => array_map(fn ($r) => $r->value, $regions)]))
+        @php($sg = old('surgery', $surgery ? ['offered' => 1, 'rating' => $surgery->rating, 'install_price' => $surgery->install_price, 'removal_price' => $surgery->removal_price] : []))
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.locations.surgery') }}</span></div>
             <div class="panel__bd stack" style="--gap:var(--s-3)">
@@ -153,26 +153,16 @@
                 </label>
                 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr))">
                     <label class="field" style="margin:0"><span class="field__label">{{ Text::get('admin.locations.rating') }}</span>
-                        <input class="input num" type="number" min="0" max="200" name="surgery[rating]" value="{{ $sg['rating'] ?? '' }}"></label>
-                    <label class="field" style="margin:0"><span class="field__label">{{ Text::get('admin.locations.max_tier') }}</span>
-                        <select class="select" name="surgery[max_tier]">
-                            @foreach ([1, 2] as $tier)
-                                <option value="{{ $tier }}" @selected((int) ($sg['max_tier'] ?? 1) === $tier)>{{ $tier }}</option>
-                            @endforeach
-                        </select></label>
+                        <input class="input num" type="number" min="0" max="200" name="surgery[rating]" value="{{ $sg['rating'] ?? '' }}">
+                        @php($roller = app(\App\Checks\CheckRoller::class))
+                        @foreach (config('city.surgery.difficulty') as $tier => $difficulty)
+                            <span class="field__hint">{{ Text::get('admin.locations.rating_hint', ['tier' => $tier, 'difficulty' => $difficulty, 'chances' => collect([-8, 0, 8, 16])->map(fn ($d) => ($difficulty + $d).' → '.round($roller->chance($difficulty + $d, $difficulty, 'surgery') * 100).'%')->implode(', ')]) }}</span>
+                        @endforeach
+                    </label>
                     <label class="field" style="margin:0"><span class="field__label">{{ Text::get('admin.locations.install_price') }}</span>
                         <input class="input num" type="number" min="0" name="surgery[install_price]" value="{{ $sg['install_price'] ?? '' }}"></label>
                     <label class="field" style="margin:0"><span class="field__label">{{ Text::get('admin.locations.removal_price') }}</span>
                         <input class="input num" type="number" min="0" name="surgery[removal_price]" value="{{ $sg['removal_price'] ?? '' }}"></label>
-                </div>
-                <div class="row row--wrap" style="--gap:var(--s-4)">
-                    @foreach ($regions as $region)
-                        <label class="check">
-                            <input type="checkbox" name="surgery[regions][]" value="{{ $region->value }}" @checked(in_array($region->value, (array) ($sg['regions'] ?? []), true))>
-                            <span class="check__box"></span>
-                            <span>{{ $region->label() }}</span>
-                        </label>
-                    @endforeach
                 </div>
             </div>
         </div>

@@ -11,7 +11,6 @@ use App\City\DiscoveryRule;
 use App\City\FeatureEditor;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LocationRequest;
-use App\Implants\BodyRegion;
 use App\Models\District;
 use App\Models\Location;
 use App\Support\Text;
@@ -81,9 +80,7 @@ class LocationController extends Controller
             'rules' => DiscoveryRule::cases(),
             'concealments' => Concealment::cases(),
             'items' => ItemOptions::grouped(),
-            'regions' => BodyRegion::cases(),
             'surgery' => $location?->surgery,
-            'surgeryRegions' => $location?->surgery?->regions() ?? [],
             'services' => ClinicService::cases(),
             'shop' => $location?->shopItems()->orderBy('id')->get()->map(fn ($r): array => [
                 'item_id' => $r->item_id, 'price' => $r->price, 'max_stock' => $r->max_stock,

@@ -36,7 +36,7 @@ enum CityRefusal: string
     /** The equipped deck has no room for it. */
     case NoStorage = 'no_storage';
 
-    /** The clinic does not do that: not its regions, not its tiers, or no surgery at all. */
+    /** The clinic does not do that: it has no surgery. */
     case NotOffered = 'not_offered';
 
     /** Not an implant, or not in the state the operation needs. */
