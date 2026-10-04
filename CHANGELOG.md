@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.34.1] — 2026-10-04
+
+Development fix: the composer sidecar builds with the web image's extensions.
+
+### Fixed
+
+- **`docker compose up` failed in `cyberpunk-composer`.** The sidecar used the
+  stock `composer:latest` image, which has no `ext-intl`, so `composer install`
+  refused `composer.json`'s platform requirement. The sidecar now builds from the
+  same `Dockerfile` as `web`.
+
+No schema changes. Patch release: a deploy is a `git pull` and nothing more.
+
+
 ## [0.34.0] — 2026-10-03
 
 The City: a body that stands in a district, places to go, and clinics that fit implants.
@@ -2218,7 +2232,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.34.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.34.1...HEAD
+[0.34.1]: https://github.com/nahkampf/dedlok/compare/v0.34.0...v0.34.1
 [0.34.0]: https://github.com/nahkampf/dedlok/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/nahkampf/dedlok/compare/v0.32.1...v0.33.0
 [0.32.1]: https://github.com/nahkampf/dedlok/compare/v0.32.0...v0.32.1
