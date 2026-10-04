@@ -40,8 +40,13 @@ services:
     networks:
       - cyberpunk-network
 
+  # Built from the same Dockerfile as web, not the stock composer image: the
+  # platform check reads ext-intl (and the rest of the extensions) from THIS
+  # container, and composer.json requires intl.
   cyberpunk-composer:
-    image: composer:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: cyberpunk-composer
     volumes:
       - ./:/var/www/cyberpunk

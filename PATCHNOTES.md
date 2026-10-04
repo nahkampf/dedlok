@@ -1,3 +1,7 @@
+## 0.34.1 (2026-10-05)
+
+- Internal dev only: the composer sidecar for local dev was missing intl*
+
 ## 0.34.0 (2026-10-03)
 
 - Basics of The City now exist. There are districts and locations, you can travel between them.
