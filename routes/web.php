@@ -6,9 +6,11 @@ use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\Admin\ArchetypeController as AdminArchetypeController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DistrictController as AdminDistrictController;
+use App\Http\Controllers\Admin\EncounterController as AdminEncounterController;
 use App\Http\Controllers\Admin\EntityOfferController as AdminEntityOfferController;
 use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\LocationController as AdminLocationController;
+use App\Http\Controllers\Admin\NpcController as AdminNpcController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterController;
@@ -16,7 +18,9 @@ use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
+use App\Http\Controllers\EncounterController;
 use App\Http\Controllers\ExchangeController;
+use App\Http\Controllers\FightController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HunterController;
 use App\Http\Controllers\ImplantController;
@@ -103,6 +107,20 @@ Route::middleware('auth')->group(function () {
     // with a confirmation in front of it.
     Route::post('/inventory/{entry}/inject', [InventoryController::class, 'inject'])
         ->name('inventory.inject');
+
+    // Putting armour on, or taking it off: one route for both, the way run and place are. A piece
+    // that is worn is asked to come off; one that is not is asked to go on.
+    Route::post('/inventory/{entry}/wear', [InventoryController::class, 'wear'])
+        ->name('inventory.wear');
+
+    // Picking a weapon up or putting it down: one route for both, like wear. Which hand it fills is
+    // its class's business, so the player picks the weapon and not the hand.
+    Route::post('/inventory/{entry}/wield', [InventoryController::class, 'wield'])
+        ->name('inventory.wield');
+
+    // Rounds in and out of a weapon's magazine. A weapon takes one calibre, so the player picks the round.
+    Route::post('/inventory/{entry}/load', [InventoryController::class, 'load'])->name('inventory.load');
+    Route::post('/inventory/{entry}/unload', [InventoryController::class, 'unload'])->name('inventory.unload');
 
     // Taking one. The same shape as injecting an imprint — one copy spent, one
     // consequence — except that the consequence is in your blood for a while
@@ -239,6 +257,19 @@ Route::middleware('auth')->group(function () {
      * setup route: a hunter does not wait for a briefing, and there is
      * nothing to choose beyond pressing Fight.
      */
+    /*
+     * A narrative encounter. Three routes, and the only ones a player in one may
+     * reach — see App\Http\Middleware\EnsureEncounterIsResolved.
+     */
+    Route::get('/encounter', [EncounterController::class, 'show'])->name('encounter.show');
+    Route::post('/encounter/choose', [EncounterController::class, 'choose'])->name('encounter.choose');
+    Route::post('/encounter/leave', [EncounterController::class, 'leave'])->name('encounter.leave');
+
+    // A fight. The only two routes a player in one may reach — see
+    // App\Http\Middleware\EnsureFightIsResolved.
+    Route::get('/fight', [FightController::class, 'show'])->name('fight.show');
+    Route::post('/fight/act', [FightController::class, 'act'])->name('fight.act');
+
     Route::get('/hunt', [HunterController::class, 'show'])->name('hunt.show');
     Route::post('/hunt/act', [HunterController::class, 'act'])->name('hunt.act');
 
@@ -306,6 +337,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/city/place/{slug}/buy/{item}', [PlaceController::class, 'buy'])->name('city.buy');
     Route::post('/city/place/{slug}/buy-and-fit/{item}', [PlaceController::class, 'buyAndFit'])->name('city.buy_and_fit');
     Route::post('/city/place/{slug}/operate/{row}/{operation}', [PlaceController::class, 'operate'])->name('city.operate');
+    Route::post('/city/place/{slug}/encounter/{encounter}', [PlaceController::class, 'encounter'])->name('city.place.encounter');
     Route::post('/city/place/{slug}/sell/{row}', [PlaceController::class, 'sell'])->name('city.sell');
     Route::post('/city/place/{slug}/treat/{service}', [PlaceController::class, 'treat'])->name('city.treat');
     Route::post('/city-explore', [CityController::class, 'explore'])->name('city.explore');
@@ -376,6 +408,8 @@ Route::middleware(['auth', 'can:admin'])
         Route::resource('skills', AdminSkillController::class)->except(['show']);
         Route::resource('districts', AdminDistrictController::class)->except(['show']);
         Route::resource('locations', AdminLocationController::class)->except(['show']);
+        Route::resource('encounters', AdminEncounterController::class)->except(['show']);
+        Route::resource('npcs', AdminNpcController::class)->except(['show']);
 
         /*
          * Archetypes are edited, never created or destroyed. Their ids are

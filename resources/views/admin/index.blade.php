@@ -35,6 +35,17 @@
 
         <div class="card">
             <div class="card__hd">
+                <div class="card__title">{{ Text::get('admin.npcs.title') }}</div>
+                <div class="card__meta">{{ $npcs }}</div>
+            </div>
+            <div class="card__bd">{{ Text::get('admin.npcs.lede') }}</div>
+            <div class="card__ft">
+                <a class="btn btn--sm" href="{{ route('admin.npcs.index') }}">{{ Text::get('admin.npcs.title') }}</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__hd">
                 <div class="card__title">{{ Text::get('admin.districts.title') }}</div>
                 <div class="card__meta">{{ $districts }}</div>
             </div>
@@ -42,6 +53,7 @@
             <div class="card__ft">
                 <a class="btn btn--sm" href="{{ route('admin.districts.index') }}">{{ Text::get('admin.districts.title') }}</a>
                 <a class="btn btn--sm" href="{{ route('admin.locations.index') }}">{{ Text::get('admin.locations.title') }}</a>
+                <a class="btn btn--sm" href="{{ route('admin.encounters.index') }}">{{ Text::get('admin.encounters.title') }}</a>
             </div>
         </div>
 

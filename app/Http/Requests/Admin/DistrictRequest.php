@@ -48,7 +48,15 @@ class DistrictRequest extends FormRequest
     /** @return array<string, mixed> */
     public function columns(): array
     {
-        return $this->safe()->only(['slug', 'name', 'description', 'color', 'map_x', 'map_y', 'travel_weight']);
+        $data = $this->safe()->only(['slug', 'name', 'description', 'color', 'map_x', 'map_y', 'travel_weight']);
+
+        // A slug is permanent. `prohibited` lets an empty value through, so on update it is dropped here
+        // rather than trusted: writing the NULL it arrives as would be a 500.
+        if ($this->route('district') !== null) {
+            unset($data['slug']);
+        }
+
+        return $data;
     }
 
     /** @return list<int> */

@@ -34,7 +34,10 @@ use Illuminate\Support\Facades\DB;
  */
 final class Traveller
 {
-    public function __construct(private readonly Resolver $resolver) {}
+    public function __construct(
+        private readonly Resolver $resolver,
+        private readonly Encounters $encounters,
+    ) {}
 
     /**
      * What a trip to this district would be, or why it cannot start.
@@ -48,6 +51,10 @@ final class Traveller
     {
         if ($character->isJackedIn()) {
             return CityRefusal::JackedIn;
+        }
+
+        if ($character->current_fight_id !== null) {
+            return CityRefusal::Fighting;
         }
 
         if (CityActivity::query()->whereKey($character->getKey())->exists()) {
@@ -177,9 +184,24 @@ final class Traveller
 
                 $locked->forceFill(['district_id' => $next])->save();
 
+                $name = District::query()->find($next)?->name ?? '';
+                // A pass that reaches a district may open an encounter in it. The
+                // locked character is the one it opens on.
+                $opened = $this->encounters->maybeOpen($locked, EncounterStart::Travel) !== null;
+
                 if ($next === $route[$count - 1]) {
                     $activity->delete();
-                    $messages[] = ['travel_arrived', ['district' => District::query()->find($next)?->name ?? '']];
+                    $messages[] = ['travel_arrived', ['district' => $name]];
+                    $opened && $messages[] = ['encounter_waiting', ['district' => $name]];
+
+                    break;
+                }
+
+                // An encounter stops the trip where it is, refunding what a pod did
+                // not carry them through. `step + 1`: the character is already in $next.
+                if ($opened) {
+                    $messages[] = $this->stop($activity, $locked, $route, $step + 1, $count);
+                    $messages[] = ['encounter_waiting', ['district' => $name]];
 
                     break;
                 }

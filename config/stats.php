@@ -474,6 +474,39 @@ return [
             'rounding' => 'floor',
         ],
 
+        // The odds a matured pass opens an encounter, 0-1. The base is
+        // config/city.php and is handed in at the call site, as explore_duration's is.
+        'encounter_chance' => [
+            'tags' => ['city', 'encounter'],
+            'min' => 0,
+            'max' => 1,
+            'rounding' => 'none',
+        ],
+
+        /*
+        | What an attack rolls against, until dodge exists (COMBAT.md, *Defence*). A declared stat with a
+        | base in `bases`, so an implant or a drug can already move it, and dodge arrives as a pool that
+        | takes its place without the engine changing. `Character::stat('defence')`.
+        */
+        'defence' => [
+            'tags' => ['combat'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'tenth',
+        ],
+
+        /*
+        | How hard somebody is to get away from, the other half of a flight roll (`defence` against it).
+        | A placeholder like `defence`, for the same reason: a declared stat with a base, so modifiers can
+        | already reach it, until something better replaces the base.
+        */
+        'pursuit' => [
+            'tags' => ['combat'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'tenth',
+        ],
+
         'surgery_duration' => [
             'tags' => ['city', 'surgery'],
             'min' => 1,
@@ -697,6 +730,11 @@ return [
     */
     'bases' => [
 
+        // Placeholder until dodge. Against `aim` of about 13 at attributes of 20 and the logistic's
+        // spread of 8, a starting character is hit about two times in three by an even match.
+        'defence' => 8,
+        'pursuit' => 8,
+
         // Nobody routes a run through anything until a skill says otherwise.
         // Routing and Advanced Routing grant one hop per level each.
         'routing_hops' => 0,
@@ -791,6 +829,20 @@ return [
         'exploration' => [
             'attributes' => ['focus', 'perception', 'senses'],
             'divisor' => 4.0,
+        ],
+
+        /*
+        | Aim = (Motor + Senses) / 3, ONE pool shared by every weapon class (`aim.pistol`, `aim.blade`,
+        | and so on; see App\Stats\CombatStats).
+        |
+        | Steady hands and the eye to use them. Three for two attributes puts a starting character near
+        | 13 — the scale `bases.defence` and an NPC's own `aim` are measured against, and the same
+        | neighbourhood egress and exploration sit in. Skills are parked, so the class changes nothing
+        | here yet; it is a separate stat so a skill can be one modifier on it later.
+        */
+        'aim' => [
+            'attributes' => ['motor', 'senses'],
+            'divisor' => 3.0,
         ],
     ],
 

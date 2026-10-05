@@ -26,6 +26,7 @@ use App\Stats\Resolver;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Testing\TestResponse;
 use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
@@ -553,6 +554,191 @@ final class FightTest extends TestCase
         $turns = (int) $run->fresh()->turnsUntilTraced();
 
         return Text::plural('cyberspace.run.trace_turns', $turns, ['count' => $turns]);
+    }
+
+    // ---- the screen ----------------------------------------------------------
+
+    private function runScreen(): TestResponse
+    {
+        return $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk();
+    }
+
+    public function test_the_run_overview_is_a_table_with_the_turn_large_and_green(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $this->begin();
+
+        $this->runScreen()
+            ->assertSeeText('Run overview')
+            ->assertDontSeeText('In the system')
+            ->assertSeeText('Coordinates')
+            ->assertSeeText('Address')
+            ->assertSeeText('Node type')
+            ->assertSeeText('System name')
+            ->assertSeeText('Run type')
+            ->assertSee('DEADBEEF')
+            ->assertSee('font-size:var(--fs-xl);line-height:1;color:var(--ok)', false)
+            ->assertSeeText('Turn 0');
+    }
+
+    public function test_the_trace_counts_down_to_trace_complete(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $run->forceFill(['trace' => 40])->save();
+
+        $this->runScreen()
+            ->assertSeeText('until trace complete')
+            ->assertDontSeeText('catches up to you');
+    }
+
+    public function test_the_ice_is_a_table_with_a_bar_that_actually_draws_and_no_turn_marker(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+        $ice = Ice::query()->where('level', 1)->sole();
+
+        $html = $this->runScreen()
+            ->assertSeeText('ICE grade')
+            ->assertSeeText('Integrity')
+            ->assertSeeText($run->ice_integrity.' / '.$ice->integrity)
+            ->getContent();
+
+        $this->assertStringContainsString('<div class="meter__fill"></div>', $html, 'a <div>: an inline <span> has no height and draws nothing');
+        $this->assertStringNotContainsString('<span class="meter__fill">', $html);
+        // The ICE panel no longer carries a turn of its own: the only "Turn" in the page's panels is the overview's.
+        $this->assertSame(1, preg_match_all('/Turn \d+<\/span>/', preg_replace('/<p class="micro".*?<\/p>/s', '', $html)), 'one turn marker outside the log');
+    }
+
+    public function test_the_actions_panel_holds_evasion_the_buttons_and_the_guard_warning(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $this->begin();
+
+        $this->runScreen()
+            ->assertSeeText('Actions')
+            ->assertSeeText('Evasion chance for egress:')
+            ->assertSeeText('Continue run')
+            ->assertSeeText('The ICE has been activated and is guarding the core. You must break the ICE before continuing, or attempt an egress.')
+            ->assertDontSeeText('Leaving is always possible')
+            ->assertDontSeeText('Chance of getting out');
+    }
+
+    public function test_the_overview_shows_the_players_thresholds_and_the_old_wording_is_gone(): void
+    {
+        $this->machine(1);
+        $this->character->forceFill(['egress_trace_at' => 70, 'egress_si_at' => 0])->save();
+        $this->begin();
+
+        $this->runScreen()
+            ->assertSeeText('Run overview')
+            ->assertDontSeeText('System overview')
+            ->assertSeeText('Egress at trace')
+            ->assertSeeText('70%')
+            ->assertSeeText('Egress below SI')
+            ->assertSeeText('Off')
+            ->assertDontSeeText('How this is worked out');
+    }
+
+    public function test_the_actions_panel_wears_a_hazard_stripe_on_or_past_a_trace_threshold(): void
+    {
+        $this->machine(1);
+        $this->character->forceFill(['egress_trace_at' => 50, 'egress_si_at' => 0])->save();
+        $run = $this->begin();
+
+        $this->runScreen()->assertDontSee('hazard-stripe', false);
+
+        $run->forceFill(['trace' => 49])->save();
+        $this->runScreen()->assertDontSee('hazard-stripe', false);
+
+        // ON the mark counts, as it does for the turn that acts on it.
+        $run->forceFill(['trace' => 50])->save();
+        $this->runScreen()->assertSee('hazard-stripe hazard-stripe--thin', false);
+    }
+
+    public function test_the_stripe_follows_the_games_own_test_for_integrity_which_is_below_not_on(): void
+    {
+        $this->machine(1);
+        $this->character->forceFill(['egress_trace_at' => 0, 'egress_si_at' => 50])->save();
+        $this->begin();
+        $max = (int) $this->character->fresh()->maximumFor('current_synaptic_integrity');
+
+        // Exactly on the mark is not a breach: the next turn would not pull them out, so the screen does not say it would.
+        $this->character->forceFill(['current_synaptic_integrity' => (int) ($max / 2)])->save();
+        $onTheMark = ((int) ($max / 2) / $max) * 100 < 50;
+        $this->assertSame($onTheMark, str_contains($this->runScreen()->getContent(), 'hazard-stripe'));
+
+        $this->character->forceFill(['current_synaptic_integrity' => max(1, (int) ($max * 0.4))])->save();
+        $this->runScreen()->assertSee('hazard-stripe hazard-stripe--thin', false);
+    }
+
+    public function test_a_threshold_set_to_zero_is_off_and_never_stripes(): void
+    {
+        $this->machine(1);
+        $this->character->forceFill(['egress_trace_at' => 0, 'egress_si_at' => 0, 'current_synaptic_integrity' => 1])->save();
+        $run = $this->begin();
+        $run->forceFill(['trace' => 99])->save();
+
+        $this->runScreen()->assertDontSee('hazard-stripe', false);
+    }
+
+    public function test_the_evasion_working_floats_from_the_egress_button_and_not_the_bar(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $this->begin();
+
+        $html = $this->runScreen()
+            ->assertSeeText('Sum, divided by')
+            ->assertSeeText('Modifiers')
+            ->assertSeeText('Opposition')
+            ->assertDontSeeText('What moves it')
+            ->assertDontSeeText('What you are up against')
+            ->assertDontSeeText('No attempt is ever hopeless')
+            ->assertDontSeeText('How this is worked out')
+            ->getContent();
+
+        $this->assertDoesNotMatchRegularExpression('/\d\s+over\s+\d/', strip_tags($html), 'the old "62.5 over 4" label is gone');
+
+        // Exactly one thing points at the card: the Egress button, hover and focus only.
+        $this->assertSame(1, substr_count($html, 'data-inspect="#egress-working"'));
+        $this->assertMatchesRegularExpression('/<button[^>]*value="egress"[^>]*data-inspect="#egress-working" data-inspect-hover/s', $html);
+    }
+
+    public function test_extract_is_only_offered_on_an_extraction_run(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 1.0));
+        app(RunStarter::class)->start($this->character->fresh(), RunPurpose::Burn);
+
+        $this->runScreen()->assertDontSeeText('Extract')->assertSeeText('Burn');
+    }
+
+    public function test_the_run_log_tags_the_turn_and_the_ice_and_speaks_plainly(): void
+    {
+        $this->machine(1);
+        $this->ignoreThresholds();
+        $run = $this->begin();
+
+        // No icebreaker running: a cut finds nothing. Then a turn the ICE swings in (a pinned die lands it).
+        $this->simulator(1)->take($this->character->fresh(), $run, RunAction::Attack);
+
+        $this->runScreen()
+            ->assertSeeText('Run log')
+            ->assertDontSeeText('What happened')
+            ->assertSeeText('Your intrusion attempt was detected, and the ICE activates.')
+            ->assertSeeText('You find no viable attack vectors.')
+            ->assertSeeText('lands a code payload for')
+            ->assertSeeText(' SI.')
+            ->assertSee('<span class="tag">Turn 1</span>', false)
+            ->assertSee('<span class="tag tag--crit">ICE I</span>', false)
+            ->assertDontSeeText('It gets through')
+            ->assertDontSeeText('Something detects you');
     }
 
     // ---- the standing instructions -----------------------------------------

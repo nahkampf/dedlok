@@ -177,10 +177,11 @@ final class ShopKeeper
         });
     }
 
-    /** Not the deck being carried, and nothing that holds or carries other things. */
+    /** Not the deck being carried, not armour being worn, and nothing that holds or carries other things. */
     private function mayLeave(Character $character, InventoryItem $row): bool
     {
         return $character->equipped_deck_id !== $row->id
+            && ! $row->isOnPerson()
             && ! $row->children()->exists()
             && ! $row->fittings()->exists();
     }

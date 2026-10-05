@@ -80,6 +80,7 @@ class LocationController extends Controller
             'rules' => DiscoveryRule::cases(),
             'concealments' => Concealment::cases(),
             'items' => ItemOptions::grouped(),
+            'shopItems' => ItemOptions::grouped(rich: true),
             'surgery' => $location?->surgery,
             'services' => ClinicService::cases(),
             'shop' => $location?->shopItems()->orderBy('id')->get()->map(fn ($r): array => [

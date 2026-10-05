@@ -15,38 +15,35 @@
      to look confident — it is to say what is known and, louder, what is not.
      An unread machine, a deck cooking itself and no icebreaker loaded are the
      three things that turn a plan into a bad night. --}}
+{{-- A way back, and nothing more: the screen opens on the system itself. --}}
+<p style="margin:var(--s-4) 0 0">
+    <a class="btn btn--ghost btn--sm cut" href="{{ route('cyberspace.index') }}">
+        &larr; {{ Text::get('cyberspace.map.title') }}
+    </a>
+</p>
+
+{{-- THE SYSTEM, AS THE SCANNER WINDOW SHOWS IT.
+
+     The unknowns are the product here. A blank column would read as "nothing there", which for an
+     IDS is the opposite of the truth — so every fact is listed either way and an unread one says so
+     in its own words, in the same rows and the same boxes the scanner uses (<x-scan-facts>). A file
+     that is not complete wears a thin hazard stripe along its top: the one loud thing on the screen. --}}
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
+    @if (! $scan || ! $scan->isComplete())
+        <div class="hazard-stripe hazard-stripe--thin" role="img"
+             aria-label="{{ Text::get($scan && $scan->hasFindings() ? 'cyberspace.run.setup.partial' : 'cyberspace.run.setup.unknown') }}"></div>
+    @endif
+
     <div class="panel__hd">
-        <h2>{{ Text::get('cyberspace.run.setup.title') }}</h2>
+        <h2>{{ Text::get('cyberspace.run.setup.known') }}</h2>
         <div class="spacer"></div>
         <span class="tag">{{ $target->displayName() }}</span>
         <span class="micro"><x-address :address="$target->address" /></span>
 
-        {{-- Who answers for it, and what they already make of you. The
-             briefing is where a run is decided, so it is where the cost of
-             being seen doing it belongs. --}}
+        {{-- Who answers for it, and what they already make of you. The briefing is where a run is
+             decided, so it is where the cost of being seen doing it belongs. --}}
         <x-standing-tag :entity="$target->owner" :standing="$standing" />
-    </div>
 
-    <div class="row row--wrap" style="--gap:var(--s-3);align-items:center;padding:var(--s-3) 0">
-        <a class="btn btn--ghost btn--sm cut" href="{{ route('cyberspace.index') }}">
-            &larr; {{ Text::get('cyberspace.map.title') }}
-        </a>
-        @if ($backdoor)
-            <span class="tag tag--ok">{{ Text::get('cyberspace.run.setup.held') }}</span>
-        @endif
-    </div>
-</div>
-
-{{-- WHAT IS KNOWN, AND WHAT IS NOT.
-
-     The unknowns are the product here. A blank column would read as "nothing
-     there", which for an IDS is the opposite of the truth — so every fact is
-     listed either way and an unread one says so in its own words. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
-    <div class="panel__hd">
-        <h2>{{ Text::get('cyberspace.run.setup.known') }}</h2>
-        <div class="spacer"></div>
         @if (! $scan || ! $scan->hasFindings())
             <span class="tag tag--crit">{{ Text::get('cyberspace.run.setup.unknown') }}</span>
         @elseif ($scan->isComplete())
@@ -56,35 +53,27 @@
         @endif
     </div>
 
-    @if (! $scan || ! $scan->hasFindings())
-        <p class="micro" style="color:var(--ink-2);padding:var(--s-3) 0;margin:0">
-            {{ Text::get('cyberspace.run.setup.unread') }}
-        </p>
-    @else
-        <div class="card__stats" style="padding-bottom:var(--s-2)">
-            @foreach ($facts as $fact)
-                @php($value = $fact->readFrom($scan))
-                <div class="card__stat">
-                    <span>{{ $fact->label() }}</span>
-                    <b @if ($value === null) style="color:var(--ink-2)" @endif>
-                        {{ $value ?? Text::get('cyberspace.run.setup.unknown') }}
-                    </b>
-                </div>
-            @endforeach
-        </div>
-    @endif
+    <div style="padding:var(--s-3) 0">
+        @if ($backdoor)
+            <p style="margin:0 0 var(--s-3)"><span class="tag tag--ok">{{ Text::get('cyberspace.run.setup.held') }}</span></p>
+        @endif
+
+        @if (! $scan || ! $scan->hasFindings())
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-3)">
+                {{ Text::get('cyberspace.run.setup.unread') }}
+            </p>
+        @endif
+
+        <x-scan-facts :facts="$overview" />
+    </div>
 </div>
 
-{{-- THE DECK. Two things about it end runs: not meeting its own requirements,
-     which refuses the run outright, and cooking a module, which ends one from
-     the inside. Both are said here rather than discovered in there. --}}
+{{-- THE DECK. Two things about it end runs: not meeting its own requirements, which refuses the run
+     outright, and cooking a module, which ends one from the inside. Both are said here rather than
+     discovered in there — and the bars are the deck screen's own (<x-deck-vitals>). --}}
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
     <div class="panel__hd">
         <h2>{{ Text::get('cyberspace.run.setup.deck') }}</h2>
-        <div class="spacer"></div>
-        @if ($totals)
-            <span class="micro num" title="{{ Text::get('decks.ready.thermal') }}">{{ $totals->netThermalLoad() }} TU</span>
-        @endif
     </div>
 
     <div style="padding:var(--s-3) 0">
@@ -105,16 +94,13 @@
                 <p class="micro" style="color:var(--warn);margin:0 0 var(--s-2)">
                     {{ Text::get('cyberspace.run.setup.thermal_risk', ['parts' => implode(', ', $thermal->atRisk())]) }}
                 </p>
-            @else
-                <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
-                    {{ Text::get('cyberspace.run.setup.thermal_safe') }}
-                </p>
             @endif
 
-            {{-- WHAT IS RUNNING, AND WHAT EACH THING IS. An icebreaker and a
-                 decryptor are both "a program" right up until one of them is
-                 the only thing between you and an ICE. --}}
-            <div class="micro" style="color:var(--ink-2);margin-bottom:var(--s-2)">
+            <x-deck-vitals :totals="$totals" :thermal="$thermal" :spent="$spent" />
+
+            {{-- WHAT IS RUNNING, AND WHAT EACH THING IS. An icebreaker and a decryptor are both "a
+                 program" right up until one of them is the only thing between you and an ICE. --}}
+            <div class="micro" style="color:var(--ink-2);margin:var(--s-3) 0 var(--s-2)">
                 {{ Text::get('cyberspace.run.setup.running') }}
             </div>
 
@@ -138,14 +124,16 @@
     </div>
 </div>
 
-{{-- THE ROUTE. Shown rather than chosen: every routing backdoor is free to
-     include and hinders by its machine's grade, so there is nothing to pick.
-     See App\Cyberspace\ChainBuilder. --}}
+{{-- THE ROUTE. Shown rather than chosen: every routing backdoor is free to include and hinders by its
+     system's grade, so there is nothing to pick. See App\Cyberspace\ChainBuilder.
+
+     Every node can be pointed at (tapped, on a phone) for what is known about it: a relay's card is the
+     scanner window's own rows if you have read it, and yours is you. The kit's inspector does both. --}}
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
     <div class="panel__hd">
         <h2>{{ Text::get('cyberspace.run.setup.chain') }}</h2>
         <div class="spacer"></div>
-        <span class="micro num">{{ $chain->count() }}/{{ $chainCap }}</span>
+        <span class="micro num" title="{{ Text::get('cyberspace.run.setup.chain_hops_hint') }}">{{ Text::get('cyberspace.run.setup.chain_hops', ['used' => $chain->count(), 'cap' => $chainCap]) }}</span>
     </div>
 
     <div style="padding:var(--s-3) 0">
@@ -158,9 +146,11 @@
         @else
             <div class="trace" style="--v:0">
                 @foreach ($chain as $hop)
-                    <span class="trace__node" title="{{ $hop->displayName() }}">&#x25C7;</span>
+                    <span class="trace__node" tabindex="0" role="button" aria-label="{{ $hop->displayName() }}"
+                          data-inspect="#hop-{{ $hop->id }}">&#x25C7;</span>
                 @endforeach
-                <span class="trace__node trace__node--you" title="{{ $character->handle }}">&#x25C9;</span>
+                <span class="trace__node trace__node--you" tabindex="0" role="button" aria-label="{{ $character->handle }}"
+                      data-inspect="#hop-you">&#x25C9;</span>
             </div>
 
             <div class="row row--wrap" style="--gap:var(--s-2);margin-top:var(--s-2)">
@@ -174,6 +164,52 @@
             <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
                 {{ Text::get('cyberspace.run.setup.chain_cost') }}
             </p>
+
+            {{-- The cards the nodes open. A <template> each, cloned by the inspector into the floating
+                 layer on hover and into a modal on tap, so each is written once. --}}
+            @foreach ($chain as $hop)
+                @php($hopScan = $hopScans[$hop->address] ?? null)
+                <template id="hop-{{ $hop->id }}">
+                    <div class="item-card">
+                        <div class="item-card__hd">
+                            <span class="item-card__name">{{ $hop->displayName() }}</span>
+                            <div class="row row--wrap" style="--gap:var(--s-2);margin-top:var(--s-2)">
+                                <span class="tag tag--ok">{{ Text::get('cyberspace.run.setup.hop_routing') }}</span>
+                                <span class="tag">{{ Text::get('cyberspace.run.setup.hop', ['grade' => $hop->grade]) }}</span>
+                                <span class="tag">{{ $hop->type->label() }}</span>
+                                @if ($hop->owner)
+                                    <span class="tag">{{ $hop->owner->name }}</span>
+                                @endif
+                            </div>
+                            <p class="micro" style="margin:var(--s-2) 0 0;color:var(--ink-2)">{{ $hop->address }}</p>
+                        </div>
+                        <div class="item-card__stats">
+                            @if ($hopScan === null)
+                                <p class="micro" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.setup.hop_unscanned') }}</p>
+                            @endif
+                            <x-scan-facts :facts="($hopScan ?? new \App\Models\SystemScan)->facts($character)" />
+                        </div>
+                    </div>
+                </template>
+            @endforeach
+
+            <template id="hop-you">
+                <div class="item-card">
+                    <div class="item-card__hd">
+                        <span class="item-card__name">{{ $character->handle }}</span>
+                        <div class="row row--wrap" style="--gap:var(--s-2);margin-top:var(--s-2)">
+                            <span class="tag">{{ Text::get('cyberspace.run.setup.you') }}</span>
+                        </div>
+                    </div>
+                    <div class="item-card__stats">
+                        <div class="item-card__stat"><span>{{ Text::get('cyberspace.run.setup.heat') }}</span><b>{{ rtrim(rtrim(number_format((float) $character->heat, 1), '0'), '.') }}</b></div>
+                        <div class="item-card__stat"><span>{{ Text::get('cyberspace.run.setup.routing_allowed') }}</span><b>{{ $chainCap }}</b></div>
+                        @if ($character->equippedDeck?->item)
+                            <div class="item-card__stat"><span>{{ Text::get('cyberspace.run.setup.deck') }}</span><b>{{ $character->equippedDeck->item->displayName() }}</b></div>
+                        @endif
+                    </div>
+                </div>
+            </template>
         @endif
     </div>
 </div>

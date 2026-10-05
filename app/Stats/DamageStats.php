@@ -60,7 +60,7 @@ final class DamageStats
         foreach (array_keys(Character::RESOURCES) as $resource) {
             foreach (DamageOrigin::cases() as $origin) {
                 $definitions[self::id($resource, $origin)] = [
-                    'tags' => [self::PREFIX, self::resourceTag($resource), $origin->tag()],
+                    'tags' => [self::PREFIX, self::resourceTag($resource), $origin->tag(), ...($origin->family() === null ? [] : [$origin->family()])],
                     'min' => 0,
                     'rounding' => 'round',
                 ];

@@ -6,7 +6,9 @@ namespace App\Admin;
 
 use App\Decks\Hardware;
 use App\Models\Item;
+use App\Support\Image;
 use App\Support\Text;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Every item, labelled as a player would see it and grouped by what it is.
@@ -30,16 +32,24 @@ use App\Support\Text;
  * `$markOffMarket` prefixes a glyph to anything not on the market — the shelf
  * wants to see which of its offers can only be had there. The loadout does
  * not ask, because a starting item's availability elsewhere is beside the point.
+ *
+ * `$rich` adds what a card needs: the item's picture (when it has one) and a
+ * line — what kind of thing it is, cost, what is on the market shelf, rarity — for
+ * `<x-card-select>`. Off by default: it costs a query and a file lookup per
+ * item, and a plain `<select>` has nowhere to put either.
  */
 final class ItemOptions
 {
-    /** @return array<string, list<array{id: int, label: string}>> */
-    public static function grouped(bool $markOffMarket = false): array
+    /** @return array<string, list<array{id: int, label: string, image?: ?string, text?: string}>> */
+    public static function grouped(bool $markOffMarket = false, bool $rich = false): array
     {
         $items = Item::query()
-            ->with('useSkill:id,title')
-            ->get(['id', 'slug', 'name', 'use_op', 'use_skill_id', 'container', 'hardware', 'on_market'])
+            // `kindName()` reads the program's kind, so a card picker loads it up front rather than once per item.
+            ->with($rich ? ['useSkill:id,title', 'program'] : ['useSkill:id,title'])
+            ->get(['id', 'slug', 'name', 'use_op', 'use_skill_id', 'container', 'hardware', 'on_market', 'base_cost', 'rarity'])
             ->sortBy(fn (Item $item): string => $item->displayName());
+
+        $shelf = $rich ? DB::table('market_stock')->pluck('quantity', 'item_id') : collect();
 
         $groups = [];
         $mark = Text::get('admin.entities.off_market').' ';
@@ -48,6 +58,15 @@ final class ItemOptions
             $groups[self::groupFor($item)][] = [
                 'id' => $item->id,
                 'label' => ($markOffMarket && ! $item->on_market ? $mark : '')."{$item->displayName()} ({$item->slug})",
+                ...($rich ? [
+                    'image' => Image::card($item->imageKind(), $item->id),
+                    'text' => Text::get('admin.item_option.numbers', [
+                        'kind' => $item->kindName(),
+                        'cost' => number_format((int) $item->base_cost),
+                        'shelf' => number_format((int) ($shelf[$item->id] ?? 0)),
+                        'rarity' => $item->rarityName(),
+                    ]),
+                ] : []),
             ];
         }
 

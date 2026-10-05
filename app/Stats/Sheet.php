@@ -248,7 +248,7 @@ final class Sheet
          * is 12 as a formula and 9.4 as a pool, and the second is what a
          * capability should read like. See config/stats.php.
          */
-        $pool = config("stats.pools.{$statId}");
+        $pool = config('stats.pools.'.CombatStats::poolKey($statId));
 
         if ($pool !== null) {
             $values = $this->inputValues((array) $pool['attributes']);

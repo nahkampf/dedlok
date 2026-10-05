@@ -233,16 +233,136 @@ Decided 2026-10-03 and built the same day; every figure is unbalanced.
 
 ## Encounters
 
-Two kinds, and they are different engines.
+Two kinds, and they are different engines. **Narrative is built (phase 4, 2026-10-03); combat
+is blocked** — it needs weapons and armour, which the game does not have, so it needs its own
+design pass. Reaching 0 HP uses the existing waiting screen.
 
-- **Narrative** — a graph of nodes and choices. A choice may carry a `CheckRoller` check on
-  a skill or an attribute. Outcomes are data: creds, an item, standing, an injury, heat,
-  a flag, a dose.
-- **Combat** — NPC rows against the physical engine. **Blocked:** the game has no weapons
-  or armour. It needs its own design pass first. Reaching 0 HP uses the existing waiting
-  screen.
+**Every number below is a default the author has not yet tuned** — one number or one line to
+change. Nothing is seeded: encounters are authored at `admin/encounters`.
 
-An open encounter locks the screen, `EnsureRunIsFinished`'s shape.
+### What an encounter is
+
+**Data, never PHP.** A graph of nodes, choices on each node, and outcomes on each choice. If a
+story needs new PHP, the outcome vocabulary has leaked; fix the vocabulary.
+
+- **`encounters`** — the definition. `slug` (`[a-z0-9_]`, permanent), `title`, `intro`,
+  `starts_on` (`travel`, `explore` or `place`), `weight`, optional `district_id` (NULL is
+  anywhere) and `location_id` (for `place`), `required_flag`, `once`, `retired`. Text is ON the
+  row. Both foreign keys cascade.
+- **`encounter_nodes`** — a `node_key` unique within the encounter, `body`, `entry` (exactly one)
+  and `ends` (shows its body and a Continue button; its choices are ignored).
+- **`encounter_choices`** — `label`, optional `requires_flag` (hidden, never greyed), `cost` in
+  creds, `next_key` (NULL closes) and an optional **check**: `check_stat` (any stat id, resolved
+  through the Sheet), `difficulty`, `pass_key`, `fail_key` (each falling back to `next_key`).
+- **`encounter_outcomes`** — one row per effect, on `always`, `pass` or `fail`. **An outcome belongs
+  to a button (`choice_id`) or to a SCREEN (`node_id`), exactly one**: a screen's outcomes apply the
+  moment somebody ARRIVES on it, every time (so a loop back to it hurts again), always — a screen has
+  no roll, so no pass or fail. That is how an ending can cost something: its text cannot, but its
+  outcomes can. They apply on the opening screen too, as `Encounters::open()` puts someone on it,
+  and the lines are told with the choice that led there (or as the log's first line, for the
+  opener). Held by `EncounterRequest`, not a CHECK — both columns cascade (MySQL error 3823).
+- **NODES ARE REACHED BY KEY, NEVER BY ID.** The editor replaces an encounter's nodes wholesale
+  on every save, which is safe only because nothing points at their ids: a live character
+  carries `node_key`, and a key that no longer exists closes the encounter gracefully.
+- **No CHECK touches a cascading foreign key** (MySQL refuses one, error 3823, and the SQLite
+  suite would never say so). "An outcome of kind `item` has an item" lives in
+  `EncounterRequest`, as `entity_offers` does it. The CHECKs that exist are on plain columns.
+
+### Outcomes: a fixed vocabulary
+
+`App\City\OutcomeKind`, like `Drugs\Family`: a new kind is a case, a label and a branch in
+`EncounterOutcomes`. **Every kind goes through the writer that already owns it.**
+
+| Kind | Writer |
+| --- | --- |
+| `creds` (±) | `Wallet::move()`, `Reason::Encounter` |
+| `item` | `ItemGranter`, after `Storage::fits()` for data |
+| `standing` (±) | `StandingLedger`, `StandingReason::Encounter` |
+| `heat` (±) | `characters.heat`, floored at nothing. `bounty_grade` is not touched: only a run sets it |
+| `flag` | `Flags::set()` |
+| `injury` (±) | `InjuryLedger::inflict()` / `heal()`; the key is one from `config/effects.php` |
+| `damage` | `DamageResolver`, `DamageOrigin::Encounter` — a resistance is `all_of: ['damage', 'encounter']` |
+| `dose` | `DrugTaker`, after `ItemGranter` makes the one copy it needs (below) |
+
+**`damage` can empty a resource**, so a choice that dealt any asks `WaitingRoom::checkFloor()`
+last. A deleted item or entity cascades its outcome away. **A fight is not an outcome**: an outcome cannot
+lead anywhere. It is a kind of CHOICE (`COMBAT.md`, *From an encounter*), with a win, a loss and a nobody-won
+screen, and a reward is the win screen's own arrival outcomes.
+
+**A dose is grant-then-take**, in the runner's own transaction. `DrugTaker::take()` takes an
+inventory row and spends a copy, and an encounter has none, so one is granted and taken at once;
+nothing is left behind, and a copy the player already owned is not spent. Everything a dose is then
+applies as if the player had chosen it: tolerance weakens it, addiction grows, and too many of one
+family overdoses (damage, an injury, and for lethal families a flatline), with `DrugTaker` asking
+the floor itself. The item must have a `drugs` row (`EncounterRequest` checks); the amount is
+ignored. An author who wants a bad pill is writing a story that can kill — that is the point.
+
+### Checks and the button
+
+- **`CheckRoller` is the only die**, kind `encounter` (the global floor). `chance()` is asked for
+  the button and `roll()` for the click, so the warning and the roll cannot disagree. An unknown
+  stat id is a value of nothing, not a crash.
+- **The button shows a band word** (`config/city.php` `encounter.bands`), with the figure in its
+  `title`. Unmeasured numbers on a screen read as promises.
+- **A choice's `cost` is charged before the roll** and not refunded by a failure. Unaffordable
+  disables the button and the runner refuses again.
+
+### How one starts
+
+**Three doors, one writer: `Encounters::open()`.**
+
+- **A travel pass** rolls as it matures, in the district it reaches. A hit **stops the trip there**
+  (`Traveller::stop()` — a pod's unreached districts are refunded) and opens the encounter. A hit
+  on arriving at the destination arrives first, then opens it. **There is no pause and resume** (decided 2026-10-03): afterwards the player travels again. A player can also end a trip themselves with *Stop travelling*, which finishes the pass in progress and leaves them in that district.
+- **An explore pass** settles its discovery FIRST — what the pass found is never lost — and then
+  may roll.
+- **A place** can offer one (`starts_on = place`): a button on its page, only while the body is
+  in that district. This is the door authored quests walk through.
+
+**The spawn roll is not a check**, so it is a flat percentile with an injected die, bound in the
+container (`Hunters`' shape). Its chance is the **resolved `encounter_chance` stat**, based on
+`city.encounter.travel_chance` (5%) or `explore_chance` (8%) and handed in at the call site, so a
+skill that quiets the street is a modifier.
+
+**Which encounter is a weighted draw out of `max(eligible weights, city.encounter.pool)`**
+(pool 100), and the rest of the pool is "nothing happens". That is what makes RARE mean rare: a
+lone encounter of weight 2 is a 2% pick, not a certainty because nothing else qualified. Eligible
+is right door, right district, flag held, not retired, an entry node, and — if `once` — not
+already seen. **Seen is a flag**, `encounter_<slug>`, set on entry.
+
+**You cannot jack in while travelling, exploring or on the table** (`Navigator::jackIn()` refuses
+any City activity), so a pass can never mature under somebody in cyberspace and an encounter can
+never open beside a run. `Encounters::canHappenTo()` still checks — jacked in, in a run or hunt,
+already in an encounter, on the floor — as a guard for an activity row that predates the rule.
+A settle that opens one adds an `encounter_waiting` message, which the sweep sends to the inbox.
+
+### State and the lock
+
+- **`character_encounters`** is the live instance (encounter, `node_key`, an append-only `log`
+  JSON the screen replays), and **`characters.current_encounter_id`** is what "in an encounter"
+  means. `Encounters::open()` sets it and `EncounterRunner` clears it. The row is deleted when
+  the encounter closes; the flag is the only lasting record. Deleting a definition cascades the
+  live row and nulls the pointer.
+- **`EnsureEncounterIsResolved`** is `EnsureHuntIsResolved`'s shape: named allow-list
+  (`encounter.show/choose/leave`), 409 JSON, admin not exempt, ordered after the waiting-room
+  check. City screens that settle on the way in redirect to the encounter if one just opened.
+- **Encounters wait for you.** One that opens while somebody was away holds the screen on their
+  return; nothing happens meanwhile.
+- **One transaction per choice**, on the locked character and the locked live row. The choice
+  must belong to the CURRENT node, so a double submit is refused rather than replayed. A choice
+  with nowhere to go closes at once; an ending node closes on Continue.
+
+### The editor
+
+`admin/encounters`; `EncounterRequest` validates the nested form and `EncounterEditor` is the
+only writer. Refused, because SQL cannot see a graph: no entry or more than one, a target that is
+not a node here, a non-ending node with no choices, an outcome of a kind missing what it needs,
+and **a node from which no ending can be reached** (`EncounterGraph`, pure). **Loops are allowed**
+("ask another question"); a trap is not. The form pads itself with blank rows and skips them.
+
+### Not built
+
+A fight outcome; per-district danger; any seeded content.
 
 ## Phases
 
@@ -253,8 +373,8 @@ An open encounter locks the screen, `EnsureRunIsFinished`'s shape.
 2. **Travel and explore.** *(built, with the editors)* `Router`, `city_activities`, the settle and its sweep, the three
    stats, the pod fare.
 3. **Shops and clinics.** *(built)*
-4. **Narrative encounters**, spawned by travel and explore and fixed at locations.
-5. **Physical combat**, after weapons and armour are designed.
+4. **Narrative encounters**, spawned by travel and explore and fixed at locations. *(built)*
+5. **Physical combat** — *built through `COMBAT.md`'s step 5 (a fight can start from an encounter); what a win pays and a loss costs is step 6.*
 6. **Hooks.** Authored quests that set flags, hunters on the street, PvP.
 
 ## Not decided

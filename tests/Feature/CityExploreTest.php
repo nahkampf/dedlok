@@ -78,8 +78,8 @@ final class CityExploreTest extends TestCase
         $this->assertEqualsCanonicalizing(['the-sub-basement', 'the-stairwell-market'], $this->found());
     }
 
-    /** A failed pass and a pass with nothing to roll against are the same sentence. */
-    public function test_nothing_found_reads_the_same_whether_or_not_anything_was_there(): void
+    /** A failed pass and a pass with nothing to roll against are the same: silence. */
+    public function test_nothing_found_is_silent_whether_or_not_anything_was_there(): void
     {
         $this->die(0.9999);
         $failed = $this->explore();
@@ -88,7 +88,7 @@ final class CityExploreTest extends TestCase
         $nothingThere = $this->explore();
 
         $this->assertSame($failed, $nothingThere);
-        $this->assertSame('explore_nothing', $failed[0][0]);
+        $this->assertSame([], $failed, 'finding nothing says nothing');
         $this->assertSame([], $this->found());
     }
 

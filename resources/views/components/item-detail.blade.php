@@ -56,6 +56,12 @@
                     @if ($entry->isEquipped())
                         <span class="tag">{{ Text::get('decks.equip.is_equipped') }}</span>
                     @endif
+                    @if ($entry->isWorn())
+                        <span class="tag">{{ Text::get('combat.armour.worn') }}</span>
+                    @endif
+                    @if ($entry->isWielded())
+                        <span class="tag">{{ Text::get('combat.weapons.wielded') }}</span>
+                    @endif
                 </span>
             </span>
             <div class="spacer"></div>
@@ -210,6 +216,62 @@
                         {{ Text::get('drugs.take') }}
                     </button>
                 </form>
+            @endif
+
+            {{-- Armour goes on and comes off here, in the one place you already have it open. Not
+                 confirmed: nothing is destroyed. A set takes every slot it covers, and whatever was
+                 in them comes off with it. --}}
+            @if ($item->armour)
+                <form method="POST" action="{{ route('inventory.wear', $entry) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm cut {{ $entry->isWorn() ? 'btn--ghost' : 'btn--primary' }}">
+                        {{ Text::get($entry->isWorn() ? 'combat.armour.take_off' : 'combat.armour.wear') }}
+                    </button>
+                </form>
+            @endif
+
+            {{-- A weapon is picked up here. Which hand it fills is its class's business, so the player
+                 picks the weapon and not the hand; whatever was in that hand is put down. --}}
+            @if ($item->weapon)
+                <form method="POST" action="{{ route('inventory.wield', $entry) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm cut {{ $entry->isWielded() ? 'btn--ghost' : 'btn--primary' }}">
+                        {{ Text::get($entry->isWielded() ? 'combat.weapons.put_down' : 'combat.weapons.wield') }}
+                    </button>
+                </form>
+            @endif
+
+            {{-- A firearm's magazine: what is in it, a round to put in, and out again. Only the rounds in the
+                 stash that fit this calibre are offered, so the choice is the one the writer would accept. --}}
+            @if ($item->weapon?->calibre !== null)
+                @php($fits = \App\Models\InventoryItem::query()->with('item')->where('character_id', $entry->character_id)->loose()
+                    ->whereHas('item.ammunition', fn ($q) => $q->where('calibre', $item->weapon->calibre))->orderBy('id')->get())
+                <div class="stack" style="--gap:var(--s-2)">
+                    <span class="micro">
+                        {{ $entry->rounds() > 0
+                            ? Text::get('combat.loading.loaded').': '.$entry->loadedAmmo?->displayName().' '.Text::get('combat.loading.rounds', ['rounds' => $entry->rounds(), 'magazine' => $item->weapon->magazine])
+                            : Text::get('combat.loading.empty') }}
+                    </span>
+                    @if ($fits->isNotEmpty())
+                        <form method="POST" action="{{ route('inventory.load', $entry) }}" class="row row--wrap" style="--gap:var(--s-2)">
+                            @csrf
+                            <select class="select" name="ammo" aria-label="{{ Text::get('combat.loading.pick') }}" style="max-width:min(260px,100%)">
+                                @foreach ($fits as $round)
+                                    <option value="{{ $round->item_id }}" @selected($round->item_id === $entry->loaded_ammo_id)>{{ $round->item->displayName() }} × {{ $round->quantity }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="btn btn--sm btn--primary cut">{{ Text::get('combat.loading.load') }}</button>
+                        </form>
+                    @else
+                        <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.loading.none_to_load', ['calibre' => $item->weapon->calibre]) }}</span>
+                    @endif
+                    @if ($entry->rounds() > 0)
+                        <form method="POST" action="{{ route('inventory.unload', $entry) }}">
+                            @csrf
+                            <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('combat.loading.unload') }}</button>
+                        </form>
+                    @endif
+                </div>
             @endif
 
             @if ($item->isImprint() && $item->useSkill)

@@ -8,7 +8,9 @@ use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\Backdoors;
 use App\Cyberspace\Lockdown;
 use App\Cyberspace\RunPurpose;
+use App\Cyberspace\ScanFact;
 use App\Models\Character;
+use App\Models\CharacterSkill;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -124,8 +126,9 @@ final class RunBriefingTest extends TestCase
         $this->visit()
             ->assertOk()
             ->assertSee(Text::get('cyberspace.run.setup.partial'))
-            // The fact that IS known is shown beside the ones that are not.
-            ->assertSee(Text::get('cyberspace.run.setup.unknown'));
+            // The fact that IS known is shown beside the ones that are not, in the scanner's own boxes.
+            ->assertSee(Text::get('cyberspace.reading.unread'))
+            ->assertSee('tag--ember', false);
     }
 
     public function test_a_complete_file_says_so(): void
@@ -195,11 +198,100 @@ final class RunBriefingTest extends TestCase
         $this->visit()->assertOk()->assertSee('Nothing is running');
     }
 
-    public function test_a_cool_deck_says_thermals_are_fine(): void
+    /** The deck screen's own bars, not a sentence: compute, memory and power draw against what it resolves. */
+    public function test_the_deck_is_shown_as_the_deck_screens_bars(): void
     {
         $this->machine();
 
-        $this->visit()->assertOk()->assertSee('Thermals are fine');
+        $this->visit()
+            ->assertOk()
+            ->assertSee('class="vitals"', false)
+            ->assertSee(Text::get('decks.fitting.compute'))
+            ->assertSee(Text::get('decks.fitting.memory'))
+            ->assertSee(Text::get('decks.fitting.draw'))
+            ->assertDontSee('Thermals are fine');
+    }
+
+    // ---- the overview ---------------------------------------------------------
+
+    public function test_the_overview_lists_every_scanner_fact_either_way(): void
+    {
+        $this->machine();
+
+        $html = $this->visit()->assertOk()->assertSeeText(Text::get('cyberspace.run.setup.known'))->getContent();
+
+        foreach (ScanFact::cases() as $fact) {
+            $this->assertStringContainsString('data-fact="'.$fact->value.'"', $html, "{$fact->value} is listed even though nothing is read");
+        }
+    }
+
+    public function test_an_incomplete_file_wears_a_thin_hazard_stripe_and_a_complete_one_does_not(): void
+    {
+        $system = $this->machine();
+
+        $this->visit()->assertOk()->assertSee('hazard-stripe hazard-stripe--thin', false);
+
+        $this->scan($system, [
+            'grade' => 1, 'os_skill_id' => Skill::query()->value('id'),
+            'ids_detection' => 0, 'tracer_detection' => 0, 'tracer_rate' => 0, 'ice_level' => 0, 'ice_bounty' => 0,
+        ]);
+
+        $this->visit()->assertOk()->assertDontSee('hazard-stripe', false);
+    }
+
+    public function test_the_header_panel_is_gone_and_the_way_back_remains(): void
+    {
+        $this->machine();
+
+        $this->visit()
+            ->assertOk()
+            ->assertDontSee(Text::get('cyberspace.run.setup.title').'</h2>', false)
+            ->assertSee(route('cyberspace.index'), false);
+    }
+
+    // ---- the route ---------------------------------------------------------------
+
+    public function test_every_node_of_the_route_opens_a_card_and_the_count_says_hops(): void
+    {
+        $this->machine();
+        // Routing is a skill: untrained, the chain is empty and there is no route to draw.
+        $routing = Skill::factory()->rank(4)->governedBy('intellect', 'memory')->create([
+            'slug' => 'a_routing_skill',
+            'modifiers' => array_map(static fn (int $at): array => ['op' => 'add', 'level' => $at, 'amount' => 1, 'target' => ['id' => 'routing_hops']], range(1, 5)),
+        ]);
+        CharacterSkill::query()->create(['character_id' => $this->character->id, 'skill_id' => $routing->id, 'attained_level' => 2, 'skill_points' => 0]);
+        $relay = System::factory()->at(2, 2)->grade(3)->create(['address' => 'FEEDF00D']);
+        (new Backdoors)->install($this->character, $relay, BackdoorKind::Routing);
+        $this->scan($relay, ['grade' => 3, 'ids_detection' => 0]);
+
+        $html = $this->visit()->assertOk()->getContent();
+
+        $this->assertStringContainsString('data-inspect="#hop-'.$relay->id.'"', $html);
+        $this->assertStringContainsString('data-inspect="#hop-you"', $html);
+        $this->assertStringContainsString('<template id="hop-'.$relay->id.'">', $html);
+        $this->assertStringContainsString('<template id="hop-you">', $html);
+        // The relay's card carries the scanner rows for what was read of it.
+        $this->assertStringContainsString('FEEDF00D', $html);
+        $this->assertMatchesRegularExpression('#<template id="hop-'.$relay->id.'">.*?data-fact="grade".*?</template>#s', $html);
+        $this->assertStringContainsString('1/', $html);
+        $this->assertStringContainsString('hops', $html);
+    }
+
+    // ---- the words -----------------------------------------------------------------
+
+    public function test_the_mission_goals_read_as_they_were_asked_to(): void
+    {
+        $this->machine();
+
+        $this->visit()
+            ->assertOk()
+            ->assertSeeText('Mission goal')
+            ->assertDontSeeText('What you came to do')
+            ->assertSeeText('Extract data')
+            ->assertSeeText('Ingress, steal some data, egress. Does not trigger a lockdown')
+            ->assertSeeText('Install a siphon that redirects some cashflow every night')
+            ->assertSeeText('Backdoor for routing')
+            ->assertSeeText('Add this system to your routing chain. The more systems you route through, the longer a tracer will take to trace you');
     }
 
     // ---- the intentions ------------------------------------------------------

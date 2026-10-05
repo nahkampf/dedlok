@@ -160,6 +160,12 @@ class LocationRequest extends FormRequest
     {
         $data = $this->safe()->only(['district_id', 'slug', 'name', 'description', 'map_x', 'map_y', 'discovery', 'concealment', 'required_flag']);
 
+        // A slug is permanent. `prohibited` lets an empty value through, so on update it is dropped
+        // here rather than trusted: writing the NULL it arrives as would be a 500.
+        if ($this->route('location') !== null) {
+            unset($data['slug']);
+        }
+
         return $data + ['concealment' => null, 'required_flag' => null];
     }
 }

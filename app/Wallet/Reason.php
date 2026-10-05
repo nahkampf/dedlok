@@ -24,6 +24,7 @@ enum Reason: string
     case Sale = 'sale';
     case Clinic = 'clinic';
     case Surgery = 'surgery';
+    case Encounter = 'encounter';
 
     public function label(): string
     {

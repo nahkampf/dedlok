@@ -68,6 +68,32 @@ final class DamageResolver
     }
 
     /**
+     * The modifiers as THIS hit meets them: a resistance counts for `resistance × (1 − penetration /
+     * 100)`. Only a negative `percentage_of_base` is a resistance — a vulnerability (positive) is not
+     * softened and an immunity (`multiplier` 0) is left alone, both by `Modifier::scaledBy()`'s own
+     * rules and by not being touched here. A modifier that does not apply to this hit's stat is
+     * scaled too and then filtered out by the resolver as it always was, so nothing needs the stat.
+     *
+     * No penetration is the list itself, untouched: ICE and every older source take this path.
+     *
+     * @param  iterable<Modifier>  $modifiers
+     * @return iterable<Modifier>
+     */
+    private static function penetrated(iterable $modifiers, int $penetration): iterable
+    {
+        if ($penetration === 0) {
+            return $modifiers;
+        }
+
+        $factor = 1.0 - $penetration / 100;
+
+        return array_map(
+            static fn (Modifier $m): Modifier => $m->op === Op::PercentageOfBase && $m->amount < 0 ? $m->scaledBy($factor) : $m,
+            is_array($modifiers) ? $modifiers : iterator_to_array($modifiers, false),
+        );
+    }
+
+    /**
      * What the hit WOULD be, without taking it.
      *
      * Here because a screen that warns "this would cost you 12" and a hit that
@@ -77,11 +103,26 @@ final class DamageResolver
      */
     public function preview(Character $character, Damage $damage): ResolvedStat
     {
+        return $this->against($character->modifiers(), Sheet::contextFor($character), $damage);
+    }
+
+    /**
+     * The same sum with the modifiers and the context already in hand. For a caller that asks it
+     * many times about one character who will not change meanwhile (a fight, a simulation), so it
+     * does not query for the same list on every hit. `preview()` is this, and the arithmetic has
+     * one home.
+     *
+     * @param  iterable<Modifier>  $modifiers
+     */
+    public function against(iterable $modifiers, Context $context, Damage $damage): ResolvedStat
+    {
         return $this->resolver->resolve(
             $damage->statId(),
             (float) $damage->amount,
-            $character->modifiers(),
-            Sheet::contextFor($character),
+            self::penetrated($modifiers, $damage->penetration),
+            // Where the blow landed, for the modifiers that care (worn armour). Absent when it
+            // struck nothing in particular, and a predicate that needs it then answers false.
+            $damage->location === null ? $context : $context->with(['hit.location' => $damage->location->value]),
         );
     }
 }

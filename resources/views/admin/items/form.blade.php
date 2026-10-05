@@ -30,6 +30,13 @@
     // The same normalisation again for the drug family.
     $drugValue = old('drug_family', $item?->drug?->family?->value ?? '');
     $isDrug = $drugValue !== '';
+    // Weapons and ammunition, the same way: the class (or the calibre) decides whether the panel is on.
+    $weaponValue = old('weapon_class', $item?->weapon?->class?->value ?? '');
+    $isWeapon = $weaponValue !== '';
+    $ammoValue = old('ammo_calibre', $item?->ammunition?->calibre ?? '');
+    $isAmmo = $ammoValue !== '';
+    $weaponProfile = old('weapon_profile', $item?->weapon?->profile() ?? []);
+    $ammoProfile = old('ammo_profile', $item?->ammunition?->profile() ?? []);
     // A socket counter: what was typed, else what is stored, else none.
     $slotCount = fn ($type) => (int) old('slots.'.$type->key(), $layout->count($type));
     $moduleValue = fn (string $field) => old($field, $module?->{$field});
@@ -319,6 +326,149 @@
                 </div>
             </div>
         </div>
+        {{-- Armour. Worn on the body, a part at a time, so the one fact a bare item has no place for is
+             WHICH parts it covers: a helmet one, a plate one, a set all six. What it RESISTS is the effects
+             panel above, against the damage types, and it counts only where this panel says it is worn. --}}
+        @php($armourTicked = collect(old('armour_slots', $item?->armour?->slots ?? []))->map(fn ($v) => (string) $v)->all())
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.armour') }}</span></div>
+            <div class="panel__bd">
+                <div class="field" @error('armour_slots') data-invalid @enderror>
+                    <span class="field__label">{{ Text::get('admin.items.fields.armour_slots') }}</span>
+                    <div class="row row--wrap" style="--gap:var(--s-4)">
+                        @foreach ($armourSlots as $slot)
+                            <label class="check">
+                                <input type="checkbox" name="armour_slots[]" value="{{ $slot->value }}" @checked(in_array($slot->value, $armourTicked, true))>
+                                <span class="check__box"></span>
+                                <span>{{ $slot->label() }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.armour_slots_hint') }}</span>
+                    @error('armour_slots') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+            </div>
+        </div>
+        {{-- Weapons. A hit does ONE fixed damage — never a range — and for a firearm that is with its
+             standard round; how well it lands is decided by the roll, not here. The class says which
+             skill aims it and whether it is a Ranged or a Close weapon. The PROFILE says how the hit
+             splits across damage types, so a stun baton can be part blunt and part electrical. --}}
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.weapon') }}</span></div>
+            <div class="panel__bd">
+                <div class="field" @error('weapon_class') data-invalid @enderror>
+                    <label class="field__label" for="weapon_class">{{ Text::get('admin.items.fields.weapon_class') }}</label>
+                    <select class="select" id="weapon_class" name="weapon_class" data-controls="weapon">
+                        <option value="">{{ Text::get('admin.items.fields.weapon_class_none') }}</option>
+                        @foreach ($weaponClasses as $class)
+                            <option value="{{ $class->value }}" @selected($weaponValue === $class->value)>{{ $class->label() }} · {{ Text::get($class->ranged() ? 'combat.weapons.ranged' : 'combat.weapons.melee') }}</option>
+                        @endforeach
+                    </select>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.weapon_class_hint') }}</span>
+                    @error('weapon_class') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+
+                <div data-when="weapon" @unless ($isWeapon) hidden @endunless>
+                    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));margin-top:var(--s-4)">
+                        @foreach (['weapon_damage' => [1, 1], 'weapon_accuracy' => [0, 0], 'weapon_rate' => [1, 1]] as $field => [$default, $min])
+                            <div class="field" @error($field) data-invalid @enderror>
+                                <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
+                                <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" step="1"
+                                       @if ($field !== 'weapon_accuracy') min="{{ $min }}" @endif
+                                       value="{{ old($field, $item?->weapon?->{str_replace('weapon_', '', $field)} ?? $default) }}">
+                                <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
+                                @error($field) <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+                        @endforeach
+                        <div class="field" @error('weapon_magazine') data-invalid @enderror>
+                            <label class="field__label" for="weapon_magazine">{{ Text::get('admin.items.fields.weapon_magazine') }}</label>
+                            <input class="input num" id="weapon_magazine" name="weapon_magazine" type="number" min="1" step="1"
+                                   value="{{ old('weapon_magazine', $item?->weapon?->magazine ?? '') }}">
+                            <span class="field__hint">{{ Text::get('admin.items.fields.weapon_magazine_hint') }}</span>
+                            @error('weapon_magazine') <span class="field__error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="field" @error('weapon_calibre') data-invalid @enderror>
+                            <label class="field__label" for="weapon_calibre">{{ Text::get('admin.items.fields.weapon_calibre') }}</label>
+                            <input class="input" id="weapon_calibre" name="weapon_calibre" maxlength="32"
+                                   value="{{ old('weapon_calibre', $item?->weapon?->calibre ?? '') }}">
+                            <span class="field__hint">{{ Text::get('admin.items.fields.weapon_calibre_hint') }}</span>
+                            @error('weapon_calibre') <span class="field__error">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    <div class="field" style="margin-top:var(--s-3)" @error('weapon_profile') data-invalid @enderror>
+                        <span class="field__label">{{ Text::get('admin.items.fields.weapon_profile') }}</span>
+                        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr))">
+                            @foreach ($damageTypes as $type => $label)
+                                <label class="field" style="margin:0"><span class="field__label">{{ $label }}</span>
+                                    <input class="input num" type="number" min="0" max="100" step="1" name="weapon_profile[{{ $type }}]"
+                                           value="{{ $weaponProfile[$type] ?? '' }}"></label>
+                            @endforeach
+                        </div>
+                        <span class="field__hint">{{ Text::get('admin.items.fields.weapon_profile_hint') }}</span>
+                        @error('weapon_profile') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+
+                    @include('admin.items._riders', ['name' => 'weapon_riders', 'current' => old('weapon_riders') ? [] : $item?->weapon?->riders(), 'hint' => 'admin.items.fields.weapon_riders_hint'])
+                </div>
+            </div>
+        </div>
+
+        {{-- Ammunition. A set of CHANGES to a hit, so the engine learns no round by name: a signed percent
+             of damage, a penetration (how much of the target's resistance it ignores) and, optionally, a
+             different damage profile while it is loaded. It fits a weapon of the same calibre. It stacks. --}}
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.ammunition') }}</span></div>
+            <div class="panel__bd">
+                <div class="field" @error('ammo_calibre') data-invalid @enderror>
+                    <label class="field__label" for="ammo_calibre">{{ Text::get('admin.items.fields.ammo_calibre') }}</label>
+                    <input class="input" id="ammo_calibre" name="ammo_calibre" maxlength="32" style="max-width:min(280px,100%)"
+                           value="{{ $ammoValue }}" data-controls="ammo">
+                    <span class="field__hint">{{ Text::get('admin.items.fields.ammo_calibre_hint') }}</span>
+                    @error('ammo_calibre') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+
+                <div data-when="ammo" @unless ($isAmmo) hidden @endunless>
+                    <div class="field" style="margin-top:var(--s-4)" @error('ammo_type') data-invalid @enderror>
+                        <label class="field__label" for="ammo_type">{{ Text::get('admin.items.fields.ammo_type') }}</label>
+                        <select class="select" id="ammo_type" name="ammo_type" style="max-width:min(280px,100%)">
+                            @foreach ($ammoTypes as $type)
+                                <option value="{{ $type->value }}" @selected(old('ammo_type', $item?->ammunition?->type?->value ?? 'standard') === $type->value)>{{ $type->label() }}</option>
+                            @endforeach
+                        </select>
+                        <span class="field__hint">{{ Text::get('admin.items.fields.ammo_type_hint') }}</span>
+                        @error('ammo_type') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));margin-top:var(--s-4)">
+                        @foreach (['ammo_damage' => 'damage', 'ammo_penetration' => 'penetration'] as $field => $column)
+                            <div class="field" @error($field) data-invalid @enderror>
+                                <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
+                                <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" step="1"
+                                       value="{{ old($field, $item?->ammunition?->{$column} ?? 0) }}">
+                                <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
+                                @error($field) <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="field" style="margin-top:var(--s-3)" @error('ammo_profile') data-invalid @enderror>
+                        <span class="field__label">{{ Text::get('admin.items.fields.ammo_profile') }}</span>
+                        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(130px,100%),1fr))">
+                            @foreach ($damageTypes as $type => $label)
+                                <label class="field" style="margin:0"><span class="field__label">{{ $label }}</span>
+                                    <input class="input num" type="number" min="0" max="100" step="1" name="ammo_profile[{{ $type }}]"
+                                           value="{{ $ammoProfile[$type] ?? '' }}"></label>
+                            @endforeach
+                        </div>
+                        <span class="field__hint">{{ Text::get('admin.items.fields.ammo_profile_hint') }}</span>
+                        @error('ammo_profile') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+
+                    @include('admin.items._riders', ['name' => 'ammo_riders', 'current' => old('ammo_riders') ? [] : $item?->ammunition?->riders(), 'hint' => 'admin.items.fields.ammo_riders_hint'])
+                </div>
+            </div>
+        </div>
+
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.software') }}</span></div>
             <div class="panel__bd">

@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Checks\CheckRoller;
+use App\City\Encounters;
+use App\Combat\Fights;
 use App\Cyberspace\ChainBuilder;
 use App\Cyberspace\HunterCombat;
 use App\Cyberspace\Hunters;
@@ -10,6 +12,7 @@ use App\Cyberspace\Lockdown;
 use App\Cyberspace\Probe;
 use App\Cyberspace\Simulator;
 use App\Models\User;
+use App\Stats\CombatStats;
 use App\Stats\DamageStats;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
@@ -43,6 +46,8 @@ class AppServiceProvider extends ServiceProvider
             // there is nothing to cache and nothing to drop when content
             // changes — an origin is an enum case.
             + DamageStats::definitions()
+            // One aim and one weapon-damage stat per weapon class, from the same kind of enum.
+            + CombatStats::definitions()
         ));
 
         $this->app->singleton(Resolver::class, fn ($app): Resolver => new Resolver($app->make(StatRegistry::class)));
@@ -57,6 +62,9 @@ class AppServiceProvider extends ServiceProvider
          * controller. The same reason ProgramRunner is injected.
          */
         $this->app->bind(CheckRoller::class, static fn (): CheckRoller => CheckRoller::fromConfig());
+
+        // Fights are bound too, for the same reason: a test pins the die and the SCREEN uses it.
+        $this->app->bind(Fights::class, static fn (): Fights => Fights::fromConfig());
         $this->app->bind(Probe::class, static fn ($app): Probe => Probe::fromConfig(
             $app->make(CheckRoller::class),
             $app->make(Resolver::class),
@@ -105,6 +113,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(Hunters::class, static fn ($app): Hunters => Hunters::fromConfig(
             $app->make(Resolver::class),
         ));
+        // The spawn die, bound for the same reason: a test pins it and the SCREEN uses it too.
+        $this->app->bind(Encounters::class, static fn ($app): Encounters => Encounters::fromConfig(
+            $app->make(Resolver::class),
+        ));
         $this->app->bind(HunterCombat::class, static fn ($app): HunterCombat => HunterCombat::fromConfig(
             $app->make(Resolver::class),
         ));
@@ -133,7 +145,7 @@ class AppServiceProvider extends ServiceProvider
                 $dependencies[(string) $statId] = array_values((array) $pool['attributes']);
             }
 
-            return new StatGraph($dependencies + SkillStats::dependencies());
+            return new StatGraph($dependencies + SkillStats::dependencies() + CombatStats::dependencies());
         });
     }
 

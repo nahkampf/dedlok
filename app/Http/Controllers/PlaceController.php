@@ -8,6 +8,8 @@ use App\City\CityClock;
 use App\City\CityRefusal;
 use App\City\Clinic;
 use App\City\ClinicService;
+use App\City\Encounters;
+use App\City\EncounterStart;
 use App\City\ShopKeeper;
 use App\City\Surgeon;
 use App\City\SurgeryOperation;
@@ -31,7 +33,7 @@ use Illuminate\View\View;
  */
 class PlaceController extends Controller
 {
-    public function show(Request $request, string $slug, CityClock $clock, Clinic $clinic, ShopKeeper $shop, Surgeon $surgeon): View|RedirectResponse
+    public function show(Request $request, string $slug, CityClock $clock, Clinic $clinic, ShopKeeper $shop, Surgeon $surgeon, Encounters $encounters): View|RedirectResponse
     {
         $character = $this->character($request);
 
@@ -41,6 +43,11 @@ class PlaceController extends Controller
 
         $clock->settle($character);
         $character->refresh();
+
+        // A pass that matured on the way in may have opened one: it owns the screen now.
+        if ($character->current_encounter_id !== null) {
+            return redirect()->route('encounter.show');
+        }
 
         $place = $this->place($character, $slug);
 
@@ -61,6 +68,10 @@ class PlaceController extends Controller
                 ->all(),
             // The same call `treat()` charges from.
             'treatments' => $clinic->quote($character, $place),
+            // What is going on here, which a button starts. Only while the body is here.
+            'happenings' => $character->district_id === $place->district_id
+                ? $encounters->eligible($character, EncounterStart::Place, null, $place->getKey())
+                : collect(),
         ]);
     }
 
@@ -152,6 +163,18 @@ class PlaceController extends Controller
         return $result instanceof CityRefusal
             ? back()->with('error', $result->message())
             : back()->with('status', Text::get('city.clinic.treated', ['paid' => number_format($result)]));
+    }
+
+    public function encounter(Request $request, string $slug, int $encounter, Encounters $encounters): RedirectResponse
+    {
+        $character = $this->character($request);
+        $place = $this->place($character, $slug);
+
+        $result = $encounters->openAtPlace($character, $place, $encounter);
+
+        return $result instanceof CityRefusal
+            ? back()->with('error', $result->message())
+            : redirect()->route('encounter.show');
     }
 
     private function character(Request $request): Character

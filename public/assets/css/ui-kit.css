@@ -952,6 +952,95 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   cursor: pointer;
 }
 
+/* .graph — a node graph (UI.nodeGraph). Nodes are glyphs and the lines carry meaning: pass in
+   --ok, fail in --crit, everything else in muted ink. The opening node is cyan, an ending ember;
+   screens outside the graph are dim. A node is a glyph and nothing else: pointing at it floats its card, tapping opens it. Drawn at its natural size (1 unit = 1px), so it scrolls
+   rather than shrinks on a phone. */
+.graph {
+  overflow: auto;
+  max-height: 70vh;
+  padding: var(--s-3);
+  background: var(--bg-1);
+  border: var(--hair) solid var(--line-1);
+  border-radius: var(--r-1);
+}
+.graph svg { display: block; max-width: none; margin-inline: auto; }
+.graph__edge { fill: none; stroke: var(--ink-2); stroke-width: 1.5; }
+.graph__edge--pass { stroke: var(--ok); }
+.graph__edge--fail { stroke: var(--crit); }
+.graph__arrow { fill: var(--ink-2); }
+.graph__arrow--pass { fill: var(--ok); }
+.graph__arrow--fail { fill: var(--crit); }
+.graph__glyph { font-size: var(--fs-xl); fill: var(--ink-1); }
+.graph__node--entry .graph__glyph { fill: var(--cyan); }
+.graph__node--end .graph__glyph { fill: var(--ember); }
+.graph__node--loose .graph__glyph { fill: var(--ink-3); }
+.graph__node { cursor: pointer; }
+.graph__node:focus { outline: none; }
+.graph__node:focus-visible .graph__glyph { stroke: var(--ink-0); stroke-width: 1; }
+.graph__node:hover .graph__glyph { fill: var(--ink-0); }
+.graph__node--entry:hover .graph__glyph { fill: var(--cyan); }
+.graph__node--end:hover .graph__glyph { fill: var(--ember); }
+/* A card row whose two halves are free text, not a label and a number: stacked, and allowed to
+   break anywhere, so a long button or a long screen key wraps instead of colliding. */
+.item-card__stat--stack { flex-direction: column; align-items: flex-start; gap: 2px; }
+.item-card__stat--stack > * { max-width: 100%; overflow-wrap: anywhere; }
+.item-card__stat--stack + .item-card__stat--stack { padding-top: var(--s-2); border-top: var(--hair) solid var(--line-1); }
+/* A line of a node's card: where a button leads, in the colour of its line. */
+.graph__tone--pass { color: var(--ok) !important; }
+.graph__tone--fail { color: var(--crit) !important; }
+.graph__key { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: var(--s-3) 0 0; padding: 0; list-style: none; font-size: var(--fs-xs); color: var(--ink-2); }
+.graph__key i { font-style: normal; margin-right: var(--s-1); }
+
+/* .select--cards: a select whose options are cards (picture, bold title, a line of text).
+   Where `appearance: base-select` exists an <option> may hold markup and the browser
+   does the rest — no script. Elsewhere it is the plain .select above, reading the
+   option's text. Parts are .opt__img, .opt__title, .opt__text, each optional.
+   Closed, the button shows the title alone so a form row stays one line tall. */
+@supports (appearance: base-select) {
+  .select--cards,
+  .select--cards::picker(select) { appearance: base-select; }
+  .select--cards::picker-icon { display: none; }
+  .select--cards::picker(select) {
+    box-sizing: border-box;
+    max-width: min(32rem, calc(100vw - var(--s-6)));
+    max-height: 60vh;
+    padding: var(--s-1);
+    background: var(--bg-2);
+    border: var(--hair) solid var(--line-2);
+    border-radius: var(--r-1);
+  }
+  .select--cards optgroup { color: var(--ink-3); font-size: var(--fs-xs); }
+  .select--cards option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--s-1) var(--s-3);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-1);
+    color: var(--ink-0);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+  }
+  .select--cards option::checkmark { display: none; }
+  .select--cards option:hover,
+  .select--cards option:focus-visible { background: var(--bg-3); }
+  .select--cards option:checked { background: var(--bg-4); }
+  .select--cards .opt__img {
+    grid-row: 1; grid-column: 1;
+    width: min(72px, 25vw);
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border: var(--hair) solid var(--line-1);
+    border-radius: var(--r-1);
+  }
+  .select--cards .opt__title { grid-column: 2; font-weight: 600; line-height: var(--lh-tight); }
+  .select--cards .opt__title:first-child { grid-column: 1 / -1; }
+  .select--cards .opt__text { grid-column: 1 / -1; color: var(--ink-2); font-size: var(--fs-xs); }
+  .select--cards selectedcontent .opt__img,
+  .select--cards selectedcontent .opt__text { display: none; }
+}
+
 .field[data-invalid] .input,
 .field[data-invalid] .textarea,
 .field[data-invalid] .select { border-color: var(--ember-2); }
@@ -1328,6 +1417,8 @@ cap-widget {
 /* PASSED. The trace has come through here already, so it wears the accent the
    fill does — this is the one place a chain says what has been lost, and when
    routing lands these are the backdoors that are about to burn. */
+.trace__node[data-inspect] { cursor: pointer; }
+.trace__node:focus-visible { outline: var(--hair) solid var(--ink-0); outline-offset: 2px; }
 .trace__node--passed { border-color: var(--crit); color: var(--crit); }
 
 /* The two ends. The machine is where it starts; you are what it is walking
@@ -2170,6 +2261,11 @@ details.panel > summary.panel__hd:focus-visible {
     var(--ember) 0 16px,
     var(--bg-0) 16px 32px
   );
+}
+/* The thin one: a warning laid along the top of a panel rather than a screen's whole banner. */
+.hazard-stripe--thin {
+  height: 6px;
+  background: repeating-linear-gradient(45deg, var(--ember) 0 6px, var(--bg-0) 6px 12px);
 }
 
 /* Framed viewport — minimap, portrait, camera feed */

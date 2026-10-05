@@ -54,6 +54,18 @@ enum CityRefusal: string
     /** Nothing to mend or restore. */
     case NothingToTreat = 'nothing_to_treat';
 
+    /** No encounter is open to be answered, or none is on offer here. */
+    case NothingHappening = 'nothing_happening';
+
+    /** The button is not on the current screen, or its flag is not held. */
+    case NotAChoice = 'not_a_choice';
+
+    /** A fight owns the character: nothing in the City starts until it is settled. */
+    case Fighting = 'fighting';
+
+    /** The choice costs more creds than are in the wallet. */
+    case CannotPay = 'cannot_pay';
+
     public function message(): string
     {
         return Text::get("city.refused.{$this->value}");

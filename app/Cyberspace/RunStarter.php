@@ -81,6 +81,10 @@ final readonly class RunStarter
             return RunResult::refused(RunRefusal::Hunted);
         }
 
+        if ($character->current_fight_id !== null) {
+            return RunResult::refused(RunRefusal::Fighting);
+        }
+
         $at = $character->gridPosition();
 
         if ($at === null) {

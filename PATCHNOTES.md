@@ -1,3 +1,11 @@
+## 0.35.0 (2026-10-05)
+
+- Skeleton for physical combat started.
+- Armour and body parts now exist. 
+- Damage types, penetration, persistent effects, resistances.
+- Opponents now exist as a data structure and in the admin editor.
+- Snall guard stuff about travelling, encounters and fights in effect
+
 ## 0.34.1 (2026-10-05)
 
 - Internal dev only: the composer sidecar for local dev was missing intl*

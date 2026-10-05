@@ -6,13 +6,17 @@ namespace Tests\Feature;
 
 use App\City\CityClock;
 use App\City\CityRefusal;
+use App\City\Explorer;
 use App\City\Traveller;
 use App\City\TravelMode;
+use App\Cyberspace\Navigator;
+use App\Cyberspace\TravelRefusal;
 use App\Models\Character;
 use App\Models\CityActivity;
 use App\Models\District;
 use App\Models\Notification;
 use App\Models\WalletEntry;
+use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -225,5 +229,33 @@ final class CityTravelTest extends TestCase
 
         $this->actingAs($this->character->user)->post(route('city.cancel'))->assertRedirect();
         $this->assertTrue((bool) CityActivity::query()->find($this->character->id)->cancelling);
+    }
+
+    public function test_nobody_jacks_in_while_travelling_or_exploring(): void
+    {
+        $this->traveller()->begin($this->character, $this->district('downtown'), TravelMode::Walk);
+
+        $result = Navigator::fromConfig(app(Resolver::class))->jackIn($this->character->fresh());
+        $this->assertSame(TravelRefusal::BusyInTheCity, $result->refusal);
+
+        CityActivity::query()->delete();
+        app(Explorer::class)->begin($this->character->fresh());
+
+        $result = Navigator::fromConfig(app(Resolver::class))->jackIn($this->character->fresh());
+        $this->assertSame(TravelRefusal::BusyInTheCity, $result->refusal);
+    }
+
+    public function test_a_trip_is_stopped_not_cancelled_and_an_explore_is_still_cancelled(): void
+    {
+        $this->traveller()->begin($this->character, $this->district('downtown'), TravelMode::Walk);
+
+        $this->actingAs($this->character->user)->get(route('city.index'))
+            ->assertOk()->assertSeeText('Stop travelling');
+
+        CityActivity::query()->delete();
+        app(Explorer::class)->begin($this->character->fresh());
+
+        $this->actingAs($this->character->user)->get(route('city.district', 'dockside'))
+            ->assertOk()->assertSeeText('Cancel')->assertDontSeeText('Stop travelling');
     }
 }

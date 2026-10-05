@@ -16,6 +16,7 @@ use App\Stats\Sources\CharacterModifiers;
 use App\Stats\Sources\InstalledImplants;
 use App\Stats\Sources\RunningPrograms;
 use App\Stats\Sources\SkillEffects;
+use App\Stats\Sources\WornArmour;
 use Carbon\CarbonImmutable;
 use Database\Factories\CharacterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -55,7 +56,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'user_id', 'handle', 'bio', 'archetype', 'creds', 'heat', 'bounty', 'bounty_grade',
     'egress_trace_at', 'egress_si_at',
-    'current_hitpoints', 'current_synaptic_integrity', 'waiting_until', 'waiting_cause', 'current_run_id', 'current_hunt_id',
+    'current_hitpoints', 'current_synaptic_integrity', 'waiting_until', 'waiting_cause', 'current_run_id', 'current_hunt_id', 'current_fight_id', 'current_encounter_id', 'equipped_ranged_id', 'equipped_melee_id',
     'intellect', 'memory', 'perception', 'reflex', 'focus',
     'social', 'meat', 'motor', 'senses', 'muscle',
 ])]
@@ -479,6 +480,62 @@ class Character extends Model
     }
 
     /**
+     * The fight this character is in, if any. Written only by App\Combat\Fights.
+     *
+     * @return BelongsTo<Fight, $this>
+     */
+    public function currentFight(): BelongsTo
+    {
+        return $this->belongsTo(Fight::class, 'current_fight_id');
+    }
+
+    public function isInFight(): bool
+    {
+        return $this->current_fight_id !== null;
+    }
+
+    /**
+     * The Ranged weapon being held, if any. Written only by App\Combat\WeaponWielder.
+     *
+     * @return BelongsTo<InventoryItem, $this>
+     */
+    public function equippedRanged(): BelongsTo
+    {
+        return $this->belongsTo(InventoryItem::class, 'equipped_ranged_id');
+    }
+
+    /**
+     * The Close weapon being held, if any; null is bare hands.
+     *
+     * @return BelongsTo<InventoryItem, $this>
+     */
+    public function equippedMelee(): BelongsTo
+    {
+        return $this->belongsTo(InventoryItem::class, 'equipped_melee_id');
+    }
+
+    /**
+     * What this character is wearing, one row per slot. Written only by App\Combat\ArmourWearer.
+     *
+     * @return HasMany<WornSlot, $this>
+     */
+    public function wornArmour(): HasMany
+    {
+        return $this->hasMany(WornSlot::class);
+    }
+
+    /**
+     * The encounter this character is standing in, or null. Written only by
+     * App\City\Encounters (opening) and App\City\EncounterRunner (closing).
+     *
+     * @return BelongsTo<CharacterEncounter, $this>
+     */
+    public function currentEncounter(): BelongsTo
+    {
+        return $this->belongsTo(CharacterEncounter::class, 'current_encounter_id');
+    }
+
+    /**
      * The ordered training queue: (skill, target level) pairs.
      *
      * @return HasMany<TrainingQueueEntry, $this>
@@ -603,6 +660,10 @@ class Character extends Model
             // What they have in them. The sixth, and the resolver learned
             // nothing new for it — a dose is a list of modifiers with a clock.
             new ActiveDoses($this, $asAt),
+            // What they are wearing. The seventh: a damage resistance counts only for the body
+            // part the piece covers, via a condition the source adds. Nothing records when a
+            // piece came off, so a past moment cannot be asked.
+            new WornArmour($this),
         ];
 
         $modifiers = [];

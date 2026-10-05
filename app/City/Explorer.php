@@ -7,6 +7,7 @@ namespace App\City;
 use App\Checks\CheckRoller;
 use App\Models\Character;
 use App\Models\CityActivity;
+use App\Models\District;
 use App\Models\Location;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
@@ -35,6 +36,7 @@ final class Explorer
     public function __construct(
         private readonly CheckRoller $roller,
         private readonly Resolver $resolver,
+        private readonly Encounters $encounters,
     ) {}
 
     public function begin(Character $character): CityActivity|CityRefusal
@@ -44,6 +46,10 @@ final class Explorer
 
             if ($locked->isJackedIn()) {
                 return CityRefusal::JackedIn;
+            }
+
+            if ($locked->current_fight_id !== null) {
+                return CityRefusal::Fighting;
             }
 
             if (CityActivity::query()->whereKey($locked->getKey())->exists()) {
@@ -83,9 +89,9 @@ final class Explorer
     public function settle(Character $character, ?CarbonInterface $now = null, bool $notify = false): array
     {
         $now = CarbonImmutable::instance($now ?? CarbonImmutable::now());
-        $message = null;
+        $messages = [];
 
-        DB::transaction(function () use ($character, $now, &$message): void {
+        DB::transaction(function () use ($character, $now, &$messages): void {
             $activity = CityActivity::query()->whereKey($character->getKey())
                 ->where('kind', ActivityKind::Explore->value)->lockForUpdate()->first();
 
@@ -97,20 +103,25 @@ final class Explorer
             $found = $this->roll($locked);
             $activity->delete();
 
-            $message = $found === null
-                ? ['explore_nothing', []]
-                : ['explore_found', ['place' => $found->name]];
+            // What the pass found is settled FIRST and is never lost; an encounter may follow it.
+            // Finding nothing says nothing: silence is the same whether every roll failed or there
+            // was nothing left to roll against, so it can never tell a player how much is hidden.
+            if ($found !== null) {
+                $messages[] = ['explore_found', ['place' => $found->name]];
+            }
+
+            if ($this->encounters->maybeOpen($locked, EncounterStart::Explore) !== null) {
+                $messages[] = ['encounter_waiting', ['district' => District::query()->find($locked->district_id)?->name ?? '']];
+            }
         });
 
-        if ($message === null) {
-            return [];
-        }
-
         if ($notify) {
-            (new Notifier)->send($character, Category::City, $message[0], $message[1]);
+            foreach ($messages as [$key, $replace]) {
+                (new Notifier)->send($character, Category::City, $key, $replace);
+            }
         }
 
-        return [$message];
+        return $messages;
     }
 
     /** One pass: the hardest success among the still-hidden places here, or null. */

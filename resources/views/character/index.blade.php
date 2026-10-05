@@ -97,6 +97,38 @@
             </div>
         </div>
 
+        {{-- WHAT THEY CARRY ON THEM: armour a part of the body at a time, then a weapon for Ranged and one
+             for Close. One panel, eight rows always — a bare slot is an answer, a set is one piece named on
+             every part it covers, and bare hands are what Close falls back to. --}}
+        <div class="stack" style="--gap:var(--s-2);margin-top:var(--s-5)">
+            <span class="micro">{{ Text::get('combat.equipment.heading') }}</span>
+            <div class="card" style="max-width:min(420px,100%)">
+                <div class="card__stats">
+                    @foreach ($armour as $row)
+                        <div class="card__stat">
+                            <span>{{ $row['slot']->label() }}</span>
+                            @if ($row['piece'] !== null)
+                                <b>{{ $row['piece'] }}</b>
+                            @else
+                                <span style="color:var(--ink-3)">{{ Text::get('combat.armour.bare') }}</span>
+                            @endif
+                        </div>
+                    @endforeach
+                    @foreach ($hands as $hand)
+                        <div class="card__stat">
+                            <span>{{ Text::get('combat.weapons.'.$hand['slot']) }}</span>
+                            @if ($hand['piece'] !== null)
+                                <b>{{ $hand['piece'] }}</b>
+                            @else
+                                <span style="color:var(--ink-3)">{{ Text::get($hand['slot'] === 'melee_slot' ? 'combat.weapons.bare_hands' : 'combat.weapons.none') }}</span>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.equipment.lede') }}</span>
+        </div>
+
         {{-- THE PRICE ON THEIR HEAD, in creds. Always drawn: zero is an answer. --}}
         <div class="stack" style="--gap:var(--s-2);margin-top:var(--s-5)">
             <span class="micro">{{ Text::get('character.bounty_heading') }}</span>

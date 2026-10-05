@@ -36,6 +36,11 @@ final class ItemPlacer
             return $this->eject($character, $row);
         }
 
+        // Armour being worn is on a body, not in the hands: it cannot be put away until it is off.
+        if ($row->isOnPerson()) {
+            return PlacementResult::refused(PlacementRefusal::Worn);
+        }
+
         if ($into->character_id !== $character->id) {
             return PlacementResult::refused(PlacementRefusal::NotOwned);
         }

@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Combat\ArmourWearer;
+use App\Combat\LoadRefusal;
+use App\Combat\WeaponLoader;
+use App\Combat\WeaponWielder;
+use App\Combat\WearRefusal;
+use App\Combat\WieldRefusal;
 use App\Cyberspace\ReadinessWatch;
 use App\Cyberspace\ScanImporter;
 use App\Cyberspace\ScanImportRefusal;
@@ -107,6 +113,75 @@ class InventoryController extends Controller
      * losing nerve tissue is the one outcome nobody should have to infer from
      * a number moving somewhere else.
      */
+    /**
+     * Put armour on, or take it off. One route for both directions, like `run` and `place`: a
+     * piece that is worn is asked to come off, one that is not is asked to go on.
+     */
+    public function wear(Request $request, InventoryItem $entry, ArmourWearer $wearer): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $name = $entry->item?->displayName() ?? '';
+        $worn = $entry->isWorn();
+        $result = $worn ? $wearer->remove($character, $entry) : $wearer->wear($character, $entry);
+
+        return $result instanceof WearRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get($worn ? 'combat.armour.took_off' : 'combat.armour.put_on', ['item' => $name]));
+    }
+
+    /** Pick a weapon up, or put it down. One route for both directions, like `wear`. */
+    public function wield(Request $request, InventoryItem $entry, WeaponWielder $wielder): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $name = $entry->item?->displayName() ?? '';
+        $held = $entry->isWielded();
+        $result = $held ? $wielder->unwield($character, $entry) : $wielder->wield($character, $entry);
+
+        return $result instanceof WieldRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get($held ? 'combat.weapons.put_away' : 'combat.weapons.took_up', ['item' => $name]));
+    }
+
+    /** Fill a weapon's magazine from the stash with the round the player picked. */
+    public function load(Request $request, InventoryItem $entry, WeaponLoader $loader): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $ammo = Item::query()->with('ammunition')->find((int) $request->input('ammo'));
+
+        if ($ammo === null) {
+            return back()->with('error', LoadRefusal::NotAmmunition->message());
+        }
+
+        $result = $loader->load($character, $entry, $ammo);
+
+        return $result instanceof LoadRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get('combat.loading.loaded_ok', ['item' => $ammo->displayName(), 'weapon' => $entry->item?->displayName() ?? '']));
+    }
+
+    /** Take every round out of a weapon and put it back in the stash. */
+    public function unload(Request $request, InventoryItem $entry, WeaponLoader $loader): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $result = $loader->unload($character, $entry);
+
+        return $result instanceof LoadRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get('combat.loading.unloaded_ok', ['weapon' => $entry->item?->displayName() ?? '']));
+    }
+
     public function take(Request $request, InventoryItem $entry, DrugTaker $taker): RedirectResponse
     {
         $character = $this->character($request);
@@ -232,6 +307,12 @@ class InventoryController extends Controller
          */
         DB::transaction(function () use ($entry, $character, $runner): void {
             $runner->stopAll($character, $entry);
+
+            // A loaded weapon hands its rounds back first. They are property, and the row they
+            // sit on is about to go.
+            if ($entry->rounds() > 0) {
+                app(WeaponLoader::class)->emptyInto($character, $entry);
+            }
 
             // Contents cascade with it; fittings cascade too, which frees the
             // modules of a deck rather than destroying them.

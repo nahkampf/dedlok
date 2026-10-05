@@ -36,6 +36,9 @@ enum OfferRefusal: string
      */
     case Equipped = 'equipped';
 
+    /** Armour being worn. Take it off first; the same rule as the carried deck, in its own words. */
+    case Worn = 'worn';
+
     /** Sold, withdrawn, or the row destroyed under it. All the same answer: it is not there now. */
     case Gone = 'gone';
 

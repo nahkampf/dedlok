@@ -5,6 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Admin\DeletionImpact;
+use App\Combat\AmmoType;
+use App\Combat\AmmunitionEditor;
+use App\Combat\ArmourEditor;
+use App\Combat\ArmourSlot;
+use App\Combat\DamageProfile;
+use App\Combat\WeaponClass;
+use App\Combat\WeaponEditor;
 use App\Decks\Hardware;
 use App\Decks\HardwareEditor;
 use App\Decks\SlotLayout;
@@ -18,6 +25,7 @@ use App\Models\Item;
 use App\Models\Skill;
 use App\Programs\ProgramEditor;
 use App\Programs\ProgramKind;
+use App\Stats\DamageOrigin;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -105,6 +113,10 @@ class ItemController extends Controller
 
             DrugEditor::apply($item, $request->drugFamily(), $request->drugColumns());
 
+            ArmourEditor::apply($item, $request->armourSlots());
+            WeaponEditor::apply($item, $request->weaponColumns());
+            AmmunitionEditor::apply($item, $request->ammoColumns());
+
             HardwareEditor::apply(
                 $item,
                 $request->hardware(),
@@ -140,6 +152,15 @@ class ItemController extends Controller
             // Always, and for the same reason: an item that has stopped being
             // a drug has to lose its row, or it stays swallowable.
             DrugEditor::apply($item, $request->drugFamily(), $request->drugColumns());
+
+            // Always: an item that has stopped being armour has to lose its row, and come off
+            // everybody wearing it.
+            ArmourEditor::apply($item, $request->armourSlots());
+
+            // Always, for the same reason: stopping being a weapon or a round clears the row (and
+            // puts a weapon down in every hand holding it).
+            WeaponEditor::apply($item, $request->weaponColumns());
+            AmmunitionEditor::apply($item, $request->ammoColumns());
 
             // Always, even for an item that is not hardware and never was:
             // becoming nothing is a change too, and it is the one that has to
@@ -195,6 +216,14 @@ class ItemController extends Controller
             'hardwareKinds' => Hardware::cases(),
             'programKinds' => ProgramKind::cases(),
             'drugFamilies' => Family::cases(),
+            'armourSlots' => ArmourSlot::cases(),
+            'weaponClasses' => WeaponClass::cases(),
+            'ammoTypes' => AmmoType::cases(),
+            // The eight damage types, as value => label, for the two profile grids.
+            'damageTypes' => array_combine(DamageProfile::types(), array_map(
+                static fn (DamageOrigin $type): string => $type->label(),
+                DamageOrigin::types(),
+            )),
             // Every socket a deck could present, which is what the counters
             // in the form are: fourteen numbers, one per type.
             'slotTypes' => SlotType::all(),
