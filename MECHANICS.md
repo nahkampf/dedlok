@@ -43,6 +43,11 @@ down so the implementation has something to be checked against.
 | Derived stats reading RESOLVED inputs rather than columns | **built**; it was the other way round until the graph landed |
 | `current_hitpoints`, `current_synaptic_integrity` as resources | **built**, with clamping. Reaching zero is not acted on: there is no defeat handling and no waiting screen |
 | Damage as a resolved stat — resistances, vulnerabilities, immunity | **built** — `App\Stats\Damage`, `DamageOrigin`, `DamageStats`, `DamageResolver`; one stat per resource and origin, mitigation is a modifier against a tag set. Nothing carries a resistance yet, and the Crim's "Hard knocks" is the only shipped mitigation of any kind — it reaches Neural Shock and nothing else, because that is the one hit in the game that lands on the body |
+| Damage types, the family tag, and a hit's PENETRATION | **built** — eight `DamageOrigin` types (kinetic and specialty), and `Damage::$penetration` scaling only a hit's negative percentage modifiers (`DamageResolver::against()`); `COMBAT.md` |
+| Armour per body part | **built** — `WornArmour`, the seventh modifier source, wraps a worn piece's damage modifiers in `hit_location_in`; a hit with no location never meets worn armour |
+| Combat stats — `aim.<class>`, `weapon_damage.<class>`, `defence`, `pursuit` | **built** — `App\Stats\CombatStats` plus two declared stats; the numbers are unmeasured, set with `fight:simulate` |
+| Hit quality, bursts, riders, magazines — the fight engine | **built** — `App\Combat\Fight\FightEngine`, pure and never writing; `App\Combat\Fights` applies it to the game; `COMBAT.md` |
+| What a win pays and a loss costs (the mugging, defeat tags) | **not built** — `COMBAT.md` step 6 |
 | `skills`, `skill_prerequisites`, `character_skills`, `training_queue` | **built**, with constraints and `skills:validate` |
 | Skill thresholds and SP/minute (`App\Skills\`) | **built**, pure and config-tunable |
 | Skill training — the deposit, the scheduler, the queue (`App\Skills\TrainingDeposit`) | **built**, with `training:deposit` on a one-minute schedule |
