@@ -1832,6 +1832,7 @@ return [
             'none' => 'Nothing',
             'wielded' => 'Equipped',
             'wield' => 'Equip',
+            'requires' => 'Requires :skill :level',
             'put_down' => 'Unequip',
             'took_up' => 'You equip :item.',
             'put_away' => 'You unequip :item.',
@@ -1842,7 +1843,7 @@ return [
                 'not_free' => 'Take it out of whatever it is in first.',
                 'already_wielded' => 'You are already holding that.',
                 'not_wielded' => 'You are not holding that.',
-                'needs_skill' => 'You are not trained for that. Reach level :level in :skill first.',
+                'requires_skill' => 'That requires :skill at level :level.',
             ],
         ],
         // The character sheet's one panel for what is on a body: armour by part, then the two hands.

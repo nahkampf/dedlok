@@ -47,7 +47,7 @@ final class WeaponWielder
         $gate = $this->gate($class);
 
         if ($gate !== null && $character->stat("skill.{$gate->slug}")->value < (int) config('combat.gate_level')) {
-            return WieldRefusal::NeedsSkill;
+            return WieldRefusal::RequiresSkill;
         }
 
         $character->forceFill([$class->ranged() ? 'equipped_ranged_id' : 'equipped_melee_id' => $row->getKey()])->save();

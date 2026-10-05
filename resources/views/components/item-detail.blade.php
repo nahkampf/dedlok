@@ -61,6 +61,8 @@
                     @endif
                     @if ($entry->isWielded())
                         <span class="tag">{{ Text::get('combat.weapons.wielded') }}</span>
+                    @elseif ($item->weapon && ($gate = app(\App\Combat\WeaponWielder::class)->gate($item->weapon->class)))
+                        <span class="tag">{{ Text::get('combat.weapons.requires', ['skill' => $gate->title, 'level' => (int) config('combat.gate_level')]) }}</span>
                     @endif
                 </span>
             </span>
