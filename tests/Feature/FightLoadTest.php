@@ -10,7 +10,6 @@ use App\Combat\Fight\Arm;
 use App\Combat\Fight\Combatant;
 use App\Combat\Fight\FightEngine;
 use App\Combat\Fight\FightState;
-use App\Combat\Fight\Range;
 use App\Combat\Fight\RoundSpec;
 use App\Combat\Fight\Side;
 use App\Combat\WeaponClass;
@@ -34,12 +33,12 @@ final class FightLoadTest extends TestCase
         ], $loaded, $rounds, 12);
     }
 
-    private function state(Arm $arm, Range $range = Range::Ranged): FightState
+    private function state(Arm $arm, int $distance = 2): FightState
     {
         return new FightState(
             new Combatant('You', 40, 10.0, ranged: $arm, si: 30),
             new Combatant('Gang member', 40, 10.0, ranged: new Arm('Gun', WeaponClass::Pistol, 10.0, 1, ['s' => new RoundSpec('s', 'S', 10.0, ['penetrating' => 100])], 's')),
-            range: $range,
+            distance: $distance,
             first: Side::A,
         );
     }
@@ -122,7 +121,7 @@ final class FightLoadTest extends TestCase
 
     public function test_the_ranged_weapon_can_be_loaded_at_close(): void
     {
-        $after = $this->play($this->state($this->pistol(rounds: 0), Range::Close), Action::load('fmj'));
+        $after = $this->play($this->state($this->pistol(rounds: 0), 0), Action::load('fmj'));
 
         $this->assertSame(12, $after->a->ranged->rounds);
     }

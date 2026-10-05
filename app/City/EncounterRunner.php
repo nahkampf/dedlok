@@ -210,8 +210,10 @@ final class EncounterRunner
      * against the nodes as they are NOW, and one that no longer exists, like a null one, closes the
      * encounter — the rule everywhere else. The screen's own arrival outcomes apply exactly as they do
      * when a choice leads there, and the floor is asked once at the end.
+     *
+     * @param  list<string>  $settled  the lines `FightEnding` produced, already rendered, to sit after the ending line
      */
-    public function afterFight(Character $locked, Fight $fight): void
+    public function afterFight(Character $locked, Fight $fight, array $settled = []): void
     {
         if ($fight->encounter_row_id === null || (int) $locked->current_encounter_id !== (int) $fight->encounter_row_id) {
             return;
@@ -229,7 +231,8 @@ final class EncounterRunner
             Result::AEscaped, Result::BEscaped => $fight->flee_key,
         };
 
-        $lines = [Text::get('combat.fight.ending.'.$fight->result->value, ['name' => $fight->opponent_name])];
+        // What the ending was worth (pay, drops, what was taken) goes in the log with the ending line itself.
+        $lines = [Text::get('combat.fight.ending.'.$fight->result->value, ['name' => $fight->opponent_name]), ...$settled];
         $closed = $key === null || ! $this->hasNode($live, $key);
         $hurt = false;
 

@@ -7,6 +7,11 @@
     $value = fn (string $field, $fallback = null) => old($field, $npc?->{$field} ?? $fallback);
     $resist = fn (string $type) => old("resistances.{$type}", $npc?->resistances[$type] ?? '');
     $slotResist = fn (string $slot, string $type) => old("slot_resistances.{$slot}.{$type}", $npc?->slot_resistances[$slot][$type] ?? '');
+    $ticked = collect(old('tags', $npc?->tags ?? []))->all();
+    $rows = old('loot') !== null
+        ? array_values(old('loot'))
+        : $loot->map(fn ($d) => ['item_id' => $d->item_id, 'chance' => $d->chance, 'min' => $d->min_quantity, 'max' => $d->max_quantity])->values()->all();
+    $rows = array_pad($rows, min(\App\Http\Requests\Admin\NpcRequest::MAX_LOOT, count($rows) + 3), ['item_id' => '', 'chance' => 100, 'min' => 1, 'max' => 1]);
     $hasSlots = collect(old('slot_resistances', $npc?->slot_resistances ?? []))->flatten()->filter()->isNotEmpty();
 @endphp
 
@@ -99,7 +104,7 @@
                     <select class="select" name="ranged_weapon_id">
                         <option value="">{{ Text::get('admin.npcs.no_ranged') }}</option>
                         @foreach ($rangedWeapons as $item)
-                            <option value="{{ $item->id }}" @selected((int) $value('ranged_weapon_id') === $item->id)>{{ $item->displayName() }} — {{ $item->weapon->class->label() }}, {{ $item->weapon->damage }}</option>
+                            <option value="{{ $item->id }}" @selected((int) $value('ranged_weapon_id') === $item->id)>{{ $item->displayName() }} — {{ $item->weapon->class->label() }}, {{ $item->weapon->damage ?? $item->weapon->calibre }}</option>
                         @endforeach
                     </select>
                     <span class="field__hint">{{ Text::get('admin.npcs.ranged_hint') }}</span>
@@ -109,7 +114,7 @@
                     <select class="select" name="ammo_item_id">
                         <option value="">{{ Text::get('admin.npcs.no_ammo') }}</option>
                         @foreach ($rounds as $item)
-                            <option value="{{ $item->id }}" @selected((int) $value('ammo_item_id') === $item->id)>{{ $item->displayName() }} — {{ $item->ammunition->calibre }}</option>
+                            <option value="{{ $item->id }}" @selected((int) $value('ammo_item_id') === $item->id)>{{ $item->displayName() }} — {{ $item->ammunition->calibre }}, {{ $item->ammunition->damage }}</option>
                         @endforeach
                     </select>
                     <span class="field__hint">{{ Text::get('admin.npcs.ammo_hint') }}</span>
@@ -155,6 +160,60 @@
                         @endforeach
                     </div>
                 </details>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.npcs.sections.spoils') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-4)">
+                <span class="field__hint">{{ Text::get('admin.npcs.spoils_hint') }}</span>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.npcs.entity') }}</span>
+                    <select class="select" name="entity_id">
+                        <option value="">{{ Text::get('admin.npcs.no_entity') }}</option>
+                        @foreach ($entities as $entity)
+                            <option value="{{ $entity->id }}" @selected((int) $value('entity_id') === $entity->id)>{{ $entity->name }}</option>
+                        @endforeach
+                    </select>
+                    <span class="field__hint">{{ Text::get('admin.npcs.entity_hint') }}</span>
+                </label>
+
+                <div class="stack" style="--gap:var(--s-2)">
+                    <span class="field__label">{{ Text::get('admin.npcs.tags') }}</span>
+                    <span class="field__hint">{{ Text::get('admin.npcs.tags_hint') }}</span>
+                    <div class="row row--wrap" style="--gap:var(--s-5)">
+                        @foreach ($tags as $tag)
+                            <label class="check">
+                                <input type="checkbox" name="tags[]" value="{{ $tag->value }}" @checked(in_array($tag->value, $ticked, true))>
+                                <span class="check__box"></span><span>{{ $tag->label() }} — {{ $tag->hint() }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="stack" style="--gap:var(--s-2)">
+                    <span class="field__label">{{ Text::get('admin.npcs.loot') }}</span>
+                    <span class="field__hint">{{ Text::get('admin.npcs.loot_hint') }}</span>
+                    @foreach ($rows as $i => $row)
+                        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(110px,100%),1fr))">
+                            <label class="field" style="margin:0;grid-column:span 2">
+                                <span class="micro" style="color:var(--ink-3)">{{ Text::get('admin.npcs.loot_item') }}</span>
+                                <select class="select" name="loot[{{ $i }}][item_id]">
+                                    <option value="">{{ Text::get('admin.npcs.loot_none') }}</option>
+                                    @foreach ($items as $item)
+                                        <option value="{{ $item->id }}" @selected((int) ($row['item_id'] ?? 0) === $item->id)>{{ $item->displayName() }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <label class="field" style="margin:0"><span class="micro" style="color:var(--ink-3)">{{ Text::get('admin.npcs.loot_chance') }}</span>
+                                <input class="input num" type="number" min="1" max="100" step="1" name="loot[{{ $i }}][chance]" value="{{ $row['chance'] ?? 100 }}"></label>
+                            <label class="field" style="margin:0"><span class="micro" style="color:var(--ink-3)">{{ Text::get('admin.npcs.loot_min') }}</span>
+                                <input class="input num" type="number" min="1" step="1" name="loot[{{ $i }}][min]" value="{{ $row['min'] ?? 1 }}"></label>
+                            <label class="field" style="margin:0"><span class="micro" style="color:var(--ink-3)">{{ Text::get('admin.npcs.loot_max') }}</span>
+                                <input class="input num" type="number" min="1" step="1" name="loot[{{ $i }}][max]" value="{{ $row['max'] ?? 1 }}"></label>
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </div>
 

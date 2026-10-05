@@ -55,6 +55,10 @@ return [
         'traced' => -0.05,
         'burned' => -1.00,
 
+        // Beating one of their people in a fight. PER GRADE of the opponent (grade 1 is -0.05, grade 5 is
+        // -0.25), like a trace. Only a WIN moves it: getting away, or being beaten, does not.
+        'defeated' => -0.05,
+
         // Written by the mission writer with an amount of its own, scaled by
         // the agent's grade — this is the floor it falls back to.
         'mission_completed' => 0.01,

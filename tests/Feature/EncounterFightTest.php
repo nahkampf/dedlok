@@ -16,6 +16,7 @@ use App\City\Explorer;
 use App\Combat\Fight\Action;
 use App\Combat\Fight\FightEngine;
 use App\Combat\Fight\Result;
+use App\Combat\FightEnding;
 use App\Combat\Fights;
 use App\Combat\WeaponClass;
 use App\Models\Ammunition;
@@ -58,9 +59,12 @@ final class EncounterFightTest extends TestCase
     private function npc(int $hp = 40, string $slug = 'thug'): Npc
     {
         $gun = Item::factory()->physical()->create(['name' => 'Gang pistol', 'stackable' => false]);
-        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'damage' => 5, 'damage_profile' => ['penetrating' => 100], 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => '9mm']);
+        $calibre = 'gang-'.$gun->id;
+        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => $calibre]);
+        $round = Item::factory()->physical()->create(['name' => 'Gang round', 'stackable' => true]);
+        Ammunition::create(['item_id' => $round->id, 'calibre' => $calibre, 'type' => 'standard', 'damage' => 5, 'damage_profile' => ['penetrating' => 100], 'penetration' => 0]);
 
-        return Npc::create(['slug' => $slug, 'name' => 'Thug', 'grade' => 2, 'hitpoints' => $hp, 'aim' => 99, 'defence' => 0, 'pursuit' => 8, 'ranged_weapon_id' => $gun->id]);
+        return Npc::create(['slug' => $slug, 'name' => 'Thug', 'grade' => 2, 'hitpoints' => $hp, 'aim' => 99, 'defence' => 0, 'pursuit' => 8, 'ranged_weapon_id' => $gun->id, 'ammo_item_id' => $round->id]);
     }
 
     /**
@@ -121,6 +125,8 @@ final class EncounterFightTest extends TestCase
     {
         $dice = new QueueDice($values);
         $this->app->bind(Fights::class, fn (): Fights => new Fights(new FightEngine(CheckRoller::fromConfig()), $dice));
+        // The ending's own die: the lowest roll, so the pay and the mugging are the band's floors.
+        $this->app->bind(FightEnding::class, fn (): FightEnding => FightEnding::fromConfig(fn (int $min, int $max): int => $min));
 
         return $dice;
     }
@@ -242,19 +248,24 @@ final class EncounterFightTest extends TestCase
     private function armed(): void
     {
         $gun = Item::factory()->physical()->create(['name' => 'Pistol', 'stackable' => false]);
-        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => '9mm']);
+        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => '9mm']);
         $row = InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $gun->id, 'quantity' => 1]);
         $round = Item::factory()->physical()->create(['name' => '9mm', 'stackable' => true]);
-        Ammunition::create(['item_id' => $round->id, 'calibre' => '9mm', 'type' => 'standard', 'damage' => 0, 'penetration' => 0]);
+        Ammunition::create(['item_id' => $round->id, 'calibre' => '9mm', 'type' => 'standard', 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'penetration' => 0]);
         $row->forceFill(['loaded_ammo_id' => $round->id, 'loaded_rounds' => 12])->save();
         $this->character->forceFill(['equipped_ranged_id' => $row->id])->save();
     }
 
     /** Start the fight from its button, then play one round with these dice. */
-    private function fightAndAct(Encounter $encounter, array $dice, Action $action): Fight
+    private function fightAndAct(Encounter $encounter, array $dice, Action $action, int $distance = 2): Fight
     {
         $this->dice($dice);
         $this->runner()->choose($this->character->fresh(), $this->choiceId($encounter));
+
+        if ($distance !== 2) {
+            $row = Fight::query()->sole();
+            $row->update(['state' => [...$row->state, 'distance' => $distance]]);
+        }
 
         $fight = app(Fights::class)->act($this->character->fresh(), $action);
         $this->assertInstanceOf(Fight::class, $fight);
@@ -275,11 +286,13 @@ final class EncounterFightTest extends TestCase
         $this->assertNull($character->current_fight_id);
         $this->assertSame($live->id, $character->current_encounter_id, 'the encounter carries on');
         $this->assertSame('won', $live->fresh()->node_key);
-        $this->assertSame(600, $character->creds, 'the win screen\'s arrival outcome paid out');
+        $pay = (int) config('combat.pay.2.min');
+        $this->assertSame(500 + $pay + 100, $character->creds, 'the fight paid its band, then the win screen\'s arrival outcome paid out');
 
         $entry = $live->fresh()->log[array_key_last($live->fresh()->log)];
         $this->assertSame('Fight with Thug', $entry['label']);
         $this->assertSame('Thug is down.', $entry['lines'][0]);
+        $this->assertSame("You take {$pay} ¤ off it.", $entry['lines'][1], 'what the fight was worth is in the encounter\'s log, not only the fight\'s');
     }
 
     public function test_a_loss_goes_to_the_loss_screen_which_they_read_after_they_get_up(): void
@@ -295,7 +308,8 @@ final class EncounterFightTest extends TestCase
         $character = $this->character->fresh();
         $this->assertTrue(app(WaitingRoom::class)->isDown($character), 'on the floor first');
         $this->assertSame('lost', $live->fresh()->node_key);
-        $this->assertSame(450, $character->creds, 'the loss screen applied to somebody already down');
+        $mugged = (int) floor(500 * (int) config('combat.mugging.min') / 100);
+        $this->assertSame(500 - $mugged - 50, $character->creds, 'mugged on the way down, then the loss screen applied to somebody already down');
 
         // A minute later they get up, and the encounter is where it was left.
         $this->travel(2)->minutes();
@@ -309,7 +323,7 @@ final class EncounterFightTest extends TestCase
         $encounter = $this->ambush($this->npc(), nodes: ['won' => ['outcomes' => [['kind' => 'creds', 'amount' => 100]]]]);
         $live = $this->enter($encounter);
 
-        $fight = $this->fightAndAct($encounter, [0.0, 0.5,  0.0], Action::disengage());
+        $fight = $this->fightAndAct($encounter, [0.0, 0.5,  0.0], Action::disengage(), distance: 3);
 
         $this->assertSame(Result::AEscaped, $fight->result);
         $this->assertSame('away', $live->fresh()->node_key);
@@ -345,7 +359,7 @@ final class EncounterFightTest extends TestCase
 
         $user = $this->character->user->fresh();
         $this->actingAs($user)->post(route('fight.act'), ['action' => 'attack'])
-            ->assertRedirect(route('city.index'))->assertSessionHas('status', 'Thug is down.');
+            ->assertRedirect(route('city.index'))->assertSessionHas('status', 'Thug is down. You take '.config('combat.pay.2.min').' ¤ off it.');
 
         $this->assertNull($this->character->fresh()->current_encounter_id, 'closed');
         $this->assertNull(CharacterEncounter::query()->find($live->id));
@@ -406,7 +420,7 @@ final class EncounterFightTest extends TestCase
         $this->runner()->choose($this->character->fresh(), $this->choiceId($encounter));
 
         $this->actingAs($this->character->user->fresh())->post(route('fight.act'), ['action' => 'attack'])
-            ->assertRedirect(route('encounter.show'))->assertSessionHas('status', 'Thug is down.');
+            ->assertRedirect(route('encounter.show'))->assertSessionHas('status', 'Thug is down. You take '.config('combat.pay.2.min').' ¤ off it.');
 
         $this->actingAs($this->character->user->fresh())->get(route('encounter.show'))
             ->assertOk()->assertSeeText('You win.')->assertSeeText('Fight with Thug');

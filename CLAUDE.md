@@ -1034,7 +1034,7 @@ hunters, the waiting room, recovery and missions. The traps that matter everywhe
 
 ### Physical combat (in progress — `COMBAT.md`)
 
-**Step 1 of the build is done; there is no fight yet.** Built: damage types, armour, weapons, wielding.
+**Steps 1–6 of the build are done** (damage types, armour, weapons, wielding, the engine, NPCs, the stored fight, encounters that start fights, and what a win pays and a loss costs). Left: the balance pass, which needs authored content.
 
 - **The eight damage types are `DamageOrigin` cases** (blunt, slashing, penetrating, fragmentation =
   family `kinetic`; electrical, thermal, chemical, neural = `specialty`). The family is a second tag on
@@ -1059,6 +1059,11 @@ hunters, the waiting room, recovery and missions. The traps that matter everywhe
   never `CheckRoller::roll()`. Nothing in it may call `takeDamage`, `WaitingRoom`, `WeaponLoader` or `Wallet` —
   the step that stores a fight applies its `Result`. Tested with `Tests\Support\QueueDice`, which throws when
   it runs dry and is asserted spent, so a drift in dice order fails a test.
+- **Distance is a number** (`FightState::$distance`, `combat.distance`): a fight opens at 2, 0 is close combat, 6 is the
+  most, and **only an action moves it** — Close in (one step) or Create distance (one or two, `far_share`). `Range` is
+  derived (`Range::at()`). **Disengage works only from beyond 2.** `FightEngine::choose()` plays any side with nobody
+  choosing: the one better at close combat (`prefersClose()`) closes in, the other holds range and backs off when
+  closed on. Old stored fights (`range`) still load.
 - **`php artisan fight:simulate <handle>` is the balance tool**: a real character's loadout against an opponent
   described by options, seeded and repeatable, writing nothing. Run it before and after touching any combat
   number (`config/combat.php`, `stats.pools.aim`, `stats.bases.defence`). `DamageResolver::against()` is the
@@ -1066,17 +1071,37 @@ hunters, the waiting room, recovery and missions. The traps that matter everywhe
 - **An NPC is a row of numbers and three pointers at items** (`npcs`: ranged weapon, melee weapon, standing
   round), authored at `admin/npcs`. A fight reads it ONCE into a snapshot (`CombatantBuilder::forNpc()`), so an
   edit never touches a fight running. Bare hands at Close, no ammunition counting, resistances as percent off
-  by type and by body part. Loot, tags and whose-it-is are NOT columns yet: they arrive with the code that
-  pays them out.
+  by type and by body part. Whose it is (`entity_id`), what it carries (`npc_loot`) and what it does to somebody
+  it beats (`tags`) arrived with step 6 and are described under *Endings* below.
 - **`App\Combat\Fights` is the only writer of `fights` and `characters.current_fight_id`.** One transaction a
   round with the character and the fight locked; the player's hit points and SI are re-read from the character at
   the start of every round and the round's drop applied with `takeDamage()` (never `DamageResolver::apply()`);
   the opponent is a snapshot on the row; ammunition goes through `WeaponLoader` and a desync throws. **Anything
   that can start something must refuse while `current_fight_id` is set** (the middleware is not the guard), and a
   fight may open inside an encounter. `fight:start <handle> <npc-slug>` is the only way to open one until
-  encounters can. Endings are minimal until COMBAT.md's step 6: no payout, no mugging, no tags.
+  encounters can.
+- **Endings are `App\Combat\FightEnding`'s**, called by `Fights::act()` on the locked character BEFORE the waiting
+  room is asked (damage, consequence, the floor), returning log lines that go onto the fight's log and into the
+  `DownedCause` effects. **It has its own integer die** (`fn (int $min, int $max): int`, container-bound like
+  `DefeatResolver`'s) and never draws from the fight's: that die is pinned in an exact order and asserted spent.
+  A win pays the grade's band (`combat.pay.<grade>`, through `Wallet` as `Reason::Fight`), rolls each drop in the
+  order authored (a chance, and a quantity only on a success; granted through `ItemGranter`) and moves the owner's
+  standing by `StandingReason::Defeated` × the opponent's grade (negative, silent in the log). **Only a win pays or
+  moves standing**: a loss costs, and getting away — the player's or the opponent's — is nothing either way.
+- **Tags are `CombatTag`**, a fixed vocabulary (`mugged`, `maim`; a new one is a case, a string and a branch).
+  **`npcs.tags` NULL is the DEFAULT, `[mugged]`, and any list REPLACES it** — the opposite of ICE, where null and
+  `[]` are one answer. `mugged` takes a uniform `combat.mugging` percent of ALL creds carried, floored
+  (`Reason::Mugged`); `maim` deepens `physical_trauma` by a `combat.maim` percent of the maximum as it stands. The
+  editor cannot express "takes nothing": ticking no box is the default.
+- **A fight copies its terms when it opens** (`fights.entity_id`, `tags`, `loot`), so an opponent edited or
+  deleted mid-fight changes nothing. `fights.entity_id` is a plain column, never a foreign key. An item in the
+  snapshot that has since been deleted is skipped and costs no die.
+- **Drops are `npc_loot`** (item, chance 1–100, min and max quantity), replaced wholesale by `NpcEditor`, the only
+  writer. **Physical items only** (`NpcRequest`): a data item would have to ask `Storage::fits()` and a drop cannot
+  be refused. This is NOT `loot_tables`, which is the grid's rarity weights. `Fights::act()` copies `creds` back
+  onto the caller's character, or the topbar shows the old balance after a payout.
 - **Weapons and ammunition are items with rows** (`weapons`, `ammunition`). A hit's damage is ONE fixed
-  figure; the profile (a map of type to percent, summing to exactly 100) splits it; `DamageProfile` is the
+  figure (a firearm's is its round's); the profile (a map of type to percent, summing to exactly 100) splits it; `DamageProfile` is the
   pure judge. `WeaponWielder` is the only writer of `equipped_ranged_id` / `equipped_melee_id`.
 - **Gear is only its own kind**: armour, a weapon and ammunition are each exclusive of one another and of
   hardware, software, drugs, imprints and implants (`ItemRequest`). Armour and weapons are non-stackable,
@@ -1090,8 +1115,11 @@ hunters, the waiting room, recovery and missions. The traps that matter everywhe
   editors). A mid-fight reload or switch costs a turn — the engine's, per COMBAT.md.
 - **One item per kind of round**: `ammunition` is unique on (calibre, type), in the schema and in
   `ItemRequest`, because ammunition stacks per item and a twin would be a pile that never merges.
-- **A round's riders ADD to the weapon's; its damage profile REPLACES the weapon's.** Riders are authored
-  and read by nothing until the fight engine.
+- **A firearm has no damage of its own — its ROUND does.** A weapon with a calibre has `damage` and
+  `damage_profile` NULL (the editor refuses both on one; CHECK `chk_weapons_damage_or_calibre`), and the round's
+  `damage` is the whole figure of a hit (1–1000, absolute, never a percent) with a required profile. A blade,
+  club or grenade has no round and keeps both on the weapon. **A round's riders ADD to the weapon's.** An NPC
+  with a firearm needs a standing round (`NpcRequest`); with none it has no ranged arm.
 - **`config/strings.php` must not declare a top-level group twice** — PHP keeps the last silently
   (`StringKeysTest` guards it).
 

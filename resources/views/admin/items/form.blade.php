@@ -349,8 +349,9 @@
                 </div>
             </div>
         </div>
-        {{-- Weapons. A hit does ONE fixed damage — never a range — and for a firearm that is with its
-             standard round; how well it lands is decided by the roll, not here. The class says which
+        {{-- Weapons. A hit does ONE fixed damage — never a range. A FIREARM has none of its own: its round
+             carries the damage and the profile, so leave both blank on a gun. A blade, a club or a grenade
+             keeps them here. How well a hit lands is decided by the roll, not here. The class says which
              skill aims it and whether it is a Ranged or a Close weapon. The PROFILE says how the hit
              splits across damage types, so a stun baton can be part blunt and part electrical. --}}
         <div class="panel">
@@ -370,7 +371,7 @@
 
                 <div data-when="weapon" @unless ($isWeapon) hidden @endunless>
                     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));margin-top:var(--s-4)">
-                        @foreach (['weapon_damage' => [1, 1], 'weapon_accuracy' => [0, 0], 'weapon_rate' => [1, 1]] as $field => [$default, $min])
+                        @foreach (['weapon_damage' => ['', 1], 'weapon_accuracy' => [0, 0], 'weapon_rate' => [1, 1]] as $field => [$default, $min])
                             <div class="field" @error($field) data-invalid @enderror>
                                 <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
                                 <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" step="1"
@@ -414,9 +415,9 @@
             </div>
         </div>
 
-        {{-- Ammunition. A set of CHANGES to a hit, so the engine learns no round by name: a signed percent
-             of damage, a penetration (how much of the target's resistance it ignores) and, optionally, a
-             different damage profile while it is loaded. It fits a weapon of the same calibre. It stacks. --}}
+        {{-- Ammunition. What a firearm's hit IS: the whole damage of a hit with this round, how it splits across
+             damage types, a penetration (how much of the target's resistance it ignores) and riders. It fits
+             a weapon of the same calibre. It stacks. --}}
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.ammunition') }}</span></div>
             <div class="panel__bd">
@@ -444,7 +445,7 @@
                             <div class="field" @error($field) data-invalid @enderror>
                                 <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
                                 <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" step="1"
-                                       value="{{ old($field, $item?->ammunition?->{$column} ?? 0) }}">
+                                       value="{{ old($field, $item?->ammunition?->{$column} ?? ($field === 'ammo_damage' ? '' : 0)) }}">
                                 <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
                                 @error($field) <span class="field__error">{{ $message }}</span> @enderror
                             </div>

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Admin;
 
+use App\Admin\DeletionImpact;
 use App\Combat\AmmoType;
 use App\Combat\WeaponClass;
 use App\Models\Ammunition;
+use App\Models\Entity;
 use App\Models\Item;
 use App\Models\Npc;
+use App\Models\NpcLoot;
 use App\Models\User;
 use App\Models\Weapon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,7 +35,7 @@ final class NpcAdminTest extends TestCase
     {
         $item = Item::factory()->physical()->create(['name' => $name, 'stackable' => false]);
         Weapon::create([
-            'item_id' => $item->id, 'class' => $class, 'damage' => 6, 'damage_profile' => ['penetrating' => 100], 'accuracy' => 0, 'rate' => 1,
+            'item_id' => $item->id, 'class' => $class, 'damage' => $class->firearm() ? null : 6, 'damage_profile' => $class->firearm() ? null : ['penetrating' => 100], 'accuracy' => 0, 'rate' => 1,
             'magazine' => $class->firearm() ? 12 : null, 'calibre' => $class->firearm() ? ($calibre ?? '9mm') : null,
         ]);
 
@@ -46,7 +49,7 @@ final class NpcAdminTest extends TestCase
         // One item per kind of round, so each one a test makes is a different type.
         $type = AmmoType::cases()[$this->rounds++ % count(AmmoType::cases())];
         $item = Item::factory()->physical()->create(['name' => 'A round', 'stackable' => true]);
-        Ammunition::create(['item_id' => $item->id, 'calibre' => $calibre, 'type' => $type, 'damage' => 0, 'penetration' => 0]);
+        Ammunition::create(['item_id' => $item->id, 'calibre' => $calibre, 'type' => $type, 'damage' => 6, 'damage_profile' => ['penetrating' => 100], 'penetration' => 0]);
 
         return $item;
     }
@@ -131,7 +134,7 @@ final class NpcAdminTest extends TestCase
     public function test_clearing_the_weapons_and_resistances_clears_them(): void
     {
         $gun = $this->weapon(WeaponClass::Pistol, 'Street pistol');
-        $this->save($this->valid(['ranged_weapon_id' => $gun->id, 'resistances' => ['blunt' => '20']]))->assertRedirect();
+        $this->save($this->valid(['ranged_weapon_id' => $gun->id, 'ammo_item_id' => $this->round()->id, 'resistances' => ['blunt' => '20']]))->assertRedirect();
         $npc = Npc::query()->sole();
 
         $this->actingAs($this->admin())->put(route('admin.npcs.update', $npc), $this->valid(['slug' => '', 'ranged_weapon_id' => '', 'resistances' => ['blunt' => '']]))->assertRedirect();
@@ -150,7 +153,7 @@ final class NpcAdminTest extends TestCase
     public function test_deleting_a_weapon_leaves_the_opponent_unarmed_and_deleting_the_opponent_is_allowed(): void
     {
         $gun = $this->weapon(WeaponClass::Pistol, 'Street pistol');
-        $this->save($this->valid(['ranged_weapon_id' => $gun->id]))->assertRedirect();
+        $this->save($this->valid(['ranged_weapon_id' => $gun->id, 'ammo_item_id' => $this->round()->id]))->assertRedirect();
         $npc = Npc::query()->sole();
 
         $gun->delete();
@@ -204,6 +207,17 @@ final class NpcAdminTest extends TestCase
         $this->save($this->valid(['ranged_weapon_id' => $plain->id]))->assertSessionHasErrors('ranged_weapon_id');
     }
 
+    public function test_a_firearm_needs_its_standing_round_but_a_grenade_does_not(): void
+    {
+        $gun = $this->weapon(WeaponClass::Pistol, 'Street pistol');
+        $thrown = $this->weapon(WeaponClass::Explosive, 'Grenade');
+
+        $this->save($this->valid(['ranged_weapon_id' => $gun->id]))->assertSessionHasErrors('ammo_item_id');
+        $this->assertSame(0, Npc::query()->count());
+
+        $this->save($this->valid(['ranged_weapon_id' => $thrown->id]))->assertRedirect();
+    }
+
     public function test_it_refuses_a_round_that_does_not_fit(): void
     {
         $gun = $this->weapon(WeaponClass::Pistol, 'Street pistol');
@@ -213,5 +227,81 @@ final class NpcAdminTest extends TestCase
         $this->save($this->valid(['ranged_weapon_id' => $gun->id, 'ammo_item_id' => Item::factory()->physical()->create()->id]))->assertSessionHasErrors('ammo_item_id');
         $this->save($this->valid(['ranged_weapon_id' => $thrown->id, 'ammo_item_id' => $this->round()->id]))->assertSessionHasErrors('ammo_item_id');
         $this->save($this->valid(['ammo_item_id' => $this->round()->id]))->assertSessionHasErrors('ammo_item_id');
+    }
+
+    // ---- spoils and defeat (COMBAT.md, step 6) ----------------------------------------------------
+
+    public function test_an_owner_tags_and_drops_are_saved_and_shown_back(): void
+    {
+        $entity = Entity::query()->interactable()->firstOrFail();
+        $scrap = Item::factory()->physical()->create(['name' => 'Scrap', 'stackable' => true]);
+        $knife = Item::factory()->physical()->create(['name' => 'Knife', 'stackable' => false]);
+
+        $this->save($this->valid([
+            'entity_id' => $entity->id,
+            'tags' => ['maim', 'mugged'],
+            'loot' => [
+                0 => ['item_id' => $scrap->id, 'chance' => '40', 'min' => '2', 'max' => '5'],
+                1 => ['item_id' => '', 'chance' => '100', 'min' => '1', 'max' => '1'],
+                2 => ['item_id' => $knife->id, 'chance' => '5', 'min' => '1', 'max' => '1'],
+            ],
+        ]))->assertRedirect();
+
+        $npc = Npc::query()->sole();
+        $this->assertSame($entity->id, $npc->entity_id);
+        $this->assertSame(['mugged', 'maim'], $npc->tags, 'stored in the vocabulary\'s order');
+        $this->assertSame([[$scrap->id, 40, 2, 5], [$knife->id, 5, 1, 1]], $npc->loot->map(fn ($d) => [$d->item_id, $d->chance, $d->min_quantity, $d->max_quantity])->all(), 'the blank row is none');
+
+        $html = $this->actingAs($this->admin())->get(route('admin.npcs.edit', $npc))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/name="tags\[\]" value="maim" checked/', $html);
+        $this->assertMatchesRegularExpression('/<option value="'.$scrap->id.'"[^>]*selected/', $html);
+        $this->assertMatchesRegularExpression('/name="loot\[0\]\[chance\]" value="40"/', $html);
+    }
+
+    public function test_ticking_nothing_is_the_default_and_the_drops_are_replaced_wholesale(): void
+    {
+        $scrap = Item::factory()->physical()->create(['name' => 'Scrap']);
+        $this->save($this->valid(['tags' => ['maim'], 'loot' => [0 => ['item_id' => $scrap->id, 'chance' => '40', 'min' => '1', 'max' => '1']]]))->assertRedirect();
+        $npc = Npc::query()->sole();
+
+        $this->actingAs($this->admin())->put(route('admin.npcs.update', $npc), $this->valid(['slug' => '']))->assertRedirect();
+
+        $this->assertNull($npc->fresh()->tags, 'no box ticked is NULL, which means the default');
+        $this->assertSame(0, NpcLoot::query()->count());
+        $this->assertNull($npc->fresh()->entity_id);
+    }
+
+    public function test_it_refuses_a_bad_owner_tag_or_drop(): void
+    {
+        $scenery = Entity::query()->create(['name' => 'A shopfront', 'category' => Entity::query()->value('category'), 'interactable' => false, 'business' => 'Scenery.']);
+        $data = Item::factory()->create(['container' => Item::CONTAINER_DATA]);
+        $scrap = Item::factory()->physical()->create();
+        $row = fn (Item $item, array $extra = []): array => [0 => $extra + ['item_id' => $item->id, 'chance' => '50', 'min' => '1', 'max' => '1']];
+
+        $this->save($this->valid(['entity_id' => $scenery->id]))->assertSessionHasErrors('entity_id');
+
+        $this->save($this->valid(['entity_id' => 999999]))->assertSessionHasErrors('entity_id');
+        $this->save($this->valid(['tags' => ['sap']]))->assertSessionHasErrors('tags.0');
+        $this->save($this->valid(['loot' => $row($data)]))->assertSessionHasErrors('loot.0');
+        $this->save($this->valid(['loot' => $row($scrap, ['chance' => '0'])]))->assertSessionHasErrors('loot.0');
+        $this->save($this->valid(['loot' => $row($scrap, ['chance' => '101'])]))->assertSessionHasErrors('loot.0');
+        $this->save($this->valid(['loot' => $row($scrap, ['min' => '0'])]))->assertSessionHasErrors('loot.0');
+        $this->save($this->valid(['loot' => $row($scrap, ['min' => '3', 'max' => '2'])]))->assertSessionHasErrors('loot.0');
+        $this->save($this->valid(['loot' => [0 => $row($scrap)[0], 1 => $row($scrap)[0]]]))->assertSessionHasErrors('loot.1');
+
+        $this->assertSame(0, Npc::query()->count());
+    }
+
+    public function test_deleting_a_dropped_item_says_how_many_opponents_stop_dropping_it(): void
+    {
+        $scrap = Item::factory()->physical()->create(['name' => 'Scrap']);
+        $this->save($this->valid(['loot' => [0 => ['item_id' => $scrap->id, 'chance' => '40', 'min' => '1', 'max' => '1']]]))->assertRedirect();
+
+        $this->assertSame(1, DeletionImpact::forItem($scrap)->counts()['npc_loot']);
+
+        $scrap->delete();
+
+        $this->assertSame(0, NpcLoot::query()->count(), 'the row goes with the item');
+        $this->assertSame(1, Npc::query()->count(), 'the opponent stays');
     }
 }

@@ -78,7 +78,7 @@ final class SimulateFight extends Command
         ]);
 
         $you = CombatantBuilder::forCharacter($character);
-        $opening = new FightState($you, $foe);   // the enemy first, as in an encounter
+        $opening = FightState::opening($you, $foe);   // the enemy first, as in an encounter
 
         $result = Simulation::make()->run(
             $opening,

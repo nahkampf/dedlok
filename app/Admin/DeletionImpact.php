@@ -13,6 +13,7 @@ use App\Models\Item;
 use App\Models\LocationBuy;
 use App\Models\MarketPurchase;
 use App\Models\Npc;
+use App\Models\NpcLoot;
 use App\Models\ShopItem;
 use App\Models\Skill;
 use App\Models\SkillPrerequisite;
@@ -62,6 +63,8 @@ final class DeletionImpact
             'npc_arms' => Npc::query()
                 ->where(fn ($q) => $q->where('ranged_weapon_id', $item->id)->orWhere('melee_weapon_id', $item->id)->orWhere('ammo_item_id', $item->id))
                 ->count(),
+            // A drop list entry goes with the item; the opponent stays and simply no longer drops it.
+            'npc_loot' => NpcLoot::query()->where('item_id', $item->id)->count(),
         ];
 
         if ($item->isContainer()) {

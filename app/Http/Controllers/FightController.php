@@ -76,9 +76,12 @@ class FightController extends Controller
         return redirect()->route('city.index')->with($won ? 'status' : 'error', $this->ending($result));
     }
 
+    /** How it ended, and then what that was worth (the lines `FightEnding` marked on the log). */
     private function ending(Fight $fight): string
     {
-        return Text::get('combat.fight.ending.'.($fight->result?->value ?? 'unknown'), ['name' => $fight->opponent_name]);
+        $worth = array_column(array_filter($fight->snapshot()->log, static fn (array $line): bool => ($line['ending'] ?? false) === true), 'text');
+
+        return implode(' ', [Text::get('combat.fight.ending.'.($fight->result?->value ?? 'unknown'), ['name' => $fight->opponent_name]), ...$worth]);
     }
 
     private function live(Character $character): ?Fight

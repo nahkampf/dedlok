@@ -121,6 +121,21 @@ final class FightSimulationTest extends TestCase
         $this->assertSame('brace', $this->sim()->policy($state(0, 0))->kind->value, 'empty and nothing to load');
     }
 
+    public function test_a_shooter_who_is_closed_on_backs_off_unless_the_close_weapon_is_better(): void
+    {
+        $round = ['s' => new RoundSpec('s', 'S', 12.0, ['penetrating' => 100], 0, [], 30)];
+        $hands = new Arm('Bare hands', WeaponClass::Unarmed, 10.0, 1, ['own' => new RoundSpec('own', 'Bare hands', 2.0, ['blunt' => 100])], 'own');
+        $blade = new Arm('Knife', WeaponClass::Blade, 10.0, 1, ['own' => new RoundSpec('own', 'Knife', 15.0, ['slashing' => 100])], 'own');
+        $at = fn (Arm $melee) => new FightState(
+            new Combatant('You', 40, 10.0, 10.0, new Arm('Pistol', WeaponClass::Pistol, 10.0, 1, $round, 's', 5, 12), $melee, 30, [], 40),
+            $this->side('Them', 40, 1),
+            0,
+        );
+
+        $this->assertSame('create_distance', $this->sim()->policy($at($hands))->kind->value, 'a gun beats bare hands');
+        $this->assertSame('attack', $this->sim()->policy($at($blade))->kind->value, 'a better knife is used');
+    }
+
     public function test_it_does_not_change_the_state_it_was_given(): void
     {
         $opening = new FightState($this->side('You', 40, 6), $this->side('Them', 40, 6));
@@ -137,12 +152,12 @@ final class FightSimulationTest extends TestCase
     {
         $character = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3]));
         $gun = Item::factory()->physical()->create(['name' => 'Pistol', 'stackable' => false]);
-        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => '9mm']);
+        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => '9mm']);
         $row = InventoryItem::query()->create(['character_id' => $character->id, 'item_id' => $gun->id, 'quantity' => 1]);
         $character->forceFill(['equipped_ranged_id' => $row->id])->save();
 
         $ammo = Item::factory()->physical()->create(['name' => '9mm FMJ', 'stackable' => true]);
-        Ammunition::create(['item_id' => $ammo->id, 'calibre' => '9mm', 'type' => 'full_metal_jacket', 'damage' => 0, 'penetration' => 0]);
+        Ammunition::create(['item_id' => $ammo->id, 'calibre' => '9mm', 'type' => 'full_metal_jacket', 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'penetration' => 0]);
         InventoryItem::query()->create(['character_id' => $character->id, 'item_id' => $ammo->id, 'quantity' => 60]);
         $row->forceFill(['loaded_ammo_id' => $ammo->id, 'loaded_rounds' => 12])->save();
 

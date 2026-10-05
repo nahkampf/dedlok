@@ -49,10 +49,12 @@ use Illuminate\Support\Facades\DB;
  * Never `DamageResolver::apply()`: the mitigation already resolved the hit, so applying would resolve
  * it twice. Side B is never rebuilt from its NPC row; it stays the stored snapshot.
  *
- * ## Endings are minimal on purpose
+ * ## Endings
  *
- * The player down goes to the waiting room; everything else just ends. What a win pays, what a loss
- * costs (the mugging) and the defeat tags are COMBAT.md's step 6, and are not here.
+ * A round that ends the fight hands it to `FightEnding` (a win pays, a loss costs, getting away is
+ * nothing), appends what it did to the log, and only then asks the waiting room whether the player went
+ * down — damage, consequence, the floor. `FightEnding` is resolved from the container, never injected, so
+ * a test can pin its own die without disturbing the fight's.
  */
 final class Fights
 {
@@ -91,13 +93,18 @@ final class Fights
                 return $refusal;
             }
 
-            $state = new FightState(CombatantBuilder::forCharacter($locked), CombatantBuilder::forNpc($npc));
+            $state = FightState::opening(CombatantBuilder::forCharacter($locked), CombatantBuilder::forNpc($npc));
 
             $fight = Fight::create([
                 'character_id' => $locked->getKey(),
                 'npc_id' => $npc->getKey(),
                 'opponent_name' => $npc->name,
                 'grade' => $npc->grade,
+                'entity_id' => $npc->entity_id,
+                'tags' => $npc->tags,
+                'loot' => $npc->loot()->get()->map(static fn ($drop): array => [
+                    'item_id' => $drop->item_id, 'chance' => $drop->chance, 'min' => $drop->min_quantity, 'max' => $drop->max_quantity,
+                ])->all() ?: null,
                 'resistances' => $npc->resistances,
                 'slot_resistances' => $npc->slot_resistances,
                 'ranged_row_id' => $locked->equipped_ranged_id,
@@ -145,14 +152,28 @@ final class Fights
 
             $this->applyToCharacter($locked, $fight, $before, $after);
 
+            $effects = [];
+            $settled = [];
+
+            if ($after->result !== null) {
+                // What the ending says it was, before the ending's own lines go after it.
+                $effects = array_values(array_filter([$after->log[array_key_last($after->log)]['text'] ?? null]));
+                $settled = app(FightEnding::class)->settle($locked, $fight, $after->result);
+                $round = $after->round;
+
+                // Marked, so the controller can flash exactly these without re-deriving what was settled.
+                $after = $after->withLog(array_map(static fn (array $line): array => ['round' => $round, 'ending' => true] + $line, $settled));
+                $effects = [...$effects, ...array_column($settled, 'text')];
+            }
+
             $fight->forceFill(['state' => $after->toArray()]);
 
             if ($after->result !== null) {
-                $this->finish($locked, $fight, $after);
+                $this->finish($locked, $fight, $after, $effects, array_column($settled, 'text'));
             }
 
             $fight->save();
-            $character->forceFill($locked->only(['current_fight_id', 'current_hitpoints', 'current_synaptic_integrity']));
+            $character->forceFill($locked->only(['current_fight_id', 'current_hitpoints', 'current_synaptic_integrity', 'creds']));
 
             return $fight;
         });
@@ -162,7 +183,7 @@ final class Fights
      * What a screen needs to draw the buttons, from the stored state: every chance quoted, and which
      * actions are on offer. Reads only; the numbers are the ones the next roll will use.
      *
-     * @return array{state: FightState, attack: list<float>, flight: float, can_attack: bool, can_create_distance: bool, loads: list<array{key: string, name: string, stock: int}>}
+     * @return array{state: FightState, attack: list<float>, flight: float, closing: float, can_attack: bool, can_create_distance: bool, can_close_in: bool, can_disengage: bool, loads: list<array{key: string, name: string, stock: int}>}
      */
     public function options(Fight $fight): array
     {
@@ -180,6 +201,9 @@ final class Fights
             'state' => $state,
             'attack' => $this->engine->quote($state, Side::A),
             'flight' => $this->engine->quoteFlight($state, Side::A),
+            'closing' => $this->engine->quoteClosing($state, Side::A),
+            'can_close_in' => $this->engine->legal($state, Side::A, Action::closeIn()),
+            'can_disengage' => $this->engine->legal($state, Side::A, Action::disengage()),
             'can_attack' => $this->engine->canAttack($state, Side::A),
             'can_create_distance' => $this->engine->legal($state, Side::A, Action::createDistance()),
             'loads' => $loads,
@@ -250,8 +274,13 @@ final class Fights
         return $row;
     }
 
-    /** The fight is over: stamp it, let go of the character, and ask the floor if they went down. */
-    private function finish(Character $character, Fight $fight, FightState $state): void
+    /**
+     * The fight is over: stamp it, let go of the character, and ask the floor if they went down.
+     *
+     * @param  list<string>  $effects  what the ending said and did, for the waiting screen to read back
+     * @param  list<string>  $settled  only what `FightEnding` did (pay, drops, what was taken), for the encounter's log
+     */
+    private function finish(Character $character, Fight $fight, FightState $state, array $effects, array $settled): void
     {
         $fight->forceFill(['result' => $state->result, 'resolved_at' => now()]);
         $character->forceFill(['current_fight_id' => null])->save();
@@ -259,13 +288,14 @@ final class Fights
         if ($state->result === Result::ADown) {
             app(WaitingRoom::class)->checkFloor($character, new DownedCause(
                 reason: 'fight',
-                effects: array_values(array_filter([$state->log[array_key_last($state->log)]['text'] ?? null])),
+                tags: array_map(static fn (CombatTag $tag): string => $tag->value, CombatTag::fromStored($fight->tags)),
+                effects: $effects,
             ));
         }
 
         // A fight an encounter started takes the encounter on from here. Resolved when needed and not
         // injected: the runner opens fights through this class, and each must be free of the other at
         // construction.
-        app(EncounterRunner::class)->afterFight($character, $fight);
+        app(EncounterRunner::class)->afterFight($character, $fight, $settled);
     }
 }

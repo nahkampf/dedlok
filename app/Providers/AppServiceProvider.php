@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Checks\CheckRoller;
 use App\City\Encounters;
+use App\Combat\FightEnding;
 use App\Combat\Fights;
 use App\Cyberspace\ChainBuilder;
 use App\Cyberspace\HunterCombat;
@@ -65,6 +66,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Fights are bound too, for the same reason: a test pins the die and the SCREEN uses it.
         $this->app->bind(Fights::class, static fn (): Fights => Fights::fromConfig());
+        $this->app->bind(FightEnding::class, static fn (): FightEnding => FightEnding::fromConfig());
         $this->app->bind(Probe::class, static fn ($app): Probe => Probe::fromConfig(
             $app->make(CheckRoller::class),
             $app->make(Resolver::class),

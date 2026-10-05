@@ -2,6 +2,58 @@
 
 ## [Unreleased]
 
+## [0.36.0] — 2026-10-05
+
+Physical combat gets its endings, a firearm's damage moves onto its round, and distance becomes a number.
+
+### Added
+
+- **What a fight pays and costs** (`App\Combat\FightEnding`, `CombatTag`, `NpcEditor`). A win pays the grade's band
+  (`combat.pay`, through `Wallet` as `Reason::Fight`), rolls the opponent's drops (`npc_loot`, physical items only) and
+  lowers its owner's standing by grade (`StandingReason::Defeated`). A loss applies the opponent's tags: `mugged` (a
+  share of all creds carried) and/or `maim` (deepens `physical_trauma`). Getting away pays and costs nothing. A fight
+  copies its terms when it opens, and the ending has its own die so the fight's pinned dice are untouched.
+- **Opponents have an owner, tags and drops**, authored in a new Spoils and defeat panel at `admin/npcs`.
+- **Close in**, a new fight action: a chance (the closer's pursuit against the target's defence) to win one step of
+  distance.
+
+### Changed
+
+- **A firearm has no damage of its own — its round does.** A weapon with a calibre stores no `damage` or
+  `damage_profile`, and the item editor refuses both on one. Ammunition's `damage` is now the whole figure of a hit
+  (1–1000, an absolute base, not a signed percent) and its profile is required. Blades, clubs and grenades keep both on
+  the weapon. An opponent with a firearm must have a standing round. CHECKs `chk_weapons_damage_or_calibre` and
+  `chk_ammunition_damage` hold it in the schema.
+- **Distance is a number.** A fight opens at 2 (`combat.distance.start`), 0 is close combat and 6 is the most. Nothing
+  closes it by itself: only an action moves it. Create distance wins one or two steps (the luckiest
+  `combat.distance.far_share` of its successes win two), takes effect at once and is offered below 6. **Disengage works
+  only from beyond 2**, so a player who wants out backs off first. `Range` is now derived from the distance.
+- **Who closes in and who holds range.** `FightEngine::prefersClose()` compares a side's melee weapon with its ranged
+  one (best figure times shots). The better-at-close side closes in; the other shoots and backs off when closed on. An
+  opponent hurt past its `flees_at` backs off to beyond 2 and then runs. The simulated player plays by `choose()`, the
+  same rules as an opponent.
+- The fight screen shows `Distance N` and offers Close in, Create distance and Disengage by the distance. A fight stored
+  before this release (it carries a `range`) still opens, at the opening distance or at 0.
+- `COMBAT.md`, `CLAUDE.md` and `TODO.md` describe all of the above.
+
+### Fixed
+
+- Saving ammunition from the item form failed with "The weapon rate field is prohibited": the hidden Weapon panel's
+  default rate of 1 was posted as a value. (`ItemRequest`.)
+- Two clock-sensitive City tests (`CityTravelTest`, `CityExploreTest`) that flaked in a loaded full run now freeze time.
+
+### Migrations
+
+- `2026_10_05_120000_fight_spoils_and_defeat`
+- `2026_10_05_130000_a_firearms_damage_lives_on_its_round` (converts existing rows: a round's new damage is the average
+  damage of the weapons taking its calibre with its old percent applied, then firearms are emptied; reversible)
+
+Production has no weapons or ammunition yet, so the conversion is a no-op there. Nothing is seeded, so a deploy changes
+nothing a player sees until an encounter with a Fight button is written. The captcha is switched off in local
+development only (`CAP_ENABLED=false`, Cap lost its site key); production is untouched.
+
+
+
 ## [0.35.0] — 2026-10-05
 
 Narrative encounters, and physical combat from the item to the fight screen.
@@ -2302,7 +2354,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.35.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.36.0...HEAD
+[0.36.0]: https://github.com/nahkampf/dedlok/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/nahkampf/dedlok/compare/v0.34.1...v0.35.0
 [0.34.1]: https://github.com/nahkampf/dedlok/compare/v0.34.0...v0.34.1
 [0.34.0]: https://github.com/nahkampf/dedlok/compare/v0.33.0...v0.34.0

@@ -5,19 +5,20 @@ what will break if it is left alone.
 
 ---
 
-## RESUME HERE — physical combat, as of 2026-10-05 (release 0.35.0)
+## RESUME HERE — physical combat, as of 2026-10-05 (step 6 built, unreleased)
 
-**`COMBAT.md` is both the design and the as-built record; read its *Settled* table first.** Steps 1–5 of its
-build order are built; step 6 is next. Everything below was decided with the author in conversation and is the
-reason a later session should not re-ask.
+**`COMBAT.md` is both the design and the as-built record; read its *Settled* table and *Step 6, as built* first.**
+Steps 1–6 of its build order are built. What is left is the balance pass, which needs authored content and the
+author's judgement. Everything below was decided with the author in conversation and is the reason a later session
+should not re-ask.
 
 ### Picking this up on another machine
 
 ```bash
 git pull origin main --follow-tags
-docker compose up -d --build            # the composer sidecar changed in 0.34.1
-docker compose exec -u www-data web php artisan migrate
-docker compose exec -u www-data web php artisan test      # 2399 passed, 6 skipped when this was written
+docker compose up -d --build
+docker compose exec -u www-data web php artisan migrate     # step 6 adds 2026_10_05_120000_fight_spoils_and_defeat
+docker compose exec -u www-data web php artisan test       # 2422 passed, 6 skipped when this was written
 docker compose exec -u www-data web php artisan fight:simulate <handle> --foe=<npc-slug>   # the balance tool
 ```
 
@@ -28,35 +29,31 @@ button exists; `php artisan fight:start <handle> <npc-slug>` opens one by hand.
 
 ### What is built (the short list; the documents have the reasons)
 
-- **Damage types, armour per body part, weapons, ammunition (a type, a calibre, one item per kind of round),
-  riders (authored), magazines on the weapon's own inventory row** — items, editors, stash actions, the sheet's
-  Equipment panel.
-- **The pure engine** `App\Combat\Fight\*`: five hit-quality tiers (10/25/50/75/100%), a burst's shots each 7% worse
-  than the last, riders on a Clean hit or Dead-on only, stunlock allowed, ranges (a round at Ranged, then Close),
-  Create distance, Disengage, Load (empty magazine, or switch type at any time, a whole turn each), NPCs never
-  count ammunition, neural damage does nothing to an NPC, an NPC below its `flees_at` tries to Disengage.
-- **`fight:simulate`**, NPCs (`admin/npcs`), the stored fight (`App\Combat\Fights`, `/fight`, `EnsureFightIsResolved`),
-  and **encounters that start fights** (a choice kind with win / lose / nobody-won destinations; rewards are the
-  win screen's arrival outcomes).
+- **Damage types, armour per body part, weapons, ammunition, riders (authored), magazines** — items, editors,
+  stash actions, the sheet's Equipment panel.
+- **The pure engine** `App\Combat\Fight\*`, **`fight:simulate`**, NPCs (`admin/npcs`), the stored fight
+  (`App\Combat\Fights`, `/fight`, `EnsureFightIsResolved`), and **encounters that start fights**.
+- **Step 6, what a win pays and a loss costs** (`App\Combat\FightEnding`, `CombatTag`, `NpcEditor`):
+  - a win pays the grade's band (`combat.pay`), rolls the opponent's drops (`npc_loot`) and lowers its owner's
+    standing by grade (`StandingReason::Defeated`); getting away pays and costs nothing;
+  - a loss applies the opponent's tags: `mugged` (30–50% of all creds carried) and/or `maim` (deepens
+    `physical_trauma`); `npcs.tags` NULL is the default `[mugged]` and a list REPLACES it;
+  - the fight copies its terms when it opens; the ending has its own die so the fight's pinned dice are untouched.
 
-### Step 6 — what a win pays and a loss costs (NOT built; the next job)
+### Next — the balance pass (NOT done; needs the author)
 
-Endings are minimal today: the player down goes to the waiting room, every other ending just releases them.
-
-1. **Columns that arrive WITH the code that reads them** (do not add them earlier): `npcs.entity_id` (whose it is, for
-   standing), a loot table, `npcs.tags`, a per-grade pay band.
-2. **Win:** the opponent's loot table rolls, creds are paid through `Wallet` (a new `Reason`), standing with its owner
-   moves through `StandingLedger`. No experience: skills train by time. **A fled opponent pays nothing** except
-   possibly standing.
-3. **Lose:** a standard enemy leaves the player at zero HP (the waiting room, already built) and **takes 30–50% of ALL
-   the creds they carry** — a uniform roll with an injected die, bounds in `config/combat.php`, through `Wallet`
-   under `Reason::Mugged`. **Tags** with further effects, the shape of ICE's defeat tags: a fixed vocabulary
-   `CombatTag` (a new tag is a case and a string); `mugged` is the default every standard enemy has, `maim` deepens
-   `physical_trauma` through `InjuryLedger` (lowering max HP until a clinic mends it); a tag can REPLACE the default.
-   The waiting screen reads the cause's `effects`.
-4. **Then a balance pass** with `fight:simulate`: the design target is fights of 4–10 rounds costing a fifth to most
-   of a character's HP at grades 1–5. Every combat number is an unmeasured default (`config/combat.php` `spread`,
-   `burst_falloff`, `hit_quality`, `unarmed`; `stats.pools.aim` divisor 3; `stats.bases.defence` and `pursuit` 8).
+1. **Author some opponents** at grades 1–5 in `admin/npcs` (or `bin/pull-db` if they already exist on production),
+   with owners, tags and drops. The pass cannot be run against nothing: `fight:simulate` fights a real character's
+   loadout against an opponent row.
+2. **Run `fight:simulate`** before and after touching any number. The design target is fights of 4–10 rounds costing
+   a fifth to most of a character's HP at grades 1–5. Every combat number is an unmeasured default (`config/combat.php`
+   `spread`, `burst_falloff`, `hit_quality`, `unarmed`, and now `pay`, `mugging`, `maim`; `stats.pools.aim` divisor 3;
+   `stats.bases.defence` and `pursuit` 8; `standing.reasons.defeated`).
+3. **Price the pay against the clinic**: a win should pay for the repair it cost, with some left over, or fighting
+   is a loss on every grade.
+4. Possible follow-ups the author has not asked for: a way to author an opponent that takes nothing (the editor's
+   "tick nothing" is the default, not "none"); a fight with no encounter has no screen that lists the spoils after
+   it ends (the log has them); an inbox message was deliberately not added (the player pressed the button).
 
 ### Parked or open on purpose (do not build without the author)
 
@@ -70,18 +67,28 @@ Endings are minimal today: the player down goes to the waiting room, every other
 
 ### Known loose ends
 
-- **Two clock-sensitive tests flake in a loaded full run** and pass alone: `CityTravelTest` "you move along the
-  route pass by pass" and `CityExploreTest` "a pass takes the base time and is not settled early". Both advance the
-  clock `N` seconds against an `N+1`-second pass with the real clock still running; freezing time at the start
-  fixes it.
 - **The new screens have never been looked at in a browser.** Check on a phone (the 320px rule): the item editor's
   Armour / Weapon / Ammunition / Riders panels, the sheet's Equipment panel, the stash's Equip / Unequip / Load
-  buttons, `admin/npcs`, the encounter editor's Fight fields and graph edges, `/fight`, the encounter screen's
-  Fight tag, the run briefing and run screen rework, and the card-select dropdown.
+  buttons, `admin/npcs` (including the new Spoils and defeat panel: owner, tag boxes, up to twelve drop rows), the encounter editor's Fight fields and graph edges, `/fight`, the encounter screen's
+  Fight tag (and the log lines a win or loss now adds), the run briefing and run screen rework, and the card-select dropdown.
 - Selling or listing a weapon with rounds in it is refused ("unload it first"); a shop sale shares the check but
   has no test of its own.
 - `Weapon` / `Ammunition` / `Npc` have no seeded content, so the 0.35.0 deploy adds the capability and no
   opponents: nothing changes for a player until something is authored.
+
+## Reactivate and fix the captcha
+
+Switched off locally on 2026-10-05 (`CAP_ENABLED=false` in `.env`) because the widget said "Failed".
+
+- **Cause:** Cap no longer knew site key `21b1ce73f9` — `POST /<key>/challenge` answered
+  `Invalid site key or secret`. Site keys live only in the `cap-valkey` store (the `keys` set), and
+  that set was empty. The `cap-data` volume apparently did not survive.
+- **To reactivate:** log in at `localhost:3010` with `CAP_ADMIN_KEY`, create a site key, put its
+  endpoint and secret in `CAP_ENDPOINT` / `CAP_VERIFY_ENDPOINT` / `CAP_SECRET` (single quotes), set
+  `CAP_ENABLED=true`, `docker compose up -d web`.
+- **To fix for good:** find out why Valkey lost its data (`--save 60 1` and the `cap-data` volume are
+  set; check whether a `down -v` or a recreate wiped it) so a key survives a restart. Then check
+  production's Cap holds its key too.
 
 ## Switch `QUEUE_CONNECTION` to `database`
 

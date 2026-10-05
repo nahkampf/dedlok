@@ -20,8 +20,9 @@ use Tests\Support\QueueDice;
 use Tests\TestCase;
 
 /**
- * Getting away and opening the range. COMBAT.md, *The fight*. Defence equals pursuit throughout, so
- * either attempt is a coin flip: a die under 0.5 works, a die over it does not.
+ * Moving the distance and getting away. COMBAT.md, *The fight*. Defence equals pursuit throughout, so
+ * every attempt is a coin flip: a die under 0.5 works, a die over it does not, and for Create distance
+ * the luckiest 40% of the successes (under 0.2) win two steps rather than one.
  */
 final class FightRangeTest extends TestCase
 {
@@ -41,8 +42,14 @@ final class FightRangeTest extends TestCase
         return new FightState(
             new Combatant('You', 40, 10.0, 10.0, $this->gun(), $this->knife(), 30),
             new Combatant('Gang member', 40, 10.0, 10.0, $this->gun(), $this->knife()),
-            range: Range::Close,
+            distance: 0,
         );
+    }
+
+    /** The same two, the enemy first, `$distance` apart. */
+    private function at(int $distance): FightState
+    {
+        return new FightState($this->close()->a, $this->close()->b, distance: $distance);
     }
 
     private function engine(): FightEngine
@@ -71,18 +78,28 @@ final class FightRangeTest extends TestCase
     {
         $dice = new QueueDice([0.2]);                     // the enemy braces (no die), then A gets away
 
-        $after = $this->round($this->close(), ['a' => Action::disengage(), 'b' => Action::brace()], $dice);
+        $after = $this->round($this->at(3), ['a' => Action::disengage(), 'b' => Action::brace()], $dice);
 
         $dice->assertSpent();
         $this->assertSame(Result::AEscaped, $after->result);
         $this->assertNull($after->result->winner());
     }
 
+    public function test_nobody_gets_away_from_within_the_fleeing_distance(): void
+    {
+        foreach ([0, 1, 2] as $distance) {
+            $after = $this->round($this->at($distance), ['a' => Action::disengage(), 'b' => Action::brace()], new QueueDice([]));
+
+            $this->assertNull($after->result, "at $distance");
+            $this->assertSame('You is too close to get away and braces.', $after->log[1]['text']);
+        }
+    }
+
     public function test_a_failed_disengage_costs_the_turn_and_the_other_side_still_acts(): void
     {
         $dice = new QueueDice([0.9,  0.0, 0.5]);          // A fails to get away; B (second now) shoots
 
-        $state = new FightState($this->close()->a, $this->close()->b, range: Range::Close, first: Side::A);
+        $state = new FightState($this->close()->a, $this->close()->b, distance: 3, first: Side::A);
         $after = $this->round($state, ['a' => Action::disengage(), 'b' => Action::attack()], $dice);
 
         $dice->assertSpent();
@@ -95,7 +112,7 @@ final class FightRangeTest extends TestCase
     {
         $dice = new QueueDice([0.2]);                     // only A's attempt is rolled; B never gets a turn
 
-        $state = new FightState($this->close()->a, $this->close()->b, range: Range::Close, first: Side::A);
+        $state = new FightState($this->close()->a, $this->close()->b, distance: 3, first: Side::A);
         $after = $this->round($state, ['a' => Action::disengage(), 'b' => Action::attack()], $dice);
 
         $dice->assertSpent();
@@ -103,54 +120,91 @@ final class FightRangeTest extends TestCase
         $this->assertSame(40, $after->a->hp);
     }
 
-    public function test_disengaging_is_offered_at_ranged_too(): void
+    public function test_a_lucky_success_wins_two_steps_at_once(): void
     {
-        $state = new FightState($this->close()->a, $this->close()->b, first: Side::A);   // Ranged
+        // The enemy braces, then the player breaks away. 0.1 is inside the luckiest 40% of the 50% that work.
+        $one = $this->round($this->at(0), ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.1]));
 
-        $after = $this->round($state, ['a' => Action::disengage()], new QueueDice([0.2]));
-
-        $this->assertSame(Result::AEscaped, $after->result);
-    }
-
-    public function test_creating_distance_puts_the_next_round_at_ranged_and_then_it_closes_again(): void
-    {
-        // Round 1 at Close: enemy braces, player breaks away.
-        $one = $this->round($this->close(), ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.2]));
-        $this->assertSame(Range::Ranged, $one->range, 'the next round opens at Ranged');
-        $this->assertSame(2, $one->round);
+        $this->assertSame(2, $one->distance);
         $this->assertSame(Range::Ranged, $one->range);
-
-        // Round 2 at Ranged: both shoot; then it closes.
-        $two = $this->round($one, ['a' => Action::attack(), 'b' => Action::attack()], new QueueDice([0.0, 0.5,  0.0, 0.5]));
-        $this->assertSame(Range::Close, $two->range, 'one round at range, and then it closes again');
-        $this->assertSame(3, $two->round);
-        $this->assertSame(30, $two->a->hp);
+        $this->assertSame('You breaks away cleanly and wins real distance.', $one->log[1]['text']);
     }
 
-    public function test_a_failed_attempt_to_open_the_range_leaves_it_closed(): void
+    public function test_an_ordinary_success_wins_one_and_a_failure_none(): void
     {
-        $after = $this->round($this->close(), ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.9]));
+        $one = $this->round($this->at(0), ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.3]));
+        $this->assertSame(1, $one->distance);
+        $this->assertSame('You breaks away and wins a little space.', $one->log[1]['text']);
 
-        $this->assertSame(Range::Close, $after->range);
-        $this->assertSame('You tries to open the range and cannot.', $after->log[1]['text']);
+        $none = $this->round($this->at(0), ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.9]));
+        $this->assertSame(0, $none->distance);
+        $this->assertSame('You tries to open the range and cannot.', $none->log[1]['text']);
     }
 
-    public function test_creating_distance_is_only_for_when_you_are_close(): void
+    public function test_nothing_moves_the_distance_but_an_action(): void
     {
-        $state = new FightState($this->close()->a, $this->close()->b, first: Side::A);   // at Ranged
-        $dice = new QueueDice([]);
+        $state = $this->at(2);
 
-        $after = $this->round($state, ['a' => Action::createDistance(), 'b' => Action::brace()], $dice);
+        for ($i = 0; $i < 3; $i++) {
+            $state = $this->round($state, ['a' => Action::attack(), 'b' => Action::attack()], new QueueDice([0.0, 0.5,  0.0, 0.5]));
+        }
 
-        $this->assertSame('You is already at range and braces.', $after->log[0]['text']);
-        $this->assertSame(Range::Close, $after->range, 'and the round went by as ever');
+        $this->assertSame(2, $state->distance, 'three rounds of shooting and nobody has moved');
+        $this->assertSame(4, $state->round);
+    }
+
+    public function test_a_player_may_keep_adding_distance_up_to_the_maximum(): void
+    {
+        $state = $this->at(2);
+        $this->assertFalse($this->engine()->legal($state, Side::A, Action::disengage()), 'not yet');
+
+        $state = $this->round($state, ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.1]));
+        $this->assertSame(4, $state->distance);
+        $this->assertTrue($this->engine()->legal($state, Side::A, Action::disengage()), 'beyond two, running is possible');
+
+        $state = $this->round($state, ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.1]));
+        $this->assertSame(6, $state->distance);
+        $this->assertFalse($this->engine()->legal($state, Side::A, Action::createDistance()), 'no further than six');
+
+        $capped = $this->round($this->at(5), ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.1]));
+        $this->assertSame(6, $capped->distance, 'a gain of two from five stops at six');
+    }
+
+    public function test_closing_in_wins_one_step_on_a_success(): void
+    {
+        $one = $this->round($this->at(2), ['a' => Action::closeIn(), 'b' => Action::brace()], new QueueDice([0.3]));
+        $this->assertSame(1, $one->distance);
+        $this->assertSame('You closes in.', $one->log[1]['text']);
+
+        $failed = $this->round($this->at(2), ['a' => Action::closeIn(), 'b' => Action::brace()], new QueueDice([0.9]));
+        $this->assertSame(2, $failed->distance);
+        $this->assertSame('You tries to close in and cannot.', $failed->log[1]['text']);
+
+        $hard = new FightState(new Combatant('You', 40, 10.0, 10.0), new Combatant('Runner', 40, 18.0, 10.0));
+        $this->assertLessThan(0.5, $this->engine()->quoteClosing($hard, Side::A), 'a target with better defence is harder to close on');
+    }
+
+    public function test_there_is_nothing_to_close_in_on_at_arms_reach(): void
+    {
+        $after = $this->round($this->at(0), ['a' => Action::closeIn(), 'b' => Action::brace()], new QueueDice([]));
+
+        $this->assertSame('You is already in reach and braces.', $after->log[1]['text']);
     }
 
     public function test_a_flight_in_flight_survives_being_stored(): void
     {
-        $one = $this->round($this->close(), ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.2]));
+        $one = $this->round($this->at(0), ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.1]));
         $rebuilt = FightState::fromArray(json_decode((string) json_encode($one->toArray()), true));
 
         $this->assertEquals($one, $rebuilt);
+    }
+
+    public function test_a_fight_stored_before_distance_was_a_number_still_opens(): void
+    {
+        $data = $this->close()->toArray();
+        unset($data['distance']);
+
+        $this->assertSame(0, FightState::fromArray($data + ['range' => 'close'])->distance);
+        $this->assertSame(2, FightState::fromArray($data + ['range' => 'ranged'])->distance);
     }
 }

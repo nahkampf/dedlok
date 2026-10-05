@@ -33,9 +33,17 @@ final class NpcTest extends TestCase
     {
         $item = Item::factory()->physical()->create(['name' => ucfirst($class->value).' item', 'stackable' => false]);
         Weapon::create($extra + [
-            'item_id' => $item->id, 'class' => $class, 'damage' => $damage, 'damage_profile' => CombatantBuilder::defaultProfile($class), 'accuracy' => 0, 'rate' => 1,
+            'item_id' => $item->id, 'class' => $class, 'damage' => $class->firearm() ? null : $damage, 'damage_profile' => $class->firearm() ? null : CombatantBuilder::defaultProfile($class), 'accuracy' => 0, 'rate' => 1,
             'magazine' => $class->firearm() ? 12 : null, 'calibre' => $class->firearm() ? '9mm' : null,
         ]);
+
+        return $item;
+    }
+
+    private function round(int $damage, array $extra = []): Item
+    {
+        $item = Item::factory()->physical()->create(['name' => 'Round', 'stackable' => true]);
+        Ammunition::create($extra + ['item_id' => $item->id, 'calibre' => '9mm', 'type' => AmmoType::Standard, 'damage' => $damage, 'damage_profile' => ['penetrating' => 100], 'penetration' => 0]);
 
         return $item;
     }
@@ -72,7 +80,7 @@ final class NpcTest extends TestCase
         $gun = $this->weapon(WeaponClass::Smg, 5, ['rate' => 3, 'accuracy' => 2, 'riders' => [['kind' => 'stun', 'chance' => 10, 'turns' => 1, 'amount' => 0]]]);
         $knife = $this->weapon(WeaponClass::Blade, 7);
 
-        $foe = CombatantBuilder::forNpc($this->npc(['ranged_weapon_id' => $gun->id, 'melee_weapon_id' => $knife->id]));
+        $foe = CombatantBuilder::forNpc($this->npc(['ranged_weapon_id' => $gun->id, 'melee_weapon_id' => $knife->id, 'ammo_item_id' => $this->round(5)->id]));
 
         $this->assertSame('Smg item', $foe->ranged->name);
         $this->assertSame(3, $foe->ranged->rate);
@@ -87,19 +95,25 @@ final class NpcTest extends TestCase
 
     public function test_a_standing_round_changes_the_ranged_weapon_as_a_loaded_one_would(): void
     {
-        $gun = $this->weapon(WeaponClass::Pistol, 8, ['riders' => [['kind' => 'stun', 'chance' => 10, 'turns' => 1, 'amount' => 0]]]);
-        $round = Item::factory()->physical()->create(['stackable' => true]);
-        Ammunition::create([
-            'item_id' => $round->id, 'calibre' => '9mm', 'type' => AmmoType::Incendiary, 'damage' => 25, 'penetration' => 50,
+        $gun = $this->weapon(WeaponClass::Pistol, 0, ['riders' => [['kind' => 'stun', 'chance' => 10, 'turns' => 1, 'amount' => 0]]]);
+        $round = $this->round(10, [
+            'type' => AmmoType::Incendiary, 'penetration' => 50,
             'damage_profile' => ['penetrating' => 60, 'thermal' => 40], 'riders' => [['kind' => 'burning', 'chance' => 30, 'turns' => 3, 'amount' => 2]],
         ]);
 
         $spec = CombatantBuilder::forNpc($this->npc(['ranged_weapon_id' => $gun->id, 'ammo_item_id' => $round->id]))->ranged->spec();
 
-        $this->assertSame(10.0, $spec->damage, '+25% of 8');
+        $this->assertSame(10.0, $spec->damage, 'the round\'s figure: the gun has none');
         $this->assertSame(50, $spec->penetration);
-        $this->assertSame(['penetrating' => 60, 'thermal' => 40], $spec->profile, 'the round\'s profile replaces');
+        $this->assertSame(['penetrating' => 60, 'thermal' => 40], $spec->profile, 'the round\'s profile');
         $this->assertSame(['stun', 'burning'], array_column($spec->riders, 'kind'), 'and its riders add');
+    }
+
+    public function test_a_firearm_with_no_standing_round_has_nothing_to_fire(): void
+    {
+        $gun = $this->weapon(WeaponClass::Pistol, 0);
+
+        $this->assertNull(CombatantBuilder::forNpc($this->npc(['ranged_weapon_id' => $gun->id]))->ranged);
     }
 
     public function test_an_opponents_resistances_apply_by_type_and_by_body_part(): void

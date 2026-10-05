@@ -45,13 +45,12 @@ final class WeaponEditorTest extends TestCase
         ], $overrides);
     }
 
-    /** @return array<string, mixed> a valid pistol */
+    /** @return array<string, mixed> a valid pistol: no damage, no profile, its round carries both */
     private function pistol(array $overrides = []): array
     {
         return $this->base(array_merge([
-            'weapon_class' => 'pistol', 'weapon_damage' => 8, 'weapon_accuracy' => 0, 'weapon_rate' => 1,
+            'weapon_class' => 'pistol', 'weapon_accuracy' => 0, 'weapon_rate' => 1,
             'weapon_magazine' => 12, 'weapon_calibre' => '9mm',
-            'weapon_profile' => ['penetrating' => '100'],
         ], $overrides));
     }
 
@@ -59,7 +58,8 @@ final class WeaponEditorTest extends TestCase
     private function round(array $overrides = []): array
     {
         return $this->base(array_merge([
-            'stackable' => '1', 'ammo_calibre' => '9mm', 'ammo_type' => 'hollow_point', 'ammo_damage' => 25, 'ammo_penetration' => -50,
+            'stackable' => '1', 'ammo_calibre' => '9mm', 'ammo_type' => 'hollow_point', 'ammo_damage' => 10, 'ammo_penetration' => -50,
+            'ammo_profile' => ['penetrating' => '100'],
         ], $overrides));
     }
 
@@ -70,17 +70,17 @@ final class WeaponEditorTest extends TestCase
 
     // ---- weapons ---------------------------------------------------------------------
 
-    public function test_a_firearm_is_saved_with_its_class_damage_magazine_calibre_and_profile(): void
+    public function test_a_firearm_is_saved_with_its_class_magazine_and_calibre_and_no_damage_of_its_own(): void
     {
         $this->save($this->pistol())->assertRedirect();
 
         $weapon = Item::query()->where('slug', 'test_gear')->sole()->weapon;
 
         $this->assertSame(WeaponClass::Pistol, $weapon->class);
-        $this->assertSame(8, $weapon->damage);
+        $this->assertNull($weapon->damage, 'the round carries it');
+        $this->assertSame([], $weapon->profile());
         $this->assertSame(12, $weapon->magazine);
         $this->assertSame('9mm', $weapon->calibre);
-        $this->assertSame(['penetrating' => 100], $weapon->profile());
     }
 
     public function test_a_blade_takes_no_magazine_or_calibre_and_a_profile_may_combine_types(): void
@@ -106,7 +106,20 @@ final class WeaponEditorTest extends TestCase
 
         $this->assertMatchesRegularExpression('/<option value="pistol"[^>]*selected/', $html);
         $this->assertStringContainsString('value="9mm"', $html);
-        $this->assertMatchesRegularExpression('/name="weapon_profile\[penetrating\]"[^>]*value="100"/', $html);
+    }
+
+    public function test_a_blade_keeps_its_damage_and_profile_on_the_weapon(): void
+    {
+        $this->save($this->base([
+            'weapon_class' => 'blade', 'weapon_damage' => 6, 'weapon_accuracy' => 0, 'weapon_rate' => 1,
+            'weapon_profile' => ['slashing' => '100'],
+        ]))->assertRedirect();
+        $item = Item::query()->where('slug', 'test_gear')->sole();
+
+        $this->assertSame(6, $item->weapon->damage);
+
+        $html = $this->actingAs($this->admin())->get(route('admin.items.edit', $item))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/name="weapon_profile\[slashing\]"[^>]*value="100"/', $html);
     }
 
     public function test_saving_again_as_not_a_weapon_removes_the_row(): void
@@ -124,12 +137,10 @@ final class WeaponEditorTest extends TestCase
     /** @return iterable<string, array{0: array<string, mixed>, 1: string}> */
     public static function weaponRefusals(): iterable
     {
-        yield 'a profile that does not add up to 100' => [['weapon_profile' => ['penetrating' => '60']], 'weapon_profile'];
-        yield 'a profile naming a cause rather than a type' => [['weapon_profile' => ['ice' => '100']], 'weapon_profile'];
-        yield 'a profile of nothing' => [['weapon_profile' => ['penetrating' => '']], 'weapon_profile'];
+        yield 'a firearm with a damage of its own' => [['weapon_damage' => 8], 'weapon_damage'];
+        yield 'a firearm with a profile of its own' => [['weapon_profile' => ['penetrating' => '100']], 'weapon_profile'];
         yield 'a firearm without a calibre' => [['weapon_calibre' => ''], 'weapon_calibre'];
         yield 'a firearm without a magazine' => [['weapon_magazine' => ''], 'weapon_magazine'];
-        yield 'a damage of nothing' => [['weapon_damage' => 0], 'weapon_damage'];
         yield 'a class that is not one' => [['weapon_class' => 'bazooka'], 'weapon_class'];
         yield 'a stackable weapon (a hand holds one row)' => [['stackable' => '1'], 'stackable'];
         yield 'a data item' => [['container' => Item::CONTAINER_DATA], 'container'];
@@ -148,6 +159,25 @@ final class WeaponEditorTest extends TestCase
         $this->save($this->pistol($override))->assertSessionHasErrors($field);
 
         $this->assertSame(0, Item::query()->where('slug', 'test_gear')->count());
+    }
+
+    /** @return iterable<string, array{0: array<string, mixed>, 1: string}> */
+    public static function closeWeaponRefusals(): iterable
+    {
+        yield 'a profile that does not add up to 100' => [['weapon_profile' => ['slashing' => '60']], 'weapon_profile'];
+        yield 'a profile naming a cause rather than a type' => [['weapon_profile' => ['ice' => '100']], 'weapon_profile'];
+        yield 'a profile of nothing' => [['weapon_profile' => ['slashing' => '']], 'weapon_profile'];
+        yield 'a damage of nothing' => [['weapon_damage' => 0], 'weapon_damage'];
+    }
+
+    /** @param  array<string, mixed>  $override */
+    #[DataProvider('closeWeaponRefusals')]
+    public function test_a_blade_refuses(array $override, string $field): void
+    {
+        $this->save($this->base(array_merge([
+            'weapon_class' => 'blade', 'weapon_damage' => 6, 'weapon_accuracy' => 0, 'weapon_rate' => 1,
+            'weapon_profile' => ['slashing' => '100'],
+        ], $override)))->assertSessionHasErrors($field);
     }
 
     public function test_a_blade_with_a_calibre_is_refused(): void
@@ -220,7 +250,7 @@ final class WeaponEditorTest extends TestCase
 
     // ---- ammunition ---------------------------------------------------------------------
 
-    public function test_ammunition_is_a_calibre_and_a_set_of_changes_and_it_stacks(): void
+    public function test_ammunition_is_a_calibre_with_the_damage_of_a_hit_and_it_stacks(): void
     {
         $this->save($this->round())->assertRedirect();
 
@@ -229,13 +259,13 @@ final class WeaponEditorTest extends TestCase
 
         $this->assertSame('9mm', $round->calibre);
         $this->assertSame(AmmoType::HollowPoint, $round->type);
-        $this->assertSame(25, $round->damage);
+        $this->assertSame(10, $round->damage, 'the whole figure of a hit, not a percent');
         $this->assertSame(-50, $round->penetration, 'a hollow point: harder on flesh, worse against a vest');
-        $this->assertNull($round->profile(), 'blank keeps the weapon\'s own');
+        $this->assertSame(['penetrating' => 100], $round->profile());
         $this->assertTrue($item->stackable);
     }
 
-    public function test_a_round_may_replace_the_profile_while_it_is_loaded(): void
+    public function test_a_round_may_split_its_damage_across_types(): void
     {
         $this->save($this->round(['ammo_profile' => ['penetrating' => '60', 'thermal' => '40']]))->assertRedirect();
 
@@ -247,10 +277,12 @@ final class WeaponEditorTest extends TestCase
     {
         yield 'a type that is not one' => [['ammo_type' => 'plasma'], 'ammo_type'];
         yield 'ammunition that does not stack' => [['stackable' => ''], 'stackable'];
-        yield 'a replacement profile that does not add up' => [['ammo_profile' => ['penetrating' => '60', 'thermal' => '10']], 'ammo_profile'];
+        yield 'a profile of nothing' => [['ammo_profile' => ['penetrating' => '']], 'ammo_profile'];
+        yield 'a profile that does not add up' => [['ammo_profile' => ['penetrating' => '60', 'thermal' => '10']], 'ammo_profile'];
         yield 'a penetration past 100' => [['ammo_penetration' => 150], 'ammo_penetration'];
-        yield 'a damage change past a tenth of what it should be' => [['ammo_damage' => -95], 'ammo_damage'];
-        yield 'also a weapon' => [['weapon_class' => 'pistol', 'weapon_damage' => 8, 'weapon_accuracy' => 0, 'weapon_rate' => 1, 'weapon_magazine' => 12, 'weapon_calibre' => '9mm', 'weapon_profile' => ['penetrating' => '100']], 'weapon_class'];
+        yield 'a damage of nothing' => [['ammo_damage' => 0], 'ammo_damage'];
+        yield 'a round that is a percent, not a figure' => [['ammo_damage' => -25], 'ammo_damage'];
+        yield 'also a weapon' => [['weapon_class' => 'pistol', 'weapon_accuracy' => 0, 'weapon_rate' => 1, 'weapon_magazine' => 12, 'weapon_calibre' => '9mm'], 'weapon_class'];
         yield 'effects on ammunition' => [[
             'modifiers' => [['op' => 'add', 'amount' => '5', 'target' => 'hitpoints_max', 'carried' => '']],
         ], 'modifiers'];
@@ -295,7 +327,15 @@ final class WeaponEditorTest extends TestCase
         $other = Item::factory()->physical()->create(['stackable' => true]);
 
         $this->expectException(QueryException::class);
-        Ammunition::create(['item_id' => $other->id, 'calibre' => '9mm', 'type' => 'hollow_point', 'damage' => 0, 'penetration' => 0]);
+        Ammunition::create(['item_id' => $other->id, 'calibre' => '9mm', 'type' => 'hollow_point', 'damage' => 10, 'penetration' => 0]);
+    }
+
+    /** The form posts the hidden Weapon panel's defaults too: a rate of 1 and an accuracy of 0 are not values. */
+    public function test_ammunition_saves_with_the_hidden_weapon_panels_defaults(): void
+    {
+        $this->save($this->round(['weapon_class' => '', 'weapon_accuracy' => '0', 'weapon_rate' => '1', 'weapon_magazine' => '', 'weapon_calibre' => '']))->assertRedirect();
+
+        $this->assertTrue(Item::query()->where('slug', 'test_gear')->sole()->isAmmunition());
     }
 
     public function test_a_blank_calibre_is_not_ammunition(): void

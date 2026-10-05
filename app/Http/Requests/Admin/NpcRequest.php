@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin;
 
 use App\Combat\ArmourSlot;
+use App\Combat\CombatTag;
 use App\Combat\DamageProfile;
 use App\Models\Item;
 use App\Models\Npc;
 use App\Models\Weapon;
 use App\Support\Text;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /**
@@ -21,6 +23,9 @@ use Illuminate\Validation\Validator;
  */
 class NpcRequest extends FormRequest
 {
+    /** Rows the loot panel can hold: a drop list longer than this is a different design. */
+    public const MAX_LOOT = 12;
+
     public function authorize(): bool
     {
         return $this->user()?->can('admin') ?? false;
@@ -48,6 +53,15 @@ class NpcRequest extends FormRequest
             'ammo_item_id' => ['nullable', 'integer', 'exists:items,id'],
             'resistances' => ['nullable', 'array'],
             'slot_resistances' => ['nullable', 'array'],
+            // Scenery keeps no books, so an opponent owned by it would move nothing: refused.
+            'entity_id' => ['nullable', 'integer', Rule::exists('entities', 'id')->where('interactable', true)],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string', Rule::in(CombatTag::values())],
+            'loot' => ['nullable', 'array', 'max:'.self::MAX_LOOT],
+            'loot.*.item_id' => ['nullable', 'integer'],
+            'loot.*.chance' => ['nullable', 'integer'],
+            'loot.*.min' => ['nullable', 'integer'],
+            'loot.*.max' => ['nullable', 'integer'],
         ];
     }
 
@@ -65,6 +79,11 @@ class NpcRequest extends FormRequest
                 $validator->errors()->add('melee_weapon_id', Text::get('admin.npcs.validation.not_melee'));
             }
 
+            // A firearm's damage is its round's: a gunman with no standing round has nothing to fire.
+            if ($ranged !== null && $ranged->class->firearm() && ! $this->filled('ammo_item_id') && ! $validator->errors()->has('ranged_weapon_id')) {
+                $validator->errors()->add('ammo_item_id', Text::get('admin.npcs.validation.needs_round'));
+            }
+
             if ($this->filled('ammo_item_id') && ! $validator->errors()->has('ranged_weapon_id')) {
                 $round = Item::query()->with('ammunition')->find((int) $this->input('ammo_item_id'))?->ammunition;
 
@@ -74,6 +93,8 @@ class NpcRequest extends FormRequest
                     $validator->errors()->add('ammo_item_id', Text::get('admin.npcs.validation.wrong_round'));
                 }
             }
+
+            $this->checkLoot($validator);
 
             foreach (['resistances' => (array) $this->input('resistances', []), 'slot_resistances' => (array) $this->input('slot_resistances', [])] as $field => $raw) {
                 $problem = $field === 'resistances' ? $this->problemIn($raw) : $this->slotProblem($raw);
@@ -88,14 +109,14 @@ class NpcRequest extends FormRequest
     /** The row's columns, resistances cleaned to what was meant. @return array<string, mixed> */
     public function columns(): array
     {
-        $data = $this->safe()->except(['resistances', 'slot_resistances']);
+        $data = $this->safe()->except(['resistances', 'slot_resistances', 'tags', 'loot']);
 
         // A slug is permanent. `prohibited` lets an empty value through, so on update it is dropped here.
         if ($this->npc() !== null) {
             unset($data['slug']);
         }
 
-        foreach (['flees_at', 'ranged_weapon_id', 'melee_weapon_id', 'ammo_item_id', 'flavor'] as $nullable) {
+        foreach (['flees_at', 'ranged_weapon_id', 'melee_weapon_id', 'ammo_item_id', 'flavor', 'entity_id'] as $nullable) {
             if (($data[$nullable] ?? '') === '') {
                 $data[$nullable] = null;
             }
@@ -116,10 +137,77 @@ class NpcRequest extends FormRequest
             }
         }
 
+        // No box ticked is the default, which is NULL; anything ticked replaces it (CombatTag).
+        $tags = CombatTag::fromStored(array_values((array) $this->input('tags', [])));
+
         return $data + [
+            'tags' => $this->input('tags') ? array_map(static fn (CombatTag $tag): string => $tag->value, $tags) : null,
             'resistances' => $this->clean((array) $this->input('resistances', [])) ?: null,
             'slot_resistances' => $slots ?: null,
         ];
+    }
+
+    /**
+     * The drops, blank rows gone: a list of {item_id, chance, min, max}.
+     *
+     * @return list<array{item_id: int, chance: int, min_quantity: int, max_quantity: int}>
+     */
+    public function loot(): array
+    {
+        $rows = [];
+
+        foreach ((array) $this->input('loot', []) as $row) {
+            if (! is_array($row) || ($row['item_id'] ?? '') === '') {
+                continue;
+            }
+
+            $rows[] = [
+                'item_id' => (int) $row['item_id'],
+                'chance' => (int) $row['chance'],
+                'min_quantity' => (int) $row['min'],
+                'max_quantity' => (int) $row['max'],
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Each drop names an item that exists and sits in the physical inventory (a data item would have to ask
+     * the deck for room, and a drop cannot be refused), once; its chance is a whole percent and its
+     * quantity a range from one up.
+     */
+    private function checkLoot(Validator $validator): void
+    {
+        $seen = [];
+
+        foreach ((array) $this->input('loot', []) as $index => $row) {
+            if (! is_array($row) || ($row['item_id'] ?? '') === '') {
+                continue;
+            }
+
+            $item = Item::query()->find((int) $row['item_id']);
+            $chance = $row['chance'] ?? '';
+            $min = $row['min'] ?? '';
+            $max = $row['max'] ?? '';
+
+            $problem = match (true) {
+                $item === null => 'loot_no_item',
+                $item->container !== Item::CONTAINER_PHYSICAL => 'loot_not_physical',
+                in_array($item->getKey(), $seen, true) => 'loot_twice',
+                ! is_numeric($chance) || (int) $chance < 1 || (int) $chance > 100 => 'loot_chance',
+                ! is_numeric($min) || ! is_numeric($max) || (int) $min < 1 || (int) $max < (int) $min => 'loot_quantity',
+                default => null,
+            };
+
+            if ($problem !== null) {
+                $validator->errors()->add("loot.{$index}", Text::get("admin.npcs.validation.{$problem}"));
+            }
+
+            if ($item !== null) {
+                $seen[] = $item->getKey();
+            }
+        }
     }
 
     private function npc(): ?Npc

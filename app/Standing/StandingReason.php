@@ -45,6 +45,9 @@ enum StandingReason: string
     /** Something that happened to them in the City, by an author's hand. The amount is the outcome's own. */
     case Encounter = 'encounter';
 
+    /** You put one of their people down in a fight. Worth its amount per grade of the opponent. */
+    case Defeated = 'defeated';
+
     /** Time passing. Written by the nightly drift so the sum still checks. */
     case Decay = 'decay';
 

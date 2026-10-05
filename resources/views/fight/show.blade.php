@@ -47,6 +47,7 @@
             <div class="row row--wrap" style="--gap:var(--s-2);align-items:center">
                 <span class="tag">{{ Text::get('combat.fight.screen.round', ['round' => $state->round]) }}</span>
                 <span class="tag">{{ Text::get('combat.fight.screen.range.'.$state->range->value) }}</span>
+                <span class="tag">{{ Text::get('combat.fight.screen.distance', ['distance' => $state->distance]) }}</span>
                 @if ($state->first->value === 'b' && $state->round === 1)
                     <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.first') }}</span>
                 @endif
@@ -116,21 +117,32 @@
             </form>
         @endforeach
 
+        @if ($can_close_in)
+            <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
+                @csrf
+                <input type="hidden" name="action" value="close_in">
+                <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.close_in') }}</button>
+                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($closing * 100) }}%</span> — {{ Text::get('combat.fight.screen.close_in_hint') }}</span>
+            </form>
+        @endif
+
         @if ($can_create_distance)
             <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
                 @csrf
                 <input type="hidden" name="action" value="create_distance">
                 <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.create_distance') }}</button>
-                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.create_distance_hint') }}</span>
+                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.create_distance_hint', ['max' => config('combat.distance.max')]) }}</span>
             </form>
         @endif
 
-        <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
-            @csrf
-            <input type="hidden" name="action" value="disengage">
-            <button type="submit" class="btn btn--ghost cut" style="justify-self:start">{{ Text::get('combat.fight.screen.disengage') }}</button>
-            <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.disengage_hint') }}</span>
-        </form>
+        @if ($can_disengage)
+            <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
+                @csrf
+                <input type="hidden" name="action" value="disengage">
+                <button type="submit" class="btn btn--ghost cut" style="justify-self:start">{{ Text::get('combat.fight.screen.disengage') }}</button>
+                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.disengage_hint', ['beyond' => config('combat.distance.flee_beyond')]) }}</span>
+            </form>
+        @endif
 
         @unless ($can_attack)
             <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">

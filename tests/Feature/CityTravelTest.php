@@ -80,6 +80,8 @@ final class CityTravelTest extends TestCase
 
     public function test_you_move_along_the_route_pass_by_pass(): void
     {
+        $this->freezeTime();
+
         $this->traveller()->begin($this->character, $this->district('downtown'), TravelMode::Walk);
 
         $this->travel(29)->seconds();
