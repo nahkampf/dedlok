@@ -3364,6 +3364,7 @@ return [
             'empty' => 'No effects. This changes nothing about anybody.',
             'add' => 'Add effect',
             'remove' => 'Remove',
+            'duplicate' => 'Duplicate this effect',
             'op' => 'How',
             'amount' => 'How much',
             'target' => 'What',

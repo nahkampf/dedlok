@@ -50,6 +50,9 @@
         </div>
     @endforeach
 
+    <button type="button" class="btn btn--sm btn--ghost cut" data-modifier-duplicate
+            title="{{ Text::get('admin.modifiers.duplicate') }}" aria-label="{{ Text::get('admin.modifiers.duplicate') }}">+</button>
+
     <button type="button" class="btn btn--sm btn--ghost cut" data-modifier-remove>
         {{ Text::get('admin.modifiers.remove') }}
     </button>

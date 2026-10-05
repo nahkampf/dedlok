@@ -698,6 +698,18 @@
       });
 
       field.addEventListener("click", (e) => {
+        const dupe = e.target.closest("[data-modifier-duplicate]");
+        if (dupe && field.contains(dupe)) {
+          const row = dupe.closest("[data-modifier-row]");
+          const copy = row.cloneNode(true);
+          // cloneNode keeps attributes, not what was typed or chosen since.
+          const live = row.querySelectorAll("input, select");
+          copy.querySelectorAll("input, select").forEach((el, i) => { el.value = live[i].value; });
+          row.after(copy);
+          reindex();
+          copy.querySelector('[data-modifier-field="level"], [data-modifier-field="amount"]')?.focus();
+          return;
+        }
         const remove = e.target.closest("[data-modifier-remove]");
         if (!remove || !field.contains(remove)) return;
         remove.closest("[data-modifier-row]")?.remove();
