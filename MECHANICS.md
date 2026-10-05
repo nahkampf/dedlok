@@ -47,7 +47,7 @@ down so the implementation has something to be checked against.
 | Armour per body part | **built** — `WornArmour`, the seventh modifier source, wraps a worn piece's damage modifiers in `hit_location_in`; a hit with no location never meets worn armour |
 | Combat stats — `aim.<class>`, `weapon_damage.<class>`, `defence`, `pursuit` | **built** — `App\Stats\CombatStats` plus two declared stats; the numbers are unmeasured, set with `fight:simulate` |
 | Hit quality, bursts, riders, magazines — the fight engine | **built** — `App\Combat\Fight\FightEngine`, pure and never writing; `App\Combat\Fights` applies it to the game; `COMBAT.md` |
-| What a win pays and a loss costs (the mugging, defeat tags) | **not built** — `COMBAT.md` step 6 |
+| What a win pays and a loss costs (the mugging, defeat tags) | **built** — `App\Combat\FightEnding`, `CombatTag`, `combat.pay` / `mugging` / `maim`; the numbers are unmeasured |
 | `skills`, `skill_prerequisites`, `character_skills`, `training_queue` | **built**, with constraints and `skills:validate` |
 | Skill thresholds and SP/minute (`App\Skills\`) | **built**, pure and config-tunable |
 | Skill training — the deposit, the scheduler, the queue (`App\Skills\TrainingDeposit`) | **built**, with `training:deposit` on a one-minute schedule |

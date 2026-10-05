@@ -1,6 +1,6 @@
 # Physical combat
 
-**Status: steps 1–5 are BUILT — items, the engine and its simulator, NPCs, the stored fight and its screen, and encounters that start fights. Step 6 (what a win pays, what a loss costs, tags) is not.** Phase 5 of `CITY.md`.
+**Status: steps 1–6 are BUILT — items, the engine and its simulator, NPCs, the stored fight and its screen, encounters that start fights, and what a win pays and a loss costs (`FightEnding`, `CombatTag`). What is left is the balance pass, which needs authored content and the author's judgement.** Phase 5 of `CITY.md`.
 
 Built (2026-10-03/04): the eight damage types and their families, armour per body part with
 location-aware resistance, weapons, ammunition (with a type), riders (authored only), wielding and
@@ -48,7 +48,7 @@ engine's own.
 | Who goes first | **PvP:** each player's Senses + Perception + Reflex (resolved), highest first, a **tie is a coin toss**. **Encounters:** the **enemy always goes first**. |
 | Armour | **Per body part**, six slots; sets cover several; hits land on **body parts**; a piece has **several resistances** |
 | Losing | A standard enemy puts the player at **zero HP** and takes **30–50% of all the creds they carry**; special enemies carry **tags** with extra effects (e.g. *Maim*) |
-| How it plays | Start at **Ranged**; after one round it closes to **Close**; *Create distance* (a chance) returns to Ranged; *Disengage* (a chance) leaves |
+| How it plays | **Distance is a number** (changed 2026-10-05): a fight opens at **2**, **nothing closes it by itself**, and **0 is close combat**. A side that is better at close combat *Closes in* (a chance, one step); any other *Creates distance* (a chance, one or two steps, up to **6**). *Disengage* (a chance) leaves, but **only from beyond 2** |
 | Damage | Eight damage types, **combinable**; **fixed damage per hit**, scaled by **hit quality**; rounds can change it |
 | Hit quality | **Five tiers**: Near miss 10%, Glancing 25%, Partial 50%, Clean hit 75%, Dead-on 100% of full damage. **No outright miss.** |
 | Burst fire | A weapon's shots per action are separate attacks; **the first uses the full chance, each later one is 7% worse than the one before** (recoil) |
@@ -64,7 +64,7 @@ engine's own.
 1. **Location damage.** Should a location change the damage (a headshot hits harder)? Default:
    **no — location matters through armour only**, with a per-location multiplier in config at 1.0
    as a later knob.
-2. **Cover.** *Dropped.* With one ranged round before the fight closes there is nothing for it to do.
+2. **Cover.** *Dropped.* With only a couple of rounds at range there is nothing for it to do.
 3. **HP regeneration.** Nothing mends HP except clinics. Default: **leave it that way**, so a lost
    fight has a price.
 4. **PvP.** Initiative is decided; consent and the bounty collection `characters.bounty` waits for
@@ -140,15 +140,18 @@ already means "everything that cuts".
 
 An *item with a row*, as software has `programs`.
 
+- **A firearm has no damage of its own; the ROUND decides it** (changed 2026-10-05, option A). A weapon
+  with a calibre carries `damage` and `damage_profile` as NULL (a CHECK ties the two to the calibre) and the
+  editor refuses both on one. A blade, a club or a thrown explosive has no round, so it keeps both.
 - **`weapons`**: `class` (`WeaponClass`, which also says Ranged or Close), `damage` (the ONE fixed
-  figure a hit does, never a range — with its standard round for a firearm), `damage_profile`,
+  figure a hit does, never a range — NULL on a firearm), `damage_profile` (NULL on a firearm),
   `riders`, `accuracy` (a signed modifier to the shooter's aim), `rate` (shots per action; above 1
   is a burst or automatic weapon), and for firearms `magazine` and `calibre`, set together or not
   at all. `WeaponEditor` is its only writer.
 - **`ammunition`**: `calibre`, `type` (`AmmoType`, a label: standard, full metal jacket, hollow
-  point, armour piercing, incendiary, shock), `damage` (a signed percent on the hit), `penetration`
-  (a signed percent of the target's resistance it ignores), an optional replacement
-  `damage_profile`, and `riders`. **Unique on (calibre, type): one item per kind of round**, since
+  point, armour piercing, incendiary, shock), `damage` (the ONE fixed figure of a hit with this round,
+  1–1000, an absolute base and never a percent), `damage_profile` (required: how that splits across
+  types), `penetration` (a signed percent of the target's resistance it ignores), and `riders`. **Unique on (calibre, type): one item per kind of round**, since
   ammunition stacks per item. `AmmunitionEditor` is its only writer; ammunition must stack and a
   weapon must not.
 - **Two hands**: `characters.equipped_ranged_id` and `equipped_melee_id`; `WeaponWielder` is the only
@@ -162,20 +165,21 @@ An *item with a row*, as software has `programs`.
 - **A weapon holding rounds cannot be listed, sold or put in a container** (`isOnPerson()`),
   destroying it returns them, and the editors hand them back when a weapon changes calibre or stops
   being a firearm, or when a round does.
-- **A round carries part of the damage; the engine learns no round by name.** Illustrative
-  defaults:
+- **A round carries the damage; the engine learns no round by name.** Illustrative figures for a 9mm
+  (the numbers are the author's to set):
 
-| Round | Damage | Penetration | Also |
+| Round | Damage | Penetration | Profile / also |
 | --- | --- | --- | --- |
-| Full metal jacket | 0% (the baseline) | 0 | — |
-| Hollow point | +25% | −50 | worse against armour, better against none |
-| Armour piercing | −15% | +50 | cuts through resistance at a cost in damage |
-| Incendiary | −10% | 0 | a `thermal` share and a *burning* rider |
+| Full metal jacket | 8 | 0 | penetrating 100 |
+| Hollow point | 10 | −50 | worse against armour, better against none |
+| Armour piercing | 7 | +50 | cuts through resistance at a cost in damage |
+| Incendiary | 7 | 0 | a `thermal` share and a *burning* rider |
 | Buckshot / slug | per shell | 0 / +25 | a shotgun's `fragmentation` / `penetrating` profiles |
 
-- **A round's profile REPLACES the weapon's while loaded; its riders ADD to the weapon's**
-  (`Riders::combine()`). An incendiary round turns a plain pistol into a burner without taking its
-  stun away.
+- **A firearm's riders and its round's ADD** (`Riders::combine()`); the damage and the profile are the
+  round's alone, since the weapon has none. An incendiary round turns a plain pistol into a burner without
+  taking its stun away. **An opponent with a firearm needs a standing round** (`NpcRequest`); in
+  `CombatantBuilder::forNpc()` a firearm with none has no ranged arm.
 - **Penetration** is the one new piece of arithmetic, in `DamageResolver`: resistance counts for
   `resistance × (1 − penetration / 100)`. +50 halves what a vest is worth; −50 makes it count half
   again; +100 ignores it. `Damage` gains a `penetration` field (default 0) and the resolver scales
@@ -232,9 +236,9 @@ round is at 0.93⁹ ≈ 52% of the first's chance). The count resets with every 
 
 1. **Chance** — `CheckRoller::chance(aim, defence, 'attack', 0.93^k)`; quoted on the button.
 2. **Tier** — the first die, via `fromRoll`.
-3. **Damage** — `weapon_damage.<class>` (the weapon's `damage` × the round's percent, handed in as
+3. **Damage** — `weapon_damage.<class>` (a firearm's round's `damage`, a close weapon's own, handed in as
    the base, so an implant or a stimulant is a modifier on it) × the tier's share.
-4. **Split** by the effective profile (the round's if it has one, else the weapon's); each part
+4. **Split** by the profile (the round's for a firearm, the weapon's otherwise); each part
    `round(amount × share)`, a part that rounds to nothing is dropped.
 5. **Body part** — the second die.
 6. **Each part through the resolver** with the location and the round's penetration.
@@ -295,13 +299,25 @@ The class-to-skill mapping is parked with skills.
 
 ## The fight
 
-**Two ranges: Ranged and Close.** A fight opens at **Ranged**, and **after one round it closes**.
+**Distance is a number, and it implies two ranges.** A fight opens at distance **2**
+(`combat.distance.start`) and **nothing moves it but somebody's action**, between 0 and `combat.distance.max` (6).
+Any distance above 0 is **Ranged**; 0 is **Close**.
 
-- **Ranged:** firearms are effective; melee weapons and bare hands cannot be used.
-- **Close:** only melee weapons and bare hands.
+- **Ranged (distance 1 or more):** firearms are effective; melee weapons and bare hands cannot be used.
+- **Close (distance 0):** only melee weapons and bare hands.
 - **Create distance** is a chance (`defence` against the opponent's `pursuit`, quoted on the button
-  like Egress's). On a success the fight is at **Ranged again for the next round — one round,
-  after which it closes**. On a failure the round is spent.
+  like Egress's), offered while the distance is below the maximum. One die: a roll above the chance fails and
+  the turn is spent; below it wins **1**, and the luckiest share of the successes (`combat.distance.far_share`,
+  0.4) wins **2**. It takes effect at once, so whoever acts after sees the new distance, and never past 6.
+- **Close in** is the other half: a chance (`pursuit` against the opponent's `defence`) to win **one** step,
+  offered above 0. One die; a failure spends the turn.
+- **Who does which.** `FightEngine::prefersClose()`: a side whose melee weapon does more per turn (its best
+  figure times its shots) than its ranged one, or with no ranged weapon it can fire or load, is *better at close
+  combat*; ties go to range. `choose()` — an opponent's play, and the simulator's player — has that side Close in
+  until it is at 0, and any other side stay at range: it shoots, and backs off (Create distance) when closed
+  on. A side hurt past its `flees_at` Disengages when it may, and otherwise backs off first.
+- **Disengage works only from beyond `combat.distance.flee_beyond` (2).** Nobody runs from arm's reach, so a
+  player who wants out keeps adding distance past 2 (up to 6) and then tries.
 - **Disengage** is Egress by another name: **always available, never certain**, a failure spends
   the round, a success ends the fight with nothing lost.
 - **Bare hands** are the fallback at Close for anyone without a melee weapon: a config weapon
@@ -343,7 +359,7 @@ penetration, profile and riders.
    is asked for the player — damage, consequence, the floor.
 3. **The other side acts** the same way. An NPC flees below its `flees_at`, shoots at Ranged with
    its ranged weapon (if it has one), and fights with its melee weapon or fists at Close.
-4. **Close the range** if this was the ranged round.
+4. **The next round** starts; the distance is as the actions left it.
 
 A fight should run **4–10 rounds** and cost a fifth to most of a character's HP at grades 1–5;
 those two ratios are what the balance pass tunes.
@@ -366,15 +382,16 @@ writes**: hit points are numbers in the state, resistance is a `Mitigation` pass
 - **Turn order inside a turn:** start-of-turn ticks (burning, poison), a stun taking the action, the floor, the
   action, the floor. A status applied on your turn is already running when the other side's turn begins in the
   same round.
-- **Range:** a round at Ranged closes; a successful Create distance (at Close only) sets `reopen`, so the next
-  round is at Ranged, and then it closes again. **`Load` works on the ranged weapon at either range.**
+- **Distance:** `FightState::$distance` is stored; `$range` (`Range::at()`) is derived from it, and
+  `withDistance()` keeps it inside 0–6. A fight stored before distance was a number (`range`) is read as the
+  opening distance or 0. **`Load` works on the ranged weapon at either range.**
 - **Magazines in a fight are a snapshot copy** (`RoundSpec::stock`, `Arm::rounds`); step 4 replays a Load through
   `WeaponLoader`, which does the same sum. A side with `rounds` NULL never runs dry (NPCs).
 - **Neural damage lands on Synaptic Integrity, and does NOTHING to a side that has none** (an NPC) — decided.
   The part is not even resolved.
 - **An NPC below its `flees_at`** (a share of `hpMax`) tries to **Disengage**: a roll like any, so it can fail
   and cost its turn. A success ends the fight with **no winner and no gains for the player** (`Result::BEscaped`,
-  `winner()` null); only standing, if anything, moves — step 6's business.
+  `winner()` null); nothing moves — decided in step 6: a fled opponent pays nothing and standing stays put.
 - **The builder owes the engine a melee arm.** There is no bare-hands fallback in the engine; whoever builds a
   `Combatant` supplies one from `combat.unarmed` (4f). A missing arm is a Brace.
 
@@ -435,6 +452,31 @@ Pure, test-first, pinned dice — the whole of it can be exercised with no datab
   - **The two locks do not fight each other.** The fight lock runs first; with a fight live the encounter lock
     stands down, or `/fight` and `/encounter` would redirect to each other for ever.
 
+## Step 6, as built — BUILT
+
+`App\Combat\FightEnding` is the one place an ending is worth anything. `Fights::act()` calls it on the locked
+character when a round ends the fight, BEFORE the waiting room is asked, appends its lines to the fight's log (and
+to the `DownedCause` effects the waiting screen reads), then calls the waiting room and the encounter runner as before.
+
+- **It has its own die**, an integer `fn (int $min, int $max): int` bound in the container, because the fight's die is
+  pinned in an exact order by tests and asserted spent. Order on a win: the pay, then per drop a chance (and a
+  quantity only if it hit). On a loss: one roll per tag, in the vocabulary's order.
+- **Win** (`Result::BDown`): the grade's pay band (`combat.pay.<grade>`, a uniform roll) through `Wallet` as
+  `Reason::Fight`; each drop; then standing with the owner by `StandingReason::Defeated` × the grade
+  (`standing.reasons.defeated` is −0.05, so −0.05 at grade 1 and −0.25 at grade 5). Standing is silent in the log.
+- **Loss** (`Result::ADown`): the player is already at zero; every tag applies, then the floor. `mugged`: a uniform
+  `combat.mugging` percent (30–50) of ALL creds carried, floored, `Reason::Mugged`; nothing is logged or written for an
+  empty purse. `maim`: `combat.maim` percent (10–20) of the maximum hit points as it stands (at least 1), added to
+  `physical_trauma`, which a clinic mends.
+- **Getting away, either way, pays nothing, costs nothing, moves no standing** — decided here; the earlier note said
+  "possibly standing".
+- **Tags**: `npcs.tags` NULL is the DEFAULT `[mugged]` and ANY list REPLACES it (`['maim']` maims without robbing);
+  the opposite of ICE's `DefeatTag`. The editor offers checkboxes, so it cannot express "takes nothing".
+- **The terms are copied onto the fight** when it opens (`entity_id`, `tags`, `loot`); `entity_id` is a plain column.
+- **Drops** are `npc_loot` rows (chance 1–100, a quantity range), physical items only, replaced wholesale by
+  `NpcEditor`. Not the grid's `loot_tables`.
+- **No inbox message**: the player pressed the button, so the log and the waiting screen cover it.
+
 ## The fight as a stored thing — BUILT (step 4)
 
 `App\Combat\Fights` is the seam between the pure engine and the game, and the only writer of `fights` and
@@ -464,7 +506,7 @@ Pure, test-first, pinned dice — the whole of it can be exercised with no datab
   allow-list `login`, `logout`, `fight.show`, `fight.act`, admin not exempt, 409 and a URL for JSON.
 - **The screen** (`fight/show`) draws every chance from `Fights::options()`, so a quote is what the next roll
   uses. One form per action; Attack is not offered when nothing can fire (a Brace is), Load lists the
-  compatible rounds in the stash, Create distance appears only at Close. No hazard stripe: that ember fill is
+  compatible rounds in the stash, Close in appears above 0, Create distance below 6, Disengage beyond 2. No hazard stripe: that ember fill is
   the hunt's alone.
 
 ## The model still to build
@@ -473,9 +515,8 @@ Pure, test-first, pinned dice — the whole of it can be exercised with no datab
   `pursuit`, `flees_at`, `ranged_weapon_id`, `melee_weapon_id` and `ammo_item_id` (the standing round) — all
   three pointers at ITEMS, so a weapon's numbers live on the weapon — and `resistances` / `slot_resistances`
   (JSON: percent off by type, and extra by body part). Pictures by convention, 3:4 like a person
-  (`public/images/npcs/<id>.jpg`). **Deliberately not on the table yet:** `entity_id` (whose it is, for
-  standing), a loot table and `tags` — columns modelled against code that does not exist get modelled wrong, so
-  they arrive with step 6. **No CHECK reaches the three item pointers** (MySQL error 3823): which kind of weapon
+  (`public/images/npcs/<id>.jpg`). Step 6 added `entity_id` (whose it is, for standing), `tags` (what it
+  does to somebody it beats; NULL is the default `[mugged]`, a list replaces it) and the `npc_loot` table. **No CHECK reaches the three item pointers** (MySQL error 3823): which kind of weapon
   goes in which hand, and that a round fits the weapon, are `NpcRequest`'s. **Deleting a weapon item leaves
   its opponents unarmed** (`nullOnDelete`), and the item's delete dialog says how many.
 - **`fights`** — durable, `runs`'s own reason: the character, a snapshot of the opponent's hit
@@ -521,14 +562,14 @@ Pure, test-first, pinned dice — the whole of it can be exercised with no datab
       --foe-melee=blade:4 --foe-resist=penetrating:30 --foe-flees-at=0.25`. It reads and writes nothing. *The balance tool is built before the content*, because the ratios above are
       the whole design.
 3. **NPCs** — **BUILT**: the `npcs` table, `admin/npcs`, the picture convention, `CombatantBuilder::forNpc()`,
-   and `fight:simulate --foe=<slug>`. Whose NPC it is, its loot and its tags arrive with step 6.
+   and `fight:simulate --foe=<slug>`. Whose NPC it is, its loot and its tags arrived with step 6.
 4. **The fight itself** — **BUILT**: the `fights` table, `characters.current_fight_id`, `App\Combat\Fights`
    (the only writer), `EnsureFightIsResolved`, `/fight`, and `php artisan fight:start <handle> <npc-slug>` as the
-   only way to open one until step 5. **Endings are minimal**: the player down goes to the waiting room, every
-   other ending just releases them. **No payout, no mugging, no tags yet — that is step 6.**
+   only way to open one until step 5. **Endings were minimal** until step 6: the player down goes to the waiting room, every
+   other ending just releases them.
 5. **Encounters** — **BUILT**: a *Fight* choice kind (`encounter_choices.fight_npc_id` + `win_key`, `lose_key`,
    `flee_key`) and the resume (`EncounterRunner::afterFight()`). See *From an encounter* below.
-6. **Defeat and loot**: mugging, `CombatTag`, `maim`, loot, standing — then a balance pass.
+6. **Defeat and loot** — **BUILT**: mugging, `CombatTag`, `maim`, the pay band, drops and standing (see *Step 6, as built*). **The balance pass is NOT done.**
 7. **Later**: PvP's opening, hunters on the street, a place that offers a fight (phase 6), dodge.
 
 ## Not decided

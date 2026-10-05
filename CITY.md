@@ -374,7 +374,7 @@ A fight outcome; per-district danger; any seeded content.
    stats, the pod fare.
 3. **Shops and clinics.** *(built)*
 4. **Narrative encounters**, spawned by travel and explore and fixed at locations. *(built)*
-5. **Physical combat** — *built through `COMBAT.md`'s step 5 (a fight can start from an encounter); what a win pays and a loss costs is step 6.*
+5. **Physical combat** — *built through `COMBAT.md`'s step 6 (a fight can start from an encounter; a win pays, a loss mugs). The balance pass is not done.*
 6. **Hooks.** Authored quests that set flags, hunters on the street, PvP.
 
 ## Not decided
