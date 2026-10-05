@@ -101,6 +101,7 @@ final class CityExploreTest extends TestCase
 
     public function test_a_pass_takes_the_base_time_and_is_not_settled_early(): void
     {
+        $this->freezeTime();
         $this->die(0.0);
         app(Explorer::class)->begin($this->character->fresh());
 
