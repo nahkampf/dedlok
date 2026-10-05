@@ -143,6 +143,13 @@ class InventoryController extends Controller
         $held = $entry->isWielded();
         $result = $held ? $wielder->unwield($character, $entry) : $wielder->wield($character, $entry);
 
+        if ($result === WieldRefusal::NeedsSkill) {
+            return back()->with('error', $result->message([
+                'skill' => $wielder->gate($entry->item->weapon->class)?->title ?? '',
+                'level' => (int) config('combat.gate_level'),
+            ]));
+        }
+
         return $result instanceof WieldRefusal
             ? back()->with('error', $result->message())
             : back()->with('status', Text::get($held ? 'combat.weapons.put_away' : 'combat.weapons.took_up', ['item' => $name]));
