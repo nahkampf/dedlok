@@ -2,6 +2,76 @@
 
 ## [Unreleased]
 
+## [0.35.0] — 2026-10-05
+
+Narrative encounters, and physical combat from the item to the fight screen.
+
+### Added
+
+- **Narrative encounters** (City phase 4). A graph of screens and buttons authored at `admin/encounters`, spawned by
+  travel, exploring or a place, with outcomes as rows (creds, items, standing, heat, flags, injuries, damage, doses).
+  A button may roll a stat, cost creds or need a flag; a screen may apply outcomes on arrival. The editor has a Help
+  accordion, a live graph of the screens, a weight slider with a word for how rare it is, a stat dropdown, "+" buttons
+  for screens, buttons and outcomes, and names every missing screen on save. `EnsureEncounterIsResolved` owns the
+  screen while one is open; you cannot jack in during any City activity; exploring is silent when it finds nothing.
+- **Damage types, armour and weapons.** Eight damage types in two families, armour worn a body part at a time
+  (`WornArmour`, the seventh modifier source, counts only for the part a piece covers), weapons with ONE fixed damage
+  and a profile that splits it across types, and a signed **penetration** on a hit that ignores part of a resistance
+  (`Damage::$penetration`; ICE passes none). Item editor panels for Armour, Weapon and Ammunition; Wear, Equip and
+  Load actions on the stash card; an Equipment panel on the character sheet.
+- **Ammunition.** One item per kind of round, unique on calibre and a type (standard, full metal jacket, hollow
+  point, armour piercing, incendiary, shock); stackable in the stash. Rounds loaded into a weapon are two columns on
+  that copy's own inventory row, written only by `WeaponLoader`; a loaded weapon cannot be sold, listed or put away,
+  and destroying one returns its rounds.
+- **Riders** (stun, burning, poisoned) on weapons and rounds, authored in the editor.
+- **The fight engine and `fight:simulate`.** `App\Combat\Fight`: five hit-quality tiers, burst fire where each shot is
+  7% worse than the last, two ranges, Create distance, Disengage, Load, riders and their ticks, NPCs that flee below a
+  share of their hit points. Pure and never writing. `php artisan fight:simulate <handle> [--foe=<slug>]` plays many
+  fights of a character's real loadout, seeded, and writes nothing.
+- **Opponents** at `admin/npcs`: numbers, three pointers at weapon and ammunition items, resistances by damage type and
+  by body part, a picture by convention (`public/images/npcs/<id>.jpg`, 3:4).
+- **The fight itself.** A stored fight (`fights`, `characters.current_fight_id`) written only by `App\Combat\Fights`,
+  its own screen at `/fight` with every chance quoted, `EnsureFightIsResolved`, and `fight:start <handle> <slug>`.
+  Everything that could start something (jacking in, runs, travel, exploring, shops, clinics, surgery, an encounter
+  from the sweep) refuses during a fight.
+- **Encounters can start fights.** A choice may be a Fight: an opponent and a win, a loss and a nobody-won destination.
+  Rewards are the win screen's arrival outcomes; a loss is read after the player gets up.
+- **Combat stats**: `aim.<class>`, `weapon_damage.<class>`, `defence` and `pursuit`.
+- **Content**: the Acclimatization and Observation skills, and the district descriptions.
+
+### Changed
+
+- The run briefing and the live run screen are reworked (run overview with thresholds, an Opposition panel, the
+  evasion card on the egress button).
+- "Walk" is "Travel" throughout, and a trip can be stopped with a "Stop travelling" button.
+- `CLAUDE.md` is compacted; the cyberspace rules moved to `CYBERSPACE_RULES.md`. `COMBAT.md` is new.
+- The kit gains a card-select dropdown and the encounter node graph.
+
+### Fixed
+
+- A `prohibited` slug rule let an empty value through on update, which wrote a NULL slug (a 500) in the encounter,
+  location and district editors.
+
+### Migrations
+
+- `2026_10_03_190000_exploration_skills_and_district_descriptions`
+- `2026_10_03_200000_narrative_encounters`
+- `2026_10_03_210000_encounter_screens_have_outcomes`
+- `2026_10_03_220000_armour`
+- `2026_10_03_230000_weapons_and_ammunition` (also adds `characters.equipped_ranged_id`, `equipped_melee_id`)
+- `2026_10_04_100000_ammunition_has_a_type`
+- `2026_10_04_110000_weapons_and_rounds_carry_riders`
+- `2026_10_04_120000_weapons_hold_rounds` (adds `inventory_items.loaded_ammo_id`, `loaded_rounds`)
+- `2026_10_04_130000_one_item_per_kind_of_round`
+- `2026_10_04_140000_npcs`
+- `2026_10_04_150000_fights` (creates `fights`, adds `characters.current_fight_id`)
+- `2026_10_04_160000_encounters_can_start_fights`
+
+Nothing is seeded: no weapon, armour, round or opponent exists until one is authored in the admin, so a deploy changes
+nothing a player sees until an encounter with a Fight button is written. What a win pays and a loss costs is next
+(`COMBAT.md`, step 6).
+
+
 ## [0.34.1] — 2026-10-04
 
 Development fix: the composer sidecar builds with the web image's extensions.
@@ -2232,7 +2302,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.34.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.35.0...HEAD
+[0.35.0]: https://github.com/nahkampf/dedlok/compare/v0.34.1...v0.35.0
 [0.34.1]: https://github.com/nahkampf/dedlok/compare/v0.34.0...v0.34.1
 [0.34.0]: https://github.com/nahkampf/dedlok/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/nahkampf/dedlok/compare/v0.32.1...v0.33.0
