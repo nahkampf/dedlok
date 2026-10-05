@@ -305,8 +305,12 @@ final readonly class Simulator
      *
      * A threshold of zero is never breached, which is how somebody turns one
      * off without needing a second column to say whether it is on.
+     *
+     * PUBLIC so the run screen can show a warning that is the very test the game acts on: the trace
+     * is breached ON the mark, Synaptic Integrity only once it is BELOW it, and a screen with its
+     * own copy of that sum would one day disagree with what the next turn actually does.
      */
-    private function thresholdBreached(Character $character, Run $run): bool
+    public function thresholdBreached(Character $character, Run $run): bool
     {
         $trace = (int) $character->egress_trace_at;
 
@@ -1318,7 +1322,7 @@ final readonly class Simulator
             Damage::synapticIntegrity($ice->attack, DamageOrigin::Ice),
         );
 
-        $line = $this->line('cyberspace.run.log.ice_hits', ['damage' => $result->taken], 'crit');
+        $line = $this->line('cyberspace.run.log.ice_hits', ['damage' => $result->taken], 'crit', $ice->name);
 
         // THE ORDER EVERY BAD ENDING FOLLOWS: the damage has landed, so now the
         // consequence, then the ejection, then the screen. RunStarter::end()
@@ -1579,15 +1583,19 @@ final readonly class Simulator
     }
 
     /**
+     * One log line. `$tag` names who did it, shown as a tag in front of the text ("ICE VII lands…") —
+     * kept beside the text rather than inside it, so the screen can style it and an old log without
+     * one still reads.
+     *
      * @param  array<string, string|int>  $replace
-     * @return array{text: string, tone: string}
+     * @return array{text: string, tone: string, tag?: string}
      */
-    private function line(string $key, array $replace = [], string $tone = ''): array
+    private function line(string $key, array $replace = [], string $tone = '', ?string $tag = null): array
     {
-        return ['text' => Text::get($key, $replace), 'tone' => $tone];
+        return ['text' => Text::get($key, $replace), 'tone' => $tone] + ($tag === null ? [] : ['tag' => $tag]);
     }
 
-    /** @param  list<array{text: string, tone: string}>  $lines */
+    /** @param  list<array{text: string, tone: string, tag?: string}>  $lines */
     private function appendLog(Run $run, array $lines): void
     {
         $run->forceFill([

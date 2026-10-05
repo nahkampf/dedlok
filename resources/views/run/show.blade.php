@@ -16,25 +16,52 @@
     <div class="panel__hd">
         <h2>{{ Text::get('cyberspace.run.heading') }}</h2>
         <div class="spacer"></div>
-        <span class="tag">{{ $run->purpose->label() }}</span>
-        <span class="micro num">{{ Text::get('cyberspace.run.turn', ['turn' => $run->turn]) }}</span>
+        {{-- Where the run has got to, and the one number to watch: large, and green because it is
+             progress rather than danger (the trace below is the danger). --}}
+        <span class="num" style="font-size:var(--fs-xl);line-height:1;color:var(--ok)">{{ Text::get('cyberspace.run.turn', ['turn' => $run->turn]) }}</span>
     </div>
 
-    <div class="row row--wrap" style="--gap:var(--s-4);align-items:center;padding:var(--s-3) 0">
-        {{-- The target, drawn from the RUN and not from the machine: the row
-             carries the address and the position it went in at, so a machine
-             that has since moved does not change what this run was against. --}}
-        <span class="micro"><span aria-hidden="true">&#x2295;</span> {{ $run->position() }}</span>
-        <span class="micro"><x-address :address="$run->address" /></span>
-
-        @if ($system)
-            <span class="tag">{{ $system->displayName() }}</span>
-        @else
-            {{-- Burned or relocated out from under them. Nothing here cancels
-                 the run yet — that is the simulator's, and it is why the row
-                 carries an address rather than a foreign key. --}}
-            <span class="tag tag--warn">{{ Text::get('cyberspace.run.ended.cancelled') }}</span>
-        @endif
+    {{-- The target, drawn from the RUN and not from the system: the row carries the address and the
+         position it went in at, so a system that has since moved does not change what this run was
+         against. --}}
+    <div style="padding:var(--s-3) 0">
+        <div class="card__stats" style="padding:0;border:0">
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.coordinates') }}</span>
+                <b class="num">{{ $run->position() }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.address') }}</span>
+                <b><x-address :address="$run->address" /></b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.type') }}</span>
+                <b>{{ $system?->type->label() ?? '—' }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.name') }}</span>
+                @if ($system)
+                    <b>{{ $system->displayName() }}</b>
+                @else
+                    {{-- Burned or relocated out from under them. Nothing here cancels the run — that is
+                         the simulator's, and it is why the row carries an address rather than a foreign key. --}}
+                    <span class="tag tag--warn">{{ Text::get('cyberspace.run.ended.cancelled') }}</span>
+                @endif
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.run_type') }}</span>
+                <b>{{ $run->purpose->label() }}@if ($run->backdoorKind()) · {{ $run->backdoorKind()->label() }}@endif</b>
+            </div>
+            {{-- THIS CHARACTER'S STANDING INSTRUCTIONS, set once from the map. Zero is off. --}}
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.threshold_trace') }}</span>
+                <b class="num">{{ $character->egress_trace_at > 0 ? $character->egress_trace_at.'%' : Text::get('cyberspace.run.overview.threshold_off') }}</b>
+            </div>
+            <div class="card__stat">
+                <span>{{ Text::get('cyberspace.run.overview.threshold_si') }}</span>
+                <b class="num">{{ $character->egress_si_at > 0 ? $character->egress_si_at.'%' : Text::get('cyberspace.run.overview.threshold_off') }}</b>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -81,84 +108,36 @@
     </div>
 </div>
 
-{{-- WHAT IS FIGHTING, drawn from the RUN and not from the machine: integrity
-     is being ground down, and the catalogue says what an ICE is rather than
-     what this fight has left of it. --}}
+{{-- WHAT IS FIGHTING, drawn from the RUN and not from the system: integrity is being ground down, and
+     the catalogue says what an ICE is rather than what this fight has left of it. --}}
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
     <div class="panel__hd">
         <h2>{{ Text::get('cyberspace.run.ice') }}</h2>
-        <div class="spacer"></div>
-        <span class="micro num">{{ Text::get('cyberspace.run.turn', ['turn' => $run->turn + 1]) }}</span>
     </div>
 
     <div style="padding:var(--s-3) 0">
         @if ($run->inAFight())
             @php($ice = $run->ice)
-            <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
-                <span class="tag tag--crit">{{ $ice->name }}</span>
-                <span class="micro num">{{ $run->ice_integrity }} / {{ $ice->integrity }}</span>
+            <div class="card__stats" style="padding:0;border:0">
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.ice_grade') }}</span>
+                    <span class="tag tag--crit">{{ $ice->name }}</span>
+                </div>
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.ice_integrity') }}</span>
+                    <b class="num">{{ $run->ice_integrity }} / {{ $ice->integrity }}</b>
+                </div>
             </div>
 
-            {{-- The kit's own meter, driven by --v the way every other one is.
-                 It is the ICE's health and not the player's, so it empties as
-                 things go WELL — `--fill` says which way to read it. --}}
-            <div class="meter" style="--v:{{ round($run->ice_integrity / max(1, $ice->integrity), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
-                <span class="meter__fill"></span>
+            {{-- The kit's own meter, driven by --v the way every other one is. It is the ICE's health and
+                 not the player's, so it empties as things go WELL — `--fill` says which way to read it.
+                 A <div>, like every other fill: an inline <span> has no height and draws nothing. --}}
+            <div class="meter meter--lg" style="--v:{{ round($run->ice_integrity / max(1, $ice->integrity), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
+                <div class="meter__fill"></div>
             </div>
         @else
             <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.ice_none') }}</p>
         @endif
-    </div>
-
-    {{-- A PULL IN PROGRESS. Plain text rather than a bar — the total it
-         started against is not stored anywhere the bar could read, only what
-         is still owed, and inventing a total to draw one would be a number
-         nothing else in the run needs. --}}
-    @if ($run->extracting_qb !== null)
-        <p class="micro" style="color:var(--ink-2);padding:0 var(--s-2);margin:0 0 var(--s-2)">
-            {{ Text::get('cyberspace.run.transferring', ['qb' => $run->extracting_qb]) }}
-        </p>
-    @endif
-
-    {{-- EVASION, AND THE WORKING BEHIND IT.
-
-     The score is the capability; the chance on the Egress button is what it
-     comes to against THIS machine. Both are here because neither is the whole
-     answer on its own — a good pool against a grade 9 is still a poor night.
-
-     Pointing at it floats the explanation; clicking opens the same card in a
-     modal, which is the only way in on a phone. One <template>, cloned by the
-     kit into both, so the two presentations cannot drift. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
-    <div class="panel__hd">
-        <h2>{{ Text::get('cyberspace.run.evasion') }}</h2>
-        <div class="spacer"></div>
-        @if ($egress->isSnared())
-            <span class="tag tag--warn">{{ Text::get('cyberspace.run.evasion_snare', ['level' => $egress->snareLevel]) }}</span>
-        @endif
-    </div>
-
-    <div style="padding:var(--s-2) 0 var(--s-3)">
-        <button type="button" class="vital" data-inspect="#egress-working"
-                style="width:100%;text-align:left;background:none;border:0;padding:0;cursor:help"
-                aria-label="{{ Text::get('cyberspace.run.evasion_explain') }}">
-            <span class="vital__label">{{ Text::get('cyberspace.run.evasion_result') }}</span>
-            {{-- The meter is the CHANCE and not the score: a pool has no
-                 maximum to fill, and the number a decision is made on is the
-                 one that gets the bar. --}}
-            <div class="meter meter--lg" style="--v:{{ round($egress->chance, 3) }};--fill:{{ $egress->isSnared() ? 'var(--warn)' : 'var(--jade)' }}">
-                <div class="meter__fill"></div>
-            </div>
-            <span class="vital__value num">{{ $egress->percent() }}%</span>
-        </button>
-
-        <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
-            <span class="num">{{ rtrim(rtrim(number_format($egress->value, 1), '0'), '.') }}</span>
-            {{ Text::get('cyberspace.run.evasion') }}
-            ·
-            {{ Text::get('cyberspace.run.evasion_difficulty') }} <span class="num">{{ $egress->difficulty }}</span>
-            · {{ Text::get('cyberspace.run.evasion_explain') }}
-        </p>
     </div>
 </div>
 
@@ -242,37 +221,78 @@
             </div>
         </div>
 
-        <div class="card__ft">
-            <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.run.evasion_floor') }}</span>
-        </div>
     </div>
 </template>
 
-{{-- ONE FORM AND ONE DOOR. Every action costs the same turn, which is the
-         economy the whole run rests on — so they are one button each on one
-         form rather than a route apiece.
+{{-- ACTIONS: the evasion that leaving rests on, and the buttons, in one panel.
 
-         LEAVING IS ALWAYS ON THE LIST and never disabled, whatever else a turn
-         may or may not offer: a run with no exit is a character deleted by a
-         door they could not see. --}}
+     EVASION, AND THE WORKING BEHIND IT. The score is the capability; the chance on the Egress button
+     is what it comes to against THIS system. Both are here because neither is the whole answer on its
+     own — a good pool against a grade 9 is still a poor night. Pointing at the Egress button floats the
+     explanation (the template above); clicking it is the egress, so there is no modal on top of that.
+
+     ONE FORM AND ONE DOOR. Every action costs the same turn, which is the economy the whole run rests
+     on — so they are one button each on one form rather than a route apiece. LEAVING IS ALWAYS ON THE
+     LIST and never disabled: a run with no exit is a character deleted by a door they could not see. --}}
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    {{-- ON OR PAST A THRESHOLD: the next turn pulls them out whatever they press. The loud thing on the
+         panel, because it is the one fact that changes what the buttons below will do. --}}
+    @if ($thresholdBreached)
+        <div class="hazard-stripe hazard-stripe--thin" role="img" aria-label="{{ Text::get('cyberspace.run.overview.threshold_hit') }}" title="{{ Text::get('cyberspace.run.overview.threshold_hit') }}"></div>
+    @endif
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.actions') }}</h2>
+        <div class="spacer"></div>
+        @if ($egress->isSnared())
+            <span class="tag tag--warn">{{ Text::get('cyberspace.run.evasion_snare', ['level' => $egress->snareLevel]) }}</span>
+        @endif
+    </div>
+
+    <div style="padding:var(--s-3) 0 var(--s-2)">
+        <div>
+            <span class="micro" style="display:block;color:var(--ink-2);margin-bottom:var(--s-2)">
+                {{ Text::get('cyberspace.run.evasion_result') }}: <span class="num" style="color:var(--ink-0)">{{ $egress->percent() }}%</span>
+            </span>
+            {{-- The meter is the CHANCE and not the score: a pool has no maximum to fill, and the number
+                 a decision is made on is the one that gets the bar. Full width, on its own line. --}}
+            <div class="meter meter--lg" style="--v:{{ round($egress->chance, 3) }};--fill:{{ $egress->isSnared() ? 'var(--warn)' : 'var(--jade)' }}">
+                <div class="meter__fill"></div>
+            </div>
+        </div>
+
+        <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
+            <span class="num">{{ rtrim(rtrim(number_format($egress->value, 1), '0'), '.') }}</span>
+            {{ Text::get('cyberspace.run.evasion') }}
+            ·
+            {{ Text::get('cyberspace.run.evasion_difficulty') }} <span class="num">{{ $egress->difficulty }}</span>
+        </p>
+    </div>
+
+    {{-- A PULL IN PROGRESS. Plain text rather than a bar — the total it started against is not stored
+         anywhere the bar could read, only what is still owed, and inventing a total to draw one would be
+         a number nothing else in the run needs. --}}
+    @if ($run->extracting_qb !== null)
+        <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+            {{ Text::get('cyberspace.run.transferring', ['qb' => $run->extracting_qb]) }}
+        </p>
+    @endif
+
     <form method="POST" action="{{ route('run.act') }}" style="padding-bottom:var(--s-3)">
         @csrf
         <div class="row row--wrap" style="--gap:var(--s-2)">
             <button type="submit" name="action" value="attack" class="btn cut" @unless ($run->inAFight()) disabled @endunless>
                 {{ Text::get('cyberspace.run.action.attack') }}
             </button>
-            {{-- ONLY ON AN EXTRACTION RUN. Purpose decides what a core touch
-                 IS, and each of the three has its own button: offering one on
-                 the wrong purpose would promise something the turn would
+            {{-- ONLY ON AN EXTRACTION RUN. Purpose decides what a core touch IS, and each of the three has
+                 its own button: offering one on the wrong purpose would promise something the turn would
                  silently waste. --}}
             @if ($run->purpose === RunPurpose::Extraction)
                 <button type="submit" name="action" value="extract" class="btn cut" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get($run->extracting_qb !== null ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
                 </button>
             @endif
-            {{-- THE SAME RULE ON THE OTHER PURPOSE. The kind was chosen at the
-                 door and is permanent, so the button says which one it is
-                 about to leave rather than asking again mid-fight. --}}
+            {{-- THE SAME RULE ON THE OTHER PURPOSE. The kind was chosen at the door and is permanent, so
+                 the button says which one it is about to leave rather than asking again mid-fight. --}}
             @if ($run->purpose === RunPurpose::Backdoor)
                 <button type="submit" name="action" value="install" class="btn cut"
                         @if ($run->backdoored || $run->inAFight()) disabled @endif>
@@ -281,11 +301,9 @@
                     ]) }}
                 </button>
             @endif
-            {{-- THE ONLY BUTTON THAT ENDS THE RUN BY WORKING, so it is the
-                 only one that wears the accent: ember means destructive, and
-                 there is nothing in the game this word fits better. It cannot
-                 be pressed twice — the machine is gone and the run is over the
-                 moment it lands. --}}
+            {{-- THE ONLY BUTTON THAT ENDS THE RUN BY WORKING, so it is the only one that wears the accent:
+                 ember means destructive, and there is nothing in the game this word fits better. It cannot
+                 be pressed twice — the system is gone and the run is over the moment it lands. --}}
             @if ($run->purpose === RunPurpose::Burn)
                 <button type="submit" name="action" value="burn" class="btn btn--danger cut" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get('cyberspace.run.action.burn') }}
@@ -295,10 +313,12 @@
                 {{ Text::get('cyberspace.run.action.hold') }}
             </button>
             <div class="spacer"></div>
-            {{-- THE ODDS ARE ON THE BUTTON. `Simulator::egressChance()` is
-                 what answers here and what the roll uses, so the number a
-                 player decides against is the number the game believes. --}}
-            <button type="submit" name="action" value="egress" class="btn btn--warn cut">
+            {{-- THE ODDS ARE ON THE BUTTON. `Simulator::egressChance()` is what answers here and what the
+                 roll uses, so the number a player decides against is the number the game believes. --}}
+            {{-- The working behind that number floats from here (hover, or keyboard focus) — it is the
+                 button the number is on. Not on click: that is the egress itself. --}}
+            <button type="submit" name="action" value="egress" class="btn btn--warn cut"
+                    data-inspect="#egress-working" data-inspect-hover>
                 {{ Text::get('cyberspace.run.egress_chance', ['chance' => $egress->percent()]) }}
             </button>
         </div>
@@ -312,12 +332,9 @@
                 {{ Text::get('cyberspace.run.core_hint') }}
             </p>
         @endif
-        <p class="micro" style="color:var(--ink-2);margin:var(--s-2) 0 0">
-            {{ Text::get('cyberspace.run.egress_hint') }}
-            @if ($egress->isSnared())
-                <span style="color:var(--warn)">{{ Text::get('cyberspace.run.egress_snared') }}</span>
-            @endif
-        </p>
+        @if ($egress->isSnared())
+            <p class="micro" style="color:var(--warn);margin:var(--s-2) 0 0">{{ Text::get('cyberspace.run.egress_snared') }}</p>
+        @endif
     </form>
 </div>
 
@@ -330,9 +347,17 @@
 
         <div style="padding:var(--s-3) 0">
             @foreach ($run->log as $line)
-                <p class="micro" style="margin:0 0 var(--s-1);@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
-                    <span class="num" style="color:var(--ink-2)">{{ $line['turn'] ?? '' }}</span>
-                    {{ $line['text'] }}
+                <p class="micro" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
+                    @if (isset($line['turn']))
+                        <span class="tag">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
+                    @endif
+                    {{-- A line may open with a tag naming who did it ("ICE VII lands a code payload…"). --}}
+                    <span>
+                        @if (! empty($line['tag']))
+                            <span class="tag tag--crit">{{ $line['tag'] }}</span>
+                        @endif
+                        {{ $line['text'] }}
+                    </span>
                 </p>
             @endforeach
         </div>

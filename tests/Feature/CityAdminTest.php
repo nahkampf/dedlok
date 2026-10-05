@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\Character;
 use App\Models\District;
+use App\Models\Item;
 use App\Models\Location;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,6 +68,36 @@ final class CityAdminTest extends TestCase
         $this->actingAs($this->admin)->put(route('admin.districts.update', $district), ['name' => 'Dockside', 'color' => 'cyan', 'map_x' => 22, 'map_y' => 70, 'travel_weight' => 1, 'links' => [$district->id]])->assertSessionHasErrors('links.0');
     }
 
+    /**
+     * `prohibited` lets an EMPTY value through, so a hand-built update with a blank slug used to
+     * pass validation and then try to write NULL into a NOT NULL column: a 500. A slug is
+     * permanent, and the request must not even look at what it was sent.
+     */
+    public function test_a_blank_slug_on_update_is_ignored_not_written(): void
+    {
+        $location = Location::query()->firstOrFail();
+        $slug = $location->slug;
+
+        $this->actingAs($this->admin)->put(route('admin.locations.update', $location), [
+            'slug' => null, 'district_id' => $location->district_id, 'name' => 'Renamed',
+            'map_x' => 50, 'map_y' => 50, 'discovery' => 'open',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame($slug, $location->fresh()->slug);
+        $this->assertSame('Renamed', $location->fresh()->name);
+    }
+
+    public function test_a_blank_slug_on_a_district_update_is_ignored_not_written(): void
+    {
+        $district = District::query()->where('slug', 'dockside')->firstOrFail();
+
+        $this->actingAs($this->admin)->put(route('admin.districts.update', $district), $this->district(['slug' => null, 'name' => 'Docks']))
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame('dockside', $district->fresh()->slug);
+        $this->assertSame('Docks', $district->fresh()->name);
+    }
+
     public function test_the_discovery_rule_decides_which_field_is_needed(): void
     {
         $base = ['district_id' => District::query()->value('id'), 'slug' => 'a-place', 'name' => 'A place', 'map_x' => 50, 'map_y' => 50];
@@ -109,5 +140,18 @@ final class CityAdminTest extends TestCase
         ] as $url) {
             $this->actingAs($this->admin)->get($url)->assertOk();
         }
+    }
+
+    public function test_the_shop_picker_is_a_card_select_with_cost_shelf_and_rarity(): void
+    {
+        $item = Item::factory()->physical()->create(['name' => 'Chrome Thing', 'base_cost' => 1234, 'rarity' => 'rare']);
+        DB::table('market_stock')->insert(['item_id' => $item->id, 'quantity' => 7, 'created_at' => now(), 'updated_at' => now()]);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.locations.edit', Location::query()->firstOrFail()))
+            ->assertOk()
+            ->assertSee('select--cards', false)
+            ->assertSee('Chrome Thing')
+            ->assertSee('Physical · 1,234 ¤ · market shelf 7 · Rare', false);
     }
 }

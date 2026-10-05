@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin;
 
 use App\Admin\ModifierField;
+use App\Combat\AmmoType;
+use App\Combat\ArmourSlot;
+use App\Combat\DamageProfile;
+use App\Combat\Riders;
+use App\Combat\WeaponClass;
 use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotKind;
@@ -14,11 +19,13 @@ use App\Decks\Variant;
 use App\Drugs\Family;
 use App\Implants\BodyRegion;
 use App\Market\Rarity;
+use App\Models\Ammunition;
 use App\Models\Item;
 use App\Programs\ProgramKind;
 use App\Stats\Modifier;
 use App\Support\Text;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -102,6 +109,8 @@ class ItemRequest extends FormRequest
          */
         $isProgramForm = $this->filled('program_kind');
         $isDrugForm = $this->filled('drug_family');
+        $isWeaponForm = $this->filled('weapon_class');
+        $isAmmoForm = $this->filled('ammo_calibre');
 
         $this->merge([
             'stackable' => $this->boolean('stackable'),
@@ -163,6 +172,25 @@ class ItemRequest extends FormRequest
             // where an implant's effects live.
             'modifiers' => ModifierField::normalise($this->input('modifiers')),
             'implant_region' => $this->filled('implant_region') ? $this->input('implant_region') : null,
+            // Armour: the slots ticked. An item is armour because it covers at least one, the same
+            // way it is a drug because it has a family. An unticked box is simply absent.
+            'armour_slots' => array_values(array_filter((array) $this->input('armour_slots', []), static fn ($slot): bool => is_string($slot) && $slot !== '')),
+            // Weapons and ammunition, the way drugs are: a class (or a calibre) makes the item one,
+            // and a zero on a panel that is off is the form's default rather than a value.
+            'weapon_class' => $this->filled('weapon_class') ? $this->input('weapon_class') : null,
+            'weapon_damage' => $this->panelNumber('weapon_damage', $isWeaponForm),
+            'weapon_accuracy' => $this->panelNumber('weapon_accuracy', $isWeaponForm),
+            'weapon_rate' => $this->panelNumber('weapon_rate', $isWeaponForm),
+            'weapon_magazine' => $this->panelNumber('weapon_magazine', $isWeaponForm),
+            'weapon_calibre' => $this->filled('weapon_calibre') ? trim((string) $this->input('weapon_calibre')) : null,
+            'weapon_profile' => $this->profileInput('weapon_profile', $isWeaponForm),
+            'weapon_riders' => $this->ridersInput('weapon_riders', $isWeaponForm),
+            'ammo_calibre' => $this->filled('ammo_calibre') ? trim((string) $this->input('ammo_calibre')) : null,
+            'ammo_type' => $isAmmoForm ? ($this->filled('ammo_type') ? $this->input('ammo_type') : AmmoType::Standard->value) : null,
+            'ammo_damage' => $this->panelNumber('ammo_damage', $isAmmoForm),
+            'ammo_penetration' => $this->panelNumber('ammo_penetration', $isAmmoForm),
+            'ammo_profile' => $this->profileInput('ammo_profile', $isAmmoForm),
+            'ammo_riders' => $this->ridersInput('ammo_riders', $isAmmoForm),
         ]);
     }
 
@@ -197,6 +225,11 @@ class ItemRequest extends FormRequest
         $hardware = $this->hardware();
         $isProgram = $this->programKind() !== null;
         $isDrug = $this->drugFamily() !== null;
+        $isArmour = $this->armourSlots() !== [];
+        $weaponClass = $this->weaponClass();
+        $isWeapon = $weaponClass !== null;
+        $isAmmo = $this->ammoCalibre() !== null;
+        $isGear = $isArmour || $isWeapon || $isAmmo;
 
         return array_merge([
             // Only on create. A slug is permanent — inventory rows and the
@@ -216,7 +249,7 @@ class ItemRequest extends FormRequest
 
             // Hardware is matter: a cyberdeck and every module that goes in
             // one is something you carry, never something written to a deck.
-            'container' => $hardware === null
+            'container' => $hardware === null && ! $isGear
                 ? ['required', Rule::in(Item::CONTAINERS)]
                 : ['required', Rule::in([Item::CONTAINER_PHYSICAL])],
             'tier' => ['required', 'integer', 'between:1,'.Item::MAX_TIER],
@@ -231,9 +264,16 @@ class ItemRequest extends FormRequest
             // at an inventory row, and a row holding two sticks cannot be
             // pointed at: fitting one of them would mean splitting the pile,
             // and what came back would not be the object the player picked.
-            'stackable' => $capacity > 0 || $hardware !== null
-                ? ['boolean', 'declined']
-                : ['boolean'],
+            // ARMOUR is the same case again: a worn row points at ONE inventory row, and a row holding
+            // three vests cannot say which one is on.
+            //
+            // A WEAPON is the same, for the hand it is held in. Ammunition is the opposite: it is
+            // bought and spent by the box, so it must stack.
+            'stackable' => $isAmmo
+                ? ['accepted']
+                : ($capacity > 0 || $hardware !== null || $isArmour || $isWeapon
+                    ? ['boolean', 'declined']
+                    : ['boolean']),
 
             'use_op' => ['nullable', Rule::in(Item::USE_OPS)],
             'use_skill_id' => $isImprint
@@ -289,7 +329,7 @@ class ItemRequest extends FormRequest
              * and `use_op` already says which job; a row claiming both would
              * be an imprint that runs and a program that teaches.
              */
-            'program_kind' => $hardware !== null || $isImprint
+            'program_kind' => $hardware !== null || $isImprint || $isGear
                 ? ['prohibited']
                 : ['nullable', Rule::enum(ProgramKind::class)],
 
@@ -311,7 +351,7 @@ class ItemRequest extends FormRequest
              * software or deck hardware. What it DOES lives on `modifiers`
              * like an implant's; these four are what it costs.
              */
-            'drug_family' => $hardware !== null || $isProgram || $isImprint
+            'drug_family' => $hardware !== null || $isProgram || $isImprint || $isGear
                 ? ['prohibited']
                 : ['nullable', Rule::enum(Family::class)],
 
@@ -366,6 +406,31 @@ class ItemRequest extends FormRequest
              * about that.
              */
             'modifiers' => ['nullable', 'array'],
+
+            // ARMOUR. Which slots of the body a piece covers; ticking none means it is not armour.
+            'armour_slots' => ['array'],
+            'armour_slots.*' => ['distinct', Rule::enum(ArmourSlot::class)],
+
+            // WEAPONS. A class makes the item one. The damage is ONE fixed figure; the profile says
+            // how it splits across damage types (and is judged in withValidator(), as a whole).
+            'weapon_class' => ['nullable', Rule::enum(WeaponClass::class)],
+            'weapon_damage' => $isWeapon ? ['required', 'integer', 'between:1,1000'] : ['prohibited'],
+            'weapon_accuracy' => $isWeapon ? ['required', 'integer', 'between:-100,100'] : ['prohibited'],
+            'weapon_rate' => $isWeapon ? ['required', 'integer', 'between:1,30'] : ['prohibited'],
+            // A firearm takes a calibre of round from a magazine, and both are required together; a
+            // blade or a grenade takes neither.
+            'weapon_magazine' => $weaponClass?->firearm() ? ['required', 'integer', 'between:1,1000'] : ['prohibited'],
+            'weapon_calibre' => $weaponClass?->firearm() ? ['required', 'string', 'max:32', 'regex:/^[A-Za-z0-9 ._-]+$/'] : ['prohibited'],
+            'weapon_profile' => $isWeapon ? ['required', 'array'] : ['prohibited'],
+            'weapon_riders' => $isWeapon ? ['nullable', 'array'] : ['prohibited'],
+
+            // AMMUNITION. A calibre makes the item a round; it changes a hit rather than being one.
+            'ammo_calibre' => ['nullable', 'string', 'max:32', 'regex:/^[A-Za-z0-9 ._-]+$/'],
+            'ammo_type' => $isAmmo ? ['required', Rule::enum(AmmoType::class)] : ['prohibited'],
+            'ammo_damage' => $isAmmo ? ['required', 'integer', 'between:-90,500'] : ['prohibited'],
+            'ammo_penetration' => $isAmmo ? ['required', 'integer', 'between:-100,100'] : ['prohibited'],
+            'ammo_profile' => $isAmmo ? ['nullable', 'array'] : ['prohibited'],
+            'ammo_riders' => $isAmmo ? ['nullable', 'array'] : ['prohibited'],
 
             /*
              * Where in a body this goes, or nothing at all.
@@ -565,6 +630,84 @@ class ItemRequest extends FormRequest
             }
         });
 
+        /*
+         * GEAR IS ONLY ITS OWN KIND. Armour, a weapon and a round are each one thing: not each
+         * other, and not deck hardware, software, a drug, an imprint or an implant. An implant is
+         * the sharpest case for armour — plating applies EVERYWHERE by design, and a piece that was
+         * both would count twice for no reason anybody could read off the card.
+         *
+         * Armour's modifiers may not carry a condition of their own: `WornArmour` adds the location
+         * condition, one condition per modifier, so a second would either replace it or leave a
+         * resistance silently working on every hit. And a weapon or a round may carry NO modifiers
+         * at all: nothing reads them (a weapon is a row the engine looks at, and its numbers are
+         * columns), so an effect typed there would do nothing and say nothing.
+         *
+         * The two profiles are judged as wholes: only damage types, whole percentages, summing to 100.
+         */
+        $validator->after(function (Validator $validator): void {
+            $kinds = array_filter([
+                'armour_slots' => $this->armourSlots() !== [],
+                'weapon_class' => $this->weaponClass() !== null,
+                'ammo_calibre' => $this->ammoCalibre() !== null,
+            ]);
+
+            if ($kinds === []) {
+                return;
+            }
+
+            if (count($kinds) > 1
+                || $this->hardware() !== null
+                || $this->input('use_op') === Item::USE_INJECT_SKILL
+                || $this->filled('implant_region')) {
+                $validator->errors()->add(array_key_first($kinds), Text::get('admin.validation.gear_exclusive'));
+            }
+
+            $modifiers = array_filter((array) $this->input('modifiers', []), 'is_array');
+
+            if (isset($kinds['armour_slots'])) {
+                foreach ($modifiers as $row) {
+                    if (! empty($row['condition'])) {
+                        $validator->errors()->add('modifiers', Text::get('admin.validation.armour_condition'));
+
+                        break;
+                    }
+                }
+            } elseif ($modifiers !== []) {
+                $validator->errors()->add('modifiers', Text::get('admin.validation.gear_no_effects'));
+            }
+
+            // ONE ITEM PER KIND OF ROUND. Ammunition stacks per item, so a second "9mm hollow point"
+            // would be a pile that never merges with the first.
+            if ($this->ammoCalibre() !== null && ! $validator->errors()->has('ammo_type')) {
+                $twin = Ammunition::query()
+                    ->where('calibre', $this->ammoCalibre())
+                    ->where('type', (string) $this->input('ammo_type'))
+                    ->when($this->item() !== null, fn ($q) => $q->where('item_id', '!=', $this->item()->getKey()))
+                    ->with('item')
+                    ->first();
+
+                if ($twin !== null) {
+                    $validator->errors()->add('ammo_type', Text::get('admin.validation.ammo_kind_taken', ['item' => $twin->item?->name ?? '']));
+                }
+            }
+
+            foreach (['weapon_riders' => $this->weaponClass() !== null, 'ammo_riders' => $this->ammoCalibre() !== null] as $field => $on) {
+                $problem = $on ? Riders::problem((array) $this->input($field, [])) : null;
+
+                if ($problem !== null) {
+                    $validator->errors()->add($field, Text::get("admin.validation.rider_{$problem}"));
+                }
+            }
+
+            if ($this->weaponClass() !== null && ! $validator->errors()->has('weapon_profile')) {
+                $this->judgeProfile($validator, 'weapon_profile', (array) $this->input('weapon_profile', []));
+            }
+
+            if ($this->ammoCalibre() !== null && ! $validator->errors()->has('ammo_profile') && DamageProfile::clean((array) $this->input('ammo_profile', [])) !== []) {
+                $this->judgeProfile($validator, 'ammo_profile', (array) $this->input('ammo_profile', []));
+            }
+        });
+
         $validator->after(function (Validator $validator): void {
             if (! ($this->hardware()?->isDeck() ?? false) || $validator->errors()->has('slots')) {
                 return;
@@ -686,6 +829,14 @@ class ItemRequest extends FormRequest
             $data['program_modifiers'],
         );
 
+        // Armour, weapons and ammunition live in tables of their own, not on the item.
+        unset(
+            $data['armour_slots'],
+            $data['weapon_class'], $data['weapon_damage'], $data['weapon_accuracy'], $data['weapon_rate'],
+            $data['weapon_magazine'], $data['weapon_calibre'], $data['weapon_profile'], $data['weapon_riders'],
+            $data['ammo_calibre'], $data['ammo_type'], $data['ammo_damage'], $data['ammo_penetration'], $data['ammo_profile'], $data['ammo_riders'],
+        );
+
         // And so does a drug. Nothing on `items` says an item is one.
         unset(
             $data['drug_family'], $data['duration_minutes'], $data['addictive'],
@@ -698,6 +849,132 @@ class ItemRequest extends FormRequest
         $data['modifiers'] = ($data['modifiers'] ?? []) === [] ? null : array_values((array) $data['modifiers']);
 
         return $data;
+    }
+
+    /**
+     * The armour slots this payload ticks, as ArmourSlot values; empty when it is not armour.
+     *
+     * @return list<string>
+     */
+    public function armourSlots(): array
+    {
+        return array_values(array_intersect(
+            ArmourSlot::values(),
+            array_map('strval', (array) $this->input('armour_slots', [])),
+        ));
+    }
+
+    /** What class of weapon this payload describes, if any. */
+    public function weaponClass(): ?WeaponClass
+    {
+        $value = $this->input('weapon_class');
+
+        return is_string($value) && $value !== '' ? WeaponClass::tryFrom($value) : null;
+    }
+
+    /** The calibre this payload's ammunition fits; null when it is not ammunition. */
+    public function ammoCalibre(): ?string
+    {
+        $value = $this->input('ammo_calibre');
+
+        return is_string($value) && trim($value) !== '' ? trim($value) : null;
+    }
+
+    /**
+     * The weapon's row, everything but the item; null when this is not a weapon.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function weaponColumns(): ?array
+    {
+        $class = $this->weaponClass();
+
+        if ($class === null) {
+            return null;
+        }
+
+        $data = $this->validated();
+        $firearm = $class->firearm();
+
+        return [
+            'class' => $class,
+            'damage' => (int) $data['weapon_damage'],
+            'damage_profile' => DamageProfile::clean((array) ($data['weapon_profile'] ?? [])),
+            'riders' => Riders::clean((array) ($data['weapon_riders'] ?? [])) ?: null,
+            'accuracy' => (int) $data['weapon_accuracy'],
+            'rate' => (int) $data['weapon_rate'],
+            'magazine' => $firearm ? (int) $data['weapon_magazine'] : null,
+            'calibre' => $firearm ? (string) $data['weapon_calibre'] : null,
+        ];
+    }
+
+    /**
+     * The ammunition's row, everything but the item; null when this is not ammunition.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function ammoColumns(): ?array
+    {
+        if ($this->ammoCalibre() === null) {
+            return null;
+        }
+
+        $data = $this->validated();
+        $profile = DamageProfile::clean((array) ($data['ammo_profile'] ?? []));
+
+        return [
+            'calibre' => $this->ammoCalibre(),
+            'type' => (string) $data['ammo_type'],
+            'damage' => (int) $data['ammo_damage'],
+            'penetration' => (int) $data['ammo_penetration'],
+            // Blank keeps the weapon's own profile; a profile here REPLACES it while the round is loaded.
+            'damage_profile' => $profile === [] ? null : $profile,
+            'riders' => Riders::clean((array) ($data['ammo_riders'] ?? [])) ?: null,
+        ];
+    }
+
+    /**
+     * A posted profile (a map of damage type to share), or null when the whole thing is blank.
+     *
+     * Blank is "none", not eight zeroes; a profile with anything typed stays as posted so the
+     * panel's own rule can refuse a panel that is off, or judge one that is on.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function profileInput(string $field, bool $panelIsOn): ?array
+    {
+        $raw = (array) $this->input($field, []);
+        $typed = array_filter($raw, static fn ($share): bool => $share !== null && $share !== '' && (string) $share !== '0');
+
+        if ($typed === [] && ! $panelIsOn) {
+            return null;
+        }
+
+        return $raw;
+    }
+
+    /**
+     * Posted riders (kind => chance, turns, amount), or null when nothing at all is typed and the
+     * panel is off, so a hidden panel's empty inputs are the form's default and not a value.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function ridersInput(string $field, bool $panelIsOn): ?array
+    {
+        $raw = (array) $this->input($field, []);
+        $typed = array_filter(Arr::flatten($raw), static fn ($v): bool => $v !== null && $v !== '' && (string) $v !== '0');
+
+        return $typed === [] && ! $panelIsOn ? null : $raw;
+    }
+
+    /** Add the profile's problem, in words, if it has one. @param array<string, mixed> $raw */
+    private function judgeProfile(Validator $validator, string $field, array $raw): void
+    {
+        $problem = DamageProfile::problem($raw);
+
+        if ($problem !== null) {
+            $validator->errors()->add($field, Text::get("admin.validation.profile_{$problem}"));
+        }
     }
 
     /** What family of drug this payload describes, if any. */

@@ -43,6 +43,9 @@ enum RunRefusal: string
     /** A hunter is on you. Cyberspace combat owns the screen until it is settled. */
     case Hunted = 'hunted';
 
+    /** In a fight, which is settled before anything else begins. */
+    case Fighting = 'fighting';
+
     case ProgramRefused = 'program_refused';
 
     public function message(): string

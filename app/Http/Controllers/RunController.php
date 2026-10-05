@@ -11,7 +11,6 @@ use App\Cyberspace\RunAction;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
-use App\Cyberspace\ScanFact;
 use App\Cyberspace\Simulator;
 use App\Cyberspace\TurnResult;
 use App\Decks\DeckTotals;
@@ -22,6 +21,7 @@ use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemScan;
 use App\Programs\ProgramKind;
+use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
 use App\Stats\Resolver;
 use Illuminate\Http\RedirectResponse;
@@ -92,6 +92,16 @@ class RunController extends Controller
             ->with('item.program')
             ->get();
 
+        // What they have read out of it, and what they have not. A file with no answers in it is the
+        // same as no file for this purpose: both mean going in blind.
+        $scan = SystemScan::query()
+            ->where('character_id', $character->id)
+            ->where('address', $target->address)
+            ->live()
+            ->first();
+
+        $chain = $chains->for($character, $target);
+
         return view('run.setup', [
             // What the system's owner makes of you, on the screen where the
             // run is decided rather than after it.
@@ -100,16 +110,20 @@ class RunController extends Controller
                 : 0.0,
             'character' => $character,
             'target' => $target,
-            // What they have read out of it, and what they have not. A file
-            // with no answers in it is the same as no file for this purpose:
-            // both mean going in blind.
-            'scan' => SystemScan::query()
+            'scan' => $scan,
+            // The same rows the scanner window shows, every fact either way: an unread one says so.
+            'overview' => ($scan ?? new SystemScan)->facts($character),
+            'chain' => $chain,
+            // What the player has read of each system the trace has to come through, by address. A
+            // relay is their own backdoor, but a backdoor says nothing about what is on the machine.
+            'hopScans' => SystemScan::query()
                 ->where('character_id', $character->id)
-                ->where('address', $target->address)
+                ->whereIn('address', $chain->pluck('address'))
                 ->live()
-                ->first(),
-            'facts' => ScanFact::cases(),
-            'chain' => $chains->for($character, $target),
+                ->get()
+                ->keyBy('address'),
+            // What the running programs are spending, against what the deck resolves.
+            'spent' => $deck === null ? ['qflops' => 0, 'memory' => 0] : app(ProgramRunner::class)->spentOn($character, (int) $deck->id),
             'chainCap' => $chains->hopsAllowed($character),
             // What is running, with what each thing IS — an icebreaker and a
             // decryptor are both "a program" until the moment one of them is
@@ -224,6 +238,9 @@ class RunController extends Controller
             // bug, which is the whole reason the explanation is on the screen
             // rather than in a log line.
             'egress' => $simulator->egressReport($character, $run),
+            // On or past one of the player's standing instructions: the next turn pulls them out on
+            // its own. The game's own test, not a second copy of it.
+            'thresholdBreached' => $simulator->thresholdBreached($character, $run),
             /*
              * WHAT THE CORE WILL ANSWER TO, as a percentage, or null when
              * there is nothing to get past.

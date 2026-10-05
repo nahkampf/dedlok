@@ -59,6 +59,19 @@ final class Predicates
                     >= (float) ($args['level'] ?? 1),
 
             /*
+             * WHERE ON THE BODY A HIT LANDED. How worn armour counts only for the slots it
+             * covers: `App\Stats\Sources\WornArmour` wraps a piece's damage modifiers in
+             * this, with the piece's slots as the argument, and a damage event passes the
+             * slot it hit in the context (`hit.location`).
+             *
+             * A hit with NO location — ICE, an overdose, an encounter's damage outcome, a
+             * burn — answers FALSE, which is the safe direction the class comment describes:
+             * armour never silently applies to something that did not strike the body.
+             */
+            'hit_location_in' => static fn (Context $c, array $args): bool => ($location = $c->get('hit.location')) !== null
+                && in_array($location, (array) ($args['slots'] ?? []), true),
+
+            /*
              * Where the character is. Jacked in is the cyberspace session, not
              * signing in and not carrying a deck — see CYBERSPACE.md,
              * "Vocabulary". Nothing sets these yet; the predicate exists so the

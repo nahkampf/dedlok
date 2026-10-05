@@ -97,10 +97,7 @@
                 <span class="field__hint">{{ Text::get('admin.locations.shop_hint') }}</span>
                 @foreach ($shopRows as $i => $row)
                     <div class="row row--wrap" style="--gap:var(--s-3)">
-                        <select class="select" name="shop[{{ $i }}][item_id]" style="flex:1 1 220px;min-width:0" aria-label="{{ Text::get('admin.locations.item') }}">
-                            <option value=""></option>
-                            <x-grouped-options :groups="$items" :selected="$row['item_id'] ?? null" />
-                        </select>
+                        <x-card-select name="shop[{{ $i }}][item_id]" :groups="$shopItems" :selected="$row['item_id'] ?? null" :label="Text::get('admin.locations.item')" style="flex:1 1 220px;min-width:0" />
                         <input class="input num" type="number" min="0" name="shop[{{ $i }}][price]" value="{{ $row['price'] ?? '' }}" placeholder="{{ Text::get('admin.locations.price_default') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.price') }}">
                         <input class="input num" type="number" min="0" name="shop[{{ $i }}][max_stock]" value="{{ $row['max_stock'] ?? '' }}" placeholder="{{ Text::get('admin.locations.unlimited') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.max_stock') }}">
                         <input class="input num" type="number" min="0" name="shop[{{ $i }}][restock_amount]" value="{{ $row['restock_amount'] ?? '' }}" placeholder="{{ Text::get('admin.locations.restock_amount') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.restock_amount') }}">

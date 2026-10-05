@@ -427,10 +427,34 @@ public/assets/
             </select>
           </div>
           <div class="field" style="grid-column:1/-1">
+            <label class="field__label" for="f4b">Item (card select)</label>
+            <select class="select select--cards" id="f4b">
+              <button type="button"><selectedcontent></selectedcontent></button>
+              <option value=""><span class="opt__title"></span></option>
+              <optgroup label="Cyberdecks">
+                <option value="1" selected>
+                  <img class="opt__img" src="images/items/_default.jpg" alt="" loading="lazy">
+                  <span class="opt__title">Explorer deck</span>
+                  <span class="opt__text">Cyberdeck · 1,200 ¤ · market shelf 8 · Common</span>
+                </option>
+                <option value="2">
+                  <span class="opt__title">Title only, no picture</span>
+                </option>
+              </optgroup>
+            </select>
+            <span class="field__hint">Needs a browser with <code>appearance: base-select</code>; elsewhere it is a plain select.</span>
+          </div>
+          <div class="field" style="grid-column:1/-1">
             <label class="field__label" for="f5">Contract notes</label>
             <textarea class="textarea" id="f5" placeholder="Leave a dead drop…"></textarea>
           </div>
         </div>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Node graph</h3><p>Nodes are glyphs and the lines carry the meaning: pass, fail, anything else. What the root can reach is joined up and laid out by distance; the rest sits underneath with no lines. A node is only a glyph: point at it for its card, tap it for the same card in a modal. Written as JSON in <code>data-graph</code>, or drawn with <code>UI.nodeGraph(el, spec)</code>.</p></div>
+      <template class="demo-src">
+        <div class="graph" data-label="Example encounter" data-graph='{"root":"start","looseLabel":"Not connected yet","nodes":[{"id":"start","label":"start","kind":"entry","detail":{"title":"start","tags":["Opens here"],"text":"A man steps out of the doorway.","rows":[{"left":"Approach","right":"→ talk"}]}},{"id":"talk","label":"talk","detail":{"title":"talk","text":"He wants to know what you are carrying.","rows":[{"left":"Persuade · rolls intellect","right":"pass → won","tone":"pass"},{"left":"Persuade · rolls intellect","right":"fail → lost","tone":"fail"},{"left":"Back off","right":"→ start"}]}},{"id":"won","label":"won","kind":"end","detail":{"title":"won","tags":["Ending"],"text":"He lets you through."}},{"id":"lost","label":"lost","kind":"end","detail":{"title":"lost","tags":["Ending"],"text":"He does not."}},{"id":"draft","label":"draft","detail":{"title":"draft","text":"Not written yet."}}],"edges":[{"from":"start","to":"talk","tone":"plain","title":"Approach"},{"from":"talk","to":"won","tone":"pass","title":"Persuade — pass"},{"from":"talk","to":"lost","tone":"fail","title":"Persuade — fail"},{"from":"talk","to":"start","tone":"plain","title":"Back off"}]}'></div>
       </template>
     </div>
     <div class="demo">

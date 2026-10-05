@@ -39,6 +39,9 @@ enum PlacementRefusal: string
     /** The equipped deck has no room for it — see App\Decks\Storage. */
     case NoStorage = 'no_storage';
 
+    /** Armour being worn cannot be put away: take it off first. */
+    case Worn = 'worn';
+
     public function message(): string
     {
         return Text::get("inventory.placement.{$this->value}");

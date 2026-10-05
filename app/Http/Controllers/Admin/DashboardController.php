@@ -9,6 +9,7 @@ use App\Models\Archetype;
 use App\Models\District;
 use App\Models\Entity;
 use App\Models\Item;
+use App\Models\Npc;
 use App\Models\Skill;
 use Illuminate\View\View;
 
@@ -27,6 +28,7 @@ class DashboardController extends Controller
             'itemsOnMarket' => Item::onMarket()->count(),
             'skills' => Skill::count(),
             'districts' => District::count(),
+            'npcs' => Npc::count(),
             'skillsWithoutBooks' => Skill::query()
                 ->whereDoesntHave('imprint')
                 ->count(),

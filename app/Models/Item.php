@@ -175,6 +175,51 @@ class Item extends Model
         return $this->drug()->exists();
     }
 
+    /**
+     * The armour half of this item, if it has one. An item is armour because it has this row.
+     *
+     * @return HasOne<Armour, $this>
+     */
+    public function armour(): HasOne
+    {
+        return $this->hasOne(Armour::class);
+    }
+
+    public function isArmour(): bool
+    {
+        return $this->armour()->exists();
+    }
+
+    /**
+     * The weapon half of this item, if it has one.
+     *
+     * @return HasOne<Weapon, $this>
+     */
+    public function weapon(): HasOne
+    {
+        return $this->hasOne(Weapon::class);
+    }
+
+    public function isWeapon(): bool
+    {
+        return $this->weapon()->exists();
+    }
+
+    /**
+     * The ammunition half of this item, if it has one.
+     *
+     * @return HasOne<Ammunition, $this>
+     */
+    public function ammunition(): HasOne
+    {
+        return $this->hasOne(Ammunition::class);
+    }
+
+    public function isAmmunition(): bool
+    {
+        return $this->ammunition()->exists();
+    }
+
     /** @return HasOne<DeckModule, $this> */
     public function deckModule(): HasOne
     {

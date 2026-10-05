@@ -92,4 +92,44 @@ return [
             'secretive' => 51,
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Encounters
+    |--------------------------------------------------------------------------
+    |
+    | `travel_chance` and `explore_chance` are the odds that a matured pass opens
+    | one at all. They are the BASE of the resolved `encounter_chance` stat, so a
+    | skill that quiets the street is a modifier. Neither is measured.
+    |
+    | `pool` is what makes RARE mean rare. An encounter's `weight` is its share of
+    | max(the eligible weights added up, this), so a lone encounter of weight 2 is
+    | a 2% pick, not a certainty because nothing else qualified. The rest of the
+    | pool is "nothing happens".
+    |
+    | `bands` name how likely a rolled choice is, lowest first: the first row whose
+    | ceiling the chance does not exceed.
+    |
+    */
+    'encounter' => [
+        'travel_chance' => 0.05,
+        'explore_chance' => 0.08,
+        'pool' => 100,
+        // How rare an encounter's weight reads in the editor, lowest first: the first row whose
+        // ceiling the weight does not exceed. The weight is its share of the pool, 1 to 100.
+        'weight_bands' => [
+            ['upto' => 2, 'word' => 'ultra_rare'],
+            ['upto' => 8, 'word' => 'rare'],
+            ['upto' => 25, 'word' => 'uncommon'],
+            ['upto' => 100, 'word' => 'common'],
+        ],
+        'bands' => [
+            ['upto' => 0.10, 'word' => 'long_shot'],
+            ['upto' => 0.30, 'word' => 'unlikely'],
+            ['upto' => 0.45, 'word' => 'risky'],
+            ['upto' => 0.60, 'word' => 'even'],
+            ['upto' => 0.80, 'word' => 'likely'],
+            ['upto' => 1.00, 'word' => 'safe'],
+        ],
+    ],
 ];

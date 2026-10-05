@@ -29,7 +29,8 @@
         @unless ($activity->cancelling || $activity->kind === ActivityKind::Surgery)
             <form method="POST" action="{{ route('city.cancel') }}">
                 @csrf
-                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('city.cancel') }}</button>
+                {{-- A trip is STOPPED, not cancelled: it finishes the pass it is in and leaves you in that district. --}}
+                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get($activity->kind === ActivityKind::Travel ? 'city.stop_travelling' : 'city.cancel') }}</button>
             </form>
         @endunless
     </div>

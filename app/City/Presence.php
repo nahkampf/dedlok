@@ -24,6 +24,10 @@ final class Presence
             return CityRefusal::JackedIn;
         }
 
+        if ($character->current_fight_id !== null) {
+            return CityRefusal::Fighting;
+        }
+
         if (CityActivity::query()->whereKey($character->getKey())->exists()) {
             return CityRefusal::Busy;
         }

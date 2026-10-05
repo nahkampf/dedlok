@@ -70,9 +70,18 @@ class ArchetypePerkModifierTest extends TestCase
 
         sort($matched);
         $this->assertSame([
+            // The eight damage types (COMBAT.md) are body damage too, and `neural` as well: the cross
+            // product is per (resource, origin) and does not ask what deals which.
+            'damage.hitpoints.blunt',
             'damage.hitpoints.burnout',
+            'damage.hitpoints.chemical',
+            'damage.hitpoints.electrical',
+            'damage.hitpoints.encounter',
+            'damage.hitpoints.fragmentation',
             'damage.hitpoints.ice',
+            'damage.hitpoints.neural',
             'damage.hitpoints.overdose',
+            'damage.hitpoints.penetrating',
             'damage.hitpoints.readiness_loss',
             // The cross product is per (resource, origin) and does not ask
             // whether anything deals that pair — a cancellation only ever
@@ -80,6 +89,8 @@ class ArchetypePerkModifierTest extends TestCase
             // physical half of the origin because a tag set is not a guess
             // about what exists.
             'damage.hitpoints.run_cancelled',
+            'damage.hitpoints.slashing',
+            'damage.hitpoints.thermal',
         ], $matched, 'every way of being hurt in the body, and nothing in the mind');
     }
 

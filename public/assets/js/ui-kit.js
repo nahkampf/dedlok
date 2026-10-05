@@ -13,6 +13,84 @@
       if (t) fn(e, t);
     });
 
+  /* --- Repeating rows ----------------------------------------------------
+     A form that grows: a "+" clones a blank row from a <template>, putting the
+     next index where the token is. Rows are direct children of [data-rows], and
+     the index is how many there already are — the server renders them 0..n-1.
+     Templates may nest: only THIS button's token is replaced, so an inner
+     template keeps its own for later.
+     <div data-rows>
+       <div data-row>… name="x[0][y]" …</div>
+       <template><div data-row>… name="x[__N__][y]" …</div></template>
+       <button type="button" data-add-row data-token="__N__">+</button>
+     </div>                                                                  */
+  on("click", "[data-add-row]", (e, btn) => {
+    const box = btn.closest("[data-rows]");
+    const tpl = box && box.querySelector(":scope > template");
+    if (!tpl) return;
+    const n = box.querySelectorAll(":scope > [data-row]").length;
+    tpl.insertAdjacentHTML("beforebegin", tpl.innerHTML.split(btn.dataset.token).join(String(n)));
+    fillPrefixes(box);
+  });
+
+  /* --- A default that follows another field ------------------------------
+     An input with data-prefix="foo" (fixed) or data-prefix-from="#slug" (follows
+     that input) starts as "foo_". It keeps following until somebody types
+     something else: only a value that is empty, or still exactly the default
+     last applied, is replaced.
+     <input data-prefix-from="#slug"> … <input id="slug">                   */
+  const prefixed = "input[data-prefix], input[data-prefix-from]";
+  const fillPrefixes = (root) =>
+    root.querySelectorAll(prefixed).forEach((input) => {
+      const from = input.dataset.prefixFrom
+        ? (document.querySelector(input.dataset.prefixFrom) || {}).value
+        : input.dataset.prefix;
+      const next = from ? from + "_" : "";
+      if (input.dataset.applied === undefined && input.value === next) input.dataset.applied = next;
+      if (input.value === "" || input.value === (input.dataset.applied || "")) {
+        input.value = next;
+        input.dataset.applied = next;
+      }
+    });
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => fillPrefixes(document));
+  } else {
+    fillPrefixes(document);
+  }
+  document.addEventListener("input", (e) => {
+    if (e.target.id && document.querySelector('[data-prefix-from="#' + CSS.escape(e.target.id) + '"]')) {
+      fillPrefixes(document);
+    }
+  });
+
+  /* --- A choice that carries a value ---------------------------------------
+     A <select data-split> whose option value may be "kind:thing". Choosing one
+     copies "thing" into the [data-split-target] input in the same [data-row].
+     The select still submits the whole "kind:thing"; the server splits it, and
+     an edited input wins. Choosing a plain option leaves the input alone.
+     <option value="injury:neural_damage">Neural damage</option>             */
+  on("change", "select[data-split]", (e, select) => {
+    const [, thing] = select.value.split(/:(.*)/s);
+    const target = select.closest("[data-row]")?.querySelector("input[data-split-target]");
+    if (thing !== undefined && target) target.value = thing;
+  });
+
+  /* --- Range with a word -------------------------------------------------
+     A slider whose label says what the number means. data-bands is JSON,
+     [[ceiling, "word"], …] lowest first: the first row the value does not
+     exceed wins. data-format is the label, with {band} and {value} in it. The
+     server renders the first label; this only keeps it true as it moves.
+     <label>… <span data-range-out>…</span>
+       <input type="range" data-bands='[[2,"Rare"],[100,"Common"]]'
+              data-format="{band} · {value} in 100"></label>                */
+  on("input", "input[type=range][data-bands]", (e, range) => {
+    const out = range.closest("label, .field")?.querySelector("[data-range-out]");
+    if (!out) return;
+    const v = Number(range.value);
+    const band = (JSON.parse(range.dataset.bands).find(([upto]) => v <= upto) || [])[1] || "";
+    out.textContent = (range.dataset.format || "{value}").replace("{band}", band).replace("{value}", String(v));
+  });
+
   /* --- Tabs -------------------------------------------------------------
      <div class="tabs" role="tablist">
        <button class="tab" role="tab" aria-selected="true" data-tab="a">…</button>
@@ -295,7 +373,10 @@
     else if (sheet.show) sheet.show();
   }
 
+  // data-inspect-hover: pointing and keyboard focus only. For a thing whose click already DOES
+  // something (a submit button), a modal on top of the action would be the wrong second effect.
   on("click", "[data-inspect]", (e, el) => {
+    if (el.hasAttribute("data-inspect-hover")) return;
     const body = detail(el);
     if (body) openInspector(body);
   });
@@ -976,5 +1057,152 @@
   countdowns();
   document.addEventListener("DOMContentLoaded", countdowns);
 
-  window.UI = { toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows };
+
+  /* --- A node graph -----------------------------------------------------
+     UI.nodeGraph(el, spec) draws a directed graph as an SVG inside el (a .graph).
+     spec = {
+       root:  "id",                                   // where the walk starts
+       nodes: [{ id, label, kind: "entry"|"end"|"plain", detail? }],
+       edges: [{ from, to, tone: "plain"|"pass"|"fail", title? }],
+     }
+     Nodes REACHABLE from the root are laid out left to right by distance from it;
+     the rest are "loose" and sit in a row underneath, unconnected, with no edges
+     drawn. Parallel edges bend apart, and one that goes back (or to itself) loops
+     round underneath so it never hides behind the node it leaves. A node carries no
+     text of its own: pointing at its glyph floats its `detail` as a card, and
+     clicking or tapping opens the same card in a modal (the inspector below, so a
+     phone can read it too). detail = { title, tags: [], text, rows: [{ left, right,
+     tone }] }, and spec.looseLabel tags a node that is not joined up. Text goes in
+     with textContent, so any of it may be anything. Or write the spec as JSON into
+     <div class="graph" data-graph='{…}'> and it is drawn on load.            */
+  function nodeGraph(el, spec) {
+    const NS = "http://www.w3.org/2000/svg";
+    const COL = 150, ROW = 64, PAD = 36, R = 15, LOOSE_PER_ROW = 10;
+    const make = (name, attrs, text) => {
+      const n = document.createElementNS(NS, name);
+      Object.entries(attrs || {}).forEach(([k, v]) => n.setAttribute(k, String(v)));
+      if (text !== undefined) n.textContent = text;
+      return n;
+    };
+    el.replaceChildren();
+    const nodes = (spec.nodes || []).filter((n, i, all) => all.findIndex((m) => m.id === n.id) === i);
+    if (!nodes.length) return;
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const edges = (spec.edges || []).filter((e) => byId.has(e.from) && byId.has(e.to));
+
+    // Distance from the root: a breadth-first walk, so each node sits one column past its nearest parent.
+    const root = byId.has(spec.root) ? spec.root : nodes[0].id;
+    const depth = new Map([[root, 0]]);
+    const queue = [root];
+    while (queue.length) {
+      const id = queue.shift();
+      edges.filter((e) => e.from === id).forEach((e) => {
+        if (!depth.has(e.to)) { depth.set(e.to, depth.get(id) + 1); queue.push(e.to); }
+      });
+    }
+    const layers = [];
+    [...depth.keys()].forEach((id) => (layers[depth.get(id)] = layers[depth.get(id)] || []).push(id));
+    const tallest = Math.max(...layers.map((l) => l.length));
+    const pos = new Map();
+    layers.forEach((layer, d) =>
+      layer.forEach((id, i) => pos.set(id, { x: PAD + d * COL, y: PAD + (tallest - 1) * ROW / 2 + (i - (layer.length - 1) / 2) * ROW })));
+    const connectedBottom = PAD + (tallest - 1) * ROW + ROW * 0.7;   // room for loops underneath
+
+    const loose = nodes.filter((n) => !depth.has(n.id));
+    loose.forEach((n, i) => pos.set(n.id, { x: PAD + (i % LOOSE_PER_ROW) * COL * 0.6, y: connectedBottom + PAD + Math.floor(i / LOOSE_PER_ROW) * ROW * 0.8 }));
+
+    const width = Math.max(...[...pos.values()].map((p) => p.x)) + PAD;
+    const height = Math.max(...[...pos.values()].map((p) => p.y)) + PAD;
+    const svg = make("svg", { viewBox: `0 0 ${width} ${height}`, width, height, role: "img", "aria-label": el.dataset.label || "" });
+
+    // One arrowhead per tone, filled by class: `context-stroke` is not everywhere yet.
+    const uid = "g" + Math.random().toString(36).slice(2, 7);
+    const defs = make("defs");
+    ["plain", "pass", "fail"].forEach((tone) => {
+      const m = make("marker", { id: `${uid}-${tone}`, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto" });
+      m.appendChild(make("path", { d: "M0 0 L10 5 L0 10 z", class: `graph__arrow graph__arrow--${tone}` }));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+
+    // Edges first so the glyphs sit on top. Edges between the same two nodes bend apart.
+    const seen = new Map();
+    edges.filter((e) => depth.has(e.from) && depth.has(e.to)).forEach((e) => {
+      const a = pos.get(e.from), b = pos.get(e.to);
+      const pair = [e.from, e.to].sort().join("\u0000");
+      const k = seen.get(pair) || 0;
+      seen.set(pair, k + 1);
+      const bend = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 22;
+      let d;
+      if (e.from === e.to) {
+        d = `M${a.x - 8} ${a.y - R} C${a.x - 38} ${a.y - R - 38 - k * 10} ${a.x + 38} ${a.y - R - 38 - k * 10} ${a.x + 8} ${a.y - R - 2}`;
+      } else if (b.x > a.x) {
+        const mx = (a.x + b.x) / 2;
+        d = `M${a.x + R} ${a.y} C${mx} ${a.y + bend} ${mx} ${b.y + bend} ${b.x - R - 3} ${b.y}`;
+      } else {
+        const low = Math.max(a.y, b.y) + ROW * 0.5 + Math.abs(bend);
+        d = `M${a.x} ${a.y + R} C${a.x} ${low} ${b.x} ${low} ${b.x} ${b.y + R + 3}`;
+      }
+      const path = make("path", { d, class: `graph__edge graph__edge--${e.tone || "plain"}`, "marker-end": `url(#${uid}-${e.tone || "plain"})` });
+      if (e.title) path.appendChild(make("title", {}, e.title));
+      svg.appendChild(path);
+    });
+
+    // ◈ for a screen in the graph, ▤ for one outside it: both from the proven glyph set. A node
+    // is the glyph and nothing else: it points at a <template> holding its card, which the
+    // inspector floats on hover and opens as a modal on click or tap.
+    const html = (tag, cls, text) => {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text !== undefined) n.textContent = text;
+      return n;
+    };
+    const card = (n, out) => {
+      const d = n.detail || {};
+      const c = html("div", "item-card");
+      const hd = html("div", "item-card__hd");
+      hd.appendChild(html("span", "item-card__name", d.title || n.label));
+      const tags = [...(d.tags || []), ...(out && spec.looseLabel ? [spec.looseLabel] : [])];
+      if (tags.length) {
+        const row = html("div", "row row--wrap");
+        row.style.cssText = "--gap:var(--s-2);margin-top:var(--s-2)";
+        tags.forEach((t) => row.appendChild(html("span", "tag", t)));
+        hd.appendChild(row);
+      }
+      c.appendChild(hd);
+      if (d.text) c.appendChild(html("div", "item-card__flavor", d.text));
+      if ((d.rows || []).length) {
+        const stats = html("div", "item-card__stats");
+        d.rows.forEach((r) => {
+          const row = html("div", "item-card__stat item-card__stat--stack");
+          row.appendChild(html("span", "", r.left));
+          row.appendChild(html("b", r.tone ? `graph__tone graph__tone--${r.tone}` : "", r.right));
+          stats.appendChild(row);
+        });
+        c.appendChild(stats);
+      }
+      return c;
+    };
+    nodes.forEach((n, i) => {
+      const p = pos.get(n.id), out = !depth.has(n.id);
+      const g = make("g", {
+        class: `graph__node graph__node--${out ? "loose" : n.kind || "plain"}`,
+        transform: `translate(${p.x} ${p.y})`,
+        tabindex: 0, role: "button", "aria-label": n.label, "data-inspect": `#${uid}-n${i}`,
+      });
+      g.appendChild(make("text", { class: "graph__glyph", "text-anchor": "middle", "dominant-baseline": "central" }, out ? "▤" : "◈"));
+      svg.appendChild(g);
+      const tpl = document.createElement("template");
+      tpl.id = `${uid}-n${i}`;
+      tpl.content.appendChild(card(n, out));
+      el.appendChild(tpl);
+    });
+    el.appendChild(svg);
+  }
+
+  document.querySelectorAll(".graph[data-graph]").forEach((el) => {
+    try { nodeGraph(el, JSON.parse(el.dataset.graph)); } catch (e) { /* a bad spec draws nothing */ }
+  });
+
+  window.UI = { toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };
 })();

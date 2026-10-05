@@ -76,9 +76,23 @@ final class Navigator
             return TravelResult::refused(TravelRefusal::AlreadyJackedIn);
         }
 
-        // On the table. Surgery is the one City activity that cannot overlap a jack-in.
-        if (CityActivity::query()->whereKey($character->getKey())->where('kind', ActivityKind::Surgery->value)->exists()) {
-            return TravelResult::refused(TravelRefusal::UnderTheKnife);
+        // A fight owns the character until it is settled, whatever they asked for.
+        if ($character->current_fight_id !== null) {
+            return TravelResult::refused(TravelRefusal::Fighting);
+        }
+
+        // No City activity overlaps a jack-in. Surgery has its own words (a body on the
+        // table cannot be cancelled out of); a trip or an exploring pass can be, so the
+        // refusal tells the player to finish or cancel it. This also means a pass can
+        // never mature under somebody in cyberspace, and so no encounter opens there.
+        $kind = CityActivity::query()->whereKey($character->getKey())->value('kind');
+
+        if ($kind !== null) {
+            return TravelResult::refused(
+                ($kind instanceof ActivityKind ? $kind : ActivityKind::from($kind)) === ActivityKind::Surgery
+                    ? TravelRefusal::UnderTheKnife
+                    : TravelRefusal::BusyInTheCity,
+            );
         }
 
         $deck = $character->equippedDeck;

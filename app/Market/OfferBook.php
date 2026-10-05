@@ -88,6 +88,10 @@ final readonly class OfferBook
             return OfferRefusal::Equipped;
         }
 
+        if ($row->isOnPerson()) {
+            return OfferRefusal::Worn;
+        }
+
         return DB::transaction(function () use ($seller, $row, $price): OfferRefusal|MarketOffer {
             // Re-asked inside the transaction and through the scope, so the
             // five ways of being spoken for are one question — and so that two

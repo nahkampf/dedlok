@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * card is a physical row holding data rows — the item says what kind of thing
  * it is, the row says where it ended up.
  */
-#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'extracted_file', 'scan_file'])]
+#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'extracted_file', 'scan_file', 'loaded_ammo_id', 'loaded_rounds'])]
 class InventoryItem extends Model
 {
     /** @use HasFactory<InventoryItemFactory> */
@@ -297,6 +297,55 @@ class InventoryItem extends Model
     public function isEquipped(): bool
     {
         return $this->equippedBy()->exists();
+    }
+
+    /**
+     * The slots this row is worn in, if it is armour being worn.
+     *
+     * @return HasMany<WornSlot, $this>
+     */
+    public function wornSlots(): HasMany
+    {
+        return $this->hasMany(WornSlot::class, 'inventory_item_id');
+    }
+
+    /** Is this the weapon its owner is holding, in either hand? Like the equipped deck, it still lists. */
+    public function isWielded(): bool
+    {
+        return Character::query()
+            ->where(fn ($q) => $q->where('equipped_ranged_id', $this->getKey())->orWhere('equipped_melee_id', $this->getKey()))
+            ->exists();
+    }
+
+    /**
+     * Rounds in the magazine. A NULL ammunition pointer is an empty one whatever the count says —
+     * the pointer is nulled when its item is deleted and no CHECK can keep the two together.
+     */
+    public function rounds(): int
+    {
+        return $this->loaded_ammo_id === null ? 0 : (int) $this->loaded_rounds;
+    }
+
+    /** @return BelongsTo<Item, $this> the ammunition item loaded in this weapon, if any */
+    public function loadedAmmo(): BelongsTo
+    {
+        return $this->belongsTo(Item::class, 'loaded_ammo_id');
+    }
+
+    /**
+     * On the body, in the hands, or with rounds in it: worn armour, a wielded weapon, a loaded
+     * magazine. Not for sale, and not for putting away — each would take it somewhere its state
+     * does not follow. Unequip it, or unload it, first.
+     */
+    public function isOnPerson(): bool
+    {
+        return $this->rounds() > 0 || $this->isWorn() || $this->isWielded();
+    }
+
+    /** Is this armour being worn? Like an equipped deck, worn armour still lists with everything else. */
+    public function isWorn(): bool
+    {
+        return $this->wornSlots()->exists();
     }
 
     /**

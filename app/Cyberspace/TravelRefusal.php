@@ -36,6 +36,9 @@ enum TravelRefusal: string
     /** Under the knife: a surgery is in progress and a body on the table is not jacked in. */
     case UnderTheKnife = 'under_the_knife';
 
+    /** Travelling or exploring: the body is busy in the City, and jacking in mid-trip would leave an activity settling under somebody in cyberspace. */
+    case BusyInTheCity = 'busy_in_the_city';
+
     /** Already in cyberspace. Jacking in twice is not a thing. */
     case AlreadyJackedIn = 'already_jacked_in';
 
@@ -88,6 +91,9 @@ enum TravelRefusal: string
      * different fight.
      */
     case Hunted = 'hunted';
+
+    /** In a fight. A fight is in the City, and nothing starts until it is settled. */
+    case Fighting = 'fighting';
 
     public function message(): string
     {

@@ -125,7 +125,21 @@
             </div>
         @endif
 
-        @if ($wares->isEmpty() && $treatments === [] && $sellable === [] && $surgeries === [])
+        @if ($happenings->isNotEmpty())
+            <div class="panel">
+                <div class="panel__hd"><span class="micro">{{ Text::get('city.encounter.at_place') }}</span></div>
+                <div class="panel__bd stack" style="--gap:var(--s-3)">
+                    @foreach ($happenings as $happening)
+                        <form method="POST" action="{{ route('city.place.encounter', [$place->slug, $happening->id]) }}">
+                            @csrf
+                            <button type="submit" class="btn cut">{{ $happening->title }}</button>
+                        </form>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        @if ($wares->isEmpty() && $treatments === [] && $sellable === [] && $surgeries === [] && $happenings->isEmpty())
             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('city.nothing_to_do') }}</p>
         @endif
     </div>

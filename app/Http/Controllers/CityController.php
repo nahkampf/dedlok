@@ -41,6 +41,10 @@ class CityController extends Controller
 
         $this->settle($clock, $character);
 
+        if ($character->current_encounter_id !== null) {
+            return redirect()->route('encounter.show');
+        }
+
         return view('city.index', [
             'character' => $character,
             'districts' => District::query()->orderBy('name')->get(),
@@ -58,6 +62,11 @@ class CityController extends Controller
         }
 
         $this->settle($clock, $character);
+
+        if ($character->current_encounter_id !== null) {
+            return redirect()->route('encounter.show');
+        }
+
         $state = $this->activity($character);
 
         $here = $character->district_id === $district->getKey();
@@ -87,6 +96,10 @@ class CityController extends Controller
 
         $this->settle($clock, $character);
 
+        if ($character->current_encounter_id !== null) {
+            return redirect()->route('encounter.show');
+        }
+
         $result = $traveller->begin($character, $district, $mode);
 
         return $this->answer($result, Text::get('city.travel_begun', ['district' => $district->name]));
@@ -98,6 +111,10 @@ class CityController extends Controller
 
         $this->settle($clock, $character);
 
+        if ($character->current_encounter_id !== null) {
+            return redirect()->route('encounter.show');
+        }
+
         return $this->answer($explorer->begin($character), Text::get('city.explore_begun'));
     }
 
@@ -106,6 +123,10 @@ class CityController extends Controller
         $character = $this->character($request);
 
         $this->settle($clock, $character);
+
+        if ($character->current_encounter_id !== null) {
+            return redirect()->route('encounter.show');
+        }
 
         $activity = CityActivity::query()->whereKey($character->getKey())->first();
 

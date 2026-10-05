@@ -3,6 +3,8 @@
 use App\Http\Middleware\EnsureCaptchaIsSolved;
 use App\Http\Middleware\EnsureCharacterIsStanding;
 use App\Http\Middleware\EnsureDeckStillRuns;
+use App\Http\Middleware\EnsureEncounterIsResolved;
+use App\Http\Middleware\EnsureFightIsResolved;
 use App\Http\Middleware\EnsureHuntIsResolved;
 use App\Http\Middleware\EnsureRunIsFinished;
 use App\Http\Middleware\RequireCharacter;
@@ -40,6 +42,11 @@ return Application::configure(basePath: dirname(__DIR__))
             // checked alongside it, since a character is never in both at
             // once and the order between the two never matters.
             EnsureHuntIsResolved::class,
+            // A live fight owns the screen the same way. Before the encounter lock, because a
+            // fight opens INSIDE an encounter and settling it is what lets the encounter resume.
+            EnsureFightIsResolved::class,
+            // An open encounter owns the screen the same way, and waits for the player.
+            EnsureEncounterIsResolved::class,
             // A live run owns the screen. Last, because it is the narrowest
             // gate: everything before it decides whether the player may be
             // here at all, and this decides where "here" is.

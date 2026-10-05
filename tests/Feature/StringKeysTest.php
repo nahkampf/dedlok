@@ -108,4 +108,23 @@ final class StringKeysTest extends TestCase
 
         return true;
     }
+
+    /**
+     * A top-level key declared twice in a PHP array silently keeps the LAST one, so a second
+     * `'combat' => [...]` far down the file wipes out the first without an error — and the
+     * strings under it come back as their own keys on the screen. Nothing else catches it.
+     */
+    public function test_no_top_level_group_is_declared_twice(): void
+    {
+        $seen = [];
+        $dupes = [];
+
+        foreach (file(base_path('config/strings.php'), FILE_IGNORE_NEW_LINES) as $line) {
+            if (preg_match("/^    '([A-Za-z_]+)' => \\[/", $line, $m)) {
+                isset($seen[$m[1]]) ? $dupes[] = $m[1] : $seen[$m[1]] = true;
+            }
+        }
+
+        $this->assertSame([], $dupes, 'declared twice in config/strings.php: the later silently replaces the earlier');
+    }
 }

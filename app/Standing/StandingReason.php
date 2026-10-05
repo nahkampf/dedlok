@@ -42,6 +42,9 @@ enum StandingReason: string
     /** Money spent at their store, which is its own small courtesy. */
     case StoreSpend = 'store_spend';
 
+    /** Something that happened to them in the City, by an author's hand. The amount is the outcome's own. */
+    case Encounter = 'encounter';
+
     /** Time passing. Written by the nightly drift so the sum still checks. */
     case Decay = 'decay';
 

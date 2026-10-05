@@ -72,7 +72,9 @@ class CharacterTest extends TestCase
             // The hunter they are fighting, or NULL. Same reason as
             // current_run_id: App\Http\Middleware\EnsureHuntIsResolved reads
             // it on every request.
-            'current_hunt_id',
+            'current_hunt_id', 'current_fight_id', 'current_encounter_id',
+            // The two weapons they are holding, one for each range, or NULL: bare hands.
+            'equipped_ranged_id', 'equipped_melee_id',
             // The two standing instructions: when to pull out of a run. A play
             // style rather than a per-run choice, which is why they live on the
             // character and persist. Zero turns one off.
