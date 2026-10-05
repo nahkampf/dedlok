@@ -29,13 +29,14 @@ As a thank you for supporting there are a few perks available (none of them "pay
 ## Roadmap & wishful thinking
 This game is under development, but here is the vision for what I would like to incorporate down the line:
 
-- The City. Moving around physically.
-    - Locations. Some known, others hidden and discoverable. 
-    - Physical combat, both vs NPCs and other players.
+- ~~The City. Moving around physically.~~ 
+    - ~~Locations. Some known, others hidden and discoverable.~~
+    - ~~Physical combat, both vs NPCs and other players.~~
 - Quests & Missions
-- Random events (both "oneshots" and "resolvable"/branching/decisions)
+- ~~Random events (both "oneshots" and "resolvable"/branching/decisions)~~
 - More co-op play where it pays to form a crew, pool resources, do missions/quests/runs/stuff togheter
 - Subnets - portals with certain requirements to enter, different maps and very specific systems and dangers in there. For high level players.
 - Somewhat living marketplace where NPC goods are stocked and priced according to what players actually buy etc.
 - A living player economy: scanfiles get collected and sold, high value non-market loot gets put up etc. Make certain playstyles that doesn't focus on brute "violence" viable.
 - Player owned systems ("data fortresses") that can have intricate defenses, passive "production", host programs and files and cash etc. Prime targets for PVP.
+- "Crafting" - extraction of data from systems form "building blocks" that analysis and programming can turn into various things such as icebreakers, helper software, oneshot ROMs etc.
