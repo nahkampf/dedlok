@@ -57,10 +57,13 @@ button exists; `php artisan fight:start <handle> <npc-slug>` opens one by hand.
 
 ### Parked or open on purpose (do not build without the author)
 
-- **Dodge** — parked. A flat `defence` stat (base 8) stands in and `pursuit` (base 8) is the flight roll's other
-  half; when dodge arrives it takes `defence`'s place and the engine does not change. Open: its attributes, whether
-  armour weight costs it, whether it counts for less against firearms.
-- **Combat skills** — parked (which skill aims which `WeaponClass`, what each grants).
+- **No dodge** (decided 2026-10-05). `defence` and `pursuit` (base 8 each) are permanent. Open: whether `defence`
+  becomes an attribute pool rather than a flat base.
+- **Combat skills are authored** (aim, damage, `defence`, `pursuit` grants on their rows) and pistol, SMG, rifle and
+  shotgun are gated at level 1 (`combat.skill_gates`). Their numbers are unmeasured; the balance pass waits for real NPCs.
+- **Skills for blunt weapons — later.** Nothing raises `aim.blunt`: Close Quarter Combat only reaches `aim.unarmed`,
+  so a club gets Physiology's damage and nothing for aim. Explosives have no skill either, deliberately (a crude
+  instrument). Decide: `aim.blunt` on Close Quarter Combat, or a skill of its own. Not gated yet.
 - Location damage (a headshot hits harder): default none. HP regeneration: default none (clinics only). PvP: the
   engine is symmetric (`Side::A`/`B`, initiative by Senses+Perception+Reflex, tie a coin toss), the opening is not
   built. Heat from violence: none. Items mid-fight: later. Area damage, cover, group fights: not designed.
@@ -789,14 +792,13 @@ Exploitation** (a fifth skill, built for the purpose) is +2% a level on the
 same tag, so training any OS deeply carries a little to the others. The gate
 is untouched: a percentage of an untrained OS's base (0) is still 0.
 `Simulator::opensTheCore()` learned none of this. Nothing raises a combat
-check or the rest — **fourteen skills still grant nothing at all** (six
-combat skills, the four encryption skills, Leadership, Network Topology,
-Coordinated Strike and Advanced Coordination).
+check or the rest — **six skills still grant nothing at all** (the four
+encryption skills, Leadership and Network Topology; counted 2026-10-05, after the combat skills were authored).
 
-**What NOT to invent.** The combat skills have nothing true to grant until
-combat exists, and Leadership the same until factions or crews do. So this
-entry is about the ~15 values above, and the fourteen empty skills stay empty
-until the mechanics under them arrive.
+**What NOT to invent.** Leadership has nothing true to grant until factions or
+crews exist. The combat skills are no longer in this list: they grant now (see
+*RESUME HERE*). The remaining empty skills stay empty until the mechanics under
+them arrive.
 
 **Deliberately not in the count:** the 34 `skill.*` level stats, which are read
 rather than modified, and the 10 damage stats, where a resistance is written
