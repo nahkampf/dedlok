@@ -1,3 +1,10 @@
+## 0.36.0 (2026-10-05)
+
+- Updated and fleshed out the combat mechanics. Loot, standing losses. Consequences for losing.
+- Guns decoupled from ammunition when it comes to damage etc. 
+- Combat distance: closing/moving away, ranged vs closed etc.
+- Fleeing is now only possible at ranges above 2.
+
 ## 0.35.0 (2026-10-05)
 
 - Skeleton for physical combat started.
