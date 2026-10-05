@@ -12,8 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * The weapon half of an item. Written only by `App\Combat\WeaponEditor`.
  *
- * `damage` is ONE fixed figure — what a hit does with the weapon's standard round — and the
- * profile says how it is split across damage types. Nothing here is a range.
+ * `damage` is ONE fixed figure and the profile says how it is split across damage types. Nothing
+ * here is a range. **A firearm (one with a calibre) has neither**: its round carries both, so
+ * both are NULL on it. A blade, a club or a thrown explosive has no round and keeps them here.
  */
 #[Fillable(['item_id', 'class', 'damage', 'damage_profile', 'riders', 'accuracy', 'rate', 'magazine', 'calibre'])]
 class Weapon extends Model
@@ -31,7 +32,7 @@ class Weapon extends Model
         ];
     }
 
-    /** @return array<string, int> damage type => percent share, in the order stored */
+    /** @return array<string, int> damage type => percent share, in the order stored; empty for a firearm */
     public function profile(): array
     {
         return array_map('intval', (array) $this->damage_profile);

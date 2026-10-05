@@ -78,27 +78,28 @@ final class FightRoundTest extends TestCase
         $this->assertStringStartsWith('You:', $after->log[0]['text']);
     }
 
-    public function test_a_round_is_both_turns_and_the_range_then_closes(): void
+    public function test_a_round_is_both_turns_and_leaves_the_distance_alone(): void
     {
         $after = $this->round($this->state($this->gun(), $this->gun()), ['a' => Action::attack()], new QueueDice([0.0, 0.5,  0.0, 0.5]));
 
         $this->assertSame(2, $after->round, 'the next round');
-        $this->assertSame(Range::Close, $after->range, 'a fight opens at Ranged and closes after one round');
+        $this->assertSame(2, $after->distance, 'only an action moves it');
+        $this->assertSame(Range::Ranged, $after->range);
         $this->assertNull($after->result);
         $this->assertSame([1, 1], array_column($after->log, 'round'), 'every line is tagged with the round it happened in');
     }
 
     public function test_at_close_only_a_melee_weapon_is_used(): void
     {
-        $state = $this->round($this->state($this->gun(), $this->gun(), aMelee: $this->knife('Katana'), bMelee: $this->knife('Shiv')), ['a' => Action::attack()], new QueueDice([0.0, 0.5,  0.0, 0.5]));
+        $state = $this->state($this->gun(), $this->gun(), aMelee: $this->knife('Katana'), bMelee: $this->knife('Shiv'))->withDistance(0);
         $this->assertSame(Range::Close, $state->range);
 
         $dice = new QueueDice([0.0, 0.5,  0.0, 0.5]);
-        $after = $this->round($state, ['a' => Action::attack()], $dice);
+        $after = $this->round($state, ['a' => Action::attack(), 'b' => Action::attack()], $dice);
 
         $dice->assertSpent();
-        $this->assertSame(2, count(array_filter($after->log, fn (array $l): bool => $l['round'] === 2)));
-        $this->assertSame(11, $after->a->ranged->rounds, 'the pistol was not fired at Close');
+        $this->assertSame(2, count(array_filter($after->log, fn (array $l): bool => $l['round'] === 1)));
+        $this->assertSame(12, $after->a->ranged->rounds, 'the pistol was not fired at Close');
         $this->assertStringContainsString('slashing', $after->log[count($after->log) - 1]['text']);
     }
 
@@ -135,16 +136,30 @@ final class FightRoundTest extends TestCase
         $this->assertSame(Result::ADown, $after->result, 'a mind at zero is down as surely as a body');
     }
 
-    public function test_a_side_with_nothing_usable_at_this_range_braces(): void
+    public function test_a_side_with_only_a_knife_tries_to_close_in_rather_than_stand_there(): void
     {
-        // The enemy has only a knife, and the opening round is at Ranged.
-        $dice = new QueueDice([0.0, 0.5]);
+        // The enemy has only a knife, and the fight opens two steps apart.
+        $dice = new QueueDice([0.9,  0.0, 0.5]);          // it fails to close; the player shoots it
 
         $after = $this->round($this->state($this->gun(), null, bMelee: $this->knife()), ['a' => Action::attack()], $dice);
 
         $dice->assertSpent();
-        $this->assertSame('Gang member braces.', $after->log[0]['text']);
+        $this->assertSame('Gang member tries to close in and cannot.', $after->log[0]['text']);
         $this->assertSame(30, $after->b->hp);
+        $this->assertSame(2, $after->distance);
+    }
+
+    public function test_who_closes_in_and_who_holds_range_is_whichever_they_are_better_at(): void
+    {
+        $engine = $this->engine();
+        $hands = new Arm('Fists', WeaponClass::Unarmed, 10.0, 1, ['own' => new RoundSpec('own', 'Fists', 2.0, ['blunt' => 100])], 'own');
+        $knife = new Arm('Machete', WeaponClass::Blade, 10.0, 1, ['own' => new RoundSpec('own', 'Own', 15.0, ['slashing' => 100])], 'own');
+        $at = fn (int $d, ?Arm $melee) => (new FightState(new Combatant('You', 40, 10.0, ranged: $this->gun(), si: 30), new Combatant('Gang member', 40, 10.0, ranged: $this->gun(), melee: $melee), distance: $d, first: Side::B));
+
+        $this->assertSame('attack', $engine->choose($at(2, $hands), Side::B)->kind->value, 'a gun beats fists: stays at range and shoots');
+        $this->assertSame('create_distance', $engine->choose($at(0, $hands), Side::B)->kind->value, 'and backs off when closed on');
+        $this->assertSame('close_in', $engine->choose($at(2, $knife), Side::B)->kind->value, 'a blade that beats the gun comes in');
+        $this->assertSame('attack', $engine->choose($at(0, $knife), Side::B)->kind->value, 'and stabs once there');
     }
 
     public function test_an_illegal_attack_becomes_a_brace_and_says_so(): void
@@ -187,9 +202,9 @@ final class FightRoundTest extends TestCase
 
     // ---- fleeing -------------------------------------------------------------------------
 
-    private function wounded(float $fleesAt, int $hp): FightState
+    private function wounded(float $fleesAt, int $hp, int $distance = 3): FightState
     {
-        $state = $this->state($this->gun(), $this->gun(), first: Side::B);
+        $state = (new FightState(new Combatant('You', 40, 10.0, ranged: $this->gun(), si: 30), new Combatant('Gang member', 40, 10.0), distance: $distance, first: Side::B));
 
         return $state->with(Side::B, new Combatant('Gang member', $hp, 10.0, 10.0, $this->gun(), null, null, [], 40, $fleesAt));
     }
@@ -198,7 +213,8 @@ final class FightRoundTest extends TestCase
     {
         $engine = $this->engine();
 
-        $this->assertSame('disengage', $engine->choose($this->wounded(0.5, 15), Side::B)->kind->value, '15 of 40 is under half');
+        $this->assertSame('disengage', $engine->choose($this->wounded(0.5, 15), Side::B)->kind->value, '15 of 40 is under half, and far enough off to run');
+        $this->assertSame('create_distance', $engine->choose($this->wounded(0.5, 15, distance: 2), Side::B)->kind->value, 'nobody runs from within two: back off first');
         $this->assertSame('attack', $engine->choose($this->wounded(0.5, 25), Side::B)->kind->value, '25 of 40 is not');
         $this->assertSame('attack', $engine->choose($this->wounded(0.0, 1), Side::B)->kind->value, 'a limit of nothing never flees');
         $this->assertSame('attack', $engine->choose($this->state($this->gun(), $this->gun()), Side::B)->kind->value, 'no limit at all');

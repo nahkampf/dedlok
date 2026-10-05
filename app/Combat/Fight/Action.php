@@ -25,6 +25,11 @@ final readonly class Action
         return new self(ActionKind::CreateDistance);
     }
 
+    public static function closeIn(): self
+    {
+        return new self(ActionKind::CloseIn);
+    }
+
     public static function disengage(): self
     {
         return new self(ActionKind::Disengage);

@@ -59,28 +59,82 @@ final class FightEngine
     }
 
     /**
-     * What a side does when nobody is choosing for it: try to leave if it is hurt past its
-     * `fleesAt` (a roll like any Disengage, so it can fail), otherwise attack with what the range
-     * allows, or brace.
+     * What a side does when nobody is choosing for it — an opponent's play, and the simulator's player.
+     *
+     * Hurt past its `fleesAt` it tries to leave, which is only possible from beyond the fleeing distance, so
+     * from nearer it backs off first. Otherwise it fights where it is stronger: a side that is better at
+     * close combat than at range closes in, and any other tries to stay at range, backing off when it has
+     * been closed on. Then it attacks with what the distance allows, loads what it can, or braces.
      */
     public function choose(FightState $state, Side $side): Action
     {
-        if ($state->combatant($side)->wantsOut()) {
-            return Action::disengage();
+        $self = $state->combatant($side);
+
+        if ($self->wantsOut()) {
+            foreach ([Action::disengage(), Action::createDistance()] as $action) {
+                if ($this->legal($state, $side, $action)) {
+                    return $action;
+                }
+            }
         }
 
-        return $this->canAttack($state, $side) ? Action::attack() : Action::brace();
+        if ($this->prefersClose($self)) {
+            if ($state->distance > 0 && $this->legal($state, $side, Action::closeIn())) {
+                return Action::closeIn();
+            }
+        } elseif ($state->distance === 0 && $this->legal($state, $side, Action::createDistance())) {
+            return Action::createDistance();
+        }
+
+        if ($this->canAttack($state, $side)) {
+            return Action::attack();
+        }
+
+        foreach (array_keys($self->ranged?->specs ?? []) as $key) {
+            if ($self->ranged->canLoad((string) $key)) {
+                return Action::load((string) $key);
+            }
+        }
+
+        return Action::brace();
     }
 
-    /** Whether `$action` can be taken by `$side` now. Brace and Disengage always can. */
+    /**
+     * Whether this side is better at close combat than at range: its melee weapon does more per turn
+     * (the best figure it can deal times its shots) than its ranged one, or it has no ranged weapon it
+     * can fire or load. Ties go to range, and a side with no melee arm at all prefers nothing.
+     */
+    public function prefersClose(Combatant $side): bool
+    {
+        // Nothing to close in WITH is nothing to prefer.
+        if ($side->melee === null) {
+            return false;
+        }
+
+        $ranged = $side->ranged;
+        $usable = $ranged !== null && ($ranged->canFire() || array_filter(array_keys($ranged->specs), static fn ($key): bool => $ranged->canLoad((string) $key)) !== []);
+
+        if (! $usable) {
+            return true;
+        }
+
+        $per = static fn (Arm $arm): float => $arm->specs === [] ? 0.0 : max(array_map(static fn (RoundSpec $spec): float => $spec->damage, $arm->specs)) * $arm->rate;
+
+        return $per($side->melee) > $per($ranged);
+    }
+
+    /** Whether `$action` can be taken by `$side` now. Brace always can. */
     public function legal(FightState $state, Side $side, Action $action): bool
     {
         return match ($action->kind) {
             ActionKind::Attack => $this->canAttack($state, $side),
-            ActionKind::CreateDistance => $state->range === Range::Close,
+            ActionKind::CreateDistance => $state->distance < (int) config('combat.distance.max'),
+            ActionKind::CloseIn => $state->distance > 0,
+            // Nobody gets away from arm's reach: first back off past the fleeing distance.
+            ActionKind::Disengage => $state->distance > (int) config('combat.distance.flee_beyond'),
             // The ranged weapon, whatever the range: at Close it is the one you are not firing.
             ActionKind::Load => $action->round !== null && $state->combatant($side)->ranged?->canLoad($action->round) === true,
-            ActionKind::Brace, ActionKind::Disengage => true,
+            ActionKind::Brace => true,
         };
     }
 
@@ -91,6 +145,12 @@ final class FightEngine
     public function quoteFlight(FightState $state, Side $side): float
     {
         return $this->roller->chance($state->combatant($side)->defence, $state->combatant($side->other())->pursuit);
+    }
+
+    /** The chance Close in succeeds: the actor's pursuit against the opponent's defence, the pursuer's half. */
+    public function quoteClosing(FightState $state, Side $side): float
+    {
+        return $this->roller->chance($state->combatant($side)->pursuit, $state->combatant($side->other())->defence);
     }
 
     /** Spend the turn putting rounds in the ranged weapon. */
@@ -107,23 +167,42 @@ final class FightEngine
     }
 
     /**
-     * Try to get away (`$getAway`, ending the fight) or to open the range again (the next round is at
-     * Ranged). One die; a failure has cost the turn.
+     * Try to get away (`$getAway`, ending the fight) or to win distance (one or two steps, at once and never
+     * past the fight's maximum). One die; a failure has cost the turn. The die's best share of the
+     * successes (`combat.distance.far_share`) wins two.
      *
      * @param  callable(): float  $dice
      */
     private function flight(FightState $state, Side $side, callable $dice, bool $getAway): FightState
     {
         $who = $state->combatant($side)->name;
-        $worked = $dice() < $this->quoteFlight($state, $side);
-        $key = ($getAway ? 'disengage' : 'distance').($worked ? '_ok' : '_failed');
+        $chance = $this->quoteFlight($state, $side);
+        $roll = $dice();
+        $worked = $roll < $chance;
+        $gain = $worked && ! $getAway ? ($roll < $chance * (float) config('combat.distance.far_share') ? 2 : 1) : 0;
+        $key = $getAway ? 'disengage'.($worked ? '_ok' : '_failed') : 'distance'.(match ($gain) {
+            2 => '_far', 1 => '_ok', default => '_failed'
+        });
         $state = $state->withLog([$this->line($state, Text::get("combat.fight.log.{$key}", ['who' => $who]))]);
 
         return match (true) {
             ! $worked => $state,
             $getAway => $state->ended($side === Side::A ? Result::AEscaped : Result::BEscaped),
-            default => $state->reopening(),
+            default => $state->withDistance($state->distance + $gain),
         };
+    }
+
+    /**
+     * Try to close the distance by one step. One die; a failure has cost the turn.
+     *
+     * @param  callable(): float  $dice
+     */
+    private function closeIn(FightState $state, Side $side, callable $dice): FightState
+    {
+        $worked = $dice() < $this->quoteClosing($state, $side);
+        $state = $state->withLog([$this->line($state, Text::get('combat.fight.log.closing'.($worked ? '_ok' : '_failed'), ['who' => $state->combatant($side)->name]))]);
+
+        return $worked ? $state->withDistance($state->distance - 1) : $state;
     }
 
     /** Whether this side has a weapon it can fire at this range. */
@@ -158,6 +237,7 @@ final class FightEngine
             ActionKind::Load => $this->load($state, $side, (string) $action->round),
             ActionKind::Disengage => $this->flight($state, $side, $dice, getAway: true),
             ActionKind::CreateDistance => $this->flight($state, $side, $dice, getAway: false),
+            ActionKind::CloseIn => $this->closeIn($state, $side, $dice),
         };
 
         // A fight that ended by one side getting away has nothing left to check.

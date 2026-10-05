@@ -111,6 +111,9 @@ class ItemRequest extends FormRequest
         $isDrugForm = $this->filled('drug_family');
         $isWeaponForm = $this->filled('weapon_class');
         $isAmmoForm = $this->filled('ammo_calibre');
+        // A firearm's damage and profile are its round's: the weapon panel is on for everything else.
+        $weaponClass = WeaponClass::tryFrom((string) $this->input('weapon_class'));
+        $weaponOwnsDamage = $isWeaponForm && ! ($weaponClass?->firearm() ?? false);
 
         $this->merge([
             'stackable' => $this->boolean('stackable'),
@@ -178,12 +181,13 @@ class ItemRequest extends FormRequest
             // Weapons and ammunition, the way drugs are: a class (or a calibre) makes the item one,
             // and a zero on a panel that is off is the form's default rather than a value.
             'weapon_class' => $this->filled('weapon_class') ? $this->input('weapon_class') : null,
-            'weapon_damage' => $this->panelNumber('weapon_damage', $isWeaponForm),
+            'weapon_damage' => $this->panelNumber('weapon_damage', $weaponOwnsDamage),
             'weapon_accuracy' => $this->panelNumber('weapon_accuracy', $isWeaponForm),
-            'weapon_rate' => $this->panelNumber('weapon_rate', $isWeaponForm),
+            // The rate's form default is 1, not 0, so a hidden Weapon panel posts a 1 that is not a value.
+            'weapon_rate' => ! $isWeaponForm && $this->numberOrNull('weapon_rate') === '1' ? null : $this->panelNumber('weapon_rate', $isWeaponForm),
             'weapon_magazine' => $this->panelNumber('weapon_magazine', $isWeaponForm),
             'weapon_calibre' => $this->filled('weapon_calibre') ? trim((string) $this->input('weapon_calibre')) : null,
-            'weapon_profile' => $this->profileInput('weapon_profile', $isWeaponForm),
+            'weapon_profile' => $this->profileInput('weapon_profile', $weaponOwnsDamage),
             'weapon_riders' => $this->ridersInput('weapon_riders', $isWeaponForm),
             'ammo_calibre' => $this->filled('ammo_calibre') ? trim((string) $this->input('ammo_calibre')) : null,
             'ammo_type' => $isAmmoForm ? ($this->filled('ammo_type') ? $this->input('ammo_type') : AmmoType::Standard->value) : null,
@@ -413,23 +417,25 @@ class ItemRequest extends FormRequest
 
             // WEAPONS. A class makes the item one. The damage is ONE fixed figure; the profile says
             // how it splits across damage types (and is judged in withValidator(), as a whole).
+            // A FIREARM has neither: its round carries both, so they are refused on one.
             'weapon_class' => ['nullable', Rule::enum(WeaponClass::class)],
-            'weapon_damage' => $isWeapon ? ['required', 'integer', 'between:1,1000'] : ['prohibited'],
+            'weapon_damage' => $isWeapon && ! $weaponClass->firearm() ? ['required', 'integer', 'between:1,1000'] : ['prohibited'],
             'weapon_accuracy' => $isWeapon ? ['required', 'integer', 'between:-100,100'] : ['prohibited'],
             'weapon_rate' => $isWeapon ? ['required', 'integer', 'between:1,30'] : ['prohibited'],
             // A firearm takes a calibre of round from a magazine, and both are required together; a
             // blade or a grenade takes neither.
             'weapon_magazine' => $weaponClass?->firearm() ? ['required', 'integer', 'between:1,1000'] : ['prohibited'],
             'weapon_calibre' => $weaponClass?->firearm() ? ['required', 'string', 'max:32', 'regex:/^[A-Za-z0-9 ._-]+$/'] : ['prohibited'],
-            'weapon_profile' => $isWeapon ? ['required', 'array'] : ['prohibited'],
+            'weapon_profile' => $isWeapon && ! $weaponClass->firearm() ? ['required', 'array'] : ['prohibited'],
             'weapon_riders' => $isWeapon ? ['nullable', 'array'] : ['prohibited'],
 
-            // AMMUNITION. A calibre makes the item a round; it changes a hit rather than being one.
+            // AMMUNITION. A calibre makes the item a round: it IS the hit of a firearm that fires it, so
+            // it carries the damage and the profile, both required.
             'ammo_calibre' => ['nullable', 'string', 'max:32', 'regex:/^[A-Za-z0-9 ._-]+$/'],
             'ammo_type' => $isAmmo ? ['required', Rule::enum(AmmoType::class)] : ['prohibited'],
-            'ammo_damage' => $isAmmo ? ['required', 'integer', 'between:-90,500'] : ['prohibited'],
+            'ammo_damage' => $isAmmo ? ['required', 'integer', 'between:1,1000'] : ['prohibited'],
             'ammo_penetration' => $isAmmo ? ['required', 'integer', 'between:-100,100'] : ['prohibited'],
-            'ammo_profile' => $isAmmo ? ['nullable', 'array'] : ['prohibited'],
+            'ammo_profile' => $isAmmo ? ['required', 'array'] : ['prohibited'],
             'ammo_riders' => $isAmmo ? ['nullable', 'array'] : ['prohibited'],
 
             /*
@@ -699,11 +705,11 @@ class ItemRequest extends FormRequest
                 }
             }
 
-            if ($this->weaponClass() !== null && ! $validator->errors()->has('weapon_profile')) {
+            if ($this->weaponClass() !== null && ! $this->weaponClass()->firearm() && ! $validator->errors()->has('weapon_profile')) {
                 $this->judgeProfile($validator, 'weapon_profile', (array) $this->input('weapon_profile', []));
             }
 
-            if ($this->ammoCalibre() !== null && ! $validator->errors()->has('ammo_profile') && DamageProfile::clean((array) $this->input('ammo_profile', [])) !== []) {
+            if ($this->ammoCalibre() !== null && ! $validator->errors()->has('ammo_profile')) {
                 $this->judgeProfile($validator, 'ammo_profile', (array) $this->input('ammo_profile', []));
             }
         });
@@ -898,8 +904,8 @@ class ItemRequest extends FormRequest
 
         return [
             'class' => $class,
-            'damage' => (int) $data['weapon_damage'],
-            'damage_profile' => DamageProfile::clean((array) ($data['weapon_profile'] ?? [])),
+            'damage' => $firearm ? null : (int) $data['weapon_damage'],
+            'damage_profile' => $firearm ? null : DamageProfile::clean((array) ($data['weapon_profile'] ?? [])),
             'riders' => Riders::clean((array) ($data['weapon_riders'] ?? [])) ?: null,
             'accuracy' => (int) $data['weapon_accuracy'],
             'rate' => (int) $data['weapon_rate'],
@@ -920,15 +926,13 @@ class ItemRequest extends FormRequest
         }
 
         $data = $this->validated();
-        $profile = DamageProfile::clean((array) ($data['ammo_profile'] ?? []));
 
         return [
             'calibre' => $this->ammoCalibre(),
             'type' => (string) $data['ammo_type'],
             'damage' => (int) $data['ammo_damage'],
             'penetration' => (int) $data['ammo_penetration'],
-            // Blank keeps the weapon's own profile; a profile here REPLACES it while the round is loaded.
-            'damage_profile' => $profile === [] ? null : $profile,
+            'damage_profile' => DamageProfile::clean((array) ($data['ammo_profile'] ?? [])),
             'riders' => Riders::clean((array) ($data['ammo_riders'] ?? [])) ?: null,
         ];
     }

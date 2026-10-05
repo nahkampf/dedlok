@@ -50,7 +50,7 @@ final class FightAdaptersTest extends TestCase
     private function pistol(array $riders = []): InventoryItem
     {
         $item = Item::factory()->physical()->create(['name' => 'Pistol', 'stackable' => false]);
-        Weapon::create(['item_id' => $item->id, 'class' => WeaponClass::Pistol, 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'accuracy' => 2, 'rate' => 3, 'magazine' => 12, 'calibre' => '9mm', 'riders' => $riders ?: null]);
+        Weapon::create(['item_id' => $item->id, 'class' => WeaponClass::Pistol, 'accuracy' => 2, 'rate' => 3, 'magazine' => 12, 'calibre' => '9mm', 'riders' => $riders ?: null]);
 
         $row = $this->give($item);
         $this->character->forceFill(['equipped_ranged_id' => $row->id])->save();
@@ -58,10 +58,10 @@ final class FightAdaptersTest extends TestCase
         return $row;
     }
 
-    private function round(string $name, string $type, int $damage = 0, int $pen = 0, string $calibre = '9mm', ?array $riders = null, ?array $profile = null): Item
+    private function round(string $name, string $type, int $damage = 8, int $pen = 0, string $calibre = '9mm', ?array $riders = null, ?array $profile = null): Item
     {
         $item = Item::factory()->physical()->create(['name' => $name, 'stackable' => true]);
-        Ammunition::create(['item_id' => $item->id, 'calibre' => $calibre, 'type' => $type, 'damage' => $damage, 'penetration' => $pen, 'damage_profile' => $profile, 'riders' => $riders]);
+        Ammunition::create(['item_id' => $item->id, 'calibre' => $calibre, 'type' => $type, 'damage' => $damage, 'penetration' => $pen, 'damage_profile' => $profile ?? ['penetrating' => 100], 'riders' => $riders]);
 
         return $item;
     }
@@ -157,7 +157,7 @@ final class FightAdaptersTest extends TestCase
     {
         $gun = $this->pistol([['kind' => 'stun', 'chance' => 10, 'turns' => 1, 'amount' => 0]]);
         $fmj = $this->round('9mm FMJ', 'full_metal_jacket');
-        $hollow = $this->round('9mm Hollow point', 'hollow_point', damage: 25, pen: -50, riders: [['kind' => 'burning', 'chance' => 30, 'turns' => 3, 'amount' => 2]]);
+        $hollow = $this->round('9mm Hollow point', 'hollow_point', damage: 10, pen: -50, riders: [['kind' => 'burning', 'chance' => 30, 'turns' => 3, 'amount' => 2]]);
         $this->round('.45 ACP', 'standard', calibre: '.45');                                       // not this gun's
         $this->give($fmj, 30);
         $this->give($hollow, 10);
@@ -176,7 +176,7 @@ final class FightAdaptersTest extends TestCase
         $this->assertSame(30, $arm->specs[(string) $fmj->id]->stock);
         $this->assertSame(10, $arm->specs[(string) $hollow->id]->stock);
         $this->assertEqualsWithDelta(8.0, $arm->specs[(string) $fmj->id]->damage, 1e-9);
-        $this->assertEqualsWithDelta(10.0, $arm->specs[(string) $hollow->id]->damage, 1e-9, '+25% of 8');
+        $this->assertEqualsWithDelta(10.0, $arm->specs[(string) $hollow->id]->damage, 1e-9, 'the round\'s own figure');
         $this->assertSame(-50, $arm->specs[(string) $hollow->id]->penetration);
 
         $this->assertSame(['stun'], array_column($arm->specs[(string) $fmj->id]->riders, 'kind'));
@@ -184,7 +184,7 @@ final class FightAdaptersTest extends TestCase
         $this->assertEqualsWithDelta($this->character->stat('aim.pistol')->value + 2, $arm->aim, 1e-9, 'aim plus the weapon\'s accuracy');
     }
 
-    public function test_a_round_replaces_the_profile_while_loaded(): void
+    public function test_a_round_carries_its_own_profile(): void
     {
         $this->pistol();
         $incendiary = $this->round('9mm Incendiary', 'incendiary', profile: ['penetrating' => 60, 'thermal' => 40]);

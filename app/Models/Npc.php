@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Combat\CombatTag;
 use App\Combat\Fight\NpcMitigation;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * An opponent in a fight. Authored content: the slug is permanent. Written only through the admin
@@ -24,10 +26,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $defence
  * @property float $pursuit
  * @property float|null $flees_at
+ * @property int|null $entity_id
+ * @property list<string>|null $tags
  * @property array<string, int>|null $resistances
  * @property array<string, array<string, int>>|null $slot_resistances
  */
-#[Fillable(['slug', 'name', 'flavor', 'grade', 'hitpoints', 'aim', 'defence', 'pursuit', 'flees_at', 'ranged_weapon_id', 'melee_weapon_id', 'ammo_item_id', 'resistances', 'slot_resistances'])]
+#[Fillable(['slug', 'name', 'flavor', 'grade', 'hitpoints', 'aim', 'defence', 'pursuit', 'entity_id', 'tags', 'flees_at', 'ranged_weapon_id', 'melee_weapon_id', 'ammo_item_id', 'resistances', 'slot_resistances'])]
 class Npc extends Model
 {
     /** The picture kind: `public/images/npcs/<id>.jpg`, 3:4, like any other person. */
@@ -44,6 +48,7 @@ class Npc extends Model
             'flees_at' => 'float',
             'resistances' => 'array',
             'slot_resistances' => 'array',
+            'tags' => 'array',
         ];
     }
 
@@ -68,6 +73,24 @@ class Npc extends Model
     public function ammo(): BelongsTo
     {
         return $this->belongsTo(Item::class, 'ammo_item_id');
+    }
+
+    /** @return BelongsTo<Entity, $this> */
+    public function entity(): BelongsTo
+    {
+        return $this->belongsTo(Entity::class);
+    }
+
+    /** @return HasMany<NpcLoot, $this> */
+    public function loot(): HasMany
+    {
+        return $this->hasMany(NpcLoot::class)->orderBy('id');
+    }
+
+    /** What it does to somebody it beats: NULL is the default, anything else replaces it. @return list<CombatTag> */
+    public function combatTags(): array
+    {
+        return CombatTag::fromStored($this->tags);
     }
 
     /** What it resists, for the engine. */

@@ -63,23 +63,12 @@ final class Simulation
         ];
     }
 
-    /** What the simulated player does: attack, else load what they can, else brace. */
+    /**
+     * What the simulated player does: what the engine plays for any side with nobody choosing for it —
+     * close in or keep range by which is the stronger, attack, load what they can, else brace.
+     */
     public function policy(FightState $state): Action
     {
-        if ($this->engine->canAttack($state, Side::A)) {
-            return Action::attack();
-        }
-
-        $ranged = $state->a->ranged;
-
-        if ($ranged !== null) {
-            foreach (array_keys($ranged->specs) as $key) {
-                if ($ranged->canLoad((string) $key)) {
-                    return Action::load((string) $key);
-                }
-            }
-        }
-
-        return Action::brace();
+        return $this->engine->choose($state, Side::A);
     }
 }

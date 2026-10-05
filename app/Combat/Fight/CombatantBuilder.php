@@ -93,13 +93,18 @@ final class CombatantBuilder
 
             $ammo = $round?->ammunition;
 
+            // A firearm's damage is its round's. One with no standing round has nothing to fire.
+            if ($row->class->firearm() && $ammo === null) {
+                return null;
+            }
+
             return [
                 'name' => $item->displayName(),
                 'class' => $row->class,
                 'rate' => $row->rate,
                 'accuracy' => $row->accuracy,
-                'damage' => $row->damage * (1 + ($ammo?->damage ?? 0) / 100),
-                'profile' => $ammo?->profile() ?? $row->profile(),
+                'damage' => $row->class->firearm() ? $ammo->damage : $row->damage,
+                'profile' => $row->class->firearm() ? ($ammo->profile() ?? self::defaultProfile($row->class)) : $row->profile(),
                 'penetration' => $ammo?->penetration ?? 0,
                 'riders' => Riders::combine($row->riders(), $ammo?->riders()),
             ];
@@ -163,8 +168,8 @@ final class CombatantBuilder
             $specs[(string) $itemId] = new RoundSpec(
                 (string) $itemId,
                 $item->displayName(),
-                $damage($class, $weapon->damage * (1 + $round->damage / 100)),
-                $round->profile() ?? $weapon->profile(),
+                $damage($class, (float) $round->damage),
+                $round->profile() ?? self::defaultProfile($class),
                 $round->penetration,
                 Riders::combine($weapon->riders(), $round->riders()),
                 (int) ($piles->get($itemId)?->sum('quantity') ?? 0),

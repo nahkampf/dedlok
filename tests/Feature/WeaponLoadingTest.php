@@ -42,7 +42,7 @@ final class WeaponLoadingTest extends TestCase
         $this->character = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3]));
 
         $item = Item::factory()->physical()->create(['name' => 'Pistol', 'stackable' => false]);
-        Weapon::create(['item_id' => $item->id, 'class' => WeaponClass::Pistol, 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'accuracy' => 0, 'rate' => 1, 'magazine' => 10, 'calibre' => '9mm']);
+        Weapon::create(['item_id' => $item->id, 'class' => WeaponClass::Pistol, 'accuracy' => 0, 'rate' => 1, 'magazine' => 10, 'calibre' => '9mm']);
         $this->pistol = InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1]);
     }
 
@@ -56,7 +56,7 @@ final class WeaponLoadingTest extends TestCase
             str_contains($name, 'AP') => 'armour_piercing',
             default => 'standard',
         };
-        Ammunition::create(['item_id' => $item->id, 'calibre' => $calibre, 'type' => $type, 'damage' => 0, 'penetration' => 0]);
+        Ammunition::create(['item_id' => $item->id, 'calibre' => $calibre, 'type' => $type, 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'penetration' => 0]);
 
         return $item->fresh();
     }

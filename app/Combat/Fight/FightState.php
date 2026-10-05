@@ -10,22 +10,32 @@ namespace App\Combat\Fight;
  *
  * The log mirrors the hunt's: append-only structured entries, each rendered once when it was
  * written (`{round, text, tone}`), never recomposed. `first` is who acts first and never changes;
- * `reopen` is a successful Create distance waiting for the round to end; `result` is null until
- * somebody is down or has got away.
+ * `distance` is how far apart the sides are, a number: a fight opens at 2, only a side's own action moves it
+ * (Create distance away, Close in towards), and nought is close combat; `range` is that number read as the
+ * weapon it allows. `result` is null until somebody is down or has got away.
  */
 final readonly class FightState
 {
+    public Range $range;
+
     /** @param  list<array{round: int, text: string, tone: string}>  $log */
     public function __construct(
         public Combatant $a,
         public Combatant $b,
-        public Range $range = Range::Ranged,
+        public int $distance = 2,
         public int $round = 1,
         public array $log = [],
         public Side $first = Side::B,
-        public bool $reopen = false,
         public ?Result $result = null,
-    ) {}
+    ) {
+        $this->range = Range::at($this->distance);
+    }
+
+    /** A fight as it opens: the sides at the configured starting distance. */
+    public static function opening(Combatant $a, Combatant $b, Side $first = Side::B): self
+    {
+        return new self($a, $b, (int) config('combat.distance.start'), first: $first);
+    }
 
     public function combatant(Side $side): Combatant
     {
@@ -48,26 +58,23 @@ final readonly class FightState
         return $this->but(result: $result);
     }
 
-    /** A successful Create distance: the next round opens at Ranged. */
-    public function reopening(): self
+    /** The sides at a new distance, kept inside the fight's bounds. */
+    public function withDistance(int $distance): self
     {
-        return $this->but(reopen: true);
+        return $this->but(distance: max(0, min((int) config('combat.distance.max'), $distance)));
     }
 
-    /**
-     * The next round. The range closes after a round at Ranged; a successful Create distance
-     * holds it at Ranged for exactly one more, so it goes back to Ranged for the round that follows.
-     */
+    /** The next round. Nothing closes the distance by itself: only somebody's action moves it. */
     public function nextRound(): self
     {
-        return $this->but(range: $this->reopen ? Range::Ranged : Range::Close, round: $this->round + 1, reopen: false);
+        return $this->but(round: $this->round + 1);
     }
 
-    private function but(?Combatant $a = null, ?Combatant $b = null, ?Range $range = null, ?int $round = null, ?array $log = null, ?bool $reopen = null, ?Result $result = null): self
+    private function but(?Combatant $a = null, ?Combatant $b = null, ?int $distance = null, ?int $round = null, ?array $log = null, ?Result $result = null): self
     {
         return new self(
-            $a ?? $this->a, $b ?? $this->b, $range ?? $this->range, $round ?? $this->round, $log ?? $this->log,
-            $this->first, $reopen ?? $this->reopen, $result ?? $this->result,
+            $a ?? $this->a, $b ?? $this->b, $distance ?? $this->distance, $round ?? $this->round, $log ?? $this->log,
+            $this->first, $result ?? $this->result,
         );
     }
 
@@ -75,17 +82,20 @@ final readonly class FightState
     public function toArray(): array
     {
         return [
-            'a' => $this->a->toArray(), 'b' => $this->b->toArray(), 'range' => $this->range->value, 'round' => $this->round,
-            'log' => $this->log, 'first' => $this->first->value, 'reopen' => $this->reopen, 'result' => $this->result?->value,
+            'a' => $this->a->toArray(), 'b' => $this->b->toArray(), 'distance' => $this->distance, 'round' => $this->round,
+            'log' => $this->log, 'first' => $this->first->value, 'result' => $this->result?->value,
         ];
     }
 
     /** @param  array<string, mixed>  $data */
     public static function fromArray(array $data): self
     {
+        // A fight stored before distance was a number says 'ranged' or 'close': at the opening distance, or at nought.
+        $distance = isset($data['distance']) ? (int) $data['distance'] : (($data['range'] ?? 'ranged') === 'close' ? 0 : (int) config('combat.distance.start'));
+
         return new self(
-            Combatant::fromArray($data['a']), Combatant::fromArray($data['b']), Range::from((string) $data['range']), (int) $data['round'],
-            array_values((array) $data['log']), Side::from((string) $data['first']), (bool) $data['reopen'],
+            Combatant::fromArray($data['a']), Combatant::fromArray($data['b']), $distance, (int) $data['round'],
+            array_values((array) $data['log']), Side::from((string) $data['first']),
             $data['result'] === null ? null : Result::from((string) $data['result']),
         );
     }

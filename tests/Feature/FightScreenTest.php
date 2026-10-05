@@ -8,6 +8,7 @@ use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
 use App\Combat\Fight\FightEngine;
 use App\Combat\Fight\Side;
+use App\Combat\FightEnding;
 use App\Combat\Fights;
 use App\Combat\WeaponClass;
 use App\Models\Ammunition;
@@ -41,26 +42,31 @@ final class FightScreenTest extends TestCase
         $this->character = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3]));
 
         $gun = Item::factory()->physical()->create(['name' => 'Pistol', 'stackable' => false]);
-        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'accuracy' => 0, 'rate' => 2, 'magazine' => 12, 'calibre' => '9mm']);
+        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'accuracy' => 0, 'rate' => 2, 'magazine' => 12, 'calibre' => '9mm']);
         $this->pistol = InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $gun->id, 'quantity' => 1]);
         $this->character->forceFill(['equipped_ranged_id' => $this->pistol->id])->save();
 
         $this->fmj = Item::factory()->physical()->create(['name' => '9mm FMJ', 'stackable' => true]);
-        Ammunition::create(['item_id' => $this->fmj->id, 'calibre' => '9mm', 'type' => 'full_metal_jacket', 'damage' => 0, 'penetration' => 0]);
+        Ammunition::create(['item_id' => $this->fmj->id, 'calibre' => '9mm', 'type' => 'full_metal_jacket', 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'penetration' => 0]);
     }
 
     private function npc(int $hp = 40): Npc
     {
         $gun = Item::factory()->physical()->create(['name' => 'Gang pistol', 'stackable' => false]);
-        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'damage' => 5, 'damage_profile' => ['penetrating' => 100], 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => '9mm']);
+        $calibre = 'gang-'.$gun->id;
+        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => $calibre]);
+        $round = Item::factory()->physical()->create(['name' => 'Gang round', 'stackable' => true]);
+        Ammunition::create(['item_id' => $round->id, 'calibre' => $calibre, 'type' => 'standard', 'damage' => 5, 'damage_profile' => ['penetrating' => 100], 'penetration' => 0]);
 
-        return Npc::create(['slug' => 'thug', 'name' => 'Thug', 'grade' => 2, 'hitpoints' => $hp, 'aim' => 99, 'defence' => 0, 'pursuit' => 8, 'ranged_weapon_id' => $gun->id]);
+        return Npc::create(['slug' => 'thug', 'name' => 'Thug', 'grade' => 2, 'hitpoints' => $hp, 'aim' => 99, 'defence' => 0, 'pursuit' => 8, 'ranged_weapon_id' => $gun->id, 'ammo_item_id' => $round->id]);
     }
 
     /** Open a fight, with the screen's own Fights bound to a pinned die. */
     private function fight(array $dice = [], int $npcHp = 40): void
     {
         $this->app->bind(Fights::class, fn (): Fights => new Fights(new FightEngine(CheckRoller::fromConfig()), new QueueDice($dice)));
+        // The ending's own die, at the band's floor, so what a win pays or a loss takes is the same every run.
+        $this->app->bind(FightEnding::class, fn (): FightEnding => FightEnding::fromConfig(fn (int $min, int $max): int => $min));
         $this->app->make(Fights::class)->open($this->character, $this->npc($npcHp));
     }
 
@@ -90,8 +96,8 @@ final class FightScreenTest extends TestCase
             ->assertSeeText('Thug')->assertSeeText('Grade 2')->assertSeeText('40 / 40')
             ->assertSeeText('Round 1')->assertSeeText('Ranged')->assertSeeText('They act first.')
             ->assertSeeText('Attack with Pistol')->assertSeeText('2 shots, each a little worse than the last')
-            ->assertSeeText('Disengage')
-            ->assertDontSeeText('Create distance')->assertDontSeeText('Brace');
+            ->assertDontSeeText('Disengage')
+            ->assertSeeText('Close in')->assertSeeText('Create distance')->assertDontSeeText('Brace');
     }
 
     public function test_an_empty_magazine_offers_loading_and_bracing_instead_of_an_attack(): void
@@ -117,17 +123,24 @@ final class FightScreenTest extends TestCase
         $this->as()->get(route('fight.show'))->assertSeeText($expected);
     }
 
-    public function test_close_in_it_offers_creating_distance_with_its_chance(): void
+    public function test_the_distance_only_moves_when_somebody_moves_it_and_running_needs_room(): void
     {
         $this->loadMagazine();
-        $this->fight([0.0, 0.5, 0.0, 0.5,  0.0, 0.5, 0.0, 0.5]);
+        $this->fight([0.0, 0.5, 0.0, 0.5, 0.0, 0.5,  0.0, 0.5, 0.1]);
+
+        $this->as()->get(route('fight.show'))->assertOk()
+            ->assertSeeText('Distance 2')->assertSeeText('Close in')->assertSeeText('Create distance')->assertDontSeeText('Disengage');
 
         $this->as()->post(route('fight.act'), ['action' => 'attack'])->assertRedirect(route('fight.show'));
 
         $this->as()->get(route('fight.show'))->assertOk()
-            ->assertSeeText('Round 2')->assertSeeText('Close')
-            ->assertSeeText('Create distance')->assertSeeText('Chance 50%')
-            ->assertSeeText('Attack with Bare hands', false);
+            ->assertSeeText('Round 2')->assertSeeText('Distance 2')->assertSeeText('Chance 50%');
+
+        // The enemy shoots, then the player backs off: a lucky roll wins two steps and running is possible.
+        $this->as()->post(route('fight.act'), ['action' => 'create_distance'])->assertRedirect(route('fight.show'));
+
+        $this->as()->get(route('fight.show'))->assertOk()
+            ->assertSeeText('Round 3')->assertSeeText('Distance 4')->assertSeeText('Ranged')->assertSeeText('Disengage');
     }
 
     // ---- a round ------------------------------------------------------------------------
@@ -152,7 +165,7 @@ final class FightScreenTest extends TestCase
         $this->fight([0.0, 0.5,  0.0, 0.5], npcHp: 5);
 
         $this->as()->post(route('fight.act'), ['action' => 'attack'])
-            ->assertRedirect(route('city.index'))->assertSessionHas('status', 'Thug is down.');
+            ->assertRedirect(route('city.index'))->assertSessionHas('status', 'Thug is down. You take '.config('combat.pay.2.min').' ¤ off it.');
 
         $this->assertNull($this->character->fresh()->current_fight_id);
         $this->as()->get(route('city.index'))->assertOk();
@@ -162,6 +175,8 @@ final class FightScreenTest extends TestCase
     {
         $this->loadMagazine();
         $this->fight([0.0, 0.5,  0.0]);
+        $row = Fight::query()->sole();
+        $row->update(['state' => [...$row->state, 'distance' => 3]]);
 
         $this->as()->post(route('fight.act'), ['action' => 'disengage'])
             ->assertRedirect(route('city.index'))->assertSessionHas('status', 'You get away from Thug.');

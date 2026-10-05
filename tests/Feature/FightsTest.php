@@ -63,12 +63,12 @@ final class FightsTest extends TestCase
         $this->character = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3]));
 
         $gun = Item::factory()->physical()->create(['name' => 'Pistol', 'stackable' => false]);
-        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => '9mm']);
+        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::Pistol, 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => '9mm']);
         $this->pistol = InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $gun->id, 'quantity' => 1]);
         $this->character->forceFill(['equipped_ranged_id' => $this->pistol->id])->save();
 
         $this->fmj = Item::factory()->physical()->create(['name' => '9mm FMJ', 'stackable' => true]);
-        Ammunition::create(['item_id' => $this->fmj->id, 'calibre' => '9mm', 'type' => 'full_metal_jacket', 'damage' => 0, 'penetration' => 0]);
+        Ammunition::create(['item_id' => $this->fmj->id, 'calibre' => '9mm', 'type' => 'full_metal_jacket', 'damage' => 8, 'damage_profile' => ['penetrating' => 100], 'penetration' => 0]);
     }
 
     private function stock(int $quantity): void
@@ -84,9 +84,12 @@ final class FightsTest extends TestCase
     private function npc(array $attributes = [], int $damage = 5, string $class = 'pistol'): Npc
     {
         $gun = Item::factory()->physical()->create(['name' => 'Gang pistol', 'stackable' => false]);
-        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::from($class), 'damage' => $damage, 'damage_profile' => $class === 'pistol' ? ['penetrating' => 100] : ['neural' => 100], 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => '9mm']);
+        $calibre = 'gang-'.$gun->id;
+        Weapon::create(['item_id' => $gun->id, 'class' => WeaponClass::from($class), 'accuracy' => 0, 'rate' => 1, 'magazine' => 12, 'calibre' => $calibre]);
+        $round = Item::factory()->physical()->create(['name' => 'Gang round', 'stackable' => true]);
+        Ammunition::create(['item_id' => $round->id, 'calibre' => $calibre, 'type' => 'standard', 'damage' => $damage, 'damage_profile' => $class === 'pistol' ? ['penetrating' => 100] : ['neural' => 100], 'penetration' => 0]);
 
-        return Npc::create($attributes + ['slug' => 'thug', 'name' => 'Thug', 'grade' => 2, 'hitpoints' => 40, 'aim' => 99, 'defence' => 0, 'pursuit' => 8, 'ranged_weapon_id' => $gun->id]);
+        return Npc::create($attributes + ['slug' => 'thug', 'name' => 'Thug', 'grade' => 2, 'hitpoints' => 40, 'aim' => 99, 'defence' => 0, 'pursuit' => 8, 'ranged_weapon_id' => $gun->id, 'ammo_item_id' => $round->id]);
     }
 
     private function fights(array $dice = []): Fights
@@ -179,7 +182,8 @@ final class FightsTest extends TestCase
         $state = $result->fresh()->snapshot();
         $this->assertSame(32, $state->b->hp);
         $this->assertSame(2, $state->round);
-        $this->assertSame('close', $state->range->value, 'a round at Ranged, and then it closes');
+        $this->assertSame(2, $state->distance, 'a fight opens at 2 and only an action moves it');
+        $this->assertSame('ranged', $state->range->value);
         $this->assertCount(2, $state->log);
         $this->assertTrue($result->fresh()->isLive());
         $this->assertSame($fight->id, $this->character->fresh()->current_fight_id);
@@ -261,7 +265,8 @@ final class FightsTest extends TestCase
     {
         $this->load(12);
         $hp = (int) $this->character->fresh()->current_hitpoints;
-        $this->open($this->npc());
+        $fight = $this->open($this->npc());
+        $fight->update(['state' => [...$fight->state, 'distance' => 3]]);                                   // nobody runs from within two
 
         $result = $this->fights([0.0, 0.5,  0.0])->act($this->character->fresh(), Action::disengage());   // the enemy shoots, then the player gets away
 
@@ -385,7 +390,10 @@ final class FightsTest extends TestCase
         $this->assertFalse($options['can_attack'], 'an empty magazine cannot fire');
         $this->assertSame([], $options['attack']);
         $this->assertSame([['key' => (string) $this->fmj->id, 'name' => '9mm FMJ', 'stock' => 30]], $options['loads']);
-        $this->assertFalse($options['can_create_distance'], 'not at Close');
+        $this->assertTrue($options['can_create_distance'], 'backing off is on offer below the maximum');
+        $this->assertTrue($options['can_close_in']);
+        $this->assertFalse($options['can_disengage'], 'not from within two');
+        $this->assertGreaterThan(0.5, $options['closing'], 'the player\'s pursuit against a defence of nothing');
         $this->assertEqualsWithDelta(0.5, $options['flight'], 1e-9, 'defence 8 against pursuit 8');
     }
 }

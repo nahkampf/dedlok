@@ -21,13 +21,16 @@ use Illuminate\Support\Carbon;
  * @property int $grade
  * @property array<string, int>|null $resistances
  * @property array<string, array<string, int>>|null $slot_resistances
+ * @property int|null $entity_id
+ * @property list<string>|null $tags
+ * @property list<array{item_id: int, chance: int, min: int, max: int}>|null $loot
  * @property int|null $ranged_row_id
  * @property int|null $melee_row_id
  * @property array<string, mixed> $state
  * @property Result|null $result
  * @property Carbon|null $resolved_at
  */
-#[Fillable(['character_id', 'npc_id', 'opponent_name', 'grade', 'resistances', 'slot_resistances', 'ranged_row_id', 'melee_row_id', 'encounter_row_id', 'win_key', 'lose_key', 'flee_key', 'state', 'result', 'resolved_at'])]
+#[Fillable(['character_id', 'npc_id', 'opponent_name', 'grade', 'entity_id', 'tags', 'loot', 'resistances', 'slot_resistances', 'ranged_row_id', 'melee_row_id', 'encounter_row_id', 'win_key', 'lose_key', 'flee_key', 'state', 'result', 'resolved_at'])]
 class Fight extends Model
 {
     protected function casts(): array
@@ -36,6 +39,8 @@ class Fight extends Model
             'grade' => 'integer',
             'resistances' => 'array',
             'slot_resistances' => 'array',
+            'tags' => 'array',
+            'loot' => 'array',
             'state' => 'array',
             'result' => Result::class,
             'resolved_at' => 'datetime',

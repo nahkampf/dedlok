@@ -12,10 +12,13 @@ enum ActionKind: string
     /** Put rounds into the ranged weapon: when its magazine is empty, or to change type. */
     case Load = 'load';
 
-    /** At Close: a chance to put the range back to Ranged for the next round. */
+    /** A chance to win one or two steps of distance, up to the fight's maximum. A failure spends the turn. */
     case CreateDistance = 'create_distance';
 
-    /** A chance to get away. Always offered, never certain; a failure spends the turn. */
+    /** A chance to close the distance by one step. A failure spends the turn. */
+    case CloseIn = 'close_in';
+
+    /** A chance to get away, but only from beyond the fleeing distance. A failure spends the turn. */
     case Disengage = 'disengage';
 
     /** Spend the turn doing nothing: what a side with nothing usable at this range may do. */

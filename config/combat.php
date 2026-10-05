@@ -6,6 +6,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Distance
+    |--------------------------------------------------------------------------
+    |
+    | How far apart a fight is, in steps: a number, not a state. It opens at `start`, nought is close combat
+    | and `max` is as far as anybody can get. NOTHING closes it by itself: only an action moves it. Create
+    | distance wins one or two steps (`far_share` is the best share of its successful rolls that wins two:
+    | 0.4 means the luckiest 40%), Close in wins one. Nobody can Disengage from `flee_beyond` or nearer, so to
+    | run you first have to back off past it.
+    |
+    | Unmeasured, like everything else here.
+    */
+    'distance' => [
+        'start' => 2,
+        'max' => 6,
+        'flee_beyond' => 2,
+        'far_share' => 0.4,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Hit quality
     |--------------------------------------------------------------------------
     |
@@ -60,5 +80,30 @@ return [
         'leg_right' => 18,
         'torso' => 37,
     ],
+
+    /*
+    | What a win pays in creds, by the opponent's grade: a uniform roll between the two, through the wallet
+    | (`Reason::Fight`). A fled opponent, and one that got away, pays nothing. Unmeasured — set with
+    | `fight:simulate`, against what a fight costs in hit points and what a clinic charges to mend them.
+    */
+    'pay' => [
+        1 => ['min' => 20, 'max' => 60],
+        2 => ['min' => 50, 'max' => 150],
+        3 => ['min' => 120, 'max' => 350],
+        4 => ['min' => 300, 'max' => 800],
+        5 => ['min' => 700, 'max' => 2000],
+    ],
+
+    /*
+    | The `mugged` tag: a whole percent, uniform between the bounds, of ALL the creds the player carries,
+    | taken from somebody the opponent has put down. Floored to whole creds; a purse of nothing loses nothing.
+    */
+    'mugging' => ['min' => 30, 'max' => 50],
+
+    /*
+    | The `maim` tag: a whole percent, uniform between the bounds, of the player's MAXIMUM hit points added
+    | to the `physical_trauma` injury (it deepens one row), until a clinic mends it. At least one point.
+    */
+    'maim' => ['min' => 10, 'max' => 20],
 
 ];
