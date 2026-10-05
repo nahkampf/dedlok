@@ -1,3 +1,7 @@
+## 0.36.1 (2026-10-05)
+- Added some dummy weapons and some weapon skills
+- Internal admin tooling only: effect rows in the editors can now be duplicated with one click.
+
 ## 0.36.0 (2026-10-05)
 
 - Updated and fleshed out the combat mechanics. Loot, standing losses. Consequences for losing.

@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.36.1] — 2026-10-05
+
+Effects in the admin editors can be duplicated. No schema change.
+
+### Added
+
+- **A "+" button on every effect row** in the shared effects editor (`<x-modifier-row>`, `modifierRows()` in
+  `ui-kit.js`). It inserts a copy of the row directly beneath it, carrying whatever has been typed or chosen,
+  its hidden carried keys included, and focuses its level (or amount) field. Indexes are rewritten as for any add or
+  remove. It is the same component for items, programs and skills, so all three editors get it. A skill that grants
+  the same effect at levels 1 to 5 no longer needs five rows built by hand. String: `admin.modifiers.duplicate`.
+
+
 ## [0.36.0] — 2026-10-05
 
 Physical combat gets its endings, a firearm's damage moves onto its round, and distance becomes a number.
@@ -2354,7 +2367,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.36.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.36.1...HEAD
+[0.36.1]: https://github.com/nahkampf/dedlok/compare/v0.36.0...v0.36.1
 [0.36.0]: https://github.com/nahkampf/dedlok/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/nahkampf/dedlok/compare/v0.34.1...v0.35.0
 [0.34.1]: https://github.com/nahkampf/dedlok/compare/v0.34.0...v0.34.1
