@@ -1255,6 +1255,12 @@ stood on this not existing.
   painting Training green would say something untrue about it. The category also decides
   where reading one takes you (`route()`), so no URL is ever stored.
 - **Every sender is something nobody pressed a button for** — a finished read, the nightly backdoor roll, a lockdown or burn taking a door, a skill level, an achievement (`insertOrIgnore`'s row count is what makes "said once" true), a mission expiring, a trip landing, cash arriving. Grep `Notifier::send` for the list.
+- **The inbox is polled every five seconds from every page** (`notifications.unread`, JSON `{unread, latest}`: two indexed
+  reads, in every lock's allow-list so a player locked into a run, fight, hunt, encounter or the down screen keeps their
+  badge). `ui-kit.js` redraws the rail's badge and plays `public/assets/sound/message.wav` when `latest` is higher than
+  the newest id the page knew, at most once in ten seconds (the moment is kept in `localStorage`, so changing page does
+  not restart the count). Browsers refuse sound until the person has touched the page; that refusal is swallowed and the
+  badge still moves.
 - **Reading is its own POST**, never something opening the screen does — a badge cleared
   by arriving is a badge cleared for messages nobody read. All of them at once, because
   the alternative is a button per row for a state nothing reads except a count.

@@ -33,6 +33,8 @@ class EnsureFightIsResolved
         'logout',
         'fight.show',
         'fight.act',
+        // The inbox's badge and sound poll from every page.
+        'notifications.unread',
     ];
 
     public function handle(Request $request, Closure $next): Response

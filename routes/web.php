@@ -371,6 +371,8 @@ Route::middleware('auth')->group(function () {
      * a badge cleared by arriving is a badge cleared for messages nobody read.
      */
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    // Polled every few seconds from every page (`ui-kit.js`): the rail's badge, and the sound for a new message.
+    Route::get('/notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
     Route::post('/notifications/read', [NotificationController::class, 'read'])->name('notifications.read');
     // Opening one is reading it, and it writes, so it is a POST like the other.
     Route::post('/notifications/{message}/open', [NotificationController::class, 'open'])->name('notifications.open');

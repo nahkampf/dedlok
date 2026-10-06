@@ -143,6 +143,53 @@
     if (dlg.showModal) dlg.showModal();
   });
 
+  /* The inbox, polled: <a data-inbox="URL" data-inbox-latest="ID" data-inbox-sound="SRC"> in the rail. Every five
+     seconds it asks for how many messages are unread and the id of the newest, and redraws the badge. A message
+     NEWER than the last this page knew of plays the sound, at most once in ten seconds; that moment is kept in
+     localStorage so moving between pages does not start the count again. Browsers refuse sound before the person has
+     touched the page, and that refusal is swallowed: the badge still moves. */
+  (function inbox() {
+    const link = document.querySelector("a[data-inbox]");
+    if (!link) return;
+
+    const INTERVAL = 5000, COOLDOWN = 10000, KEY = "inbox.lastSound";
+    let latest = Number(link.dataset.inboxLatest) || 0;
+    const audio = link.dataset.inboxSound ? new Audio(link.dataset.inboxSound) : null;
+
+    const lastPlayed = () => { try { return Number(localStorage.getItem(KEY)) || 0; } catch { return 0; } };
+    const stamp = () => { try { localStorage.setItem(KEY, String(Date.now())); } catch { /* the cooldown is per page then */ } };
+
+    const badge = (unread) => {
+      let el = link.querySelector(".dock__count");
+      if (unread <= 0) { el?.remove(); return; }
+      if (!el) {
+        el = document.createElement("span");
+        el.className = "dock__count";
+        link.querySelector(".dock__icon")?.after(el);
+      }
+      el.textContent = unread > 99 ? "99+" : String(unread);
+    };
+
+    const ding = () => {
+      if (!audio || Date.now() - lastPlayed() < COOLDOWN) return;
+      stamp();
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    };
+
+    const poll = () => {
+      fetch(link.dataset.inbox, { headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((data) => {
+          badge(Number(data.unread) || 0);
+          if (Number(data.latest) > latest) { latest = Number(data.latest); ding(); }
+        })
+        .catch(() => {});
+    };
+
+    setInterval(poll, INTERVAL);
+  })();
+
   /* The training plan's level picker: <form data-plan data-plan-floors='{"SKILL_ID": FLOOR}' data-plan-max="5"
      data-plan-label="Level :level"> holding select[data-plan-skill] and select[data-plan-level]. Choosing a skill redraws
      the levels to those ABOVE what that skill already has reached or queued, the highest selected. */

@@ -124,6 +124,12 @@ final class Notifier
             ->delete();
     }
 
+    /** The id of this account's newest message, 0 for none: what the page compares to know something arrived. */
+    public function latestIdFor(User $user): int
+    {
+        return (int) Notification::query()->where('user_id', $user->getKey())->max('id');
+    }
+
     /** What the rail's badge counts. */
     public function unreadFor(User $user): int
     {

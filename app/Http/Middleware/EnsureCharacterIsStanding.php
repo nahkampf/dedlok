@@ -40,6 +40,8 @@ class EnsureCharacterIsStanding
         'login',
         'logout',
         'waiting.show',
+        // The inbox's badge and sound poll from every page, this one included.
+        'notifications.unread',
     ];
 
     public function handle(Request $request, Closure $next): Response

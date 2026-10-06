@@ -34,6 +34,8 @@ class EnsureHuntIsResolved
         'logout',
         'hunt.show',
         'hunt.act',
+        // The inbox's badge and sound poll from every page.
+        'notifications.unread',
     ];
 
     public function handle(Request $request, Closure $next): Response

@@ -309,6 +309,14 @@ final class RunScreenSmokeTest extends TestCase
     }
 
     /** With no run at all, the screen is not a place to be. */
+    public function test_the_inbox_poll_still_answers_inside_a_live_run(): void
+    {
+        $this->machine();
+        $this->begin();
+
+        $this->getJson(route('notifications.unread'))->assertOk()->assertJsonStructure(['unread', 'latest']);
+    }
+
     public function test_the_screen_turns_away_somebody_not_in_a_run(): void
     {
         $this->actingAs($this->character->user)
