@@ -2023,6 +2023,7 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
   animation: toast-in var(--t-base) var(--ease);
 }
 .toast--ok   { border-left-color: var(--ok); }
+.toast--warn { border-left-color: var(--warn); }
 .toast--crit { border-left-color: var(--crit); }
 @keyframes toast-in { from { opacity: 0; transform: translateX(12px); } }
 

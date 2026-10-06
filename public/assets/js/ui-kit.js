@@ -164,10 +164,13 @@
         if (r.ok) { location.reload(); return; }
         const body = await r.json().catch(() => ({}));
         before.forEach((id) => list.appendChild(list.querySelector('[data-queue-row="' + id + '"]')));
-        flash(body.message || "Could not reorder.", "warn");
+        // A toast, not the page's flash: it is fixed to the screen, and a refusal that lands off-screen at the top of a
+        // scrolled page is a refusal nobody sees.
+        toast(body.message || "Could not reorder.", { level: "warn", timeout: 9000 });
         if (focusId) list.querySelector('[data-queue-row="' + focusId + '"] [data-queue-handle]')?.focus();
       }).catch(() => {
         before.forEach((id) => list.appendChild(list.querySelector('[data-queue-row="' + id + '"]')));
+        toast("Could not reorder.", { level: "warn" });
       });
     };
 
@@ -177,8 +180,9 @@
       const row = handle.closest("[data-queue-row]");
       const before = order();
       row.classList.add("is-dragging");
-      handle.setPointerCapture(e.pointerId);
 
+      // On the WINDOW, not the handle: moving the row in the DOM drops pointer capture from the
+      // element inside it, and the pointerup would then never arrive to save anything.
       const move = (ev) => {
         const siblings = rows().filter((r) => r !== row);
         const next = siblings.find((r) => ev.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
@@ -186,15 +190,15 @@
         else if (list.lastElementChild !== row) list.appendChild(row);
       };
       const end = () => {
-        handle.removeEventListener("pointermove", move);
-        handle.removeEventListener("pointerup", end);
-        handle.removeEventListener("pointercancel", end);
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", end);
+        window.removeEventListener("pointercancel", end);
         row.classList.remove("is-dragging");
         save(before, row.dataset.queueRow);
       };
-      handle.addEventListener("pointermove", move);
-      handle.addEventListener("pointerup", end);
-      handle.addEventListener("pointercancel", end);
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", end);
+      window.addEventListener("pointercancel", end);
       e.preventDefault();
     });
 
