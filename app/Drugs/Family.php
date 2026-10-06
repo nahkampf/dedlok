@@ -36,6 +36,14 @@ enum Family: string
 
     case Nootropic = 'nootropic';
 
+    /**
+     * Treatment rather than a vice: medical consumables that act for a while (something that mends you over an
+     * hour is not a drug in any sense but this game's). A family so it can have its own books and its own idea of
+     * too much; what that is — its withdrawal, how it overdoses, whether it is ever addictive — is NOT YET DECIDED and
+     * is deliberately not written anywhere, so author a Medical drug with `addictive` 0 until it is.
+     */
+    case Medical = 'medical';
+
     public function label(): string
     {
         return Text::get("drugs.families.{$this->value}");

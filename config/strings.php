@@ -570,6 +570,7 @@ return [
             'sedative' => 'Sedative',
             'psychedelic' => 'Psychedelic',
             'nootropic' => 'Nootropic',
+            'medical' => 'Medical',
         ],
 
         // On the item card, so what a dose costs is readable before it is
