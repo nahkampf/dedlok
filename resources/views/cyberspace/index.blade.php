@@ -52,7 +52,13 @@
                              with no reason beside it is a screen that looks
                              broken. --}}
                         @unless ($canScan)
-                            <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.no_analyser') }}</span>
+                            @if (! $analyserRunning)
+                                <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.no_analyser') }}</span>
+                            @elseif (! $scan?->isRunning())
+                                {{-- Running, but every instance is reading some other machine. A read on THIS one
+                                     says nothing: the box beside it already offers to show it. --}}
+                                <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.all_busy') }}</span>
+                            @endif
                         @endunless
 
                         {{-- A pass in progress. The bar is the kit's meter with

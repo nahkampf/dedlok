@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Tests\Feature\Cyberspace;
 
 use App\Models\Character;
+use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\Skill;
 use App\Models\System;
+use App\Models\SystemContact;
 use App\Models\SystemScan;
+use App\Programs\ProgramKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Testing\TestResponse;
@@ -39,6 +43,13 @@ final class InteractBoxTest extends TestCase
         $this->equipReadyDeck($this->character);
         $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8, 'egress_trace_at' => 25, 'egress_si_at' => 40])->save();
         $this->machine = System::factory()->at(8, 8)->grade(1)->withTracer(2, 4)->create(['address' => 'DEADBEEF']);
+
+        // What the top bar remembers standing here: the line about scanners lives inside it.
+        SystemContact::query()->create([
+            'character_id' => $this->character->id, 'x' => 8, 'y' => 8, 'address' => 'DEADBEEF',
+            'name' => $this->machine->displayName(), 'type' => $this->machine->type, 'owner' => 'Nobody',
+            'seen_at' => now(), 'first_seen_at' => now(),
+        ]);
     }
 
     private function page(): TestResponse
@@ -89,6 +100,38 @@ final class InteractBoxTest extends TestCase
         $this->page()->assertSee('Show scan')
             ->assertSee('<button type="button" class="btn cut" data-reading-open="DEADBEEF">', false)
             ->assertDontSee('action="'.route('cyberspace.scan').'"', false);
+    }
+
+    private function analyser(): InventoryItem
+    {
+        $item = Item::factory()->program(ProgramKind::Analyser, qflops: 1, memory: 1)->create();
+
+        return InventoryItem::query()->create([
+            'character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1,
+            'running_on_deck_id' => $this->character->fresh()->equipped_deck_id, 'started_at' => now()->subHour(),
+        ]);
+    }
+
+    public function test_it_says_no_scanner_only_when_none_is_running_and_not_when_one_is_busy(): void
+    {
+        $this->page()->assertSee('You have no scanner running');
+
+        // One running and reading THIS machine: it is not absent, and not busy elsewhere either.
+        $process = $this->analyser();
+        $this->scan(['pass_started_at' => now()->subMinute(), 'pass_ready_at' => now()->addMinutes(10), 'reading_process_id' => $process->id]);
+        $this->page()->assertDontSee('You have no scanner running')->assertDontSee('reading something else')->assertSee('Show scan');
+    }
+
+    public function test_a_scanner_busy_on_another_machine_says_so(): void
+    {
+        $process = $this->analyser();
+        SystemScan::query()->create([
+            'character_id' => $this->character->id, 'address' => 'ELSEWHERE', 'x' => 1, 'y' => 1, 'passes' => 1,
+            'scanned_at' => now(), 'expires_at' => now()->addDay(),
+            'pass_started_at' => now()->subMinute(), 'pass_ready_at' => now()->addMinutes(10), 'reading_process_id' => $process->id,
+        ]);
+
+        $this->page()->assertDontSee('You have no scanner running')->assertSee('reading something else');
     }
 
     public function test_the_scan_button_is_not_in_the_top_bar_any_more(): void

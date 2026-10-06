@@ -121,6 +121,9 @@ class CyberspaceController extends Controller
             // being read and two instruments going, the button is dead for a
             // third and the screen should know it.
             'canScan' => $probe->freeAnalyser($character) !== null,
+            // Told apart from having none at all: a scanner that is busy reading is running, and "you have no
+            // scanner running" would be false the moment a read begins.
+            'analyserRunning' => $probe->hasAnalyserRunning($character),
             /*
              * WHAT A RUN FROM HERE WOULD LOOK LIKE, before committing to one.
              *
