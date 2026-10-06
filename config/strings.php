@@ -636,7 +636,7 @@ return [
         'titles' => [
             'scan_complete' => 'Scan complete',
             'backdoor_found' => 'Backdoor found',
-            'siphons_ran' => 'Siphons ran',
+            'siphons_ran' => 'Siphon report',
             'backdoor_lost' => 'Backdoor lost',
             'file_stale' => 'Scan file gone stale',
             'offer_sold' => 'Sold: :item',

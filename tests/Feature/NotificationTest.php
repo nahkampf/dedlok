@@ -229,6 +229,24 @@ final class NotificationTest extends TestCase
         $this->assertNull($theirs->fresh()->read_at);
     }
 
+    public function test_a_message_with_a_finished_reads_facts_draws_them_as_rows(): void
+    {
+        $this->notifier()->send($this->character, Category::Cyberspace, 'scan_complete', ['system' => 'Silo - Veritas 123'], ['facts' => [
+            ['key' => 'grade', 'label' => 'Grade', 'value' => 'IV', 'discoverable' => true, 'mark' => null],
+            ['key' => 'ids', 'label' => 'IDS', 'value' => null, 'discoverable' => true, 'mark' => null],
+        ]]);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))
+            ->assertOk()->assertSee('Scan complete')->assertSee('data-fact="grade"', false)->assertSee('IV')->assertSee('UNKNOWN');
+    }
+
+    public function test_the_siphon_report_is_titled_siphon_report(): void
+    {
+        $m = $this->notifier()->send($this->character, Category::Cyberspace, 'siphons_ran', ['creds' => '100'], []);
+
+        $this->assertSame('Siphon report', $m->fresh()->title);
+    }
+
     public function test_one_message_can_be_deleted_and_somebody_elses_cannot(): void
     {
         $mine = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);

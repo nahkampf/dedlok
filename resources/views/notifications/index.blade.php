@@ -80,10 +80,13 @@
                                      system named here may have moved by now, and the line still
                                      says what it paid.
 
-                                     ponytail: drawn in the siphon report's shape, the only
-                                     sender with a list. A second sender with a different shape
-                                     makes this a per-category partial. --}}
-                                @if ($message->details)
+                                     Two shapes now: a finished read's `facts` and the siphon report's list of lines. A
+                                     third makes this a per-key partial. --}}
+                                @if (! empty($message->details['facts']))
+                                    {{-- A finished read: every row the system overview shows, as they stood when it
+                                         finished. --}}
+                                    <x-scan-facts :facts="$message->details['facts']" />
+                                @elseif ($message->details)
                                     <div class="prose micro" style="color:var(--ink-2)">
                                         <ul>
                                             @foreach ($message->details as $line)

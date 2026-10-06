@@ -635,9 +635,13 @@ final class Probe
             // player who pressed Scan is usually somewhere else by the time it
             // answers — and the sweep exists precisely so something NOTICES,
             // which is only worth anything if there is somewhere to say it.
+            //
+            // THE FILE ITSELF RIDES ALONG, as the rows the scanner window and the briefing show: a message is
+            // never recomposed and the system may have moved or burned by the time anybody reads it, so what
+            // the read found is kept with the sentence that says it finished.
             (new Notifier)->send($character, Category::Cyberspace, 'scan_complete', [
                 'system' => $system->displayName(),
-            ]);
+            ], ['facts' => $scan->facts($character)]);
         }
 
         $instrument = $scan->reading_process_id;

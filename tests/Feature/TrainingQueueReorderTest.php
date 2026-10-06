@@ -160,6 +160,20 @@ final class TrainingQueueReorderTest extends TestCase
         $this->actingAs($this->user)->postJson(route('training.reorder'), ['order' => [$a, $b]])->assertOk();
     }
 
+    public function test_a_reorder_leaves_the_queue_open_for_the_reload(): void
+    {
+        [$h1, $c1] = $this->queue([[$this->hacking, 1], [$this->crypto, 1]]);
+        $open = '/<details class="panel" style="margin-top:var\(--s-4\)"\s+open\s*>/';
+
+        $this->assertDoesNotMatchRegularExpression($open, $this->actingAs($this->user)->get(route('skills.index'))->getContent());
+
+        $this->actingAs($this->user)->postJson(route('training.reorder'), ['order' => [$c1, $h1]])->assertOk();
+
+        $this->assertMatchesRegularExpression($open, $this->actingAs($this->user)->get(route('skills.index'))->getContent());
+        // One reload only: the flash is gone the time after.
+        $this->assertDoesNotMatchRegularExpression($open, $this->actingAs($this->user)->get(route('skills.index'))->getContent());
+    }
+
     public function test_the_screen_offers_a_handle_only_when_there_is_something_to_reorder(): void
     {
         $this->queue([[$this->hacking, 1]]);

@@ -96,7 +96,7 @@
 
     {{-- THE QUEUE. An accordion, because it is a thing you come to change
          rather than something to watch. --}}
-    <details class="panel" style="margin-top:var(--s-4)">
+    <details class="panel" style="margin-top:var(--s-4)" @if (session('queue_open')) open @endif>
         {{-- How long the whole thing takes, in the summary as well as inside:
              the panel is shut to begin with, and that is the one number worth
              reading without opening it. --}}

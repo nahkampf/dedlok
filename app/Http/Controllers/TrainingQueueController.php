@@ -148,6 +148,10 @@ class TrainingQueueController extends Controller
             ], 422);
         }
 
+        // The page reloads to show the new order, and the queue is where the player was working: it comes back
+        // open instead of folded.
+        $request->session()->flash('queue_open', true);
+
         return response()->json(['status' => 'ok']);
     }
 

@@ -1197,6 +1197,10 @@ stood on this not existing.
   `.accordion--quiet`). The closed row is the title; opened it shows the sentence, the details list and a *Go to
   <category>* button. **The title is composed at send time** from `notifications.titles.<key>` (one per message key, held
   by a test) and stored on `notifications.title`; NULL, for a message from before titles, shows the category label.
+  **What rides on a message is `details`, in one of two shapes**: a siphon report's list of lines, or a finished read's
+  `facts` (the scan's rows as `SystemScan::facts()` returned them, drawn by `<x-scan-facts>`, so the message shows what
+  the system overview shows as it stood when the read finished). Messages from before titles were given the title they
+  would have had by `2026_10_06_130000_old_messages_get_titles`, read back off their stored sentences.
   **Unfolding one reads it** — `ui-kit.js` POSTs `notifications.mark` (204) on the first open and lowers the rail's
   count — and *Go to* is the old `notifications.open` (read, then the category's route).
 - **Messages can be deleted**, one from its opened body or the ticked ones from the top (a select-all box and *Delete
