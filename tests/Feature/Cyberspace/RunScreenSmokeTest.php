@@ -157,7 +157,7 @@ final class RunScreenSmokeTest extends TestCase
         $run = $this->begin();
         $run->forceFill(['purpose' => RunPurpose::Backdoor, 'backdoor_kind' => BackdoorKind::Siphon->value])->save();
 
-        $this->get(route('run.show'))->assertOk()->assertSee('Install Siphon')->assertDontSee('backdoor.kind');
+        $this->get(route('run.show'))->assertOk()->assertSee('Install Siphon')->assertSee('Backdoor · Siphon')->assertDontSee('backdoor.kind');
     }
 
     public function test_the_core_touch_button_turns_green_once_the_core_is_open_and_not_before(): void
