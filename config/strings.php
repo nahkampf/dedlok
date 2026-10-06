@@ -1183,8 +1183,8 @@ return [
                 // would hand over the operating system for free.
                 // A landed install, one line per kind (BackdoorKind::value).
                 'install' => [
-                    'siphon' => 'You successfully install a siphoning daemon in the core. Run is now complete.',
-                    'routing' => 'You successfully install a routing daemon in the core. Run is now complete.',
+                    'siphon' => 'You successfully install a siphoning daemon in the core. Egress to end run.',
+                    'routing' => 'You successfully install a routing daemon in the core. Egress to end run.',
                 ],
                 'install_already' => 'Your backdoor is already here, and it is the one you left.',
                 // PLANTING. Says whose door it is, because that is the whole

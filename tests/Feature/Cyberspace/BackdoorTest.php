@@ -120,7 +120,7 @@ final class BackdoorTest extends TestCase
 
         $texts = array_column($this->act($run, RunAction::Install)->log, 'text');
 
-        $this->assertContains('You successfully install a siphoning daemon in the core. Run is now complete.', $texts);
+        $this->assertContains('You successfully install a siphoning daemon in the core. Egress to end run.', $texts);
     }
 
     /** A backdoor run with no kind on it is a hand-built request, and is refused. */
