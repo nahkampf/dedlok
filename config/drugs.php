@@ -139,6 +139,8 @@ return [
             'psychedelic' => ['hp_per_excess' => 2, 'lethal_at' => null],
             // Too much makes you ill and never stops a heart.
             'nootropic' => ['hp_per_excess' => 1, 'lethal_at' => null],
+            // Stacked treatment kills: the same figures as a stimulant (decided 2026-10-07).
+            'medical' => ['hp_per_excess' => 4, 'lethal_at' => 3],
         ],
     ],
 ];

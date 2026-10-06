@@ -664,6 +664,15 @@ class ItemRequest extends FormRequest
          *
          * The two profiles are judged as wholes: only damage types, whole percentages, summing to 100.
          */
+        // A family that cannot hook anybody (Medical) cannot be given an addictive figure, even in a hand-made request.
+        $validator->after(function (Validator $validator): void {
+            $family = $this->drugFamily();
+
+            if ($family !== null && ! $family->addicts() && (float) $this->input('addictive', 0) !== 0.0) {
+                $validator->errors()->add('addictive', Text::get('admin.validation.not_addictive', ['family' => $family->label()]));
+            }
+        });
+
         $validator->after(function (Validator $validator): void {
             $kinds = array_filter([
                 'armour_slots' => $this->armourSlots() !== [],

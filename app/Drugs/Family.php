@@ -39,10 +39,24 @@ enum Family: string
     /**
      * Treatment rather than a vice: medical consumables that act for a while (something that mends you over an
      * hour is not a drug in any sense but this game's). A family so it can have its own books and its own idea of
-     * too much; what that is — its withdrawal, how it overdoses, whether it is ever addictive — is NOT YET DECIDED and
-     * is deliberately not written anywhere, so author a Medical drug with `addictive` 0 until it is.
+     * too much. Decided 2026-10-07: it overdoses like a stimulant (`drugs.overdose.families.medical`), it is NEVER
+     * addictive (`addicts()`, so no withdrawal definition exists or is needed), and tolerance is per drug as for every
+     * other family.
      */
     case Medical = 'medical';
+
+    /**
+     * Can a drug of this family hook anybody? Medical cannot: treatment is not a vice, so it has no withdrawal and
+     * `DrugLedger` never raises addiction for it, whatever a drug row says. The item editor refuses a non-zero
+     * `addictive` on one too, so the row cannot say it.
+     */
+    public function addicts(): bool
+    {
+        return match ($this) {
+            self::Medical => false,
+            default => true,
+        };
+    }
 
     public function label(): string
     {

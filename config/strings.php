@@ -4074,6 +4074,7 @@ return [
         | keeps Laravel's own message, which is already about the right field.
         */
         'validation' => [
+            'not_addictive' => 'A :family drug cannot be addictive: leave Addictive at 0.',
             'gear_exclusive' => 'Armour, a weapon and ammunition are each only that: not each other, and not deck hardware, an imprint or an implant. (Plating that works everywhere is an implant; armour works on the parts it covers.)',
             'gear_no_effects' => 'A weapon or a round carries no effects of its own: nothing reads them, so they would do nothing. What it does is its damage and profile; what makes a fighter better is a skill, an implant or a drug.',
             'profile_unknown_type' => 'A profile names only damage types: blunt, slashing, penetrating, fragmentation, electrical, thermal, chemical and neural.',

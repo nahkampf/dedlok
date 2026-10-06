@@ -1028,12 +1028,12 @@ implant's; the row says which family, how long, and what it costs the books.
   psychedelic, nootropic. **A new family is a case and a withdrawal**: each needs its own
   `config/effects.php` definition, because coming off a stimulant is not coming off an
   opiate and there is nothing generic to say about either.
-- **`Medical` is the sixth family (2026-10-07), created with NO values on purpose**: a label and nothing else. Medical
-  consumables that act for a while (a dose that carries `hitpoints_regen` like Rewire carries `synaptic_regen`) are drugs, not
-  `consumables` rows, because a dose in effect is exactly what `character_doses` is for. Still undecided, and so written
-  nowhere: its withdrawal (`effects.withdrawal_medical` does not exist), its `drugs.overdose.families.medical` entry (missing
-  reads as no hit-point damage and never lethal, while the global neural-damage injury still applies) and whether it can
-  addict at all. **Until then author a Medical drug with `addictive` 0**, or the first withdrawal would fail loudly.
+- **`Medical` is the sixth family (2026-10-07): treatment that acts for a while.** A dose that carries `hitpoints_regen`
+  (like Rewire carries `synaptic_regen`) is a drug and not a `consumables` row, because a dose in effect is exactly what
+  `character_doses` is for. Decided: **it overdoses like a stimulant** (`drugs.overdose.families.medical`: 4 hit points per
+  dose over the line, the heart stops at 3 over), **it is never addictive** (`Family::addicts()`: `DrugLedger::record()` never
+  raises its addiction whatever the row says, `reconcile()` returns at once so no `effects.withdrawal_medical` exists or is
+  needed, and the item editor refuses a non-zero `addictive` on one), and tolerance is per drug as for every other family.
 - **The books are per (character, family) and a missing row means clean.** Somebody can be
   deep into opiates and clean of stimulants. `App\Drugs\DrugLedger` is the only writer of
   `character_drug_use`, and the only thing that writes or clears a withdrawal.

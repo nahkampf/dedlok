@@ -99,7 +99,8 @@ final class DrugLedger
         $books->forceFill([
             'character_id' => $character->getKey(),
             'family' => $drug->family->value,
-            'addiction' => round((float) $books->addiction + $drug->addictive, 2),
+            // A family that cannot hook anybody never moves the figure, whatever the drug row says.
+            'addiction' => $drug->family->addicts() ? round((float) $books->addiction + $drug->addictive, 2) : (float) $books->addiction,
             'tolerance' => round((float) $books->tolerance + $drug->tolerance_gain, 2),
         ])->save();
 
@@ -126,6 +127,11 @@ final class DrugLedger
      */
     public function reconcile(Character $character, Family $family): bool
     {
+        // No withdrawal exists for a family that cannot hook anybody, so there is nothing to write or to look up.
+        if (! $family->addicts()) {
+            return false;
+        }
+
         $key = $family->withdrawalKey();
 
         $carried = CharacterModifier::query()
