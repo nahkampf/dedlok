@@ -732,6 +732,8 @@ against ICE generated on the fly, and it locks the screen until it is settled.
   full width) marks the screen as a hunter attacking the player rather than a run against a
   system — the same licence `.hud-alert` spends, on a different shape, because nothing
   else on a hunt screen says so: no trace, no IDS, no briefing to read it off of.
+  **The waiting screen (`/down`) wears the same stripe across the top of its box** under the heading *Incapacitated!*:
+  being finished is what the accent is for.
 
 ### Being on the floor
 

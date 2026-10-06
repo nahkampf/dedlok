@@ -13,6 +13,10 @@
      what losing cost is whatever the defeat tags carried — and the screen puts
      those first for that reason. --}}
 <div class="panel panel--snug" style="margin-top:var(--s-5);max-width:min(560px,100%);margin-inline:auto">
+    {{-- The ember hazard stripe across the top of the box, the hunt screen's own: being finished is what the
+         accent is for, and the box says so before a word of it is read. --}}
+    <div class="hazard-stripe" aria-hidden="true"></div>
+
     <div class="panel__hd">
         {{-- From the geometric set the kit has proved, like every other glyph
              in the game — and the one place the accent is spent on this screen,

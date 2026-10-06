@@ -2121,7 +2121,7 @@ return [
         */
         'waiting' => [
             'title' => 'Down',
-            'heading' => 'You are on the floor',
+            'heading' => 'Incapacitated!',
             'back_in' => 'Up in :when',
             'up' => 'Get up',
             'up_hint' => 'You come back on one point. Getting up is not healing.',

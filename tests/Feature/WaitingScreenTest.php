@@ -187,6 +187,18 @@ final class WaitingScreenTest extends TestCase
             ->assertSee('flatline');
     }
 
+    public function test_the_box_is_headed_incapacitated_and_wears_the_hazard_stripe(): void
+    {
+        $character = $this->character();
+        $character->forceFill(['current_synaptic_integrity' => 0])->save();
+        $this->room()->put($character, $this->cause());
+
+        $this->actingAs($character->user)->get(route('waiting.show'))->assertOk()
+            ->assertSee('Incapacitated!')
+            ->assertDontSee('You are on the floor')
+            ->assertSee('<div class="hazard-stripe" aria-hidden="true"></div>', false);
+    }
+
     /** Somebody standing has no business here. */
     public function test_the_screen_turns_away_anybody_on_their_feet(): void
     {

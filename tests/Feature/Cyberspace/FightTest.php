@@ -766,7 +766,7 @@ final class FightTest extends TestCase
             ->assertSeeText('You find no viable attack vectors.')
             ->assertSeeText('lands a code payload for')
             ->assertSeeText(' SI.')
-            ->assertSee('<span class="tag">Turn 1</span>', false)
+            ->assertSee('<span class="tag tag--quiet">Turn 1</span>', false)
             ->assertSee('<span class="tag tag--crit">ICE I</span>', false)
             ->assertDontSeeText('It gets through')
             ->assertDontSeeText('Something detects you');
