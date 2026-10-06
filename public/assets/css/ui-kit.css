@@ -931,6 +931,15 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
 }
 .input::placeholder, .textarea::placeholder { color: var(--ink-3); }
+/* A field whose columns line up: monospace, and no soft wrap, so ASCII art stays the shape it was drawn. Wide
+   art scrolls inside the field instead of reflowing. The character bio is the first. */
+.input--mono, .textarea--mono {
+  font-family: var(--font-mono);
+  line-height: 1.25;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 4;
+}
 .input:hover, .textarea:hover, .select:hover { border-color: var(--line-2); }
 .input:focus, .textarea:focus, .select:focus {
   outline: none;

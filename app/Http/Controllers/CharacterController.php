@@ -75,9 +75,14 @@ class CharacterController extends Controller
 
         // Empty and absent are the same thing here: clearing the box is how
         // somebody takes their bio down, and a row of spaces is not a bio.
-        $bio = trim((string) ($data['bio'] ?? ''));
+        //
+        // NOT `trim()`: the bio is monospace and may be ASCII art, so the indentation of its FIRST line is part of
+        // the drawing. Blank lines at the start and whitespace at the end go; leading spaces on a line do not. Line
+        // endings are one kind, because a browser submits CRLF.
+        $raw = str_replace(["\r\n", "\r"], "\n", (string) ($data['bio'] ?? ''));
+        $bio = rtrim(ltrim($raw, "\n"));
 
-        $character->forceFill(['bio' => $bio === '' ? null : $bio])->save();
+        $character->forceFill(['bio' => trim($bio) === '' ? null : $bio])->save();
 
         return back()->with('status', Text::get('character.bio_saved'));
     }

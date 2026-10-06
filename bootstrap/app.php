@@ -22,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // The character bio keeps its leading spaces: it is where ASCII art is drawn, and the framework's blanket
+        // trim would shift the first line of an indented drawing left. The controller does its own, gentler trim.
+        $middleware->trimStrings(except: ['bio']);
+
         $middleware->web(append: [
             // Runs after the session is available, so $request->user() is set.
             RequireCharacter::class,

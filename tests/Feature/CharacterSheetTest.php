@@ -204,6 +204,24 @@ final class CharacterSheetTest extends TestCase
         $this->visit()->assertSee('Ran the Kabuki relay before it burned.', false);
     }
 
+    public function test_the_bio_is_a_monospace_field_that_does_not_wrap(): void
+    {
+        $this->visit()->assertSee('class="input input--mono" id="bio"', false)->assertSee('wrap="off"', false);
+    }
+
+    /**
+     * ASCII art keeps its shape: the first line's indentation survives, the browser's CRLF becomes LF, and only
+     * blank lines at the start and whitespace at the very end go.
+     */
+    public function test_a_bios_leading_spaces_survive_for_ascii_art(): void
+    {
+        $art = "\r\n\r\n    /\\_/\\   \r\n   ( o.o )\r\n    > ^ <\r\n\r\n";
+
+        $this->actingAs($this->character->user)->from(route('character.index'))->post(route('character.bio'), ['bio' => $art]);
+
+        $this->assertSame("    /\\_/\\   \n   ( o.o )\n    > ^ <", $this->character->fresh()->bio);
+    }
+
     /** Clearing the box is how somebody takes their bio down. */
     public function test_an_empty_bio_is_null_rather_than_blank(): void
     {
