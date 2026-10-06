@@ -23,6 +23,8 @@ return new class extends Migration
     /** @var array<string, string> sentence pattern => title, with $1 and $2 for what it captured */
     private const RULES = [
         '/^Your scan of .+ completed\./' => 'Scan complete',
+        // The same message in the wording it had before it was rewritten.
+        '/^Your read of .+ finished\./' => 'Scan complete',
         '/^Your backdoor into .+ was detected\./' => 'Backdoor found',
         '/^Siphons ran:/' => 'Siphon report',
         '/^Your backdoor into .+ is gone\./' => 'Backdoor lost',

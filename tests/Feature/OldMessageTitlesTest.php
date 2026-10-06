@@ -23,6 +23,7 @@ final class OldMessageTitlesTest extends TestCase
         $ids = [
             'Siphon report' => $make('Siphons ran: 1,200 ¤'),
             'Scan complete' => $make('Your scan of Silo - Veritas 123 completed. The specifications are saved to a file.'),
+            'Scan complete (old wording)' => $make('Your read of Data silo - Mashpriborintorg 383 finished. Everything that machine will give up is in the file.'),
             'Pistols, level 3' => $make('Pistols reached level 3.'),
             'Sold: DUMMY' => $make('Sold: 3 × DUMMY, for 900 ¤.'),
             'Cash from Pi' => $make('Pi sent you 500 ¤.'),
@@ -35,7 +36,7 @@ final class OldMessageTitlesTest extends TestCase
         (require database_path('migrations/2026_10_06_130000_old_messages_get_titles.php'))->up();
 
         foreach ($ids as $title => $id) {
-            $this->assertSame($title, Notification::find($id)->title, $title);
+            $this->assertSame(str_replace(' (old wording)', '', $title), Notification::find($id)->title, $title);
         }
         $this->assertNull(Notification::find($unknown)->title);
         $this->assertSame('A real title', Notification::find($kept)->title);
