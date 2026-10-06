@@ -1010,7 +1010,7 @@ return [
             | for why there is nothing to pick.
             */
             'setup' => [
-                'heading' => 'Making a run',
+                'heading' => 'Interact',
                 'title' => 'Before you go in',
                 'open' => 'Plan a run',
                 'purpose' => 'End goal of run',
@@ -1286,7 +1286,7 @@ return [
             | what might.
             */
             'thresholds' => [
-                'heading' => 'When to pull out',
+                'heading' => 'Thresholds',
                 'hint' => 'Set once. A run that crosses either of these threshold will attempt to egress on its own, whatever you were doing.',
                 'trace' => 'Egress when the trace passes',
                 'si' => 'Egress when Synaptic Integrity falls below',

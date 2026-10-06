@@ -93,18 +93,6 @@
                          terrain, contacts and bookmarks all survive it. --}}
                     <button type="submit" class="btn cut">{{ Text::get('cyberspace.map.jack_out') }}</button>
                 </form>
-
-                {{-- One press starts one pass, which takes MINUTES and is
-                     spent whether or not it finds anything. Offered only where
-                     there is something to read: the portal answers nothing and
-                     empty ground is not a machine. --}}
-                <form method="POST" action="{{ route('cyberspace.scan') }}">
-                    @csrf
-                    <button type="submit" class="btn btn--sm cut"
-                            @disabled(! $here || ! $canScan || $scan?->isRunning() || $scan?->isComplete())>
-                        {{ Text::get('cyberspace.scan.action') }}
-                    </button>
-                </form>
             @else
                 <form method="POST" action="{{ route('cyberspace.jack_in') }}">
                     @csrf
@@ -279,16 +267,39 @@
                         <a class="btn cut" href="{{ route('exchange.show') }}">
                             {{ Text::get('exchange.visit') }}
                         </a>
-                    @elseif (! $canRun)
-                        <p class="micro" style="color:var(--ink-2);margin:0">
-                            {{ $target->isLockedDown()
-                                ? Text::get('cyberspace.run.refused.locked_down')
-                                : Text::get('cyberspace.run.refused.not_intrudable') }}
-                        </p>
                     @else
-                        <a class="btn btn--go cut" href="{{ route('run.setup') }}">
-                            {{ Text::get('cyberspace.run.setup.open') }}
-                        </a>
+                        {{-- Two instructions, in the order a player does them. "Plan a run" says by
+                             its colour whether the read is whole: green when everything is known,
+                             brass when it is not (the run is still allowed; it is only blind).
+                             The scan beside it is a plain button, so there is never a second filled
+                             one next to it. --}}
+                        <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            @if ($canRun)
+                                <a class="btn {{ $scan?->isComplete() ? 'btn--go' : 'btn--warn' }} cut" href="{{ route('run.setup') }}">
+                                    {{ Text::get('cyberspace.run.setup.open') }}
+                                </a>
+                            @else
+                                <p class="micro" style="color:var(--ink-2);margin:0">
+                                    {{ $target->isLockedDown()
+                                        ? Text::get('cyberspace.run.refused.locked_down')
+                                        : Text::get('cyberspace.run.refused.not_intrudable') }}
+                                </p>
+                            @endif
+
+                            {{-- One press starts one pass, which takes MINUTES and is spent whether or not
+                                 it finds anything. Dead while a read is running or whole, and live again
+                                 once the file has gone stale, because a stale file is no longer `$scan`
+                                 at all. An interrupted read can be started again. --}}
+                            @if ($target->type->isScannable())
+                                <form method="POST" action="{{ route('cyberspace.scan') }}">
+                                    @csrf
+                                    <button type="submit" class="btn cut"
+                                            @disabled(! $here || ! $canScan || $scan?->isRunning() || $scan?->isComplete())>
+                                        {{ Text::get('cyberspace.scan.action') }}
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
                     @endif
                 </div>
             </section>
@@ -305,7 +316,10 @@
             <summary class="panel__hd">
                 <h2>{{ Text::get('cyberspace.run.thresholds.heading') }}</h2>
                 <div class="spacer"></div>
-                <span class="micro num">{{ $character->egress_trace_at }}% · {{ $character->egress_si_at }}%</span>
+                {{-- Two tags rather than one line of text, so the values read at a glance when the
+                     panel is folded; each says in its title which threshold it is. --}}
+                <span class="tag num" title="{{ Text::get('cyberspace.run.thresholds.trace') }}">{{ $character->egress_trace_at }}%</span>
+                <span class="tag num" title="{{ Text::get('cyberspace.run.thresholds.si') }}">{{ $character->egress_si_at }}%</span>
             </summary>
 
             <form method="POST" action="{{ route('cyberspace.thresholds') }}" style="padding:var(--s-3) 0">

@@ -493,6 +493,12 @@ consequences and taking what a machine holds all roll.
 - **The run screen draws the trace as the CHAIN it walks** — the machine at one end, you at
   the other, backdoored relays between. Two nodes today, drawn as a chain so it will not
   have to change. `Run::turnsUntilTraced()` is worked out server-side.
+- **The map's *Interact* box holds the two things you do to the machine you stand on**: *Plan a run* and *Scan*
+  (the scan button is no longer in the top bar). *Plan a run* is `.btn--go` when the live scan is whole
+  (`SystemScan::isComplete()`) and `.btn--warn` (brass) when it is not or there is none; Scan is a plain button, so
+  there is never a second filled one beside it. Scan is dead while a read runs or the file is whole and live again once
+  the file is stale (a stale scan is not the live `$scan`); an interrupted partial read can be started again. The
+  *Thresholds* panel beneath shows its two values as tags.
 - **`run.setup` is the briefing, and the only way a run begins.** The map says *Plan a run*.
   Everything on the briefing is permanent: purpose fixed at the door, backdoor kind
   unchangeable, route snapshotted at start.
