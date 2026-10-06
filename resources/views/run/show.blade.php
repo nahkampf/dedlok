@@ -277,6 +277,11 @@
         </p>
     @endif
 
+    {{-- THE CORE IS OPEN when nothing guards it and nothing is left to get past: no ICE awake, and no door to
+         roll for (`$core` is null once the operating system has been spoken to, or when there never was one).
+         That is the moment the run's own action stops being a gamble, and its button says so by turning green. --}}
+    @php($coreOpen = ! $run->inAFight() && $core === null)
+
     <form method="POST" action="{{ route('run.act') }}" style="padding-bottom:var(--s-3)">
         @csrf
         <div class="row row--wrap" style="--gap:var(--s-2)">
@@ -287,14 +292,14 @@
                  its own button: offering one on the wrong purpose would promise something the turn would
                  silently waste. --}}
             @if ($run->purpose === RunPurpose::Extraction)
-                <button type="submit" name="action" value="extract" class="btn cut" @if ($run->inAFight()) disabled @endif>
+                <button type="submit" name="action" value="extract" class="btn cut @if ($coreOpen) btn--go @endif" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get($run->extracting_qb !== null ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
                 </button>
             @endif
             {{-- THE SAME RULE ON THE OTHER PURPOSE. The kind was chosen at the door and is permanent, so
                  the button says which one it is about to leave rather than asking again mid-fight. --}}
             @if ($run->purpose === RunPurpose::Backdoor)
-                <button type="submit" name="action" value="install" class="btn cut"
+                <button type="submit" name="action" value="install" class="btn cut @if ($coreOpen && ! $run->backdoored) btn--go @endif"
                         @if ($run->backdoored || $run->inAFight()) disabled @endif>
                     {{ Text::get($run->backdoored ? 'cyberspace.run.action.install_done' : 'cyberspace.run.action.install', [
                         'kind' => $run->backdoorKind()?->label() ?? '',

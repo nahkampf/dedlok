@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Cyberspace;
 
 use App\Checks\CheckRoller;
+use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
@@ -144,6 +145,34 @@ final class RunScreenSmokeTest extends TestCase
         $this->assertMatchesRegularExpression('/<span class="tag tag--crit">ICE OLD<\/span>/', $html);
         $this->assertMatchesRegularExpression('/Your\s*<span class="tag tag--ok">BREAKER<\/span>/', $html);
         $this->assertMatchesRegularExpression('/<span class="tag">ICE GREY<\/span>/', $html);
+    }
+
+    public function test_every_backdoor_kind_has_a_real_label_and_the_install_button_uses_it(): void
+    {
+        foreach (BackdoorKind::cases() as $kind) {
+            $this->assertStringNotContainsString('backdoor.kind', $kind->label(), "{$kind->value} has no label");
+        }
+
+        $this->machine();
+        $run = $this->begin();
+        $run->forceFill(['purpose' => RunPurpose::Backdoor, 'backdoor_kind' => BackdoorKind::Siphon->value])->save();
+
+        $this->get(route('run.show'))->assertOk()->assertSee('Install Siphon')->assertDontSee('backdoor.kind');
+    }
+
+    public function test_the_core_touch_button_turns_green_once_the_core_is_open_and_not_before(): void
+    {
+        $this->machine();
+        $run = $this->begin();
+        $green = '/<button type="submit" name="action" value="extract" class="btn cut\s+btn--go/';
+
+        // Fresh: an operating system still has to be got past, so the button is a gamble and plain.
+        $run->forceFill(['os_locked' => true, 'ice_id' => null, 'ice_integrity' => null])->save();
+        $this->assertDoesNotMatchRegularExpression($green, $this->get(route('run.show'))->getContent());
+
+        // The door is open and nothing guards the core.
+        $run->forceFill(['os_locked' => false])->save();
+        $this->assertMatchesRegularExpression($green, $this->get(route('run.show'))->getContent());
     }
 
     public function test_the_log_shows_the_newest_line_first(): void

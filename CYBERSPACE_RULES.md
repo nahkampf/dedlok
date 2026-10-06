@@ -489,7 +489,8 @@ consequences and taking what a machine holds all roll.
 - **They are set from the MAP, never from inside a run** — an accordion on the cyberspace
   screen, because they are a play style, and changing them mid-fight would be changing the
   rules of a fight while standing in it.
-- **The run log is drawn NEWEST FIRST** (stored oldest first, reversed in the view), so the answer to the turn just taken is where the eye already is instead of below the fold.
+- **The run log is drawn NEWEST FIRST** (stored oldest first, reversed in the view), so the answer to the turn just taken is where the eye already is instead of below the fold, and so is the hunter's.
+- **The core-touch button (Extract, Install) turns `.btn--go` when the core is OPEN**: no ICE awake and nothing left to get past (`Simulator::coreChance()` is null — the operating system has been spoken to, or there never was one). Burn keeps its ember: it is the destructive one. Backdoor kinds read through `backdoor.kind.*` (a label once read a key under `cyberspace.`, which does not exist, and the button said so).
 - **A log line is stored rendered, and may carry a `tag`.** `runs.log` entries are `{text, tone,
   turn}` plus an optional `tag` — who did it ("ICE VII"), shown as a tag in front of the text. It is
   kept BESIDE the text rather than inside it so the screen can style it, and an old log without one

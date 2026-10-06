@@ -248,6 +248,20 @@ final class HunterTest extends TestCase
             ->assertRedirect(route('hunt.show'));
     }
 
+    public function test_the_hunt_log_shows_the_newest_line_first(): void
+    {
+        $this->character->forceFill(['heat' => 90])->save();
+        $hunt = $this->hunters()->spawn($this->character->fresh());
+        $hunt->forceFill(['log' => [
+            ['text' => 'HUNT FIRST LINE', 'tone' => ''],
+            ['text' => 'HUNT SECOND LINE', 'tone' => ''],
+            ['text' => 'HUNT THIRD LINE', 'tone' => ''],
+        ]])->save();
+
+        $this->actingAs($this->character->user)->get(route('hunt.show'))->assertOk()
+            ->assertSeeInOrder(['HUNT THIRD LINE', 'HUNT SECOND LINE', 'HUNT FIRST LINE']);
+    }
+
     // ---- Navigator wiring ---------------------------------------------------
 
     public function test_a_roll_that_passes_creates_a_hunt_on_arrival(): void
