@@ -30,63 +30,67 @@
             @if (count($messages) === 0)
                 <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('notifications.empty') }}</p>
             @else
-                <div class="stack" style="--gap:2px">
+                {{-- AN ACCORDION, one <details> a message. The closed row is the TITLE
+                     and nothing else a player has to read; opening it shows the sentence
+                     and, in the siphon report's case, its list. Unfolding one READS it
+                     (`data-mark-read`, in ui-kit.js) without leaving the page, which is
+                     the same call the old row made when it navigated: arriving on the
+                     screen still reads nothing.
+
+                     A read message is DIMMED rather than marked. The kit's live dot is
+                     ember and pulses, and an inbox with ten unread would be ten pulsing
+                     dots. Unread is the ordinary weight; read is quieter. The marker is
+                     ink and not the accordion's ember, for the same reason. --}}
+                <div class="accordion accordion--quiet">
                     @foreach ($messages as $message)
-                        {{-- THE ROW IS A BUTTON, because opening a message
-                             writes: it marks that one read and then goes
-                             wherever its category leads.
-
-                             A read message is DIMMED rather than marked. The
-                             kit's live dot is ember and pulses, and an inbox
-                             with ten unread would be ten pulsing dots — which
-                             is exactly what the accent is rationed against.
-                             Unread is the ordinary weight; read is quieter. --}}
-                        <form method="POST" action="{{ route('notifications.open', $message) }}">
-                            @csrf
-                            <button type="submit" class="item-row">
+                        <details data-mark-read="{{ route('notifications.mark', $message) }}" @if ($message->read_at !== null) data-read @endif>
+                            <summary>
                                 <span class="slot__icon" aria-hidden="true">{{ $message->category->glyph() }}</span>
-
-                                <span class="stack" style="--gap:2px;min-width:0">
-                                    <span class="item-row__name"@if ($message->read_at !== null) style="color:var(--ink-3)"@endif>{{ $message->body }}</span>
-
-                                    <span class="row row--wrap micro" style="--gap:var(--s-2);align-items:center;color:var(--ink-3)">
-                                        <span class="tag">{{ $message->category->label() }}</span>
-                                        <span>{{ $message->created_at->diffForHumans() }}</span>
-                                    </span>
-                                </span>
-
+                                <span class="item-row__name" data-message-title style="flex:1;min-width:0;@if ($message->read_at !== null)color:var(--ink-3)@endif">{{ $message->title ?? $message->category->label() }}</span>
+                                <span class="micro" style="color:var(--ink-3)">{{ $message->created_at->diffForHumans() }}</span>
                                 @if ($message->read_at === null)
-                                    <span class="item-row__meta micro">{{ Text::get('notifications.new') }}</span>
+                                    <span class="item-row__meta micro" data-message-new>{{ Text::get('notifications.new') }}</span>
                                 @endif
-                            </button>
-                        </form>
+                            </summary>
 
-                        {{-- THE LIST UNDER THE SENTENCE, outside the row's
-                             button because an address in it is a copy button
-                             of its own, and a button inside a button is not
-                             something a browser will draw. Snapshotted with
-                             the body — a system named here may have moved by
-                             now, and the line still says what it paid.
+                            <div class="stack" style="--gap:var(--s-2)">
+                                <p style="margin:0">{{ $message->body }}</p>
 
-                             ponytail: drawn in the siphon report's shape, the
-                             only sender with a list. A second sender with a
-                             different shape makes this a per-category partial. --}}
-                        @if ($message->details)
-                            <div class="prose micro" style="margin:0 0 var(--s-2) var(--s-5);color:var(--ink-2)">
-                                <ul>
-                                    @foreach ($message->details as $line)
-                                        <li>
-                                            {{ $line['system'] ?? '' }}
-                                            @if (! empty($line['address']))
-                                                · <x-address :address="$line['address']" />
-                                            @endif
-                                            · {{ Text::get('notifications.details.grade', ['grade' => $line['grade'] ?? '?']) }}
-                                            · <span class="num">{{ Number::format((int) ($line['creds'] ?? 0)) }} ¤</span>
-                                        </li>
-                                    @endforeach
-                                </ul>
+                                {{-- THE LIST UNDER THE SENTENCE. Snapshotted with the body: a
+                                     system named here may have moved by now, and the line still
+                                     says what it paid.
+
+                                     ponytail: drawn in the siphon report's shape, the only
+                                     sender with a list. A second sender with a different shape
+                                     makes this a per-category partial. --}}
+                                @if ($message->details)
+                                    <div class="prose micro" style="color:var(--ink-2)">
+                                        <ul>
+                                            @foreach ($message->details as $line)
+                                                <li>
+                                                    {{ $line['system'] ?? '' }}
+                                                    @if (! empty($line['address']))
+                                                        · <x-address :address="$line['address']" />
+                                                    @endif
+                                                    · {{ Text::get('notifications.details.grade', ['grade' => $line['grade'] ?? '?']) }}
+                                                    · <span class="num">{{ Number::format((int) ($line['creds'] ?? 0)) }} ¤</span>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+
+                                {{-- Where the category leads. A POST and not a link: it writes
+                                     (it reads the message), and it sits outside the summary
+                                     because a button in a summary is not one a browser draws. --}}
+                                <form method="POST" action="{{ route('notifications.open', $message) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn--sm btn--quiet cut">
+                                        {{ Text::get('notifications.go_to', ['place' => $message->category->label()]) }}
+                                    </button>
+                                </form>
                             </div>
-                        @endif
+                        </details>
                     @endforeach
                 </div>
             @endif

@@ -63,6 +63,7 @@ final class Notifier
         return Notification::create([
             'user_id' => (int) $userId,
             'category' => $category,
+            'title' => $this->title($key, $replace),
             // Truncated rather than refused: a message too long for the column
             // is a copy problem, and losing the whole notification over one
             // would be a worse answer than a clipped sentence.
@@ -85,6 +86,14 @@ final class Notifier
      * Already read is a no-op rather than a second write: the moment a message
      * was read is the FIRST time, and re-reading it does not move that.
      */
+    /** The closed row's line, or null when a key has no title (the screen then shows the category). */
+    private function title(string $key, array $replace): ?string
+    {
+        $title = Text::get("notifications.titles.{$key}", $replace);
+
+        return $title === "notifications.titles.{$key}" ? null : mb_substr($title, 0, 120);
+    }
+
     public function markRead(Notification $message): void
     {
         if ($message->read_at === null) {

@@ -2078,6 +2078,8 @@ details.panel > summary.panel__hd:focus-visible {
   color: var(--ember); font-family: var(--font-mono);
 }
 .accordion details[open] summary::before { content: "−"; }
+/* Ink rather than ember: a list of twenty folds is not twenty live things. The inbox is the first. */
+.accordion--quiet summary::before { color: var(--ink-2); }
 .accordion details > *:not(summary) { padding-bottom: var(--s-4); color: var(--ink-2); font-size: var(--fs-sm); }
 
 .avatar {

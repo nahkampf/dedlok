@@ -143,6 +143,34 @@
     if (dlg.showModal) dlg.showModal();
   });
 
+  /* Unfolding an inbox message reads it: <details data-mark-read="URL">. Once, on the first
+     open, with keepalive like the patch notes. The row quietens and the rail's count comes
+     down, so the page agrees with the server without a reload. */
+  document.querySelectorAll("details[data-mark-read]:not([data-read])").forEach((d) => {
+    d.addEventListener("toggle", () => {
+      if (!d.open || d.hasAttribute("data-read")) return;
+      d.setAttribute("data-read", "");
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      fetch(d.dataset.markRead, {
+        method: "POST",
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest", ...(token ? { "X-CSRF-TOKEN": token } : {}) },
+        credentials: "same-origin",
+        keepalive: true,
+      }).then((r) => {
+        if (!r.ok) return;
+        d.querySelector("[data-message-new]")?.remove();
+        const title = d.querySelector("[data-message-title]");
+        if (title) title.style.color = "var(--ink-3)";
+        const badge = document.querySelector(".dock__count");
+        if (badge) {
+          const left = parseInt(badge.textContent, 10) - 1;
+          if (Number.isNaN(left)) return;
+          if (left > 0) badge.textContent = String(left); else badge.remove();
+        }
+      }).catch(() => {});
+    });
+  });
+
   /* --- Dock -------------------------------------------------------------
      <nav class="dock">
        <button class="dock__item" data-dock-toggle aria-expanded="false">…

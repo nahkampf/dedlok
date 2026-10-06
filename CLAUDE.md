@@ -1180,6 +1180,12 @@ stood on this not existing.
 - **`App\Notifications\Notifier` is the only writer of `notifications`**, and the only
   thing that marks one read. A sender says what happened and hands over a strings KEY;
   the sentence is rendered once, at write time, and stored.
+- **A message has a TITLE and a body, and the inbox is an accordion** (`<details>` per message, quiet ink marker via
+  `.accordion--quiet`). The closed row is the title; opened it shows the sentence, the details list and a *Go to
+  <category>* button. **The title is composed at send time** from `notifications.titles.<key>` (one per message key, held
+  by a test) and stored on `notifications.title`; NULL, for a message from before titles, shows the category label.
+  **Unfolding one reads it** — `ui-kit.js` POSTs `notifications.mark` (204) on the first open and lowers the rail's
+  count — and *Go to* is the old `notifications.open` (read, then the category's route).
 - **The body is never recomposed.** A message outlives its own subject — a machine
   relocates, a skill is renamed, an achievement is retired — so a stored sentence is the
   only one that is still true tomorrow. Same call `system_contacts` makes about a sighting.
