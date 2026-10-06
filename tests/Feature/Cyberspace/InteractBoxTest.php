@@ -80,6 +80,17 @@ final class InteractBoxTest extends TestCase
         $this->page()->assertSee('data-fact="grade"', false)->assertSee('IV');
     }
 
+    public function test_a_running_read_replaces_the_scan_button_with_show_scan(): void
+    {
+        $this->page()->assertSee(route('cyberspace.scan'), false)->assertDontSee('Show scan');
+
+        $this->scan(['pass_started_at' => now()->subMinute(), 'pass_ready_at' => now()->addMinutes(10)]);
+
+        $this->page()->assertSee('Show scan')
+            ->assertSee('<button type="button" class="btn cut" data-reading-open="DEADBEEF">', false)
+            ->assertDontSee('action="'.route('cyberspace.scan').'"', false);
+    }
+
     public function test_the_scan_button_is_not_in_the_top_bar_any_more(): void
     {
         // One scan form on the page, and it comes after the Interact heading, not before it.

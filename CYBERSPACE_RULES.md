@@ -496,7 +496,8 @@ consequences and taking what a machine holds all roll.
 - **The map's *Interact* box holds the two things you do to the machine you stand on**: *Plan a run* and *Scan*
   (the scan button is no longer in the top bar). *Plan a run* is `.btn--go` when the live scan is whole
   (`SystemScan::isComplete()`) and `.btn--warn` (brass) when it is not or there is none; Scan is a plain button, so
-  there is never a second filled one beside it. Scan is dead while a read runs or the file is whole and live again once
+  there is never a second filled one beside it. While a read runs, *Scan* is replaced by *Show scan* (the way back into
+  the read window). Scan is dead while the file is whole and live again once
   the file is stale (a stale scan is not the live `$scan`); an interrupted partial read can be started again. The
   *Thresholds* panel beneath shows its two values as tags. Under the buttons the box lists what the live scan has found
   (`<x-scan-facts>`, the briefing's and the scanner window's own rows): every fact either way, so a blank reads

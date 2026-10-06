@@ -291,13 +291,21 @@
                                  once the file has gone stale, because a stale file is no longer `$scan`
                                  at all. An interrupted read can be started again. --}}
                             @if ($target->type->isScannable())
-                                <form method="POST" action="{{ route('cyberspace.scan') }}">
-                                    @csrf
-                                    <button type="submit" class="btn cut"
-                                            @disabled(! $here || ! $canScan || $scan?->isRunning() || $scan?->isComplete())>
-                                        {{ Text::get('cyberspace.scan.action') }}
+                                @if ($scan?->isRunning())
+                                    {{-- A read is going: the way back into it replaces the button that
+                                         would start one, since there is nothing to start. --}}
+                                    <button type="button" class="btn cut" data-reading-open="{{ $target->address }}">
+                                        {{ Text::get('cyberspace.scan.show') }}
                                     </button>
-                                </form>
+                                @else
+                                    <form method="POST" action="{{ route('cyberspace.scan') }}">
+                                        @csrf
+                                        <button type="submit" class="btn cut"
+                                                @disabled(! $here || ! $canScan || $scan?->isComplete())>
+                                            {{ Text::get('cyberspace.scan.action') }}
+                                        </button>
+                                    </form>
+                                @endif
                             @endif
                         </div>
 

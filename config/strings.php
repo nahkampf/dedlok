@@ -924,6 +924,7 @@ return [
         */
         'scan' => [
             'action' => 'Scan',
+            'show' => 'Show scan',
             'not_jacked_in' => 'You are not in cyberspace.',
             'nothing_there' => 'There is nothing here to scan.',
             'not_scannable' => 'The portal returns nothing. There is nothing here to scan.',
