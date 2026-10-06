@@ -300,6 +300,15 @@
                                 </form>
                             @endif
                         </div>
+
+                        {{-- What the read has found out so far, in the rows and boxes the scanner window and
+                             the briefing use (<x-scan-facts>): every fact either way, so a blank says "not
+                             read yet" instead of looking like nothing to find. Not a count of anything hidden. --}}
+                        @if ($target->type->isScannable())
+                            <div style="margin-top:var(--s-3)">
+                                <x-scan-facts :facts="($scan ?? new \App\Models\SystemScan)->facts($character)" />
+                            </div>
+                        @endif
                     @endif
                 </div>
             </section>

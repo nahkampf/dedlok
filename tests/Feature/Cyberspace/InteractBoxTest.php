@@ -70,6 +70,16 @@ final class InteractBoxTest extends TestCase
         $this->page()->assertSee('btn btn--go cut" href="'.route('run.setup'), false)->assertDontSee('btn btn--warn cut" href="'.route('run.setup'), false);
     }
 
+    public function test_the_box_lists_what_the_read_has_found_and_marks_the_rest_unread(): void
+    {
+        $this->page()->assertSee('data-fact="grade"', false)->assertSee('UNKNOWN');
+
+        $os = Skill::query()->where('slug', 'lattice')->first() ?? Skill::factory()->create(['slug' => 'lattice', 'rank' => 1]);
+        $this->scan(['grade' => 4, 'os_skill_id' => $os->id]);
+
+        $this->page()->assertSee('data-fact="grade"', false)->assertSee('IV');
+    }
+
     public function test_the_scan_button_is_not_in_the_top_bar_any_more(): void
     {
         // One scan form on the page, and it comes after the Interact heading, not before it.
