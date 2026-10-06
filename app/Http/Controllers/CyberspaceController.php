@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Cyberspace\Backdoors;
 use App\Cyberspace\BookmarkKeeper;
 use App\Cyberspace\BookmarkKind;
 use App\Cyberspace\Grid;
@@ -141,6 +142,9 @@ class CyberspaceController extends Controller
                 ? System::query()->at($character->gridPosition())->first()
                 : null,
             'canRun' => $target !== null && $target->type->isInteractable() && ! $target->isLockedDown(),
+            // What the character already holds in this system, for the Interact box: a backdoor row is access, so
+            // it is read live off the machine they stand on.
+            'heldBackdoor' => $target === null ? null : (new Backdoors)->heldOn($character, $target),
             // Who answers for what you are standing on, and what they make of
             // you. Read off the LIVE system rather than the contact: a
             // sighting remembers a name, and standing is with a row.

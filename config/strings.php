@@ -914,6 +914,12 @@ return [
             'many' => 'Your deck stopped running and dumped you out of cyberspace. :count points of Synaptic Integrity.',
         ],
 
+        // The Interact box on the map: what you already hold in the system you stand on.
+        'interact' => [
+            'installed_here' => 'Installed here',
+            'backdoor' => 'Backdoor',
+        ],
+
         /*
         | Scanning: finding out what a machine is before deciding what to do
         | about it.

@@ -320,6 +320,21 @@
                             @endif
                         </div>
 
+                        {{-- WHAT YOU ALREADY HOLD HERE: a backdoor of yours, and which kind it is. The same
+                             label-left, tags-right row the facts below use. Access you were given for an entity's
+                             job leaves no row of yours, so it is not shown. --}}
+                        @if ($heldBackdoor)
+                            <div class="card__stats" style="padding:0;border:0;margin-top:var(--s-3)">
+                                <div class="card__stat">
+                                    <span>{{ Text::get('cyberspace.interact.installed_here') }}</span>
+                                    <span class="row row--wrap" style="--gap:var(--s-2)">
+                                        <span class="tag tag--ok">{{ Text::get('cyberspace.interact.backdoor') }}</span>
+                                        <span class="tag tag--ok" title="{{ Text::get('backdoor.hint.'.$heldBackdoor->kind->value) }}">{{ $heldBackdoor->kind->label() }}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        @endif
+
                         {{-- What the read has found out so far, in the rows and boxes the scanner window and
                              the briefing use (<x-scan-facts>): every fact either way, so a blank says "not
                              read yet" instead of looking like nothing to find. Not a count of anything hidden. --}}

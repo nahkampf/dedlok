@@ -506,7 +506,8 @@ consequences and taking what a machine holds all roll.
   the file is stale (a stale scan is not the live `$scan`); an interrupted partial read can be started again. The
   *Thresholds* panel beneath shows its two values as tags. Under the buttons the box lists what the live scan has found
   (`<x-scan-facts>`, the briefing's and the scanner window's own rows): every fact either way, so a blank reads
-  UNKNOWN rather than as nothing to find.
+  UNKNOWN rather than as nothing to find. Above them, an *Installed here* row lists the backdoor you already hold in this system and its kind
+  (read live off `backdoors`; access you were given for an entity's job leaves no row of yours, so it is not shown).
 - **`run.setup` is the briefing, and the only way a run begins.** The map says *Plan a run*.
   Everything on the briefing is permanent: purpose fixed at the door, backdoor kind
   unchangeable, route snapshotted at start.

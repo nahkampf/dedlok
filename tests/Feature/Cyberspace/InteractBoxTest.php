@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Cyberspace\BackdoorKind;
+use App\Models\Backdoor;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -143,6 +145,19 @@ final class InteractBoxTest extends TestCase
         preg_match('/data-remaining="(\d+)"\s+data-total="(\d+)"/', $html, $m);
         $this->assertEqualsWithDelta(540, (int) $m[1], 3);
         $this->assertEqualsWithDelta(600, (int) $m[2], 3);
+    }
+
+    public function test_a_backdoor_you_hold_here_is_listed_with_its_kind(): void
+    {
+        $this->page()->assertDontSee('Installed here');
+
+        Backdoor::query()->create([
+            'character_id' => $this->character->id, 'system_id' => $this->machine->id,
+            'kind' => BackdoorKind::Siphon, 'installed_at' => now(),
+        ]);
+
+        $this->page()->assertSee('Installed here')->assertSee('Backdoor')
+            ->assertSeeInOrder(['Installed here', 'tag tag--ok">Backdoor', 'tag tag--ok', 'Siphon'], false);
     }
 
     public function test_the_scan_button_is_not_in_the_top_bar_any_more(): void
