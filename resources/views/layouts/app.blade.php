@@ -349,6 +349,13 @@
             @empty
                 <p class="muted" style="font-size:var(--fs-sm)">{{ Text::get('programs.running_none') }}</p>
             @endforelse
+
+            {{-- What the deck could start, fetched when this opens (`ui-kit.js`): working it out costs a
+                 look at the deck's totals, which is not worth doing on every page. --}}
+            <div class="micro" style="margin-top:var(--s-4);color:var(--ink-2)">{{ Text::get('programs.startable') }}</div>
+            <div data-startable="{{ route('programs.startable') }}">
+                <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('programs.startable_loading') }}</p>
+            </div>
         </div>
 
         {{-- Where the doing happens. --}}

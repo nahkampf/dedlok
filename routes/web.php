@@ -154,6 +154,8 @@ Route::middleware('auth')->group(function () {
      * question about the same row, and the row already knows which way it is
      * being asked.
      */
+    // The Running modal's list of what could be started, fetched when it opens (it is in every page's layout).
+    Route::get('/programs/startable', [InventoryController::class, 'startable'])->name('programs.startable');
     Route::post('/inventory/{entry}/run', [InventoryController::class, 'run'])
         ->name('inventory.run');
 

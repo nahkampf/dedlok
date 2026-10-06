@@ -221,6 +221,45 @@ final class ProgramTest extends TestCase
         $this->assertTrue($result->succeeded(), 'a program that exactly fills the deck fits in it');
     }
 
+    // ---- what could be started -------------------------------------------
+
+    public function test_startable_lists_what_a_press_would_start_and_nothing_else(): void
+    {
+        $fits = $this->own($this->programItem(qflops: 10, memory: 10));
+        $this->own($this->programItem(qflops: 500, memory: 10));          // too much compute
+        $this->own($this->programItem(background: false));                // run-only
+        $this->runner->start($this->character, $this->own($this->programItem(qflops: 90, memory: 1)));   // running now
+
+        $listed = $this->runner->startable($this->character->fresh());
+
+        $this->assertSame([$fits->id], $listed->pluck('id')->all());
+
+        // And the writer agrees with the list: what it offers is what starts.
+        $this->assertTrue($this->runner->start($this->character->fresh(), $listed->first())->succeeded());
+    }
+
+    public function test_startable_is_empty_without_a_deck_and_the_screen_says_why(): void
+    {
+        $this->own($this->programItem());
+        app(DeckEquipper::class)->unequip($this->character, false, app(ModuleFitter::class));
+
+        $this->assertCount(0, $this->runner->startable($this->character->fresh()));
+
+        $this->actingAs($this->character->user)->get(route('programs.startable'))
+            ->assertOk()->assertSee('No deck equipped');
+    }
+
+    public function test_the_fragment_offers_a_run_button_for_each_and_the_modal_asks_for_it(): void
+    {
+        $row = $this->own($this->programItem(qflops: 10, memory: 10), 3);
+
+        $this->actingAs($this->character->user)->get(route('programs.startable'))
+            ->assertOk()->assertSee(route('inventory.run', $row), false)->assertSee('Run')->assertSee('×3', false);
+
+        $this->actingAs($this->character->user)->get(route('inventory.index'))
+            ->assertOk()->assertSee('data-startable="'.route('programs.startable').'"', false);
+    }
+
     // ---- gates -----------------------------------------------------------
 
     /**

@@ -402,6 +402,18 @@ class InventoryController extends Controller
         return $ejection === null ? $status : $status->with('error', $ejection->message());
     }
 
+    /** The Running modal's Run list, as a fragment: what the equipped deck could start right now. */
+    public function startable(Request $request, ProgramRunner $runner): View
+    {
+        $character = $this->character($request);
+        $deck = $character->equippedDeck;
+
+        return view('programs._startable', [
+            'programs' => $runner->startable($character),
+            'hasDeck' => $deck !== null,
+        ]);
+    }
+
     private function character(Request $request): Character
     {
         // RequireCharacter guarantees one on every route in this group, so a

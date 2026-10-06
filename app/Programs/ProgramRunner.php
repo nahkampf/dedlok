@@ -11,6 +11,7 @@ use App\Models\Program;
 use App\Stats\Resolver;
 use App\Stats\Sources\RunningPrograms;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -57,22 +58,46 @@ final class ProgramRunner
      */
     public function start(Character $character, InventoryItem $row, bool $duringRun = false): ProcessResult
     {
+        $refusal = $this->refusalFor($character, $row, $duringRun);
+
+        if ($refusal !== null) {
+            return ProcessResult::refused($refusal);
+        }
+
+        $deck = $character->equippedDeck;
+
+        return DB::transaction(function () use ($row, $deck): ProcessResult {
+            return ProcessResult::started($this->splitOne($row, (int) $deck->id));
+        });
+    }
+
+    /**
+     * Why `start()` would refuse this row, or null when it would not.
+     *
+     * THE ONE LIST OF CHECKS: `start()` asks it and so does the screen that offers a Run button, so the
+     * button is there for exactly what the writer would accept. A read, never a write. `$shared` lets a
+     * caller asking about many rows pay for the deck's totals once (`startable()`).
+     *
+     * @param  array{deck: ?InventoryItem, totals: ?DeckTotals, spent: ?array{qflops: float|int, memory: float|int}}|null  $shared
+     */
+    public function refusalFor(Character $character, InventoryItem $row, bool $duringRun = false, ?array $shared = null): ?ProcessRefusal
+    {
         if ($row->character_id !== $character->id) {
-            return ProcessResult::refused(ProcessRefusal::NotOwned);
+            return ProcessRefusal::NotOwned;
         }
 
         if ($row->isRunning()) {
-            return ProcessResult::refused(ProcessRefusal::AlreadyRunning);
+            return ProcessRefusal::AlreadyRunning;
         }
 
         $program = $row->item?->program;
 
         if ($program === null) {
-            return ProcessResult::refused(ProcessRefusal::NotAProgram);
+            return ProcessRefusal::NotAProgram;
         }
 
         if (! $duringRun && ! $program->background_process) {
-            return ProcessResult::refused(ProcessRefusal::RunOnly);
+            return ProcessRefusal::RunOnly;
         }
 
         /*
@@ -82,7 +107,7 @@ final class ProgramRunner
          * upgrade is a bigger icebreaker, never a second one.
          */
         if ($program->kind === ProgramKind::Icebreaker && $this->icebreakerRunning($character)) {
-            return ProcessResult::refused(ProcessRefusal::OneIcebreaker);
+            return ProcessRefusal::OneIcebreaker;
         }
 
         /*
@@ -95,34 +120,59 @@ final class ProgramRunner
          * do with the machine.
          */
         if ($this->threadsRunning($character, (int) $row->item_id) >= $this->threadsAllowed($character, $program)) {
-            return ProcessResult::refused(ProcessRefusal::NoFreeThread);
+            return ProcessRefusal::NoFreeThread;
         }
 
-        $deck = $character->equippedDeck;
+        $deck = $shared['deck'] ?? $character->equippedDeck;
 
         if ($deck === null) {
-            return ProcessResult::refused(ProcessRefusal::NoDeckEquipped);
+            return ProcessRefusal::NoDeckEquipped;
         }
 
-        $totals = $this->totals($character, $deck);
+        $totals = $shared['totals'] ?? $this->totals($character, $deck);
 
         if (! $totals->isReady()) {
-            return ProcessResult::refused(ProcessRefusal::DeckNotReady);
+            return ProcessRefusal::DeckNotReady;
         }
 
-        $spent = $this->spentOn($character, (int) $deck->id);
+        $spent = $shared['spent'] ?? $this->spentOn($character, (int) $deck->id);
 
         if ($totals->qflops < $spent['qflops'] + $program->qflops_cost) {
-            return ProcessResult::refused(ProcessRefusal::NotEnoughCompute);
+            return ProcessRefusal::NotEnoughCompute;
         }
 
         if ($totals->quantabits < $spent['memory'] + $program->memory_cost) {
-            return ProcessResult::refused(ProcessRefusal::NotEnoughMemory);
+            return ProcessRefusal::NotEnoughMemory;
         }
 
-        return DB::transaction(function () use ($row, $deck): ProcessResult {
-            return ProcessResult::started($this->splitOne($row, (int) $deck->id));
-        });
+        return null;
+    }
+
+    /**
+     * The programs the equipped deck could start right now: loose, idle, allowed to run in the background, and
+     * accepted by every check `start()` makes. The Running modal's list, so what it offers is what a press
+     * would do. The deck is totalled once for the whole list.
+     *
+     * @return Collection<int, InventoryItem>
+     */
+    public function startable(Character $character): Collection
+    {
+        $deck = $character->equippedDeck;
+        $shared = $deck === null ? null : [
+            'deck' => $deck,
+            'totals' => $this->totals($character, $deck),
+            'spent' => $this->spentOn($character, (int) $deck->id),
+        ];
+
+        return InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->loose()
+            ->whereHas('item.program', static fn ($q) => $q->where('background_process', true))
+            ->with('item.program')
+            ->get()
+            ->filter(fn (InventoryItem $row): bool => $this->refusalFor($character, $row, false, $shared) === null)
+            ->sortBy(fn (InventoryItem $row): string => (string) $row->item?->displayName())
+            ->values();
     }
 
     /** Stop one process, returning the program to its owner's hands. */

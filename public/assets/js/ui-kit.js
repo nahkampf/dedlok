@@ -143,6 +143,18 @@
     if (dlg.showModal) dlg.showModal();
   });
 
+  /* The Running modal's "Could run" list: <div data-startable="URL"> is filled with the server's fragment each time
+     the modal is opened from [data-open="#processes"], so it is never older than the click. */
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest('[data-open="#processes"]')) return;
+    const box = document.querySelector("[data-startable]");
+    if (!box) return;
+    fetch(box.dataset.startable, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+      .then((r) => (r.ok ? r.text() : Promise.reject()))
+      .then((html) => { box.innerHTML = html; })
+      .catch(() => { box.textContent = "Could not load the list."; });
+  });
+
   /* A sortable list that saves itself: <div data-queue-sort="URL"> of [data-queue-row="ID"], each with a
      [data-queue-handle]. Pointer events rather than HTML5 drag, which a phone does not do. Dragging moves
      the row in the DOM as you go; letting go POSTs the whole order as ids. A refusal (422) snaps the rows

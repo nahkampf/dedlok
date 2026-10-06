@@ -710,6 +710,11 @@ what a bare `items` row cannot.
 - **`App\Programs\ProgramRunner` is the only writer.** Starting takes one copy off the pile
   and gives it a row; stopping puts it back and MERGES (not optional — `stack_key` is
   unique).
+- **`ProgramRunner::refusalFor()` is the one list of checks**, asked by `start()` and by `startable()`, so the Running
+  modal's **Could run** list (every loose, idle, background-capable program the deck would accept, each with a *Run*
+  button posting to `inventory.run`) offers exactly what a press would do. It is fetched when the modal opens
+  (`programs.startable`, a fragment, `ui-kit.js`) rather than drawn in the layout, because working it out totals the
+  deck and the layout is on every page.
 - **Always the equipped deck**, which is why `start()` takes no deck argument. So
   unequipping stops everything, and so do fitting, stripping and destroying:
   `stopAll()` is called by `DeckEquipper`, `ModuleFitter` and the destroy path.

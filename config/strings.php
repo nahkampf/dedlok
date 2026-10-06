@@ -148,6 +148,12 @@ return [
         'not_equipped' => 'Nothing runs on a deck you are not carrying.',
         'open_deck' => 'Open the deck',
         'running_none' => 'Nothing running',
+        // The Running modal's second list: what the deck could start right now.
+        'startable' => 'Could run',
+        'startable_loading' => 'Looking at what your deck can run…',
+        'startable_failed' => 'Could not load the list.',
+        'startable_none' => 'Nothing you can run right now.',
+        'startable_no_deck' => 'No deck equipped, so nothing can run.',
         'processes' => ['zero' => 'No processes', 'one' => ':count process', 'many' => ':count processes'],
 
         'costs' => [
