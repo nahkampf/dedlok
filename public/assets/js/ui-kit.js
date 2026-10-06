@@ -143,6 +143,75 @@
     if (dlg.showModal) dlg.showModal();
   });
 
+  /* A sortable list that saves itself: <div data-queue-sort="URL"> of [data-queue-row="ID"], each with a
+     [data-queue-handle]. Pointer events rather than HTML5 drag, which a phone does not do. Dragging moves
+     the row in the DOM as you go; letting go POSTs the whole order as ids. A refusal (422) snaps the rows
+     back and says why; success reloads, because the positions, estimates and warnings are the server's.
+     ArrowUp / ArrowDown on a focused handle do the same one step at a time. */
+  document.querySelectorAll("[data-queue-sort]").forEach((list) => {
+    const rows = () => [...list.querySelectorAll(":scope > [data-queue-row]")];
+    const order = () => rows().map((r) => r.dataset.queueRow);
+
+    const save = (before, focusId) => {
+      if (order().join() === before.join()) return;
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      fetch(list.dataset.queueSort, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest", ...(token ? { "X-CSRF-TOKEN": token } : {}) },
+        credentials: "same-origin",
+        body: JSON.stringify({ order: order().map(Number) }),
+      }).then(async (r) => {
+        if (r.ok) { location.reload(); return; }
+        const body = await r.json().catch(() => ({}));
+        before.forEach((id) => list.appendChild(list.querySelector('[data-queue-row="' + id + '"]')));
+        flash(body.message || "Could not reorder.", "warn");
+        if (focusId) list.querySelector('[data-queue-row="' + focusId + '"] [data-queue-handle]')?.focus();
+      }).catch(() => {
+        before.forEach((id) => list.appendChild(list.querySelector('[data-queue-row="' + id + '"]')));
+      });
+    };
+
+    list.addEventListener("pointerdown", (e) => {
+      const handle = e.target.closest("[data-queue-handle]");
+      if (!handle || e.button > 0) return;
+      const row = handle.closest("[data-queue-row]");
+      const before = order();
+      row.classList.add("is-dragging");
+      handle.setPointerCapture(e.pointerId);
+
+      const move = (ev) => {
+        const siblings = rows().filter((r) => r !== row);
+        const next = siblings.find((r) => ev.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
+        if (next) { if (row.nextElementSibling !== next) list.insertBefore(row, next); }
+        else if (list.lastElementChild !== row) list.appendChild(row);
+      };
+      const end = () => {
+        handle.removeEventListener("pointermove", move);
+        handle.removeEventListener("pointerup", end);
+        handle.removeEventListener("pointercancel", end);
+        row.classList.remove("is-dragging");
+        save(before, row.dataset.queueRow);
+      };
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", end);
+      handle.addEventListener("pointercancel", end);
+      e.preventDefault();
+    });
+
+    list.addEventListener("keydown", (e) => {
+      const handle = e.target.closest("[data-queue-handle]");
+      if (!handle || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+      const row = handle.closest("[data-queue-row]");
+      const before = order();
+      if (e.key === "ArrowUp" && row.previousElementSibling) list.insertBefore(row, row.previousElementSibling);
+      else if (e.key === "ArrowDown" && row.nextElementSibling) list.insertBefore(row.nextElementSibling, row);
+      else return;
+      e.preventDefault();
+      handle.focus();
+      save(before, row.dataset.queueRow);
+    });
+  });
+
   /* Select all: <input type="checkbox" data-select-all="FORM-ID"> ticks and unticks every
      <input data-select-row form="FORM-ID">, and follows them back: it is ticked while all are
      and clear while any is not. */

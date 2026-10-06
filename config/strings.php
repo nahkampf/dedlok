@@ -2449,6 +2449,12 @@ return [
         'stalled' => 'Not earning: every attribute this skill trains on resolves to zero.',
 
         'queue' => 'Queue',
+        'reorder_hint' => 'Drag a position number to change the order. A move that would put something ahead of what it needs is refused.',
+        'reorder_handle' => 'Drag to reorder',
+        'reorder_refused' => [
+            'queue_changed' => 'The queue changed while you were moving things. It has been refreshed.',
+            'breaks_requirement' => 'That order would break a requirement: :problem',
+        ],
         'queue_hint' => 'Up to :limit, trained in order. A skill goes in at the next level up — press it again for the one after that.',
         'queue_empty' => 'Nothing queued.',
         'position' => ':position.',

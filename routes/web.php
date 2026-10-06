@@ -373,6 +373,7 @@ Route::middleware('auth')->group(function () {
     // Unfolding one in the inbox reads it without leaving the page; sent by `ui-kit.js`.
     Route::post('/notifications/{message}/mark', [NotificationController::class, 'mark'])->name('notifications.mark');
     Route::post('/skills/queue', [TrainingQueueController::class, 'store'])->name('training.store');
+    Route::post('/skills/queue/order', [TrainingQueueController::class, 'reorder'])->name('training.reorder');
     Route::delete('/skills/queue/{entry}', [TrainingQueueController::class, 'destroy'])->name('training.destroy');
 
     /*

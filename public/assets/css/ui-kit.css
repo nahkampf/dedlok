@@ -2080,6 +2080,16 @@ details.panel > summary.panel__hd:focus-visible {
 .accordion details[open] summary::before { content: "−"; }
 /* Ink rather than ember: a list of twenty folds is not twenty live things. The inbox is the first. */
 .accordion--quiet summary::before { color: var(--ink-2); }
+
+/* A training-queue row's grab handle: its position number. touch-action off so a finger drags the row
+   instead of scrolling the page, and a row in flight takes one step of elevation, never a shadow. */
+.queue-handle {
+  background: none; border: 0; padding: 0; text-align: left;
+  color: var(--ink-3); cursor: grab; touch-action: none; user-select: none;
+}
+.queue-handle:hover, .queue-handle:focus-visible { color: var(--ink-0); }
+[data-queue-row].is-dragging { background: var(--bg-3); cursor: grabbing; }
+[data-queue-row].is-dragging .queue-handle { cursor: grabbing; color: var(--ink-0); }
 .accordion details > *:not(summary) { padding-bottom: var(--s-4); color: var(--ink-2); font-size: var(--fs-sm); }
 
 .avatar {

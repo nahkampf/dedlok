@@ -145,16 +145,29 @@
             @if (count($queue) === 0)
                 <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('training.queue_empty') }}</p>
             @else
-                <div class="stack" style="--gap:2px">
+                @if (count($queue) > 1)
+                    <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('training.reorder_hint') }}</p>
+                @endif
+
+                <div class="stack" style="--gap:2px" data-queue-sort="{{ route('training.reorder') }}">
                     @foreach ($queue as $entry)
                         {{-- Three children exactly: .item-row is a grid of
                              32px / minmax(0,1fr) / auto, so a fourth would drop
                              to a row of its own and no spacer is needed to push
                              the last one over. --}}
-                        <div class="item-row">
-                            <span class="micro num" style="color:var(--ink-3)">
-                                {{ Text::get('training.position', ['position' => $entry->position]) }}
-                            </span>
+                        <div class="item-row" data-queue-row="{{ $entry->id }}">
+                            {{-- The position is the handle when there is anything to reorder with. --}}
+                            @if (count($queue) > 1)
+                                <button type="button" class="micro num queue-handle" data-queue-handle
+                                        title="{{ Text::get('training.reorder_handle') }}"
+                                        aria-label="{{ Text::get('training.reorder_handle') }}">
+                                    {{ Text::get('training.position', ['position' => $entry->position]) }}
+                                </button>
+                            @else
+                                <span class="micro num" style="color:var(--ink-3)">
+                                    {{ Text::get('training.position', ['position' => $entry->position]) }}
+                                </span>
+                            @endif
 
                             <span class="stack" style="--gap:2px;min-width:0">
                                 {{-- On the name and never the row: the row also

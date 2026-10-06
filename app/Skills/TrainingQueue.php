@@ -8,6 +8,7 @@ use App\Models\Character;
 use App\Models\CharacterSkill;
 use App\Models\Skill;
 use App\Models\TrainingQueueEntry;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -97,6 +98,108 @@ final class TrainingQueue
                 'position' => $entries->count() + 1,
             ]);
         });
+    }
+
+    /**
+     * Put the queue in a new order: `$ids` are ALL the character's entry ids, first to train first.
+     *
+     * REFUSED when the new order has a problem the current one does not (`introducedProblems()`):
+     * Hacking II ahead of Hacking I, or a skill ahead of its prerequisite. A problem the queue already
+     * had is not held against a reordering that leaves it no worse, so a queue the player was left
+     * with by removing something can still be tidied.
+     *
+     * THE DEPOSIT RUNS FIRST, for `remove()`'s reason: whatever trains now has accrued since the last
+     * minute. The entry that stops being first LOSES ITS CLOCK (a stale one would credit the time it
+     * spent waiting the next time it came round), and the one that becomes first starts a clock at the
+     * minute the deposit just banked to.
+     */
+    public function reorder(Character $character, array $ids): true|ReorderRefusal
+    {
+        $this->deposit->advance($character);
+
+        return DB::transaction(function () use ($character, $ids): true|ReorderRefusal {
+            $entries = $character->trainingQueue()->lockForUpdate()->with('skill')->get();
+
+            $ids = array_map('intval', array_values($ids));
+            $held = $entries->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+            if (count($ids) !== count($held) || array_diff($ids, $held) !== [] || count(array_unique($ids)) !== count($ids)) {
+                return ReorderRefusal::QueueChanged;
+            }
+
+            if ($ids === $held) {
+                return true;
+            }
+
+            if ($this->newProblems($character, $entries, $ids) !== []) {
+                return ReorderRefusal::BreaksRequirement;
+            }
+
+            $firstBefore = (int) $entries->first()->id;
+
+            // Two passes: (character_id, position) is unique, so rows cannot swap places in one.
+            foreach ($entries as $entry) {
+                $entry->forceFill(['position' => $entry->position + 1000])->save();
+            }
+
+            foreach ($ids as $index => $id) {
+                $entry = $entries->firstWhere('id', $id);
+                $attributes = ['position' => $index + 1];
+
+                if ($ids[0] !== $firstBefore) {
+                    if ($index === 0) {
+                        $attributes['last_deposited_at'] = now()->startOfMinute();
+                    } elseif ($id === $firstBefore) {
+                        $attributes['last_deposited_at'] = null;
+                    }
+                }
+
+                $entry->forceFill($attributes)->save();
+            }
+
+            return true;
+        });
+    }
+
+    /**
+     * What a reordering would say that the queue does not say now: empty when it is safe.
+     *
+     * @param  list<int>  $ids
+     * @return list<string>
+     */
+    public function introducedProblems(Character $character, array $ids): array
+    {
+        return $this->newProblems($character, $character->trainingQueue()->with('skill')->get(), array_map('intval', $ids));
+    }
+
+    /**
+     * @param  Collection<int, TrainingQueueEntry>  $entries  the current queue
+     * @param  list<int>  $ids  the proposed order
+     * @return list<string>
+     */
+    private function newProblems(Character $character, Collection $entries, array $ids): array
+    {
+        $validator = new TrainingQueueValidator;
+
+        // A problem's position is part of its sentence, and moving an entry moves the sentence: compare them
+        // without it.
+        $plain = static fn (array $problems): array => array_map(
+            static fn (string $p): string => (string) preg_replace('/position \d+/', 'position', $p),
+            $problems,
+        );
+
+        $proposed = collect($ids)->map(function (int $id, int $index) use ($entries): TrainingQueueEntry {
+            $copy = $entries->firstWhere('id', $id)?->replicate() ?? new TrainingQueueEntry;
+            $copy->setRelation('skill', $entries->firstWhere('id', $id)?->skill);
+            $copy->position = $index + 1;
+
+            return $copy;
+        });
+
+        return array_values(array_diff(
+            $plain($validator->problemsForEntries($character, $proposed)),
+            $plain($validator->problemsForEntries($character, $entries)),
+        ));
     }
 
     /**

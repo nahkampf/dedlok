@@ -519,6 +519,14 @@ every save. The skill EDITOR is the only place all of them are visible.
   that cannot happen yet — that is what lets Codebreaking sit behind Hacking.
   `TrainingQueueValidator` says what will stall; `QueueRefusal` has three cases and none is
   about requirements.
+- **The queue can be reordered by dragging, and a reordering IS refused for a requirement** — unlike queueing and
+  removing, which only warn. `TrainingQueue::reorder()` takes all the entry ids in the new order and asks
+  `TrainingQueueValidator::problemsForEntries()` about it: refused (`ReorderRefusal::BreaksRequirement`) when the new
+  order has a problem the current one lacks (a level ahead of the one before it, a skill ahead of its prerequisite),
+  so a queue the player was left with by removing something can still be tidied. **The deposit runs first; the entry
+  that stops being first loses its clock** (a stale one would credit its waiting time) and the new first starts one.
+  The page sends the order as JSON (`training.reorder`, 422 and a message on refusal); the handle is the position
+  number and works with pointer events (HTML5 drag does nothing on a phone) and ArrowUp/ArrowDown.
 - **Removing one is allowed to break the rest**, deliberately. **The deposit runs first**,
   inside `remove()`, because removing position 1 throws away its clock.
 - **Renumbering is ascending** — `(character_id, position)` is unique, so each row moves
