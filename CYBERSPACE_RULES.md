@@ -733,7 +733,8 @@ against ICE generated on the fly, and it locks the screen until it is settled.
   system — the same licence `.hud-alert` spends, on a different shape, because nothing
   else on a hunt screen says so: no trace, no IDS, no briefing to read it off of.
   **The waiting screen (`/down`) wears the same stripe across the top of its box** under the heading *Incapacitated!*:
-  being finished is what the accent is for.
+  being finished is what the accent is for. Behind the box the whole page is `.floor-overlay`: bone and ember stripes at
+  45°, 16px wide, one z-step below popovers so a toast still shows (the box is lifted one above it).
 
 ### Being on the floor
 

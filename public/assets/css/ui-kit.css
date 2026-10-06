@@ -2291,6 +2291,16 @@ details.panel > summary.panel__hd:focus-visible {
   background: repeating-linear-gradient(45deg, var(--ember) 0 6px, var(--bg-0) 6px 12px);
 }
 
+/* The floor: the whole page behind the waiting box filled with bone and ember stripes at 45 degrees, 16px wide. One
+   layer below popovers (so a toast still shows) and above the rail and topbar, which a player who is down cannot use
+   anyway; the box that follows it is lifted one step above it. Used by /down alone. */
+.floor-overlay {
+  position: fixed; inset: 0;
+  z-index: var(--z-popover);
+  background: repeating-linear-gradient(45deg, var(--ember) 0 16px, var(--ink-0) 16px 32px);
+}
+.floor-overlay ~ .panel { position: relative; z-index: calc(var(--z-popover) + 1); }
+
 /* Framed viewport — minimap, portrait, camera feed */
 .frame {
   position: relative;

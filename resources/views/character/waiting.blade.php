@@ -12,6 +12,10 @@
      what happened rather than commiserating. The wait is not the punishment —
      what losing cost is whatever the defeat tags carried — and the screen puts
      those first for that reason. --}}
+{{-- Everything BEHIND the box is stripes: bone and ember at 45 degrees, 16px wide (`.floor-overlay`). The box sits
+     above it. --}}
+<div class="floor-overlay" aria-hidden="true"></div>
+
 <div class="panel panel--snug" style="margin-top:var(--s-5);max-width:min(560px,100%);margin-inline:auto">
     {{-- The ember hazard stripe across the top of the box, the hunt screen's own: being finished is what the
          accent is for, and the box says so before a word of it is read. --}}

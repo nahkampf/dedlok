@@ -196,7 +196,8 @@ final class WaitingScreenTest extends TestCase
         $this->actingAs($character->user)->get(route('waiting.show'))->assertOk()
             ->assertSee('Incapacitated!')
             ->assertDontSee('You are on the floor')
-            ->assertSee('<div class="hazard-stripe" aria-hidden="true"></div>', false);
+            ->assertSee('<div class="hazard-stripe" aria-hidden="true"></div>', false)
+            ->assertSee('<div class="floor-overlay" aria-hidden="true"></div>', false);
     }
 
     /** Somebody standing has no business here. */
