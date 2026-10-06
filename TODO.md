@@ -594,7 +594,7 @@ defend before there is a game to defend it against.
 
 **What is still missing, and it is most of it:**
 
-- **Collecting a bounty.** The sum exists and grows; the mechanic that lets
+- **Collecting a bounty — PARKED, see *Bounty collection and player-versus-player* below.** The sum exists and grows; the mechanic that lets
   another player attack the carrier and receive it does not. Undecided: how a
   target is found, whether the sum is paid out of nowhere or by the carrier, and
   whether it clears on collection (it should) or decays. Any payout is a
@@ -623,6 +623,30 @@ defend before there is a game to defend it against.
   especially through subnets.
 
 ---
+
+## Bounty collection and player-versus-player (parked 2026-10-06)
+
+**Parked on purpose, because it needs other parts of the mechanics settled first.** What was decided in conversation, so
+a later session does not re-ask:
+
+- **Player-versus-player combat WILL exist.** The fight engine is already symmetric (`Side::A`/`B`, initiative by
+  Senses + Perception + Reflex, tie a coin toss); what is missing is the opening. How a fight against a player starts,
+  and what the loser suffers, are not decided.
+- **Collecting a bounty is a PvP act.** Beat the carrier and collect. Where a target is found is the district their body
+  stands in (`characters.district_id`).
+- **FULL payout, and the whole bounty clears** — not the half payout floated first.
+- **A cooldown on the same PAIR of players** (collector, target), to stop farming: with the payout coming from nowhere
+  (a new `Wallet\Reason` case through `Wallet::move()`), a player and their alt could otherwise earn heat on one and
+  collect on the other. Transfers still have no fee or cap, so the pair cooldown is the guard. Length not decided.
+- **A target can HIDE.** Anywhere else — any district or location — they can be found and attacked. In a **safe house**
+  they cannot be (or it is much harder; which is undecided). **The mirror in cyberspace is the player-owned "data
+  fortress"** (see *Player Owned Systems* below): both are a place to **camp** and to **store important items or cash**,
+  because they are much harder for other players to raid. Design the two as a pair so neither is the strictly safer
+  one.
+- **Still open:** who may be attacked at all (consent, level bands, an opt-in); how the loser of a PvP fight is
+  treated (mugging, `maim`, the waiting room); whether the target needs to be online (the engine can play a side
+  with nobody choosing, from a snapshot, as an NPC is); whether a safe house is a purchase, a location, or a
+  flag; how hard "much harder" is.
 
 ## The gap that let a 500 ship
 
@@ -866,4 +890,6 @@ Some ideas to develop later: A city map showing locations. Most locations are hi
 Maybe players can also buy "houses" and "apartments" - figure out what this would be more than "cosmetics". Also possibly buying into existing businesses to generate passive income (investments). Maybe crafting of items?
 
 ## Player Owned Systems ("Data Fortresses")
+**Mirror of the safe house** (see *Bounty collection and player-versus-player*): a place to camp and to store important items or cash, much harder for other players to raid. Decide the two together.
+
 Systems in cyberspace that a player can "build". Should take quite a lot of skill, and time and resources to build. Works more or less like a normal system, but players can stash cash here, run "programs" that do things like generate passive income etc, use it as a very good route in the chain etc. Prime target for other players to attack. Players should here have to "construct" their own IDS and ICE, which should take skills and the higher the skill and the longer they work on it the stronger their systems become. A data fortress built by a skilled runner should more or less require a team to take down.

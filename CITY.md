@@ -380,5 +380,5 @@ A fight outcome; per-district danger; any seeded content.
 ## Not decided
 
 - Whether a district can itself be hidden. Every district is on the map for now.
-- What a bounty collected in the City looks like.
+- What a bounty collected in the City looks like. Parked 2026-10-06 until PvP is designed: full payout and a per-pair cooldown, and a *safe house* a target can hide in (the mirror of a cyberspace data fortress). See `TODO.md`.
 - Housing, investments and crafting (TODO.md's list).
