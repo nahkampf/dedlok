@@ -2,6 +2,42 @@
 
 ## [Unreleased]
 
+## [0.37.0] — 2026-10-06
+
+The inbox becomes an accordion of titles, a weapon can require a skill to equip, and the wallet ledger pages.
+
+### Added
+
+- **Inbox titles.** A message has a title and a body. `notifications.title` is composed when the message is sent, from
+  `notifications.titles.<key>` (one per message key, held by a test), and never recomposed. NULL, for a message from
+  before this, shows its category label.
+- **Skill gates on weapons.** `combat.skill_gates` maps a weapon class to a skill slug and `combat.gate_level` (1) is
+  the level; pistol, SMG, rifle and shotgun are gated. `WeaponWielder::wield()` is the one place it is asked, on the
+  RESOLVED `skill.<slug>`, and refuses with `WieldRefusal::RequiresSkill`. A class left out is free, a slug with no skill
+  row gates nothing, and a weapon already equipped is never taken away. A gated weapon's stash card is tagged
+  *Requires <skill> <level>*.
+- A **Duplicate** (+) button on every effect row of the shared effects editor, so a grant for levels 1–5 is one row and
+  four clicks. (Shipped in 0.36.1.)
+
+### Changed
+
+- **The inbox is an accordion** (`<details>` per message, `.accordion--quiet` for an ink marker). The closed row is the
+  title; opened it shows the sentence, any details list and a *Go to <category>* button (the old
+  `notifications.open`). Unfolding a message reads it, by a POST to `notifications.mark` (204) from `ui-kit.js`, which
+  also lowers the rail's count. Arriving on the screen still reads nothing.
+- **The wallet ledger shows every entry**, newest first, 50 to a page (`pagination.ui-kit`), instead of the newest 100.
+- **There is no dodge, by decision.** `defence` and `pursuit` are permanent flat stats; their comments and `COMBAT.md`,
+  `CLAUDE.md`, `MECHANICS.md` and `TODO.md` now say so, and MECHANICS's status table is brought up to date.
+- Bounty collection and player-versus-player are parked in `TODO.md` with what was decided (full payout, a per-pair
+  cooldown, safe houses mirroring data fortresses).
+
+### Migrations
+
+- `2026_10_06_100000_messages_have_titles` (adds a nullable `notifications.title`; nothing is backfilled; reversible)
+
+Combat skills and weapons are authored in the live admin, so a deploy changes nothing for a player there until they exist.
+
+
 ## [0.36.1] — 2026-10-05
 
 Effects in the admin editors can be duplicated. No schema change.
@@ -2367,7 +2403,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.36.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.37.0...HEAD
+[0.37.0]: https://github.com/nahkampf/dedlok/compare/v0.36.1...v0.37.0
 [0.36.1]: https://github.com/nahkampf/dedlok/compare/v0.36.0...v0.36.1
 [0.36.0]: https://github.com/nahkampf/dedlok/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/nahkampf/dedlok/compare/v0.34.1...v0.35.0
