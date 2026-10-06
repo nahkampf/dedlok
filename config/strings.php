@@ -943,11 +943,9 @@ return [
             ],
             'duration' => 'A pass here takes about :when',
             'already_known' => 'This system is already fully scanned.',
-            'found' => [
-                'zero' => 'Nothing new. Probe unable to reveal anything new.',
-                'one' => 'One thing more about this system.',
-                'many' => ':count things more about this system.',
-            ],
+            'nothing_new' => 'Nothing new. Probe unable to reveal anything new.',
+            'new_data' => 'System :system [:address] has new scan data',
+            'unknown_system' => 'Unknown system',
             'grade' => 'Grade',
             'os' => 'Operating system',
             'unknown' => 'Unscanned',
@@ -1059,7 +1057,6 @@ return [
                 'thermal_safe' => 'Thermals are fine.',
 
                 'running' => 'Running',
-                'running_none' => 'Nothing is running. You cannot make a run, and you cannot scan.',
                 'no_icebreaker' => 'You hold no icebreaker. If something wakes up, you cannot fight it.',
 
                 // Run-only software, started by the run and by nothing else.
@@ -1067,7 +1064,7 @@ return [
                 'loadout_icebreaker' => 'Icebreaker — one at a time',
                 'loadout_other' => 'Other run-only software',
                 'loadout_none' => 'None',
-                'loadout_hint' => 'Started as you go in and stopped when you leave. It cannot be changed once you are inside. Your last loadout is chosen for you.',
+                'loadout_hint' => 'Select an icebreaker to apply to this run. It cannot be changed once the run is initiated.',
 
                 /*
                 | THE INTENTIONS. Each is a separate button, because they are

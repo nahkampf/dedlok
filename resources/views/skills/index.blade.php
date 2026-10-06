@@ -247,12 +247,19 @@
                         </span>
                     </div>
 
+                    {{-- The level picker only offers what lies above what is reached or queued for the chosen skill
+                         (`data-plan-floors`, redrawn by ui-kit.js when the skill changes). It is drawn for the
+                         first skill here as well, so it is right before any script runs. --}}
+                    @php($firstId = (int) (collect($plannable)->first()[0]['id'] ?? 0))
+                    @php($firstFloor = $planFloors[$firstId] ?? 0)
                     <form method="POST" action="{{ route('training.plan') }}"
-                          class="row row--wrap" style="--gap:var(--s-3);align-items:flex-end">
+                          class="row row--wrap" style="--gap:var(--s-3);align-items:flex-end"
+                          data-plan data-plan-floors='@json($planFloors)' data-plan-max="{{ $max }}"
+                          data-plan-label="{{ Text::get('training.plan_option', ['level' => ':level']) }}">
                         @csrf
                         <label class="field" style="flex:1 1 min(240px,100%);min-width:0">
                             <span class="micro">{{ Text::get('training.plan_pick') }}</span>
-                            <select name="skill" class="select">
+                            <select name="skill" class="select" data-plan-skill>
                                 <x-grouped-options :groups="$plannable" />
                             </select>
                         </label>
@@ -262,8 +269,8 @@
                              produces is presses of the button above. --}}
                         <label class="field" style="flex:0 1 min(140px,100%);min-width:0">
                             <span class="micro">{{ Text::get('training.plan_level') }}</span>
-                            <select name="level" class="select">
-                                @for ($level = 1; $level <= $max; $level++)
+                            <select name="level" class="select" data-plan-level>
+                                @for ($level = $firstFloor + 1; $level <= $max; $level++)
                                     <option value="{{ $level }}" @selected($level === $max)>
                                         {{ Text::get('training.plan_option', ['level' => $level]) }}
                                     </option>

@@ -519,6 +519,10 @@ every save. The skill EDITOR is the only place all of them are visible.
   that cannot happen yet — that is what lets Codebreaking sit behind Hacking.
   `TrainingQueueValidator` says what will stall; `QueueRefusal` has three cases and none is
   about requirements.
+- **The plan picker's level list follows the skill chosen**: it offers only levels above what is reached or queued
+  (`SkillsController::planFloors()`, handed to the page as `data-plan-floors` and redrawn by `ui-kit.js`; drawn for
+  the first skill server-side too, so it is right before any script runs). A skill with every level reached or queued
+  is not offered to plan at all.
 - **The queue can be reordered by dragging, and a reordering IS refused for a requirement** — unlike queueing and
   removing, which only warn. `TrainingQueue::reorder()` takes all the entry ids in the new order and asks
   `TrainingQueueValidator::problemsForEntries()` about it: refused (`ReorderRefusal::BreaksRequirement`) when the new

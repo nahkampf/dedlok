@@ -143,6 +143,28 @@
     if (dlg.showModal) dlg.showModal();
   });
 
+  /* The training plan's level picker: <form data-plan data-plan-floors='{"SKILL_ID": FLOOR}' data-plan-max="5"
+     data-plan-label="Level :level"> holding select[data-plan-skill] and select[data-plan-level]. Choosing a skill redraws
+     the levels to those ABOVE what that skill already has reached or queued, the highest selected. */
+  document.querySelectorAll("form[data-plan]").forEach((form) => {
+    const skill = form.querySelector("select[data-plan-skill]");
+    const level = form.querySelector("select[data-plan-level]");
+    if (!skill || !level) return;
+    const floors = JSON.parse(form.dataset.planFloors || "{}");
+    const max = Number(form.dataset.planMax);
+    const redraw = () => {
+      level.innerHTML = "";
+      for (let l = (floors[skill.value] || 0) + 1; l <= max; l++) {
+        const option = document.createElement("option");
+        option.value = String(l);
+        option.textContent = form.dataset.planLabel.replace(":level", l);
+        option.selected = l === max;
+        level.appendChild(option);
+      }
+    };
+    skill.addEventListener("change", redraw);
+  });
+
   /* The Running modal's "Could run" list: <div data-startable="URL"> is filled with the server's fragment each time
      the modal is opened from [data-open="#processes"], so it is never older than the click. */
   document.addEventListener("click", (e) => {

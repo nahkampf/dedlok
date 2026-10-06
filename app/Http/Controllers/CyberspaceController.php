@@ -80,13 +80,17 @@ class CyberspaceController extends Controller
             // that something landed and whether any of it was lost; the files
             // themselves say the rest.
             $lost = count(array_filter($settled, static fn ($result): bool => $result->voided));
-            $found = array_sum(array_map(static fn ($result): int => count($result->found), $settled));
+            // One sentence per system that learned something, by name: several reads can settle at once.
+            $news = array_values(array_filter(array_map(
+                fn ($result): ?string => $result->scan !== null && $result->found !== [] ? $this->newDataLine($result->scan) : null,
+                $settled,
+            )));
 
             $request->session()->now(
                 $lost > 0 ? 'error' : 'status',
                 $lost > 0
                     ? Text::plural('cyberspace.scan.lost', $lost, ['count' => $lost])
-                    : Text::plural('cyberspace.scan.found', $found, ['count' => $found]),
+                    : ($news === [] ? Text::get('cyberspace.scan.nothing_new') : implode(' ', $news)),
             );
         }
 
@@ -221,11 +225,20 @@ class CyberspaceController extends Controller
                 ]));
         }
 
-        return back()->with('status', Text::plural(
-            'cyberspace.scan.found',
-            count($result->found),
-            ['count' => count($result->found)],
-        ));
+        return back()->with('status', $result->found === [] || $result->scan === null
+            ? Text::get('cyberspace.scan.nothing_new')
+            : $this->newDataLine($result->scan));
+    }
+
+    /** "System Silo - Veritas 123 [DEADBEEF] has new scan data": which system, by name and address. */
+    private function newDataLine(SystemScan $scan): string
+    {
+        $system = System::query()->where('address', $scan->address)->first();
+
+        return Text::get('cyberspace.scan.new_data', [
+            'system' => $system?->displayName() ?? Text::get('cyberspace.scan.unknown_system'),
+            'address' => $scan->address,
+        ]);
     }
 
     /**
