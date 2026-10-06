@@ -2,8 +2,10 @@
 
 namespace App\Actions\Fortify;
 
+use App\Beta\BetaKeys;
 use App\Models\User;
 use App\Support\PatchNotes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -39,15 +41,29 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $this->passwordRules(),
         ])->validate();
 
-        // A new player has read everything so far: the patch notes are for
-        // what changes after they arrive, never a history lesson on the way in.
-        $user = User::create([
-            'email' => $input['email'],
-            'password' => Hash::make($input['password']),
-        ]);
+        // ALPHA TESTING (config/features.php): while it is on, no beta key means no account. Checked before anything is
+        // written, and spent below inside the same transaction that creates the user.
+        $keys = new BetaKeys;
 
-        $user->forceFill(['last_seen_changelog' => PatchNotes::latest()])->save();
+        if (BetaKeys::enabled()) {
+            $keys->assertUsable($input['code'] ?? null);
+        }
 
-        return $user;
+        return DB::transaction(function () use ($input, $keys): User {
+            // A new player has read everything so far: the patch notes are for
+            // what changes after they arrive, never a history lesson on the way in.
+            $user = User::create([
+                'email' => $input['email'],
+                'password' => Hash::make($input['password']),
+            ]);
+
+            $user->forceFill(['last_seen_changelog' => PatchNotes::latest()])->save();
+
+            if (BetaKeys::enabled()) {
+                $keys->claim($input['code'] ?? null, $user);
+            }
+
+            return $user;
+        });
     }
 }

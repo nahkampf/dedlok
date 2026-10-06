@@ -1093,6 +1093,20 @@
       if (ok) toast(ok);
     } catch {
       if (bad) toast(bad, { level: "warn" });
+      return;
+    }
+
+    // data-copy-then="URL": after a copy that worked, POST there (the admin's beta key is handed out by copying it),
+    // and strike through whatever data-copy-mark names in the same row.
+    if (el.dataset.copyThen) {
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      fetch(el.dataset.copyThen, {
+        method: "POST",
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest", ...(token ? { "X-CSRF-TOKEN": token } : {}) },
+        credentials: "same-origin",
+      }).then((r) => {
+        if (r.ok && el.dataset.copyMark) el.closest("tr")?.querySelector(el.dataset.copyMark)?.classList.add("strike");
+      }).catch(() => {});
     }
   });
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\Admin\ArchetypeController as AdminArchetypeController;
+use App\Http\Controllers\Admin\BetaKeyController as AdminBetaKeyController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DistrictController as AdminDistrictController;
 use App\Http\Controllers\Admin\EncounterController as AdminEncounterController;
@@ -425,6 +426,11 @@ Route::middleware(['auth', 'can:admin'])
         Route::resource('locations', AdminLocationController::class)->except(['show']);
         Route::resource('encounters', AdminEncounterController::class)->except(['show']);
         Route::resource('npcs', AdminNpcController::class)->except(['show']);
+
+        // ALPHA TESTING (config/features.php): the beta keys. 404 while the flag is off.
+        Route::get('beta-keys', [AdminBetaKeyController::class, 'index'])->name('beta_keys.index');
+        Route::post('beta-keys', [AdminBetaKeyController::class, 'store'])->name('beta_keys.store');
+        Route::post('beta-keys/{betaKey}/given', [AdminBetaKeyController::class, 'given'])->name('beta_keys.given');
 
         /*
          * Archetypes are edited, never created or destroyed. Their ids are

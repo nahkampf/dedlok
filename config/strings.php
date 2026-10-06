@@ -83,6 +83,12 @@ return [
     'auth' => [
         'login' => 'Sign in',
         'register' => 'New identity',
+        // The beta key, while `features.alpha_testing` is on.
+        'beta' => [
+            'code' => 'Beta key',
+            'hint' => 'Registration is by invitation while the game is in testing. Enter the key you were given.',
+            'invalid' => 'That beta key is not valid.',
+        ],
         'handle' => 'Handle',
         'handle_hint' => 'Up to :max characters.',
         'handle_taken' => 'That handle is already claimed.',
@@ -3149,6 +3155,24 @@ return [
     | Item and skill NAMES are still columns — these are the words around them.
     */
     'admin' => [
+        // The Beta keys section, present only while `features.alpha_testing` is on.
+        'beta_keys' => [
+            'title' => 'Beta keys',
+            'lede' => 'Keys testers register with while alpha testing is on. Copy one to hand it out: that also marks it as given out.',
+            'generate' => 'Generate a key',
+            'generated' => 'New key: :code',
+            'code' => 'Key',
+            'status' => 'Status',
+            'used_by' => 'Registered as',
+            'copy' => 'Copy',
+            'copied' => 'Copied. Marked as given out.',
+            'copy_failed' => 'Could not copy: select the key and copy it by hand.',
+            'given_out' => 'Given out',
+            'unused' => 'Unused',
+            'used' => 'Used',
+            'none' => 'No keys yet.',
+            'no_character' => 'no character yet',
+        ],
         // One line under an item in `<x-card-select>`: what kind of thing it is, what it costs,
         // what the market shelf holds right now, and how rare it is.
         'item_option' => ['numbers' => ':kind · :cost ¤ · market shelf :shelf · :rarity'],
