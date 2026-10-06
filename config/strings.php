@@ -2356,6 +2356,7 @@ return [
             'program_threads' => 'program threads',
             'coop_slots' => 'co-op slots',
             'synaptic_regen' => 'SI regeneration',
+            'hitpoints_regen' => 'HP regeneration (per hour)',
 
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
             // The key is the tags in alphabetical order, because a set has no

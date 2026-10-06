@@ -205,6 +205,26 @@ return [
         ],
 
         /*
+        | Hit points recovered per HOUR, on its own.
+        |
+        | ZERO BY DEFAULT and nothing heals hit points on its own without it: clinics and medkits are the way back
+        | (COMBAT.md). An effect row carries it (a dose, an implant, a skill, a piece of armour), as `synaptic_regen`
+        | is carried.
+        |
+        | PER HOUR AND NOT PER MINUTE, because the smallest whole rate is the smallest thing anybody can grant, and a
+        | point a minute is sixty an hour: more than a whole character's hit points, from the weakest effect there
+        | could be. An hour makes the smallest grant one point an hour, and `characters:regenerate` spreads it evenly
+        | across the hour (an exact share of a point each minute, carried by the clock and not by stored state), so
+        | there is no lump on the hour and no remainder to keep.
+        */
+        'hitpoints_regen' => [
+            'tags' => ['derived', 'vital'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        /*
         | Minutes between points of Synaptic Integrity that come back ON THEIR
         | OWN, for everybody: the slow floor under healing, a point every four
         | hours. `synaptic_regen` above is the fast trickle somebody pays for.

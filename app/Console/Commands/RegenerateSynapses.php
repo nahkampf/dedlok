@@ -44,6 +44,14 @@ use Illuminate\Support\Facades\Log;
  * back on their own, slowly — which is what the skill is for, and the only
  * route out of zero that exists until healing is designed.
  *
+ * ## And hit points, by the hour
+ *
+ * `hitpoints_regen` is a rate in points per HOUR, zero by default. Each run credits the share of it that belongs to
+ * THIS minute: `floor(rate × (m + 1) / 60) − floor(rate × m / 60)` for m the minute since the epoch. Over any sixty
+ * consecutive minutes that is exactly `rate` points, spread as evenly as whole points allow, and it needs no stored
+ * remainder — the clock carries it, which is this command's whole stance. A minute the scheduler missed is a share
+ * missed. Like the SI trickle it heals from zero.
+ *
  * ponytail: resolves a sheet per character per minute, and skips on a zero.
  * Nothing at this scale. If it ever matters the fix is to narrow the query to
  * characters who could possibly regenerate — which cannot be asked in SQL
@@ -55,7 +63,7 @@ class RegenerateSynapses extends Command
                             {--dry-run : Work out what would be credited and write nothing}
                             {--quiet-when-idle : Print nothing unless something healed}';
 
-    protected $description = 'Credit a minute of Synaptic Integrity regeneration, and the four-hourly mend everybody gets';
+    protected $description = 'Credit a minute of Synaptic Integrity and hit point regeneration, and the four-hourly mend everybody gets';
 
     public function handle(Resolver $resolver): int
     {
@@ -63,10 +71,27 @@ class RegenerateSynapses extends Command
 
         $healed = 0;
         $points = 0;
+        $hpHealed = 0;
+        $hpPoints = 0;
         $minute = intdiv(now()->getTimestamp(), 60);
 
-        Character::query()->chunkById(200, function ($characters) use ($resolver, $dryRun, $minute, &$healed, &$points): void {
+        Character::query()->chunkById(200, function ($characters) use ($resolver, $dryRun, $minute, &$healed, &$points, &$hpHealed, &$hpPoints): void {
             foreach ($characters as $character) {
+                // Hit points: this minute's share of an hourly rate (see the class notes).
+                $perHour = $resolver->resolve('hitpoints_regen', 0.0, $character->modifiers())->toInt();
+                $share = intdiv($perHour * ($minute + 1), 60) - intdiv($perHour * $minute, 60);
+
+                if ($share > 0) {
+                    $gained = $dryRun
+                        ? min($share, max(0, $character->maximumFor('current_hitpoints') - (int) $character->current_hitpoints))
+                        : $character->recover('current_hitpoints', $share);
+
+                    if ($gained > 0) {
+                        $hpHealed++;
+                        $hpPoints += $gained;
+                    }
+                }
+
                 $rate = $resolver->resolve('synaptic_regen', 0.0, $character->modifiers())->toInt();
 
                 // The slow floor: through the Sheet, because its base lives in
@@ -92,7 +117,18 @@ class RegenerateSynapses extends Command
             }
         });
 
-        $summary = sprintf('%d character(s) recovered %d point(s) of Synaptic Integrity', $healed, $points);
+        $parts = [];
+
+        if ($healed > 0) {
+            $parts[] = sprintf('%d character(s) recovered %d point(s) of Synaptic Integrity', $healed, $points);
+        }
+
+        if ($hpHealed > 0) {
+            $parts[] = sprintf('%d character(s) recovered %d point(s) of hit points', $hpHealed, $hpPoints);
+        }
+
+        // Nothing healed reads as the SI sentence it always did, with its zeroes.
+        $summary = $parts === [] ? sprintf('%d character(s) recovered %d point(s) of Synaptic Integrity', 0, 0) : implode('; ', $parts);
 
         if ($dryRun) {
             $this->info("Dry run: {$summary}. Nothing was written.");
@@ -100,7 +136,7 @@ class RegenerateSynapses extends Command
             return self::SUCCESS;
         }
 
-        if ($healed === 0) {
+        if ($healed === 0 && $hpHealed === 0) {
             if (! $this->option('quiet-when-idle')) {
                 $this->info('Nobody had anything to recover.');
             }

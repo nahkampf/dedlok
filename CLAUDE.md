@@ -1098,7 +1098,13 @@ why it had nothing to offer a medkit. A consumable changes a STORED number a sin
   ammunition).
 - **Where it shows up:** the stash card (*Use*, with what it does in the button's title, and *Put on belt*), the route
   `inventory.use`, the belt (consumables go on it like drugs) and the Equipment screen's belt dialog.
-- **HP does not regenerate on its own and nothing here changes that**: clinics and medkits only.
+- **HP does not regenerate on its own** unless an effect carries `hitpoints_regen` (below): clinics and medkits are the way back.
+- **`hitpoints_regen` is points per HOUR**, zero for everybody, a stat any effect row can carry (a dose, an implant, a skill,
+  a piece of armour; offered in the effects editor as *HP regeneration (per hour)*). Per hour and not per minute because
+  the smallest whole rate is the smallest grant there can be, and a point a minute is sixty an hour. `characters:regenerate`
+  (every minute) credits each minute's share: `floor(rate × (m+1) / 60) − floor(rate × m / 60)` for m the minute since the
+  epoch, so over any hour it is exactly `rate`, spread evenly, with no stored remainder. Like the SI trickle it heals from zero,
+  and there is no baseline mend for hit points: nobody gets any for free.
 
 ### Implants
 
