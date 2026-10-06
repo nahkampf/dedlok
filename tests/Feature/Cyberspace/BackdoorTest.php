@@ -109,8 +109,18 @@ final class BackdoorTest extends TestCase
         $this->assertFalse($run->fresh()->backdoored);
         $this->assertNotEmpty(array_filter(
             array_column($result->log, 'text'),
-            static fn (string $line): bool => str_contains($line, 'nothing you can use'),
+            static fn (string $line): bool => str_contains($line, 'attempt to push a payload onto the core, but fail'),
         ));
+    }
+
+    public function test_a_landed_install_says_which_daemon_went_in(): void
+    {
+        $this->machine();
+        $run = $this->begin(BackdoorKind::Siphon);
+
+        $texts = array_column($this->act($run, RunAction::Install)->log, 'text');
+
+        $this->assertContains('You successfully install a siphoning daemon in the core. Run is now complete.', $texts);
     }
 
     /** A backdoor run with no kind on it is a hand-built request, and is refused. */

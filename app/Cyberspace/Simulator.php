@@ -1119,7 +1119,7 @@ final readonly class Simulator
 
         $run->backdoored = true;
 
-        $log[] = $this->line('cyberspace.run.log.install', ['kind' => $backdoor->kind->label()], 'ok');
+        $log[] = $this->line("cyberspace.run.log.install.{$backdoor->kind->value}", tone: 'ok');
 
         return $log;
     }

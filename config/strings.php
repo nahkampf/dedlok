@@ -1181,7 +1181,11 @@ return [
                 // INSTALLING. One line for every reason it can fail, the same
                 // discipline the core touch already keeps: naming the cause
                 // would hand over the operating system for free.
-                'install' => 'You leave a way back in. :kind.',
+                // A landed install, one line per kind (BackdoorKind::value).
+                'install' => [
+                    'siphon' => 'You successfully install a siphoning daemon in the core. Run is now complete.',
+                    'routing' => 'You successfully install a routing daemon in the core. Run is now complete.',
+                ],
                 'install_already' => 'Your backdoor is already here, and it is the one you left.',
                 // PLANTING. Says whose door it is, because that is the whole
                 // difference: the runner leaves with the standing and without
@@ -1189,7 +1193,7 @@ return [
                 'planted' => 'Their door is in. It answers to them, not to you.',
                 // Awake ICE blocks every core action until it is broken.
                 'ice_guards' => 'The ICE stands between you and the core. Break it, or get out.',
-                'install_fails' => 'You reach for the core and find nothing you can use.',
+                'install_fails' => 'You attempt to push a payload onto the core, but fail.',
                 /*
                 | BURNING. The machine is named because it is the last thing
                 | anybody will be able to call it — the address goes out of
