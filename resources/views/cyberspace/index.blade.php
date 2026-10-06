@@ -70,13 +70,18 @@
                             {{-- The way back into the read. A pass runs for
                                  minutes and a player who closed the screen
                                  needs a door back to it. --}}
-                            <button type="button" class="chip-stat" data-reading-open="{{ $here->address }}">
+                            {{-- Seconds remaining and in all, from the server: the bar and the time are ticked by
+                                 `ui-kit.js` between loads, so a pass visibly moves. --}}
+                            <button type="button" class="chip-stat" data-reading-open="{{ $here->address }}"
+                                    data-pass-clock
+                                    data-remaining="{{ max(0, (int) now()->diffInSeconds($scan->pass_ready_at, false)) }}"
+                                    data-total="{{ max(1, (int) $scan->pass_started_at?->diffInSeconds($scan->pass_ready_at, false)) }}">
                                 <span class="micro">{{ Text::get('cyberspace.scan.reading') }}</span>
-                                <span class="meter" style="--v:{{ round($scan->progress(), 3) }};width:80px"
+                                <span class="meter" data-pass-bar style="--v:{{ round($scan->progress(), 3) }};width:80px"
                                       title="{{ Text::get('cyberspace.scan.ready_in', ['when' => $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE])]) }}">
                                     <span class="meter__fill"></span>
                                 </span>
-                                <span class="micro">{{ $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }}</span>
+                                <span class="micro" data-pass-left>{{ $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }}</span>
                             </button>
                         @endif
                     @endif

@@ -112,6 +112,9 @@ and extraction are built. See below for what is not.
   the sweep exists.**
 - **Losing a read has two causes that must not share a sentence** —
   `App\Cyberspace\VoidCause`: the instrument stopped, or the machine burned/relocated.
+- **The top bar's reading chip ticks on a JS timer** (`[data-pass-clock]`, seconds remaining and total from the server,
+  never an absolute time), moving its bar and time each second and reloading shortly after the pass ends so the page
+  settles it. The read dialog, which polls, is the other place the bar moves.
 - **A read is a screen you watch.** The `<dialog>` in the layout polls
   `cyberspace.reading` while open, and the endpoint settles a matured pass on the way past.
   It polls only while open.

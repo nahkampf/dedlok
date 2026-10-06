@@ -1172,6 +1172,35 @@
     reprice(data.creds);
   });
 
+  /* --- A running scan pass, ticking ----------------------------------------
+     <button data-pass-clock data-remaining="SECONDS" data-total="SECONDS"> holding a [data-pass-bar] meter and a
+     [data-pass-left] time. The server renders both once; this moves them every second so a pass visibly runs, and
+     reloads shortly after the end so the page settles it (the next pass begins, or the read is whole). Seconds
+     REMAINING, as with [data-countdown]: never an absolute time, which would trust the browser's clock. */
+  function passClocks() {
+    document.querySelectorAll("[data-pass-clock]").forEach((el) => {
+      if (el.dataset.ticking) return;
+      el.dataset.ticking = "1";
+      const end = Date.now() + Number(el.dataset.remaining) * 1000;
+      const total = Math.max(1, Number(el.dataset.total));
+      const bar = el.querySelector("[data-pass-bar]");
+      const text = el.querySelector("[data-pass-left]");
+      const tick = () => {
+        const left = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+        if (bar) bar.style.setProperty("--v", String(Math.max(0, Math.min(1, 1 - left / total))));
+        if (text) {
+          const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
+          text.textContent = (h > 0 ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0");
+        }
+        if (left > 0) return setTimeout(tick, 1000);
+        setTimeout(() => location.reload(), 1500);
+      };
+      tick();
+    });
+  }
+  passClocks();
+  document.addEventListener("DOMContentLoaded", passClocks);
+
   /* --- A countdown that reloads the page when it ends ----------------------
      <span data-countdown="95">1:35</span> — the value is SECONDS REMAINING,
      sent by the server, never an absolute time: a phone's clock can be wrong

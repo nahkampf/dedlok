@@ -134,6 +134,17 @@ final class InteractBoxTest extends TestCase
         $this->page()->assertDontSee('You have no scanner running')->assertSee('reading something else');
     }
 
+    public function test_a_running_pass_carries_its_clock_so_the_bar_can_move(): void
+    {
+        $this->scan(['pass_started_at' => now()->subSeconds(60), 'pass_ready_at' => now()->addSeconds(540)]);
+
+        $html = $this->page()->assertSee('data-pass-clock', false)->assertSee('data-pass-bar', false)->assertSee('data-pass-left', false)->getContent();
+
+        preg_match('/data-remaining="(\d+)"\s+data-total="(\d+)"/', $html, $m);
+        $this->assertEqualsWithDelta(540, (int) $m[1], 3);
+        $this->assertEqualsWithDelta(600, (int) $m[2], 3);
+    }
+
     public function test_the_scan_button_is_not_in_the_top_bar_any_more(): void
     {
         // One scan form on the page, and it comes after the Interact heading, not before it.
