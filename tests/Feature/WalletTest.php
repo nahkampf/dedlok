@@ -26,6 +26,20 @@ final class WalletTest extends TestCase
         ));
     }
 
+    public function test_the_ledger_pages_fifty_at_a_time_and_shows_every_entry(): void
+    {
+        $c = $this->character(0);
+
+        foreach (range(1, 120) as $i) {
+            Wallet::move($c, 1, Reason::Market, "Entry $i");
+        }
+
+        $get = fn (int $page) => $this->actingAs($c->user)->get(route('wallet.index', ['page' => $page]))->assertOk();
+
+        $get(1)->assertSee('Entry 120')->assertSee('Entry 71')->assertDontSee('Entry 70');
+        $get(3)->assertSee('Entry 20')->assertSee('Entry 1<', false)->assertDontSee('Entry 21<', false);
+    }
+
     public function test_a_movement_changes_the_balance_and_is_logged(): void
     {
         $c = $this->character(100);

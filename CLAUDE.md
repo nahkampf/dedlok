@@ -276,8 +276,8 @@ them.
 
 ### Where a modifier comes from
 
-**`Character::modifiers()` is the whole list; each entry is a `ModifierSource`.** Six
-today, and the resolver learns nothing new when a seventh arrives.
+**`Character::modifiers()` is the whole list; each entry is a `ModifierSource`.** Seven
+today (`WornArmour` is the seventh, under *Physical combat*), and the resolver learns nothing new when an eighth arrives.
 
 | Source | Is |
 | --- | --- |
@@ -287,6 +287,7 @@ today, and the resolver learns nothing new when a seventh arrives.
 | `InstalledImplants` | `items.modifiers` |
 | `CharacterModifiers` | injuries and statuses, `character_modifiers` table |
 | `ActiveDoses` | drugs in effect, `character_doses` table |
+| `WornArmour` | worn armour's damage modifiers, wrapped in `hit_location_in` |
 
 - **A thing with a row carries its modifiers ON that row** — hence no
   `config/implants.php` and no `skill_effects` table. **`config/effects.php` is only for
@@ -308,7 +309,7 @@ today, and the resolver learns nothing new when a seventh arrives.
   `percentage_of_base -15` against `all_of: ['damage', 'ice']`, immunity is
   `multiplier 0`. `DamageResolver` is the only door; `taken` is for saying out loud, never
   for deciding whether anything happened.
-- **Build a `Sheet` and read it; do not call `modifiers()` per stat.** Four of the five
+- **Build a `Sheet` and read it; do not call `modifiers()` per stat.** Most of the
   sources query. A sheet is bound to its context and cheap to rebuild rather than hold.
 - **Pools are not formulas.** A formula divides each attribute, rounds each up and adds; a
   pool adds first and divides once. Pools are kept out of `stats.formulas` because that
@@ -803,7 +804,7 @@ never a `forceFill(['creds' => …])`.
   recipient gets a `Category::Wallet` message.
 - **Balances before the ledger existed have no history**; the first entry carries the
   balance it left.
-- `/wallet` shows the newest 100 with no pager.
+- `/wallet` shows every entry, newest first, 50 to a page (`pagination.ui-kit`, like the admin lists).
 
 ### The City
 
@@ -1054,6 +1055,16 @@ hunters, the waiting room, recovery and missions. The traps that matter everywhe
 - **Combat numbers are generated stats** (`App\Stats\CombatStats`): `aim.<class>` (one shared pool in
   `stats.pools.aim`), `weapon_damage.<class>` (base handed in, unrounded) and the declared `defence`. A new
   `WeaponClass` case brings both with it; each needs a `character.names` entry to be offered in the editor.
+- **There is no dodge, and none is planned** (decided 2026-10-05): `defence` and `pursuit` are permanent stats
+  (base 8 each in `stats.bases`), and modifiers reach them like any other. A combat skill is **data on its row**,
+  never code: its `skills.modifiers` target `aim.<class>`, `weapon_damage.<class>`, `defence` or `pursuit`. Close in
+  rolls `pursuit`; Create distance and Disengage roll `defence` against the opponent's `pursuit`.
+- **A weapon class can be gated by a skill** (`config/combat.php` `skill_gates` maps class to skill slug,
+  `gate_level` is the level, 1). `WeaponWielder::wield()` is the only place it is asked, on the RESOLVED level
+  (`skill.<slug>`), and refuses with `WieldRefusal::RequiresSkill`; a class left out is free, a slug with no skill row
+  gates nothing, and a weapon already equipped is never taken away. Pistol, SMG, rifle and shotgun are gated; blade,
+  blunt, unarmed and explosive are not. The stash card tags a gated weapon *Requires <skill> <level>* whether or not
+  you can equip it (no per-card sheet).
 - **The fight engine is pure and never writes** (`App\Combat\Fight\FightEngine`): a plain-data `FightState`
   in, a new one out, resistance a `Mitigation` argument, one injected die in a documented order, `chance()` and
   never `CheckRoller::roll()`. Nothing in it may call `takeDamage`, `WaitingRoom`, `WeaponLoader` or `Wallet` —
@@ -1169,6 +1180,12 @@ stood on this not existing.
 - **`App\Notifications\Notifier` is the only writer of `notifications`**, and the only
   thing that marks one read. A sender says what happened and hands over a strings KEY;
   the sentence is rendered once, at write time, and stored.
+- **A message has a TITLE and a body, and the inbox is an accordion** (`<details>` per message, quiet ink marker via
+  `.accordion--quiet`). The closed row is the title; opened it shows the sentence, the details list and a *Go to
+  <category>* button. **The title is composed at send time** from `notifications.titles.<key>` (one per message key, held
+  by a test) and stored on `notifications.title`; NULL, for a message from before titles, shows the category label.
+  **Unfolding one reads it** — `ui-kit.js` POSTs `notifications.mark` (204) on the first open and lowers the rail's
+  count — and *Go to* is the old `notifications.open` (read, then the category's route).
 - **The body is never recomposed.** A message outlives its own subject — a machine
   relocates, a skill is renamed, an achievement is retired — so a stored sentence is the
   only one that is still true tomorrow. Same call `system_contacts` makes about a sighting.

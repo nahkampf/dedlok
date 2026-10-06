@@ -21,8 +21,12 @@ enum WieldRefusal: string
 
     case NotWielded = 'not_wielded';
 
-    public function message(): string
+    /** The class is gated by a skill (`combat.skill_gates`) the character has not trained far enough. */
+    case RequiresSkill = 'requires_skill';
+
+    /** @param  array<string, string|int>  $with  placeholders, `skill` and `level` for RequiresSkill */
+    public function message(array $with = []): string
     {
-        return Text::get("combat.weapons.refused.{$this->value}");
+        return Text::get("combat.weapons.refused.{$this->value}", $with);
     }
 }

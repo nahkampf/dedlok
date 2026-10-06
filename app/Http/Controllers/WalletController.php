@@ -15,8 +15,7 @@ use Illuminate\View\View;
 /** The wallet: every movement of creds, and sending some to another character. */
 class WalletController extends Controller
 {
-    // ponytail: newest N and no pager, the inbox's call. Add a pager when somebody scrolls past it.
-    private const SHOWN = 100;
+    private const PER_PAGE = 50;
 
     public function index(Request $request): View
     {
@@ -27,8 +26,7 @@ class WalletController extends Controller
             'entries' => WalletEntry::query()
                 ->where('character_id', $character->getKey())
                 ->orderByDesc('id')
-                ->limit(self::SHOWN)
-                ->get(),
+                ->paginate(self::PER_PAGE),
         ]);
     }
 

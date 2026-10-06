@@ -56,8 +56,8 @@ engine's own.
 | Magazines | Rounds are stackable items in the stash; **loaded rounds are a count on the weapon**; at zero you **reload or cannot fire**; reload (empty) and switching round type each cost **a whole turn** |
 | NPCs | **Do not count ammunition** |
 | Resistances | **Sum, then apply once** — no diminishing |
-| Dodge | **Parked.** A flat `defence` number stands in (below) |
-| Skills | **Parked** |
+| Dodge | **None, by decision (2026-10-05).** A flat `defence` number is the permanent answer (below) |
+| Skills | **Built as data**: combat skills carry modifiers on `aim.<class>`, `weapon_damage.<class>`, `defence` and `pursuit`; pistol, SMG, rifle and shotgun need level 1 in theirs to equip (`combat.skill_gates`) |
 
 ## Calls still open
 
@@ -73,7 +73,7 @@ engine's own.
 6. **Using items mid-fight** (stims, healing; `DrugTaker`). Default: later.
 7. **The numbers**: the tier `spread`, opponent HP and damage by grade, fight length — set with
    `fight:simulate`.
-8. **Dodge and skills**, parked on purpose.
+8. **Skill balance**, deferred until real NPCs exist: the grants are authored, the numbers are not measured.
 
 *Settled since:* neural damage against an NPC does nothing; an NPC that flees does so by a Disengage roll, and
 a success ends the fight with no gains. Whatever replaces `defence` must keep the engine's shape.
@@ -269,9 +269,9 @@ chance, turns, amount}`, at most one of each kind per list (`Riders` judges it).
   recovers. Its price is on the author: a stun's chance and turns are the numbers to keep modest,
   and the floor (0 HP) still ends a fight a stunned player never acted in.
 
-## Defence, until dodge exists — BUILT
+## Defence — BUILT
 
-**Dodge is parked.** What an attack rolls against is a single number, the target's `defence`: the
+**There is no dodge.** What an attack rolls against is a single number, the target's `defence`: the
 NPC's row, and for a player the declared stat `defence` (`stats.defence`, base 8 in `stats.bases`),
 so an implant or a drug can already move it. It is the `difficulty` in
 `CheckRoller::chance(aim, defence)`. *Create distance* and *Disengage* roll the same `defence`
@@ -570,7 +570,7 @@ to the `DownedCause` effects the waiting screen reads), then calls the waiting r
 5. **Encounters** — **BUILT**: a *Fight* choice kind (`encounter_choices.fight_npc_id` + `win_key`, `lose_key`,
    `flee_key`) and the resume (`EncounterRunner::afterFight()`). See *From an encounter* below.
 6. **Defeat and loot** — **BUILT**: mugging, `CombatTag`, `maim`, the pay band, drops and standing (see *Step 6, as built*). **The balance pass is NOT done.**
-7. **Later**: PvP's opening, hunters on the street, a place that offers a fight (phase 6), dodge.
+7. **Later**: PvP's opening, hunters on the street, a place that offers a fight (phase 6).
 
 ## Not decided
 
@@ -582,5 +582,4 @@ to the `DownedCause` effects the waiting screen reads), then calls the waiting r
 - Whether a limb hit should ever *do* something beyond its armour (a crippled leg hurting *Create
   distance*), which is where `maim` is headed.
 - Skills: which skill aims which class, and what each of the six grants.
-- Dodge: its attributes, whether armour weight costs it, whether it counts for less against
-  firearms.
+- Whether `defence` should become a pool from attributes (it is a flat base of 8).

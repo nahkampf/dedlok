@@ -592,6 +592,7 @@ return [
         'empty' => 'Nothing yet. This fills up while you are away.',
         'new' => 'New',
         'mark_read' => 'Mark all read',
+        'go_to' => 'Go to :place',
         // Pieces of a line in a message's list (the siphon report's).
         'details' => [
             'grade' => 'grade :grade',
@@ -613,6 +614,31 @@ return [
             'mission' => 'Work',
             'city' => 'City',
             'wallet' => 'Wallet',
+        ],
+
+        // The closed row of the inbox. One per message key; a key without one shows its category instead.
+        'titles' => [
+            'scan_complete' => 'Scan complete',
+            'backdoor_found' => 'Backdoor found',
+            'siphons_ran' => 'Siphons ran',
+            'backdoor_lost' => 'Backdoor lost',
+            'file_stale' => 'Scan file gone stale',
+            'offer_sold' => 'Sold: :item',
+            'mission_failed' => 'Job ran out of time',
+            'mission_abandoned' => 'Job abandoned',
+            'mission_voided' => 'Job called off',
+            'skill_level' => ':skill, level :level',
+            'achievement_unlocked' => 'Achievement: :name',
+            'withdrawal' => 'Withdrawal',
+            'travel_arrived' => 'Arrived in :district',
+            'travel_stopped' => 'Stopped in :district',
+            'encounter_waiting' => 'Something happened in :district',
+            'explore_found' => 'Found: :place',
+            'surgery_installed' => 'Surgery went well',
+            'surgery_removed' => 'Implant removed',
+            'surgery_failed' => 'Surgery failed',
+            'transfer_received' => 'Cash from :handle',
+            'bounty_word' => 'A price on your head',
         ],
 
         'messages' => [
@@ -1832,6 +1858,7 @@ return [
             'none' => 'Nothing',
             'wielded' => 'Equipped',
             'wield' => 'Equip',
+            'requires' => 'Requires :skill :level',
             'put_down' => 'Unequip',
             'took_up' => 'You equip :item.',
             'put_away' => 'You unequip :item.',
@@ -1842,6 +1869,7 @@ return [
                 'not_free' => 'Take it out of whatever it is in first.',
                 'already_wielded' => 'You are already holding that.',
                 'not_wielded' => 'You are not holding that.',
+                'requires_skill' => 'That requires :skill at level :level.',
             ],
         ],
         // The character sheet's one panel for what is on a body: armour by part, then the two hands.

@@ -26,6 +26,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Skill gates on weapons
+    |--------------------------------------------------------------------------
+    |
+    | A weapon class named here can only be EQUIPPED by somebody whose resolved level in the skill (a slug)
+    | is at least `gate_level`. A class left out is free to anyone. Asked by `WeaponWielder::wield()` and
+    | nowhere else: an NPC's weapon is not a skill matter, and a weapon already in hand is never taken away.
+    */
+    'skill_gates' => [
+        'pistol' => 'pistols',
+        'smg' => 'smgs',
+        'rifle' => 'rifles',
+        'shotgun' => 'shotguns',
+    ],
+
+    'gate_level' => 1,
+
+    /*
+    |--------------------------------------------------------------------------
     | Hit quality
     |--------------------------------------------------------------------------
     |

@@ -57,10 +57,13 @@ button exists; `php artisan fight:start <handle> <npc-slug>` opens one by hand.
 
 ### Parked or open on purpose (do not build without the author)
 
-- **Dodge** — parked. A flat `defence` stat (base 8) stands in and `pursuit` (base 8) is the flight roll's other
-  half; when dodge arrives it takes `defence`'s place and the engine does not change. Open: its attributes, whether
-  armour weight costs it, whether it counts for less against firearms.
-- **Combat skills** — parked (which skill aims which `WeaponClass`, what each grants).
+- **No dodge** (decided 2026-10-05). `defence` and `pursuit` (base 8 each) are permanent. Open: whether `defence`
+  becomes an attribute pool rather than a flat base.
+- **Combat skills are authored** (aim, damage, `defence`, `pursuit` grants on their rows) and pistol, SMG, rifle and
+  shotgun are gated at level 1 (`combat.skill_gates`). Their numbers are unmeasured; the balance pass waits for real NPCs.
+- **Skills for blunt weapons — later.** Nothing raises `aim.blunt`: Close Quarter Combat only reaches `aim.unarmed`,
+  so a club gets Physiology's damage and nothing for aim. Explosives have no skill either, deliberately (a crude
+  instrument). Decide: `aim.blunt` on Close Quarter Combat, or a skill of its own. Not gated yet.
 - Location damage (a headshot hits harder): default none. HP regeneration: default none (clinics only). PvP: the
   engine is symmetric (`Side::A`/`B`, initiative by Senses+Perception+Reflex, tie a coin toss), the opening is not
   built. Heat from violence: none. Items mid-fight: later. Area damage, cover, group fights: not designed.
@@ -157,7 +160,7 @@ of `characters.creds`, plus `/wallet` and cash transfers by handle.
 
 - **Transfers have no fee, cooldown or cap**, so funnelling cash between one
   person's characters is open. One line in `Transfers::send()` when it matters.
-- **The ledger shows the newest 100 and has no pager**, like the inbox.
+- ~~**The ledger shows the newest 100 and has no pager.**~~ Done 2026-10-06: every entry, 50 a page.
 - **No history before 2026-10-02**: the first entry carries the balance it left.
 - **Not checked on a phone** at 320px/360px — the four-column ledger table is
   relied on to scroll inside its panel. The Standing tab's tables likewise.
@@ -591,7 +594,7 @@ defend before there is a game to defend it against.
 
 **What is still missing, and it is most of it:**
 
-- **Collecting a bounty.** The sum exists and grows; the mechanic that lets
+- **Collecting a bounty — PARKED, see *Bounty collection and player-versus-player* below.** The sum exists and grows; the mechanic that lets
   another player attack the carrier and receive it does not. Undecided: how a
   target is found, whether the sum is paid out of nowhere or by the carrier, and
   whether it clears on collection (it should) or decays. Any payout is a
@@ -620,6 +623,30 @@ defend before there is a game to defend it against.
   especially through subnets.
 
 ---
+
+## Bounty collection and player-versus-player (parked 2026-10-06)
+
+**Parked on purpose, because it needs other parts of the mechanics settled first.** What was decided in conversation, so
+a later session does not re-ask:
+
+- **Player-versus-player combat WILL exist.** The fight engine is already symmetric (`Side::A`/`B`, initiative by
+  Senses + Perception + Reflex, tie a coin toss); what is missing is the opening. How a fight against a player starts,
+  and what the loser suffers, are not decided.
+- **Collecting a bounty is a PvP act.** Beat the carrier and collect. Where a target is found is the district their body
+  stands in (`characters.district_id`).
+- **FULL payout, and the whole bounty clears** — not the half payout floated first.
+- **A cooldown on the same PAIR of players** (collector, target), to stop farming: with the payout coming from nowhere
+  (a new `Wallet\Reason` case through `Wallet::move()`), a player and their alt could otherwise earn heat on one and
+  collect on the other. Transfers still have no fee or cap, so the pair cooldown is the guard. Length not decided.
+- **A target can HIDE.** Anywhere else — any district or location — they can be found and attacked. In a **safe house**
+  they cannot be (or it is much harder; which is undecided). **The mirror in cyberspace is the player-owned "data
+  fortress"** (see *Player Owned Systems* below): both are a place to **camp** and to **store important items or cash**,
+  because they are much harder for other players to raid. Design the two as a pair so neither is the strictly safer
+  one.
+- **Still open:** who may be attacked at all (consent, level bands, an opt-in); how the loser of a PvP fight is
+  treated (mugging, `maim`, the waiting room); whether the target needs to be online (the engine can play a side
+  with nobody choosing, from a snapshot, as an NPC is); whether a safe house is a purchase, a location, or a
+  flag; how hard "much harder" is.
 
 ## The gap that let a 500 ship
 
@@ -789,14 +816,13 @@ Exploitation** (a fifth skill, built for the purpose) is +2% a level on the
 same tag, so training any OS deeply carries a little to the others. The gate
 is untouched: a percentage of an untrained OS's base (0) is still 0.
 `Simulator::opensTheCore()` learned none of this. Nothing raises a combat
-check or the rest — **fourteen skills still grant nothing at all** (six
-combat skills, the four encryption skills, Leadership, Network Topology,
-Coordinated Strike and Advanced Coordination).
+check or the rest — **six skills still grant nothing at all** (the four
+encryption skills, Leadership and Network Topology; counted 2026-10-05, after the combat skills were authored).
 
-**What NOT to invent.** The combat skills have nothing true to grant until
-combat exists, and Leadership the same until factions or crews do. So this
-entry is about the ~15 values above, and the fourteen empty skills stay empty
-until the mechanics under them arrive.
+**What NOT to invent.** Leadership has nothing true to grant until factions or
+crews exist. The combat skills are no longer in this list: they grant now (see
+*RESUME HERE*). The remaining empty skills stay empty until the mechanics under
+them arrive.
 
 **Deliberately not in the count:** the 34 `skill.*` level stats, which are read
 rather than modified, and the 10 damage stats, where a resistance is written
@@ -864,4 +890,6 @@ Some ideas to develop later: A city map showing locations. Most locations are hi
 Maybe players can also buy "houses" and "apartments" - figure out what this would be more than "cosmetics". Also possibly buying into existing businesses to generate passive income (investments). Maybe crafting of items?
 
 ## Player Owned Systems ("Data Fortresses")
+**Mirror of the safe house** (see *Bounty collection and player-versus-player*): a place to camp and to store important items or cash, much harder for other players to raid. Decide the two together.
+
 Systems in cyberspace that a player can "build". Should take quite a lot of skill, and time and resources to build. Works more or less like a normal system, but players can stash cash here, run "programs" that do things like generate passive income etc, use it as a very good route in the chain etc. Prime target for other players to attack. Players should here have to "construct" their own IDS and ICE, which should take skills and the higher the skill and the longer they work on it the stronger their systems become. A data fortress built by a skilled runner should more or less require a team to take down.

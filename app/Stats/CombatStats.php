@@ -21,7 +21,7 @@ use App\Combat\WeaponClass;
  * only thing that varies: a new `WeaponClass` case brings both stats with it.
  *
  * `defence` is NOT generated and not here: it is one declared stat (`stats.defence`, base in
- * `stats.bases`), the number an attack rolls against until dodge exists.
+ * `stats.bases`), the number an attack rolls against (there is no dodge).
  */
 final class CombatStats
 {

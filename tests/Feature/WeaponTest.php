@@ -15,11 +15,14 @@ use App\Combat\WeaponWielder;
 use App\Combat\WieldRefusal;
 use App\Inventory\ItemPlacer;
 use App\Inventory\PlacementRefusal;
+use App\Inventory\SkillInjector;
 use App\Market\OfferBook;
 use App\Market\OfferRefusal;
 use App\Models\Character;
+use App\Models\CharacterSkill;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Skill;
 use App\Models\User;
 use App\Models\Weapon;
 use App\Stats\DamageOrigin;
@@ -112,6 +115,33 @@ final class WeaponTest extends TestCase
     }
 
     // ---- holding it ---------------------------------------------------------------
+
+    public function test_the_card_of_a_gated_weapon_says_what_it_requires(): void
+    {
+        Skill::factory()->create(['slug' => 'pistols', 'title' => 'Pistols']);
+        $this->weapon(WeaponClass::Pistol, 'Pistol');
+        $this->weapon(WeaponClass::Blade, 'Blade');
+
+        $this->actingAs($this->character->user)->get(route('inventory.index'))
+            ->assertOk()->assertSee('Requires Pistols 1')->assertDontSee('Requires Blades');
+    }
+
+    public function test_a_gated_class_needs_level_one_in_its_skill_and_a_blade_needs_nothing(): void
+    {
+        $skill = Skill::factory()->create(['slug' => 'pistols']);
+        $pistol = $this->weapon(WeaponClass::Pistol, 'Pistol');
+        $blade = $this->weapon(WeaponClass::Blade, 'Blade');
+        $injector = app(SkillInjector::class);
+
+        // Not injected: refused. Injected at level 0 is still untrained: refused.
+        $this->assertSame(WieldRefusal::RequiresSkill, $this->wielder()->wield($this->character, $pistol));
+        $injector->grant($this->character, $skill, 0);
+        $this->assertSame(WieldRefusal::RequiresSkill, $this->wielder()->wield($this->character->fresh(), $pistol));
+        $this->assertTrue($this->wielder()->wield($this->character->fresh(), $blade));
+
+        CharacterSkill::query()->where('character_id', $this->character->id)->update(['attained_level' => 1]);
+        $this->assertTrue($this->wielder()->wield($this->character->fresh(), $pistol));
+    }
 
     public function test_a_weapon_fills_the_hand_its_class_names(): void
     {

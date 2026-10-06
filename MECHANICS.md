@@ -41,29 +41,30 @@ down so the implementation has something to be checked against.
 | Attack tags — what ICE does while it fights | **built** — `ice.attack_tags` and `App\Cyberspace\AttackTag`, the mirror of the defeat tags. **Ensnare** multiplies the egress chance, and `CheckRoller` owns the multiplication so the floor is applied again after it: a chance modifier can make something expensive and can never make it certain |
 | `scan_duration`, `program_threads` — how long a read takes, and how many copies of one program run at once | **built** as resolved stats; Multithreading raises the second, and `programs.multithreaded` decides whether it may exceed one at all |
 | Derived stats reading RESOLVED inputs rather than columns | **built**; it was the other way round until the graph landed |
-| `current_hitpoints`, `current_synaptic_integrity` as resources | **built**, with clamping. Reaching zero is not acted on: there is no defeat handling and no waiting screen |
-| Damage as a resolved stat — resistances, vulnerabilities, immunity | **built** — `App\Stats\Damage`, `DamageOrigin`, `DamageStats`, `DamageResolver`; one stat per resource and origin, mitigation is a modifier against a tag set. Nothing carries a resistance yet, and the Crim's "Hard knocks" is the only shipped mitigation of any kind — it reaches Neural Shock and nothing else, because that is the one hit in the game that lands on the body |
+| `current_hitpoints`, `current_synaptic_integrity` as resources | **built**, with clamping. Reaching zero puts a character in the waiting room (`WaitingRoom::checkFloor()`) |
+| Damage as a resolved stat — resistances, vulnerabilities, immunity | **built** — `App\Stats\Damage`, `DamageOrigin`, `DamageStats`, `DamageResolver`; one stat per resource and origin, mitigation is a modifier against a tag set. Worn armour, implants, skills, drugs and injuries can all carry a resistance; the Crim's "Hard knocks" is the shipped perk |
 | Damage types, the family tag, and a hit's PENETRATION | **built** — eight `DamageOrigin` types (kinetic and specialty), and `Damage::$penetration` scaling only a hit's negative percentage modifiers (`DamageResolver::against()`); `COMBAT.md` |
 | Armour per body part | **built** — `WornArmour`, the seventh modifier source, wraps a worn piece's damage modifiers in `hit_location_in`; a hit with no location never meets worn armour |
+| Combat skills and weapon gates — grants on skill rows; `combat.skill_gates` | **built** — pistol, SMG, rifle and shotgun need level 1 in their skill to equip; no dodge, by decision |
 | Combat stats — `aim.<class>`, `weapon_damage.<class>`, `defence`, `pursuit` | **built** — `App\Stats\CombatStats` plus two declared stats; the numbers are unmeasured, set with `fight:simulate` |
 | Hit quality, bursts, riders, magazines — the fight engine | **built** — `App\Combat\Fight\FightEngine`, pure and never writing; `App\Combat\Fights` applies it to the game; `COMBAT.md` |
 | What a win pays and a loss costs (the mugging, defeat tags) | **built** — `App\Combat\FightEnding`, `CombatTag`, `combat.pay` / `mugging` / `maim`; the numbers are unmeasured |
 | `skills`, `skill_prerequisites`, `character_skills`, `training_queue` | **built**, with constraints and `skills:validate` |
 | Skill thresholds and SP/minute (`App\Skills\`) | **built**, pure and config-tunable |
 | Skill training — the deposit, the scheduler, the queue (`App\Skills\TrainingDeposit`) | **built**, with `training:deposit` on a one-minute schedule |
-| `SkillLevelReached` / `TrainingEntryCompleted` events | **built**, dispatched; no listeners yet |
+| `SkillLevelReached` / `TrainingEntryCompleted` events | **built**, dispatched; `NotifyOfSkillLevel` is the one listener |
 | Skills as a `ModifierSource` | **built** — `skills.modifiers` as JSON on the row, read by `App\Stats\Sources\SkillEffects`; there is no `skill_effects` table, for the reason an implant has none |
 | `character_modifiers` table | **built** — instances in the database, definitions in `config/effects.php`, stacking collapsed at read time by `App\Stats\Stacking` |
 | Item *modifiers* — items that change a stat | **built** — software. `programs`, `App\Programs\ProgramRunner`, `App\Stats\Sources\RunningPrograms`, authored in the item editor |
 | A program's KIND as a gate | **built** — `Simulator::attack()` asks whether an icebreaker is running; the run starts it from the briefing's loadout, one icebreaker at a time |
 | Implants | **built** — `items.implant_region`, `inventory_items.installed_at`, `App\Implants\ImplantFitter`, and the body map at `/implants` |
-| Injuries | **partly built** — `App\Stats\InjuryLedger` deepens one row per injury and `config/effects.php` defines two; nothing inflicts one yet. Resource damage is a different thing and does now happen: a deck that stops running while its owner is inside costs them 1 SI |
-| Drugs | **specified only** — the timed half of `character_modifiers` is built and nothing writes one |
+| Injuries | **built** — `App\Stats\InjuryLedger` deepens one row per injury; ICE flatlines, overdoses, botched surgery and the `maim` combat tag inflict them, and clinics mend them |
+| Drugs | **built** — `drugs`, `App\Drugs\DrugTaker`, `ActiveDoses`, tolerance, addiction and overdose; see CLAUDE.md |
 | The market's supply — `items.rarity`, `items.seed_quantity`, `market_stock`, `market_purchases` | **built**, with `market:seed` on an eight-hour schedule |
 | Archetype loadouts — `archetypes.starting_creds`, `archetype_skills`, `archetype_items` | **built**, granted at creation by `App\Archetypes\LoadoutGranter`, edited in the archetype editor |
 | `archetypes.playable` — which roles are on offer | **built**; only the Deck Jockey is offered, the other six are withdrawn rather than deleted |
-| `characters.creds` — money | **built** as a balance only: granted at creation, spent by nothing |
-| The market itself — a storefront, a price, a transaction | **not built**; nothing spends money yet |
+| `characters.creds` — money | **built** — written only by `App\Wallet\Wallet`; granted at creation, spent at the market, shops, clinics and the pod |
+| The market itself — a storefront, a price, a transaction | **built** — `App\Market\Purchaser`, the player market, and City shops |
 | Cyberdeck hardware — `items.hardware`, `deck_slots`, `deck_modules` | **built**, with constraints and the item editor |
 | A deck's board — `items.board_layout`, the arranged screen and its editor | **built** |
 | Fitting a module into a deck a player owns | **built** — `deck_fittings`, `App\Decks\ModuleFitter` |
@@ -77,9 +78,9 @@ down so the implementation has something to be checked against.
 | The thermal rename — `heat` freed up for the character's wanted level | **done**; columns, stat ids, classes and strings all moved |
 | Thermal load as an accumulating total rather than a level | **not done**; a re-calibration of every module in the catalogue |
 | A floor of 1 on `synaptic_integrity_max` | **done**; `DerivedStatTest` pins both ceilings at 1 |
-| `characters.heat` — what the world knows about you | **specified only**; see CYBERSPACE.md |
+| `characters.heat` — what the world knows about you | **built** — traces and burns add it, bounties and hunters read it; see CYBERSPACE.md |
 | A sixth deck measure — storage, to hold data and programs | **built** — `SlotKind::Storage`, `deck_modules.storage`, `deck_storage` |
-| Cyberspace — the grid, systems, intrusion | **partly built** — the world is walkable: jacking in, stepping, jumping, bookmarks, discovery and the map screen. No system can be entered and nothing is inside one. CYBERSPACE.md is the document and carries the detail |
+| Cyberspace — the grid, systems, intrusion | **built** — grid, scanning, runs, ICE, traces, extraction, backdoors, burn, hunters and missions. CYBERSPACE.md and CYBERSPACE_RULES.md carry the detail |
 | Encryption skills — four, ranks 2/4/8/16, with imprints | **built** as rows; placeholder descriptions, nothing reads them |
 | `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
 | Routing, Advanced Routing — how long a chain may be | **built** as skill rows with prerequisites; nothing reads them |

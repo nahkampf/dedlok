@@ -71,5 +71,11 @@
                 </div>
             @endif
         </div>
+
+        @if ($entries->hasPages())
+            <div class="panel__ft">
+                {{ $entries->links('pagination.ui-kit') }}
+            </div>
+        @endif
     </div>
 @endsection

@@ -6,6 +6,7 @@ namespace App\Combat;
 
 use App\Models\Character;
 use App\Models\InventoryItem;
+use App\Models\Skill;
 
 /**
  * Picks a weapon up and puts it down. The only writer of `characters.equipped_ranged_id` and
@@ -43,9 +44,23 @@ final class WeaponWielder
             return WieldRefusal::NotFree;
         }
 
+        $gate = $this->gate($class);
+
+        if ($gate !== null && $character->stat("skill.{$gate->slug}")->value < (int) config('combat.gate_level')) {
+            return WieldRefusal::RequiresSkill;
+        }
+
         $character->forceFill([$class->ranged() ? 'equipped_ranged_id' : 'equipped_melee_id' => $row->getKey()])->save();
 
         return true;
+    }
+
+    /** The skill that gates a class, if one does and it exists; the answer to "train what?". */
+    public function gate(WeaponClass $class): ?Skill
+    {
+        $slug = config("combat.skill_gates.{$class->value}");
+
+        return is_string($slug) ? Skill::query()->where('slug', $slug)->first() : null;
     }
 
     public function unwield(Character $character, InventoryItem $row): true|WieldRefusal

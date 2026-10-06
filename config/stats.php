@@ -484,9 +484,8 @@ return [
         ],
 
         /*
-        | What an attack rolls against, until dodge exists (COMBAT.md, *Defence*). A declared stat with a
-        | base in `bases`, so an implant or a drug can already move it, and dodge arrives as a pool that
-        | takes its place without the engine changing. `Character::stat('defence')`.
+        | What an attack rolls against (COMBAT.md, *Defence*). There is no dodge, by decision: a declared stat with a
+        | flat base in `bases`, so skills, implants and drugs reach it as modifiers. `Character::stat('defence')`.
         */
         'defence' => [
             'tags' => ['combat'],
@@ -497,8 +496,7 @@ return [
 
         /*
         | How hard somebody is to get away from, the other half of a flight roll (`defence` against it).
-        | A placeholder like `defence`, for the same reason: a declared stat with a base, so modifiers can
-        | already reach it, until something better replaces the base.
+        | Like `defence`: a declared stat with a flat base, so modifiers can reach it.
         */
         'pursuit' => [
             'tags' => ['combat'],
@@ -730,7 +728,7 @@ return [
     */
     'bases' => [
 
-        // Placeholder until dodge. Against `aim` of about 13 at attributes of 20 and the logistic's
+        // Flat, since there is no dodge. Against `aim` of about 13 at attributes of 20 and the logistic's
         // spread of 8, a starting character is hit about two times in three by an even match.
         'defence' => 8,
         'pursuit' => 8,

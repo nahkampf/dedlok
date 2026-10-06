@@ -10,6 +10,7 @@ use App\Notifications\Notifier;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 /**
@@ -76,6 +77,16 @@ class NotificationController extends Controller
         $notifier->markRead($message);
 
         return redirect()->route($message->category->route());
+    }
+
+    /** Read one without going anywhere: the inbox unfolding a row. 204, nothing to render. */
+    public function mark(Request $request, Notification $message, Notifier $notifier): Response
+    {
+        abort_unless((int) $message->user_id === (int) $request->user()->getKey(), 404);
+
+        $notifier->markRead($message);
+
+        return response()->noContent();
     }
 
     public function read(Request $request, Notifier $notifier): RedirectResponse

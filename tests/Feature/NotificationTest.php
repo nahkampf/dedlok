@@ -178,6 +178,57 @@ final class NotificationTest extends TestCase
         $this->assertSame(1, $this->notifier()->unreadFor($this->user));
     }
 
+    public function test_a_message_gets_a_title_when_it_is_sent_and_a_key_without_one_gets_none(): void
+    {
+        $titled = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'Pistols', 'level' => 3]);
+        $bare = $this->notifier()->send($this->character, Category::City, 'no_such_key', []);
+
+        $this->assertSame('Pistols, level 3', $titled->fresh()->title);
+        $this->assertNull($bare->fresh()->title);
+    }
+
+    public function test_every_message_has_a_title(): void
+    {
+        $this->assertSame(
+            array_keys(config('strings.notifications.messages')),
+            array_keys(config('strings.notifications.titles')),
+        );
+    }
+
+    public function test_the_screen_shows_the_title_closed_and_the_sentence_inside(): void
+    {
+        $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'Pistols', 'level' => 3]);
+        // From before titles: no title, so the category stands in for it.
+        Notification::create(['user_id' => $this->user->id, 'category' => Category::City, 'body' => 'An old sentence.']);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('Pistols, level 3')
+            ->assertSee('Pistols reached level 3.')
+            ->assertSee('<details', false)
+            ->assertSee('An old sentence.')
+            ->assertSee('Go to Training');
+    }
+
+    public function test_unfolding_a_message_reads_it_without_leaving_the_page(): void
+    {
+        $message = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+        $other = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'B', 'level' => 1]);
+
+        $this->actingAs($this->user)->post(route('notifications.mark', $message))->assertNoContent();
+
+        $this->assertNotNull($message->fresh()->read_at);
+        $this->assertNull($other->fresh()->read_at);
+    }
+
+    public function test_somebody_elses_message_cannot_be_marked(): void
+    {
+        $theirs = $this->notifier()->send(Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3])), Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+
+        $this->actingAs($this->user)->post(route('notifications.mark', $theirs))->assertNotFound();
+        $this->assertNull($theirs->fresh()->read_at);
+    }
+
     /** A City message reads, and leads to the city map. */
     public function test_opening_a_city_message_reads_it_and_goes_to_the_map(): void
     {

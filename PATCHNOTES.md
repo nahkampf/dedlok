@@ -1,3 +1,9 @@
+## 0.37.0 (2026-10-06)
+
+- Messages are now full messages. Accordion show titles, click for full message.
+- Wallet can now display full transaction history, with a pager for 50 items at a time.
+- Added a skill gate for pistols, smgs, rifles and shotguns.
+
 ## 0.36.1 (2026-10-05)
 - Added some dummy weapons and some weapon skills
 - Internal admin tooling only: effect rows in the editors can now be duplicated with one click.
