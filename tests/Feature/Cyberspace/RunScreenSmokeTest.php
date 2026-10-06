@@ -129,6 +129,23 @@ final class RunScreenSmokeTest extends TestCase
         $this->get(route('run.show'))->assertOk();
     }
 
+    public function test_a_log_lines_tag_takes_its_stored_colour_and_old_tags_stay_red(): void
+    {
+        $this->machine();
+        $run = $this->begin();
+        $run->forceFill(['log' => [
+            ['text' => 'old line', 'tone' => 'crit', 'turn' => 1, 'tag' => 'ICE OLD'],
+            ['text' => 'green line', 'tone' => 'ok', 'turn' => 2, 'tag' => 'BREAKER', 'tag_tone' => 'ok', 'before' => 'Your'],
+            ['text' => 'grey line', 'tone' => '', 'turn' => 3, 'tag' => 'ICE GREY', 'tag_tone' => ''],
+        ]])->save();
+
+        $html = $this->get(route('run.show'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/<span class="tag tag--crit">ICE OLD<\/span>/', $html);
+        $this->assertMatchesRegularExpression('/Your\s*<span class="tag tag--ok">BREAKER<\/span>/', $html);
+        $this->assertMatchesRegularExpression('/<span class="tag">ICE GREY<\/span>/', $html);
+    }
+
     public function test_the_log_shows_the_newest_line_first(): void
     {
         $this->machine();

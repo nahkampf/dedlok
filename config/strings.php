@@ -1147,7 +1147,9 @@ return [
             | scan fact for free.
             */
             'log' => [
-                'attack' => 'Your icebreaker cuts for :damage.',
+                // "Your" + a green tag naming the icebreaker + this: the tag sits inside the sentence.
+                'attack_before' => 'Your',
+                'attack' => 'finds an intrusion vector and pushes a disruptive payload through, causing :damage system integrity loss.',
                 'attack_fails' => 'You find no viable attack vectors.',
                 'hold' => 'You wait, and the system waits with you.',
                 'egress' => 'You egress.',
@@ -1155,10 +1157,11 @@ return [
                 // them, or something in it has hold of them. Which it was is
                 // already on the screen in the chance itself.
                 'egress_held' => 'You reach for the way out and the system does not let go.',
-                'ice_broken' => 'The ICE comes apart.',
+                'ice_broken' => 'The ICE freezes, glitches for a few milliseconds and then vanishes, stuck in a crash loop. It is now disabled.',
                 // The line opens with a tag naming the ICE ("ICE VII"), written beside the text, not in it.
                 'ice_hits' => 'lands a code payload for :damage SI.',
-                'ice_misses' => 'It reaches for you and misses.',
+                // After a grey tag naming the ICE ("ICE VII").
+                'ice_misses' => 'attempts to find an open attack vector, but fails.',
                 'ice_silent' => 'Whatever was fighting you is no longer there.',
                 'traced' => 'The trace reaches you. Somebody knows who was in here.',
                 'trace_held' => 'The route holds it up another turn.',

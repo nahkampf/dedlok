@@ -352,10 +352,17 @@
                     @if (isset($line['turn']))
                         <span class="tag">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
                     @endif
-                    {{-- A line may open with a tag naming who did it ("ICE VII lands a code payload…"). --}}
+                    {{-- A line may carry a tag naming who did it ("ICE VII lands a code payload…"), and
+                         words before it ("Your [icebreaker] finds…"). The tag's colour is stored with it:
+                         `crit` for the ICE hitting you (also what a line from before the colour was kept
+                         says), `ok` for your icebreaker, none for the ICE failing. --}}
                     <span>
+                        @if (! empty($line['before']))
+                            {{ $line['before'] }}
+                        @endif
                         @if (! empty($line['tag']))
-                            <span class="tag tag--crit">{{ $line['tag'] }}</span>
+                            @php($tagTone = array_key_exists('tag_tone', $line) ? $line['tag_tone'] : 'crit')
+                            <span class="tag{{ $tagTone !== '' ? ' tag--'.$tagTone : '' }}">{{ $line['tag'] }}</span>
                         @endif
                         {{ $line['text'] }}
                     </span>
