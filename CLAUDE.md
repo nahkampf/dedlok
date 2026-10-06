@@ -804,7 +804,7 @@ never a `forceFill(['creds' => …])`.
   recipient gets a `Category::Wallet` message.
 - **Balances before the ledger existed have no history**; the first entry carries the
   balance it left.
-- `/wallet` shows the newest 100 with no pager.
+- `/wallet` shows every entry, newest first, 50 to a page (`pagination.ui-kit`, like the admin lists).
 
 ### The City
 

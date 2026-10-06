@@ -160,7 +160,7 @@ of `characters.creds`, plus `/wallet` and cash transfers by handle.
 
 - **Transfers have no fee, cooldown or cap**, so funnelling cash between one
   person's characters is open. One line in `Transfers::send()` when it matters.
-- **The ledger shows the newest 100 and has no pager**, like the inbox.
+- ~~**The ledger shows the newest 100 and has no pager.**~~ Done 2026-10-06: every entry, 50 a page.
 - **No history before 2026-10-02**: the first entry carries the balance it left.
 - **Not checked on a phone** at 320px/360px — the four-column ledger table is
   relied on to scroll inside its panel. The Standing tab's tables likewise.
