@@ -2047,9 +2047,9 @@ return [
         // What is in them right now — one card per family they carry anything
         // for. The line is the overdose one: the dose that takes it past the
         // capacity is the dose that breaks it.
-        'doses_heading' => 'What is in you',
+        'doses_heading' => 'Drugs',
         'doses_capacity' => ':used of :capacity',
-        'doses_none' => 'Nothing of this in you',
+        'doses_none' => 'Not currently in your system',
         'doses_at_the_line' => 'One more is too much',
         'doses_wears_off' => 'wears off :when',
         'doses_potency' => ':percent% strength',

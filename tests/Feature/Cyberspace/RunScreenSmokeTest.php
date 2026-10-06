@@ -186,6 +186,7 @@ final class RunScreenSmokeTest extends TestCase
         ]])->save();
 
         $this->get(route('run.show'))->assertOk()
+            ->assertSee('<span class="tag tag--quiet">', false)
             ->assertSeeInOrder(['THIRD LINE OF THE LOG', 'SECOND LINE OF THE LOG', 'FIRST LINE OF THE LOG']);
     }
 

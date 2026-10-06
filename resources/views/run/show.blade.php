@@ -355,7 +355,7 @@
             @foreach (array_reverse($run->log) as $line)
                 <p class="micro" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
                     @if (isset($line['turn']))
-                        <span class="tag">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
+                        <span class="tag tag--quiet">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
                     @endif
                     {{-- A line may carry a tag naming who did it ("ICE VII lands a code payload…"), and
                          words before it ("Your [icebreaker] finds…"). The tag's colour is stored with it:

@@ -1350,6 +1350,7 @@ cap-widget {
 .tag--warn  { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); background: var(--warn-a); }
 .tag--crit  { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 40%, transparent); background: var(--crit-a); }
 .tag--info  { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: var(--info-a); }
+.tag--quiet { background: transparent; border-color: var(--line-0); color: var(--ink-3); }
 .tag--solid { background: var(--ink-0); border-color: var(--ink-0); color: var(--ink-on-bone); }
 
 /* DECORATION, and the palette name says so. The semantic aliases carry meaning
