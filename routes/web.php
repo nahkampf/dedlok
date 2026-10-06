@@ -161,6 +161,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/run', [InventoryController::class, 'run'])
         ->name('inventory.run');
 
+    // Use one copy of a consumable (a medkit): it is spent and its effect lands at once.
+    Route::post('/inventory/{entry}/use', [InventoryController::class, 'consume'])->name('inventory.use');
+
     // On or off the belt: one route for both, like inventory.wear.
     Route::post('/inventory/{entry}/belt', [InventoryController::class, 'belt'])->name('inventory.belt');
 

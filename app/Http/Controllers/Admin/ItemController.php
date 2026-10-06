@@ -20,6 +20,7 @@ use App\Drugs\DrugEditor;
 use App\Drugs\Family;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ItemRequest;
+use App\Items\ConsumableEditor;
 use App\Market\Rarity;
 use App\Models\Item;
 use App\Models\Skill;
@@ -113,6 +114,8 @@ class ItemController extends Controller
 
             DrugEditor::apply($item, $request->drugFamily(), $request->drugColumns());
 
+            ConsumableEditor::apply($item, $request->consumableEffects());
+
             ArmourEditor::apply($item, $request->armourSlots());
             WeaponEditor::apply($item, $request->weaponColumns());
             AmmunitionEditor::apply($item, $request->ammoColumns());
@@ -152,6 +155,10 @@ class ItemController extends Controller
             // Always, and for the same reason: an item that has stopped being
             // a drug has to lose its row, or it stays swallowable.
             DrugEditor::apply($item, $request->drugFamily(), $request->drugColumns());
+
+            // Always, for the same reason: an item that has stopped being a consumable has to lose its row, or it
+            // stays usable by anyone who already owns a copy.
+            ConsumableEditor::apply($item, $request->consumableEffects());
 
             // Always: an item that has stopped being armour has to lose its row, and come off
             // everybody wearing it.

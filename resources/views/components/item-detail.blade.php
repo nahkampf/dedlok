@@ -223,8 +223,18 @@
                 </form>
             @endif
 
-            {{-- A drug can ride on the belt, ready to hand. The first free slot takes it, and the whole pile goes. --}}
-            @if ($item->isDrug())
+            {{-- A consumable (a medkit) is spent for what it does at once. Refused, and kept, if it would do nothing. --}}
+            @if ($item->consumable)
+                <form method="POST" action="{{ route('inventory.use', $entry) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm btn--primary cut" title="{{ $item->consumable->describe() }}">
+                        {{ Text::get('consumables.use') }}
+                    </button>
+                </form>
+            @endif
+
+            {{-- A drug or consumable can ride on the belt, ready to hand. The first free slot takes it, and the whole pile goes. --}}
+            @if ($item->isDrug() || $item->consumable)
                 <form method="POST" action="{{ route('inventory.belt', $entry) }}">
                     @csrf
                     <button type="submit" class="btn btn--sm cut {{ $entry->isBelted() ? 'btn--ghost' : '' }}">

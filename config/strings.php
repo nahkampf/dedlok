@@ -2010,12 +2010,39 @@ return [
             'took_off' => 'You take :item off your belt.',
             'refused' => [
                 'not_owned' => 'That is not yours.',
-                'not_beltable' => 'Only drugs go on a belt, for now.',
+                'not_beltable' => 'Only drugs and consumables go on a belt.',
                 'already_belted' => 'It is already on your belt.',
                 'not_belted' => 'It is not on your belt.',
                 'not_free' => 'Take it out of whatever it is in first.',
                 'belt_full' => 'Your belt is full.',
             ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Consumables
+    |--------------------------------------------------------------------------
+    |
+    | An item that does something once, at once, when a copy is used (a medkit): `App\Items\UseEffect`, applied by
+    | `App\Items\Consumer`. Not a drug, which is an effect that lasts.
+    */
+    'consumables' => [
+        'use' => 'Use',
+        'used' => 'You use :item. :effects',
+        'effects' => [
+            'heal_hitpoints' => [
+                'label' => 'Restores hit points',
+                'card' => 'Restores :amount hit points',
+                'done' => 'You recover :amount hit points.',
+            ],
+        ],
+        'refused' => [
+            'not_owned' => 'That is not yours.',
+            'not_usable' => 'That cannot be used.',
+            'not_free' => 'Take it out of whatever it is in first.',
+            'nothing_to_do' => 'It would do nothing for you right now.',
+            'in_a_fight' => 'You cannot do that in the middle of a fight.',
         ],
     ],
 
@@ -3671,6 +3698,9 @@ return [
                 'ammo_profile_hint' => 'How a hit with this round splits across damage types, adding up to exactly 100: a plain round is 100 penetrating, an incendiary one adds a thermal share.',
                 'armour_slots' => 'Covers',
                 'armour_slots_hint' => 'Where this piece is worn: Head, Torso, Arms and Legs (arms and legs are one slot each, covering both sides). Tick none and it is not armour; tick several and it is a set that takes them all. Its resistances (add them in the effects above, against the damage types) count only for a hit that lands on a part ticked here.',
+                // The consumable panel: what using one copy does, once.
+                'use_heal_hitpoints' => 'Restores hit points',
+                'use_heal_hitpoints_hint' => 'Using one copy restores this many hit points at once, never past the maximum as it stands. Leave it blank and the item is not a consumable. A medkit is this; a drug is something that lasts.',
                 'drug_family_hint' => 'Giving it a family makes the item a drug. The books are kept per family, so this decides which figures a dose moves and which withdrawal it answers.',
                 'duration_minutes' => 'Duration (minutes)',
                 'duration_minutes_hint' => 'How long one dose is in effect.',
@@ -3717,6 +3747,7 @@ return [
                 'mission' => 'Work',
                 'hardware' => 'Deck hardware',
                 'software' => 'Software',
+                'consumable' => 'Consumable',
                 'drug' => 'Drug',
                 'armour' => 'Armour',
                 'weapon' => 'Weapon',

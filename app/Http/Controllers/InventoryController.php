@@ -20,6 +20,9 @@ use App\Equipment\BeltEquipper;
 use App\Equipment\BeltRefusal;
 use App\Inventory\ItemPlacer;
 use App\Inventory\SkillInjector;
+use App\Items\Consumer;
+use App\Items\UseEffect;
+use App\Items\UseRefusal;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -132,6 +135,29 @@ class InventoryController extends Controller
         return $result instanceof WearRefusal
             ? back()->with('error', $result->message())
             : back()->with('status', Text::get($worn ? 'combat.armour.took_off' : 'combat.armour.put_on', ['item' => $name]));
+    }
+
+    /** Use one copy of a consumable: spent, and what it does lands at once. */
+    public function consume(Request $request, InventoryItem $entry, Consumer $consumer): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $name = $entry->item?->displayName() ?? '';
+        $result = $consumer->use($character, $entry);
+
+        if ($result instanceof UseRefusal) {
+            return back()->with('error', $result->message());
+        }
+
+        $done = [];
+
+        foreach ($result as $kind => $amount) {
+            $done[] = UseEffect::from($kind)->done($amount);
+        }
+
+        return back()->with('status', Text::get('consumables.used', ['item' => $name, 'effects' => implode(' ', $done)]));
     }
 
     /** Put a drug on the belt, or take it off. One route for both directions, like `wear`. */

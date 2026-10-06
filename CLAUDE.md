@@ -866,7 +866,7 @@ The sheet no longer carries an equipment panel.
   class already picks its hand, and `equipped_ranged_id` / `equipped_melee_id` are unchanged.
 - **The belt is three slots (`config/equipment.php`) on `inventory_items.belt_slot`**, written only by
   `App\Equipment\BeltEquipper`. A slot holds one ROW, so a pile of stims is one slot and the whole pile goes on. Only
-  drugs may be belted today. A belted row has no stack key (like a running program) so it does not merge with the loose
+  drugs and consumables may be belted today. A belted row has no stack key (like a running program) so it does not merge with the loose
   pile; taking it off merges it back. A belted row is on the person: it cannot be listed, sold or put in a container.
 - **NOT BUILT: using a belted drug in a fight.** It was chosen, and it is its own piece of work: the fight engine
   snapshots the player's aim, damage and defence when a fight opens, so a stimulant taken mid-fight would not touch them
@@ -1076,6 +1076,29 @@ implant's; the row says which family, how long, and what it costs the books.
 - **`App\Drugs\DrugEditor` is the only writer of the `drugs` table** and clears the side an
   item stopped being, exactly as `ProgramEditor` does. The item editor has a Drug panel and
   `ItemRequest` refuses a drug that is also software, deck hardware or an imprint.
+
+### Consumables
+
+**A consumable is an item with a `consumables` row** — the same shape a drug, software and a weapon have — and it does
+something ONCE, AT ONCE, when a copy is used: a medkit. **It is not a drug and it is not a modifier**: a drug is an effect
+that lasts and is read by the resolver while it lasts, and the effects editor's targets are resolved stats, which is
+why it had nothing to offer a medkit. A consumable changes a STORED number a single time.
+
+- **`App\Items\UseEffect` is a fixed vocabulary**; `heal_hitpoints` is the first (restores current hit points, via
+  `Character::recover()`, so never past the maximum as it stands — mending an injury is a clinic's job). A new kind is a
+  case, a label, and an arm of `would()` and `apply()`. `consumables.effects` is a list of `{kind, amount}`.
+- **`App\Items\Consumer` is the only thing that uses one**, in one transaction with the character locked: the copy is
+  spent (the last takes its row) and the effects land together. **A use that would do nothing is REFUSED and the copy
+  kept** (`UseRefusal::NothingToDo`, as a service that would do nothing is by `LoyaltyExchange`), so a medkit is never
+  wasted at full health. It refuses a stranger's row, a non-consumable, a copy that is not to hand (in a container, fitted),
+  and **a live fight** (`InAFight`: COMBAT.md lists items mid-fight as later).
+- **`App\Items\ConsumableEditor` is the only writer of the table and clears the side an item stopped being.** The item
+  editor has a Consumable panel with one whole-number field per kind (blank is none; zero and fractions are errors), and
+  `ItemRequest` makes a consumable none of the other kinds (drug, software, hardware, imprint, implant, armour, weapon,
+  ammunition).
+- **Where it shows up:** the stash card (*Use*, with what it does in the button's title, and *Put on belt*), the route
+  `inventory.use`, the belt (consumables go on it like drugs) and the Equipment screen's belt dialog.
+- **HP does not regenerate on its own and nothing here changes that**: clinics and medkits only.
 
 ### Implants
 

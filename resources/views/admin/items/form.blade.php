@@ -283,6 +283,25 @@
              WHAT IT DOES is the modifiers panel above, like an implant's. What
              it COSTS is here — the family decides which books a dose moves,
              and the two figures are how fast it moves them. --}}
+        {{-- A consumable: what using one copy does, once. A number per kind of effect; blank is none, and an item with
+             none is not a consumable. Not a drug (that lasts) and not an effect row above (those are resolved stats). --}}
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.consumable') }}</span></div>
+            <div class="panel__bd">
+                @foreach (\App\Items\UseEffect::cases() as $kind)
+                    @php($field = 'use_'.$kind->value)
+                    @php($stored = collect($item?->consumable?->effects ?? [])->firstWhere('kind', $kind->value)['amount'] ?? '')
+                    <div class="field" @error($field) data-invalid @enderror>
+                        <label class="field__label" for="{{ $field }}">{{ Text::get('admin.items.fields.'.$field) }}</label>
+                        <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="1" step="1"
+                               value="{{ old($field, $stored) }}">
+                        <span class="field__hint">{{ Text::get('admin.items.fields.'.$field.'_hint') }}</span>
+                        @error($field) <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.drug') }}</span></div>
             <div class="panel__bd">

@@ -18,6 +18,7 @@ use App\Decks\SlotType;
 use App\Decks\Variant;
 use App\Drugs\Family;
 use App\Implants\BodyRegion;
+use App\Items\UseEffect;
 use App\Market\Rarity;
 use App\Models\Ammunition;
 use App\Models\Item;
@@ -157,6 +158,9 @@ class ItemRequest extends FormRequest
             'program_kind' => $this->filled('program_kind') ? $this->input('program_kind') : null,
             // Drugs, the same way: empty is no value.
             'drug_family' => $this->filled('drug_family') ? $this->input('drug_family') : null,
+            // A consumable: one number per kind of effect, blank meaning none. Whole numbers only, so a stray
+            // decimal is a validation error and not a quiet rounding.
+            'use_heal_hitpoints' => $this->filled('use_heal_hitpoints') ? $this->input('use_heal_hitpoints') : null,
             'duration_minutes' => $this->panelNumber('duration_minutes', $isDrugForm),
             'addictive' => $this->panelNumber('addictive', $isDrugForm),
             'tolerance_gain' => $this->panelNumber('tolerance_gain', $isDrugForm),
@@ -229,6 +233,7 @@ class ItemRequest extends FormRequest
         $hardware = $this->hardware();
         $isProgram = $this->programKind() !== null;
         $isDrug = $this->drugFamily() !== null;
+        $isConsumable = $this->consumableEffects() !== [];
         $isArmour = $this->armourSlots() !== [];
         $weaponClass = $this->weaponClass();
         $isWeapon = $weaponClass !== null;
@@ -355,9 +360,18 @@ class ItemRequest extends FormRequest
              * software or deck hardware. What it DOES lives on `modifiers`
              * like an implant's; these four are what it costs.
              */
-            'drug_family' => $hardware !== null || $isProgram || $isImprint || $isGear
+            'drug_family' => $hardware !== null || $isProgram || $isImprint || $isGear || $isConsumable
                 ? ['prohibited']
                 : ['nullable', Rule::enum(Family::class)],
+
+            /*
+             * CONSUMABLES. An item is one because it names something using a copy does, the way it is a drug
+             * because it has a family. What it does is a number per kind (`App\Items\UseEffect`); blank is none.
+             * A consumable is a PHYSICAL object used up once, so it is none of the other kinds.
+             */
+            'use_heal_hitpoints' => $hardware !== null || $isProgram || $isImprint || $isGear || $isDrug || $this->filled('implant_region')
+                ? ['prohibited']
+                : ['nullable', 'integer', 'min:1', 'max:10000'],
 
             'duration_minutes' => $isDrug
                 ? ['required', 'integer', 'min:1', 'max:10080']
@@ -662,6 +676,7 @@ class ItemRequest extends FormRequest
             }
 
             if (count($kinds) > 1
+                || $this->consumableEffects() !== []
                 || $this->hardware() !== null
                 || $this->input('use_op') === Item::USE_INJECT_SKILL
                 || $this->filled('implant_region')) {
@@ -843,6 +858,9 @@ class ItemRequest extends FormRequest
             $data['ammo_calibre'], $data['ammo_type'], $data['ammo_damage'], $data['ammo_penetration'], $data['ammo_profile'], $data['ammo_riders'],
         );
 
+        // And so does a consumable.
+        unset($data['use_heal_hitpoints']);
+
         // And so does a drug. Nothing on `items` says an item is one.
         unset(
             $data['drug_family'], $data['duration_minutes'], $data['addictive'],
@@ -977,6 +995,27 @@ class ItemRequest extends FormRequest
         if ($problem !== null) {
             $validator->errors()->add($field, Text::get("admin.validation.profile_{$problem}"));
         }
+    }
+
+    /**
+     * What using one copy does, as the rows `consumables.effects` stores: a kind and a whole amount for each filled
+     * field, in the vocabulary's order. Empty when this is not a consumable.
+     *
+     * @return list<array{kind: string, amount: int}>
+     */
+    public function consumableEffects(): array
+    {
+        $effects = [];
+
+        foreach (UseEffect::cases() as $kind) {
+            $value = $this->input('use_'.$kind->value);
+
+            if ($value !== null && $value !== '' && (int) $value > 0) {
+                $effects[] = ['kind' => $kind->value, 'amount' => (int) $value];
+            }
+        }
+
+        return $effects;
     }
 
     /** What family of drug this payload describes, if any. */

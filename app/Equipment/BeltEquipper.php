@@ -9,7 +9,7 @@ use App\Models\InventoryItem;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Puts things on the belt and takes them off. The only writer of `inventory_items.belt_slot`.
+ * Puts things on the belt and takes them off. Drugs and consumables go on it: what is meant to be used in a hurry. The only writer of `inventory_items.belt_slot`.
  *
  * WHICH SLOT is not the player's question, as which socket is not for `ModuleFitter::fitToDeck()`: the first free
  * one takes it. A slot holds one inventory ROW, so a pile of stims is one slot however many are in it, and the
@@ -29,7 +29,7 @@ final class BeltEquipper
             return BeltRefusal::NotOwned;
         }
 
-        if ($row->item?->drug === null) {
+        if ($row->item?->drug === null && $row->item?->consumable === null) {
             return BeltRefusal::NotBeltable;
         }
 
