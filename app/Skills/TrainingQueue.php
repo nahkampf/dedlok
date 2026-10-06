@@ -137,9 +137,10 @@ final class TrainingQueue
 
             $firstBefore = (int) $entries->first()->id;
 
-            // Two passes: (character_id, position) is unique, so rows cannot swap places in one.
+            // Two passes: (character_id, position) is unique, so rows cannot swap places in one. The parking
+            // spot has to fit the column, which is a tinyint unsigned (255): 100 clears a queue of five.
             foreach ($entries as $entry) {
-                $entry->forceFill(['position' => $entry->position + 1000])->save();
+                $entry->forceFill(['position' => $entry->position + 100])->save();
             }
 
             foreach ($ids as $index => $id) {
@@ -181,10 +182,10 @@ final class TrainingQueue
     {
         $validator = new TrainingQueueValidator;
 
-        // A problem's position is part of its sentence, and moving an entry moves the sentence: compare them
-        // without it.
+        // A problem's position, and how far short a prerequisite is, are part of its sentence, and moving an entry
+        // moves both: compare the problems without them, so one the queue already had is the same problem.
         $plain = static fn (array $problems): array => array_map(
-            static fn (string $p): string => (string) preg_replace('/position \d+/', 'position', $p),
+            static fn (string $p): string => (string) preg_replace(['/position \d+/', '/only \d+ is/'], ['position', 'only N is'], $p),
             $problems,
         );
 

@@ -107,6 +107,14 @@ final class TrainingQueueReorderTest extends TestCase
         $this->assertSame([$cb, $c1, $h1], $this->order());
     }
 
+    public function test_a_prerequisite_that_was_already_unmet_stays_the_same_problem_when_it_is_less_short(): void
+    {
+        // Codebreaking needs Hacking 2. First in the queue it is short by two; behind Hacking I, by one.
+        [$cb, $h1, $h2] = $this->queue([[$this->codebreaking, 1], [$this->hacking, 1], [$this->hacking, 2]]);
+
+        $this->assertTrue($this->reorder([$h1, $cb, $h2]));
+    }
+
     public function test_the_entry_that_stops_being_first_loses_its_clock_and_the_new_first_starts_one(): void
     {
         [$h1, $c1] = $this->queue([[$this->hacking, 1], [$this->crypto, 1]]);
