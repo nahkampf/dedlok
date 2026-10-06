@@ -143,6 +143,17 @@
     if (dlg.showModal) dlg.showModal();
   });
 
+  /* Select all: <input type="checkbox" data-select-all="FORM-ID"> ticks and unticks every
+     <input data-select-row form="FORM-ID">, and follows them back: it is ticked while all are
+     and clear while any is not. */
+  document.querySelectorAll("input[data-select-all]").forEach((all) => {
+    const rows = () => document.querySelectorAll('input[data-select-row][form="' + all.dataset.selectAll + '"]');
+    all.addEventListener("change", () => rows().forEach((r) => { r.checked = all.checked; }));
+    document.addEventListener("change", (e) => {
+      if (e.target.matches("input[data-select-row]")) all.checked = [...rows()].every((r) => r.checked);
+    });
+  });
+
   /* Unfolding an inbox message reads it: <details data-mark-read="URL">. Once, on the first
      open, with keepalive like the patch notes. The row quietens and the rail's count comes
      down, so the page agrees with the server without a reload. */

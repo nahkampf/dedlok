@@ -24,6 +24,21 @@
                     </button>
                 </form>
             @endif
+
+            {{-- Select-all and delete-selected. The ticks live in the rows and belong to this form
+                 through their `form` attribute, so a row's own forms are never nested inside it. --}}
+            @if (count($messages) > 0)
+                <label class="check" style="margin-left:var(--s-3)">
+                    <input type="checkbox" data-select-all="inbox-bulk">
+                    <span class="check__box"></span><span class="micro">{{ Text::get('notifications.select_all') }}</span>
+                </label>
+
+                <form id="inbox-bulk" method="POST" action="{{ route('notifications.destroy_many') }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn--sm btn--quiet cut">{{ Text::get('notifications.delete_selected') }}</button>
+                </form>
+            @endif
         </div>
 
         <div class="panel__bd">
@@ -45,6 +60,11 @@
                     @foreach ($messages as $message)
                         <details data-mark-read="{{ route('notifications.mark', $message) }}" @if ($message->read_at !== null) data-read @endif>
                             <summary>
+                                <label class="check" title="{{ Text::get('notifications.select_one') }}">
+                                    <input type="checkbox" name="ids[]" value="{{ $message->id }}" form="inbox-bulk" data-select-row
+                                           aria-label="{{ Text::get('notifications.select_one') }}">
+                                    <span class="check__box"></span>
+                                </label>
                                 <span class="slot__icon" aria-hidden="true">{{ $message->category->glyph() }}</span>
                                 <span class="item-row__name" data-message-title style="flex:1;min-width:0;@if ($message->read_at !== null)color:var(--ink-3)@endif">{{ $message->title ?? $message->category->label() }}</span>
                                 <span class="micro" style="color:var(--ink-3)">{{ $message->created_at->diffForHumans() }}</span>
@@ -83,12 +103,20 @@
                                 {{-- Where the category leads. A POST and not a link: it writes
                                      (it reads the message), and it sits outside the summary
                                      because a button in a summary is not one a browser draws. --}}
+                                <div class="row row--wrap" style="--gap:var(--s-2)">
                                 <form method="POST" action="{{ route('notifications.open', $message) }}">
                                     @csrf
                                     <button type="submit" class="btn btn--sm btn--quiet cut">
                                         {{ Text::get('notifications.go_to', ['place' => $message->category->label()]) }}
                                     </button>
                                 </form>
+
+                                <form method="POST" action="{{ route('notifications.destroy', $message) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('notifications.delete') }}</button>
+                                </form>
+                                </div>
                             </div>
                         </details>
                     @endforeach

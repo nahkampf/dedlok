@@ -367,6 +367,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read', [NotificationController::class, 'read'])->name('notifications.read');
     // Opening one is reading it, and it writes, so it is a POST like the other.
     Route::post('/notifications/{message}/open', [NotificationController::class, 'open'])->name('notifications.open');
+    // Deleting: one from its opened body, or the ticked ones (`ids[]`) from the top of the page.
+    Route::delete('/notifications', [NotificationController::class, 'destroyMany'])->name('notifications.destroy_many');
+    Route::delete('/notifications/{message}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
     // Unfolding one in the inbox reads it without leaving the page; sent by `ui-kit.js`.
     Route::post('/notifications/{message}/mark', [NotificationController::class, 'mark'])->name('notifications.mark');
     Route::post('/skills/queue', [TrainingQueueController::class, 'store'])->name('training.store');

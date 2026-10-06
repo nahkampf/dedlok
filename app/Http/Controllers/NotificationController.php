@@ -89,6 +89,26 @@ class NotificationController extends Controller
         return response()->noContent();
     }
 
+    public function destroy(Request $request, Notification $message, Notifier $notifier): RedirectResponse
+    {
+        abort_unless((int) $message->user_id === (int) $request->user()->getKey(), 404);
+
+        $notifier->delete($request->user(), [$message->getKey()]);
+
+        return back()->with('status', Text::plural('notifications.deleted', 1));
+    }
+
+    public function destroyMany(Request $request, Notifier $notifier): RedirectResponse
+    {
+        $ids = array_values(array_filter(array_map('intval', (array) $request->input('ids', []))));
+
+        if ($ids === []) {
+            return back()->with('error', Text::get('notifications.none_selected'));
+        }
+
+        return back()->with('status', Text::plural('notifications.deleted', $notifier->delete($request->user(), $ids)));
+    }
+
     public function read(Request $request, Notifier $notifier): RedirectResponse
     {
         /** @var User $user */

@@ -229,6 +229,52 @@ final class NotificationTest extends TestCase
         $this->assertNull($theirs->fresh()->read_at);
     }
 
+    public function test_one_message_can_be_deleted_and_somebody_elses_cannot(): void
+    {
+        $mine = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+        $keep = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'B', 'level' => 1]);
+        $theirs = $this->notifier()->send(Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3])), Category::Training, 'skill_level', ['skill' => 'C', 'level' => 1]);
+
+        $this->actingAs($this->user)->delete(route('notifications.destroy', $mine))->assertRedirect();
+        $this->actingAs($this->user)->delete(route('notifications.destroy', $theirs))->assertNotFound();
+
+        $this->assertNull(Notification::find($mine->id));
+        $this->assertNotNull(Notification::find($keep->id));
+        $this->assertNotNull(Notification::find($theirs->id));
+    }
+
+    public function test_ticked_messages_are_deleted_together_and_other_peoples_ids_are_ignored(): void
+    {
+        $a = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+        $b = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'B', 'level' => 1]);
+        $keep = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'C', 'level' => 1]);
+        $theirs = $this->notifier()->send(Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3])), Category::Training, 'skill_level', ['skill' => 'D', 'level' => 1]);
+
+        $this->actingAs($this->user)->delete(route('notifications.destroy_many'), ['ids' => [$a->id, $b->id, $theirs->id]])
+            ->assertRedirect()->assertSessionHas('status', '2 messages deleted.');
+
+        $this->assertSame([$keep->id], Notification::where('user_id', $this->user->id)->pluck('id')->all());
+        $this->assertNotNull(Notification::find($theirs->id));
+    }
+
+    public function test_deleting_with_nothing_ticked_says_so(): void
+    {
+        $this->actingAs($this->user)->delete(route('notifications.destroy_many'))
+            ->assertRedirect()->assertSessionHas('error');
+    }
+
+    public function test_the_screen_offers_a_tick_per_message_select_all_and_delete(): void
+    {
+        $m = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('data-select-all="inbox-bulk"', false)
+            ->assertSee('name="ids[]" value="'.$m->id.'"', false)
+            ->assertSee('Delete selected')
+            ->assertSee(route('notifications.destroy', $m), false);
+    }
+
     /** A City message reads, and leads to the city map. */
     public function test_opening_a_city_message_reads_it_and_goes_to_the_map(): void
     {

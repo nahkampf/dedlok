@@ -593,6 +593,16 @@ return [
         'new' => 'New',
         'mark_read' => 'Mark all read',
         'go_to' => 'Go to :place',
+        'delete' => 'Delete',
+        'delete_selected' => 'Delete selected',
+        'select_all' => 'Select all',
+        'select_one' => 'Select this message',
+        'none_selected' => 'Tick the messages to delete first.',
+        'deleted' => [
+            'zero' => 'Nothing was deleted.',
+            'one' => 'One message deleted.',
+            'many' => ':count messages deleted.',
+        ],
         // Pieces of a line in a message's list (the siphon report's).
         'details' => [
             'grade' => 'grade :grade',

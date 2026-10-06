@@ -109,6 +109,21 @@ final class Notifier
             ->update(['read_at' => now()]);
     }
 
+    /**
+     * Delete messages, and only this account's: an id that is somebody else's, or gone, is simply not
+     * counted. Real and unrecoverable, like every delete here; the inbox is a convenience and a
+     * message is never the only record of anything.
+     *
+     * @param  list<int>  $ids
+     */
+    public function delete(User $user, array $ids): int
+    {
+        return Notification::query()
+            ->where('user_id', $user->getKey())
+            ->whereIn('id', $ids)
+            ->delete();
+    }
+
     /** What the rail's badge counts. */
     public function unreadFor(User $user): int
     {

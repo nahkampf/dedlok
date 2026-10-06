@@ -1186,6 +1186,10 @@ stood on this not existing.
   by a test) and stored on `notifications.title`; NULL, for a message from before titles, shows the category label.
   **Unfolding one reads it** — `ui-kit.js` POSTs `notifications.mark` (204) on the first open and lowers the rail's
   count — and *Go to* is the old `notifications.open` (read, then the category's route).
+- **Messages can be deleted**, one from its opened body or the ticked ones from the top (a select-all box and *Delete
+  selected*). The ticks sit in the rows and belong to one form through their `form` attribute, so no row form is nested
+  in another. `Notifier::delete()` is the writer, scoped to the account: somebody else's id is simply not counted.
+  Real and unrecoverable, with no confirmation (a message is never the only record of anything).
 - **The body is never recomposed.** A message outlives its own subject — a machine
   relocates, a skill is renamed, an achievement is retired — so a stored sentence is the
   only one that is still true tomorrow. Same call `system_contacts` makes about a sighting.
