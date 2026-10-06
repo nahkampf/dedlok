@@ -986,7 +986,10 @@
 
     dlg.addEventListener("close", () => stop());
 
-    on("click", "[data-reading-open]", (e, btn) => {
+    // `:not(dialog)`: right after a scan starts the dialog itself carries data-reading-open (below), and without
+    // this every click inside it, Run in background included, matched the dialog, closed it via data-close and
+    // then reopened it here.
+    on("click", "[data-reading-open]:not(dialog)", (e, btn) => {
       start(btn.dataset.readingOpen);
       if (dlg.showModal) dlg.showModal();
     });
