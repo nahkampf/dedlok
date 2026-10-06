@@ -809,6 +809,11 @@ each hand, on the same wireframe as Implants (`<x-equipment-map>`, `.bodymap`). 
 filled slot here carries the *Take off* button for the route that put it there (`inventory.wear`, `.wield`, `.belt`).
 The sheet no longer carries an equipment panel.
 
+- **Every slot line has an *Equip* button that opens that place's dialog** (`Equip: <place>`, a table of what the stash
+  holds that would go there: armour whose wear slots include it, drugs for the belt, ranged weapons for Primary and
+  close ones for Secondary; what is already equipped is not offered). Each row's button posts to the same toggle route
+  (`inventory.wear`, `.wield`, `.belt`), so one writer serves the stash card and this screen. The body map uses short
+  names (`equipment.map.*`) so its labels cannot run into each other.
 - **Armour is worn on four `WearSlot`s — head, torso, arms, legs — and arms and legs are one slot each, covering both
   sides.** `ArmourSlot` (six hit locations) is still where a hit LANDS and what `worn_armour`, `WornArmour` and an NPC's
   per-part resistances use. `Armour::covers()` expands whatever is stored to whole groups, so a legacy one-armed piece

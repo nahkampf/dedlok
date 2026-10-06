@@ -19,15 +19,16 @@
            x="0" y="0" width="200" height="260" />
 
     @php
-        // Marker (x, y) on the figure, and where the label hangs. Labels sit in two columns so none crosses another.
+        // Marker (x, y) on the figure, and where the label hangs. Five labels down the left and two down the right,
+        // each on its own line, with the SHORT names (`equipment.map`): "Secondary weapon" ran into "Primary weapon".
         $places = [
             'head'      => ['x' => 101, 'y' => 26,  'lx' => 12,  'ly' => 20,  'anchor' => 'start'],
-            'torso'     => ['x' => 101, 'y' => 75,  'lx' => 188, 'ly' => 40,  'anchor' => 'end'],
-            'arms'      => ['x' => 152, 'y' => 80,  'lx' => 188, 'ly' => 66,  'anchor' => 'end'],
+            'torso'     => ['x' => 101, 'y' => 75,  'lx' => 12,  'ly' => 58,  'anchor' => 'start'],
             'belt'      => ['x' => 101, 'y' => 114, 'lx' => 12,  'ly' => 96,  'anchor' => 'start'],
             'primary'   => ['x' => 17,  'y' => 120, 'lx' => 12,  'ly' => 150, 'anchor' => 'start'],
-            'secondary' => ['x' => 185, 'y' => 119, 'lx' => 188, 'ly' => 150, 'anchor' => 'end'],
             'legs'      => ['x' => 80,  'y' => 190, 'lx' => 12,  'ly' => 235, 'anchor' => 'start'],
+            'arms'      => ['x' => 152, 'y' => 80,  'lx' => 188, 'ly' => 66,  'anchor' => 'end'],
+            'secondary' => ['x' => 185, 'y' => 119, 'lx' => 188, 'ly' => 150, 'anchor' => 'end'],
         ];
     @endphp
 
@@ -50,6 +51,6 @@
         </rect>
 
         <text class="bodymap__label" x="{{ $place['lx'] }}" y="{{ $place['ly'] }}"
-              text-anchor="{{ $place['anchor'] }}">{{ $region['label'] }} {{ $used }}/{{ $total }}</text>
+              text-anchor="{{ $place['anchor'] }}">{{ Text::get('equipment.map.'.$region['key']) }} {{ $used }}/{{ $total }}</text>
     @endforeach
 </svg>

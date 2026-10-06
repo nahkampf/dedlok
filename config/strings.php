@@ -1970,7 +1970,23 @@ return [
     */
     'equipment' => [
         'title' => 'Equipment',
-        'lede' => 'What is on your body: armour in four places, a belt for what you want to hand, and a weapon in each hand.',
+        'lede' => 'Equipment like armour, weapons, consumables etc that you have equipped',
+        // The short names drawn on the body map, where long ones run into each other.
+        'map' => [
+            'head' => 'Head',
+            'torso' => 'Torso',
+            'arms' => 'Arms',
+            'belt' => 'Belt',
+            'primary' => 'Primary',
+            'secondary' => 'Secondary',
+            'legs' => 'Legs',
+        ],
+        'equip' => 'Equip',
+        'equip_title' => 'Equip: :slot',
+        'candidates_none' => 'Nothing in your stash fits here.',
+        'columns' => ['item' => 'Item', 'details' => 'Details'],
+        'covers' => 'Worn on :slots',
+        'damage' => 'Damage :damage',
         'regions' => [
             'belt' => 'Belt',
             'primary' => 'Primary weapon',
@@ -1979,8 +1995,6 @@ return [
             'left_hand' => 'left hand',
         ],
         'take_off' => 'Take off',
-        'how' => 'Things go on from your stash.',
-        'to_stash' => 'Open the stash',
         'belt' => [
             'empty' => 'Empty',
             'put_on' => 'Put on belt',

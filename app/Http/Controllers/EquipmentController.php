@@ -34,14 +34,24 @@ class EquipmentController extends Controller
      * The seven places, in body order, each with what is in it.
      *
      * `rows` are inventory rows (one per piece however many places it covers: a jacket worn on Torso and Arms is
-     * one row in both), `route` is what takes one off, `empty` is the word for a bare place.
+     * one row in both), `route` is what takes one off AND puts one on (they are one toggle), `empty` is the word for
+     * a bare place, and `candidates` is what the stash holds that could go here, for the Equip dialog.
      *
-     * @return list<array{key: string, label: string, hint: ?string, capacity: int, rows: list<InventoryItem>, route: string, empty: string}>
+     * @return list<array{key: string, label: string, hint: ?string, capacity: int, rows: list<InventoryItem>, route: string, empty: string, candidates: list<array{row: InventoryItem, details: string}>}>
      */
     private function regions(Character $character): array
     {
         $worn = $character->wornArmour()->with('inventoryItem.item')->get();
         $regions = [];
+
+        // Everything in hand that is armour, a weapon or a drug, read once and sorted into places below. Loose only:
+        // a thing in a container, fitted or installed is not to hand.
+        $stash = InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->loose()
+            ->whereHas('item', static fn ($item) => $item->whereHas('armour')->orWhereHas('weapon')->orWhereHas('drug'))
+            ->with('item.armour', 'item.weapon', 'item.drug')
+            ->get();
 
         foreach (WearSlot::cases() as $slot) {
             $rows = $worn
@@ -59,6 +69,13 @@ class EquipmentController extends Controller
                 'rows' => $rows,
                 'route' => 'inventory.wear',
                 'empty' => 'combat.armour.bare',
+                'candidates' => $stash
+                    ->filter(fn (InventoryItem $row): bool => $row->item->armour !== null
+                        && in_array($slot, $row->item->armour->wornOn(), true) && ! $row->isWorn())
+                    ->map(fn (InventoryItem $row): array => [
+                        'row' => $row,
+                        'details' => Text::get('equipment.covers', ['slots' => implode(', ', array_map(fn (WearSlot $s): string => $s->label(), $row->item->armour->wornOn()))]),
+                    ])->values()->all(),
             ];
         }
 
@@ -76,6 +93,12 @@ class EquipmentController extends Controller
                 ->all(),
             'route' => 'inventory.belt',
             'empty' => 'equipment.belt.empty',
+            'candidates' => $stash
+                ->filter(fn (InventoryItem $row): bool => $row->item->drug !== null && ! $row->isBelted())
+                ->map(fn (InventoryItem $row): array => [
+                    'row' => $row,
+                    'details' => $row->item->drug->family->label().($row->quantity > 1 ? ' ×'.$row->quantity : ''),
+                ])->values()->all(),
         ];
 
         // The right hand holds the ranged weapon and the left the close one: the class of a weapon already
@@ -94,6 +117,14 @@ class EquipmentController extends Controller
                 'rows' => $row === null ? [] : [$row->loadMissing('item')],
                 'route' => 'inventory.wield',
                 'empty' => $empty,
+                // The right hand takes ranged weapons and the left the close ones: the class says which hand.
+                'candidates' => $stash
+                    ->filter(fn (InventoryItem $row): bool => $row->item->weapon !== null
+                        && $row->item->weapon->class->ranged() === ($key === 'primary') && ! $row->isWielded())
+                    ->map(fn (InventoryItem $row): array => [
+                        'row' => $row,
+                        'details' => $row->item->weapon->class->label().($row->item->weapon->calibre !== null ? ' · '.$row->item->weapon->calibre : ($row->item->weapon->damage !== null ? ' · '.Text::get('equipment.damage', ['damage' => $row->item->weapon->damage]) : '')),
+                    ])->values()->all(),
             ];
         }
 

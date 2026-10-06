@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Combat\ArmourSlot;
+use App\Combat\WeaponClass;
 use App\Combat\WearSlot;
 use App\Drugs\Family;
 use App\Equipment\BeltEquipper;
@@ -14,6 +15,7 @@ use App\Models\Character;
 use App\Models\Drug;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Weapon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -124,6 +126,83 @@ final class EquipmentScreenTest extends TestCase
 
         $other = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3]));
         $this->actingAs($other->user)->post(route('inventory.belt', $stim))->assertNotFound();
+    }
+
+    /** One dialog's table, from its opening tag to its close. */
+    private function dialog(string $html, string $key): string
+    {
+        preg_match('/<dialog id="equip-'.$key.'".*?<\/dialog>/s', $html, $m);
+
+        return $m[0] ?? '';
+    }
+
+    private function weapon(string $class, string $name): InventoryItem
+    {
+        $item = Item::factory()->create(['container' => 'physical', 'name' => $name, 'stackable' => false]);
+        Weapon::create([
+            'item_id' => $item->id, 'class' => WeaponClass::from($class), 'damage' => 6, 'damage_profile' => ['blunt' => 100],
+            'accuracy' => 0, 'rate' => 1,
+        ]);
+
+        return InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1]);
+    }
+
+    public function test_the_lede_is_the_new_sentence_and_the_stash_line_is_gone(): void
+    {
+        $this->actingAs($this->character->user)->get(route('equipment.index'))->assertOk()
+            ->assertSee('Equipment like armour, weapons, consumables etc that you have equipped')
+            ->assertDontSee('Things go on from your stash');
+    }
+
+    public function test_the_map_uses_the_short_names_for_the_hands(): void
+    {
+        $html = $this->actingAs($this->character->user)->get(route('equipment.index'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/bodymap__label[^>]*>Primary 0\/1</', $html);
+        $this->assertMatchesRegularExpression('/bodymap__label[^>]*>Secondary 0\/1</', $html);
+        $this->assertDoesNotMatchRegularExpression('/bodymap__label[^>]*>Secondary weapon/', $html);
+    }
+
+    public function test_every_place_has_an_equip_button_and_a_dialog_headed_with_its_name(): void
+    {
+        $html = $this->actingAs($this->character->user)->get(route('equipment.index'))->assertOk()->getContent();
+
+        foreach (['head' => 'Head', 'torso' => 'Torso', 'arms' => 'Arms', 'legs' => 'Legs', 'belt' => 'Belt', 'primary' => 'Primary weapon', 'secondary' => 'Secondary weapon'] as $key => $label) {
+            $this->assertStringContainsString('data-open="#equip-'.$key.'"', $html);
+            $this->assertStringContainsString('Equip: '.$label, $this->dialog($html, $key));
+            $this->assertStringContainsString('Nothing in your stash fits here.', $this->dialog($html, $key));
+        }
+    }
+
+    public function test_each_dialog_lists_what_the_stash_holds_that_would_go_there(): void
+    {
+        $helmet = Item::factory()->create(['container' => 'physical', 'name' => 'Visor helm', 'stackable' => false]);
+        Armour::create(['item_id' => $helmet->id, 'slots' => ['head']]);
+        InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $helmet->id, 'quantity' => 1]);
+        $this->drug('Calm pill');
+        $this->weapon('pistol', 'Sidearm');
+        $this->weapon('blade', 'Combat knife');
+
+        $html = $this->actingAs($this->character->user)->get(route('equipment.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('Visor helm', $this->dialog($html, 'head'));
+        $this->assertStringNotContainsString('Visor helm', $this->dialog($html, 'torso'));
+        $this->assertStringContainsString('Calm pill', $this->dialog($html, 'belt'));
+        $this->assertStringContainsString('Sidearm', $this->dialog($html, 'primary'));
+        $this->assertStringNotContainsString('Combat knife', $this->dialog($html, 'primary'));
+        $this->assertStringContainsString('Combat knife', $this->dialog($html, 'secondary'));
+        $this->assertStringNotContainsString('Sidearm', $this->dialog($html, 'secondary'));
+    }
+
+    public function test_something_already_equipped_is_not_offered_again(): void
+    {
+        $row = $this->weapon('pistol', 'Sidearm');
+        $this->character->forceFill(['equipped_ranged_id' => $row->id])->save();
+
+        $html = $this->actingAs($this->character->user)->get(route('equipment.index'))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('Sidearm', $this->dialog($html, 'primary'));
+        $this->assertStringContainsString('Nothing in your stash fits here.', $this->dialog($html, 'primary'));
     }
 
     public function test_the_hands_are_the_right_for_ranged_and_the_left_for_close(): void
