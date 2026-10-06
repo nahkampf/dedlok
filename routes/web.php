@@ -19,6 +19,7 @@ use App\Http\Controllers\CityController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\EncounterController;
+use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\ExchangeController;
 use App\Http\Controllers\FightController;
 use App\Http\Controllers\HomeController;
@@ -159,6 +160,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/run', [InventoryController::class, 'run'])
         ->name('inventory.run');
 
+    // On or off the belt: one route for both, like inventory.wear.
+    Route::post('/inventory/{entry}/belt', [InventoryController::class, 'belt'])->name('inventory.belt');
+
     // Moving a row into a container, or back out of one. One route for both
     // directions: an absent `parent` means the loose pile, which is the same
     // operation with a null target.
@@ -172,6 +176,7 @@ Route::middleware('auth')->group(function () {
      * clinic that offers it (`city.operate`) — see CITY.md.
      */
     Route::get('/implants', [ImplantController::class, 'index'])->name('implants.index');
+    Route::get('/equipment', [EquipmentController::class, 'index'])->name('equipment.index');
 
     /*
      * Cyberspace: the map, and everything done from it.

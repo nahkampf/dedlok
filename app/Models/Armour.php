@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Combat\ArmourSlot;
+use App\Combat\WearSlot;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,12 +26,23 @@ class Armour extends Model
         return ['slots' => 'array'];
     }
 
-    /** @return list<ArmourSlot> the slots covered, in body order, ignoring anything no longer a slot */
+    /**
+     * The hit locations covered, in body order — WHOLE WEAR SLOTS: a piece stored as covering one arm covers both,
+     * because armour is worn on Arms and not on an arm (`WearSlot`). Anything no longer a slot is ignored.
+     *
+     * @return list<ArmourSlot>
+     */
     public function covers(): array
     {
-        $wanted = (array) $this->slots;
+        $groups = WearSlot::groupsOf((array) $this->slots);
 
-        return array_values(array_filter(ArmourSlot::cases(), static fn (ArmourSlot $slot): bool => in_array($slot->value, $wanted, true)));
+        return array_values(array_filter(ArmourSlot::cases(), static fn (ArmourSlot $slot): bool => in_array(WearSlot::of($slot), $groups, true)));
+    }
+
+    /** @return list<WearSlot> the places this piece is worn */
+    public function wornOn(): array
+    {
+        return WearSlot::groupsOf((array) $this->slots);
     }
 
     /** @return BelongsTo<Item, $this> */

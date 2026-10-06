@@ -6,10 +6,10 @@ namespace App\Http\Requests\Admin;
 
 use App\Admin\ModifierField;
 use App\Combat\AmmoType;
-use App\Combat\ArmourSlot;
 use App\Combat\DamageProfile;
 use App\Combat\Riders;
 use App\Combat\WeaponClass;
+use App\Combat\WearSlot;
 use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotKind;
@@ -413,7 +413,7 @@ class ItemRequest extends FormRequest
 
             // ARMOUR. Which slots of the body a piece covers; ticking none means it is not armour.
             'armour_slots' => ['array'],
-            'armour_slots.*' => ['distinct', Rule::enum(ArmourSlot::class)],
+            'armour_slots.*' => ['distinct', Rule::in(WearSlot::values())],
 
             // WEAPONS. A class makes the item one. The damage is ONE fixed figure; the profile says
             // how it splits across damage types (and is judged in withValidator(), as a whole).
@@ -858,16 +858,14 @@ class ItemRequest extends FormRequest
     }
 
     /**
-     * The armour slots this payload ticks, as ArmourSlot values; empty when it is not armour.
+     * The wear slots this payload ticks, expanded to the hit locations they protect (as stored); empty when
+     * it is not armour.
      *
      * @return list<string>
      */
     public function armourSlots(): array
     {
-        return array_values(array_intersect(
-            ArmourSlot::values(),
-            array_map('strval', (array) $this->input('armour_slots', [])),
-        ));
+        return WearSlot::expand(array_map('strval', (array) $this->input('armour_slots', [])));
     }
 
     /** What class of weapon this payload describes, if any. */

@@ -59,6 +59,9 @@
                     @if ($entry->isWorn())
                         <span class="tag">{{ Text::get('combat.armour.worn') }}</span>
                     @endif
+                    @if ($entry->isBelted())
+                        <span class="tag">{{ Text::get('equipment.belt.belted') }}</span>
+                    @endif
                     @if ($entry->isWielded())
                         <span class="tag">{{ Text::get('combat.weapons.wielded') }}</span>
                     @elseif ($item->weapon && ($gate = app(\App\Combat\WeaponWielder::class)->gate($item->weapon->class)))
@@ -216,6 +219,16 @@
                     @csrf
                     <button type="submit" class="btn btn--sm btn--primary cut">
                         {{ Text::get('drugs.take') }}
+                    </button>
+                </form>
+            @endif
+
+            {{-- A drug can ride on the belt, ready to hand. The first free slot takes it, and the whole pile goes. --}}
+            @if ($item->isDrug())
+                <form method="POST" action="{{ route('inventory.belt', $entry) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm cut {{ $entry->isBelted() ? 'btn--ghost' : '' }}">
+                        {{ Text::get($entry->isBelted() ? 'equipment.belt.take_off' : 'equipment.belt.put_on') }}
                     </button>
                 </form>
             @endif

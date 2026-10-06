@@ -16,6 +16,8 @@ use App\Cyberspace\ScanImportRefusal;
 use App\Decks\FittingRefusal;
 use App\Decks\ModuleFitter;
 use App\Drugs\DrugTaker;
+use App\Equipment\BeltEquipper;
+use App\Equipment\BeltRefusal;
 use App\Inventory\ItemPlacer;
 use App\Inventory\SkillInjector;
 use App\Models\Character;
@@ -130,6 +132,22 @@ class InventoryController extends Controller
         return $result instanceof WearRefusal
             ? back()->with('error', $result->message())
             : back()->with('status', Text::get($worn ? 'combat.armour.took_off' : 'combat.armour.put_on', ['item' => $name]));
+    }
+
+    /** Put a drug on the belt, or take it off. One route for both directions, like `wear`. */
+    public function belt(Request $request, InventoryItem $entry, BeltEquipper $belt): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $name = $entry->item?->displayName() ?? '';
+        $on = $entry->isBelted();
+        $result = $on ? $belt->take($character, $entry) : $belt->put($character, $entry);
+
+        return $result instanceof BeltRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get($on ? 'equipment.belt.took_off' : 'equipment.belt.put_on_done', ['item' => $name]));
     }
 
     /** Pick a weapon up, or put it down. One route for both directions, like `wear`. */

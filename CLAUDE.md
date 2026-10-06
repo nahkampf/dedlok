@@ -781,7 +781,7 @@ what a bare `items` row cannot.
 own, and are tabs of `/character` now (as is Standing, below) — because to a player they are one screen: who you
 are, rather than what you are carrying.
 
-- **THE TABS ARE ROUTES, NOT PANELS** (five now: character, skills, implants, standing,
+- **THE TABS ARE ROUTES, NOT PANELS** (six now: character, skills, implants, equipment, standing,
   achievements). Each kept its URL, its controller and its
   tests; `<x-character-tabs>` is a nav of LINKS and the current one is `aria-current`,
   never `role="tab"` with `aria-selected` — promising a tablist and then reloading the page
@@ -801,6 +801,29 @@ are, rather than what you are carrying.
   MEDIUMTEXT because the form allows 65,000 CHARACTERS and TEXT holds 65,535 BYTES — a bio
   in Japanese is three bytes a character. Clearing the box writes NULL: empty and absent
   are one state, and a row of spaces is not a bio.
+
+### Equipment
+
+**The Equipment tab (`/equipment`, read only) draws what is on a body**: armour in four places, a belt, and a weapon in
+each hand, on the same wireframe as Implants (`<x-equipment-map>`, `.bodymap`). Things go on from the stash card and each
+filled slot here carries the *Take off* button for the route that put it there (`inventory.wear`, `.wield`, `.belt`).
+The sheet no longer carries an equipment panel.
+
+- **Armour is worn on four `WearSlot`s — head, torso, arms, legs — and arms and legs are one slot each, covering both
+  sides.** `ArmourSlot` (six hit locations) is still where a hit LANDS and what `worn_armour`, `WornArmour` and an NPC's
+  per-part resistances use. `Armour::covers()` expands whatever is stored to whole groups, so a legacy one-armed piece
+  covers both arms and nothing under it changed; the item editor ticks four boxes and `ArmourEditor` stores the six they
+  protect.
+- **Primary weapon (right hand) is the ranged weapon and Secondary (left hand) the close one.** A relabel: a weapon's
+  class already picks its hand, and `equipped_ranged_id` / `equipped_melee_id` are unchanged.
+- **The belt is three slots (`config/equipment.php`) on `inventory_items.belt_slot`**, written only by
+  `App\Equipment\BeltEquipper`. A slot holds one ROW, so a pile of stims is one slot and the whole pile goes on. Only
+  drugs may be belted today. A belted row has no stack key (like a running program) so it does not merge with the loose
+  pile; taking it off merges it back. A belted row is on the person: it cannot be listed, sold or put in a container.
+- **NOT BUILT: using a belted drug in a fight.** It was chosen, and it is its own piece of work: the fight engine
+  snapshots the player's aim, damage and defence when a fight opens, so a stimulant taken mid-fight would not touch them
+  without rebuilding that snapshot each round (COMBAT.md lists items mid-fight as later). Until then the belt holds drugs
+  and does nothing with them.
 
 ### The wallet
 

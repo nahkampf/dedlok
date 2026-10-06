@@ -61,7 +61,7 @@
                  U+FE0E so it is drawn as text rather than handed to an emoji
                  font. --}}
             <a class="dock__item" href="{{ route('character.index') }}"
-               @if (request()->routeIs('character.index', 'skills.*', 'implants.*', 'standing.*', 'achievements.*')) aria-current="page" @endif>
+               @if (request()->routeIs('character.index', 'skills.*', 'implants.*', 'equipment.*', 'standing.*', 'achievements.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9823;&#65038;</span>
                 <span class="dock__label">{{ Text::get('ui.nav.character') }}</span>
             </a>

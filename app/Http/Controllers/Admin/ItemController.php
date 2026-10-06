@@ -8,10 +8,10 @@ use App\Admin\DeletionImpact;
 use App\Combat\AmmoType;
 use App\Combat\AmmunitionEditor;
 use App\Combat\ArmourEditor;
-use App\Combat\ArmourSlot;
 use App\Combat\DamageProfile;
 use App\Combat\WeaponClass;
 use App\Combat\WeaponEditor;
+use App\Combat\WearSlot;
 use App\Decks\Hardware;
 use App\Decks\HardwareEditor;
 use App\Decks\SlotLayout;
@@ -216,7 +216,7 @@ class ItemController extends Controller
             'hardwareKinds' => Hardware::cases(),
             'programKinds' => ProgramKind::cases(),
             'drugFamilies' => Family::cases(),
-            'armourSlots' => ArmourSlot::cases(),
+            'armourSlots' => WearSlot::cases(),
             'weaponClasses' => WeaponClass::cases(),
             'ammoTypes' => AmmoType::cases(),
             // The eight damage types, as value => label, for the two profile grids.

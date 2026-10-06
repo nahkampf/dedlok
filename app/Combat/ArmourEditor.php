@@ -23,10 +23,13 @@ use App\Models\WornSlot;
  */
 final class ArmourEditor
 {
-    /** @param  list<string>  $slots  ArmourSlot values; empty means this is not armour */
+    /**
+     * @param  list<string>  $slots  WearSlot values (or ArmourSlot values, which name their group); empty
+     *                               means this is not armour. Stored as the hit locations they expand to.
+     */
     public static function apply(Item $item, array $slots): void
     {
-        $slots = array_values(array_intersect(ArmourSlot::values(), $slots));
+        $slots = WearSlot::expand($slots);
         $rows = InventoryItem::query()->where('item_id', $item->getKey())->pluck('id');
 
         if ($slots === []) {

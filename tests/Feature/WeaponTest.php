@@ -269,16 +269,18 @@ final class WeaponTest extends TestCase
         $this->actingAs($this->character->user)->get(route('inventory.index'))
             ->assertOk()->assertSeeText('Equip')->assertDontSeeText('Unequip');
 
-        $this->actingAs($this->character->user)->get(route('character.index'))
-            ->assertOk()->assertSeeText('Equipment')->assertSeeText('Ranged weapon')->assertSeeText('Close combat weapon')->assertSeeText('Bare hands')->assertSeeText('Left leg');
+        $this->actingAs($this->character->user)->get(route('equipment.index'))
+            ->assertOk()->assertSeeText('Primary weapon')->assertSeeText('Secondary weapon')->assertSeeText('Bare hands')->assertSeeText('Legs');
 
         $this->actingAs($this->character->user)->post(route('inventory.wield', $knife))
             ->assertRedirect()->assertSessionHas('status', 'You equip Combat knife.');
 
         $this->actingAs($this->character->user)->get(route('inventory.index'))
             ->assertOk()->assertSeeText('Unequip')->assertSeeText('Equipped');
-        $this->actingAs($this->character->user)->get(route('character.index'))
+        $this->actingAs($this->character->user)->get(route('equipment.index'))
             ->assertOk()->assertSeeText('Combat knife')->assertDontSeeText('Bare hands');
+        $this->actingAs($this->character->user)->get(route('character.index'))
+            ->assertOk()->assertDontSeeText('Primary weapon');
 
         $this->actingAs($this->character->user)->post(route('inventory.wield', $knife))
             ->assertSessionHas('status', 'You unequip Combat knife.');

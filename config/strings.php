@@ -1729,6 +1729,13 @@ return [
         'damage' => ':count damage',
         'enemies' => ['zero' => 'The street is empty', 'one' => 'One hostile', 'many' => ':count hostiles'],
         'log' => ':attacker hits :target for :damage.',
+        // Where armour is WORN: four places, each a group of the six hit locations below.
+        'wear_slots' => [
+            'head' => 'Head',
+            'torso' => 'Torso',
+            'arms' => 'Arms',
+            'legs' => 'Legs',
+        ],
         'slots' => [
             'head' => 'Head',
             'torso' => 'Torso',
@@ -1953,6 +1960,45 @@ return [
     | see App\Implants\BodyRegion.
     |
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Equipment
+    |--------------------------------------------------------------------------
+    |
+    | What is on a body, as the character window's Equipment tab draws it: armour in four places (App\Combat\WearSlot),
+    | a belt, and a weapon in each hand. The words for armour and weapons themselves are under `combat`.
+    */
+    'equipment' => [
+        'title' => 'Equipment',
+        'lede' => 'What is on your body: armour in four places, a belt for what you want to hand, and a weapon in each hand.',
+        'regions' => [
+            'belt' => 'Belt',
+            'primary' => 'Primary weapon',
+            'secondary' => 'Secondary weapon',
+            'right_hand' => 'right hand',
+            'left_hand' => 'left hand',
+        ],
+        'take_off' => 'Take off',
+        'how' => 'Things go on from your stash.',
+        'to_stash' => 'Open the stash',
+        'belt' => [
+            'empty' => 'Empty',
+            'put_on' => 'Put on belt',
+            'take_off' => 'Take off belt',
+            'belted' => 'On belt',
+            'put_on_done' => 'You put :item on your belt.',
+            'took_off' => 'You take :item off your belt.',
+            'refused' => [
+                'not_owned' => 'That is not yours.',
+                'not_beltable' => 'Only drugs go on a belt, for now.',
+                'already_belted' => 'It is already on your belt.',
+                'not_belted' => 'It is not on your belt.',
+                'not_free' => 'Take it out of whatever it is in first.',
+                'belt_full' => 'Your belt is full.',
+            ],
+        ],
+    ],
+
     'implants' => [
         'title' => 'Implants',
         'lede' => 'Better living through implants.',
@@ -2028,6 +2074,7 @@ return [
             'character' => 'Character',
             'skills' => 'Skills',
             'implants' => 'Implants',
+            'equipment' => 'Equipment',
             'standing' => 'Standing',
             'achievements' => 'Achievements',
         ],
@@ -3585,7 +3632,7 @@ return [
                 'ammo_profile' => 'Damage profile (percent of each type)',
                 'ammo_profile_hint' => 'How a hit with this round splits across damage types, adding up to exactly 100: a plain round is 100 penetrating, an incendiary one adds a thermal share.',
                 'armour_slots' => 'Covers',
-                'armour_slots_hint' => 'Which parts of the body this piece protects. Tick none and it is not armour; tick several and it is a set that takes them all. Its resistances (add them in the effects above, against the damage types) count only for a hit that lands on a part ticked here.',
+                'armour_slots_hint' => 'Where this piece is worn: Head, Torso, Arms and Legs (arms and legs are one slot each, covering both sides). Tick none and it is not armour; tick several and it is a set that takes them all. Its resistances (add them in the effects above, against the damage types) count only for a hit that lands on a part ticked here.',
                 'drug_family_hint' => 'Giving it a family makes the item a drug. The books are kept per family, so this decides which figures a dose moves and which withdrawal it answers.',
                 'duration_minutes' => 'Duration (minutes)',
                 'duration_minutes_hint' => 'How long one dose is in effect.',

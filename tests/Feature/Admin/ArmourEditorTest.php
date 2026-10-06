@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Admin;
 
 use App\Combat\ArmourSlot;
+use App\Combat\WearSlot;
 use App\Models\Armour;
 use App\Models\Item;
 use App\Models\User;
@@ -54,11 +55,12 @@ final class ArmourEditorTest extends TestCase
 
     public function test_a_set_is_one_item_covering_the_slots_that_are_ticked(): void
     {
-        $this->save($this->payload(['slug' => 'jacket', 'armour_slots' => ['torso', 'arm_left', 'arm_right']]))->assertRedirect();
+        $this->save($this->payload(['slug' => 'jacket', 'armour_slots' => ['torso', 'arms']]))->assertRedirect();
 
         $item = Item::query()->where('slug', 'jacket')->sole();
 
         $this->assertTrue($item->isArmour());
+        // Four wear slots are ticked; the row stores the hit locations they protect.
         $this->assertSame(['torso', 'arm_left', 'arm_right'], $item->armour->slots);
         $this->assertSame([ArmourSlot::Torso, ArmourSlot::ArmLeft, ArmourSlot::ArmRight], $item->armour->covers());
         $this->assertCount(2, $item->modifiers, 'several resistances, one per type');
@@ -66,15 +68,25 @@ final class ArmourEditorTest extends TestCase
 
     public function test_the_editor_shows_the_slots_ticked(): void
     {
-        $this->save($this->payload(['armour_slots' => ['head', 'leg_right']]))->assertRedirect();
+        $this->save($this->payload(['armour_slots' => ['head', 'legs']]))->assertRedirect();
         $item = Item::query()->where('slug', 'ceramic_plate')->sole();
 
         $html = $this->actingAs($this->admin())->get(route('admin.items.edit', $item))->assertOk()->getContent();
 
         $this->assertMatchesRegularExpression('/value="head"[^>]*checked/', $html);
-        $this->assertMatchesRegularExpression('/value="leg_right"[^>]*checked/', $html);
+        $this->assertMatchesRegularExpression('/value="legs"[^>]*checked/', $html);
         $this->assertDoesNotMatchRegularExpression('/value="torso"[^>]*checked/', $html);
-        $this->assertStringContainsString('arm_left', $html, 'every slot is offered');
+        $this->assertStringContainsString('value="arms"', $html, 'every wear slot is offered');
+        $this->assertStringNotContainsString('value="arm_left"', $html, 'and the hit locations are not');
+    }
+
+    public function test_a_piece_stored_as_one_arm_covers_both(): void
+    {
+        $item = Item::factory()->create(['slug' => 'half_sleeve']);
+        Armour::create(['item_id' => $item->id, 'slots' => ['arm_left']]);
+
+        $this->assertSame([ArmourSlot::ArmLeft, ArmourSlot::ArmRight], $item->fresh()->armour->covers());
+        $this->assertSame([WearSlot::Arms], $item->fresh()->armour->wornOn());
     }
 
     public function test_ticking_nothing_is_not_armour(): void
