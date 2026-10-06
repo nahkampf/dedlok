@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Skills;
 
 use App\Models\Character;
+use App\Models\TrainingQueueEntry;
+use Illuminate\Support\Collection;
 
 /**
  * Checks a training queue by simulating it forward from the character's
@@ -21,8 +23,18 @@ final class TrainingQueueValidator
      */
     public function problemsFor(Character $character): array
     {
-        $entries = $character->trainingQueue()->with('skill')->get();
+        return $this->problemsForEntries($character, $character->trainingQueue()->with('skill')->get());
+    }
 
+    /**
+     * The same judgement over ANY ordered list of this character's entries, positions as they sit on
+     * the models: how a reordering is asked "what would that queue say?" without writing it.
+     *
+     * @param  Collection<int, TrainingQueueEntry>  $entries  skill loaded, in the order to judge
+     * @return list<string>
+     */
+    public function problemsForEntries(Character $character, Collection $entries): array
+    {
         if ($entries->isEmpty()) {
             return [];
         }

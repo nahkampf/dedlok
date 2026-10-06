@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * card is a physical row holding data rows — the item says what kind of thing
  * it is, the row says where it ended up.
  */
-#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'extracted_file', 'scan_file', 'loaded_ammo_id', 'loaded_rounds'])]
+#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'belt_slot', 'extracted_file', 'scan_file', 'loaded_ammo_id', 'loaded_rounds'])]
 class InventoryItem extends Model
 {
     /** @use HasFactory<InventoryItemFactory> */
@@ -188,6 +188,12 @@ class InventoryItem extends Model
             return null;
         }
 
+        // ON THE BELT is the same kind of place: the belted pile is one slot's contents, and must not merge into
+        // the loose pile of the same item (BeltEquipper merges it back when it comes off).
+        if ($this->belt_slot !== null) {
+            return null;
+        }
+
         // Which pile this belongs to: same item, same owner, same container.
         // Two stacks of the same item in two different cards are two piles.
         return "{$this->character_id}:{$this->item_id}:".($this->parent_id ?? 0);
@@ -339,7 +345,13 @@ class InventoryItem extends Model
      */
     public function isOnPerson(): bool
     {
-        return $this->rounds() > 0 || $this->isWorn() || $this->isWielded();
+        return $this->rounds() > 0 || $this->isWorn() || $this->isWielded() || $this->isBelted();
+    }
+
+    /** Is this on the belt? Like worn armour, a belted row still lists with everything else. */
+    public function isBelted(): bool
+    {
+        return $this->belt_slot !== null;
     }
 
     /** Is this armour being worn? Like an equipped deck, worn armour still lists with everything else. */

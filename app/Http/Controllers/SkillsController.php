@@ -81,7 +81,10 @@ class SkillsController extends Controller
             // planning names a level of its own. Only what they have
             // injected, here as everywhere — a picker listing every skill in
             // the game would be the catalogue this screen deleted.
-            'plannable' => $this->plannable($skills, $levels, $progression),
+            'plannable' => $this->plannable($skills, $levels, $queue, $progression),
+            // How far each of those skills is already spoken for, reached or queued: the level picker offers
+            // only what lies above it, and `ui-kit.js` redraws it when the skill is changed.
+            'planFloors' => $this->planFloors($skills, $levels, $queue),
         ]);
     }
 
@@ -224,12 +227,14 @@ class SkillsController extends Controller
      * @param  array<int, array{level: int, points: int}>  $levels
      * @return array<string, list<array{id: int, label: string}>>
      */
-    private function plannable(Collection $skills, array $levels, SkillProgression $progression): array
+    private function plannable(Collection $skills, array $levels, Collection $queue, SkillProgression $progression): array
     {
         $groups = [];
+        $floors = $this->planFloors($skills, $levels, $queue);
 
         foreach ($skills as $skill) {
-            if (($levels[$skill->id]['level'] ?? 0) >= $progression->maxLevel()) {
+            // Nothing above what is reached or queued means nothing to plan to.
+            if ($floors[$skill->id] >= $progression->maxLevel()) {
                 continue;
             }
 
@@ -237,6 +242,28 @@ class SkillsController extends Controller
         }
 
         return $groups;
+    }
+
+    /**
+     * For each skill, the highest level already reached or queued: a plan can only usefully aim above it.
+     *
+     * @param  Collection<int, Skill>  $skills
+     * @param  array<int, array{level: int, points: int}>  $levels
+     * @param  Collection<int, TrainingQueueEntry>  $queue
+     * @return array<int, int>
+     */
+    private function planFloors(Collection $skills, array $levels, Collection $queue): array
+    {
+        $floors = [];
+
+        foreach ($skills as $skill) {
+            $floors[$skill->id] = max(
+                (int) ($levels[$skill->id]['level'] ?? 0),
+                (int) $queue->where('skill_id', $skill->id)->max('target_level'),
+            );
+        }
+
+        return $floors;
     }
 
     /**

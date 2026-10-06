@@ -96,7 +96,7 @@
 
     {{-- THE QUEUE. An accordion, because it is a thing you come to change
          rather than something to watch. --}}
-    <details class="panel" style="margin-top:var(--s-4)">
+    <details class="panel" style="margin-top:var(--s-4)" @if (session('queue_open')) open @endif>
         {{-- How long the whole thing takes, in the summary as well as inside:
              the panel is shut to begin with, and that is the one number worth
              reading without opening it. --}}
@@ -145,16 +145,29 @@
             @if (count($queue) === 0)
                 <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('training.queue_empty') }}</p>
             @else
-                <div class="stack" style="--gap:2px">
+                @if (count($queue) > 1)
+                    <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('training.reorder_hint') }}</p>
+                @endif
+
+                <div class="stack" style="--gap:2px" data-queue-sort="{{ route('training.reorder') }}">
                     @foreach ($queue as $entry)
                         {{-- Three children exactly: .item-row is a grid of
                              32px / minmax(0,1fr) / auto, so a fourth would drop
                              to a row of its own and no spacer is needed to push
                              the last one over. --}}
-                        <div class="item-row">
-                            <span class="micro num" style="color:var(--ink-3)">
-                                {{ Text::get('training.position', ['position' => $entry->position]) }}
-                            </span>
+                        <div class="item-row" data-queue-row="{{ $entry->id }}">
+                            {{-- The position is the handle when there is anything to reorder with. --}}
+                            @if (count($queue) > 1)
+                                <button type="button" class="micro num queue-handle" data-queue-handle
+                                        title="{{ Text::get('training.reorder_handle') }}"
+                                        aria-label="{{ Text::get('training.reorder_handle') }}">
+                                    {{ Text::get('training.position', ['position' => $entry->position]) }}
+                                </button>
+                            @else
+                                <span class="micro num" style="color:var(--ink-3)">
+                                    {{ Text::get('training.position', ['position' => $entry->position]) }}
+                                </span>
+                            @endif
 
                             <span class="stack" style="--gap:2px;min-width:0">
                                 {{-- On the name and never the row: the row also
@@ -234,12 +247,19 @@
                         </span>
                     </div>
 
+                    {{-- The level picker only offers what lies above what is reached or queued for the chosen skill
+                         (`data-plan-floors`, redrawn by ui-kit.js when the skill changes). It is drawn for the
+                         first skill here as well, so it is right before any script runs. --}}
+                    @php($firstId = (int) (collect($plannable)->first()[0]['id'] ?? 0))
+                    @php($firstFloor = $planFloors[$firstId] ?? 0)
                     <form method="POST" action="{{ route('training.plan') }}"
-                          class="row row--wrap" style="--gap:var(--s-3);align-items:flex-end">
+                          class="row row--wrap" style="--gap:var(--s-3);align-items:flex-end"
+                          data-plan data-plan-floors='@json($planFloors)' data-plan-max="{{ $max }}"
+                          data-plan-label="{{ Text::get('training.plan_option', ['level' => ':level']) }}">
                         @csrf
                         <label class="field" style="flex:1 1 min(240px,100%);min-width:0">
                             <span class="micro">{{ Text::get('training.plan_pick') }}</span>
-                            <select name="skill" class="select">
+                            <select name="skill" class="select" data-plan-skill>
                                 <x-grouped-options :groups="$plannable" />
                             </select>
                         </label>
@@ -249,8 +269,8 @@
                              produces is presses of the button above. --}}
                         <label class="field" style="flex:0 1 min(140px,100%);min-width:0">
                             <span class="micro">{{ Text::get('training.plan_level') }}</span>
-                            <select name="level" class="select">
-                                @for ($level = 1; $level <= $max; $level++)
+                            <select name="level" class="select" data-plan-level>
+                                @for ($level = $firstFloor + 1; $level <= $max; $level++)
                                     <option value="{{ $level }}" @selected($level === $max)>
                                         {{ Text::get('training.plan_option', ['level' => $level]) }}
                                     </option>

@@ -329,7 +329,7 @@
         {{-- Armour. Worn on the body, a part at a time, so the one fact a bare item has no place for is
              WHICH parts it covers: a helmet one, a plate one, a set all six. What it RESISTS is the effects
              panel above, against the damage types, and it counts only where this panel says it is worn. --}}
-        @php($armourTicked = collect(old('armour_slots', $item?->armour?->slots ?? []))->map(fn ($v) => (string) $v)->all())
+        @php($armourTicked = collect(old('armour_slots', array_map(fn ($g) => $g->value, \App\Combat\WearSlot::groupsOf((array) ($item?->armour?->slots ?? [])))))->map(fn ($v) => (string) $v)->all())
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.armour') }}</span></div>
             <div class="panel__bd">

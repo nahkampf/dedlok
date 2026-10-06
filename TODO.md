@@ -57,6 +57,10 @@ button exists; `php artisan fight:start <handle> <npc-slug>` opens one by hand.
 
 ### Parked or open on purpose (do not build without the author)
 
+- **Using a belted drug in a fight** — chosen 2026-10-06 and not built. The belt (three slots, drugs only) exists and
+  holds them. What is missing is a fight action that takes one through `DrugTaker` and a way for its modifiers to reach
+  the player's snapshot (aim, damage, defence are resolved once, when the fight opens): rebuild the snapshot each
+  round, or resolve those stats per round. Decide that before building the action.
 - **No dodge** (decided 2026-10-05). `defence` and `pursuit` (base 8 each) are permanent. Open: whether `defence`
   becomes an attribute pool rather than a flat base.
 - **Combat skills are authored** (aim, damage, `defence`, `pursuit` grants on their rows) and pistol, SMG, rifle and

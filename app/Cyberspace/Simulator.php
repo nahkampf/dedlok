@@ -488,16 +488,25 @@ final readonly class Simulator
         // zero to say so — but the stat alone cannot tell a character with no
         // icebreaker from one whose icebreaker is worth nothing, so the
         // process itself is the question.
-        $running = $character->runningProcesses()
-            ->contains(fn ($process): bool => $process->item?->program?->kind === ProgramKind::Icebreaker);
+        $icebreaker = $character->runningProcesses()
+            ->first(fn ($process): bool => $process->item?->program?->kind === ProgramKind::Icebreaker);
 
-        if (! $running || $damage <= 0 || $run->ice_id === null) {
+        if ($icebreaker === null || $damage <= 0 || $run->ice_id === null) {
             return $this->line('cyberspace.run.log.attack_fails');
         }
 
         $run->ice_integrity = max(0, (int) $run->ice_integrity - $damage);
 
-        return $this->line('cyberspace.run.log.attack', ['damage' => $damage], 'ok');
+        // "Your [Icebreaker name] finds an intrusion vector…": the program is a green tag in the middle of the
+        // sentence, so the line carries what comes before the tag as well as what follows it.
+        return $this->line(
+            'cyberspace.run.log.attack',
+            ['damage' => $damage],
+            'ok',
+            (string) $icebreaker->item?->displayName(),
+            'ok',
+            'cyberspace.run.log.attack_before',
+        );
     }
 
     /**
@@ -1110,7 +1119,7 @@ final readonly class Simulator
 
         $run->backdoored = true;
 
-        $log[] = $this->line('cyberspace.run.log.install', ['kind' => $backdoor->kind->label()], 'ok');
+        $log[] = $this->line("cyberspace.run.log.install.{$backdoor->kind->value}", tone: 'ok');
 
         return $log;
     }
@@ -1314,7 +1323,8 @@ final readonly class Simulator
         }
 
         if (($this->roll)(1, 100) > $ice->skill) {
-            return [$this->line('cyberspace.run.log.ice_misses'), null];
+            // A grey tag naming the ICE, then what it tried: the same shape as its hit, quieter.
+            return [$this->line('cyberspace.run.log.ice_misses', tag: $ice->name, tagTone: ''), null];
         }
 
         $result = (new DamageResolver($this->resolver))->apply(
@@ -1590,12 +1600,14 @@ final readonly class Simulator
      * @param  array<string, string|int>  $replace
      * @return array{text: string, tone: string, tag?: string}
      */
-    private function line(string $key, array $replace = [], string $tone = '', ?string $tag = null): array
+    private function line(string $key, array $replace = [], string $tone = '', ?string $tag = null, string $tagTone = 'crit', ?string $before = null): array
     {
-        return ['text' => Text::get($key, $replace), 'tone' => $tone] + ($tag === null ? [] : ['tag' => $tag]);
+        return ['text' => Text::get($key, $replace), 'tone' => $tone]
+            + ($tag === null ? [] : ['tag' => $tag, 'tag_tone' => $tagTone])
+            + ($before === null ? [] : ['before' => Text::get($before)]);
     }
 
-    /** @param  list<array{text: string, tone: string, tag?: string}>  $lines */
+    /** @param  list<array{text: string, tone: string, tag?: string, tag_tone?: string, before?: string}>  $lines */
     private function appendLog(Run $run, array $lines): void
     {
         $run->forceFill([

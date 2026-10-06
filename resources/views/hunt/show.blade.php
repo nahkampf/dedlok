@@ -47,13 +47,13 @@
     </form>
 </div>
 
-{{-- THE ACCOUNT. Newest last, the way a transcript reads. --}}
+{{-- THE ACCOUNT. Newest first, like the run's: the page is read from the top after every exchange (stored oldest first, reversed here). --}}
 @if ($hunt->log)
     <div class="panel panel--snug" style="margin-top:var(--s-4)">
         <div class="panel__hd"><h2>{{ Text::get('cyberspace.hunt.log_heading') }}</h2></div>
 
         <div style="padding:var(--s-3) 0">
-            @foreach ($hunt->log as $line)
+            @foreach (array_reverse($hunt->log) as $line)
                 <p class="micro" style="margin:0 0 var(--s-1);
                     @if ($line['tone'] === 'crit') color:var(--crit)
                     @elseif ($line['tone'] === 'ok') color:var(--ok)

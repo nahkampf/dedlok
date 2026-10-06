@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Combat\ArmourSlot;
 use App\Drugs\DrugLedger;
 use App\Drugs\Family;
 use App\Models\Archetype;
@@ -48,13 +47,6 @@ class CharacterController extends Controller
             'attributes' => $this->attributes($character),
             'max' => Character::ATTRIBUTE_MAX,
             'vitals' => $this->vitals($character),
-            // What is worn, a body part at a time. Always six rows: a bare slot is an answer.
-            'armour' => $this->armour($character),
-            // What is in their hands: a weapon for Ranged and one for Close, null being bare hands.
-            'hands' => [
-                ['slot' => 'ranged_slot', 'piece' => $character->equippedRanged?->item?->displayName()],
-                ['slot' => 'melee_slot', 'piece' => $character->equippedMelee?->item?->displayName()],
-            ],
             // What is in them right now, and how close each family is to the
             // line. Empty for nearly everybody, and then the section is absent
             // rather than a row of zeroes.
@@ -83,9 +75,14 @@ class CharacterController extends Controller
 
         // Empty and absent are the same thing here: clearing the box is how
         // somebody takes their bio down, and a row of spaces is not a bio.
-        $bio = trim((string) ($data['bio'] ?? ''));
+        //
+        // NOT `trim()`: the bio is monospace and may be ASCII art, so the indentation of its FIRST line is part of
+        // the drawing. Blank lines at the start and whitespace at the end go; leading spaces on a line do not. Line
+        // endings are one kind, because a browser submits CRLF.
+        $raw = str_replace(["\r\n", "\r"], "\n", (string) ($data['bio'] ?? ''));
+        $bio = rtrim(ltrim($raw, "\n"));
 
-        $character->forceFill(['bio' => $bio === '' ? null : $bio])->save();
+        $character->forceFill(['bio' => trim($bio) === '' ? null : $bio])->save();
 
         return back()->with('status', Text::get('character.bio_saved'));
     }
@@ -112,21 +109,6 @@ class CharacterController extends Controller
         }
 
         return $rows;
-    }
-
-    /**
-     * The six slots and what is worn on each: the piece's name, or null for a bare one.
-     *
-     * @return list<array{slot: ArmourSlot, piece: ?string}>
-     */
-    private function armour(Character $character): array
-    {
-        $worn = $character->wornArmour()->with('inventoryItem.item')->get()->keyBy(fn ($row): string => $row->slot->value);
-
-        return array_map(static fn (ArmourSlot $slot): array => [
-            'slot' => $slot,
-            'piece' => $worn->get($slot->value)?->inventoryItem?->item?->displayName(),
-        ], ArmourSlot::cases());
     }
 
     /**

@@ -243,6 +243,37 @@ final class FightTest extends TestCase
         $this->assertSame(1, $result->run->turn);
     }
 
+    public function test_the_log_names_your_icebreaker_in_a_green_tag_and_the_ice_in_a_grey_one(): void
+    {
+        $this->machine(1);
+        $this->runIcebreaker(1);
+        $run = $this->begin();
+
+        // The ICE misses (the die is high): your cut, then its failed attempt.
+        $log = $this->simulator(101)->take($this->character->fresh(), $run, RunAction::Attack)->run->log;
+
+        $cut = collect($log)->first(fn (array $l): bool => ($l['before'] ?? null) === 'Your');
+        $this->assertSame('ok', $cut['tag_tone']);
+        $this->assertSame(Item::query()->where('slug', 'icebreaker-1')->sole()->displayName(), $cut['tag']);
+        $this->assertSame('finds an intrusion vector and pushes a disruptive payload through, causing 1 system integrity loss.', $cut['text']);
+
+        $miss = collect($log)->first(fn (array $l): bool => ($l['text'] ?? '') === 'attempts to find an open attack vector, but fails.');
+        $this->assertSame('', $miss['tag_tone'], 'grey: no colour');
+        $this->assertSame('ICE I', $miss['tag']);
+    }
+
+    public function test_the_last_blow_says_the_ice_is_disabled(): void
+    {
+        $this->machine(1);
+        $this->runIcebreaker(1);
+        $run = $this->begin();
+        $run->forceFill(['ice_integrity' => 1])->save();
+
+        $log = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Attack)->run->log;
+
+        $this->assertTrue(collect($log)->contains(fn (array $l): bool => $l['text'] === 'The ICE freezes, glitches for a few milliseconds and then vanishes, stuck in a crash loop. It is now disabled.'));
+    }
+
     /**
      * NO ICEBREAKER, NO DAMAGE — and the log line is the same one a wasted pass
      * gets, because the player is meant to work out which from a pattern.
@@ -735,7 +766,7 @@ final class FightTest extends TestCase
             ->assertSeeText('You find no viable attack vectors.')
             ->assertSeeText('lands a code payload for')
             ->assertSeeText(' SI.')
-            ->assertSee('<span class="tag">Turn 1</span>', false)
+            ->assertSee('<span class="tag tag--quiet">Turn 1</span>', false)
             ->assertSee('<span class="tag tag--crit">ICE I</span>', false)
             ->assertDontSeeText('It gets through')
             ->assertDontSeeText('Something detects you');

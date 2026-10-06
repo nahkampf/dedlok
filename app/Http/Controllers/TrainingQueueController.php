@@ -8,10 +8,12 @@ use App\Models\Character;
 use App\Models\Skill;
 use App\Models\TrainingQueueEntry;
 use App\Skills\QueueRefusal;
+use App\Skills\ReorderRefusal;
 use App\Skills\SkillProgression;
 use App\Skills\TrainingPlanner;
 use App\Skills\TrainingQueue;
 use App\Support\Text;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -121,6 +123,36 @@ class TrainingQueueController extends Controller
             'skill' => $skill->title,
             'level' => $level,
         ]));
+    }
+
+    /**
+     * Drag-to-reorder: the whole new order, as ids. JSON both ways, because the page that sends it is
+     * a drag and a refusal is a toast and a snap back, not a navigation.
+     */
+    public function reorder(Request $request, TrainingQueue $queue): JsonResponse
+    {
+        $character = $this->character($request);
+
+        $validated = $request->validate([
+            'order' => ['required', 'array', 'min:1', 'max:'.TrainingQueue::LIMIT],
+            'order.*' => ['integer'],
+        ]);
+
+        $result = $queue->reorder($character, $validated['order']);
+
+        if ($result instanceof ReorderRefusal) {
+            return response()->json([
+                'message' => $result->message(['problem' => $result === ReorderRefusal::BreaksRequirement
+                    ? ($queue->introducedProblems($character, $validated['order'])[0] ?? '')
+                    : '']),
+            ], 422);
+        }
+
+        // The page reloads to show the new order, and the queue is where the player was working: it comes back
+        // open instead of folded.
+        $request->session()->flash('queue_open', true);
+
+        return response()->json(['status' => 'ok']);
     }
 
     public function destroy(Request $request, TrainingQueueEntry $entry, TrainingQueue $queue): RedirectResponse

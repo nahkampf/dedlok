@@ -52,7 +52,13 @@
                              with no reason beside it is a screen that looks
                              broken. --}}
                         @unless ($canScan)
-                            <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.no_analyser') }}</span>
+                            @if (! $analyserRunning)
+                                <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.no_analyser') }}</span>
+                            @elseif (! $scan?->isRunning())
+                                {{-- Running, but every instance is reading some other machine. A read on THIS one
+                                     says nothing: the box beside it already offers to show it. --}}
+                                <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.scan.all_busy') }}</span>
+                            @endif
                         @endunless
 
                         {{-- A pass in progress. The bar is the kit's meter with
@@ -64,13 +70,18 @@
                             {{-- The way back into the read. A pass runs for
                                  minutes and a player who closed the screen
                                  needs a door back to it. --}}
-                            <button type="button" class="chip-stat" data-reading-open="{{ $here->address }}">
+                            {{-- Seconds remaining and in all, from the server: the bar and the time are ticked by
+                                 `ui-kit.js` between loads, so a pass visibly moves. --}}
+                            <button type="button" class="chip-stat" data-reading-open="{{ $here->address }}"
+                                    data-pass-clock
+                                    data-remaining="{{ max(0, (int) now()->diffInSeconds($scan->pass_ready_at, false)) }}"
+                                    data-total="{{ max(1, (int) $scan->pass_started_at?->diffInSeconds($scan->pass_ready_at, false)) }}">
                                 <span class="micro">{{ Text::get('cyberspace.scan.reading') }}</span>
-                                <span class="meter" style="--v:{{ round($scan->progress(), 3) }};width:80px"
+                                <span class="meter" data-pass-bar style="--v:{{ round($scan->progress(), 3) }};width:80px"
                                       title="{{ Text::get('cyberspace.scan.ready_in', ['when' => $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE])]) }}">
                                     <span class="meter__fill"></span>
                                 </span>
-                                <span class="micro">{{ $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }}</span>
+                                <span class="micro" data-pass-left>{{ $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }}</span>
                             </button>
                         @endif
                     @endif
@@ -92,18 +103,6 @@
                     {{-- A plain button, not --warn. Jacking out undoes no work:
                          terrain, contacts and bookmarks all survive it. --}}
                     <button type="submit" class="btn cut">{{ Text::get('cyberspace.map.jack_out') }}</button>
-                </form>
-
-                {{-- One press starts one pass, which takes MINUTES and is
-                     spent whether or not it finds anything. Offered only where
-                     there is something to read: the portal answers nothing and
-                     empty ground is not a machine. --}}
-                <form method="POST" action="{{ route('cyberspace.scan') }}">
-                    @csrf
-                    <button type="submit" class="btn btn--sm cut"
-                            @disabled(! $here || ! $canScan || $scan?->isRunning() || $scan?->isComplete())>
-                        {{ Text::get('cyberspace.scan.action') }}
-                    </button>
                 </form>
             @else
                 <form method="POST" action="{{ route('cyberspace.jack_in') }}">
@@ -279,16 +278,71 @@
                         <a class="btn cut" href="{{ route('exchange.show') }}">
                             {{ Text::get('exchange.visit') }}
                         </a>
-                    @elseif (! $canRun)
-                        <p class="micro" style="color:var(--ink-2);margin:0">
-                            {{ $target->isLockedDown()
-                                ? Text::get('cyberspace.run.refused.locked_down')
-                                : Text::get('cyberspace.run.refused.not_intrudable') }}
-                        </p>
                     @else
-                        <a class="btn btn--go cut" href="{{ route('run.setup') }}">
-                            {{ Text::get('cyberspace.run.setup.open') }}
-                        </a>
+                        {{-- Two instructions, in the order a player does them. "Plan a run" says by
+                             its colour whether the read is whole: green when everything is known,
+                             brass when it is not (the run is still allowed; it is only blind).
+                             The scan beside it is a plain button, so there is never a second filled
+                             one next to it. --}}
+                        <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            @if ($canRun)
+                                <a class="btn {{ $scan?->isComplete() ? 'btn--go' : 'btn--warn' }} cut" href="{{ route('run.setup') }}">
+                                    {{ Text::get('cyberspace.run.setup.open') }}
+                                </a>
+                            @else
+                                <p class="micro" style="color:var(--ink-2);margin:0">
+                                    {{ $target->isLockedDown()
+                                        ? Text::get('cyberspace.run.refused.locked_down')
+                                        : Text::get('cyberspace.run.refused.not_intrudable') }}
+                                </p>
+                            @endif
+
+                            {{-- One press starts one pass, which takes MINUTES and is spent whether or not
+                                 it finds anything. Dead while a read is running or whole, and live again
+                                 once the file has gone stale, because a stale file is no longer `$scan`
+                                 at all. An interrupted read can be started again. --}}
+                            @if ($target->type->isScannable())
+                                @if ($scan?->isRunning())
+                                    {{-- A read is going: the way back into it replaces the button that
+                                         would start one, since there is nothing to start. --}}
+                                    <button type="button" class="btn cut" data-reading-open="{{ $target->address }}">
+                                        {{ Text::get('cyberspace.scan.show') }}
+                                    </button>
+                                @else
+                                    <form method="POST" action="{{ route('cyberspace.scan') }}">
+                                        @csrf
+                                        <button type="submit" class="btn cut"
+                                                @disabled(! $here || ! $canScan || $scan?->isComplete())>
+                                            {{ Text::get('cyberspace.scan.action') }}
+                                        </button>
+                                    </form>
+                                @endif
+                            @endif
+                        </div>
+
+                        {{-- WHAT YOU ALREADY HOLD HERE: a backdoor of yours, and which kind it is. The same
+                             label-left, tags-right row the facts below use. Access you were given for an entity's
+                             job leaves no row of yours, so it is not shown. --}}
+                        @if ($heldBackdoor)
+                            <div class="card__stats" style="padding:0;border:0;margin-top:var(--s-3)">
+                                <div class="card__stat">
+                                    <span>{{ Text::get('cyberspace.interact.installed_here') }}</span>
+                                    <span class="row row--wrap" style="--gap:var(--s-2)">
+                                        <span class="tag tag--ok">{{ Text::get('cyberspace.interact.backdoor') }}</span>
+                                        <span class="tag tag--ok" title="{{ Text::get('backdoor.hint.'.$heldBackdoor->kind->value) }}">{{ $heldBackdoor->kind->label() }}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- What the read has found out so far, in the rows and boxes the scanner window and
+                             the briefing use (<x-scan-facts>): every fact either way, so a blank says "not
+                             read yet" instead of looking like nothing to find. Not a count of anything hidden. --}}
+                        @if ($target->type->isScannable())
+                            <div style="margin-top:var(--s-3)">
+                                <x-scan-facts :facts="($scan ?? new \App\Models\SystemScan)->facts($character)" />
+                            </div>
+                        @endif
                     @endif
                 </div>
             </section>
@@ -305,7 +359,10 @@
             <summary class="panel__hd">
                 <h2>{{ Text::get('cyberspace.run.thresholds.heading') }}</h2>
                 <div class="spacer"></div>
-                <span class="micro num">{{ $character->egress_trace_at }}% · {{ $character->egress_si_at }}%</span>
+                {{-- Two tags rather than one line of text, so the values read at a glance when the
+                     panel is folded; each says in its title which threshold it is. --}}
+                <span class="tag num" title="{{ Text::get('cyberspace.run.thresholds.trace') }}">{{ $character->egress_trace_at }}%</span>
+                <span class="tag num" title="{{ Text::get('cyberspace.run.thresholds.si') }}">{{ $character->egress_si_at }}%</span>
             </summary>
 
             <form method="POST" action="{{ route('cyberspace.thresholds') }}" style="padding:var(--s-3) 0">

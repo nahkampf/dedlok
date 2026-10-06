@@ -112,6 +112,9 @@ and extraction are built. See below for what is not.
   the sweep exists.**
 - **Losing a read has two causes that must not share a sentence** —
   `App\Cyberspace\VoidCause`: the instrument stopped, or the machine burned/relocated.
+- **The top bar's reading chip ticks on a JS timer** (`[data-pass-clock]`, seconds remaining and total from the server,
+  never an absolute time), moving its bar and time each second and reloading shortly after the pass ends so the page
+  settles it. The read dialog, which polls, is the other place the bar moves.
 - **A read is a screen you watch.** The `<dialog>` in the layout polls
   `cyberspace.reading` while open, and the endpoint settles a matured pass on the way past.
   It polls only while open.
@@ -486,6 +489,9 @@ consequences and taking what a machine holds all roll.
 - **They are set from the MAP, never from inside a run** — an accordion on the cyberspace
   screen, because they are a play style, and changing them mid-fight would be changing the
   rules of a fight while standing in it.
+- **The run log's turn tag is `.tag--quiet`** (no fill, hairline, `--ink-3`): the turn is context for the line, and the tags that name WHO acted (ICE, your icebreaker) are the ones that should carry colour.
+- **The run log is drawn NEWEST FIRST** (stored oldest first, reversed in the view), so the answer to the turn just taken is where the eye already is instead of below the fold, and so is the hunter's.
+- **The core-touch button (Extract, Install) turns `.btn--go` when the core is OPEN**: no ICE awake and nothing left to get past (`Simulator::coreChance()` is null — the operating system has been spoken to, or there never was one). Burn keeps its ember: it is the destructive one. Backdoor kinds read through `backdoor.kind.*` (a label once read a key under `cyberspace.`, which does not exist, and the button said so).
 - **A log line is stored rendered, and may carry a `tag`.** `runs.log` entries are `{text, tone,
   turn}` plus an optional `tag` — who did it ("ICE VII"), shown as a tag in front of the text. It is
   kept BESIDE the text rather than inside it so the screen can style it, and an old log without one
@@ -493,6 +499,16 @@ consequences and taking what a machine holds all roll.
 - **The run screen draws the trace as the CHAIN it walks** — the machine at one end, you at
   the other, backdoored relays between. Two nodes today, drawn as a chain so it will not
   have to change. `Run::turnsUntilTraced()` is worked out server-side.
+- **The map's *Interact* box holds the two things you do to the machine you stand on**: *Plan a run* and *Scan*
+  (the scan button is no longer in the top bar). *Plan a run* is `.btn--go` when the live scan is whole
+  (`SystemScan::isComplete()`) and `.btn--warn` (brass) when it is not or there is none; Scan is a plain button, so
+  there is never a second filled one beside it. While a read runs, *Scan* is replaced by *Show scan* (the way back into
+  the read window). Scan is dead while the file is whole and live again once
+  the file is stale (a stale scan is not the live `$scan`); an interrupted partial read can be started again. The
+  *Thresholds* panel beneath shows its two values as tags. Under the buttons the box lists what the live scan has found
+  (`<x-scan-facts>`, the briefing's and the scanner window's own rows): every fact either way, so a blank reads
+  UNKNOWN rather than as nothing to find. Above them, an *Installed here* row lists the backdoor you already hold in this system and its kind
+  (read live off `backdoors`; access you were given for an entity's job leaves no row of yours, so it is not shown).
 - **`run.setup` is the briefing, and the only way a run begins.** The map says *Plan a run*.
   Everything on the briefing is permanent: purpose fixed at the door, backdoor kind
   unchangeable, route snapshotted at start.
@@ -716,6 +732,9 @@ against ICE generated on the fly, and it locks the screen until it is settled.
   full width) marks the screen as a hunter attacking the player rather than a run against a
   system — the same licence `.hud-alert` spends, on a different shape, because nothing
   else on a hunt screen says so: no trace, no IDS, no briefing to read it off of.
+  **The waiting screen (`/down`) wears the same stripe across the top of its box** under the heading *Incapacitated!*:
+  being finished is what the accent is for. Behind the box the whole page is `.floor-overlay`: bone and ember stripes at
+  45°, 16px wide, one z-step below popovers so a toast still shows (the box is lifted one above it).
 
 ### Being on the floor
 

@@ -2,6 +2,67 @@
 
 ## [Unreleased]
 
+## [0.38.0] — 2026-10-07
+
+An Equipment tab and a belt, combat skills with effects and a weapon gate, a live inbox, a rebuilt Interact box on the map, and an alpha-testing flag.
+
+### Added
+
+- **The Equipment tab** (`/equipment`, read only): armour in four places (`WearSlot`: head, torso, arms, legs), a belt of three
+  (`config/equipment.php`, `inventory_items.belt_slot`, `App\Equipment\BeltEquipper`, drugs only) and a weapon in each hand
+  (Primary, right, is the ranged weapon; Secondary, left, the close one), on the Implants wireframe (`<x-equipment-map>`).
+  Every slot line has an *Equip* button opening `Equip: <place>`: a table of what the stash holds that would go there. The
+  sheet no longer carries an equipment panel. Arms and legs are ONE slot each covering both sides (`Armour::covers()`
+  expands any stored coverage to whole groups; the item editor ticks four boxes); hit locations in combat are still six.
+- **Skill gates on weapons** (`combat.skill_gates`, `combat.gate_level`): pistol, SMG, rifle and shotgun need level 1 in the
+  matching skill to equip (`WieldRefusal::RequiresSkill`); the stash card is tagged *Requires <skill> <level>*.
+- **Combat skills have effects** and four new ones (Shotguns, Physiology, Combat Training, Tactical Movement) arrive by
+  migration, with prerequisites. Existing skills only gain effects and prerequisites; their titles, descriptions, ranks and
+  prices are left alone.
+- **Drag to reorder the training queue** (`TrainingQueue::reorder()`, `training.reorder`): refused when the new order has a
+  problem the old one did not. The plan picker's level list follows the chosen skill and only offers levels above what is
+  reached or queued.
+- **The inbox is polled** every five seconds from every page (`notifications.unread`, in every lock's allow-list): the rail's
+  badge is redrawn and `public/assets/sound/message.wav` plays for a new message, at most once in ten seconds.
+- **Inbox titles, deletion and scan data**: an accordion of titles; select-all and delete; a finished read's message carries
+  its facts; old messages are given the title they would have had.
+- **The map's Interact box**: Plan a run (green when the scan is whole, brass when not), Scan / Show scan, *Installed here*
+  for a backdoor you hold, and the scan's facts beneath. The reading chip ticks between loads.
+- **The Running modal lists what the deck could run**, each with a Run button (`ProgramRunner::refusalFor()` is the one list of
+  checks; `startable()`).
+- **A wallet pager**: every entry, 50 a page.
+- **Feature flag `alpha_testing`** (`config/features.php`, `FEATURE_ALPHA_TESTING`, off by default): registration needs a
+  beta key; the admin has a *Beta keys* section (generate, copy-and-mark-given-out, who used it). Documented in CLAUDE.md,
+  *Feature flags*, with everything it touches.
+- A duplicate (+) button on every effect row of the effects editor.
+
+### Changed
+
+- **The run log is newest first** (so is the hunt's), its turn tag is quiet, and its ICE and icebreaker lines are reworded.
+  The core-touch button (Extract, Install) turns green once the core is open. Install's lines are reworded and a landed one
+  says to egress.
+- **`/down`**: *Incapacitated!*, an ember hazard stripe across its box and bone-and-ember stripes behind it.
+- The sheet's "What is in you" is *Drugs*; the bio is a monospace, no-wrap field that keeps its leading spaces.
+- "Cyberspace" messages read as "Siphon report" etc. Scan alerts name the system and address.
+- No dodge, by decision: `defence` and `pursuit` are flat stats. MECHANICS.md's status table is brought up to date.
+
+### Fixed
+
+- Run in background on the scan window closed it and reopened it at once.
+- A scanner busy reading was reported as "no scanner running".
+- A siphon's button and the run header showed `cyberspace.backdoor.kind.siphon` (a label read a key under the wrong group).
+- Reordering the queue overflowed `training_queue.position` (a tinyint) on MySQL while parking rows.
+
+### Migrations
+
+- `2026_10_06_120000_combat_skills_get_their_effects` (data: effects, prerequisites, four new skills with imprints; reversible)
+- `2026_10_06_130000_old_messages_get_titles` (data: fills `notifications.title` from stored sentences)
+- `2026_10_06_140000_a_belt_for_consumables` (adds `inventory_items.belt_slot`, unique with the owner)
+- `2026_10_07_100000_beta_keys` (new `beta_keys` table)
+
+The alpha flag is off unless `FEATURE_ALPHA_TESTING=true` is set, so a deploy changes nothing about registration.
+
+
 ## [0.37.0] — 2026-10-06
 
 The inbox becomes an accordion of titles, a weapon can require a skill to equip, and the wallet ledger pages.
@@ -2403,7 +2464,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.37.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.38.0...HEAD
+[0.38.0]: https://github.com/nahkampf/dedlok/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/nahkampf/dedlok/compare/v0.36.1...v0.37.0
 [0.36.1]: https://github.com/nahkampf/dedlok/compare/v0.36.0...v0.36.1
 [0.36.0]: https://github.com/nahkampf/dedlok/compare/v0.35.0...v0.36.0

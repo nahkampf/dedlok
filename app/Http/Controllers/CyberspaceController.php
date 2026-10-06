@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Cyberspace\Backdoors;
 use App\Cyberspace\BookmarkKeeper;
 use App\Cyberspace\BookmarkKind;
 use App\Cyberspace\Grid;
@@ -80,13 +81,17 @@ class CyberspaceController extends Controller
             // that something landed and whether any of it was lost; the files
             // themselves say the rest.
             $lost = count(array_filter($settled, static fn ($result): bool => $result->voided));
-            $found = array_sum(array_map(static fn ($result): int => count($result->found), $settled));
+            // One sentence per system that learned something, by name: several reads can settle at once.
+            $news = array_values(array_filter(array_map(
+                fn ($result): ?string => $result->scan !== null && $result->found !== [] ? $this->newDataLine($result->scan) : null,
+                $settled,
+            )));
 
             $request->session()->now(
                 $lost > 0 ? 'error' : 'status',
                 $lost > 0
                     ? Text::plural('cyberspace.scan.lost', $lost, ['count' => $lost])
-                    : Text::plural('cyberspace.scan.found', $found, ['count' => $found]),
+                    : ($news === [] ? Text::get('cyberspace.scan.nothing_new') : implode(' ', $news)),
             );
         }
 
@@ -121,6 +126,9 @@ class CyberspaceController extends Controller
             // being read and two instruments going, the button is dead for a
             // third and the screen should know it.
             'canScan' => $probe->freeAnalyser($character) !== null,
+            // Told apart from having none at all: a scanner that is busy reading is running, and "you have no
+            // scanner running" would be false the moment a read begins.
+            'analyserRunning' => $probe->hasAnalyserRunning($character),
             /*
              * WHAT A RUN FROM HERE WOULD LOOK LIKE, before committing to one.
              *
@@ -134,6 +142,9 @@ class CyberspaceController extends Controller
                 ? System::query()->at($character->gridPosition())->first()
                 : null,
             'canRun' => $target !== null && $target->type->isInteractable() && ! $target->isLockedDown(),
+            // What the character already holds in this system, for the Interact box: a backdoor row is access, so
+            // it is read live off the machine they stand on.
+            'heldBackdoor' => $target === null ? null : (new Backdoors)->heldOn($character, $target),
             // Who answers for what you are standing on, and what they make of
             // you. Read off the LIVE system rather than the contact: a
             // sighting remembers a name, and standing is with a row.
@@ -218,11 +229,20 @@ class CyberspaceController extends Controller
                 ]));
         }
 
-        return back()->with('status', Text::plural(
-            'cyberspace.scan.found',
-            count($result->found),
-            ['count' => count($result->found)],
-        ));
+        return back()->with('status', $result->found === [] || $result->scan === null
+            ? Text::get('cyberspace.scan.nothing_new')
+            : $this->newDataLine($result->scan));
+    }
+
+    /** "System Silo - Veritas 123 [DEADBEEF] has new scan data": which system, by name and address. */
+    private function newDataLine(SystemScan $scan): string
+    {
+        $system = System::query()->where('address', $scan->address)->first();
+
+        return Text::get('cyberspace.scan.new_data', [
+            'system' => $system?->displayName() ?? Text::get('cyberspace.scan.unknown_system'),
+            'address' => $scan->address,
+        ]);
     }
 
     /**

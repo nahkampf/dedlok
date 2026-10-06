@@ -1,3 +1,19 @@
+## 0.38.0 (2026-10-07)
+
+- Equipment tab on the character screen.
+- Skeleton in place for equipment, armor etc.
+- Balanced some combat skills
+- Training Queue skills are now draggable
+- Messages are now polled every 5s, and a sound plays (if the browser allows it) at new messages.
+- Lots of tidying up and tightening of the texts and UI for cyberspace screen, scanning, and intrusion runs.
+- The "Running programs" modal now lists programs you can start, and a button to start them
+- Switched order of run log so latest is always on top (also applies to Hunter logs). 
+- Completed scan messages now contain the results of the scan
+- Decorated and tidied up the /down screen. 
+- Character bio now renders with monospace font, so we can use ASCII art
+- Some small status message bugs and labelling issues fixed in scan and runs
+- Feature flagged "alpha testing" keys when registering - only people with an alpha key can register
+
 ## 0.37.0 (2026-10-06)
 
 - Messages are now full messages. Accordion show titles, click for full message.

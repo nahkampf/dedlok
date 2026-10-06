@@ -8,6 +8,7 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Notifications\Notifier;
 use App\Support\Text;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -59,6 +60,24 @@ class NotificationController extends Controller
     }
 
     /**
+     * What the rail's badge needs, as JSON, and nothing else: how many are unread and the id of the newest message.
+     *
+     * Polled from every page, so it is two indexed reads. A NEW message is one whose id is higher than the newest
+     * the page already knew about, which is why this carries an id rather than only a count: a message read and a
+     * message arriving between two polls leave the count where it was.
+     */
+    public function unread(Request $request, Notifier $notifier): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return response()->json([
+            'unread' => $notifier->unreadFor($user),
+            'latest' => $notifier->latestIdFor($user),
+        ]);
+    }
+
+    /**
      * Open one message: read it, then go wherever its category leads.
      *
      * OPENING ONE IS READING IT, which is not the contradiction of the rule
@@ -87,6 +106,26 @@ class NotificationController extends Controller
         $notifier->markRead($message);
 
         return response()->noContent();
+    }
+
+    public function destroy(Request $request, Notification $message, Notifier $notifier): RedirectResponse
+    {
+        abort_unless((int) $message->user_id === (int) $request->user()->getKey(), 404);
+
+        $notifier->delete($request->user(), [$message->getKey()]);
+
+        return back()->with('status', Text::plural('notifications.deleted', 1));
+    }
+
+    public function destroyMany(Request $request, Notifier $notifier): RedirectResponse
+    {
+        $ids = array_values(array_filter(array_map('intval', (array) $request->input('ids', []))));
+
+        if ($ids === []) {
+            return back()->with('error', Text::get('notifications.none_selected'));
+        }
+
+        return back()->with('status', Text::plural('notifications.deleted', $notifier->delete($request->user(), $ids)));
     }
 
     public function read(Request $request, Notifier $notifier): RedirectResponse

@@ -14,6 +14,16 @@
                    value="{{ old('email') }}" required autocomplete="username">
         </div>
 
+        {{-- ALPHA TESTING (config/features.php): a beta key, while the flag is on. --}}
+        @if (config('features.alpha_testing'))
+            <div class="field">
+                <label class="field__label" for="code">{{ Text::get('auth.beta.code') }}</label>
+                <input class="input input--mono" id="code" name="code" type="text"
+                       value="{{ old('code') }}" required autocomplete="off" autocapitalize="characters" spellcheck="false">
+                <span class="field__hint">{{ Text::get('auth.beta.hint') }}</span>
+            </div>
+        @endif
+
         <div class="field">
             <label class="field__label" for="password">{{ Text::get('auth.password') }}</label>
             <input class="input" id="password" name="password" type="password"

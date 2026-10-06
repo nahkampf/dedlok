@@ -417,6 +417,49 @@ registration and password-reset request.
   `CAP_VERIFY_ENDPOINT` the container's (`cap:3000`), defaulting to the first.
   `CAP_SECRET` is the site key's secret, never `CAP_ADMIN_KEY`.
 
+### Feature flags
+
+**`config/features.php` holds one switch per unfinished thing, read as `config('features.<name>')`, OFF by default,
+set in `.env`.** A flag is documented here: what it does, and every place that reads it. Add to this list when a flag
+gains a reader.
+
+#### `alpha_testing` (`FEATURE_ALPHA_TESTING`)
+
+**While it is ON, nobody can register without a valid, unused BETA KEY, and the admin has a *Beta keys* section.** OFF,
+registration is open exactly as it was, the register form has no key field, and the admin section does not exist (its
+routes 404 and the dashboard card is not drawn). Turning it off deletes nothing and forgets nothing: the table is simply
+not asked. **It does not touch accounts that already exist, sign-in, password reset or the captcha.**
+
+- **A key is `XXXX-XXXX-XXXX`**, from an alphabet with no 0/O or 1/I/L, single-use. `BetaKeys::normalise()` accepts
+  what a person types (lower case, no dashes, stray spaces). A key that does not exist and one already spent get the
+  same sentence (`auth.beta.invalid`), so a guess learns nothing.
+- **Spent means `used_at` is set**, and `beta_keys.user_id` NULLS when the account is deleted and never cascades, so a
+  deleted tester's key does not become valid again. Registration is one transaction: the key is checked before
+  anything is written (`assertUsable`) and spent on the new user with its row locked (`claim`), so two people cannot
+  use one key and a refused registration (bad email, say) does not burn it.
+- **In the admin** the list shows each key, a status tag, and, for a spent one, the email and the character's handle
+  (or "no character yet"). *Copy* copies the key and marks it **given out** (`given_out_at`, idempotent), which strikes
+  it through in the list. *Generate a key* makes one new key. `given_out_at` is informational: it never stops a key
+  working.
+
+**Everything the flag touches:**
+
+| Where | What it does with the flag |
+| --- | --- |
+| `config/features.php`, `.env.sample` | defines it and its env var |
+| `App\Beta\BetaKeys` | the only writer of `beta_keys`; `BetaKeys::enabled()` is the one read of the flag in PHP |
+| `app/Actions/Fortify/CreateNewUser.php` | when on: refuses a missing, wrong or spent key, and spends the key in the same transaction as the user |
+| `resources/views/auth/register.blade.php` | when on: draws the *Beta key* field |
+| `database/migrations/2026_10_07_100000_beta_keys.php`, `App\Models\BetaKey` | the table and model (they exist whatever the flag says) |
+| `App\Http\Controllers\Admin\BetaKeyController`, `routes/web.php` (`admin.beta_keys.*`) | every action is `abort_unless(enabled, 404)` |
+| `resources/views/admin/beta-keys/index.blade.php`, `resources/views/admin/index.blade.php` | the section, and the dashboard card (drawn only when on) |
+| `public/assets/js/ui-kit.js`, `ui-kit.css` | `data-copy-then` / `data-copy-mark` (POST after a copy that worked, then strike through) and `.strike` — both generic, nothing about keys |
+| `config/strings.php` | `auth.beta.*`, `admin.beta_keys.*` |
+| `tests/Feature/AlphaTestingTest.php` | both states of the flag |
+
+**To remove the feature for good:** delete that table's rows of the list above, drop `beta_keys` in a migration, and take
+the `BetaKeys` branch out of `CreateNewUser`.
+
 ### Inventory and imprints
 
 **Two inventories, and one gate in front of every skill.**
@@ -519,6 +562,18 @@ every save. The skill EDITOR is the only place all of them are visible.
   that cannot happen yet — that is what lets Codebreaking sit behind Hacking.
   `TrainingQueueValidator` says what will stall; `QueueRefusal` has three cases and none is
   about requirements.
+- **The plan picker's level list follows the skill chosen**: it offers only levels above what is reached or queued
+  (`SkillsController::planFloors()`, handed to the page as `data-plan-floors` and redrawn by `ui-kit.js`; drawn for
+  the first skill server-side too, so it is right before any script runs). A skill with every level reached or queued
+  is not offered to plan at all.
+- **The queue can be reordered by dragging, and a reordering IS refused for a requirement** — unlike queueing and
+  removing, which only warn. `TrainingQueue::reorder()` takes all the entry ids in the new order and asks
+  `TrainingQueueValidator::problemsForEntries()` about it: refused (`ReorderRefusal::BreaksRequirement`) when the new
+  order has a problem the current one lacks (a level ahead of the one before it, a skill ahead of its prerequisite),
+  so a queue the player was left with by removing something can still be tidied. **The deposit runs first; the entry
+  that stops being first loses its clock** (a stale one would credit its waiting time) and the new first starts one.
+  The page sends the order as JSON (`training.reorder`, 422 and a message on refusal); the handle is the position
+  number and works with pointer events (HTML5 drag does nothing on a phone) and ArrowUp/ArrowDown.
 - **Removing one is allowed to break the rest**, deliberately. **The deposit runs first**,
   inside `remove()`, because removing position 1 throws away its clock.
 - **Renumbering is ascending** — `(character_id, position)` is unique, so each row moves
@@ -702,6 +757,11 @@ what a bare `items` row cannot.
 - **`App\Programs\ProgramRunner` is the only writer.** Starting takes one copy off the pile
   and gives it a row; stopping puts it back and MERGES (not optional — `stack_key` is
   unique).
+- **`ProgramRunner::refusalFor()` is the one list of checks**, asked by `start()` and by `startable()`, so the Running
+  modal's **Could run** list (every loose, idle, background-capable program the deck would accept, each with a *Run*
+  button posting to `inventory.run`) offers exactly what a press would do. It is fetched when the modal opens
+  (`programs.startable`, a fragment, `ui-kit.js`) rather than drawn in the layout, because working it out totals the
+  deck and the layout is on every page.
 - **Always the equipped deck**, which is why `start()` takes no deck argument. So
   unequipping stops everything, and so do fitting, stripping and destroying:
   `stopAll()` is called by `DeckEquipper`, `ModuleFitter` and the destroy path.
@@ -764,7 +824,7 @@ what a bare `items` row cannot.
 own, and are tabs of `/character` now (as is Standing, below) — because to a player they are one screen: who you
 are, rather than what you are carrying.
 
-- **THE TABS ARE ROUTES, NOT PANELS** (five now: character, skills, implants, standing,
+- **THE TABS ARE ROUTES, NOT PANELS** (six now: character, skills, implants, equipment, standing,
   achievements). Each kept its URL, its controller and its
   tests; `<x-character-tabs>` is a nav of LINKS and the current one is `aria-current`,
   never `role="tab"` with `aria-selected` — promising a tablist and then reloading the page
@@ -784,6 +844,34 @@ are, rather than what you are carrying.
   MEDIUMTEXT because the form allows 65,000 CHARACTERS and TEXT holds 65,535 BYTES — a bio
   in Japanese is three bytes a character. Clearing the box writes NULL: empty and absent
   are one state, and a row of spaces is not a bio.
+
+### Equipment
+
+**The Equipment tab (`/equipment`, read only) draws what is on a body**: armour in four places, a belt, and a weapon in
+each hand, on the same wireframe as Implants (`<x-equipment-map>`, `.bodymap`). Things go on from the stash card and each
+filled slot here carries the *Take off* button for the route that put it there (`inventory.wear`, `.wield`, `.belt`).
+The sheet no longer carries an equipment panel.
+
+- **Every slot line has an *Equip* button that opens that place's dialog** (`Equip: <place>`, a table of what the stash
+  holds that would go there: armour whose wear slots include it, drugs for the belt, ranged weapons for Primary and
+  close ones for Secondary; what is already equipped is not offered). Each row's button posts to the same toggle route
+  (`inventory.wear`, `.wield`, `.belt`), so one writer serves the stash card and this screen. The body map uses short
+  names (`equipment.map.*`) so its labels cannot run into each other.
+- **Armour is worn on four `WearSlot`s — head, torso, arms, legs — and arms and legs are one slot each, covering both
+  sides.** `ArmourSlot` (six hit locations) is still where a hit LANDS and what `worn_armour`, `WornArmour` and an NPC's
+  per-part resistances use. `Armour::covers()` expands whatever is stored to whole groups, so a legacy one-armed piece
+  covers both arms and nothing under it changed; the item editor ticks four boxes and `ArmourEditor` stores the six they
+  protect.
+- **Primary weapon (right hand) is the ranged weapon and Secondary (left hand) the close one.** A relabel: a weapon's
+  class already picks its hand, and `equipped_ranged_id` / `equipped_melee_id` are unchanged.
+- **The belt is three slots (`config/equipment.php`) on `inventory_items.belt_slot`**, written only by
+  `App\Equipment\BeltEquipper`. A slot holds one ROW, so a pile of stims is one slot and the whole pile goes on. Only
+  drugs may be belted today. A belted row has no stack key (like a running program) so it does not merge with the loose
+  pile; taking it off merges it back. A belted row is on the person: it cannot be listed, sold or put in a container.
+- **NOT BUILT: using a belted drug in a fight.** It was chosen, and it is its own piece of work: the fight engine
+  snapshots the player's aim, damage and defence when a fight opens, so a stimulant taken mid-fight would not touch them
+  without rebuilding that snapshot each round (COMBAT.md lists items mid-fight as later). Until then the belt holds drugs
+  and does nothing with them.
 
 ### The wallet
 
@@ -1184,8 +1272,16 @@ stood on this not existing.
   `.accordion--quiet`). The closed row is the title; opened it shows the sentence, the details list and a *Go to
   <category>* button. **The title is composed at send time** from `notifications.titles.<key>` (one per message key, held
   by a test) and stored on `notifications.title`; NULL, for a message from before titles, shows the category label.
+  **What rides on a message is `details`, in one of two shapes**: a siphon report's list of lines, or a finished read's
+  `facts` (the scan's rows as `SystemScan::facts()` returned them, drawn by `<x-scan-facts>`, so the message shows what
+  the system overview shows as it stood when the read finished). Messages from before titles were given the title they
+  would have had by `2026_10_06_130000_old_messages_get_titles`, read back off their stored sentences.
   **Unfolding one reads it** — `ui-kit.js` POSTs `notifications.mark` (204) on the first open and lowers the rail's
   count — and *Go to* is the old `notifications.open` (read, then the category's route).
+- **Messages can be deleted**, one from its opened body or the ticked ones from the top (a select-all box and *Delete
+  selected*). The ticks sit in the rows and belong to one form through their `form` attribute, so no row form is nested
+  in another. `Notifier::delete()` is the writer, scoped to the account: somebody else's id is simply not counted.
+  Real and unrecoverable, with no confirmation (a message is never the only record of anything).
 - **The body is never recomposed.** A message outlives its own subject — a machine
   relocates, a skill is renamed, an achievement is retired — so a stored sentence is the
   only one that is still true tomorrow. Same call `system_contacts` makes about a sighting.
@@ -1202,6 +1298,12 @@ stood on this not existing.
   painting Training green would say something untrue about it. The category also decides
   where reading one takes you (`route()`), so no URL is ever stored.
 - **Every sender is something nobody pressed a button for** — a finished read, the nightly backdoor roll, a lockdown or burn taking a door, a skill level, an achievement (`insertOrIgnore`'s row count is what makes "said once" true), a mission expiring, a trip landing, cash arriving. Grep `Notifier::send` for the list.
+- **The inbox is polled every five seconds from every page** (`notifications.unread`, JSON `{unread, latest}`: two indexed
+  reads, in every lock's allow-list so a player locked into a run, fight, hunt, encounter or the down screen keeps their
+  badge). `ui-kit.js` redraws the rail's badge and plays `public/assets/sound/message.wav` when `latest` is higher than
+  the newest id the page knew, at most once in ten seconds (the moment is kept in `localStorage`, so changing page does
+  not restart the count). Browsers refuse sound until the person has touched the page; that refusal is swallowed and the
+  badge still moves.
 - **Reading is its own POST**, never something opening the screen does — a badge cleared
   by arriving is a badge cleared for messages nobody read. All of them at once, because
   the alternative is a button per row for a state nothing reads except a count.

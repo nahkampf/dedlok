@@ -23,6 +23,7 @@
         'character' => 'character.index',
         'skills' => 'skills.index',
         'implants' => 'implants.index',
+        'equipment' => 'equipment.index',
         'standing' => 'standing.index',
         'achievements' => 'achievements.index',
     ] as $tab => $route)

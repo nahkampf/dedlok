@@ -302,7 +302,10 @@ final class ArmourTest extends TestCase
             ->assertOk()->assertSeeText('Take off')->assertSeeText('Worn');
 
         $this->actingAs($this->character->user)->get(route('character.index'))
-            ->assertOk()->assertSeeText('Torso')->assertSeeText('Ceramic plate')->assertSeeText('Left leg')->assertSeeText('Nothing');
+            ->assertOk()->assertDontSeeText('Ceramic plate');
+
+        $this->actingAs($this->character->user)->get(route('equipment.index'))
+            ->assertOk()->assertSeeText('Torso')->assertSeeText('Ceramic plate')->assertSeeText('Legs')->assertSeeText('Nothing');
 
         $this->actingAs($this->character->user)->post(route('inventory.wear', $plate))
             ->assertSessionHas('status', 'You take off Ceramic plate.');

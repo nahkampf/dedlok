@@ -99,16 +99,16 @@
             <x-deck-vitals :totals="$totals" :thermal="$thermal" :spent="$spent" />
 
             {{-- WHAT IS RUNNING, AND WHAT EACH THING IS. An icebreaker and a decryptor are both "a
-                 program" right up until one of them is the only thing between you and an ICE. --}}
-            <div class="micro" style="color:var(--ink-2);margin:var(--s-3) 0 var(--s-2)">
-                {{ Text::get('cyberspace.run.setup.running') }}
-            </div>
+                 program" right up until one of them is the only thing between you and an ICE.
 
-            @if ($processes->isEmpty())
-                <p class="micro" style="color:var(--warn);margin:0">
-                    {{ Text::get('cyberspace.run.setup.running_none') }}
-                </p>
-            @else
+                 NOTHING WHEN NOTHING IS RUNNING. There used to be a warning here that you could neither
+                 run nor scan, and it was wrong on both counts: a run's icebreakers are started by the run
+                 (the loadout above), and nothing is scanned from this screen. An empty list says nothing. --}}
+            @unless ($processes->isEmpty())
+                <div class="micro" style="color:var(--ink-2);margin:var(--s-3) 0 var(--s-2)">
+                    {{ Text::get('cyberspace.run.setup.running') }}
+                </div>
+
                 <div class="row row--wrap" style="--gap:var(--s-2)">
                     @foreach ($processes as $process)
                         <span class="tag" title="{{ $process->item?->displayName() }}">
@@ -119,7 +119,7 @@
                         </span>
                     @endforeach
                 </div>
-            @endif
+            @endunless
         @endif
     </div>
 </div>

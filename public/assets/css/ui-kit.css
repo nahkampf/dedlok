@@ -931,6 +931,15 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
 }
 .input::placeholder, .textarea::placeholder { color: var(--ink-3); }
+/* A field whose columns line up: monospace, and no soft wrap, so ASCII art stays the shape it was drawn. Wide
+   art scrolls inside the field instead of reflowing. The character bio is the first. */
+.input--mono, .textarea--mono {
+  font-family: var(--font-mono);
+  line-height: 1.25;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 4;
+}
 .input:hover, .textarea:hover, .select:hover { border-color: var(--line-2); }
 .input:focus, .textarea:focus, .select:focus {
   outline: none;
@@ -1350,6 +1359,8 @@ cap-widget {
 .tag--warn  { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); background: var(--warn-a); }
 .tag--crit  { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 40%, transparent); background: var(--crit-a); }
 .tag--info  { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: var(--info-a); }
+.strike { text-decoration: line-through; color: var(--ink-3); }
+.tag--quiet { background: transparent; border-color: var(--line-0); color: var(--ink-3); }
 .tag--solid { background: var(--ink-0); border-color: var(--ink-0); color: var(--ink-on-bone); }
 
 /* DECORATION, and the palette name says so. The semantic aliases carry meaning
@@ -2023,6 +2034,7 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
   animation: toast-in var(--t-base) var(--ease);
 }
 .toast--ok   { border-left-color: var(--ok); }
+.toast--warn { border-left-color: var(--warn); }
 .toast--crit { border-left-color: var(--crit); }
 @keyframes toast-in { from { opacity: 0; transform: translateX(12px); } }
 
@@ -2080,6 +2092,16 @@ details.panel > summary.panel__hd:focus-visible {
 .accordion details[open] summary::before { content: "−"; }
 /* Ink rather than ember: a list of twenty folds is not twenty live things. The inbox is the first. */
 .accordion--quiet summary::before { color: var(--ink-2); }
+
+/* A training-queue row's grab handle: its position number. touch-action off so a finger drags the row
+   instead of scrolling the page, and a row in flight takes one step of elevation, never a shadow. */
+.queue-handle {
+  background: none; border: 0; padding: 0; text-align: left;
+  color: var(--ink-3); cursor: grab; touch-action: none; user-select: none;
+}
+.queue-handle:hover, .queue-handle:focus-visible { color: var(--ink-0); }
+[data-queue-row].is-dragging { background: var(--bg-3); cursor: grabbing; }
+[data-queue-row].is-dragging .queue-handle { cursor: grabbing; color: var(--ink-0); }
 .accordion details > *:not(summary) { padding-bottom: var(--s-4); color: var(--ink-2); font-size: var(--fs-sm); }
 
 .avatar {
@@ -2269,6 +2291,16 @@ details.panel > summary.panel__hd:focus-visible {
   height: 6px;
   background: repeating-linear-gradient(45deg, var(--ember) 0 6px, var(--bg-0) 6px 12px);
 }
+
+/* The floor: the whole page behind the waiting box filled with bone and ember stripes at 45 degrees, 16px wide. One
+   layer below popovers (so a toast still shows) and above the rail and topbar, which a player who is down cannot use
+   anyway; the box that follows it is lifted one step above it. Used by /down alone. */
+.floor-overlay {
+  position: fixed; inset: 0;
+  z-index: var(--z-popover);
+  background: repeating-linear-gradient(45deg, var(--ember) 0 16px, var(--ink-0) 16px 32px);
+}
+.floor-overlay ~ .panel { position: relative; z-index: calc(var(--z-popover) + 1); }
 
 /* Framed viewport — minimap, portrait, camera feed */
 .frame {

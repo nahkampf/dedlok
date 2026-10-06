@@ -191,6 +191,14 @@ final class ProbeTest extends TestCase
 
     // ---- what it refuses ---------------------------------------------------
 
+    public function test_the_alert_for_new_scan_data_names_the_system_and_its_address(): void
+    {
+        $this->assertSame(
+            'System Silo - Test 001 [DEADBEEF] has new scan data',
+            Text::get('cyberspace.scan.new_data', ['system' => 'Silo - Test 001', 'address' => 'DEADBEEF']),
+        );
+    }
+
     public function test_you_cannot_read_a_machine_from_outside_cyberspace(): void
     {
         $this->machine();

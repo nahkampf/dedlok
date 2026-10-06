@@ -35,7 +35,7 @@ enum BackdoorKind: string
 
     public function label(): string
     {
-        return Text::get("cyberspace.backdoor.kind.{$this->value}");
+        return Text::get("backdoor.kind.{$this->value}");
     }
 
     /** @return list<string> */

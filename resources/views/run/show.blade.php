@@ -277,6 +277,11 @@
         </p>
     @endif
 
+    {{-- THE CORE IS OPEN when nothing guards it and nothing is left to get past: no ICE awake, and no door to
+         roll for (`$core` is null once the operating system has been spoken to, or when there never was one).
+         That is the moment the run's own action stops being a gamble, and its button says so by turning green. --}}
+    @php($coreOpen = ! $run->inAFight() && $core === null)
+
     <form method="POST" action="{{ route('run.act') }}" style="padding-bottom:var(--s-3)">
         @csrf
         <div class="row row--wrap" style="--gap:var(--s-2)">
@@ -287,14 +292,14 @@
                  its own button: offering one on the wrong purpose would promise something the turn would
                  silently waste. --}}
             @if ($run->purpose === RunPurpose::Extraction)
-                <button type="submit" name="action" value="extract" class="btn cut" @if ($run->inAFight()) disabled @endif>
+                <button type="submit" name="action" value="extract" class="btn cut @if ($coreOpen) btn--go @endif" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get($run->extracting_qb !== null ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
                 </button>
             @endif
             {{-- THE SAME RULE ON THE OTHER PURPOSE. The kind was chosen at the door and is permanent, so
                  the button says which one it is about to leave rather than asking again mid-fight. --}}
             @if ($run->purpose === RunPurpose::Backdoor)
-                <button type="submit" name="action" value="install" class="btn cut"
+                <button type="submit" name="action" value="install" class="btn cut @if ($coreOpen && ! $run->backdoored) btn--go @endif"
                         @if ($run->backdoored || $run->inAFight()) disabled @endif>
                     {{ Text::get($run->backdoored ? 'cyberspace.run.action.install_done' : 'cyberspace.run.action.install', [
                         'kind' => $run->backdoorKind()?->label() ?? '',
@@ -338,23 +343,31 @@
     </form>
 </div>
 
-{{-- THE ACCOUNT. A run is something a player watches happen, so the log says
-     what each turn did in the order it did it — newest last, the way a
-     transcript reads. --}}
+{{-- THE ACCOUNT. A run is something a player watches happen, and the page is
+     read from the top after every turn, so the log is NEWEST FIRST: the answer
+     to the turn just taken is where the eye already is, and nobody scrolls
+     down to find it. (It is stored oldest first and reversed here.) --}}
 @if ($run->log)
     <div class="panel panel--snug" style="margin-top:var(--s-4)">
         <div class="panel__hd"><h2>{{ Text::get('cyberspace.run.log_heading') }}</h2></div>
 
         <div style="padding:var(--s-3) 0">
-            @foreach ($run->log as $line)
+            @foreach (array_reverse($run->log) as $line)
                 <p class="micro" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
                     @if (isset($line['turn']))
-                        <span class="tag">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
+                        <span class="tag tag--quiet">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
                     @endif
-                    {{-- A line may open with a tag naming who did it ("ICE VII lands a code payload…"). --}}
+                    {{-- A line may carry a tag naming who did it ("ICE VII lands a code payload…"), and
+                         words before it ("Your [icebreaker] finds…"). The tag's colour is stored with it:
+                         `crit` for the ICE hitting you (also what a line from before the colour was kept
+                         says), `ok` for your icebreaker, none for the ICE failing. --}}
                     <span>
+                        @if (! empty($line['before']))
+                            {{ $line['before'] }}
+                        @endif
                         @if (! empty($line['tag']))
-                            <span class="tag tag--crit">{{ $line['tag'] }}</span>
+                            @php($tagTone = array_key_exists('tag_tone', $line) ? $line['tag_tone'] : 'crit')
+                            <span class="tag{{ $tagTone !== '' ? ' tag--'.$tagTone : '' }}">{{ $line['tag'] }}</span>
                         @endif
                         {{ $line['text'] }}
                     </span>

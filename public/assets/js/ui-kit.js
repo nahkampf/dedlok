@@ -143,6 +143,171 @@
     if (dlg.showModal) dlg.showModal();
   });
 
+  /* The inbox, polled: <a data-inbox="URL" data-inbox-latest="ID" data-inbox-sound="SRC"> in the rail. Every five
+     seconds it asks for how many messages are unread and the id of the newest, and redraws the badge. A message
+     NEWER than the last this page knew of plays the sound, at most once in ten seconds; that moment is kept in
+     localStorage so moving between pages does not start the count again. Browsers refuse sound before the person has
+     touched the page, and that refusal is swallowed: the badge still moves. */
+  (function inbox() {
+    const link = document.querySelector("a[data-inbox]");
+    if (!link) return;
+
+    const INTERVAL = 5000, COOLDOWN = 10000, KEY = "inbox.lastSound";
+    let latest = Number(link.dataset.inboxLatest) || 0;
+    const audio = link.dataset.inboxSound ? new Audio(link.dataset.inboxSound) : null;
+
+    const lastPlayed = () => { try { return Number(localStorage.getItem(KEY)) || 0; } catch { return 0; } };
+    const stamp = () => { try { localStorage.setItem(KEY, String(Date.now())); } catch { /* the cooldown is per page then */ } };
+
+    const badge = (unread) => {
+      let el = link.querySelector(".dock__count");
+      if (unread <= 0) { el?.remove(); return; }
+      if (!el) {
+        el = document.createElement("span");
+        el.className = "dock__count";
+        link.querySelector(".dock__icon")?.after(el);
+      }
+      el.textContent = unread > 99 ? "99+" : String(unread);
+    };
+
+    const ding = () => {
+      if (!audio || Date.now() - lastPlayed() < COOLDOWN) return;
+      stamp();
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    };
+
+    const poll = () => {
+      fetch(link.dataset.inbox, { headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((data) => {
+          badge(Number(data.unread) || 0);
+          if (Number(data.latest) > latest) { latest = Number(data.latest); ding(); }
+        })
+        .catch(() => {});
+    };
+
+    setInterval(poll, INTERVAL);
+  })();
+
+  /* The training plan's level picker: <form data-plan data-plan-floors='{"SKILL_ID": FLOOR}' data-plan-max="5"
+     data-plan-label="Level :level"> holding select[data-plan-skill] and select[data-plan-level]. Choosing a skill redraws
+     the levels to those ABOVE what that skill already has reached or queued, the highest selected. */
+  document.querySelectorAll("form[data-plan]").forEach((form) => {
+    const skill = form.querySelector("select[data-plan-skill]");
+    const level = form.querySelector("select[data-plan-level]");
+    if (!skill || !level) return;
+    const floors = JSON.parse(form.dataset.planFloors || "{}");
+    const max = Number(form.dataset.planMax);
+    const redraw = () => {
+      level.innerHTML = "";
+      for (let l = (floors[skill.value] || 0) + 1; l <= max; l++) {
+        const option = document.createElement("option");
+        option.value = String(l);
+        option.textContent = form.dataset.planLabel.replace(":level", l);
+        option.selected = l === max;
+        level.appendChild(option);
+      }
+    };
+    skill.addEventListener("change", redraw);
+  });
+
+  /* The Running modal's "Could run" list: <div data-startable="URL"> is filled with the server's fragment each time
+     the modal is opened from [data-open="#processes"], so it is never older than the click. */
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest('[data-open="#processes"]')) return;
+    const box = document.querySelector("[data-startable]");
+    if (!box) return;
+    fetch(box.dataset.startable, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+      .then((r) => (r.ok ? r.text() : Promise.reject()))
+      .then((html) => { box.innerHTML = html; })
+      .catch(() => { box.textContent = "Could not load the list."; });
+  });
+
+  /* A sortable list that saves itself: <div data-queue-sort="URL"> of [data-queue-row="ID"], each with a
+     [data-queue-handle]. Pointer events rather than HTML5 drag, which a phone does not do. Dragging moves
+     the row in the DOM as you go; letting go POSTs the whole order as ids. A refusal (422) snaps the rows
+     back and says why; success reloads, because the positions, estimates and warnings are the server's.
+     ArrowUp / ArrowDown on a focused handle do the same one step at a time. */
+  document.querySelectorAll("[data-queue-sort]").forEach((list) => {
+    const rows = () => [...list.querySelectorAll(":scope > [data-queue-row]")];
+    const order = () => rows().map((r) => r.dataset.queueRow);
+
+    const save = (before, focusId) => {
+      if (order().join() === before.join()) return;
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      fetch(list.dataset.queueSort, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest", ...(token ? { "X-CSRF-TOKEN": token } : {}) },
+        credentials: "same-origin",
+        body: JSON.stringify({ order: order().map(Number) }),
+      }).then(async (r) => {
+        if (r.ok) { location.reload(); return; }
+        const body = await r.json().catch(() => ({}));
+        before.forEach((id) => list.appendChild(list.querySelector('[data-queue-row="' + id + '"]')));
+        // A toast, not the page's flash: it is fixed to the screen, and a refusal that lands off-screen at the top of a
+        // scrolled page is a refusal nobody sees.
+        toast(body.message || "Could not reorder.", { level: "warn", timeout: 9000 });
+        if (focusId) list.querySelector('[data-queue-row="' + focusId + '"] [data-queue-handle]')?.focus();
+      }).catch(() => {
+        before.forEach((id) => list.appendChild(list.querySelector('[data-queue-row="' + id + '"]')));
+        toast("Could not reorder.", { level: "warn" });
+      });
+    };
+
+    list.addEventListener("pointerdown", (e) => {
+      const handle = e.target.closest("[data-queue-handle]");
+      if (!handle || e.button > 0) return;
+      const row = handle.closest("[data-queue-row]");
+      const before = order();
+      row.classList.add("is-dragging");
+
+      // On the WINDOW, not the handle: moving the row in the DOM drops pointer capture from the
+      // element inside it, and the pointerup would then never arrive to save anything.
+      const move = (ev) => {
+        const siblings = rows().filter((r) => r !== row);
+        const next = siblings.find((r) => ev.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
+        if (next) { if (row.nextElementSibling !== next) list.insertBefore(row, next); }
+        else if (list.lastElementChild !== row) list.appendChild(row);
+      };
+      const end = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", end);
+        window.removeEventListener("pointercancel", end);
+        row.classList.remove("is-dragging");
+        save(before, row.dataset.queueRow);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", end);
+      window.addEventListener("pointercancel", end);
+      e.preventDefault();
+    });
+
+    list.addEventListener("keydown", (e) => {
+      const handle = e.target.closest("[data-queue-handle]");
+      if (!handle || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+      const row = handle.closest("[data-queue-row]");
+      const before = order();
+      if (e.key === "ArrowUp" && row.previousElementSibling) list.insertBefore(row, row.previousElementSibling);
+      else if (e.key === "ArrowDown" && row.nextElementSibling) list.insertBefore(row.nextElementSibling, row);
+      else return;
+      e.preventDefault();
+      handle.focus();
+      save(before, row.dataset.queueRow);
+    });
+  });
+
+  /* Select all: <input type="checkbox" data-select-all="FORM-ID"> ticks and unticks every
+     <input data-select-row form="FORM-ID">, and follows them back: it is ticked while all are
+     and clear while any is not. */
+  document.querySelectorAll("input[data-select-all]").forEach((all) => {
+    const rows = () => document.querySelectorAll('input[data-select-row][form="' + all.dataset.selectAll + '"]');
+    all.addEventListener("change", () => rows().forEach((r) => { r.checked = all.checked; }));
+    document.addEventListener("change", (e) => {
+      if (e.target.matches("input[data-select-row]")) all.checked = [...rows()].every((r) => r.checked);
+    });
+  });
+
   /* Unfolding an inbox message reads it: <details data-mark-read="URL">. Once, on the first
      open, with keepalive like the patch notes. The row quietens and the rail's count comes
      down, so the page agrees with the server without a reload. */
@@ -890,7 +1055,10 @@
 
     dlg.addEventListener("close", () => stop());
 
-    on("click", "[data-reading-open]", (e, btn) => {
+    // `:not(dialog)`: right after a scan starts the dialog itself carries data-reading-open (below), and without
+    // this every click inside it, Run in background included, matched the dialog, closed it via data-close and
+    // then reopened it here.
+    on("click", "[data-reading-open]:not(dialog)", (e, btn) => {
       start(btn.dataset.readingOpen);
       if (dlg.showModal) dlg.showModal();
     });
@@ -925,6 +1093,20 @@
       if (ok) toast(ok);
     } catch {
       if (bad) toast(bad, { level: "warn" });
+      return;
+    }
+
+    // data-copy-then="URL": after a copy that worked, POST there (the admin's beta key is handed out by copying it),
+    // and strike through whatever data-copy-mark names in the same row.
+    if (el.dataset.copyThen) {
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      fetch(el.dataset.copyThen, {
+        method: "POST",
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest", ...(token ? { "X-CSRF-TOKEN": token } : {}) },
+        credentials: "same-origin",
+      }).then((r) => {
+        if (r.ok && el.dataset.copyMark) el.closest("tr")?.querySelector(el.dataset.copyMark)?.classList.add("strike");
+      }).catch(() => {});
     }
   });
 
@@ -1072,6 +1254,35 @@
     if (btn && btn.isConnected) btn.disabled = false;
     reprice(data.creds);
   });
+
+  /* --- A running scan pass, ticking ----------------------------------------
+     <button data-pass-clock data-remaining="SECONDS" data-total="SECONDS"> holding a [data-pass-bar] meter and a
+     [data-pass-left] time. The server renders both once; this moves them every second so a pass visibly runs, and
+     reloads shortly after the end so the page settles it (the next pass begins, or the read is whole). Seconds
+     REMAINING, as with [data-countdown]: never an absolute time, which would trust the browser's clock. */
+  function passClocks() {
+    document.querySelectorAll("[data-pass-clock]").forEach((el) => {
+      if (el.dataset.ticking) return;
+      el.dataset.ticking = "1";
+      const end = Date.now() + Number(el.dataset.remaining) * 1000;
+      const total = Math.max(1, Number(el.dataset.total));
+      const bar = el.querySelector("[data-pass-bar]");
+      const text = el.querySelector("[data-pass-left]");
+      const tick = () => {
+        const left = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+        if (bar) bar.style.setProperty("--v", String(Math.max(0, Math.min(1, 1 - left / total))));
+        if (text) {
+          const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
+          text.textContent = (h > 0 ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(s).padStart(2, "0");
+        }
+        if (left > 0) return setTimeout(tick, 1000);
+        setTimeout(() => location.reload(), 1500);
+      };
+      tick();
+    });
+  }
+  passClocks();
+  document.addEventListener("DOMContentLoaded", passClocks);
 
   /* --- A countdown that reloads the page when it ends ----------------------
      <span data-countdown="95">1:35</span> — the value is SECONDS REMAINING,

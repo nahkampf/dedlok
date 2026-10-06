@@ -83,6 +83,12 @@ return [
     'auth' => [
         'login' => 'Sign in',
         'register' => 'New identity',
+        // The beta key, while `features.alpha_testing` is on.
+        'beta' => [
+            'code' => 'Beta key',
+            'hint' => 'Registration is by invitation while the game is in testing. Enter the key you were given.',
+            'invalid' => 'That beta key is not valid.',
+        ],
         'handle' => 'Handle',
         'handle_hint' => 'Up to :max characters.',
         'handle_taken' => 'That handle is already claimed.',
@@ -148,6 +154,12 @@ return [
         'not_equipped' => 'Nothing runs on a deck you are not carrying.',
         'open_deck' => 'Open the deck',
         'running_none' => 'Nothing running',
+        // The Running modal's second list: what the deck could start right now.
+        'startable' => 'Could run',
+        'startable_loading' => 'Looking at what your deck can run…',
+        'startable_failed' => 'Could not load the list.',
+        'startable_none' => 'Nothing you can run right now.',
+        'startable_no_deck' => 'No deck equipped, so nothing can run.',
         'processes' => ['zero' => 'No processes', 'one' => ':count process', 'many' => ':count processes'],
 
         'costs' => [
@@ -593,6 +605,16 @@ return [
         'new' => 'New',
         'mark_read' => 'Mark all read',
         'go_to' => 'Go to :place',
+        'delete' => 'Delete',
+        'delete_selected' => 'Delete selected',
+        'select_all' => 'Select all',
+        'select_one' => 'Select this message',
+        'none_selected' => 'Tick the messages to delete first.',
+        'deleted' => [
+            'zero' => 'Nothing was deleted.',
+            'one' => 'One message deleted.',
+            'many' => ':count messages deleted.',
+        ],
         // Pieces of a line in a message's list (the siphon report's).
         'details' => [
             'grade' => 'grade :grade',
@@ -620,7 +642,7 @@ return [
         'titles' => [
             'scan_complete' => 'Scan complete',
             'backdoor_found' => 'Backdoor found',
-            'siphons_ran' => 'Siphons ran',
+            'siphons_ran' => 'Siphon report',
             'backdoor_lost' => 'Backdoor lost',
             'file_stale' => 'Scan file gone stale',
             'offer_sold' => 'Sold: :item',
@@ -898,6 +920,12 @@ return [
             'many' => 'Your deck stopped running and dumped you out of cyberspace. :count points of Synaptic Integrity.',
         ],
 
+        // The Interact box on the map: what you already hold in the system you stand on.
+        'interact' => [
+            'installed_here' => 'Installed here',
+            'backdoor' => 'Backdoor',
+        ],
+
         /*
         | Scanning: finding out what a machine is before deciding what to do
         | about it.
@@ -908,6 +936,7 @@ return [
         */
         'scan' => [
             'action' => 'Scan',
+            'show' => 'Show scan',
             'not_jacked_in' => 'You are not in cyberspace.',
             'nothing_there' => 'There is nothing here to scan.',
             'not_scannable' => 'The portal returns nothing. There is nothing here to scan.',
@@ -926,11 +955,9 @@ return [
             ],
             'duration' => 'A pass here takes about :when',
             'already_known' => 'This system is already fully scanned.',
-            'found' => [
-                'zero' => 'Nothing new. Probe unable to reveal anything new.',
-                'one' => 'One thing more about this system.',
-                'many' => ':count things more about this system.',
-            ],
+            'nothing_new' => 'Nothing new. Probe unable to reveal anything new.',
+            'new_data' => 'System :system [:address] has new scan data',
+            'unknown_system' => 'Unknown system',
             'grade' => 'Grade',
             'os' => 'Operating system',
             'unknown' => 'Unscanned',
@@ -1000,7 +1027,7 @@ return [
             | for why there is nothing to pick.
             */
             'setup' => [
-                'heading' => 'Making a run',
+                'heading' => 'Interact',
                 'title' => 'Before you go in',
                 'open' => 'Plan a run',
                 'purpose' => 'End goal of run',
@@ -1042,7 +1069,6 @@ return [
                 'thermal_safe' => 'Thermals are fine.',
 
                 'running' => 'Running',
-                'running_none' => 'Nothing is running. You cannot make a run, and you cannot scan.',
                 'no_icebreaker' => 'You hold no icebreaker. If something wakes up, you cannot fight it.',
 
                 // Run-only software, started by the run and by nothing else.
@@ -1050,7 +1076,7 @@ return [
                 'loadout_icebreaker' => 'Icebreaker — one at a time',
                 'loadout_other' => 'Other run-only software',
                 'loadout_none' => 'None',
-                'loadout_hint' => 'Started as you go in and stopped when you leave. It cannot be changed once you are inside. Your last loadout is chosen for you.',
+                'loadout_hint' => 'Select an icebreaker to apply to this run. It cannot be changed once the run is initiated.',
 
                 /*
                 | THE INTENTIONS. Each is a separate button, because they are
@@ -1133,7 +1159,9 @@ return [
             | scan fact for free.
             */
             'log' => [
-                'attack' => 'Your icebreaker cuts for :damage.',
+                // "Your" + a green tag naming the icebreaker + this: the tag sits inside the sentence.
+                'attack_before' => 'Your',
+                'attack' => 'finds an intrusion vector and pushes a disruptive payload through, causing :damage system integrity loss.',
                 'attack_fails' => 'You find no viable attack vectors.',
                 'hold' => 'You wait, and the system waits with you.',
                 'egress' => 'You egress.',
@@ -1141,10 +1169,11 @@ return [
                 // them, or something in it has hold of them. Which it was is
                 // already on the screen in the chance itself.
                 'egress_held' => 'You reach for the way out and the system does not let go.',
-                'ice_broken' => 'The ICE comes apart.',
+                'ice_broken' => 'The ICE freezes, glitches for a few milliseconds and then vanishes, stuck in a crash loop. It is now disabled.',
                 // The line opens with a tag naming the ICE ("ICE VII"), written beside the text, not in it.
                 'ice_hits' => 'lands a code payload for :damage SI.',
-                'ice_misses' => 'It reaches for you and misses.',
+                // After a grey tag naming the ICE ("ICE VII").
+                'ice_misses' => 'attempts to find an open attack vector, but fails.',
                 'ice_silent' => 'Whatever was fighting you is no longer there.',
                 'traced' => 'The trace reaches you. Somebody knows who was in here.',
                 'trace_held' => 'The route holds it up another turn.',
@@ -1164,7 +1193,11 @@ return [
                 // INSTALLING. One line for every reason it can fail, the same
                 // discipline the core touch already keeps: naming the cause
                 // would hand over the operating system for free.
-                'install' => 'You leave a way back in. :kind.',
+                // A landed install, one line per kind (BackdoorKind::value).
+                'install' => [
+                    'siphon' => 'You successfully install a siphoning daemon in the core. Egress to end run.',
+                    'routing' => 'You successfully install a routing daemon in the core. Egress to end run.',
+                ],
                 'install_already' => 'Your backdoor is already here, and it is the one you left.',
                 // PLANTING. Says whose door it is, because that is the whole
                 // difference: the runner leaves with the standing and without
@@ -1172,7 +1205,7 @@ return [
                 'planted' => 'Their door is in. It answers to them, not to you.',
                 // Awake ICE blocks every core action until it is broken.
                 'ice_guards' => 'The ICE stands between you and the core. Break it, or get out.',
-                'install_fails' => 'You reach for the core and find nothing you can use.',
+                'install_fails' => 'You attempt to push a payload onto the core, but fail.',
                 /*
                 | BURNING. The machine is named because it is the last thing
                 | anybody will be able to call it — the address goes out of
@@ -1276,7 +1309,7 @@ return [
             | what might.
             */
             'thresholds' => [
-                'heading' => 'When to pull out',
+                'heading' => 'Thresholds',
                 'hint' => 'Set once. A run that crosses either of these threshold will attempt to egress on its own, whatever you were doing.',
                 'trace' => 'Egress when the trace passes',
                 'si' => 'Egress when Synaptic Integrity falls below',
@@ -1702,6 +1735,13 @@ return [
         'damage' => ':count damage',
         'enemies' => ['zero' => 'The street is empty', 'one' => 'One hostile', 'many' => ':count hostiles'],
         'log' => ':attacker hits :target for :damage.',
+        // Where armour is WORN: four places, each a group of the six hit locations below.
+        'wear_slots' => [
+            'head' => 'Head',
+            'torso' => 'Torso',
+            'arms' => 'Arms',
+            'legs' => 'Legs',
+        ],
         'slots' => [
             'head' => 'Head',
             'torso' => 'Torso',
@@ -1926,6 +1966,59 @@ return [
     | see App\Implants\BodyRegion.
     |
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Equipment
+    |--------------------------------------------------------------------------
+    |
+    | What is on a body, as the character window's Equipment tab draws it: armour in four places (App\Combat\WearSlot),
+    | a belt, and a weapon in each hand. The words for armour and weapons themselves are under `combat`.
+    */
+    'equipment' => [
+        'title' => 'Equipment',
+        'lede' => 'Equipment like armour, weapons, consumables etc that you have equipped',
+        // The short names drawn on the body map, where long ones run into each other.
+        'map' => [
+            'head' => 'Head',
+            'torso' => 'Torso',
+            'arms' => 'Arms',
+            'belt' => 'Belt',
+            'primary' => 'Primary',
+            'secondary' => 'Secondary',
+            'legs' => 'Legs',
+        ],
+        'equip' => 'Equip',
+        'equip_title' => 'Equip: :slot',
+        'candidates_none' => 'Nothing in your stash fits here.',
+        'columns' => ['item' => 'Item', 'details' => 'Details'],
+        'covers' => 'Worn on :slots',
+        'damage' => 'Damage :damage',
+        'regions' => [
+            'belt' => 'Belt',
+            'primary' => 'Primary weapon',
+            'secondary' => 'Secondary weapon',
+            'right_hand' => 'right hand',
+            'left_hand' => 'left hand',
+        ],
+        'take_off' => 'Take off',
+        'belt' => [
+            'empty' => 'Empty',
+            'put_on' => 'Put on belt',
+            'take_off' => 'Take off belt',
+            'belted' => 'On belt',
+            'put_on_done' => 'You put :item on your belt.',
+            'took_off' => 'You take :item off your belt.',
+            'refused' => [
+                'not_owned' => 'That is not yours.',
+                'not_beltable' => 'Only drugs go on a belt, for now.',
+                'already_belted' => 'It is already on your belt.',
+                'not_belted' => 'It is not on your belt.',
+                'not_free' => 'Take it out of whatever it is in first.',
+                'belt_full' => 'Your belt is full.',
+            ],
+        ],
+    ],
+
     'implants' => [
         'title' => 'Implants',
         'lede' => 'Better living through implants.',
@@ -2001,6 +2094,7 @@ return [
             'character' => 'Character',
             'skills' => 'Skills',
             'implants' => 'Implants',
+            'equipment' => 'Equipment',
             'standing' => 'Standing',
             'achievements' => 'Achievements',
         ],
@@ -2020,9 +2114,9 @@ return [
         // What is in them right now — one card per family they carry anything
         // for. The line is the overdose one: the dose that takes it past the
         // capacity is the dose that breaks it.
-        'doses_heading' => 'What is in you',
+        'doses_heading' => 'Drugs',
         'doses_capacity' => ':used of :capacity',
-        'doses_none' => 'Nothing of this in you',
+        'doses_none' => 'Not currently in your system',
         'doses_at_the_line' => 'One more is too much',
         'doses_wears_off' => 'wears off :when',
         'doses_potency' => ':percent% strength',
@@ -2047,7 +2141,7 @@ return [
         */
         'waiting' => [
             'title' => 'Down',
-            'heading' => 'You are on the floor',
+            'heading' => 'Incapacitated!',
             'back_in' => 'Up in :when',
             'up' => 'Get up',
             'up_hint' => 'You come back on one point. Getting up is not healing.',
@@ -2439,6 +2533,12 @@ return [
         'stalled' => 'Not earning: every attribute this skill trains on resolves to zero.',
 
         'queue' => 'Queue',
+        'reorder_hint' => 'Drag a position number to change the order. A move that would put something ahead of what it needs is refused.',
+        'reorder_handle' => 'Drag to reorder',
+        'reorder_refused' => [
+            'queue_changed' => 'The queue changed while you were moving things. It has been refreshed.',
+            'breaks_requirement' => 'That order would break a requirement: :problem',
+        ],
         'queue_hint' => 'Up to :limit, trained in order. A skill goes in at the next level up — press it again for the one after that.',
         'queue_empty' => 'Nothing queued.',
         'position' => ':position.',
@@ -3055,6 +3155,24 @@ return [
     | Item and skill NAMES are still columns — these are the words around them.
     */
     'admin' => [
+        // The Beta keys section, present only while `features.alpha_testing` is on.
+        'beta_keys' => [
+            'title' => 'Beta keys',
+            'lede' => 'Keys testers register with while alpha testing is on. Copy one to hand it out: that also marks it as given out.',
+            'generate' => 'Generate a key',
+            'generated' => 'New key: :code',
+            'code' => 'Key',
+            'status' => 'Status',
+            'used_by' => 'Registered as',
+            'copy' => 'Copy',
+            'copied' => 'Copied. Marked as given out.',
+            'copy_failed' => 'Could not copy: select the key and copy it by hand.',
+            'given_out' => 'Given out',
+            'unused' => 'Unused',
+            'used' => 'Used',
+            'none' => 'No keys yet.',
+            'no_character' => 'no character yet',
+        ],
         // One line under an item in `<x-card-select>`: what kind of thing it is, what it costs,
         // what the market shelf holds right now, and how rare it is.
         'item_option' => ['numbers' => ':kind · :cost ¤ · market shelf :shelf · :rarity'],
@@ -3552,7 +3670,7 @@ return [
                 'ammo_profile' => 'Damage profile (percent of each type)',
                 'ammo_profile_hint' => 'How a hit with this round splits across damage types, adding up to exactly 100: a plain round is 100 penetrating, an incendiary one adds a thermal share.',
                 'armour_slots' => 'Covers',
-                'armour_slots_hint' => 'Which parts of the body this piece protects. Tick none and it is not armour; tick several and it is a set that takes them all. Its resistances (add them in the effects above, against the damage types) count only for a hit that lands on a part ticked here.',
+                'armour_slots_hint' => 'Where this piece is worn: Head, Torso, Arms and Legs (arms and legs are one slot each, covering both sides). Tick none and it is not armour; tick several and it is a set that takes them all. Its resistances (add them in the effects above, against the damage types) count only for a hit that lands on a part ticked here.',
                 'drug_family_hint' => 'Giving it a family makes the item a drug. The books are kept per family, so this decides which figures a dose moves and which withdrawal it answers.',
                 'duration_minutes' => 'Duration (minutes)',
                 'duration_minutes_hint' => 'How long one dose is in effect.',

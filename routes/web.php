@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\Admin\ArchetypeController as AdminArchetypeController;
+use App\Http\Controllers\Admin\BetaKeyController as AdminBetaKeyController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DistrictController as AdminDistrictController;
 use App\Http\Controllers\Admin\EncounterController as AdminEncounterController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\CityController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\EncounterController;
+use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\ExchangeController;
 use App\Http\Controllers\FightController;
 use App\Http\Controllers\HomeController;
@@ -154,8 +156,13 @@ Route::middleware('auth')->group(function () {
      * question about the same row, and the row already knows which way it is
      * being asked.
      */
+    // The Running modal's list of what could be started, fetched when it opens (it is in every page's layout).
+    Route::get('/programs/startable', [InventoryController::class, 'startable'])->name('programs.startable');
     Route::post('/inventory/{entry}/run', [InventoryController::class, 'run'])
         ->name('inventory.run');
+
+    // On or off the belt: one route for both, like inventory.wear.
+    Route::post('/inventory/{entry}/belt', [InventoryController::class, 'belt'])->name('inventory.belt');
 
     // Moving a row into a container, or back out of one. One route for both
     // directions: an absent `parent` means the loose pile, which is the same
@@ -170,6 +177,7 @@ Route::middleware('auth')->group(function () {
      * clinic that offers it (`city.operate`) — see CITY.md.
      */
     Route::get('/implants', [ImplantController::class, 'index'])->name('implants.index');
+    Route::get('/equipment', [EquipmentController::class, 'index'])->name('equipment.index');
 
     /*
      * Cyberspace: the map, and everything done from it.
@@ -364,12 +372,18 @@ Route::middleware('auth')->group(function () {
      * a badge cleared by arriving is a badge cleared for messages nobody read.
      */
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    // Polled every few seconds from every page (`ui-kit.js`): the rail's badge, and the sound for a new message.
+    Route::get('/notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
     Route::post('/notifications/read', [NotificationController::class, 'read'])->name('notifications.read');
     // Opening one is reading it, and it writes, so it is a POST like the other.
     Route::post('/notifications/{message}/open', [NotificationController::class, 'open'])->name('notifications.open');
+    // Deleting: one from its opened body, or the ticked ones (`ids[]`) from the top of the page.
+    Route::delete('/notifications', [NotificationController::class, 'destroyMany'])->name('notifications.destroy_many');
+    Route::delete('/notifications/{message}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
     // Unfolding one in the inbox reads it without leaving the page; sent by `ui-kit.js`.
     Route::post('/notifications/{message}/mark', [NotificationController::class, 'mark'])->name('notifications.mark');
     Route::post('/skills/queue', [TrainingQueueController::class, 'store'])->name('training.store');
+    Route::post('/skills/queue/order', [TrainingQueueController::class, 'reorder'])->name('training.reorder');
     Route::delete('/skills/queue/{entry}', [TrainingQueueController::class, 'destroy'])->name('training.destroy');
 
     /*
@@ -412,6 +426,11 @@ Route::middleware(['auth', 'can:admin'])
         Route::resource('locations', AdminLocationController::class)->except(['show']);
         Route::resource('encounters', AdminEncounterController::class)->except(['show']);
         Route::resource('npcs', AdminNpcController::class)->except(['show']);
+
+        // ALPHA TESTING (config/features.php): the beta keys. 404 while the flag is off.
+        Route::get('beta-keys', [AdminBetaKeyController::class, 'index'])->name('beta_keys.index');
+        Route::post('beta-keys', [AdminBetaKeyController::class, 'store'])->name('beta_keys.store');
+        Route::post('beta-keys/{betaKey}/given', [AdminBetaKeyController::class, 'given'])->name('beta_keys.given');
 
         /*
          * Archetypes are edited, never created or destroyed. Their ids are

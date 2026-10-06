@@ -229,6 +229,119 @@ final class NotificationTest extends TestCase
         $this->assertNull($theirs->fresh()->read_at);
     }
 
+    public function test_a_message_with_a_finished_reads_facts_draws_them_as_rows(): void
+    {
+        $this->notifier()->send($this->character, Category::Cyberspace, 'scan_complete', ['system' => 'Silo - Veritas 123'], ['facts' => [
+            ['key' => 'grade', 'label' => 'Grade', 'value' => 'IV', 'discoverable' => true, 'mark' => null],
+            ['key' => 'ids', 'label' => 'IDS', 'value' => null, 'discoverable' => true, 'mark' => null],
+        ]]);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))
+            ->assertOk()->assertSee('Scan complete')->assertSee('data-fact="grade"', false)->assertSee('IV')->assertSee('UNKNOWN');
+    }
+
+    public function test_the_siphon_report_is_titled_siphon_report(): void
+    {
+        $m = $this->notifier()->send($this->character, Category::Cyberspace, 'siphons_ran', ['creds' => '100'], []);
+
+        $this->assertSame('Siphon report', $m->fresh()->title);
+    }
+
+    public function test_the_poll_reports_the_unread_count_and_the_newest_id_for_this_account_only(): void
+    {
+        $this->actingAs($this->user)->getJson(route('notifications.unread'))->assertOk()->assertExactJson(['unread' => 0, 'latest' => 0]);
+
+        $a = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+        $b = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'B', 'level' => 1]);
+        $this->notifier()->send(Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3])), Category::Training, 'skill_level', ['skill' => 'C', 'level' => 1]);
+        $this->notifier()->markRead($a);
+
+        $this->actingAs($this->user)->getJson(route('notifications.unread'))
+            ->assertOk()->assertExactJson(['unread' => 1, 'latest' => $b->id]);
+    }
+
+    public function test_a_guest_cannot_poll(): void
+    {
+        $this->getJson(route('notifications.unread'))->assertUnauthorized();
+    }
+
+    public function test_the_rail_carries_what_the_poll_needs_and_the_sound_exists(): void
+    {
+        $m = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))->assertOk()
+            ->assertSee('data-inbox="'.route('notifications.unread').'"', false)
+            ->assertSee('data-inbox-latest="'.$m->id.'"', false)
+            ->assertSee('assets/sound/message.wav', false);
+
+        $this->assertFileExists(public_path('assets/sound/message.wav'));
+    }
+
+    /** The badge must keep moving while the player is locked into a screen of their own. */
+    public function test_the_poll_is_reachable_while_down_and_in_a_fight_a_hunt_or_an_encounter(): void
+    {
+        foreach ([
+            ['waiting_until' => now()->addMinute()],
+            ['current_run_id' => null, 'current_hunt_id' => null],
+        ] as $state) {
+            $this->character->forceFill($state)->save();
+            $this->actingAs($this->user)->getJson(route('notifications.unread'))->assertOk();
+        }
+
+        $this->character->forceFill(['waiting_until' => null])->save();
+
+        foreach (['EnsureRunIsFinished', 'EnsureHuntIsResolved', 'EnsureFightIsResolved', 'EnsureEncounterIsResolved', 'EnsureCharacterIsStanding'] as $lock) {
+            $source = file_get_contents(app_path("Http/Middleware/{$lock}.php"));
+            $this->assertStringContainsString("'notifications.unread'", $source, "{$lock} lets the poll through");
+        }
+    }
+
+    public function test_one_message_can_be_deleted_and_somebody_elses_cannot(): void
+    {
+        $mine = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+        $keep = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'B', 'level' => 1]);
+        $theirs = $this->notifier()->send(Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3])), Category::Training, 'skill_level', ['skill' => 'C', 'level' => 1]);
+
+        $this->actingAs($this->user)->delete(route('notifications.destroy', $mine))->assertRedirect();
+        $this->actingAs($this->user)->delete(route('notifications.destroy', $theirs))->assertNotFound();
+
+        $this->assertNull(Notification::find($mine->id));
+        $this->assertNotNull(Notification::find($keep->id));
+        $this->assertNotNull(Notification::find($theirs->id));
+    }
+
+    public function test_ticked_messages_are_deleted_together_and_other_peoples_ids_are_ignored(): void
+    {
+        $a = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+        $b = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'B', 'level' => 1]);
+        $keep = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'C', 'level' => 1]);
+        $theirs = $this->notifier()->send(Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3])), Category::Training, 'skill_level', ['skill' => 'D', 'level' => 1]);
+
+        $this->actingAs($this->user)->delete(route('notifications.destroy_many'), ['ids' => [$a->id, $b->id, $theirs->id]])
+            ->assertRedirect()->assertSessionHas('status', '2 messages deleted.');
+
+        $this->assertSame([$keep->id], Notification::where('user_id', $this->user->id)->pluck('id')->all());
+        $this->assertNotNull(Notification::find($theirs->id));
+    }
+
+    public function test_deleting_with_nothing_ticked_says_so(): void
+    {
+        $this->actingAs($this->user)->delete(route('notifications.destroy_many'))
+            ->assertRedirect()->assertSessionHas('error');
+    }
+
+    public function test_the_screen_offers_a_tick_per_message_select_all_and_delete(): void
+    {
+        $m = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('data-select-all="inbox-bulk"', false)
+            ->assertSee('name="ids[]" value="'.$m->id.'"', false)
+            ->assertSee('Delete selected')
+            ->assertSee(route('notifications.destroy', $m), false);
+    }
+
     /** A City message reads, and leads to the city map. */
     public function test_opening_a_city_message_reads_it_and_goes_to_the_map(): void
     {

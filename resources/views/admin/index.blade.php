@@ -33,6 +33,19 @@
             </div>
         </div>
 
+        {{-- ALPHA TESTING (config/features.php): only while the flag is on. --}}
+        @if (config('features.alpha_testing'))
+            <div class="card">
+                <div class="card__hd">
+                    <div class="card__title">{{ Text::get('admin.beta_keys.title') }}</div>
+                </div>
+                <div class="card__bd">{{ Text::get('admin.beta_keys.lede') }}</div>
+                <div class="card__ft">
+                    <a class="btn btn--sm" href="{{ route('admin.beta_keys.index') }}">{{ Text::get('admin.beta_keys.title') }}</a>
+                </div>
+            </div>
+        @endif
+
         <div class="card">
             <div class="card__hd">
                 <div class="card__title">{{ Text::get('admin.npcs.title') }}</div>

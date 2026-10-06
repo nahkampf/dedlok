@@ -191,11 +191,18 @@ final class RunBriefingTest extends TestCase
         $this->visit()->assertOk()->assertDontSee('you cannot fight it')->assertSee('name="icebreaker"', false);
     }
 
-    public function test_it_says_when_nothing_is_running_at_all(): void
+    public function test_the_loadout_hint_says_what_to_do_and_when_it_locks(): void
     {
         $this->machine();
 
-        $this->visit()->assertOk()->assertSee('Nothing is running');
+        $this->visit()->assertOk()->assertSee('Select an icebreaker to apply to this run. It cannot be changed once the run is initiated.');
+    }
+
+    public function test_it_says_nothing_when_nothing_is_running(): void
+    {
+        $this->machine();
+
+        $this->visit()->assertOk()->assertDontSee('Nothing is running')->assertDontSee('you cannot scan');
     }
 
     /** The deck screen's own bars, not a sentence: compute, memory and power draw against what it resolves. */

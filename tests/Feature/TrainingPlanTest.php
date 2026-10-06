@@ -69,6 +69,61 @@ final class TrainingPlanTest extends TestCase
         ]);
     }
 
+    // ---- the level picker ----------------------------------------------------
+
+    public function test_the_level_picker_only_offers_levels_above_what_is_reached_or_queued(): void
+    {
+        $this->inject($this->character, $this->hacking, $this->hacking->pointsForLevel(2), 2);
+        $this->injected($this->cryptography, $this->codebreaking);
+        TrainingQueueEntry::create(['character_id' => $this->character->id, 'skill_id' => $this->cryptography->id, 'target_level' => 1, 'position' => 1]);
+        TrainingQueueEntry::create(['character_id' => $this->character->id, 'skill_id' => $this->cryptography->id, 'target_level' => 2, 'position' => 2]);
+
+        $html = $this->actingAs($this->user)->get(route('skills.index'))->assertOk()->getContent();
+
+        // Every skill's floor is handed to the page: reached 2, queued to 2, untouched 0.
+        preg_match("/data-plan-floors='([^']+)'/", $html, $m);
+        $floors = json_decode(html_entity_decode($m[1]), true);
+
+        $this->assertSame(2, $floors[$this->hacking->id]);
+        $this->assertSame(2, $floors[$this->cryptography->id]);
+        $this->assertSame(0, $floors[$this->codebreaking->id]);
+        $this->assertStringContainsString('data-plan-skill', $html);
+        $this->assertStringContainsString('data-plan-level', $html);
+    }
+
+    public function test_the_level_options_are_drawn_for_the_first_listed_skill_without_script(): void
+    {
+        $this->inject($this->character, $this->hacking, $this->hacking->pointsForLevel(3), 3);
+        $this->injected($this->cryptography, $this->codebreaking);
+
+        $html = $this->actingAs($this->user)->get(route('skills.index'))->assertOk()->getContent();
+
+        preg_match('/data-plan-skill[^>]*>.*?<option value="(\d+)"/s', $html, $first);
+        preg_match("/data-plan-floors='([^']+)'/", $html, $f);
+        $floor = json_decode(html_entity_decode($f[1]), true)[(int) $first[1]];
+
+        preg_match('/<select name="level"[^>]*>(.*?)<\/select>/s', $html, $m);
+        preg_match_all('/<option value="(\d)"/', $m[1], $values);
+
+        $this->assertSame(array_map('strval', range($floor + 1, 5)), $values[1]);
+    }
+
+    public function test_a_skill_with_every_level_queued_is_not_offered_to_plan(): void
+    {
+        // Reached 2 and levels 3 to 5 queued: nothing above it left to plan to (three entries, so the queue is not full).
+        $this->inject($this->character, $this->hacking, $this->hacking->pointsForLevel(2), 2);
+        $this->injected($this->cryptography, $this->codebreaking);
+        foreach ([3, 4, 5] as $i => $level) {
+            TrainingQueueEntry::create(['character_id' => $this->character->id, 'skill_id' => $this->hacking->id, 'target_level' => $level, 'position' => $i + 1]);
+        }
+
+        $html = $this->actingAs($this->user)->get(route('skills.index'))->assertOk()->getContent();
+        preg_match('/<select name="skill"[^>]*data-plan-skill[^>]*>(.*?)<\/select>/s', $html, $m);
+
+        $this->assertStringNotContainsString('value="'.$this->hacking->id.'"', $m[1]);
+        $this->assertStringContainsString('value="'.$this->cryptography->id.'"', $m[1]);
+    }
+
     private function planner(): TrainingPlanner
     {
         return TrainingPlanner::make();

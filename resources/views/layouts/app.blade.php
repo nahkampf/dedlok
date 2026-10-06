@@ -25,6 +25,7 @@
      user rather than the character — the bar has a character to draw and this
      does not need one. --}}
 @php($unread = auth()->check() ? (new \App\Notifications\Notifier)->unreadFor(auth()->user()) : 0)
+@php($latestMessage = auth()->check() ? (new \App\Notifications\Notifier)->latestIdFor(auth()->user()) : 0)
 {{-- One query, and only for a signed-in character: the topbar's process
      count and the modal behind it read the same collection. --}}
 @php($processes = $hud?->runningProcesses() ?? collect())
@@ -61,7 +62,7 @@
                  U+FE0E so it is drawn as text rather than handed to an emoji
                  font. --}}
             <a class="dock__item" href="{{ route('character.index') }}"
-               @if (request()->routeIs('character.index', 'skills.*', 'implants.*', 'standing.*', 'achievements.*')) aria-current="page" @endif>
+               @if (request()->routeIs('character.index', 'skills.*', 'implants.*', 'equipment.*', 'standing.*', 'achievements.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9823;&#65038;</span>
                 <span class="dock__label">{{ Text::get('ui.nav.character') }}</span>
             </a>
@@ -126,7 +127,11 @@
 
                  THE COUNT IS ONLY THERE WHEN THERE IS ONE. An ember pip that
                  was permanent furniture would spend the accent on nothing. --}}
+            {{-- `data-inbox` is what ui-kit.js polls with: where to ask, the newest message this page knows of, and
+                 the sound for a new one. --}}
             <a class="dock__item" href="{{ route('notifications.index') }}"
+               data-inbox="{{ route('notifications.unread') }}" data-inbox-latest="{{ $latestMessage }}"
+               data-inbox-sound="{{ Asset::url('assets/sound/message.wav') }}"
                @if (request()->routeIs('notifications.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9993;&#65038;</span>
                 @if ($unread > 0)
@@ -349,6 +354,13 @@
             @empty
                 <p class="muted" style="font-size:var(--fs-sm)">{{ Text::get('programs.running_none') }}</p>
             @endforelse
+
+            {{-- What the deck could start, fetched when this opens (`ui-kit.js`): working it out costs a
+                 look at the deck's totals, which is not worth doing on every page. --}}
+            <div class="micro" style="margin-top:var(--s-4);color:var(--ink-2)">{{ Text::get('programs.startable') }}</div>
+            <div data-startable="{{ route('programs.startable') }}">
+                <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('programs.startable_loading') }}</p>
+            </div>
         </div>
 
         {{-- Where the doing happens. --}}
