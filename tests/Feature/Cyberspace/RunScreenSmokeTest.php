@@ -129,6 +129,20 @@ final class RunScreenSmokeTest extends TestCase
         $this->get(route('run.show'))->assertOk();
     }
 
+    public function test_the_log_shows_the_newest_line_first(): void
+    {
+        $this->machine();
+        $run = $this->begin();
+        $run->forceFill(['log' => [
+            ['text' => 'FIRST LINE OF THE LOG', 'tone' => 'neutral', 'turn' => 1],
+            ['text' => 'SECOND LINE OF THE LOG', 'tone' => 'neutral', 'turn' => 2],
+            ['text' => 'THIRD LINE OF THE LOG', 'tone' => 'neutral', 'turn' => 3],
+        ]])->save();
+
+        $this->get(route('run.show'))->assertOk()
+            ->assertSeeInOrder(['THIRD LINE OF THE LOG', 'SECOND LINE OF THE LOG', 'FIRST LINE OF THE LOG']);
+    }
+
     /** Whatever was fighting has been broken: the run outlives its ICE. */
     public function test_the_screen_renders_after_the_ice_is_broken(): void
     {

@@ -489,6 +489,7 @@ consequences and taking what a machine holds all roll.
 - **They are set from the MAP, never from inside a run** — an accordion on the cyberspace
   screen, because they are a play style, and changing them mid-fight would be changing the
   rules of a fight while standing in it.
+- **The run log is drawn NEWEST FIRST** (stored oldest first, reversed in the view), so the answer to the turn just taken is where the eye already is instead of below the fold.
 - **A log line is stored rendered, and may carry a `tag`.** `runs.log` entries are `{text, tone,
   turn}` plus an optional `tag` — who did it ("ICE VII"), shown as a tag in front of the text. It is
   kept BESIDE the text rather than inside it so the screen can style it, and an old log without one

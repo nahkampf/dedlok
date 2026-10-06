@@ -338,15 +338,16 @@
     </form>
 </div>
 
-{{-- THE ACCOUNT. A run is something a player watches happen, so the log says
-     what each turn did in the order it did it — newest last, the way a
-     transcript reads. --}}
+{{-- THE ACCOUNT. A run is something a player watches happen, and the page is
+     read from the top after every turn, so the log is NEWEST FIRST: the answer
+     to the turn just taken is where the eye already is, and nobody scrolls
+     down to find it. (It is stored oldest first and reversed here.) --}}
 @if ($run->log)
     <div class="panel panel--snug" style="margin-top:var(--s-4)">
         <div class="panel__hd"><h2>{{ Text::get('cyberspace.run.log_heading') }}</h2></div>
 
         <div style="padding:var(--s-3) 0">
-            @foreach ($run->log as $line)
+            @foreach (array_reverse($run->log) as $line)
                 <p class="micro" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
                     @if (isset($line['turn']))
                         <span class="tag">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
