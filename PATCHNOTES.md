@@ -1,3 +1,7 @@
+## 0.40.0 (2026-10-07)
+
+- Discord notice for new users
+
 ## 0.39.0 (2026-10-07)
 
 - New item type: Consumables. Healps HP immediately.

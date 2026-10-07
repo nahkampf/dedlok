@@ -2874,6 +2874,14 @@ return [
     ],
 
     // The front page: NOTICE.md, and the two places there are to go.
+    // The invitation shown once, on a new account's first sign-in.
+    'discord' => [
+        'title' => 'Please join our Discord!',
+        'text' => 'Here\'s where to report bugs, give feedback, wish for features or just hang out and chill:',
+        'url' => 'https://discord.gg/WZuCf4YwER',
+        'close' => 'Close',
+    ],
+
     'home' => [
         // The accordion's summary when NOTICE.md does not open with a heading.
         'notice' => 'Notice',

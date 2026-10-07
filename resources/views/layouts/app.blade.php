@@ -499,6 +499,11 @@
 
 
 
+{{-- Once, to an account that has not closed it: the invitation to the Discord. --}}
+@if (auth()->check() && auth()->user()->seen_discord_at === null)
+    <x-discord-invite />
+@endif
+
 <script src="{{ Asset::url('assets/js/ui-kit.js') }}" defer></script>
 @stack('scripts')
 </body>

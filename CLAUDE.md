@@ -977,6 +977,15 @@ not shown** — it is spent at the store and has its own story. Zero-delta entri
 against somebody already at −100) are hidden. Read-only: `StandingLedger` stays the only
 writer.
 
+### The Discord invitation
+
+**A modal that opens by itself, once, on a new account's first sign-in** (`<x-discord-invite>` in `layouts/app.blade.php`, shown while
+`users.seen_discord_at` is NULL and somebody is signed in). The same shape as the patch notes: `data-show-on-load`, and a form
+marked `data-post-on-close` posts `discord.seen` however the dialog is closed (`DiscordInviteController`, idempotent). The post is
+in `RequireCharacter`'s allow-list because the first thing a new account sees is character creation. **Existing accounts are
+marked seen by the migration**, and `UserFactory` makes test users seen, so only a test that sets `seen_discord_at` to NULL meets it.
+Text and URL are `strings.discord.*`.
+
 ### Narrative encounters
 
 **`CITY.md`, *Encounters*, is the document.** Something that happens to a character in the City:

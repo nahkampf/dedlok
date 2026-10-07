@@ -33,6 +33,8 @@ class RequireCharacter
     private const ALLOWED_ROUTES = [
         'character.create',
         'character.store',
+        // The first thing a new account sees is the Discord invitation, and it must be closable before a character exists.
+        'discord.seen',
         'handles.available',
         'locale.update',
         'logout',
