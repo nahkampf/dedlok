@@ -1399,6 +1399,8 @@ review.
 **as saved**, not as the counters currently read — the placement ring lives in PHP and a
 second copy in `ui-kit.js` would be a second answer. Change counts, save, then arrange.
 
+**The items list has one Type filter** (`?type=`, a value is `kind` or `kind:detail`): deck hardware (and each piece), software (and each kind), drugs (any, fight-only, or one family), armour, weapon, ammunition, consumable, implant, imprint, and *plain* (none of those). `ItemController::typeGroups()` builds the dropdown and `ofType()` narrows; the old `?hardware=` and `?program=` URLs still work. A new kind of item is a line in each.
+
 **The item editor writes three tables** — the row, plus `deck_slots` if it is a deck, plus
 `deck_modules` if it is a module. `ItemController` wraps both in a transaction and delegates
 to `HardwareEditor`.
