@@ -2,6 +2,34 @@
 
 ## [Unreleased]
 
+## [0.42.0] — 2026-10-07
+
+Players can write to each other, the front page counts players, and the encounter editor can remove rows.
+
+### Added
+
+- **Messages between players**: *New message* in the inbox (`MessageController`: `messages.create`, `.store`, `.recipients`). To (a
+  character's handle, suggested as you type through a `<datalist>` filled by `data-suggest` in `ui-kit.js`: handles only, at most
+  eight, never your own), Title (100) and Message (500, the inbox column's width). It arrives as an ordinary notification
+  (`Category::Personal`, `Notifier::sendFrom()`) with the sender in `details['from']`; the inbox shows *From:* and a *Reply* link
+  (`messages.create?to=`) in place of *Go to*. Sending is throttled (15 in 10 minutes) and to yourself is refused.
+- **Plain text only** (`App\Support\PlainText`): everything typed is decoded of entities, stripped of script/style blocks and every
+  tag (in a loop, so a tag rebuilt from the pieces of another goes too) and of control and invisible formatting characters (bidi
+  overrides), before it is judged and stored, so `<b></b>` is an empty title. A player's words are written as typed and never
+  through `Text::get()`, and every view prints them escaped.
+- **Player counts on the front page**, under the version number: *Total players* (accounts with a character) and *Active players
+  last 7 days*, cached five minutes under `home.player_counts`. Active is `users.last_active_at`, written by
+  `TouchLastActive` at most once every five minutes and never by the inbox poll. Accounts that existed before the column are NULL
+  until their next visit, so the active figure starts low and fills in.
+- **The encounter editor can remove a screen, a choice or an outcome** (`data-remove-row`): it leaves the form and nothing is
+  deleted until save. Rows are not renumbered (the request reads them by key), and `data-add-row` takes the next index past every
+  one ever used, so a "+" after a ✕ cannot reuse an index a row still has.
+
+### Migrations
+
+- `2026_10_07_200000_a_user_remembers_when_they_were_last_active` (adds `users.last_active_at`)
+
+
 ## [0.41.0] — 2026-10-07
 
 Link unfurls with a picture and a description, a credits name on registration, and two location descriptions.
@@ -2550,7 +2578,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.41.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.42.0...HEAD
+[0.42.0]: https://github.com/nahkampf/dedlok/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/nahkampf/dedlok/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/nahkampf/dedlok/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/nahkampf/dedlok/compare/v0.38.0...v0.39.0
