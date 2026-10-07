@@ -138,6 +138,62 @@ final class MissionTest extends TestCase
         $this->assertNotNull($taken->expires_at, 'the window is measured from accept, never from the offer');
     }
 
+    /** The job is written down in the inbox: what, where, what it pays and when it is due. */
+    public function test_accepting_sends_the_job_to_the_inbox_with_its_addresses_and_due_date(): void
+    {
+        $offer = $this->anOffer(MissionAction::Burn);
+        $addresses = $offer->targets->pluck('address')->all();
+
+        $taken = $this->ledger()->accept($this->character, $offer);
+
+        $message = Notification::query()->sole();
+        $this->assertSame(Category::Mission, $message->category);
+        $this->assertStringContainsString(MissionAction::Burn->label(), (string) $message->title);
+        $this->assertStringContainsString((string) $this->entity->name, (string) $message->title);
+
+        foreach ($addresses as $address) {
+            $this->assertStringContainsString($address, $message->body, 'the systems it names, by address');
+        }
+
+        $this->assertStringContainsString($taken->expires_at->format('Y-m-d H:i').' UTC', $message->body, 'the due date');
+        $this->assertStringContainsString('500', $message->body, 'what it pays');
+        $this->assertSame($addresses, array_column($message->details['targets'], 'address'));
+    }
+
+    public function test_the_inbox_lists_the_systems_of_an_accepted_job(): void
+    {
+        $offer = $this->anOffer(MissionAction::Plant);
+        $this->ledger()->accept($this->character, $offer);
+
+        $page = $this->actingAs($this->character->user)->get(route('notifications.index'))->assertOk()->getContent();
+
+        foreach ($offer->targets as $target) {
+            $this->assertStringContainsString($target->address, $page);
+        }
+    }
+
+    public function test_a_supply_job_says_how_many_files_not_which_systems(): void
+    {
+        $this->ledger()->accept($this->character, $this->anOffer(MissionAction::Supply));
+
+        $message = Notification::query()->sole();
+
+        $this->assertStringContainsString('Bring 3 complete scan files.', $message->body);
+        $this->assertNull($message->details);
+    }
+
+    public function test_a_refused_acceptance_writes_nothing(): void
+    {
+        $first = $this->anOffer(MissionAction::Scan);
+        $second = $this->anOffer(MissionAction::Burn);
+        $this->ledger()->accept($this->character, $first);
+        Notification::query()->delete();
+
+        $this->ledger()->accept($this->character, $second);   // one job per agent: refused
+
+        $this->assertSame(0, Notification::query()->count());
+    }
+
     public function test_one_job_per_agent(): void
     {
         $first = $this->anOffer(MissionAction::Scan);
@@ -285,6 +341,8 @@ final class MissionTest extends TestCase
     {
         $mission = $this->accepted(MissionAction::Scan);
         $mission->forceFill(['expires_at' => now()->subMinute()])->save();
+        // Taking the job wrote its own briefing; this is about what the sweep adds after it.
+        Notification::query()->delete();
 
         $this->ledger()->sweepExpired();
 
@@ -324,6 +382,58 @@ final class MissionTest extends TestCase
         // at hand-in, so the job still records which systems were sold.
         $this->assertSame(3, $done->targets()->count());
         $this->assertSame(0, $done->outstanding());
+    }
+
+    // ---- a survey is handed in as files -----------------------------------------------------------------
+
+    public function test_a_survey_is_handed_in_as_one_file_per_system_and_the_files_are_spent(): void
+    {
+        $mission = $this->accepted(MissionAction::Scan);
+        $files = $mission->targets->map(fn ($target) => $this->fileFor($target->system));
+        $stranger = $this->scanFiles(1)->first();   // a file of some other system is not wanted and is not spent
+
+        $done = $this->ledger()->complete($this->character->fresh(), $mission);
+
+        $this->assertInstanceOf(Mission::class, $done);
+        $this->assertSame(MissionState::Completed, $done->state);
+        $this->assertSame(0, $done->outstanding());
+        $files->each(fn (InventoryItem $row) => $this->assertNull(InventoryItem::query()->find($row->id), 'spent'));
+        $this->assertNotNull(InventoryItem::query()->find($stranger->id));
+        $this->assertSame(500, (int) $this->character->fresh()->creds, 'and it paid');
+    }
+
+    public function test_a_survey_with_a_file_missing_is_refused_and_spends_nothing(): void
+    {
+        $mission = $this->accepted(MissionAction::Scan);
+        $first = $this->fileFor($mission->targets->first()->system);
+
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission));
+
+        $this->assertNotNull(InventoryItem::query()->find($first->id), 'a refusal spends nothing');
+        $this->assertSame(0, $mission->fresh()->targets()->whereNotNull('satisfied_at')->count());
+    }
+
+    public function test_an_incomplete_or_stale_file_does_not_stand_in_for_a_system(): void
+    {
+        $mission = $this->accepted(MissionAction::Scan);
+        [$one, $two] = [$mission->targets[0]->system, $mission->targets[1]->system];
+        $this->fileFor($one);
+        $this->fileFor($two, complete: false);
+
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission));
+
+        $this->fileFor($two, stale: true);
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission));
+    }
+
+    public function test_the_card_says_which_systems_of_a_survey_have_their_file_in_hand(): void
+    {
+        $mission = $this->accepted(MissionAction::Scan);
+        $this->fileFor($mission->targets->first()->system);
+
+        $held = $this->ledger()->heldAddresses($this->character->fresh());
+
+        $this->assertSame([$mission->targets->first()->address], $held);
     }
 
     public function test_supply_refuses_when_the_files_are_short(): void
@@ -407,6 +517,27 @@ final class MissionTest extends TestCase
     private function ledger(): MissionLedger
     {
         return app(MissionLedger::class);
+    }
+
+    /** A scan file of a particular system, made the way an export makes one. */
+    private function fileFor(System $system, bool $complete = true, bool $stale = false): InventoryItem
+    {
+        $item = Item::query()->where('slug', 'scan-file')->firstOrFail();
+        $os = Skill::query()->where('slug', 'lattice')->first()
+            ?? Skill::factory()->create(['slug' => 'lattice', 'title' => 'Lattice', 'rank' => 1]);
+
+        return InventoryItem::query()->create([
+            'character_id' => $this->character->id,
+            'item_id' => $item->id,
+            'quantity' => 1,
+            'scan_file' => array_merge([
+                'address' => $system->address,
+                'name' => $system->displayName(),
+                'grade' => $system->grade,
+                'made_at' => now()->subHour()->format(DATE_ATOM),
+                'expires_at' => ($stale ? now()->subHour() : now()->addHours(12))->format(DATE_ATOM),
+            ], $complete ? ['os_skill_id' => $os->id, 'ids_detection' => 0, 'tracer_detection' => 0, 'tracer_rate' => 0, 'ice_level' => 0] : []),
+        ]);
     }
 
     /** One offer of a named action, built the way the board builds one. */

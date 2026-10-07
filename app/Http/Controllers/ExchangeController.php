@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Missions\MissionBoard;
+use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\EntityOffer;
 use App\Models\InventoryItem;
@@ -93,6 +94,8 @@ class ExchangeController extends Controller
             // Counted once here rather than per card: only a supply job reads
             // it, but the card should not be running a query to draw a meter.
             'files' => $this->completeFiles($character),
+            // The systems a survey's files are in hand for, so its card can tick them off before the hand-in.
+            'heldAddresses' => app(MissionLedger::class)->heldAddresses($character),
 
             // The shelf. Asked for only when the desk will deal with somebody
             // at all — the same reason the board is, and the same gate.

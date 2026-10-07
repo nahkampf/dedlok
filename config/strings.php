@@ -611,6 +611,10 @@ return [
         'mark_read' => 'Mark all read',
         'go_to' => 'Go to :place',
 
+        // The `:what` of an accepted job's message.
+        'mission_what_systems' => 'Systems (:count): :addresses.',
+        'mission_what_supply' => 'Bring :count complete scan files.',
+
         // Writing to another player.
         'compose' => [
             'button' => 'New message',
@@ -677,6 +681,7 @@ return [
             'backdoor_lost' => 'Backdoor lost',
             'file_stale' => 'Scan file gone stale',
             'offer_sold' => 'Sold: :item',
+            'mission_accepted' => 'Job accepted: :action for :entity',
             'mission_failed' => 'Job ran out of time',
             'mission_abandoned' => 'Job abandoned',
             'mission_voided' => 'Job called off',
@@ -714,6 +719,8 @@ return [
             'offer_sold' => 'Sold: :quantity × :item, for :price ¤.',
             // WORK THAT ENDED WITHOUT YOU THERE. Completing is not here:
             // that happens at the desk with somebody pressing a button.
+            // Sent when a job is ACCEPTED (the one exception: see MissionLedger::briefing()). A record to work from.
+            'mission_accepted' => ':action for :entity. :what Pays :creds ¤, standing :standing, loyalty :loyalty; failing costs :penalty standing. Due by :due.',
             'mission_failed' => 'Your :action job for :entity ran out of time.',
             'mission_abandoned' => 'You walked away from the :action job for :entity.',
             'mission_voided' => 'The :action job for :entity is off: something it named is not there any more.',
@@ -769,6 +776,9 @@ return [
         'quantity' => ':count complete scan files',
         'target_gone' => 'Not there any more',
         'target_done' => 'Done',
+        // On a survey's systems, before it is handed in: is this one's scan file in your stash?
+        'file_held' => 'File in hand',
+        'file_needed' => 'Needs a scan file',
 
         // Said on the board and again on the row, because a player choosing
         // between two jobs is choosing between two KINDS of evening.
@@ -780,7 +790,7 @@ return [
         ],
 
         'action_hint' => [
-            'scan' => 'Scan every system named and bring the files back. The safest work there is, and the slowest.',
+            'scan' => 'Scan every system named and bring the files back, one for each. The safest work there is, and the slowest.',
             'burn' => 'We want these systems gone. Burned. Shut down.',
             'plant' => 'Leave a backdoor on these systems. The door is ours, not yours - you get paid, and we get the way in.',
             'supply' => 'Bring us complete scan files. We do not care which systems, only that the picture is whole.',

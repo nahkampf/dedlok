@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+## [0.42.2] — 2026-10-08
+
+A survey job can be completed, and accepting any job writes it down in the inbox.
+
+### Added
+
+- **Accepting a job sends its details to the inbox** (`MissionLedger::briefing()`, `notifications.messages.mission_accepted`): the task and
+  who it is for, the systems by address (in the sentence and in `details['targets']`, drawn with the copy-an-address button), what it
+  pays and costs, and the due date as an absolute `Y-m-d H:i UTC` (a stored message is never recomposed). A supply job names a file
+  count. A refused acceptance writes nothing. This is the inbox's one exception to "while nobody was looking", recorded in CLAUDE.md.
+- **A survey's card tags each system *File in hand* or *Needs a scan file*** (`MissionLedger::heldAddresses()`; `heldFiles()` is the
+  one definition of what counts, shared with supply jobs).
+
+### Fixed
+
+- **A survey (`MissionAction::Scan`) could never be completed.** The design says it is handed in as scan files, but `complete()` only
+  looked at `satisfied_at` on the targets and nothing ever wrote it for a survey (only Burn and Plant record where they happen). It now
+  takes one whole, unexpired, loose scan file of each named system, all or nothing, spends the files and writes `satisfied_at` as the
+  receipt (`handInSurvey()`). Scanning alone still does not tick a survey: the files have to be exported first. The hint now says
+  "one for each".
+
+No migrations.
+
+
 ## [0.42.1] — 2026-10-07
 
 A routing chain box on the map screen.
@@ -2591,7 +2615,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.42.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.42.2...HEAD
+[0.42.2]: https://github.com/nahkampf/dedlok/compare/v0.42.1...v0.42.2
 [0.42.1]: https://github.com/nahkampf/dedlok/compare/v0.42.0...v0.42.1
 [0.42.0]: https://github.com/nahkampf/dedlok/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/nahkampf/dedlok/compare/v0.40.0...v0.41.0

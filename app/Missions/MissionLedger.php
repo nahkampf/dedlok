@@ -16,9 +16,12 @@ use App\Standing\LedgerKind;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
 use App\Stats\Resolver;
+use App\Support\Text;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Number;
 
 /**
  * The only thing that moves a mission through its states.
@@ -105,8 +108,44 @@ final readonly class MissionLedger
                 'expires_at' => now()->addHours($hours),
             ])->save();
 
-            return $live->fresh();
+            $accepted = $live->fresh();
+            $this->briefing($character, $accepted);
+
+            return $accepted;
         });
+    }
+
+    /**
+     * The job, written down: what it is, where, what it pays and when it is due, kept in the inbox.
+     *
+     * An EXCEPTION to the inbox's rule that it holds what happened while nobody was looking: the player pressed the
+     * button. But the desk's board is gone once it is closed, the window is hours, and the addresses are what a runner
+     * works from, so a record to come back to is worth the exception. Written as it stood at acceptance and never
+     * recomposed, like every message: a target that has since gone is still the one the job named.
+     */
+    private function briefing(Character $character, Mission $mission): void
+    {
+        $mission->loadMissing('targets.system', 'entity');
+
+        $targets = $mission->targets->map(static fn ($target): array => [
+            'address' => (string) $target->address,
+            'grade' => $target->system?->grade,
+        ])->all();
+
+        $what = $mission->action->designatesTargets()
+            ? Text::get('notifications.mission_what_systems', ['count' => count($targets), 'addresses' => implode(', ', array_column($targets, 'address'))])
+            : Text::get('notifications.mission_what_supply', ['count' => $mission->quantity_required]);
+
+        (new Notifier)->send($character, Category::Mission, 'mission_accepted', [
+            'action' => $mission->action->label(),
+            'entity' => (string) ($mission->entity?->name ?? ''),
+            'what' => $what,
+            'creds' => Number::format((int) $mission->creds_reward),
+            'standing' => number_format((float) $mission->standing_reward, 3),
+            'loyalty' => (int) $mission->loyalty_reward,
+            'penalty' => number_format((float) $mission->penalty, 3),
+            'due' => $mission->expires_at?->format('Y-m-d H:i').' UTC',
+        ], $targets === [] ? null : ['targets' => $targets]);
     }
 
     /**
@@ -182,6 +221,11 @@ final readonly class MissionLedger
                 $spent = $this->spendFiles($character, $live);
 
                 if ($spent === false) {
+                    return MissionRefusal::NotDone;
+                }
+            } elseif ($live->action === MissionAction::Scan) {
+                // A survey is handed in: one whole, unexpired file for every system it names.
+                if (! $this->handInSurvey($character, $live)) {
                     return MissionRefusal::NotDone;
                 }
             } elseif (! $live->targetsSatisfied()) {
@@ -291,16 +335,14 @@ final readonly class MissionLedger
     }
 
     /**
-     * Files, counted and spent.
+     * The scan files a runner could hand in: loose in the stash, whole and unexpired. The one definition, shared by a supply
+     * job, a survey and the desk's card, so what the card says is in hand is what the hand-in would take.
      *
-     * ONLY COMPLETE FILES COUNT and only unexpired ones — a one-pass file that
-     * learned the grade and nothing else is not intel. Asking for more than
-     * the runner has is refused rather than partly taken, the rule the shelf
-     * and the offer book both keep.
+     * @return Collection<int, InventoryItem>
      */
-    private function spendFiles(Character $character, Mission $mission): bool
+    public function heldFiles(Character $character): Collection
     {
-        $held = InventoryItem::query()
+        return InventoryItem::query()
             ->where('character_id', $character->getKey())
             ->whereNotNull('scan_file')
             ->loose()
@@ -312,6 +354,58 @@ final readonly class MissionLedger
                 return $file !== null && ! $file->hasExpired() && $this->isWholePicture($file);
             })
             ->values();
+    }
+
+    /**
+     * The addresses of the files in hand, for a survey's card to tick off.
+     *
+     * @return list<string>
+     */
+    public function heldAddresses(Character $character): array
+    {
+        return $this->heldFiles($character)->map(static fn (InventoryItem $row): string => (string) $row->scanFile()?->address)->unique()->values()->all();
+    }
+
+    /**
+     * A SURVEY, handed in: for every system the job names that is not already satisfied, one whole, unexpired file of THAT
+     * system (made before the job or during it). All or nothing, like a supply job, and the files are spent so one file cannot
+     * be sold twice. Writes `satisfied_at` on the targets: the files are the evidence and the targets are the receipt.
+     */
+    private function handInSurvey(Character $character, Mission $mission): bool
+    {
+        $held = $this->heldFiles($character);
+        $spending = [];
+
+        foreach ($mission->targets()->whereNull('satisfied_at')->get() as $target) {
+            $row = $held->first(static fn (InventoryItem $candidate): bool => $candidate->scanFile()?->address === $target->address
+                && ! in_array($candidate->getKey(), array_map(static fn (array $pair): mixed => $pair[1]->getKey(), $spending), true));
+
+            if ($row === null) {
+                return false;
+            }
+
+            $spending[] = [$target, $row];
+        }
+
+        foreach ($spending as [$target, $row]) {
+            $target->forceFill(['satisfied_at' => now()])->save();
+            $row->delete();
+        }
+
+        return true;
+    }
+
+    /**
+     * Files, counted and spent.
+     *
+     * ONLY COMPLETE FILES COUNT and only unexpired ones — a one-pass file that
+     * learned the grade and nothing else is not intel. Asking for more than
+     * the runner has is refused rather than partly taken, the rule the shelf
+     * and the offer book both keep.
+     */
+    private function spendFiles(Character $character, Mission $mission): bool
+    {
+        $held = $this->heldFiles($character);
 
         if ($held->count() < $mission->quantity_required) {
             return false;

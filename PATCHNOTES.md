@@ -1,3 +1,8 @@
+## 0.42.2 (2026-10-07)
+
+- Buxfix: Survey jobs were missing a check for handing in.
+- When acceting an exchange job, the details are now sent in a message.
+
 ## 0.42.1 (2026-10-07)
 
 - Added ROuting chain box to cyberspace view

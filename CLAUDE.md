@@ -1404,6 +1404,17 @@ stood on this not existing.
   the newest id the page knew, at most once in ten seconds (the moment is kept in `localStorage`, so changing page does
   not restart the count). Browsers refuse sound until the person has touched the page; that refusal is swallowed and the
   badge still moves.
+- **Accepting a job writes one message, the inbox's one exception to "while nobody was looking"** (`MissionLedger::briefing()`,
+  `notifications.messages.mission_accepted`): what the job is and for whom, the systems BY ADDRESS (in `details['targets']`, drawn with
+  the copy-an-address button, and in the sentence), what it pays and costs, and when it is due (`Y-m-d H:i UTC`: absolute, because the
+  body is never recomposed and "in 9 hours" would be false tomorrow). The desk's board is gone once closed and a runner works from the
+  addresses, so a record to come back to is worth the exception. A refused acceptance writes nothing; a supply job names a file count.
+- **A SURVEY (`MissionAction::Scan`) is handed in as files** (`MissionLedger::handInSurvey()`, called by `complete()`): one whole, unexpired,
+  loose scan file per system the job names, of THAT system and made before the job or during it; all or nothing, the files are spent
+  (one file is not sold twice) and `satisfied_at` is written on the targets as the receipt. **Nothing records a scan against a survey
+  as it happens** (only Burn and Plant record where they happen), so scanning alone never ticks it: the player has to export the
+  files first. Until 2026-10-08 `complete()` never consulted files for a survey at all, so none could be completed. The desk's card
+  tags each system *File in hand* / *Needs a scan file* (`heldAddresses()`; `heldFiles()` is the one definition of what counts).
 - **Reading is its own POST**, never something opening the screen does — a badge cleared
   by arriving is a badge cleared for messages nobody read. All of them at once, because
   the alternative is a button per row for a state nothing reads except a count.
