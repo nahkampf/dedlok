@@ -23,4 +23,7 @@ enum ActionKind: string
 
     /** Spend the turn doing nothing: what a side with nothing usable at this range may do. */
     case Brace = 'brace';
+
+    /** A belted fight-only drug (the row id is `round`). The turn is spent here; `Fights` takes the dose. */
+    case Use = 'use';
 }

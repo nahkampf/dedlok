@@ -161,7 +161,12 @@ class ItemRequest extends FormRequest
             // A consumable: one number per kind of effect, blank meaning none. Whole numbers only, so a stray
             // decimal is a validation error and not a quiet rounding.
             'use_heal_hitpoints' => $this->filled('use_heal_hitpoints') ? $this->input('use_heal_hitpoints') : null,
-            'duration_minutes' => $this->panelNumber('duration_minutes', $isDrugForm),
+            // A fight-only drug counts rounds, so its minutes are not asked (0, unread) and the two fight fields only
+            // mean anything when it is one: blank otherwise, however the form posted them.
+            'fight_only' => $this->boolean('fight_only'),
+            'duration_minutes' => $this->boolean('fight_only') ? '0' : $this->panelNumber('duration_minutes', $isDrugForm),
+            'duration_turns' => $this->boolean('fight_only') ? $this->numberOrNull('duration_turns') : null,
+            'turn_hitpoints' => $this->boolean('fight_only') ? ($this->numberOrNull('turn_hitpoints') ?? '0') : null,
             'addictive' => $this->panelNumber('addictive', $isDrugForm),
             'tolerance_gain' => $this->panelNumber('tolerance_gain', $isDrugForm),
             'lethal_at' => $this->panelNumber('lethal_at', $isDrugForm),
@@ -374,8 +379,17 @@ class ItemRequest extends FormRequest
                 ? ['prohibited']
                 : ['nullable', 'integer', 'min:1', 'max:10000'],
 
+            'fight_only' => ['boolean'],
             'duration_minutes' => $isDrug
-                ? ['required', 'integer', 'min:1', 'max:10080']
+                ? ($this->boolean('fight_only') ? ['required', 'integer', 'in:0'] : ['required', 'integer', 'min:1', 'max:10080'])
+                : ['prohibited'],
+            // Rounds, when it is fight-only: a fight is a few rounds, so a long one is a typo.
+            'duration_turns' => $isDrug && $this->boolean('fight_only')
+                ? ['required', 'integer', 'min:1', 'max:50']
+                : ['prohibited'],
+            // Signed: positive restores, negative is the drug's price. Whole points.
+            'turn_hitpoints' => $isDrug && $this->boolean('fight_only')
+                ? ['required', 'integer', 'min:-100', 'max:100']
                 : ['prohibited'],
             'addictive' => $isDrug
                 ? ['required', 'numeric', 'min:0', 'max:100']
@@ -873,7 +887,7 @@ class ItemRequest extends FormRequest
 
         // And so does a drug. Nothing on `items` says an item is one.
         unset(
-            $data['drug_family'], $data['duration_minutes'], $data['addictive'],
+            $data['drug_family'], $data['fight_only'], $data['duration_minutes'], $data['duration_turns'], $data['turn_hitpoints'], $data['addictive'],
             $data['tolerance_gain'], $data['lethal_at'],
         );
 
@@ -1046,7 +1060,10 @@ class ItemRequest extends FormRequest
         $data = $this->validated();
 
         return [
+            'fight_only' => (bool) ($data['fight_only'] ?? false),
             'duration_minutes' => (int) ($data['duration_minutes'] ?? 0),
+            'duration_turns' => ($data['duration_turns'] ?? null) === null ? null : (int) $data['duration_turns'],
+            'turn_hitpoints' => (int) ($data['turn_hitpoints'] ?? 0),
             'addictive' => (float) ($data['addictive'] ?? 0),
             'tolerance_gain' => (float) ($data['tolerance_gain'] ?? 0),
             'lethal_at' => ($data['lethal_at'] ?? null) === null ? null : (int) $data['lethal_at'],

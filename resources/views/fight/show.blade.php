@@ -107,6 +107,26 @@
             <span class="tag">{{ Text::get('combat.fight.screen.nothing_to_attack') }}</span>
         @endif
 
+        {{-- Fight-only drugs on the belt. Using one IS the turn: the opponent acts, and it works from the next round. --}}
+        @foreach ($uses as $use)
+            <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
+                @csrf
+                <input type="hidden" name="action" value="use">
+                <input type="hidden" name="round" value="{{ $use['id'] }}">
+                <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.use', ['item' => $use['name']]) }}</button>
+                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.use_hint', ['turns' => $use['turns'], 'quantity' => $use['quantity']]) }}</span>
+            </form>
+        @endforeach
+
+        @if ($doses !== [])
+            <span class="micro" style="color:var(--ink-3)">
+                {{ Text::get('combat.fight.screen.in_effect') }}
+                @foreach ($doses as $dose)
+                    <span class="tag">{{ Text::get('combat.fight.screen.dose_left', ['item' => $dose['name'], 'turns' => $dose['turns']]) }}</span>
+                @endforeach
+            </span>
+        @endif
+
         @foreach ($loads as $load)
             <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
                 @csrf

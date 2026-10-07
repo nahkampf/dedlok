@@ -868,10 +868,9 @@ The sheet no longer carries an equipment panel.
   `App\Equipment\BeltEquipper`. A slot holds one ROW, so a pile of stims is one slot and the whole pile goes on. Only
   drugs and consumables may be belted today. A belted row has no stack key (like a running program) so it does not merge with the loose
   pile; taking it off merges it back. A belted row is on the person: it cannot be listed, sold or put in a container.
-- **NOT BUILT: using a belted drug in a fight.** It was chosen, and it is its own piece of work: the fight engine
-  snapshots the player's aim, damage and defence when a fight opens, so a stimulant taken mid-fight would not touch them
-  without rebuilding that snapshot each round (COMBAT.md lists items mid-fight as later). Until then the belt holds drugs
-  and does nothing with them.
+- **A FIGHT-ONLY drug IS usable from the belt in a fight** (see *Drugs*): `ActionKind::Use`, the row id in `Action::$round`.
+  **An ordinary belted drug and a consumable still are NOT** (`Fights` refuses them as `CannotUse`, `Consumer` as `InAFight`):
+  that stays unbuilt, and the belt holds them for nothing yet.
 
 ### The wallet
 
@@ -1034,6 +1033,21 @@ implant's; the row says which family, how long, and what it costs the books.
   dose over the line, the heart stops at 3 over), **it is never addictive** (`Family::addicts()`: `DrugLedger::record()` never
   raises its addiction whatever the row says, `reconcile()` returns at once so no `effects.withdrawal_medical` exists or is
   needed, and the item editor refuses a non-zero `addictive` on one), and tolerance is per drug as for every other family.
+- **A drug may be FIGHT-ONLY** (`drugs.fight_only`, 2026-10-07): a setting on the drug and not a second kind, so it keeps its
+  family, books, tolerance and overdose. Its length is `duration_turns` (rounds; `duration_minutes` is 0 and unread), it may
+  carry `turn_hitpoints` (signed: restored at the start of each round, scaled by the dose's potency, or lost as the drug's
+  price, flat and not mitigable like an overdose's injury) and any effect rows and a consumable half like any drug.
+  `DrugTaker::take()` refuses it outside a fight (`DoseRefusal::OnlyInAFight`; the stash card shows a *Fights only* tag
+  instead of Take). **Using one is the round's whole action** (`ActionKind::Use`, belted rows only): the engine just spends the
+  turn, then `Fights::act()` takes the dose through `DrugTaker` with `inFight: true`, so the enemy acts first and the dose
+  works **from the next round**. The dose is a `character_doses` row with `turns_left` (NULL = an ordinary dose); it is in
+  effect while `turns_left > 0` (`Dose::scopeInEffect()` and `ActiveDoses`), counts down once a round after the round is
+  played, and is deleted when the fight ends however it ended (`expires_at` is a one-day backstop only). **The player's
+  side of the snapshot is REBUILT from the character every round** (aim, damage, defence, pursuit; `CombatantBuilder::
+  forCharacter()`, keeping only the opponent's statuses), which is how a dose's stat effects reach a fight that began
+  before it — and why a weapon that is no longer the one the fight began with throws. **In a fight `DrugTaker` never asks
+  the waiting room**: an overdose or a flatline leaves the hit points at 0 and `Fights` ends the fight as a loss
+  (`Result::ADown`), whose `finish()` asks the floor.
 - **The books are per (character, family) and a missing row means clean.** Somebody can be
   deep into opiates and clean of stimulants. `App\Drugs\DrugLedger` is the only writer of
   `character_drug_use`, and the only thing that writes or clears a withdrawal.

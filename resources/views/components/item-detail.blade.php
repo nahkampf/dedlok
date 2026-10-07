@@ -214,7 +214,10 @@
             {{-- Taking one is not confirmed. A dose is one copy of a thing
                  meant to be used, and what makes it dangerous is the overdose
                  rather than the click. --}}
-            @if ($item->isDrug())
+            @if ($item->isDrug() && $item->drug->fight_only)
+                {{-- Fight-only: no button here. It goes on the belt and is used from the fight screen, as that round's action. --}}
+                <span class="tag" title="{{ Text::get('drugs.fight_only_hint', ['turns' => $item->drug->duration_turns]) }}">{{ Text::get('drugs.fight_only') }}</span>
+            @elseif ($item->isDrug())
                 <form method="POST" action="{{ route('inventory.take', $entry) }}">
                     @csrf
                     <button type="submit" class="btn btn--sm btn--primary cut"

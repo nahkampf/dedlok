@@ -25,6 +25,9 @@ enum DoseRefusal: string
     /** Somebody else's, or nothing left of it. */
     case NotOwned = 'not_owned';
 
+    /** A fight-only drug, taken from the stash or anywhere else but a fight. */
+    case OnlyInAFight = 'only_in_a_fight';
+
     public function message(): string
     {
         return Text::get("drugs.refused.{$this->value}");

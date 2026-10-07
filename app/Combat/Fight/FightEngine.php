@@ -135,6 +135,8 @@ final class FightEngine
             // The ranged weapon, whatever the range: at Close it is the one you are not firing.
             ActionKind::Load => $action->round !== null && $state->combatant($side)->ranged?->canLoad($action->round) === true,
             ActionKind::Brace => true,
+            // Whether the drug can be used is `Fights`' question (it owns the belt); the turn itself always can.
+            ActionKind::Use => true,
         };
     }
 
@@ -235,6 +237,8 @@ final class FightEngine
             ActionKind::Attack => $this->attack($state, $side, $dice, $mitigation),
             ActionKind::Brace => $state->withLog([$this->line($state, Text::get('combat.fight.log.brace', ['who' => $name]))]),
             ActionKind::Load => $this->load($state, $side, (string) $action->round),
+            // The turn is spent and nothing else happens in the engine: the dose is `Fights`' to write, and it logs it.
+            ActionKind::Use => $state,
             ActionKind::Disengage => $this->flight($state, $side, $dice, getAway: true),
             ActionKind::CreateDistance => $this->flight($state, $side, $dice, getAway: false),
             ActionKind::CloseIn => $this->closeIn($state, $side, $dice),

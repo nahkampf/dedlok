@@ -51,6 +51,8 @@ final readonly class ActiveDoses implements ModifierSource
         $doses = Dose::query()
             ->where('character_id', $this->character->getKey())
             ->where('expires_at', '>', $at)
+            // A fight-only dose counts down in rounds and is in effect while any are left.
+            ->where(static fn ($turns) => $turns->whereNull('turns_left')->orWhere('turns_left', '>', 0))
             // A dose taken after the moment being asked about was not in them
             // then. Unlike a running program, a dose knows exactly when it
             // began and when it ends, so looking back is honest here.

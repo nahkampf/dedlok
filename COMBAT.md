@@ -71,7 +71,9 @@ engine's own.
 4. **PvP.** Initiative is decided; consent and the bounty collection `characters.bounty` waits for
    are not. Default: **the engine is symmetric now (`Combatant`); the opening is later**.
 5. **Heat from violence.** Default: none (heat is a cyberspace quantity).
-6. **Using items mid-fight** (stims, healing; `DrugTaker`). Default: later.
+6. **Using items mid-fight** (stims, healing; `DrugTaker`). *Partly built (2026-10-07):* a **fight-only drug** (a setting on a drug
+   row) is used from the belt as the round's whole action, works from the next round for `duration_turns` rounds, and can restore
+   or cost hit points each round. Ordinary drugs and consumables (medkits) in a fight: still later.
 7. **The numbers**: the tier `spread`, opponent HP and damage by grade, fight length — set with
    `fight:simulate`.
 8. **Skill balance**, deferred until real NPCs exist: the grants are authored, the numbers are not measured.

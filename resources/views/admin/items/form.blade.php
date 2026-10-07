@@ -318,6 +318,23 @@
                 </div>
 
                 <div data-when="drug" @unless ($isDrug) hidden @endunless>
+                    {{-- Only in a fight: counts ROUNDS, so the minutes below are not read. --}}
+                    <label class="check" style="margin-top:var(--s-4)">
+                        <input type="checkbox" name="fight_only" value="1" @checked(old('fight_only', $item?->drug?->fight_only ?? false))>
+                        <span>{{ Text::get('admin.items.fields.fight_only') }}</span>
+                    </label>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.fight_only_hint') }}</span>
+                    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));margin-top:var(--s-3)">
+                        @foreach (['duration_turns' => 1, 'turn_hitpoints' => 1] as $field => $step)
+                            <div class="field" @error($field) data-invalid @enderror>
+                                <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
+                                <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" step="{{ $step }}"
+                                       value="{{ old($field, $item?->drug?->{$field} ?? ($field === 'turn_hitpoints' ? 0 : '')) }}">
+                                <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
+                                @error($field) <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+                        @endforeach
+                    </div>
                     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));margin-top:var(--s-4)">
                         @foreach (['duration_minutes' => 1, 'addictive' => 0.5, 'tolerance_gain' => 0.5] as $field => $step)
                             <div class="field" @error($field) data-invalid @enderror>

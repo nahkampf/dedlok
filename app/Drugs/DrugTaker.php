@@ -69,7 +69,11 @@ final class DrugTaker
 
     private readonly WaitingRoom $waitingRoom;
 
-    public function take(Character $character, InventoryItem $row): DoseResult
+    /**
+     * `$inFight` is `Fights`' to pass and nobody else's: a fight-only drug is taken only there, as that round's action,
+     * and the fight rather than this class asks the waiting room whether the body survived it.
+     */
+    public function take(Character $character, InventoryItem $row, bool $inFight = false): DoseResult
     {
         $item = $row->item;
         $drug = $item?->drug;
@@ -82,7 +86,11 @@ final class DrugTaker
             return DoseResult::refused(DoseRefusal::NotOwned);
         }
 
-        return DB::transaction(function () use ($character, $row, $item, $drug): DoseResult {
+        if ($drug->fight_only && ! $inFight) {
+            return DoseResult::refused(DoseRefusal::OnlyInAFight);
+        }
+
+        return DB::transaction(function () use ($character, $row, $item, $drug, $inFight): DoseResult {
             $now = CarbonImmutable::now();
 
             // What tolerance has left of it, decided before the books move:
@@ -101,7 +109,10 @@ final class DrugTaker
                 'item_id' => $item->getKey(),
                 'potency' => $potency,
                 'started_at' => $now,
-                'expires_at' => $now->addMinutes(max(1, (int) $drug->duration_minutes)),
+                // A fight-only dose counts rounds (`turns_left`); its expiry is only a backstop for a fight that never
+                // finished, and long enough that no real fight outlasts it.
+                'expires_at' => $drug->fight_only ? $now->addDay() : $now->addMinutes(max(1, (int) $drug->duration_minutes)),
+                'turns_left' => $drug->fight_only ? max(1, (int) $drug->duration_turns) : null,
             ]);
 
             $this->ledger->record($character, $drug);
@@ -112,7 +123,7 @@ final class DrugTaker
             $instant = $this->instantEffects($character, $item);
 
             if ($overdose->happened()) {
-                $this->hurt($character, $drug, $overdose);
+                $this->hurt($character, $drug, $overdose, $inFight);
             }
 
             // There is something of the family in them now, so whatever they
@@ -165,7 +176,7 @@ final class DrugTaker
      * bad ending in this game follows: whatever emptied somebody, the same
      * door decides they are on the floor.
      */
-    private function hurt(Character $character, Drug $drug, Overdose $overdose): void
+    private function hurt(Character $character, Drug $drug, Overdose $overdose, bool $inFight = false): void
     {
         $this->injuries->inflict($character, 'neural_damage', $overdose->injury);
 
@@ -182,6 +193,12 @@ final class DrugTaker
             // question of how hard. The same call the ICE attack tag of this
             // name makes about an injury.
             $character->forceFill(['current_hitpoints' => 0])->save();
+        }
+
+        // In a fight the fight asks the floor, at its own ending: asking here too would put a body on the waiting
+        // screen under a fight that is still live.
+        if ($inFight) {
+            return;
         }
 
         $this->waitingRoom->checkFloor($character->fresh() ?? $character, new DownedCause(
