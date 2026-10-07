@@ -7,6 +7,7 @@ namespace App\Notifications;
 use App\Models\Character;
 use App\Models\Notification;
 use App\Models\User;
+use App\Support\PlainText;
 use App\Support\Text;
 
 /**
@@ -87,6 +88,26 @@ final class Notifier
      * was read is the FIRST time, and re-reading it does not move that.
      */
     /** The closed row's line, or null when a key has no title (the screen then shows the category). */
+    /**
+     * A message one player wrote to another. The title and body are the sender's own words, cleaned to plain text
+     * here (`PlainText`) whatever the caller did, and written as they are: never through `Text::get()`, which would
+     * read a `:placeholder` in somebody's sentence as something to fill. Who it is from rides on `details`.
+     */
+    public function sendFrom(Character $from, Character $to, string $title, string $body): ?Notification
+    {
+        if ($to->user_id === null) {
+            return null;
+        }
+
+        return Notification::create([
+            'user_id' => (int) $to->user_id,
+            'category' => Category::Personal,
+            'title' => mb_substr(PlainText::clean($title), 0, 120),
+            'body' => mb_substr(PlainText::clean($body, multiline: true), 0, self::MAX_BODY),
+            'details' => ['from' => (string) $from->handle],
+        ]);
+    }
+
     private function title(string $key, array $replace): ?string
     {
         $title = Text::get("notifications.titles.{$key}", $replace);

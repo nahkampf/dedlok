@@ -28,9 +28,55 @@
     const box = btn.closest("[data-rows]");
     const tpl = box && box.querySelector(":scope > template");
     if (!tpl) return;
-    const n = box.querySelectorAll(":scope > [data-row]").length;
+    // Rows may have been removed, so the count is not a free index: the next one is past every index ever used.
+    const n = Math.max(box.querySelectorAll(":scope > [data-row]").length, Number(box.dataset.nextIndex || 0));
+    box.dataset.nextIndex = String(n + 1);
     tpl.insertAdjacentHTML("beforebegin", tpl.innerHTML.split(btn.dataset.token).join(String(n)));
     fillPrefixes(box);
+  });
+
+  /* A "✕" on a row removes it, and everything nested inside it. Nothing is deleted until the form is saved. The indexes of
+     the rows left are NOT renumbered (the server reads them by key), so remember how far they ran, or the next "+" would
+     reuse an index a row still has.
+     <div data-row><button type="button" data-remove-row>✕</button> …</div>                                    */
+  on("click", "[data-remove-row]", (e, btn) => {
+    const row = btn.closest("[data-row]");
+    const box = row && row.parentElement;
+    if (!box) return;
+    box.dataset.nextIndex = String(Math.max(Number(box.dataset.nextIndex || 0), box.querySelectorAll(":scope > [data-row]").length));
+    row.remove();
+  });
+
+  /* --- Suggestions as you type -------------------------------------------
+     An input with data-suggest="URL" and data-suggest-into="LIST-ID" asks the URL for ?q=<what is typed> and puts the JSON
+     list of strings it gets back into that <datalist>. The browser does the drawing and the picking. A short pause between
+     keystrokes, and a late answer to an older question is thrown away. Suggestions are a courtesy: the server still judges
+     whatever is sent, and a failed request just leaves the list as it was.
+     <input list="x" data-suggest="/handles" data-suggest-into="x"> <datalist id="x"></datalist>                   */
+  document.querySelectorAll("input[data-suggest]").forEach((input) => {
+    const list = document.getElementById(input.dataset.suggestInto);
+    if (!list) return;
+    let timer = null;
+    let asked = 0;
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      const q = input.value.trim();
+      if (q === "") { list.replaceChildren(); return; }
+      timer = setTimeout(() => {
+        const mine = ++asked;
+        fetch(input.dataset.suggest + "?q=" + encodeURIComponent(q), {
+          headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+        })
+          .then((r) => (r.ok ? r.json() : []))
+          .then((names) => {
+            if (mine !== asked || !Array.isArray(names)) return;
+            // textContent through option.value, never innerHTML: a handle is player-supplied.
+            list.replaceChildren(...names.map((n) => Object.assign(document.createElement("option"), { value: String(n) })));
+          })
+          .catch(() => {});
+      }, 150);
+    });
   });
 
   /* --- A default that follows another field ------------------------------

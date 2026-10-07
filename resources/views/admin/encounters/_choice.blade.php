@@ -2,6 +2,7 @@
 {{-- One choice. $j is its index, or __J__ for the template. --}}
 @php($at = "nodes[{$i}][choices][{$j}]")
 <div class="stack" style="--gap:var(--s-2);padding-left:var(--s-3);border-left:var(--hair) solid var(--line-1)" data-row>
+    <button type="button" class="btn btn--sm btn--ghost cut" data-remove-row style="align-self:start">✕ {{ Text::get('admin.encounters.remove_choice') }}</button>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr))">
         <label class="field" style="margin:0"><span class="field__label">{{ Text::get('admin.encounters.choice.label') }}</span>
             <input class="input" name="{{ $at }}[label]" maxlength="200" value="{{ $choice['label'] ?? '' }}"></label>

@@ -985,6 +985,14 @@ not shown** — it is spent at the store and has its own story. Zero-delta entri
 against somebody already at −100) are hidden. Read-only: `StandingLedger` stays the only
 writer.
 
+### Player counts on the front page
+
+**Under the version number, two small lines: *Total players* and *Active players last 7 days*, the figures green** (`home.blade.php`,
+`HomeController`, cached five minutes under `home.player_counts`). A player is an account that has made a character. Active is
+`users.last_active_at` within seven days, written by `App\Http\Middleware\TouchLastActive` at most once every five minutes and
+**never by the inbox poll** (`notifications.unread`: an open tab polls every five seconds whether anyone is there or not).
+Accounts that existed before the column are NULL until their next visit, so the active figure starts low and fills in.
+
 ### The Discord invitation
 
 **A modal that opens by itself, once, on a new account's first sign-in** (`<x-discord-invite>` in `layouts/app.blade.php`, shown while
@@ -1008,6 +1016,10 @@ a graph of nodes and choices with outcomes as rows, authored at `admin/encounter
 - **An outcome belongs to a button OR a screen** (`choice_id` / `node_id`, exactly one, held by the
   request). A screen's apply on arrival, every time, through `EncounterRunner::arrive()`; the floor
   is asked once, after everything.
+- **The editor has a ✕ on every screen, choice and outcome** (`data-remove-row`, `ui-kit.js`): it removes the row and what is nested in it
+  from the form, and nothing is deleted until the form is saved (a save replaces the graph, so a row not posted is gone). Rows are
+  NOT renumbered, because the request reads them by key; `data-add-row` therefore takes the next index past every one ever used
+  (`data-next-index`), or a "+" after a ✕ would reuse an index a row still has. Removing the entry screen is refused on save (exactly one entry).
 - **Nodes are reached by `node_key`, never by id**, so the editor replaces them wholesale on
   every save and nobody mid-encounter is stranded. `EncounterEditor` is the only writer of the
   graph; `Encounters::open()` the only door in; `EncounterRunner` the only thing that answers or
@@ -1359,6 +1371,14 @@ stood on this not existing.
   selected*). The ticks sit in the rows and belong to one form through their `form` attribute, so no row form is nested
   in another. `Notifier::delete()` is the writer, scoped to the account: somebody else's id is simply not counted.
   Real and unrecoverable, with no confirmation (a message is never the only record of anything).
+- **A player can write to another** (*New message*, `MessageController`, `messages.create` / `.store`): To (a character's handle, suggested
+  as you type from `messages.recipients`, handles only, eight at most, never your own), Title (100), Message (500, the column's
+  width). It lands as an ordinary notification in the recipient's account (`Category::Personal`, `Notifier::sendFrom()`), with
+  who it is from in `details['from']`; the inbox shows *From:* and a *Reply* link (`messages.create?to=`) instead of *Go to*.
+  **Everything typed is reduced to plain text before it is judged and stored** (`App\Support\PlainText`: entities decoded, script/style
+  blocks and every tag removed in a loop, control and invisible formatting characters such as bidi overrides dropped; "I <3 you"
+  stays), so "<b></b>" is an empty title; **it is written as typed and never through `Text::get()`** (a `:placeholder` in somebody's
+  words is not filled), and every view still prints it escaped. Sending is throttled (15 in 10 minutes). A message to yourself is refused.
 - **The body is never recomposed.** A message outlives its own subject — a machine
   relocates, a skill is renamed, an achievement is retired — so a stored sentence is the
   only one that is still true tomorrow. Same call `system_contacts` makes about a sighting.

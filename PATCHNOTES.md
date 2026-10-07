@@ -1,3 +1,9 @@
+## 0.42.0 (2026-10-07)
+
+- Player-2-player messaging.
+- List total and active players 
+- Minor tweaks and bugfixes for the encounter editor
+
 ## 0.41.0 (2026-10-07)
 
 - Minor SEO/OG fixes

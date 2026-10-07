@@ -40,6 +40,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'seen_discord_at' => 'immutable_datetime',
+            'last_active_at' => 'immutable_datetime',
         ];
     }
 

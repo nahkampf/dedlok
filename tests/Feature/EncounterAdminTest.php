@@ -128,6 +128,40 @@ final class EncounterAdminTest extends TestCase
         }
     }
 
+    public function test_every_screen_choice_and_outcome_has_a_remove_button(): void
+    {
+        $this->save($this->payload())->assertRedirect();
+        $html = $this->actingAs($this->admin)->get(route('admin.encounters.edit', Encounter::query()->firstOrFail()))->getContent();
+
+        foreach (['Remove this screen', 'Remove this choice', 'Remove this outcome'] as $label) {
+            $this->assertStringContainsString($label, $html);
+        }
+        // Rows that exist and the templates that new ones are cloned from both carry one.
+        $this->assertGreaterThanOrEqual(6, substr_count($html, 'data-remove-row'));
+    }
+
+    public function test_a_screen_taken_out_of_the_middle_leaves_a_gap_in_the_indexes_and_still_saves(): void
+    {
+        // What the form posts after the second screen's ✕: indexes 0 and 3, with nothing at 1 or 2.
+        $this->save([
+            'slug' => 'gappy', 'title' => 'Gappy', 'intro' => '', 'starts_on' => 'travel', 'weight' => 5, 'entry' => 0,
+            'nodes' => [
+                0 => ['key' => 'start', 'body' => 'Go.', 'choices' => [0 => ['label' => 'Leave', 'next_key' => 'end', 'cost' => 0]]],
+                3 => ['key' => 'end', 'body' => 'Done.', 'ends' => 1],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $encounter = Encounter::query()->where('slug', 'gappy')->firstOrFail();
+        $this->assertSame(['end', 'start'], $encounter->nodes()->orderBy('node_key')->pluck('node_key')->all());
+
+        // And the screen taken out on a later save is gone.
+        $this->actingAs($this->admin)->put(route('admin.encounters.update', $encounter), [
+            'title' => 'Gappy', 'intro' => '', 'starts_on' => 'travel', 'weight' => 5, 'entry' => 0,
+            'nodes' => [0 => ['key' => 'start', 'body' => 'Go.', 'ends' => 1]],
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(['start'], $encounter->nodes()->pluck('node_key')->all());
+    }
+
     public function test_the_editor_has_a_graph_accordion_with_its_script_and_key(): void
     {
         foreach ([route('admin.encounters.create'), null] as $url) {

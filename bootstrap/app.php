@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureFightIsResolved;
 use App\Http\Middleware\EnsureHuntIsResolved;
 use App\Http\Middleware\EnsureRunIsFinished;
 use App\Http\Middleware\RequireCharacter;
+use App\Http\Middleware\TouchLastActive;
 use App\Support\Text;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -29,6 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             // Runs after the session is available, so $request->user() is set.
             RequireCharacter::class,
+            // Notes when an account was last active, for the front page's count. Not in the character locks' way.
+            TouchLastActive::class,
             // Guards the routes named in config/cap.php; a no-op elsewhere.
             EnsureCaptchaIsSolved::class,
             // The net under ReadinessWatch: throws a player out of cyberspace
