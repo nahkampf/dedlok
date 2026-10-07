@@ -19,6 +19,7 @@ use App\Stats\Resolver;
 use App\Support\Text;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Number;
 
@@ -222,6 +223,11 @@ final readonly class MissionLedger
                 if ($spent === false) {
                     return MissionRefusal::NotDone;
                 }
+            } elseif ($live->action === MissionAction::Scan) {
+                // A survey is handed in: one whole, unexpired file for every system it names.
+                if (! $this->handInSurvey($character, $live)) {
+                    return MissionRefusal::NotDone;
+                }
             } elseif (! $live->targetsSatisfied()) {
                 return MissionRefusal::NotDone;
             }
@@ -329,16 +335,14 @@ final readonly class MissionLedger
     }
 
     /**
-     * Files, counted and spent.
+     * The scan files a runner could hand in: loose in the stash, whole and unexpired. The one definition, shared by a supply
+     * job, a survey and the desk's card, so what the card says is in hand is what the hand-in would take.
      *
-     * ONLY COMPLETE FILES COUNT and only unexpired ones — a one-pass file that
-     * learned the grade and nothing else is not intel. Asking for more than
-     * the runner has is refused rather than partly taken, the rule the shelf
-     * and the offer book both keep.
+     * @return Collection<int, InventoryItem>
      */
-    private function spendFiles(Character $character, Mission $mission): bool
+    public function heldFiles(Character $character): Collection
     {
-        $held = InventoryItem::query()
+        return InventoryItem::query()
             ->where('character_id', $character->getKey())
             ->whereNotNull('scan_file')
             ->loose()
@@ -350,6 +354,58 @@ final readonly class MissionLedger
                 return $file !== null && ! $file->hasExpired() && $this->isWholePicture($file);
             })
             ->values();
+    }
+
+    /**
+     * The addresses of the files in hand, for a survey's card to tick off.
+     *
+     * @return list<string>
+     */
+    public function heldAddresses(Character $character): array
+    {
+        return $this->heldFiles($character)->map(static fn (InventoryItem $row): string => (string) $row->scanFile()?->address)->unique()->values()->all();
+    }
+
+    /**
+     * A SURVEY, handed in: for every system the job names that is not already satisfied, one whole, unexpired file of THAT
+     * system (made before the job or during it). All or nothing, like a supply job, and the files are spent so one file cannot
+     * be sold twice. Writes `satisfied_at` on the targets: the files are the evidence and the targets are the receipt.
+     */
+    private function handInSurvey(Character $character, Mission $mission): bool
+    {
+        $held = $this->heldFiles($character);
+        $spending = [];
+
+        foreach ($mission->targets()->whereNull('satisfied_at')->get() as $target) {
+            $row = $held->first(static fn (InventoryItem $candidate): bool => $candidate->scanFile()?->address === $target->address
+                && ! in_array($candidate->getKey(), array_map(static fn (array $pair): mixed => $pair[1]->getKey(), $spending), true));
+
+            if ($row === null) {
+                return false;
+            }
+
+            $spending[] = [$target, $row];
+        }
+
+        foreach ($spending as [$target, $row]) {
+            $target->forceFill(['satisfied_at' => now()])->save();
+            $row->delete();
+        }
+
+        return true;
+    }
+
+    /**
+     * Files, counted and spent.
+     *
+     * ONLY COMPLETE FILES COUNT and only unexpired ones — a one-pass file that
+     * learned the grade and nothing else is not intel. Asking for more than
+     * the runner has is refused rather than partly taken, the rule the shelf
+     * and the offer book both keep.
+     */
+    private function spendFiles(Character $character, Mission $mission): bool
+    {
+        $held = $this->heldFiles($character);
 
         if ($held->count() < $mission->quantity_required) {
             return false;

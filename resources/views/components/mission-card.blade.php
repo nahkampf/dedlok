@@ -10,6 +10,9 @@
     // a supply job reads it, and it is counted once by the controller rather
     // than per card.
     'files' => 0,
+    // The addresses of the scan files in hand. A survey is handed in as files, so each of its systems says whether the
+    // one it needs is already held.
+    'held' => [],
 ])
 
 @php($action = $mission->action)
@@ -73,8 +76,15 @@
                                 <span class="tag tag--ok">{{ Text::get('missions.target_done') }}</span>
                             @elseif (! $target->stillStands())
                                 <span class="tag tag--crit">{{ Text::get('missions.target_gone') }}</span>
+
                             @elseif ($target->system)
                                 <span class="item-row__meta">{{ Text::get('cyberspace.scan.grade') }} {{ $target->system->grade }}</span>
+                            @endif
+
+                            {{-- A survey is handed in as files: say whether this system's is in hand. --}}
+                            @if ($active && $action === MissionAction::Scan && ! $target->isSatisfied() && $target->stillStands())
+                                @php($inHand = in_array($target->address, $held, true))
+                                <span class="tag {{ $inHand ? 'tag--ok' : '' }}">{{ Text::get($inHand ? 'missions.file_held' : 'missions.file_needed') }}</span>
                             @endif
                         </span>
                     </div>

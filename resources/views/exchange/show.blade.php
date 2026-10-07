@@ -77,7 +77,7 @@
                 @if ($active === null)
                     <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('missions.active_none') }}</p>
                 @else
-                    <x-mission-card :mission="$active" :active="true" :files="$files" />
+                    <x-mission-card :mission="$active" :active="true" :files="$files" :held="$heldAddresses" />
                 @endif
             </div>
         </div>

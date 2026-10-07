@@ -384,6 +384,58 @@ final class MissionTest extends TestCase
         $this->assertSame(0, $done->outstanding());
     }
 
+    // ---- a survey is handed in as files -----------------------------------------------------------------
+
+    public function test_a_survey_is_handed_in_as_one_file_per_system_and_the_files_are_spent(): void
+    {
+        $mission = $this->accepted(MissionAction::Scan);
+        $files = $mission->targets->map(fn ($target) => $this->fileFor($target->system));
+        $stranger = $this->scanFiles(1)->first();   // a file of some other system is not wanted and is not spent
+
+        $done = $this->ledger()->complete($this->character->fresh(), $mission);
+
+        $this->assertInstanceOf(Mission::class, $done);
+        $this->assertSame(MissionState::Completed, $done->state);
+        $this->assertSame(0, $done->outstanding());
+        $files->each(fn (InventoryItem $row) => $this->assertNull(InventoryItem::query()->find($row->id), 'spent'));
+        $this->assertNotNull(InventoryItem::query()->find($stranger->id));
+        $this->assertSame(500, (int) $this->character->fresh()->creds, 'and it paid');
+    }
+
+    public function test_a_survey_with_a_file_missing_is_refused_and_spends_nothing(): void
+    {
+        $mission = $this->accepted(MissionAction::Scan);
+        $first = $this->fileFor($mission->targets->first()->system);
+
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission));
+
+        $this->assertNotNull(InventoryItem::query()->find($first->id), 'a refusal spends nothing');
+        $this->assertSame(0, $mission->fresh()->targets()->whereNotNull('satisfied_at')->count());
+    }
+
+    public function test_an_incomplete_or_stale_file_does_not_stand_in_for_a_system(): void
+    {
+        $mission = $this->accepted(MissionAction::Scan);
+        [$one, $two] = [$mission->targets[0]->system, $mission->targets[1]->system];
+        $this->fileFor($one);
+        $this->fileFor($two, complete: false);
+
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission));
+
+        $this->fileFor($two, stale: true);
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission));
+    }
+
+    public function test_the_card_says_which_systems_of_a_survey_have_their_file_in_hand(): void
+    {
+        $mission = $this->accepted(MissionAction::Scan);
+        $this->fileFor($mission->targets->first()->system);
+
+        $held = $this->ledger()->heldAddresses($this->character->fresh());
+
+        $this->assertSame([$mission->targets->first()->address], $held);
+    }
+
     public function test_supply_refuses_when_the_files_are_short(): void
     {
         $mission = $this->accepted(MissionAction::Supply);
@@ -465,6 +517,27 @@ final class MissionTest extends TestCase
     private function ledger(): MissionLedger
     {
         return app(MissionLedger::class);
+    }
+
+    /** A scan file of a particular system, made the way an export makes one. */
+    private function fileFor(System $system, bool $complete = true, bool $stale = false): InventoryItem
+    {
+        $item = Item::query()->where('slug', 'scan-file')->firstOrFail();
+        $os = Skill::query()->where('slug', 'lattice')->first()
+            ?? Skill::factory()->create(['slug' => 'lattice', 'title' => 'Lattice', 'rank' => 1]);
+
+        return InventoryItem::query()->create([
+            'character_id' => $this->character->id,
+            'item_id' => $item->id,
+            'quantity' => 1,
+            'scan_file' => array_merge([
+                'address' => $system->address,
+                'name' => $system->displayName(),
+                'grade' => $system->grade,
+                'made_at' => now()->subHour()->format(DATE_ATOM),
+                'expires_at' => ($stale ? now()->subHour() : now()->addHours(12))->format(DATE_ATOM),
+            ], $complete ? ['os_skill_id' => $os->id, 'ids_detection' => 0, 'tracer_detection' => 0, 'tracer_rate' => 0, 'ice_level' => 0] : []),
+        ]);
     }
 
     /** One offer of a named action, built the way the board builds one. */

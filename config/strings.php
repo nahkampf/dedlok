@@ -776,6 +776,9 @@ return [
         'quantity' => ':count complete scan files',
         'target_gone' => 'Not there any more',
         'target_done' => 'Done',
+        // On a survey's systems, before it is handed in: is this one's scan file in your stash?
+        'file_held' => 'File in hand',
+        'file_needed' => 'Needs a scan file',
 
         // Said on the board and again on the row, because a player choosing
         // between two jobs is choosing between two KINDS of evening.
@@ -787,7 +790,7 @@ return [
         ],
 
         'action_hint' => [
-            'scan' => 'Scan every system named and bring the files back. The safest work there is, and the slowest.',
+            'scan' => 'Scan every system named and bring the files back, one for each. The safest work there is, and the slowest.',
             'burn' => 'We want these systems gone. Burned. Shut down.',
             'plant' => 'Leave a backdoor on these systems. The door is ours, not yours - you get paid, and we get the way in.',
             'supply' => 'Bring us complete scan files. We do not care which systems, only that the picture is whole.',
