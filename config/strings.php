@@ -1677,6 +1677,12 @@ return [
             'keys' => 'Arrow keys move; the numpad moves in all eight directions.',
         ],
 
+        // The routing chain box on the map screen: what the next run would route through.
+        'chain' => [
+            'heading' => 'Routing chain',
+            'hops_tip' => ':used out of :cap maximum hops',
+        ],
+
         'bookmarks' => [
             'heading' => 'Bookmarks',
             'none' => 'Nothing saved yet. Mark a position you want to come back to.',

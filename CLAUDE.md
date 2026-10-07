@@ -1205,6 +1205,9 @@ hunters, the waiting room, recovery and missions. The traps that matter everywhe
 - **Settling is lazy and catches up**; sweeps (`cyberspace:settle`, `missions:expire`,
   lockdowns) only keep stored rows true between visits. Do not delete the catch-up.
 - **Dice are injected**, and `Probe`/`Simulator` are container-bound so tests pin screens.
+- **The map screen has a *Routing chain* box** (beside Jump, Thresholds and Bookmarks): the same `ChainBuilder::for()` call the
+  briefing makes, with no target, so it lists every system you hold a routing backdoor on, highest grade first, up to `routing_hops`,
+  with the `used/cap` count and the briefing's own empty states (cannot route / nothing held). Read only: nothing to pick.
 - **Zero means "has none", null means "not looked"** on defences and scans.
 - **Never name a hidden fact in a failure line** (OS, hidden systems, remaining loot).
 - Locks: `EnsureRunIsFinished`, `EnsureHuntIsResolved`, `EnsureCharacterIsStanding`,

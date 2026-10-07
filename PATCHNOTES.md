@@ -1,3 +1,7 @@
+## 0.42.1 (2026-10-07)
+
+- Added ROuting chain box to cyberspace view
+
 ## 0.42.0 (2026-10-07)
 
 - Player-2-player messaging.

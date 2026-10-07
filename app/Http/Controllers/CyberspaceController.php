@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Cyberspace\Backdoors;
 use App\Cyberspace\BookmarkKeeper;
 use App\Cyberspace\BookmarkKind;
+use App\Cyberspace\ChainBuilder;
 use App\Cyberspace\Grid;
 use App\Cyberspace\MapView;
 use App\Cyberspace\Navigator;
@@ -45,7 +46,7 @@ use Illuminate\View\View;
  */
 class CyberspaceController extends Controller
 {
-    public function index(Request $request, Probe $probe): View
+    public function index(Request $request, Probe $probe, ChainBuilder $chains): View
     {
         $character = $this->character($request);
         $grid = Grid::fromConfig();
@@ -97,6 +98,10 @@ class CyberspaceController extends Controller
 
         return view('cyberspace.index', [
             'character' => $character,
+            // The route a run would take from here: the same call the briefing makes, so what this box shows is what
+            // the next run gets. Not tied to a target, so every routing backdoor held is listed.
+            'chain' => $chains->for($character),
+            'chainCap' => $chains->hopsAllowed($character),
             'grid' => $grid,
             'map' => MapView::for($character, $grid),
             'swept' => MapView::sweptCount($character),
