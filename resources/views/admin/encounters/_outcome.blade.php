@@ -3,6 +3,7 @@
      pass/fail branch (it always applies). Its index is a number, or the token __K__ in a template. --}}
 @php($oat = $outcomeAt)
 <div class="row row--wrap" style="--gap:var(--s-2)" data-row>
+    <button type="button" class="btn btn--sm btn--ghost" data-remove-row aria-label="{{ Text::get('admin.encounters.remove_outcome') }}" title="{{ Text::get('admin.encounters.remove_outcome') }}">✕</button>
     @if ($onScreen ?? false)
         <input type="hidden" name="{{ $oat }}[branch]" value="always">
     @else

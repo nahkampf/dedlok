@@ -2,6 +2,7 @@
 {{-- One screen. $i is its index, or the token __I__ when this is the template for a new one. --}}
 <div class="panel panel--snug" data-row>
     <div class="panel__bd stack" style="--gap:var(--s-3)">
+        <button type="button" class="btn btn--sm btn--ghost cut" data-remove-row style="align-self:start">✕ {{ Text::get('admin.encounters.remove_node') }}</button>
         <div class="row row--wrap" style="--gap:var(--s-3);align-items:end">
             <label class="field" style="margin:0;flex:1 1 160px;min-width:0">
                 <span class="field__label">{{ Text::get('admin.encounters.node.key') }}</span>

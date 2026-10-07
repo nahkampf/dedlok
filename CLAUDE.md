@@ -1008,6 +1008,10 @@ a graph of nodes and choices with outcomes as rows, authored at `admin/encounter
 - **An outcome belongs to a button OR a screen** (`choice_id` / `node_id`, exactly one, held by the
   request). A screen's apply on arrival, every time, through `EncounterRunner::arrive()`; the floor
   is asked once, after everything.
+- **The editor has a ✕ on every screen, choice and outcome** (`data-remove-row`, `ui-kit.js`): it removes the row and what is nested in it
+  from the form, and nothing is deleted until the form is saved (a save replaces the graph, so a row not posted is gone). Rows are
+  NOT renumbered, because the request reads them by key; `data-add-row` therefore takes the next index past every one ever used
+  (`data-next-index`), or a "+" after a ✕ would reuse an index a row still has. Removing the entry screen is refused on save (exactly one entry).
 - **Nodes are reached by `node_key`, never by id**, so the editor replaces them wholesale on
   every save and nobody mid-encounter is stranded. `EncounterEditor` is the only writer of the
   graph; `Encounters::open()` the only door in; `EncounterRunner` the only thing that answers or

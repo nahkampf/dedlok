@@ -28,9 +28,23 @@
     const box = btn.closest("[data-rows]");
     const tpl = box && box.querySelector(":scope > template");
     if (!tpl) return;
-    const n = box.querySelectorAll(":scope > [data-row]").length;
+    // Rows may have been removed, so the count is not a free index: the next one is past every index ever used.
+    const n = Math.max(box.querySelectorAll(":scope > [data-row]").length, Number(box.dataset.nextIndex || 0));
+    box.dataset.nextIndex = String(n + 1);
     tpl.insertAdjacentHTML("beforebegin", tpl.innerHTML.split(btn.dataset.token).join(String(n)));
     fillPrefixes(box);
+  });
+
+  /* A "✕" on a row removes it, and everything nested inside it. Nothing is deleted until the form is saved. The indexes of
+     the rows left are NOT renumbered (the server reads them by key), so remember how far they ran, or the next "+" would
+     reuse an index a row still has.
+     <div data-row><button type="button" data-remove-row>✕</button> …</div>                                    */
+  on("click", "[data-remove-row]", (e, btn) => {
+    const row = btn.closest("[data-row]");
+    const box = row && row.parentElement;
+    if (!box) return;
+    box.dataset.nextIndex = String(Math.max(Number(box.dataset.nextIndex || 0), box.querySelectorAll(":scope > [data-row]").length));
+    row.remove();
   });
 
   /* --- A default that follows another field ------------------------------

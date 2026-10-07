@@ -3378,7 +3378,7 @@ return [
                 'sections' => [
                     ['heading' => 'How it works', 'items' => [
                         ['An encounter', 'A set of screens (nodes). The player reads a screen, picks a button (choice), and the choice can cost creds, roll a stat, apply outcomes and lead to another screen. An ending screen shows its text and a Continue button.'],
-                        ['Saving', 'Saving replaces all screens, choices and outcomes with what is in the form. Blank rows are ignored. Use the + buttons to add a screen, a choice or an outcome; one blank of each is also shown after a save. Anybody mid-encounter keeps their place, as long as their screen still exists.'],
+                        ['Saving', 'Saving replaces all screens, choices and outcomes with what is in the form. Blank rows are ignored. Use the + buttons to add a screen, a choice or an outcome and ✕ to remove one (nothing is deleted until you save); one blank of each is also shown after a save. Anybody mid-encounter keeps their place, as long as their screen still exists.'],
                         ['Refused', 'No opening screen, or more than one. A choice that leads to a key that is not a screen here: you get one "Missing screens" message listing every such key, with the form as you typed it. A screen with no choices that is not an ending. A screen no ending can be reached from (loops are fine, traps are not).'],
                     ]],
                     ['heading' => 'Encounter', 'items' => [
@@ -3446,6 +3446,9 @@ return [
             'add_node' => 'screen',
             'add_choice' => 'choice',
             'add_outcome' => 'outcome',
+            'remove_node' => 'Remove this screen',
+            'remove_choice' => 'Remove this choice',
+            'remove_outcome' => 'Remove this outcome',
             'node' => [
                 'key' => 'Key',
                 'entry' => 'Opens here',
