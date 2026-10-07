@@ -73,6 +73,9 @@ enum Category: string
     /** Somebody sent you cash. The only wallet message: everything else in it is something you did. */
     case Wallet = 'wallet';
 
+    /** A message another player wrote to you. */
+    case Personal = 'personal';
+
     public function label(): string
     {
         return Text::get("notifications.categories.{$this->value}");
@@ -100,6 +103,8 @@ enum Category: string
             self::City => "\u{26A0}",
             // The currency sign, as on the wallet's rail item.
             self::Wallet => "\u{00A4}",
+            // The hollow diamond, from the admin's empty states: a glyph already known to render in the kit's fonts.
+            self::Personal => "\u{25C7}",
         };
     }
 
@@ -128,6 +133,8 @@ enum Category: string
             self::Mission => 'cyberspace.index',
             self::City => 'city.index',
             self::Wallet => 'wallet.index',
+            // A reply is the next thing anybody does with one; the message itself says who it is from.
+            self::Personal => 'messages.create',
         };
     }
 }

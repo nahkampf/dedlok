@@ -610,6 +610,31 @@ return [
         'new' => 'New',
         'mark_read' => 'Mark all read',
         'go_to' => 'Go to :place',
+
+        // Writing to another player.
+        'compose' => [
+            'button' => 'New message',
+            'title' => 'New message',
+            'to' => 'To',
+            'to_hint' => 'A character\'s handle. Start typing to see who exists.',
+            'subject' => 'Title',
+            'message' => 'Message',
+            'message_hint' => 'Plain text only: anything that looks like markup is removed. Up to :max characters.',
+            'send' => 'Send',
+            'cancel' => '← Back to messages',
+            'from' => 'From: :handle',
+            'reply' => 'Reply',
+            'sent' => 'Message sent to :handle.',
+            'errors' => [
+                'to' => 'Say who the message is for.',
+                'no_such' => 'There is nobody with that handle.',
+                'yourself' => 'You cannot send a message to yourself.',
+                'title' => 'Give the message a title.',
+                'title_max' => 'The title can be at most :max characters.',
+                'message' => 'Write a message.',
+                'message_max' => 'The message can be at most :max characters.',
+            ],
+        ],
         'delete' => 'Delete',
         'delete_selected' => 'Delete selected',
         'select_all' => 'Select all',
@@ -641,6 +666,7 @@ return [
             'mission' => 'Work',
             'city' => 'City',
             'wallet' => 'Wallet',
+            'personal' => 'Message',
         ],
 
         // The closed row of the inbox. One per message key; a key without one shows its category instead.

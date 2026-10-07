@@ -1371,6 +1371,14 @@ stood on this not existing.
   selected*). The ticks sit in the rows and belong to one form through their `form` attribute, so no row form is nested
   in another. `Notifier::delete()` is the writer, scoped to the account: somebody else's id is simply not counted.
   Real and unrecoverable, with no confirmation (a message is never the only record of anything).
+- **A player can write to another** (*New message*, `MessageController`, `messages.create` / `.store`): To (a character's handle, suggested
+  as you type from `messages.recipients`, handles only, eight at most, never your own), Title (100), Message (500, the column's
+  width). It lands as an ordinary notification in the recipient's account (`Category::Personal`, `Notifier::sendFrom()`), with
+  who it is from in `details['from']`; the inbox shows *From:* and a *Reply* link (`messages.create?to=`) instead of *Go to*.
+  **Everything typed is reduced to plain text before it is judged and stored** (`App\Support\PlainText`: entities decoded, script/style
+  blocks and every tag removed in a loop, control and invisible formatting characters such as bidi overrides dropped; "I <3 you"
+  stays), so "<b></b>" is an empty title; **it is written as typed and never through `Text::get()`** (a `:placeholder` in somebody's
+  words is not filled), and every view still prints it escaped. Sending is throttled (15 in 10 minutes). A message to yourself is refused.
 - **The body is never recomposed.** A message outlives its own subject — a machine
   relocates, a skill is renamed, an achievement is retired — so a stored sentence is the
   only one that is still true tomorrow. Same call `system_contacts` makes about a sighting.

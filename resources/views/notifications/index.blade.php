@@ -12,6 +12,8 @@
             <span class="micro">{{ Text::get('notifications.inbox') }}</span>
             <div class="spacer"></div>
 
+            <a class="btn btn--sm cut" href="{{ route('messages.create') }}">{{ Text::get('notifications.compose.button') }}</a>
+
             {{-- Only while there is something to do. A button that is always
                  there and usually does nothing is a button nobody trusts. --}}
             @if ($unread > 0)
@@ -82,7 +84,10 @@
 
                                      Two shapes now: a finished read's `facts` and the siphon report's list of lines. A
                                      third makes this a per-key partial. --}}
-                                @if (! empty($message->details['facts']))
+                                {{-- A message a player wrote: who from, in the sender's own handle. Plain text, printed escaped. --}}
+                                @if (! empty($message->details['from']))
+                                    <span class="micro" style="color:var(--ink-3)">{{ Text::get('notifications.compose.from', ['handle' => $message->details['from']]) }}</span>
+                                @elseif (! empty($message->details['facts']))
                                     {{-- A finished read: every row the system overview shows, as they stood when it
                                          finished. --}}
                                     <x-scan-facts :facts="$message->details['facts']" />
@@ -107,12 +112,16 @@
                                      (it reads the message), and it sits outside the summary
                                      because a button in a summary is not one a browser draws. --}}
                                 <div class="row row--wrap" style="--gap:var(--s-2)">
+                                @if (! empty($message->details['from']))
+                                    <a class="btn btn--sm btn--quiet cut" href="{{ route('messages.create', ['to' => $message->details['from']]) }}">{{ Text::get('notifications.compose.reply') }}</a>
+                                @else
                                 <form method="POST" action="{{ route('notifications.open', $message) }}">
                                     @csrf
                                     <button type="submit" class="btn btn--sm btn--quiet cut">
                                         {{ Text::get('notifications.go_to', ['place' => $message->category->label()]) }}
                                     </button>
                                 </form>
+                                @endif
 
                                 <form method="POST" action="{{ route('notifications.destroy', $message) }}">
                                     @csrf

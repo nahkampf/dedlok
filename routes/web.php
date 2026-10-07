@@ -29,6 +29,7 @@ use App\Http\Controllers\HunterController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\MarketController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PatchNotesController;
@@ -379,6 +380,11 @@ Route::middleware('auth')->group(function () {
      * a badge cleared by arriving is a badge cleared for messages nobody read.
      */
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+
+    // A message to another player. Throttled: it is the one way to make the game write to somebody else.
+    Route::get('/messages/new', [MessageController::class, 'create'])->name('messages.create');
+    Route::post('/messages', [MessageController::class, 'store'])->middleware('throttle:15,10')->name('messages.store');
+    Route::get('/messages/recipients', [MessageController::class, 'recipients'])->middleware('throttle:120,1')->name('messages.recipients');
     // Polled every few seconds from every page (`ui-kit.js`): the rail's badge, and the sound for a new message.
     Route::get('/notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
     Route::post('/notifications/read', [NotificationController::class, 'read'])->name('notifications.read');
