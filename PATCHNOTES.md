@@ -1,3 +1,7 @@
+## 0.42.3 (2026-10-07)
+
+- Tasks & Missions menu now exists. Currently just lists accepted jobs, in the future it will also hold quests and journals.
+
 ## 0.42.2 (2026-10-07)
 
 - Buxfix: Survey jobs were missing a check for handing in.
