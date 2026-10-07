@@ -3702,7 +3702,7 @@ return [
                 'armour_slots_hint' => 'Where this piece is worn: Head, Torso, Arms and Legs (arms and legs are one slot each, covering both sides). Tick none and it is not armour; tick several and it is a set that takes them all. Its resistances (add them in the effects above, against the damage types) count only for a hit that lands on a part ticked here.',
                 // The consumable panel: what using one copy does, once.
                 'use_heal_hitpoints' => 'Restores hit points',
-                'use_heal_hitpoints_hint' => 'Using one copy restores this many hit points at once, never past the maximum as it stands. Leave it blank and the item is not a consumable. A medkit is this; a drug is something that lasts.',
+                'use_heal_hitpoints_hint' => 'Using one copy restores this many hit points at once, never past the maximum as it stands. Leave it blank and the item is not a consumable. A medkit is this; a drug is something that lasts. A drug can carry it too: taking the dose then also restores this at once, and tolerance does not weaken it.',
                 'drug_family_hint' => 'Giving it a family makes the item a drug. The books are kept per family, so this decides which figures a dose moves and which withdrawal it answers.',
                 'duration_minutes' => 'Duration (minutes)',
                 'duration_minutes_hint' => 'How long one dose is in effect.',

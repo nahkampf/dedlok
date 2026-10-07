@@ -10,6 +10,7 @@ use App\Models\Character;
 use App\Models\Dose;
 use App\Models\Drug;
 use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Stats\Damage;
 use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
@@ -105,6 +106,11 @@ final class DrugTaker
 
             $this->ledger->record($character, $drug);
 
+            // The item may also be a consumable: what it does AT ONCE lands with the dose, and BEFORE any overdose
+            // harm, so a lethal dose is not undone by its own medicine. Tolerance does not touch it: it scales
+            // only what a dose does while it lasts, and this is a fixed amount somebody set.
+            $instant = $this->instantEffects($character, $item);
+
             if ($overdose->happened()) {
                 $this->hurt($character, $drug, $overdose);
             }
@@ -113,8 +119,35 @@ final class DrugTaker
             // were carrying for going without has stopped being true.
             $this->ledger->reconcile($character->fresh() ?? $character, $drug->family);
 
-            return DoseResult::taken($dose, $potency, $overdose);
+            return DoseResult::taken($dose, $potency, $overdose, $instant);
         });
+    }
+
+    /**
+     * What the consumable half of this item (if it has one) does to the body, once, with the character locked.
+     * Applies even at full health: the dose is worth taking for what lasts, and this part simply restores nothing.
+     *
+     * @return array<string, int>
+     */
+    private function instantEffects(Character $character, Item $item): array
+    {
+        $consumable = $item->consumable;
+
+        if ($consumable === null) {
+            return [];
+        }
+
+        $body = Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail();
+        $done = [];
+
+        foreach ($consumable->kinds() as [$kind, $amount]) {
+            $done[$kind->value] = ($done[$kind->value] ?? 0) + $kind->apply($body, $amount);
+        }
+
+        // The caller holds a model of this character: hand back what changed on the locked one.
+        $character->setRawAttributes($body->getAttributes(), true);
+
+        return $done;
     }
 
     /**

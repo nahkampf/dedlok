@@ -20,11 +20,14 @@ final readonly class DoseResult
         public ?DoseRefusal $refusal,
         public float $potency = 1.0,
         public Overdose $overdose = new Overdose,
+        /** @var array<string, int> what a consumable half of the item did at once, by `UseEffect` value */
+        public array $instant = [],
     ) {}
 
-    public static function taken(Dose $dose, float $potency, Overdose $overdose): self
+    /** @param  array<string, int>  $instant */
+    public static function taken(Dose $dose, float $potency, Overdose $overdose, array $instant = []): self
     {
-        return new self($dose, null, $potency, $overdose);
+        return new self($dose, null, $potency, $overdose, $instant);
     }
 
     public static function refused(DoseRefusal $refusal): self

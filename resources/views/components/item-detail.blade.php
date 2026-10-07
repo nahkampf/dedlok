@@ -217,14 +217,15 @@
             @if ($item->isDrug())
                 <form method="POST" action="{{ route('inventory.take', $entry) }}">
                     @csrf
-                    <button type="submit" class="btn btn--sm btn--primary cut">
+                    <button type="submit" class="btn btn--sm btn--primary cut"
+                            @if ($item->consumable) title="{{ $item->consumable->describe() }}" @endif>
                         {{ Text::get('drugs.take') }}
                     </button>
                 </form>
             @endif
 
             {{-- A consumable (a medkit) is spent for what it does at once. Refused, and kept, if it would do nothing. --}}
-            @if ($item->consumable)
+            @if ($item->consumable && ! $item->isDrug())
                 <form method="POST" action="{{ route('inventory.use', $entry) }}">
                     @csrf
                     <button type="submit" class="btn btn--sm btn--primary cut" title="{{ $item->consumable->describe() }}">

@@ -360,16 +360,17 @@ class ItemRequest extends FormRequest
              * software or deck hardware. What it DOES lives on `modifiers`
              * like an implant's; these four are what it costs.
              */
-            'drug_family' => $hardware !== null || $isProgram || $isImprint || $isGear || $isConsumable
+            'drug_family' => $hardware !== null || $isProgram || $isImprint || $isGear
                 ? ['prohibited']
                 : ['nullable', Rule::enum(Family::class)],
 
             /*
              * CONSUMABLES. An item is one because it names something using a copy does, the way it is a drug
              * because it has a family. What it does is a number per kind (`App\Items\UseEffect`); blank is none.
-             * A consumable is a PHYSICAL object used up once, so it is none of the other kinds.
+             * A consumable is a PHYSICAL object used up once. It may also be a DRUG (a trauma drip that heals now and
+             * mends for ten minutes), and is none of the other kinds.
              */
-            'use_heal_hitpoints' => $hardware !== null || $isProgram || $isImprint || $isGear || $isDrug || $this->filled('implant_region')
+            'use_heal_hitpoints' => $hardware !== null || $isProgram || $isImprint || $isGear || $this->filled('implant_region')
                 ? ['prohibited']
                 : ['nullable', 'integer', 'min:1', 'max:10000'],
 

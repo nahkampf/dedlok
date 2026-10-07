@@ -7,7 +7,11 @@ namespace Tests\Feature;
 use App\Drugs\DrugLedger;
 use App\Drugs\DrugTaker;
 use App\Drugs\Family;
+use App\Items\ConsumableEditor;
+use App\Items\Consumer;
+use App\Items\UseRefusal;
 use App\Models\Character;
+use App\Models\Dose;
 use App\Models\Drug;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -112,5 +116,97 @@ final class MedicalDrugTest extends TestCase
 
         $this->actingAs($admin)->post(route('admin.items.store'), $base + ['slug' => 'dermal_patch', 'addictive' => '0'])->assertSessionHasNoErrors();
         $this->assertSame(Family::Medical, Item::query()->where('slug', 'dermal_patch')->sole()->drug->family);
+    }
+
+    // ---- a drug that is also a consumable ---------------------------------------------------------------
+
+    /** A Medical drip that heals `$now` at once and mends 60 an hour for ten minutes. */
+    private function dripThatHealsNow(int $now, float $tolerance = 0.0): InventoryItem
+    {
+        $row = $this->drip();
+        ConsumableEditor::apply($row->item, [['kind' => 'heal_hitpoints', 'amount' => $now]]);
+        Drug::query()->where('item_id', $row->item_id)->update(['tolerance_gain' => $tolerance]);
+
+        return $row->fresh();
+    }
+
+    public function test_taking_it_heals_at_once_and_the_dose_still_runs(): void
+    {
+        $row = $this->dripThatHealsNow(15);
+        $max = $this->character->maximumFor('current_hitpoints');
+        $this->character->forceFill(['current_hitpoints' => $max - 30])->save();
+
+        $result = (new DrugTaker)->take($this->character->fresh(), $row);
+
+        $this->assertSame(['heal_hitpoints' => 15], $result->instant);
+        $this->assertSame($max - 15, $this->character->fresh()->current_hitpoints);
+        $this->assertSame(4, $row->fresh()->quantity, 'one copy spent, once');
+        $this->assertSame(1, Dose::query()->where('character_id', $this->character->id)->count());
+    }
+
+    public function test_at_full_health_the_dose_is_still_taken_and_the_instant_part_restores_nothing(): void
+    {
+        $row = $this->dripThatHealsNow(15);
+
+        $result = (new DrugTaker)->take($this->character->fresh(), $row);
+
+        $this->assertTrue($result->succeeded());
+        $this->assertSame(['heal_hitpoints' => 0], $result->instant);
+        $this->assertSame(1, Dose::query()->where('character_id', $this->character->id)->count());
+    }
+
+    /** Tolerance weakens what a dose does while it lasts; an instant heal is the fixed amount the author set. */
+    public function test_tolerance_does_not_weaken_the_instant_heal(): void
+    {
+        $row = $this->dripThatHealsNow(15, tolerance: 0.0);
+        (new DrugLedger)->for($this->character, Family::Medical)->forceFill([
+            'character_id' => $this->character->id, 'family' => Family::Medical->value, 'tolerance' => 90.0, 'addiction' => 0,
+        ])->save();
+        $max = $this->character->maximumFor('current_hitpoints');
+        $this->character->forceFill(['current_hitpoints' => $max - 30])->save();
+
+        $result = (new DrugTaker)->take($this->character->fresh(), $row);
+
+        $this->assertLessThan(1.0, $result->potency, 'the lasting part is weakened');
+        $this->assertSame(['heal_hitpoints' => 15], $result->instant, 'the instant part is not');
+    }
+
+    public function test_a_dose_that_kills_is_not_undone_by_its_own_medicine(): void
+    {
+        $row = $this->dripThatHealsNow(100);
+        // Three doses already working, so the next is the lethal fourth (stimulant-like: stops at 3 over).
+        $taker = new DrugTaker;
+        $capacity = (new DrugLedger)->capacityFor($this->character, Family::Medical);
+        $row->update(['quantity' => 20]);
+
+        for ($i = 0; $i < $capacity + 3; $i++) {
+            $taker->take($this->character->fresh(), $row->fresh());
+        }
+
+        $this->assertSame(0, $this->character->fresh()->current_hitpoints, 'the heart stopped and stayed stopped');
+    }
+
+    public function test_it_is_taken_and_never_used_as_a_plain_consumable(): void
+    {
+        $row = $this->dripThatHealsNow(15);
+        $this->character->forceFill(['current_hitpoints' => 5])->save();
+
+        $this->assertSame(UseRefusal::NotUsable, (new Consumer)->use($this->character->fresh(), $row));
+        $this->assertSame(5, $this->character->fresh()->current_hitpoints);
+        $this->assertSame(5, $row->fresh()->quantity);
+    }
+
+    public function test_the_take_route_says_what_it_restored_and_the_card_offers_take_only(): void
+    {
+        $row = $this->dripThatHealsNow(15);
+        $max = $this->character->maximumFor('current_hitpoints');
+        $this->character->forceFill(['current_hitpoints' => $max - 30])->save();
+
+        $card = $this->actingAs($this->character->user)->get(route('inventory.index'))->assertOk()->getContent();
+        $this->assertStringContainsString(route('inventory.take', $row), $card);
+        $this->assertStringNotContainsString(route('inventory.use', $row), $card);
+
+        $this->actingAs($this->character->user)->post(route('inventory.take', $row))
+            ->assertRedirect()->assertSessionHas('status', fn (string $m): bool => str_contains($m, 'You recover 15 hit points.'));
     }
 }

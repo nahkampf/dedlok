@@ -191,14 +191,18 @@ final class ConsumableTest extends TestCase
         $this->assertFalse($item->fresh()->isConsumable(), 'blank clears the row');
     }
 
-    public function test_a_consumable_is_only_that(): void
+    public function test_a_consumable_may_also_be_a_drug_and_is_nothing_else(): void
     {
         $this->save(['use_heal_hitpoints' => '25', 'drug_family' => 'stimulant', 'duration_minutes' => 10, 'addictive' => 1, 'tolerance_gain' => 1])
-            ->assertSessionHasErrors('use_heal_hitpoints');
-        $this->save(['use_heal_hitpoints' => '25', 'armour_slots' => ['head']])->assertSessionHasErrors();
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $item = Item::query()->where('slug', 'field_medkit')->sole();
+        $this->assertTrue($item->isConsumable());
+        $this->assertTrue($item->isDrug());
+
+        $this->save(['slug' => 'armoured_kit', 'use_heal_hitpoints' => '25', 'armour_slots' => ['head']])->assertSessionHasErrors();
         // Blank is the only way to say none: zero and a fraction are mistakes.
         $this->save(['use_heal_hitpoints' => '0'])->assertSessionHasErrors('use_heal_hitpoints');
         $this->save(['use_heal_hitpoints' => '2.5'])->assertSessionHasErrors('use_heal_hitpoints');
-        $this->assertSame(0, Item::query()->where('slug', 'field_medkit')->count());
+        $this->assertSame(1, Item::query()->where('slug', 'field_medkit')->count(), 'only the drug-and-consumable one was saved');
     }
 }

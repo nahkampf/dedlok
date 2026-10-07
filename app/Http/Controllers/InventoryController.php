@@ -246,6 +246,11 @@ class InventoryController extends Controller
             return back()->with('error', $result->refusal->message());
         }
 
+        // What a consumable half did at once ("You recover 12 hit points."), added to whichever sentence follows.
+        $instant = collect($result->instant)
+            ->map(fn (int $amount, string $kind): string => UseEffect::from($kind)->done($amount))
+            ->implode(' ');
+
         if ($result->overdosed()) {
             $overdose = $result->overdose;
 
@@ -257,15 +262,15 @@ class InventoryController extends Controller
                     'points' => $this->points($overdose->injury),
                     'hp' => $overdose->hitpoints,
                 ],
-            ));
+            ).($instant === '' ? '' : ' '.$instant));
         }
 
-        return back()->with('status', $result->potency < 1.0
+        return back()->with('status', ($result->potency < 1.0
             ? Text::get('drugs.taken_weakened', [
                 'name' => $name,
                 'percent' => (int) round($result->potency * 100),
             ])
-            : Text::get('drugs.taken', ['name' => $name]));
+            : Text::get('drugs.taken', ['name' => $name])).($instant === '' ? '' : ' '.$instant));
     }
 
     /** Half a point reads as 0.5 and two points as 2, never as 2.0. */

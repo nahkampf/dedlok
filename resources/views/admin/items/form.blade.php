@@ -284,7 +284,7 @@
              it COSTS is here — the family decides which books a dose moves,
              and the two figures are how fast it moves them. --}}
         {{-- A consumable: what using one copy does, once. A number per kind of effect; blank is none, and an item with
-             none is not a consumable. Not a drug (that lasts) and not an effect row above (those are resolved stats). --}}
+             none is not a consumable. A drug may carry one too (taken, it also does this at once). Not an effect row above (those are resolved stats). --}}
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.consumable') }}</span></div>
             <div class="panel__bd">

@@ -1100,8 +1100,14 @@ why it had nothing to offer a medkit. A consumable changes a STORED number a sin
   and **a live fight** (`InAFight`: COMBAT.md lists items mid-fight as later).
 - **`App\Items\ConsumableEditor` is the only writer of the table and clears the side an item stopped being.** The item
   editor has a Consumable panel with one whole-number field per kind (blank is none; zero and fractions are errors), and
-  `ItemRequest` makes a consumable none of the other kinds (drug, software, hardware, imprint, implant, armour, weapon,
-  ammunition).
+  `ItemRequest` makes a consumable none of the other kinds (software, hardware, imprint, implant, armour, weapon,
+  ammunition) except a drug.
+- **A drug may ALSO be a consumable** (decided 2026-10-07, any family): a trauma drip that heals 15 now and mends for ten
+  minutes. It is TAKEN and never used: `DrugTaker` applies the instant effects in the dose's transaction (on the locked
+  character, after the books move and BEFORE any overdose harm, so a lethal dose is not undone by its own medicine), the card
+  offers only *Take*, `Consumer` refuses it as `NotUsable`, and `DoseResult::$instant` lets the flash say what was restored.
+  **Tolerance never touches the instant part** (it scales only what a dose does while it lasts), and at full health the dose
+  is still taken, the instant part simply restoring 0 (`NothingToDo` is for pure consumables).
 - **Where it shows up:** the stash card (*Use*, with what it does in the button's title, and *Put on belt*), the route
   `inventory.use`, the belt (consumables go on it like drugs) and the Equipment screen's belt dialog.
 - **HP does not regenerate on its own** unless an effect carries `hitpoints_regen` (below): clinics and medkits are the way back.

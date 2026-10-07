@@ -32,7 +32,9 @@ final class Consumer
 
         $consumable = $row->item?->consumable;
 
-        if ($consumable === null) {
+        // A drug that also restores something is TAKEN (`DrugTaker`), which does both halves in one go; using it here
+        // would apply the instant half and skip the dose.
+        if ($consumable === null || $row->item->drug !== null) {
             return UseRefusal::NotUsable;
         }
 
