@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+## [0.41.0] — 2026-10-07
+
+Link unfurls with a picture and a description, a credits name on registration, and two location descriptions.
+
+### Added
+
+- **Link unfurls**: `layouts/social-meta.blade.php`, included in both layouts' `<head>`, gives a shared link its Open Graph and
+  Twitter tags. `og:title` is the page's own `<title>` plus ` - A cyberpunk browser game`; `og:image` and `twitter:image` are
+  `public/images/square.jpg` (640×640, `twitter:card` `summary`) through `Asset::url()`, absolute; `og:description` is
+  `strings.unfurl.description`, with the tagline in `strings.unfurl.tagline`.
+- **An optional credits name on registration, while `alpha_testing` is on**: *What do we call you (for credits, on the thank you
+  page)*. `users.credit_name` is nullable, trimmed (blank is NULL), 100 characters, validated before the key is spent, stored only
+  while the flag is on, and shown beside the email in the admin's Beta keys list. Nothing in the game reads it yet. Documented
+  in the flag's table in CLAUDE.md.
+
+### Changed
+
+- The descriptions of two locations (Pier Nine Warehouse, Server Farm Annex) are carried to the live database, written only where
+  the description is still the starter city's.
+
+### Migrations
+
+- `2026_10_07_180000_two_locations_get_their_descriptions` (data: two descriptions; guarded, so a description written in the live
+  admin is left alone; reversible)
+- `2026_10_07_190000_a_user_may_say_what_to_call_them_in_the_credits` (adds `users.credit_name`)
+
+The credits field appears only if `FEATURE_ALPHA_TESTING=true` is set, so a deploy changes nothing about registration otherwise.
+
+
 ## [0.40.0] — 2026-10-07
 
 An invitation to the Discord, shown once to a new account.
@@ -2521,7 +2550,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.40.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.41.0...HEAD
+[0.41.0]: https://github.com/nahkampf/dedlok/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/nahkampf/dedlok/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/nahkampf/dedlok/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/nahkampf/dedlok/compare/v0.37.0...v0.38.0

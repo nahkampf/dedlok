@@ -233,6 +233,13 @@ version someone must remember to bump is wrong exactly when it matters.
 `tests/Feature/AssetVersionTest.php` holds the rule. `public/ui-kit.html` is static and
 links bare on purpose.
 
+### Link unfurls
+
+**`layouts/social-meta.blade.php`, included in both layouts' `<head>`**, gives a shared link its Open Graph and Twitter tags: the
+title is the page's own `<title>` plus ` - A cyberpunk browser game`, the picture is `public/images/square.jpg` (640×640, so
+`twitter:card` is `summary`), through `Asset::url()` and absolute because a crawler has nothing to resolve a relative URL against.
+`og:description` and the tagline are `strings.unfurl.*`.
+
 ### Fonts
 
 **Every face is self-hosted and declared in `ui-kit.css`.** No font request leaves the
@@ -449,7 +456,8 @@ not asked. **It does not touch accounts that already exist, sign-in, password re
 | `config/features.php`, `.env.sample` | defines it and its env var |
 | `App\Beta\BetaKeys` | the only writer of `beta_keys`; `BetaKeys::enabled()` is the one read of the flag in PHP |
 | `app/Actions/Fortify/CreateNewUser.php` | when on: refuses a missing, wrong or spent key, and spends the key in the same transaction as the user |
-| `resources/views/auth/register.blade.php` | when on: draws the *Beta key* field |
+| `resources/views/auth/register.blade.php` | when on: draws the *Beta key* field and the optional *What do we call you (for credits, on the thank you page)* field |
+| `users.credit_name` (`2026_10_07_190000_...`) | that second field: nullable, trimmed (blank is NULL), 100 characters, validated before the key is spent, stored only while the flag is on, shown beside the email in the admin's key list; nothing in the game reads it yet |
 | `database/migrations/2026_10_07_100000_beta_keys.php`, `App\Models\BetaKey` | the table and model (they exist whatever the flag says) |
 | `App\Http\Controllers\Admin\BetaKeyController`, `routes/web.php` (`admin.beta_keys.*`) | every action is `abort_unless(enabled, 404)` |
 | `resources/views/admin/beta-keys/index.blade.php`, `resources/views/admin/index.blade.php` | the section, and the dashboard card (drawn only when on) |

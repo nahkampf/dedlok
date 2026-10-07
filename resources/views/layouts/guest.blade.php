@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', config('app.name'))</title>
+    @include('layouts.social-meta')
     <link rel="stylesheet" href="{{ Asset::url('assets/css/ui-kit.css') }}">
 </head>
 <body class="bg-grid" style="min-height:100vh;display:grid;place-items:center;padding:var(--s-4)">

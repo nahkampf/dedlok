@@ -48,6 +48,9 @@
                             <td class="micro">
                                 @if ($key->isUsed())
                                     {{ $key->user?->email }}
+                                    @if ($key->user?->credit_name)
+                                        · “{{ $key->user->credit_name }}”
+                                    @endif
                                     @if ($key->user?->character)
                                         · {{ $key->user->character->handle }}
                                     @elseif ($key->user)

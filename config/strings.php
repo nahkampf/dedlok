@@ -88,6 +88,7 @@ return [
             'code' => 'Beta key',
             'hint' => 'Registration is by invitation while the game is in testing. Enter the key you were given.',
             'invalid' => 'That beta key is not valid.',
+            'credit_name' => 'What do we call you (for credits, on the thank you page)',
         ],
         'handle' => 'Handle',
         'handle_hint' => 'Up to :max characters.',
@@ -2874,6 +2875,12 @@ return [
     ],
 
     // The front page: NOTICE.md, and the two places there are to go.
+    // What a shared link unfurls as: see layouts/social-meta.blade.php.
+    'unfurl' => [
+        'tagline' => 'A cyberpunk browser game',
+        'description' => 'A cyberpunk browser RPG, inspired by BBS door games like LOD, LORD, Usurper and Darkness - and heavily influenced by mechanics from EVE Online.',
+    ],
+
     // The invitation shown once, on a new account's first sign-in.
     'discord' => [
         'title' => 'Please join our Discord!',

@@ -47,6 +47,9 @@ class CreateNewUser implements CreatesNewUsers
 
         if (BetaKeys::enabled()) {
             $keys->assertUsable($input['code'] ?? null);
+
+            // Optional, and only asked while the flag is on: what to call them in the credits.
+            Validator::make($input, ['credit_name' => ['nullable', 'string', 'max:100']])->validate();
         }
 
         return DB::transaction(function () use ($input, $keys): User {
@@ -61,6 +64,9 @@ class CreateNewUser implements CreatesNewUsers
 
             if (BetaKeys::enabled()) {
                 $keys->claim($input['code'] ?? null, $user);
+
+                // Blank is not a name: NULL, the same as never asked.
+                $user->forceFill(['credit_name' => trim((string) ($input['credit_name'] ?? '')) ?: null])->save();
             }
 
             return $user;
