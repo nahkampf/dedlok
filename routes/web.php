@@ -37,6 +37,7 @@ use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
 use App\Http\Controllers\StandingController;
+use App\Http\Controllers\TasksController;
 use App\Http\Controllers\TrainingQueueController;
 use App\Http\Controllers\WaitingController;
 use App\Http\Controllers\WalletController;
@@ -317,6 +318,9 @@ Route::middleware('auth')->group(function () {
      * client-side switch, so opening the sheet draws one panel instead of
      * running four screens' worth of queries to show one of them.
      */
+    // Tasks & Missions: the exchange jobs you have taken, with the journal and quests still to come.
+    Route::get('/tasks', TasksController::class)->name('tasks.index');
+
     Route::get('/character', [CharacterController::class, 'index'])->name('character.index');
     Route::post('/character/bio', [CharacterController::class, 'bio'])->name('character.bio');
 

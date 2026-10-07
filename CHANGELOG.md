@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [0.42.3] — 2026-10-07
+
+A Tasks & Missions screen.
+
+### Added
+
+- **A *Tasks & Missions* rail item and screen** (`/tasks`, `TasksController`, `tasks.index`) with three headings. *Missions* lists the
+  exchange jobs the character has accepted and not yet finished (`Mission::accepted()`: failed, completed and voided jobs are history, an
+  unaccepted offer is the desk's to show), soonest deadline first, each as the desk's own `<x-mission-card>`: the task, its systems by
+  address with grade, pay and penalty, time left, a survey's per-system *File in hand* / *Needs a scan file* tags, and a supply job's
+  meter. The card gained three props: `:actions="false"` (no Complete or Accept: a job is handed in at the desk it came from),
+  `:desk="true"` (who it is for, the agent, the desk's address) and `:abandon="true"` (Abandon alone, since giving a job up needs no
+  desk; its tooltip is *Costs -X standing*, the job's penalty). *Journal* and *Tasks* (quests) read "Not yet implemented." The rail
+  glyph is U+25C7, one already proved to render.
+
+No migrations.
+
+
 ## [0.42.2] — 2026-10-08
 
 A survey job can be completed, and accepting any job writes it down in the inbox.
@@ -2615,7 +2633,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.42.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.42.3...HEAD
+[0.42.3]: https://github.com/nahkampf/dedlok/compare/v0.42.1...v0.42.3
 [0.42.2]: https://github.com/nahkampf/dedlok/compare/v0.42.1...v0.42.2
 [0.42.1]: https://github.com/nahkampf/dedlok/compare/v0.42.0...v0.42.1
 [0.42.0]: https://github.com/nahkampf/dedlok/compare/v0.41.0...v0.42.0

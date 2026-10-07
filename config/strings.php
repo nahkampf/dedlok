@@ -42,6 +42,8 @@ return [
             // rail is 220px open and one word has to fit beside a glyph.
             'messages' => 'Messages',
             'wallet' => 'Wallet',
+            // The jobs you have taken, and later the journal and quests. Short enough to sit beside a glyph in a 220px rail.
+            'tasks' => 'Tasks & Missions',
             'city' => 'City',
             'contracts' => 'Contracts',
             'profile' => 'Profile',
@@ -752,6 +754,20 @@ return [
     |
     */
 
+    // The Tasks & Missions screen.
+    'tasks' => [
+        'title' => 'Tasks & Missions',
+        'lede' => 'What you have taken on.',
+        'missions' => 'Missions',
+        'missions_hint' => 'Jobs you have accepted from an exchange and not yet finished, the ones running out first at the top. Hand them in at the desk they came from.',
+        'missions_none' => 'No missions accepted. An exchange desk offers them.',
+        'journal' => 'Journal',
+        'tasks' => 'Tasks',
+        'not_yet' => 'Not yet implemented.',
+        'from' => 'From :entity, through :agent',
+        'desk' => 'Desk at',
+    ],
+
     'missions' => [
         'heading' => 'Work',
         'board' => 'On offer',
@@ -776,6 +792,8 @@ return [
         'quantity' => ':count complete scan files',
         'target_gone' => 'Not there any more',
         'target_done' => 'Done',
+        // The tooltip on Abandon where it stands alone (Tasks & Missions): what giving the job up costs.
+        'abandon_cost' => 'Costs -:amount standing',
         // On a survey's systems, before it is handed in: is this one's scan file in your stash?
         'file_held' => 'File in hand',
         'file_needed' => 'Needs a scan file',
