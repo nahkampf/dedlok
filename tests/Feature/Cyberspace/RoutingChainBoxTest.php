@@ -76,6 +76,7 @@ final class RoutingChainBoxTest extends TestCase
         $this->assertStringNotContainsString('Relay 1', $html, 'cut by the two hops the skill allows');
         $this->assertStringNotContainsString('Relay 4', $html);
         $this->assertStringContainsString('2/2 hops', $html);
+        $this->assertStringContainsString('title="2 out of 2 maximum hops"', $html);
     }
 
     public function test_trained_with_nothing_held_says_so(): void

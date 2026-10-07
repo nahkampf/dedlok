@@ -1680,6 +1680,7 @@ return [
         // The routing chain box on the map screen: what the next run would route through.
         'chain' => [
             'heading' => 'Routing chain',
+            'hops_tip' => ':used out of :cap maximum hops',
         ],
 
         'bookmarks' => [

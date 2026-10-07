@@ -412,7 +412,7 @@
             <div class="panel__hd">
                 <h2>{{ Text::get('cyberspace.chain.heading') }}</h2>
                 <div class="spacer"></div>
-                <span class="micro num" title="{{ Text::get('cyberspace.run.setup.chain_hops_hint') }}">{{ Text::get('cyberspace.run.setup.chain_hops', ['used' => $chain->count(), 'cap' => $chainCap]) }}</span>
+                <span class="micro num" title="{{ Text::get('cyberspace.chain.hops_tip', ['used' => $chain->count(), 'cap' => $chainCap]) }}">{{ Text::get('cyberspace.run.setup.chain_hops', ['used' => $chain->count(), 'cap' => $chainCap]) }}</span>
             </div>
 
             @if ($chain->isEmpty())
