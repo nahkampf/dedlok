@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.42.1] — 2026-10-07
+
+A routing chain box on the map screen.
+
+### Added
+
+- **A *Routing chain* box on the cyberspace screen**, beside Jump, Thresholds and Bookmarks: the same `ChainBuilder::for()` call the
+  run briefing makes (no target), so it lists every system you hold a routing backdoor on, highest grade first, up to
+  `routing_hops`, each with its order, name, copyable address and grade. The header's count (`used/cap hops`) has the hover text
+  *X out of N maximum hops*. The briefing's own empty states are reused (cannot route / nothing held). Read only: there is nothing
+  to pick. `CyberspaceController::index()` passes `chain` and `chainCap`.
+
+
 ## [0.42.0] — 2026-10-07
 
 Players can write to each other, the front page counts players, and the encounter editor can remove rows.
@@ -2578,7 +2591,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.42.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.42.1...HEAD
+[0.42.1]: https://github.com/nahkampf/dedlok/compare/v0.42.0...v0.42.1
 [0.42.0]: https://github.com/nahkampf/dedlok/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/nahkampf/dedlok/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/nahkampf/dedlok/compare/v0.39.0...v0.40.0
