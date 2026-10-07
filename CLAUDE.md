@@ -233,6 +233,13 @@ version someone must remember to bump is wrong exactly when it matters.
 `tests/Feature/AssetVersionTest.php` holds the rule. `public/ui-kit.html` is static and
 links bare on purpose.
 
+### Link unfurls
+
+**`layouts/social-meta.blade.php`, included in both layouts' `<head>`**, gives a shared link its Open Graph and Twitter tags: the
+title is the page's own `<title>` plus ` - A cyberpunk browser game`, the picture is `public/images/square.jpg` (640×640, so
+`twitter:card` is `summary`), through `Asset::url()` and absolute because a crawler has nothing to resolve a relative URL against.
+There is no `og:description` yet.
+
 ### Fonts
 
 **Every face is self-hosted and declared in `ui-kit.css`.** No font request leaves the
