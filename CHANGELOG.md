@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.40.0] — 2026-10-07
+
+An invitation to the Discord, shown once to a new account.
+
+### Added
+
+- **The Discord invitation**: a modal (`<x-discord-invite>`, in `layouts/app.blade.php`) that opens by itself on a new account's
+  first signed-in page, with the heading, text and link in `strings.discord.*`. Shown while `users.seen_discord_at` is NULL and
+  somebody is signed in; closing it however (button, Esc, backdrop) posts `discord.seen` (`DiscordInviteController`, idempotent),
+  which is in `RequireCharacter`'s allow-list because a new account meets it on the character creation screen. Same shape as the
+  patch notes modal (`data-show-on-load`, `data-post-on-close`).
+- `UserFactory` makes test users seen, so only a test that sets `seen_discord_at` to NULL meets the modal.
+
+### Migrations
+
+- `2026_10_07_170000_a_user_remembers_the_discord_invite` (adds `users.seen_discord_at`; every existing account is marked seen, so
+  the invitation is for new accounts only)
+
+
 ## [0.39.0] — 2026-10-07
 
 Consumables, hit point regeneration, a Medical drug family, drugs that work only in a fight, and a clock that stops while one is open.
@@ -2502,7 +2521,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.39.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.40.0...HEAD
+[0.40.0]: https://github.com/nahkampf/dedlok/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/nahkampf/dedlok/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/nahkampf/dedlok/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/nahkampf/dedlok/compare/v0.36.1...v0.37.0
