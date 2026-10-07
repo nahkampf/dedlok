@@ -75,7 +75,8 @@ class RegenerateSynapses extends Command
         $hpPoints = 0;
         $minute = intdiv(now()->getTimestamp(), 60);
 
-        Character::query()->chunkById(200, function ($characters) use ($resolver, $dryRun, $minute, &$healed, &$points, &$hpHealed, &$hpPoints): void {
+        // Nobody in a fight mends: its clock stops with the player's, or waiting out a fight would be a way to heal in it.
+        Character::query()->whereNull('current_fight_id')->chunkById(200, function ($characters) use ($resolver, $dryRun, $minute, &$healed, &$points, &$hpHealed, &$hpPoints): void {
             foreach ($characters as $character) {
                 // Hit points: this minute's share of an hourly rate (see the class notes).
                 $perHour = $resolver->resolve('hitpoints_regen', 0.0, $character->modifiers())->toInt();

@@ -6,6 +6,7 @@ namespace App\Stats\Sources;
 
 use App\Models\Character;
 use App\Models\Dose;
+use App\Models\Fight;
 use App\Stats\Modifier;
 
 /**
@@ -48,15 +49,22 @@ final readonly class ActiveDoses implements ModifierSource
     {
         $at = $this->asAt ?? now();
 
+        // In a fight the clock stops: an ordinary dose is judged as at the moment the fight opened, so waiting out a
+        // drug's cost (or letting its benefit lapse) cannot be done by leaving a fight open. `Fights` pushes the expiry
+        // forward by the fight's length when it ends, so the pause is real afterwards too.
+        $opened = $this->asAt === null && $this->character->current_fight_id !== null
+            ? Fight::query()->find($this->character->current_fight_id)?->created_at
+            : null;
+        $clock = $opened ?? $at;
+
         $doses = Dose::query()
             ->where('character_id', $this->character->getKey())
-            ->where('expires_at', '>', $at)
-            // A fight-only dose counts down in rounds and is in effect while any are left.
-            ->where(static fn ($turns) => $turns->whereNull('turns_left')->orWhere('turns_left', '>', 0))
-            // A dose taken after the moment being asked about was not in them
-            // then. Unlike a running program, a dose knows exactly when it
-            // began and when it ends, so looking back is honest here.
-            ->where('started_at', '<=', $at)
+            ->where(static fn ($any) => $any
+                // A fight-only dose counts down in rounds and is in effect while any are left.
+                ->where(static fn ($fight) => $fight->where('turns_left', '>', 0)->where('expires_at', '>', $at)->where('started_at', '<=', $at))
+                // A dose taken after the moment being asked about was not in them then. Unlike a running program, a
+                // dose knows exactly when it began and when it ends, so looking back is honest here.
+                ->orWhere(static fn ($timed) => $timed->whereNull('turns_left')->where('expires_at', '>', $clock)->where('started_at', '<=', $clock)))
             ->with('item')
             ->get();
 

@@ -18,8 +18,10 @@ use App\Drugs\Family;
 use App\Items\ConsumableEditor;
 use App\Models\Ammunition;
 use App\Models\Character;
+use App\Models\CharacterModifier;
 use App\Models\Dose;
 use App\Models\Drug;
+use App\Models\DrugUse;
 use App\Models\Fight;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -296,5 +298,55 @@ final class FightDrugTest extends TestCase
         $this->assertSame(4, $drug->duration_turns);
         $this->assertSame(2, $drug->turn_hitpoints);
         $this->assertSame(0, $drug->duration_minutes);
+    }
+
+    // ---- the clock stops in a fight -----------------------------------------------------
+
+    /** An ordinary one-hour dose taken before the fight, with a modifier so there is something to see. */
+    private function earlier(): Dose
+    {
+        $item = Item::factory()->create(['container' => 'physical', 'name' => 'Old stim', 'stackable' => true, 'modifiers' => [['op' => 'add', 'amount' => 5, 'target' => ['id' => 'defence']]]]);
+        Drug::query()->create(['item_id' => $item->id, 'family' => Family::Stimulant, 'duration_minutes' => 60, 'addictive' => 0, 'tolerance_gain' => 0]);
+
+        return Dose::query()->create(['character_id' => $this->character->id, 'item_id' => $item->id, 'potency' => 1.0, 'started_at' => now(), 'expires_at' => now()->addMinutes(30)]);
+    }
+
+    public function test_nobody_in_a_fight_regenerates_or_withdraws(): void
+    {
+        DrugUse::query()->create(['character_id' => $this->character->id, 'family' => Family::Stimulant, 'addiction' => 90.0, 'tolerance' => 0]);
+        $this->travelTo(now()->setTime(12, 1));
+        $this->character->forceFill(['current_synaptic_integrity' => 1])->save();
+        $this->open();
+        $before = (int) $this->character->fresh()->current_synaptic_integrity;
+
+        // Four hours on the mend mark would heal anybody out of a fight.
+        $this->travelTo(now()->setTime(16, 0));
+        $this->artisan('characters:regenerate')->assertSuccessful();
+        $this->artisan('drugs:withdraw')->assertSuccessful();
+
+        $this->assertSame($before, (int) $this->character->fresh()->current_synaptic_integrity);
+        $this->assertSame(0, CharacterModifier::query()->where('character_id', $this->character->id)->count(), 'no withdrawal is written under a fight');
+    }
+
+    public function test_a_dose_from_before_a_fight_does_not_run_out_while_it_is_open(): void
+    {
+        $dose = $this->earlier();
+        $fight = $this->open();
+        $base = Character::query()->find($this->character->id)->stat('defence')->toInt();
+        $this->assertGreaterThanOrEqual(5, $base, 'the dose is working');
+
+        // Two hours of an open fight: the dose would have lapsed.
+        $this->travel(2)->hours();
+
+        $this->assertSame($base, Character::query()->find($this->character->id)->stat('defence')->toInt(), 'still working: the clock is stopped');
+
+        // The fight ends, and the dose gets its time back rather than lapsing the moment it is over.
+        $row = $fight->fresh();
+        $state = $row->snapshot();
+        $row->forceFill(['state' => $state->with(Side::B, $state->b->with(hp: 0))->toArray()])->save();
+        $this->with($this->enemyShot())->act($this->character->fresh(), Action::brace());
+
+        $this->assertTrue($dose->fresh()->expires_at->isFuture(), 'about thirty minutes are left, not none');
+        $this->assertEqualsWithDelta(30, now()->diffInMinutes($dose->fresh()->expires_at), 2);
     }
 }

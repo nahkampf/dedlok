@@ -432,6 +432,15 @@ final class Fights
 
         // Fight-only doses end with the fight, however it ended.
         Dose::query()->where('character_id', $character->getKey())->whereNotNull('turns_left')->delete();
+
+        // And the clock stopped while it lasted: every ordinary dose that was in effect when it opened (or ran out
+        // during it) gets back the time the fight took, so the pause is real once the fight is over.
+        $took = max(0, (int) $fight->created_at->diffInSeconds(now(), absolute: true));
+
+        if ($took > 0) {
+            Dose::query()->where('character_id', $character->getKey())->whereNull('turns_left')->where('expires_at', '>', $fight->created_at)
+                ->get()->each(static fn (Dose $dose) => $dose->forceFill(['expires_at' => $dose->expires_at->addSeconds($took)])->save());
+        }
         $character->forceFill(['current_fight_id' => null])->save();
 
         if ($state->result === Result::ADown) {

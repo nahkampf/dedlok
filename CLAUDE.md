@@ -1048,6 +1048,11 @@ implant's; the row says which family, how long, and what it costs the books.
   before it — and why a weapon that is no longer the one the fight began with throws. **In a fight `DrugTaker` never asks
   the waiting room**: an overdose or a flatline leaves the hit points at 0 and `Fights` ends the fight as a loss
   (`Result::ADown`), whose `finish()` asks the floor.
+- **THE CLOCK STOPS IN A FIGHT** (2026-10-07), so an open fight cannot be waited in: `characters:regenerate` (SI, HP, the mend)
+  and `drugs:withdraw` skip a character with `current_fight_id`; `ActiveDoses` judges an ordinary dose as at the moment the
+  fight opened (so neither its benefit lapses nor its cost is waited out), and `Fights::finish()` pushes every such dose's
+  `expires_at` forward by the fight's length. **Only fights**: a cyberspace run is real-time by design (scans, lockdowns, hunters)
+  and its clocks are NOT paused. Overdose capacity and `hasInThem()` still read the real clock (`scopeInEffect`).
 - **The books are per (character, family) and a missing row means clean.** Somebody can be
   deep into opiates and clean of stimulants. `App\Drugs\DrugLedger` is the only writer of
   `character_drug_use`, and the only thing that writes or clears a withdrawal.
