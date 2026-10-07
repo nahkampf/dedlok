@@ -405,6 +405,36 @@
             </form>
         </details>
 
+        {{-- THE ROUTING CHAIN, as the next run would build it (App\Cyberspace\ChainBuilder): every system you hold a
+             routing backdoor on, highest grade first, up to the most your Routing skills allow. Nothing to pick, so
+             nothing to press. --}}
+        <section class="panel panel--snug">
+            <div class="panel__hd">
+                <h2>{{ Text::get('cyberspace.chain.heading') }}</h2>
+                <div class="spacer"></div>
+                <span class="micro num" title="{{ Text::get('cyberspace.run.setup.chain_hops_hint') }}">{{ Text::get('cyberspace.run.setup.chain_hops', ['used' => $chain->count(), 'cap' => $chainCap]) }}</span>
+            </div>
+
+            @if ($chain->isEmpty())
+                <p class="micro" style="color:var(--ink-2);margin:var(--s-3) 0 0">
+                    {{ $chainCap < 1 ? Text::get('cyberspace.run.setup.chain_untrained') : Text::get('cyberspace.run.setup.chain_none') }}
+                </p>
+            @else
+                <ol class="stack" style="--gap:var(--s-2);margin:var(--s-3) 0 0;padding:0;list-style:none">
+                    @foreach ($chain as $hop)
+                        <li class="row row--wrap" style="--gap:var(--s-2);align-items:center">
+                            <span class="micro num" style="color:var(--ink-3)">{{ $loop->iteration }}</span>
+                            <span class="item-row__name" style="min-width:0">{{ $hop->displayName() }}</span>
+                            <span class="micro"><x-address :address="$hop->address" /></span>
+                            <span class="tag">{{ Text::get('cyberspace.run.setup.hop', ['grade' => $hop->grade]) }}</span>
+                        </li>
+                    @endforeach
+                </ol>
+            @endif
+
+            <p class="micro" style="color:var(--ink-2);margin:var(--s-3) 0 0">{{ Text::get('cyberspace.chain.hint') }}</p>
+        </section>
+
         <section class="panel panel--snug">
             <div class="panel__hd"><h2>{{ Text::get('cyberspace.bookmarks.heading') }}</h2></div>
 
