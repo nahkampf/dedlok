@@ -997,8 +997,8 @@ Accounts that existed before the column are NULL until their next visit, so the 
 
 **A rail item and a screen (`/tasks`, `TasksController`) with three headings.** *Missions* lists the exchange jobs the character has
 ACCEPTED and not yet finished (`Mission::accepted()`: failed, completed and voided are history, an offer is the desk's to show),
-soonest deadline first, each as the desk's own `<x-mission-card>` with `:actions="false"` (no buttons: a job is handed in at the desk
-it came from) and `:desk="true"` (who it is for, the agent, the desk's address). *Journal* and *Tasks* (quests) read "Not yet
+soonest deadline first, each as the desk's own `<x-mission-card>` with `:actions="false"` (no Complete: a job is handed in at the desk
+it came from) and `:abandon="true"` (giving one up needs no desk; its tooltip is *Costs -X standing*, the row's penalty) and `:desk="true"` (who it is for, the agent, the desk's address). *Journal* and *Tasks* (quests) read "Not yet
 implemented." until they are designed. The rail glyph is U+25C7, one already proved to render.
 
 ### The Discord invitation

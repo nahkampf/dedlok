@@ -13,7 +13,7 @@ use Illuminate\View\View;
  * Tasks & Missions: what you have taken on, in one place.
  *
  * Missions are the exchange jobs you have ACCEPTED and not yet finished (failed, completed and voided ones are history, and
- * an offer you have not taken is the desk's to show). Read only: handing a job in happens at the desk it came from. The
+ * an offer you have not taken is the desk's to show). Handing a job in happens at the desk it came from; giving one up (Abandon) can be done from here. The
  * journal and the quests (tasks) are placeholders until they are designed.
  */
 class TasksController extends Controller

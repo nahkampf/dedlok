@@ -94,7 +94,9 @@ final class TasksAndMissionsTest extends TestCase
         $this->assertStringContainsString('123', $html, 'what it pays');
         $this->assertStringNotContainsString('Accept', $html);
         $this->assertStringNotContainsString(route('missions.complete', $taken), $html, 'handed in at the desk, not here');
-        $this->assertStringNotContainsString(route('missions.abandon', $taken), $html);
+        // Giving a job up needs no desk, so Abandon is here, and its tooltip says what it costs.
+        $this->assertStringContainsString(route('missions.abandon', $taken), $html);
+        $this->assertStringContainsString('title="Costs -0.020 standing"', $html);
     }
 
     public function test_the_job_running_out_first_is_listed_first(): void
@@ -107,6 +109,16 @@ final class TasksAndMissionsTest extends TestCase
         $html = $this->page();
 
         $this->assertLessThan(strpos($html, MissionAction::Burn->label()), strpos($html, MissionAction::Plant->label()));
+    }
+
+    public function test_abandoning_from_here_fails_the_job_and_costs_the_standing(): void
+    {
+        $job = $this->job($this->me, MissionAction::Burn, MissionState::Accepted);
+
+        $this->actingAs($this->me->user->fresh())->delete(route('missions.abandon', $job))->assertRedirect();
+
+        $this->assertSame(MissionState::Failed, $job->fresh()->state);
+        $this->assertStringNotContainsString('class="card card--select"', $this->page(), 'and it is gone from the list');
     }
 
     public function test_a_guest_is_sent_to_sign_in(): void

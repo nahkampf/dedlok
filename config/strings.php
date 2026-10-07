@@ -792,6 +792,8 @@ return [
         'quantity' => ':count complete scan files',
         'target_gone' => 'Not there any more',
         'target_done' => 'Done',
+        // The tooltip on Abandon where it stands alone (Tasks & Missions): what giving the job up costs.
+        'abandon_cost' => 'Costs -:amount standing',
         // On a survey's systems, before it is handed in: is this one's scan file in your stash?
         'file_held' => 'File in hand',
         'file_needed' => 'Needs a scan file',

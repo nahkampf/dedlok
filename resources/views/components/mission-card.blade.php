@@ -18,6 +18,8 @@
     'actions' => true,
     // Say where it came from: who it is for, their agent and the desk's address.
     'desk' => false,
+    // Just Abandon, for a card that has no other buttons (Tasks & Missions): the one thing that can be done from anywhere.
+    'abandon' => false,
 ])
 
 @php($action = $mission->action)
@@ -143,5 +145,17 @@
             </form>
         @endif
     </div>
+    @endif
+
+    {{-- Abandon alone: giving up work needs no desk, and what it costs is the tooltip, as the desk's own card says it beside the pay. --}}
+    @if (! $actions && $abandon && $active)
+        <div class="card__ft">
+            <div class="spacer"></div>
+            <form method="POST" action="{{ route('missions.abandon', $mission) }}">
+                @csrf @method('DELETE')
+                <button type="submit" class="btn btn--sm btn--ghost cut"
+                        title="{{ Text::get('missions.abandon_cost', ['amount' => number_format($mission->penalty, 3)]) }}">{{ Text::get('missions.abandon') }}</button>
+            </form>
+        </div>
     @endif
 </div>

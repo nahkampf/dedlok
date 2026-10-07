@@ -17,7 +17,7 @@
         @else
             <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));--gap:var(--s-4)">
                 @foreach ($missions as $mission)
-                    <x-mission-card :mission="$mission" :active="true" :files="$files" :held="$heldAddresses" :actions="false" :desk="true" />
+                    <x-mission-card :mission="$mission" :active="true" :files="$files" :held="$heldAddresses" :actions="false" :desk="true" :abandon="true" />
                 @endforeach
             </div>
         @endif
