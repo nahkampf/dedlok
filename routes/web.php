@@ -19,6 +19,7 @@ use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
+use App\Http\Controllers\DiscordInviteController;
 use App\Http\Controllers\EncounterController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\ExchangeController;
@@ -55,6 +56,9 @@ Route::get('/handles/available', AvailableHandlesController::class)
 Route::middleware('auth')->group(function () {
     // Closing the patch notes on the front page. See PatchNotesController.
     Route::post('/patch-notes/seen', PatchNotesController::class)->name('patch-notes.seen');
+
+    // Closing the Discord invitation shown on first sign-in. See DiscordInviteController.
+    Route::post('/discord/seen', DiscordInviteController::class)->name('discord.seen');
 
     /*
      * Character creation, and the one place ForbidSecondCharacter applies. It

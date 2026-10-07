@@ -30,6 +30,8 @@ class UserFactory extends Factory
             'email_verified_at' => CarbonImmutable::now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            // Seen: the Discord invitation is for NEW accounts, and a test user is not one unless it says so.
+            'seen_discord_at' => CarbonImmutable::now(),
         ];
     }
 

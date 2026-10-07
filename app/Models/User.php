@@ -39,6 +39,7 @@ class User extends Authenticatable
             'email_verified_at' => 'immutable_datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'seen_discord_at' => 'immutable_datetime',
         ];
     }
 
