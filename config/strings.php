@@ -2913,6 +2913,9 @@ return [
         // of the format rather than the value: config/version.php holds the
         // number and nothing else.
         'version' => 'v:version',
+        // Under the version, the same size and place. The numbers are drawn green.
+        'players_total' => 'Total players:',
+        'players_active' => 'Active players last 7 days:',
         'places' => [
             'city' => 'CITY',
             'cyberspace' => 'CYBERSPACE',

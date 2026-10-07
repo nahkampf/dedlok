@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Support\PatchNotes;
 use App\Support\Text;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -47,7 +49,15 @@ class HomeController extends Controller
         $patchNotes = PatchNotes::all();
         $user = request()->user();
 
+        // Players are accounts that have made a character (an account that only registered is not playing yet). Active is
+        // one that did something in the last seven days. Cached for five minutes: the page is the most visited one.
+        $players = Cache::remember('home.player_counts', 300, static fn (): array => [
+            'total' => User::query()->whereHas('character')->count(),
+            'active' => User::query()->whereHas('character')->where('last_active_at', '>=', now()->subDays(7))->count(),
+        ]);
+
         return view('home', [
+            'players' => $players,
             // Every note, for the version link, and what this player has not
             // read, which opens by itself. Nobody signed in is asked nothing.
             'patchNotes' => $patchNotes,

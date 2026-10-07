@@ -40,6 +40,14 @@
                 {{ Text::get('home.version', ['version' => config('version.app')]) }}
             </button>
         @endif
+
+        {{-- Under the version, the same size and edge: dark grey, the figures green. --}}
+        <div class="micro" style="color:var(--ink-3)">
+            {{ Text::get('home.players_total') }} <span style="color:var(--ok)">{{ number_format($players['total']) }}</span>
+        </div>
+        <div class="micro" style="color:var(--ink-3)">
+            {{ Text::get('home.players_active') }} <span style="color:var(--ok)">{{ number_format($players['active']) }}</span>
+        </div>
     </div>
 
     @if ($patchNotes !== [])

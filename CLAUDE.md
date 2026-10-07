@@ -985,6 +985,14 @@ not shown** — it is spent at the store and has its own story. Zero-delta entri
 against somebody already at −100) are hidden. Read-only: `StandingLedger` stays the only
 writer.
 
+### Player counts on the front page
+
+**Under the version number, two small lines: *Total players* and *Active players last 7 days*, the figures green** (`home.blade.php`,
+`HomeController`, cached five minutes under `home.player_counts`). A player is an account that has made a character. Active is
+`users.last_active_at` within seven days, written by `App\Http\Middleware\TouchLastActive` at most once every five minutes and
+**never by the inbox poll** (`notifications.unread`: an open tab polls every five seconds whether anyone is there or not).
+Accounts that existed before the column are NULL until their next visit, so the active figure starts low and fills in.
+
 ### The Discord invitation
 
 **A modal that opens by itself, once, on a new account's first sign-in** (`<x-discord-invite>` in `layouts/app.blade.php`, shown while
