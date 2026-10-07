@@ -2,6 +2,44 @@
 
 ## [Unreleased]
 
+## [0.39.0] — 2026-10-07
+
+Consumables, hit point regeneration, a Medical drug family, drugs that work only in a fight, and a clock that stops while one is open.
+
+### Added
+
+- **Consumables**: an item with a `consumables` row does something once, at once, when a copy is used (`App\Items\UseEffect`,
+  `heal_hitpoints` first; `Consumer` is the only user, `ConsumableEditor` the only writer). A use that would do nothing is
+  refused and the copy kept; it is refused in a fight. The item editor has a Consumable panel; the stash card has *Use*.
+- **`hitpoints_regen`**: a stat in hit points per HOUR, zero for everybody, carried by any effect row. `characters:regenerate`
+  credits each minute's exact share (`floor(rate × (m+1) / 60) − floor(rate × m / 60)`), so a rate of 1 is one point an hour
+  with no stored remainder. No baseline mend for hit points.
+- **The Medical drug family**: overdoses like a stimulant, never addictive (`Family::addicts()`; the ledger never raises its
+  addiction and the editor refuses a non-zero one), tolerance per drug.
+- **A drug may also be a consumable** (any family): taking the dose also does the instant half, before any overdose harm and
+  untouched by tolerance. The stash card offers only *Take*.
+- **Fight-only drugs** (`drugs.fight_only`, `duration_turns`, `turn_hitpoints`; `character_doses.turns_left`): used from the belt
+  as the round's whole action (`ActionKind::Use`), working from the next round for N rounds, with a signed per-round hit point
+  tick (restores are scaled by potency). They keep the family, books, tolerance and overdose; a body that does not survive the
+  dose ends the fight as a loss. The player's side of a fight is now rebuilt from the character every round, which is how a
+  dose's stat effects reach a fight already open.
+- **An overdose warning** on the character sheet: a brass triangle on a drug family one dose from overdosing (`.warn-icon`,
+  `.tip--start`).
+- **The items list has one Type filter** covering every kind of item (hardware and each piece, software and each kind, drugs and
+  each family or fight-only, armour, weapon, ammunition, consumable, implant, imprint, plain). `?hardware=` and `?program=` still work.
+
+### Changed
+
+- **The clock stops in a fight**: `characters:regenerate` and `drugs:withdraw` skip a character with a live fight; an ordinary dose
+  is judged as at the moment the fight opened and gets the fight's length back when it ends. Cyberspace runs are not paused.
+- A close weapon (unarmed, blade, blunt) may leave *Shots a round* blank in the weapon editor; it is stored as 1.
+
+### Migrations
+
+- `2026_10_07_120000_consumables` (new `consumables` table)
+- `2026_10_07_150000_drugs_for_fights` (adds `drugs.fight_only`, `drugs.duration_turns`, `drugs.turn_hitpoints`, `character_doses.turns_left`)
+
+
 ## [0.38.0] — 2026-10-07
 
 An Equipment tab and a belt, combat skills with effects and a weapon gate, a live inbox, a rebuilt Interact box on the map, and an alpha-testing flag.
@@ -2464,7 +2502,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.38.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.39.0...HEAD
+[0.39.0]: https://github.com/nahkampf/dedlok/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/nahkampf/dedlok/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/nahkampf/dedlok/compare/v0.36.1...v0.37.0
 [0.36.1]: https://github.com/nahkampf/dedlok/compare/v0.36.0...v0.36.1

@@ -1,3 +1,12 @@
+## 0.39.0 (2026-10-07)
+
+- New item type: Consumables. Healps HP immediately.
+- HP now regenerates over time, and the regen can be targeted by skills, drugs etc.
+- New drug family: Medical (for various things that don't fit other categories). Meds have no addiction, but can build tolerance.
+- Some drugs are now "combat only", ie they tick on turns rather than seconds so only usable when locked into combat
+- While in combat, all the heartbeat stuff in the background (regeneration, withdrawal etc) pauses.
+- Added an overdose warning to the drug section on the character screen
+
 ## 0.38.0 (2026-10-07)
 
 - Equipment tab on the character screen.
