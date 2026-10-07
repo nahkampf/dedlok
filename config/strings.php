@@ -1680,7 +1680,6 @@ return [
         // The routing chain box on the map screen: what the next run would route through.
         'chain' => [
             'heading' => 'Routing chain',
-            'hint' => 'Built for you: every system you hold a routing backdoor on, highest grade first, up to the most your Routing skills allow. A trace has to come through all of them.',
         ],
 
         'bookmarks' => [

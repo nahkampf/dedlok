@@ -431,8 +431,6 @@
                     @endforeach
                 </ol>
             @endif
-
-            <p class="micro" style="color:var(--ink-2);margin:var(--s-3) 0 0">{{ Text::get('cyberspace.chain.hint') }}</p>
         </section>
 
         <section class="panel panel--snug">
