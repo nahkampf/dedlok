@@ -27,6 +27,9 @@ enum FightRefusal: string
     /** No live fight to act in. */
     case NoFight = 'no_fight';
 
+    /** A drug that is not on the belt, not fight-only, or already used up. */
+    case CannotUse = 'cannot_use';
+
     public function message(): string
     {
         return Text::get("combat.fight.refused.{$this->value}");

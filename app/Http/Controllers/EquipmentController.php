@@ -49,8 +49,8 @@ class EquipmentController extends Controller
         $stash = InventoryItem::query()
             ->where('character_id', $character->getKey())
             ->loose()
-            ->whereHas('item', static fn ($item) => $item->whereHas('armour')->orWhereHas('weapon')->orWhereHas('drug'))
-            ->with('item.armour', 'item.weapon', 'item.drug')
+            ->whereHas('item', static fn ($item) => $item->whereHas('armour')->orWhereHas('weapon')->orWhereHas('drug')->orWhereHas('consumable'))
+            ->with('item.armour', 'item.weapon', 'item.drug', 'item.consumable')
             ->get();
 
         foreach (WearSlot::cases() as $slot) {
@@ -94,10 +94,10 @@ class EquipmentController extends Controller
             'route' => 'inventory.belt',
             'empty' => 'equipment.belt.empty',
             'candidates' => $stash
-                ->filter(fn (InventoryItem $row): bool => $row->item->drug !== null && ! $row->isBelted())
+                ->filter(fn (InventoryItem $row): bool => ($row->item->drug !== null || $row->item->consumable !== null) && ! $row->isBelted())
                 ->map(fn (InventoryItem $row): array => [
                     'row' => $row,
-                    'details' => $row->item->drug->family->label().($row->quantity > 1 ? ' ×'.$row->quantity : ''),
+                    'details' => ($row->item->drug?->family->label() ?? $row->item->consumable->describe()).($row->quantity > 1 ? ' ×'.$row->quantity : ''),
                 ])->values()->all(),
         ];
 

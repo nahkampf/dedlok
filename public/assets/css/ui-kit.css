@@ -1991,6 +1991,20 @@ a.tab { text-decoration: none; }
 [data-tip]:hover::after,
 [data-tip]:focus-visible::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* A tooltip that opens from the element's own left edge and wraps, for one that sits near the left of a card: the
+   centred default would run off a 320px screen. */
+[data-tip].tip--start::after {
+  left: 0; transform: translateY(3px);
+  white-space: normal; width: max-content; max-width: min(240px, 80vw);
+}
+[data-tip].tip--start:hover::after,
+[data-tip].tip--start:focus-visible::after { transform: translateY(0); }
+
+/* A small warning triangle: brass, the kit's "careful" (a condition to manage, never the accent). An inline SVG
+   rather than a glyph, so it cannot come back at notdef width. */
+.warn-icon { display: inline-flex; width: var(--fs-md); height: var(--fs-md); color: var(--warn); flex: none; }
+.warn-icon svg { width: 100%; height: 100%; }
+
 /* Modal — native <dialog> */
 dialog.modal {
   padding: 0;

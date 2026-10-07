@@ -42,7 +42,8 @@ class SweepWithdrawal extends Command
         foreach (DrugUse::query()->orderBy('character_id')->cursor() as $books) {
             $character = Character::query()->find($books->character_id);
 
-            if ($character === null) {
+            // A fight stops this clock too: what a character is owed is settled when it ends.
+            if ($character === null || $character->current_fight_id !== null) {
                 continue;
             }
 

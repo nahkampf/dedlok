@@ -125,6 +125,14 @@
                         <div class="card">
                             <div class="card__hd">
                                 <div class="row row--wrap" style="--gap:var(--s-2);align-items:baseline">
+                                    {{-- The next dose would break the line: the same sum `DrugTaker` makes. A brass
+                                         triangle, focusable because a tap is not a hover. --}}
+                                    @if ($row['used'] >= $row['capacity'])
+                                        <span class="warn-icon tip--start" data-tip="{{ Text::get('character.doses_risk') }}" tabindex="0"
+                                              role="img" aria-label="{{ Text::get('character.doses_risk') }}">
+                                            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 15 14H1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="miter"/><path d="M8 6v4" stroke="currentColor" stroke-width="1.5"/><rect x="7.25" y="11" width="1.5" height="1.5" fill="currentColor"/></svg>
+                                        </span>
+                                    @endif
                                     <span class="card__title">{{ $row['family']->label() }}</span>
                                     <div class="spacer"></div>
                                     {{-- Brass and not ember: being hooked is a

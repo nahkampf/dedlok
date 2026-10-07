@@ -20,6 +20,7 @@ use App\Drugs\DrugEditor;
 use App\Drugs\Family;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ItemRequest;
+use App\Items\ConsumableEditor;
 use App\Market\Rarity;
 use App\Models\Item;
 use App\Models\Skill;
@@ -58,6 +59,7 @@ class ItemController extends Controller
             'market' => ['nullable', 'string'],
             'hardware' => ['nullable', 'string'],
             'program' => ['nullable', 'string'],
+            'type' => ['nullable', 'string', 'max:40'],
         ]);
 
         $items = Item::query()
@@ -85,6 +87,7 @@ class ItemController extends Controller
                     fn ($inner) => $inner->where('kind', $kind->value),
                 )
             )
+            ->when($filters['type'] ?? null, fn ($query, string $type) => $this->ofType($query, $type))
             ->when(($filters['market'] ?? null) === 'on', fn ($query) => $query->onMarket())
             ->when(($filters['market'] ?? null) === 'off', fn ($query) => $query->where('on_market', false))
             ->orderBy('slug')
@@ -96,7 +99,63 @@ class ItemController extends Controller
             'filters' => $filters,
             'programKinds' => ProgramKind::cases(),
             'drugFamilies' => Family::cases(),
+            'typeGroups' => $this->typeGroups(),
         ]);
+    }
+
+    /**
+     * Every kind of item there is, for the list's one Type filter: value => label, grouped. A value is `kind` or
+     * `kind:detail` (deck hardware's piece, software's kind, a drug's family).
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function typeGroups(): array
+    {
+        $groups = [
+            Text::get('admin.items.types.hardware') => ['hardware' => Text::get('admin.items.types.any_hardware')]
+                + collect(Hardware::cases())->mapWithKeys(fn (Hardware $kind): array => ["hardware:{$kind->value}" => $kind->label()])->all(),
+            Text::get('admin.items.types.software') => ['software' => Text::get('admin.items.types.any_software')]
+                + collect(ProgramKind::cases())->mapWithKeys(fn (ProgramKind $kind): array => ["software:{$kind->value}" => $kind->label()])->all(),
+            Text::get('admin.items.types.drug') => ['drug' => Text::get('admin.items.types.any_drug'), 'drug:fight_only' => Text::get('admin.items.types.fight_only')]
+                + collect(Family::cases())->mapWithKeys(fn (Family $family): array => ["drug:{$family->value}" => $family->label()])->all(),
+            Text::get('admin.items.types.gear') => [
+                'armour' => Text::get('admin.items.types.armour'),
+                'weapon' => Text::get('admin.items.types.weapon'),
+                'ammunition' => Text::get('admin.items.types.ammunition'),
+            ],
+            Text::get('admin.items.types.other') => [
+                'consumable' => Text::get('admin.items.types.consumable'),
+                'implant' => Text::get('admin.items.types.implant'),
+                'imprint' => Text::get('admin.items.types.imprint'),
+                'plain' => Text::get('admin.items.types.plain'),
+            ],
+        ];
+
+        return $groups;
+    }
+
+    /** Narrow a list to one kind of item. An unknown value narrows nothing, like every other filter here. */
+    private function ofType($query, string $type)
+    {
+        [$kind, $detail] = array_pad(explode(':', $type, 2), 2, null);
+
+        return match ($kind) {
+            'hardware' => $detail === null ? $query->whereNotNull('hardware') : $query->where('hardware', $detail),
+            'software' => $query->whereHas('program', fn ($inner) => $detail === null ? $inner : $inner->where('kind', $detail)),
+            'drug' => $query->whereHas('drug', fn ($inner) => match (true) {
+                $detail === null => $inner,
+                $detail === 'fight_only' => $inner->where('fight_only', true),
+                default => $inner->where('family', $detail),
+            }),
+            'armour', 'weapon', 'ammunition', 'consumable' => $query->whereHas($kind),
+            'implant' => $query->whereNotNull('implant_region'),
+            'imprint' => $query->where('use_op', Item::USE_INJECT_SKILL),
+            // Nothing but an item: none of the kinds above.
+            'plain' => $query->whereNull('hardware')->whereNull('implant_region')->where(fn ($inner) => $inner->whereNull('use_op')->orWhere('use_op', '!=', Item::USE_INJECT_SKILL))
+                ->whereDoesntHave('program')->whereDoesntHave('drug')->whereDoesntHave('consumable')
+                ->whereDoesntHave('armour')->whereDoesntHave('weapon')->whereDoesntHave('ammunition'),
+            default => $query,
+        };
     }
 
     public function create(): View
@@ -112,6 +171,8 @@ class ItemController extends Controller
             ProgramEditor::apply($item, $request->programKind(), $request->programColumns());
 
             DrugEditor::apply($item, $request->drugFamily(), $request->drugColumns());
+
+            ConsumableEditor::apply($item, $request->consumableEffects());
 
             ArmourEditor::apply($item, $request->armourSlots());
             WeaponEditor::apply($item, $request->weaponColumns());
@@ -152,6 +213,10 @@ class ItemController extends Controller
             // Always, and for the same reason: an item that has stopped being
             // a drug has to lose its row, or it stays swallowable.
             DrugEditor::apply($item, $request->drugFamily(), $request->drugColumns());
+
+            // Always, for the same reason: an item that has stopped being a consumable has to lose its row, or it
+            // stays usable by anyone who already owns a copy.
+            ConsumableEditor::apply($item, $request->consumableEffects());
 
             // Always: an item that has stopped being armour has to lose its row, and come off
             // everybody wearing it.

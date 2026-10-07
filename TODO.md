@@ -57,7 +57,10 @@ button exists; `php artisan fight:start <handle> <npc-slug>` opens one by hand.
 
 ### Parked or open on purpose (do not build without the author)
 
-- **Using a belted drug in a fight** — chosen 2026-10-06 and not built. The belt (three slots, drugs only) exists and
+- **Using an ORDINARY belted drug or a consumable in a fight** — chosen 2026-10-06; the FIGHT-ONLY drug (2026-10-07) is the part built, and
+  it also settled the snapshot question (the player's side is rebuilt every round). Left: letting any belted drug or a medkit be used
+  as an action (a medkit can be USED from the stash,
+  never inside a fight: `Consumer` refuses with `InAFight`). Drugs would apply through `DrugTaker`, a medkit through `Consumer`. The belt (three slots, drugs only) exists and
   holds them. What is missing is a fight action that takes one through `DrugTaker` and a way for its modifiers to reach
   the player's snapshot (aim, damage, defence are resolved once, when the fight opens): rebuild the snapshot each
   round, or resolve those stats per round. Decide that before building the action.

@@ -773,6 +773,9 @@ against ICE generated on the fly, and it locks the screen until it is settled.
   FLOORS**: tolerance scales one point to 0.9, which floors to nothing. Tolerance scales
   only the positive amounts, so a tolerant user heals at half the rate and pays the full
   side effect.
+- **Hit points have their own trickle, `hitpoints_regen`, in points per HOUR** and zero for everybody (no baseline mend): an
+  effect has to carry it. The same command credits it, a share each minute, exactly `rate` over the hour (CLAUDE.md,
+  *Consumables*, has the arithmetic).
 - **`Character::recover()` is `takeDamage()`'s mirror** — addition and a ceiling. **Capped
   at the maximum as it is NOW**, which is why it cannot be damage with a minus sign: healing
   must never climb past what injury lowered.

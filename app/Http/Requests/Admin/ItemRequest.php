@@ -18,6 +18,7 @@ use App\Decks\SlotType;
 use App\Decks\Variant;
 use App\Drugs\Family;
 use App\Implants\BodyRegion;
+use App\Items\UseEffect;
 use App\Market\Rarity;
 use App\Models\Ammunition;
 use App\Models\Item;
@@ -157,7 +158,15 @@ class ItemRequest extends FormRequest
             'program_kind' => $this->filled('program_kind') ? $this->input('program_kind') : null,
             // Drugs, the same way: empty is no value.
             'drug_family' => $this->filled('drug_family') ? $this->input('drug_family') : null,
-            'duration_minutes' => $this->panelNumber('duration_minutes', $isDrugForm),
+            // A consumable: one number per kind of effect, blank meaning none. Whole numbers only, so a stray
+            // decimal is a validation error and not a quiet rounding.
+            'use_heal_hitpoints' => $this->filled('use_heal_hitpoints') ? $this->input('use_heal_hitpoints') : null,
+            // A fight-only drug counts rounds, so its minutes are not asked (0, unread) and the two fight fields only
+            // mean anything when it is one: blank otherwise, however the form posted them.
+            'fight_only' => $this->boolean('fight_only'),
+            'duration_minutes' => $this->boolean('fight_only') ? '0' : $this->panelNumber('duration_minutes', $isDrugForm),
+            'duration_turns' => $this->boolean('fight_only') ? $this->numberOrNull('duration_turns') : null,
+            'turn_hitpoints' => $this->boolean('fight_only') ? ($this->numberOrNull('turn_hitpoints') ?? '0') : null,
             'addictive' => $this->panelNumber('addictive', $isDrugForm),
             'tolerance_gain' => $this->panelNumber('tolerance_gain', $isDrugForm),
             'lethal_at' => $this->panelNumber('lethal_at', $isDrugForm),
@@ -229,6 +238,7 @@ class ItemRequest extends FormRequest
         $hardware = $this->hardware();
         $isProgram = $this->programKind() !== null;
         $isDrug = $this->drugFamily() !== null;
+        $isConsumable = $this->consumableEffects() !== [];
         $isArmour = $this->armourSlots() !== [];
         $weaponClass = $this->weaponClass();
         $isWeapon = $weaponClass !== null;
@@ -359,8 +369,27 @@ class ItemRequest extends FormRequest
                 ? ['prohibited']
                 : ['nullable', Rule::enum(Family::class)],
 
+            /*
+             * CONSUMABLES. An item is one because it names something using a copy does, the way it is a drug
+             * because it has a family. What it does is a number per kind (`App\Items\UseEffect`); blank is none.
+             * A consumable is a PHYSICAL object used up once. It may also be a DRUG (a trauma drip that heals now and
+             * mends for ten minutes), and is none of the other kinds.
+             */
+            'use_heal_hitpoints' => $hardware !== null || $isProgram || $isImprint || $isGear || $this->filled('implant_region')
+                ? ['prohibited']
+                : ['nullable', 'integer', 'min:1', 'max:10000'],
+
+            'fight_only' => ['boolean'],
             'duration_minutes' => $isDrug
-                ? ['required', 'integer', 'min:1', 'max:10080']
+                ? ($this->boolean('fight_only') ? ['required', 'integer', 'in:0'] : ['required', 'integer', 'min:1', 'max:10080'])
+                : ['prohibited'],
+            // Rounds, when it is fight-only: a fight is a few rounds, so a long one is a typo.
+            'duration_turns' => $isDrug && $this->boolean('fight_only')
+                ? ['required', 'integer', 'min:1', 'max:50']
+                : ['prohibited'],
+            // Signed: positive restores, negative is the drug's price. Whole points.
+            'turn_hitpoints' => $isDrug && $this->boolean('fight_only')
+                ? ['required', 'integer', 'min:-100', 'max:100']
                 : ['prohibited'],
             'addictive' => $isDrug
                 ? ['required', 'numeric', 'min:0', 'max:100']
@@ -421,7 +450,9 @@ class ItemRequest extends FormRequest
             'weapon_class' => ['nullable', Rule::enum(WeaponClass::class)],
             'weapon_damage' => $isWeapon && ! $weaponClass->firearm() ? ['required', 'integer', 'between:1,1000'] : ['prohibited'],
             'weapon_accuracy' => $isWeapon ? ['required', 'integer', 'between:-100,100'] : ['prohibited'],
-            'weapon_rate' => $isWeapon ? ['required', 'integer', 'between:1,30'] : ['prohibited'],
+            // Shots a round only means something for something that shoots: a close weapon (unarmed, blade, blunt)
+            // may leave it blank and is stored as 1.
+            'weapon_rate' => $isWeapon ? [$weaponClass?->ranged() === false ? 'nullable' : 'required', 'integer', 'between:1,30'] : ['prohibited'],
             // A firearm takes a calibre of round from a magazine, and both are required together; a
             // blade or a grenade takes neither.
             'weapon_magazine' => $weaponClass?->firearm() ? ['required', 'integer', 'between:1,1000'] : ['prohibited'],
@@ -650,6 +681,15 @@ class ItemRequest extends FormRequest
          *
          * The two profiles are judged as wholes: only damage types, whole percentages, summing to 100.
          */
+        // A family that cannot hook anybody (Medical) cannot be given an addictive figure, even in a hand-made request.
+        $validator->after(function (Validator $validator): void {
+            $family = $this->drugFamily();
+
+            if ($family !== null && ! $family->addicts() && (float) $this->input('addictive', 0) !== 0.0) {
+                $validator->errors()->add('addictive', Text::get('admin.validation.not_addictive', ['family' => $family->label()]));
+            }
+        });
+
         $validator->after(function (Validator $validator): void {
             $kinds = array_filter([
                 'armour_slots' => $this->armourSlots() !== [],
@@ -662,6 +702,7 @@ class ItemRequest extends FormRequest
             }
 
             if (count($kinds) > 1
+                || $this->consumableEffects() !== []
                 || $this->hardware() !== null
                 || $this->input('use_op') === Item::USE_INJECT_SKILL
                 || $this->filled('implant_region')) {
@@ -843,9 +884,12 @@ class ItemRequest extends FormRequest
             $data['ammo_calibre'], $data['ammo_type'], $data['ammo_damage'], $data['ammo_penetration'], $data['ammo_profile'], $data['ammo_riders'],
         );
 
+        // And so does a consumable.
+        unset($data['use_heal_hitpoints']);
+
         // And so does a drug. Nothing on `items` says an item is one.
         unset(
-            $data['drug_family'], $data['duration_minutes'], $data['addictive'],
+            $data['drug_family'], $data['fight_only'], $data['duration_minutes'], $data['duration_turns'], $data['turn_hitpoints'], $data['addictive'],
             $data['tolerance_gain'], $data['lethal_at'],
         );
 
@@ -906,7 +950,7 @@ class ItemRequest extends FormRequest
             'damage_profile' => $firearm ? null : DamageProfile::clean((array) ($data['weapon_profile'] ?? [])),
             'riders' => Riders::clean((array) ($data['weapon_riders'] ?? [])) ?: null,
             'accuracy' => (int) $data['weapon_accuracy'],
-            'rate' => (int) $data['weapon_rate'],
+            'rate' => (int) ($data['weapon_rate'] ?? 1),
             'magazine' => $firearm ? (int) $data['weapon_magazine'] : null,
             'calibre' => $firearm ? (string) $data['weapon_calibre'] : null,
         ];
@@ -979,6 +1023,27 @@ class ItemRequest extends FormRequest
         }
     }
 
+    /**
+     * What using one copy does, as the rows `consumables.effects` stores: a kind and a whole amount for each filled
+     * field, in the vocabulary's order. Empty when this is not a consumable.
+     *
+     * @return list<array{kind: string, amount: int}>
+     */
+    public function consumableEffects(): array
+    {
+        $effects = [];
+
+        foreach (UseEffect::cases() as $kind) {
+            $value = $this->input('use_'.$kind->value);
+
+            if ($value !== null && $value !== '' && (int) $value > 0) {
+                $effects[] = ['kind' => $kind->value, 'amount' => (int) $value];
+            }
+        }
+
+        return $effects;
+    }
+
     /** What family of drug this payload describes, if any. */
     public function drugFamily(): ?Family
     {
@@ -997,7 +1062,10 @@ class ItemRequest extends FormRequest
         $data = $this->validated();
 
         return [
+            'fight_only' => (bool) ($data['fight_only'] ?? false),
             'duration_minutes' => (int) ($data['duration_minutes'] ?? 0),
+            'duration_turns' => ($data['duration_turns'] ?? null) === null ? null : (int) $data['duration_turns'],
+            'turn_hitpoints' => (int) ($data['turn_hitpoints'] ?? 0),
             'addictive' => (float) ($data['addictive'] ?? 0),
             'tolerance_gain' => (float) ($data['tolerance_gain'] ?? 0),
             'lethal_at' => ($data['lethal_at'] ?? null) === null ? null : (int) $data['lethal_at'],

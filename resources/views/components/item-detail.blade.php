@@ -214,17 +214,31 @@
             {{-- Taking one is not confirmed. A dose is one copy of a thing
                  meant to be used, and what makes it dangerous is the overdose
                  rather than the click. --}}
-            @if ($item->isDrug())
+            @if ($item->isDrug() && $item->drug->fight_only)
+                {{-- Fight-only: no button here. It goes on the belt and is used from the fight screen, as that round's action. --}}
+                <span class="tag" title="{{ Text::get('drugs.fight_only_hint', ['turns' => $item->drug->duration_turns]) }}">{{ Text::get('drugs.fight_only') }}</span>
+            @elseif ($item->isDrug())
                 <form method="POST" action="{{ route('inventory.take', $entry) }}">
                     @csrf
-                    <button type="submit" class="btn btn--sm btn--primary cut">
+                    <button type="submit" class="btn btn--sm btn--primary cut"
+                            @if ($item->consumable) title="{{ $item->consumable->describe() }}" @endif>
                         {{ Text::get('drugs.take') }}
                     </button>
                 </form>
             @endif
 
-            {{-- A drug can ride on the belt, ready to hand. The first free slot takes it, and the whole pile goes. --}}
-            @if ($item->isDrug())
+            {{-- A consumable (a medkit) is spent for what it does at once. Refused, and kept, if it would do nothing. --}}
+            @if ($item->consumable && ! $item->isDrug())
+                <form method="POST" action="{{ route('inventory.use', $entry) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm btn--primary cut" title="{{ $item->consumable->describe() }}">
+                        {{ Text::get('consumables.use') }}
+                    </button>
+                </form>
+            @endif
+
+            {{-- A drug or consumable can ride on the belt, ready to hand. The first free slot takes it, and the whole pile goes. --}}
+            @if ($item->isDrug() || $item->consumable)
                 <form method="POST" action="{{ route('inventory.belt', $entry) }}">
                     @csrf
                     <button type="submit" class="btn btn--sm cut {{ $entry->isBelted() ? 'btn--ghost' : '' }}">

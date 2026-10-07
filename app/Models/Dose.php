@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * dose: what you swallowed is what you swallowed, and a band that climbs an
  * hour later does not reach back into your blood.
  */
-#[Fillable(['character_id', 'item_id', 'potency', 'started_at', 'expires_at'])]
+#[Fillable(['character_id', 'item_id', 'potency', 'started_at', 'expires_at', 'turns_left'])]
 class Dose extends Model
 {
     protected $table = 'character_doses';
@@ -46,6 +46,6 @@ class Dose extends Model
     /** Still in effect. Expiry is filtered on read, never swept. */
     public function scopeInEffect(Builder $query, ?\DateTimeInterface $at = null): void
     {
-        $query->where('expires_at', '>', $at ?? now());
+        $query->where('expires_at', '>', $at ?? now())->where(static fn ($turns) => $turns->whereNull('turns_left')->orWhere('turns_left', '>', 0));
     }
 }

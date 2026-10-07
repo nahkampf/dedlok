@@ -570,12 +570,15 @@ return [
             'sedative' => 'Sedative',
             'psychedelic' => 'Psychedelic',
             'nootropic' => 'Nootropic',
+            'medical' => 'Medical',
         ],
 
         // On the item card, so what a dose costs is readable before it is
         // taken rather than after.
         'summary' => ':family · :minutes min',
         'take' => 'Take',
+        'fight_only' => 'Fights only',
+        'fight_only_hint' => 'Put it on your belt. In a fight, using it is your turn; it lasts :turns rounds.',
         'in_effect' => 'In effect for :when',
 
         'taken' => ':name taken.',
@@ -593,6 +596,7 @@ return [
         'refused' => [
             'not_a_drug' => 'That is not something you can take.',
             'not_owned' => 'You do not have that.',
+            'only_in_a_fight' => 'That can only be used in a fight, from your belt.',
         ],
     ],
 
@@ -1775,6 +1779,10 @@ return [
                 'nothing_to_attack' => 'Nothing to attack with at this range.',
                 'load' => 'Load :round',
                 'load_hint' => ':stock in your stash. Loading takes the whole turn.',
+                'use' => 'Use :item',
+                'use_hint' => 'From your belt (:quantity). Takes the whole turn, and works from the next round for :turns rounds.',
+                'in_effect' => 'In effect:',
+                'dose_left' => ':item, :turns left',
                 'create_distance' => 'Create distance',
                 'create_distance_hint' => 'A chance to win one or two steps of distance, up to :max. The turn is spent either way.',
                 'close_in' => 'Close in',
@@ -1810,12 +1818,18 @@ return [
                 'down' => 'You are on the floor.',
                 'busy' => 'You are in the middle of something else.',
                 'no_fight' => 'There is no fight to act in.',
+                'cannot_use' => 'You cannot use that now.',
             ],
             'log' => [
                 'shot' => ':attacker: :tier to the :slot for :parts.',
                 'shot_none' => ':attacker: :tier to the :slot. Nothing gets through.',
                 'part' => ':amount :type',
                 'brace' => ':who braces.',
+                'dose' => ':who uses :item.',
+                'dose_lasts' => 'It lasts :turns rounds.',
+                'dose_heals' => ':item restores :amount hit points.',
+                'dose_costs' => ':item costs :amount hit points.',
+                'dose_overdose' => 'Too much. Your body pays for it.',
                 'afflicted' => ':who is :status for :turns.',
                 'tick' => ':who takes :amount from :status.',
                 'stunned' => ':who is stunned and loses the turn.',
@@ -2010,12 +2024,39 @@ return [
             'took_off' => 'You take :item off your belt.',
             'refused' => [
                 'not_owned' => 'That is not yours.',
-                'not_beltable' => 'Only drugs go on a belt, for now.',
+                'not_beltable' => 'Only drugs and consumables go on a belt.',
                 'already_belted' => 'It is already on your belt.',
                 'not_belted' => 'It is not on your belt.',
                 'not_free' => 'Take it out of whatever it is in first.',
                 'belt_full' => 'Your belt is full.',
             ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Consumables
+    |--------------------------------------------------------------------------
+    |
+    | An item that does something once, at once, when a copy is used (a medkit): `App\Items\UseEffect`, applied by
+    | `App\Items\Consumer`. Not a drug, which is an effect that lasts.
+    */
+    'consumables' => [
+        'use' => 'Use',
+        'used' => 'You use :item. :effects',
+        'effects' => [
+            'heal_hitpoints' => [
+                'label' => 'Restores hit points',
+                'card' => 'Restores :amount hit points',
+                'done' => 'You recover :amount hit points.',
+            ],
+        ],
+        'refused' => [
+            'not_owned' => 'That is not yours.',
+            'not_usable' => 'That cannot be used.',
+            'not_free' => 'Take it out of whatever it is in first.',
+            'nothing_to_do' => 'It would do nothing for you right now.',
+            'in_a_fight' => 'You cannot do that in the middle of a fight.',
         ],
     ],
 
@@ -2118,6 +2159,7 @@ return [
         'doses_capacity' => ':used of :capacity',
         'doses_none' => 'Not currently in your system',
         'doses_at_the_line' => 'One more is too much',
+        'doses_risk' => 'You might be at risk for an overdose!',
         'doses_wears_off' => 'wears off :when',
         'doses_potency' => ':percent% strength',
         'doses_tolerance' => 'Tolerance',
@@ -2329,6 +2371,7 @@ return [
             'program_threads' => 'program threads',
             'coop_slots' => 'co-op slots',
             'synaptic_regen' => 'SI regeneration',
+            'hitpoints_regen' => 'HP regeneration (per hour)',
 
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
             // The key is the tags in alphabetical order, because a set has no
@@ -3646,7 +3689,7 @@ return [
                 'weapon_accuracy' => 'Accuracy',
                 'weapon_accuracy_hint' => 'A signed modifier to the shooter\'s aim with this weapon.',
                 'weapon_rate' => 'Shots a round',
-                'weapon_rate_hint' => '1 for anything that is not an automatic firearm.',
+                'weapon_rate_hint' => '1 for anything that is not an automatic firearm. A close weapon (unarmed, blade, blunt) may leave it blank.',
                 'weapon_magazine' => 'Magazine',
                 'weapon_magazine_hint' => 'Rounds before a reload. Firearms only: leave blank for a blade, a fist or a grenade.',
                 'weapon_calibre' => 'Calibre',
@@ -3671,9 +3714,18 @@ return [
                 'ammo_profile_hint' => 'How a hit with this round splits across damage types, adding up to exactly 100: a plain round is 100 penetrating, an incendiary one adds a thermal share.',
                 'armour_slots' => 'Covers',
                 'armour_slots_hint' => 'Where this piece is worn: Head, Torso, Arms and Legs (arms and legs are one slot each, covering both sides). Tick none and it is not armour; tick several and it is a set that takes them all. Its resistances (add them in the effects above, against the damage types) count only for a hit that lands on a part ticked here.',
+                // The consumable panel: what using one copy does, once.
+                'use_heal_hitpoints' => 'Restores hit points',
+                'use_heal_hitpoints_hint' => 'Using one copy restores this many hit points at once, never past the maximum as it stands. Leave it blank and the item is not a consumable. A medkit is this; a drug is something that lasts. A drug can carry it too: taking the dose then also restores this at once, and tolerance does not weaken it.',
                 'drug_family_hint' => 'Giving it a family makes the item a drug. The books are kept per family, so this decides which figures a dose moves and which withdrawal it answers.',
                 'duration_minutes' => 'Duration (minutes)',
-                'duration_minutes_hint' => 'How long one dose is in effect.',
+                'duration_minutes_hint' => 'How long one dose is in effect. Not used by a fight-only drug.',
+                'fight_only' => 'Only usable in a fight',
+                'fight_only_hint' => 'Goes on the belt and is used from the fight screen as that round\'s action. It lasts a number of rounds instead of minutes, and still counts toward tolerance, addiction and overdose.',
+                'duration_turns' => 'Duration (rounds)',
+                'duration_turns_hint' => 'Rounds of a fight one dose lasts. Fight-only drugs only.',
+                'turn_hitpoints' => 'Hit points each round',
+                'turn_hitpoints_hint' => 'Restored at the start of each round (positive, weakened by tolerance) or lost (negative). 0 for none. Fight-only drugs only.',
                 'addictive' => 'Addictive',
                 'tolerance_gain' => 'Tolerance',
                 'addictive_hint' => 'How far one dose drives the addiction figure up. Zero is a drug nobody gets hooked on.',
@@ -3717,6 +3769,7 @@ return [
                 'mission' => 'Work',
                 'hardware' => 'Deck hardware',
                 'software' => 'Software',
+                'consumable' => 'Consumable',
                 'drug' => 'Drug',
                 'armour' => 'Armour',
                 'weapon' => 'Weapon',
@@ -3749,6 +3802,26 @@ return [
             'program' => [
                 'filter' => 'Program',
                 'any' => 'Any program',
+            ],
+            'types' => [
+                'filter' => 'Type',
+                'any' => 'Any type',
+                'hardware' => 'Deck hardware',
+                'any_hardware' => 'Any deck hardware',
+                'software' => 'Software',
+                'any_software' => 'Any software',
+                'drug' => 'Drugs',
+                'any_drug' => 'Any drug',
+                'fight_only' => 'Fight-only drugs',
+                'gear' => 'Gear',
+                'armour' => 'Armour',
+                'weapon' => 'Weapon',
+                'ammunition' => 'Ammunition',
+                'other' => 'Other',
+                'consumable' => 'Consumable',
+                'implant' => 'Implant',
+                'imprint' => 'Eidetic imprint',
+                'plain' => 'Plain item (none of the above)',
             ],
             'program_summary' => ':qflops qF · :memory QB · :storage QB stored',
             'run_only' => 'run only',
@@ -4041,6 +4114,7 @@ return [
         | keeps Laravel's own message, which is already about the right field.
         */
         'validation' => [
+            'not_addictive' => 'A :family drug cannot be addictive: leave Addictive at 0.',
             'gear_exclusive' => 'Armour, a weapon and ammunition are each only that: not each other, and not deck hardware, an imprint or an implant. (Plating that works everywhere is an implant; armour works on the parts it covers.)',
             'gear_no_effects' => 'A weapon or a round carries no effects of its own: nothing reads them, so they would do nothing. What it does is its damage and profile; what makes a fighter better is a skill, an implant or a drug.',
             'profile_unknown_type' => 'A profile names only damage types: blunt, slashing, penetrating, fragmentation, electrical, thermal, chemical and neural.',

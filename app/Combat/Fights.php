@@ -9,6 +9,7 @@ use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
 use App\City\EncounterRunner;
 use App\Combat\Fight\Action;
+use App\Combat\Fight\ActionKind;
 use App\Combat\Fight\Arm;
 use App\Combat\Fight\CharacterMitigation;
 use App\Combat\Fight\CombatantBuilder;
@@ -18,13 +19,18 @@ use App\Combat\Fight\FightState;
 use App\Combat\Fight\NpcMitigation;
 use App\Combat\Fight\Result;
 use App\Combat\Fight\Side;
+use App\Drugs\DrugTaker;
+use App\Items\UseEffect;
 use App\Models\Character;
 use App\Models\CityActivity;
+use App\Models\Dose;
 use App\Models\Fight;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Npc;
+use App\Support\Text;
 use Closure;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -138,10 +144,38 @@ final class Fights
                 return FightRefusal::NoFight;
             }
 
+            // A drug is used from the belt, and only a fight-only one: checked before anything moves, so a refusal
+            // costs nothing and the round is not played.
+            $use = null;
+
+            if ($action->kind === ActionKind::Use) {
+                $use = $this->usable($locked, (int) $action->round);
+
+                if ($use === null) {
+                    return FightRefusal::CannotUse;
+                }
+            }
+
+            // The player's side is rebuilt below, so a weapon that is not the one this fight began with would be
+            // picked up silently: it is loud instead, and the whole round is rolled back.
+            if ((int) $fight->ranged_row_id !== (int) $locked->equipped_ranged_id) {
+                throw new \LogicException('The ranged weapon this fight began with is no longer in hand.');
+            }
+
+            if ((int) $fight->melee_row_id !== (int) $locked->equipped_melee_id) {
+                throw new \LogicException('The close weapon this fight began with is no longer in hand.');
+            }
+
             $before = $fight->snapshot();
 
-            // Overwrite the player's side from the real body: the one source of truth.
-            $before = $before->with(Side::A, $before->a->with(hp: (int) $locked->current_hitpoints, si: (int) $locked->current_synaptic_integrity));
+            // What the doses in effect do at the START of the round, before anybody acts: restore or cost hit points.
+            $before = $before->withLog($this->tickDoses($locked, $before->round));
+
+            // Overwrite the player's side from the real body: the one source of truth. Its aim, damage, defence and
+            // pursuit are resolved afresh, every round, because a dose changes them mid-fight; only what the fight
+            // itself put on the player (statuses from the opponent's riders) is kept. Hit points and SI are the body's.
+            $body = CombatantBuilder::forCharacter($locked);
+            $before = $before->with(Side::A, $body->withStatuses($before->a->statuses));
 
             $after = $this->engine->round(
                 $before,
@@ -151,6 +185,16 @@ final class Fights
             );
 
             $this->applyToCharacter($locked, $fight, $before, $after);
+
+            // A fight still going: the doses in effect lose a round, and then (so the new one starts with all its
+            // rounds) the one the player used this turn is taken.
+            if ($after->result === null) {
+                $this->ageDoses($locked);
+
+                if ($use !== null) {
+                    $after = $this->takeDose($locked, $use, $after);
+                }
+            }
 
             $effects = [];
             $settled = [];
@@ -183,7 +227,7 @@ final class Fights
      * What a screen needs to draw the buttons, from the stored state: every chance quoted, and which
      * actions are on offer. Reads only; the numbers are the ones the next roll will use.
      *
-     * @return array{state: FightState, attack: list<float>, flight: float, closing: float, can_attack: bool, can_create_distance: bool, can_close_in: bool, can_disengage: bool, loads: list<array{key: string, name: string, stock: int}>}
+     * @return array{state: FightState, attack: list<float>, flight: float, closing: float, can_attack: bool, can_create_distance: bool, can_close_in: bool, can_disengage: bool, loads: list<array{key: string, name: string, stock: int}>, uses: list<array{id: int, name: string, turns: int, hitpoints: int, quantity: int}>, doses: list<array{name: string, turns: int}>}
      */
     public function options(Fight $fight): array
     {
@@ -207,7 +251,109 @@ final class Fights
             'can_attack' => $this->engine->canAttack($state, Side::A),
             'can_create_distance' => $this->engine->legal($state, Side::A, Action::createDistance()),
             'loads' => $loads,
+            'uses' => $this->belted((int) $fight->character_id)->map(static fn (InventoryItem $row): array => [
+                'id' => (int) $row->getKey(),
+                'name' => (string) $row->item?->displayName(),
+                'turns' => (int) $row->item?->drug?->duration_turns,
+                'hitpoints' => (int) $row->item?->drug?->turn_hitpoints,
+                'quantity' => (int) $row->quantity,
+            ])->values()->all(),
+            'doses' => Dose::query()->where('character_id', $fight->character_id)->where('turns_left', '>', 0)->with('item')->get()
+                ->map(static fn (Dose $dose): array => ['name' => (string) $dose->item?->displayName(), 'turns' => (int) $dose->turns_left])->all(),
         ];
+    }
+
+    /**
+     * The fight-only drugs on the belt: the only things a fight can use. Not the stash (you cannot reach into it
+     * mid-fight) and not an ordinary drug (those are taken outside one).
+     *
+     * @return Collection<int, InventoryItem>
+     */
+    private function belted(int $characterId): Collection
+    {
+        return InventoryItem::query()
+            ->where('character_id', $characterId)
+            ->whereNotNull('belt_slot')
+            ->where('quantity', '>=', 1)
+            ->whereHas('item.drug', static fn ($query) => $query->where('fight_only', true))
+            ->with('item.drug')
+            ->orderBy('belt_slot')
+            ->get();
+    }
+
+    private function usable(Character $character, int $rowId): ?InventoryItem
+    {
+        return $this->belted((int) $character->getKey())->firstWhere('id', $rowId);
+    }
+
+    /**
+     * Each dose in effect, at the start of a round: hit points restored (scaled by the dose's potency, so tolerance
+     * costs the benefit here too) or lost (the drug's own price, flat and not mitigable like an overdose's injury).
+     *
+     * @return list<array{round: int, text: string, tone: string}>
+     */
+    private function tickDoses(Character $character, int $round): array
+    {
+        $lines = [];
+        $doses = Dose::query()->where('character_id', $character->getKey())->where('turns_left', '>', 0)->with('item.drug')->orderBy('id')->get();
+
+        foreach ($doses as $dose) {
+            $amount = (int) $dose->item?->drug?->turn_hitpoints;
+            $name = (string) $dose->item?->displayName();
+
+            if ($amount > 0) {
+                $gained = $character->recover('current_hitpoints', (int) round($amount * (float) $dose->potency));
+                $lines[] = ['round' => $round, 'text' => Text::get('combat.fight.log.dose_heals', ['item' => $name, 'amount' => $gained]), 'tone' => 'ok'];
+            } elseif ($amount < 0) {
+                $character->takeDamage('current_hitpoints', -$amount);
+                $lines[] = ['round' => $round, 'text' => Text::get('combat.fight.log.dose_costs', ['item' => $name, 'amount' => -$amount]), 'tone' => 'crit'];
+            }
+        }
+
+        return $lines;
+    }
+
+    /** A round has passed: every fight dose has one fewer, and a spent one is gone. */
+    private function ageDoses(Character $character): void
+    {
+        $rows = Dose::query()->where('character_id', $character->getKey())->where('turns_left', '>', 0);
+        $rows->decrement('turns_left');
+
+        Dose::query()->where('character_id', $character->getKey())->where('turns_left', 0)->delete();
+    }
+
+    /**
+     * Take the belted drug the player spent this turn on, through `DrugTaker` (books, tolerance, overdose and the
+     * instant half all apply), and say so. The body has changed, so the state's hit points follow it; a body that did
+     * not survive the dose ends the fight as a loss, and `finish()` asks the floor.
+     */
+    private function takeDose(Character $character, InventoryItem $row, FightState $after): FightState
+    {
+        $round = max(1, $after->round - 1);
+        $name = (string) $row->item?->displayName();
+        $drug = $row->item?->drug;
+        $result = app(DrugTaker::class)->take($character, $row, inFight: true);
+
+        if (! $result->succeeded()) {
+            return $after->withLog([['round' => $round, 'text' => $result->refusal->message(), 'tone' => 'crit']]);
+        }
+
+        $said = [Text::get('combat.fight.log.dose', ['who' => $after->a->name, 'item' => $name])];
+
+        foreach ($result->instant as $kind => $amount) {
+            $said[] = UseEffect::from($kind)->done($amount);
+        }
+
+        $said[] = Text::get('combat.fight.log.dose_lasts', ['turns' => (int) $drug?->duration_turns]);
+        $lines = [['round' => $round, 'text' => implode(' ', $said), 'tone' => 'ok']];
+
+        if ($result->overdosed()) {
+            $lines[] = ['round' => $round, 'text' => Text::get('combat.fight.log.dose_overdose'), 'tone' => 'crit'];
+        }
+
+        $after = $after->with(Side::A, $after->a->with(hp: (int) $character->current_hitpoints, si: (int) $character->current_synaptic_integrity))->withLog($lines);
+
+        return $after->a->down() ? $after->ended(Result::ADown) : $after;
     }
 
     /**
@@ -283,6 +429,18 @@ final class Fights
     private function finish(Character $character, Fight $fight, FightState $state, array $effects, array $settled): void
     {
         $fight->forceFill(['result' => $state->result, 'resolved_at' => now()]);
+
+        // Fight-only doses end with the fight, however it ended.
+        Dose::query()->where('character_id', $character->getKey())->whereNotNull('turns_left')->delete();
+
+        // And the clock stopped while it lasted: every ordinary dose that was in effect when it opened (or ran out
+        // during it) gets back the time the fight took, so the pause is real once the fight is over.
+        $took = max(0, (int) $fight->created_at->diffInSeconds(now(), absolute: true));
+
+        if ($took > 0) {
+            Dose::query()->where('character_id', $character->getKey())->whereNull('turns_left')->where('expires_at', '>', $fight->created_at)
+                ->get()->each(static fn (Dose $dose) => $dose->forceFill(['expires_at' => $dose->expires_at->addSeconds($took)])->save());
+        }
         $character->forceFill(['current_fight_id' => null])->save();
 
         if ($state->result === Result::ADown) {

@@ -41,26 +41,17 @@
                     </select>
                 </div>
 
-                <div class="field" style="flex:1 1 min(180px, 100%)">
-                    <label class="field__label" for="hardware">{{ Text::get('admin.items.hardware.filter') }}</label>
-                    <select class="select" id="hardware" name="hardware">
-                        <option value="">{{ Text::get('admin.items.hardware.any') }}</option>
-                        @foreach (Hardware::cases() as $kind)
-                            <option value="{{ $kind->value }}" @selected(($filters['hardware'] ?? '') === $kind->value)>
-                                {{ $kind->label() }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label class="field__label" for="program">{{ Text::get('admin.items.program.filter') }}</label>
-                    <select class="select" id="program" name="program">
-                        <option value="">{{ Text::get('admin.items.program.any') }}</option>
-                        @foreach ($programKinds as $kind)
-                            <option value="{{ $kind->value }}" @selected(($filters['program'] ?? '') === $kind->value)>
-                                {{ $kind->label() }}
-                            </option>
+                {{-- Every kind of item in one list. The old ?hardware= and ?program= URLs still work. --}}
+                <div class="field" style="flex:1 1 min(220px, 100%)">
+                    <label class="field__label" for="type">{{ Text::get('admin.items.types.filter') }}</label>
+                    <select class="select" id="type" name="type">
+                        <option value="">{{ Text::get('admin.items.types.any') }}</option>
+                        @foreach ($typeGroups as $group => $options)
+                            <optgroup label="{{ $group }}">
+                                @foreach ($options as $value => $label)
+                                    <option value="{{ $value }}" @selected(($filters['type'] ?? '') === $value)>{{ $label }}</option>
+                                @endforeach
+                            </optgroup>
                         @endforeach
                     </select>
                 </div>

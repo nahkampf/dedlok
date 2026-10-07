@@ -35,6 +35,11 @@ final readonly class Action
         return new self(ActionKind::Disengage);
     }
 
+    public static function use(int $rowId): self
+    {
+        return new self(ActionKind::Use, (string) $rowId);
+    }
+
     public static function brace(): self
     {
         return new self(ActionKind::Brace);

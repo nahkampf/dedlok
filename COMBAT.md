@@ -65,12 +65,15 @@ engine's own.
    **no — location matters through armour only**, with a per-location multiplier in config at 1.0
    as a later knob.
 2. **Cover.** *Dropped.* With only a couple of rounds at range there is nothing for it to do.
-3. **HP regeneration.** Nothing mends HP except clinics. Default: **leave it that way**, so a lost
-   fight has a price.
+3. **HP regeneration.** Nothing mends HP by default. Clinics and medkits (`App\Items\Consumer`) restore it, and an
+   effect can carry `hitpoints_regen` (points per hour, zero for everybody) to trickle it back. For everybody else it
+   stays nothing, so a lost fight has a price.
 4. **PvP.** Initiative is decided; consent and the bounty collection `characters.bounty` waits for
    are not. Default: **the engine is symmetric now (`Combatant`); the opening is later**.
 5. **Heat from violence.** Default: none (heat is a cyberspace quantity).
-6. **Using items mid-fight** (stims, healing; `DrugTaker`). Default: later.
+6. **Using items mid-fight** (stims, healing; `DrugTaker`). *Partly built (2026-10-07):* a **fight-only drug** (a setting on a drug
+   row) is used from the belt as the round's whole action, works from the next round for `duration_turns` rounds, and can restore
+   or cost hit points each round. Ordinary drugs and consumables (medkits) in a fight: still later.
 7. **The numbers**: the tier `spread`, opponent HP and damage by grade, fight length — set with
    `fight:simulate`.
 8. **Skill balance**, deferred until real NPCs exist: the grants are authored, the numbers are not measured.
@@ -574,7 +577,7 @@ to the `DownedCause` effects the waiting screen reads), then calls the waiting r
 
 ## Not decided
 
-- Natural HP regeneration, medkits, items mid-fight; street heat; group fights; whether carrying a
+- Items mid-fight (a medkit or a drug used inside a fight; `Consumer` refuses it, see TODO.md); street heat; group fights; whether carrying a
   weapon is legal by district; an aimed shot at a chosen body part.
 - More riders (a neural scramble, bleeding) and resisting a status directly; whether poison
   lingers after a fight as a real-time status.

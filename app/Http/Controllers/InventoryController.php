@@ -20,6 +20,9 @@ use App\Equipment\BeltEquipper;
 use App\Equipment\BeltRefusal;
 use App\Inventory\ItemPlacer;
 use App\Inventory\SkillInjector;
+use App\Items\Consumer;
+use App\Items\UseEffect;
+use App\Items\UseRefusal;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -134,6 +137,29 @@ class InventoryController extends Controller
             : back()->with('status', Text::get($worn ? 'combat.armour.took_off' : 'combat.armour.put_on', ['item' => $name]));
     }
 
+    /** Use one copy of a consumable: spent, and what it does lands at once. */
+    public function consume(Request $request, InventoryItem $entry, Consumer $consumer): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        abort_unless($entry->character_id === $character->id, 404);
+
+        $name = $entry->item?->displayName() ?? '';
+        $result = $consumer->use($character, $entry);
+
+        if ($result instanceof UseRefusal) {
+            return back()->with('error', $result->message());
+        }
+
+        $done = [];
+
+        foreach ($result as $kind => $amount) {
+            $done[] = UseEffect::from($kind)->done($amount);
+        }
+
+        return back()->with('status', Text::get('consumables.used', ['item' => $name, 'effects' => implode(' ', $done)]));
+    }
+
     /** Put a drug on the belt, or take it off. One route for both directions, like `wear`. */
     public function belt(Request $request, InventoryItem $entry, BeltEquipper $belt): RedirectResponse
     {
@@ -220,6 +246,11 @@ class InventoryController extends Controller
             return back()->with('error', $result->refusal->message());
         }
 
+        // What a consumable half did at once ("You recover 12 hit points."), added to whichever sentence follows.
+        $instant = collect($result->instant)
+            ->map(fn (int $amount, string $kind): string => UseEffect::from($kind)->done($amount))
+            ->implode(' ');
+
         if ($result->overdosed()) {
             $overdose = $result->overdose;
 
@@ -231,15 +262,15 @@ class InventoryController extends Controller
                     'points' => $this->points($overdose->injury),
                     'hp' => $overdose->hitpoints,
                 ],
-            ));
+            ).($instant === '' ? '' : ' '.$instant));
         }
 
-        return back()->with('status', $result->potency < 1.0
+        return back()->with('status', ($result->potency < 1.0
             ? Text::get('drugs.taken_weakened', [
                 'name' => $name,
                 'percent' => (int) round($result->potency * 100),
             ])
-            : Text::get('drugs.taken', ['name' => $name]));
+            : Text::get('drugs.taken', ['name' => $name])).($instant === '' ? '' : ' '.$instant));
     }
 
     /** Half a point reads as 0.5 and two points as 2, never as 2.0. */

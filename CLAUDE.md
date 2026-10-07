@@ -866,12 +866,11 @@ The sheet no longer carries an equipment panel.
   class already picks its hand, and `equipped_ranged_id` / `equipped_melee_id` are unchanged.
 - **The belt is three slots (`config/equipment.php`) on `inventory_items.belt_slot`**, written only by
   `App\Equipment\BeltEquipper`. A slot holds one ROW, so a pile of stims is one slot and the whole pile goes on. Only
-  drugs may be belted today. A belted row has no stack key (like a running program) so it does not merge with the loose
+  drugs and consumables may be belted today. A belted row has no stack key (like a running program) so it does not merge with the loose
   pile; taking it off merges it back. A belted row is on the person: it cannot be listed, sold or put in a container.
-- **NOT BUILT: using a belted drug in a fight.** It was chosen, and it is its own piece of work: the fight engine
-  snapshots the player's aim, damage and defence when a fight opens, so a stimulant taken mid-fight would not touch them
-  without rebuilding that snapshot each round (COMBAT.md lists items mid-fight as later). Until then the belt holds drugs
-  and does nothing with them.
+- **A FIGHT-ONLY drug IS usable from the belt in a fight** (see *Drugs*): `ActionKind::Use`, the row id in `Action::$round`.
+  **An ordinary belted drug and a consumable still are NOT** (`Fights` refuses them as `CannotUse`, `Consumer` as `InAFight`):
+  that stays unbuilt, and the belt holds them for nothing yet.
 
 ### The wallet
 
@@ -1028,6 +1027,32 @@ implant's; the row says which family, how long, and what it costs the books.
   psychedelic, nootropic. **A new family is a case and a withdrawal**: each needs its own
   `config/effects.php` definition, because coming off a stimulant is not coming off an
   opiate and there is nothing generic to say about either.
+- **`Medical` is the sixth family (2026-10-07): treatment that acts for a while.** A dose that carries `hitpoints_regen`
+  (like Rewire carries `synaptic_regen`) is a drug and not a `consumables` row, because a dose in effect is exactly what
+  `character_doses` is for. Decided: **it overdoses like a stimulant** (`drugs.overdose.families.medical`: 4 hit points per
+  dose over the line, the heart stops at 3 over), **it is never addictive** (`Family::addicts()`: `DrugLedger::record()` never
+  raises its addiction whatever the row says, `reconcile()` returns at once so no `effects.withdrawal_medical` exists or is
+  needed, and the item editor refuses a non-zero `addictive` on one), and tolerance is per drug as for every other family.
+- **A drug may be FIGHT-ONLY** (`drugs.fight_only`, 2026-10-07): a setting on the drug and not a second kind, so it keeps its
+  family, books, tolerance and overdose. Its length is `duration_turns` (rounds; `duration_minutes` is 0 and unread), it may
+  carry `turn_hitpoints` (signed: restored at the start of each round, scaled by the dose's potency, or lost as the drug's
+  price, flat and not mitigable like an overdose's injury) and any effect rows and a consumable half like any drug.
+  `DrugTaker::take()` refuses it outside a fight (`DoseRefusal::OnlyInAFight`; the stash card shows a *Fights only* tag
+  instead of Take). **Using one is the round's whole action** (`ActionKind::Use`, belted rows only): the engine just spends the
+  turn, then `Fights::act()` takes the dose through `DrugTaker` with `inFight: true`, so the enemy acts first and the dose
+  works **from the next round**. The dose is a `character_doses` row with `turns_left` (NULL = an ordinary dose); it is in
+  effect while `turns_left > 0` (`Dose::scopeInEffect()` and `ActiveDoses`), counts down once a round after the round is
+  played, and is deleted when the fight ends however it ended (`expires_at` is a one-day backstop only). **The player's
+  side of the snapshot is REBUILT from the character every round** (aim, damage, defence, pursuit; `CombatantBuilder::
+  forCharacter()`, keeping only the opponent's statuses), which is how a dose's stat effects reach a fight that began
+  before it — and why a weapon that is no longer the one the fight began with throws. **In a fight `DrugTaker` never asks
+  the waiting room**: an overdose or a flatline leaves the hit points at 0 and `Fights` ends the fight as a loss
+  (`Result::ADown`), whose `finish()` asks the floor.
+- **THE CLOCK STOPS IN A FIGHT** (2026-10-07), so an open fight cannot be waited in: `characters:regenerate` (SI, HP, the mend)
+  and `drugs:withdraw` skip a character with `current_fight_id`; `ActiveDoses` judges an ordinary dose as at the moment the
+  fight opened (so neither its benefit lapses nor its cost is waited out), and `Fights::finish()` pushes every such dose's
+  `expires_at` forward by the fight's length. **Only fights**: a cyberspace run is real-time by design (scans, lockdowns, hunters)
+  and its clocks are NOT paused. Overdose capacity and `hasInThem()` still read the real clock (`scopeInEffect`).
 - **The books are per (character, family) and a missing row means clean.** Somebody can be
   deep into opiates and clean of stimulants. `App\Drugs\DrugLedger` is the only writer of
   `character_drug_use`, and the only thing that writes or clears a withdrawal.
@@ -1076,6 +1101,41 @@ implant's; the row says which family, how long, and what it costs the books.
 - **`App\Drugs\DrugEditor` is the only writer of the `drugs` table** and clears the side an
   item stopped being, exactly as `ProgramEditor` does. The item editor has a Drug panel and
   `ItemRequest` refuses a drug that is also software, deck hardware or an imprint.
+
+### Consumables
+
+**A consumable is an item with a `consumables` row** — the same shape a drug, software and a weapon have — and it does
+something ONCE, AT ONCE, when a copy is used: a medkit. **It is not a drug and it is not a modifier**: a drug is an effect
+that lasts and is read by the resolver while it lasts, and the effects editor's targets are resolved stats, which is
+why it had nothing to offer a medkit. A consumable changes a STORED number a single time.
+
+- **`App\Items\UseEffect` is a fixed vocabulary**; `heal_hitpoints` is the first (restores current hit points, via
+  `Character::recover()`, so never past the maximum as it stands — mending an injury is a clinic's job). A new kind is a
+  case, a label, and an arm of `would()` and `apply()`. `consumables.effects` is a list of `{kind, amount}`.
+- **`App\Items\Consumer` is the only thing that uses one**, in one transaction with the character locked: the copy is
+  spent (the last takes its row) and the effects land together. **A use that would do nothing is REFUSED and the copy
+  kept** (`UseRefusal::NothingToDo`, as a service that would do nothing is by `LoyaltyExchange`), so a medkit is never
+  wasted at full health. It refuses a stranger's row, a non-consumable, a copy that is not to hand (in a container, fitted),
+  and **a live fight** (`InAFight`: COMBAT.md lists items mid-fight as later).
+- **`App\Items\ConsumableEditor` is the only writer of the table and clears the side an item stopped being.** The item
+  editor has a Consumable panel with one whole-number field per kind (blank is none; zero and fractions are errors), and
+  `ItemRequest` makes a consumable none of the other kinds (software, hardware, imprint, implant, armour, weapon,
+  ammunition) except a drug.
+- **A drug may ALSO be a consumable** (decided 2026-10-07, any family): a trauma drip that heals 15 now and mends for ten
+  minutes. It is TAKEN and never used: `DrugTaker` applies the instant effects in the dose's transaction (on the locked
+  character, after the books move and BEFORE any overdose harm, so a lethal dose is not undone by its own medicine), the card
+  offers only *Take*, `Consumer` refuses it as `NotUsable`, and `DoseResult::$instant` lets the flash say what was restored.
+  **Tolerance never touches the instant part** (it scales only what a dose does while it lasts), and at full health the dose
+  is still taken, the instant part simply restoring 0 (`NothingToDo` is for pure consumables).
+- **Where it shows up:** the stash card (*Use*, with what it does in the button's title, and *Put on belt*), the route
+  `inventory.use`, the belt (consumables go on it like drugs) and the Equipment screen's belt dialog.
+- **HP does not regenerate on its own** unless an effect carries `hitpoints_regen` (below): clinics and medkits are the way back.
+- **`hitpoints_regen` is points per HOUR**, zero for everybody, a stat any effect row can carry (a dose, an implant, a skill,
+  a piece of armour; offered in the effects editor as *HP regeneration (per hour)*). Per hour and not per minute because
+  the smallest whole rate is the smallest grant there can be, and a point a minute is sixty an hour. `characters:regenerate`
+  (every minute) credits each minute's share: `floor(rate × (m+1) / 60) − floor(rate × m / 60)` for m the minute since the
+  epoch, so over any hour it is exactly `rate`, spread evenly, with no stored remainder. Like the SI trickle it heals from zero,
+  and there is no baseline mend for hit points: nobody gets any for free.
 
 ### Implants
 
@@ -1338,6 +1398,8 @@ review.
 `data-board-min`/`max` carry the clamp bounds from `BoardLayout`. It arranges the sockets
 **as saved**, not as the counters currently read — the placement ring lives in PHP and a
 second copy in `ui-kit.js` would be a second answer. Change counts, save, then arrange.
+
+**The items list has one Type filter** (`?type=`, a value is `kind` or `kind:detail`): deck hardware (and each piece), software (and each kind), drugs (any, fight-only, or one family), armour, weapon, ammunition, consumable, implant, imprint, and *plain* (none of those). `ItemController::typeGroups()` builds the dropdown and `ofType()` narrows; the old `?hardware=` and `?program=` URLs still work. A new kind of item is a line in each.
 
 **The item editor writes three tables** — the row, plus `deck_slots` if it is a deck, plus
 `deck_modules` if it is a module. `ItemController` wraps both in a transaction and delegates

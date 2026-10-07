@@ -144,6 +144,23 @@ final class CharacterSheetTest extends TestCase
             ->assertDontSeeText(Family::Opiate->label());
     }
 
+    /** One more dose would overdose: a triangle with the warning, and none while there is room. */
+    public function test_the_sheet_warns_when_one_more_dose_would_overdose(): void
+    {
+        $item = Item::factory()->create(['container' => 'physical', 'name' => 'Redline']);
+        Drug::query()->create(['item_id' => $item->id, 'family' => Family::Stimulant, 'duration_minutes' => 60, 'addictive' => 0, 'tolerance_gain' => 0]);
+        $dose = fn () => Dose::query()->create([
+            'character_id' => $this->character->id, 'item_id' => $item->id, 'potency' => 1.0,
+            'started_at' => now(), 'expires_at' => now()->addHour(),
+        ]);
+
+        $dose();
+        $this->visit()->assertDontSee('class="warn-icon', false);
+
+        $dose();   // two of a possible two
+        $this->visit()->assertSee('class="warn-icon', false)->assertSee('data-tip="'.Text::get('character.doses_risk').'"', false);
+    }
+
     public function test_a_clean_character_has_no_dose_panel(): void
     {
         $this->visit()->assertOk()->assertDontSeeText(Text::get('character.doses_heading'));

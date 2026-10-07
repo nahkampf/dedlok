@@ -176,6 +176,22 @@ class Item extends Model
     }
 
     /**
+     * The consumable half of this item, if it has one: what using a copy does, once. An item is a consumable
+     * because it has this row.
+     *
+     * @return HasOne<Consumable, $this>
+     */
+    public function consumable(): HasOne
+    {
+        return $this->hasOne(Consumable::class);
+    }
+
+    public function isConsumable(): bool
+    {
+        return $this->consumable()->exists();
+    }
+
+    /**
      * The armour half of this item, if it has one. An item is armour because it has this row.
      *
      * @return HasOne<Armour, $this>
