@@ -993,6 +993,14 @@ writer.
 **never by the inbox poll** (`notifications.unread`: an open tab polls every five seconds whether anyone is there or not).
 Accounts that existed before the column are NULL until their next visit, so the active figure starts low and fills in.
 
+### Tasks & Missions
+
+**A rail item and a screen (`/tasks`, `TasksController`) with three headings.** *Missions* lists the exchange jobs the character has
+ACCEPTED and not yet finished (`Mission::accepted()`: failed, completed and voided are history, an offer is the desk's to show),
+soonest deadline first, each as the desk's own `<x-mission-card>` with `:actions="false"` (no buttons: a job is handed in at the desk
+it came from) and `:desk="true"` (who it is for, the agent, the desk's address). *Journal* and *Tasks* (quests) read "Not yet
+implemented." until they are designed. The rail glyph is U+25C7, one already proved to render.
+
 ### The Discord invitation
 
 **A modal that opens by itself, once, on a new account's first sign-in** (`<x-discord-invite>` in `layouts/app.blade.php`, shown while

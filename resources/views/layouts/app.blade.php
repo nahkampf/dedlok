@@ -102,6 +102,14 @@
             </a>
 
 
+            {{-- Tasks & Missions: the jobs you have taken (and, later, the journal and quests). U+25C7, the hollow diamond,
+                 a glyph already proved to render (the admin's empty states and the player-message category use it). --}}
+            <a class="dock__item" href="{{ route('tasks.index') }}"
+               @if (request()->routeIs('tasks.*')) aria-current="page" @endif>
+                <span class="dock__icon" aria-hidden="true">&#9671;</span>
+                <span class="dock__label">{{ Text::get('ui.nav.tasks') }}</span>
+            </a>
+
             {{-- Somewhere you go, so it is in the rail rather than on a card
                  somewhere. U+2696 is the scales, from the same Miscellaneous
                  Symbols block as the star, the wheel and the cog above, with

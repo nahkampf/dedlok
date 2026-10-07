@@ -13,6 +13,11 @@
     // The addresses of the scan files in hand. A survey is handed in as files, so each of its systems says whether the
     // one it needs is already held.
     'held' => [],
+    // Buttons: Complete and Abandon / Accept and Decline. Off where the card is only being READ (Tasks & Missions): a job is
+    // handed in at the desk it came from.
+    'actions' => true,
+    // Say where it came from: who it is for, their agent and the desk's address.
+    'desk' => false,
 ])
 
 @php($action = $mission->action)
@@ -33,6 +38,16 @@
 
     <div class="card__bd stack" style="--gap:var(--s-3)">
         <p class="micro" style="margin:0;color:var(--ink-2);max-width:70ch">{{ $action->description() }}</p>
+
+        {{-- WHERE IT CAME FROM, when the card is not drawn at that desk: the one it is for, the agent, and where the desk is. --}}
+        @if ($desk)
+            <span class="row row--wrap micro" style="--gap:var(--s-2);color:var(--ink-3)">
+                <span>{{ Text::get('tasks.from', ['entity' => $mission->entity?->name, 'agent' => $mission->exchange?->agent]) }}</span>
+                @if ($mission->exchange?->system)
+                    <span>· {{ Text::get('tasks.desk') }} <x-address :address="$mission->exchange->system->address" /></span>
+                @endif
+            </span>
+        @endif
 
         {{-- WHAT IT PAYS, and what failing costs beside it. A player choosing
              between two jobs is choosing between two evenings, and the second
@@ -104,6 +119,7 @@
         @endif
     </div>
 
+    @if ($actions)
     <div class="card__ft">
         @if ($active)
             <form method="POST" action="{{ route('missions.complete', $mission) }}">
@@ -127,4 +143,5 @@
             </form>
         @endif
     </div>
+    @endif
 </div>
