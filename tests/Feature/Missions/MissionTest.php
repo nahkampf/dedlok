@@ -138,6 +138,62 @@ final class MissionTest extends TestCase
         $this->assertNotNull($taken->expires_at, 'the window is measured from accept, never from the offer');
     }
 
+    /** The job is written down in the inbox: what, where, what it pays and when it is due. */
+    public function test_accepting_sends_the_job_to_the_inbox_with_its_addresses_and_due_date(): void
+    {
+        $offer = $this->anOffer(MissionAction::Burn);
+        $addresses = $offer->targets->pluck('address')->all();
+
+        $taken = $this->ledger()->accept($this->character, $offer);
+
+        $message = Notification::query()->sole();
+        $this->assertSame(Category::Mission, $message->category);
+        $this->assertStringContainsString(MissionAction::Burn->label(), (string) $message->title);
+        $this->assertStringContainsString((string) $this->entity->name, (string) $message->title);
+
+        foreach ($addresses as $address) {
+            $this->assertStringContainsString($address, $message->body, 'the systems it names, by address');
+        }
+
+        $this->assertStringContainsString($taken->expires_at->format('Y-m-d H:i').' UTC', $message->body, 'the due date');
+        $this->assertStringContainsString('500', $message->body, 'what it pays');
+        $this->assertSame($addresses, array_column($message->details['targets'], 'address'));
+    }
+
+    public function test_the_inbox_lists_the_systems_of_an_accepted_job(): void
+    {
+        $offer = $this->anOffer(MissionAction::Plant);
+        $this->ledger()->accept($this->character, $offer);
+
+        $page = $this->actingAs($this->character->user)->get(route('notifications.index'))->assertOk()->getContent();
+
+        foreach ($offer->targets as $target) {
+            $this->assertStringContainsString($target->address, $page);
+        }
+    }
+
+    public function test_a_supply_job_says_how_many_files_not_which_systems(): void
+    {
+        $this->ledger()->accept($this->character, $this->anOffer(MissionAction::Supply));
+
+        $message = Notification::query()->sole();
+
+        $this->assertStringContainsString('Bring 3 complete scan files.', $message->body);
+        $this->assertNull($message->details);
+    }
+
+    public function test_a_refused_acceptance_writes_nothing(): void
+    {
+        $first = $this->anOffer(MissionAction::Scan);
+        $second = $this->anOffer(MissionAction::Burn);
+        $this->ledger()->accept($this->character, $first);
+        Notification::query()->delete();
+
+        $this->ledger()->accept($this->character, $second);   // one job per agent: refused
+
+        $this->assertSame(0, Notification::query()->count());
+    }
+
     public function test_one_job_per_agent(): void
     {
         $first = $this->anOffer(MissionAction::Scan);
@@ -285,6 +341,8 @@ final class MissionTest extends TestCase
     {
         $mission = $this->accepted(MissionAction::Scan);
         $mission->forceFill(['expires_at' => now()->subMinute()])->save();
+        // Taking the job wrote its own briefing; this is about what the sweep adds after it.
+        Notification::query()->delete();
 
         $this->ledger()->sweepExpired();
 

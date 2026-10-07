@@ -87,6 +87,20 @@
                                 {{-- A message a player wrote: who from, in the sender's own handle. Plain text, printed escaped. --}}
                                 @if (! empty($message->details['from']))
                                     <span class="micro" style="color:var(--ink-3)">{{ Text::get('notifications.compose.from', ['handle' => $message->details['from']]) }}</span>
+                                @elseif (! empty($message->details['targets']))
+                                    {{-- An accepted job's systems: where to go. The address is the button that copies it. --}}
+                                    <div class="prose micro" style="color:var(--ink-2)">
+                                        <ul>
+                                            @foreach ($message->details['targets'] as $target)
+                                                <li>
+                                                    <x-address :address="$target['address']" />
+                                                    @if (! empty($target['grade']))
+                                                        · {{ Text::get('notifications.details.grade', ['grade' => $target['grade']]) }}
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
                                 @elseif (! empty($message->details['facts']))
                                     {{-- A finished read: every row the system overview shows, as they stood when it
                                          finished. --}}

@@ -1404,6 +1404,11 @@ stood on this not existing.
   the newest id the page knew, at most once in ten seconds (the moment is kept in `localStorage`, so changing page does
   not restart the count). Browsers refuse sound until the person has touched the page; that refusal is swallowed and the
   badge still moves.
+- **Accepting a job writes one message, the inbox's one exception to "while nobody was looking"** (`MissionLedger::briefing()`,
+  `notifications.messages.mission_accepted`): what the job is and for whom, the systems BY ADDRESS (in `details['targets']`, drawn with
+  the copy-an-address button, and in the sentence), what it pays and costs, and when it is due (`Y-m-d H:i UTC`: absolute, because the
+  body is never recomposed and "in 9 hours" would be false tomorrow). The desk's board is gone once closed and a runner works from the
+  addresses, so a record to come back to is worth the exception. A refused acceptance writes nothing; a supply job names a file count.
 - **Reading is its own POST**, never something opening the screen does — a badge cleared
   by arriving is a badge cleared for messages nobody read. All of them at once, because
   the alternative is a button per row for a state nothing reads except a count.

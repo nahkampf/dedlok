@@ -16,9 +16,11 @@ use App\Standing\LedgerKind;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
 use App\Stats\Resolver;
+use App\Support\Text;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Number;
 
 /**
  * The only thing that moves a mission through its states.
@@ -105,8 +107,44 @@ final readonly class MissionLedger
                 'expires_at' => now()->addHours($hours),
             ])->save();
 
-            return $live->fresh();
+            $accepted = $live->fresh();
+            $this->briefing($character, $accepted);
+
+            return $accepted;
         });
+    }
+
+    /**
+     * The job, written down: what it is, where, what it pays and when it is due, kept in the inbox.
+     *
+     * An EXCEPTION to the inbox's rule that it holds what happened while nobody was looking: the player pressed the
+     * button. But the desk's board is gone once it is closed, the window is hours, and the addresses are what a runner
+     * works from, so a record to come back to is worth the exception. Written as it stood at acceptance and never
+     * recomposed, like every message: a target that has since gone is still the one the job named.
+     */
+    private function briefing(Character $character, Mission $mission): void
+    {
+        $mission->loadMissing('targets.system', 'entity');
+
+        $targets = $mission->targets->map(static fn ($target): array => [
+            'address' => (string) $target->address,
+            'grade' => $target->system?->grade,
+        ])->all();
+
+        $what = $mission->action->designatesTargets()
+            ? Text::get('notifications.mission_what_systems', ['count' => count($targets), 'addresses' => implode(', ', array_column($targets, 'address'))])
+            : Text::get('notifications.mission_what_supply', ['count' => $mission->quantity_required]);
+
+        (new Notifier)->send($character, Category::Mission, 'mission_accepted', [
+            'action' => $mission->action->label(),
+            'entity' => (string) ($mission->entity?->name ?? ''),
+            'what' => $what,
+            'creds' => Number::format((int) $mission->creds_reward),
+            'standing' => number_format((float) $mission->standing_reward, 3),
+            'loyalty' => (int) $mission->loyalty_reward,
+            'penalty' => number_format((float) $mission->penalty, 3),
+            'due' => $mission->expires_at?->format('Y-m-d H:i').' UTC',
+        ], $targets === [] ? null : ['targets' => $targets]);
     }
 
     /**
