@@ -2146,6 +2146,7 @@ return [
         'doses_capacity' => ':used of :capacity',
         'doses_none' => 'Not currently in your system',
         'doses_at_the_line' => 'One more is too much',
+        'doses_risk' => 'You might be at risk for an overdose!',
         'doses_wears_off' => 'wears off :when',
         'doses_potency' => ':percent% strength',
         'doses_tolerance' => 'Tolerance',
