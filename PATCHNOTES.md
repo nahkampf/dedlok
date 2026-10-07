@@ -1,3 +1,9 @@
+## 0.41.0 (2026-10-07)
+
+- Minor SEO/OG fixes
+- Name/credit field for alpha testers
+- Updated a few locations
+
 ## 0.40.0 (2026-10-07)
 
 - Discord notice for new users
