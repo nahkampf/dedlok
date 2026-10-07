@@ -450,7 +450,9 @@ class ItemRequest extends FormRequest
             'weapon_class' => ['nullable', Rule::enum(WeaponClass::class)],
             'weapon_damage' => $isWeapon && ! $weaponClass->firearm() ? ['required', 'integer', 'between:1,1000'] : ['prohibited'],
             'weapon_accuracy' => $isWeapon ? ['required', 'integer', 'between:-100,100'] : ['prohibited'],
-            'weapon_rate' => $isWeapon ? ['required', 'integer', 'between:1,30'] : ['prohibited'],
+            // Shots a round only means something for something that shoots: a close weapon (unarmed, blade, blunt)
+            // may leave it blank and is stored as 1.
+            'weapon_rate' => $isWeapon ? [$weaponClass?->ranged() === false ? 'nullable' : 'required', 'integer', 'between:1,30'] : ['prohibited'],
             // A firearm takes a calibre of round from a magazine, and both are required together; a
             // blade or a grenade takes neither.
             'weapon_magazine' => $weaponClass?->firearm() ? ['required', 'integer', 'between:1,1000'] : ['prohibited'],
@@ -948,7 +950,7 @@ class ItemRequest extends FormRequest
             'damage_profile' => $firearm ? null : DamageProfile::clean((array) ($data['weapon_profile'] ?? [])),
             'riders' => Riders::clean((array) ($data['weapon_riders'] ?? [])) ?: null,
             'accuracy' => (int) $data['weapon_accuracy'],
-            'rate' => (int) $data['weapon_rate'],
+            'rate' => (int) ($data['weapon_rate'] ?? 1),
             'magazine' => $firearm ? (int) $data['weapon_magazine'] : null,
             'calibre' => $firearm ? (string) $data['weapon_calibre'] : null,
         ];

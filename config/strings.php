@@ -3689,7 +3689,7 @@ return [
                 'weapon_accuracy' => 'Accuracy',
                 'weapon_accuracy_hint' => 'A signed modifier to the shooter\'s aim with this weapon.',
                 'weapon_rate' => 'Shots a round',
-                'weapon_rate_hint' => '1 for anything that is not an automatic firearm.',
+                'weapon_rate_hint' => '1 for anything that is not an automatic firearm. A close weapon (unarmed, blade, blunt) may leave it blank.',
                 'weapon_magazine' => 'Magazine',
                 'weapon_magazine_hint' => 'Rounds before a reload. Firearms only: leave blank for a blade, a fist or a grenade.',
                 'weapon_calibre' => 'Calibre',

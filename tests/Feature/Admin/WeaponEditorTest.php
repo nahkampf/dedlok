@@ -97,6 +97,24 @@ final class WeaponEditorTest extends TestCase
         $this->assertSame(['blunt' => 70, 'electrical' => 30], $weapon->profile(), 'a stun baton');
     }
 
+    public function test_a_close_weapon_may_leave_shots_a_round_blank_and_a_firearm_may_not(): void
+    {
+        foreach (['unarmed', 'blade', 'blunt'] as $class) {
+            Item::query()->where('slug', 'test_gear')->delete();
+            $this->save($this->base([
+                'weapon_class' => $class, 'weapon_damage' => 5, 'weapon_accuracy' => 0, 'weapon_rate' => '',
+                'weapon_profile' => ['blunt' => '100'],
+            ]))->assertRedirect()->assertSessionHasNoErrors();
+
+            $this->assertSame(1, Item::query()->where('slug', 'test_gear')->sole()->weapon->rate, "{$class} is stored as 1");
+        }
+
+        Item::query()->where('slug', 'test_gear')->delete();
+        $this->save($this->base([
+            'weapon_class' => 'pistol', 'weapon_accuracy' => 0, 'weapon_rate' => '', 'weapon_magazine' => 12, 'weapon_calibre' => '9mm',
+        ]))->assertSessionHasErrors('weapon_rate');
+    }
+
     public function test_the_editor_shows_the_weapon_back(): void
     {
         $this->save($this->pistol())->assertRedirect();
