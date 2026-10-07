@@ -88,6 +88,7 @@ return [
             'code' => 'Beta key',
             'hint' => 'Registration is by invitation while the game is in testing. Enter the key you were given.',
             'invalid' => 'That beta key is not valid.',
+            'credit_name' => 'What do we call you (for credits, on the thank you page)',
         ],
         'handle' => 'Handle',
         'handle_hint' => 'Up to :max characters.',

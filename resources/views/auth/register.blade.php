@@ -22,6 +22,13 @@
                        value="{{ old('code') }}" required autocomplete="off" autocapitalize="characters" spellcheck="false">
                 <span class="field__hint">{{ Text::get('auth.beta.hint') }}</span>
             </div>
+
+            <div class="field" @error('credit_name') data-invalid @enderror>
+                <label class="field__label" for="credit_name">{{ Text::get('auth.beta.credit_name') }}</label>
+                <input class="input" id="credit_name" name="credit_name" type="text" maxlength="100"
+                       value="{{ old('credit_name') }}" autocomplete="off">
+                @error('credit_name') <span class="field__error">{{ $message }}</span> @enderror
+            </div>
         @endif
 
         <div class="field">

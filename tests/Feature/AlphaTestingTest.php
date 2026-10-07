@@ -228,4 +228,57 @@ final class AlphaTestingTest extends TestCase
         $this->actingAs(User::factory()->create())->postJson(route('admin.beta_keys.given', $key))->assertForbidden();
         $this->assertNull($key->fresh()->given_out_at);
     }
+
+    // ---- what to call them in the credits ---------------------------------------------------------------
+
+    public function test_the_credit_name_is_asked_only_while_the_flag_is_on(): void
+    {
+        $this->get(route('register'))->assertOk()->assertDontSee('name="credit_name"', false);
+
+        $this->on();
+        $this->get(route('register'))->assertOk()->assertSee('name="credit_name"', false)->assertSee('What do we call you (for credits, on the thank you page)');
+    }
+
+    public function test_it_is_optional_trimmed_and_kept_on_the_account(): void
+    {
+        $this->on();
+
+        $this->register(['code' => (new BetaKeys)->generate()->code, 'credit_name' => '  Ada L.  '], 'named@example.test')->assertSessionHasNoErrors();
+        $this->assertSame('Ada L.', User::query()->where('email', 'named@example.test')->sole()->credit_name);
+
+        $this->post(route('logout'));
+        $this->register(['code' => (new BetaKeys)->generate()->code, 'credit_name' => '   '], 'blank@example.test')->assertSessionHasNoErrors();
+        $this->assertNull(User::query()->where('email', 'blank@example.test')->sole()->credit_name);
+
+        $this->post(route('logout'));
+        $this->register(['code' => (new BetaKeys)->generate()->code], 'omitted@example.test')->assertSessionHasNoErrors();
+        $this->assertNull(User::query()->where('email', 'omitted@example.test')->sole()->credit_name);
+    }
+
+    public function test_a_name_that_is_too_long_is_refused_and_does_not_spend_the_key(): void
+    {
+        $this->on();
+        $key = (new BetaKeys)->generate();
+
+        $this->register(['code' => $key->code, 'credit_name' => str_repeat('x', 101)])->assertSessionHasErrors('credit_name');
+
+        $this->assertFalse($key->fresh()->isUsed());
+        $this->assertDatabaseMissing('users', ['email' => 'tester@example.test']);
+    }
+
+    public function test_with_the_flag_off_a_posted_credit_name_is_ignored(): void
+    {
+        $this->register(['credit_name' => 'Sneaky'])->assertSessionHasNoErrors();
+
+        $this->assertNull(User::query()->where('email', 'tester@example.test')->sole()->credit_name);
+    }
+
+    public function test_the_admin_list_shows_it_beside_the_email(): void
+    {
+        $this->on();
+        $key = (new BetaKeys)->generate();
+        $this->register(['code' => $key->code, 'credit_name' => 'Ada L.'], 'named@example.test');
+
+        $this->actingAs($this->admin())->get(route('admin.beta_keys.index'))->assertOk()->assertSee('named@example.test')->assertSee('Ada L.');
+    }
 }
