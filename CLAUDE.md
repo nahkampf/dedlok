@@ -238,7 +238,7 @@ links bare on purpose.
 **`layouts/social-meta.blade.php`, included in both layouts' `<head>`**, gives a shared link its Open Graph and Twitter tags: the
 title is the page's own `<title>` plus ` - A cyberpunk browser game`, the picture is `public/images/square.jpg` (640×640, so
 `twitter:card` is `summary`), through `Asset::url()` and absolute because a crawler has nothing to resolve a relative URL against.
-There is no `og:description` yet.
+`og:description` and the tagline are `strings.unfurl.*`.
 
 ### Fonts
 

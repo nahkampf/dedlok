@@ -21,6 +21,7 @@ final class SocialMetaTest extends TestCase
         $expected = e(trim(html_entity_decode($title[1], ENT_QUOTES)).' - A cyberpunk browser game');
 
         $response->assertSee('<meta property="og:title" content="'.$expected.'">', false)
+            ->assertSee('<meta property="og:description" content="A cyberpunk browser RPG, inspired by BBS door games like LOD, LORD, Usurper and Darkness - and heavily influenced by mechanics from EVE Online.">', false)
             ->assertSee('<meta name="twitter:title" content="'.$expected.'">', false)
             ->assertSee('<meta name="twitter:card" content="summary">', false);
         $this->assertMatchesRegularExpression('#<meta property="og:image" content="http[^"]+/images/square\.jpg\?v=\d+">#', $html);

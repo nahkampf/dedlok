@@ -2874,6 +2874,12 @@ return [
     ],
 
     // The front page: NOTICE.md, and the two places there are to go.
+    // What a shared link unfurls as: see layouts/social-meta.blade.php.
+    'unfurl' => [
+        'tagline' => 'A cyberpunk browser game',
+        'description' => 'A cyberpunk browser RPG, inspired by BBS door games like LOD, LORD, Usurper and Darkness - and heavily influenced by mechanics from EVE Online.',
+    ],
+
     // The invitation shown once, on a new account's first sign-in.
     'discord' => [
         'title' => 'Please join our Discord!',
