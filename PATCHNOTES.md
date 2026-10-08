@@ -1,3 +1,12 @@
+## 0.43.0 (2026-10-08)
+- Address is now in the "Scan complete" message.
+- SI passive regen tweaked to 1 SI / 2hrs
+- Decryption: Encrypted Data extracted from intrusion runs can now be decrypted (yields Memory Dumps, more types to follow)
+- Decryptors (Ghostkey, currentty just for Cinder) + supporting skills now exist
+- Decryption queue and progress under Deck view
+- Some Exchanges in cyberspace now buy both Scan Files, Encrypted Data and Memory Dumps. Different Exchanges pay differently however.
+- Encrypted Data (and its yields) are now dependent on system grade
+
 ## 0.42.3 (2026-10-07)
 
 - Tasks & Missions menu now exists. Currently just lists accepted jobs, in the future it will also hold quests and journals.

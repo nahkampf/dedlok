@@ -2,6 +2,64 @@
 
 ## [Unreleased]
 
+## [0.43.0] — 2026-10-08
+
+Decryption: stolen files can be broken, sold, and used for supply jobs.
+
+### Added
+
+- **Decryption** (`App\Decryption\DecryptionQueue`, the only writer of `decryption_queue`). A reorderable queue of stolen files, worked by
+  every Decryptor program running on the equipped deck, one file apiece (`decryption_queue.worker_id` is the running copy; one copy never
+  works two files and one file is never worked by two copies, so two Ghostkeys break two files at once, within `program_threads`). A free
+  decryptor takes the first waiting file it can break. A cycle (`decryption_cycle_seconds`, base 300) ends in ONE `CheckRoller` roll of
+  `check.<encryption>` against `cyberspace.decryption.difficulty.<slug>` (kind `decryption`, floor 0.02 in `checks.floors`), scaled by
+  `decryption_chance.<slug>`; a pass converts the SAME inventory row to a Memory Dump, a fail costs the cycle and nothing else. Queueing
+  needs the encryption's skill at its gate level (`cyberspace.decryption.gate`, 1). Settling is lazy and catches up, with
+  `decryption:settle` every minute for the inbox message (`notifications.messages.decrypted`); every way of stopping a decryptor goes
+  through `ProgramRunner::putBack()`, which settles first and frees that copy's file. It works during a run.
+- **The Decryption panel on the equipped deck's screen** (drag or arrow-key reordering through the kit's `data-queue-sort`, odds and
+  expected time per file, Working / Waiting) and a **Decrypt button and status on the stash card** (`inventory_items.decryptionEntry`).
+- **Stats:** `decryption_cycle_seconds` (an interval, so skills shorten it), and a generated `decryption_chance.<slug>` per Encryption
+  skill, all tagged `decryption_chance` so one modifier on that tag set reaches every encryption. A chance bonus is a multiplier on a
+  cycle's chance (the roller's own), not percentage points.
+- **Programs can be limited to some encryptions** (`programs.decrypts`, slugs, NULL is any), edited as ticks in the item editor. **Ghostkey**
+  (Cinder only, common, shelf 25, free, 2 QB to own, 2 QB RAM and 3 qFLOPS to run, multithreaded) is the first.
+- **Skills:** Cryptology and Precomputation (category `Decryption`, rank 8, uncommon, shelf 10: +2% chance and -2% cycle time a level, for
+  every encryption), and each encryption skill grants +2% chance a level for its own. Ouroboros is off the market (ultra-rare, gained
+  through exchanges, quests and drops).
+- **Buying from players is one rule for locations and exchanges** (`App\Trade\Buying`; `LocationBuy`, the new `EntityBuy` and the
+  `BuysFromPlayers` trait): a listing is an item, a percent of its stock price (default 100; a file's stock price is its own value, the
+  broken one on a Memory Dump) and a limit per window (`city.sell.reset_hours`, 8) shared by every player, refused rather than reduced
+  (`CityRefusal::WontTakeMore`). `BuyListEditor` is the only writer and diffs, so saving never refills a limit. Exchanges buy per entity
+  over a range of desk grades (`entity_buys`, `DeskBuyer`, `exchange.sell`), edited on the entity shelf page.
+- **Supply jobs take sealed data dumps** as files (`MissionLedger::suppliable()`): whole scan files first, then loose Encrypted Data
+  Dumps. A Memory Dump does not count.
+- **The scan-complete message carries the address** of the system scanned, in the sentence and with the copy button.
+
+### Changed
+
+- **File values follow the system's grade** (`cyberspace.contents.data.value` sealed and `.value_broken` decrypted, each rolled on its own,
+  25-50 / 50-125 at grade 1 up to 1000-2000 / 2000-5400 at grade 9; they were 10-60 times higher). A file's encryption follows bands by
+  grade (Cinder 1-4, Halcyon-3 3-6, BLACKGLASS 6-8, Ouroboros 8-9) and it remembers the grade it came off (`ExtractedFile::$grade`).
+- **Everybody mends a point of Synaptic Integrity every two hours** (`synaptic_mend_minutes`, base 120; it was 240).
+- **A location's buy list is a percent and a limit**, not a price (`location_buys.price` is gone; a blank price became 40, the fraction it
+  used, and a flat one the percent that pays it).
+
+### Migrations
+
+- `2026_10_08_100000_files_are_worth_what_their_grade_says`: the Memory Dump item, and **every file on a system and every dump a player
+  holds is re-rolled** from the new bands (the old values are not recoverable; `down()` does nothing).
+- `2026_10_08_110000_places_buy_by_percentage_up_to_a_limit`: `location_buys` percent / limit columns (price dropped) and `entity_buys`.
+- `2026_10_08_120000_the_decryption_queue`: `decryption_queue`.
+- `2026_10_08_130000_the_decryption_skills`: Cryptology, Precomputation, and the four encryption skills' effects.
+- `2026_10_08_140000_decryption_imprints_are_stocked_by_hand`: those imprints' rarity and shelf, and Ouroboros off the market.
+- `2026_10_08_150000_a_decryptor_may_be_limited_to_some_encryptions`: `programs.decrypts` and Ghostkey.
+- `2026_10_08_160000_a_decryption_has_a_worker`: `decryption_queue.worker_id`; Ghostkey multithreaded.
+
+**After deploying:** the schedule picks up `decryption:settle` by itself (the crontab already runs `schedule:run`). Add the Encrypted Data
+Dump and the Memory Dump to the buy lists of the places that should buy them, and author Decryptors for the other encryptions.
+
+
 ## [0.42.3] — 2026-10-07
 
 A Tasks & Missions screen.
@@ -2633,7 +2691,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.42.3...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.43.0...HEAD
+[0.43.0]: https://github.com/nahkampf/dedlok/compare/v0.42.3...v0.43.0
 [0.42.3]: https://github.com/nahkampf/dedlok/compare/v0.42.1...v0.42.3
 [0.42.2]: https://github.com/nahkampf/dedlok/compare/v0.42.1...v0.42.2
 [0.42.1]: https://github.com/nahkampf/dedlok/compare/v0.42.0...v0.42.1
