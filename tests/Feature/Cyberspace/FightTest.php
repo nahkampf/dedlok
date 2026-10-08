@@ -854,6 +854,26 @@ final class FightTest extends TestCase
         $this->assertContains(Text::get('cyberspace.run.log.egress'), $texts);
     }
 
+    /**
+     * THE PLAYER IS SENT TO THE MAP the moment the run ends, so the explanation has to travel with them: the notice rides in the
+     * flash that the map shows, ahead of the ending itself.
+     */
+    public function test_an_auto_egress_is_explained_on_the_page_the_player_lands_on(): void
+    {
+        $this->machine(1);
+        $this->begin();
+
+        $max = $this->character->maximumFor('current_synaptic_integrity');
+        $this->character->forceFill(['current_synaptic_integrity' => (int) floor($max * 0.1)])->save();
+        $this->everyCheckPasses();
+
+        $this->actingAs($this->character->fresh()->user)
+            ->post(route('run.act'), ['action' => RunAction::Install->value])
+            ->assertRedirect(route('cyberspace.index'))
+            ->assertSessionHas('status', fn (string $status): bool => str_contains($status, 'Auto-egress: your Synaptic Integrity fell below your threshold')
+                && str_contains($status, Text::get('cyberspace.run.ended.egress')));
+    }
+
     /** Zero turns one off, without needing a second column to say whether it is on. */
     public function test_a_threshold_of_zero_never_fires(): void
     {

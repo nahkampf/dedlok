@@ -140,9 +140,11 @@ final readonly class Simulator
             if ($breached = $this->breachedThreshold($character, $run)) {
                 // SAYS WHICH ONE, and that the action asked for did not happen: a player who pressed Install and found
                 // themselves outside with no backdoor needs the reason in the run's own account.
+                // `notice` marks a line the screen must still say when the run ends and the page moves on to the map:
+                // the log is kept, but nobody reads a log they were sent away from.
                 $log[] = $this->line("cyberspace.run.log.threshold_{$breached}", [
                     'at' => $breached === 'trace' ? (int) $character->egress_trace_at : (int) $character->egress_si_at,
-                ], 'warn');
+                ], 'warn') + ['notice' => true];
                 $action = RunAction::Egress;
             }
 
