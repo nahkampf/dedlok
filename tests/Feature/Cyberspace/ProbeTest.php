@@ -296,6 +296,17 @@ final class ProbeTest extends TestCase
         $this->assertSame(1, (new Achievements)->progressFor($this->character, Metric::SystemsScanned));
     }
 
+    public function test_a_finished_read_files_itself_and_stays_on_the_map(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+
+        $result = $this->readOnce(0.0);
+
+        $this->assertNotNull($result->scan->fresh()->filed_at);
+        $this->assertNull($result->scan->fresh()->used_at, 'filing no longer spends the read');
+        $this->assertSame(1, $this->character->inventory()->whereNotNull('scan_file')->count());
+    }
+
     /**
      * Learning nothing is an ordinary outcome, and it still costs a pass.
      *

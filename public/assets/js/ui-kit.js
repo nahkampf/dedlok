@@ -1094,6 +1094,8 @@
         .forEach((el) => { el.hidden = done; });
       dlg.querySelectorAll("[data-reading-export], [data-reading-done]")
         .forEach((el) => { el.hidden = !done; });
+      // A read that filed itself has nothing left to save.
+      dlg.querySelectorAll("[data-reading-export]").forEach((el) => { el.hidden = !done || !!data.filed; });
 
       // Nothing left to watch: the read stopped, and the dialog stays open
       // showing what it found — it is the polling that stops.

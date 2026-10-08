@@ -383,6 +383,7 @@ class CyberspaceController extends Controller
             'readyIn' => $scan->pass_ready_at?->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE]),
             'pass' => $scan->passes,
             'complete' => $scan->isComplete(),
+            'filed' => $scan->filed_at !== null,
             // The character, so the operating system can say whether they can
             // operate it — a fact that is also a gate.
             'facts' => $scan->facts($character),

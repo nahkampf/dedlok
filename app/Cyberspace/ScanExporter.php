@@ -72,6 +72,10 @@ final readonly class ScanExporter
                 return ScanExportRefusal::Incomplete;
             }
 
+            if ($scan->filed_at !== null) {
+                return ScanExportRefusal::Filed;
+            }
+
             $item = Item::query()->where('slug', self::SLUG)->first();
 
             if ($item === null) {
@@ -90,7 +94,7 @@ final readonly class ScanExporter
 
             $name = System::query()->where('address', $address)->first()?->displayName();
 
-            $scan->forceFill(['used_at' => now()])->save();
+            $scan->forceFill(['filed_at' => now()])->save();
 
             return $character->inventory()->create([
                 'item_id' => $item->id,

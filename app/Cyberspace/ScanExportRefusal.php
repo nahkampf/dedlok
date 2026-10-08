@@ -33,6 +33,9 @@ enum ScanExportRefusal: string
      */
     case Incomplete = 'incomplete';
 
+    /** This read already made its file. One read is one file. */
+    case Filed = 'filed';
+
     /** The equipped deck has no room for it — see App\Decks\Storage. */
     case NoStorage = 'no_storage';
 

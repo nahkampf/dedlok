@@ -1515,10 +1515,11 @@ return [
             | because what it costs is written on it.
             */
             'export' => 'Save to stash',
-            'export_hint' => 'Files this scan into your data stash. It leaves your own map — a file IS the read, not a copy of it.',
-            'exported' => 'Saved as :file. It is in your data stash, and this machine is no longer scanned.',
+            'export_hint' => 'Files this scan into your data stash. A finished read files itself when there is room; this is for when there was not.',
+            'exported' => 'Saved as :file. It is in your data stash.',
             'export_gone' => 'That file is gone. It was spent, or it went stale.',
             'export_incomplete' => 'An incomplete file is not intel. Finish the read first.',
+            'export_filed' => 'This read already made its file.',
             'export_no_storage' => 'Your deck has no room for the file. Make room in its storage first.',
 
             /*
