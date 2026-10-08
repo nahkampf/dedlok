@@ -874,6 +874,22 @@ final class FightTest extends TestCase
                 && str_contains($status, Text::get('cyberspace.run.ended.egress')));
     }
 
+    /** The briefing says so BEFORE the door when the first turn would pull you out, and stays quiet when it would not. */
+    public function test_the_briefing_warns_when_the_first_turn_would_auto_egress(): void
+    {
+        $this->machine(1);
+        $max = $this->character->maximumFor('current_synaptic_integrity');
+        $this->character->forceFill(['egress_si_at' => 20, 'current_synaptic_integrity' => $max])->save();
+
+        $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))
+            ->assertOk()->assertDontSee('will auto-egress');
+
+        $this->character->forceFill(['current_synaptic_integrity' => (int) floor($max * 0.1)])->save();
+
+        $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))
+            ->assertOk()->assertSee('The first turn will auto-egress before anything you press happens.');
+    }
+
     /** Zero turns one off, without needing a second column to say whether it is on. */
     public function test_a_threshold_of_zero_never_fires(): void
     {

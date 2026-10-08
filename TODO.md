@@ -16,8 +16,8 @@ In this order. Each is small enough to build alone.
    asks for a wider page column (`@section('wide')` in `layouts/app`, 1500px instead of 1100px) so there is room. Read, not looked at: no browser here.
 3. ~~**A "Current processes" item in the top bar, beside Running programs, opening a modal.**~~ Done 2026-10-08: `App\Characters\CurrentProcesses`,
    the `processes.current` fragment, the chip (no count) and modal in `layouts/app`. Scans, a trip / exploration / operation, decryption (the
-   current cycle, and a count of files waiting), the skill being trained, and drugs in effect. Not in it yet: withdrawals, mission deadlines,
-   lockdowns. Read, not looked at: no browser here.
+   current cycle, and a count of files waiting), the skill being trained, and drugs in effect. Withdrawals, accepted jobs' deadlines and a *Clocks* group (market restock, SI mend, trained regeneration) were added the same day.
+   Not in it: lockdowns / relocations (the author's first answer was "not lockdowns", the second listed them as clocks: ask), shop restocks. Read, not looked at: no browser here.
 
 ---
 

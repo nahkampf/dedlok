@@ -2,7 +2,16 @@
 @use('Carbon\CarbonInterval')
 {{-- The body of the Current processes modal. One row per thing in flight: what it is, a bar for how far along, and the
      time left on the bar's tooltip (hover, or focus on a phone: the bar takes focus, which is how a tap reaches it). --}}
-@forelse ($rows as $row)
+@php($groups = collect($rows)->groupBy('group'))
+@unless ($groups->has('process'))
+    <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('processes.none') }}</p>
+@endunless
+@foreach (['process', 'timer'] as $group)
+@if ($groups->has($group))
+    @if ($group === 'timer')
+        <div class="micro" style="margin-top:var(--s-4);color:var(--ink-2)">{{ Text::get('processes.timers') }}</div>
+    @endif
+@foreach ($groups[$group] as $row)
     @php($left = $row['seconds'] === null
         ? null
         : ($row['seconds'] < 1
@@ -26,6 +35,8 @@
             <span class="micro" style="color:var(--ink-3)">{{ $left }}</span>
         @endif
     </div>
-@empty
-    <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('processes.none') }}</p>
-@endforelse
+@endforeach
+@endif
+@endforeach
+
+

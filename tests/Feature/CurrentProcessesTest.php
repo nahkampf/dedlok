@@ -5,13 +5,19 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Characters\CurrentProcesses;
+use App\Cyberspace\SystemType;
 use App\Decryption\DecryptionQueue;
 use App\Inventory\SkillInjector;
 use App\Models\Character;
 use App\Models\Dose;
+use App\Models\DrugUse;
+use App\Models\Entity;
+use App\Models\Exchange;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Mission;
 use App\Models\Skill;
+use App\Models\System;
 use App\Models\SystemScan;
 use App\Models\TrainingQueueEntry;
 use App\Programs\ProgramKind;
@@ -36,12 +42,21 @@ final class CurrentProcessesTest extends TestCase
         $this->character = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3]));
     }
 
+    /** @param  list<array<string, mixed>>  $rows */
+    private function processesOnly(array $rows): array
+    {
+        return array_values(array_filter($rows, fn (array $row): bool => $row['group'] === 'process'));
+    }
+
     public function test_an_idle_character_has_nothing_going_on(): void
     {
-        $this->assertSame([], app(CurrentProcesses::class)->for($this->character));
+        $rows = app(CurrentProcesses::class)->for($this->character);
+
+        $this->assertSame([], array_values(array_filter($rows, fn (array $row): bool => $row['group'] === 'process')));
+        $this->assertSame(['restock'], array_column($rows, 'kind'), 'only the market clock, which ticks for everybody');
 
         $this->actingAs($this->character->user)->get(route('processes.current'))
-            ->assertOk()->assertSeeText('Nothing is going on.');
+            ->assertOk()->assertSeeText('Nothing is going on.')->assertSeeText('The market restocks');
     }
 
     public function test_a_drug_in_effect_is_a_bar_with_the_time_left_on_it(): void
@@ -49,7 +64,7 @@ final class CurrentProcessesTest extends TestCase
         $item = Item::factory()->create(['name' => 'Rewire']);
         Dose::create(['character_id' => $this->character->id, 'item_id' => $item->id, 'potency' => 1, 'started_at' => now()->subMinutes(10), 'expires_at' => now()->addMinutes(30)]);
 
-        $rows = app(CurrentProcesses::class)->for($this->character);
+        $rows = $this->processesOnly(app(CurrentProcesses::class)->for($this->character));
 
         $this->assertCount(1, $rows);
         $this->assertSame('dose', $rows[0]['kind']);
@@ -65,7 +80,7 @@ final class CurrentProcessesTest extends TestCase
         $item = Item::factory()->create();
         Dose::create(['character_id' => $this->character->id, 'item_id' => $item->id, 'potency' => 1, 'started_at' => now(), 'expires_at' => now()->addDay(), 'turns_left' => 3]);
 
-        $this->assertSame([], app(CurrentProcesses::class)->for($this->character));
+        $this->assertNotContains('dose', array_column(app(CurrentProcesses::class)->for($this->character), 'kind'));
     }
 
     public function test_a_scan_pass_shows_how_far_through_it_is(): void
@@ -124,6 +139,51 @@ final class CurrentProcessesTest extends TestCase
         $this->assertSame('Training '.$skill->title.', level 1', $rows[0]['label']);
         $this->assertSame(0.0, $rows[0]['ratio']);
         $this->assertGreaterThan(0, $rows[0]['seconds']);
+    }
+
+    public function test_a_mission_deadline_is_a_bar(): void
+    {
+        $entity = Entity::query()->interactable()->firstOrFail();
+        $desk = System::factory()->at(8, 8)->ownedBy($entity)->create(['type' => SystemType::Exchange]);
+        $exchange = Exchange::query()->create(['system_id' => $desk->id, 'grade' => 1, 'agent' => 'Wren', 'min_standing' => 0]);
+        Mission::query()->create([
+            'character_id' => $this->character->id, 'entity_id' => $entity->id, 'exchange_id' => $exchange->id, 'action' => 'burn', 'state' => 'accepted',
+            'quantity_required' => 0, 'creds_reward' => 100, 'standing_reward' => 0.1, 'loyalty_reward' => 1, 'penalty' => 0.1,
+            'offered_at' => now()->subHours(2), 'accepted_at' => now()->subHours(1), 'expires_at' => now()->addHours(3),
+        ]);
+
+        $rows = $this->processesOnly(app(CurrentProcesses::class)->for($this->character));
+
+        $this->assertSame('mission', $rows[0]['kind']);
+        $this->assertEqualsWithDelta(0.25, $rows[0]['ratio'], 0.001);
+        $this->assertSame(3 * 3600, $rows[0]['seconds']);
+    }
+
+    public function test_a_withdrawal_counts_the_nights_until_it_fades(): void
+    {
+        $item = Item::factory()->create();
+        DrugUse::query()->create(['character_id' => $this->character->id, 'family' => 'opiate', 'addiction' => 43.5, 'tolerance' => 0]);
+
+        $row = $this->processesOnly(app(CurrentProcesses::class)->for($this->character))[0];
+
+        $this->assertSame('withdrawal', $row['kind']);
+        $this->assertSame('Withdrawal: Opiate', $row['label']);
+        $this->assertSame('Fades in 4 nights, or when you take another', $row['detail'], '43.5 falls to 42.5, 41.5, 40.5, 39.5: four nights');
+        $this->assertGreaterThan(3 * 86400, $row['seconds']);
+    }
+
+    public function test_the_mend_clock_counts_down_while_hurt_and_is_silent_at_full(): void
+    {
+        $max = $this->character->maximumFor('current_synaptic_integrity');
+        $this->character->forceFill(['current_synaptic_integrity' => $max])->save();
+        $this->assertNotContains('mend', array_column(app(CurrentProcesses::class)->for($this->character->fresh()), 'kind'));
+
+        $this->character->forceFill(['current_synaptic_integrity' => $max - 1])->save();
+        $mend = collect(app(CurrentProcesses::class)->for($this->character->fresh()))->firstWhere('kind', 'mend');
+
+        $this->assertNotNull($mend);
+        $this->assertSame('timer', $mend['group']);
+        $this->assertLessThanOrEqual(7200, $mend['seconds']);
     }
 
     public function test_the_top_bar_offers_the_modal_to_a_signed_in_character_only(): void

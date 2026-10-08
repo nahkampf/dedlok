@@ -1092,6 +1092,7 @@ return [
             'setup' => [
                 'heading' => 'Interact',
                 'title' => 'Before you go in',
+                'auto_egress' => 'Your Synaptic Integrity is :si%, below the :at% you set to pull out. The first turn will auto-egress before anything you press happens. Restore your SI, or lower the threshold from the map, before you go in.',
                 'open' => 'Plan a run',
                 'purpose' => 'End goal of run',
                 'kind' => 'What to leave behind',
@@ -2573,6 +2574,14 @@ return [
         ],
         'training' => 'Training :skill, level :level',
         'dose' => ':item in your system',
+        'withdrawal' => 'Withdrawal: :family',
+        'withdrawal_nights' => ['zero' => '', 'one' => 'Fades after tonight, or when you take another', 'many' => 'Fades in :count nights, or when you take another'],
+        'mission' => ':action for :entity',
+        'timers' => 'Clocks',
+        'restock' => 'The market restocks',
+        'mend' => 'Your next point of Synaptic Integrity',
+        'si_regen' => 'Regenerating :rate Synaptic Integrity a minute',
+        'hp_regen' => 'Regenerating :rate hit points an hour',
     ],
 
     'decryption' => [

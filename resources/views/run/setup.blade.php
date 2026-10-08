@@ -22,6 +22,17 @@
     </a>
 </p>
 
+{{-- WILL THE FIRST TURN PULL YOU OUT? Synaptic Integrity already under the mark you left for yourself: whatever you press, the
+     run egresses before it happens. The same test the run makes (Simulator::siBelowThreshold), said before the door. --}}
+@if ($autoEgress)
+    <div class="callout callout--warn" style="margin-top:var(--s-4)" role="alert">
+        {{ Text::get('cyberspace.run.setup.auto_egress', [
+            'si' => round($character->current_synaptic_integrity / max(1, $character->maximumFor('current_synaptic_integrity')) * 100),
+            'at' => $character->egress_si_at,
+        ]) }}
+    </div>
+@endif
+
 {{-- THE SYSTEM, AS THE SCANNER WINDOW SHOWS IT.
 
      The unknowns are the product here. A blank column would read as "nothing there", which for an

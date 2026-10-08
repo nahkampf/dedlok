@@ -14,6 +14,7 @@ use App\Cyberspace\MapView;
 use App\Cyberspace\Position;
 use App\Cyberspace\RaidLedger;
 use App\Cyberspace\RunAction;
+use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
@@ -79,6 +80,30 @@ final class BackdoorTest extends TestCase
         $this->assertNotNull($held);
         $this->assertSame(BackdoorKind::Routing, $held->kind);
         $this->assertTrue($run->fresh()->backdoored);
+    }
+
+    /** A run that landed its backdoor SUCCEEDED, so leaving it ends as Done and not as a bare egress. */
+    public function test_leaving_after_an_install_ends_the_run_as_done(): void
+    {
+        $this->machine();
+        $run = $this->begin(BackdoorKind::Routing);
+        $this->act($run, RunAction::Install);
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 0.0));
+
+        $result = $this->act($run, RunAction::Egress);
+
+        $this->assertSame(RunEnding::Completed, $result->ending);
+        $this->assertSame('completed', $run->fresh()->ending);
+    }
+
+    /** And one that never installed anything did not, however it left. */
+    public function test_leaving_without_installing_is_an_egress(): void
+    {
+        $this->machine();
+        $run = $this->begin(BackdoorKind::Routing);
+        $this->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 0.0));
+
+        $this->assertSame(RunEnding::Egress, $this->act($run, RunAction::Egress)->ending);
     }
 
     /** The kind is chosen at the door, with the purpose, and carried on the run. */

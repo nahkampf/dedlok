@@ -141,6 +141,8 @@ class RunController extends Controller
                 ->pluck('id')
                 ->all(),
             'totals' => $totals,
+            // Standing below the SI mark they left for themselves: the first turn pulls them out whatever they press.
+            'autoEgress' => app(Simulator::class)->siBelowThreshold($character),
             'ready' => $totals?->isReady() ?? false,
             // A deck's tolerance is its weakest part, not the sum of its
             // parts, so this is asked separately from the totals.

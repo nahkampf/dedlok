@@ -173,10 +173,10 @@ final readonly class Simulator
                 )->passed) {
                     $log[] = $this->line('cyberspace.run.log.egress');
 
-                    // COMPLETED IF THEY GOT WHAT THEY CAME FOR, egress
-                    // otherwise — "they did what they came to do" is only true
-                    // once extraction has actually taken something.
-                    $ending = $run->extracted ? RunEnding::Completed : RunEnding::Egress;
+                    // COMPLETED IF THEY GOT WHAT THEY CAME FOR, egress otherwise — "they did what they came to do" is only
+                    // true once extraction has taken something or a backdoor has landed (a planted one included). A burn
+                    // ends its own run as Completed.
+                    $ending = $run->extracted || $run->backdoored ? RunEnding::Completed : RunEnding::Egress;
 
                     $run->save();
                     // The turn that ENDS the run is part of its account too: without it a threshold that pulled the
@@ -335,18 +335,24 @@ final readonly class Simulator
             return 'trace';
         }
 
+        return $this->siBelowThreshold($character) ? 'si' : null;
+    }
+
+    /**
+     * Is the character's Synaptic Integrity already below their standing mark? BELOW it, not on it. THE one test of it:
+     * the run asks it every turn and the briefing asks it before the door, so the warning is the very rule the game acts on.
+     */
+    public function siBelowThreshold(Character $character): bool
+    {
         $si = (int) $character->egress_si_at;
 
         if ($si <= 0) {
-            return null;
+            return false;
         }
 
         $max = $character->maximumFor('current_synaptic_integrity');
 
-        return $max > 0
-            && ((int) $character->current_synaptic_integrity / $max) * 100 < $si
-            ? 'si'
-            : null;
+        return $max > 0 && ((int) $character->current_synaptic_integrity / $max) * 100 < $si;
     }
 
     /**
