@@ -9,6 +9,7 @@ use App\Achievements\Metric;
 use App\Cyberspace\DefeatResolver;
 use App\Models\Character;
 use App\Models\CharacterModifier;
+use App\Models\Craft;
 use App\Models\DeckFitting;
 use App\Models\Ice;
 use App\Models\InventoryItem;
@@ -292,6 +293,29 @@ final class DefeatResolverTest extends TestCase
         $this->resolver(1)->apply($character->fresh(), $this->iceWithTags(['erase']));
 
         $this->assertNull(InventoryItem::find($row->id));
+    }
+
+    /**
+     * CRAFTING.md: a design is destructible by ICE, and Erase already is that ICE. A design and a component are data on the deck like
+     * any other, so a wipe takes them with the running Script, while a build under way (its components are spent) goes on.
+     */
+    public function test_erase_takes_designs_components_and_a_running_script_but_not_a_build_under_way(): void
+    {
+        $character = $this->character();
+        $this->equipReadyDeck($character);
+        $character = $character->fresh();
+
+        $design = InventoryItem::query()->create(['character_id' => $character->id, 'item_id' => Item::query()->where('slug', 'dummy-temporary-program-design-original')->value('id'), 'quantity' => 1]);
+        $dump = InventoryItem::query()->create(['character_id' => $character->id, 'item_id' => Item::query()->where('slug', 'memory-dump')->value('id'), 'quantity' => 1, 'extracted_file' => ['label' => 'x', 'size_qb' => 0.1, 'encryption_skill_id' => null, 'value_sealed' => 1, 'value_broken' => 2, 'grade' => 1]]);
+        $script = InventoryItem::query()->create(['character_id' => $character->id, 'item_id' => Item::query()->where('slug', 'dummy-temporary-program')->value('id'), 'quantity' => 1, 'running_on_deck_id' => $character->equipped_deck_id, 'started_at' => now()]);
+        $craft = Craft::query()->create(['character_id' => $character->id, 'product_item_id' => $script->item_id, 'name' => 'x', 'required_seconds' => 600, 'settled_at' => now()]);
+
+        $this->resolver(1)->apply($character->fresh(), $this->iceWithTags(['erase']));
+
+        $this->assertNull(InventoryItem::find($design->id), 'the design is gone');
+        $this->assertNull(InventoryItem::find($dump->id), 'and so is a component');
+        $this->assertNull(InventoryItem::find($script->id), 'a running Script is destroyed, not put back');
+        $this->assertNotNull(Craft::find($craft->id), 'a build under way was paid for already');
     }
 
     /** Nothing in deck storage is an ordinary answer. */

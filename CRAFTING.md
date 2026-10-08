@@ -88,7 +88,7 @@ system type).** Running cost suggested at 0.4 QB RAM (needs decimals); the rest 
 2. Lifetime programs and the Script kind.
 3. Components: origin on files, the weighted decryption outcomes, the component items, grouped display.
 4. Designs, `crafting_slots`, the crafting clock, the skills, the screens.
-5. ICE shredding (an attack tag).
+5. ICE shredding: **no new mechanic needed.** The existing `DefeatTag::Erase` already deletes data held on the deck, designs and components included (tested in `DefeatResolverTest`). A tag aimed at designs alone, or one that fires on a hit rather than on a defeat, is not built.
 6. Balance.
 
 ### Step 1: decimal QB and qFLOPS
@@ -108,4 +108,4 @@ can it start" comparison is made on whole tenths (`Storage::fits`, `DeckRequirem
 - Designs, crafts, the pausable clock, the skills (migration `..220000`) and the first Script with its Design Original and Copy (`..230000`, all
   placeholders to rename and tune) are built. Running cost of the Script: 0.4 QB, 0.4 qFLOPS, 0.4 QB stored (a guess).
 - Left: skills for fewer components (`crafting_cost`) and more slots (`crafting_slots`) are stats with no skill authored; a *choose which files* picker;
-  ICE that deletes designs; sources of components other than decryption; the balance pass.
+  a design-only ICE tag; sources of components other than decryption; the balance pass.
