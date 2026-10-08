@@ -2551,6 +2551,29 @@ return [
     | An entity's front desk. Reached by standing on it, and the only thing
     | that happens on one: nothing may be run against, scanned or burned here.
     */
+    'processes' => [
+        'title' => 'Current processes',
+        'loading' => 'Loading…',
+        'none' => 'Nothing is going on.',
+        'left' => ':time left',
+        'finishing' => 'About to finish',
+        'scan' => 'Scanning :address',
+        'scan_pass' => 'Pass :pass',
+        'travel' => 'Travelling',
+        'explore' => 'Exploring',
+        'surgery' => 'On the table',
+        'travel_pass' => 'Stage :step of :of',
+        'decryption' => 'Decrypting :label',
+        'decryption_cycle' => 'This cycle: :percent% to break',
+        'decryption_waiting' => [
+            'zero' => '',
+            'one' => '1 file waiting to be decrypted',
+            'many' => ':count files waiting to be decrypted',
+        ],
+        'training' => 'Training :skill, level :level',
+        'dose' => ':item in your system',
+    ],
+
     'decryption' => [
         'heading' => 'Decryption',
         'action' => 'Decrypt',

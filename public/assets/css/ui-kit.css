@@ -2797,6 +2797,8 @@ button.board__node { background: none; border: 0; padding: 0; font: inherit; cur
   font-size: clamp(14px, 4.5cqw, 20px); line-height: 1;
   color: var(--hue, var(--ink-0));
 }
+.proc-bar { display: block; }
+.proc-bar[data-tip]:focus::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 .board__node[data-tip]:focus::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 .board__node[data-tip]:hover, .board__node[data-tip]:focus { z-index: 3; }
 a.board__node:hover .board__box { border-color: var(--hue, var(--ink-2)); background: var(--bg-3); }

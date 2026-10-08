@@ -173,7 +173,7 @@ first, as does any markup built by concatenation.
 - **The bar is where status lives, and width is the whole constraint.** Mark, two
   resources, money, count of what is running. Resources are `.dial`s (40px rings) because
   three 104px gauges left no room for the fourth. Money is `.chip-stat` (`¤` + number).
-  Anything added has to pay for itself at 320px or go to the rail. `.brand__name` is its
+  **Beside the running count sits *Current processes* (U+25CD, no number): a modal whose body is the fragment `processes.current`, fetched when it opens (`[data-fragment]` in `ui-kit.js`) and built by `App\Characters\CurrentProcesses` from the thing that owns each clock (scans, a city activity, decryption, training, drugs in effect), each a `.meter` whose time left is its `data-tip`; read only, writing nothing but the decryption settle.** Anything added has to pay for itself at 320px or go to the rail. `.brand__name` is its
   own element so CSS can drop it below 560px. The bar is `.topbar--stuck`: **sticky, not
   fixed**, so nothing below reserves a matching strip.
 - **A dial is a meter, not a second component** — same `--v`, `--fill`, `data-hot-low`,
