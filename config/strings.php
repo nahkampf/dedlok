@@ -488,6 +488,7 @@ return [
             'encounter' => 'Encounter',
             'fight' => 'Won a fight',
             'mugged' => 'Mugged',
+            'granted' => 'Granted by the game',
         ],
         'refused' => [
             'amount' => 'Send at least 1 ¤.',
