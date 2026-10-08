@@ -2,6 +2,50 @@
 
 ## [Unreleased]
 
+## [0.45.0] — 2026-10-08
+
+Code Crafting, Scripts, components from decryption, decimal storage and compute, and Supporters with Ko-fi.
+
+### Added
+
+- **Code Crafting** (`CRAFTING.md`, `App\Crafting`): designs (an item with a recipe: a Design Copy is spent by a craft, a Design Original is kept), builds in
+  `crafting_slots` slots (base 1) that run only while the equipped deck is ready, components spent when a build starts (lowest qualifying grade first,
+  asking before a higher one), the product delivered when it fits. Skills: Code Crafting, Script Crafting, Icebreaker / Analyser / Decryptor Crafting
+  (category *Code Crafting*). The deck screen has a *Crafting* panel, Current processes a bar, the item editor a *Design* panel, `crafting:settle` runs
+  every minute. The first Script, DUMMY_TEMPORARY_PROGRAM (+10% stealth for ten minutes), and its two designs (placeholders to rename and tune).
+- **Scripts**: `ProgramKind::Script` and `programs.lifetime_seconds`. A running copy is spent after its lifetime; stopping it early destroys it.
+  `App\Programs\Lifetime` reaps lazily and `programs:expire` sweeps every minute. `chk_programs_kind` admits `script`.
+- **Components**: decrypting a file is a weighted roll by the grade of the system it came off, over twenty components (`cyberspace.decryption.components`,
+  each at least 5% wherever it appears). **Files record where they came from** (`App\Cyberspace\FileOrigin`) and decryption keeps it; the stash draws
+  components of one kind and origin as one slot (`InventoryItem::groupKey()`, `<x-item-group>`).
+- **Supporters** (`App\Supporters\Supporters`): an account flag earning an ember badge by the character's name, an unlimited training queue, a place on
+  the public `/supporters` page, a thank-you message with the Discord invitation, and **a picture of their own** (`App\Characters\Avatar`: centre-cropped to
+  300x400, kept on disk, shown only while a supporter). Granted from `admin/supporters` or `supporter:grant`.
+- **Ko-fi memberships**: `POST /kofi_webhook` (CSRF-exempt, trusted by `verification_token`, `KOFI_VERIFICATION_TOKEN`) records a subscription payment once
+  (`kofi_payments`, by `message_id`) and makes the payer, matched by email, a supporter for one month (`users.supporter_until`; NULL is for good).
+  `supporters:expire` runs hourly. The admin lists payments that matched no account and connects them to one, and has a history of every supporter with
+  tiers, payments and totals per currency. Backfills for andreas@anderssons.email ($2 Supporter, 2026-10-07) and ACiD (Hyperfan, for good).
+
+### Changed
+
+- **Storage, memory and compute are carried to one decimal place**: program costs, item size and capacity, deck onboard storage, hardware measures, file
+  sizes and a transfer's remaining QB. `App\Support\Qb` rounds totals and compares in whole tenths; the item editor takes `step="0.1"`.
+- `ItemGranter` no longer adds to a copy that is running or belted.
+
+### Operations
+
+- Set `KOFI_VERIFICATION_TOKEN` in the production `.env`, and the webhook URL on Ko-fi to `https://dedlok.online/kofi_webhook`.
+- `public/images/characters/avatars/` must be writable by `dedlok`.
+- `php artisan scans:file Noodle` once deployed (needs the PHP 8.4 binary).
+
+### Migrations
+
+- `2026_10_08_180000_storage_memory_and_compute_have_a_decimal`, `..190000_a_program_may_have_a_lifetime`, `..195000_a_program_kind_script`,
+  `..200000_the_components_a_decrypted_file_becomes`, `..210000_designs_and_crafts`, `..220000_the_code_crafting_skills`,
+  `..230000_the_first_script_and_its_design`, `..240000_supporters`, `..250000_kofi_memberships`, `..260000_andreas_signed_up_as_a_supporter`,
+  `..270000_acid_is_a_hyperfan`.
+
+
 ### Added
 
 - **Ko-fi memberships.** `POST /kofi_webhook` makes a subscription payer a supporter for one month from the payment (`users.supporter_until`, `kofi_payments`, `supporters:expire` hourly). Needs `KOFI_VERIFICATION_TOKEN`.
@@ -2758,7 +2802,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.44.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.45.0...HEAD
+[0.45.0]: https://github.com/nahkampf/dedlok/compare/v0.44.0...v0.45.0
 [0.44.0]: https://github.com/nahkampf/dedlok/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/nahkampf/dedlok/compare/v0.42.3...v0.43.0
 [0.42.3]: https://github.com/nahkampf/dedlok/compare/v0.42.1...v0.42.3
