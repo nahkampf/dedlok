@@ -8,6 +8,7 @@ use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\Cyberspace\Extractor;
 use App\Models\Character;
+use App\Models\Notification;
 use App\Models\System;
 use App\Models\SystemContent;
 use App\Models\User;
@@ -216,5 +217,23 @@ final class AchievementTest extends TestCase
         $character->delete();
 
         $this->assertSame([4], $this->achievements->unlockedFor($user));
+    }
+
+    public function test_an_unlock_sends_the_message_with_its_link_and_the_page_shows_the_share(): void
+    {
+        $character = $this->character();
+        $this->achievements->record($character, Metric::SystemsBurned, 100);
+
+        $message = Notification::where('user_id', $character->user_id)->first();
+        $this->assertSame('Achievement unlocked!', $message->title);
+        $this->assertSame('You unlocked the achievement ACHIEVEMENT_4!', $message->body);
+        $this->assertSame('achievements.index', $message->details['link']['route']);
+
+        $user = User::findOrFail($character->user_id);
+        $this->actingAs($user)->get(route('notifications.index'))
+            ->assertSee('You unlocked the <a href="'.route('achievements.index').'">achievement</a> ACHIEVEMENT_4!', false);
+
+        // One player, who has it: 100.00%; the others, 0.00%.
+        $this->actingAs($user)->get(route('achievements.index'))->assertSee('100.00% of players')->assertSee('0.00% of players');
     }
 }

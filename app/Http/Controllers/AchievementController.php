@@ -30,6 +30,7 @@ class AchievementController extends Controller
         $user = $request->user();
 
         $rows = [];
+        $percent = $achievements->percentages();
 
         foreach ($achievements->listableFor($user) as $id => $entry) {
             $rows[] = [
@@ -37,6 +38,7 @@ class AchievementController extends Controller
                 'name' => Text::get('achievements.name', ['id' => $id]),
                 'description' => Text::get("achievements.description.{$id}"),
                 'unlocked' => $entry['unlocked'],
+                'share' => Text::get('achievements.earned_by', ['percent' => $percent[$id]]),
             ];
         }
 

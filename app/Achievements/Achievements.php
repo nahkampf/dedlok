@@ -115,6 +115,24 @@ final class Achievements
         return $listing;
     }
 
+    /**
+     * Share of players (accounts that have made a character) who have each achievement, as a percentage with two decimals, by id.
+     *
+     * @return array<int, string>
+     */
+    public function percentages(): array
+    {
+        $players = max(1, DB::table('characters')->distinct()->count('user_id'));
+        $counts = DB::table(self::UNLOCKED)->selectRaw('achievement_id, count(*) as n')->groupBy('achievement_id')->pluck('n', 'achievement_id');
+        $out = [];
+
+        foreach (array_keys($this->definitions()) as $id) {
+            $out[$id] = number_format(((int) ($counts[$id] ?? 0)) / $players * 100, 2);
+        }
+
+        return $out;
+    }
+
     /** The running total, where absent and zero are the same answer. */
     public function progressFor(Character|User $who, Metric $metric): int
     {
@@ -183,7 +201,8 @@ final class Achievements
             if ($unlocked > 0 && ($user = User::find($userId)) !== null) {
                 (new Notifier)->send($user, Category::Achievement, 'achievement_unlocked', [
                     'name' => Text::get('achievements.name', ['id' => $id]),
-                ]);
+                    // The word "achievement" in the sentence links to the achievements tab (drawn by the inbox).
+                ], ['link' => ['word' => 'achievement', 'route' => 'achievements.index']]);
             }
         }
     }

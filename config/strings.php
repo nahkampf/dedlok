@@ -699,7 +699,7 @@ return [
             'mission_abandoned' => 'Job abandoned',
             'mission_voided' => 'Job called off',
             'skill_level' => ':skill, level :level',
-            'achievement_unlocked' => 'Achievement: :name',
+            'achievement_unlocked' => 'Achievement unlocked!',
             'withdrawal' => 'Withdrawal',
             'travel_arrived' => 'Arrived in :district',
             'travel_stopped' => 'Stopped in :district',
@@ -741,7 +741,7 @@ return [
             'mission_abandoned' => 'You walked away from the :action job for :entity.',
             'mission_voided' => 'The :action job for :entity is off: something it named is not there any more.',
             'skill_level' => ':skill reached level :level.',
-            'achievement_unlocked' => 'Achievement unlocked: :name.',
+            'achievement_unlocked' => 'You unlocked the achievement :name!',
             'withdrawal' => 'You need it. :family, and going without is starting to show.',
             // The City. "found nothing" is ONE sentence whether every roll failed
             // or there was nothing to find: it must never say how much is hidden.
@@ -888,6 +888,9 @@ return [
             12 => 'A thousand positions of the grid explored.',
             13 => 'Ten thousand positions of the grid explored.',
         ],
+
+        // Under each card: the share of players who have it, two decimals.
+        'earned_by' => ':percent% of players',
 
         'none' => 'Nothing yet. Everything below is still out there.',
         'complete' => 'Everything there is to earn has been earned.',
