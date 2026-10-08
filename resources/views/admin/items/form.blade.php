@@ -320,7 +320,8 @@
                 <div data-when="drug" @unless ($isDrug) hidden @endunless>
                     {{-- Only in a fight: counts ROUNDS, so the minutes below are not read. --}}
                     <label class="check" style="margin-top:var(--s-4)">
-                        <input type="checkbox" name="fight_only" value="1" @checked(old('fight_only', $item?->drug?->fight_only ?? false))>
+                        <input type="checkbox" name="fight_only" value="1" @checked(old('fight_only', $item?->
+<span class="check__box"></span>drug?->fight_only ?? false))>
                         <span>{{ Text::get('admin.items.fields.fight_only') }}</span>
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.fight_only_hint') }}</span>
@@ -540,7 +541,8 @@
                     <label class="check" style="margin-top:var(--s-3)">
                         <input type="hidden" name="background_process" value="0">
                         <input type="checkbox" name="background_process" value="1"
-                               @checked(old('background_process', $item?->program?->background_process ?? false))>
+                               @checked(old('background_process', $item?->
+<span class="check__box"></span>program?->background_process ?? false))>
                         <span>{{ Text::get('admin.items.fields.background_process') }}</span>
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.background_process_hint') }}</span>
@@ -562,7 +564,8 @@
                     <label class="check" style="margin-top:var(--s-3)">
                         <input type="hidden" name="multithreaded" value="0">
                         <input type="checkbox" name="multithreaded" value="1"
-                               @checked(old('multithreaded', $item?->program?->multithreaded ?? false))>
+                               @checked(old('multithreaded', $item?->
+<span class="check__box"></span>program?->multithreaded ?? false))>
                         <span>{{ Text::get('admin.items.fields.multithreaded') }}</span>
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.multithreaded_hint') }}</span>
@@ -573,7 +576,8 @@
                         <div class="row row--wrap" style="--gap:var(--s-4)">
                             @foreach ($encryptions as $encryption)
                                 <label class="check">
-                                    <input type="checkbox" name="program_decrypts[]" value="{{ $encryption->slug }}"
+                                    <input type="checkbox" name="program_decrypts[]" value="{{ $encryption->
+<span class="check__box"></span>slug }}"
                                            @checked(in_array($encryption->slug, (array) old('program_decrypts', $item?->program?->decrypts ?? []), true))>
                                     <span>{{ $encryption->title }}</span>
                                 </label>
@@ -794,7 +798,8 @@
 
                 <label class="check">
                     <input type="hidden" name="design_single_use" value="0">
-                    <input type="checkbox" name="design_single_use" value="1" @checked(old('design_single_use', $design?->single_use ?? false))>
+                    <input type="checkbox" name="design_single_use" value="1" @checked(old('design_single_use', $design?->
+<span class="check__box"></span>single_use ?? false))>
                     <span>{{ Text::get('admin.items.design.single_use') }}</span>
                 </label>
                 <span class="field__hint">{{ Text::get('admin.items.design.single_use_hint') }}</span>
