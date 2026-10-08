@@ -17,7 +17,7 @@ In this order. Each is small enough to build alone.
 3. ~~**A "Current processes" item in the top bar, beside Running programs, opening a modal.**~~ Done 2026-10-08: `App\Characters\CurrentProcesses`,
    the `processes.current` fragment, the chip (no count) and modal in `layouts/app`. Scans, a trip / exploration / operation, decryption (the
    current cycle, and a count of files waiting), the skill being trained, and drugs in effect. Withdrawals, accepted jobs' deadlines and a *Clocks* group (market restock, SI mend, trained regeneration) were added the same day.
-   Not in it: lockdowns / relocations (the author's first answer was "not lockdowns", the second listed them as clocks: ask), shop restocks. Read, not looked at: no browser here.
+   Not in it, by decision: lockdowns / relocations and shop restocks. Read, not looked at: no browser here.
 
 ---
 
