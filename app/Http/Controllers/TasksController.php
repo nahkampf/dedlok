@@ -31,7 +31,7 @@ class TasksController extends Controller
                 ->orderBy('expires_at')
                 ->get(),
             // For a survey's per-system tags and a supply job's meter: what is in the stash right now.
-            'files' => $ledger->heldFiles($character)->count(),
+            'files' => $ledger->suppliable($character),
             'heldAddresses' => $ledger->heldAddresses($character),
         ]);
     }

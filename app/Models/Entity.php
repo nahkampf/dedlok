@@ -57,6 +57,16 @@ class Entity extends Model
         return $this->hasMany(EntityOffer::class);
     }
 
+    /**
+     * What this entity's desks will buy from players.
+     *
+     * @return HasMany<EntityBuy, $this>
+     */
+    public function buys(): HasMany
+    {
+        return $this->hasMany(EntityBuy::class);
+    }
+
     /** @return HasMany<System, $this> */
     public function systems(): HasMany
     {

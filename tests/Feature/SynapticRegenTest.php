@@ -26,7 +26,7 @@ final class SynapticRegenTest extends TestCase
     {
         parent::setUp();
 
-        // Off the four-hourly mark, so the mend everybody gets stays out of
+        // Off the two-hourly mark, so the mend everybody gets stays out of
         // tests about the trained trickle. See the mend tests below.
         $this->travelTo(now()->setTime(12, 1));
     }
@@ -146,8 +146,8 @@ final class SynapticRegenTest extends TestCase
         $this->character()->recover('current_synaptic_integrity', -1);
     }
 
-    /** EVERYBODY MENDS: a point on each four-hourly mark, trained or not. */
-    public function test_everybody_mends_a_point_on_the_four_hourly_mark(): void
+    /** EVERYBODY MENDS: a point on each two-hourly mark, trained or not. */
+    public function test_everybody_mends_a_point_on_the_two_hourly_mark(): void
     {
         $character = $this->character();
         $character->forceFill(['current_synaptic_integrity' => 1])->save();
@@ -156,14 +156,14 @@ final class SynapticRegenTest extends TestCase
         $this->artisan('characters:regenerate')->assertSuccessful();
         $this->assertSame(2, $character->fresh()->current_synaptic_integrity);
 
-        // Every other minute of the four hours brings nothing.
-        foreach ([[12, 1], [13, 0], [15, 59]] as [$h, $m]) {
+        // Every other minute of the two hours brings nothing.
+        foreach ([[12, 1], [13, 0], [13, 59]] as [$h, $m]) {
             $this->travelTo(now()->setTime($h, $m));
             $this->artisan('characters:regenerate')->assertSuccessful();
         }
         $this->assertSame(2, $character->fresh()->current_synaptic_integrity);
 
-        $this->travelTo(now()->setTime(16, 0));
+        $this->travelTo(now()->setTime(14, 0));
         $this->artisan('characters:regenerate')->assertSuccessful();
         $this->assertSame(3, $character->fresh()->current_synaptic_integrity);
     }
@@ -180,7 +180,7 @@ final class SynapticRegenTest extends TestCase
         $this->assertSame($max, $character->fresh()->current_synaptic_integrity);
     }
 
-    /** An interval, so a percentage off it lands: −25% is a point every three hours. */
+    /** An interval, so a percentage off it lands: −25% is a point every ninety minutes. */
     public function test_the_interval_is_a_stat_a_modifier_can_shorten(): void
     {
         $character = $this->character();
@@ -190,7 +190,7 @@ final class SynapticRegenTest extends TestCase
             Modifier::fromArray(['op' => 'percentage_of_base', 'amount' => -25, 'target' => ['id' => 'synaptic_mend_minutes']]),
         ])->toInt();
 
-        $this->assertSame(240, $base);
-        $this->assertSame(180, $faster);
+        $this->assertSame(120, $base);
+        $this->assertSame(90, $faster);
     }
 }

@@ -326,6 +326,24 @@
                 </form>
             @endif
 
+            {{-- A sealed file is broken by the decryption queue, not here: this only asks. --}}
+            @if ($entry->extractedFile() && $item->slug !== \App\Cyberspace\ExtractedFile::DECRYPTED_SLUG)
+                @php($queued = $entry->decryptionEntry)
+                @if ($queued)
+                    {{-- Where it stands, and no second button: taking it out is on the deck's Decryption panel. --}}
+                    <span class="tag" @if ($queued->worker_id) style="color:var(--info)" @endif>
+                        {{ Text::get($queued->worker_id ? 'decryption.status_working' : 'decryption.status_waiting', ['position' => $queued->position]) }}
+                    </span>
+                @else
+                    <form method="POST" action="{{ route('decryption.store', $entry) }}">
+                        @csrf
+                        <button type="submit" class="btn btn--sm btn--primary cut" title="{{ Text::get('decryption.action_title') }}">
+                            {{ Text::get('decryption.action') }}
+                        </button>
+                    </form>
+                @endif
+            @endif
+
             @if ($entry->parent_id !== null)
                 <form method="POST" action="{{ route('inventory.place', $entry) }}">
                     @csrf

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Admin\BuyListEditor;
 use App\Admin\ItemOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\EntityOfferRequest;
@@ -13,6 +14,7 @@ use App\Standing\Service;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -95,6 +97,40 @@ class EntityOfferController extends Controller
         ]));
     }
 
+    /**
+     * What the entity's desks buy: the whole list, one row per item, blank rows dropped. A diff, so a listing keeps
+     * its count taken so far.
+     */
+    public function updateBuys(Request $request, Entity $entity): RedirectResponse
+    {
+        $request->validate([
+            'buys' => ['nullable', 'array', 'max:60'],
+            'buys.*.item_id' => ['nullable', 'integer', 'exists:items,id'],
+            'buys.*.min_grade' => ['nullable', 'integer', 'between:1,5'],
+            'buys.*.max_grade' => ['nullable', 'integer', 'between:1,5', 'gte:buys.*.min_grade'],
+            'buys.*.percent' => ['nullable', 'integer', 'between:0,1000'],
+            'buys.*.max_quantity' => ['nullable', 'integer', 'between:1,1000000'],
+        ]);
+
+        $rows = [];
+
+        foreach ((array) $request->input('buys', []) as $row) {
+            if (! empty($row['item_id'])) {
+                $rows[(int) $row['item_id']] = [
+                    'item_id' => (int) $row['item_id'],
+                    'min_grade' => (int) ($row['min_grade'] ?? 1),
+                    'max_grade' => (int) ($row['max_grade'] ?? 5),
+                    'percent' => ($row['percent'] ?? '') === '' ? 100 : (int) $row['percent'],
+                    'max_quantity' => ($row['max_quantity'] ?? '') === '' ? null : (int) $row['max_quantity'],
+                ];
+            }
+        }
+
+        DB::transaction(fn () => BuyListEditor::sync($entity->buys(), array_values($rows)));
+
+        return back()->with('status', Text::get('admin.entities.buys_saved', ['entity' => $entity->name]));
+    }
+
     public function store(EntityOfferRequest $request, Entity $entity): RedirectResponse
     {
         $offer = $entity->offers()->create($request->columns());
@@ -146,6 +182,7 @@ class EntityOfferController extends Controller
                 ->values(),
             'items' => ItemOptions::grouped(markOffMarket: true),
             'services' => Service::cases(),
+            'buys' => $entity->buys()->orderBy('id')->get(['item_id', 'min_grade', 'max_grade', 'percent', 'max_quantity'])->toArray(),
         ];
     }
 }

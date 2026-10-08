@@ -32,10 +32,10 @@ use Illuminate\Support\Facades\Log;
  *
  * ## And everybody mends, slowly
  *
- * On top of that, a point every `synaptic_mend_minutes` (four hours) for
+ * On top of that, a point every `synaptic_mend_minutes` (two hours) for
  * everybody, trained or not. Still no clock: the point lands on the minute
  * whose number since the epoch divides by the character's interval, so the
- * four-hourly marks are the same for everybody on the same interval, and a
+ * two-hourly marks are the same for everybody on the same interval, and a
  * minute the scheduler missed is a point missed — this command's stance.
  *
  * ## It heals from zero
@@ -63,7 +63,7 @@ class RegenerateSynapses extends Command
                             {--dry-run : Work out what would be credited and write nothing}
                             {--quiet-when-idle : Print nothing unless something healed}';
 
-    protected $description = 'Credit a minute of Synaptic Integrity and hit point regeneration, and the four-hourly mend everybody gets';
+    protected $description = 'Credit a minute of Synaptic Integrity and hit point regeneration, and the two-hourly mend everybody gets';
 
     public function handle(Resolver $resolver): int
     {

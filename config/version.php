@@ -15,6 +15,6 @@ declare(strict_types=1);
 
 return [
 
-    'app' => '0.42.3',
+    'app' => '0.43.0',
 
 ];

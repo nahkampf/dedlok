@@ -48,7 +48,7 @@ class StatConfigTest extends TestCase
     /**
      * THE FAST TRICKLE IS PAID FOR, and the zero base is where that rule lives.
      *
-     * Everybody mends a point every four hours through `synaptic_mend_minutes`.
+     * Everybody mends a point every two hours through `synaptic_mend_minutes`.
      * A point a minute is bought — Neuroplasticity or a dose. Raising this base
      * would hand fast healing to everybody and delete the reason it is sold.
      */

@@ -357,6 +357,29 @@ final readonly class MissionLedger
     }
 
     /**
+     * The SEALED data dumps in hand: loose Encrypted Data Dumps, which a supply job takes as files too. A decrypted one
+     * (a Memory Dump) is worth more to a buyer than to a desk that only wants bulk, so it does not count.
+     *
+     * @return Collection<int, InventoryItem>
+     */
+    public function heldDumps(Character $character): Collection
+    {
+        return InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->whereNotNull('extracted_file')
+            ->whereHas('item', static fn ($q) => $q->where('slug', 'encrypted-data-dump'))
+            ->loose()
+            ->orderBy('id')
+            ->get();
+    }
+
+    /** How many files a supply job could be handed right now: whole scan files and sealed dumps. */
+    public function suppliable(Character $character): int
+    {
+        return $this->heldFiles($character)->count() + $this->heldDumps($character)->count();
+    }
+
+    /**
      * The addresses of the files in hand, for a survey's card to tick off.
      *
      * @return list<string>
@@ -405,7 +428,8 @@ final readonly class MissionLedger
      */
     private function spendFiles(Character $character, Mission $mission): bool
     {
-        $held = $this->heldFiles($character);
+        // Scan files first, then sealed dumps: a scan perishes and a dump keeps.
+        $held = $this->heldFiles($character)->concat($this->heldDumps($character));
 
         if ($held->count() < $mission->quantity_required) {
             return false;

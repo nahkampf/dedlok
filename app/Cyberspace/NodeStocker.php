@@ -141,7 +141,7 @@ final class NodeStocker
      * Public because the day a system relocates or is created mid-life it needs
      * stocking without a pass over the whole grid.
      *
-     * @param  array<int, int>  $encryption  rank => skill id
+     * @param  array<string, int>  $encryption  slug => skill id
      * @param  array<string, list<int>>  $items  rarity => item ids
      * @return list<array<string, mixed>>
      */
@@ -293,7 +293,7 @@ final class NodeStocker
      * Its NAME comes from the kind of machine it was on, because that is most
      * of what makes a silo feel like a silo.
      *
-     * @param  array<int, int>  $encryption
+     * @param  array<string, int>  $encryption
      * @return array<string, mixed>
      */
     private function file(SystemType $type, int $grade, array $encryption): array
@@ -304,7 +304,8 @@ final class NodeStocker
         [$low, $high] = $this->range('data.value', $grade);
         $sealed = ($this->roll)($low, $high);
 
-        $multiplier = (int) ($this->config['data']['broken_multiplier'] ?? 2000);
+        [$low, $high] = $this->range('data.value_broken', $grade);
+        $broken = ($this->roll)($low, $high);
 
         return [
             'kind' => ContentKind::Data->value,
@@ -312,7 +313,7 @@ final class NodeStocker
             'size_qb' => $size,
             'encryption_skill_id' => $this->encryptionFor($grade, $encryption),
             'value_sealed' => $sealed,
-            'value_broken' => (int) round($sealed * $multiplier / 1000),
+            'value_broken' => $broken,
         ];
     }
 
@@ -338,32 +339,38 @@ final class NodeStocker
     /**
      * Which encryption, by grade.
      *
-     * Nine grades across however many encryption skills there are, so the top
-     * grade gets the hardest and the bottom the cheapest whatever the ladder's
-     * length becomes — the same arithmetic the operating systems use, and for
-     * the same reason.
+     * `contents.data.encryption` says which grades each of the four skills turns up in; the bands overlap,
+     * and the draw is even between the ones that cover this grade.
      *
-     * @param  array<int, int>  $ladder
+     * @param  array<string, int>  $ladder  slug => skill id, easiest first
      */
     private function encryptionFor(int $grade, array $ladder): ?int
     {
-        if ($ladder === []) {
-            return null;
+        $bands = (array) data_get($this->config, 'data.encryption', []);
+        $eligible = [];
+
+        foreach ($ladder as $slug => $skillId) {
+            [$low, $high] = $bands[$slug] ?? [Grade::MIN, Grade::MAX];
+
+            if ($grade >= $low && $grade <= $high) {
+                $eligible[] = $skillId;
+            }
         }
 
-        $rungs = array_values($ladder);
-        $rung = (int) floor(($grade - Grade::MIN) * count($rungs) / Grade::MAX);
+        if ($eligible === []) {
+            return $ladder === [] ? null : end($ladder);
+        }
 
-        return $rungs[$rung] ?? end($rungs);
+        return $eligible[($this->roll)(0, count($eligible) - 1)];
     }
 
-    /** @return array<int, int> */
+    /** @return array<string, int> */
     private function encryptionLadder(): array
     {
         return Skill::query()
             ->where('category', 'Encryption')
             ->orderBy('rank')
-            ->pluck('id')
+            ->pluck('id', 'slug')
             ->all();
     }
 

@@ -230,6 +230,23 @@ and extraction are built. See below for what is not.
 - **The bands are the design and both ends are hard.** Grades 1–3 draw rare at 1%, and
   **ultra-rare is weight 0 below grade 8** — a wall, not a long shot. A rarity with no items
   behind it is skipped.
+- **A file's values are set by the GRADE of its system** (`cyberspace.contents.data.value` sealed, `.value_broken` decrypted, each
+  rolled on its own) and **its encryption by grade bands** (`.encryption`: Cinder 1-4, Halcyon-3 3-6, BLACKGLASS 6-8, Ouroboros
+  8-9, an even draw where they overlap). The grade rides on the extracted file (`ExtractedFile::$grade`) because a decrypted file
+  becomes a Memory Dump by it. Buyers take both states (see CLAUDE.md, *Buying from players*).
+- **DECRYPTION IS BUILT** (`App\Decryption\DecryptionQueue`, the only writer of `decryption_queue` and the only thing that opens a file):
+  a training-queue-shaped list worked by every Decryptor running on the equipped deck: each running copy (an inventory row, `decryption_queue.worker_id`) works ONE file at a time and a file is worked by ONE copy, so two Ghostkeys break two files at once (how many copies may run is `program_threads`, and the program must be `multithreaded`). A free decryptor takes the first waiting file in the queue it can break; position is only priority, and the queue is reordered by dragging (`decryption.reorder`, the training queue's own `data-queue-sort`). A cycle (the stat `decryption_cycle_seconds`, base 300 in `stats.bases`) ends in ONE
+  `CheckRoller` roll of `check.<encryption slug>` against `decryption.difficulty.<slug>`, kind `decryption` (floor 0.02 in
+  `checks.floors`), its chance scaled by `1 + decryption_chance.<slug>/100` (a generated stat per Encryption skill, tagged
+  `decryption_chance`, so a modifier on that tag set reaches all four; the roller's `multiplier`, not percentage points). Queueing needs
+  the skill at `decryption.gate.<slug>` (level 1) on the RESOLVED level. Cryptology (+2% chance a level, all) and Precomputation (-2% time a
+  level) are the `Decryption`-category skills that grant them; the four encryption skills each grant +2% for their own. A pass converts the SAME inventory row to a Memory Dump (`outcomeFor()` is the one place a table of outcomes by
+  grade will go); a fail costs only the cycle. **It needs a Decryptor program RUNNING on the equipped deck** — that is the "standing
+  claim" on compute and memory, and its modifiers on `check.<slug>` are how a better decryptor is data. Queueing needs the file's
+  encryption skill INJECTED. Settling is lazy and catches up (every elapsed whole cycle rolls until one passes) with
+  `decryption:settle` each minute for the inbox message and the next clock; **every way of stopping a decryptor goes through
+  `ProgramRunner::putBack()`, which settles first and then closes the cycle**, so a gap is never credited. The file being worked on
+  that is being worked on cannot be removed while jacked in. It keeps working DURING A RUN: nothing about a run stops a background program, and the run's loadout simply starts with what compute and memory the decryptor left. **A SUPPLY JOB takes sealed dumps as files** (`MissionLedger::suppliable()`: whole scan files first, then loose Encrypted Data Dumps; a Memory Dump does not count). Not built: heat accumulation (see MECHANICS.md, *Thermal load*).
 - **A file is labelled for the machine it came off** (`strings.cyberspace.files.words` per
   type) — flavour, not mechanics.
 - **`systems.stock_rule` is how a machine is TOLD what to hold**, NULL on nearly every row.
@@ -758,8 +775,8 @@ against ICE generated on the fly, and it locks the screen until it is settled.
 
 ### Recovery
 
-- **Everybody mends a point of SI every four hours** — `synaptic_mend_minutes`, base
-  240 in `stats.bases`, an INTERVAL so a percentage off it lands (a rate of 1/240 a
+- **Everybody mends a point of SI every two hours** — `synaptic_mend_minutes`, base
+  120 in `stats.bases`, an INTERVAL so a percentage off it lands (a rate of 1/120 a
   minute would floor to nothing). `characters:regenerate` credits it with no clock: the
   point lands on the minute whose epoch number divides by the character's interval.
 - **Anything faster is paid for, and `synaptic_regen` floors at 0 to say so.**

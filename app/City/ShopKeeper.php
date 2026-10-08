@@ -12,6 +12,7 @@ use App\Models\Location;
 use App\Models\LocationBuy;
 use App\Models\ShopItem;
 use App\Support\Text;
+use App\Trade\Buying;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
 use Carbon\CarbonImmutable;
@@ -113,36 +114,18 @@ final class ShopKeeper
     }
 
     /**
-     * What this character could sell here: the loose rows the place's buy list names.
+     * What this character could sell here: the loose rows the place's buy list names, with the price and the room left.
      *
-     * @return list<array{row: InventoryItem, unit: int}>
+     * @return list<array{row: InventoryItem, unit: int, left: int|null}>
      */
     public function sellable(Character $character, Location $place): array
     {
-        $buys = LocationBuy::query()->with('item')->where('location_id', $place->getKey())->get()->keyBy('item_id');
-
-        if ($buys->isEmpty()) {
-            return [];
-        }
-
-        $out = [];
-
-        foreach (InventoryItem::query()->with('item')->where('character_id', $character->getKey())->loose()->whereIn('item_id', $buys->keys())->orderBy('id')->get() as $row) {
-            if ($this->mayLeave($character, $row)) {
-                $out[] = ['row' => $row, 'unit' => $buys[$row->item_id]->unitPrice()];
-            }
-        }
-
-        return $out;
+        return Buying::sellable($character, LocationBuy::query()->with('item')->where('location_id', $place->getKey())->get());
     }
 
     /** @return int|CityRefusal creds received */
     public function sell(Character $character, Location $place, int $rowId, int $quantity): int|CityRefusal
     {
-        if ($quantity < 1) {
-            return CityRefusal::CannotSell;
-        }
-
         return DB::transaction(function () use ($character, $place, $rowId, $quantity): int|CityRefusal {
             $locked = Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail();
 
@@ -150,39 +133,22 @@ final class ShopKeeper
                 return $refusal;
             }
 
-            $row = InventoryItem::query()->with('item')->where('character_id', $locked->getKey())->loose()->whereKey($rowId)->lockForUpdate()->first();
-            $buy = $row === null ? null : LocationBuy::query()->with('item')->where('location_id', $place->getKey())->where('item_id', $row->item_id)->first();
+            $row = InventoryItem::query()->with('item')->where('character_id', $locked->getKey())->whereKey($rowId)->first();
+            $buy = $row === null ? null : LocationBuy::query()->where('location_id', $place->getKey())->where('item_id', $row->item_id)->first();
 
-            if ($row === null || $buy === null || ! $this->mayLeave($locked, $row) || $quantity > (int) $row->quantity) {
+            if ($buy === null) {
                 return CityRefusal::CannotSell;
             }
 
-            $total = $buy->unitPrice() * $quantity;
-
-            if ($quantity === (int) $row->quantity) {
-                $row->delete();
-            } else {
-                $row->forceFill(['quantity' => $row->quantity - $quantity])->save();
-            }
-
-            Wallet::move($locked, $total, Reason::Sale, Text::get('city.shop.sale_note', [
-                'item' => $buy->item->displayName(),
+            $result = Buying::sell($locked, $buy, $rowId, $quantity, Text::get('city.shop.sale_note', [
+                'item' => $row->item->displayName(),
                 'quantity' => $quantity,
                 'place' => $place->name,
             ]));
 
             $character->refresh();
 
-            return $total;
+            return $result;
         });
-    }
-
-    /** Not the deck being carried, not armour being worn, and nothing that holds or carries other things. */
-    private function mayLeave(Character $character, InventoryItem $row): bool
-    {
-        return $character->equipped_deck_id !== $row->id
-            && ! $row->isOnPerson()
-            && ! $row->children()->exists()
-            && ! $row->fittings()->exists();
     }
 }

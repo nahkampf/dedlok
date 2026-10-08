@@ -21,13 +21,13 @@ return [
     | Selling to a place
     |--------------------------------------------------------------------------
     |
-    | What a place pays when its buy listing names no price: this fraction of the
-    | item's base cost. Kept well under what a shop charges so that buying and
-    | reselling cannot print money. Unbalanced.
+    | A buy listing (a location's or an exchange's) pays its `percent` of the item's stock price, and may cap how
+    | many it takes per window. `reset_hours` is that window: the market's own eight-hour cycle, and the one
+    | place it is set. The window settles lazily under the buyer's lock.
     |
     */
     'sell' => [
-        'fraction' => 0.4,
+        'reset_hours' => 8,
     ],
 
     /*

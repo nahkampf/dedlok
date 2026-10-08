@@ -280,6 +280,8 @@ class ItemController extends Controller
             'skills' => Skill::orderBy('title')->get(['id', 'slug', 'title']),
             'hardwareKinds' => Hardware::cases(),
             'programKinds' => ProgramKind::cases(),
+            // The ladder a Decryptor can be limited to.
+            'encryptions' => Skill::query()->where('category', 'Encryption')->orderBy('rank')->get(['slug', 'title']),
             'drugFamilies' => Family::cases(),
             'armourSlots' => WearSlot::cases(),
             'weaponClasses' => WeaponClass::cases(),

@@ -43,6 +43,12 @@ final class SkillStats
 
     public const CHECK_PREFIX = 'check.';
 
+    /** `decryption_chance.<slug>`: a percentage added to the chance of each decryption cycle of ONE encryption. */
+    public const CHANCE_PREFIX = 'decryption_chance.';
+
+    /** The skill category whose members are encryptions, and so have a chance stat. */
+    public const ENCRYPTION_CATEGORY = 'Encryption';
+
     /** Cleared by the Skill model, the way the archetype roster is. */
     public const CACHE_KEY = 'stats.skills.definitions';
 
@@ -228,6 +234,20 @@ final class SkillStats
                 'max' => null,
                 'rounding' => 'none',
             ];
+
+            /*
+             * Every encryption has a chance stat, tagged `decryption_chance` so a modifier on that tag set reaches all
+             * four, and a modifier by id reaches one. A percentage added to the chance of each cycle (base 0, see
+             * Sheet::baseFor), unbounded above because the roller's floor and ceiling are what bound a chance.
+             */
+            if ($skill->category === self::ENCRYPTION_CATEGORY) {
+                $definitions[self::CHANCE_PREFIX.$skill->slug] = [
+                    'tags' => ['decryption_chance'],
+                    'min' => 0,
+                    'max' => null,
+                    'rounding' => 'none',
+                ];
+            }
         }
 
         return $definitions;

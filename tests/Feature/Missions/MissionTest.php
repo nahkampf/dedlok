@@ -178,7 +178,7 @@ final class MissionTest extends TestCase
 
         $message = Notification::query()->sole();
 
-        $this->assertStringContainsString('Bring 3 complete scan files.', $message->body);
+        $this->assertStringContainsString('Bring 3 files: complete scan files or sealed data dumps.', $message->body);
         $this->assertNull($message->details);
     }
 
@@ -448,6 +448,37 @@ final class MissionTest extends TestCase
         );
 
         $this->assertSame(2, InventoryItem::query()->whereNotNull('scan_file')->count(), 'a refusal spends nothing');
+    }
+
+    /** Sealed data dumps are files too; a decrypted one (a Memory Dump) is not bulk and does not count. */
+    public function test_supply_takes_sealed_dumps_after_scan_files_and_not_memory_dumps(): void
+    {
+        $mission = $this->accepted(MissionAction::Supply);
+        $this->scanFiles(1);
+
+        $dump = fn (string $slug): InventoryItem => InventoryItem::create([
+            'character_id' => $this->character->id,
+            'item_id' => Item::query()->where('slug', $slug)->value('id'),
+            'quantity' => 1,
+            'extracted_file' => ['label' => 'Logs', 'size_qb' => 2, 'encryption_skill_id' => null, 'value_sealed' => 40, 'value_broken' => 90, 'grade' => 1],
+        ]);
+
+        $dump('encrypted-data-dump');
+        $dump('memory-dump');
+
+        $this->assertSame(
+            MissionRefusal::NotDone,
+            $this->ledger()->complete($this->character->fresh(), $mission),
+            'one scan file and one sealed dump are two files, and a Memory Dump is not a third',
+        );
+        $this->assertSame(1, InventoryItem::query()->whereNotNull('scan_file')->count(), 'a refusal spends nothing');
+
+        $dump('encrypted-data-dump');
+
+        $this->assertNotInstanceOf(MissionRefusal::class, $this->ledger()->complete($this->character->fresh(), $mission));
+        $this->assertSame(0, InventoryItem::query()->whereNotNull('scan_file')->count());
+        $this->assertSame(1, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'memory-dump'))->count(), 'the Memory Dump is untouched');
+        $this->assertSame(0, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'encrypted-data-dump'))->count());
     }
 
     /** A one-pass file that learned the grade and nothing else is not intel. */

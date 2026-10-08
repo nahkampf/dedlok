@@ -51,6 +51,9 @@ enum CityRefusal: string
     /** Not something they take, or not yours to sell: installed, in a container, fitted, running, or the deck you carry. */
     case CannotSell = 'cannot_sell';
 
+    /** The buyer has taken all of that it will take for now; the limit resets on the normal restock cycle. */
+    case WontTakeMore = 'wont_take_more';
+
     /** Nothing to mend or restore. */
     case NothingToTreat = 'nothing_to_treat';
 

@@ -22,12 +22,17 @@ use App\Models\SystemContent;
  */
 final readonly class ExtractedFile
 {
+    /** The item a file becomes once decrypted; its row is the same row, so the value it fetches is the broken one. */
+    public const DECRYPTED_SLUG = 'memory-dump';
+
     public function __construct(
         public string $label,
         public int $sizeQb,
         public ?int $encryptionSkillId,
         public int $valueSealed,
         public int $valueBroken,
+        /** The grade of the system it came off; null on a file taken before this was recorded. */
+        public ?int $grade = null,
     ) {}
 
     public static function fromContent(SystemContent $content): self
@@ -38,6 +43,7 @@ final readonly class ExtractedFile
             encryptionSkillId: $content->encryption_skill_id,
             valueSealed: (int) $content->value_sealed,
             valueBroken: (int) $content->value_broken,
+            grade: $content->system?->grade,
         );
     }
 
@@ -50,6 +56,7 @@ final readonly class ExtractedFile
             'encryption_skill_id' => $this->encryptionSkillId,
             'value_sealed' => $this->valueSealed,
             'value_broken' => $this->valueBroken,
+            'grade' => $this->grade,
         ];
     }
 
@@ -66,7 +73,14 @@ final readonly class ExtractedFile
             encryptionSkillId: isset($stored['encryption_skill_id']) ? (int) $stored['encryption_skill_id'] : null,
             valueSealed: (int) ($stored['value_sealed'] ?? 0),
             valueBroken: (int) ($stored['value_broken'] ?? 0),
+            grade: isset($stored['grade']) ? (int) $stored['grade'] : null,
         );
+    }
+
+    /** What a buyer starts from: the broken value once decrypted, the sealed value before. */
+    public function stockPrice(bool $decrypted): int
+    {
+        return $decrypted ? $this->valueBroken : $this->valueSealed;
     }
 
     /** What breaking it is worth, over selling it sealed — the number a player weighs sitting on one against. */

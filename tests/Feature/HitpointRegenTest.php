@@ -26,7 +26,7 @@ final class HitpointRegenTest extends TestCase
     {
         parent::setUp();
 
-        // Off the four-hourly SI mark, so the slow SI point stays out of what these tests count.
+        // Off the two-hourly SI mark, so the slow SI point stays out of what these tests count.
         $this->travelTo(now()->setTime(12, 1, 0));
     }
 

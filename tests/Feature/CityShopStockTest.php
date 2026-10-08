@@ -133,10 +133,10 @@ final class CityShopStockTest extends TestCase
         return app(ShopKeeper::class)->sell($this->character->fresh(), $this->place, $row->id, $quantity);
     }
 
-    public function test_selling_pays_a_fraction_of_the_cost_and_what_is_sold_is_gone(): void
+    public function test_selling_pays_the_percentage_of_the_stock_price_and_what_is_sold_is_gone(): void
     {
         $item = Item::factory()->physical()->create(['base_cost' => 100, 'stackable' => true]);
-        LocationBuy::create(['location_id' => $this->place->id, 'item_id' => $item->id]);
+        LocationBuy::create(['location_id' => $this->place->id, 'item_id' => $item->id, 'percent' => 40]);
         $row = $this->carry($item, 5);
 
         $this->assertSame(80, $this->sell($row, 2), '2 at 40% of 100');
@@ -149,12 +149,28 @@ final class CityShopStockTest extends TestCase
         $this->assertSame(0, ShopItem::query()->count(), 'and it did not join any shelf');
     }
 
-    public function test_a_row_price_beats_the_fraction(): void
+    public function test_a_listing_pays_the_full_stock_price_unless_told_otherwise(): void
     {
         $item = Item::factory()->physical()->create(['base_cost' => 100]);
-        LocationBuy::create(['location_id' => $this->place->id, 'item_id' => $item->id, 'price' => 77]);
+        LocationBuy::create(['location_id' => $this->place->id, 'item_id' => $item->id]);
 
-        $this->assertSame(77, $this->sell($this->carry($item), 1));
+        $this->assertSame(100, $this->sell($this->carry($item), 1));
+    }
+
+    public function test_a_limit_is_refused_not_reduced_and_resets_with_the_cycle(): void
+    {
+        $item = Item::factory()->physical()->create(['base_cost' => 10, 'stackable' => true]);
+        LocationBuy::create(['location_id' => $this->place->id, 'item_id' => $item->id, 'max_quantity' => 3, 'window_started_at' => now()]);
+        $row = $this->carry($item, 10);
+
+        $this->assertSame(CityRefusal::WontTakeMore, $this->sell($row, 4));
+        $this->assertSame(20, $this->sell($row, 2));
+        $this->assertSame(CityRefusal::WontTakeMore, $this->sell($row->fresh(), 2), 'one left of three');
+        $this->assertSame(10, $this->sell($row->fresh(), 1));
+        $this->assertSame(CityRefusal::WontTakeMore, $this->sell($row->fresh(), 1));
+
+        $this->travel(9)->hours();
+        $this->assertSame(30, $this->sell($row->fresh(), 3), 'a new window, a new limit');
     }
 
     public function test_it_will_not_take_what_it_does_not_list_or_what_is_not_in_your_hands(): void
@@ -207,12 +223,13 @@ final class CityShopStockTest extends TestCase
         $this->actingAs($admin)->put(route('admin.locations.update', $this->place), [
             'district_id' => $this->place->district_id, 'name' => 'Stall', 'map_x' => 50, 'map_y' => 50, 'discovery' => 'open',
             'shop' => [['item_id' => $item->id, 'price' => '', 'max_stock' => '6', 'restock_amount' => '2', 'restock_hours' => '4']],
-            'buys' => [['item_id' => $item->id, 'price' => ''], ['item_id' => '', 'price' => '3']],
+            'buys' => [['item_id' => $item->id, 'percent' => '', 'max_quantity' => '7'], ['item_id' => '', 'percent' => '3']],
         ])->assertSessionHasNoErrors();
 
         $row = ShopItem::query()->sole();
         $this->assertSame([6, 6, 2, 4], [$row->max_stock, $row->stock, $row->restock_amount, $row->restock_hours]);
-        $this->assertSame(1, LocationBuy::query()->count());
+        $buy = LocationBuy::query()->sole();
+        $this->assertSame([100, 7], [$buy->percent, $buy->max_quantity], 'blank percent is 100');
 
         $counts = DeletionImpact::forItem($item)->counts();
         $this->assertArrayHasKey('shop_listings', $counts);

@@ -5,6 +5,40 @@ what will break if it is left alone.
 
 ---
 
+## Next up (prioritized by the author, 2026-10-08)
+
+In this order. Each is small enough to build alone.
+
+1. ~~**The "scan completed" message carries the address of the system scanned.**~~ Done 2026-10-08: the sentence names it and the
+   message's `details['address']` draws the copy-an-address button above the facts. Older messages are not backfilled.
+2. **Wide screens put the map's side boxes to the right of it.** The *Threshold*, *Jump*, *Interact* (and the rest of that column:
+   Routing chain, Bookmarks) render below the map; when the screen is wide enough they should sit to its right. Kit layout, not new
+   components: a modifier class on the map screen's container, with the narrow case unchanged and audited at 320/360px as usual
+   (`board-split` on the deck screen is the shape to copy).
+3. **A "Current processes" item in the top bar, beside Running programs, opening a modal.** Everything in flight for the
+   character: a scan, a decryption (`decryption_queue`), the skill being trained (`training_queue`), any drug in effect
+   (`character_doses`), and so on, each with a progress bar (`.meter`, `--v`) that shows the time left on hover. Width is the whole
+   constraint on the bar (it must pay for itself at 320px, like the dials); the modal is the screen. Fetch it when it opens, as the
+   Running modal's *Could run* list does, rather than drawing it in the layout, because working it out queries a lot and the layout
+   is on every page. Each source should say how it knows its end (a decryption is a cycle in a queue with no fixed end: show the
+   current cycle and the expected time from `DecryptionQueue::odds()`).
+
+---
+
+## Decryption: what is left (2026-10-08)
+
+Built: the queue, cycles, simultaneous decryptors, reordering, gates, Cryptology and Precomputation, Ghostkey, buy lists, supply
+jobs taking sealed dumps. Left, in the author's hands or undecided:
+
+- **Decryptors for Halcyon-3, BLACKGLASS and Ouroboros** (the author is building them; `programs.decrypts` limits one to some encryptions).
+- **Other outcomes than a Memory Dump** — `DecryptionQueue::outcomeFor()` is the one place a table by grade goes; and a use for a Memory Dump beyond selling it.
+- **Heat while decrypting** — see MECHANICS.md, *Thermal load*. Nothing accumulates; a decryption that runs unattended on a deck with positive
+  net thermal load is the case the design says should cook the weakest module, and it needs the tick, the rate and the recalibration decided first.
+- **A file-grade filter on buy lists**, if wanted. The grade fields on an exchange buy list are the DESK's grade (1-5).
+- **Balance**: cycle length, difficulties and the 2% floor are first guesses.
+
+---
+
 ## RESUME HERE — physical combat, as of 2026-10-05 (step 6 built, unreleased)
 
 **`COMBAT.md` is both the design and the as-built record; read its *Settled* table and *Step 6, as built* first.**

@@ -58,13 +58,13 @@
                 <div class="panel__bd stack" style="--gap:var(--s-3)">
                     @foreach ($sellable as $entry)
                         <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
-                            <span class="item-row__name" style="flex:1 1 160px;min-width:0">{{ $entry['row']->item->displayName() }} <span class="micro" style="color:var(--ink-3)">× {{ $entry['row']->quantity }}</span></span>
+                            <span class="item-row__name" style="flex:1 1 160px;min-width:0">{{ $entry['row']->item->displayName() }} <span class="micro" style="color:var(--ink-3)">× {{ $entry['row']->quantity }}@if ($entry['left'] !== null) · {{ Text::get('city.shop.buy_left', ['count' => $entry['left']]) }}@endif</span></span>
                             <span class="num micro">{{ number_format($entry['unit']) }} ¤</span>
                             @if ($here)
                                 <form method="POST" action="{{ route('city.sell', [$place->slug, $entry['row']->id]) }}" class="row" style="--gap:var(--s-2)">
                                     @csrf
-                                    <input class="input num" type="number" name="quantity" min="1" max="{{ $entry['row']->quantity }}" value="{{ $entry['row']->quantity }}" style="width:5.5rem" aria-label="{{ Text::get('city.shop.quantity') }}">
-                                    <button type="submit" class="btn btn--sm cut">{{ Text::get('city.shop.sell') }}</button>
+                                    <input class="input num" type="number" name="quantity" min="1" max="{{ $entry['row']->quantity }}" value="{{ min($entry['row']->quantity, $entry['left'] ?? $entry['row']->quantity) ?: 1 }}" style="width:5.5rem" aria-label="{{ Text::get('city.shop.quantity') }}">
+                                    <button type="submit" class="btn btn--sm cut" @disabled($entry['left'] === 0)>{{ Text::get('city.shop.sell') }}</button>
                                 </form>
                             @endif
                         </div>

@@ -190,7 +190,7 @@ return [
         | Synaptic Integrity recovered per minute, on its own.
         |
         | ZERO BY DEFAULT: the fast trickle is paid for. Everybody mends a point
-        | every four hours (`synaptic_mend_minutes`, below); anything quicker is
+        | every two hours (`synaptic_mend_minutes`, below); anything quicker is
         | bought — Neuroplasticity, a point a minute per level, or a dose.
         |
         | Per MINUTE rather than per tick, so whatever eventually credits it can
@@ -226,7 +226,7 @@ return [
 
         /*
         | Minutes between points of Synaptic Integrity that come back ON THEIR
-        | OWN, for everybody: the slow floor under healing, a point every four
+        | OWN, for everybody: the slow floor under healing, a point every two
         | hours. `synaptic_regen` above is the fast trickle somebody pays for.
         |
         | An INTERVAL rather than a rate, because a rate of 1/240 a minute
@@ -236,6 +236,21 @@ return [
         */
         'synaptic_mend_minutes' => [
             'tags' => ['derived', 'vital'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'ceil',
+        ],
+
+        /*
+        | Seconds in one decryption cycle: how long a Decryptor works before the single check that may open the file.
+        |
+        | An INTERVAL for the reason `synaptic_mend_minutes` is, so a percentage off it lands (-2% a level is six seconds
+        | off a five-minute cycle) and a faster cycle is more checks, not a better one. The CHANCE of each check is
+        | `check.<slug>` of the file's encryption, scaled by `decryption_chance.<slug>`; this is only how often it is
+        | rolled. Seconds so a small modifier is a whole number of them. Rounded up, at least a second.
+        */
+        'decryption_cycle_seconds' => [
+            'tags' => ['derived'],
             'min' => 1,
             'max' => null,
             'rounding' => 'ceil',
@@ -762,8 +777,11 @@ return [
         // on this id and nothing else changes.
         'heat_decay' => 0.5,
 
-        // A point of Synaptic Integrity every four hours, for everybody.
-        'synaptic_mend_minutes' => 240,
+        // A point of Synaptic Integrity every two hours, for everybody.
+        'synaptic_mend_minutes' => 120,
+
+        // One decryption cycle is five minutes before anything shortens it.
+        'decryption_cycle_seconds' => 300,
     ],
 
     /*

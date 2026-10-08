@@ -8,6 +8,7 @@ use App\Inventory\Imprint;
 use App\Models\ArchetypeItem;
 use App\Models\ArchetypeSkill;
 use App\Models\CharacterSkill;
+use App\Models\EntityBuy;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\LocationBuy;
@@ -58,7 +59,7 @@ final class DeletionImpact
             'purchases' => MarketPurchase::where('item_id', $item->id)->count(),
             'archetype_loadouts' => ArchetypeItem::where('item_id', $item->id)->count(),
             'shop_listings' => ShopItem::where('item_id', $item->id)->count(),
-            'shop_buys' => LocationBuy::where('item_id', $item->id)->count(),
+            'shop_buys' => LocationBuy::where('item_id', $item->id)->count() + EntityBuy::where('item_id', $item->id)->count(),
             // An opponent whose weapon or standing round is deleted does not lose its row: it goes unarmed.
             'npc_arms' => Npc::query()
                 ->where(fn ($q) => $q->where('ranged_weapon_id', $item->id)->orWhere('melee_weapon_id', $item->id)->orWhere('ammo_item_id', $item->id))

@@ -91,6 +91,25 @@ class InventoryItem extends Model
             ?? Text::get('inventory.files.unknown_encryption');
     }
 
+    /** Where this file waits to be decrypted, if it does. Asked only of file rows. */
+    public function decryptionEntry(): HasOne
+    {
+        return $this->hasOne(DecryptionEntry::class, 'inventory_item_id');
+    }
+
+    /**
+     * What a buyer starts from, before its percentage: a file's own value (the broken one once it is a Memory Dump),
+     * otherwise the item's `base_cost`. THE one place a row's stock price is worked out.
+     */
+    public function stockPrice(): int
+    {
+        $file = $this->extractedFile();
+
+        return $file !== null
+            ? $file->stockPrice($this->item->slug === ExtractedFile::DECRYPTED_SLUG)
+            : (int) $this->item->base_cost;
+    }
+
     /**
      * The read this row used to be, before it became something sellable.
      *

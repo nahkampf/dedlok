@@ -184,13 +184,26 @@ return [
                 1 => [2, 6], 2 => [4, 10], 3 => [6, 16], 4 => [10, 24], 5 => [16, 40],
                 6 => [24, 60], 7 => [40, 90], 8 => [60, 140], 9 => [90, 220],
             ],
+            // What it fetches SEALED, and what it fetches once BROKEN: [min, max] creds, rolled
+            // independently, so a lucky sealed file can out-earn a poor decrypted one. Geometric
+            // between grade 1 (25-50 / 50-125) and grade 9 (1000-2000 / 2000-5400).
             'value' => [
-                1 => [120, 400], 2 => [250, 800], 3 => [500, 1600], 4 => [900, 2800], 5 => [1600, 5000],
-                6 => [2800, 8000], 7 => [4500, 13000], 8 => [7500, 21000], 9 => [12000, 34000],
+                1 => [25, 50], 2 => [40, 80], 3 => [65, 125], 4 => [100, 200], 5 => [160, 315],
+                6 => [250, 500], 7 => [400, 795], 8 => [630, 1260], 9 => [1000, 2000],
             ],
-            // Per mille of the sealed price, so 2200 means broken is worth
-            // 2.2x what a buyer gives for it still sealed.
-            'broken_multiplier' => 2200,
+            'value_broken' => [
+                1 => [50, 125], 2 => [80, 200], 3 => [125, 320], 4 => [200, 515], 5 => [315, 820],
+                6 => [500, 1315], 7 => [795, 2105], 8 => [1260, 3375], 9 => [2000, 5400],
+            ],
+            // Which encryption a file may carry: each Encryption skill's slug and the [lowest, highest]
+            // grade of system it turns up in. Where bands overlap, the draw is even between the
+            // eligible ones; a skill with no entry here is eligible everywhere.
+            'encryption' => [
+                'cinder' => [1, 4],
+                'halcyon3' => [3, 6],
+                'blackglass' => [6, 8],
+                'ouroboros' => [8, 9],
+            ],
         ],
 
         /*
@@ -224,6 +237,41 @@ return [
             'silo' => ['data' => 1500, 'item' => 900, 'creds' => 700],
             'compute' => ['data' => 700, 'item' => 900, 'creds' => 1400],
             'relay' => ['data' => 900, 'item' => 1300, 'creds' => 900],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Decryption
+    |--------------------------------------------------------------------------
+    |
+    | A stolen file is broken AT LEISURE, as a queue: one file at a time, in cycles. At the end of each whole cycle
+    | during which a Decryptor program has been running on the equipped deck, ONE check is rolled — the file's
+    | encryption skill (`check.<slug>`, with whatever the running decryptor adds) against the difficulty below. A
+    | pass opens the file; a fail costs only the cycle, and nothing carries forward.
+    |
+    | `difficulty` is per encryption, keyed by the skill's slug. Against `check.<slug>` of about 15 for a fresh
+    | character who has just injected the skill, about 51 mid-career and about 67 fully trained, so each
+    | encryption is a coin flip for somebody a rung or two above where it turns up. `checks.floors.decryption`
+    | keeps a hopeless matchup slow rather than impossible.
+    |
+    */
+    'decryption' => [
+        // Skill needed to attempt each encryption, on the RESOLVED level (`skill.<slug>`): level 0 is injected but untrained.
+        // A slug left out needs level 1.
+        'gate' => [
+            'cinder' => 1,
+            'halcyon3' => 1,
+            'blackglass' => 1,
+            'ouroboros' => 1,
+        ],
+        // Files waiting, the one being worked on included.
+        'queue_max' => 10,
+        'difficulty' => [
+            'cinder' => 20,
+            'halcyon3' => 35,
+            'blackglass' => 50,
+            'ouroboros' => 65,
         ],
     ],
 

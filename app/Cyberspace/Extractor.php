@@ -163,6 +163,7 @@ final readonly class Extractor
     {
         return DB::transaction(function () use ($character, $address): ExtractionResult {
             $contents = SystemContent::query()
+                ->with('system')
                 ->whereHas('system', fn ($query) => $query->where('address', $address))
                 ->ofKind(ContentKind::Data)
                 ->get();

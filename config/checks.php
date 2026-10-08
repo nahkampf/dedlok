@@ -66,6 +66,11 @@ return [
         // same absence removes the ceiling, so a strong explorer is certain of
         // a Trivial one. See CITY.md.
         'exploration' => 0.0,
+
+        // DECRYPTION. A failed cycle costs only time, so the floor is the whole price of a hopeless matchup: at
+        // 2% a five-minute cycle averages four hours to a lucky break, and the best decryptor alive still
+        // wastes a cycle one time in fifty. See config/cyberspace.php, *Decryption*.
+        'decryption' => 0.02,
     ],
 
     /*

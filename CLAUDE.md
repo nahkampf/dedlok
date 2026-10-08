@@ -945,6 +945,19 @@ never a `forceFill(['creds' => …])`.
   and replaced wholesale per district, and **a district is refused deletion while anybody
   stands in it or it is `city.start`**. A trip whose route names a deleted district stops
   where the traveller is and refunds the rest (`Traveller::settle()`).
+- **BUYING FROM PLAYERS IS ONE RULE FOR LOCATIONS AND EXCHANGES** (`App\Trade\Buying`; `LocationBuy` and `EntityBuy` share `BuysFromPlayers`).
+  A listing is an item, a `percent` of its STOCK PRICE (default 100; `InventoryItem::stockPrice()`: `base_cost`, or for a file its OWN
+  value — sealed on an Encrypted Data Dump, broken on a Memory Dump) and a `max_quantity` per window (NULL: any number). **The
+  limit is the buyer's, shared by every player**, counted in `bought` and zeroed lazily when the window (`city.sell.reset_hours`, 8)
+  rolls over, under the listing's lock. A sale over the limit is REFUSED (`CityRefusal::WontTakeMore`), never reduced. A location's list
+  is edited in the location editor; an exchange's is the entity's, over a range of desk grades, on the entity shelf page
+  (`entity_buys`, `DeskBuyer`, `exchange.sell`) and obeys the desk's welcome gate. `BuyListEditor` is the only writer of both and
+  DIFFS, so saving never hands a buyer a fresh limit.
+- **DECRYPTION** (`App\Decryption\DecryptionQueue`, `CYBERSPACE_RULES.md` under *Node contents*): a reorderable queue of stolen files broken in
+  cycles by one roll each, by **every Decryptor program running on the equipped deck, one file apiece** (`decryption_queue.worker_id`); the Encrypted Data Dump row becomes a Memory
+  Dump IN PLACE. `decryption_queue` is written only there; `decryption:settle` runs every minute; `ProgramRunner::putBack()` settles
+  before any decryptor stops. A Decryptor can be limited to some encryptions (`programs.decrypts`, slugs; NULL is any, edited as ticks in the item editor): a file waits
+  for a running decryptor that can break ITS encryption (`DecryptionQueue::decryptorRunning()`). Ghostkey (Cinder only) is the first. Difficulties and gates are `cyberspace.decryption`, the cycle length the stat `decryption_cycle_seconds`, each cycle's chance scaled by `decryption_chance.<slug>` (tag `decryption_chance` for all), the floor `checks.floors.decryption`.
 - **A location is a shop by having `shop_items` rows and a clinic by having
   `clinic_services` rows, and buys from players by having `location_buys` rows;
   `FeatureEditor` is the only writer of all three.** Shop listings are edited as a DIFF —

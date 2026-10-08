@@ -108,7 +108,7 @@
         </div>
 
         @php($buyRows = old('buys', $buys))
-        @php($buyRows = array_pad(array_values($buyRows), count($buyRows) + 3, ['item_id' => null, 'price' => null]))
+        @php($buyRows = array_pad(array_values($buyRows), count($buyRows) + 3, ['item_id' => null, 'percent' => null, 'max_quantity' => null]))
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.locations.buys') }}</span></div>
             <div class="panel__bd stack" style="--gap:var(--s-3)">
@@ -119,7 +119,8 @@
                             <option value=""></option>
                             <x-grouped-options :groups="$items" :selected="$row['item_id'] ?? null" />
                         </select>
-                        <input class="input num" type="number" min="0" name="buys[{{ $i }}][price]" value="{{ $row['price'] ?? '' }}" placeholder="{{ Text::get('admin.locations.buy_default') }}" style="width:9rem" aria-label="{{ Text::get('admin.locations.price') }}">
+                        <input class="input num" type="number" min="0" max="1000" name="buys[{{ $i }}][percent]" value="{{ $row['percent'] ?? '' }}" placeholder="{{ Text::get('admin.locations.buy_percent') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.buy_percent') }}">
+                        <input class="input num" type="number" min="1" name="buys[{{ $i }}][max_quantity]" value="{{ $row['max_quantity'] ?? '' }}" placeholder="{{ Text::get('admin.locations.unlimited') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.buy_max') }}">
                     </div>
                 @endforeach
             </div>
