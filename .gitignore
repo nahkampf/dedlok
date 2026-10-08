@@ -50,3 +50,6 @@ Homestead.yaml
 # Claude Code tooling: project-installed skills and their lockfile.
 /.claude
 /skills-lock.json
+
+# Pictures supporters upload for their own character (App\Characters\Avatar); the shipped default stays tracked.
+/public/images/characters/avatars/

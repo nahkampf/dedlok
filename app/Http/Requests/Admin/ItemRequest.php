@@ -10,6 +10,7 @@ use App\Combat\DamageProfile;
 use App\Combat\Riders;
 use App\Combat\WeaponClass;
 use App\Combat\WearSlot;
+use App\Cyberspace\SystemType;
 use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotKind;
@@ -22,8 +23,10 @@ use App\Items\UseEffect;
 use App\Market\Rarity;
 use App\Models\Ammunition;
 use App\Models\Item;
+use App\Models\Program;
 use App\Programs\ProgramKind;
 use App\Stats\Modifier;
+use App\Support\Qb;
 use App\Support\Text;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
@@ -67,6 +70,17 @@ class ItemRequest extends FormRequest
 
     /** What an unsigned int column holds. A number above it is a typo. */
     private const MAX_MEASURE = 4_294_967_295;
+
+    /** The measures carried to one decimal place (see App\Support\Qb), and the most one may hold. */
+    private const TENTHS = ['qflops', 'quantabits', 'storage'];
+
+    private const MAX_QB = 999_999_999.9;
+
+    /** @return list<mixed> A number with at most one decimal place. */
+    private static function qb(int|float $min = 0): array
+    {
+        return ['numeric', 'regex:/^\d+(\.\d)?$/', 'min:'.$min, 'max:'.self::MAX_QB];
+    }
 
     public function authorize(): bool
     {
@@ -164,6 +178,16 @@ class ItemRequest extends FormRequest
             // A fight-only drug counts rounds, so its minutes are not asked (0, unread) and the two fight fields only
             // mean anything when it is one: blank otherwise, however the form posted them.
             'fight_only' => $this->boolean('fight_only'),
+            // A Script's lifetime: blank is an ordinary program.
+            'lifetime_seconds' => $this->numberOrNull('lifetime_seconds'),
+            // A design: the product is what makes the item one. Lines with no component chosen are the form's spare rows.
+            'design_product' => $this->filled('design_product') ? $this->input('design_product') : null,
+            // The panel's own defaults (a level of 1) mean nothing when there is no product, so they are not values.
+            'design_seconds' => $this->filled('design_product') ? $this->numberOrNull('design_seconds') : null,
+            'design_single_use' => $this->filled('design_product') && $this->boolean('design_single_use'),
+            'design_skill_id' => $this->filled('design_product') && $this->filled('design_skill_id') ? $this->input('design_skill_id') : null,
+            'design_skill_level' => $this->filled('design_product') && $this->filled('design_skill_id') ? $this->numberOrNull('design_skill_level') : null,
+            'design_lines' => $this->designLinesInput(),
             'duration_minutes' => $this->boolean('fight_only') ? '0' : $this->panelNumber('duration_minutes', $isDrugForm),
             'duration_turns' => $this->boolean('fight_only') ? $this->numberOrNull('duration_turns') : null,
             'turn_hitpoints' => $this->boolean('fight_only') ? ($this->numberOrNull('turn_hitpoints') ?? '0') : null,
@@ -235,11 +259,12 @@ class ItemRequest extends FormRequest
      */
     public function rules(): array
     {
-        $capacity = (int) $this->input('capacity', 0);
+        $capacity = (float) $this->input('capacity', 0);
         $isImprint = $this->input('use_op') === Item::USE_INJECT_SKILL;
         $hardware = $this->hardware();
         $isProgram = $this->programKind() !== null;
         $isDrug = $this->drugFamily() !== null;
+        $isDesign = $this->filled('design_product');
         $isConsumable = $this->consumableEffects() !== [];
         $isArmour = $this->armourSlots() !== [];
         $weaponClass = $this->weaponClass();
@@ -300,9 +325,9 @@ class ItemRequest extends FormRequest
                 : ['prohibited'],
 
             'weight' => ['required', 'numeric', 'min:0', 'max:999999.99'],
-            'size' => ['required', 'integer', 'min:0'],
+            'size' => ['required', ...self::qb()],
 
-            'capacity' => ['required', 'integer', 'min:0'],
+            'capacity' => ['required', ...self::qb()],
             // The other half of chk_items_capacity_pair. Capacity without a
             // kind holds anything; a kind without capacity holds nothing while
             // claiming otherwise. Neither is a container.
@@ -329,7 +354,7 @@ class ItemRequest extends FormRequest
                 ? ['nullable', 'array']
                 : ['prohibited'],
             'onboard_storage' => $hardware?->isDeck()
-                ? ['nullable', 'integer', 'min:0', 'max:65535']
+                ? ['nullable', ...self::qb()]
                 : ['prohibited'],
             'board_layout.*' => ['array', 'size:2'],
             'board_layout.*.0' => ['numeric', 'between:'.BoardLayout::MIN.','.BoardLayout::MAX],
@@ -350,13 +375,13 @@ class ItemRequest extends FormRequest
                 : ['nullable', Rule::enum(ProgramKind::class)],
 
             'qflops_cost' => $isProgram
-                ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                ? ['required', ...self::qb()]
                 : ['prohibited'],
             'memory_cost' => $isProgram
-                ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                ? ['required', ...self::qb()]
                 : ['prohibited'],
             'storage_size' => $isProgram
-                ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                ? ['required', ...self::qb()]
                 : ['prohibited'],
             /*
              * DRUGS. An item is a drug because it has a family, the same way
@@ -417,6 +442,37 @@ class ItemRequest extends FormRequest
              * something this is false on.
              */
             'multithreaded' => ['boolean'],
+            'lifetime_seconds' => $isProgram
+                ? ['nullable', 'integer', 'min:1', 'max:'.self::MAX_MEASURE]
+                : ['prohibited'],
+
+            /*
+             * A DESIGN (CRAFTING.md): plain data with a recipe. The product must be a program of a kind somebody can be taught to build,
+             * and every line names a data item. A line's filters are all optional.
+             */
+            'design_product' => $hardware !== null || $isProgram || $isImprint || $isGear || $isDrug || $this->filled('implant_region')
+                ? ['prohibited']
+                : ['nullable', 'integer', Rule::exists('programs', 'item_id'), function (string $attribute, mixed $value, \Closure $fail): void {
+                    $kind = Program::query()->where('item_id', (int) $value)->value('kind');
+
+                    if (config('crafting.gate.'.($kind instanceof ProgramKind ? $kind->value : (string) $kind)) === null) {
+                        $fail(Text::get('crafting.refused.uncraftable'));
+                    }
+                }],
+            'design_seconds' => $isDesign ? ['required', 'integer', 'min:1', 'max:'.self::MAX_MEASURE] : ['prohibited'],
+            'design_single_use' => ['boolean'],
+            'design_skill_id' => $isDesign ? ['nullable', 'integer', Rule::exists('skills', 'id')] : ['prohibited'],
+            'design_skill_level' => $isDesign ? ['nullable', 'integer', 'min:1', 'max:20'] : ['prohibited'],
+            'design_lines' => $isDesign ? ['required', 'array', 'min:1', 'max:'.(int) config('crafting.max_components', 8)] : ['prohibited'],
+            'design_lines.*.item_id' => ['required', 'integer', Rule::exists('items', 'id')->where('container', Item::CONTAINER_DATA)],
+            'design_lines.*.quantity' => ['required', 'integer', 'min:1', 'max:9999'],
+            'design_lines.*.grade_min' => ['nullable', 'integer', 'between:1,9'],
+            'design_lines.*.grade_max' => ['nullable', 'integer', 'between:1,9', 'gte:design_lines.*.grade_min'],
+            'design_lines.*.os_slug' => ['nullable', 'string', Rule::exists('skills', 'slug')->where('category', 'Operating Systems')],
+            'design_lines.*.owner_id' => ['nullable', 'integer', Rule::exists('entities', 'id')],
+            'design_lines.*.system_type' => ['nullable', Rule::enum(SystemType::class)],
+            'design_lines.*.ice_min' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'design_lines.*.ids_min' => ['nullable', 'integer', 'min:1', 'max:100'],
 
             // The encryptions a Decryptor is limited to, by skill slug; empty is any. Stored only on a decryptor.
             'program_decrypts' => ['array'],
@@ -569,7 +625,7 @@ class ItemRequest extends FormRequest
 
         foreach (self::MEASURES as $column) {
             $rules[$column] = $column === $measure
-                ? ['required', 'integer', 'min:1', 'max:'.self::MAX_MEASURE]
+                ? ['required', ...(in_array($column, self::TENTHS, true) ? self::qb(0.1) : ['integer', 'min:1', 'max:'.self::MAX_MEASURE])]
                 : ['prohibited'];
         }
 
@@ -594,7 +650,7 @@ class ItemRequest extends FormRequest
             // One field, two reasons to refuse it. A deck is unstackable
             // because of its sockets, a crate because of its contents, and
             // being told the wrong one is worse than being told neither.
-            'stackable.declined' => (int) $this->input('capacity', 0) > 0
+            'stackable.declined' => (float) $this->input('capacity', 0) > 0
                 ? Text::get('admin.validation.container_stacks')
                 : Text::get('admin.validation.deck_stacks'),
 
@@ -867,7 +923,7 @@ class ItemRequest extends FormRequest
         // Always written, for the board's reason: an item that stops being a
         // deck stops holding anything.
         $data['onboard_storage'] = ($this->hardware()?->isDeck() ?? false)
-            ? (isset($data['onboard_storage']) ? (int) $data['onboard_storage'] : null)
+            ? (isset($data['onboard_storage']) ? Qb::of($data['onboard_storage']) : null)
             : null;
 
         foreach (self::MEASURES as $column) {
@@ -878,7 +934,8 @@ class ItemRequest extends FormRequest
         // is a program — the row is what says so — so none of these stay.
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
-            $data['storage_size'], $data['background_process'], $data['multithreaded'],
+            $data['storage_size'], $data['lifetime_seconds'], $data['background_process'], $data['multithreaded'],
+            $data['design_product'], $data['design_seconds'], $data['design_single_use'], $data['design_skill_id'], $data['design_skill_level'], $data['design_lines'],
             $data['program_modifiers'], $data['program_decrypts'],
         );
 
@@ -1050,6 +1107,69 @@ class ItemRequest extends FormRequest
         return $effects;
     }
 
+    /** The program a design makes, or null when this is not a design. */
+    public function designProductId(): ?int
+    {
+        $value = $this->input('design_product');
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    /** @return array<string, mixed> */
+    public function designColumns(): array
+    {
+        $data = $this->validated();
+
+        return [
+            'craft_seconds' => (int) ($data['design_seconds'] ?? 1),
+            'single_use' => (bool) ($data['design_single_use'] ?? false),
+            'skill_id' => isset($data['design_skill_id']) ? (int) $data['design_skill_id'] : null,
+            'skill_level' => (int) ($data['design_skill_level'] ?? 1),
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function designLines(): array
+    {
+        return array_map(static fn (array $line): array => [
+            'component_item_id' => (int) $line['item_id'],
+            'quantity' => (int) $line['quantity'],
+            'grade_min' => isset($line['grade_min']) ? (int) $line['grade_min'] : null,
+            'grade_max' => isset($line['grade_max']) ? (int) $line['grade_max'] : null,
+            'os_slug' => $line['os_slug'] ?? null,
+            'owner_id' => isset($line['owner_id']) ? (int) $line['owner_id'] : null,
+            'system_type' => $line['system_type'] ?? null,
+            'ice_min' => isset($line['ice_min']) ? (int) $line['ice_min'] : null,
+            'ids_min' => isset($line['ids_min']) ? (int) $line['ids_min'] : null,
+        ], array_values((array) ($this->validated()['design_lines'] ?? [])));
+    }
+
+    /**
+     * The form's recipe rows without its spare ones: a row with no component chosen is nothing, and a blank filter is no filter.
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    private function designLinesInput(): ?array
+    {
+        if (! $this->filled('design_product')) {
+            return null;
+        }
+
+        $lines = [];
+
+        foreach ((array) $this->input('design_lines', []) as $line) {
+            $line = (array) $line;
+
+            if (($line['item_id'] ?? '') === '') {
+                continue;
+            }
+
+            $lines[] = array_map(static fn (mixed $value): mixed => $value === '' ? null : $value, $line);
+        }
+
+        return $lines;
+    }
+
     /** What family of drug this payload describes, if any. */
     public function drugFamily(): ?Family
     {
@@ -1096,10 +1216,11 @@ class ItemRequest extends FormRequest
         $data = $this->validated();
 
         return [
-            'qflops_cost' => (int) ($data['qflops_cost'] ?? 0),
-            'memory_cost' => (int) ($data['memory_cost'] ?? 0),
-            'storage_size' => (int) ($data['storage_size'] ?? 0),
+            'qflops_cost' => Qb::of($data['qflops_cost'] ?? 0),
+            'memory_cost' => Qb::of($data['memory_cost'] ?? 0),
+            'storage_size' => Qb::of($data['storage_size'] ?? 0),
             'background_process' => (bool) ($data['background_process'] ?? false),
+            'lifetime_seconds' => isset($data['lifetime_seconds']) ? (int) $data['lifetime_seconds'] : null,
             'multithreaded' => (bool) ($data['multithreaded'] ?? false),
             // Null rather than [], because a program that only gates genuinely
             // modifies nothing and the two should not be different spellings

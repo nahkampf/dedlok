@@ -737,8 +737,8 @@ class ModuleFittingTest extends TestCase
 
         $totals = $this->totals($deck);
 
-        $this->assertSame(11, $totals->qflops);
-        $this->assertSame(16, $totals->quantabits);
+        $this->assertEquals(11, $totals->qflops);
+        $this->assertEquals(16, $totals->quantabits);
         $this->assertSame(2, $totals->bandwidth);
         $this->assertSame(217, $totals->draw);
         $this->assertSame(300, $totals->supply);
@@ -756,7 +756,7 @@ class ModuleFittingTest extends TestCase
 
         // Labelled by the measure, not the socket: a deck with one of each has
         // one compute figure rather than two halves of one.
-        $this->assertSame(18, $this->totals($deck)->qflops);
+        $this->assertEquals(18, $this->totals($deck)->qflops);
     }
 
     public function test_a_deck_with_everything_is_ready(): void
@@ -1228,9 +1228,9 @@ class ModuleFittingTest extends TestCase
         );
 
         // The stored column was the base, not the answer.
-        $this->assertSame(20, $resolved->qflops);
+        $this->assertEquals(20, $resolved->qflops);
         // And nothing else moved with it.
-        $this->assertSame(16, $resolved->quantabits);
+        $this->assertEquals(16, $resolved->quantabits);
     }
 
     public function test_a_percentage_lands_on_the_summed_base(): void
@@ -1243,7 +1243,7 @@ class ModuleFittingTest extends TestCase
         );
 
         // 16 + 50% of 16, floored by the stat's own rounding.
-        $this->assertSame(24, $resolved->quantabits);
+        $this->assertEquals(24, $resolved->quantabits);
     }
 
     public function test_a_tag_targets_every_deck_measure_at_once(): void
@@ -1257,8 +1257,8 @@ class ModuleFittingTest extends TestCase
 
         // Tag targeting is the point: a stat added later is picked up without
         // anyone editing a list.
-        $this->assertSame(22, $resolved->qflops);
-        $this->assertSame(32, $resolved->quantabits);
+        $this->assertEquals(22, $resolved->qflops);
+        $this->assertEquals(32, $resolved->quantabits);
         $this->assertSame(4, $resolved->bandwidth);
     }
 
@@ -1306,7 +1306,7 @@ class ModuleFittingTest extends TestCase
         );
 
         // Negative compute is not a state the game has.
-        $this->assertSame(0, $resolved->qflops);
+        $this->assertEquals(0, $resolved->qflops);
     }
 
     public function test_counts_are_facts_about_the_deck_and_do_not_resolve(): void

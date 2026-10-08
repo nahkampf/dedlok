@@ -41,6 +41,12 @@ final class TrainingQueue
     /** How many entries a character may line up. */
     public const LIMIT = 5;
 
+    /** Supporters line up as many as they like (null is no limit); everybody else gets LIMIT. */
+    public static function limitFor(Character $character): ?int
+    {
+        return $character->user?->isSupporter() ? null : self::LIMIT;
+    }
+
     public function __construct(
         private readonly SkillProgression $progression,
         private readonly TrainingDeposit $deposit,
@@ -63,7 +69,9 @@ final class TrainingQueue
         return DB::transaction(function () use ($character, $skill): TrainingQueueEntry|QueueRefusal {
             $entries = $character->trainingQueue()->lockForUpdate()->get();
 
-            if ($entries->count() >= self::LIMIT) {
+            $limit = self::limitFor($character);
+
+            if ($limit !== null && $entries->count() >= $limit) {
                 return QueueRefusal::QueueFull;
             }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Characters\Avatar;
 use App\Drugs\DrugLedger;
 use App\Drugs\Family;
 use App\Models\Archetype;
@@ -14,6 +15,7 @@ use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use RuntimeException;
 
 /**
  * The character sheet: who you are, rather than what you are carrying.
@@ -85,6 +87,34 @@ class CharacterController extends Controller
         $character->forceFill(['bio' => trim($bio) === '' ? null : $bio])->save();
 
         return back()->with('status', Text::get('character.bio_saved'));
+    }
+
+    /** A supporter's own picture: centre-cropped to 300x400 by `Avatar`, replacing what stood there. */
+    public function avatar(Request $request, Avatar $avatar): RedirectResponse
+    {
+        abort_unless($request->user()->isSupporter(), 403);
+
+        $request->validate(['avatar' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:8192']], [
+            'avatar.required' => Text::get('character.avatar_required'),
+            'avatar.mimes' => Text::get('character.avatar_invalid'),
+            'avatar.max' => Text::get('character.avatar_invalid'),
+        ]);
+
+        try {
+            $avatar->store($this->character($request), $request->file('avatar'));
+        } catch (RuntimeException) {
+            return back()->withErrors(['avatar' => Text::get('character.avatar_invalid')]);
+        }
+
+        return back()->with('status', Text::get('character.avatar_saved'));
+    }
+
+    /** Takes the picture down; the default comes back. Open to anybody who has one, supporter or not any more. */
+    public function removeAvatar(Request $request, Avatar $avatar): RedirectResponse
+    {
+        $avatar->remove($this->character($request));
+
+        return back()->with('status', Text::get('character.avatar_removed'));
     }
 
     /**

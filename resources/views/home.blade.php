@@ -48,6 +48,7 @@
         <div class="micro" style="color:var(--ink-3)">
             {{ Text::get('home.players_active') }} <span style="color:var(--ok)">{{ number_format($players['active']) }}</span>
         </div>
+        <a class="link micro" href="{{ route('supporters.index') }}">{{ Text::get('supporters.title') }}</a>
     </div>
 
     @if ($patchNotes !== [])

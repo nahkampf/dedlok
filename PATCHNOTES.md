@@ -1,3 +1,13 @@
+## 0.45.0 (2026-10-08)
+
+- New mechanics: Code Crafting. Takes Designs and Components and produces Programs.
+- Encrypted Data from extraction runs now yield various component files when decrypted.
+- Component files retain their stats from the system they were extracted from (grade, owner, type etc)
+- Crafting can produce existing progras (like Icebrakers) or a new type called Scripts. Scripts are one-use programs that provide a stat boost for a short while, and gets deleted after use.
+- Code Crafting is skillgated behind the skill Code Crafting. A few supporting skills also seeded.
+- Tweak: RAM, Storage and compute are now decimals rather than integers, so that files for instance can take up less space than 1 QB.
+- Supporters: Signing up for a membership on Ko-Fi now grants a support badge, unlimited skill queue, and option to upload an avatar on the character screen.
+
 ## 0.44.0 (2026-10-08)
 - When completing a scan, a scan file is automatically created (killed the old, clunky "export scan" mechanics. 
 - "Current processes" button in the topbar shows progress of scans, trips, decryption, training, drugs, withdrawals, job deadlines and market restocks.

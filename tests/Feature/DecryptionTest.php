@@ -37,6 +37,8 @@ final class DecryptionTest extends TestCase
 
     private float $die = 0.0;
 
+    private ?int $outcomeRoll = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +47,9 @@ final class DecryptionTest extends TestCase
 
         // Pinned: 0.0 passes every check, 0.99 fails all but a certainty.
         $this->app->bind(CheckRoller::class, fn (): CheckRoller => CheckRoller::fromConfig(fn (): float => $this->die));
+
+        // The outcome die: the lowest roll is the first component on the list, the Memory Dump.
+        $this->app->instance('decryption.die', fn (int $min, int $max): int => $this->outcomeRoll ?? $min);
 
         $this->character = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3]));
         $this->cinder = Skill::factory()->create(['slug' => 'cinder', 'category' => 'Encryption', 'rank' => 2]);
@@ -142,7 +147,7 @@ final class DecryptionTest extends TestCase
         $program = $ghostkey->program;
 
         $this->assertSame(['cinder'], $program->decrypts);
-        $this->assertSame([ProgramKind::Decryptor, 3, 2, 2, 0, 25, 'common', true], [
+        $this->assertEquals([ProgramKind::Decryptor, 3, 2, 2, 0, 25, 'common', true], [
             $program->kind, $program->qflops_cost, $program->memory_cost, $program->storage_size,
             $ghostkey->base_cost, $ghostkey->seed_quantity, $ghostkey->rarity->value, (bool) $ghostkey->on_market,
         ]);
@@ -294,6 +299,29 @@ final class DecryptionTest extends TestCase
         $this->startDecryptor();
         $this->queue()->settle($this->character->fresh());
         $this->assertNotNull($entry->fresh()->cycle_started_at);
+    }
+
+    public function test_what_a_file_becomes_is_a_weighted_roll_by_grade_and_keeps_where_it_came_from(): void
+    {
+        $this->inject();
+        $origin = ['system_type' => 'relay', 'owner_id' => 7, 'owner_name' => 'Aperture', 'os_slug' => 'auroos', 'os_title' => 'AuraOS', 'ids_level' => 2, 'ice_level' => 1, 'encryption_slug' => 'cinder', 'encryption_title' => 'Cinder'];
+        $file = $this->file();
+        $file->forceFill(['extracted_file' => [...$file->extracted_file, 'origin' => $origin]])->save();
+
+        $this->queue()->enqueue($this->character->fresh(), $file);
+        $this->startDecryptor();
+        $this->queue()->settle($this->character->fresh());
+
+        // Grade 1 weights: memory dump 20, kernel log 15, temporary file 15, ... the 21st point of 100 is the first after the dump.
+        $this->outcomeRoll = 21;
+        $this->travel(6)->minutes();
+        $this->queue()->settle($this->character->fresh());
+
+        $row = $file->fresh();
+        $this->assertSame('kernel-log', $row->item->slug);
+        $this->assertSame('AuraOS', $row->extractedFile()->origin->osTitle);
+        $this->assertSame('Kernel Log (AuraOS)', $row->label());
+        $this->assertSame(90, $row->stockPrice(), 'a component is worth the file\'s broken value');
     }
 
     public function test_a_passed_cycle_turns_the_file_into_a_memory_dump_in_place_and_says_so(): void

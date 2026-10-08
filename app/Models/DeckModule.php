@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Decks\Hardware;
 use App\Decks\Variant;
+use App\Support\Qb;
 use App\Support\Text;
 use Database\Factories\DeckModuleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -40,12 +41,12 @@ class DeckModule extends Model
             'variant' => Variant::class,
             'power_draw' => 'integer',
             'thermal_load' => 'integer',
-            'qflops' => 'integer',
-            'quantabits' => 'integer',
+            'qflops' => 'float',
+            'quantabits' => 'float',
             'bandwidth' => 'integer',
             'watts' => 'integer',
             'cooling' => 'integer',
-            'storage' => 'integer',
+            'storage' => 'float',
             'thermal_warning' => 'integer',
             'thermal_limit' => 'integer',
         ];
@@ -58,7 +59,7 @@ class DeckModule extends Model
     }
 
     /** The number this kind of module is measured by, if it has one. */
-    public function measure(Hardware $hardware): ?int
+    public function measure(Hardware $hardware): int|float|null
     {
         $column = $hardware->measure();
 
@@ -75,7 +76,7 @@ class DeckModule extends Model
             return null;
         }
 
-        return Text::get("decks.units.{$column}", ['value' => number_format($value)]);
+        return Text::get("decks.units.{$column}", ['value' => in_array($column, ['qflops', 'quantabits', 'storage'], true) ? Qb::format($value) : number_format($value)]);
     }
 
     /** One line: "Socket K · 1,200 qFLOPS · 45 W draw". */

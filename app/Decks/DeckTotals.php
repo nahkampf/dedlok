@@ -10,6 +10,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Stats\Modifier;
 use App\Stats\Resolver;
+use App\Support\Qb;
 use Illuminate\Support\Collection;
 
 /**
@@ -59,12 +60,15 @@ final class DeckTotals
         'storage' => 'deck_storage',
     ];
 
+    /** The measures carried to one decimal place (see Qb); the rest are whole numbers. */
+    private const TENTHS = ['qflops', 'quantabits', 'storage'];
+
     /**
      * @param  array<string, int>  $counts  fitted modules per Hardware value
      */
     private function __construct(
-        public readonly int $qflops,
-        public readonly int $quantabits,
+        public readonly float $qflops,
+        public readonly float $quantabits,
         public readonly int $bandwidth,
         public readonly int $draw,
         public readonly int $supply,
@@ -73,13 +77,13 @@ final class DeckTotals
         /** What the thermal modules take away. */
         public readonly int $cooling,
         /** Where files and unloaded programs live. Not memory — see Hardware. */
-        public readonly int $storage,
+        public readonly float $storage,
         private readonly array $counts,
         /**
          * QB of data the character keeps on it — see Storage. Null for every
          * deck but the equipped one, since only that one holds anything.
          */
-        public readonly ?int $stored = null,
+        public readonly ?float $stored = null,
     ) {}
 
     /**
@@ -115,9 +119,9 @@ final class DeckTotals
     public static function of(Collection $fittings, ?Item $deck = null): self
     {
         $sums = [
-            'qflops' => 0, 'quantabits' => 0, 'bandwidth' => 0,
+            'qflops' => 0.0, 'quantabits' => 0.0, 'bandwidth' => 0,
             'watts' => 0, 'power_draw' => 0, 'thermal_load' => 0, 'cooling' => 0,
-            'storage' => 0,
+            'storage' => 0.0,
         ];
         $counts = [];
 
@@ -132,13 +136,15 @@ final class DeckTotals
             $counts[$item->hardware->value] = ($counts[$item->hardware->value] ?? 0) + 1;
 
             foreach (array_keys($sums) as $column) {
-                $sums[$column] += (int) $module->{$column};
+                $sums[$column] += in_array($column, self::TENTHS, true)
+                    ? (float) $module->{$column}
+                    : (int) $module->{$column};
             }
         }
 
         return new self(
-            qflops: $sums['qflops'],
-            quantabits: $sums['quantabits'],
+            qflops: Qb::of($sums['qflops']),
+            quantabits: Qb::of($sums['quantabits']),
             bandwidth: $sums['bandwidth'],
             draw: $sums['power_draw'],
             // A supply gives power and draws none; chk_deck_modules_supply is
@@ -149,7 +155,7 @@ final class DeckTotals
             cooling: $sums['cooling'],
             // Every deck holds a little before anything is fitted, so a
             // runner without a storage module can still carry their software.
-            storage: ($deck?->onboardStorage() ?? 0) + $sums['storage'],
+            storage: Qb::of(($deck?->onboardStorage() ?? 0) + $sums['storage']),
             counts: $counts,
         );
     }
@@ -173,7 +179,8 @@ final class DeckTotals
         $resolved = [];
 
         foreach (self::STATS as $measure => $statId) {
-            $resolved[$measure] = (int) $resolver->resolve($statId, (float) $this->{$measure}, $modifiers)->value;
+            $value = $resolver->resolve($statId, (float) $this->{$measure}, $modifiers)->value;
+            $resolved[$measure] = in_array($measure, self::TENTHS, true) ? Qb::of($value) : (int) $value;
         }
 
         return new self(
@@ -191,7 +198,7 @@ final class DeckTotals
     }
 
     /** The same totals, with what the character keeps on the deck. */
-    private function holding(int $stored): self
+    private function holding(float $stored): self
     {
         return new self(
             $this->qflops, $this->quantabits, $this->bandwidth, $this->draw, $this->supply,
@@ -202,7 +209,7 @@ final class DeckTotals
     /** More data than the deck holds. Nothing is deleted for it; the deck just will not run. */
     public function isOverfull(): bool
     {
-        return $this->stored !== null && $this->stored > $this->storage;
+        return $this->stored !== null && Qb::tenths($this->stored) > Qb::tenths($this->storage);
     }
 
     /** How many modules of a kind are fitted. */

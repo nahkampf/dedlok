@@ -267,6 +267,31 @@ return [
         ],
         // Files waiting, the one being worked on included.
         'queue_max' => 10,
+        // What decrypting a stolen file yields, by the grade of the system it came off. Every column sums to 100 and no
+        // component is ever under 5 where it appears (a config test holds both). `headline` is the origin field a component is
+        // named by: "Kernel Log (AuraOS)". A grade a component is absent from is simply left out.
+        'components' => [
+            'memory-dump' => ['headline' => 'grade', 'weights' => [1 => 20, 2 => 15, 3 => 12, 4 => 8, 5 => 7, 6 => 6, 7 => 5, 8 => 5, 9 => 5]],
+            'kernel-log' => ['headline' => 'os', 'weights' => [1 => 15, 2 => 12, 3 => 10, 4 => 8, 5 => 8, 6 => 7, 7 => 7, 8 => 5, 9 => 5]],
+            'cipher-fragment' => ['headline' => 'encryption', 'weights' => [2 => 5, 3 => 6, 4 => 6, 5 => 7, 6 => 7, 7 => 8, 8 => 8, 9 => 10]],
+            'temporary-file' => ['headline' => 'system_type', 'weights' => [1 => 15, 2 => 12, 3 => 8]],
+            'cache-file' => ['headline' => 'system_type', 'weights' => [1 => 10, 2 => 9, 3 => 7, 4 => 6]],
+            'error-log' => ['headline' => 'os', 'weights' => [1 => 10, 2 => 8, 3 => 7, 4 => 6, 5 => 5, 6 => 5, 7 => 5, 8 => 5]],
+            'stack-trace' => ['headline' => 'os', 'weights' => [1 => 10, 2 => 8, 3 => 7, 4 => 6, 5 => 5, 6 => 5, 7 => 5, 8 => 5]],
+            'garbage-collection' => ['headline' => 'os', 'weights' => [1 => 10, 2 => 8, 3 => 7, 4 => 6, 5 => 5, 6 => 5]],
+            'config-file' => ['headline' => 'os', 'weights' => [1 => 10, 2 => 7, 3 => 6, 4 => 5, 5 => 5, 6 => 5]],
+            'backup' => ['headline' => 'owner', 'weights' => [2 => 5, 3 => 6, 4 => 6, 5 => 6, 6 => 5, 7 => 5, 8 => 5]],
+            'customer-record' => ['headline' => 'owner', 'weights' => [2 => 6, 3 => 7, 4 => 6, 5 => 6, 6 => 5, 7 => 5, 8 => 5]],
+            'software-manifest' => ['headline' => 'owner', 'weights' => [2 => 5, 3 => 6, 4 => 6, 5 => 6, 6 => 5, 7 => 5, 8 => 5]],
+            'project-file' => ['headline' => 'owner', 'weights' => [3 => 6, 4 => 7, 5 => 7, 6 => 6, 7 => 6, 8 => 6, 9 => 7]],
+            'security-profile' => ['headline' => 'security', 'weights' => [3 => 5, 4 => 7, 5 => 7, 6 => 7, 7 => 8, 8 => 7, 9 => 10]],
+            'research-data' => ['headline' => 'owner', 'weights' => [4 => 6, 5 => 7, 6 => 7, 7 => 8, 8 => 8, 9 => 12]],
+            'design-document' => ['headline' => 'owner', 'weights' => [4 => 6, 5 => 6, 6 => 6, 7 => 6, 8 => 6, 9 => 8]],
+            'experimental-data' => ['headline' => 'grade', 'weights' => [4 => 5, 5 => 6, 6 => 7, 7 => 8, 8 => 8, 9 => 12]],
+            'field-test-data' => ['headline' => 'grade', 'weights' => [5 => 7, 6 => 7, 7 => 8, 8 => 8, 9 => 11]],
+            'parameterized-dataset' => ['headline' => 'grade', 'weights' => [6 => 5, 7 => 6, 8 => 7, 9 => 10]],
+            'vectorized-dataset' => ['headline' => 'grade', 'weights' => [7 => 5, 8 => 7, 9 => 10]],
+        ],
         'difficulty' => [
             'cinder' => 20,
             'halcyon3' => 35,

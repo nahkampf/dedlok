@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Cyberspace;
 
 use App\Models\SystemContent;
+use App\Support\Qb;
 
 /**
  * What a file was, before it became a generic "Encrypted Data Dump" row.
@@ -25,25 +26,31 @@ final readonly class ExtractedFile
     /** The item a file becomes once decrypted; its row is the same row, so the value it fetches is the broken one. */
     public const DECRYPTED_SLUG = 'memory-dump';
 
+    /** The item every file is while it is still sealed; anything else carrying a file has been broken open. */
+    public const SEALED_SLUG = 'encrypted-data-dump';
+
     public function __construct(
         public string $label,
-        public int $sizeQb,
+        public float $sizeQb,
         public ?int $encryptionSkillId,
         public int $valueSealed,
         public int $valueBroken,
         /** The grade of the system it came off; null on a file taken before this was recorded. */
         public ?int $grade = null,
+        /** Where it came from; null on a file taken before this was recorded. */
+        public ?FileOrigin $origin = null,
     ) {}
 
     public static function fromContent(SystemContent $content): self
     {
         return new self(
             label: (string) $content->label,
-            sizeQb: (int) $content->size_qb,
+            sizeQb: Qb::of($content->size_qb),
             encryptionSkillId: $content->encryption_skill_id,
             valueSealed: (int) $content->value_sealed,
             valueBroken: (int) $content->value_broken,
             grade: $content->system?->grade,
+            origin: FileOrigin::fromSystem($content->system, $content->encryption),
         );
     }
 
@@ -57,6 +64,7 @@ final readonly class ExtractedFile
             'value_sealed' => $this->valueSealed,
             'value_broken' => $this->valueBroken,
             'grade' => $this->grade,
+            'origin' => $this->origin?->toArray(),
         ];
     }
 
@@ -69,11 +77,12 @@ final readonly class ExtractedFile
 
         return new self(
             label: (string) $stored['label'],
-            sizeQb: (int) ($stored['size_qb'] ?? 0),
+            sizeQb: Qb::of($stored['size_qb'] ?? 0),
             encryptionSkillId: isset($stored['encryption_skill_id']) ? (int) $stored['encryption_skill_id'] : null,
             valueSealed: (int) ($stored['value_sealed'] ?? 0),
             valueBroken: (int) ($stored['value_broken'] ?? 0),
             grade: isset($stored['grade']) ? (int) $stored['grade'] : null,
+            origin: FileOrigin::fromArray($stored['origin'] ?? null),
         );
     }
 

@@ -254,7 +254,7 @@ class CyberdeckAdminTest extends TestCase
         $spec = Item::where('slug', 'kurogane_k4')->firstOrFail()->deckModule;
 
         $this->assertSame(Variant::SocketK, $spec->variant);
-        $this->assertSame(1_200, $spec->qflops);
+        $this->assertEquals(1_200, $spec->qflops);
         $this->assertSame(45, $spec->power_draw);
         $this->assertNull($spec->watts);
     }

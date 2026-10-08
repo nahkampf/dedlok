@@ -56,14 +56,19 @@ use Illuminate\Support\Facades\DB;
  */
 final class DecryptionQueue
 {
+    /**
+     * @param  \Closure(int, int): int|null  $die  inclusive integer die for what a file becomes; null is `random_int`. The container
+     *                                             binding `decryption.die` pins it in a test, the way `CheckRoller`'s die is pinned.
+     */
     public function __construct(
         private readonly CheckRoller $roller,
         private readonly Notifier $notifier,
+        private readonly ?\Closure $die = null,
     ) {}
 
     public static function make(): self
     {
-        return new self(app(CheckRoller::class), new Notifier);
+        return new self(app(CheckRoller::class), new Notifier, app()->bound('decryption.die') ? app('decryption.die') : null);
     }
 
     // ---- what a screen asks ------------------------------------------------
@@ -76,7 +81,7 @@ final class DecryptionQueue
 
     public static function isOpen(InventoryItem $row): bool
     {
-        return $row->item?->slug === ExtractedFile::DECRYPTED_SLUG;
+        return $row->item !== null && $row->extracted_file !== null && $row->item->slug !== ExtractedFile::SEALED_SLUG;
     }
 
     /** Seconds in a cycle: the resolved stat, so skills and gear can shorten it. */
@@ -443,9 +448,39 @@ final class DecryptionQueue
         }
     }
 
-    /** What a file becomes. One outcome today; the grade on the file is what a table of outcomes would key on. */
+    /**
+     * What a file becomes: a weighted roll over the components that can come out of a system of its grade
+     * (`cyberspace.decryption.components`, every column summing to 100). A file with no recorded grade is read as grade 1.
+     * A component whose item has not been authored is skipped, and nothing at all falls back to the Memory Dump.
+     */
     private function outcomeFor(ExtractedFile $file): ?Item
     {
+        $grade = max(1, min(9, $file->grade ?? 1));
+        $weights = [];
+
+        foreach ((array) config('cyberspace.decryption.components', []) as $slug => $component) {
+            $weight = (int) ($component['weights'][$grade] ?? 0);
+
+            if ($weight > 0) {
+                $weights[$slug] = $weight;
+            }
+        }
+
+        $items = Item::query()->whereIn('slug', array_keys($weights))->get()->keyBy('slug');
+        $weights = array_intersect_key($weights, $items->all());
+
+        if ($weights !== []) {
+            $pick = ($this->die ?? random_int(...))(1, array_sum($weights));
+
+            foreach ($weights as $slug => $weight) {
+                $pick -= $weight;
+
+                if ($pick <= 0) {
+                    return $items[$slug];
+                }
+            }
+        }
+
         return Item::query()->where('slug', ExtractedFile::DECRYPTED_SLUG)->first();
     }
 

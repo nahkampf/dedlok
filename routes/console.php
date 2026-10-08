@@ -190,6 +190,21 @@ Schedule::command('decryption:settle --quiet-when-idle')
     ->withoutOverlapping();
 
 /*
+ * Scripts are spent by the clock (`programs.lifetime_seconds`). Whoever looks at their running programs
+ * sees an expired one gone already; this keeps the table true for the character nobody is looking at.
+ */
+Schedule::command('programs:expire')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+/*
+ * Builds (CRAFTING.md) advance a minute at a time while the equipped deck is ready; this is that minute, and delivers the finished.
+ */
+Schedule::command('crafting:settle --quiet-when-idle')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+/*
  * Healing by waiting: the two-hourly mend everybody gets, and the per-minute
  * trickle Neuroplasticity and doses grant.
  *
@@ -267,3 +282,6 @@ Schedule::command('missions:expire --quiet-when-idle')
 Schedule::command('city:settle')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// A supporter whose month has run out stops being one. Reads already know; this keeps the stored flag true.
+Schedule::command('supporters:expire')->hourly();

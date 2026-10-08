@@ -127,6 +127,7 @@ return [
             'evasion' => 'Evasion',
             'analyser' => 'Analyser',
             'daemon' => 'Daemon',
+            'script' => 'Script',
         ],
 
         // The status readout. A count, because the number is the whole of what
@@ -169,6 +170,8 @@ return [
             'compute' => ':value qFLOPS',
             'memory' => ':value QB',
             'storage' => ':value QB stored',
+            'lifetime' => 'Lasts :time, then spent',
+            'left' => ':time left',
         ],
 
         'background' => 'Runs in the background',
@@ -177,6 +180,7 @@ return [
         'action' => [
             'start' => 'Run',
             'stop' => 'Stop',
+            'stop_spent' => 'Stopping a Script destroys it',
         ],
 
         'refused' => [
@@ -675,11 +679,14 @@ return [
             'city' => 'City',
             'wallet' => 'Wallet',
             'personal' => 'Message',
+            'support' => 'Supporter',
         ],
 
         // The closed row of the inbox. One per message key; a key without one shows its category instead.
         'titles' => [
             'decrypted' => 'Decrypted: :label',
+            'crafted' => 'Built: :item',
+            'supporter_welcome' => 'Thank you for supporting Dedlok',
             'scan_complete' => 'Scan complete',
             'backdoor_found' => 'Backdoor found',
             'siphons_ran' => 'Siphon report',
@@ -706,6 +713,8 @@ return [
 
         'messages' => [
             'decrypted' => 'The :label broke. It is a :item now, worth :value ¤ to the right buyer.',
+            'crafted' => 'Your :item is built. It is in your data stash.',
+            'supporter_welcome' => 'Thank you for supporting Dedlok. You now have a badge by your name, a training queue with no limit, and your name on the Supporters page. You are also welcome in our Discord: open :url, or paste it into Discord under + then Join a Server, and say hello. It is where to report bugs, give feedback, wish for features or just hang out.',
             'scan_complete' => 'Your scan of :system (:address) completed. The specifications are saved to a file.',
             'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
             // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
@@ -2240,6 +2249,15 @@ return [
         'bio_placeholder' => 'Whatever you want anyone who looks you up to find.',
         'bio_save' => 'Save bio',
         'bio_saved' => 'Bio saved.',
+        // A supporter's own picture.
+        'avatar' => 'Your picture',
+        'avatar_hint' => 'JPG, PNG, WebP or GIF. It is cropped from the centre to 300 by 400.',
+        'avatar_upload' => 'Upload',
+        'avatar_remove' => 'Remove',
+        'avatar_saved' => 'Picture saved.',
+        'avatar_removed' => 'Picture removed.',
+        'avatar_required' => 'Choose a picture first.',
+        'avatar_invalid' => 'That is not a picture we can use. Try a JPG, PNG, WebP or GIF under 8 MB and 16 megapixels.',
 
         /*
         | THE FLOOR UNDER EVERY DEFEAT.
@@ -2442,6 +2460,16 @@ return [
             'decryption_cycle_seconds' => 'Decryption cycle length (seconds)',
             // A tag set: every encryption's chance at once. A single encryption is `decryption_chance.<slug>`.
             'decryption_chance' => 'All decryption chance (%)',
+            // A tag set: every kind's crafting time at once. A single kind is `crafting_seconds.<kind>`.
+            'crafting_time' => 'All crafting time (%)',
+            'crafting_slots' => 'crafting slots',
+            'crafting_cost' => 'crafting component quantities (%)',
+            'crafting_seconds.icebreaker' => 'Icebreaker crafting time (%)',
+            'crafting_seconds.decryptor' => 'Decryptor crafting time (%)',
+            'crafting_seconds.evasion' => 'Evasion crafting time (%)',
+            'crafting_seconds.analyser' => 'Analyser crafting time (%)',
+            'crafting_seconds.daemon' => 'Daemon crafting time (%)',
+            'crafting_seconds.script' => 'Script crafting time (%)',
             'hitpoints_regen' => 'HP regeneration (per hour)',
 
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
@@ -2554,6 +2582,46 @@ return [
     | An entity's front desk. Reached by standing on it, and the only thing
     | that happens on one: nothing may be run against, scanned or burned here.
     */
+    'crafting' => [
+        'heading' => 'Crafting',
+        'paused' => 'This deck will not run, so nothing is being built. Finish building it and the work picks up where it left off.',
+        'none_building' => 'Nothing is being built.',
+        'no_designs' => 'You hold no designs.',
+        'working' => 'Building',
+        'on_hold' => 'On hold',
+        'waiting_room' => 'Done, no room to store it',
+        'copy' => 'Design Copy',
+        'original' => 'Design Original',
+        'craft' => 'Craft',
+        'craft_anyway' => 'Craft anyway',
+        'cancel' => 'Give up',
+        'cancel_hint' => 'The components are already spent and are not given back.',
+        'started' => 'Building :item. The components are spent.',
+        'cancelled' => 'You gave it up. The components are gone.',
+
+        'filter' => [
+            'grade_min' => 'grade :grade or higher',
+            'grade_max' => 'grade :grade or lower',
+            'grade_between' => 'grade :min to :max',
+            'ice_min' => 'ICE :level or more',
+            'ids_min' => 'IDS :level or more',
+            'unknown_owner' => 'an owner that is gone',
+        ],
+
+        'refused' => [
+            'not_a_design' => 'That is not a design in your hands.',
+            'product_gone' => 'What this design makes is no longer in the game.',
+            'uncraftable' => 'Nobody can build that kind of program yet.',
+            'no_skill' => 'You do not have the skill to build this.',
+            'no_free_slot' => 'You are already building as many things as you can at once.',
+            'no_deck' => 'Equip a deck first. The work is done on the machine you are carrying.',
+            'deck_not_ready' => 'That deck will not run. Finish building it first.',
+            'missing_components' => 'You do not have the components for this.',
+            'wastes_grade' => 'You are using components of a higher grade than necessary, are you sure?',
+            'not_yours' => 'That is not yours.',
+        ],
+    ],
+
     'processes' => [
         'title' => 'Current processes',
         'loading' => 'Loading…',
@@ -2566,6 +2634,11 @@ return [
         'explore' => 'Exploring',
         'surgery' => 'On the table',
         'travel_pass' => 'Stage :step of :of',
+        'script' => ':program running',
+        'craft' => 'Building :item',
+        'craft_on_hold' => 'On hold: the deck will not run',
+        'craft_waiting' => 'Finished; no room to store it',
+        'script_detail' => 'Spent when it ends; stopping it early destroys it',
         'decryption' => 'Decrypting :label',
         'decryption_cycle' => 'This cycle: :percent% to break',
         'decryption_waiting' => [
@@ -2722,6 +2795,7 @@ return [
             'queue_changed' => 'The queue changed while you were moving things. It has been refreshed.',
             'breaks_requirement' => 'That order would break a requirement: :problem',
         ],
+        'queue_hint_unlimited' => 'As many as you like, trained in order. A skill goes in at the next level up — press it again for the one after that.',
         'queue_hint' => 'Up to :limit, trained in order. A skill goes in at the next level up — press it again for the one after that.',
         'queue_empty' => 'Nothing queued.',
         'position' => ':position.',
@@ -2774,6 +2848,7 @@ return [
         | and what stopped it.
         */
         'plan' => 'Plan a route',
+        'plan_hint_unlimited' => 'Name a level you want and the prerequisites, and the levels in between, are queued in order.',
         'plan_hint' => 'Name a level you want and the prerequisites, and the levels in between, are queued in order. The queue still holds :limit, so a long route arrives in instalments.',
         'plan_pick' => 'Skill to reach',
         'plan_level' => 'Level wanted',
@@ -2837,12 +2912,26 @@ return [
         | App\Cyberspace\ExtractedFile — the same voice hardwareSummary() and
         | programSummary() already speak for a module or a program.
         */
+        'group' => [
+            'summary' => ':count files · :qb QB · worth :value ¤ in all',
+            'row' => 'Grade :grade · :qb QB · :value ¤',
+        ],
+
         'files' => [
             'size' => ':qb QB',
             'encrypted_with' => 'sealed with :skill',
             'unencrypted' => 'unsealed',
             'unknown_encryption' => 'an encryption nobody names any more',
             'sealed_value' => 'worth :value sealed',
+            'broken_value' => 'worth :value',
+            'headline' => [
+                'grade' => 'Grade :grade',
+                'security' => 'IDS :ids, ICE :ice',
+            ],
+            'from' => 'From a :type',
+            'owned_by' => 'owned by :owner',
+            'running' => 'running :os',
+            'guarded' => 'IDS :ids, ICE :ice',
         ],
 
         /*
@@ -3021,6 +3110,14 @@ return [
     ],
 
     // The invitation shown once, on a new account's first sign-in.
+    'supporters' => [
+        'title' => 'Supporters',
+        'lede' => 'The people who keep this game going. Thank you.',
+        'none' => 'Nobody yet.',
+        'badge' => 'Supporter',
+        'badge_hint' => 'Supports the game',
+    ],
+
     'discord' => [
         'title' => 'Please join our Discord!',
         'text' => 'Here\'s where to report bugs, give feedback, wish for features or just hang out and chill:',
@@ -3356,6 +3453,42 @@ return [
     */
     'admin' => [
         // The Beta keys section, present only while `features.alpha_testing` is on.
+        'supporters' => [
+            'title' => 'Supporters',
+            'lede' => 'Who supports the game. A supporter gets a badge by their character\'s name, an unlimited training queue, a place on the Supporters page, and a message about the Discord.',
+            'search' => 'Find an account',
+            'find' => 'Find',
+            'account' => 'Account',
+            'name' => 'Character',
+            'status' => 'Status',
+            'no_character' => 'no character yet',
+            'grant' => 'Make a supporter',
+            'revoke' => 'Remove',
+            'empty' => 'No accounts.',
+            'granted' => ':who is now a supporter.',
+            'revoked' => ':who is no longer a supporter.',
+            'history' => 'Supporter history',
+            'history_link' => 'Everybody who has supported, with payments',
+            'history_lede' => 'Everyone who is or has been a supporter, newest payment first: the tiers they have paid for, every payment Ko-fi told us about, and what they have paid in total (per currency, before Ko-fi\'s fees).',
+            'history_empty' => 'Nobody yet.',
+            'tiers' => 'Tiers',
+            'paid' => 'Paid so far',
+            'now' => 'Supporter',
+            'lapsed' => 'Lapsed',
+            'for_good' => 'for good',
+            'no_payments' => 'No Ko-fi payments (granted by hand).',
+            'first_payment' => 'first',
+            'unmatched' => 'Ko-fi payments with no account',
+            'unmatched_lede' => 'Members whose Ko-fi email matched no account. Type the account email to connect them; that also gives the supporter time they have left.',
+            'kofi_email' => 'Ko-fi email',
+            'payments' => 'Payments',
+            'last_payment' => 'Last',
+            'account_email' => 'Account email',
+            'connect' => 'Connect',
+            'connected' => ':count payment(s) connected to :who.',
+            'no_such_account' => 'No account with the email :who.',
+        ],
+
         'beta_keys' => [
             'title' => 'Beta keys',
             'lede' => 'Keys testers register with while alpha testing is on. Copy one to hand it out: that also marks it as given out.',
@@ -3736,6 +3869,7 @@ return [
                 'skill' => 'Skill levels',
                 'check' => 'Skill checks',
                 'decryption_chance' => 'Decryption chance (%)',
+                'crafting_time' => 'Crafting time (%)',
                 'damage' => 'Damage taken',
                 'sets' => 'Groups',
                 'other' => 'Other',
@@ -3900,6 +4034,8 @@ return [
                 'memory_cost_hint' => 'Quantabits consumed while it runs.',
                 'storage_size' => 'Stored size',
                 'storage_size_hint' => 'Quantabits it occupies just by being owned, running or not.',
+                'lifetime_seconds' => 'Lifetime (seconds)',
+                'lifetime_seconds_hint' => 'Blank is an ordinary program. Set, it is a Script: a running copy lasts this long from the moment it starts and is then spent. Stopping one early destroys it.',
                 'background_process' => 'Runs in the background',
                 'background_process_hint' => 'Whether it may run outside an intrusion. A decryptor must; an icebreaker has nothing to break out there.',
                 'program_modifiers' => 'What running it does',
@@ -4004,6 +4140,29 @@ return [
                 'automatic' => 'Not arranged — showing the automatic ring.',
             ],
 
+            'design' => [
+                'heading' => 'Design',
+                'hint' => 'Choosing a program here makes this item a design: a recipe that builds it, from the components below, in the time below. Leave it blank for anything else.',
+                'product' => 'Builds',
+                'none' => 'Not a design',
+                'seconds' => 'Build time (seconds)',
+                'seconds_hint' => 'Before skills shorten it.',
+                'skill' => 'Also needs the skill',
+                'no_skill' => 'No other skill',
+                'skill_level' => 'At level',
+                'single_use' => 'Design Copy',
+                'single_use_hint' => 'Ticked, the design is spent when a build starts. Unticked it is a Design Original and is kept.',
+                'line' => 'Component :n',
+                'quantity' => 'How many',
+                'grade_min' => 'Grade from',
+                'grade_max' => 'Grade up to',
+                'ice_min' => 'ICE at least',
+                'ids_min' => 'IDS at least',
+                'os' => 'Operating system',
+                'owner' => 'Owned by',
+                'system_type' => 'Type of system',
+                'any' => 'Any',
+            ],
             'onboard_storage' => [
                 'label' => 'Onboard storage (QB)',
                 'hint' => 'What the deck holds before a storage module. Empty uses the default of :fallback QB.',

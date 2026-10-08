@@ -19,6 +19,7 @@ use App\Models\System;
 use App\Models\SystemContent;
 use App\Programs\ProgramKind;
 use App\Stats\Resolver;
+use App\Support\Qb;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
@@ -66,16 +67,16 @@ final class DeckStorageTest extends TestCase
 
         // 2 × 3 for the programs, 4, and the file at its OWN 7 rather than its
         // item's 5. The physical thing and the shard's contents take nothing.
-        $this->assertSame(17, Storage::used($this->character));
+        $this->assertEquals(17, Storage::used($this->character));
     }
 
     public function test_no_deck_holds_nothing_and_every_deck_holds_the_onboard_figure(): void
     {
-        $this->assertSame(0, Storage::capacity($this->character));
+        $this->assertEquals(0, Storage::capacity($this->character));
 
         $this->equipReadyDeck($this->character);
 
-        $this->assertSame(20, Storage::capacity($this->character->fresh()));
+        $this->assertEquals(20, Storage::capacity($this->character->fresh()));
     }
 
     public function test_a_deck_carries_its_own_figure_and_the_config_is_the_fallback(): void
@@ -83,12 +84,29 @@ final class DeckStorageTest extends TestCase
         $deck = $this->equipReadyDeck($this->character);
         $deck->item->forceFill(['onboard_storage' => 12])->save();
 
-        $this->assertSame(12, Storage::capacity($this->character->fresh()));
+        $this->assertEquals(12, Storage::capacity($this->character->fresh()));
 
         $deck->item->forceFill(['onboard_storage' => null])->save();
 
-        $this->assertSame(20, Storage::capacity($this->character->fresh()));
-        $this->assertSame(0, Item::factory()->data()->create(['onboard_storage' => 99])->onboardStorage(), 'only a deck holds anything');
+        $this->assertEquals(20, Storage::capacity($this->character->fresh()));
+        $this->assertEquals(0, Item::factory()->data()->create(['onboard_storage' => 99])->onboardStorage(), 'only a deck holds anything');
+    }
+
+    public function test_tenths_add_up_exactly_at_the_limit(): void
+    {
+        $deck = $this->equipReadyDeck($this->character);
+        $deck->item->forceFill(['onboard_storage' => 0.3])->save();
+        $character = $this->character->fresh();
+
+        $this->carry(Item::factory()->data()->unstackable()->create(['size' => 0.1]));
+        $this->carry(Item::factory()->data()->unstackable()->create(['size' => 0.2]));
+
+        // 0.1 + 0.2 is 0.30000000000000004 in a float; the deck is exactly full, not over it.
+        $this->assertEquals(0.3, Storage::used($character));
+        $this->assertTrue(Storage::fits($character, 0.0));
+        $this->assertFalse(Storage::fits($character, 0.1));
+        $this->assertSame('0.4 QB', Qb::format(0.4).' QB');
+        $this->assertSame('2', Qb::format(2.0));
     }
 
     public function test_an_overfull_deck_will_not_run(): void

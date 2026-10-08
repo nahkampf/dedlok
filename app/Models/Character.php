@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Cyberspace\Position;
+use App\Programs\Lifetime;
 use App\Skills\TrainingRate;
 use App\Stats\Context;
 use App\Stats\Modifier;
@@ -17,6 +18,7 @@ use App\Stats\Sources\InstalledImplants;
 use App\Stats\Sources\RunningPrograms;
 use App\Stats\Sources\SkillEffects;
 use App\Stats\Sources\WornArmour;
+use App\Support\Qb;
 use Carbon\CarbonImmutable;
 use Database\Factories\CharacterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -410,7 +412,7 @@ class Character extends Model
             ->loose()
             ->get()
             ->filter(fn (InventoryItem $row) => $row->item->canHold($item)
-                && $row->remainingCapacity() >= $item->size)
+                && Qb::tenths($row->remainingCapacity()) >= Qb::tenths($item->size))
             ->sortByDesc(fn (InventoryItem $row) => $row->remainingCapacity())
             ->values();
     }
@@ -443,12 +445,12 @@ class Character extends Model
             return new Collection;
         }
 
-        return InventoryItem::query()
+        return Lifetime::reap(InventoryItem::query()
             ->where('character_id', $this->id)
             ->where('running_on_deck_id', $this->equipped_deck_id)
             ->with('item.program')
             ->orderBy('started_at')
-            ->get();
+            ->get());
     }
 
     /**

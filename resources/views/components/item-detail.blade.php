@@ -31,7 +31,7 @@
     <div class="item-card__hd">
         <div class="row" style="--gap:var(--s-2);align-items:flex-start">
             <span class="stack" style="--gap:5px;min-width:0">
-                <span class="item-card__name">{{ $item->displayName() }}</span>
+                <span class="item-card__name">{{ $entry->label() }}</span>
                 {{-- Kind first: what the thing IS identifies it, and the tier
                      qualifies that. "RAM, Tier One" is how you would say it.
 
@@ -327,7 +327,7 @@
             @endif
 
             {{-- A sealed file is broken by the decryption queue, not here: this only asks. --}}
-            @if ($entry->extractedFile() && $item->slug !== \App\Cyberspace\ExtractedFile::DECRYPTED_SLUG)
+            @if ($entry->extractedFile() && $item->slug === \App\Cyberspace\ExtractedFile::SEALED_SLUG)
                 @php($queued = $entry->decryptionEntry)
                 @if ($queued)
                     {{-- Where it stands, and no second button: taking it out is on the deck's Decryption panel. --}}
@@ -397,7 +397,8 @@
                      starts this, not you" teaches more than an absent button. --}}
                 <form method="POST" action="{{ route('inventory.run', $entry) }}">
                     @csrf
-                    <button type="submit" class="btn btn--sm cut {{ $entry->isRunning() ? 'btn--ghost' : '' }}">
+                    <button type="submit" class="btn btn--sm cut {{ $entry->isRunning() ? 'btn--ghost' : '' }}"
+                            @if ($entry->isRunning() && $entry->item->program?->isTemporary()) title="{{ Text::get('programs.action.stop_spent') }}" @endif>
                         {{ Text::get($entry->isRunning() ? 'programs.action.stop' : 'programs.action.start') }}
                     </button>
                 </form>

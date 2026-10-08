@@ -24,6 +24,7 @@ use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
+use App\Support\Qb;
 use App\Support\Text;
 use Closure;
 use Illuminate\Support\Facades\Config;
@@ -646,10 +647,10 @@ final readonly class Simulator
      *
      * @return list<array{text: string, tone: string}>
      */
-    private function beginTransfer(Character $character, Run $run, int $fileQb): array
+    private function beginTransfer(Character $character, Run $run, float $fileQb): array
     {
         $bandwidth = $this->bandwidthFor($character);
-        $remaining = $fileQb - $bandwidth;
+        $remaining = Qb::of($fileQb - $bandwidth);
 
         if ($remaining <= 0) {
             return $this->completeTransfer($character, $run);
@@ -667,7 +668,7 @@ final readonly class Simulator
      */
     private function continueTransfer(Character $character, Run $run): array
     {
-        $remaining = (int) $run->extracting_qb - $this->bandwidthFor($character);
+        $remaining = Qb::of((float) $run->extracting_qb - $this->bandwidthFor($character));
 
         if ($remaining <= 0) {
             $run->extracting_qb = null;
@@ -1622,7 +1623,7 @@ final readonly class Simulator
      * kept beside the text rather than inside it, so the screen can style it and an old log without
      * one still reads.
      *
-     * @param  array<string, string|int>  $replace
+     * @param  array<string, string|int|float>  $replace
      * @return array{text: string, tone: string, tag?: string}
      */
     private function line(string $key, array $replace = [], string $tone = '', ?string $tag = null, string $tagTone = 'crit', ?string $before = null): array

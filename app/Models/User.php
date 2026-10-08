@@ -39,6 +39,9 @@ class User extends Authenticatable
             'email_verified_at' => 'immutable_datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'is_supporter' => 'boolean',
+            'supporter_since' => 'immutable_datetime',
+            'supporter_until' => 'immutable_datetime',
             'seen_discord_at' => 'immutable_datetime',
             'last_active_at' => 'immutable_datetime',
         ];
@@ -50,6 +53,12 @@ class User extends Authenticatable
      * Deliberately not in #[Fillable]: no request can grant it however the
      * payload is shaped. `php artisan admin:grant` is the only writer.
      */
+    /** A supporter of the game. Outside #[Fillable]; `App\Supporters\Supporters` is the only writer. */
+    public function isSupporter(): bool
+    {
+        return (bool) $this->is_supporter && ($this->supporter_until === null || $this->supporter_until->isFuture());
+    }
+
     public function isAdmin(): bool
     {
         return (bool) $this->is_admin;

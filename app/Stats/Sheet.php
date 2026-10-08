@@ -247,6 +247,11 @@ final class Sheet
             return 0.0;
         }
 
+        // A crafting time is the design's own number, handed to the resolver at the call site; asked of a sheet it has none.
+        if (str_starts_with($statId, SkillStats::CRAFTING_PREFIX)) {
+            return 0.0;
+        }
+
         /*
          * A POOL sums its attributes and divides ONCE, where a formula divides
          * each and rounds each up before adding. Four attributes of 20 over 8.5

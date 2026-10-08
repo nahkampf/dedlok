@@ -468,6 +468,28 @@ not asked. **It does not touch accounts that already exist, sign-in, password re
 **To remove the feature for good:** delete that table's rows of the list above, drop `beta_keys` in a migration, and take
 the `BetaKeys` branch out of `CreateNewUser`.
 
+### Code Crafting
+
+**`CRAFTING.md` is the document** (the design, the component table, the skills). Components and a Design, over time, into a program.
+
+- **A component is an item the decryption queue turns a stolen file into** (`cyberspace.decryption.components`: weights by the grade of the system,
+  every grade summing to 100, nothing under 5 where it appears), and it **keeps where the file came from** (`App\Cyberspace\FileOrigin` inside the
+  `extracted_file` JSON: system type, owner, OS, IDS and ICE level, encryption). Unstackable; `InventoryItem::label()` names it by one origin field,
+  "Kernel Log (AuraOS)". A file taken before origin was recorded matches no recipe filter.
+- **A Design is an item with a `designs` row** (`App\Crafting\DesignEditor` the only writer, the item editor's Design panel): a product (always a program of
+  a kind with a gate in `config/crafting.php`), a base time, a Copy (`single_use`, spent when a craft starts) or an Original, an optional extra
+  skill, and `design_components` lines (item, quantity, optional filters on grade, OS, owner, type, ICE, IDS). Filters live as slugs and plain ids
+  with no foreign key, like the file's own copy.
+- **`App\Crafting\Crafting` is the only writer of `crafts`.** Starting spends the components (lowest qualifying grade first; spending a higher grade
+  than a line's minimum asks first, `CraftingRefusal::WastesGrade`) and snapshots the time (`crafting_seconds.<kind>`, base the design's, ceil) and
+  the quantities (`crafting_cost` percent, ceil, min 1). Slots are the stat `crafting_slots` (base 1), not a queue. A build never fails, and cancelling
+  forfeits. **The clock runs only while the equipped deck is ready**: `settle()` credits elapsed time if the deck is ready NOW, runs when
+  somebody looks, in `ProgramRunner::stopAll()` (so before any deck change) and from `crafting:settle` every minute. A finished build whose product does
+  not fit waits, finished, holding its slot.
+- **The gates:** `skill.code_crafting` plus the kind's skill (`crafting.gate`), on the RESOLVED level; a skill that is not in the game gates nothing.
+  Code Crafting shortens every build (`crafting_time` tag) and each kind's skill shortens its own (`crafting_seconds.<kind>`).
+- Screens: the deck's *Crafting* panel and Current processes. Starting a build is not offered during a run (the run lock), but one in progress goes on.
+
 ### Inventory and imprints
 
 **Two inventories, and one gate in front of every skill.**
@@ -823,6 +845,20 @@ what a bare `items` row cannot.
   priced on their total. **Nothing is ever deleted for being over**: a smaller deck may
   be equipped, and `DeckRequirement::Storage` then keeps it from jacking in or starting
   programs until the player makes room.
+- **A SCRIPT is a program with a lifetime** (`ProgramKind::Script`, `programs.lifetime_seconds`, NULL for an ordinary one; `Program::isTemporary()`): it is
+  spent by running. *Run* takes one copy as for any program and it holds its RAM and qFLOPS on the deck; it ends at `started_at` + the lifetime
+  (`App\Programs\Lifetime`, nothing stored about the end) and **stopping it early destroys it** (`ProgramRunner::putBack()`) — which includes every
+  way of stopping all (unequip, fit, strip). Expiry is lazy and swept: `Lifetime::reap()` runs inside `Character::runningProcesses()` and
+  `RunningPrograms::processesOn()` and before a start, and `programs:expire` runs every minute for characters nobody is looking at. One of a given
+  Script at a time is not a new rule: it is `multithreaded = false`. `RunningPrograms` cannot look back at a Script that has been reaped, so none belongs on
+  training stats. Current processes shows a bar for each.
+- **Storage, memory (QB), compute (qFLOPS) and file sizes are carried to ONE DECIMAL PLACE** (`DECIMAL(10,1)` on `programs.storage_size / memory_cost /
+  qflops_cost`, `items.size / capacity / onboard_storage`, `deck_modules.qflops / quantabits / storage`, `system_contents.size_qb`,
+  `runs.extracting_qb`; the stats `deck_qflops / deck_quantabits / deck_storage` round to a `tenth`), so a lightweight script can cost 0.4 QB of RAM.
+  PHP holds them as floats, so **every total goes through `App\Support\Qb::of()` and every "does it fit / can it start / is it over" comparison
+  through `Qb::tenths()` or `Qb::fits()`** (`Storage::fits`, `ProgramRunner::refusalFor`, `DeckTotals::isOverfull`, `ItemPlacer`, the extractor): 0.1 + 0.2 is
+  not 0.3 in a float. Models cast them `float` (never `decimal:1`, which is a string); `Qb::format()` prints `2` for 2.0. Bandwidth, watts, power
+  draw and thermal figures stay whole numbers.
 - Screens: topbar count + modal, deck screen's Running and Storage tabs (storage split
   into two grids), `inventory.run` in both directions.
 
@@ -1013,6 +1049,21 @@ ACCEPTED and not yet finished (`Mission::accepted()`: failed, completed and void
 soonest deadline first, each as the desk's own `<x-mission-card>` with `:actions="false"` (no Complete: a job is handed in at the desk
 it came from) and `:abandon="true"` (giving one up needs no desk; its tooltip is *Costs -X standing*, the row's penalty) and `:desk="true"` (who it is for, the agent, the desk's address). *Journal* and *Tasks* (quests) read "Not yet
 implemented." until they are designed. The rail glyph is U+25C7, one already proved to render.
+
+### Supporters
+
+**A flag on the account** (`users.is_supporter`, `supporter_since`; outside `User`'s `#[Fillable]`, like `is_admin`). **`App\Supporters\Supporters` is the only
+writer** (`grant()` / `revoke()`), reached from `php artisan supporter:grant <email> [--revoke]` and the admin screen at `admin/supporters` (a searchable
+list of accounts with a button each; the command is no use on a host whose CLI PHP is not 8.4, hence the screen). A supporter gets:
+
+- a **badge** (`<x-supporter-badge :character>`, a `.tag--ember`) by the character's name on the sheet and on market offers;
+- an **unlimited training queue** (`TrainingQueue::limitFor()` is null for them, `LIMIT` = 5 for everybody else; the skills screen draws no `/5`);
+- a place on the public **Supporters page** (`/supporters`, linked from the front page): the name they gave for the credits (`users.credit_name`),
+  else their character's handle, in the order they became one; an account with neither is not listed;
+- **Ko-fi**: `POST /kofi_webhook` (`KofiWebhookController`, CSRF-exempt) takes a *Subscription* payment, trusts it by `verification_token` (`KOFI_VERIFICATION_TOKEN`; unset refuses everything), matches the payer's email to `users.email`, records it once by `message_id` in `kofi_payments`, and grants the flag until now + 1 month (`users.supporter_until`; NULL is for good, and a payment never shortens a for-good grant). `isSupporter()` is false once the date has passed; `supporters:expire` (hourly) clears the stored flag. An unmatched email is kept and logged, and nobody is granted.
+- a **picture of their own** on the character sheet: `App\Characters\Avatar` (the only writer) decodes the upload, centre-crops it to 3:4, resamples to 300x400 and writes `public/images/characters/avatars/<id>.jpg` (gitignored), shown only while the account is a supporter (the sheet picks `Image` kind `characters/avatars`, whose default walks back up to `characters/_default.jpg`) — a lapse shows the default and keeps the file, so paying again switches it back; nothing is kept of the original; uploading is `403` for a non-supporter; capped at 16 megapixels (128M memory limit) and EXIF orientation is not applied;
+- **one message** when the flag goes from off to on (`Category::Support`, `notifications.messages.supporter_welcome`): thanks, what they now have, and the
+  Discord invitation (`strings.discord.url`). Revoking sends nothing; granting again sends it again.
 
 ### The Discord invitation
 

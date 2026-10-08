@@ -21,6 +21,12 @@ In this order. Each is small enough to build alone.
 
 ---
 
+## Code Crafting (designed 2026-10-08, `CRAFTING.md`)
+
+Build order, each its own step: **1. decimal QB / qFLOPS** (built, unreleased), **2. lifetime programs and the Script kind** (built, unreleased), **3. components and 4. designs, slots, the pausable clock, skills and screens** (built, unreleased), 5. ICE shredding (already covered by `DefeatTag::Erase`; see `CRAFTING.md`), 6. balance. See *As built* in `CRAFTING.md` for what is left inside them.
+
+---
+
 ## Decryption: what is left (2026-10-08)
 
 Built: the queue, cycles, simultaneous decryptors, reordering, gates, Cryptology and Precomputation, Ghostkey, buy lists, supply

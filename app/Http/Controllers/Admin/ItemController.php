@@ -12,6 +12,8 @@ use App\Combat\DamageProfile;
 use App\Combat\WeaponClass;
 use App\Combat\WeaponEditor;
 use App\Combat\WearSlot;
+use App\Crafting\DesignEditor;
+use App\Cyberspace\SystemType;
 use App\Decks\Hardware;
 use App\Decks\HardwareEditor;
 use App\Decks\SlotLayout;
@@ -22,6 +24,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ItemRequest;
 use App\Items\ConsumableEditor;
 use App\Market\Rarity;
+use App\Models\Entity;
 use App\Models\Item;
 use App\Models\Skill;
 use App\Programs\ProgramEditor;
@@ -170,6 +173,8 @@ class ItemController extends Controller
 
             ProgramEditor::apply($item, $request->programKind(), $request->programColumns());
 
+            DesignEditor::apply($item, $request->designProductId(), $request->designColumns(), $request->designLines());
+
             DrugEditor::apply($item, $request->drugFamily(), $request->drugColumns());
 
             ConsumableEditor::apply($item, $request->consumableEffects());
@@ -209,6 +214,9 @@ class ItemController extends Controller
             // stopped being software has to LOSE its program row, or it stays
             // runnable by anyone who already owns a copy.
             ProgramEditor::apply($item, $request->programKind(), $request->programColumns());
+
+            // Always: an item that has stopped being a design loses its recipe.
+            DesignEditor::apply($item, $request->designProductId(), $request->designColumns(), $request->designLines());
 
             // Always, and for the same reason: an item that has stopped being
             // a drug has to lose its row, or it stays swallowable.
@@ -283,6 +291,12 @@ class ItemController extends Controller
             // The ladder a Decryptor can be limited to.
             'encryptions' => Skill::query()->where('category', 'Encryption')->orderBy('rank')->get(['slug', 'title']),
             'drugFamilies' => Family::cases(),
+            // A design's pickers: the programs it can make, the data items it can ask for, and the origin filters.
+            'designProducts' => Item::query()->whereHas('program', fn ($q) => $q->whereIn('kind', array_keys((array) config('crafting.gate'))))->orderBy('name')->get(['id', 'name']),
+            'designComponents' => Item::query()->where('container', Item::CONTAINER_DATA)->whereDoesntHave('program')->orderBy('name')->get(['id', 'name']),
+            'operatingSystems' => Skill::query()->where('category', 'Operating Systems')->orderBy('title')->get(['slug', 'title']),
+            'owners' => Entity::query()->orderBy('name')->get(['id', 'name']),
+            'systemTypes' => SystemType::cases(),
             'armourSlots' => WearSlot::cases(),
             'weaponClasses' => WeaponClass::cases(),
             'ammoTypes' => AmmoType::cases(),

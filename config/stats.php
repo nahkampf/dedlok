@@ -86,21 +86,21 @@ return [
          *
          * A floor of 0 on all five: a debuff may take a measure to nothing but
          * never below it, and negative compute is not a state the game has.
-         * Rounding down for the same reason max HP does — these are whole
-         * units of hardware.
+         * Carried to one decimal place (see App\Support\Qb): a
+         * lightweight script costs a fraction of a unit.
          */
         'deck_qflops' => [
             'tags' => ['deck', 'compute'],
             'min' => 0,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'tenth',
         ],
 
         'deck_quantabits' => [
             'tags' => ['deck', 'memory'],
             'min' => 0,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'tenth',
         ],
 
         /*
@@ -254,6 +254,28 @@ return [
             'min' => 1,
             'max' => null,
             'rounding' => 'ceil',
+        ],
+
+        /*
+        | CRAFTING (CRAFTING.md). How many things a character can be building at once; one until a skill says otherwise.
+        | Whole, at least one.
+        */
+        'crafting_slots' => [
+            'tags' => ['derived'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        /*
+        | What a recipe's component quantities are scaled by, as a percent: 100 is the recipe as written, and a skill that
+        | shaves a few percent off leaves it at 98. Each line is rounded up and is never below one. Never under 10.
+        */
+        'crafting_cost' => [
+            'tags' => ['derived'],
+            'min' => 10,
+            'max' => null,
+            'rounding' => 'none',
         ],
 
         /*
@@ -565,7 +587,7 @@ return [
             'tags' => ['deck', 'storage'],
             'min' => 0,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'tenth',
         ],
 
         'deck_bandwidth' => [
@@ -782,6 +804,9 @@ return [
 
         // One decryption cycle is five minutes before anything shortens it.
         'decryption_cycle_seconds' => 300,
+
+        'crafting_slots' => 1,
+        'crafting_cost' => 100,
     ],
 
     /*

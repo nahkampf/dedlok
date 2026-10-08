@@ -110,7 +110,8 @@
                                          reasoning stripping a deck follows. --}}
                                     <form method="POST" action="{{ route('inventory.run', $process) }}">
                                         @csrf
-                                        <button type="submit" class="btn btn--sm btn--ghost cut">
+                                        <button type="submit" class="btn btn--sm btn--ghost cut"
+                                                @if ($program?->isTemporary()) title="{{ Text::get('programs.action.stop_spent') }}" @endif>
                                             {{ Text::get('programs.action.stop') }}
                                         </button>
                                     </form>
@@ -148,13 +149,13 @@
                     <div class="readout">
                         <span class="readout__label">{{ Text::get('decks.ready.compute') }}</span>
                         <span class="readout__value">{{ Text::get('decks.units.qflops', [
-                            'value' => number_format($totals->qflops, 0, '.', ' '),
+                            'value' => \App\Support\Qb::format($totals->qflops, ' '),
                         ]) }}</span>
                     </div>
                     <div class="readout">
                         <span class="readout__label">{{ Text::get('decks.ready.memory') }}</span>
                         <span class="readout__value">{{ Text::get('decks.units.quantabits', [
-                            'value' => number_format($totals->quantabits, 0, '.', ' '),
+                            'value' => \App\Support\Qb::format($totals->quantabits, ' '),
                         ]) }}</span>
                     </div>
                     <div class="readout">
@@ -316,6 +317,79 @@
                         </div>
                     @endforeach
                 </div>
+            </div>
+        </details>
+    @endif
+
+    {{-- CRAFTING (CRAFTING.md): builds in their slots, and the designs held. The clock runs only while this deck is ready. --}}
+    @if ($crafting !== null)
+        @php($craftingOpen = $crafting['crafts']->isNotEmpty() || $crafting['plans'] !== [])
+        <details class="panel" style="margin-top:var(--s-5)" {{ $craftingOpen ? 'open' : '' }}>
+            <summary class="panel__hd">
+                <span class="micro">{{ Text::get('crafting.heading') }}</span>
+                <div class="spacer"></div>
+                <span class="micro num" style="color:var(--ink-2)">{{ $crafting['crafts']->count() }} / {{ $crafting['slots'] }}</span>
+            </summary>
+
+            <div class="panel__bd stack" style="--gap:var(--s-4)">
+                @if (! $crafting['ready'])
+                    <p class="muted" style="font-size:var(--fs-sm);margin:0;color:var(--warn)">{{ Text::get('crafting.paused') }}</p>
+                @endif
+
+                @forelse ($crafting['crafts'] as $craft)
+                    @php($ratio = $craft->required_seconds > 0 ? min(1, $craft->progress_seconds / $craft->required_seconds) : 1)
+                    @php($left = \Carbon\CarbonInterval::seconds($craft->remainingSeconds())->cascade()->forHumans(['parts' => 2, 'short' => true]))
+                    <div class="stack" style="--gap:var(--s-1)">
+                        <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            <span style="flex:1 1 180px;min-width:0">{{ $craft->name }}</span>
+                            <span class="tag">{{ Text::get($craft->isFinished() ? 'crafting.waiting_room' : ($crafting['ready'] ? 'crafting.working' : 'crafting.on_hold')) }}</span>
+                            <form method="POST" action="{{ route('crafting.destroy', $craft) }}">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn btn--sm btn--ghost cut" title="{{ Text::get('crafting.cancel_hint') }}">{{ Text::get('crafting.cancel') }}</button>
+                            </form>
+                        </div>
+                        <div class="proc-bar" tabindex="0" data-tip="{{ Text::get('processes.left', ['time' => $left]) }}">
+                            <div class="meter" style="--v:{{ round($ratio, 3) }}"><div class="meter__fill"></div></div>
+                        </div>
+                    </div>
+                @empty
+                    <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('crafting.none_building') }}</p>
+                @endforelse
+
+                @if ($crafting['plans'] === [])
+                    <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('crafting.no_designs') }}</p>
+                @endif
+
+                @foreach ($crafting['plans'] as $plan)
+                    <div class="stack" style="--gap:var(--s-2);padding-top:var(--s-3);border-top:var(--hair) solid var(--line-0)">
+                        <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            <span style="flex:1 1 180px;min-width:0">{{ $plan->design?->product?->displayName() ?? $plan->row->item?->displayName() }}</span>
+                            <span class="tag">{{ Text::get($plan->design?->single_use ? 'crafting.copy' : 'crafting.original') }}</span>
+                            <span class="micro num" style="color:var(--ink-3)">{{ \Carbon\CarbonInterval::seconds($plan->seconds)->cascade()->forHumans(['parts' => 2, 'short' => true]) }}</span>
+                        </div>
+
+                        @foreach ($plan->lines as $line)
+                            <div class="row row--wrap micro" style="--gap:var(--s-2);justify-content:space-between;color:{{ $line->met() ? 'var(--ink-2)' : 'var(--warn)' }}">
+                                <span>{{ $line->label }}</span>
+                                <span class="num">{{ min($line->have, 99999) }} / {{ $line->need }}</span>
+                            </div>
+                        @endforeach
+
+                        @if ($plan->blocked)
+                            <span class="field__hint" style="color:var(--warn)">{{ $plan->blocked->message() }}</span>
+                        @endif
+
+                        <form method="POST" action="{{ route('crafting.store', $plan->row) }}" class="row" style="--gap:var(--s-3);align-items:center">
+                            @csrf
+                            @if (session('confirm_craft') === $plan->row->id)
+                                <input type="hidden" name="confirm" value="1">
+                            @endif
+                            <button type="submit" class="btn btn--sm cut" @disabled($plan->blocked !== null)>
+                                {{ Text::get(session('confirm_craft') === $plan->row->id ? 'crafting.craft_anyway' : 'crafting.craft') }}
+                            </button>
+                        </form>
+                    </div>
+                @endforeach
             </div>
         </details>
     @endif

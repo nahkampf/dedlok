@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // Ko-fi's webhook. The verification token is on Ko-fi's API page; unset, the receiver refuses everything.
+    'kofi' => [
+        'token' => env('KOFI_VERIFICATION_TOKEN', ''),
+    ],
+
 ];

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Characters;
 
 use App\City\ActivityKind;
+use App\Crafting\Crafting;
 use App\Decryption\DecryptionQueue;
 use App\Drugs\DrugLedger;
 use App\Drugs\Family;
@@ -14,6 +15,7 @@ use App\Models\DecryptionEntry;
 use App\Models\Dose;
 use App\Models\Mission;
 use App\Models\SystemScan;
+use App\Programs\Lifetime;
 use App\Stats\Resolver;
 use App\Support\Text;
 use Carbon\CarbonImmutable;
@@ -49,8 +51,10 @@ final class CurrentProcesses
                 ...$this->scans($character, $now),
                 ...$this->activity($character, $now),
                 ...$this->decryption($character, $now),
+                ...$this->crafting($character),
                 ...$this->training($character),
                 ...$this->doses($character, $now),
+                ...$this->scripts($character, $now),
                 ...$this->withdrawals($character, $now),
                 ...$this->missions($character, $now),
             ]),
@@ -193,6 +197,51 @@ final class CurrentProcesses
                 'detail' => null,
                 'ratio' => $this->between($dose->started_at, $dose->expires_at, $now),
                 'seconds' => $this->until($dose->expires_at, $now),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /** Builds: a bar of working time done, on hold while the deck will not run. */
+    private function crafting(Character $character): array
+    {
+        $crafting = Crafting::make();
+        $crafting->settle($character);
+        $ready = $crafting->deckReady($character);
+        $rows = [];
+
+        foreach ($crafting->crafts($character) as $craft) {
+            $rows[] = [
+                'kind' => 'craft',
+                'label' => Text::get('processes.craft', ['item' => $craft->name]),
+                'detail' => $craft->isFinished() ? Text::get('processes.craft_waiting') : ($ready ? null : Text::get('processes.craft_on_hold')),
+                'ratio' => $craft->required_seconds > 0 ? min(1.0, $craft->progress_seconds / $craft->required_seconds) : 1.0,
+                'seconds' => $craft->isFinished() || ! $ready ? null : $craft->remainingSeconds(),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /** A Script on the deck: a bar from the moment it started to the moment it is spent. */
+    private function scripts(Character $character, CarbonImmutable $now): array
+    {
+        $rows = [];
+
+        foreach ($character->runningProcesses() as $process) {
+            $end = Lifetime::endsAt($process);
+
+            if ($end === null) {
+                continue;
+            }
+
+            $rows[] = [
+                'kind' => 'script',
+                'label' => Text::get('processes.script', ['program' => $process->item?->displayName() ?? '']),
+                'detail' => Text::get('processes.script_detail'),
+                'ratio' => $this->between($process->started_at, $end, $now),
+                'seconds' => $this->until($end, $now),
             ];
         }
 

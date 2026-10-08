@@ -62,6 +62,9 @@ final class ItemGranter
             ->where('character_id', $character->id)
             ->where('item_id', $item->id)
             ->whereNull('parent_id')
+            // A copy that is running (or belted) is a row of its own; adding to it would hand a running Script a second life.
+            ->whereNull('running_on_deck_id')
+            ->whereNull('belt_slot')
             ->first();
 
         if ($existing !== null) {

@@ -123,7 +123,7 @@ class RunController extends Controller
                 ->get()
                 ->keyBy('address'),
             // What the running programs are spending, against what the deck resolves.
-            'spent' => $deck === null ? ['qflops' => 0, 'memory' => 0] : app(ProgramRunner::class)->spentOn($character, (int) $deck->id),
+            'spent' => $deck === null ? ['qflops' => 0.0, 'memory' => 0.0] : app(ProgramRunner::class)->spentOn($character, (int) $deck->id),
             'chainCap' => $chains->hopsAllowed($character),
             // What is running, with what each thing IS — an icebreaker and a
             // decryptor are both "a program" until the moment one of them is

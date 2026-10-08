@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Programs;
 
+use App\Crafting\Crafting;
 use App\Decks\DeckTotals;
 use App\Decryption\DecryptionQueue;
 use App\Models\Character;
@@ -11,6 +12,7 @@ use App\Models\InventoryItem;
 use App\Models\Program;
 use App\Stats\Resolver;
 use App\Stats\Sources\RunningPrograms;
+use App\Support\Qb;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Config;
@@ -59,6 +61,9 @@ final class ProgramRunner
      */
     public function start(Character $character, InventoryItem $row, bool $duringRun = false): ProcessResult
     {
+        // A spent Script still counts as a running copy until somebody removes it.
+        Lifetime::reapFor($character);
+
         $refusal = $this->refusalFor($character, $row, $duringRun);
 
         if ($refusal !== null) {
@@ -138,11 +143,11 @@ final class ProgramRunner
 
         $spent = $shared['spent'] ?? $this->spentOn($character, (int) $deck->id);
 
-        if ($totals->qflops < $spent['qflops'] + $program->qflops_cost) {
+        if (Qb::tenths($totals->qflops) < Qb::tenths($spent['qflops']) + Qb::tenths($program->qflops_cost)) {
             return ProcessRefusal::NotEnoughCompute;
         }
 
-        if ($totals->quantabits < $spent['memory'] + $program->memory_cost) {
+        if (Qb::tenths($totals->quantabits) < Qb::tenths($spent['memory']) + Qb::tenths($program->memory_cost)) {
             return ProcessRefusal::NotEnoughMemory;
         }
 
@@ -158,6 +163,8 @@ final class ProgramRunner
      */
     public function startable(Character $character): Collection
     {
+        Lifetime::reapFor($character);
+
         $deck = $character->equippedDeck;
         $shared = $deck === null ? null : [
             'deck' => $deck,
@@ -204,6 +211,10 @@ final class ProgramRunner
      */
     public function stopAll(Character $character, InventoryItem $deck): ProcessResult
     {
+        // Every change to a deck passes through here, before it is made: bring any build up to date while the deck is
+        // still as it was, so the time before the change is credited to the state it was worked in (see Crafting).
+        Crafting::make()->settle($character);
+
         $rows = InventoryItem::query()
             ->where('character_id', $character->id)
             ->where('running_on_deck_id', $deck->id)
@@ -292,12 +303,12 @@ final class ProgramRunner
     /**
      * What the processes on a deck are already spending.
      *
-     * @return array{qflops: int, memory: int}
+     * @return array{qflops: float, memory: float}
      */
     public function spentOn(Character $character, int $deckId): array
     {
-        $qflops = 0;
-        $memory = 0;
+        $qflops = 0.0;
+        $memory = 0.0;
 
         foreach (RunningPrograms::processesOn($character, $deckId) as $row) {
             $program = $row->item?->program;
@@ -310,7 +321,7 @@ final class ProgramRunner
             $memory += $program->memory_cost;
         }
 
-        return ['qflops' => $qflops, 'memory' => $memory];
+        return ['qflops' => Qb::of($qflops), 'memory' => Qb::of($memory)];
     }
 
     /**
@@ -367,6 +378,13 @@ final class ProgramRunner
             if ($owner !== null) {
                 DecryptionQueue::make()->stopped($owner, $row->getKey());
             }
+        }
+
+        // A Script is spent by running, so stopping one early destroys it; there is no pile to put it back in.
+        if ($row->item?->program?->isTemporary()) {
+            $row->delete();
+
+            return;
         }
 
         $row->running_on_deck_id = null;

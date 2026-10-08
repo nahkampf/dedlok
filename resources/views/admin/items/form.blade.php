@@ -202,14 +202,14 @@
 
                 <div class="field" @error('size') data-invalid @enderror>
                     <label class="field__label" for="size">{{ Text::get('admin.items.fields.size') }}</label>
-                    <input class="input num" id="size" name="size" type="number" min="0" value="{{ $value('size', 0) }}">
+                    <input class="input num" id="size" name="size" type="number" min="0" step="0.1" value="{{ $value('size', 0) }}">
                     <span class="field__hint">{{ Text::get('admin.items.fields.size_hint') }}</span>
                     @error('size') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="field" @error('capacity') data-invalid @enderror>
                     <label class="field__label" for="capacity">{{ Text::get('admin.items.fields.capacity') }}</label>
-                    <input class="input num" id="capacity" name="capacity" type="number" min="0"
+                    <input class="input num" id="capacity" name="capacity" type="number" min="0" step="0.1"
                            value="{{ $value('capacity', 0) }}" data-controls="accepts">
                     <span class="field__hint">{{ Text::get('admin.items.fields.capacity_hint') }}</span>
                     @error('capacity') <span class="field__error">{{ $message }}</span> @enderror
@@ -529,7 +529,7 @@
                         @foreach (['qflops_cost', 'memory_cost', 'storage_size'] as $field)
                             <div class="field" @error($field) data-invalid @enderror>
                                 <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
-                                <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0"
+                                <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0" step="0.1"
                                        value="{{ old($field, $item?->program?->{$field} ?? 0) }}">
                                 <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
                                 @error($field) <span class="field__error">{{ $message }}</span> @enderror
@@ -544,6 +544,15 @@
                         <span>{{ Text::get('admin.items.fields.background_process') }}</span>
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.background_process_hint') }}</span>
+
+                    {{-- A Script is spent by running: it lasts this long, and is gone. Blank is an ordinary program. --}}
+                    <div class="field" style="margin-top:var(--s-3)" @error('lifetime_seconds') data-invalid @enderror>
+                        <label class="field__label" for="lifetime_seconds">{{ Text::get('admin.items.fields.lifetime_seconds') }}</label>
+                        <input class="input num" id="lifetime_seconds" name="lifetime_seconds" type="number" min="1" step="1"
+                               value="{{ old('lifetime_seconds', $item?->program?->lifetime_seconds) }}">
+                        <span class="field__hint">{{ Text::get('admin.items.fields.lifetime_seconds_hint') }}</span>
+                        @error('lifetime_seconds') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
 
                     {{-- Whether two copies may be pointed at two things at
                          once. A property of the SOFTWARE: how many a character
@@ -619,7 +628,7 @@
 
                 <div class="field" style="max-width:min(240px,100%)" @error('onboard_storage') data-invalid @enderror>
                     <label class="field__label" for="onboard_storage">{{ Text::get('admin.items.onboard_storage.label') }}</label>
-                    <input class="input num" id="onboard_storage" name="onboard_storage" type="number" min="0" max="65535"
+                    <input class="input num" id="onboard_storage" name="onboard_storage" type="number" min="0" step="0.1"
                            value="{{ old('onboard_storage', $item?->onboard_storage) }}"
                            placeholder="{{ config('decks.onboard_storage') }}">
                     <span class="field__hint">{{ Text::get('admin.items.onboard_storage.hint', ['fallback' => config('decks.onboard_storage')]) }}</span>
@@ -727,11 +736,126 @@
                     <div class="field" data-hardware="{{ $kinds }}" @error($field) data-invalid @enderror>
                         <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
                         <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0"
+                               step="{{ in_array($field, ['qflops', 'quantabits', 'storage'], true) ? '0.1' : '1' }}"
                                value="{{ $moduleValue($field) }}">
                         <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
                         @error($field) <span class="field__error">{{ $message }}</span> @enderror
                     </div>
                 @endforeach
+            </div>
+        </div>
+
+        {{-- A DESIGN (CRAFTING.md): plain data with a recipe. Choosing a product is what makes the item one; blank rows are spare. --}}
+        @php($design = $item?->design)
+        @php($maxLines = (int) config('crafting.max_components', 8))
+        @php($lines = old('design_lines', $design ? $design->components->map(fn ($c) => [
+            'item_id' => $c->component_item_id, 'quantity' => $c->quantity, 'grade_min' => $c->grade_min, 'grade_max' => $c->grade_max,
+            'os_slug' => $c->os_slug, 'owner_id' => $c->owner_id, 'system_type' => $c->system_type, 'ice_min' => $c->ice_min, 'ids_min' => $c->ids_min,
+        ])->all() : []))
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.design.heading') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-3)">
+                <p class="field__hint" style="margin:0">{{ Text::get('admin.items.design.hint') }}</p>
+
+                <div class="field" @error('design_product') data-invalid @enderror>
+                    <label class="field__label" for="design_product">{{ Text::get('admin.items.design.product') }}</label>
+                    <select class="input" id="design_product" name="design_product">
+                        <option value="">{{ Text::get('admin.items.design.none') }}</option>
+                        @foreach ($designProducts as $product)
+                            <option value="{{ $product->id }}" @selected((string) old('design_product', $design?->product_item_id) === (string) $product->id)>{{ $product->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('design_product') <span class="field__error">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr))">
+                    <div class="field" @error('design_seconds') data-invalid @enderror>
+                        <label class="field__label" for="design_seconds">{{ Text::get('admin.items.design.seconds') }}</label>
+                        <input class="input num" id="design_seconds" name="design_seconds" type="number" min="1" step="1" value="{{ old('design_seconds', $design?->craft_seconds) }}">
+                        <span class="field__hint">{{ Text::get('admin.items.design.seconds_hint') }}</span>
+                        @error('design_seconds') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="field" @error('design_skill_id') data-invalid @enderror>
+                        <label class="field__label" for="design_skill_id">{{ Text::get('admin.items.design.skill') }}</label>
+                        <select class="input" id="design_skill_id" name="design_skill_id">
+                            <option value="">{{ Text::get('admin.items.design.no_skill') }}</option>
+                            @foreach ($skills as $skill)
+                                <option value="{{ $skill->id }}" @selected((string) old('design_skill_id', $design?->skill_id) === (string) $skill->id)>{{ $skill->title }}</option>
+                            @endforeach
+                        </select>
+                        @error('design_skill_id') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="field" @error('design_skill_level') data-invalid @enderror>
+                        <label class="field__label" for="design_skill_level">{{ Text::get('admin.items.design.skill_level') }}</label>
+                        <input class="input num" id="design_skill_level" name="design_skill_level" type="number" min="1" max="20" step="1" value="{{ old('design_skill_level', $design?->skill_level ?? 1) }}">
+                        @error('design_skill_level') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <label class="check">
+                    <input type="hidden" name="design_single_use" value="0">
+                    <input type="checkbox" name="design_single_use" value="1" @checked(old('design_single_use', $design?->single_use ?? false))>
+                    <span>{{ Text::get('admin.items.design.single_use') }}</span>
+                </label>
+                <span class="field__hint">{{ Text::get('admin.items.design.single_use_hint') }}</span>
+                @error('design_lines') <span class="field__error">{{ $message }}</span> @enderror
+
+                @for ($i = 0; $i < $maxLines; $i++)
+                    @php($line = $lines[$i] ?? [])
+                    <div class="stack" style="--gap:var(--s-2);padding-top:var(--s-3);border-top:var(--hair) solid var(--line-0)">
+                        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr))">
+                            <div class="field" @error("design_lines.$i.item_id") data-invalid @enderror>
+                                <label class="field__label" for="design_lines_{{ $i }}_item_id">{{ Text::get('admin.items.design.line', ['n' => $i + 1]) }}</label>
+                                <select class="input" id="design_lines_{{ $i }}_item_id" name="design_lines[{{ $i }}][item_id]">
+                                    <option value="">&mdash;</option>
+                                    @foreach ($designComponents as $component)
+                                        <option value="{{ $component->id }}" @selected((string) ($line['item_id'] ?? '') === (string) $component->id)>{{ $component->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error("design_lines.$i.item_id") <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="field" @error("design_lines.$i.quantity") data-invalid @enderror>
+                                <label class="field__label" for="design_lines_{{ $i }}_quantity">{{ Text::get('admin.items.design.quantity') }}</label>
+                                <input class="input num" id="design_lines_{{ $i }}_quantity" name="design_lines[{{ $i }}][quantity]" type="number" min="1" step="1" value="{{ $line['quantity'] ?? '' }}">
+                                @error("design_lines.$i.quantity") <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+                            @foreach (['grade_min' => [1, 9], 'grade_max' => [1, 9], 'ice_min' => [1, 20], 'ids_min' => [1, 100]] as $field => [$low, $high])
+                                <div class="field" @error("design_lines.$i.$field") data-invalid @enderror>
+                                    <label class="field__label" for="design_lines_{{ $i }}_{{ $field }}">{{ Text::get("admin.items.design.$field") }}</label>
+                                    <input class="input num" id="design_lines_{{ $i }}_{{ $field }}" name="design_lines[{{ $i }}][{{ $field }}]" type="number" min="{{ $low }}" max="{{ $high }}" step="1" value="{{ $line[$field] ?? '' }}">
+                                    @error("design_lines.$i.$field") <span class="field__error">{{ $message }}</span> @enderror
+                                </div>
+                            @endforeach
+                            <div class="field">
+                                <label class="field__label" for="design_lines_{{ $i }}_os_slug">{{ Text::get('admin.items.design.os') }}</label>
+                                <select class="input" id="design_lines_{{ $i }}_os_slug" name="design_lines[{{ $i }}][os_slug]">
+                                    <option value="">{{ Text::get('admin.items.design.any') }}</option>
+                                    @foreach ($operatingSystems as $os)
+                                        <option value="{{ $os->slug }}" @selected(($line['os_slug'] ?? '') === $os->slug)>{{ $os->title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="field__label" for="design_lines_{{ $i }}_owner_id">{{ Text::get('admin.items.design.owner') }}</label>
+                                <select class="input" id="design_lines_{{ $i }}_owner_id" name="design_lines[{{ $i }}][owner_id]">
+                                    <option value="">{{ Text::get('admin.items.design.any') }}</option>
+                                    @foreach ($owners as $owner)
+                                        <option value="{{ $owner->id }}" @selected((string) ($line['owner_id'] ?? '') === (string) $owner->id)>{{ $owner->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="field__label" for="design_lines_{{ $i }}_system_type">{{ Text::get('admin.items.design.system_type') }}</label>
+                                <select class="input" id="design_lines_{{ $i }}_system_type" name="design_lines[{{ $i }}][system_type]">
+                                    <option value="">{{ Text::get('admin.items.design.any') }}</option>
+                                    @foreach ($systemTypes as $type)
+                                        <option value="{{ $type->value }}" @selected(($line['system_type'] ?? '') === $type->value)>{{ $type->label() }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                @endfor
             </div>
         </div>
 

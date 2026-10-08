@@ -108,12 +108,12 @@
             @if ($queueEta !== null)
                 <span class="micro" style="color:var(--ink-3)">{{ $queueEta }}</span>
             @endif
-            <span class="micro num">{{ count($queue) }}/{{ $limit }}</span>
+            <span class="micro num">{{ count($queue) }}@if ($limit !== null)/{{ $limit }}@endif</span>
         </summary>
 
         <div class="panel__bd stack" style="--gap:var(--s-4)">
             <p class="micro" style="color:var(--ink-3);margin:0">
-                {{ Text::get('training.queue_hint', ['limit' => $limit]) }}
+                {{ $limit === null ? Text::get('training.queue_hint_unlimited') : Text::get('training.queue_hint', ['limit' => $limit]) }}
             </p>
 
             {{-- At the rate it earns THIS INSTANT, like the active entry's own
@@ -209,7 +209,7 @@
                 </div>
             @endif
 
-            @if (count($queue) >= $limit)
+            @if ($limit !== null && count($queue) >= $limit)
                 <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('training.full') }}</p>
             @elseif ($queueable === [])
                 <p class="micro" style="color:var(--ink-3);margin:0">
@@ -243,7 +243,7 @@
                     <div class="stack" style="--gap:var(--s-2)">
                         <span class="micro">{{ Text::get('training.plan') }}</span>
                         <span class="micro" style="color:var(--ink-3)">
-                            {{ Text::get('training.plan_hint', ['limit' => $limit]) }}
+                            {{ $limit === null ? Text::get('training.plan_hint_unlimited') : Text::get('training.plan_hint', ['limit' => $limit]) }}
                         </span>
                     </div>
 

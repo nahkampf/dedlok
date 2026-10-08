@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Crafting\Crafting;
+use App\Crafting\CraftPlan;
 use App\Decks\DeckEquipper;
 use App\Decks\DeckTotals;
 use App\Decks\FittingRefusal;
@@ -11,6 +13,7 @@ use App\Decks\ModuleFitter;
 use App\Decks\ThermalExposure;
 use App\Decryption\DecryptionQueue;
 use App\Models\Character;
+use App\Models\Craft;
 use App\Models\DeckSlot;
 use App\Models\DecryptionEntry;
 use App\Models\InventoryItem;
@@ -21,6 +24,7 @@ use App\Stats\Resolver;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -88,6 +92,7 @@ class DeckController extends Controller
             'equipped' => $character->hasEquipped($entry),
             // The decryption queue, with each file's odds: only the equipped deck runs a decryptor, so only it shows one.
             'decryption' => $character->hasEquipped($entry) ? $this->decryption($character) : null,
+            'crafting' => $character->hasEquipped($entry) ? $this->crafting($character) : null,
             // What that load is doing to each thing fitted in it. Kept apart
             // from the totals because a deck's tolerance is its weakest part
             // rather than the sum of its parts.
@@ -265,6 +270,24 @@ class DeckController extends Controller
         // RequireCharacter guarantees one on every route in this group, so a
         // missing character here is a routing mistake, not a player state.
         return $request->user()->character()->firstOrFail();
+    }
+
+    /**
+     * The builds and the designs, settled first so the bars are true.
+     *
+     * @return array{slots: int, ready: bool, crafts: Collection<int, Craft>, plans: list<CraftPlan>}
+     */
+    private function crafting(Character $character): array
+    {
+        $crafting = Crafting::make();
+        $crafting->settle($character);
+
+        return [
+            'slots' => $crafting->slots($character),
+            'ready' => $crafting->deckReady($character),
+            'crafts' => $crafting->crafts($character),
+            'plans' => $crafting->designsHeld($character)->map(fn (InventoryItem $row): CraftPlan => $crafting->plan($character, $row))->all(),
+        ];
     }
 
     /**

@@ -13,10 +13,12 @@ use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\LocationController as AdminLocationController;
 use App\Http\Controllers\Admin\NpcController as AdminNpcController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
+use App\Http\Controllers\Admin\SupporterController as AdminSupporterController;
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\CityController;
+use App\Http\Controllers\CraftingController;
 use App\Http\Controllers\CurrentProcessesController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HunterController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\KofiWebhookController;
 use App\Http\Controllers\MarketController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MissionController;
@@ -39,6 +42,7 @@ use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
 use App\Http\Controllers\StandingController;
+use App\Http\Controllers\SupportersController;
 use App\Http\Controllers\TasksController;
 use App\Http\Controllers\TrainingQueueController;
 use App\Http\Controllers\WaitingController;
@@ -47,6 +51,12 @@ use App\Http\Middleware\ForbidSecondCharacter;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+
+// Everyone who supports the game. Public, like the front page.
+// Ko-fi's membership webhook. Public, CSRF-exempt, authenticated by its verification token.
+Route::post('/kofi_webhook', KofiWebhookController::class)->name('kofi.webhook');
+
+Route::get('/supporters', [SupportersController::class, 'index'])->name('supporters.index');
 
 // The whole pool in one response; the client randomises locally so repeated
 // presses cost no requests at all. Read-only, so GET and no CSRF. Still
@@ -148,6 +158,10 @@ Route::middleware('auth')->group(function () {
     // cannot be called off from in there. See App\Decryption\DecryptionQueue.
     Route::post('/inventory/{entry}/decrypt', [DecryptionController::class, 'store'])
         ->name('decryption.store');
+    // Crafting (CRAFTING.md): start a build from a design in the stash (components are spent now), or give one up.
+    Route::post('/inventory/{entry}/craft', [CraftingController::class, 'store'])->name('crafting.store');
+    Route::delete('/crafting/{craft}', [CraftingController::class, 'destroy'])->name('crafting.destroy');
+
     Route::post('/decryption/reorder', [DecryptionController::class, 'reorder'])
         ->name('decryption.reorder');
     Route::delete('/decryption/{entry}', [DecryptionController::class, 'destroy'])
@@ -336,6 +350,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/tasks', TasksController::class)->name('tasks.index');
 
     Route::get('/character', [CharacterController::class, 'index'])->name('character.index');
+    Route::post('/character/avatar', [CharacterController::class, 'avatar'])->middleware('throttle:10,10')->name('character.avatar');
+    Route::delete('/character/avatar', [CharacterController::class, 'removeAvatar'])->name('character.avatar.remove');
     Route::post('/character/bio', [CharacterController::class, 'bio'])->name('character.bio');
 
     Route::get('/standing', [StandingController::class, 'index'])->name('standing.index');
@@ -457,6 +473,12 @@ Route::middleware(['auth', 'can:admin'])
         Route::resource('locations', AdminLocationController::class)->except(['show']);
         Route::resource('encounters', AdminEncounterController::class)->except(['show']);
         Route::resource('npcs', AdminNpcController::class)->except(['show']);
+
+        // Who is a supporter, and the button that makes somebody one.
+        Route::get('supporters', [AdminSupporterController::class, 'index'])->name('supporters.index');
+        Route::get('supporters/history', [AdminSupporterController::class, 'history'])->name('supporters.history');
+        Route::post('supporters/kofi', [AdminSupporterController::class, 'connect'])->name('supporters.connect');
+        Route::put('supporters/{user}', [AdminSupporterController::class, 'update'])->name('supporters.update');
 
         // ALPHA TESTING (config/features.php): the beta keys. 404 while the flag is off.
         Route::get('beta-keys', [AdminBetaKeyController::class, 'index'])->name('beta_keys.index');

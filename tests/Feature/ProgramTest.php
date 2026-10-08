@@ -103,8 +103,8 @@ final class ProgramTest extends TestCase
 
     private function programItem(
         ProgramKind $kind = ProgramKind::Daemon,
-        int $qflops = 10,
-        int $memory = 10,
+        float $qflops = 10,
+        float $memory = 10,
         array $modifiers = [],
         ?bool $background = null,
     ): Item {
@@ -180,7 +180,7 @@ final class ProgramTest extends TestCase
     {
         $row = $this->own($this->programItem(qflops: 30, memory: 40));
 
-        $this->assertSame(
+        $this->assertEquals(
             ['qflops' => 0, 'memory' => 0],
             $this->runner->spentOn($this->character, (int) $this->deck->id),
             'an idle program spends nothing'
@@ -188,10 +188,20 @@ final class ProgramTest extends TestCase
 
         $this->runner->start($this->character, $row);
 
-        $this->assertSame(
+        $this->assertEquals(
             ['qflops' => 30, 'memory' => 40],
             $this->runner->spentOn($this->character, (int) $this->deck->id)
         );
+    }
+
+    public function test_a_program_may_cost_a_fraction_of_a_unit(): void
+    {
+        $light = $this->own($this->programItem(qflops: 0.4, memory: 0.4));
+
+        $this->runner->start($this->character, $light);
+
+        $this->assertEquals(['qflops' => 0.4, 'memory' => 0.4], $this->runner->spentOn($this->character, (int) $this->deck->id));
+        $this->assertSame(0.4, $light->item->program->memory_cost);
     }
 
     public function test_a_program_that_does_not_fit_the_compute_budget_is_refused(): void

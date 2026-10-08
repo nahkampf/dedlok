@@ -10,7 +10,9 @@ use App\Decks\SlotLayout;
 use App\Implants\BodyRegion;
 use App\Market\Rarity;
 use App\Programs\ProgramKind;
+use App\Support\Qb;
 use App\Support\Text;
+use Carbon\CarbonInterval;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -80,11 +82,11 @@ class Item extends Model
             'rarity' => Rarity::class,
             'stackable' => 'boolean',
             'weight' => 'decimal:2',
-            'size' => 'integer',
-            'capacity' => 'integer',
+            'size' => 'float',
+            'capacity' => 'float',
             'hardware' => Hardware::class,
             'board_layout' => 'array',
-            'onboard_storage' => 'integer',
+            'onboard_storage' => 'float',
             'base_cost' => 'integer',
             'on_market' => 'boolean',
             'seed_quantity' => 'integer',
@@ -149,6 +151,21 @@ class Item extends Model
     public function program(): HasOne
     {
         return $this->hasOne(Program::class);
+    }
+
+    /**
+     * The recipe this item is, if it is a design (a Design Copy or a Design Original).
+     *
+     * @return HasOne<Design, $this>
+     */
+    public function design(): HasOne
+    {
+        return $this->hasOne(Design::class);
+    }
+
+    public function isDesign(): bool
+    {
+        return $this->design !== null;
     }
 
     public function isProgram(): bool
@@ -283,13 +300,13 @@ class Item extends Model
      * QB this deck holds before any storage module — its own figure, or the
      * `decks.onboard_storage` fallback. Nothing that is not a deck holds any.
      */
-    public function onboardStorage(): int
+    public function onboardStorage(): float
     {
         if (! $this->isCyberdeck()) {
             return 0;
         }
 
-        return $this->onboard_storage ?? (int) config('decks.onboard_storage', 0);
+        return $this->onboard_storage ?? Qb::of(config('decks.onboard_storage', 0));
     }
 
     /** A module of some kind — a CPU, a stick of RAM, a power supply. */
@@ -509,12 +526,16 @@ class Item extends Model
         }
 
         $parts = [
-            Text::get('programs.costs.compute', ['value' => $program->qflops_cost]),
-            Text::get('programs.costs.memory', ['value' => $program->memory_cost]),
-            Text::get('programs.costs.storage', ['value' => $program->storage_size]),
+            Text::get('programs.costs.compute', ['value' => Qb::of($program->qflops_cost)]),
+            Text::get('programs.costs.memory', ['value' => Qb::of($program->memory_cost)]),
+            Text::get('programs.costs.storage', ['value' => Qb::of($program->storage_size)]),
         ];
 
         $parts[] = Text::get($program->background_process ? 'programs.background' : 'programs.run_only');
+
+        if ($program->isTemporary()) {
+            $parts[] = Text::get('programs.costs.lifetime', ['time' => CarbonInterval::seconds($program->lifetime_seconds)->cascade()->forHumans(['short' => true, 'parts' => 2])]);
+        }
 
         return implode(Text::get('items.summary.separator'), $parts);
     }

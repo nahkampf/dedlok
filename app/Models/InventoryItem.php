@@ -7,6 +7,8 @@ namespace App\Models;
 use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\ScanFact;
 use App\Cyberspace\ScanFile;
+use App\Cyberspace\SystemType;
+use App\Support\Qb;
 use App\Support\Text;
 use Carbon\Carbon;
 use Database\Factories\InventoryItemFactory;
@@ -74,21 +76,73 @@ class InventoryItem extends Model
             return null;
         }
 
+        $sealed = $this->item?->slug === ExtractedFile::SEALED_SLUG;
+        $origin = $file->origin;
+
         $parts = [
             Text::get('inventory.files.size', ['qb' => $file->sizeQb]),
-            $file->encryptionSkillId !== null
-                ? Text::get('inventory.files.encrypted_with', ['skill' => $this->encryptionSkillName($file)])
+            ...($file->grade === null ? [] : [Text::get('inventory.files.headline.grade', ['grade' => $file->grade])]),
+            ...($origin?->systemType === null ? [] : [Text::get('inventory.files.from', ['type' => SystemType::from($origin->systemType)->label()])]),
+            ...($origin?->ownerName === null ? [] : [Text::get('inventory.files.owned_by', ['owner' => $origin->ownerName])]),
+            ...($origin?->osTitle === null ? [] : [Text::get('inventory.files.running', ['os' => $origin->osTitle])]),
+            ...($origin?->idsLevel === null ? [] : [Text::get('inventory.files.guarded', ['ids' => $origin->idsLevel, 'ice' => $origin->iceLevel ?? 0])]),
+            $sealed
+                ? ($file->encryptionSkillId !== null
+                    ? Text::get('inventory.files.encrypted_with', ['skill' => $this->encryptionSkillName($file)])
+                    : Text::get('inventory.files.unencrypted'))
                 : Text::get('inventory.files.unencrypted'),
-            Text::get('inventory.files.sealed_value', ['value' => $file->valueSealed]),
+            Text::get($sealed ? 'inventory.files.sealed_value' : 'inventory.files.broken_value', ['value' => $sealed ? $file->valueSealed : $file->valueBroken]),
         ];
 
         return implode(Text::get('items.summary.separator'), $parts);
+    }
+
+    /**
+     * The item's name, and for a component the one thing about its origin it is named by: "Kernel Log (AuraOS)".
+     * Two components of one item and different origins are different things to a recipe, so they read as different things.
+     */
+    public function label(): string
+    {
+        $name = (string) $this->item?->displayName();
+        $file = $this->extractedFile();
+
+        if ($file === null || $this->item === null) {
+            return $name;
+        }
+
+        $origin = $file->origin;
+        $headline = match (config("cyberspace.decryption.components.{$this->item->slug}.headline")) {
+            'grade' => $file->grade === null ? null : Text::get('inventory.files.headline.grade', ['grade' => $file->grade]),
+            'os' => $origin?->osTitle,
+            'owner' => $origin?->ownerName,
+            'system_type' => $origin?->systemType === null ? null : SystemType::from($origin->systemType)->label(),
+            'encryption' => $origin?->encryptionTitle,
+            'security' => $origin?->idsLevel === null ? null : Text::get('inventory.files.headline.security', ['ids' => $origin->idsLevel, 'ice' => $origin->iceLevel ?? 0]),
+            default => null,
+        };
+
+        return $headline === null ? $name : "{$name} ({$headline})";
     }
 
     private function encryptionSkillName(ExtractedFile $file): string
     {
         return Skill::query()->find($file->encryptionSkillId)?->title
             ?? Text::get('inventory.files.unknown_encryption');
+    }
+
+    /**
+     * A decrypted file: a component (or a Memory Dump), not a sealed dump. Components of one kind and origin are DRAWN as one
+     * slot in the stash (see `groupKey()`), though each stays its own row with its own file.
+     */
+    public function isComponent(): bool
+    {
+        return $this->extracted_file !== null && $this->item !== null && $this->item->slug !== ExtractedFile::SEALED_SLUG;
+    }
+
+    /** What the stash groups a row under: one key for rows that read the same ("Kernel Log (AuraOS)"), the row's own id for anything else. */
+    public function groupKey(): string
+    {
+        return $this->isComponent() ? 'c:'.$this->item_id.':'.$this->label() : 'r:'.$this->getKey();
     }
 
     /** Where this file waits to be decrypted, if it does. Asked only of file rows. */
@@ -106,7 +160,7 @@ class InventoryItem extends Model
         $file = $this->extractedFile();
 
         return $file !== null
-            ? $file->stockPrice($this->item->slug === ExtractedFile::DECRYPTED_SLUG)
+            ? $file->stockPrice($this->item->slug !== ExtractedFile::SEALED_SLUG)
             : (int) $this->item->base_cost;
     }
 
@@ -416,15 +470,16 @@ class InventoryItem extends Model
      * is the first thing to read `size` at all: it has been stored and
      * unenforced since the table was created.
      */
-    public function usedCapacity(): int
+    public function usedCapacity(): float
     {
-        return $this->children
-            ->sum(fn (self $child) => (int) $child->item->size * $child->quantity);
+        return Qb::sum($this->children
+            ->map(fn (self $child) => (float) $child->item->size * $child->quantity)
+            ->all());
     }
 
-    public function remainingCapacity(): int
+    public function remainingCapacity(): float
     {
-        return max(0, (int) $this->item->capacity - $this->usedCapacity());
+        return max(0.0, Qb::of((float) $this->item->capacity - $this->usedCapacity()));
     }
 
     /**

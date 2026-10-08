@@ -11,6 +11,7 @@ use App\Inventory\ItemGranter;
 use App\Models\Character;
 use App\Models\Item;
 use App\Models\SystemContent;
+use App\Support\Qb;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
 use Illuminate\Support\Facades\DB;
@@ -89,12 +90,12 @@ final readonly class Extractor
         return Storage::fits($character, $this->totalFileQb($address));
     }
 
-    public function totalFileQb(string $address): int
+    public function totalFileQb(string $address): float
     {
-        return (int) SystemContent::query()
+        return Qb::of(SystemContent::query()
             ->whereHas('system', fn ($query) => $query->where('address', $address))
             ->ofKind(ContentKind::Data)
-            ->sum('size_qb');
+            ->sum('size_qb'));
     }
 
     /**
@@ -127,15 +128,15 @@ final readonly class Extractor
                 // What the deck cannot hold stays on the system, still there
                 // for the next run — never taken and lost.
                 if ($content->kind === ContentKind::Item) {
-                    $size = $content->item === null ? 0 : Storage::sizeOf($content->item) * (int) $content->quantity;
+                    $size = $content->item === null ? 0 : Qb::of(Storage::sizeOf($content->item) * (int) $content->quantity);
 
-                    if ($size > $room) {
+                    if (Qb::tenths($size) > Qb::tenths($room)) {
                         $left[] = $content->id;
 
                         continue;
                     }
 
-                    $room -= $size;
+                    $room = Qb::of($room - $size);
                 }
 
                 match ($content->kind) {
@@ -173,7 +174,7 @@ final readonly class Extractor
             }
 
             // All or nothing, because the pull was priced on the total.
-            if (! Storage::fits($character, (int) $contents->sum('size_qb'))) {
+            if (! Storage::fits($character, Qb::sum($contents->pluck('size_qb')))) {
                 return new ExtractionResult(leftBehind: true);
             }
 

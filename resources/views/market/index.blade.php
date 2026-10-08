@@ -173,7 +173,7 @@
                                     @if ($row->quantity > 1)
                                         <span>{{ Text::plural('market.offers.available', $row->quantity) }}</span>
                                     @endif
-                                    <span>{{ Text::get("market.offers.seller", ["name" => $offer->seller?->handle]) }}</span>
+                                    <span>{{ Text::get("market.offers.seller", ["name" => $offer->seller?->handle]) }} <x-supporter-badge :character="$offer->seller" /></span>
                                 </span>
                             </div>
 
