@@ -52,7 +52,7 @@ final class KofiWebhookTest extends TestCase
         $this->hook()->assertOk();
 
         $this->assertEquals($until, $user->fresh()->supporter_until);
-        $this->assertDatabaseCount('kofi_payments', 1);
+        $this->assertSame(1, \DB::table('kofi_payments')->where('message_id', 'm1')->count());
     }
 
     public function test_a_wrong_or_missing_token_is_refused(): void
