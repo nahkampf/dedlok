@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('message_id', 100)->unique()->comment('Ko-fi\'s message_id for the delivery; unique, so a retry changes nothing.');
             $table->string('email')->comment('The email on the payment, as Ko-fi sent it. Matched to users.email, case-insensitively.');
             $table->string('tier_name')->nullable()->comment('The membership tier named on the payment. Informational.');
+            $table->decimal('amount', 10, 2)->nullable()->comment('What was paid, in `currency`, as Ko-fi sent it (before Ko-fi\'s fees). NULL if the payload had none.');
+            $table->string('currency', 10)->nullable()->comment('Currency code of `amount`, e.g. USD. Totals are never added across currencies.');
             $table->boolean('is_first')->default(false)->comment('Whether it was the first payment of the subscription.');
             $table->unsignedBigInteger('user_id')->nullable()->comment('The account it matched. Plain column, no foreign key: NULL when no account had that email, and the row outlives the account.');
             $table->timestamp('received_at')->comment('When the webhook arrived, which is what the month counts from.');

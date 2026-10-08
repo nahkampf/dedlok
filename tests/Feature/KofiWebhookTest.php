@@ -141,4 +141,17 @@ final class KofiWebhookTest extends TestCase
         $this->actingAs(User::factory()->create())->post(route('admin.supporters.connect'), ['kofi_email' => 'other@example.com', 'account' => 'ghost@example.com'])
             ->assertForbidden();
     }
+
+    public function test_the_history_lists_every_payment_tier_and_a_total_per_currency(): void
+    {
+        $user = User::factory()->create(['email' => 'payer@example.com']);
+        $this->hook(['message_id' => 'a', 'amount' => '3.00', 'currency' => 'USD', 'tier_name' => 'Member'])->assertOk();
+        $this->hook(['message_id' => 'b', 'amount' => '3.50', 'currency' => 'USD', 'tier_name' => 'Gold'])->assertOk();
+
+        $this->actingAs($this->admin())->get(route('admin.supporters.history'))
+            ->assertOk()->assertSee('payer@example.com')->assertSee('6.50 USD')->assertSee('Member, Gold')->assertSee('2 Payments');
+
+        $this->actingAs(User::factory()->create())->get(route('admin.supporters.history'))->assertForbidden();
+        $this->assertTrue($user->fresh()->isSupporter());
+    }
 }

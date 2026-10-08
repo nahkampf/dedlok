@@ -10,6 +10,8 @@
     <h1 style="margin-top:var(--s-3)">{{ Text::get('admin.supporters.title') }}</h1>
     <p class="muted" style="margin-top:var(--s-2);max-width:70ch;font-size:var(--fs-sm)">{{ Text::get('admin.supporters.lede') }}</p>
 
+    <p style="margin-top:var(--s-3)"><a href="{{ route('admin.supporters.history') }}">{{ Text::get('admin.supporters.history_link') }} →</a></p>
+
     @if ($unmatched->isNotEmpty())
         <div class="panel" style="margin-top:var(--s-4)">
             <div class="panel__hd"><h2>{{ Text::get('admin.supporters.unmatched') }}</h2></div>

@@ -43,6 +43,8 @@ class KofiWebhookController extends Controller
                 'message_id' => $messageId,
                 'email' => $email,
                 'tier_name' => $data['tier_name'] ?? null,
+                'amount' => is_numeric($data['amount'] ?? null) ? $data['amount'] : null,
+                'currency' => isset($data['currency']) ? substr((string) $data['currency'], 0, 10) : null,
                 'is_first' => (bool) ($data['is_first_subscription_payment'] ?? false),
                 'user_id' => $user?->id,
                 'received_at' => now(),
