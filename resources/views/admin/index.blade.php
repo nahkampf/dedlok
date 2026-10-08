@@ -33,6 +33,16 @@
             </div>
         </div>
 
+        <div class="card">
+            <div class="card__hd">
+                <div class="card__title">{{ Text::get('admin.supporters.title') }}</div>
+            </div>
+            <div class="card__bd">{{ Text::get('admin.supporters.lede') }}</div>
+            <div class="card__ft">
+                <a class="btn btn--sm" href="{{ route('admin.supporters.index') }}">{{ Text::get('admin.supporters.title') }}</a>
+            </div>
+        </div>
+
         {{-- ALPHA TESTING (config/features.php): only while the flag is on. --}}
         @if (config('features.alpha_testing'))
             <div class="card">

@@ -134,7 +134,7 @@ class TrainingQueueController extends Controller
         $character = $this->character($request);
 
         $validated = $request->validate([
-            'order' => ['required', 'array', 'min:1', 'max:'.TrainingQueue::LIMIT],
+            'order' => ['required', 'array', 'min:1', 'max:'.(TrainingQueue::limitFor($character) ?? 1000)],
             'order.*' => ['integer'],
         ]);
 

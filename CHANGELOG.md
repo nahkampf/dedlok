@@ -23,6 +23,11 @@
   editor a *Design* panel, and `crafting:settle` runs every minute. Also: `chk_programs_kind` admits `script` (migration `..195000`), and
   `ItemGranter` no longer adds to a copy that is running or belted.
 
+- **Supporters** (migration `2026_10_08_240000_supporters`, `App\Supporters\Supporters`): an account flag that earns an ember badge by the character's
+  name, an unlimited training queue, a place on the public Supporters page, and a thank-you message with the Discord invitation. Granted from the new
+  `admin/supporters` screen or `supporter:grant`.
+- **The stash draws components of one kind and origin as one slot** (`InventoryItem::groupKey()`, `<x-item-group>`); each stays its own row.
+
 ### Changed
 
 - **Storage, memory and compute are carried to one decimal place** (migration `2026_10_08_180000_storage_memory_and_compute_have_a_decimal`):

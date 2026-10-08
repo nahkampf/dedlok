@@ -1050,6 +1050,19 @@ soonest deadline first, each as the desk's own `<x-mission-card>` with `:actions
 it came from) and `:abandon="true"` (giving one up needs no desk; its tooltip is *Costs -X standing*, the row's penalty) and `:desk="true"` (who it is for, the agent, the desk's address). *Journal* and *Tasks* (quests) read "Not yet
 implemented." until they are designed. The rail glyph is U+25C7, one already proved to render.
 
+### Supporters
+
+**A flag on the account** (`users.is_supporter`, `supporter_since`; outside `User`'s `#[Fillable]`, like `is_admin`). **`App\Supporters\Supporters` is the only
+writer** (`grant()` / `revoke()`), reached from `php artisan supporter:grant <email> [--revoke]` and the admin screen at `admin/supporters` (a searchable
+list of accounts with a button each; the command is no use on a host whose CLI PHP is not 8.4, hence the screen). A supporter gets:
+
+- a **badge** (`<x-supporter-badge :character>`, a `.tag--ember`) by the character's name on the sheet and on market offers;
+- an **unlimited training queue** (`TrainingQueue::limitFor()` is null for them, `LIMIT` = 5 for everybody else; the skills screen draws no `/5`);
+- a place on the public **Supporters page** (`/supporters`, linked from the front page): the name they gave for the credits (`users.credit_name`),
+  else their character's handle, in the order they became one; an account with neither is not listed;
+- **one message** when the flag goes from off to on (`Category::Support`, `notifications.messages.supporter_welcome`): thanks, what they now have, and the
+  Discord invitation (`strings.discord.url`). Revoking sends nothing; granting again sends it again.
+
 ### The Discord invitation
 
 **A modal that opens by itself, once, on a new account's first sign-in** (`<x-discord-invite>` in `layouts/app.blade.php`, shown while

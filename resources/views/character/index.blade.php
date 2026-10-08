@@ -18,7 +18,7 @@
 
             <div class="stack" style="--gap:var(--s-4);flex:1 1 min(320px,100%);min-width:0">
                 <div class="stack" style="--gap:2px">
-                    <span style="font-size:var(--fs-lg);font-weight:650">{{ $character->handle }}</span>
+                    <span class="row row--wrap" style="--gap:var(--s-2);align-items:center"><span style="font-size:var(--fs-lg);font-weight:650">{{ $character->handle }}</span><x-supporter-badge :character="$character" /></span>
                     <span class="micro" style="color:var(--ink-3)">{{ $archetype?->name }}{{ $archetype?->role ? ' · '.$archetype->role : '' }}</span>
                 </div>
 

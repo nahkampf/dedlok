@@ -77,7 +77,7 @@ class MarketController extends Controller
             // anybody happens to be holding today, and it is short.
             'offers' => MarketOffer::query()
                 ->onOffer()
-                ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'seller'])
+                ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'seller.user'])
                 ->get(),
         ]);
     }

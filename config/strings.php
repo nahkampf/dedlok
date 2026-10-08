@@ -679,12 +679,14 @@ return [
             'city' => 'City',
             'wallet' => 'Wallet',
             'personal' => 'Message',
+            'support' => 'Supporter',
         ],
 
         // The closed row of the inbox. One per message key; a key without one shows its category instead.
         'titles' => [
             'decrypted' => 'Decrypted: :label',
             'crafted' => 'Built: :item',
+            'supporter_welcome' => 'Thank you for supporting Dedlok',
             'scan_complete' => 'Scan complete',
             'backdoor_found' => 'Backdoor found',
             'siphons_ran' => 'Siphon report',
@@ -712,6 +714,7 @@ return [
         'messages' => [
             'decrypted' => 'The :label broke. It is a :item now, worth :value ¤ to the right buyer.',
             'crafted' => 'Your :item is built. It is in your data stash.',
+            'supporter_welcome' => 'Thank you for supporting Dedlok. You now have a badge by your name, a training queue with no limit, and your name on the Supporters page. You are also welcome in our Discord: open :url, or paste it into Discord under + then Join a Server, and say hello. It is where to report bugs, give feedback, wish for features or just hang out.',
             'scan_complete' => 'Your scan of :system (:address) completed. The specifications are saved to a file.',
             'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
             // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
@@ -2783,6 +2786,7 @@ return [
             'queue_changed' => 'The queue changed while you were moving things. It has been refreshed.',
             'breaks_requirement' => 'That order would break a requirement: :problem',
         ],
+        'queue_hint_unlimited' => 'As many as you like, trained in order. A skill goes in at the next level up — press it again for the one after that.',
         'queue_hint' => 'Up to :limit, trained in order. A skill goes in at the next level up — press it again for the one after that.',
         'queue_empty' => 'Nothing queued.',
         'position' => ':position.',
@@ -2835,6 +2839,7 @@ return [
         | and what stopped it.
         */
         'plan' => 'Plan a route',
+        'plan_hint_unlimited' => 'Name a level you want and the prerequisites, and the levels in between, are queued in order.',
         'plan_hint' => 'Name a level you want and the prerequisites, and the levels in between, are queued in order. The queue still holds :limit, so a long route arrives in instalments.',
         'plan_pick' => 'Skill to reach',
         'plan_level' => 'Level wanted',
@@ -3096,6 +3101,14 @@ return [
     ],
 
     // The invitation shown once, on a new account's first sign-in.
+    'supporters' => [
+        'title' => 'Supporters',
+        'lede' => 'The people who keep this game going. Thank you.',
+        'none' => 'Nobody yet.',
+        'badge' => 'Supporter',
+        'badge_hint' => 'Supports the game',
+    ],
+
     'discord' => [
         'title' => 'Please join our Discord!',
         'text' => 'Here\'s where to report bugs, give feedback, wish for features or just hang out and chill:',
@@ -3431,6 +3444,22 @@ return [
     */
     'admin' => [
         // The Beta keys section, present only while `features.alpha_testing` is on.
+        'supporters' => [
+            'title' => 'Supporters',
+            'lede' => 'Who supports the game. A supporter gets a badge by their character\'s name, an unlimited training queue, a place on the Supporters page, and a message about the Discord.',
+            'search' => 'Find an account',
+            'find' => 'Find',
+            'account' => 'Account',
+            'name' => 'Character',
+            'status' => 'Status',
+            'no_character' => 'no character yet',
+            'grant' => 'Make a supporter',
+            'revoke' => 'Remove',
+            'empty' => 'No accounts.',
+            'granted' => ':who is now a supporter.',
+            'revoked' => ':who is no longer a supporter.',
+        ],
+
         'beta_keys' => [
             'title' => 'Beta keys',
             'lede' => 'Keys testers register with while alpha testing is on. Copy one to hand it out: that also marks it as given out.',

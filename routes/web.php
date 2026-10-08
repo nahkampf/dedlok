@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\ItemController as AdminItemController;
 use App\Http\Controllers\Admin\LocationController as AdminLocationController;
 use App\Http\Controllers\Admin\NpcController as AdminNpcController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
+use App\Http\Controllers\Admin\SupporterController as AdminSupporterController;
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterCreationController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
 use App\Http\Controllers\StandingController;
+use App\Http\Controllers\SupportersController;
 use App\Http\Controllers\TasksController;
 use App\Http\Controllers\TrainingQueueController;
 use App\Http\Controllers\WaitingController;
@@ -48,6 +50,9 @@ use App\Http\Middleware\ForbidSecondCharacter;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+
+// Everyone who supports the game. Public, like the front page.
+Route::get('/supporters', [SupportersController::class, 'index'])->name('supporters.index');
 
 // The whole pool in one response; the client randomises locally so repeated
 // presses cost no requests at all. Read-only, so GET and no CSRF. Still
@@ -462,6 +467,10 @@ Route::middleware(['auth', 'can:admin'])
         Route::resource('locations', AdminLocationController::class)->except(['show']);
         Route::resource('encounters', AdminEncounterController::class)->except(['show']);
         Route::resource('npcs', AdminNpcController::class)->except(['show']);
+
+        // Who is a supporter, and the button that makes somebody one.
+        Route::get('supporters', [AdminSupporterController::class, 'index'])->name('supporters.index');
+        Route::put('supporters/{user}', [AdminSupporterController::class, 'update'])->name('supporters.update');
 
         // ALPHA TESTING (config/features.php): the beta keys. 404 while the flag is off.
         Route::get('beta-keys', [AdminBetaKeyController::class, 'index'])->name('beta_keys.index');

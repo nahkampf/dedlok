@@ -32,6 +32,9 @@ enum Category: string
     /** The grid: scans that finished, backdoors that were found. */
     case Cyberspace = 'cyberspace';
 
+    /** The game thanking somebody who supports it, and telling them how to join the Discord. Written only by `Supporters::grant()`. */
+    case Support = 'support';
+
     /** The training clock, which moves whether or not anybody is watching. */
     case Training = 'training';
 
@@ -105,6 +108,8 @@ enum Category: string
             self::Wallet => "\u{00A4}",
             // The hollow diamond, from the admin's empty states: a glyph already known to render in the kit's fonts.
             self::Personal => "\u{25C7}",
+            // The star the achievements use: already proved to render, and a thank-you is the same kind of mark.
+            self::Support => "\u{2605}",
         };
     }
 
@@ -135,6 +140,7 @@ enum Category: string
             self::Wallet => 'wallet.index',
             // A reply is the next thing anybody does with one; the message itself says who it is from.
             self::Personal => 'messages.create',
+            self::Support => 'supporters.index',
         };
     }
 }

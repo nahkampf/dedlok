@@ -65,7 +65,7 @@ class SkillsController extends Controller
                 ->pluck('items.use_skill_id')
                 ->flip()
                 ->all(),
-            'limit' => TrainingQueue::LIMIT,
+            'limit' => TrainingQueue::limitFor($character),
             'training' => $this->training($character, $queue->first(), $levels),
             // What the WHOLE queue costs, at the rates it earns this instant —
             // the same honesty the active entry's estimate has, and the same
