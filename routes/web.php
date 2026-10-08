@@ -350,6 +350,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/tasks', TasksController::class)->name('tasks.index');
 
     Route::get('/character', [CharacterController::class, 'index'])->name('character.index');
+    Route::post('/character/avatar', [CharacterController::class, 'avatar'])->middleware('throttle:10,10')->name('character.avatar');
+    Route::delete('/character/avatar', [CharacterController::class, 'removeAvatar'])->name('character.avatar.remove');
     Route::post('/character/bio', [CharacterController::class, 'bio'])->name('character.bio');
 
     Route::get('/standing', [StandingController::class, 'index'])->name('standing.index');

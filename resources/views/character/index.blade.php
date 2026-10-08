@@ -14,7 +14,28 @@
              all of them — public/images/characters/<id>.jpg, with
              _default.jpg behind it. --}}
         <div class="row row--wrap" style="--gap:var(--s-5);align-items:flex-start">
-            <x-entity-image kind="characters" :id="$character->id" :alt="$character->handle" portrait />
+            <div class="stack" style="--gap:var(--s-3);width:min(300px,100%)">
+                <x-entity-image kind="characters" :id="$character->id" :alt="$character->handle" portrait />
+
+                @if (auth()->user()->isSupporter())
+                    <form method="POST" action="{{ route('character.avatar') }}" enctype="multipart/form-data" class="stack" style="--gap:var(--s-2)">
+                        @csrf
+                        <div class="field">
+                            <label class="field__label" for="avatar">{{ Text::get('character.avatar') }}</label>
+                            <input class="input" id="avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required>
+                            <span class="field__hint">{{ Text::get('character.avatar_hint') }}</span>
+                            @error('avatar') <span class="field__error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="row row--wrap" style="--gap:var(--s-2)">
+                            <button type="submit" class="btn btn--sm cut">{{ Text::get('character.avatar_upload') }}</button>
+                            @if (\App\Characters\Avatar::exists($character))
+                                <button type="submit" form="avatar-remove" class="btn btn--sm btn--ghost cut">{{ Text::get('character.avatar_remove') }}</button>
+                            @endif
+                        </div>
+                    </form>
+                    <form id="avatar-remove" method="POST" action="{{ route('character.avatar.remove') }}">@csrf @method('DELETE')</form>
+                @endif
+            </div>
 
             <div class="stack" style="--gap:var(--s-4);flex:1 1 min(320px,100%);min-width:0">
                 <div class="stack" style="--gap:2px">

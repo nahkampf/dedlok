@@ -2249,6 +2249,15 @@ return [
         'bio_placeholder' => 'Whatever you want anyone who looks you up to find.',
         'bio_save' => 'Save bio',
         'bio_saved' => 'Bio saved.',
+        // A supporter's own picture.
+        'avatar' => 'Your picture',
+        'avatar_hint' => 'JPG, PNG, WebP or GIF. It is cropped from the centre to 300 by 400.',
+        'avatar_upload' => 'Upload',
+        'avatar_remove' => 'Remove',
+        'avatar_saved' => 'Picture saved.',
+        'avatar_removed' => 'Picture removed.',
+        'avatar_required' => 'Choose a picture first.',
+        'avatar_invalid' => 'That is not a picture we can use. Try a JPG, PNG, WebP or GIF under 8 MB and 16 megapixels.',
 
         /*
         | THE FLOOR UNDER EVERY DEFEAT.
