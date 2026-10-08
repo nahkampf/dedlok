@@ -3454,6 +3454,26 @@ return [
     */
     'admin' => [
         // The Beta keys section, present only while `features.alpha_testing` is on.
+        'characters' => [
+            'title' => 'Characters',
+            'lede' => 'Give a character creds, or refill their hit points or Synaptic Integrity to the maximum they have now.',
+            'search' => 'Find a character or account',
+            'find' => 'Find',
+            'character' => 'Character',
+            'creds' => 'Creds',
+            'hp' => 'Hit points',
+            'si' => 'SI',
+            'grant' => 'Grant',
+            'amount' => 'Creds to give',
+            'grant_creds' => 'Give creds',
+            'full_hp' => 'Full HP',
+            'full_si' => 'Full SI',
+            'empty' => 'No characters.',
+            'granted_creds' => ':amount ¤ given to :who.',
+            'refilled_hitpoints' => ':who is at full hit points.',
+            'refilled_si' => ':who is at full Synaptic Integrity.',
+        ],
+
         'supporters' => [
             'title' => 'Supporters',
             'lede' => 'Who supports the game. A supporter gets a badge by their character\'s name, an unlimited training queue, a place on the Supporters page, and a message about the Discord.',
