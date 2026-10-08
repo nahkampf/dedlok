@@ -8,6 +8,7 @@ use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\Cyberspace\Extractor;
 use App\Models\Character;
+use App\Models\Notification;
 use App\Models\System;
 use App\Models\SystemContent;
 use App\Models\User;
@@ -189,20 +190,19 @@ final class AchievementTest extends TestCase
      * EVERY ACHIEVEMENT HAS A DESCRIPTION, AND IT FITS IN 255 CHARACTERS.
      *
      * `Text::get()` returns the key when a string is missing, so a forgotten
-     * description is not an error — it is the words "achievements.description.7"
+     * description is not an error — it is a blank card
      * on a card, which is exactly the kind of failure nothing catches. The
      * length is the other half: nothing here is a column today, but one that
      * will not fit a varchar(255) is one that has to be rewritten the day this
      * catalogue becomes a table.
      */
-    public function test_every_achievement_has_a_description_that_would_fit_a_column(): void
+    public function test_every_achievement_has_a_name_and_a_description_that_would_fit_a_column(): void
     {
-        foreach (array_keys((array) Config::get('achievements.unlocks')) as $id) {
-            $key = "achievements.description.{$id}";
-            $description = Text::get($key);
-
-            $this->assertNotSame($key, $description, "achievement {$id} has no description");
-            $this->assertLessThanOrEqual(255, mb_strlen($description), "achievement {$id} is too long for a column");
+        foreach ((array) Config::get('achievements.unlocks') as $id => $unlock) {
+            $this->assertNotSame('', trim((string) ($unlock['name'] ?? '')), "achievement {$id} has no name");
+            $this->assertLessThanOrEqual(120, mb_strlen($unlock['name']), "achievement {$id} has a name too long for a message title");
+            $this->assertNotSame('', trim((string) ($unlock['description'] ?? '')), "achievement {$id} has no description");
+            $this->assertLessThanOrEqual(255, mb_strlen($unlock['description']), "achievement {$id} is too long for a column");
         }
     }
 
@@ -216,5 +216,24 @@ final class AchievementTest extends TestCase
         $character->delete();
 
         $this->assertSame([4], $this->achievements->unlockedFor($user));
+    }
+
+    public function test_an_unlock_sends_the_message_with_its_link_and_the_page_shows_the_share(): void
+    {
+        $character = $this->character();
+        $this->achievements->record($character, Metric::SystemsBurned, 100);
+
+        $message = Notification::where('user_id', $character->user_id)->first();
+        $this->assertSame('Achievement unlocked!', $message->title);
+        $name = (string) config('achievements.unlocks.4.name');
+        $this->assertSame("You unlocked the achievement {$name}!", $message->body);
+        $this->assertSame('achievements.index', $message->details['link']['route']);
+
+        $user = User::findOrFail($character->user_id);
+        $this->actingAs($user)->get(route('notifications.index'))
+            ->assertSee('You unlocked the <a href="'.route('achievements.index').'">achievement</a> '.e($name).'!', false);
+
+        // One player, who has it: 100.00%; the others, 0.00%.
+        $this->actingAs($user)->get(route('achievements.index'))->assertSee('100.00% of players')->assertSee('0.00% of players');
     }
 }

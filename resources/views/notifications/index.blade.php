@@ -76,7 +76,15 @@
                             </summary>
 
                             <div class="stack" style="--gap:var(--s-2)">
-                                <p style="margin:0">{{ $message->body }}</p>
+                                @php($link = $message->details['link'] ?? null)
+                                @php($at = $link === null ? false : mb_strpos($message->body, $link['word']))
+                                <p style="margin:0">
+                                    @if ($at !== false)
+                                        {{ mb_substr($message->body, 0, $at) }}<a href="{{ route($link['route']) }}">{{ $link['word'] }}</a>{{ mb_substr($message->body, $at + mb_strlen($link['word'])) }}
+                                    @else
+                                        {{ $message->body }}
+                                    @endif
+                                </p>
 
                                 {{-- THE LIST UNDER THE SENTENCE. Snapshotted with the body: a
                                      system named here may have moved by now, and the line still
@@ -108,6 +116,8 @@
                                         <span class="micro"><x-address :address="$message->details['address']" /></span>
                                     @endif
                                     <x-scan-facts :facts="$message->details['facts']" />
+                                @elseif (! empty($message->details['link']))
+                                    {{-- Only a link in the sentence above: nothing to list. --}}
                                 @elseif ($message->details)
                                     <div class="prose micro" style="color:var(--ink-2)">
                                         <ul>

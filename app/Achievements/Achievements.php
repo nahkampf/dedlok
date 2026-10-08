@@ -8,7 +8,6 @@ use App\Models\Character;
 use App\Models\User;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
-use App\Support\Text;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -95,7 +94,7 @@ final class Achievements
      * Ordered as `config/achievements.php` lists them, which is the only
      * ordering that exists until a screen wants another.
      *
-     * @return array<int, array{metric: string, threshold: int, secret: bool, unlocked: bool}>
+     * @return array<int, array{name: string, description: string, metric: string, threshold: int, secret: bool, unlocked: bool}>
      */
     public function listableFor(User $user): array
     {
@@ -113,6 +112,24 @@ final class Achievements
         }
 
         return $listing;
+    }
+
+    /**
+     * Share of players (accounts that have made a character) who have each achievement, as a percentage with two decimals, by id.
+     *
+     * @return array<int, string>
+     */
+    public function percentages(): array
+    {
+        $players = max(1, DB::table('characters')->distinct()->count('user_id'));
+        $counts = DB::table(self::UNLOCKED)->selectRaw('achievement_id, count(*) as n')->groupBy('achievement_id')->pluck('n', 'achievement_id');
+        $out = [];
+
+        foreach (array_keys($this->definitions()) as $id) {
+            $out[$id] = number_format(((int) ($counts[$id] ?? 0)) / $players * 100, 2);
+        }
+
+        return $out;
     }
 
     /** The running total, where absent and zero are the same answer. */
@@ -182,8 +199,9 @@ final class Achievements
              */
             if ($unlocked > 0 && ($user = User::find($userId)) !== null) {
                 (new Notifier)->send($user, Category::Achievement, 'achievement_unlocked', [
-                    'name' => Text::get('achievements.name', ['id' => $id]),
-                ]);
+                    'name' => $unlock['name'],
+                    // The word "achievement" in the sentence links to the achievements tab (drawn by the inbox).
+                ], ['link' => ['word' => 'achievement', 'route' => 'achievements.index']]);
             }
         }
     }
@@ -194,17 +212,19 @@ final class Achievements
      * `secret` is absent on most rows and false when it is, so normalising it
      * once here is what keeps both readers from having to know that.
      *
-     * @return array<int, array{metric: string, threshold: int, secret: bool}>
+     * @return array<int, array{name: string, description: string, metric: string, threshold: int, secret: bool}>
      */
     private function definitions(): array
     {
-        /** @var array<int|string, array{metric?: string, threshold?: int, secret?: bool}> $unlocks */
+        /** @var array<int|string, array{name?: string, description?: string, metric?: string, threshold?: int, secret?: bool}> $unlocks */
         $unlocks = Config::get('achievements.unlocks', []);
 
         $definitions = [];
 
         foreach ($unlocks as $id => $unlock) {
             $definitions[(int) $id] = [
+                'name' => (string) ($unlock['name'] ?? 'ACHIEVEMENT_'.$id),
+                'description' => (string) ($unlock['description'] ?? ''),
                 'metric' => (string) ($unlock['metric'] ?? ''),
                 'threshold' => (int) ($unlock['threshold'] ?? 0),
                 'secret' => (bool) ($unlock['secret'] ?? false),

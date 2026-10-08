@@ -1,3 +1,10 @@
+## 0.46.0 (2026-10-09)
+
+- Internal tooling fix: Various checkboxes in admin
+- Achiements now show the percentage of players who earned them
+- Achivement unlocked message now sends
+- Updated the names of achivements
+
 ## 0.45.0 (2026-10-08)
 
 - New mechanics: Code Crafting. Takes Designs and Components and produces Programs.

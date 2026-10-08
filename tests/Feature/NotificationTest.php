@@ -421,7 +421,7 @@ final class NotificationTest extends TestCase
         $message = Notification::query()->sole();
 
         $this->assertSame(Category::Achievement, $message->category);
-        $this->assertStringContainsString(Text::get('achievements.name', ['id' => 2]), $message->body);
+        $this->assertStringContainsString((string) config('achievements.unlocks.2.name', 'ACHIEVEMENT_2'), $message->body);
     }
 
     /** Crossing the line again is not a second message, and the index says so. */

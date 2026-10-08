@@ -19,6 +19,7 @@
             <div class="card__bd stack" style="text-align:center;--gap:var(--s-2)">
                 <span>{{ $row['name'] }}</span>
                 <span class="micro" style="color:var(--ink-3)">{{ $row['description'] }}</span>
+                <span class="micro num" style="color:var(--ink-2)">{{ $row['share'] }}</span>
             </div>
         </div>
     @endforeach

@@ -52,7 +52,7 @@ final class AchievementPageTest extends TestCase
 
     private function label(int $id): string
     {
-        return Text::get('achievements.name', ['id' => $id]);
+        return (string) config("achievements.unlocks.{$id}.name", "ACHIEVEMENT_{$id}");
     }
 
     /**
@@ -90,7 +90,7 @@ final class AchievementPageTest extends TestCase
 
         // The description is on a LOCKED card too — it is the only place a
         // player finds out what one would take.
-        $response->assertSee(Text::get('achievements.description.2'));
+        $response->assertSee((string) config('achievements.unlocks.2.description', ''));
     }
 
     /** Earned first, and the rest underneath. */

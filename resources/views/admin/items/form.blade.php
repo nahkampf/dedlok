@@ -321,6 +321,7 @@
                     {{-- Only in a fight: counts ROUNDS, so the minutes below are not read. --}}
                     <label class="check" style="margin-top:var(--s-4)">
                         <input type="checkbox" name="fight_only" value="1" @checked(old('fight_only', $item?->drug?->fight_only ?? false))>
+                        <span class="check__box"></span>
                         <span>{{ Text::get('admin.items.fields.fight_only') }}</span>
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.fight_only_hint') }}</span>
@@ -541,6 +542,7 @@
                         <input type="hidden" name="background_process" value="0">
                         <input type="checkbox" name="background_process" value="1"
                                @checked(old('background_process', $item?->program?->background_process ?? false))>
+                        <span class="check__box"></span>
                         <span>{{ Text::get('admin.items.fields.background_process') }}</span>
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.background_process_hint') }}</span>
@@ -563,6 +565,7 @@
                         <input type="hidden" name="multithreaded" value="0">
                         <input type="checkbox" name="multithreaded" value="1"
                                @checked(old('multithreaded', $item?->program?->multithreaded ?? false))>
+                        <span class="check__box"></span>
                         <span>{{ Text::get('admin.items.fields.multithreaded') }}</span>
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.multithreaded_hint') }}</span>
@@ -575,6 +578,7 @@
                                 <label class="check">
                                     <input type="checkbox" name="program_decrypts[]" value="{{ $encryption->slug }}"
                                            @checked(in_array($encryption->slug, (array) old('program_decrypts', $item?->program?->decrypts ?? []), true))>
+                                    <span class="check__box"></span>
                                     <span>{{ $encryption->title }}</span>
                                 </label>
                             @endforeach
@@ -795,6 +799,7 @@
                 <label class="check">
                     <input type="hidden" name="design_single_use" value="0">
                     <input type="checkbox" name="design_single_use" value="1" @checked(old('design_single_use', $design?->single_use ?? false))>
+                    <span class="check__box"></span>
                     <span>{{ Text::get('admin.items.design.single_use') }}</span>
                 </label>
                 <span class="field__hint">{{ Text::get('admin.items.design.single_use_hint') }}</span>

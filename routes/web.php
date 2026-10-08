@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\Admin\ArchetypeController as AdminArchetypeController;
 use App\Http\Controllers\Admin\BetaKeyController as AdminBetaKeyController;
+use App\Http\Controllers\Admin\CharacterController as AdminCharacterController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DistrictController as AdminDistrictController;
 use App\Http\Controllers\Admin\EncounterController as AdminEncounterController;
@@ -473,6 +474,11 @@ Route::middleware(['auth', 'can:admin'])
         Route::resource('locations', AdminLocationController::class)->except(['show']);
         Route::resource('encounters', AdminEncounterController::class)->except(['show']);
         Route::resource('npcs', AdminNpcController::class)->except(['show']);
+
+        // Grants: creds, and a full refill of HP or SI.
+        Route::get('characters', [AdminCharacterController::class, 'index'])->name('characters.index');
+        Route::post('characters/{character}/creds', [AdminCharacterController::class, 'creds'])->name('characters.creds');
+        Route::post('characters/{character}/refill/{resource}', [AdminCharacterController::class, 'refill'])->name('characters.refill');
 
         // Who is a supporter, and the button that makes somebody one.
         Route::get('supporters', [AdminSupporterController::class, 'index'])->name('supporters.index');

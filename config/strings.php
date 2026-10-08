@@ -488,6 +488,7 @@ return [
             'encounter' => 'Encounter',
             'fight' => 'Won a fight',
             'mugged' => 'Mugged',
+            'granted' => 'Granted by the game',
         ],
         'refused' => [
             'amount' => 'Send at least 1 ¤.',
@@ -698,7 +699,7 @@ return [
             'mission_abandoned' => 'Job abandoned',
             'mission_voided' => 'Job called off',
             'skill_level' => ':skill, level :level',
-            'achievement_unlocked' => 'Achievement: :name',
+            'achievement_unlocked' => 'Achievement unlocked!',
             'withdrawal' => 'Withdrawal',
             'travel_arrived' => 'Arrived in :district',
             'travel_stopped' => 'Stopped in :district',
@@ -740,7 +741,7 @@ return [
             'mission_abandoned' => 'You walked away from the :action job for :entity.',
             'mission_voided' => 'The :action job for :entity is off: something it named is not there any more.',
             'skill_level' => ':skill reached level :level.',
-            'achievement_unlocked' => 'Achievement unlocked: :name.',
+            'achievement_unlocked' => 'You unlocked the achievement :name!',
             'withdrawal' => 'You need it. :family, and going without is starting to show.',
             // The City. "found nothing" is ONE sentence whether every roll failed
             // or there was nothing to find: it must never say how much is hidden.
@@ -861,32 +862,8 @@ return [
         'gained' => 'Achievements gained',
         'remaining' => 'Still to earn',
 
-        // The name is still one template composed from the id; the
-        // DESCRIPTION is already a map keyed by that same id, because there is
-        // nothing generic to say about what any of them took. When the names
-        // are written they become a map beside it, in the same shape.
-        //
-        // KEEP EACH ONE UNDER 255 CHARACTERS. Nothing here is a column, but a
-        // description that will not fit one is a description that has to be
-        // rewritten the day this becomes a table — AchievementTest pins it,
-        // and pins that every achievement in the catalogue has one at all.
-        'name' => 'ACHIEVEMENT_:id',
-
-        'description' => [
-            1 => 'A million creds extracted from runs.',
-            2 => 'Ten thousand creds drained using siphons.',
-            3 => 'A routing chain at its full length: ten relays between you and whoever is looking.',
-            4 => 'A hundred systems burned.',
-            5 => 'A hundred pieces of ICE defeated.',
-            6 => 'Flatlined. The first one is the one you remember.',
-            7 => 'Flatlined a hundred times, and still jacking in.',
-            8 => 'Twenty skills trained to the level cap.',
-            9 => 'Fifty skills trained to the level cap.',
-            10 => 'A hundred systems fully scanned.',
-            11 => 'A thousand systems fully scanned.',
-            12 => 'A thousand positions of the grid explored.',
-            13 => 'Ten thousand positions of the grid explored.',
-        ],
+        // Under each card: the share of players who have it, two decimals.
+        'earned_by' => ':percent% of players',
 
         'none' => 'Nothing yet. Everything below is still out there.',
         'complete' => 'Everything there is to earn has been earned.',
@@ -3453,6 +3430,26 @@ return [
     */
     'admin' => [
         // The Beta keys section, present only while `features.alpha_testing` is on.
+        'characters' => [
+            'title' => 'Characters',
+            'lede' => 'Give a character creds, or refill their hit points or Synaptic Integrity to the maximum they have now.',
+            'search' => 'Find a character or account',
+            'find' => 'Find',
+            'character' => 'Character',
+            'creds' => 'Creds',
+            'hp' => 'Hit points',
+            'si' => 'SI',
+            'grant' => 'Grant',
+            'amount' => 'Creds to give',
+            'grant_creds' => 'Give creds',
+            'full_hp' => 'Full HP',
+            'full_si' => 'Full SI',
+            'empty' => 'No characters.',
+            'granted_creds' => ':amount ¤ given to :who.',
+            'refilled_hitpoints' => ':who is at full hit points.',
+            'refilled_si' => ':who is at full Synaptic Integrity.',
+        ],
+
         'supporters' => [
             'title' => 'Supporters',
             'lede' => 'Who supports the game. A supporter gets a badge by their character\'s name, an unlimited training queue, a place on the Supporters page, and a message about the Discord.',
