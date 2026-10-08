@@ -684,6 +684,7 @@ return [
         // The closed row of the inbox. One per message key; a key without one shows its category instead.
         'titles' => [
             'decrypted' => 'Decrypted: :label',
+            'crafted' => 'Built: :item',
             'scan_complete' => 'Scan complete',
             'backdoor_found' => 'Backdoor found',
             'siphons_ran' => 'Siphon report',
@@ -710,6 +711,7 @@ return [
 
         'messages' => [
             'decrypted' => 'The :label broke. It is a :item now, worth :value ¤ to the right buyer.',
+            'crafted' => 'Your :item is built. It is in your data stash.',
             'scan_complete' => 'Your scan of :system (:address) completed. The specifications are saved to a file.',
             'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
             // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
@@ -2446,6 +2448,16 @@ return [
             'decryption_cycle_seconds' => 'Decryption cycle length (seconds)',
             // A tag set: every encryption's chance at once. A single encryption is `decryption_chance.<slug>`.
             'decryption_chance' => 'All decryption chance (%)',
+            // A tag set: every kind's crafting time at once. A single kind is `crafting_seconds.<kind>`.
+            'crafting_time' => 'All crafting time (%)',
+            'crafting_slots' => 'crafting slots',
+            'crafting_cost' => 'crafting component quantities (%)',
+            'crafting_seconds.icebreaker' => 'Icebreaker crafting time (%)',
+            'crafting_seconds.decryptor' => 'Decryptor crafting time (%)',
+            'crafting_seconds.evasion' => 'Evasion crafting time (%)',
+            'crafting_seconds.analyser' => 'Analyser crafting time (%)',
+            'crafting_seconds.daemon' => 'Daemon crafting time (%)',
+            'crafting_seconds.script' => 'Script crafting time (%)',
             'hitpoints_regen' => 'HP regeneration (per hour)',
 
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
@@ -2558,6 +2570,46 @@ return [
     | An entity's front desk. Reached by standing on it, and the only thing
     | that happens on one: nothing may be run against, scanned or burned here.
     */
+    'crafting' => [
+        'heading' => 'Crafting',
+        'paused' => 'This deck will not run, so nothing is being built. Finish building it and the work picks up where it left off.',
+        'none_building' => 'Nothing is being built.',
+        'no_designs' => 'You hold no designs.',
+        'working' => 'Building',
+        'on_hold' => 'On hold',
+        'waiting_room' => 'Done, no room to store it',
+        'copy' => 'Design Copy',
+        'original' => 'Design Original',
+        'craft' => 'Craft',
+        'craft_anyway' => 'Craft anyway',
+        'cancel' => 'Give up',
+        'cancel_hint' => 'The components are already spent and are not given back.',
+        'started' => 'Building :item. The components are spent.',
+        'cancelled' => 'You gave it up. The components are gone.',
+
+        'filter' => [
+            'grade_min' => 'grade :grade or higher',
+            'grade_max' => 'grade :grade or lower',
+            'grade_between' => 'grade :min to :max',
+            'ice_min' => 'ICE :level or more',
+            'ids_min' => 'IDS :level or more',
+            'unknown_owner' => 'an owner that is gone',
+        ],
+
+        'refused' => [
+            'not_a_design' => 'That is not a design in your hands.',
+            'product_gone' => 'What this design makes is no longer in the game.',
+            'uncraftable' => 'Nobody can build that kind of program yet.',
+            'no_skill' => 'You do not have the skill to build this.',
+            'no_free_slot' => 'You are already building as many things as you can at once.',
+            'no_deck' => 'Equip a deck first. The work is done on the machine you are carrying.',
+            'deck_not_ready' => 'That deck will not run. Finish building it first.',
+            'missing_components' => 'You do not have the components for this.',
+            'wastes_grade' => 'You are using components of a higher grade than necessary, are you sure?',
+            'not_yours' => 'That is not yours.',
+        ],
+    ],
+
     'processes' => [
         'title' => 'Current processes',
         'loading' => 'Loading…',
@@ -2571,6 +2623,9 @@ return [
         'surgery' => 'On the table',
         'travel_pass' => 'Stage :step of :of',
         'script' => ':program running',
+        'craft' => 'Building :item',
+        'craft_on_hold' => 'On hold: the deck will not run',
+        'craft_waiting' => 'Finished; no room to store it',
         'script_detail' => 'Spent when it ends; stopping it early destroys it',
         'decryption' => 'Decrypting :label',
         'decryption_cycle' => 'This cycle: :percent% to break',
@@ -3751,6 +3806,7 @@ return [
                 'skill' => 'Skill levels',
                 'check' => 'Skill checks',
                 'decryption_chance' => 'Decryption chance (%)',
+                'crafting_time' => 'Crafting time (%)',
                 'damage' => 'Damage taken',
                 'sets' => 'Groups',
                 'other' => 'Other',
@@ -4021,6 +4077,29 @@ return [
                 'automatic' => 'Not arranged — showing the automatic ring.',
             ],
 
+            'design' => [
+                'heading' => 'Design',
+                'hint' => 'Choosing a program here makes this item a design: a recipe that builds it, from the components below, in the time below. Leave it blank for anything else.',
+                'product' => 'Builds',
+                'none' => 'Not a design',
+                'seconds' => 'Build time (seconds)',
+                'seconds_hint' => 'Before skills shorten it.',
+                'skill' => 'Also needs the skill',
+                'no_skill' => 'No other skill',
+                'skill_level' => 'At level',
+                'single_use' => 'Design Copy',
+                'single_use_hint' => 'Ticked, the design is spent when a build starts. Unticked it is a Design Original and is kept.',
+                'line' => 'Component :n',
+                'quantity' => 'How many',
+                'grade_min' => 'Grade from',
+                'grade_max' => 'Grade up to',
+                'ice_min' => 'ICE at least',
+                'ids_min' => 'IDS at least',
+                'os' => 'Operating system',
+                'owner' => 'Owned by',
+                'system_type' => 'Type of system',
+                'any' => 'Any',
+            ],
             'onboard_storage' => [
                 'label' => 'Onboard storage (QB)',
                 'hint' => 'What the deck holds before a storage module. Empty uses the default of :fallback QB.',

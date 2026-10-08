@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Characters;
 
 use App\City\ActivityKind;
+use App\Crafting\Crafting;
 use App\Decryption\DecryptionQueue;
 use App\Drugs\DrugLedger;
 use App\Drugs\Family;
@@ -50,6 +51,7 @@ final class CurrentProcesses
                 ...$this->scans($character, $now),
                 ...$this->activity($character, $now),
                 ...$this->decryption($character, $now),
+                ...$this->crafting($character),
                 ...$this->training($character),
                 ...$this->doses($character, $now),
                 ...$this->scripts($character, $now),
@@ -195,6 +197,27 @@ final class CurrentProcesses
                 'detail' => null,
                 'ratio' => $this->between($dose->started_at, $dose->expires_at, $now),
                 'seconds' => $this->until($dose->expires_at, $now),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /** Builds: a bar of working time done, on hold while the deck will not run. */
+    private function crafting(Character $character): array
+    {
+        $crafting = Crafting::make();
+        $crafting->settle($character);
+        $ready = $crafting->deckReady($character);
+        $rows = [];
+
+        foreach ($crafting->crafts($character) as $craft) {
+            $rows[] = [
+                'kind' => 'craft',
+                'label' => Text::get('processes.craft', ['item' => $craft->name]),
+                'detail' => $craft->isFinished() ? Text::get('processes.craft_waiting') : ($ready ? null : Text::get('processes.craft_on_hold')),
+                'ratio' => $craft->required_seconds > 0 ? min(1.0, $craft->progress_seconds / $craft->required_seconds) : 1.0,
+                'seconds' => $craft->isFinished() || ! $ready ? null : $craft->remainingSeconds(),
             ];
         }
 

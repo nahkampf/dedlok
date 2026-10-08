@@ -1,6 +1,6 @@
 # CRAFTING.md — Code Crafting
 
-Status: **designed 2026-10-08, nothing built except where a step below says so.** Decided with the author in conversation; do not re-ask.
+Status: **steps 1-4 built 2026-10-08 (unreleased); ICE shredding and the balance pass are not.** Decided with the author in conversation; do not re-ask.
 
 Players turn **Components** (data files that come out of decrypted stolen data) and a **Design** (a recipe) into **programs**, over time, on a working deck.
 Some products are programs that already exist (an icebreaker, a decryptor). Others are **Scripts**: one-use programs that act like a timed modifier.
@@ -82,7 +82,7 @@ eligible components (a config test holds both). A recipe can be satisfied from o
 program running). Recipe: **3× Memory Dump, grade 1 or higher; 1× Kernel Log (AuraOS); 2× Temporary File (any system type); 1× Cache File (any
 system type).** Running cost suggested at 0.4 QB RAM (needs decimals); the rest is the author's to set in the editor.
 
-## Build order
+## Build order (1-4 built)
 
 1. **Decimal QB and qFLOPS** (own release; see below).
 2. Lifetime programs and the Script kind.
@@ -99,3 +99,13 @@ and scan file blobs), and the resolved stats `deck_qflops`, `deck_quantabits`, `
 existing values convert exactly. **Float drift is the risk**: sums are rounded to one decimal at the totals, and every "does it fit / is it ready /
 can it start" comparison is made on whole tenths (`Storage::fits`, `DeckRequirement`, `ProgramRunner::refusalFor`). Display trims `.0` (*2 QB*,
 *0.4 QB*); editors take `step="0.1"`.
+
+## As built (steps 3 and 4)
+
+- Components: migration `2026_10_08_200000` makes the nineteen items; the odds are `cyberspace.decryption.components` and a config test holds them.
+  The stash lists every component as its own row, named by its headline origin; **grouping in the stash grid is not built** (the crafting panel
+  shows counts per recipe line instead).
+- Designs, crafts, the pausable clock, the skills (migration `..220000`) and the first Script with its Design Original and Copy (`..230000`, all
+  placeholders to rename and tune) are built. Running cost of the Script: 0.4 QB, 0.4 qFLOPS, 0.4 QB stored (a guess).
+- Left: skills for fewer components (`crafting_cost`) and more slots (`crafting_slots`) are stats with no skill authored; a *choose which files* picker;
+  ICE that deletes designs; sources of components other than decryption; the balance pass.

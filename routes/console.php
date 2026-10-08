@@ -198,6 +198,13 @@ Schedule::command('programs:expire')
     ->withoutOverlapping();
 
 /*
+ * Builds (CRAFTING.md) advance a minute at a time while the equipped deck is ready; this is that minute, and delivers the finished.
+ */
+Schedule::command('crafting:settle --quiet-when-idle')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+/*
  * Healing by waiting: the two-hourly mend everybody gets, and the per-minute
  * trickle Neuroplasticity and doses grant.
  *

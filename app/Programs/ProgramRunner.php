@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Programs;
 
+use App\Crafting\Crafting;
 use App\Decks\DeckTotals;
 use App\Decryption\DecryptionQueue;
 use App\Models\Character;
@@ -210,6 +211,10 @@ final class ProgramRunner
      */
     public function stopAll(Character $character, InventoryItem $deck): ProcessResult
     {
+        // Every change to a deck passes through here, before it is made: bring any build up to date while the deck is
+        // still as it was, so the time before the change is credited to the state it was worked in (see Crafting).
+        Crafting::make()->settle($character);
+
         $rows = InventoryItem::query()
             ->where('character_id', $character->id)
             ->where('running_on_deck_id', $deck->id)

@@ -17,6 +17,7 @@ use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\CityController;
+use App\Http\Controllers\CraftingController;
 use App\Http\Controllers\CurrentProcessesController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
@@ -148,6 +149,10 @@ Route::middleware('auth')->group(function () {
     // cannot be called off from in there. See App\Decryption\DecryptionQueue.
     Route::post('/inventory/{entry}/decrypt', [DecryptionController::class, 'store'])
         ->name('decryption.store');
+    // Crafting (CRAFTING.md): start a build from a design in the stash (components are spent now), or give one up.
+    Route::post('/inventory/{entry}/craft', [CraftingController::class, 'store'])->name('crafting.store');
+    Route::delete('/crafting/{craft}', [CraftingController::class, 'destroy'])->name('crafting.destroy');
+
     Route::post('/decryption/reorder', [DecryptionController::class, 'reorder'])
         ->name('decryption.reorder');
     Route::delete('/decryption/{entry}', [DecryptionController::class, 'destroy'])

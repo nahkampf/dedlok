@@ -468,6 +468,28 @@ not asked. **It does not touch accounts that already exist, sign-in, password re
 **To remove the feature for good:** delete that table's rows of the list above, drop `beta_keys` in a migration, and take
 the `BetaKeys` branch out of `CreateNewUser`.
 
+### Code Crafting
+
+**`CRAFTING.md` is the document** (the design, the component table, the skills). Components and a Design, over time, into a program.
+
+- **A component is an item the decryption queue turns a stolen file into** (`cyberspace.decryption.components`: weights by the grade of the system,
+  every grade summing to 100, nothing under 5 where it appears), and it **keeps where the file came from** (`App\Cyberspace\FileOrigin` inside the
+  `extracted_file` JSON: system type, owner, OS, IDS and ICE level, encryption). Unstackable; `InventoryItem::label()` names it by one origin field,
+  "Kernel Log (AuraOS)". A file taken before origin was recorded matches no recipe filter.
+- **A Design is an item with a `designs` row** (`App\Crafting\DesignEditor` the only writer, the item editor's Design panel): a product (always a program of
+  a kind with a gate in `config/crafting.php`), a base time, a Copy (`single_use`, spent when a craft starts) or an Original, an optional extra
+  skill, and `design_components` lines (item, quantity, optional filters on grade, OS, owner, type, ICE, IDS). Filters live as slugs and plain ids
+  with no foreign key, like the file's own copy.
+- **`App\Crafting\Crafting` is the only writer of `crafts`.** Starting spends the components (lowest qualifying grade first; spending a higher grade
+  than a line's minimum asks first, `CraftingRefusal::WastesGrade`) and snapshots the time (`crafting_seconds.<kind>`, base the design's, ceil) and
+  the quantities (`crafting_cost` percent, ceil, min 1). Slots are the stat `crafting_slots` (base 1), not a queue. A build never fails, and cancelling
+  forfeits. **The clock runs only while the equipped deck is ready**: `settle()` credits elapsed time if the deck is ready NOW, runs when
+  somebody looks, in `ProgramRunner::stopAll()` (so before any deck change) and from `crafting:settle` every minute. A finished build whose product does
+  not fit waits, finished, holding its slot.
+- **The gates:** `skill.code_crafting` plus the kind's skill (`crafting.gate`), on the RESOLVED level; a skill that is not in the game gates nothing.
+  Code Crafting shortens every build (`crafting_time` tag) and each kind's skill shortens its own (`crafting_seconds.<kind>`).
+- Screens: the deck's *Crafting* panel and Current processes. Starting a build is not offered during a run (the run lock), but one in progress goes on.
+
 ### Inventory and imprints
 
 **Two inventories, and one gate in front of every skill.**

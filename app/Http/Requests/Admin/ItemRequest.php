@@ -10,6 +10,7 @@ use App\Combat\DamageProfile;
 use App\Combat\Riders;
 use App\Combat\WeaponClass;
 use App\Combat\WearSlot;
+use App\Cyberspace\SystemType;
 use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotKind;
@@ -22,6 +23,7 @@ use App\Items\UseEffect;
 use App\Market\Rarity;
 use App\Models\Ammunition;
 use App\Models\Item;
+use App\Models\Program;
 use App\Programs\ProgramKind;
 use App\Stats\Modifier;
 use App\Support\Qb;
@@ -178,6 +180,14 @@ class ItemRequest extends FormRequest
             'fight_only' => $this->boolean('fight_only'),
             // A Script's lifetime: blank is an ordinary program.
             'lifetime_seconds' => $this->numberOrNull('lifetime_seconds'),
+            // A design: the product is what makes the item one. Lines with no component chosen are the form's spare rows.
+            'design_product' => $this->filled('design_product') ? $this->input('design_product') : null,
+            // The panel's own defaults (a level of 1) mean nothing when there is no product, so they are not values.
+            'design_seconds' => $this->filled('design_product') ? $this->numberOrNull('design_seconds') : null,
+            'design_single_use' => $this->filled('design_product') && $this->boolean('design_single_use'),
+            'design_skill_id' => $this->filled('design_product') && $this->filled('design_skill_id') ? $this->input('design_skill_id') : null,
+            'design_skill_level' => $this->filled('design_product') && $this->filled('design_skill_id') ? $this->numberOrNull('design_skill_level') : null,
+            'design_lines' => $this->designLinesInput(),
             'duration_minutes' => $this->boolean('fight_only') ? '0' : $this->panelNumber('duration_minutes', $isDrugForm),
             'duration_turns' => $this->boolean('fight_only') ? $this->numberOrNull('duration_turns') : null,
             'turn_hitpoints' => $this->boolean('fight_only') ? ($this->numberOrNull('turn_hitpoints') ?? '0') : null,
@@ -254,6 +264,7 @@ class ItemRequest extends FormRequest
         $hardware = $this->hardware();
         $isProgram = $this->programKind() !== null;
         $isDrug = $this->drugFamily() !== null;
+        $isDesign = $this->filled('design_product');
         $isConsumable = $this->consumableEffects() !== [];
         $isArmour = $this->armourSlots() !== [];
         $weaponClass = $this->weaponClass();
@@ -434,6 +445,34 @@ class ItemRequest extends FormRequest
             'lifetime_seconds' => $isProgram
                 ? ['nullable', 'integer', 'min:1', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
+
+            /*
+             * A DESIGN (CRAFTING.md): plain data with a recipe. The product must be a program of a kind somebody can be taught to build,
+             * and every line names a data item. A line's filters are all optional.
+             */
+            'design_product' => $hardware !== null || $isProgram || $isImprint || $isGear || $isDrug || $this->filled('implant_region')
+                ? ['prohibited']
+                : ['nullable', 'integer', Rule::exists('programs', 'item_id'), function (string $attribute, mixed $value, \Closure $fail): void {
+                    $kind = Program::query()->where('item_id', (int) $value)->value('kind');
+
+                    if (config('crafting.gate.'.($kind instanceof ProgramKind ? $kind->value : (string) $kind)) === null) {
+                        $fail(Text::get('crafting.refused.uncraftable'));
+                    }
+                }],
+            'design_seconds' => $isDesign ? ['required', 'integer', 'min:1', 'max:'.self::MAX_MEASURE] : ['prohibited'],
+            'design_single_use' => ['boolean'],
+            'design_skill_id' => $isDesign ? ['nullable', 'integer', Rule::exists('skills', 'id')] : ['prohibited'],
+            'design_skill_level' => $isDesign ? ['nullable', 'integer', 'min:1', 'max:20'] : ['prohibited'],
+            'design_lines' => $isDesign ? ['required', 'array', 'min:1', 'max:'.(int) config('crafting.max_components', 8)] : ['prohibited'],
+            'design_lines.*.item_id' => ['required', 'integer', Rule::exists('items', 'id')->where('container', Item::CONTAINER_DATA)],
+            'design_lines.*.quantity' => ['required', 'integer', 'min:1', 'max:9999'],
+            'design_lines.*.grade_min' => ['nullable', 'integer', 'between:1,9'],
+            'design_lines.*.grade_max' => ['nullable', 'integer', 'between:1,9', 'gte:design_lines.*.grade_min'],
+            'design_lines.*.os_slug' => ['nullable', 'string', Rule::exists('skills', 'slug')->where('category', 'Operating Systems')],
+            'design_lines.*.owner_id' => ['nullable', 'integer', Rule::exists('entities', 'id')],
+            'design_lines.*.system_type' => ['nullable', Rule::enum(SystemType::class)],
+            'design_lines.*.ice_min' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'design_lines.*.ids_min' => ['nullable', 'integer', 'min:1', 'max:100'],
 
             // The encryptions a Decryptor is limited to, by skill slug; empty is any. Stored only on a decryptor.
             'program_decrypts' => ['array'],
@@ -896,6 +935,7 @@ class ItemRequest extends FormRequest
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
             $data['storage_size'], $data['lifetime_seconds'], $data['background_process'], $data['multithreaded'],
+            $data['design_product'], $data['design_seconds'], $data['design_single_use'], $data['design_skill_id'], $data['design_skill_level'], $data['design_lines'],
             $data['program_modifiers'], $data['program_decrypts'],
         );
 
@@ -1065,6 +1105,69 @@ class ItemRequest extends FormRequest
         }
 
         return $effects;
+    }
+
+    /** The program a design makes, or null when this is not a design. */
+    public function designProductId(): ?int
+    {
+        $value = $this->input('design_product');
+
+        return is_numeric($value) ? (int) $value : null;
+    }
+
+    /** @return array<string, mixed> */
+    public function designColumns(): array
+    {
+        $data = $this->validated();
+
+        return [
+            'craft_seconds' => (int) ($data['design_seconds'] ?? 1),
+            'single_use' => (bool) ($data['design_single_use'] ?? false),
+            'skill_id' => isset($data['design_skill_id']) ? (int) $data['design_skill_id'] : null,
+            'skill_level' => (int) ($data['design_skill_level'] ?? 1),
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function designLines(): array
+    {
+        return array_map(static fn (array $line): array => [
+            'component_item_id' => (int) $line['item_id'],
+            'quantity' => (int) $line['quantity'],
+            'grade_min' => isset($line['grade_min']) ? (int) $line['grade_min'] : null,
+            'grade_max' => isset($line['grade_max']) ? (int) $line['grade_max'] : null,
+            'os_slug' => $line['os_slug'] ?? null,
+            'owner_id' => isset($line['owner_id']) ? (int) $line['owner_id'] : null,
+            'system_type' => $line['system_type'] ?? null,
+            'ice_min' => isset($line['ice_min']) ? (int) $line['ice_min'] : null,
+            'ids_min' => isset($line['ids_min']) ? (int) $line['ids_min'] : null,
+        ], array_values((array) ($this->validated()['design_lines'] ?? [])));
+    }
+
+    /**
+     * The form's recipe rows without its spare ones: a row with no component chosen is nothing, and a blank filter is no filter.
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    private function designLinesInput(): ?array
+    {
+        if (! $this->filled('design_product')) {
+            return null;
+        }
+
+        $lines = [];
+
+        foreach ((array) $this->input('design_lines', []) as $line) {
+            $line = (array) $line;
+
+            if (($line['item_id'] ?? '') === '') {
+                continue;
+            }
+
+            $lines[] = array_map(static fn (mixed $value): mixed => $value === '' ? null : $value, $line);
+        }
+
+        return $lines;
     }
 
     /** What family of drug this payload describes, if any. */

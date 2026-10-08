@@ -6,6 +6,7 @@ namespace App\Stats;
 
 use App\Models\Character;
 use App\Models\Skill;
+use App\Programs\ProgramKind;
 use App\Skills\SkillProgression;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -47,6 +48,9 @@ final class SkillStats
     public const CHANCE_PREFIX = 'decryption_chance.';
 
     /** The skill category whose members are encryptions, and so have a chance stat. */
+    /** `crafting_seconds.<kind>`: how long building a program of one kind takes, in seconds. The design hands in its own base. */
+    public const CRAFTING_PREFIX = 'crafting_seconds.';
+
     public const ENCRYPTION_CATEGORY = 'Encryption';
 
     /** Cleared by the Skill model, the way the archetype roster is. */
@@ -248,6 +252,20 @@ final class SkillStats
                     'rounding' => 'none',
                 ];
             }
+        }
+
+        /*
+         * Crafting time, one stat per program kind, all tagged `crafting_time`: a skill that speeds every craft targets the
+         * tag set and one that speeds a kind targets its id. The base is the design's own (handed in at the call site), so
+         * the generic base is nothing; rounded up, at least a second.
+         */
+        foreach (ProgramKind::cases() as $kind) {
+            $definitions[self::CRAFTING_PREFIX.$kind->value] = [
+                'tags' => ['crafting_time'],
+                'min' => 1,
+                'max' => null,
+                'rounding' => 'ceil',
+            ];
         }
 
         return $definitions;

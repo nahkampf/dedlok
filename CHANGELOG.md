@@ -15,6 +15,14 @@
   (`App\Cyberspace\FileOrigin`: system type, owner, OS, IDS and ICE level, encryption) and decryption keeps it; a component is named by one origin field,
   "Kernel Log (AuraOS)" (`InventoryItem::label()`). Files taken before this have no origin. Step 3 of Code Crafting (`CRAFTING.md`).
 
+- **Code Crafting** (`CRAFTING.md`): designs (an item with a recipe: a Design Copy is spent by a craft, a Design Original is kept), builds in
+  `crafting_slots` slots (base 1) that run only while the equipped deck is ready, components spent when a build starts (lowest qualifying grade
+  first, asking before a higher one), and the product delivered when it fits (migrations `2026_10_08_210000` to `..230000`, `App\Crafting`). Skills:
+  Code Crafting, Script Crafting, Icebreaker / Analyser / Decryptor Crafting (category *Code Crafting*, gates and crafting-time cuts). The first Script,
+  DUMMY_TEMPORARY_PROGRAM (+10% stealth for ten minutes), and its two designs. The deck screen has a *Crafting* panel, Current processes a bar, the item
+  editor a *Design* panel, and `crafting:settle` runs every minute. Also: `chk_programs_kind` admits `script` (migration `..195000`), and
+  `ItemGranter` no longer adds to a copy that is running or belted.
+
 ### Changed
 
 - **Storage, memory and compute are carried to one decimal place** (migration `2026_10_08_180000_storage_memory_and_compute_have_a_decimal`):

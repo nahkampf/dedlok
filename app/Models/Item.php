@@ -153,6 +153,21 @@ class Item extends Model
         return $this->hasOne(Program::class);
     }
 
+    /**
+     * The recipe this item is, if it is a design (a Design Copy or a Design Original).
+     *
+     * @return HasOne<Design, $this>
+     */
+    public function design(): HasOne
+    {
+        return $this->hasOne(Design::class);
+    }
+
+    public function isDesign(): bool
+    {
+        return $this->design !== null;
+    }
+
     public function isProgram(): bool
     {
         return $this->program()->exists();

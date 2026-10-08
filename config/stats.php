@@ -257,6 +257,28 @@ return [
         ],
 
         /*
+        | CRAFTING (CRAFTING.md). How many things a character can be building at once; one until a skill says otherwise.
+        | Whole, at least one.
+        */
+        'crafting_slots' => [
+            'tags' => ['derived'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        /*
+        | What a recipe's component quantities are scaled by, as a percent: 100 is the recipe as written, and a skill that
+        | shaves a few percent off leaves it at 98. Each line is rounded up and is never below one. Never under 10.
+        */
+        'crafting_cost' => [
+            'tags' => ['derived'],
+            'min' => 10,
+            'max' => null,
+            'rounding' => 'none',
+        ],
+
+        /*
         | How hard this character is to notice in somebody else's machine.
         |
         | WHAT AN IDS IS ROLLED AGAINST. A machine's detection value is the
@@ -782,6 +804,9 @@ return [
 
         // One decryption cycle is five minutes before anything shortens it.
         'decryption_cycle_seconds' => 300,
+
+        'crafting_slots' => 1,
+        'crafting_cost' => 100,
     ],
 
     /*
