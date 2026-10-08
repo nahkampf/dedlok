@@ -323,7 +323,8 @@
 
     {{-- CRAFTING (CRAFTING.md): builds in their slots, and the designs held. The clock runs only while this deck is ready. --}}
     @if ($crafting !== null)
-        <details class="panel" style="margin-top:var(--s-5)" @open($crafting['crafts']->isNotEmpty() || $crafting['plans'] !== [])>
+        @php($craftingOpen = $crafting['crafts']->isNotEmpty() || $crafting['plans'] !== [])
+        <details class="panel" style="margin-top:var(--s-5)" {{ $craftingOpen ? 'open' : '' }}>
             <summary class="panel__hd">
                 <span class="micro">{{ Text::get('crafting.heading') }}</span>
                 <div class="spacer"></div>
