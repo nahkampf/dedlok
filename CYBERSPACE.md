@@ -1658,6 +1658,11 @@ anywhere else.
 
 ## Decryption
 
+> **Built (2026-10-08)** as described below, with these decisions: a failed cycle only wastes time; the check is
+> `check.<encryption>` against a per-encryption difficulty; it requires a Decryptor program running on the equipped deck (the
+> standing claim on compute and memory); every running decryptor works one file and several run side by side; the queue is reorderable like the training queue; it works during a run; supply jobs take sealed dumps; heat is not accumulated. The
+> open questions 6 and 7 are settled accordingly.
+
 Every file comes off a system encrypted, and breaking one is **a slow background
 process, never an action**. You start it and walk away.
 

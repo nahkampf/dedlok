@@ -182,7 +182,15 @@ Schedule::command('market:seed')
  * happened. Nobody is waiting on it.
  */
 /*
- * Healing by waiting: the four-hourly mend everybody gets, and the per-minute
+ * Decryption cycles. Lazy settling does the real work whenever somebody looks; this makes a file that opens while
+ * nobody is watching say so, and starts the next file's clock. Cheap: it only visits characters with a queue.
+ */
+Schedule::command('decryption:settle --quiet-when-idle')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+/*
+ * Healing by waiting: the two-hourly mend everybody gets, and the per-minute
  * trickle Neuroplasticity and doses grant.
  *
  * Every minute, because the trickle IS per minute, and the mend lands on the

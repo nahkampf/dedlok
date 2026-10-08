@@ -366,6 +366,7 @@ return [
             'no_room' => 'There is no room for it in that part of the body.',
             'sold_out' => 'There is not enough on the shelf.',
             'cannot_sell' => 'They will not take that.',
+            'wont_take_more' => 'They will not take any more of that for now.',
             'no_storage' => 'Your deck has no room for that.',
             'nothing_to_treat' => 'There is nothing to treat.',
             'nothing_happening' => 'Nothing is going on.',
@@ -403,6 +404,7 @@ return [
             'in_stock' => ':count left',
             'sold_out' => 'Sold out',
             'they_buy' => 'They buy',
+            'buy_left' => 'will take :count more',
             'sell' => 'Sell',
             'sold' => 'Sold for :paid ¤.',
             'sale_note' => ':item × :quantity to :place',
@@ -615,7 +617,7 @@ return [
 
         // The `:what` of an accepted job's message.
         'mission_what_systems' => 'Systems (:count): :addresses.',
-        'mission_what_supply' => 'Bring :count complete scan files.',
+        'mission_what_supply' => 'Bring :count files: complete scan files or sealed data dumps.',
 
         // Writing to another player.
         'compose' => [
@@ -677,6 +679,7 @@ return [
 
         // The closed row of the inbox. One per message key; a key without one shows its category instead.
         'titles' => [
+            'decrypted' => 'Decrypted: :label',
             'scan_complete' => 'Scan complete',
             'backdoor_found' => 'Backdoor found',
             'siphons_ran' => 'Siphon report',
@@ -702,7 +705,8 @@ return [
         ],
 
         'messages' => [
-            'scan_complete' => 'Your scan of :system completed. The specifications are saved to a file.',
+            'decrypted' => 'The :label broke. It is a :item now, worth :value ¤ to the right buyer.',
+            'scan_complete' => 'Your scan of :system (:address) completed. The specifications are saved to a file.',
             'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
             // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
             // a burn: the holder was not there, and naming the cause would tell
@@ -811,7 +815,7 @@ return [
             'scan' => 'Scan every system named and bring the files back, one for each. The safest work there is, and the slowest.',
             'burn' => 'We want these systems gone. Burned. Shut down.',
             'plant' => 'Leave a backdoor on these systems. The door is ours, not yours - you get paid, and we get the way in.',
-            'supply' => 'Bring us complete scan files. We do not care which systems, only that the picture is whole.',
+            'supply' => 'Bring us files: complete scan files or sealed data dumps. We do not care which systems, only that the picture is whole.',
         ],
 
         'states' => [
@@ -2432,6 +2436,9 @@ return [
             'program_threads' => 'program threads',
             'coop_slots' => 'co-op slots',
             'synaptic_regen' => 'SI regeneration',
+            'decryption_cycle_seconds' => 'Decryption cycle length (seconds)',
+            // A tag set: every encryption's chance at once. A single encryption is `decryption_chance.<slug>`.
+            'decryption_chance' => 'All decryption chance (%)',
             'hitpoints_regen' => 'HP regeneration (per hour)',
 
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
@@ -2544,6 +2551,40 @@ return [
     | An entity's front desk. Reached by standing on it, and the only thing
     | that happens on one: nothing may be run against, scanned or burned here.
     */
+    'decryption' => [
+        'heading' => 'Decryption',
+        'action' => 'Decrypt',
+        'action_title' => 'Queue it to be broken. Needs a Decryptor running on your deck.',
+        'queued' => ':label is queued for decryption.',
+        'status_working' => 'Being decrypted',
+        'status_waiting' => 'Queued for decryption (:position)',
+        'reorder_hint' => 'Drag the number, or use the arrow keys, to put a file ahead of another. A free Decryptor takes the first file in line that it can break.',
+        'reorder_handle' => 'Move this file up or down the queue',
+        'removed' => 'Taken out of the queue.',
+        'empty' => 'Nothing is queued. Use Decrypt on an Encrypted Data Dump in your stash.',
+        'working' => 'Working',
+        'waiting' => 'Waiting',
+        'paused' => 'Paused: no Decryptor is running on your deck.',
+        'cycle' => 'A cycle takes :time and is one check.',
+        'odds' => ':percent% a cycle, about :time',
+        'encryption' => 'Encryption: :skill',
+        'worth' => 'Worth :sealed ¤ sealed, :broken ¤ open',
+        'remove' => 'Remove',
+        'unequip_warning' => 'A decryption is running. Putting the deck down stops the Decryptor and loses the cycle in progress; the queue keeps its place.',
+        'no_decryptor' => 'No Decryptor running on your deck can break the file being worked on, so the queue will wait.',
+        'refused' => [
+            'not_a_file' => 'That is not a file you can decrypt.',
+            'already_open' => 'That one is already open.',
+            'already_queued' => 'That one is already in the queue.',
+            'no_skill' => 'You are not trained enough in the skill that breaks that encryption.',
+            'unbreakable' => 'That file carries no encryption to break.',
+            'queue_full' => 'The queue is full.',
+            'locked_in' => 'You cannot call off the file being worked on while you are jacked in.',
+            'not_queued' => 'That is not in your queue.',
+            'bad_order' => 'That is not the order of your queue. Reload and try again.',
+        ],
+    ],
+
     'exchange' => [
         'title' => 'Missions & Loyalty',
         'agent' => 'Agent',
@@ -2567,6 +2608,10 @@ return [
         'store_bought' => ':item is yours. :price loyalty spent.',
         'store_served' => ':item: done. :price loyalty spent.',
         'store_heat' => 'You carry :heat heat',
+
+        // THE BUY SIDE: what the desk pays creds for.
+        'they_buy' => 'This desk buys',
+        'sale_note' => ':item × :quantity to :place',
 
         // What an entity DOES for loyalty, as App\Standing\Service.
         'services' => [
@@ -3602,8 +3647,9 @@ return [
             'install_price' => 'Fitting, per tier',
             'removal_price' => 'Removal, per tier',
             'buys' => 'Buys from players',
-            'buys_hint' => 'What this place will buy, and for how much. Price blank = a fraction of the item\'s cost. What it buys is gone.',
-            'buy_default' => 'fraction of cost',
+            'buys_hint' => 'What this place will buy. Percent is the share of the item\'s stock price it pays (blank is 100; a file pays that share of its own value). Limit is how many it takes per restock cycle (blank is any number). What it buys is gone.',
+            'buy_percent' => 'percent',
+            'buy_max' => 'limit per cycle',
             'item' => 'Item',
             'price' => 'Price',
             'price_default' => 'item cost',
@@ -3655,6 +3701,7 @@ return [
                 'scan' => 'Scanning',
                 'skill' => 'Skill levels',
                 'check' => 'Skill checks',
+                'decryption_chance' => 'Decryption chance (%)',
                 'damage' => 'Damage taken',
                 'sets' => 'Groups',
                 'other' => 'Other',
@@ -3823,6 +3870,8 @@ return [
                 'background_process_hint' => 'Whether it may run outside an intrusion. A decryptor must; an icebreaker has nothing to break out there.',
                 'program_modifiers' => 'What running it does',
                 'program_modifiers_hint' => 'Effects the character gets while this is running. Empty is fine — a program that only gates modifies nothing.',
+                'program_decrypts' => 'Decrypts (Decryptors only)',
+                'program_decrypts_hint' => 'The encryptions this Decryptor can break. Tick none for any. Ignored on every other kind of program.',
                 'multithreaded' => 'Can be run more than once at a time',
                 'multithreaded_hint' => 'Whether a character may point two copies at two things at once. How many they may run is their own skill; this is whether it is a question at all.',
                 'implant_region' => 'Implant region',
@@ -4037,6 +4086,10 @@ return [
             'service_amount' => 'Amount',
             'service_amount_hint' => 'How much one purchase of the service does. Heat: points taken off.',
             'grades' => 'Desks',
+            'buys' => 'What the desks buy',
+            'buys_hint' => 'Creds paid for what players carry in, by every desk between the two grades. Percent is the share of the item\'s stock price (blank is 100; a file pays that share of its own value). Limit is how many the entity takes per restock cycle across all its desks (blank is any number). What it buys is gone.',
+            'buys_save' => 'Save what they buy',
+            'buys_saved' => ':entity: buy list saved.',
             'grade_from' => 'From',
             'grade_to' => 'To',
             'price' => 'Loyalty',

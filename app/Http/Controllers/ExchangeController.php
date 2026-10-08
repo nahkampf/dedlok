@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\City\CityRefusal;
 use App\Missions\MissionBoard;
 use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\EntityOffer;
-use App\Models\InventoryItem;
 use App\Models\Mission;
 use App\Models\System;
 use App\Standing\Band;
+use App\Standing\DeskBuyer;
 use App\Standing\LoyaltyExchange;
 use App\Standing\LoyaltyRefusal;
 use App\Standing\Service;
@@ -93,7 +94,7 @@ class ExchangeController extends Controller
 
             // Counted once here rather than per card: only a supply job reads
             // it, but the card should not be running a query to draw a meter.
-            'files' => $this->completeFiles($character),
+            'files' => app(MissionLedger::class)->suppliable($character),
             // The systems a survey's files are in hand for, so its card can tick them off before the hand-in.
             'heldAddresses' => app(MissionLedger::class)->heldAddresses($character),
 
@@ -102,7 +103,33 @@ class ExchangeController extends Controller
             'shelf' => $welcome && $entity !== null
                 ? (new LoyaltyExchange)->shelf($entity, (int) $system->exchange->grade)
                 : collect(),
+
+            // What the desk will buy from this character, with the price and what is left of its limit.
+            'buying' => $entity !== null
+                ? app(DeskBuyer::class)->sellable($character, $system->exchange, $standing)
+                : [],
         ]);
+    }
+
+    /** Sell to the desk you are standing on. Like redeeming, the desk is where the character is, never in the request. */
+    public function sell(Request $request, int $row, DeskBuyer $buyer): RedirectResponse
+    {
+        $character = $this->character($request);
+        $quantity = (int) $request->validate(['quantity' => ['required', 'integer', 'between:1,9999']])['quantity'];
+
+        $system = $character->isJackedIn()
+            ? System::query()->at($character->gridPosition())->with('owner', 'exchange')->first()
+            : null;
+
+        if ($system?->exchange === null || ! $system->type->isExchange()) {
+            return redirect()->route('cyberspace.index');
+        }
+
+        $result = $buyer->sell($character, $system->exchange, $row, $quantity);
+
+        return $result instanceof CityRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get('city.shop.sold', ['paid' => number_format($result)]));
     }
 
     /**
@@ -135,28 +162,6 @@ class ExchangeController extends Controller
             'item' => $offer->displayName(),
             'price' => number_format((int) $offer->loyalty_price),
         ]));
-    }
-
-    /**
-     * How many complete, unexpired scan files this character is holding.
-     *
-     * The same test the hand-in makes, asked for a meter. A file inside a
-     * container is not to hand, so `loose()` decides here exactly as it does
-     * everywhere else.
-     */
-    private function completeFiles(Character $character): int
-    {
-        return InventoryItem::query()
-            ->where('character_id', $character->id)
-            ->whereNotNull('scan_file')
-            ->loose()
-            ->get()
-            ->filter(function (InventoryItem $row): bool {
-                $file = $row->scanFile();
-
-                return $file !== null && ! $file->hasExpired() && $file->toScan()->isComplete();
-            })
-            ->count();
     }
 
     private function character(Request $request): Character

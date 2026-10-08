@@ -229,6 +229,38 @@
         </div>
     </form>
 
+    {{-- WHAT THEY BUY. The reverse of the shelf: creds paid for what players carry in. One form for the whole
+         list, a diff on save (a listing keeps its count taken so far). --}}
+    @php($buyRows = old('buys', $buys))
+    @php($buyRows = array_pad(array_values($buyRows), count($buyRows) + 3, ['item_id' => null, 'min_grade' => 1, 'max_grade' => 5, 'percent' => null, 'max_quantity' => null]))
+    <form method="POST" action="{{ route('admin.entities.buys.update', $entity) }}" class="panel" style="margin-top:var(--s-5)">
+        @csrf @method('PUT')
+
+        <div class="panel__hd"><span class="micro">{{ Text::get('admin.entities.buys') }}</span></div>
+
+        <div class="panel__bd stack" style="--gap:var(--s-3)">
+            <span class="field__hint">{{ Text::get('admin.entities.buys_hint') }}</span>
+            @foreach ($buyRows as $i => $row)
+                <div class="row row--wrap" style="--gap:var(--s-3)">
+                    <select class="select" name="buys[{{ $i }}][item_id]" style="flex:1 1 220px;min-width:0" aria-label="{{ Text::get('admin.locations.item') }}">
+                        <option value=""></option>
+                        <x-grouped-options :groups="$items" :selected="$row['item_id'] ?? null" />
+                    </select>
+                    <input class="input num" type="number" min="1" max="5" name="buys[{{ $i }}][min_grade]" value="{{ $row['min_grade'] ?? 1 }}" style="width:5rem" aria-label="{{ Text::get('admin.entities.grade_from') }}">
+                    <input class="input num" type="number" min="1" max="5" name="buys[{{ $i }}][max_grade]" value="{{ $row['max_grade'] ?? 5 }}" style="width:5rem" aria-label="{{ Text::get('admin.entities.grade_to') }}">
+                    <input class="input num" type="number" min="0" max="1000" name="buys[{{ $i }}][percent]" value="{{ $row['percent'] ?? '' }}" placeholder="{{ Text::get('admin.locations.buy_percent') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.buy_percent') }}">
+                    <input class="input num" type="number" min="1" name="buys[{{ $i }}][max_quantity]" value="{{ $row['max_quantity'] ?? '' }}" placeholder="{{ Text::get('admin.locations.unlimited') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.buy_max') }}">
+                </div>
+            @endforeach
+            @error('buys.*') <span class="field__error">{{ $message }}</span> @enderror
+        </div>
+
+        <div class="panel__ft">
+            <div class="spacer"></div>
+            <button type="submit" class="btn btn--sm cut">{{ Text::get('admin.entities.buys_save') }}</button>
+        </div>
+    </form>
+
     <p style="margin-top:var(--s-4)">
         <a class="btn btn--ghost btn--sm cut" href="{{ route('admin.entities.index') }}">
             &larr; {{ Text::get('admin.entities.title') }}

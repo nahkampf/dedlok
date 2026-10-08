@@ -73,6 +73,31 @@ final class ProgramAdminTest extends TestCase
         ], $overrides);
     }
 
+    public function test_a_decryptor_can_be_limited_to_some_encryptions_and_nothing_else_can(): void
+    {
+        Skill::factory()->create(['slug' => 'cinder', 'category' => 'Encryption', 'rank' => 2]);
+        Skill::factory()->create(['slug' => 'ouroboros', 'category' => 'Encryption', 'rank' => 16]);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.items.store'), $this->payload(['slug' => 'lockpick', 'program_kind' => ProgramKind::Decryptor->value, 'program_decrypts' => ['cinder']]))
+            ->assertSessionHasNoErrors();
+        $this->assertSame(['cinder'], Program::query()->whereHas('item', fn ($q) => $q->where('slug', 'lockpick'))->sole()->decrypts);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.items.store'), $this->payload(['slug' => 'openall', 'program_kind' => ProgramKind::Decryptor->value]))
+            ->assertSessionHasNoErrors();
+        $this->assertNull(Program::query()->whereHas('item', fn ($q) => $q->where('slug', 'openall'))->sole()->decrypts, 'none ticked is any');
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.items.store'), $this->payload(['slug' => 'breaker', 'program_decrypts' => ['cinder']]))
+            ->assertSessionHasNoErrors();
+        $this->assertNull(Program::query()->whereHas('item', fn ($q) => $q->where('slug', 'breaker'))->sole()->decrypts, 'only a decryptor is limited');
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.items.store'), $this->payload(['slug' => 'bogus', 'program_kind' => ProgramKind::Decryptor->value, 'program_decrypts' => ['not-a-skill']]))
+            ->assertSessionHasErrors('program_decrypts.0');
+    }
+
     public function test_an_item_becomes_a_program_by_being_given_a_kind(): void
     {
         $this->actingAs($this->admin())

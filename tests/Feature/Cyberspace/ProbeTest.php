@@ -1258,9 +1258,11 @@ final class ProbeTest extends TestCase
         $this->assertSame(
             Text::get('notifications.messages.scan_complete', [
                 'system' => System::query()->sole()->displayName(),
+                'address' => System::query()->sole()->address,
             ]),
             $message->body,
         );
+        $this->assertSame(System::query()->sole()->address, $message->details['address'], 'and it rides along for the copy button');
     }
 
     /** A pass that learned nothing has nothing to say. */

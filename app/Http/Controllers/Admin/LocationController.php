@@ -87,7 +87,7 @@ class LocationController extends Controller
                 'item_id' => $r->item_id, 'price' => $r->price, 'max_stock' => $r->max_stock,
                 'restock_amount' => $r->restock_amount ?: null, 'restock_hours' => $r->restock_hours,
             ])->all() ?? [],
-            'buys' => $location?->buys()->orderBy('id')->get(['item_id', 'price'])->map(fn ($r): array => ['item_id' => $r->item_id, 'price' => $r->price])->all() ?? [],
+            'buys' => $location?->buys()->orderBy('id')->get(['item_id', 'percent', 'max_quantity'])->map(fn ($r): array => ['item_id' => $r->item_id, 'percent' => $r->percent, 'max_quantity' => $r->max_quantity])->all() ?? [],
             'clinic' => $location?->clinicServices()->pluck('price', 'service')->mapWithKeys(fn ($p, $s): array => [$s instanceof ClinicService ? $s->value : (string) $s => $p])->all() ?? [],
         ];
     }

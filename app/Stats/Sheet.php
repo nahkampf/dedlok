@@ -242,6 +242,11 @@ final class Sheet
             return $this->checkBase((string) SkillStats::slugOf($statId));
         }
 
+        // A decryption chance starts at nothing; everything it is worth comes from modifiers.
+        if (str_starts_with($statId, SkillStats::CHANCE_PREFIX)) {
+            return 0.0;
+        }
+
         /*
          * A POOL sums its attributes and divides ONCE, where a formula divides
          * each and rounds each up before adding. Four attributes of 20 over 8.5

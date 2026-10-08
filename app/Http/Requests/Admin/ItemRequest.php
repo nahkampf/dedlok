@@ -175,6 +175,8 @@ class ItemRequest extends FormRequest
             'storage_size' => $this->panelNumber('storage_size', $isProgramForm),
             'background_process' => $this->boolean('background_process'),
             'multithreaded' => $this->boolean('multithreaded'),
+            // Which encryptions a Decryptor can break: ticked slugs, none ticked meaning any.
+            'program_decrypts' => array_values(array_filter((array) $this->input('program_decrypts', []), 'is_string')),
             // Rows from the effects editor, turned into modifier definitions
             // here so everything downstream sees the shape
             // Modifier::fromArray() reads. A raw JSON string is still accepted:
@@ -415,6 +417,10 @@ class ItemRequest extends FormRequest
              * something this is false on.
              */
             'multithreaded' => ['boolean'],
+
+            // The encryptions a Decryptor is limited to, by skill slug; empty is any. Stored only on a decryptor.
+            'program_decrypts' => ['array'],
+            'program_decrypts.*' => ['string', Rule::exists('skills', 'slug')->where('category', 'Encryption')],
 
             /*
              * What running it does. A list of modifier definitions in the
@@ -873,7 +879,7 @@ class ItemRequest extends FormRequest
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
             $data['storage_size'], $data['background_process'], $data['multithreaded'],
-            $data['program_modifiers'],
+            $data['program_modifiers'], $data['program_decrypts'],
         );
 
         // Armour, weapons and ammunition live in tables of their own, not on the item.
@@ -1101,6 +1107,10 @@ class ItemRequest extends FormRequest
             'modifiers' => ($data['program_modifiers'] ?? []) === []
                 ? null
                 : array_values((array) $data['program_modifiers']),
+            // NULL is any encryption, and only a Decryptor can be limited.
+            'decrypts' => $this->programKind() === ProgramKind::Decryptor && ($data['program_decrypts'] ?? []) !== []
+                ? array_values((array) $data['program_decrypts'])
+                : null,
         ];
     }
 

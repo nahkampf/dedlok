@@ -231,13 +231,13 @@ final class NotificationTest extends TestCase
 
     public function test_a_message_with_a_finished_reads_facts_draws_them_as_rows(): void
     {
-        $this->notifier()->send($this->character, Category::Cyberspace, 'scan_complete', ['system' => 'Silo - Veritas 123'], ['facts' => [
+        $this->notifier()->send($this->character, Category::Cyberspace, 'scan_complete', ['system' => 'Silo - Veritas 123', 'address' => 'AB12CD34'], ['address' => 'AB12CD34', 'facts' => [
             ['key' => 'grade', 'label' => 'Grade', 'value' => 'IV', 'discoverable' => true, 'mark' => null],
             ['key' => 'ids', 'label' => 'IDS', 'value' => null, 'discoverable' => true, 'mark' => null],
         ]]);
 
         $this->actingAs($this->user)->get(route('notifications.index'))
-            ->assertOk()->assertSee('Scan complete')->assertSee('data-fact="grade"', false)->assertSee('IV')->assertSee('UNKNOWN');
+            ->assertOk()->assertSee('Scan complete')->assertSee('data-fact="grade"', false)->assertSee('IV')->assertSee('UNKNOWN')->assertSee('AB12CD34');
     }
 
     public function test_the_siphon_report_is_titled_siphon_report(): void

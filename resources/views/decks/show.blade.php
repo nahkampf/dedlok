@@ -260,6 +260,66 @@
         </details>
     </div>
 
+    {{-- DECRYPTION: the files waiting to be broken, here because the clock runs on the deck being carried and
+         only while a Decryptor runs on it. The head is the one being worked on. --}}
+    @if ($decryption !== null)
+        <details class="panel" style="margin-top:var(--s-5)" @open($decryption['entries'] !== [])>
+            <summary class="panel__hd">
+                <span class="micro">{{ Text::get('decryption.heading') }}</span>
+                <div class="spacer"></div>
+                <span class="micro num" style="color:var(--ink-2)">{{ count($decryption['entries']) }}</span>
+            </summary>
+
+            <div class="panel__bd stack" style="--gap:var(--s-3)">
+                <span class="field__hint">{{ Text::get('decryption.cycle', ['time' => \Carbon\CarbonInterval::seconds(\App\Decryption\DecryptionQueue::cycleSeconds($character))->cascade()->forHumans(['parts' => 2])]) }}</span>
+
+                @if ($decryption['entries'] === [])
+                    <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('decryption.empty') }}</p>
+                @elseif (! $decryption['running'])
+                    <p class="muted" style="font-size:var(--fs-sm);margin:0;color:var(--warn)">{{ Text::get('decryption.no_decryptor') }}</p>
+                @endif
+
+                @if (count($decryption['entries']) > 1)
+                    <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('decryption.reorder_hint') }}</p>
+                @endif
+
+                <div class="stack" style="--gap:var(--s-2)" data-queue-sort="{{ route('decryption.reorder') }}">
+                    @foreach ($decryption['entries'] as $line)
+                        @php($file = $line['row']->extractedFile())
+                        <div class="row row--wrap" style="--gap:var(--s-3);align-items:center" data-queue-row="{{ $line['entry']->id }}">
+                            @if (count($decryption['entries']) > 1)
+                                <button type="button" class="micro num queue-handle" data-queue-handle
+                                        title="{{ Text::get('decryption.reorder_handle') }}"
+                                        aria-label="{{ Text::get('decryption.reorder_handle') }}">{{ $line['entry']->position }}</button>
+                            @else
+                                <span class="micro num" style="color:var(--ink-3)">{{ $line['entry']->position }}</span>
+                            @endif
+                            <span class="item-row__name" style="flex:1 1 180px;min-width:0">
+                                @if ($line['entry']->worker_id)
+                                    <span class="dot dot--live" aria-hidden="true"></span>
+                                @endif
+                                {{ $file?->label }}
+                                <span class="micro" style="color:var(--ink-3)">
+                                    · {{ $line['odds'] ? Text::get('decryption.encryption', ['skill' => $line['odds']['skill']->title]) : '' }}
+                                </span>
+                            </span>
+                            <span class="micro num" style="color:var(--ink-3)">
+                                @if ($line['odds'])
+                                    {{ Text::get('decryption.odds', ['percent' => round($line['odds']['chance'] * 100), 'time' => \Carbon\CarbonInterval::seconds((int) ceil($line['odds']['seconds']))->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}
+                                @endif
+                            </span>
+                            <span class="tag">{{ Text::get($line['entry']->worker_id ? 'decryption.working' : 'decryption.waiting') }}</span>
+                            <form method="POST" action="{{ route('decryption.destroy', $line['entry']) }}">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('decryption.remove') }}</button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </details>
+    @endif
+
     {{-- Closed by default, and it is the one that earns it: two slot grids are
          the longest thing on the page, and storage is somewhere you go rather
          than something you monitor.
@@ -298,6 +358,9 @@
             </div>
             <div class="panel__bd stack" style="--gap:var(--s-4)">
                 <p style="font-size:var(--fs-sm);margin:0">{{ Text::get('decks.equip.question') }}</p>
+                @if ($decryption !== null && $decryption['running'] && $decryption['entries'] !== [])
+                    <p style="font-size:var(--fs-sm);margin:0;color:var(--warn)">{{ Text::get('decryption.unequip_warning') }}</p>
+                @endif
 
                 <div class="stack" style="--gap:var(--s-2)">
                     <form method="POST" action="{{ route('deck.unequip') }}">

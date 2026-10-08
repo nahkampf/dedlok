@@ -104,6 +104,9 @@
                                 @elseif (! empty($message->details['facts']))
                                     {{-- A finished read: every row the system overview shows, as they stood when it
                                          finished. --}}
+                                    @if (! empty($message->details['address']))
+                                        <span class="micro"><x-address :address="$message->details['address']" /></span>
+                                    @endif
                                     <x-scan-facts :facts="$message->details['facts']" />
                                 @elseif ($message->details)
                                     <div class="prose micro" style="color:var(--ink-2)">

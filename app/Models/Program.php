@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'item_id', 'kind', 'qflops_cost', 'memory_cost', 'storage_size',
-    'background_process', 'multithreaded', 'modifiers',
+    'background_process', 'multithreaded', 'modifiers', 'decrypts',
 ])]
 class Program extends Model
 {
@@ -36,7 +36,14 @@ class Program extends Model
             'background_process' => 'boolean',
             'multithreaded' => 'boolean',
             'modifiers' => 'array',
+            'decrypts' => 'array',
         ];
+    }
+
+    /** Can this program work on a file sealed with this encryption? Null `decrypts` is any. */
+    public function canBreak(string $encryptionSlug): bool
+    {
+        return $this->decrypts === null || in_array($encryptionSlug, $this->decrypts, true);
     }
 
     /** @return BelongsTo<Item, $this> */

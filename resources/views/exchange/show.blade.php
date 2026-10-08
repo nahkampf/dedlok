@@ -184,6 +184,28 @@
         </div>
     </div>
 
+    @if ($buying !== [])
+        <div class="panel" style="margin-top:var(--s-4)">
+            <div class="panel__hd"><span class="micro">{{ Text::get('exchange.they_buy') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-3)">
+                @foreach ($buying as $entry)
+                    <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                        <span class="item-row__name" style="flex:1 1 160px;min-width:0">
+                            {{ $entry['row']->item->displayName() }}
+                            <span class="micro" style="color:var(--ink-3)">× {{ $entry['row']->quantity }}@if ($entry['left'] !== null) · {{ Text::get('city.shop.buy_left', ['count' => $entry['left']]) }}@endif</span>
+                        </span>
+                        <span class="num micro">{{ number_format($entry['unit']) }} ¤</span>
+                        <form method="POST" action="{{ route('exchange.sell', $entry['row']->id) }}" class="row" style="--gap:var(--s-2)">
+                            @csrf
+                            <input class="input num" type="number" name="quantity" min="1" max="{{ $entry['row']->quantity }}" value="{{ min($entry['row']->quantity, $entry['left'] ?? $entry['row']->quantity) ?: 1 }}" style="width:5.5rem" aria-label="{{ Text::get('city.shop.quantity') }}">
+                            <button type="submit" class="btn btn--sm cut" @disabled($entry['left'] === 0)>{{ Text::get('city.shop.sell') }}</button>
+                        </form>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <p style="margin-top:var(--s-4)">
         <a class="btn btn--ghost btn--sm cut" href="{{ route('cyberspace.index') }}">
             &larr; {{ Text::get('cyberspace.map.title') }}

@@ -558,6 +558,21 @@
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.multithreaded_hint') }}</span>
 
+                    {{-- A Decryptor can be limited to some encryptions; ticking none means any. --}}
+                    <fieldset class="field" style="margin-top:var(--s-3)">
+                        <legend class="field__label">{{ Text::get('admin.items.fields.program_decrypts') }}</legend>
+                        <div class="row row--wrap" style="--gap:var(--s-4)">
+                            @foreach ($encryptions as $encryption)
+                                <label class="check">
+                                    <input type="checkbox" name="program_decrypts[]" value="{{ $encryption->slug }}"
+                                           @checked(in_array($encryption->slug, (array) old('program_decrypts', $item?->program?->decrypts ?? []), true))>
+                                    <span>{{ $encryption->title }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <span class="field__hint">{{ Text::get('admin.items.fields.program_decrypts_hint') }}</span>
+                    </fieldset>
+
                     {{-- Rows rather than the JSON this used to be. Validated
                          by BUILDING each one — see ItemRequest — because a
                          shape that parses but names an op that does not exist

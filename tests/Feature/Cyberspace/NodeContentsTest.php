@@ -150,6 +150,40 @@ final class NodeContentsTest extends TestCase
         $this->assertSame($dear->id, $high->contents()->ofKind(ContentKind::Data)->value('encryption_skill_id'));
     }
 
+    /** Each encryption turns up only in its own grades, and a file's values come from its grade's bands. */
+    public function test_the_four_encryptions_keep_to_their_grades_and_prices(): void
+    {
+        Config::set('cyberspace.contents.data.chance', array_fill(1, 9, 1000));
+        Config::set('cyberspace.contents.by_type.silo.data', 2000);
+
+        $skills = [];
+        foreach (['cinder' => 2, 'halcyon3' => 4, 'blackglass' => 8, 'ouroboros' => 16] as $slug => $rank) {
+            $skills[$slug] = Skill::factory()->create(['slug' => $slug, 'category' => 'Encryption', 'rank' => $rank])->id;
+        }
+
+        $expected = [1 => ['cinder'], 4 => ['cinder', 'halcyon3'], 5 => ['halcyon3'], 7 => ['blackglass'], 8 => ['blackglass', 'ouroboros'], 9 => ['ouroboros']];
+
+        foreach ($expected as $grade => $allowed) {
+            $machine = $this->machine(grade: $grade);
+
+            foreach ([true, false] as $lucky) {
+                $machine->contents()->delete();
+                $this->stocker($lucky)->run();
+
+                $file = $machine->contents()->ofKind(ContentKind::Data)->sole();
+                $this->assertContains(array_search($file->encryption_skill_id, $skills), $allowed, "grade {$grade}");
+
+                [$lo, $hi] = config("cyberspace.contents.data.value.{$grade}");
+                $this->assertGreaterThanOrEqual($lo, $file->value_sealed);
+                $this->assertLessThanOrEqual($hi, $file->value_sealed);
+
+                [$lo, $hi] = config("cyberspace.contents.data.value_broken.{$grade}");
+                $this->assertGreaterThanOrEqual($lo, $file->value_broken);
+                $this->assertLessThanOrEqual($hi, $file->value_broken);
+            }
+        }
+    }
+
     /** A world with no encryption skills still stocks files. */
     public function test_a_file_survives_an_empty_encryption_ladder(): void
     {

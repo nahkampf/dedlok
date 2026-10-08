@@ -641,7 +641,8 @@ final class Probe
             // the read found is kept with the sentence that says it finished.
             (new Notifier)->send($character, Category::Cyberspace, 'scan_complete', [
                 'system' => $system->displayName(),
-            ], ['facts' => $scan->facts($character)]);
+                'address' => $system->address,
+            ], ['facts' => $scan->facts($character), 'address' => $system->address]);
         }
 
         $instrument = $scan->reading_process_id;

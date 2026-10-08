@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Programs;
 
 use App\Decks\DeckTotals;
+use App\Decryption\DecryptionQueue;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Program;
@@ -358,6 +359,16 @@ final class ProgramRunner
      */
     private function putBack(InventoryItem $row): void
     {
+        // A decryptor stopping settles the decryption queue first and then closes the cycle — the one place every way
+        // of stopping one (stop, stopAll, stopRunOnly, a deck unequipped or destroyed) passes through.
+        if ($row->running_on_deck_id !== null && $row->item?->program?->kind === ProgramKind::Decryptor) {
+            $owner = Character::query()->find($row->character_id);
+
+            if ($owner !== null) {
+                DecryptionQueue::make()->stopped($owner, $row->getKey());
+            }
+        }
+
         $row->running_on_deck_id = null;
         $row->started_at = null;
 

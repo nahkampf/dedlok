@@ -19,6 +19,7 @@ use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
+use App\Http\Controllers\DecryptionController;
 use App\Http\Controllers\DiscordInviteController;
 use App\Http\Controllers\EncounterController;
 use App\Http\Controllers\EquipmentController;
@@ -142,6 +143,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/read', [InventoryController::class, 'read'])
         ->name('inventory.read');
 
+    // Decryption: queue a file to be broken, or take one out. Startable while jacked in; the file being worked on
+    // cannot be called off from in there. See App\Decryption\DecryptionQueue.
+    Route::post('/inventory/{entry}/decrypt', [DecryptionController::class, 'store'])
+        ->name('decryption.store');
+    Route::post('/decryption/reorder', [DecryptionController::class, 'reorder'])
+        ->name('decryption.reorder');
+    Route::delete('/decryption/{entry}', [DecryptionController::class, 'destroy'])
+        ->name('decryption.destroy');
+
     /*
      * Destroying something you own. Real and irreversible, and the
      * confirmation in front of it is the only brake — the same decision the
@@ -252,6 +262,7 @@ Route::middleware('auth')->group(function () {
     // Spending loyalty at the desk you are standing on. Like the board, there
     // is no id for the DESK in the route: being there is the permission.
     Route::post('/exchange/store/{offer}', [ExchangeController::class, 'redeem'])->name('exchange.redeem');
+    Route::post('/exchange/sell/{row}', [ExchangeController::class, 'sell'])->name('exchange.sell');
 
     /*
      * Work. There is no index and never will be: a board belongs to a DESK,
@@ -472,6 +483,7 @@ Route::middleware(['auth', 'can:admin'])
         Route::get('entities/{entity}', [AdminEntityOfferController::class, 'edit'])->name('entities.edit');
         Route::post('entities/{entity}/offers', [AdminEntityOfferController::class, 'store'])->name('entities.offers.store');
         Route::put('entities/{entity}', [AdminEntityOfferController::class, 'update'])->name('entities.update');
+        Route::put('entities/{entity}/buys', [AdminEntityOfferController::class, 'updateBuys'])->name('entities.buys.update');
         Route::put('entities/{entity}/offers/{offer}', [AdminEntityOfferController::class, 'updateOffer'])->name('entities.offers.update');
         Route::delete('entities/{entity}/offers/{offer}', [AdminEntityOfferController::class, 'destroy'])->name('entities.offers.destroy');
     });

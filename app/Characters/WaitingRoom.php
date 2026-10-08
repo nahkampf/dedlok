@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\DB;
  *
  * Getting up is not healing: it is getting up. A character comes back on **one** point of whatever put them
  * down, which is enough to act and not enough to be safe — and the way back
- * from there is the four-hourly mend, Neuroplasticity, or something a player does.
+ * from there is the two-hourly mend, Neuroplasticity, or something a player does.
  *
  * Both resources are checked, and both are brought to one if both were at
  * zero: waking up still broken in the other half would put somebody straight

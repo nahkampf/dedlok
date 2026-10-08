@@ -47,11 +47,11 @@ final class Notifier
      * Returns null when there was nobody to write it to, which is not an error
      * — the same answer `Achievements::move()` gives for the same fixture.
      *
-     * `$details` is a list drawn under the sentence, stored as given and never
-     * recomposed, exactly like the body. The sender owns its shape and the
-     * inbox renders it; today only the siphon report writes one.
+     * `$details` is drawn under the sentence, stored as given and never recomposed, exactly like the body. The
+     * sender owns its shape and the inbox renders it: a list of lines (the siphon report), or a keyed map (a job's
+     * `targets`, a finished read's `facts` and `address`).
      *
-     * @param  list<array<string, mixed>>|null  $details
+     * @param  array<array-key, mixed>|null  $details
      */
     public function send(Character|User $who, Category $category, string $key, array $replace = [], ?array $details = null): ?Notification
     {

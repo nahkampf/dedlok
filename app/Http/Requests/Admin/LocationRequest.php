@@ -54,7 +54,8 @@ class LocationRequest extends FormRequest
             'shop.*.restock_hours' => ['nullable', 'integer', 'between:1,65535'],
             'buys' => ['nullable', 'array', 'max:60'],
             'buys.*.item_id' => ['nullable', 'integer', 'exists:items,id'],
-            'buys.*.price' => ['nullable', 'integer', 'between:0,1000000'],
+            'buys.*.percent' => ['nullable', 'integer', 'between:0,1000'],
+            'buys.*.max_quantity' => ['nullable', 'integer', 'between:1,1000000'],
             'surgery' => ['nullable', 'array'],
             'surgery.offered' => ['nullable', 'boolean'],
             'surgery.rating' => ['nullable', 'integer', 'between:0,200', 'required_with:surgery.offered'],
@@ -101,7 +102,7 @@ class LocationRequest extends FormRequest
     /**
      * What the place buys: one per item, blank rows dropped.
      *
-     * @return list<array{item_id: int, price: int|null}>
+     * @return list<array{item_id: int, percent: int, max_quantity: int|null}>
      */
     public function buyRows(): array
     {
@@ -111,7 +112,8 @@ class LocationRequest extends FormRequest
             if (! empty($row['item_id'])) {
                 $rows[(int) $row['item_id']] = [
                     'item_id' => (int) $row['item_id'],
-                    'price' => ($row['price'] ?? '') === '' ? null : (int) $row['price'],
+                    'percent' => ($row['percent'] ?? '') === '' ? 100 : (int) $row['percent'],
+                    'max_quantity' => ($row['max_quantity'] ?? '') === '' ? null : (int) $row['max_quantity'],
                 ];
             }
         }
