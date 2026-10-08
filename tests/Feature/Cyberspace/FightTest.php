@@ -827,6 +827,28 @@ final class FightTest extends TestCase
         $this->assertSame(RunEnding::Egress, $result->ending);
     }
 
+    /**
+     * THE RUN KEEPS THE ACCOUNT OF THE TURN THAT ENDED IT. A threshold that pulls you out before your action happens used to
+     * leave a run that said only that it had egressed — a player who pressed Install saw no backdoor and no reason why.
+     */
+    public function test_a_threshold_egress_is_written_into_the_runs_log(): void
+    {
+        $this->machine(1);
+        $run = $this->begin();
+
+        $max = $this->character->maximumFor('current_synaptic_integrity');
+        $this->character->forceFill(['current_synaptic_integrity' => (int) floor($max * 0.1)])->save();
+        $this->everyCheckPasses();
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Install);
+
+        $this->assertSame(RunEnding::Egress, $result->ending);
+
+        $texts = array_column($run->fresh()->log, 'text');
+        $this->assertContains(Text::get('cyberspace.run.log.threshold'), $texts, 'why the action never happened');
+        $this->assertContains(Text::get('cyberspace.run.log.egress'), $texts);
+    }
+
     /** Zero turns one off, without needing a second column to say whether it is on. */
     public function test_a_threshold_of_zero_never_fires(): void
     {

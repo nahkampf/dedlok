@@ -173,6 +173,10 @@ final readonly class Simulator
                     $ending = $run->extracted ? RunEnding::Completed : RunEnding::Egress;
 
                     $run->save();
+                    // The turn that ENDS the run is part of its account too: without it a threshold that pulled the
+                    // player out at once ("You hit your set threshold, and pull out.") left a run that said only
+                    // that it had egressed, and nothing to say why the action they pressed never happened.
+                    $this->appendLog($run, $log);
                     $this->runs->end($character, $run, $ending);
 
                     return TurnResult::resolved($run, $log, $ending);
@@ -207,6 +211,7 @@ final readonly class Simulator
                  */
                 if ($burned) {
                     $run->save();
+                    $this->appendLog($run, $log);
                     $this->runs->end($character, $run, RunEnding::Completed);
 
                     return TurnResult::resolved($run, $log, RunEnding::Completed);
