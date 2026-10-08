@@ -9,6 +9,12 @@
   `programs:expire` sweeps every minute; the item editor has a *Lifetime (seconds)* field, the Running modal shows time left, Current processes a
   bar. Step 2 of Code Crafting (`CRAFTING.md`).
 
+- **Components** (migration `2026_10_08_200000_the_components_a_decrypted_file_becomes`, `cyberspace.decryption.components`): decrypting a file is
+  now a weighted roll by the grade of the system it came off, over twenty components (the Memory Dump and nineteen new items), each at least 5% wherever it
+  can appear, every grade summing to 100 (a config test holds both). The row still converts in place. **Files now record where they came from**
+  (`App\Cyberspace\FileOrigin`: system type, owner, OS, IDS and ICE level, encryption) and decryption keeps it; a component is named by one origin field,
+  "Kernel Log (AuraOS)" (`InventoryItem::label()`). Files taken before this have no origin. Step 3 of Code Crafting (`CRAFTING.md`).
+
 ### Changed
 
 - **Storage, memory and compute are carried to one decimal place** (migration `2026_10_08_180000_storage_memory_and_compute_have_a_decimal`):

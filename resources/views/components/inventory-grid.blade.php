@@ -67,7 +67,7 @@
                         {{-- No title attribute: the browser's own tooltip
                              would sit on top of the inspector saying half of
                              what it already says. --}}
-                        aria-label="{{ $item->displayName() }} — {{ Text::get('inventory.inspect') }}">
+                        aria-label="{{ $entry->label() }} — {{ Text::get('inventory.inspect') }}">
                         <span class="slot__icon" aria-hidden="true">{{ $item->glyph() }}</span>
 
                         @if ($entry->quantity > 1)

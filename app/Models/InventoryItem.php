@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\ScanFact;
 use App\Cyberspace\ScanFile;
+use App\Cyberspace\SystemType;
 use App\Support\Qb;
 use App\Support\Text;
 use Carbon\Carbon;
@@ -75,15 +76,52 @@ class InventoryItem extends Model
             return null;
         }
 
+        $sealed = $this->item?->slug === ExtractedFile::SEALED_SLUG;
+        $origin = $file->origin;
+
         $parts = [
             Text::get('inventory.files.size', ['qb' => $file->sizeQb]),
-            $file->encryptionSkillId !== null
-                ? Text::get('inventory.files.encrypted_with', ['skill' => $this->encryptionSkillName($file)])
+            ...($file->grade === null ? [] : [Text::get('inventory.files.headline.grade', ['grade' => $file->grade])]),
+            ...($origin?->systemType === null ? [] : [Text::get('inventory.files.from', ['type' => SystemType::from($origin->systemType)->label()])]),
+            ...($origin?->ownerName === null ? [] : [Text::get('inventory.files.owned_by', ['owner' => $origin->ownerName])]),
+            ...($origin?->osTitle === null ? [] : [Text::get('inventory.files.running', ['os' => $origin->osTitle])]),
+            ...($origin?->idsLevel === null ? [] : [Text::get('inventory.files.guarded', ['ids' => $origin->idsLevel, 'ice' => $origin->iceLevel ?? 0])]),
+            $sealed
+                ? ($file->encryptionSkillId !== null
+                    ? Text::get('inventory.files.encrypted_with', ['skill' => $this->encryptionSkillName($file)])
+                    : Text::get('inventory.files.unencrypted'))
                 : Text::get('inventory.files.unencrypted'),
-            Text::get('inventory.files.sealed_value', ['value' => $file->valueSealed]),
+            Text::get($sealed ? 'inventory.files.sealed_value' : 'inventory.files.broken_value', ['value' => $sealed ? $file->valueSealed : $file->valueBroken]),
         ];
 
         return implode(Text::get('items.summary.separator'), $parts);
+    }
+
+    /**
+     * The item's name, and for a component the one thing about its origin it is named by: "Kernel Log (AuraOS)".
+     * Two components of one item and different origins are different things to a recipe, so they read as different things.
+     */
+    public function label(): string
+    {
+        $name = (string) $this->item?->displayName();
+        $file = $this->extractedFile();
+
+        if ($file === null || $this->item === null) {
+            return $name;
+        }
+
+        $origin = $file->origin;
+        $headline = match (config("cyberspace.decryption.components.{$this->item->slug}.headline")) {
+            'grade' => $file->grade === null ? null : Text::get('inventory.files.headline.grade', ['grade' => $file->grade]),
+            'os' => $origin?->osTitle,
+            'owner' => $origin?->ownerName,
+            'system_type' => $origin?->systemType === null ? null : SystemType::from($origin->systemType)->label(),
+            'encryption' => $origin?->encryptionTitle,
+            'security' => $origin?->idsLevel === null ? null : Text::get('inventory.files.headline.security', ['ids' => $origin->idsLevel, 'ice' => $origin->iceLevel ?? 0]),
+            default => null,
+        };
+
+        return $headline === null ? $name : "{$name} ({$headline})";
     }
 
     private function encryptionSkillName(ExtractedFile $file): string
@@ -107,7 +145,7 @@ class InventoryItem extends Model
         $file = $this->extractedFile();
 
         return $file !== null
-            ? $file->stockPrice($this->item->slug === ExtractedFile::DECRYPTED_SLUG)
+            ? $file->stockPrice($this->item->slug !== ExtractedFile::SEALED_SLUG)
             : (int) $this->item->base_cost;
     }
 

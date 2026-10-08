@@ -6,6 +6,7 @@ namespace Tests\Feature\Cyberspace;
 
 use App\Cyberspace\Extractor;
 use App\Models\Character;
+use App\Models\Entity;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Skill;
@@ -159,6 +160,24 @@ final class ExtractorTest extends TestCase
         $this->assertSame(300, $file->valueSealed);
         $this->assertSame(900, $file->valueBroken);
         $this->assertSame(600, $file->decryptionPremium());
+    }
+
+    public function test_a_file_remembers_the_system_it_came_off(): void
+    {
+        $os = Skill::factory()->create(['slug' => 'auroos', 'title' => 'AuraOS', 'category' => 'Operating Systems', 'rank' => 1]);
+        $owner = Entity::query()->interactable()->firstOrFail();
+        $system = System::factory()->at(8, 8)->grade(1)->create(['address' => 'DEADBEEF', 'os_skill_id' => $os->id, 'owner_id' => $owner->id, 'ids_detection' => 4]);
+        SystemContent::query()->create(['system_id' => $system->id, 'kind' => 'data', 'label' => 'Ledger', 'size_qb' => 3, 'value_sealed' => 30, 'value_broken' => 60]);
+
+        $this->extractor()->extract($this->character(), 'DEADBEEF');
+
+        $origin = InventoryItem::query()->whereNotNull('extracted_file')->sole()->extractedFile()->origin;
+        $this->assertSame('AuraOS', $origin->osTitle);
+        $this->assertSame('auroos', $origin->osSlug);
+        $this->assertSame($owner->id, $origin->ownerId);
+        $this->assertSame($owner->name, $origin->ownerName);
+        $this->assertSame(4, $origin->idsLevel);
+        $this->assertSame($system->type->value, $origin->systemType);
     }
 
     /** Two files never merge, whatever the dump item's own stackable flag says elsewhere — each carries different numbers. */

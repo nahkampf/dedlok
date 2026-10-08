@@ -26,6 +26,9 @@ final readonly class ExtractedFile
     /** The item a file becomes once decrypted; its row is the same row, so the value it fetches is the broken one. */
     public const DECRYPTED_SLUG = 'memory-dump';
 
+    /** The item every file is while it is still sealed; anything else carrying a file has been broken open. */
+    public const SEALED_SLUG = 'encrypted-data-dump';
+
     public function __construct(
         public string $label,
         public float $sizeQb,
@@ -34,6 +37,8 @@ final readonly class ExtractedFile
         public int $valueBroken,
         /** The grade of the system it came off; null on a file taken before this was recorded. */
         public ?int $grade = null,
+        /** Where it came from; null on a file taken before this was recorded. */
+        public ?FileOrigin $origin = null,
     ) {}
 
     public static function fromContent(SystemContent $content): self
@@ -45,6 +50,7 @@ final readonly class ExtractedFile
             valueSealed: (int) $content->value_sealed,
             valueBroken: (int) $content->value_broken,
             grade: $content->system?->grade,
+            origin: FileOrigin::fromSystem($content->system, $content->encryption),
         );
     }
 
@@ -58,6 +64,7 @@ final readonly class ExtractedFile
             'value_sealed' => $this->valueSealed,
             'value_broken' => $this->valueBroken,
             'grade' => $this->grade,
+            'origin' => $this->origin?->toArray(),
         ];
     }
 
@@ -75,6 +82,7 @@ final readonly class ExtractedFile
             valueSealed: (int) ($stored['value_sealed'] ?? 0),
             valueBroken: (int) ($stored['value_broken'] ?? 0),
             grade: isset($stored['grade']) ? (int) $stored['grade'] : null,
+            origin: FileOrigin::fromArray($stored['origin'] ?? null),
         );
     }
 

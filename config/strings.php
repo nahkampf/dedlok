@@ -2849,6 +2849,15 @@ return [
             'unencrypted' => 'unsealed',
             'unknown_encryption' => 'an encryption nobody names any more',
             'sealed_value' => 'worth :value sealed',
+            'broken_value' => 'worth :value',
+            'headline' => [
+                'grade' => 'Grade :grade',
+                'security' => 'IDS :ids, ICE :ice',
+            ],
+            'from' => 'From a :type',
+            'owned_by' => 'owned by :owner',
+            'running' => 'running :os',
+            'guarded' => 'IDS :ids, ICE :ice',
         ],
 
         /*
