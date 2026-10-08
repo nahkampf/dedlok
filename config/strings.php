@@ -862,33 +862,6 @@ return [
         'gained' => 'Achievements gained',
         'remaining' => 'Still to earn',
 
-        // The name is still one template composed from the id; the
-        // DESCRIPTION is already a map keyed by that same id, because there is
-        // nothing generic to say about what any of them took. When the names
-        // are written they become a map beside it, in the same shape.
-        //
-        // KEEP EACH ONE UNDER 255 CHARACTERS. Nothing here is a column, but a
-        // description that will not fit one is a description that has to be
-        // rewritten the day this becomes a table — AchievementTest pins it,
-        // and pins that every achievement in the catalogue has one at all.
-        'name' => 'ACHIEVEMENT_:id',
-
-        'description' => [
-            1 => 'A million creds extracted from runs.',
-            2 => 'Ten thousand creds drained using siphons.',
-            3 => 'A routing chain at its full length: ten relays between you and whoever is looking.',
-            4 => 'A hundred systems burned.',
-            5 => 'A hundred pieces of ICE defeated.',
-            6 => 'Flatlined. The first one is the one you remember.',
-            7 => 'Flatlined a hundred times, and still jacking in.',
-            8 => 'Twenty skills trained to the level cap.',
-            9 => 'Fifty skills trained to the level cap.',
-            10 => 'A hundred systems fully scanned.',
-            11 => 'A thousand systems fully scanned.',
-            12 => 'A thousand positions of the grid explored.',
-            13 => 'Ten thousand positions of the grid explored.',
-        ],
-
         // Under each card: the share of players who have it, two decimals.
         'earned_by' => ':percent% of players',
 

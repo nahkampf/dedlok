@@ -35,8 +35,8 @@ class AchievementController extends Controller
         foreach ($achievements->listableFor($user) as $id => $entry) {
             $rows[] = [
                 'id' => $id,
-                'name' => Text::get('achievements.name', ['id' => $id]),
-                'description' => Text::get("achievements.description.{$id}"),
+                'name' => $entry['name'],
+                'description' => $entry['description'],
                 'unlocked' => $entry['unlocked'],
                 'share' => Text::get('achievements.earned_by', ['percent' => $percent[$id]]),
             ];
