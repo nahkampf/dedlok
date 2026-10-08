@@ -274,7 +274,7 @@
             @endif
         </div>
 
-        <main style="max-width:1100px;margin:0 auto;padding:var(--s-5) var(--s-4) var(--s-8)">
+        <main style="max-width:{{ $__env->hasSection('wide') ? '1500px' : '1100px' }};margin:0 auto;padding:var(--s-5) var(--s-4) var(--s-8)">
             @yield('content')
         </main>
     </div>

@@ -3231,6 +3231,29 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
   clip-path: polygon(100% 0, 0 0, 100% 100%);
 }
 
+/* THE MAP AND THE BOXES THAT ACT ON IT.
+   Under the map by default, in a column of their own to its right when the room allows. The room is the
+   block's own width (a container query), not the window's: the page column and the rail both change it. The
+   threshold is the map's width at a readable ten-odd cells plus the 320px column; narrower than that and the
+   boxes stay below, which is where they started and what a phone gets. The side column never has a bare 1fr
+   track or a fixed width over 100%. */
+.map-split { container-type: inline-size; margin-top: var(--s-4); }
+.map-split__body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+.map-side {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: var(--s-4);
+  align-content: start;
+}
+
+@container (min-width: 1000px) {
+  .map-split__body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+    align-items: start;
+  }
+  .map-side { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* ── The map and its key, side by side ────────────────────────────────────
    The map scrolls and the key is reference material, so the key gets a column
    of its own rather than a strip of dead space under a short map.
