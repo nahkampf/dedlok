@@ -10,6 +10,43 @@
     <h1 style="margin-top:var(--s-3)">{{ Text::get('admin.supporters.title') }}</h1>
     <p class="muted" style="margin-top:var(--s-2);max-width:70ch;font-size:var(--fs-sm)">{{ Text::get('admin.supporters.lede') }}</p>
 
+    @if ($unmatched->isNotEmpty())
+        <div class="panel" style="margin-top:var(--s-4)">
+            <div class="panel__hd"><h2>{{ Text::get('admin.supporters.unmatched') }}</h2></div>
+            <p class="muted" style="margin:var(--s-2) var(--s-4);font-size:var(--fs-sm)">{{ Text::get('admin.supporters.unmatched_lede') }}</p>
+            @error('account') <p class="field__error" style="margin:0 var(--s-4)">{{ $message }}</p> @enderror
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ Text::get('admin.supporters.kofi_email') }}</th>
+                            <th>{{ Text::get('admin.supporters.payments') }}</th>
+                            <th>{{ Text::get('admin.supporters.last_payment') }}</th>
+                            <th>{{ Text::get('admin.supporters.account_email') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($unmatched as $row)
+                            <tr>
+                                <td>{{ $row->email }}</td>
+                                <td>{{ $row->payments }}</td>
+                                <td>{{ \Illuminate\Support\Carbon::parse($row->last_at)->format('Y-m-d') }}</td>
+                                <td>
+                                    <form method="POST" action="{{ route('admin.supporters.connect') }}" class="row row--wrap" style="--gap:var(--s-2)">
+                                        @csrf
+                                        <input type="hidden" name="kofi_email" value="{{ $row->email }}">
+                                        <input class="input" name="account" type="email" required aria-label="{{ Text::get('admin.supporters.account_email') }}" style="flex:1 1 min(200px,100%)">
+                                        <button type="submit" class="btn btn--sm cut">{{ Text::get('admin.supporters.connect') }}</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     <form method="GET" action="{{ route('admin.supporters.index') }}" class="row row--wrap" style="--gap:var(--s-3);margin-top:var(--s-4);align-items:flex-end">
         <div class="field" style="flex:1 1 min(280px,100%)">
             <label class="field__label" for="q">{{ Text::get('admin.supporters.search') }}</label>

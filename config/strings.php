@@ -3458,6 +3458,15 @@ return [
             'empty' => 'No accounts.',
             'granted' => ':who is now a supporter.',
             'revoked' => ':who is no longer a supporter.',
+            'unmatched' => 'Ko-fi payments with no account',
+            'unmatched_lede' => 'Members whose Ko-fi email matched no account. Type the account email to connect them; that also gives the supporter time they have left.',
+            'kofi_email' => 'Ko-fi email',
+            'payments' => 'Payments',
+            'last_payment' => 'Last',
+            'account_email' => 'Account email',
+            'connect' => 'Connect',
+            'connected' => ':count payment(s) connected to :who.',
+            'no_such_account' => 'No account with the email :who.',
         ],
 
         'beta_keys' => [

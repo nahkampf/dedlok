@@ -474,6 +474,7 @@ Route::middleware(['auth', 'can:admin'])
 
         // Who is a supporter, and the button that makes somebody one.
         Route::get('supporters', [AdminSupporterController::class, 'index'])->name('supporters.index');
+        Route::post('supporters/kofi', [AdminSupporterController::class, 'connect'])->name('supporters.connect');
         Route::put('supporters/{user}', [AdminSupporterController::class, 'update'])->name('supporters.update');
 
         // ALPHA TESTING (config/features.php): the beta keys. 404 while the flag is off.

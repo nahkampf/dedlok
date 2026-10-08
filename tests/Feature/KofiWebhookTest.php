@@ -98,4 +98,47 @@ final class KofiWebhookTest extends TestCase
 
         $this->assertNull($user->fresh()->supporter_until);
     }
+
+    private function admin(): User
+    {
+        $user = User::factory()->create();
+        $user->forceFill(['is_admin' => true])->save();
+
+        return $user->fresh();
+    }
+
+    public function test_an_admin_connects_an_unmatched_payment_to_an_account(): void
+    {
+        $this->hook(['email' => 'other@example.com'])->assertOk();
+        $user = User::factory()->create(['email' => 'real@example.com']);
+
+        $this->actingAs($this->admin())->get(route('admin.supporters.index'))->assertSee('other@example.com');
+        $this->actingAs($this->admin())->post(route('admin.supporters.connect'), ['kofi_email' => 'other@example.com', 'account' => 'Real@Example.com'])
+            ->assertSessionHas('status');
+
+        $this->assertTrue($user->fresh()->isSupporter());
+        $this->assertDatabaseHas('kofi_payments', ['email' => 'other@example.com', 'user_id' => $user->id]);
+    }
+
+    public function test_connecting_an_old_payment_connects_it_but_grants_nothing(): void
+    {
+        $this->hook(['email' => 'other@example.com'])->assertOk();
+        $user = User::factory()->create(['email' => 'real@example.com']);
+
+        $this->travel(40)->days();
+        $this->actingAs($this->admin())->post(route('admin.supporters.connect'), ['kofi_email' => 'other@example.com', 'account' => 'real@example.com']);
+
+        $this->assertFalse($user->fresh()->isSupporter());
+        $this->assertDatabaseHas('kofi_payments', ['user_id' => $user->id]);
+    }
+
+    public function test_an_unknown_account_is_refused_and_a_player_cannot_connect(): void
+    {
+        $this->hook(['email' => 'other@example.com'])->assertOk();
+
+        $this->actingAs($this->admin())->post(route('admin.supporters.connect'), ['kofi_email' => 'other@example.com', 'account' => 'ghost@example.com'])
+            ->assertSessionHasErrors('account');
+        $this->actingAs(User::factory()->create())->post(route('admin.supporters.connect'), ['kofi_email' => 'other@example.com', 'account' => 'ghost@example.com'])
+            ->assertForbidden();
+    }
 }

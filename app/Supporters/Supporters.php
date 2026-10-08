@@ -7,6 +7,7 @@ namespace App\Supporters;
 use App\Models\User;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -36,7 +37,8 @@ final class Supporters
     {
         if ($user->isSupporter()) {
             if ($user->supporter_until !== null) {
-                $user->forceFill(['supporter_until' => $until])->save();
+                // Null stays for good; otherwise the later end wins, so an old payment connected late never shortens a newer one.
+                $user->forceFill(['supporter_until' => $until === null || $until->greaterThan($user->supporter_until) ? $until : $user->supporter_until])->save();
             }
 
             return false;
@@ -61,6 +63,32 @@ final class Supporters
         $user->forceFill(['is_supporter' => false, 'supporter_since' => null, 'supporter_until' => null])->save();
 
         return true;
+    }
+
+    /**
+     * Connects Ko-fi payments that matched no account to one, and grants what the newest of them still has left (a month from when it arrived).
+     *
+     * @return int how many payments were connected
+     */
+    public function connectKofi(string $kofiEmail, User $user): int
+    {
+        $rows = DB::table('kofi_payments')->whereNull('user_id')->where('email', strtolower(trim($kofiEmail)));
+        $latest = $rows->max('received_at');
+
+        if ($latest === null) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($rows, $latest, $user): int {
+            $count = $rows->update(['user_id' => $user->id]);
+            $until = Carbon::parse($latest)->addMonth();
+
+            if ($until->isFuture()) {
+                $this->grant($user, $until);
+            }
+
+            return $count;
+        });
     }
 
     /** Takes the flag from everybody whose time has run out. Reads already say they are not supporters; this keeps the row true. */
