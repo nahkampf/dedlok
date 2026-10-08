@@ -130,6 +130,21 @@ class InventoryItem extends Model
             ?? Text::get('inventory.files.unknown_encryption');
     }
 
+    /**
+     * A decrypted file: a component (or a Memory Dump), not a sealed dump. Components of one kind and origin are DRAWN as one
+     * slot in the stash (see `groupKey()`), though each stays its own row with its own file.
+     */
+    public function isComponent(): bool
+    {
+        return $this->extracted_file !== null && $this->item !== null && $this->item->slug !== ExtractedFile::SEALED_SLUG;
+    }
+
+    /** What the stash groups a row under: one key for rows that read the same ("Kernel Log (AuraOS)"), the row's own id for anything else. */
+    public function groupKey(): string
+    {
+        return $this->isComponent() ? 'c:'.$this->item_id.':'.$this->label() : 'r:'.$this->getKey();
+    }
+
     /** Where this file waits to be decrypted, if it does. Asked only of file rows. */
     public function decryptionEntry(): HasOne
     {

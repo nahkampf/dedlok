@@ -43,8 +43,14 @@
     @else
         <div @class(['panel__bd' => ! $bare, 'stack']) style="--gap:var(--s-3)">
             <div class="slots slots--fluid" style="--slot-min:56px">
+                {{-- Components of one kind and origin are one slot (`InventoryItem::groupKey()`); every other row is its own. The
+                     templates below are still one per ROW, which is what the group card's buttons open. --}}
+                @php($groups = $rows->groupBy(fn ($row) => $row->groupKey()))
                 @foreach ($rows as $entry)
                     @php($item = $entry->item)
+                    @php($group = $groups[$entry->groupKey()])
+                    @php($isHead = $group->first()->is($entry))
+                    @php($grouped = $group->count() > 1)
 
                     {{-- Where this row could be put away. Filtered in memory:
                          the controller loaded every container with its
@@ -60,9 +66,10 @@
                          opens the detail, so it has to be reachable by keyboard
                          and announce itself. The kit's .slot carries the button
                          reset that makes the two look identical. --}}
+                    @if (! $grouped || $isHead)
                     <button type="button"
                         class="slot slot--filled {{ $item->tierClass() }}"
-                        data-inspect="#detail-{{ $entry->id }}"
+                        data-inspect="#{{ $grouped ? 'group' : 'detail' }}-{{ $entry->id }}"
                         aria-haspopup="dialog"
                         {{-- No title attribute: the browser's own tooltip
                              would sit on top of the inspector saying half of
@@ -70,7 +77,9 @@
                         aria-label="{{ $entry->label() }} — {{ Text::get('inventory.inspect') }}">
                         <span class="slot__icon" aria-hidden="true">{{ $item->glyph() }}</span>
 
-                        @if ($entry->quantity > 1)
+                        @if ($grouped)
+                            <span class="slot__qty">{{ $group->count() }}</span>
+                        @elseif ($entry->quantity > 1)
                             <span class="slot__qty">{{ $entry->quantity }}</span>
                         @endif
 
@@ -83,6 +92,13 @@
                             </span>
                         @endif
                     </button>
+                    @endif
+
+                    @if ($grouped && $isHead)
+                        <template id="group-{{ $entry->id }}">
+                            <x-item-group :entries="$group" />
+                        </template>
+                    @endif
 
                     {{-- The detail, once. ui-kit.js clones it into the floating
                          inspector on hover and into a modal on click. --}}

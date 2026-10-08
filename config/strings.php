@@ -2898,6 +2898,11 @@ return [
         | App\Cyberspace\ExtractedFile — the same voice hardwareSummary() and
         | programSummary() already speak for a module or a program.
         */
+        'group' => [
+            'summary' => ':count files · :qb QB · worth :value ¤ in all',
+            'row' => 'Grade :grade · :qb QB · :value ¤',
+        ],
+
         'files' => [
             'size' => ':qb QB',
             'encrypted_with' => 'sealed with :skill',

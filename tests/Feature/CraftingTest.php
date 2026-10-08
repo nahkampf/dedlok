@@ -220,4 +220,31 @@ final class CraftingTest extends TestCase
         $this->actingAs($this->character->user)->get(route('deck.show', $this->character->equipped_deck_id))
             ->assertOk()->assertSee('DUMMY_TEMPORARY_PROGRAM')->assertSee('Design Original')->assertSee('Memory Dump (grade 1 or higher)');
     }
+
+    public function test_components_of_one_kind_and_origin_are_one_slot_in_the_stash_but_stay_separate_rows(): void
+    {
+        $this->file('kernel-log', 1, 'auroos');
+        $this->file('kernel-log', 3, 'auroos');
+        $this->file('kernel-log', 2, 'auroos');
+        $this->file('kernel-log', 2, 'prismv');
+        $this->file('cache-file');
+
+        $html = $this->actingAs($this->character->user)->get(route('inventory.index'))->assertOk()->getContent();
+
+        // Three AuraOS Kernel Logs are one slot (and so one group card); the Prism-V one and the Cache File are slots of their own.
+        $this->assertSame(1, substr_count($html, 'data-inspect="#group-'), 'one group slot');
+        $this->assertSame(2, substr_count($html, 'data-inspect="#detail-') - $this->nonComponentSlots($html), 'the Prism-V log and the Cache File keep a slot each');
+        $this->assertStringContainsString('Kernel Log (auroos)', $html);
+        $this->assertStringContainsString('3 files', $html);
+        $this->assertSame(5, InventoryItem::query()->where('character_id', $this->character->id)->whereNotNull('extracted_file')->count(), 'nothing was merged');
+    }
+
+    /** Slots that are not these five components (the deck and its modules are in the stash too). */
+    private function nonComponentSlots(string $html): int
+    {
+        $components = InventoryItem::query()->where('character_id', $this->character->id)->whereNotNull('extracted_file')->pluck('id')->all();
+        preg_match_all('/data-inspect="#detail-(\d+)"/', $html, $found);
+
+        return count(array_filter($found[1], fn (string $id): bool => ! in_array((int) $id, $components, true)));
+    }
 }
