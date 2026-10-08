@@ -52,5 +52,4 @@ Homestead.yaml
 /skills-lock.json
 
 # Pictures supporters upload for their own character (App\Characters\Avatar); the shipped default stays tracked.
-/public/images/characters/*
-!/public/images/characters/_default*.jpg
+/public/images/characters/avatars/

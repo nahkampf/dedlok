@@ -35,7 +35,7 @@ final class AvatarTest extends TestCase
 
     protected function tearDown(): void
     {
-        array_map('unlink', glob($this->dir.'/images/characters/*') ?: []);
+        array_map('unlink', array_merge(glob($this->dir.'/images/characters/avatars/*') ?: [], glob($this->dir.'/images/characters/*.jpg') ?: []));
         parent::tearDown();
     }
 
@@ -46,7 +46,7 @@ final class AvatarTest extends TestCase
 
     private function path(): string
     {
-        return $this->dir."/images/characters/{$this->character->id}.jpg";
+        return $this->dir."/images/characters/avatars/{$this->character->id}.jpg";
     }
 
     public function test_a_supporter_uploads_and_it_is_cropped_to_300_by_400(): void
@@ -56,7 +56,7 @@ final class AvatarTest extends TestCase
         $this->actingAs($this->user)->post(route('character.avatar'), ['avatar' => $this->upload(1000, 500)])->assertSessionHas('status');
 
         $this->assertSame([300, 400], array_slice(getimagesize($this->path()), 0, 2));
-        $this->actingAs($this->user)->get(route('character.index'))->assertSee("images/characters/{$this->character->id}.jpg");
+        $this->actingAs($this->user)->get(route('character.index'))->assertSee("images/characters/avatars/{$this->character->id}.jpg");
     }
 
     public function test_a_small_or_tall_picture_is_cropped_the_same_way(): void
@@ -93,5 +93,21 @@ final class AvatarTest extends TestCase
         $this->actingAs($this->user)->delete(route('character.avatar.remove'))->assertSessionHas('status');
 
         $this->assertFileDoesNotExist($this->path());
+    }
+
+    public function test_a_lapse_shows_the_default_but_keeps_the_file_and_paying_again_brings_it_back(): void
+    {
+        mkdir($this->dir.'/images/characters', 0775, true);
+        copy(base_path('public/images/characters/_default.jpg'), $this->dir.'/images/characters/_default.jpg');
+        $this->user->forceFill(['is_supporter' => true])->save();
+        $this->actingAs($this->user)->post(route('character.avatar'), ['avatar' => $this->upload(300, 400)]);
+
+        $this->user->forceFill(['supporter_until' => now()->subDay()])->save();
+        $page = $this->actingAs($this->user)->get(route('character.index'));
+        $page->assertDontSee("avatars/{$this->character->id}.jpg")->assertSee('characters/_default.jpg');
+        $this->assertFileExists($this->path());
+
+        $this->user->forceFill(['supporter_until' => now()->addMonth()])->save();
+        $this->actingAs($this->user)->get(route('character.index'))->assertSee("avatars/{$this->character->id}.jpg");
     }
 }

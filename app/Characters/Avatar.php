@@ -9,8 +9,9 @@ use Illuminate\Http\UploadedFile;
 use RuntimeException;
 
 /**
- * THE ONLY WRITER of a character's own picture, `public/images/characters/<id>.jpg` — the very file `App\Support\Image` already
- * looks for, so nothing else changes for it to appear.
+ * THE ONLY WRITER of a character's own picture, `public/images/characters/avatars/<id>.jpg`, in a folder of its own so the sheet can
+ * choose it (`Image` kind `characters/avatars`, walking back up to the default) only while the owner is a supporter. The file
+ * is never deleted for a lapse: pay again and it is simply shown again.
  *
  * Whatever is uploaded is decoded, centre-cropped to 3:4 and resampled to 300x400, then written as a fresh JPEG: the original
  * bytes (and anything hidden in them, EXIF included) are never kept. Transparency is flattened onto the kit's dark background.
@@ -27,7 +28,7 @@ final class Avatar
 
     public static function path(Character $character): string
     {
-        return public_path("images/characters/{$character->id}.jpg");
+        return public_path("images/characters/avatars/{$character->id}.jpg");
     }
 
     public static function exists(Character $character): bool

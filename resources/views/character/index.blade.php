@@ -15,7 +15,7 @@
              _default.jpg behind it. --}}
         <div class="row row--wrap" style="--gap:var(--s-5);align-items:flex-start">
             <div class="stack" style="--gap:var(--s-3);width:min(300px,100%)">
-                <x-entity-image kind="characters" :id="$character->id" :alt="$character->handle" portrait />
+                <x-entity-image kind="{{ auth()->user()->isSupporter() ? 'characters/avatars' : 'characters' }}" :id="$character->id" :alt="$character->handle" portrait />
 
                 @if (auth()->user()->isSupporter())
                     <form method="POST" action="{{ route('character.avatar') }}" enctype="multipart/form-data" class="stack" style="--gap:var(--s-2)">
