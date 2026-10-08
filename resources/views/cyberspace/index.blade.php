@@ -2,6 +2,8 @@
 @use('App\Cyberspace\BookmarkKind')
 @extends('layouts.app')
 @section('title', Text::get('cyberspace.map.title'))
+{{-- Room for the map and its boxes side by side on a big screen: see layouts/app. --}}
+@section('wide', '1')
 
 @section('content')
     <h1>{{ Text::get('cyberspace.map.title') }}</h1>
@@ -121,7 +123,14 @@
 
     {{-- The map. One form around the whole grid: every step is the same POST
          with a different target, so 400 cells do not need 400 forms. --}}
-    <form method="POST" action="{{ route('cyberspace.step') }}" style="margin-top:var(--s-4)">
+    {{-- The map and the boxes that act on it (jump, going in, thresholds, routing chain, bookmarks). On a wide
+         screen the boxes stand to the RIGHT of the map; narrower, they sit under it as they always did. The width
+         that decides is the room this block actually has, not the window's (`.map-split`, a container query),
+         because the page's own column and the rail change it. --}}
+    <div class="map-split">
+    <div class="map-split__body">
+    <div class="map-main">
+    <form method="POST" action="{{ route('cyberspace.step') }}">
         @csrf
     <div class="gridmap-frame">
         <div class="gridmap" style="--span:{{ $map->span() }}">
@@ -218,7 +227,9 @@
 
     {{-- Getting somewhere without walking: an address anyone can hand you, and
          the places you have saved. --}}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:var(--s-4);margin-top:var(--s-5)">
+    </div>
+
+    <div class="map-side">
         <section class="panel panel--snug">
             <div class="panel__hd"><h2>{{ Text::get('cyberspace.map.jump') }}</h2></div>
 
@@ -485,6 +496,7 @@
             @endforelse
         </section>
     </div>
-
+    </div>
+    </div>
 
 @endsection

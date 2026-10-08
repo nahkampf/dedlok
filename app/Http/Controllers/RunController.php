@@ -141,6 +141,8 @@ class RunController extends Controller
                 ->pluck('id')
                 ->all(),
             'totals' => $totals,
+            // Standing below the SI mark they left for themselves: the first turn pulls them out whatever they press.
+            'autoEgress' => app(Simulator::class)->siBelowThreshold($character),
             'ready' => $totals?->isReady() ?? false,
             // A deck's tolerance is its weakest part, not the sum of its
             // parts, so this is asked separately from the totals.
@@ -312,8 +314,12 @@ class RunController extends Controller
             $simulator->resolveEnding($character, $run, $result->ending);
         }
 
+        // WHAT THE FINAL TURN HAS TO SAY, ahead of the ending: the run screen is gone by now, so a line the game wrote to explain
+        // the ending (an auto-egress naming its threshold) would otherwise be read by nobody.
+        $notices = array_column(array_filter($result->log, static fn (array $line): bool => ! empty($line['notice'])), 'text');
+
         return redirect()->route('cyberspace.index')
-            ->with($result->ending->isBad() ? 'error' : 'status', $result->ending->message());
+            ->with($result->ending->isBad() ? 'error' : 'status', implode(' ', [...$notices, $result->ending->message()]));
     }
 
     /**

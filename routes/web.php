@@ -17,6 +17,7 @@ use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterCreationController;
 use App\Http\Controllers\CityController;
+use App\Http\Controllers\CurrentProcessesController;
 use App\Http\Controllers\CyberspaceController;
 use App\Http\Controllers\DeckController;
 use App\Http\Controllers\DecryptionController;
@@ -173,6 +174,8 @@ Route::middleware('auth')->group(function () {
      * being asked.
      */
     // The Running modal's list of what could be started, fetched when it opens (it is in every page's layout).
+    // The top bar's Current processes modal: everything in flight for the character, fetched when it opens.
+    Route::get('/processes/current', [CurrentProcessesController::class, 'index'])->name('processes.current');
     Route::get('/programs/startable', [InventoryController::class, 'startable'])->name('programs.startable');
     Route::post('/inventory/{entry}/run', [InventoryController::class, 'run'])
         ->name('inventory.run');

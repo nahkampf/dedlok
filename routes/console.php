@@ -148,7 +148,7 @@ Schedule::command('standing:drift --quiet-when-idle')
  * housekeeping hour may as well stay one hour.
  */
 Schedule::command('drugs:metabolise --quiet-when-idle')
-    ->dailyAt('05:20')
+    ->cron((string) config('cadence.drugs_metabolise'))
     ->withoutOverlapping();
 
 /*
@@ -164,7 +164,7 @@ Schedule::command('drugs:withdraw --quiet-when-idle')
     ->withoutOverlapping();
 
 Schedule::command('market:seed')
-    ->cron('0 */8 * * *')
+    ->cron((string) config('cadence.market_seed'))
     ->withoutOverlapping();
 
 /*

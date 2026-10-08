@@ -576,7 +576,7 @@ consequences and taking what a machine holds all roll.
   takes, and for the same reason.
 - **Two files never merge**, even though the item is unstackable anyway — a summed quantity
   would destroy information.
-- **`RunEnding::Completed`'s trigger is `runs.extracted`**, checked in BOTH doors to leaving
+- **`RunEnding::Completed`'s trigger is `runs.extracted` OR `runs.backdoored`** (a run that succeeded always ends as Done; a burn ends its own as Completed), checked in BOTH doors to leaving
   so they cannot disagree.
 - **One line covers every reason a core touch can fail** — unspeakable OS, wrong purpose,
   empty machine. The UI only offers Extract on an extraction run, so the purpose check

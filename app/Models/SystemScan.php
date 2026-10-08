@@ -52,6 +52,7 @@ class SystemScan extends Model
             'scanned_at' => 'immutable_datetime',
             'expires_at' => 'immutable_datetime',
             'used_at' => 'immutable_datetime',
+            'filed_at' => 'immutable_datetime',
         ];
     }
 

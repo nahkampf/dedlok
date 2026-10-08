@@ -792,6 +792,11 @@ final class FightTest extends TestCase
 
         $this->assertSame(RunEnding::Egress, $result->ending, 'it left, though Cut was asked for');
         $this->assertNull($this->character->fresh()->current_run_id);
+        $this->assertContains(
+            Text::get('cyberspace.run.log.threshold_trace', ['at' => $this->character->egress_trace_at]),
+            array_column($run->fresh()->log, 'text'),
+            'and the log says it was the trace mark that did it',
+        );
     }
 
     /**
@@ -825,6 +830,64 @@ final class FightTest extends TestCase
         $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
 
         $this->assertSame(RunEnding::Egress, $result->ending);
+    }
+
+    /**
+     * THE RUN KEEPS THE ACCOUNT OF THE TURN THAT ENDED IT. A threshold that pulls you out before your action happens used to
+     * leave a run that said only that it had egressed — a player who pressed Install saw no backdoor and no reason why.
+     */
+    public function test_a_threshold_egress_is_written_into_the_runs_log(): void
+    {
+        $this->machine(1);
+        $run = $this->begin();
+
+        $max = $this->character->maximumFor('current_synaptic_integrity');
+        $this->character->forceFill(['current_synaptic_integrity' => (int) floor($max * 0.1)])->save();
+        $this->everyCheckPasses();
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Install);
+
+        $this->assertSame(RunEnding::Egress, $result->ending);
+
+        $texts = array_column($run->fresh()->log, 'text');
+        $this->assertContains(Text::get('cyberspace.run.log.threshold_si', ['at' => $this->character->egress_si_at]), $texts, 'why the action never happened');
+        $this->assertContains(Text::get('cyberspace.run.log.egress'), $texts);
+    }
+
+    /**
+     * THE PLAYER IS SENT TO THE MAP the moment the run ends, so the explanation has to travel with them: the notice rides in the
+     * flash that the map shows, ahead of the ending itself.
+     */
+    public function test_an_auto_egress_is_explained_on_the_page_the_player_lands_on(): void
+    {
+        $this->machine(1);
+        $this->begin();
+
+        $max = $this->character->maximumFor('current_synaptic_integrity');
+        $this->character->forceFill(['current_synaptic_integrity' => (int) floor($max * 0.1)])->save();
+        $this->everyCheckPasses();
+
+        $this->actingAs($this->character->fresh()->user)
+            ->post(route('run.act'), ['action' => RunAction::Install->value])
+            ->assertRedirect(route('cyberspace.index'))
+            ->assertSessionHas('status', fn (string $status): bool => str_contains($status, 'Auto-egress: your Synaptic Integrity fell below your threshold')
+                && str_contains($status, Text::get('cyberspace.run.ended.egress')));
+    }
+
+    /** The briefing says so BEFORE the door when the first turn would pull you out, and stays quiet when it would not. */
+    public function test_the_briefing_warns_when_the_first_turn_would_auto_egress(): void
+    {
+        $this->machine(1);
+        $max = $this->character->maximumFor('current_synaptic_integrity');
+        $this->character->forceFill(['egress_si_at' => 20, 'current_synaptic_integrity' => $max])->save();
+
+        $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))
+            ->assertOk()->assertDontSee('will auto-egress');
+
+        $this->character->forceFill(['current_synaptic_integrity' => (int) floor($max * 0.1)])->save();
+
+        $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))
+            ->assertOk()->assertSee('The first turn will auto-egress before anything you press happens.');
     }
 
     /** Zero turns one off, without needing a second column to say whether it is on. */

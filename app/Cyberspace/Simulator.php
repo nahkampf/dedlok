@@ -137,8 +137,14 @@ final readonly class Simulator
              * It is also what makes `auto-run` possible at all, since a player
              * who hands the whole run to their policy is handing it to this.
              */
-            if ($this->thresholdBreached($character, $run)) {
-                $log[] = $this->line('cyberspace.run.log.threshold', tone: 'warn');
+            if ($breached = $this->breachedThreshold($character, $run)) {
+                // SAYS WHICH ONE, and that the action asked for did not happen: a player who pressed Install and found
+                // themselves outside with no backdoor needs the reason in the run's own account.
+                // `notice` marks a line the screen must still say when the run ends and the page moves on to the map:
+                // the log is kept, but nobody reads a log they were sent away from.
+                $log[] = $this->line("cyberspace.run.log.threshold_{$breached}", [
+                    'at' => $breached === 'trace' ? (int) $character->egress_trace_at : (int) $character->egress_si_at,
+                ], 'warn') + ['notice' => true];
                 $action = RunAction::Egress;
             }
 
@@ -167,12 +173,16 @@ final readonly class Simulator
                 )->passed) {
                     $log[] = $this->line('cyberspace.run.log.egress');
 
-                    // COMPLETED IF THEY GOT WHAT THEY CAME FOR, egress
-                    // otherwise — "they did what they came to do" is only true
-                    // once extraction has actually taken something.
-                    $ending = $run->extracted ? RunEnding::Completed : RunEnding::Egress;
+                    // COMPLETED IF THEY GOT WHAT THEY CAME FOR, egress otherwise — "they did what they came to do" is only
+                    // true once extraction has taken something or a backdoor has landed (a planted one included). A burn
+                    // ends its own run as Completed.
+                    $ending = $run->extracted || $run->backdoored ? RunEnding::Completed : RunEnding::Egress;
 
                     $run->save();
+                    // The turn that ENDS the run is part of its account too: without it a threshold that pulled the
+                    // player out at once ("You hit your set threshold, and pull out.") left a run that said only
+                    // that it had egressed, and nothing to say why the action they pressed never happened.
+                    $this->appendLog($run, $log);
                     $this->runs->end($character, $run, $ending);
 
                     return TurnResult::resolved($run, $log, $ending);
@@ -207,6 +217,7 @@ final readonly class Simulator
                  */
                 if ($burned) {
                     $run->save();
+                    $this->appendLog($run, $log);
                     $this->runs->end($character, $run, RunEnding::Completed);
 
                     return TurnResult::resolved($run, $log, RunEnding::Completed);
@@ -312,12 +323,27 @@ final readonly class Simulator
      */
     public function thresholdBreached(Character $character, Run $run): bool
     {
+        return $this->breachedThreshold($character, $run) !== null;
+    }
+
+    /** Which standing instruction has come due: 'trace', 'si', or null. THE one test of it. */
+    public function breachedThreshold(Character $character, Run $run): ?string
+    {
         $trace = (int) $character->egress_trace_at;
 
         if ($trace > 0 && $run->trace >= $trace) {
-            return true;
+            return 'trace';
         }
 
+        return $this->siBelowThreshold($character) ? 'si' : null;
+    }
+
+    /**
+     * Is the character's Synaptic Integrity already below their standing mark? BELOW it, not on it. THE one test of it:
+     * the run asks it every turn and the briefing asks it before the door, so the warning is the very rule the game acts on.
+     */
+    public function siBelowThreshold(Character $character): bool
+    {
         $si = (int) $character->egress_si_at;
 
         if ($si <= 0) {
@@ -326,8 +352,7 @@ final readonly class Simulator
 
         $max = $character->maximumFor('current_synaptic_integrity');
 
-        return $max > 0
-            && ((int) $character->current_synaptic_integrity / $max) * 100 < $si;
+        return $max > 0 && ((int) $character->current_synaptic_integrity / $max) * 100 < $si;
     }
 
     /**

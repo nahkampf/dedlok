@@ -11,17 +11,13 @@ In this order. Each is small enough to build alone.
 
 1. ~~**The "scan completed" message carries the address of the system scanned.**~~ Done 2026-10-08: the sentence names it and the
    message's `details['address']` draws the copy-an-address button above the facts. Older messages are not backfilled.
-2. **Wide screens put the map's side boxes to the right of it.** The *Threshold*, *Jump*, *Interact* (and the rest of that column:
-   Routing chain, Bookmarks) render below the map; when the screen is wide enough they should sit to its right. Kit layout, not new
-   components: a modifier class on the map screen's container, with the narrow case unchanged and audited at 320/360px as usual
-   (`board-split` on the deck screen is the shape to copy).
-3. **A "Current processes" item in the top bar, beside Running programs, opening a modal.** Everything in flight for the
-   character: a scan, a decryption (`decryption_queue`), the skill being trained (`training_queue`), any drug in effect
-   (`character_doses`), and so on, each with a progress bar (`.meter`, `--v`) that shows the time left on hover. Width is the whole
-   constraint on the bar (it must pay for itself at 320px, like the dials); the modal is the screen. Fetch it when it opens, as the
-   Running modal's *Could run* list does, rather than drawing it in the layout, because working it out queries a lot and the layout
-   is on every page. Each source should say how it knows its end (a decryption is a cycle in a queue with no fixed end: show the
-   current cycle and the expected time from `DecryptionQueue::odds()`).
+2. ~~**Wide screens put the map's side boxes to the right of it.**~~ Done 2026-10-08: `.map-split` is a container, and at 1000px of its own
+   width the boxes become a 320px column beside the map (`.map-side`); below that they sit under it as before. The cyberspace page
+   asks for a wider page column (`@section('wide')` in `layouts/app`, 1500px instead of 1100px) so there is room. Read, not looked at: no browser here.
+3. ~~**A "Current processes" item in the top bar, beside Running programs, opening a modal.**~~ Done 2026-10-08: `App\Characters\CurrentProcesses`,
+   the `processes.current` fragment, the chip (no count) and modal in `layouts/app`. Scans, a trip / exploration / operation, decryption (the
+   current cycle, and a count of files waiting), the skill being trained, and drugs in effect. Withdrawals, accepted jobs' deadlines and a *Clocks* group (market restock, SI mend, trained regeneration) were added the same day.
+   Not in it, by decision: lockdowns / relocations and shop restocks. Read, not looked at: no browser here.
 
 ---
 

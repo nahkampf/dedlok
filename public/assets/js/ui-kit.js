@@ -270,6 +270,19 @@
       .catch(() => { box.textContent = "Could not load the list."; });
   });
 
+  /* A modal body that is fetched each time it opens: <div data-fragment="URL"> inside the <dialog> that the opener
+     [data-open="#id"] names. Never older than the click. */
+  document.addEventListener("click", (e) => {
+    const opener = e.target.closest("[data-open]");
+    if (!opener) return;
+    const box = document.querySelector(opener.dataset.open + " [data-fragment]");
+    if (!box) return;
+    fetch(box.dataset.fragment, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+      .then((r) => (r.ok ? r.text() : Promise.reject()))
+      .then((html) => { box.innerHTML = html; })
+      .catch(() => { box.textContent = "Could not load the list."; });
+  });
+
   /* A sortable list that saves itself: <div data-queue-sort="URL"> of [data-queue-row="ID"], each with a
      [data-queue-handle]. Pointer events rather than HTML5 drag, which a phone does not do. Dragging moves
      the row in the DOM as you go; letting go POSTs the whole order as ids. A refusal (422) snaps the rows
@@ -1081,6 +1094,8 @@
         .forEach((el) => { el.hidden = done; });
       dlg.querySelectorAll("[data-reading-export], [data-reading-done]")
         .forEach((el) => { el.hidden = !done; });
+      // A read that filed itself has nothing left to save.
+      dlg.querySelectorAll("[data-reading-export]").forEach((el) => { el.hidden = !done || !!data.filed; });
 
       // Nothing left to watch: the read stopped, and the dialog stays open
       // showing what it found — it is the polling that stops.

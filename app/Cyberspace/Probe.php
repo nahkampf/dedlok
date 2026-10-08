@@ -685,6 +685,11 @@ final class Probe
 
         DB::transaction(static fn () => $scan->save());
 
+        // The read files itself. No room on the deck is not an error: the press on the dialog remains.
+        if ($found !== [] && $scan->isComplete()) {
+            app(ScanExporter::class)->export($character, $system->address);
+        }
+
         return ProbeResult::scanned($scan, $found, $rolls);
     }
 

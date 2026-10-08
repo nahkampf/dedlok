@@ -1092,6 +1092,7 @@ return [
             'setup' => [
                 'heading' => 'Interact',
                 'title' => 'Before you go in',
+                'auto_egress' => 'Your Synaptic Integrity is :si%, below the :at% you set to pull out. The first turn will auto-egress before anything you press happens. Restore your SI, or lower the threshold from the map, before you go in.',
                 'open' => 'Plan a run',
                 'purpose' => 'End goal of run',
                 'kind' => 'What to leave behind',
@@ -1240,7 +1241,8 @@ return [
                 'ice_silent' => 'Whatever was fighting you is no longer there.',
                 'traced' => 'The trace reaches you. Somebody knows who was in here.',
                 'trace_held' => 'The route holds it up another turn.',
-                'threshold' => 'You hit your set threshold, and pull out.',
+                'threshold_trace' => 'Auto-egress: the trace reached your threshold of :at%, so you try to pull out instead of doing anything else.',
+                'threshold_si' => 'Auto-egress: your Synaptic Integrity fell below your threshold of :at%, so you try to pull out instead of doing anything else.',
 
                 /*
                 | ARRIVING, and whether anything looked up. Said first and said
@@ -1513,10 +1515,11 @@ return [
             | because what it costs is written on it.
             */
             'export' => 'Save to stash',
-            'export_hint' => 'Files this scan into your data stash. It leaves your own map — a file IS the read, not a copy of it.',
-            'exported' => 'Saved as :file. It is in your data stash, and this machine is no longer scanned.',
+            'export_hint' => 'Files this scan into your data stash. A finished read files itself when there is room; this is for when there was not.',
+            'exported' => 'Saved as :file. It is in your data stash.',
             'export_gone' => 'That file is gone. It was spent, or it went stale.',
             'export_incomplete' => 'An incomplete file is not intel. Finish the read first.',
+            'export_filed' => 'This read already made its file.',
             'export_no_storage' => 'Your deck has no room for the file. Make room in its storage first.',
 
             /*
@@ -2551,6 +2554,37 @@ return [
     | An entity's front desk. Reached by standing on it, and the only thing
     | that happens on one: nothing may be run against, scanned or burned here.
     */
+    'processes' => [
+        'title' => 'Current processes',
+        'loading' => 'Loading…',
+        'none' => 'Nothing is going on.',
+        'left' => ':time left',
+        'finishing' => 'About to finish',
+        'scan' => 'Scanning :address',
+        'scan_pass' => 'Pass :pass',
+        'travel' => 'Travelling',
+        'explore' => 'Exploring',
+        'surgery' => 'On the table',
+        'travel_pass' => 'Stage :step of :of',
+        'decryption' => 'Decrypting :label',
+        'decryption_cycle' => 'This cycle: :percent% to break',
+        'decryption_waiting' => [
+            'zero' => '',
+            'one' => '1 file waiting to be decrypted',
+            'many' => ':count files waiting to be decrypted',
+        ],
+        'training' => 'Training :skill, level :level',
+        'dose' => ':item in your system',
+        'withdrawal' => 'Withdrawal: :family',
+        'withdrawal_nights' => ['zero' => '', 'one' => 'Fades after tonight, or when you take another', 'many' => 'Fades in :count nights, or when you take another'],
+        'mission' => ':action for :entity',
+        'timers' => 'Clocks',
+        'restock' => 'The market restocks',
+        'mend' => 'Your next point of Synaptic Integrity',
+        'si_regen' => 'Regenerating :rate Synaptic Integrity a minute',
+        'hp_regen' => 'Regenerating :rate hit points an hour',
+    ],
+
     'decryption' => [
         'heading' => 'Decryption',
         'action' => 'Decrypt',

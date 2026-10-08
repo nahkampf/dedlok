@@ -240,6 +240,14 @@
                     <span class="sr-only">{{ Text::get('creds.name') }}</span>
                 </span>
 
+                {{-- Everything in flight (a scan, a decryption, training, a drug, a trip), in a modal fetched when it opens.
+                     No count: working one out costs queries the bar is not worth. U+25CD is proved in the map's key. --}}
+                <button type="button" class="chip-stat" data-open="#current-processes" aria-haspopup="dialog"
+                        title="{{ Text::get('processes.title') }}">
+                    <span class="chip-stat__glyph" aria-hidden="true">&#9677;</span>
+                    <span class="sr-only">{{ Text::get('processes.title') }}</span>
+                </button>
+
                 {{-- What is running, as a count. The number is all the bar has
                      room to say and all it needs to; the modal says the rest.
                      U+25B6 is already proved in this stack — see the rail. --}}
@@ -274,13 +282,25 @@
             @endif
         </div>
 
-        <main style="max-width:1100px;margin:0 auto;padding:var(--s-5) var(--s-4) var(--s-8)">
+        <main style="max-width:{{ $__env->hasSection('wide') ? '1500px' : '1100px' }};margin:0 auto;padding:var(--s-5) var(--s-4) var(--s-8)">
             @yield('content')
         </main>
     </div>
 </div>
 
 @if ($hud)
+    {{-- CURRENT PROCESSES. A readout, not a control surface: the list is the fragment `processes.current`, fetched
+         each time this opens (`ui-kit.js`, [data-fragment]) so it is never older than the click. --}}
+    <dialog id="current-processes" class="modal">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('processes.title') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+        </div>
+        <div class="panel__bd" data-fragment="{{ route('processes.current') }}">
+            <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('processes.loading') }}</p>
+        </div>
+    </dialog>
+
     {{-- What is running, behind the count in the bar.
 
          Rendered out here rather than inside the topbar: a <dialog> goes to the

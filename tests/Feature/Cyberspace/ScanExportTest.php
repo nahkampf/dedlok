@@ -60,11 +60,11 @@ final class ScanExportTest extends TestCase
         $this->assertArrayNotHasKey('x', $row->scan_file);
         $this->assertArrayNotHasKey('y', $row->scan_file);
 
-        // Selling what you know costs you knowing it.
-        $this->assertNotNull($scan->fresh()->used_at);
-        $this->assertNull(
+        // Filing a read no longer costs you knowing it.
+        $this->assertNotNull($scan->fresh()->filed_at);
+        $this->assertNotNull(
             SystemScan::query()->where('character_id', $this->character->id)->live()->first(),
-            'the machine stops being scanned the moment its file is made',
+            'the machine stays scanned once its file is made',
         );
     }
 
@@ -77,7 +77,7 @@ final class ScanExportTest extends TestCase
 
         $this->assertInstanceOf(InventoryItem::class, $exporter->export($this->character, $system->address));
         $this->assertSame(
-            ScanExportRefusal::Gone,
+            ScanExportRefusal::Filed,
             $exporter->export($this->character, $system->address),
             'a second export off one pass would be the same intel sold twice',
         );
