@@ -154,7 +154,7 @@ final class ExtractorTest extends TestCase
 
         $file = $row->extractedFile();
         $this->assertSame('Payroll ledger', $file->label);
-        $this->assertSame(40, $file->sizeQb);
+        $this->assertEquals(40, $file->sizeQb);
         $this->assertSame($skill->id, $file->encryptionSkillId);
         $this->assertSame(300, $file->valueSealed);
         $this->assertSame(900, $file->valueBroken);
@@ -200,7 +200,7 @@ final class ExtractorTest extends TestCase
             'size_qb' => 60, 'value_sealed' => 10, 'value_broken' => 20,
         ]);
 
-        $this->assertSame(100, $this->extractor()->totalFileQb('DEADBEEF'));
+        $this->assertEquals(100, $this->extractor()->totalFileQb('DEADBEEF'));
         $this->assertSame(2, SystemContent::query()->where('kind', 'data')->count(), 'reading the size takes nothing');
     }
 
@@ -208,7 +208,7 @@ final class ExtractorTest extends TestCase
     {
         $this->system();
 
-        $this->assertSame(0, $this->extractor()->totalFileQb('DEADBEEF'));
+        $this->assertEquals(0, $this->extractor()->totalFileQb('DEADBEEF'));
     }
 
     /** Creds and items come out without touching a file sitting alongside them. */

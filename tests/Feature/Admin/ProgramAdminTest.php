@@ -98,6 +98,20 @@ final class ProgramAdminTest extends TestCase
             ->assertSessionHasErrors('program_decrypts.0');
     }
 
+    public function test_a_program_may_cost_a_tenth_but_not_a_hundredth(): void
+    {
+        $this->actingAs($this->admin())
+            ->post(route('admin.items.store'), $this->payload(['slug' => 'light', 'memory_cost' => '0.4', 'qflops_cost' => '0.5', 'storage_size' => '1.5']))
+            ->assertSessionHasNoErrors();
+
+        $program = Item::where('slug', 'light')->firstOrFail()->program;
+        $this->assertSame([0.5, 0.4, 1.5], [$program->qflops_cost, $program->memory_cost, $program->storage_size]);
+
+        $this->actingAs($this->admin())
+            ->post(route('admin.items.store'), $this->payload(['slug' => 'finer', 'memory_cost' => '0.45']))
+            ->assertSessionHasErrors('memory_cost');
+    }
+
     public function test_an_item_becomes_a_program_by_being_given_a_kind(): void
     {
         $this->actingAs($this->admin())
@@ -108,9 +122,9 @@ final class ProgramAdminTest extends TestCase
 
         $this->assertNotNull($program);
         $this->assertSame(ProgramKind::Evasion, $program->kind);
-        $this->assertSame(12, $program->qflops_cost);
-        $this->assertSame(8, $program->memory_cost);
-        $this->assertSame(4, $program->storage_size);
+        $this->assertEquals(12, $program->qflops_cost);
+        $this->assertEquals(8, $program->memory_cost);
+        $this->assertEquals(4, $program->storage_size);
         $this->assertFalse($program->background_process);
         $this->assertNull($program->modifiers, 'a program that only gates modifies nothing');
     }
@@ -256,7 +270,7 @@ final class ProgramAdminTest extends TestCase
 
         $this->assertSame(1, Program::query()->where('item_id', $item->id)->count(), 'replaced, not added to');
         $this->assertSame(ProgramKind::Decryptor, $item->fresh()->program->kind);
-        $this->assertSame(30, $item->fresh()->program->qflops_cost);
+        $this->assertEquals(30, $item->fresh()->program->qflops_cost);
         $this->assertTrue($item->fresh()->program->background_process);
     }
 

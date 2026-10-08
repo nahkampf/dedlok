@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Storage, memory and compute are carried to one decimal place** (migration `2026_10_08_180000_storage_memory_and_compute_have_a_decimal`):
+  program costs, item size and capacity, deck onboard storage, hardware measures, file sizes and a transfer's remaining QB. `App\Support\Qb` rounds
+  totals and compares in whole tenths, so a deck exactly full is full and not over; the resolved deck stats round to a tenth; the item editor takes
+  one decimal place (`step="0.1"`) and refuses two. Existing values convert exactly. First step of Code Crafting (`CRAFTING.md`).
+
 ## [0.44.0] — 2026-10-08
 
 Scan files make themselves, a Current processes modal, auto-egress explained.

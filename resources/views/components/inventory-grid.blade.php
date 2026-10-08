@@ -53,7 +53,7 @@
                     @php($fits = $containers->filter(
                         fn ($c) => $c->id !== $entry->id
                             && $c->item->canHold($item)
-                            && $c->remainingCapacity() >= $item->size
+                            && \App\Support\Qb::tenths($c->remainingCapacity()) >= \App\Support\Qb::tenths($item->size)
                     ))
 
                     {{-- A <button>, not a <div>: the slot is the control that

@@ -11,6 +11,7 @@ use App\Models\InventoryItem;
 use App\Models\Program;
 use App\Stats\Resolver;
 use App\Stats\Sources\RunningPrograms;
+use App\Support\Qb;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Config;
@@ -138,11 +139,11 @@ final class ProgramRunner
 
         $spent = $shared['spent'] ?? $this->spentOn($character, (int) $deck->id);
 
-        if ($totals->qflops < $spent['qflops'] + $program->qflops_cost) {
+        if (Qb::tenths($totals->qflops) < Qb::tenths($spent['qflops']) + Qb::tenths($program->qflops_cost)) {
             return ProcessRefusal::NotEnoughCompute;
         }
 
-        if ($totals->quantabits < $spent['memory'] + $program->memory_cost) {
+        if (Qb::tenths($totals->quantabits) < Qb::tenths($spent['memory']) + Qb::tenths($program->memory_cost)) {
             return ProcessRefusal::NotEnoughMemory;
         }
 
@@ -292,12 +293,12 @@ final class ProgramRunner
     /**
      * What the processes on a deck are already spending.
      *
-     * @return array{qflops: int, memory: int}
+     * @return array{qflops: float, memory: float}
      */
     public function spentOn(Character $character, int $deckId): array
     {
-        $qflops = 0;
-        $memory = 0;
+        $qflops = 0.0;
+        $memory = 0.0;
 
         foreach (RunningPrograms::processesOn($character, $deckId) as $row) {
             $program = $row->item?->program;
@@ -310,7 +311,7 @@ final class ProgramRunner
             $memory += $program->memory_cost;
         }
 
-        return ['qflops' => $qflops, 'memory' => $memory];
+        return ['qflops' => Qb::of($qflops), 'memory' => Qb::of($memory)];
     }
 
     /**

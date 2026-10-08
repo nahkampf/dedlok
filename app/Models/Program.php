@@ -30,9 +30,9 @@ class Program extends Model
     {
         return [
             'kind' => ProgramKind::class,
-            'qflops_cost' => 'integer',
-            'memory_cost' => 'integer',
-            'storage_size' => 'integer',
+            'qflops_cost' => 'float',
+            'memory_cost' => 'float',
+            'storage_size' => 'float',
             'background_process' => 'boolean',
             'multithreaded' => 'boolean',
             'modifiers' => 'array',

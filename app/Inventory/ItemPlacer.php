@@ -7,6 +7,7 @@ namespace App\Inventory;
 use App\Decks\Storage;
 use App\Models\Character;
 use App\Models\InventoryItem;
+use App\Support\Qb;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -76,13 +77,13 @@ final class ItemPlacer
 
             $target->load('children.item');
 
-            $needed = (int) $locked->item->size * $locked->quantity;
+            $needed = Qb::of((float) $locked->item->size * $locked->quantity);
 
             // Room already taken by this row does not count against it.
-            $free = $target->remainingCapacity()
-                + ($locked->parent_id === $target->getKey() ? $needed : 0);
+            $free = Qb::of($target->remainingCapacity()
+                + ($locked->parent_id === $target->getKey() ? $needed : 0));
 
-            if ($needed > $free) {
+            if (Qb::tenths($needed) > Qb::tenths($free)) {
                 return PlacementResult::refused(PlacementRefusal::NoRoom);
             }
 

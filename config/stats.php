@@ -86,21 +86,21 @@ return [
          *
          * A floor of 0 on all five: a debuff may take a measure to nothing but
          * never below it, and negative compute is not a state the game has.
-         * Rounding down for the same reason max HP does — these are whole
-         * units of hardware.
+         * Carried to one decimal place (see App\Support\Qb): a
+         * lightweight script costs a fraction of a unit.
          */
         'deck_qflops' => [
             'tags' => ['deck', 'compute'],
             'min' => 0,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'tenth',
         ],
 
         'deck_quantabits' => [
             'tags' => ['deck', 'memory'],
             'min' => 0,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'tenth',
         ],
 
         /*
@@ -565,7 +565,7 @@ return [
             'tags' => ['deck', 'storage'],
             'min' => 0,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'tenth',
         ],
 
         'deck_bandwidth' => [

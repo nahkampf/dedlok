@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Cyberspace;
 
 use App\Models\SystemContent;
+use App\Support\Qb;
 
 /**
  * What a file was, before it became a generic "Encrypted Data Dump" row.
@@ -27,7 +28,7 @@ final readonly class ExtractedFile
 
     public function __construct(
         public string $label,
-        public int $sizeQb,
+        public float $sizeQb,
         public ?int $encryptionSkillId,
         public int $valueSealed,
         public int $valueBroken,
@@ -39,7 +40,7 @@ final readonly class ExtractedFile
     {
         return new self(
             label: (string) $content->label,
-            sizeQb: (int) $content->size_qb,
+            sizeQb: Qb::of($content->size_qb),
             encryptionSkillId: $content->encryption_skill_id,
             valueSealed: (int) $content->value_sealed,
             valueBroken: (int) $content->value_broken,
@@ -69,7 +70,7 @@ final readonly class ExtractedFile
 
         return new self(
             label: (string) $stored['label'],
-            sizeQb: (int) ($stored['size_qb'] ?? 0),
+            sizeQb: Qb::of($stored['size_qb'] ?? 0),
             encryptionSkillId: isset($stored['encryption_skill_id']) ? (int) $stored['encryption_skill_id'] : null,
             valueSealed: (int) ($stored['value_sealed'] ?? 0),
             valueBroken: (int) ($stored['value_broken'] ?? 0),

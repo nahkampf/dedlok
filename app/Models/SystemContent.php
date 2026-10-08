@@ -37,7 +37,7 @@ class SystemContent extends Model
             'kind' => ContentKind::class,
             'amount' => 'integer',
             'quantity' => 'integer',
-            'size_qb' => 'integer',
+            'size_qb' => 'float',
             'value_sealed' => 'integer',
             'value_broken' => 'integer',
         ];

@@ -42,7 +42,7 @@ class Run extends Model
             'backdoor_kind' => BackdoorKind::class,
             'detected' => 'boolean',
             'ice_integrity' => 'integer',
-            'extracting_qb' => 'integer',
+            'extracting_qb' => 'float',
             'trace' => 'integer',
             'trace_hop' => 'integer',
             'chain' => 'array',

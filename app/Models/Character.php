@@ -17,6 +17,7 @@ use App\Stats\Sources\InstalledImplants;
 use App\Stats\Sources\RunningPrograms;
 use App\Stats\Sources\SkillEffects;
 use App\Stats\Sources\WornArmour;
+use App\Support\Qb;
 use Carbon\CarbonImmutable;
 use Database\Factories\CharacterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -410,7 +411,7 @@ class Character extends Model
             ->loose()
             ->get()
             ->filter(fn (InventoryItem $row) => $row->item->canHold($item)
-                && $row->remainingCapacity() >= $item->size)
+                && Qb::tenths($row->remainingCapacity()) >= Qb::tenths($item->size))
             ->sortByDesc(fn (InventoryItem $row) => $row->remainingCapacity())
             ->values();
     }

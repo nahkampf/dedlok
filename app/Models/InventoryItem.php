@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\ScanFact;
 use App\Cyberspace\ScanFile;
+use App\Support\Qb;
 use App\Support\Text;
 use Carbon\Carbon;
 use Database\Factories\InventoryItemFactory;
@@ -416,15 +417,16 @@ class InventoryItem extends Model
      * is the first thing to read `size` at all: it has been stored and
      * unenforced since the table was created.
      */
-    public function usedCapacity(): int
+    public function usedCapacity(): float
     {
-        return $this->children
-            ->sum(fn (self $child) => (int) $child->item->size * $child->quantity);
+        return Qb::sum($this->children
+            ->map(fn (self $child) => (float) $child->item->size * $child->quantity)
+            ->all());
     }
 
-    public function remainingCapacity(): int
+    public function remainingCapacity(): float
     {
-        return max(0, (int) $this->item->capacity - $this->usedCapacity());
+        return max(0.0, Qb::of((float) $this->item->capacity - $this->usedCapacity()));
     }
 
     /**

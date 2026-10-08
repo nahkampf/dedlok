@@ -202,14 +202,14 @@
 
                 <div class="field" @error('size') data-invalid @enderror>
                     <label class="field__label" for="size">{{ Text::get('admin.items.fields.size') }}</label>
-                    <input class="input num" id="size" name="size" type="number" min="0" value="{{ $value('size', 0) }}">
+                    <input class="input num" id="size" name="size" type="number" min="0" step="0.1" value="{{ $value('size', 0) }}">
                     <span class="field__hint">{{ Text::get('admin.items.fields.size_hint') }}</span>
                     @error('size') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="field" @error('capacity') data-invalid @enderror>
                     <label class="field__label" for="capacity">{{ Text::get('admin.items.fields.capacity') }}</label>
-                    <input class="input num" id="capacity" name="capacity" type="number" min="0"
+                    <input class="input num" id="capacity" name="capacity" type="number" min="0" step="0.1"
                            value="{{ $value('capacity', 0) }}" data-controls="accepts">
                     <span class="field__hint">{{ Text::get('admin.items.fields.capacity_hint') }}</span>
                     @error('capacity') <span class="field__error">{{ $message }}</span> @enderror
@@ -529,7 +529,7 @@
                         @foreach (['qflops_cost', 'memory_cost', 'storage_size'] as $field)
                             <div class="field" @error($field) data-invalid @enderror>
                                 <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
-                                <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0"
+                                <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0" step="0.1"
                                        value="{{ old($field, $item?->program?->{$field} ?? 0) }}">
                                 <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
                                 @error($field) <span class="field__error">{{ $message }}</span> @enderror
@@ -619,7 +619,7 @@
 
                 <div class="field" style="max-width:min(240px,100%)" @error('onboard_storage') data-invalid @enderror>
                     <label class="field__label" for="onboard_storage">{{ Text::get('admin.items.onboard_storage.label') }}</label>
-                    <input class="input num" id="onboard_storage" name="onboard_storage" type="number" min="0" max="65535"
+                    <input class="input num" id="onboard_storage" name="onboard_storage" type="number" min="0" step="0.1"
                            value="{{ old('onboard_storage', $item?->onboard_storage) }}"
                            placeholder="{{ config('decks.onboard_storage') }}">
                     <span class="field__hint">{{ Text::get('admin.items.onboard_storage.hint', ['fallback' => config('decks.onboard_storage')]) }}</span>
@@ -727,6 +727,7 @@
                     <div class="field" data-hardware="{{ $kinds }}" @error($field) data-invalid @enderror>
                         <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
                         <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0"
+                               step="{{ in_array($field, ['qflops', 'quantabits', 'storage'], true) ? '0.1' : '1' }}"
                                value="{{ $moduleValue($field) }}">
                         <span class="field__hint">{{ Text::get("admin.items.fields.{$field}_hint") }}</span>
                         @error($field) <span class="field__error">{{ $message }}</span> @enderror

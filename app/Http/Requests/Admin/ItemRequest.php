@@ -24,6 +24,7 @@ use App\Models\Ammunition;
 use App\Models\Item;
 use App\Programs\ProgramKind;
 use App\Stats\Modifier;
+use App\Support\Qb;
 use App\Support\Text;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
@@ -67,6 +68,17 @@ class ItemRequest extends FormRequest
 
     /** What an unsigned int column holds. A number above it is a typo. */
     private const MAX_MEASURE = 4_294_967_295;
+
+    /** The measures carried to one decimal place (see App\Support\Qb), and the most one may hold. */
+    private const TENTHS = ['qflops', 'quantabits', 'storage'];
+
+    private const MAX_QB = 999_999_999.9;
+
+    /** @return list<mixed> A number with at most one decimal place. */
+    private static function qb(int|float $min = 0): array
+    {
+        return ['numeric', 'regex:/^\d+(\.\d)?$/', 'min:'.$min, 'max:'.self::MAX_QB];
+    }
 
     public function authorize(): bool
     {
@@ -235,7 +247,7 @@ class ItemRequest extends FormRequest
      */
     public function rules(): array
     {
-        $capacity = (int) $this->input('capacity', 0);
+        $capacity = (float) $this->input('capacity', 0);
         $isImprint = $this->input('use_op') === Item::USE_INJECT_SKILL;
         $hardware = $this->hardware();
         $isProgram = $this->programKind() !== null;
@@ -300,9 +312,9 @@ class ItemRequest extends FormRequest
                 : ['prohibited'],
 
             'weight' => ['required', 'numeric', 'min:0', 'max:999999.99'],
-            'size' => ['required', 'integer', 'min:0'],
+            'size' => ['required', ...self::qb()],
 
-            'capacity' => ['required', 'integer', 'min:0'],
+            'capacity' => ['required', ...self::qb()],
             // The other half of chk_items_capacity_pair. Capacity without a
             // kind holds anything; a kind without capacity holds nothing while
             // claiming otherwise. Neither is a container.
@@ -329,7 +341,7 @@ class ItemRequest extends FormRequest
                 ? ['nullable', 'array']
                 : ['prohibited'],
             'onboard_storage' => $hardware?->isDeck()
-                ? ['nullable', 'integer', 'min:0', 'max:65535']
+                ? ['nullable', ...self::qb()]
                 : ['prohibited'],
             'board_layout.*' => ['array', 'size:2'],
             'board_layout.*.0' => ['numeric', 'between:'.BoardLayout::MIN.','.BoardLayout::MAX],
@@ -350,13 +362,13 @@ class ItemRequest extends FormRequest
                 : ['nullable', Rule::enum(ProgramKind::class)],
 
             'qflops_cost' => $isProgram
-                ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                ? ['required', ...self::qb()]
                 : ['prohibited'],
             'memory_cost' => $isProgram
-                ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                ? ['required', ...self::qb()]
                 : ['prohibited'],
             'storage_size' => $isProgram
-                ? ['required', 'integer', 'min:0', 'max:'.self::MAX_MEASURE]
+                ? ['required', ...self::qb()]
                 : ['prohibited'],
             /*
              * DRUGS. An item is a drug because it has a family, the same way
@@ -569,7 +581,7 @@ class ItemRequest extends FormRequest
 
         foreach (self::MEASURES as $column) {
             $rules[$column] = $column === $measure
-                ? ['required', 'integer', 'min:1', 'max:'.self::MAX_MEASURE]
+                ? ['required', ...(in_array($column, self::TENTHS, true) ? self::qb(0.1) : ['integer', 'min:1', 'max:'.self::MAX_MEASURE])]
                 : ['prohibited'];
         }
 
@@ -594,7 +606,7 @@ class ItemRequest extends FormRequest
             // One field, two reasons to refuse it. A deck is unstackable
             // because of its sockets, a crate because of its contents, and
             // being told the wrong one is worse than being told neither.
-            'stackable.declined' => (int) $this->input('capacity', 0) > 0
+            'stackable.declined' => (float) $this->input('capacity', 0) > 0
                 ? Text::get('admin.validation.container_stacks')
                 : Text::get('admin.validation.deck_stacks'),
 
@@ -867,7 +879,7 @@ class ItemRequest extends FormRequest
         // Always written, for the board's reason: an item that stops being a
         // deck stops holding anything.
         $data['onboard_storage'] = ($this->hardware()?->isDeck() ?? false)
-            ? (isset($data['onboard_storage']) ? (int) $data['onboard_storage'] : null)
+            ? (isset($data['onboard_storage']) ? Qb::of($data['onboard_storage']) : null)
             : null;
 
         foreach (self::MEASURES as $column) {
@@ -1096,9 +1108,9 @@ class ItemRequest extends FormRequest
         $data = $this->validated();
 
         return [
-            'qflops_cost' => (int) ($data['qflops_cost'] ?? 0),
-            'memory_cost' => (int) ($data['memory_cost'] ?? 0),
-            'storage_size' => (int) ($data['storage_size'] ?? 0),
+            'qflops_cost' => Qb::of($data['qflops_cost'] ?? 0),
+            'memory_cost' => Qb::of($data['memory_cost'] ?? 0),
+            'storage_size' => Qb::of($data['storage_size'] ?? 0),
             'background_process' => (bool) ($data['background_process'] ?? false),
             'multithreaded' => (bool) ($data['multithreaded'] ?? false),
             // Null rather than [], because a program that only gates genuinely

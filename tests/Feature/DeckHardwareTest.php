@@ -61,7 +61,7 @@ class DeckHardwareTest extends TestCase
 
         $this->assertInstanceOf(DeckModule::class, $spec);
         $this->assertSame(Variant::SocketK, $spec->variant);
-        $this->assertSame(1_200, $spec->qflops);
+        $this->assertEquals(1_200, $spec->qflops);
         $this->assertSame(45, $spec->power_draw);
 
         // One measure, and the other three stay empty.
@@ -167,7 +167,7 @@ class DeckHardwareTest extends TestCase
         ]);
 
         $this->assertSame(0, $item->deckSlots()->count());
-        $this->assertSame(512, $item->fresh()->deckModule->quantabits);
+        $this->assertEquals(512, $item->fresh()->deckModule->quantabits);
     }
 
     public function test_becoming_a_deck_takes_the_module_spec_away(): void

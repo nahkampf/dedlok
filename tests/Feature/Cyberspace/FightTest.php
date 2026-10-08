@@ -1270,11 +1270,11 @@ final class FightTest extends TestCase
         $sim = $this->simulator(101);
 
         $first = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
-        $this->assertSame(70, $first->run->extracting_qb);
+        $this->assertEquals(70, $first->run->extracting_qb);
         $this->assertFalse($first->run->extracted);
 
         $second = $sim->take($this->character->fresh(), $first->run->fresh(), RunAction::Extract);
-        $this->assertSame(20, $second->run->extracting_qb);
+        $this->assertEquals(20, $second->run->extracting_qb);
 
         $third = $sim->take($this->character->fresh(), $second->run->fresh(), RunAction::Extract);
         $this->assertNull($third->run->extracting_qb, 'the countdown clears once the file lands');
@@ -1305,7 +1305,7 @@ final class FightTest extends TestCase
         $run = $this->beginUnnoticed();
 
         $first = $this->simulator(101)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
-        $this->assertSame(70, $first->run->extracting_qb);
+        $this->assertEquals(70, $first->run->extracting_qb);
         $this->assertFalse($first->run->detected);
 
         $this->everyCheckFails();
@@ -1313,11 +1313,11 @@ final class FightTest extends TestCase
 
         $this->assertTrue($caught->run->detected);
         $this->assertSame($system->ice_id, $caught->run->ice_id, 'the ICE woke');
-        $this->assertSame(70, $caught->run->extracting_qb, 'kept, not advanced');
+        $this->assertEquals(70, $caught->run->extracting_qb, 'kept, not advanced');
         $this->assertContains(Text::get('cyberspace.run.log.pull_noticed_ice'), array_column($caught->log, 'text'));
 
         $again = $this->simulator(101)->take($this->character->fresh(), $caught->run->fresh(), RunAction::Extract);
-        $this->assertSame(70, $again->run->extracting_qb, 'blocked while the ICE is awake');
+        $this->assertEquals(70, $again->run->extracting_qb, 'blocked while the ICE is awake');
     }
 
     /** A system with no IDS has nothing to watch a pull with. */
@@ -1337,7 +1337,7 @@ final class FightTest extends TestCase
         $next = $this->simulator(101)->take($this->character->fresh(), $first->run->fresh(), RunAction::Extract);
 
         $this->assertFalse($next->run->detected);
-        $this->assertSame(20, $next->run->extracting_qb);
+        $this->assertEquals(20, $next->run->extracting_qb);
     }
 
     /** Spending a turn on anything else pauses a pull rather than losing it. */
@@ -1353,13 +1353,13 @@ final class FightTest extends TestCase
         $sim = $this->simulator(101);
 
         $afterBegin = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
-        $this->assertSame(70, $afterBegin->run->extracting_qb);
+        $this->assertEquals(70, $afterBegin->run->extracting_qb);
 
         $afterAttack = $sim->take($this->character->fresh(), $afterBegin->run->fresh(), RunAction::Hold);
-        $this->assertSame(70, $afterAttack->run->extracting_qb, 'a turn spent elsewhere does not spend the transfer too');
+        $this->assertEquals(70, $afterAttack->run->extracting_qb, 'a turn spent elsewhere does not spend the transfer too');
 
         $afterContinue = $sim->take($this->character->fresh(), $afterAttack->run->fresh(), RunAction::Extract);
-        $this->assertSame(20, $afterContinue->run->extracting_qb, 'picking it back up resumes from where it was');
+        $this->assertEquals(20, $afterContinue->run->extracting_qb, 'picking it back up resumes from where it was');
     }
 
     /**
@@ -1379,7 +1379,7 @@ final class FightTest extends TestCase
         $sim = $this->simulator(101);
 
         $afterBegin = $sim->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
-        $this->assertSame(10, $afterBegin->run->extracting_qb);
+        $this->assertEquals(10, $afterBegin->run->extracting_qb);
 
         // Somebody else's raid finishes first, in between this run's turns.
         SystemContent::query()->where('system_id', $system->id)->where('kind', 'data')->delete();

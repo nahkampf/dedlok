@@ -199,9 +199,9 @@ class ItemFactory extends Factory
      */
     public function program(
         ProgramKind $kind,
-        int $qflops = 1,
-        int $memory = 1,
-        int $storage = 1,
+        float $qflops = 1,
+        float $memory = 1,
+        float $storage = 1,
         ?bool $background = null,
         array $modifiers = [],
     ): static {

@@ -823,6 +823,13 @@ what a bare `items` row cannot.
   priced on their total. **Nothing is ever deleted for being over**: a smaller deck may
   be equipped, and `DeckRequirement::Storage` then keeps it from jacking in or starting
   programs until the player makes room.
+- **Storage, memory (QB), compute (qFLOPS) and file sizes are carried to ONE DECIMAL PLACE** (`DECIMAL(10,1)` on `programs.storage_size / memory_cost /
+  qflops_cost`, `items.size / capacity / onboard_storage`, `deck_modules.qflops / quantabits / storage`, `system_contents.size_qb`,
+  `runs.extracting_qb`; the stats `deck_qflops / deck_quantabits / deck_storage` round to a `tenth`), so a lightweight script can cost 0.4 QB of RAM.
+  PHP holds them as floats, so **every total goes through `App\Support\Qb::of()` and every "does it fit / can it start / is it over" comparison
+  through `Qb::tenths()` or `Qb::fits()`** (`Storage::fits`, `ProgramRunner::refusalFor`, `DeckTotals::isOverfull`, `ItemPlacer`, the extractor): 0.1 + 0.2 is
+  not 0.3 in a float. Models cast them `float` (never `decimal:1`, which is a string); `Qb::format()` prints `2` for 2.0. Bandwidth, watts, power
+  draw and thermal figures stay whole numbers.
 - Screens: topbar count + modal, deck screen's Running and Storage tabs (storage split
   into two grids), `inventory.run` in both directions.
 

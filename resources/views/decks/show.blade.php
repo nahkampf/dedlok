@@ -148,13 +148,13 @@
                     <div class="readout">
                         <span class="readout__label">{{ Text::get('decks.ready.compute') }}</span>
                         <span class="readout__value">{{ Text::get('decks.units.qflops', [
-                            'value' => number_format($totals->qflops, 0, '.', ' '),
+                            'value' => \App\Support\Qb::format($totals->qflops, ' '),
                         ]) }}</span>
                     </div>
                     <div class="readout">
                         <span class="readout__label">{{ Text::get('decks.ready.memory') }}</span>
                         <span class="readout__value">{{ Text::get('decks.units.quantabits', [
-                            'value' => number_format($totals->quantabits, 0, '.', ' '),
+                            'value' => \App\Support\Qb::format($totals->quantabits, ' '),
                         ]) }}</span>
                     </div>
                     <div class="readout">

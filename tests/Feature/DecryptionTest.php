@@ -142,7 +142,7 @@ final class DecryptionTest extends TestCase
         $program = $ghostkey->program;
 
         $this->assertSame(['cinder'], $program->decrypts);
-        $this->assertSame([ProgramKind::Decryptor, 3, 2, 2, 0, 25, 'common', true], [
+        $this->assertEquals([ProgramKind::Decryptor, 3, 2, 2, 0, 25, 'common', true], [
             $program->kind, $program->qflops_cost, $program->memory_cost, $program->storage_size,
             $ghostkey->base_cost, $ghostkey->seed_quantity, $ghostkey->rarity->value, (bool) $ghostkey->on_market,
         ]);

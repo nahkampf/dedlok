@@ -23,7 +23,7 @@ In this order. Each is small enough to build alone.
 
 ## Code Crafting (designed 2026-10-08, `CRAFTING.md`)
 
-Build order, each its own step: **1. decimal QB / qFLOPS** (own release, in progress), 2. lifetime programs and the Script kind, 3. components
+Build order, each its own step: **1. decimal QB / qFLOPS** (own release, built, unreleased), 2. lifetime programs and the Script kind, 3. components
 (origin on files, weighted decryption outcomes), 4. designs, crafting slots, the pause-able clock, skills and screens, 5. ICE shredding, 6. balance.
 
 ---
