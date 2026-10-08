@@ -1060,6 +1060,7 @@ list of accounts with a button each; the command is no use on a host whose CLI P
 - an **unlimited training queue** (`TrainingQueue::limitFor()` is null for them, `LIMIT` = 5 for everybody else; the skills screen draws no `/5`);
 - a place on the public **Supporters page** (`/supporters`, linked from the front page): the name they gave for the credits (`users.credit_name`),
   else their character's handle, in the order they became one; an account with neither is not listed;
+- **Ko-fi**: `POST /kofi_webhook` (`KofiWebhookController`, CSRF-exempt) takes a *Subscription* payment, trusts it by `verification_token` (`KOFI_VERIFICATION_TOKEN`; unset refuses everything), matches the payer's email to `users.email`, records it once by `message_id` in `kofi_payments`, and grants the flag until now + 1 month (`users.supporter_until`; NULL is for good, and a payment never shortens a for-good grant). `isSupporter()` is false once the date has passed; `supporters:expire` (hourly) clears the stored flag. An unmatched email is kept and logged, and nobody is granted.
 - **one message** when the flag goes from off to on (`Category::Support`, `notifications.messages.supporter_welcome`): thanks, what they now have, and the
   Discord invitation (`strings.discord.url`). Revoking sends nothing; granting again sends it again.
 

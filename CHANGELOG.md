@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Ko-fi memberships.** `POST /kofi_webhook` makes a subscription payer a supporter for one month from the payment (`users.supporter_until`, `kofi_payments`, `supporters:expire` hourly). Needs `KOFI_VERIFICATION_TOKEN`.
 - **Scripts**: `ProgramKind::Script` and `programs.lifetime_seconds` (migration `2026_10_08_190000_a_program_may_have_a_lifetime`). A running copy is
   spent after its lifetime, and stopping it early destroys it. `App\Programs\Lifetime` reaps lazily (running-process reads and starts) and
   `programs:expire` sweeps every minute; the item editor has a *Lifetime (seconds)* field, the Running modal shows time left, Current processes a

@@ -27,6 +27,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // trim would shift the first line of an indented drawing left. The controller does its own, gentler trim.
         $middleware->trimStrings(except: ['bio']);
 
+        // Ko-fi posts here with no session; it is judged by its verification token instead.
+        $middleware->validateCsrfTokens(except: ['kofi_webhook']);
+
         $middleware->web(append: [
             // Runs after the session is available, so $request->user() is set.
             RequireCharacter::class,

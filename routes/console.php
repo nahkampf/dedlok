@@ -282,3 +282,6 @@ Schedule::command('missions:expire --quiet-when-idle')
 Schedule::command('city:settle')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// A supporter whose month has run out stops being one. Reads already know; this keeps the stored flag true.
+Schedule::command('supporters:expire')->hourly();

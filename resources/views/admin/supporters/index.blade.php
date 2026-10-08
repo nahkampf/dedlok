@@ -40,7 +40,7 @@
                             <td>
                                 @if ($user->isSupporter())
                                     <span class="tag tag--ember">{{ Text::get('supporters.badge') }}</span>
-                                    <span class="micro" style="color:var(--ink-3)">{{ $user->supporter_since?->format('Y-m-d') }}</span>
+                                    <span class="micro" style="color:var(--ink-3)">{{ $user->supporter_since?->format('Y-m-d') }}{{ $user->supporter_until ? ' → '.$user->supporter_until->format('Y-m-d') : '' }}</span>
                                 @endif
                             </td>
                             <td style="text-align:right">

@@ -32,6 +32,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HunterController;
 use App\Http\Controllers\ImplantController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\KofiWebhookController;
 use App\Http\Controllers\MarketController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MissionController;
@@ -52,6 +53,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 
 // Everyone who supports the game. Public, like the front page.
+// Ko-fi's membership webhook. Public, CSRF-exempt, authenticated by its verification token.
+Route::post('/kofi_webhook', KofiWebhookController::class)->name('kofi.webhook');
+
 Route::get('/supporters', [SupportersController::class, 'index'])->name('supporters.index');
 
 // The whole pool in one response; the client randomises locally so repeated

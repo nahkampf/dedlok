@@ -17,6 +17,7 @@ class SupportersController extends Controller
     {
         $names = User::query()
             ->where('is_supporter', true)
+            ->where(fn ($q) => $q->whereNull('supporter_until')->orWhere('supporter_until', '>', now()))
             ->with('character:id,user_id,handle')
             ->orderBy('supporter_since')
             ->orderBy('id')
