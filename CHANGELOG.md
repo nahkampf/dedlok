@@ -2,6 +2,37 @@
 
 ## [Unreleased]
 
+## [0.46.0] — 2026-10-09
+
+An admin Characters screen for grants, achievements that show how rare they are, and fixes.
+
+### Added
+
+- **Admin Characters screen** (`admin/characters`): *Give creds* (1 to 1,000,000, through `Wallet::move()` as the new `Reason::Granted`, so the ledger has the line),
+  *Full HP* and *Full SI* (`Character::recover()` to the resolved maximum).
+- **Achievements show the share of players who have each** (two decimals, `Achievements::percentages()`; a player is an account with a character).
+- **The unlock message** is titled "Achievement unlocked!" and reads "You unlocked the achievement <name>!", the word *achievement* linking to the Achievements tab
+  (`details['link']`, drawn by the inbox).
+
+### Changed
+
+- **An achievement's name and description live in `config/achievements.php`** with its metric and threshold, and are gone from `config/strings.php`.
+  The thirteen names are written (The Two Comma Club to Panopticon).
+
+### Fixed
+
+- The item editor's checkboxes (Design copy, Fight only, Runs in the background, Multithreaded, each decryptor encryption) drew no box.
+- The deck's Crafting panel printed its own open/closed condition as text.
+
+### Operations
+
+- **Deploying pays ACiD 3000 creds** (migration `2026_10_09_100000_acid_is_given_3000_creds`, once, through the wallet). Do not also give them by hand.
+
+### Migrations
+
+- `2026_10_09_100000_acid_is_given_3000_creds`: data only, no schema change.
+
+
 ## [0.45.0] — 2026-10-08
 
 Code Crafting, Scripts, components from decryption, decimal storage and compute, and Supporters with Ko-fi.
@@ -2802,7 +2833,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.45.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.46.0...HEAD
+[0.46.0]: https://github.com/nahkampf/dedlok/compare/v0.45.0...v0.46.0
 [0.45.0]: https://github.com/nahkampf/dedlok/compare/v0.44.0...v0.45.0
 [0.44.0]: https://github.com/nahkampf/dedlok/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/nahkampf/dedlok/compare/v0.42.3...v0.43.0
