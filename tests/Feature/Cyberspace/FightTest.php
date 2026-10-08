@@ -792,6 +792,11 @@ final class FightTest extends TestCase
 
         $this->assertSame(RunEnding::Egress, $result->ending, 'it left, though Cut was asked for');
         $this->assertNull($this->character->fresh()->current_run_id);
+        $this->assertContains(
+            Text::get('cyberspace.run.log.threshold_trace', ['at' => $this->character->egress_trace_at]),
+            array_column($run->fresh()->log, 'text'),
+            'and the log says it was the trace mark that did it',
+        );
     }
 
     /**
@@ -845,7 +850,7 @@ final class FightTest extends TestCase
         $this->assertSame(RunEnding::Egress, $result->ending);
 
         $texts = array_column($run->fresh()->log, 'text');
-        $this->assertContains(Text::get('cyberspace.run.log.threshold'), $texts, 'why the action never happened');
+        $this->assertContains(Text::get('cyberspace.run.log.threshold_si', ['at' => $this->character->egress_si_at]), $texts, 'why the action never happened');
         $this->assertContains(Text::get('cyberspace.run.log.egress'), $texts);
     }
 

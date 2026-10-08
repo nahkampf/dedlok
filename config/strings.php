@@ -1240,7 +1240,8 @@ return [
                 'ice_silent' => 'Whatever was fighting you is no longer there.',
                 'traced' => 'The trace reaches you. Somebody knows who was in here.',
                 'trace_held' => 'The route holds it up another turn.',
-                'threshold' => 'You hit your set threshold, and pull out.',
+                'threshold_trace' => 'Auto-egress: the trace reached your threshold of :at%, so you try to pull out instead of doing anything else.',
+                'threshold_si' => 'Auto-egress: your Synaptic Integrity fell below your threshold of :at%, so you try to pull out instead of doing anything else.',
 
                 /*
                 | ARRIVING, and whether anything looked up. Said first and said

@@ -137,8 +137,12 @@ final readonly class Simulator
              * It is also what makes `auto-run` possible at all, since a player
              * who hands the whole run to their policy is handing it to this.
              */
-            if ($this->thresholdBreached($character, $run)) {
-                $log[] = $this->line('cyberspace.run.log.threshold', tone: 'warn');
+            if ($breached = $this->breachedThreshold($character, $run)) {
+                // SAYS WHICH ONE, and that the action asked for did not happen: a player who pressed Install and found
+                // themselves outside with no backdoor needs the reason in the run's own account.
+                $log[] = $this->line("cyberspace.run.log.threshold_{$breached}", [
+                    'at' => $breached === 'trace' ? (int) $character->egress_trace_at : (int) $character->egress_si_at,
+                ], 'warn');
                 $action = RunAction::Egress;
             }
 
@@ -317,22 +321,30 @@ final readonly class Simulator
      */
     public function thresholdBreached(Character $character, Run $run): bool
     {
+        return $this->breachedThreshold($character, $run) !== null;
+    }
+
+    /** Which standing instruction has come due: 'trace', 'si', or null. THE one test of it. */
+    public function breachedThreshold(Character $character, Run $run): ?string
+    {
         $trace = (int) $character->egress_trace_at;
 
         if ($trace > 0 && $run->trace >= $trace) {
-            return true;
+            return 'trace';
         }
 
         $si = (int) $character->egress_si_at;
 
         if ($si <= 0) {
-            return false;
+            return null;
         }
 
         $max = $character->maximumFor('current_synaptic_integrity');
 
         return $max > 0
-            && ((int) $character->current_synaptic_integrity / $max) * 100 < $si;
+            && ((int) $character->current_synaptic_integrity / $max) * 100 < $si
+            ? 'si'
+            : null;
     }
 
     /**
