@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Scripts**: `ProgramKind::Script` and `programs.lifetime_seconds` (migration `2026_10_08_190000_a_program_may_have_a_lifetime`). A running copy is
+  spent after its lifetime, and stopping it early destroys it. `App\Programs\Lifetime` reaps lazily (running-process reads and starts) and
+  `programs:expire` sweeps every minute; the item editor has a *Lifetime (seconds)* field, the Running modal shows time left, Current processes a
+  bar. Step 2 of Code Crafting (`CRAFTING.md`).
+
 ### Changed
 
 - **Storage, memory and compute are carried to one decimal place** (migration `2026_10_08_180000_storage_memory_and_compute_have_a_decimal`):

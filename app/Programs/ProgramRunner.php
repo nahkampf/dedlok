@@ -60,6 +60,9 @@ final class ProgramRunner
      */
     public function start(Character $character, InventoryItem $row, bool $duringRun = false): ProcessResult
     {
+        // A spent Script still counts as a running copy until somebody removes it.
+        Lifetime::reapFor($character);
+
         $refusal = $this->refusalFor($character, $row, $duringRun);
 
         if ($refusal !== null) {
@@ -159,6 +162,8 @@ final class ProgramRunner
      */
     public function startable(Character $character): Collection
     {
+        Lifetime::reapFor($character);
+
         $deck = $character->equippedDeck;
         $shared = $deck === null ? null : [
             'deck' => $deck,
@@ -368,6 +373,13 @@ final class ProgramRunner
             if ($owner !== null) {
                 DecryptionQueue::make()->stopped($owner, $row->getKey());
             }
+        }
+
+        // A Script is spent by running, so stopping one early destroys it; there is no pile to put it back in.
+        if ($row->item?->program?->isTemporary()) {
+            $row->delete();
+
+            return;
         }
 
         $row->running_on_deck_id = null;

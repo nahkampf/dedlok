@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Cyberspace\Position;
+use App\Programs\Lifetime;
 use App\Skills\TrainingRate;
 use App\Stats\Context;
 use App\Stats\Modifier;
@@ -444,12 +445,12 @@ class Character extends Model
             return new Collection;
         }
 
-        return InventoryItem::query()
+        return Lifetime::reap(InventoryItem::query()
             ->where('character_id', $this->id)
             ->where('running_on_deck_id', $this->equipped_deck_id)
             ->with('item.program')
             ->orderBy('started_at')
-            ->get();
+            ->get());
     }
 
     /**

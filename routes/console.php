@@ -190,6 +190,14 @@ Schedule::command('decryption:settle --quiet-when-idle')
     ->withoutOverlapping();
 
 /*
+ * Scripts are spent by the clock (`programs.lifetime_seconds`). Whoever looks at their running programs
+ * sees an expired one gone already; this keeps the table true for the character nobody is looking at.
+ */
+Schedule::command('programs:expire')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+/*
  * Healing by waiting: the two-hourly mend everybody gets, and the per-minute
  * trickle Neuroplasticity and doses grant.
  *

@@ -176,6 +176,8 @@ class ItemRequest extends FormRequest
             // A fight-only drug counts rounds, so its minutes are not asked (0, unread) and the two fight fields only
             // mean anything when it is one: blank otherwise, however the form posted them.
             'fight_only' => $this->boolean('fight_only'),
+            // A Script's lifetime: blank is an ordinary program.
+            'lifetime_seconds' => $this->numberOrNull('lifetime_seconds'),
             'duration_minutes' => $this->boolean('fight_only') ? '0' : $this->panelNumber('duration_minutes', $isDrugForm),
             'duration_turns' => $this->boolean('fight_only') ? $this->numberOrNull('duration_turns') : null,
             'turn_hitpoints' => $this->boolean('fight_only') ? ($this->numberOrNull('turn_hitpoints') ?? '0') : null,
@@ -429,6 +431,9 @@ class ItemRequest extends FormRequest
              * something this is false on.
              */
             'multithreaded' => ['boolean'],
+            'lifetime_seconds' => $isProgram
+                ? ['nullable', 'integer', 'min:1', 'max:'.self::MAX_MEASURE]
+                : ['prohibited'],
 
             // The encryptions a Decryptor is limited to, by skill slug; empty is any. Stored only on a decryptor.
             'program_decrypts' => ['array'],
@@ -890,7 +895,7 @@ class ItemRequest extends FormRequest
         // is a program — the row is what says so — so none of these stay.
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
-            $data['storage_size'], $data['background_process'], $data['multithreaded'],
+            $data['storage_size'], $data['lifetime_seconds'], $data['background_process'], $data['multithreaded'],
             $data['program_modifiers'], $data['program_decrypts'],
         );
 
@@ -1112,6 +1117,7 @@ class ItemRequest extends FormRequest
             'memory_cost' => Qb::of($data['memory_cost'] ?? 0),
             'storage_size' => Qb::of($data['storage_size'] ?? 0),
             'background_process' => (bool) ($data['background_process'] ?? false),
+            'lifetime_seconds' => isset($data['lifetime_seconds']) ? (int) $data['lifetime_seconds'] : null,
             'multithreaded' => (bool) ($data['multithreaded'] ?? false),
             // Null rather than [], because a program that only gates genuinely
             // modifies nothing and the two should not be different spellings

@@ -545,6 +545,15 @@
                     </label>
                     <span class="field__hint">{{ Text::get('admin.items.fields.background_process_hint') }}</span>
 
+                    {{-- A Script is spent by running: it lasts this long, and is gone. Blank is an ordinary program. --}}
+                    <div class="field" style="margin-top:var(--s-3)" @error('lifetime_seconds') data-invalid @enderror>
+                        <label class="field__label" for="lifetime_seconds">{{ Text::get('admin.items.fields.lifetime_seconds') }}</label>
+                        <input class="input num" id="lifetime_seconds" name="lifetime_seconds" type="number" min="1" step="1"
+                               value="{{ old('lifetime_seconds', $item?->program?->lifetime_seconds) }}">
+                        <span class="field__hint">{{ Text::get('admin.items.fields.lifetime_seconds_hint') }}</span>
+                        @error('lifetime_seconds') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+
                     {{-- Whether two copies may be pointed at two things at
                          once. A property of the SOFTWARE: how many a character
                          may run is the program_threads stat, and an icebreaker

@@ -6,6 +6,7 @@ namespace App\Stats\Sources;
 
 use App\Models\Character;
 use App\Models\InventoryItem;
+use App\Programs\Lifetime;
 use App\Stats\Modifier;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Config;
@@ -117,7 +118,7 @@ final readonly class RunningPrograms implements ModifierSource
      */
     public static function processesOn(Character $character, int $deckId, ?\DateTimeInterface $asAt = null)
     {
-        return InventoryItem::query()
+        return Lifetime::reap(InventoryItem::query()
             ->where('character_id', $character->id)
             ->where('running_on_deck_id', $deckId)
             ->when($asAt !== null, static function ($query) use ($asAt): void {
@@ -132,6 +133,6 @@ final readonly class RunningPrograms implements ModifierSource
                 });
             })
             ->with('item.program')
-            ->get();
+            ->get());
     }
 }

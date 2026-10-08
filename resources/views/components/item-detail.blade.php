@@ -397,7 +397,8 @@
                      starts this, not you" teaches more than an absent button. --}}
                 <form method="POST" action="{{ route('inventory.run', $entry) }}">
                     @csrf
-                    <button type="submit" class="btn btn--sm cut {{ $entry->isRunning() ? 'btn--ghost' : '' }}">
+                    <button type="submit" class="btn btn--sm cut {{ $entry->isRunning() ? 'btn--ghost' : '' }}"
+                            @if ($entry->isRunning() && $entry->item->program?->isTemporary()) title="{{ Text::get('programs.action.stop_spent') }}" @endif>
                         {{ Text::get($entry->isRunning() ? 'programs.action.stop' : 'programs.action.start') }}
                     </button>
                 </form>

@@ -35,6 +35,9 @@ enum ProgramKind: string
     /** Everything that quietly does a job — the catch-all, kept narrow. */
     case Daemon = 'daemon';
 
+    /** Spent by running: a program with a lifetime (`programs.lifetime_seconds`) that acts like a timed modifier. */
+    case Script = 'script';
+
     /**
      * May a program of this kind run outside a cyberspace run?
      *
@@ -50,7 +53,7 @@ enum ProgramKind: string
             // is something you do on the open grid and not only inside a run:
             // scanning IS the safe run type. It idles and listens, which is
             // the shape of a background job.
-            self::Decryptor, self::Daemon, self::Analyser => true,
+            self::Decryptor, self::Daemon, self::Analyser, self::Script => true,
             self::Icebreaker, self::Evasion => false,
         };
     }

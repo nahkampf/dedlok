@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * storage by owning it, compute and memory only while it runs.
  */
 #[Fillable([
-    'item_id', 'kind', 'qflops_cost', 'memory_cost', 'storage_size',
+    'item_id', 'kind', 'qflops_cost', 'memory_cost', 'storage_size', 'lifetime_seconds',
     'background_process', 'multithreaded', 'modifiers', 'decrypts',
 ])]
 class Program extends Model
@@ -33,11 +33,18 @@ class Program extends Model
             'qflops_cost' => 'float',
             'memory_cost' => 'float',
             'storage_size' => 'float',
+            'lifetime_seconds' => 'integer',
             'background_process' => 'boolean',
             'multithreaded' => 'boolean',
             'modifiers' => 'array',
             'decrypts' => 'array',
         ];
+    }
+
+    /** Spent by running: a copy lasts `lifetime_seconds` and is then gone (see App\Programs\Lifetime). */
+    public function isTemporary(): bool
+    {
+        return $this->lifetime_seconds !== null;
     }
 
     /** Can this program work on a file sealed with this encryption? Null `decrypts` is any. */

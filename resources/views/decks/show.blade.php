@@ -110,7 +110,8 @@
                                          reasoning stripping a deck follows. --}}
                                     <form method="POST" action="{{ route('inventory.run', $process) }}">
                                         @csrf
-                                        <button type="submit" class="btn btn--sm btn--ghost cut">
+                                        <button type="submit" class="btn btn--sm btn--ghost cut"
+                                                @if ($program?->isTemporary()) title="{{ Text::get('programs.action.stop_spent') }}" @endif>
                                             {{ Text::get('programs.action.stop') }}
                                         </button>
                                     </form>

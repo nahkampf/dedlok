@@ -127,6 +127,7 @@ return [
             'evasion' => 'Evasion',
             'analyser' => 'Analyser',
             'daemon' => 'Daemon',
+            'script' => 'Script',
         ],
 
         // The status readout. A count, because the number is the whole of what
@@ -169,6 +170,8 @@ return [
             'compute' => ':value qFLOPS',
             'memory' => ':value QB',
             'storage' => ':value QB stored',
+            'lifetime' => 'Lasts :time, then spent',
+            'left' => ':time left',
         ],
 
         'background' => 'Runs in the background',
@@ -177,6 +180,7 @@ return [
         'action' => [
             'start' => 'Run',
             'stop' => 'Stop',
+            'stop_spent' => 'Stopping a Script destroys it',
         ],
 
         'refused' => [
@@ -2566,6 +2570,8 @@ return [
         'explore' => 'Exploring',
         'surgery' => 'On the table',
         'travel_pass' => 'Stage :step of :of',
+        'script' => ':program running',
+        'script_detail' => 'Spent when it ends; stopping it early destroys it',
         'decryption' => 'Decrypting :label',
         'decryption_cycle' => 'This cycle: :percent% to break',
         'decryption_waiting' => [
@@ -3900,6 +3906,8 @@ return [
                 'memory_cost_hint' => 'Quantabits consumed while it runs.',
                 'storage_size' => 'Stored size',
                 'storage_size_hint' => 'Quantabits it occupies just by being owned, running or not.',
+                'lifetime_seconds' => 'Lifetime (seconds)',
+                'lifetime_seconds_hint' => 'Blank is an ordinary program. Set, it is a Script: a running copy lasts this long from the moment it starts and is then spent. Stopping one early destroys it.',
                 'background_process' => 'Runs in the background',
                 'background_process_hint' => 'Whether it may run outside an intrusion. A decryptor must; an icebreaker has nothing to break out there.',
                 'program_modifiers' => 'What running it does',

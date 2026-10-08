@@ -823,6 +823,13 @@ what a bare `items` row cannot.
   priced on their total. **Nothing is ever deleted for being over**: a smaller deck may
   be equipped, and `DeckRequirement::Storage` then keeps it from jacking in or starting
   programs until the player makes room.
+- **A SCRIPT is a program with a lifetime** (`ProgramKind::Script`, `programs.lifetime_seconds`, NULL for an ordinary one; `Program::isTemporary()`): it is
+  spent by running. *Run* takes one copy as for any program and it holds its RAM and qFLOPS on the deck; it ends at `started_at` + the lifetime
+  (`App\Programs\Lifetime`, nothing stored about the end) and **stopping it early destroys it** (`ProgramRunner::putBack()`) — which includes every
+  way of stopping all (unequip, fit, strip). Expiry is lazy and swept: `Lifetime::reap()` runs inside `Character::runningProcesses()` and
+  `RunningPrograms::processesOn()` and before a start, and `programs:expire` runs every minute for characters nobody is looking at. One of a given
+  Script at a time is not a new rule: it is `multithreaded = false`. `RunningPrograms` cannot look back at a Script that has been reaped, so none belongs on
+  training stats. Current processes shows a bar for each.
 - **Storage, memory (QB), compute (qFLOPS) and file sizes are carried to ONE DECIMAL PLACE** (`DECIMAL(10,1)` on `programs.storage_size / memory_cost /
   qflops_cost`, `items.size / capacity / onboard_storage`, `deck_modules.qflops / quantabits / storage`, `system_contents.size_qb`,
   `runs.extracting_qb`; the stats `deck_qflops / deck_quantabits / deck_storage` round to a `tenth`), so a lightweight script can cost 0.4 QB of RAM.

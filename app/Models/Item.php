@@ -12,6 +12,7 @@ use App\Market\Rarity;
 use App\Programs\ProgramKind;
 use App\Support\Qb;
 use App\Support\Text;
+use Carbon\CarbonInterval;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -516,6 +517,10 @@ class Item extends Model
         ];
 
         $parts[] = Text::get($program->background_process ? 'programs.background' : 'programs.run_only');
+
+        if ($program->isTemporary()) {
+            $parts[] = Text::get('programs.costs.lifetime', ['time' => CarbonInterval::seconds($program->lifetime_seconds)->cascade()->forHumans(['short' => true, 'parts' => 2])]);
+        }
 
         return implode(Text::get('items.summary.separator'), $parts);
     }
