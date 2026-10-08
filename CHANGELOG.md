@@ -2,6 +2,39 @@
 
 ## [Unreleased]
 
+## [0.44.0] — 2026-10-08
+
+Scan files make themselves, a Current processes modal, auto-egress explained.
+
+### Added
+
+- **A finished read files itself** (`Probe` calls `ScanExporter` after the last pass). Filing no longer spends the read: the system stays
+  on the map and in the briefing. `system_scans.filed_at` (migration `2026_10_08_170000`) makes it once per read
+  (`ScanExportRefusal::Filed`). With no room on the deck nothing is made and the dialog's *Save to stash* remains as the fallback; the poll
+  sends `filed` so the button hides once the file exists.
+- **Current processes** (`App\Characters\CurrentProcesses`, fragment `processes.current`, a chip and modal in the top bar): scans, travel /
+  exploring / surgery, decryption (cycle and files waiting), training, drugs in effect, withdrawals, accepted jobs' deadlines, and a *Clocks*
+  group (market restock, next point of SI, trained regeneration). The next-run moments come from the new `config/cadence.php`, which
+  `routes/console.php` reads too. Lockdowns and relocations are deliberately not in it.
+- **The briefing warns of an auto-egress** (`Simulator::siBelowThreshold()`, the same test the run makes) when SI is already under the egress mark.
+- **Wide screens put the map's side boxes beside the map** (`.map-split` container query, `@section('wide')` page column).
+
+### Changed
+
+- **A run that succeeded ends as Completed**: extracting, installing a backdoor (including a mission plant) or burning. Leaving otherwise is Egressed.
+- **An auto-egress says which threshold did it** (trace or SI), in the run log and as a notice that survives the redirect to the map. The turn
+  that ends a run is now written into its log.
+- SI regeneration is one point per two hours (`synaptic_mend_minutes` 120).
+
+### Operations
+
+- `php artisan scans:file <handle>` files a character's finished, unfiled reads (for the ones that finished before reads filed themselves).
+
+### Migrations
+
+- `2026_10_08_170000_a_finished_read_is_filed_by_itself`: `system_scans.filed_at`.
+
+
 ## [0.43.0] — 2026-10-08
 
 Decryption: stolen files can be broken, sold, and used for supply jobs.
@@ -2691,7 +2724,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.43.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.44.0...HEAD
+[0.44.0]: https://github.com/nahkampf/dedlok/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/nahkampf/dedlok/compare/v0.42.3...v0.43.0
 [0.42.3]: https://github.com/nahkampf/dedlok/compare/v0.42.1...v0.42.3
 [0.42.2]: https://github.com/nahkampf/dedlok/compare/v0.42.1...v0.42.2

@@ -1,3 +1,11 @@
+## 0.44.0 (2026-10-08)
+- When completing a scan, a scan file is automatically created (killed the old, clunky "export scan" mechanics. 
+- "Current processes" button in the topbar shows progress of scans, trips, decryption, training, drugs, withdrawals, job deadlines and market restocks.
+- Boxes moved to the right of the cyberspace map if there is space.
+- Run briefings now warn about low SI where that would lead to auto-egress on the first turn.
+- Auto-egress now states that in the popup notice
+- Succesful runs now state "Done" rather than "Egressed".
+
 ## 0.43.0 (2026-10-08)
 - Address is now in the "Scan complete" message.
 - SI passive regen tweaked to 1 SI / 2hrs
