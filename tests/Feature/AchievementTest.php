@@ -225,12 +225,13 @@ final class AchievementTest extends TestCase
 
         $message = Notification::where('user_id', $character->user_id)->first();
         $this->assertSame('Achievement unlocked!', $message->title);
-        $this->assertSame('You unlocked the achievement ACHIEVEMENT_4!', $message->body);
+        $name = (string) config('achievements.unlocks.4.name');
+        $this->assertSame("You unlocked the achievement {$name}!", $message->body);
         $this->assertSame('achievements.index', $message->details['link']['route']);
 
         $user = User::findOrFail($character->user_id);
         $this->actingAs($user)->get(route('notifications.index'))
-            ->assertSee('You unlocked the <a href="'.route('achievements.index').'">achievement</a> ACHIEVEMENT_4!', false);
+            ->assertSee('You unlocked the <a href="'.route('achievements.index').'">achievement</a> '.e($name).'!', false);
 
         // One player, who has it: 100.00%; the others, 0.00%.
         $this->actingAs($user)->get(route('achievements.index'))->assertSee('100.00% of players')->assertSee('0.00% of players');
