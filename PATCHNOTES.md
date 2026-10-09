@@ -1,3 +1,10 @@
+## 0.47.0 (2026-10-09)
+
+- New program types: Locators and Pathfinders.
+- Locators take a search term (like "exchange, lockjaw, grade >2") and show the direction and number of steps to target.
+- Pathfinders do the same, but has the option of "autotraverse" - autopiloting you to your destination at 10 seconds per step. This will be targetable by skills later, to cut down the waiting time.
+- Boosted payout for Survey missions, starting at x3 at grade 1 and tapering down to x1 at grade 5.
+
 ## 0.46.1 (2026-10-09)
 
 - Listing required skills in the crafting box if you are lacking

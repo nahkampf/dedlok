@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## [0.47.0] — 2026-10-09
+
+Locators, a help page, richer survey pay, and an item editor that folds.
+
+### Added
+
+- **Locator and Pathfinder** (`ProgramKind::Locator` / `::Pathfinder`, migrations `..300000` and `..310000` widen `chk_programs_kind`): background programs that find the nearest system you have met
+  (`App\Cyberspace\Finder`). The map screen's *Locator* box takes `exchange, lockjaw, grade >2`, answers with the nearest match as one of eight arrows and a distance, and names the program
+  that is running. It reads `system_contacts` only, a grade only from a live scan, and the portal is always findable. One locator at a time (`ProcessRefusal::OneLocator`).
+- **Autotraverse** (Pathfinder only): the page takes one `Navigator::step()` toward the target every ten seconds (`cyberspace.traverse`), behind a brass overlay (the dialog's backdrop) with steps left and a bar.
+  Cancel stops where you stand.
+- **The two items**, Azimuth and lOCO_mOTiVE 0.9.1, by `2026_10_09_320000_the_locators` (skipped when the slug already exists).
+- **A help page** at `/help`: one page of accordions with anchors per group and topic, and a glossary. Linked from the front page.
+- **Crafting**: the deck's "You do not have the skill to build this." opens a *Skills missing* dialog (released in 0.46.1).
+
+### Changed
+
+- **Survey missions pay more creds at the low grades**: ×3 at grade 1, ×2.5, ×2, ×1.5, ×1 at grade 5 (`missions.actions.scan.creds` may now be a table by grade). Standing and loyalty are unchanged; jobs already offered keep their pay.
+- **The item editor's boxes are accordions, closed by default**; all open on validation errors, and Identity is open on the creator.
+
+
 ## [0.46.1] — 2026-10-09
 
 ### Changed
@@ -2841,7 +2862,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.46.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.47.0...HEAD
+[0.47.0]: https://github.com/nahkampf/dedlok/compare/v0.46.1...v0.47.0
 [0.46.1]: https://github.com/nahkampf/dedlok/compare/v0.46.0...v0.46.1
 [0.46.0]: https://github.com/nahkampf/dedlok/compare/v0.45.0...v0.46.0
 [0.45.0]: https://github.com/nahkampf/dedlok/compare/v0.44.0...v0.45.0
