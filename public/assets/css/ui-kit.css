@@ -2026,6 +2026,8 @@ dialog.modal > .panel__hd,
 dialog.modal > .panel__ft { flex: none; }
 
 dialog.modal::backdrop { background: rgba(5,6,8,.72); backdrop-filter: blur(3px); }
+/* Autotraverse: a half-transparent brass wash over the whole screen, so the page is plainly not for using. */
+dialog.modal--traverse::backdrop { background: color-mix(in srgb, var(--warn) 50%, transparent); backdrop-filter: none; }
 dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
 @keyframes modal-in { from { opacity: 0; transform: translateY(-6px) scale(.99); } }
 

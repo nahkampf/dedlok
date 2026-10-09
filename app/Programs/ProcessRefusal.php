@@ -73,6 +73,9 @@ enum ProcessRefusal: string
 
     case OneIcebreaker = 'one_icebreaker';
 
+    /** A Locator and a Pathfinder are one slot between them. */
+    case OneLocator = 'one_locator';
+
     public function message(): string
     {
         return Text::get("programs.refused.{$this->value}");

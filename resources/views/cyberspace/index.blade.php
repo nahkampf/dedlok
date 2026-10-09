@@ -416,6 +416,76 @@
             </form>
         </details>
 
+        {{-- THE LOCATOR (App\Cyberspace\Finder): drawn only while the program runs. The nearest system you have met that fits, with
+             its distance and which of eight directions it lies in. --}}
+        @if ($locator !== null)
+            <section class="panel panel--snug" id="locator">
+                <div class="panel__hd">
+                    <h2>{{ Text::get('cyberspace.locate.heading') }}</h2>
+                    <div class="spacer"></div>
+                    @if ($locator['name'])
+                        <span class="tag">{{ $locator['name'] }}</span>
+                    @endif
+                </div>
+                <form method="GET" action="{{ route('cyberspace.index') }}#locator" class="stack" style="--gap:var(--s-2);margin-top:var(--s-3)">
+                    <div style="display:flex;flex-wrap:wrap;gap:var(--s-2)">
+                        <input class="input" id="find" name="find" value="{{ $locator['raw'] }}" maxlength="100"
+                               style="flex:1;min-width:min(160px,100%)" autocomplete="off"
+                               placeholder="{{ Text::get('cyberspace.locate.placeholder') }}">
+                        <button type="submit" class="btn btn--sm cut">{{ Text::get('cyberspace.locate.go') }}</button>
+                    </div>
+                    <span class="field__hint">{{ Text::get('cyberspace.locate.hint') }}</span>
+                </form>
+
+                @if ($locator['query'] !== null)
+                    @php($found = $locator['result'])
+                    <div class="stack" style="--gap:var(--s-2);margin-top:var(--s-3);padding-top:var(--s-3);border-top:var(--hair) solid var(--line-0)">
+                        @if ($found === null)
+                            <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.locate.none') }}</p>
+                        @else
+                            <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                                <span aria-hidden="true" style="font-size:var(--fs-xl);line-height:1">{{ $found->arrow() }}</span>
+                                <div style="min-width:0">
+                                    <div class="item-row__name">{{ $found->contact->name }}</div>
+                                    <div class="micro" style="color:var(--ink-2)">
+                                        {{ Text::get('cyberspace.locate.distance', ['steps' => $found->steps]) }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row row--wrap micro" style="--gap:var(--s-2);align-items:center">
+                                <x-address :address="$found->contact->address" />
+                                <span class="tag">{{ $found->contact->type->label() }}</span>
+                                @if ($found->contact->owner)
+                                    <span class="tag">{{ $found->contact->owner }}</span>
+                                @endif
+                                @if ($found->grade !== null)
+                                    <span class="tag">{{ Text::get('cyberspace.locate.grade', ['grade' => $found->grade]) }}</span>
+                                @endif
+                            </div>
+                            @if ($found->fromPortal)
+                                <span class="field__hint">{{ Text::get('cyberspace.locate.from_portal') }}</span>
+                            @elseif ($locator['canTraverse'])
+                                <div>
+                                    <button type="button" class="btn btn--sm cut" data-autotraverse="traverse-dialog"
+                                            data-url="{{ route('cyberspace.traverse') }}" data-x="{{ $found->contact->x }}" data-y="{{ $found->contact->y }}"
+                                            data-steps="{{ $found->steps }}" data-step-ms="10000">{{ Text::get('cyberspace.locate.autotraverse') }}</button>
+                                </div>
+                                {{-- Over the whole screen: the dialog's backdrop is the yellow half-transparent overlay. --}}
+                                <dialog class="modal modal--traverse" id="traverse-dialog">
+                                    <div class="panel__hd"><span class="micro">{{ Text::get('cyberspace.locate.traversing') }}</span></div>
+                                    <div class="panel__bd stack" style="--gap:var(--s-4)">
+                                        <div class="item-row__name" data-traverse-left></div>
+                                        <div class="meter" style="--v:0" data-traverse-meter><div class="meter__fill"></div></div>
+                                        <button type="button" class="btn btn--block cut" data-traverse-cancel>{{ Text::get('cyberspace.locate.traverse_cancel') }}</button>
+                                    </div>
+                                </dialog>
+                            @endif
+                        @endif
+                    </div>
+                @endif
+            </section>
+        @endif
+
         {{-- THE ROUTING CHAIN, as the next run would build it (App\Cyberspace\ChainBuilder): every system you hold a
              routing backdoor on, highest grade first, up to the most your Routing skills allow. Nothing to pick, so
              nothing to press. --}}

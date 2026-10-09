@@ -116,6 +116,11 @@ final class ProgramRunner
             return ProcessRefusal::OneIcebreaker;
         }
 
+        // One locator at a time, a Pathfinder counting as one: two would be two search boxes answering one question.
+        if (in_array($program->kind, [ProgramKind::Locator, ProgramKind::Pathfinder], true) && $this->kindRunning($character, ProgramKind::Locator, ProgramKind::Pathfinder)) {
+            return ProcessRefusal::OneLocator;
+        }
+
         /*
          * HOW MANY OF THIS ONE THING ARE ALREADY GOING.
          *
@@ -253,10 +258,15 @@ final class ProgramRunner
     /** Whether any icebreaker is going, on any deck — the same reach threads have. */
     private function icebreakerRunning(Character $character): bool
     {
+        return $this->kindRunning($character, ProgramKind::Icebreaker);
+    }
+
+    private function kindRunning(Character $character, ProgramKind ...$kinds): bool
+    {
         return InventoryItem::query()
             ->where('character_id', $character->getKey())
             ->whereNotNull('running_on_deck_id')
-            ->whereHas('item.program', static fn ($q) => $q->where('kind', ProgramKind::Icebreaker->value))
+            ->whereHas('item.program', static fn ($q) => $q->whereIn('kind', array_map(static fn (ProgramKind $k): string => $k->value, $kinds)))
             ->exists();
     }
 

@@ -38,6 +38,12 @@ enum ProgramKind: string
     /** Spent by running: a program with a lifetime (`programs.lifetime_seconds`) that acts like a timed modifier. */
     case Script = 'script';
 
+    /** Finds the nearest system you have met that fits a description. Always running, and the map screen offers its search while it is. */
+    case Locator = 'locator';
+
+    /** A Locator that can also walk you to what it found (Autotraverse on the map). */
+    case Pathfinder = 'pathfinder';
+
     /**
      * May a program of this kind run outside a cyberspace run?
      *
@@ -53,7 +59,7 @@ enum ProgramKind: string
             // is something you do on the open grid and not only inside a run:
             // scanning IS the safe run type. It idles and listens, which is
             // the shape of a background job.
-            self::Decryptor, self::Daemon, self::Analyser, self::Script => true,
+            self::Decryptor, self::Daemon, self::Analyser, self::Script, self::Locator, self::Pathfinder => true,
             self::Icebreaker, self::Evasion => false,
         };
     }

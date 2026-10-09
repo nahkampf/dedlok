@@ -61,8 +61,8 @@
         @csrf
         @unless ($creating) @method('PUT') @endunless
 
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.identity') }}</span></div>
+        <details class="panel" @if ($errors->any() || $creating) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.identity') }}</span></summary>
             <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
 
                 <div class="field" @error('slug') data-invalid @enderror>
@@ -96,10 +96,10 @@
                     @error('flavor') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
             </div>
-        </div>
+        </details>
 
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.classification') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.classification') }}</span></summary>
             <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr))">
 
                 <div class="field" @error('container') data-invalid @enderror>
@@ -151,10 +151,10 @@
                     @error('stackable') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
             </div>
-        </div>
+        </details>
 
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.use') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.use') }}</span></summary>
             <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
 
                 <div class="field" @error('use_op') data-invalid @enderror>
@@ -186,10 +186,10 @@
                     @error('use_skill_id') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
             </div>
-        </div>
+        </details>
 
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.physical') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.physical') }}</span></summary>
             <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr))">
 
                 <div class="field" @error('weight') data-invalid @enderror>
@@ -238,7 +238,7 @@
                  carries its modifiers on that row — deciding here which kinds
                  of thing may is a second opinion about that. --}}
             <x-modifier-rows name="modifiers" :rows="\App\Admin\ModifierField::rows($item?->modifiers)" />
-        </div>
+        </details>
 
         {{-- Software. The mirror of the hardware panel below, and the two are
              mutually exclusive without a rule saying so: hardware forces the
@@ -257,8 +257,8 @@
              One field, because there is one fact. What an implant DOES is the
              modifiers panel above, read by `InstalledImplants`; how many fit
              is `BodyRegion`'s answer and never the item's. --}}
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.implant') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.implant') }}</span></summary>
             <div class="panel__bd">
                 <div class="field" @error('implant_region') data-invalid @enderror>
                     <label class="field__label" for="implant_region">{{ Text::get('admin.items.fields.implant_region') }}</label>
@@ -274,7 +274,7 @@
                     @error('implant_region') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
             </div>
-        </div>
+        </details>
 
         {{-- Drugs. The third thing an item can also be, and the only one that
              is physical: software is data and deck hardware is a component,
@@ -285,8 +285,8 @@
              and the two figures are how fast it moves them. --}}
         {{-- A consumable: what using one copy does, once. A number per kind of effect; blank is none, and an item with
              none is not a consumable. A drug may carry one too (taken, it also does this at once). Not an effect row above (those are resolved stats). --}}
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.consumable') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.consumable') }}</span></summary>
             <div class="panel__bd">
                 @foreach (\App\Items\UseEffect::cases() as $kind)
                     @php($field = 'use_'.$kind->value)
@@ -300,10 +300,10 @@
                     </div>
                 @endforeach
             </div>
-        </div>
+        </details>
 
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.drug') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.drug') }}</span></summary>
             <div class="panel__bd">
                 <div class="field" @error('drug_family') data-invalid @enderror>
                     <label class="field__label" for="drug_family">{{ Text::get('admin.items.fields.drug_family') }}</label>
@@ -362,13 +362,13 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </details>
         {{-- Armour. Worn on the body, a part at a time, so the one fact a bare item has no place for is
              WHICH parts it covers: a helmet one, a plate one, a set all six. What it RESISTS is the effects
              panel above, against the damage types, and it counts only where this panel says it is worn. --}}
         @php($armourTicked = collect(old('armour_slots', array_map(fn ($g) => $g->value, \App\Combat\WearSlot::groupsOf((array) ($item?->armour?->slots ?? [])))))->map(fn ($v) => (string) $v)->all())
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.armour') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.armour') }}</span></summary>
             <div class="panel__bd">
                 <div class="field" @error('armour_slots') data-invalid @enderror>
                     <span class="field__label">{{ Text::get('admin.items.fields.armour_slots') }}</span>
@@ -385,14 +385,14 @@
                     @error('armour_slots') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
             </div>
-        </div>
+        </details>
         {{-- Weapons. A hit does ONE fixed damage — never a range. A FIREARM has none of its own: its round
              carries the damage and the profile, so leave both blank on a gun. A blade, a club or a grenade
              keeps them here. How well a hit lands is decided by the roll, not here. The class says which
              skill aims it and whether it is a Ranged or a Close weapon. The PROFILE says how the hit
              splits across damage types, so a stun baton can be part blunt and part electrical. --}}
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.weapon') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.weapon') }}</span></summary>
             <div class="panel__bd">
                 <div class="field" @error('weapon_class') data-invalid @enderror>
                     <label class="field__label" for="weapon_class">{{ Text::get('admin.items.fields.weapon_class') }}</label>
@@ -450,13 +450,13 @@
                     @include('admin.items._riders', ['name' => 'weapon_riders', 'current' => old('weapon_riders') ? [] : $item?->weapon?->riders(), 'hint' => 'admin.items.fields.weapon_riders_hint'])
                 </div>
             </div>
-        </div>
+        </details>
 
         {{-- Ammunition. What a firearm's hit IS: the whole damage of a hit with this round, how it splits across
              damage types, a penetration (how much of the target's resistance it ignores) and riders. It fits
              a weapon of the same calibre. It stacks. --}}
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.ammunition') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.ammunition') }}</span></summary>
             <div class="panel__bd">
                 <div class="field" @error('ammo_calibre') data-invalid @enderror>
                     <label class="field__label" for="ammo_calibre">{{ Text::get('admin.items.fields.ammo_calibre') }}</label>
@@ -505,10 +505,10 @@
                     @include('admin.items._riders', ['name' => 'ammo_riders', 'current' => old('ammo_riders') ? [] : $item?->ammunition?->riders(), 'hint' => 'admin.items.fields.ammo_riders_hint'])
                 </div>
             </div>
-        </div>
+        </details>
 
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.software') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.software') }}</span></summary>
             <div class="panel__bd">
                 <div class="field" @error('program_kind') data-invalid @enderror>
                     <label class="field__label" for="program_kind">{{ Text::get('admin.items.fields.program_kind') }}</label>
@@ -596,10 +596,10 @@
                                      :hint="Text::get('admin.items.fields.program_modifiers_hint')" />
                 </div>
             </div>
-        </div>
+        </details>
 
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.hardware') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.hardware') }}</span></summary>
             <div class="panel__bd">
                 <div class="field" @error('hardware') data-invalid @enderror>
                     <label class="field__label" for="hardware">{{ Text::get('admin.items.fields.hardware') }}</label>
@@ -613,18 +613,18 @@
                     @error('hardware') <span class="field__error">{{ $message }}</span> @enderror
                 </div>
             </div>
-        </div>
+        </details>
 
         {{-- A deck's sockets. Thirteen counters, one per type, because that
              is the whole vocabulary a deck can be specified in — see
              App\Decks\SlotType. Zeroes are dropped on the way in, so the
              counters a non-deck item posts are not a request for anything. --}}
-        <div class="panel" data-hardware="deck" @unless ($isDeck) hidden @endunless>
-            <div class="panel__hd">
+        <details class="panel" data-hardware="deck" @unless ($isDeck) hidden @endunless @if ($errors->any()) open @endif>
+            <summary class="panel__hd">
                 <span class="micro">{{ Text::get('admin.items.sections.sockets') }}</span>
                 <div class="spacer"></div>
                 <span class="tag">{{ Text::plural('admin.items.sockets.total', $layout->total()) }}</span>
-            </div>
+            </summary>
             <div class="panel__bd stack" style="--gap:var(--s-4)">
                 <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('admin.items.sockets.help') }}</p>
 
@@ -654,20 +654,20 @@
                     @endforeach
                 </div>
             </div>
-        </div>
+        </details>
 
         {{-- Where those sockets sit when someone looks at the deck. The same
              component the player's screen renders, with the drag handles on —
              an editor that draws the board differently from the screen is an
              editor that lies. --}}
-        <div class="panel" data-hardware="deck" @unless ($isDeck) hidden @endunless>
-            <div class="panel__hd">
+        <details class="panel" data-hardware="deck" @unless ($isDeck) hidden @endunless @if ($errors->any()) open @endif>
+            <summary class="panel__hd">
                 <span class="micro">{{ Text::get('admin.items.sections.board') }}</span>
                 <div class="spacer"></div>
                 @unless ($item?->board_layout)
                     <span class="tag">{{ Text::get('admin.items.board.automatic') }}</span>
                 @endunless
-            </div>
+            </summary>
             <div class="panel__bd stack" style="--gap:var(--s-4)">
                 <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('admin.items.board.help') }}</p>
 
@@ -695,13 +695,13 @@
                 <input type="hidden" id="board_layout" name="board_layout"
                        value="{{ old('board_layout', $item?->board_layout ? json_encode($item->board_layout) : '') }}">
             </div>
-        </div>
+        </details>
 
         {{-- A module's own row. Which fields apply follows from the kind, and
              every one that does not is prohibited rather than ignored — see
              App\Http\Requests\Admin\ItemRequest::moduleRules(). --}}
-        <div class="panel" data-hardware="cpu npu ram nic expansion psu" @unless ($isModule) hidden @endunless>
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.module') }}</span></div>
+        <details class="panel" data-hardware="cpu npu ram nic expansion psu" @unless ($isModule) hidden @endunless @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.module') }}</span></summary>
             <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr))">
 
                 <div class="field" data-hardware="cpu ram expansion" @error('variant') data-invalid @enderror>
@@ -747,7 +747,7 @@
                     </div>
                 @endforeach
             </div>
-        </div>
+        </details>
 
         {{-- A DESIGN (CRAFTING.md): plain data with a recipe. Choosing a product is what makes the item one; blank rows are spare. --}}
         @php($design = $item?->design)
@@ -756,8 +756,8 @@
             'item_id' => $c->component_item_id, 'quantity' => $c->quantity, 'grade_min' => $c->grade_min, 'grade_max' => $c->grade_max,
             'os_slug' => $c->os_slug, 'owner_id' => $c->owner_id, 'system_type' => $c->system_type, 'ice_min' => $c->ice_min, 'ids_min' => $c->ids_min,
         ])->all() : []))
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.design.heading') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.design.heading') }}</span></summary>
             <div class="panel__bd stack" style="--gap:var(--s-3)">
                 <p class="field__hint" style="margin:0">{{ Text::get('admin.items.design.hint') }}</p>
 
@@ -862,10 +862,10 @@
                     </div>
                 @endfor
             </div>
-        </div>
+        </details>
 
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.market') }}</span></div>
+        <details class="panel" @if ($errors->any()) open @endif>
+            <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.market') }}</span></summary>
             <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr))">
 
                 <div class="field" @error('base_cost') data-invalid @enderror>
@@ -892,7 +892,7 @@
                     </label>
                 </div>
             </div>
-        </div>
+        </details>
 
         <div class="row row--wrap">
             <button type="submit" class="btn btn--primary cut">

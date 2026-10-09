@@ -111,6 +111,19 @@ final class MissionTest extends TestCase
         $this->assertGreaterThan(0, $this->board()->forCharacter($this->character, $this->desk)->count());
     }
 
+    /** A survey pays x3 at grade 1, falling to x1 at grade 5; the other actions keep their one figure. */
+    public function test_a_survey_pays_more_at_the_low_grades(): void
+    {
+        $rewards = new \ReflectionMethod(MissionBoard::class, 'rewards');
+        $min = fn (string $action, int $grade): int => $rewards->invoke($this->board(), MissionAction::from($action), $grade)['creds'];
+
+        // The test roll returns the bottom of every band.
+        $this->assertSame(120, $min('scan', 1));
+        $this->assertSame(225, $min('scan', 2));
+        $this->assertSame(900, $min('scan', 5));
+        $this->assertSame(80, $min('burn', 1));
+    }
+
     /** The rewards are frozen at the offer, so retuning cannot change a job already taken. */
     public function test_rewards_are_snapshotted_onto_the_row(): void
     {

@@ -8,6 +8,7 @@ use App\Cyberspace\Backdoors;
 use App\Cyberspace\BookmarkKeeper;
 use App\Cyberspace\BookmarkKind;
 use App\Cyberspace\ChainBuilder;
+use App\Cyberspace\Finder;
 use App\Cyberspace\Grid;
 use App\Cyberspace\MapView;
 use App\Cyberspace\Navigator;
@@ -16,6 +17,7 @@ use App\Cyberspace\Probe;
 use App\Cyberspace\ScanExporter;
 use App\Cyberspace\ScanExportRefusal;
 use App\Cyberspace\SweepResult;
+use App\Cyberspace\TravelRefusal;
 use App\Cyberspace\TravelResult;
 use App\Models\Bookmark;
 use App\Models\Character;
@@ -46,7 +48,7 @@ use Illuminate\View\View;
  */
 class CyberspaceController extends Controller
 {
-    public function index(Request $request, Probe $probe, ChainBuilder $chains): View
+    public function index(Request $request, Probe $probe, ChainBuilder $chains, Finder $finder): View
     {
         $character = $this->character($request);
         $grid = Grid::fromConfig();
@@ -96,7 +98,17 @@ class CyberspaceController extends Controller
             );
         }
 
+        // The Locator's search: offered only while the program runs, and answered here because it is a read.
+        $locator = null;
+
+        if ($finder->available($character)) {
+            $raw = trim((string) $request->query('find', ''));
+            $query = $request->query->has('find') ? $finder->parse($raw) : null;
+            $locator = ['name' => $finder->program($character)?->item?->displayName(), 'canTraverse' => $finder->canTraverse($character) && $character->isJackedIn(), 'raw' => $raw, 'query' => $query, 'result' => $query === null ? null : $finder->nearest($character, $query, $grid)];
+        }
+
         return view('cyberspace.index', [
+            'locator' => $locator,
             'character' => $character,
             // The route a run would take from here: the same call the briefing makes, so what this box shows is what
             // the next run gets. Not tied to a target, so every routing backdoor held is listed.
@@ -198,6 +210,42 @@ class CyberspaceController extends Controller
             Navigator::fromConfig($resolver)->step($this->character($request), new Position($x, $y)),
             null,
         );
+    }
+
+    /**
+     * One step of Autotraverse, toward a target. The page calls it every ten seconds; each call is an ordinary step
+     * through the Navigator, so a sweep and a hunter's roll happen exactly as when walking by hand. Answers JSON:
+     * where they stand, the steps left, or `stop` with the reason when something put an end to it.
+     */
+    public function traverse(Request $request, Finder $finder, Resolver $resolver): JsonResponse
+    {
+        $data = $request->validate(['x' => ['required', 'integer', 'min:0', 'max:9999'], 'y' => ['required', 'integer', 'min:0', 'max:9999']]);
+        $character = $this->character($request);
+
+        abort_unless($finder->canTraverse($character), 403);
+
+        $target = new Position((int) $data['x'], (int) $data['y']);
+        $from = $character->gridPosition();
+
+        if ($from === null) {
+            return response()->json(['stop' => true, 'message' => TravelRefusal::NotJackedIn->message()]);
+        }
+
+        if ($from->equals($target)) {
+            return response()->json(['left' => 0]);
+        }
+
+        $result = Navigator::fromConfig($resolver)->step($character, Finder::stepToward($from, $target));
+
+        if (! $result->succeeded()) {
+            return response()->json(['stop' => true, 'message' => $result->refusal->message()]);
+        }
+
+        if ($result->wasAmbushed()) {
+            return response()->json(['stop' => true, 'message' => Text::get('cyberspace.locate.traverse_stopped'), 'hunt' => route('hunt.show')]);
+        }
+
+        return response()->json(['x' => $result->position->x, 'y' => $result->position->y, 'left' => $result->position->distanceTo($target)]);
     }
 
     /**
