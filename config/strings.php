@@ -1714,13 +1714,9 @@ return [
             'go' => 'Find nearest',
             'searched_for' => 'Looking for: :terms',
             'none' => 'Nothing you know of fits.',
-            'distance' => ':steps steps :direction',
+            'distance' => ':steps steps',
             'grade' => 'Grade :grade',
             'from_portal' => 'Measured from the portal.',
-            'directions' => [
-                'n' => 'north', 'ne' => 'north-east', 'e' => 'east', 'se' => 'south-east',
-                's' => 'south', 'sw' => 'south-west', 'w' => 'west', 'nw' => 'north-west',
-            ],
         ],
 
         'bookmarks' => [

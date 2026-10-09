@@ -442,7 +442,7 @@
                                 <div style="min-width:0">
                                     <div class="item-row__name">{{ $found->contact->name }}</div>
                                     <div class="micro" style="color:var(--ink-2)">
-                                        {{ Text::get('cyberspace.locate.distance', ['steps' => $found->steps, 'direction' => Text::get('cyberspace.locate.directions.'.$found->direction)]) }}
+                                        {{ Text::get('cyberspace.locate.distance', ['steps' => $found->steps]) }}
                                     </div>
                                 </div>
                             </div>
