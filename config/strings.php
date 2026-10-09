@@ -778,6 +778,8 @@ return [
         'missions' => 'Missions',
         'missions_hint' => 'Jobs you have accepted from an exchange and not yet finished, the ones running out first at the top. Hand them in at the desk they came from.',
         'missions_none' => 'No missions accepted. An exchange desk offers them.',
+        'recent' => 'Recently worked for:',
+        'grade' => 'Grade :grade',
         'journal' => 'Journal',
         'tasks' => 'Tasks',
         'not_yet' => 'Not yet implemented.',

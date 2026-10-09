@@ -30,6 +30,18 @@ class TasksController extends Controller
                 ->with('targets.system', 'entity', 'exchange.system')
                 ->orderBy('expires_at')
                 ->get(),
+            // The desks worked for in the last week: one per exchange, however many jobs, and whatever became of them.
+            // `accepted_at` is NULL for an offer nobody took, so an unaccepted one is never counted.
+            'recent' => Mission::query()
+                ->where('character_id', $character->getKey())
+                ->where('accepted_at', '>=', now()->subDays(7))
+                ->with('exchange.system')
+                ->get()
+                ->pluck('exchange')
+                ->filter()
+                ->unique('id')
+                ->sortBy(fn ($exchange) => $exchange->system?->name)
+                ->values(),
             // For a survey's per-system tags and a supply job's meter: what is in the stash right now.
             'files' => $ledger->suppliable($character),
             'heldAddresses' => $ledger->heldAddresses($character),

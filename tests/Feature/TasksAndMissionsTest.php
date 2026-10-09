@@ -60,6 +60,26 @@ final class TasksAndMissionsTest extends TestCase
         return $this->actingAs($this->me->user->fresh())->get(route('tasks.index'))->assertOk()->getContent();
     }
 
+    public function test_recently_worked_for_lists_desks_taken_from_in_the_last_week_once_each(): void
+    {
+        $this->assertStringNotContainsString('Recently worked for:', $this->page());
+
+        $this->job($this->me, MissionAction::Scan, MissionState::Completed);
+        $this->job($this->me, MissionAction::Burn, MissionState::Failed);
+        // An offer nobody took is not work, and a job from before the week does not count.
+        $this->job($this->me, MissionAction::Scan, MissionState::Offered);
+
+        $html = $this->page();
+
+        $this->assertStringContainsString('Recently worked for:', $html);
+        $this->assertSame(1, substr_count($html, 'Grade 1'), 'the desk once, however many jobs');
+        $this->assertStringContainsString($this->desk->system->address, $html);
+
+        Mission::query()->update(['accepted_at' => now()->subDays(8)]);
+
+        $this->assertStringNotContainsString('Recently worked for:', $this->page());
+    }
+
     public function test_the_rail_has_tasks_and_missions_and_the_screen_has_three_headings(): void
     {
         $html = $this->page();

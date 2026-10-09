@@ -21,6 +21,19 @@
                 @endforeach
             </div>
         @endif
+
+        @if ($recent->isNotEmpty())
+            <h3 class="micro" style="margin:var(--s-3) 0 0">{{ Text::get('tasks.recent') }}</h3>
+            <ul class="stack" style="--gap:var(--s-2);list-style:none;margin:0;padding:0">
+                @foreach ($recent as $exchange)
+                    <li class="row row--wrap" style="--gap:var(--s-2);align-items:center">
+                        <span class="item-row__name" style="min-width:0">{{ $exchange->system?->displayName() }}</span>
+                        <span class="tag">{{ Text::get('tasks.grade', ['grade' => $exchange->grade]) }}</span>
+                        <span class="micro"><x-address :address="$exchange->system?->address" /></span>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
     </section>
 
     <section class="stack" style="--gap:var(--s-2);margin-top:var(--s-6)">
