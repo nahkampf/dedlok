@@ -420,7 +420,13 @@
              its distance and which of eight directions it lies in. --}}
         @if ($locator !== null)
             <section class="panel panel--snug" id="locator">
-                <div class="panel__hd"><h2>{{ Text::get('cyberspace.locate.heading') }}</h2></div>
+                <div class="panel__hd">
+                    <h2>{{ Text::get('cyberspace.locate.heading') }}</h2>
+                    <div class="spacer"></div>
+                    @if ($locator['name'])
+                        <span class="tag">{{ $locator['name'] }}</span>
+                    @endif
+                </div>
                 <form method="GET" action="{{ route('cyberspace.index') }}#locator" class="stack" style="--gap:var(--s-2);margin-top:var(--s-3)">
                     <div style="display:flex;flex-wrap:wrap;gap:var(--s-2)">
                         <input class="input" id="find" name="find" value="{{ $locator['raw'] }}" maxlength="100"

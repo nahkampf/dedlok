@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Cyberspace;
 
 use App\Models\Character;
+use App\Models\InventoryItem;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
 use App\Programs\ProgramKind;
@@ -23,6 +24,14 @@ final class Finder
     public function available(Character $character): bool
     {
         return $this->running($character, ProgramKind::Locator, ProgramKind::Pathfinder);
+    }
+
+    /** The Locator or Pathfinder that is running, if any. There is at most one: they share a slot. */
+    public function program(Character $character): ?InventoryItem
+    {
+        return $character->runningProcesses()->first(
+            static fn ($row): bool => in_array($row->item?->program?->kind, [ProgramKind::Locator, ProgramKind::Pathfinder], true),
+        );
     }
 
     /** Can the character have the grid walked for them? Only a running Pathfinder does it. */
