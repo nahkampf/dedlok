@@ -1,3 +1,10 @@
+## 0.48.0 (2026-10-09)
+
+- Grid is now 128x128 instead of 64x64 (it was getting crowded in here)
+- All locations, sightings, bookmarks etc have been updated to the new coordinates
+- Locators now accepts addresses as input as well
+- Tasks & Missions lists the exchanges you have worked for in the last 7 days
+
 ## 0.47.0 (2026-10-09)
 
 - New program types: Locators and Pathfinders.

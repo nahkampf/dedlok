@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.48.0] — 2026-10-09
+
+The grid is four times the size, and the portal and every exchange move with it.
+
+### Changed
+
+- **The grid is 128 × 128** (`cyberspace.size`, was 64). Migration `2026_10_09_330000_the_grid_is_128`: the portal, derived as the middle, moves from (32,32) to (64,64);
+  every exchange is moved to rings round it (the placer's own rule, grade 1 innermost); each player's sighting of a moved system, saved waypoints on its old position and scan files follow it
+  (a sighting or waypoint already on the destination gives way to the newer); then `GridSeeder` tops the world up to its 70% occupancy over the new area, at the same ratios.
+  New systems get their contents at the next nightly `cyberspace:restock`. Not reversible. Does nothing on an empty grid.
+- **Locators and Pathfinders take an address** as a term (`FindQuery::$address`): an exact match on a system you have met, in any case.
+
+### Added
+
+- **Tasks & Missions**: *Recently worked for:* under Missions lists each exchange you accepted a job from in the last seven days, once each, with its grade and address.
+
+
 ## [0.47.0] — 2026-10-09
 
 Locators, a help page, richer survey pay, and an item editor that folds.
@@ -2862,7 +2879,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.47.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.48.0...HEAD
+[0.48.0]: https://github.com/nahkampf/dedlok/compare/v0.47.0...v0.48.0
 [0.47.0]: https://github.com/nahkampf/dedlok/compare/v0.46.1...v0.47.0
 [0.46.1]: https://github.com/nahkampf/dedlok/compare/v0.46.0...v0.46.1
 [0.46.0]: https://github.com/nahkampf/dedlok/compare/v0.45.0...v0.46.0
