@@ -17,6 +17,8 @@ final readonly class CraftPlan
         public array $lines,
         public int $seconds,
         public ?CraftingRefusal $blocked,
+        /** @var list<array{title: string, level: int}> */
+        public array $missingSkills = [],
     ) {}
 
     public function wasteful(): bool

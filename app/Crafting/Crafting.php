@@ -105,7 +105,11 @@ final class Crafting
         $percent = $character->stat('crafting_cost')->value;
         $lines = $design->components->map(fn (DesignComponent $line): CraftLine => $this->lineFor($character, $line, $percent))->all();
 
-        return new CraftPlan($row, $design, $lines, $seconds, $this->blockedBy($character, $design, $program->kind->value, $lines));
+        return new CraftPlan(
+            $row, $design, $lines, $seconds,
+            $this->blockedBy($character, $design, $program->kind->value, $lines),
+            $this->missingSkills($character, $design, $program->kind->value),
+        );
     }
 
     // ---- what a press does ------------------------------------------------
@@ -261,16 +265,8 @@ final class Crafting
             return CraftingRefusal::Uncraftable;
         }
 
-        $gates = [
-            [config('crafting.general_skill'), (int) config('crafting.general_level', 1)],
-            [$kindSkill, (int) config('crafting.gate_level', 1)],
-            [$design->skill?->slug, $design->skill_level],
-        ];
-
-        foreach ($gates as [$slug, $level]) {
-            if ($slug !== null && ! $this->hasLevel($character, (string) $slug, (int) $level)) {
-                return CraftingRefusal::NoSkill;
-            }
+        if ($this->missingSkills($character, $design, $kind) !== []) {
+            return CraftingRefusal::NoSkill;
         }
 
         if (Craft::query()->where('character_id', $character->getKey())->count() >= $this->slots($character)) {
@@ -292,6 +288,30 @@ final class Crafting
         }
 
         return null;
+    }
+
+    /**
+     * The skills this build asks for that the character lacks, each as its title and the level wanted.
+     *
+     * @return list<array{title: string, level: int}>
+     */
+    private function missingSkills(Character $character, Design $design, string $kind): array
+    {
+        $gates = [
+            [config('crafting.general_skill'), (int) config('crafting.general_level', 1)],
+            [config("crafting.gate.{$kind}"), (int) config('crafting.gate_level', 1)],
+            [$design->skill?->slug, $design->skill_level],
+        ];
+
+        $missing = [];
+
+        foreach ($gates as [$slug, $level]) {
+            if ($slug !== null && ! $this->hasLevel($character, (string) $slug, (int) $level)) {
+                $missing[] = ['title' => SkillStats::skills()->get((string) $slug)?->title ?? (string) $slug, 'level' => (int) $level];
+            }
+        }
+
+        return $missing;
     }
 
     /** The resolved level, so a skill modifier counts. A skill that is not in the game gates nothing. */
