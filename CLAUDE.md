@@ -862,6 +862,16 @@ what a bare `items` row cannot.
 - Screens: topbar count + modal, deck screen's Running and Storage tabs (storage split
   into two grids), `inventory.run` in both directions.
 
+### Locators
+
+**A Locator is a background program (`ProgramKind::Locator`) that finds the nearest system you have MET; a Pathfinder (`ProgramKind::Pathfinder`) is one that also walks you there.** `App\Cyberspace\Finder` is the whole of it, and the map screen's *Locator* box (drawn only while one runs, tagged with the program's name) is its only screen.
+
+- **One slot between them** (`ProcessRefusal::OneLocator`, in `ProgramRunner::refusalFor()`).
+- **It reads the map's memory (`system_contacts`), never `systems`**, and a grade is known only from a live scan, so a grade term matches nothing unscanned. The **portal is always known** (`Grid::portal()`, added as an unsaved sighting) and has no owner or grade.
+- **The query is one line of terms** (`exchange, lockjaw, grade >2`): a system type, a grade comparison, anything else is the owner. Result: nearest in steps (Chebyshev, then straight line), shown as one of eight arrows (`Finder::direction()`, north is a smaller y) and the distance. Measured from the portal when not jacked in.
+- **Autotraverse** (Pathfinder only, jacked in): the page posts `cyberspace.traverse` every ten seconds (`data-autotraverse` in `ui-kit.js`), each post one ordinary `Navigator::step()` toward the target (so a sweep and a hunter roll as by hand). The overlay is the dialog's backdrop (`dialog.modal--traverse`). It lives in the open page: reloading or leaving cancels it, and a refusal or a hunter stops it.
+- The two items (`azimuth`, `loco_motive`) arrive by migration `2026_10_09_320000_the_locators`.
+
 ### The character sheet
 
 **One rail item stands where four did.** Skills, Implants and Achievements each had their
@@ -1049,6 +1059,10 @@ ACCEPTED and not yet finished (`Mission::accepted()`: failed, completed and void
 soonest deadline first, each as the desk's own `<x-mission-card>` with `:actions="false"` (no Complete: a job is handed in at the desk
 it came from) and `:abandon="true"` (giving one up needs no desk; its tooltip is *Costs -X standing*, the row's penalty) and `:desk="true"` (who it is for, the agent, the desk's address). *Journal* and *Tasks* (quests) read "Not yet
 implemented." until they are designed. The rail glyph is U+25C7, one already proved to render.
+
+### The help page
+
+**`/help` is one public page of accordions** (`HelpController`, `resources/views/help/index.blade.php`) read straight from `strings.help`: groups with topics, then a glossary. Every group and topic has an id, so `/help#cyberspace` and `/help#scanning` work, and the page opens the accordion a link points at. Short statements, no numbers, nothing unbuilt. A topic's body is a list of blocks: a string is a paragraph, an array is a bullet list.
 
 ### Supporters
 
