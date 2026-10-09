@@ -21,14 +21,14 @@ declare(strict_types=1);
 return [
 
     /*
-    | The edge of the square. 64 today, 2048 eventually.
+    | The edge of the square. 128 today (it was 64 until 2026-10-09), 2048 eventually.
     |
     | Everything derived from it is derived rather than written down: the
     | position count is size squared, and the portal sits at the middle by
     | division. A second number that has to be kept in step with this one is a
     | number that will not be.
     */
-    'size' => 64,
+    'size' => 128,
 
     /*
     | How much of the grid holds a system, in percent.
@@ -71,7 +71,7 @@ return [
     | machines, with the occasional thing that should not be touched.
     |
     | Per mille, so they are readable as tenths of a percent and sum to 1000.
-    | On a 64 x 64 grid at 70% occupancy that is roughly fourteen grade 9s in
+    | On a 128 x 128 grid at 70% occupancy that is roughly fifty grade 9s in
     | the entire world - which is the point. They should be rumours.
     |
     | This is THE tuning dial for how dangerous cyberspace feels. Nothing
