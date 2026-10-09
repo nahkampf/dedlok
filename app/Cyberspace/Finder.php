@@ -16,7 +16,8 @@ use App\Programs\ProgramKind;
  * It reads the map's memory (`system_contacts`) and never `systems`, for the reason `MapView` gives: a search over the live table
  * would hand out machines nobody has met. A grade is known only from a live scan, exactly as the map shows it, so a grade term
  * matches nothing that has not been scanned. Distance is in steps (`Position::distanceTo()`), measured from where the body is on
- * the grid, or from the portal when it is not jacked in.
+ * the grid, or from the portal when it is not jacked in. An address is an exact match and finds only a system that has been met:
+ * knowing an address tells you where to arrive, not where it is, and the finder keeps it that way.
  */
 final class Finder
 {
@@ -64,9 +65,16 @@ final class Finder
         $owner = null;
         $op = null;
         $grade = null;
+        $address = null;
 
         foreach (array_filter(array_map('trim', explode(',', $query)), static fn (string $t): bool => $t !== '') as $term) {
             $lower = mb_strtolower($term);
+
+            if (Address::isValid(strtoupper($term))) {
+                $address = strtoupper($term);
+
+                continue;
+            }
 
             if (preg_match('/^(?:grade\s*)?(>=|<=|>|<|=)?\s*([1-9])$/', $lower, $m) === 1) {
                 $op = $m[1] === '' ? '=' : $m[1];
@@ -88,7 +96,7 @@ final class Finder
             $owner = $owner === null ? $term : $owner.' '.$term;
         }
 
-        return new FindQuery($type, $owner, $op, $grade);
+        return new FindQuery($type, $owner, $op, $grade, $address);
     }
 
     public function nearest(Character $character, FindQuery $query, ?Grid $grid = null): ?FindResult
@@ -106,6 +114,7 @@ final class Finder
         $contacts = SystemContact::query()
             ->where('type', '!=', SystemType::Portal->value)
             ->where('character_id', $character->getKey())
+            ->when($query->address, static fn ($q, string $a) => $q->where('address', $a))
             ->when($query->type, static fn ($q, SystemType $t) => $q->where('type', $t->value))
             ->when($query->owner, static fn ($q, string $o) => $q->where('owner', 'like', '%'.addcslashes($o, '%_\\').'%'))
             ->get();
@@ -115,10 +124,13 @@ final class Finder
         if (($query->type === null || $query->type === SystemType::Portal) && $query->owner === null && $query->grade === null) {
             $portal = $grid->portal();
             $row = $grid->at($portal);
-            $contacts->push(new SystemContact([
-                'x' => $portal->x, 'y' => $portal->y, 'address' => $row?->address ?? '', 'name' => $row?->name ?? SystemType::Portal->label(),
-                'type' => SystemType::Portal, 'owner' => null,
-            ]));
+
+            if ($query->address === null || $row?->address === $query->address) {
+                $contacts->push(new SystemContact([
+                    'x' => $portal->x, 'y' => $portal->y, 'address' => $row?->address ?? '', 'name' => $row?->name ?? SystemType::Portal->label(),
+                    'type' => SystemType::Portal, 'owner' => null,
+                ]));
+            }
         }
 
         $best = null;

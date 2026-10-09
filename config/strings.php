@@ -1711,7 +1711,7 @@ return [
         'locate' => [
             'heading' => 'Locator',
             'open' => 'Search',
-            'hint' => 'Type, owner and grade, separated by commas. For example: exchange, lockjaw, grade >2',
+            'hint' => 'Type, owner, grade or an address, separated by commas. For example: exchange, lockjaw, grade >2',
             'placeholder' => 'exchange, lockjaw, grade >2',
             'go' => 'Find nearest',
             'searched_for' => 'Looking for: :terms',
