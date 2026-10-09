@@ -252,6 +252,8 @@ final readonly class MissionBoard
     {
         $band = config("missions.grades.{$grade}");
         $scale = config("missions.actions.{$action->value}");
+        // A multiplier is one figure, or a table by grade.
+        $scale['creds'] = is_array($scale['creds']) ? $scale['creds'][$grade] : $scale['creds'];
 
         return [
             'creds' => (int) round(($this->roll)((int) $band['creds'][0], (int) $band['creds'][1]) * $scale['creds']),

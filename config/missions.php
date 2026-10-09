@@ -69,13 +69,17 @@ return [
     | because handing somebody a permanent foothold on a rival's machine is
     | worth more to them than intel and more dangerous to be caught at.
     |
+    | A figure may also be a table by grade. The survey's creds are one: x3 at grade 1, falling by half a point
+    | a grade to x1 at grade 5, because a survey pays per JOB however many systems it names (3 to 10), which
+    | made the low desks poor for the scanning they ask. Creds only: grade 1 standing is held low on purpose.
+    |
     | Supply is the low-risk half of the board and priced as trade rather than
     | service: the creds are the reward and the standing deliberately is not,
     | which keeps scanning from being the quiet fastest route up the ladder.
     |
     */
     'actions' => [
-        'scan' => ['creds' => 1.0, 'standing' => 1.0, 'loyalty' => 1.0],
+        'scan' => ['creds' => [1 => 3.0, 2 => 2.5, 3 => 2.0, 4 => 1.5, 5 => 1.0], 'standing' => 1.0, 'loyalty' => 1.0],
         'burn' => ['creds' => 2.0, 'standing' => 1.5, 'loyalty' => 2.0],
         'plant' => ['creds' => 1.4, 'standing' => 2.0, 'loyalty' => 2.0],
         'supply' => ['creds' => 1.2, 'standing' => 0.5, 'loyalty' => 0.5],
