@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.46.1] — 2026-10-09
+
+### Changed
+
+- **The deck's Crafting box**: "You do not have the skill to build this." now opens a *Skills missing* dialog listing each skill the build still needs and the level wanted
+  (`Crafting::missingSkills()`, carried on `CraftPlan`; `blockedBy()` asks the same list, so the message and the dialog cannot disagree).
+
+
 ## [0.46.0] — 2026-10-09
 
 An admin Characters screen for grants, achievements that show how rare they are, and fixes.
@@ -2833,7 +2841,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.46.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.46.1...HEAD
+[0.46.1]: https://github.com/nahkampf/dedlok/compare/v0.46.0...v0.46.1
 [0.46.0]: https://github.com/nahkampf/dedlok/compare/v0.45.0...v0.46.0
 [0.45.0]: https://github.com/nahkampf/dedlok/compare/v0.44.0...v0.45.0
 [0.44.0]: https://github.com/nahkampf/dedlok/compare/v0.43.0...v0.44.0
