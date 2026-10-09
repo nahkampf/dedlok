@@ -3088,6 +3088,122 @@ return [
         'description' => 'A cyberpunk browser RPG, inspired by BBS door games like LOD, LORD, Usurper and Darkness - and heavily influenced by mechanics from EVE Online.',
     ],
 
+    // The help page. Short statements, no numbers. A topic's body is blocks: a string is a paragraph, an array is a list.
+    'help' => [
+        'title' => 'Help',
+        'contents' => 'Contents',
+        'groups' => [
+            [
+                'id' => 'start',
+                'title' => 'Start here',
+                'topics' => [
+                    [
+                        'id' => 'screen',
+                        'title' => 'The screen',
+                        'body' => [
+                            [
+                                'Rail on the left: everywhere you can go. Hover or tap to open it.',
+                                'Top bar: Synaptic Integrity, hit points, creds and the number of processes running.',
+                                'Current processes (the ring beside the count) lists every clock that is running.',
+                                'Inbox: what happened while you were away. The badge counts unread messages.',
+                            ],
+                        ],
+                    ],
+                    [
+                        'id' => 'first-steps',
+                        'title' => 'First steps',
+                        'body' => [
+                            [
+                                'Equip a deck. The deck screen names anything that stops it running.',
+                                'Jack in and scan a system.',
+                                'Run it. Take creds, items and files.',
+                                'Sell what you took, or keep it.',
+                                'Spend creds on skills and gear, and queue training.',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'id' => 'character',
+                'title' => 'Your character',
+                'topics' => [
+                    [
+                        'id' => 'skills',
+                        'title' => 'Skills and training',
+                        'body' => [
+                            'A skill must be injected before it can be trained. Injecting uses up its imprint. Imprints are sold on the market or found.',
+                            'Training runs in the background, one skill at a time. Queue a skill and it takes the next level. Queue it again for the one after.',
+                            'A missing prerequisite is a warning. The skill stalls until you meet it.',
+                            'The queue holds five. Drag to reorder, as long as the order still meets every requirement.',
+                        ],
+                    ],
+                    [
+                        'id' => 'si-hp',
+                        'title' => 'SI and HP',
+                        'body' => [
+                            [
+                                'SI is your mind. ICE and failing hardware damage it. It mends over time.',
+                                'HP is your body. It does not mend by itself. Clinics, medkits and some drugs and implants restore it.',
+                                'At zero you are down. You wait, then get up on one point. Getting up is not healing.',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'id' => 'cyberspace',
+                'title' => 'Cyberspace',
+                'topics' => [
+                    [
+                        'id' => 'scanning',
+                        'title' => 'Scanning',
+                        'body' => [
+                            'Scan first. A scan reveals what defences a system has, and the difficulty. Scan data goes stale after a while.',
+                            'A scan takes time and runs by itself. Your deck has to be ready.',
+                        ],
+                    ],
+                    [
+                        'id' => 'runs',
+                        'title' => 'Runs',
+                        'body' => [
+                            'Choose your loadout on the briefing. It cannot be changed inside a run.',
+                            'A run is turn by turn. You act, then the system does.',
+                            [
+                                'The IDS watches you. If it catches you, the ICE wakes.',
+                                'Awake ICE guards the core. Break it or leave.',
+                                'A trace follows your routing chain. Longer chains give you more turns.',
+                                'Egress is a roll. If it fails, the turn is spent and the system acts.',
+                            ],
+                            'How a run ends:',
+                            [
+                                'Egress: you leave.',
+                                'Completed: you did what you came for.',
+                                'Defeat: ICE wins, and its effects apply.',
+                                'Burnout: your deck loses a module.',
+                                'Cancelled: the system was burned or locked down. You lose a point of SI.',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        'glossary' => [
+            'id' => 'glossary',
+            'title' => 'Glossary',
+            'terms' => [
+                'Creds' => 'Money.',
+                'Egress' => 'Leaving a system during a run.',
+                'Grade' => 'A system\'s level, from 1 to 9. Higher is harder and pays more.',
+                'ICE' => 'Defences that attack you during a run.',
+                'IDS' => 'Watches for intruders. If it detects you, ICE wakes.',
+                'Imprint' => 'A skill stored as an item. Inject it to learn the skill.',
+                'QB' => 'The unit for file size and memory.',
+                'SI' => 'Synaptic Integrity. Your mind\'s health.',
+            ],
+        ],
+    ],
+
     // The invitation shown once, on a new account's first sign-in.
     'supporters' => [
         'title' => 'Supporters',

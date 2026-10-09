@@ -29,6 +29,7 @@ use App\Http\Controllers\EncounterController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\ExchangeController;
 use App\Http\Controllers\FightController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HunterController;
 use App\Http\Controllers\ImplantController;
@@ -56,6 +57,8 @@ Route::get('/', HomeController::class)->name('home');
 // Everyone who supports the game. Public, like the front page.
 // Ko-fi's membership webhook. Public, CSRF-exempt, authenticated by its verification token.
 Route::post('/kofi_webhook', KofiWebhookController::class)->name('kofi.webhook');
+
+Route::get('/help', [HelpController::class, 'index'])->name('help.index');
 
 Route::get('/supporters', [SupportersController::class, 'index'])->name('supporters.index');
 
