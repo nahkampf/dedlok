@@ -128,6 +128,7 @@ return [
             'analyser' => 'Analyser',
             'daemon' => 'Daemon',
             'script' => 'Script',
+            'locator' => 'Locator',
         ],
 
         // The status readout. A count, because the number is the whole of what
@@ -1702,6 +1703,24 @@ return [
         'chain' => [
             'heading' => 'Routing chain',
             'hops_tip' => ':used out of :cap maximum hops',
+        ],
+
+        // The Locator program's search on the map screen.
+        'locate' => [
+            'heading' => 'Locator',
+            'open' => 'Search',
+            'hint' => 'Type, owner and grade, separated by commas. For example: exchange, lockjaw, grade >2',
+            'placeholder' => 'exchange, lockjaw, grade >2',
+            'go' => 'Find nearest',
+            'searched_for' => 'Looking for: :terms',
+            'none' => 'Nothing you know of fits.',
+            'distance' => ':steps steps :direction',
+            'grade' => 'Grade :grade',
+            'from_portal' => 'Measured from the portal.',
+            'directions' => [
+                'n' => 'north', 'ne' => 'north-east', 'e' => 'east', 'se' => 'south-east',
+                's' => 'south', 'sw' => 'south-west', 'w' => 'west', 'nw' => 'north-west',
+            ],
         ],
 
         'bookmarks' => [
