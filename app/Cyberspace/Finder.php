@@ -67,7 +67,7 @@ final class Finder
             }
 
             $matched = collect(SystemType::cases())->first(
-                static fn (SystemType $t): bool => $t !== SystemType::Portal && ($t->value === $lower || mb_strtolower($t->label()) === $lower),
+                static fn (SystemType $t): bool => $t->value === $lower || mb_strtolower($t->label()) === $lower,
             );
 
             if ($matched !== null) {
@@ -93,12 +93,24 @@ final class Finder
             ->whereNotNull('grade')
             ->pluck('grade', 'address');
 
+        // A portal is never a sighting; it is added below.
         $contacts = SystemContact::query()
-            ->where('character_id', $character->getKey())
             ->where('type', '!=', SystemType::Portal->value)
+            ->where('character_id', $character->getKey())
             ->when($query->type, static fn ($q, SystemType $t) => $q->where('type', $t->value))
             ->when($query->owner, static fn ($q, string $o) => $q->where('owner', 'like', '%'.addcslashes($o, '%_\\').'%'))
             ->get();
+
+        // THE PORTAL IS ALWAYS KNOWN: everybody arrives there, so it needs no sighting. It has no owner and no grade, so a
+        // description that asks for either leaves it out.
+        if (($query->type === null || $query->type === SystemType::Portal) && $query->owner === null && $query->grade === null) {
+            $portal = $grid->portal();
+            $row = $grid->at($portal);
+            $contacts->push(new SystemContact([
+                'x' => $portal->x, 'y' => $portal->y, 'address' => $row?->address ?? '', 'name' => $row?->name ?? SystemType::Portal->label(),
+                'type' => SystemType::Portal, 'owner' => null,
+            ]));
+        }
 
         $best = null;
         $bestKey = null;
@@ -118,7 +130,7 @@ final class Finder
             }
 
             // Nearest in steps, then in a straight line, then the one seen first.
-            $key = [$steps, ($position->x - $from->x) ** 2 + ($position->y - $from->y) ** 2, $contact->getKey()];
+            $key = [$steps, ($position->x - $from->x) ** 2 + ($position->y - $from->y) ** 2, (int) $contact->getKey()];
 
             if ($bestKey === null || $key < $bestKey) {
                 $best = $contact;

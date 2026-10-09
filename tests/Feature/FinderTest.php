@@ -80,4 +80,16 @@ class FinderTest extends TestCase
         $this->assertEquals(new Position(10, 11), Finder::stepToward(new Position(10, 10), new Position(10, 40)));
         $this->assertEquals(new Position(9, 10), Finder::stepToward(new Position(10, 10), new Position(0, 10)));
     }
+
+    public function test_the_portal_can_be_found_without_having_met_it(): void
+    {
+        $character = Character::factory()->create(['grid_x' => 100, 'grid_y' => 100]);
+        $finder = new Finder;
+
+        $found = $finder->nearest($character, $finder->parse('portal'));
+
+        $this->assertNotNull($found);
+        $this->assertSame(SystemType::Portal, $found->contact->type);
+        $this->assertNull($finder->nearest($character, $finder->parse('portal, lockjaw')));
+    }
 }
