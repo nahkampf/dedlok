@@ -375,7 +375,24 @@
                             </div>
                         @endforeach
 
-                        @if ($plan->blocked)
+                        @if ($plan->blocked === \App\Crafting\CraftingRefusal::NoSkill && $plan->missingSkills !== [])
+                            <button type="button" class="field__hint" style="color:var(--warn);background:none;border:0;padding:0;text-align:left;text-decoration:underline;cursor:pointer" data-open="#skills-missing-{{ $plan->row->id }}">{{ $plan->blocked->message() }}</button>
+                            <dialog class="modal" id="skills-missing-{{ $plan->row->id }}">
+                                <div class="panel__hd">
+                                    <span class="micro">{{ Text::get('crafting.skills_missing') }}</span>
+                                    <div class="spacer"></div>
+                                    <button class="btn btn--sm btn--ghost" data-close aria-label="{{ Text::get('decks.board.close') }}">✕</button>
+                                </div>
+                                <div class="panel__bd stack" style="--gap:var(--s-2)">
+                                    @foreach ($plan->missingSkills as $need)
+                                        <div class="row row--wrap" style="--gap:var(--s-3);justify-content:space-between">
+                                            <span>{{ $need['title'] }}</span>
+                                            <span class="num">{{ $need['level'] }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </dialog>
+                        @elseif ($plan->blocked)
                             <span class="field__hint" style="color:var(--warn)">{{ $plan->blocked->message() }}</span>
                         @endif
 

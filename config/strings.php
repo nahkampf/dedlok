@@ -2585,6 +2585,8 @@ return [
             'unknown_owner' => 'an owner that is gone',
         ],
 
+        'skills_missing' => 'Skills missing',
+
         'refused' => [
             'not_a_design' => 'That is not a design in your hands.',
             'product_gone' => 'What this design makes is no longer in the game.',
