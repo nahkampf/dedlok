@@ -72,6 +72,11 @@ class FinderTest extends TestCase
         $this->assertNull($finder->nearest($character, $finder->parse('lockjaw, grade >5')));
         // CCCCCCCC has no scan, so a grade term cannot match it.
         $this->assertNull($finder->nearest($character, $finder->parse('other, grade >0')));
+
+        // An address is an exact match, in any case, and finds only a system that has been met.
+        $this->assertSame('CCCCCCCC', $finder->nearest($character, $finder->parse('cccccccc'))->contact->address);
+        $this->assertNull($finder->nearest($character, $finder->parse('DDDDDDDD')));
+        $this->assertNull($finder->nearest($character, $finder->parse('CCCCCCCC, exchange, lockjaw')));
     }
 
     public function test_a_step_goes_one_cell_toward_the_target(): void

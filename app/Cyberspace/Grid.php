@@ -35,7 +35,7 @@ final class Grid
 
     public static function fromConfig(): self
     {
-        $size = (int) Config::get('cyberspace.size', 64);
+        $size = (int) Config::get('cyberspace.size', 128);
 
         return new self(
             $size,

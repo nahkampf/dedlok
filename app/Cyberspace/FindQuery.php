@@ -13,6 +13,8 @@ final readonly class FindQuery
         /** One of `>`, `>=`, `<`, `<=`, `=`, with $grade. */
         public ?string $gradeOp = null,
         public ?int $grade = null,
+        /** An exact address (8 hex digits), upper case. Only a system you have met can be found by it. */
+        public ?string $address = null,
     ) {}
 
     public function gradeFits(int $known): bool
@@ -31,6 +33,7 @@ final readonly class FindQuery
     {
         return implode(', ', array_filter([
             $this->type?->label(),
+            $this->address,
             $this->owner,
             $this->grade === null ? null : 'grade '.($this->gradeOp === '=' ? '' : $this->gradeOp).$this->grade,
         ]));

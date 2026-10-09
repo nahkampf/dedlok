@@ -147,7 +147,7 @@ exists to discover before you find it out the expensive way.
 
 ## The grid
 
-Cyberspace is a coordinate space. It is **64 × 64 today and will be 2048 × 2048**,
+Cyberspace is a coordinate space. It is **128 × 128 today and will be 2048 × 2048**,
 and that second number is a design input rather than a someday: at four million
 positions, discovery stops being flavour and becomes the point of the map.
 
@@ -256,12 +256,12 @@ CHECK can reach across to another table's bitmap.
 
 ### How the grid is stored
 
-At 64 × 64 this is 4 096 rows and none of it matters. At 2048 × 2048 it is
+At 128 × 128 this is 16 384 rows and none of it matters. At 2048 × 2048 it is
 4.2 million positions and every decision below starts costing something. Both
 sizes have to work, so:
 
 - **Discovery is a chunked bitmap, never a row per position.** The grid divides
-  into 64 × 64 chunks — 512 bytes of bits each, one chunk today and 1 024 of
+  into 64 × 64 chunks — 512 bytes of bits each, four chunks today and 1 024 of
   them at full size. A character stores a blob per chunk they have entered, so a
   player who has explored five chunks holds 2.5 KB and a player who has explored
   nothing holds nothing. A row per discovered position is the version that does

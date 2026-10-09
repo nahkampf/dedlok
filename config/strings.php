@@ -778,6 +778,8 @@ return [
         'missions' => 'Missions',
         'missions_hint' => 'Jobs you have accepted from an exchange and not yet finished, the ones running out first at the top. Hand them in at the desk they came from.',
         'missions_none' => 'No missions accepted. An exchange desk offers them.',
+        'recent' => 'Recently worked for:',
+        'grade' => 'Grade :grade',
         'journal' => 'Journal',
         'tasks' => 'Tasks',
         'not_yet' => 'Not yet implemented.',
@@ -1711,7 +1713,7 @@ return [
         'locate' => [
             'heading' => 'Locator',
             'open' => 'Search',
-            'hint' => 'Type, owner and grade, separated by commas. For example: exchange, lockjaw, grade >2',
+            'hint' => 'Type, owner, grade or an address, separated by commas. For example: exchange, lockjaw, grade >2',
             'placeholder' => 'exchange, lockjaw, grade >2',
             'go' => 'Find nearest',
             'searched_for' => 'Looking for: :terms',
