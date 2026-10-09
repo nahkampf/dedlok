@@ -197,6 +197,7 @@ return [
             'not_enough_memory' => 'Not enough memory left. Stop something, or fit more RAM.',
             'run_only' => 'This only does anything during an intrusion. Choose it on the briefing and the run starts it.',
             'one_icebreaker' => 'Only one icebreaker runs at a time.',
+            'one_locator' => 'Only one locator runs at a time.',
         ],
     ],
 

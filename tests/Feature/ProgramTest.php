@@ -113,6 +113,15 @@ final class ProgramTest extends TestCase
             ->create();
     }
 
+    public function test_a_locator_and_a_pathfinder_share_one_slot(): void
+    {
+        $first = $this->own($this->programItem(ProgramKind::Locator, qflops: 1, memory: 1, background: true));
+        $second = $this->own($this->programItem(ProgramKind::Pathfinder, qflops: 1, memory: 1, background: true));
+
+        $this->assertTrue($this->runner->start($this->character, $first)->succeeded());
+        $this->assertSame(ProcessRefusal::OneLocator, $this->runner->start($this->character->fresh(), $second)->refusal);
+    }
+
     // ---- the point of the whole phase -----------------------------------
 
     /**
