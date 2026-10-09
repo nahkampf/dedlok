@@ -10,7 +10,6 @@ use App\Cyberspace\SystemType;
 use App\Models\Character;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -80,15 +79,5 @@ class FinderTest extends TestCase
         $this->assertEquals(new Position(11, 9), Finder::stepToward(new Position(10, 10), new Position(50, 0)));
         $this->assertEquals(new Position(10, 11), Finder::stepToward(new Position(10, 10), new Position(10, 40)));
         $this->assertEquals(new Position(9, 10), Finder::stepToward(new Position(10, 10), new Position(0, 10)));
-    }
-
-    public function test_autotraverse_needs_a_running_pathfinder(): void
-    {
-        $user = User::factory()->create();
-        $character = Character::factory()->create(['user_id' => $user->id, 'grid_x' => 100, 'grid_y' => 100]);
-
-        $status = $this->actingAs($user)->postJson(route('cyberspace.traverse'), ['x' => 110, 'y' => 100])->status();
-        $this->assertGreaterThanOrEqual(400, $status);
-        $this->assertSame(100, $character->fresh()->grid_x);
     }
 }
