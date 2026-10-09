@@ -129,6 +129,7 @@ return [
             'daemon' => 'Daemon',
             'script' => 'Script',
             'locator' => 'Locator',
+            'pathfinder' => 'Pathfinder',
         ],
 
         // The status readout. A count, because the number is the whole of what
@@ -1717,6 +1718,11 @@ return [
             'distance' => ':steps steps',
             'grade' => 'Grade :grade',
             'from_portal' => 'Measured from the portal.',
+            'autotraverse' => 'Autotraverse',
+            'traversing' => 'Autotraversing',
+            'steps_left' => ':steps steps left',
+            'traverse_cancel' => 'Cancel',
+            'traverse_stopped' => 'Autotraverse stopped.',
         ],
 
         'bookmarks' => [

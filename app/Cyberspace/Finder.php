@@ -19,12 +19,29 @@ use App\Programs\ProgramKind;
  */
 final class Finder
 {
-    /** Does the character have a Locator running on the equipped deck? */
+    /** Does the character have a Locator (or a Pathfinder, which is one that also walks) running on the equipped deck? */
     public function available(Character $character): bool
     {
+        return $this->running($character, ProgramKind::Locator, ProgramKind::Pathfinder);
+    }
+
+    /** Can the character have the grid walked for them? Only a running Pathfinder does it. */
+    public function canTraverse(Character $character): bool
+    {
+        return $this->running($character, ProgramKind::Pathfinder);
+    }
+
+    private function running(Character $character, ProgramKind ...$kinds): bool
+    {
         return $character->runningProcesses()->contains(
-            static fn ($row): bool => $row->item?->program?->kind === ProgramKind::Locator,
+            static fn ($row): bool => in_array($row->item?->program?->kind, $kinds, true),
         );
+    }
+
+    /** The cell one step from `$from` toward `$to` (a diagonal while both axes differ, as a step is on this grid). */
+    public static function stepToward(Position $from, Position $to): Position
+    {
+        return new Position($from->x + ($to->x <=> $from->x), $from->y + ($to->y <=> $from->y));
     }
 
     /**

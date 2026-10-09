@@ -458,6 +458,21 @@
                             </div>
                             @if ($found->fromPortal)
                                 <span class="field__hint">{{ Text::get('cyberspace.locate.from_portal') }}</span>
+                            @elseif ($locator['canTraverse'])
+                                <div>
+                                    <button type="button" class="btn btn--sm cut" data-autotraverse="traverse-dialog"
+                                            data-url="{{ route('cyberspace.traverse') }}" data-x="{{ $found->contact->x }}" data-y="{{ $found->contact->y }}"
+                                            data-steps="{{ $found->steps }}" data-step-ms="10000">{{ Text::get('cyberspace.locate.autotraverse') }}</button>
+                                </div>
+                                {{-- Over the whole screen: the dialog's backdrop is the yellow half-transparent overlay. --}}
+                                <dialog class="modal modal--traverse" id="traverse-dialog">
+                                    <div class="panel__hd"><span class="micro">{{ Text::get('cyberspace.locate.traversing') }}</span></div>
+                                    <div class="panel__bd stack" style="--gap:var(--s-4)">
+                                        <div class="item-row__name" data-traverse-left></div>
+                                        <div class="meter" style="--v:0" data-traverse-meter><div class="meter__fill"></div></div>
+                                        <button type="button" class="btn btn--block cut" data-traverse-cancel>{{ Text::get('cyberspace.locate.traverse_cancel') }}</button>
+                                    </div>
+                                </dialog>
                             @endif
                         @endif
                     </div>

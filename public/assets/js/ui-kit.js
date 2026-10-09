@@ -1516,5 +1516,46 @@
     try { nodeGraph(el, JSON.parse(el.dataset.graph)); } catch (e) { /* a bad spec draws nothing */ }
   });
 
+  /* Autotraverse: <button data-autotraverse="DIALOG-ID" data-url data-x data-y data-steps data-step-ms>. Opens the modal
+     dialog (its backdrop is the overlay) and posts one step toward the target every data-step-ms. Cancelling, or the
+     dialog closing any other way, stops it where it stands and reloads to show the new position; so does arriving or
+     the server refusing a step. */
+  document.querySelectorAll("[data-autotraverse]").forEach((btn) => {
+    const dlg = document.getElementById(btn.dataset.autotraverse);
+    if (!dlg || !dlg.showModal) return;
+    const total = parseInt(btn.dataset.steps, 10) || 0;
+    const gap = parseInt(btn.dataset.stepMs, 10) || 10000;
+    const label = dlg.querySelector("[data-traverse-left]");
+    const bar = dlg.querySelector("[data-traverse-meter]");
+    let timer = null;
+    let left = total;
+
+    const draw = () => {
+      label.textContent = left + (left === 1 ? " step left" : " steps left");
+      meter(bar, total ? (total - left) / total : 1);
+    };
+    const stop = () => { clearTimeout(timer); timer = null; if (dlg.open) dlg.close(); };
+    const next = () => {
+      timer = setTimeout(() => {
+        const token = document.querySelector('meta[name="csrf-token"]')?.content;
+        fetch(btn.dataset.url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest", ...(token ? { "X-CSRF-TOKEN": token } : {}) },
+          body: JSON.stringify({ x: btn.dataset.x, y: btn.dataset.y }),
+          credentials: "same-origin",
+        }).then((r) => r.json()).then((res) => {
+          if (res.stop) { stop(); return; }
+          left = res.left;
+          draw();
+          if (left > 0) next(); else stop();
+        }).catch(stop);
+      }, gap);
+    };
+
+    btn.addEventListener("click", () => { left = total; draw(); dlg.showModal(); next(); });
+    dlg.querySelector("[data-traverse-cancel]").addEventListener("click", stop);
+    dlg.addEventListener("close", () => { clearTimeout(timer); timer = null; location.reload(); });
+  });
+
   window.UI = { toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };
 })();

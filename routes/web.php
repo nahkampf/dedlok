@@ -237,6 +237,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/cyberspace/jack-in', [CyberspaceController::class, 'jackIn'])->name('cyberspace.jack_in');
     Route::post('/cyberspace/jack-out', [CyberspaceController::class, 'jackOut'])->name('cyberspace.jack_out');
     Route::post('/cyberspace/step', [CyberspaceController::class, 'step'])->name('cyberspace.step');
+    Route::post('/cyberspace/traverse', [CyberspaceController::class, 'traverse'])->name('cyberspace.traverse');
     Route::post('/cyberspace/jump', [CyberspaceController::class, 'jump'])->name('cyberspace.jump');
 
     // Reading the machine underfoot. No target in the request: the position is
