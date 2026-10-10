@@ -1750,6 +1750,45 @@ positions, no synchronisation — this is not a game that supports two people
 being in the same place at the same second, and pretending otherwise would drag
 timing into everything.
 
+### Data Fortresses (designed, not built)
+
+A Data Fortress is the player-owned node. Decisions so far (2026-10-09):
+
+- **Founding.** Needs the skill *Node Administration*. A **Data Fortress Kernel** is a crafted
+  program (a Design, so Code Crafting and the kind's skill gate it) and is **spent by running it once**,
+  standing on an empty square: it leaves a basic fortress there. It is a "Found here" action on the map,
+  not a deck process. The square must be truly empty (no system, not the portal, not an exchange).
+- **A cap per player**, one at first, raised by skill.
+- **It is a system like any other** (`systems.owner_id` has to learn to point at a player), but the
+  seeder, restock and occupancy top-up must treat it as nobody's NPC node and never touch it.
+- **Upgrades, and hosted programs.** Storage, CPU and RAM are upgraded; programs are installed ON the
+  fortress, which has its own totals the way a deck does (same measures, same one-decimal rule).
+- **Upkeep.** A daily drain of cash, by storage, CPU and what is hosted. The gentle failure: hosted
+  programs stop first, then defences go down, then the fortress is **abandoned**. An abandoned
+  fortress stays on the grid with its contents and is **ripe for raiding**; it is not deleted.
+- **Access.** Private, or public with services anyone can use, or invited-only. **The first service is a
+  public market.** Players still never see each other: a visitor meets the fortress, not its owner.
+- **Cloak.** A hosted program that makes the fortress read as empty. It has a **strength**, a
+  decloaker program has one, and the two are compared (a contest through `CheckRoller`, a margin and
+  never a flat pass).
+- **Relocation.** A hosted program that moves the fortress every X hours. It sends **every invited
+  player a message with the new coordinates and address**, and rewrites the owner's bookmark. Anybody
+  else's map memory goes stale, which is the point.
+- **Never hardcode the grid size.** It is 128 now and is expected to grow to about 512; relocation,
+  founding and anything else that picks a square reads `cyberspace.size`.
+
+- **The market is a hosted program**, like the cloak: it has to be installed, run and upkept, and a
+  fortress whose market stops (no upkeep, or abandoned) sells nothing.
+- **Invites live in a settings menu on the fortress**, where the owner handles who is invited and
+  whether it is private, invited-only or public.
+- **Building one is a substantial investment on three fronts**: the skill training it requires
+  (Node Administration, and what it sits behind), the components, and the Designs. It is meant to be a
+  long-term goal, not a purchase; the Kernel's Design should need rare components and more than one skill.
+
+Open: defences (owner-built IDS and ICE; waits on PvP), what raiding takes, the market's shape (whose
+stock, what fee), the invite list's storage, and the actual build numbers (a balance pass once the
+components exist).
+
 ---
 
 ## Subnets

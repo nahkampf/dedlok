@@ -1061,28 +1061,29 @@ return [
 
         /*
         | HOW LONG ONE PASS TAKES, in minutes, for somebody with no skill at
-        | all. A grade 1 box gives itself up in about a minute; a grade 9 takes
-        | the better part of a quarter of an hour, and a read goes round until
-        | it has the picture or the file goes stale.
+        | all: one minute at every grade.
         |
-        | That is the point of the curve: reading the bottom of the grid is
-        | something you do in passing, and reading the top is an evening's work
-        | somebody has to decide to spend. It is also the first thing in the
-        | game that makes standing still in cyberspace cost anything.
+        | FLAT ON PURPOSE. The countdown is on screen the moment a pass starts,
+        | so a time that grew with grade told the player the grade before the
+        | read had said anything, and a "ten minutes" was a reason to cancel and
+        | pick an easier box. The grade shows in `difficulty` above instead: a
+        | high grade is a lower chance per roll, so it takes MORE passes, which
+        | is a cost the player cannot read off a timer in advance.
         |
-        | Skill and software cut it, through the `scan_duration` stat — a
-        | trained profiler with a good instrument reads a grade 9 in half this.
+        | Skill and software still cut it, through the `scan_duration` stat.
+        | Keyed by grade so a curve could come back, but do not bring one back
+        | without hiding the clock.
         */
         'minutes' => [
             1 => 1,
-            2 => 2,
-            3 => 3,
-            4 => 4,
-            5 => 6,
-            6 => 8,
-            7 => 10,
-            8 => 13,
-            9 => 16,
+            2 => 1,
+            3 => 1,
+            4 => 1,
+            5 => 1,
+            6 => 1,
+            7 => 1,
+            8 => 1,
+            9 => 1,
         ],
 
         'lifetime_hours' => 48,

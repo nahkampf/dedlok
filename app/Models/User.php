@@ -43,6 +43,7 @@ class User extends Authenticatable
             'supporter_since' => 'immutable_datetime',
             'supporter_until' => 'immutable_datetime',
             'seen_discord_at' => 'immutable_datetime',
+            'sound_enabled' => 'boolean',
             'last_active_at' => 'immutable_datetime',
         ];
     }

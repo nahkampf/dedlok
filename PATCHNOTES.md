@@ -1,3 +1,12 @@
+## 0.49.0 (2026-10-10)
+
+- Toggle sound on/off in the top bar.
+- Added a dedlok playlist to the topbar
+- Changed how scans work: before you could figure out the grade of a system because scan time scaled with grade. This is now changed so all passes take 1 minute, only the difficulty determines if something is discovered in a pass.
+- New icons for programs, hardware, implants, armour, drugs, weapons and more.
+- Scan files, encrypted data and components now have their own colours in the stash.
+- The run log now displays what (if any) files were pulled out of an extraction run
+
 ## 0.48.0 (2026-10-09)
 
 - Grid is now 128x128 instead of 64x64 (it was getting crowded in here)

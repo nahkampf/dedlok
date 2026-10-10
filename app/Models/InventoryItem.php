@@ -139,6 +139,34 @@ class InventoryItem extends Model
         return $this->extracted_file !== null && $this->item !== null && $this->item->slug !== ExtractedFile::SEALED_SLUG;
     }
 
+    /** The glyph a slot shows: a file's own (sealed dump, memory dump, component), otherwise its item's. */
+    public function glyph(): string
+    {
+        if ($this->extracted_file === null || $this->item === null) {
+            return $this->item->glyph();
+        }
+
+        return match (true) {
+            $this->item->slug === ExtractedFile::SEALED_SLUG => "\u{25A7}",
+            $this->item->slug === ExtractedFile::DECRYPTED_SLUG => "\u{29C8}",
+            default => "\u{2B22}",
+        };
+    }
+
+    /**
+     * The colour class a file wears instead of its tier: scan files, sealed dumps and components are each one colour
+     * (`.f-scan`, `.f-sealed`, `.f-component`); anything else keeps the item's own tier.
+     */
+    public function tierClass(): string
+    {
+        return match (true) {
+            $this->scan_file !== null => 'f-scan',
+            $this->extracted_file !== null && ! $this->isComponent() => 'f-sealed',
+            $this->isComponent() => 'f-component',
+            default => $this->item->tierClass(),
+        };
+    }
+
     /** What the stash groups a row under: one key for rows that read the same ("Kernel Log (AuraOS)"), the row's own id for anything else. */
     public function groupKey(): string
     {

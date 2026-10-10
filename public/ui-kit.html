@@ -659,6 +659,12 @@ public/assets/
       </template>
     </div>
     <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Embed</h3><p><code class="inl">.embed</code> is a fixed 16:9 slot a third-party player fills: a hairline box and an <code class="inl">&lt;iframe&gt;</code> positioned inside it. In the game the iframe carries <code class="inl">data-embed="URL"</code> and no <code class="inl">src</code>, which <code class="inl">ui-kit.js</code> sets when its <code class="inl">&lt;dialog&gt;</code> opens and removes when it closes — nothing is requested unasked, and closing stops what was playing. The topbar's speaker (<code class="inl">data-sound-toggle</code>) is an ordinary <code class="inl">.chip-stat</code> button.</p></div>
+      <template class="demo-src">
+        <div class="embed"><span class="dim" style="position:absolute;inset:0;display:grid;place-items:center">player</span></div>
+      </template>
+    </div>
+    <div class="demo">
       <div class="demo__hd"><h3 class="h3">Tabs, breadcrumb, pagination</h3><p>A tab may be a BUTTON that switches a panel, as below, or an <code class="inl">&lt;a class="tab"&gt;</code> that navigates — a character sheet whose sections each have a URL. The link form marks the current one with <code class="inl">aria-current="page"</code> rather than <code class="inl">aria-selected</code>, because <code class="inl">role="tab"</code> on something that reloads the page promises a panel switch that is not going to happen. Same two lines of paint either way.</p></div>
       <template class="demo-src">
         <div class="stack" style="--gap:var(--s-5)">

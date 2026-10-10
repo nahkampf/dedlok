@@ -36,6 +36,8 @@ class EnsureHuntIsResolved
         'hunt.act',
         // The inbox's badge and sound poll from every page.
         'notifications.unread',
+        // Muting is the account's, and a player under a lock is exactly who wants it.
+        'sound.update',
     ];
 
     public function handle(Request $request, Closure $next): Response

@@ -565,14 +565,45 @@ class Item extends Model
      */
     public function glyph(): string
     {
+        $kind = $this->hardware?->value ?? $this->program?->kind->value;
+
         return match (true) {
             $this->isImprint() => "\u{25C8}",
-            $this->isCyberdeck() => "\u{2394}",
-            $this->isModule() => "\u{232C}",
-            $this->isContainer() => "\u{25CD}",
+            $kind !== null && isset(self::GLYPHS[$kind]) => self::GLYPHS[$kind],
+            $this->isImplant() => "\u{2624}",
+            $this->drug !== null => "\u{2731}",
+            $this->consumable !== null => "\u{236C}",
+            $this->armour !== null => "\u{26CA}",
+            $this->weapon !== null => "\u{2715}",
+            $this->ammunition !== null => "\u{205E}",
+            $this->isContainer() => "\u{25A2}",
             default => "\u{25A4}",
         };
     }
+
+    /**
+     * Hardware kind and program kind to glyph. Chosen from the shortlist page, 2026-10-10; each is from the set the
+     * gallery proves renders. A kind with no entry (a scan file's plain item) falls through to the stash default.
+     */
+    private const GLYPHS = [
+        'deck' => "\u{2394}",
+        'cpu' => "\u{2B23}",
+        'npu' => "\u{232C}",
+        'ram' => "\u{2338}",
+        'nic' => "\u{21C4}",
+        'psu' => "\u{2301}",
+        'thermal' => "\u{224B}",
+        'storage' => "\u{26C3}",
+        'expansion' => "\u{229E}",
+        'icebreaker' => "\u{25ED}",
+        'decryptor' => "\u{26BF}",
+        'evasion' => "\u{25CC}",
+        'analyser' => "\u{2315}",
+        'daemon' => "\u{23E3}",
+        'script' => "\u{21AF}",
+        'locator' => "\u{27A4}",
+        'pathfinder' => "\u{2B95}",
+    ];
 
     /** @param  Builder<self>  $query */
     public function scopeInContainer(Builder $query, string $container): void

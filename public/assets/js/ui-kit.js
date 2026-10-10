@@ -189,6 +189,39 @@
     if (dlg.showModal) dlg.showModal();
   });
 
+  /* Sound on or off: <button data-sound-toggle="URL" aria-pressed="true|false" data-label-on data-label-off> holding
+     [data-sound-glyph]. Pressing flips it, redraws the glyph and POSTs the choice to the account. Everything that
+     plays a sound asks UI.soundOn() first, so the toggle is the one switch. */
+  const soundBtn = document.querySelector("[data-sound-toggle]");
+  const soundOn = () => soundBtn?.getAttribute("aria-pressed") !== "false";
+  if (soundBtn) {
+    soundBtn.addEventListener("click", () => {
+      const on = !soundOn();
+      soundBtn.setAttribute("aria-pressed", String(on));
+      soundBtn.title = on ? soundBtn.dataset.labelOn : soundBtn.dataset.labelOff;
+      const g = soundBtn.querySelector("[data-sound-glyph]");
+      if (g) g.textContent = on ? "\u25C1))" : "\u25C1\u00D7";
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      fetch(soundBtn.dataset.soundToggle, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest", ...(token ? { "X-CSRF-TOKEN": token } : {}) },
+        credentials: "same-origin",
+        body: JSON.stringify({ enabled: on }),
+      }).catch(() => {});
+    });
+  }
+
+  /* An iframe that exists only while its modal is open: <iframe data-embed="URL"> inside a <dialog>. The src is set on
+     open and cleared on close, so nothing third-party loads unasked and closing stops what was playing. */
+  document.querySelectorAll("dialog").forEach((dlg) => {
+    const frame = dlg.querySelector("iframe[data-embed]");
+    if (!frame) return;
+    new MutationObserver(() => {
+      if (dlg.open) { if (!frame.getAttribute("src")) frame.src = frame.dataset.embed; }
+      else frame.removeAttribute("src");
+    }).observe(dlg, { attributes: true, attributeFilter: ["open"] });
+  });
+
   /* The inbox, polled: <a data-inbox="URL" data-inbox-latest="ID" data-inbox-sound="SRC"> in the rail. Every five
      seconds it asks for how many messages are unread and the id of the newest, and redraws the badge. A message
      NEWER than the last this page knew of plays the sound, at most once in ten seconds; that moment is kept in
@@ -217,7 +250,7 @@
     };
 
     const ding = () => {
-      if (!audio || Date.now() - lastPlayed() < COOLDOWN) return;
+      if (!audio || !soundOn() || Date.now() - lastPlayed() < COOLDOWN) return;
       stamp();
       audio.currentTime = 0;
       audio.play().catch(() => {});

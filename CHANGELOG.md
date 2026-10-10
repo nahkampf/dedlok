@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [0.49.0] — 2026-10-10
+
+A sound switch and a playlist in the bar, a glyph and a colour for every kind of thing in the stash, and scan passes that no longer give the grade away.
+
+### Added
+
+- **Sound toggle** in the topbar (`users.sound_enabled`, migration `2026_10_10_100000_a_user_may_mute_the_interface`, default on). `SoundController` saves it (`sound.update`, 204, named in every lock's allow-list so a player under a run, hunt, fight, encounter or the floor can still mute); `ui-kit.js` swaps the glyph and `soundOn()` gates the inbox chime. The glyph is `◁))` / `◁×`.
+- **Playlist modal** (♪) headed *Official dedlok playlist*, embedding the YouTube playlist through `youtube-nocookie.com`. The iframe has no `src` until the dialog opens and loses it on close (`data-embed`), so nothing is requested unasked and closing stops the music. `.embed` is the kit's 16:9 slot, with a gallery demo.
+- **`ENCOUNTERS_GRID.md`**: the design for encounters in cyberspace (realm, four doors, the clock stop, `kill_run` / `continue_run`, avatars). Nothing built.
+
+### Changed
+
+- **Every scan pass takes one minute at every grade** (`cyberspace.scan.minutes`, was 1 to 16 by grade). The countdown on screen told a player the grade before the read had; the grade now shows as a lower chance per roll, so a hard system takes more passes. Skill and software still cut it (`scan_duration`).
+- **Glyphs by kind** (`Item::GLYPHS`, `InventoryItem::glyph()`): one per program kind, hardware kind, implant, drug, consumable, armour, weapon, ammunition and container, and ▧ / ⧈ / ⬢ for an encrypted dump, a memory dump and every component.
+- **Files are coloured by what they are** (`.f-scan` cyan, `.f-sealed` violet, `.f-component` moss) on the slot's glyph and the item card, through `InventoryItem::tierClass()`. Declared after `.slot`, which sets its own `--tier`.
+- **The run log names what was pulled**: "You pull one Encrypted Data Dump out" rather than "a file" (`run.log.took.files`).
+
+
 ## [0.48.0] — 2026-10-09
 
 The grid is four times the size, and the portal and every exchange move with it.
@@ -2879,7 +2897,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.48.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.49.0...HEAD
+[0.49.0]: https://github.com/nahkampf/dedlok/compare/v0.48.0...v0.49.0
 [0.48.0]: https://github.com/nahkampf/dedlok/compare/v0.47.0...v0.48.0
 [0.47.0]: https://github.com/nahkampf/dedlok/compare/v0.46.1...v0.47.0
 [0.46.1]: https://github.com/nahkampf/dedlok/compare/v0.46.0...v0.46.1
