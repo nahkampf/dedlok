@@ -14,6 +14,7 @@ use App\Missions\MissionAction;
 use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\Ice;
+use App\Models\Item;
 use App\Models\Run;
 use App\Models\System;
 use App\Programs\ProgramKind;
@@ -1317,7 +1318,10 @@ final readonly class Simulator
         }
 
         if ($result->files > 0) {
-            $pieces[] = Text::plural('cyberspace.run.log.took.files', $result->files, ['count' => $result->files]);
+            $pieces[] = Text::plural('cyberspace.run.log.took.files', $result->files, [
+                'count' => $result->files,
+                'name' => (string) Item::query()->where('slug', ExtractedFile::SEALED_SLUG)->value('name'),
+            ]);
         }
 
         return match (count($pieces)) {

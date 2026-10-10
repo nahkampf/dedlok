@@ -316,6 +316,7 @@ final class ProbeTest extends TestCase
      */
     public function test_a_bad_pass_learns_nothing_and_spends_a_pass(): void
     {
+        $this->gradedPasses();
         $this->machine(grade: 9);
 
         $result = $this->readOnce(0.999);
@@ -336,6 +337,7 @@ final class ProbeTest extends TestCase
      */
     public function test_one_press_reads_until_the_picture_is_whole(): void
     {
+        $this->gradedPasses();
         $os = $this->anOperatingSystem();
         $this->machine(grade: 5, os: $os);
 
@@ -426,6 +428,7 @@ final class ProbeTest extends TestCase
      */
     public function test_the_read_stops_when_the_file_goes_stale(): void
     {
+        $this->gradedPasses();
         Config::set('cyberspace.scan.lifetime_hours', 1);
         $this->machine(grade: 9);
 
@@ -520,17 +523,23 @@ final class ProbeTest extends TestCase
     // ---- a pass takes time -------------------------------------------------
 
     /**
-     * THE CURVE THE DESIGN ASKS FOR: about a minute at the bottom of the grid,
-     * about sixteen at the top, for somebody with no skill at all.
+     * A pass is the same length at every grade: a countdown that grew with
+     * the grade would tell the player the grade before the read had.
      */
-    public function test_a_pass_takes_longer_against_a_harder_machine(): void
+    public function test_a_pass_takes_the_same_time_at_every_grade(): void
     {
         $probe = Probe::fromConfig();
         $character = $this->character->fresh();
 
-        $this->assertSame(60, $probe->durationFor($character, new System(['grade' => 1])));
-        $this->assertSame(120, $probe->durationFor($character, new System(['grade' => 2])));
-        $this->assertSame(16 * 60, $probe->durationFor($character, new System(['grade' => 9])));
+        foreach (range(1, 9) as $grade) {
+            $this->assertSame(60, $probe->durationFor($character, new System(['grade' => $grade])));
+        }
+    }
+
+    /** The old grade-scaled curve, for the tests that need passes long enough to watch. */
+    private function gradedPasses(): void
+    {
+        Config::set('cyberspace.scan.minutes', [1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 6, 6 => 8, 7 => 10, 8 => 13, 9 => 16]);
     }
 
     /** Skill and software cut it, through the stat and nothing else. */
@@ -550,6 +559,7 @@ final class ProbeTest extends TestCase
 
     public function test_starting_a_pass_finds_nothing_yet(): void
     {
+        $this->gradedPasses();
         $this->machine(grade: 4, os: $this->anOperatingSystem());
 
         $result = $this->probe(0.0)->scan($this->character);
@@ -565,6 +575,7 @@ final class ProbeTest extends TestCase
     /** The instrument does one thing at a time. */
     public function test_a_second_pass_cannot_start_while_one_is_running(): void
     {
+        $this->gradedPasses();
         $this->machine(grade: 4);
 
         $this->probe(0.0)->scan($this->character);
@@ -684,6 +695,7 @@ final class ProbeTest extends TestCase
 
     public function test_progress_reads_as_a_fraction_of_the_read(): void
     {
+        $this->gradedPasses();
         $this->machine(grade: 4);
         $this->probe(0.0)->scan($this->character);
 
