@@ -68,14 +68,14 @@
                          reset that makes the two look identical. --}}
                     @if (! $grouped || $isHead)
                     <button type="button"
-                        class="slot slot--filled {{ $item->tierClass() }}"
+                        class="slot slot--filled {{ $entry->tierClass() }}"
                         data-inspect="#{{ $grouped ? 'group' : 'detail' }}-{{ $entry->id }}"
                         aria-haspopup="dialog"
                         {{-- No title attribute: the browser's own tooltip
                              would sit on top of the inspector saying half of
                              what it already says. --}}
                         aria-label="{{ $entry->label() }} — {{ Text::get('inventory.inspect') }}">
-                        <span class="slot__icon" aria-hidden="true">{{ $item->glyph() }}</span>
+                        <span class="slot__icon" aria-hidden="true">{{ $entry->glyph() }}</span>
 
                         @if ($grouped)
                             <span class="slot__qty">{{ $group->count() }}</span>

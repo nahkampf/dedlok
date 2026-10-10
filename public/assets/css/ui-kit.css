@@ -1747,6 +1747,9 @@ cap-widget {
 }
 .chip-stat__glyph { color: var(--ink-2); line-height: 1; flex: none; }
 button.chip-stat { cursor: pointer; }
+/* A third-party player in a modal: a fixed 16:9 slot the iframe fills. */
+.embed { position: relative; aspect-ratio: 16 / 9; width: 100%; background: var(--bg-0); border: var(--hair) solid var(--line-1); }
+.embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 button.chip-stat:hover .chip-stat__glyph,
 button.chip-stat:focus-visible .chip-stat__glyph { color: var(--ink-0); }
 /* Nothing running is not a warning, it is the ordinary state — so it recedes
@@ -2575,6 +2578,12 @@ details.panel > summary.panel__hd:focus-visible {
 .slot--drop { border-style: dashed; border-color: var(--ember); background: var(--crit-a); }
 
 .slot__icon { font-size: 20px; line-height: 1; filter: grayscale(.25); }
+
+/* Files, by what they are rather than how rare: a scan, a sealed dump, any decrypted component. Decoration tokens only. AFTER .slot, which sets its own --tier at equal specificity. */
+.f-scan { --tier: var(--cyan); }
+.f-sealed { --tier: var(--violet); }
+.f-component { --tier: var(--moss); }
+.f-scan .slot__icon, .f-sealed .slot__icon, .f-component .slot__icon { color: var(--tier); filter: none; }
 .slot__qty {
   position: absolute; right: 3px; bottom: 2px;
   font: 700 10px/1 var(--font-mono);
