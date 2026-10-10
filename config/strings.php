@@ -25,6 +25,9 @@ declare(strict_types=1);
 return [
 
     'ui' => [
+        // The topbar's speaker and note. The label names what pressing does NOT, but the state it is in.
+        'sound' => ['on' => 'Sound on. Press to mute.', 'off' => 'Sound off. Press to unmute.'],
+        'music' => ['open' => 'Music', 'title' => 'Official dedlok playlist'],
         'nav' => [
             'run' => 'Run',
             'character' => 'Character',
@@ -1341,7 +1344,8 @@ return [
                 'took' => [
                     'creds' => ':creds creds',
                     'items' => ['one' => 'a piece of hardware', 'many' => ':count pieces of hardware'],
-                    'files' => ['one' => 'a file', 'many' => ':count files'],
+                    // Named, because "a file" never said what had been taken: the dump's own item name.
+                    'files' => ['one' => 'one :name', 'many' => ':count × :name'],
                 ],
             ],
 

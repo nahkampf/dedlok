@@ -258,6 +258,23 @@
                     <span class="num">{{ $processes->count() }}</span>
                     <span class="sr-only">{{ Text::plural('programs.processes', $processes->count(), ['count' => $processes->count()]) }}</span>
                 </button>
+
+                {{-- Sound on or off, saved on the account. The glyph is a speaker made of two proved shapes: U+25C1 and
+                     the parentheses (or U+00D7 when muted). ui-kit.js swaps it and posts the change. --}}
+                <button type="button" class="chip-stat" data-sound-toggle="{{ route('sound.update') }}"
+                        data-label-on="{{ Text::get('ui.sound.on') }}" data-label-off="{{ Text::get('ui.sound.off') }}"
+                        aria-pressed="{{ auth()->user()->sound_enabled ? 'true' : 'false' }}"
+                        title="{{ Text::get(auth()->user()->sound_enabled ? 'ui.sound.on' : 'ui.sound.off') }}">
+                    <span class="chip-stat__glyph" aria-hidden="true" data-sound-glyph>{{ auth()->user()->sound_enabled ? "\u{25C1}))" : "\u{25C1}\u{00D7}" }}</span>
+                    <span class="sr-only">{{ Text::get('ui.sound.on') }}</span>
+                </button>
+
+                {{-- The playlist, in a modal. U+266A is the eighth note, from the Miscellaneous Symbols block. --}}
+                <button type="button" class="chip-stat" data-open="#music" aria-haspopup="dialog"
+                        title="{{ Text::get('ui.music.open') }}">
+                    <span class="chip-stat__glyph" aria-hidden="true">&#9834;&#65038;</span>
+                    <span class="sr-only">{{ Text::get('ui.music.open') }}</span>
+                </button>
             @endif
 
             <div class="spacer"></div>
@@ -289,6 +306,22 @@
 </div>
 
 @if ($hud)
+    {{-- THE PLAYLIST. The iframe has no src until the modal opens and loses it when it closes (`data-embed`, ui-kit.js),
+         so nothing is requested from YouTube by somebody who never asks, and closing the modal stops the music. --}}
+    <dialog id="music" class="modal">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('ui.music.title') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+        </div>
+        <div class="panel__bd">
+            <div class="embed">
+                <iframe data-embed="https://www.youtube-nocookie.com/embed/videoseries?list=PL5TIGn3RVGw9nM6sipiaF925G2enf6woK"
+                        title="{{ Text::get('ui.music.title') }}" allow="autoplay; encrypted-media; picture-in-picture"
+                        referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+        </div>
+    </dialog>
+
     {{-- CURRENT PROCESSES. A readout, not a control surface: the list is the fragment `processes.current`, fetched
          each time this opens (`ui-kit.js`, [data-fragment]) so it is never older than the click. --}}
     <dialog id="current-processes" class="modal">

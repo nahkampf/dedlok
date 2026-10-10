@@ -43,6 +43,7 @@ use App\Http\Controllers\PatchNotesController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
+use App\Http\Controllers\SoundController;
 use App\Http\Controllers\StandingController;
 use App\Http\Controllers\SupportersController;
 use App\Http\Controllers\TasksController;
@@ -77,6 +78,9 @@ Route::middleware('auth')->group(function () {
 
     // Closing the Discord invitation shown on first sign-in. See DiscordInviteController.
     Route::post('/discord/seen', DiscordInviteController::class)->name('discord.seen');
+
+    // The topbar speaker. See SoundController; every lock's allow-list names it.
+    Route::post('/preferences/sound', SoundController::class)->name('sound.update');
 
     /*
      * Character creation, and the one place ForbidSecondCharacter applies. It
