@@ -80,19 +80,23 @@
                                      dialog behind it is rendered outside the
                                      board — see below. --}}
                                 <button type="button"
-                                    class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty' }}"
+                                    class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty'.($socket->kind->seats() ? ' slot--ghost' : '') }}"
                                     data-open="#socket-{{ $socket->id }}"
                                     aria-haspopup="dialog"
                                     aria-label="{{ $node->label() }} — {{ $module?->displayName() ?? Text::get('decks.fitting.empty_socket') }}">
                                     @if ($module)
                                         <span class="slot__icon" aria-hidden="true">{{ $module->glyph() }}</span>
+                                    @elseif ($socket->kind->seats())
+                                        <span class="slot__icon" aria-hidden="true">{{ \App\Models\Item::GLYPHS[$socket->kind->seats()->value] }}</span>
                                     @endif
                                 </button>
                             @else
-                                <span class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty' }}"
+                                <span class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty'.($socket->kind->seats() ? ' slot--ghost' : '') }}"
                                       @if ($module) title="{{ $module->displayName() }}" @endif>
                                     @if ($module)
                                         <span class="slot__icon" aria-hidden="true">{{ $module->glyph() }}</span>
+                                    @elseif ($socket->kind->seats())
+                                        <span class="slot__icon" aria-hidden="true">{{ \App\Models\Item::GLYPHS[$socket->kind->seats()->value] }}</span>
                                     @endif
                                 </span>
                             @endif
