@@ -352,6 +352,40 @@ A settle that opens one adds an `encounter_waiting` message, which the sweep sen
   must belong to the CURRENT node, so a double submit is refused rather than replayed. A choice
   with nowhere to go closes at once; an ending node closes on Continue.
 
+### Prerequisites *(designed 2026-10-11, not built)*
+
+**An encounter may carry prerequisites: a list of conditions that must ALL hold before it can be drawn, and the
+list may be empty.** An empty list is today's behaviour exactly. This is the same question `required_flag` and
+`once` already answer for one thing each, made general, so that an encounter can wait for a flag set AND ten scan
+files AND a skill level. It applies to every realm and door (`ENCOUNTERS_GRID.md` shares it).
+
+- **Eligibility, never a roll.** A prerequisite is judged where the pool is built (`Encounters::open()`): an
+  encounter with an unmet one is not in the pool, so it neither spawns nor dilutes the draw. A `place` or `spot`
+  encounter offered by a button is simply not offered.
+- **Data, never PHP.** Rows in `encounter_prerequisites` (`encounter_id`, `kind`, `subject`, `amount`, `negate`),
+  a fixed vocabulary as `OutcomeKind` is: a new kind is a case and an arm of one judge, `PrerequisiteJudge`, and
+  nothing else. The judge only READS, through the owner of each thing (`Flags`, `Character::stat()`,
+  `SkillInjector`/`hasSkillAtLevel`, `Wallet`, standing through `StandingLedger`).
+- **Kinds to start with:** `flag` (set / not set via `negate`), `item` (an item and a minimum quantity), `scan_files`
+  (at least N whole, unexpired, loose scan files, optionally of one system type; files are not an item, so they
+  need their own kind), `creds` (at least), `skill` (level at least, on the resolved level), `standing` (with an
+  entity, at least or at most), `district` (is standing in one). Each is "at least" by default and `negate` flips it.
+- **Held, not spent.** A prerequisite never consumes anything. Spending is an outcome on a choice (the cost of the
+  choice, or an `item` outcome with a negative quantity), so "needs ten scan files" and "takes ten scan files" are
+  two separate things an author states separately.
+- **`required_flag` becomes the first prerequisite.** A migration copies each `required_flag` into a `flag` row and
+  the column goes; `once` and `retired` stay columns (they are about the encounter's history, not the character).
+- **A choice keeps `requires_flag`.** A button is hidden by it, never greyed, and the same judge can later back a
+  choice's own list; that is a separate decision (see below).
+- **The editor** gets a *Prerequisites* panel above the screens: add and remove rows as everywhere else
+  (`data-add-row`, `data-remove-row`), a kind picker that decides which of subject and amount are shown.
+  `EncounterRequest` refuses a row of a kind missing what it needs, and a subject that does not exist (a flag is
+  free text, so it is not checked; an item, skill and entity are). NOT a CHECK: it hangs off a cascading key
+  (MySQL error 3823).
+- **Not decided:** whether a choice may have a list of its own (today one flag); whether "any of" (OR) is ever
+  needed, or whether two encounters say the same thing better; whether the player is ever told what an unmet
+  prerequisite was. The default is no, as with a hidden location, so nobody can read off the list by looking.
+
 ### The editor
 
 `admin/encounters`; `EncounterRequest` validates the nested form and `EncounterEditor` is the
