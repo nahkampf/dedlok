@@ -1,3 +1,9 @@
+## 0.49.1 (2026-10-11)
+
+- Missions: Green checkmark next to addresses that are "done"
+- Empty sockets on a deck now shows their corresponding type glyph
+- Reverted colors for scan files, encrypted data and components since they now have specific glyphs
+
 ## 0.49.0 (2026-10-10)
 
 - Toggle sound on/off in the top bar.

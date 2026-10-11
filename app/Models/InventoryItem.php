@@ -153,20 +153,6 @@ class InventoryItem extends Model
         };
     }
 
-    /**
-     * The colour class a file wears instead of its tier: scan files, sealed dumps and components are each one colour
-     * (`.f-scan`, `.f-sealed`, `.f-component`); anything else keeps the item's own tier.
-     */
-    public function tierClass(): string
-    {
-        return match (true) {
-            $this->scan_file !== null => 'f-scan',
-            $this->extracted_file !== null && ! $this->isComponent() => 'f-sealed',
-            $this->isComponent() => 'f-component',
-            default => $this->item->tierClass(),
-        };
-    }
-
     /** What the stash groups a row under: one key for rows that read the same ("Kernel Log (AuraOS)"), the row's own id for anything else. */
     public function groupKey(): string
     {

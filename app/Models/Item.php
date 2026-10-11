@@ -585,7 +585,7 @@ class Item extends Model
      * Hardware kind and program kind to glyph. Chosen from the shortlist page, 2026-10-10; each is from the set the
      * gallery proves renders. A kind with no entry (a scan file's plain item) falls through to the stash default.
      */
-    private const GLYPHS = [
+    public const GLYPHS = [
         'deck' => "\u{2394}",
         'cpu' => "\u{2B23}",
         'npu' => "\u{232C}",

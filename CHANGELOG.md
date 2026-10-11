@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.49.1] — 2026-10-11
+
+Empty sockets show what they take, files stop wearing their own colours, and a job's systems are ticked off as you do them.
+
+### Added
+
+- **A green tick beside a mission's system** once its part is done (`mission-card.blade.php`, `.mark--ok`): the act is recorded for a burn or plant, and for a survey the scan file it needs is in hand. Offers show none.
+- **Prerequisites for encounters, designed** (`CITY.md`, *Prerequisites*; `ENCOUNTERS_GRID.md`): a list of conditions that must all hold before an encounter is drawn, empty by default. Nothing built.
+
+### Changed
+
+- **An empty deck socket shows its kind's glyph**, faint (`.slot--ghost`, `Item::GLYPHS` now public), instead of the diamond. IO ports keep the diamond.
+- **The stash loads the one-to-one rows `Item::glyph()` asks about** (`program`, `drug`, `consumable`, `armour`, `weapon`, `ammunition`, on items and on what is in containers), one query each rather than one per item.
+
+### Removed
+
+- **File colours.** `.f-scan`, `.f-sealed`, `.f-component` and `InventoryItem::tierClass()` are gone; a file wears its item's tier again. The ▧ ⧈ ⬢ glyphs stay.
+
+
 ## [0.49.0] — 2026-10-10
 
 A sound switch and a playlist in the bar, a glyph and a colour for every kind of thing in the stash, and scan passes that no longer give the grade away.
@@ -2897,7 +2916,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.49.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.49.1...HEAD
+[0.49.1]: https://github.com/nahkampf/dedlok/compare/v0.49.0...v0.49.1
 [0.49.0]: https://github.com/nahkampf/dedlok/compare/v0.48.0...v0.49.0
 [0.48.0]: https://github.com/nahkampf/dedlok/compare/v0.47.0...v0.48.0
 [0.47.0]: https://github.com/nahkampf/dedlok/compare/v0.46.1...v0.47.0

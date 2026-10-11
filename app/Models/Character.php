@@ -382,10 +382,15 @@ class Character extends Model
     {
         return $this->inventory()
             // The deck hardware comes along because the row renders its spec
-            // line: without it, a stash of modules is a query per module.
+            // line: without it, a stash of modules is a query per module. The
+            // one-to-one rows are what Item::glyph() asks, which is a query
+            // per item for each kind it tries before it finds its own.
             ->with([
                 'item.useSkill', 'item.deckSlots', 'item.deckModule',
+                'item.program', 'item.drug', 'item.consumable', 'item.armour', 'item.weapon', 'item.ammunition',
                 'children.item.useSkill', 'children.item.deckSlots', 'children.item.deckModule',
+                'children.item.program', 'children.item.drug', 'children.item.consumable',
+                'children.item.armour', 'children.item.weapon', 'children.item.ammunition',
             ])
             ->loose()
             ->inContainer($container)

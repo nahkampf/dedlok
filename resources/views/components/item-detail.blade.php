@@ -19,7 +19,7 @@
      [data-act] is hidden in the floating copy: a hover layer is not somewhere
      a click can land, because the pointer has to cross the gap to reach a
      button and the layer is gone by then. --}}
-<div class="item-card {{ $entry->tierClass() }}">
+<div class="item-card {{ $entry->item->tierClass() }}">
     {{-- What the thing looks like, found by convention: one subdirectory per
          type of item under public/images/items. The enlarge dialog is rendered
          beside the listing instead of here — <x-item-image> — because this card

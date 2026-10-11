@@ -84,8 +84,14 @@
                 <span class="micro">{{ Text::get('missions.targets') }}</span>
 
                 @foreach ($mission->targets as $target)
+                    {{-- A green tick when this system's part is done: the act is recorded (burn, plant), or for a
+                         survey the file it needs is in hand. --}}
+                    @php($inHand = $active && $action === MissionAction::Scan && $target->stillStands() && in_array($target->address, $held, true))
                     <div class="item-row">
                         <span class="item-row__name">
+                            @if ($target->isSatisfied() || $inHand)
+                                <span class="mark--ok" title="{{ Text::get($target->isSatisfied() ? 'missions.target_done' : 'missions.file_held') }}">&#x2713;</span>
+                            @endif
                             <x-address :address="$target->address" />
                         </span>
                         <span class="row row--wrap" style="--gap:var(--s-2);justify-content:flex-end">
@@ -100,7 +106,6 @@
 
                             {{-- A survey is handed in as files: say whether this system's is in hand. --}}
                             @if ($active && $action === MissionAction::Scan && ! $target->isSatisfied() && $target->stillStands())
-                                @php($inHand = in_array($target->address, $held, true))
                                 <span class="tag {{ $inHand ? 'tag--ok' : '' }}">{{ Text::get($inHand ? 'missions.file_held' : 'missions.file_needed') }}</span>
                             @endif
                         </span>

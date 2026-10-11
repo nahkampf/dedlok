@@ -45,6 +45,23 @@ exactly one.
 - **A hunt and an encounter never overlap.** Both are rolled at `arrive()`: the hunter first, and a spawned
   hunt makes `canHappenTo()` false.
 
+## Prerequisites
+
+**Every encounter, in either realm, may carry prerequisites: conditions that must all hold before it can be drawn,
+and the list may be empty.** Designed 2026-10-11; the shape, the kinds and the rules are `CITY.md` (*Narrative
+encounters*, *Prerequisites*), and a grid encounter uses the same table and the same judge.
+
+- **Judged with the rest of eligibility**, in the pool `Encounters::open()` builds for a door, so a grid encounter
+  that waits for a flag and ten scan files is not in the draw until both are true. `spot` is not offered while one
+  is unmet.
+- **Kinds that matter on the grid** are the ones the City already has (`flag`, `item`, `scan_files`, `creds`,
+  `skill`, `standing`) plus candidates for the grid's own facts, each a case in the one judge and none of them PHP
+  in an encounter: `heat_at_least`, `has_backdoor` (on a system, or of a grade), `owns_program_kind`. Which are
+  wanted is not decided.
+- **Held, never spent**, exactly as in the City. A cost is an outcome.
+- **A `run`-door encounter may ask about the run** (the system's grade, its owner, the purpose) through its door
+  filters, which remain columns; prerequisites are about the CHARACTER, filters are about the PLACE.
+
 ## The clock stops
 
 **Decided 2026-10-10: while a grid encounter is open, the player's own clocks stand still**, as they do in a
