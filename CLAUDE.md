@@ -1060,10 +1060,6 @@ soonest deadline first, each as the desk's own `<x-mission-card>` with `:actions
 it came from) and `:abandon="true"` (giving one up needs no desk; its tooltip is *Costs -X standing*, the row's penalty) and `:desk="true"` (who it is for, the agent, the desk's address). *Journal* and *Tasks* (quests) read "Not yet
 implemented." until they are designed. The rail glyph is U+25C7, one already proved to render.
 
-### The help page
-
-**`/help` is one public page of accordions** (`HelpController`, `resources/views/help/index.blade.php`) read straight from `strings.help`: groups with topics, then a glossary. Every group and topic has an id, so `/help#cyberspace` and `/help#scanning` work, and the page opens the accordion a link points at. Short statements, no numbers, nothing unbuilt. A topic's body is a list of blocks: a string is a paragraph, an array is a bullet list.
-
 ### Supporters
 
 **A flag on the account** (`users.is_supporter`, `supporter_since`; outside `User`'s `#[Fillable]`, like `is_admin`). **`App\Supporters\Supporters` is the only
