@@ -80,6 +80,17 @@ final class TasksAndMissionsTest extends TestCase
         $this->assertStringNotContainsString('Recently worked for:', $this->page());
     }
 
+    public function test_a_system_whose_part_is_done_has_a_tick_beside_its_address(): void
+    {
+        $mission = $this->job($this->me, MissionAction::Burn, MissionState::Accepted);
+
+        $this->assertStringNotContainsString('mark--ok', $this->page());
+
+        $mission->targets()->update(['satisfied_at' => now()]);
+
+        $this->assertStringContainsString('mark--ok', $this->page());
+    }
+
     public function test_the_rail_has_tasks_and_missions_and_the_screen_has_three_headings(): void
     {
         $html = $this->page();
