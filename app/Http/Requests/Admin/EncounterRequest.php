@@ -527,7 +527,16 @@ class EncounterRequest extends FormRequest
                 $errors["nodes.{$node['index']}.run_end"] = Text::get('admin.encounters.errors.run_end_required', ['node' => $node['key']]);
             }
 
-            if ($runEnd !== null && (! $isRunDoor || ! $node['ends'])) {
+            // Two different mistakes, so the message says which: the encounter does not start in a run, or the
+            // screen is not an ending.
+            if ($runEnd !== null && ! $isRunDoor) {
+                $door = EncounterStart::tryFrom((string) $this->input('starts_on'));
+
+                $errors["nodes.{$node['index']}.run_end"] = Text::get('admin.encounters.errors.run_end_door', [
+                    'node' => $node['key'],
+                    'door' => $door?->label() ?? (string) $this->input('starts_on'),
+                ]);
+            } elseif ($runEnd !== null && ! $node['ends']) {
                 $errors["nodes.{$node['index']}.run_end"] = Text::get('admin.encounters.errors.run_end_refused', ['node' => $node['key']]);
             }
         }
