@@ -52,7 +52,7 @@
     </select>
     {{-- Journal outcomes: the note's slug is the field above (Flag, injury or resource). These are its heading (when the
          note is new) and a line to add under it. --}}
-    <input class="input" name="{{ $oat }}[text]" maxlength="255" value="{{ $outcome['text'] ?? '' }}" placeholder="{{ Text::get('admin.encounters.outcome.journal_heading') }}" style="flex:1 1 100%;min-width:0" aria-label="{{ Text::get('admin.encounters.outcome.journal_heading') }}">
-    <input class="input" name="{{ $oat }}[entry_slug]" maxlength="60" value="{{ $outcome['entry_slug'] ?? '' }}" placeholder="{{ Text::get('admin.encounters.outcome.journal_line_slug') }}" style="flex:1 1 160px;min-width:0" aria-label="{{ Text::get('admin.encounters.outcome.journal_line_slug') }}">
-    <input class="input" name="{{ $oat }}[entry_text]" maxlength="500" value="{{ $outcome['entry_text'] ?? '' }}" placeholder="{{ Text::get('admin.encounters.outcome.journal_line') }}" style="flex:3 1 240px;min-width:0" aria-label="{{ Text::get('admin.encounters.outcome.journal_line') }}">
+    <input class="input" data-journal @disabled($kindNow !== 'journal') name="{{ $oat }}[text]" maxlength="255" value="{{ $outcome['text'] ?? '' }}" placeholder="{{ Text::get('admin.encounters.outcome.journal_heading') }}" style="flex:1 1 100%;min-width:0" aria-label="{{ Text::get('admin.encounters.outcome.journal_heading') }}">
+    <input class="input" data-journal @disabled($kindNow !== 'journal') name="{{ $oat }}[entry_slug]" maxlength="60" value="{{ $outcome['entry_slug'] ?? '' }}" placeholder="{{ Text::get('admin.encounters.outcome.journal_line_slug') }}" style="flex:1 1 160px;min-width:0" aria-label="{{ Text::get('admin.encounters.outcome.journal_line_slug') }}">
+    <input class="input" data-journal @disabled($kindNow !== 'journal') name="{{ $oat }}[entry_text]" maxlength="500" value="{{ $outcome['entry_text'] ?? '' }}" placeholder="{{ Text::get('admin.encounters.outcome.journal_line') }}" style="flex:3 1 240px;min-width:0" aria-label="{{ Text::get('admin.encounters.outcome.journal_line') }}">
 </div>

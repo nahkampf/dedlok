@@ -93,6 +93,21 @@ class EncounterRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $v): void {
+            // PHP DROPS every variable past `max_input_vars` and says nothing, so a big encounter would be saved
+            // with its tail missing and look like it had saved. A form that reached the limit is refused whole.
+            $limit = (int) ini_get('max_input_vars');
+            $leaves = 0;
+            $posted = $this->request->all();
+            array_walk_recursive($posted, static function () use (&$leaves): void {
+                $leaves++;
+            });
+
+            if ($limit > 0 && $leaves >= $limit) {
+                $v->errors()->add('nodes', Text::get('admin.encounters.errors.too_big', ['limit' => $limit]));
+
+                return;
+            }
+
             [$this->nodes, $errors] = $this->build();
             [$this->prerequisites, $prerequisiteErrors] = $this->buildPrerequisites();
 

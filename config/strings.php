@@ -3891,6 +3891,7 @@ return [
                 'journal_slug' => 'Screen ":node": a journal slug is lower case letters, digits, hyphens and underscores (up to 60).',
                 'journal_empty' => 'Screen ":node": a journal outcome needs a heading for a new note, a line of text, or both.',
                 'journal_entry' => 'Screen ":node": a journal line needs both its slug and its text.',
+                'too_big' => 'This encounter has more form fields than the server accepts (:limit), so part of it would have been dropped without a word. Nothing was saved. Raise max_input_vars for PHP, or split the encounter.',
                 'run_end_required' => 'The ending ":node" must say what happens to the run: kill it or continue it.',
                 'run_end_door' => 'Screen ":node": "What happens to the run" only applies to an encounter that starts "In a run, between turns". This one starts ":door", so leave that field blank (or change Starts on).',
                 'run_end_refused' => 'Screen ":node" is not an ending, so it cannot say what happens to the run. Tick Ending, or leave the field blank.',

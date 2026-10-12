@@ -119,6 +119,9 @@
     const [, thing] = select.value.split(/:(.*)/s);
     const target = select.closest("[data-row]")?.querySelector("input[data-split-target]");
     if (thing !== undefined && target) target.value = thing;
+    // The journal's three inputs only exist for a journal outcome: a disabled field is not submitted, which keeps
+    // the form under the server's field limit.
+    select.closest("[data-row]")?.querySelectorAll("input[data-journal]").forEach((i) => { i.disabled = select.value !== "journal"; });
   });
 
   /* --- Range with a word -------------------------------------------------

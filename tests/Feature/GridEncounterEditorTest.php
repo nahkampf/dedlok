@@ -62,6 +62,17 @@ final class GridEncounterEditorTest extends TestCase
         $this->save('grid_step', $move)->assertSessionHasNoErrors();
     }
 
+    public function test_a_form_that_reached_the_servers_field_limit_is_refused_whole(): void
+    {
+        $limit = (int) ini_get('max_input_vars');
+        $before = $this->encounter->nodes()->count();
+
+        // PHP drops what is past the limit and says nothing: such a form must never be saved as if it were whole.
+        $this->save('grid_step', [], ['padding' => array_fill(0, $limit, 'x')])->assertSessionHasErrors('nodes');
+
+        $this->assertSame($before, $this->encounter->nodes()->count(), 'nothing was written');
+    }
+
     public function test_a_system_filter_is_only_for_the_system_door(): void
     {
         $this->save('grid_step', [], ['system_type' => 'silo'])->assertSessionHasErrors('system_type');
