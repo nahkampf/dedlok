@@ -117,6 +117,8 @@ final class ReadinessWatch
             return null;
         }
 
+        Trail::note('readiness_ejection', $character, ['reason' => $deck === null ? 'no deck' : 'deck not ready']);
+
         return DB::transaction(function () use ($character): Ejection {
             // Through the resolver, so a character who is good at surviving
             // this particular way of losing a deck is good at it — the

@@ -133,6 +133,9 @@ final class Navigator
             return TravelResult::refused(TravelRefusal::Hunted);
         }
 
+        // BEFORE the position goes: the snapshot is of where they were and why (see Trail).
+        Trail::note('jack_out', $character);
+
         $character->forceFill(['grid_x' => null, 'grid_y' => null])->save();
 
         return TravelResult::left();

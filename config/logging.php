@@ -58,6 +58,15 @@ return [
             'ignore_exceptions' => false,
         ],
 
+        // What happens around a character leaving cyberspace, for finding out why somebody was jacked out
+        // (App\Cyberspace\Trail). Its own file so it can be read without the rest of the log.
+        'cyberspace' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/cyberspace.log'),
+            'level' => 'debug',
+            'replace_placeholders' => true,
+        ],
+
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),

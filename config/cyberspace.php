@@ -1231,6 +1231,13 @@ return [
     ],
 
     /*
+    | A TRAIL OF EVERY WAY OUT, for finding out why somebody was jacked out (App\Cyberspace\Trail), written to
+    | storage/logs/cyberspace.log. On by default everywhere except production, where `CYBERSPACE_TRAIL=true` turns it
+    | on. It records state and never changes it, and cannot break a request: any failure inside it is swallowed.
+    */
+    'trail' => (bool) env('CYBERSPACE_TRAIL', env('APP_ENV') !== 'production'),
+
+    /*
     | What a deck freezing costs the person inside it.
     |
     | A module breaks from thermal load mid-run, the deck stops being a working
