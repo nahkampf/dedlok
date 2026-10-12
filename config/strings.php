@@ -306,7 +306,7 @@ return [
             'log_heading' => 'So far',
             'locked' => 'Finish what you are in the middle of.',
             'at_place' => 'Something is going on here',
-            'starts' => ['travel' => 'On the way', 'explore' => 'While exploring', 'place' => 'At a place', 'grid_step' => 'On a move in cyberspace'],
+            'starts' => ['travel' => 'On the way', 'explore' => 'While exploring', 'place' => 'At a place', 'grid_step' => 'On a move in cyberspace', 'system' => 'Arriving at a system', 'run' => 'In a run, between turns'],
             'kinds' => [
                 'creds' => 'Creds',
                 'item' => 'Item',
@@ -316,6 +316,10 @@ return [
                 'injury' => 'Injury',
                 'damage' => 'Damage',
                 'dose' => 'Dose',
+                'trace' => 'Trace (run, points)',
+                'wake_ice' => 'Wake the ICE (run)',
+                'detected' => 'Run is detected (run)',
+                'grid_move' => 'Move on the grid (x,y in the text)',
             ],
             // How a rolled choice reads on its button. The figure is in the
             // button's title, not on it: an unmeasured number reads as a promise.
@@ -331,6 +335,11 @@ return [
             'failed' => 'It does not.',
             // One line per outcome, what the player is told it did.
             'outcomes' => [
+                'trace_up' => 'The trace gets closer.',
+                'trace_down' => 'The trace falls back.',
+                'ice_woken' => 'The ICE wakes.',
+                'detected' => 'Something noticed you.',
+                'moved' => 'You are somewhere else.',
                 'creds_gain' => 'You gain :amount ¤.',
                 'creds_loss' => 'You lose :amount ¤.',
                 'item' => 'You get :item ×:quantity.',
@@ -1428,6 +1437,7 @@ return [
                 'egress' => 'You egressed the run.',
                 'defeat' => 'You were defeated.',
                 'burnout' => 'Your deck cooked a module and unsafely dropped you out of cyberspace.',
+                'encounter' => 'Something ended the run. You are still on the grid.',
                 // WHAT ACTUALLY HAPPENED, because a player thrown out of a run
                 // they were winning, by something they could not see, with no
                 // account of it, has been handed a bug rather than a
@@ -3681,6 +3691,11 @@ return [
                 'weight_hint' => 'Its share of a draw out of 100. Small is rare: 2 is a 2% pick even when it is the only one that qualifies, and the rest is "nothing happens".',
                 'district' => 'Only in district',
                 'location' => 'At place',
+                'system_type' => 'System type (arriving at a system)',
+                'grade_min' => 'Grade from (system or run)',
+                'grade_max' => 'Grade to (system or run)',
+                'owner' => 'Owner (arriving at a system)',
+                'run_purpose' => 'Run purpose (in a run)',
                 'required_flag' => 'Required flag',
                 'once' => 'Once per character',
                 'retired' => 'Retired',
@@ -3764,6 +3779,12 @@ return [
             'remove_choice' => 'Remove this choice',
             'remove_outcome' => 'Remove this outcome',
 
+            // What the ending of a run encounter does to the run it interrupted.
+            'run_end' => [
+                'kill_run' => 'Kill the run',
+                'continue_run' => 'Continue the run',
+            ],
+
             // What a character must hold before an encounter can be drawn for them. All of them, held and never spent.
             'prerequisite' => [
                 'title' => 'Prerequisites',
@@ -3799,6 +3820,7 @@ return [
                 'key' => 'Key',
                 'entry' => 'Opens here',
                 'ends' => 'Ending',
+                'run_end' => 'What happens to the run (endings of a run encounter)',
                 'body' => 'Text',
             ],
             'arrival' => 'When reached',
@@ -3833,6 +3855,11 @@ return [
             ],
             'branches' => ['always' => 'Always', 'pass' => 'On pass', 'fail' => 'On fail'],
             'errors' => [
+                'run_only' => 'Screen ":node": ":kind" acts on a run, so only an encounter that opens in a run may use it.',
+                'grid_move_door' => 'Screen ":node": moving on the grid needs a grid door that is not a run.',
+                'grid_position' => 'Screen ":node": a position is written x,y and is inside the grid (0 to :size).',
+                'run_end_required' => 'The ending ":node" must say what happens to the run: kill it or continue it.',
+                'run_end_refused' => 'Only an ending of a run encounter says what happens to the run (":node" does not).',
                 'no_nodes' => 'An encounter needs at least one screen.',
                 'one_entry' => 'Exactly one screen must be marked as where the encounter opens.',
                 'node_key' => 'A screen\'s key is lower-case letters, digits and underscores, up to 40.',

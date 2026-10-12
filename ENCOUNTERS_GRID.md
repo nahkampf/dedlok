@@ -1,16 +1,24 @@
 # Encounters in cyberspace
 
-**Designed 2026-10-10.** *Built 2026-10-12: the `grid_step` door only* (`EncounterStart::GridStep`; an arrival by a step,
-a jump or a bookmark, never the jack-in itself), with the base chance at `cyberspace.encounter.grid_step_chance`. **The
-realm is the door's, not a column**: `EncounterStart::isGrid()`, so there is no second field to disagree with `starts_on`.
-Everything else below (`system`, `run` and `spot` doors, the clock stop, `kill_run` / `continue_run`, the new outcome
-kinds, avatars) is still design. The first authored one is `loa_intro_encounter`, by migration.
+**Designed 2026-10-10, built 2026-10-12 except for avatars and the `spot` door.** What differs from the first design:
 
-**Original status line, kept:** nothing else built. This extends `CITY.md` (*Encounters*) into the grid. Read that first: the
-graph, the checks, the outcome vocabulary and the writers are all the City's and are not repeated here. The
-rules for runs, hunters and the floor are `CYBERSPACE_RULES.md`; the physical fight engine is `COMBAT.md`.
+- **The realm is the door's, not a column.** `EncounterStart::isGrid()`: `grid_step`, `system` and `run` are cyberspace's, so
+  there is no second field to disagree with `starts_on`.
+- **Doors built:** `grid_step` (an arrival by a step, a jump or a bookmark, never the jack-in), `system` (the position has a
+  system; filters: type, grade range, owner) and `run` (after a turn of a live run; filters: grade range, purpose). Base chances are
+  `cyberspace.encounter.{grid_step,system,run}_chance`. `spot` is not built.
+- **The clock stops** (`App\Characters\EncounterPause`): sweeps skip a held character, scripts and doses are read as at the opening
+  and every stored moment moves forward by the encounter's length on close. Crafting credits nothing while held. A fight opened
+  inside an encounter is counted in both, which is in the player's favour.
+- **`run_end`** is on the ending's node (`kill_run` or `continue_run`), required on every ending of a `run` encounter and refused
+  elsewhere. `kill_run` ends the run through `RunStarter::end()` as `RunEnding::Encounter`; a bare close with no ending screen is
+  `continue_run`.
+- **Outcome kinds built:** `trace` (points, clamped 0 to 99 so it never lands), `wake_ice`, `detected` (the same, and the owner
+  minds) and `grid_move` (`ref` = `x,y`; grid doors that are not a run). The first three are refused outside a run encounter.
+- **Prerequisites** are shared with the City (`CITY.md`).
+- **Not built:** avatars and the fight choice, `spot`, and a message for `kill_run`.
 
-**Every number below is a default the author has not tuned.**
+**The original design follows, kept for the reasoning.** Every number in it is a default the author has not tuned.
 
 ## What it is
 

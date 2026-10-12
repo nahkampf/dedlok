@@ -37,6 +37,12 @@ enum RunEnding: string
     /** They did what they came to do. */
     case Completed = 'completed';
 
+    /**
+     * An encounter inside the run ended it (`kill_run`). Not a defeat and not an ejection: they stay on the grid
+     * where they were, what was already taken stays taken, and the pull in progress is lost like any ending.
+     */
+    case Encounter = 'encounter';
+
     public function message(): string
     {
         return Text::get("cyberspace.run.ended.{$this->value}");

@@ -26,6 +26,18 @@ enum OutcomeKind: string
     /** The character takes a drug, at once. The item must be one with a `drugs` row; the amount is ignored. */
     case Dose = 'dose';
 
+    /** RUN ONLY. Moves the run's trace by `amount` points, never landing it (the simulator does that). */
+    case Trace = 'trace';
+
+    /** RUN ONLY. The ICE wakes and the run is detected, with no mark against the owner's books. */
+    case WakeIce = 'wake_ice';
+
+    /** RUN ONLY. The run is noticed, as at the core: detected, its ICE awake, and the owner minds. */
+    case Detected = 'detected';
+
+    /** GRID DOORS, NOT A RUN. Moves the character to the position in `ref` ("x,y") and looks around, with no rolls. */
+    case GridMove = 'grid_move';
+
     /**
      * The injuries an encounter may deepen or ease: the accumulating ones `InjuryLedger` owns.
      * The drug withdrawals in `config/effects.php` are deliberately absent — `DrugLedger` is the
@@ -51,15 +63,21 @@ enum OutcomeKind: string
         return $this === self::Standing;
     }
 
-    /** Whether `ref` carries the target: a flag slug, an injury key or a resource. */
+    /** Whether `ref` carries the target: a flag slug, an injury key, a resource or a position. */
     public function needsRef(): bool
     {
-        return in_array($this, [self::Flag, self::Injury, self::Damage], true);
+        return in_array($this, [self::Flag, self::Injury, self::Damage, self::GridMove], true);
     }
 
-    /** A flag and a dose have no amount; everything else is a signed number. */
+    /** A flag, a dose and the grid effects with no number have no amount; everything else is a signed number. */
     public function needsAmount(): bool
     {
-        return ! in_array($this, [self::Flag, self::Dose], true);
+        return ! in_array($this, [self::Flag, self::Dose, self::WakeIce, self::Detected, self::GridMove], true);
+    }
+
+    /** Needs a live run to act on, so only a run encounter may carry it. */
+    public function isRunOnly(): bool
+    {
+        return in_array($this, [self::Trace, self::WakeIce, self::Detected], true);
     }
 }

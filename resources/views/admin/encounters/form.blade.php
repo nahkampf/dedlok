@@ -155,6 +155,42 @@
                         @endforeach
                     </select>
                 </label>
+                {{-- The grid doors' filters. Which apply depends on the door; the others are refused on save. --}}
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.system_type') }}</span>
+                    <select class="select" name="system_type">
+                        <option value=""></option>
+                        @foreach ($systemTypes as $type)
+                            <option value="{{ $type->value }}" @selected($enum('system_type') === $type->value)>{{ $type->label() }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.grade_min') }}</span>
+                    <input class="input num" type="number" name="grade_min" min="1" max="9" value="{{ $value('grade_min') }}">
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.grade_max') }}</span>
+                    <input class="input num" type="number" name="grade_max" min="1" max="9" value="{{ $value('grade_max') }}">
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.owner') }}</span>
+                    <select class="select" name="owner_entity_id">
+                        <option value=""></option>
+                        @foreach ($owners as $owner)
+                            <option value="{{ $owner->id }}" @selected((int) $value('owner_entity_id') === $owner->id)>{{ $owner->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.run_purpose') }}</span>
+                    <select class="select" name="run_purpose">
+                        <option value=""></option>
+                        @foreach ($purposes as $purpose)
+                            <option value="{{ $purpose->value }}" @selected($enum('run_purpose') === $purpose->value)>{{ $purpose->label() }}</option>
+                        @endforeach
+                    </select>
+                </label>
                 <label class="field">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.required_flag') }}</span>
                     <input class="input" name="required_flag" maxlength="60" value="{{ $value('required_flag') }}">

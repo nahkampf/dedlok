@@ -7,10 +7,13 @@ namespace App\Http\Controllers\Admin;
 use App\Admin\ItemOptions;
 use App\Admin\ModifierField;
 use App\City\EncounterEditor;
+use App\City\EncounterRunEnd;
 use App\City\EncounterStart;
 use App\City\OutcomeBranch;
 use App\City\OutcomeKind;
 use App\City\PrerequisiteKind;
+use App\Cyberspace\RunPurpose;
+use App\Cyberspace\SystemType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\EncounterRequest;
 use App\Models\District;
@@ -127,6 +130,10 @@ class EncounterController extends Controller
             )),
             'stored' => $encounter === null ? [] : EncounterEditor::rows($encounter),
             'prerequisiteKinds' => PrerequisiteKind::cases(),
+            'systemTypes' => SystemType::cases(),
+            'purposes' => RunPurpose::cases(),
+            'runEnds' => EncounterRunEnd::cases(),
+            'owners' => Entity::query()->orderBy('name')->get(['id', 'name']),
             'storedPrerequisites' => $encounter === null ? [] : EncounterEditor::prerequisiteRows($encounter),
         ];
     }

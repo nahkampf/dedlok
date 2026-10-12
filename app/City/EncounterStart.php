@@ -21,10 +21,16 @@ enum EncounterStart: string
     /** An arrival on the grid by a move (a step, a jump or a bookmark; not the jack-in itself). Cyberspace's own door. */
     case GridStep = 'grid_step';
 
-    /** The realm is the door's: this one is cyberspace and every other is the City. */
+    /** Arriving at a system on the grid, by whatever move. Filters: its type, a grade range, its owner. */
+    case System = 'system';
+
+    /** Between turns of a run. Filters: a grade range, the run's purpose. Every ending says what becomes of the run. */
+    case Run = 'run';
+
+    /** The realm is the door's: these three are cyberspace and every other is the City. */
     public function isGrid(): bool
     {
-        return $this === self::GridStep;
+        return in_array($this, [self::GridStep, self::System, self::Run], true);
     }
 
     public function label(): string

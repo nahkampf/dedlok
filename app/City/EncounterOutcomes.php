@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\City;
 
 use App\Characters\Flags;
+use App\Cyberspace\Navigator;
+use App\Cyberspace\Position;
+use App\Cyberspace\Simulator;
 use App\Decks\Storage;
 use App\Drugs\DrugTaker;
 use App\Inventory\ItemGranter;
@@ -13,12 +16,14 @@ use App\Models\EncounterOutcome;
 use App\Models\Entity;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Run;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
 use App\Stats\Damage;
 use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
 use App\Stats\InjuryLedger;
+use App\Stats\Resolver;
 use App\Support\Text;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
@@ -60,7 +65,54 @@ final class EncounterOutcomes
             OutcomeKind::Injury => $this->injury($character, (string) $outcome->ref, $amount),
             OutcomeKind::Damage => $this->hurt($character, (string) $outcome->ref, (int) round(abs($amount))),
             OutcomeKind::Dose => $this->dose($character, $outcome),
+            OutcomeKind::Trace => $this->trace($character, (int) round($amount)),
+            OutcomeKind::WakeIce => $this->alert($character, owner: false),
+            OutcomeKind::Detected => $this->alert($character, owner: true),
+            OutcomeKind::GridMove => $this->gridMove($character, (string) $outcome->ref),
         };
+    }
+
+    /** The run this character is in, or null: a run outcome outside a run does nothing. */
+    private function liveRun(Character $character): ?Run
+    {
+        return $character->current_run_id === null
+            ? null
+            : Run::query()->live()->find($character->current_run_id);
+    }
+
+    private function trace(Character $character, int $points): ?string
+    {
+        $run = $this->liveRun($character);
+
+        if ($run === null || $points === 0) {
+            return null;
+        }
+
+        $moved = app(Simulator::class)->shiftTrace($run, $points);
+
+        return $moved === 0 ? null : Text::get($moved > 0 ? 'city.encounter.outcomes.trace_up' : 'city.encounter.outcomes.trace_down');
+    }
+
+    private function alert(Character $character, bool $owner): ?string
+    {
+        $run = $this->liveRun($character);
+
+        if ($run === null || ! app(Simulator::class)->alert($character, $run, $owner)) {
+            return null;
+        }
+
+        return Text::get($owner ? 'city.encounter.outcomes.detected' : 'city.encounter.outcomes.ice_woken');
+    }
+
+    private function gridMove(Character $character, string $ref): ?string
+    {
+        if (preg_match('/^(\d+),\s*(\d+)$/', trim($ref), $m) !== 1) {
+            return null;
+        }
+
+        $moved = Navigator::fromConfig(app(Resolver::class))->relocate($character, new Position((int) $m[1], (int) $m[2]));
+
+        return $moved ? Text::get('city.encounter.outcomes.moved') : null;
     }
 
     private function creds(Character $character, int $amount): ?string

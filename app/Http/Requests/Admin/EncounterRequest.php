@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin;
 
 use App\City\EncounterGraph;
+use App\City\EncounterRunEnd;
 use App\City\EncounterStart;
 use App\City\OutcomeBranch;
 use App\City\OutcomeKind;
 use App\City\PrerequisiteKind;
+use App\Cyberspace\RunPurpose;
+use App\Cyberspace\SystemType;
 use App\Models\District;
 use App\Models\Encounter;
 use App\Models\Entity;
@@ -19,6 +22,7 @@ use App\Stats\StatRegistry;
 use App\Support\Text;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Validation\Rule;
 
 /**
@@ -63,7 +67,13 @@ class EncounterRequest extends FormRequest
             'intro' => ['nullable', 'string', 'max:5000'],
             'starts_on' => ['required', Rule::enum(EncounterStart::class)],
             'weight' => ['required', 'integer', 'between:1,100'],
-            'district_id' => ['nullable', 'integer', 'exists:districts,id', 'prohibited_if:starts_on,place,grid_step'],
+            'district_id' => ['nullable', 'integer', 'exists:districts,id', 'prohibited_if:starts_on,place,grid_step,system,run'],
+            // The grid doors' own filters, each only on the door that reads it.
+            'system_type' => ['nullable', Rule::enum(SystemType::class), 'prohibited_unless:starts_on,system'],
+            'grade_min' => ['nullable', 'integer', 'between:1,9', 'prohibited_unless:starts_on,system,run'],
+            'grade_max' => ['nullable', 'integer', 'between:1,9', 'gte:grade_min', 'prohibited_unless:starts_on,system,run'],
+            'owner_entity_id' => ['nullable', 'integer', 'exists:entities,id', 'prohibited_unless:starts_on,system'],
+            'run_purpose' => ['nullable', Rule::enum(RunPurpose::class), 'prohibited_unless:starts_on,run'],
             'location_id' => ['nullable', 'integer', 'exists:locations,id', 'required_if:starts_on,place', 'prohibited_unless:starts_on,place'],
             'required_flag' => ['nullable', 'string', 'regex:'.self::FLAG],
             'once' => ['nullable', 'boolean'],
@@ -94,11 +104,30 @@ class EncounterRequest extends FormRequest
         return [
             ...$slug,
             ...array_intersect_key($data, array_flip(['title', 'intro', 'starts_on', 'weight', 'district_id', 'location_id', 'required_flag'])),
+            ...$this->doorFilters($data),
             'intro' => ($data['intro'] ?? '') === '' ? null : $data['intro'],
             'required_flag' => ($data['required_flag'] ?? '') === '' ? null : $data['required_flag'],
             'once' => $this->boolean('once'),
             'retired' => $this->boolean('retired'),
         ];
+    }
+
+    /**
+     * The grid doors' filters, a blank being NULL (no filter).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function doorFilters(array $data): array
+    {
+        $out = [];
+
+        foreach (['system_type', 'grade_min', 'grade_max', 'owner_entity_id', 'run_purpose'] as $field) {
+            $value = $data[$field] ?? null;
+            $out[$field] = $value === null || $value === '' ? null : $value;
+        }
+
+        return $out;
     }
 
     /** @return list<array<string, mixed>> */
@@ -244,6 +273,23 @@ class EncounterRequest extends FormRequest
             $errors["{$oat}.ref"] = Text::get('admin.encounters.errors.flag', ['node' => $nodeKey]);
         }
 
+        // The grid's outcomes need a run (or a map) to act on, so only the doors that have one may carry them.
+        $door = EncounterStart::tryFrom((string) $this->input('starts_on'));
+
+        if ($kind->isRunOnly() && $door !== EncounterStart::Run) {
+            $errors["{$oat}.kind"] = Text::get('admin.encounters.errors.run_only', ['node' => $nodeKey, 'kind' => $kind->label()]);
+        }
+
+        if ($kind === OutcomeKind::GridMove) {
+            $size = (int) Config::get('cyberspace.size', 128);
+
+            if (! ($door?->isGrid() ?? false) || $door === EncounterStart::Run) {
+                $errors["{$oat}.kind"] = Text::get('admin.encounters.errors.grid_move_door', ['node' => $nodeKey]);
+            } elseif (preg_match('/^(\d+),\s*(\d+)$/', $ref, $m) !== 1 || (int) $m[1] >= $size || (int) $m[2] >= $size) {
+                $errors["{$oat}.ref"] = Text::get('admin.encounters.errors.grid_position', ['node' => $nodeKey, 'size' => $size]);
+            }
+        }
+
         if ($kind === OutcomeKind::Injury && ! in_array($ref, OutcomeKind::INJURIES, true)) {
             $errors["{$oat}.ref"] = Text::get('admin.encounters.errors.injury', ['node' => $nodeKey, 'ref' => $ref]);
         }
@@ -321,6 +367,7 @@ class EncounterRequest extends FormRequest
                 'index' => $i, 'key' => $key, 'body' => $body,
                 'entry' => (string) $this->input('entry') === (string) $i,
                 'ends' => (bool) ($raw['ends'] ?? false),
+                'run_end' => trim((string) ($raw['run_end'] ?? '')) ?: null,
                 'raw' => (array) ($raw['choices'] ?? []),
                 'rawOutcomes' => (array) ($raw['outcomes'] ?? []),
                 'outcomes' => [],
@@ -444,6 +491,19 @@ class EncounterRequest extends FormRequest
             if (! $node['ends'] && $node['choices'] === []) {
                 $errors["nodes.{$node['index']}.choices"] = Text::get('admin.encounters.errors.no_choices', ['node' => $node['key']]);
             }
+
+            // What an ending does to the run: required on every ending of a run encounter so an author decides, and
+            // refused anywhere else, where there is no run to be told. Not a CHECK (nodes cascade, error 3823).
+            $isRunDoor = (string) $this->input('starts_on') === EncounterStart::Run->value;
+            $runEnd = $node['run_end'];
+
+            if ($isRunDoor && $node['ends'] && EncounterRunEnd::tryFrom((string) $runEnd) === null) {
+                $errors["nodes.{$node['index']}.run_end"] = Text::get('admin.encounters.errors.run_end_required', ['node' => $node['key']]);
+            }
+
+            if ($runEnd !== null && (! $isRunDoor || ! $node['ends'])) {
+                $errors["nodes.{$node['index']}.run_end"] = Text::get('admin.encounters.errors.run_end_refused', ['node' => $node['key']]);
+            }
         }
         unset($node);
 
@@ -464,7 +524,7 @@ class EncounterRequest extends FormRequest
 
         return [
             array_map(static fn (array $n): array => [
-                'key' => $n['key'], 'body' => $n['body'], 'entry' => $n['entry'], 'ends' => $n['ends'], 'outcomes' => $n['outcomes'], 'choices' => $n['choices'],
+                'key' => $n['key'], 'body' => $n['body'], 'entry' => $n['entry'], 'ends' => $n['ends'], 'run_end' => $n['run_end'], 'outcomes' => $n['outcomes'], 'choices' => $n['choices'],
             ], $nodes),
             $errors,
         ];

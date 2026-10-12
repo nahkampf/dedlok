@@ -248,6 +248,26 @@ final class Navigator
     }
 
     /**
+     * Put somebody on a position for a story (an encounter's `grid_move`), and let them look around.
+     *
+     * No hunter roll and no encounter: a move an encounter makes must not open another. Refused for a position off
+     * the grid and for somebody who is not jacked in.
+     */
+    public function relocate(Character $character, Position $to): bool
+    {
+        if (! $character->isJackedIn() || ! $this->grid->contains($to)) {
+            return false;
+        }
+
+        DB::transaction(function () use ($character, $to): void {
+            $character->forceFill(['grid_x' => $to->x, 'grid_y' => $to->y])->save();
+            $this->sweep->from($character, $to, ViewShape::forCharacter($character, $this->resolver));
+        });
+
+        return true;
+    }
+
+    /**
      * Stand here, and look around.
      *
      * One transaction, because a position written without the sweep that
@@ -280,6 +300,17 @@ final class Navigator
                     EncounterStart::GridStep,
                 ),
             );
+
+            // Standing on a system, the system door: same lock, same roll, its own chance and filters.
+            if ($encounter === null && ($system = $this->grid->at($position)) !== null) {
+                $encounter = DB::transaction(
+                    fn (): ?CharacterEncounter => app(Encounters::class)->maybeOpenFor(
+                        Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail(),
+                        EncounterStart::System,
+                        $system,
+                    ),
+                );
+            }
 
             if ($encounter !== null) {
                 $character->refresh();

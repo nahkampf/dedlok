@@ -40,6 +40,7 @@ final class EncounterEditor
             foreach ($nodes as $row) {
                 $node = $encounter->nodes()->create([
                     'node_key' => $row['key'], 'body' => $row['body'], 'entry' => $row['entry'], 'ends' => $row['ends'],
+                    'run_end' => $row['run_end'] ?? null,
                 ]);
 
                 // What the screen itself does on arrival: the same rows, owned by the screen.
@@ -113,7 +114,7 @@ final class EncounterEditor
                 ];
             }
 
-            $rows[] = ['key' => $node->node_key, 'body' => $node->body, 'entry' => $node->entry, 'ends' => $node->ends, 'outcomes' => $arrival, 'choices' => $choices];
+            $rows[] = ['key' => $node->node_key, 'body' => $node->body, 'entry' => $node->entry, 'ends' => $node->ends, 'run_end' => $node->run_end, 'outcomes' => $arrival, 'choices' => $choices];
         }
 
         return $rows;

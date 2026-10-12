@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\City\Encounters;
+use App\City\EncounterStart;
 use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\Backdoors;
 use App\Cyberspace\ChainBuilder;
@@ -26,6 +28,7 @@ use App\Standing\StandingLedger;
 use App\Stats\Resolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -339,7 +342,20 @@ class RunController extends Controller
         }
 
         if (! $result->ended()) {
-            return redirect()->route('run.show');
+            // Between turns: the run door. Opened on the locked character, in its own write.
+            $opened = null;
+            $system = $run->system();
+
+            if ($system !== null) {
+                $opened = DB::transaction(fn () => app(Encounters::class)->maybeOpenFor(
+                    Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail(),
+                    EncounterStart::Run,
+                    $system,
+                    $run,
+                ));
+            }
+
+            return redirect()->route($opened === null ? 'run.show' : 'encounter.show');
         }
 
         // A defeat ejects and puts them on the floor; an egress just ends. Both

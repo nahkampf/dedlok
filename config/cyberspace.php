@@ -1522,7 +1522,12 @@ return [
     | in a hundred moves.
     */
     'encounter' => [
+        // An arrival by a move, wherever it is.
         'grid_step_chance' => 0.02,
+        // An arrival at a system (one stands on the position), rolled after the one above found nothing.
+        'system_chance' => 0.05,
+        // After a turn of a run, while it is still live.
+        'run_chance' => 0.05,
     ],
 
 ];

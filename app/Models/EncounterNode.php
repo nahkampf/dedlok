@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /** One screen of an encounter, reached by `node_key` and never by id. */
-#[Fillable(['encounter_id', 'node_key', 'body', 'entry', 'ends'])]
+#[Fillable(['encounter_id', 'node_key', 'body', 'entry', 'ends', 'run_end'])]
 class EncounterNode extends Model
 {
     public $timestamps = false;
