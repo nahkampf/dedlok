@@ -1626,7 +1626,7 @@
         if (!v) return;
         const used = Math.round(Number(v.dataset.used) * 10) + extra, total = Math.round(Number(v.dataset.total) * 10);
         meter(v.querySelector(".meter"), total > 0 ? used / total : (used > 0 ? 1 : 0));
-        v.querySelector(".meter").style.setProperty("--fill", used > total ? "var(--crit)" : "var(--ok)");
+        v.querySelector(".meter").style.setProperty("--fill", (total > 0 ? used >= total : used > 0) ? "var(--crit)" : total > 0 && used * 10 >= total * 9 ? "var(--warn)" : "var(--ok)");
         const text = v.querySelector("[data-vital-value]");
         if (text && vitals) text.textContent = vitals.dataset.format.replace(":used", fmt(used)).replace(":total", fmt(total));
       });

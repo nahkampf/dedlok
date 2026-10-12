@@ -12,6 +12,7 @@ use App\Models\Item;
 use App\Models\System;
 use App\Programs\ProcessRefusal;
 use App\Programs\ProgramKind;
+use App\Programs\ProgramRunner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Testing\TestResponse;
@@ -88,6 +89,21 @@ final class RunScriptsTest extends TestCase
         $this->assertNull($this->character->fresh()->current_run_id, 'no run began');
         $this->assertNotNull($fits->fresh(), 'the script that did fit was not destroyed by the rollback');
         $this->assertFalse($fits->fresh()->isRunning());
+    }
+
+    public function test_a_deck_bar_goes_brass_near_its_limit_and_ember_at_it(): void
+    {
+        $runner = app(ProgramRunner::class);
+        $page = fn (): string => $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('--fill:var(--warn)', $page());
+
+        // The fixture deck holds 100 QB: 92 is within a tenth of it, 100 is at it.
+        $this->assertTrue($runner->start($this->character->fresh(), $this->script(memory: 92.0))->succeeded());
+        $this->assertStringContainsString('--fill:var(--warn)', $page());
+
+        $this->assertTrue($runner->start($this->character->fresh(), $this->script(memory: 8.0))->succeeded());
+        $this->assertStringContainsString('--fill:var(--crit)', $page());
     }
 
     public function test_a_row_that_is_not_a_script_is_ignored(): void

@@ -10,6 +10,11 @@
     ['key' => 'memory', 'label' => 'decks.fitting.memory', 'used' => $spent['memory'], 'total' => $totals->quantabits],
     ...($totals->stored === null ? [] : [['key' => 'storage', 'label' => 'decks.fitting.storage', 'used' => $totals->stored, 'total' => $totals->storage]]),
 ])
+{{-- A bar goes brass within a tenth of its limit and ember at it or over it. ui-kit.js (data-run-budget) makes the same
+     call as the loadout is ticked. Heat is not asked: it has its own warning and limit marks. --}}
+@php($fill = static fn (float|int $used, float|int $total): string => ($total > 0 ? \App\Support\Qb::tenths($used) >= \App\Support\Qb::tenths($total) : $used > 0)
+    ? '--crit'
+    : ($total > 0 && \App\Support\Qb::tenths($used) * 10 >= \App\Support\Qb::tenths($total) * 9 ? '--warn' : '--ok'))
 @php($scale = $thermal->scale())
 @php($load = $totals->netThermalLoad())
 
@@ -21,7 +26,7 @@
     @foreach ($bars as $bar)
         <div class="vital" data-vital="{{ $bar['key'] }}" data-used="{{ $bar['used'] }}" data-total="{{ $bar['total'] }}">
             <span class="vital__label">{{ Text::get($bar['label']) }}</span>
-            <div class="meter" style="--v:{{ $bar['total'] > 0 ? round(min(1, $bar['used'] / $bar['total']), 3) : ($bar['used'] > 0 ? 1 : 0) }};--fill:var({{ $bar['used'] > $bar['total'] ? '--crit' : '--ok' }})">
+            <div class="meter" style="--v:{{ $bar['total'] > 0 ? round(min(1, $bar['used'] / $bar['total']), 3) : ($bar['used'] > 0 ? 1 : 0) }};--fill:var({{ $fill($bar['used'], $bar['total']) }})">
                 <div class="meter__fill"></div>
             </div>
             <span class="vital__value num" data-vital-value>{{ Text::get('decks.fitting.used', ['used' => $bar['used'], 'total' => $bar['total']]) }}</span>
@@ -33,7 +38,7 @@
          than a row to correct. --}}
     <div class="vital">
         <span class="vital__label">{{ Text::get('decks.fitting.draw') }}</span>
-        <div class="meter" style="--v:{{ $totals->ratio() }};--fill:var({{ $totals->isOver() ? '--crit' : '--ok' }})">
+        <div class="meter" style="--v:{{ $totals->ratio() }};--fill:var({{ $fill($totals->draw, $totals->supply) }})">
             <div class="meter__fill"></div>
         </div>
         <span class="vital__value num">{{ Text::get('decks.fitting.budget', [
