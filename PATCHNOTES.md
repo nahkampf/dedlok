@@ -1,3 +1,8 @@
+## 0.53.0 (2026-10-12)
+
+- Encounters can now override the general encounter chance
+- Bugfix: Encounter editor swallowed journal edits
+
 ## 0.52.0 (2026-10-12)
 
 - The Journal on Tasks & Missions now work, and is targetable by encounters etc (so they can write and invalidate it). See this as "quest notes".
