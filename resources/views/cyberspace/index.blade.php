@@ -230,8 +230,9 @@
     </div>
 
     <div class="map-side">
-        <section class="panel panel--snug">
-            <div class="panel__hd"><h2>{{ Text::get('cyberspace.map.jump') }}</h2></div>
+        {{-- An accordion like the thresholds, closed until wanted: the jump, saving an address and browsing what is known. --}}
+        <details class="panel panel--snug">
+            <summary class="panel__hd"><h2>{{ Text::get('cyberspace.map.jump') }}</h2></summary>
 
             <form method="POST" action="{{ route('cyberspace.jump') }}">
                 @csrf
@@ -246,6 +247,11 @@
                 </div>
                 <p class="micro" style="color:var(--ink-2);margin-top:var(--s-2)">{{ Text::get('cyberspace.map.jump_hint') }}</p>
             </form>
+
+            {{-- Every system you have seen that is still where you saw it and open, filterable: a fragment in a modal. --}}
+            <button type="button" class="btn btn--sm cut" data-open="#known-systems" style="margin-top:var(--s-3)">
+                {{ Text::get('cyberspace.known.browse') }}
+            </button>
 
             {{-- Saving an address is not travelling to it: you may keep one you
                  have never been to, which is what a traded address is for. --}}
@@ -263,7 +269,7 @@
                     <button type="submit" class="btn btn--sm cut">{{ Text::get('cyberspace.bookmarks.save') }}</button>
                 </div>
             </form>
-        </section>
+        </details>
 
         {{-- GOING IN.
 
@@ -498,12 +504,12 @@
         {{-- THE ROUTING CHAIN, as the next run would build it (App\Cyberspace\ChainBuilder): every system you hold a
              routing backdoor on, highest grade first, up to the most your Routing skills allow. Nothing to pick, so
              nothing to press. --}}
-        <section class="panel panel--snug">
-            <div class="panel__hd">
+        <details class="panel panel--snug">
+            <summary class="panel__hd">
                 <h2>{{ Text::get('cyberspace.chain.heading') }}</h2>
                 <div class="spacer"></div>
                 <span class="micro num" title="{{ Text::get('cyberspace.chain.hops_tip', ['used' => $chain->count(), 'cap' => $chainCap]) }}">{{ Text::get('cyberspace.run.setup.chain_hops', ['used' => $chain->count(), 'cap' => $chainCap]) }}</span>
-            </div>
+            </summary>
 
             @if ($chain->isEmpty())
                 <p class="micro" style="color:var(--ink-2);margin:var(--s-3) 0 0">
@@ -521,7 +527,7 @@
                     @endforeach
                 </ol>
             @endif
-        </section>
+        </details>
 
         <section class="panel panel--snug">
             <div class="panel__hd"><h2>{{ Text::get('cyberspace.bookmarks.heading') }}</h2></div>
@@ -578,4 +584,15 @@
     </div>
     </div>
 
+    {{-- BROWSE KNOWN SYSTEMS. The body is the fragment `cyberspace.systems`, fetched each time this opens and again when a
+         filter changes, so it is never older than the click. --}}
+    <dialog id="known-systems" class="modal">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('cyberspace.known.title') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+        </div>
+        <div class="panel__bd" data-fragment="{{ route('cyberspace.systems') }}">
+            <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('processes.loading') }}</p>
+        </div>
+    </dialog>
 @endsection

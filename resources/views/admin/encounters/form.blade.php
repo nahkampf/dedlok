@@ -10,7 +10,7 @@
 
     // A blank row at each level: one outcome in a choice, one choice on a screen. The "+" buttons
     // add more; the same blanks are the <template>s they clone.
-    $blankOutcome = ['branch' => 'always', 'kind' => '', 'amount' => '', 'ref' => '', 'item_id' => null, 'entity_id' => null];
+    $blankOutcome = ['branch' => 'always', 'kind' => '', 'amount' => '', 'ref' => '', 'item_id' => null, 'entity_id' => null, 'text' => '', 'entry_slug' => '', 'entry_text' => ''];
     $blankChoice = ['label' => '', 'requires_flag' => '', 'cost' => 0, 'next_key' => '', 'check_stat' => '', 'difficulty' => '', 'pass_key' => '', 'fail_key' => '', 'fight_npc_id' => '', 'win_key' => '', 'lose_key' => '', 'flee_key' => '', 'outcomes' => [$blankOutcome]];
     $blankNode = ['key' => '', 'body' => '', 'entry' => false, 'ends' => false, 'outcomes' => [$blankOutcome], 'choices' => [$blankChoice]];
 

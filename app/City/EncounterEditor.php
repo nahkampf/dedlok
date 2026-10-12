@@ -93,6 +93,7 @@ final class EncounterEditor
                     $outcomes[] = [
                         'branch' => $o->branch->value, 'kind' => $o->kind->value, 'amount' => $o->amount,
                         'ref' => $o->ref, 'item_id' => $o->item_id, 'entity_id' => $o->entity_id,
+                        'text' => $o->text, 'entry_slug' => $o->entry_slug, 'entry_text' => $o->entry_text,
                     ];
                 }
 
@@ -111,6 +112,7 @@ final class EncounterEditor
                 $arrival[] = [
                     'branch' => $o->branch->value, 'kind' => $o->kind->value, 'amount' => $o->amount,
                     'ref' => $o->ref, 'item_id' => $o->item_id, 'entity_id' => $o->entity_id,
+                    'text' => $o->text, 'entry_slug' => $o->entry_slug, 'entry_text' => $o->entry_text,
                 ];
             }
 

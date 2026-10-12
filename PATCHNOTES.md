@@ -1,3 +1,9 @@
+## 0.52.0 (2026-10-12)
+
+- The Journal on Tasks & Missions now work, and is targetable by encounters etc (so they can write and invalidate it). See this as "quest notes".
+- Jump and Routing Chain boxes are now accordions, closed by default (like Thresholds).
+- New button in Jump box: Browse known systems. Brings up a list of all (still valid) systems you've seen, takes filters.
+
 ## 0.51.0 (2026-10-12)
 
 - View ranges changed. They now have specific shapes at various levels. The default for new players is vr2. 

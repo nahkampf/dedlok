@@ -320,6 +320,8 @@ return [
                 'wake_ice' => 'Wake the ICE (run)',
                 'detected' => 'Run is detected (run)',
                 'grid_move' => 'Move on the grid (x,y in the text)',
+                'journal' => 'Journal: write a note and/or a line',
+                'journal_done' => 'Journal: mark a note or line done',
             ],
             // How a rolled choice reads on its button. The figure is in the
             // button's title, not on it: an unmeasured number reads as a promise.
@@ -335,6 +337,8 @@ return [
             'failed' => 'It does not.',
             // One line per outcome, what the player is told it did.
             'outcomes' => [
+                'journal_note' => 'You make a note of it.',
+                'journal_entry' => 'You add to a note.',
                 'trace_up' => 'The trace gets closer.',
                 'trace_down' => 'The trace falls back.',
                 'ice_woken' => 'The ICE wakes.',
@@ -793,6 +797,7 @@ return [
         'recent' => 'Recently worked for:',
         'grade' => 'Grade :grade',
         'journal' => 'Journal',
+        'journal_none' => 'Nothing written yet.',
         'tasks' => 'Tasks',
         'not_yet' => 'Not yet implemented.',
         'from' => 'From :entity, through :agent',
@@ -1685,6 +1690,24 @@ return [
         | The map screen. Jack in and jack out mean cyberspace here and only
         | here; signing into the game is auth.login / auth.logout.
         */
+        // Browse known systems: what you have seen and that is still where you saw it and open.
+        'known' => [
+            'browse' => 'Browse known systems',
+            'title' => 'Known systems',
+            'owner' => 'Owner',
+            'name' => 'System',
+            'type' => 'Type',
+            'grade' => 'Grade',
+            'address' => 'Address',
+            'any' => 'Any',
+            'unowned' => 'No owner',
+            'grade_unknown' => 'Not scanned',
+            'none' => 'You have not seen any system that is still there.',
+            'no_match' => 'Nothing you know matches those filters.',
+            'count' => ':shown systems',
+            'count_capped' => 'Showing :shown of :total systems. Narrow the filters to see the rest.',
+        ],
+
         'map' => [
             'title' => 'Cyberspace',
             'lede' => 'Your view of the cyberspace matrix.',
@@ -3851,9 +3874,12 @@ return [
                 'branch' => 'When',
                 'kind' => 'Does',
                 'amount' => 'Amount',
-                'ref' => 'Flag, injury or resource',
+                'ref' => 'Flag, injury, resource or journal slug',
                 'item' => 'Item',
                 'entity' => 'Entity',
+                'journal_heading' => 'Journal: heading, for a note that is new',
+                'journal_line_slug' => 'Journal: line slug',
+                'journal_line' => 'Journal: line text',
                 'hint' => 'Amounts are signed. Item: a quantity. Damage: hitpoints or synaptic_integrity. Pass and fail apply only to a choice that rolls.',
             ],
             'branches' => ['always' => 'Always', 'pass' => 'On pass', 'fail' => 'On fail'],
@@ -3862,8 +3888,12 @@ return [
                 'grid_move_door' => 'Screen ":node": moving on the grid needs a grid door that is not a run.',
                 'grid_position' => 'Screen ":node": a position is written x,y and is inside the grid (0 to :size).',
                 'spot_address' => 'No system answers to that address.',
+                'journal_slug' => 'Screen ":node": a journal slug is lower case letters, digits, hyphens and underscores (up to 60).',
+                'journal_empty' => 'Screen ":node": a journal outcome needs a heading for a new note, a line of text, or both.',
+                'journal_entry' => 'Screen ":node": a journal line needs both its slug and its text.',
                 'run_end_required' => 'The ending ":node" must say what happens to the run: kill it or continue it.',
-                'run_end_refused' => 'Only an ending of a run encounter says what happens to the run (":node" does not).',
+                'run_end_door' => 'Screen ":node": "What happens to the run" only applies to an encounter that starts "In a run, between turns". This one starts ":door", so leave that field blank (or change Starts on).',
+                'run_end_refused' => 'Screen ":node" is not an ending, so it cannot say what happens to the run. Tick Ending, or leave the field blank.',
                 'no_nodes' => 'An encounter needs at least one screen.',
                 'one_entry' => 'Exactly one screen must be marked as where the encounter opens.',
                 'node_key' => 'A screen\'s key is lower-case letters, digits and underscores, up to 40.',

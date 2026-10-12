@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.52.0] — 2026-10-12
+
+A journal on the Tasks & Missions screen that encounters write to, and a browser for the systems you know.
+
+### Added
+
+- **The journal** (`journal_notes`, `journal_entries`, `App\Journal\Journal`): a level 0 note is a heading with a slug, and a line is a row under one with a slug of its own, per character. Listed on Tasks & Missions, newest first at both levels; a completed note is not shown and a completed line is struck through. Two outcome kinds write it: `journal` (a note made with its heading if it is new, a line under it, or both; idempotent by slug) and `journal_done` (marks a note or line done by slug). `encounter_outcomes` gains `text`, `entry_slug` and `entry_text`, and the editor's outcome row gains the three inputs.
+- **Browse known systems** (`GET cyberspace/systems`, `cyberspace/_systems.blade.php`): a modal in the Jump box listing every system you have seen that is still at the address and position you saw it and is not in lockdown, sorted by owner (the unowned last) then name, with owner, type and grade filters that combine. Grade is only what a live scan found out. A filter change refetches the fragment (`form[data-fragment-filter]`, `ui-kit.js`). Capped at 200 rows.
+
+### Changed
+
+- **The Jump and Routing chain boxes are accordions**, closed by default like Thresholds.
+- **The run_end refusal in the encounter editor** says which rule it broke (the encounter does not start in a run, or the screen is not an ending).
+
+### Migrations
+
+- `2026_10_12_210000_the_journal`: the two journal tables and the three outcome columns.
+
+
 ## [0.51.0] — 2026-10-12
 
 Encounters come to cyberspace, view range becomes a shape, and a completed run no longer throws the player off the grid.
@@ -3005,7 +3024,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.51.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.52.0...HEAD
+[0.52.0]: https://github.com/nahkampf/dedlok/compare/v0.51.0...v0.52.0
 [0.51.0]: https://github.com/nahkampf/dedlok/compare/v0.50.0...v0.51.0
 [0.50.0]: https://github.com/nahkampf/dedlok/compare/v0.49.2...v0.50.0
 [0.49.2]: https://github.com/nahkampf/dedlok/compare/v0.49.1...v0.49.2

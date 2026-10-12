@@ -36,9 +36,36 @@
         @endif
     </section>
 
-    <section class="stack" style="--gap:var(--s-2);margin-top:var(--s-6)">
+    {{-- THE JOURNAL: notes (headings) the character has not finished, newest first, each with its lines newest first. A line
+         that is done is struck through; a note that is done is not here. Written by encounters (App\Journal\Journal). --}}
+    <section class="stack" style="--gap:var(--s-3);margin-top:var(--s-6)">
         <h2>{{ Text::get('tasks.journal') }}</h2>
-        <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('tasks.not_yet') }}</p>
+
+        @if ($journal->isEmpty())
+            <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('tasks.journal_none') }}</p>
+        @else
+            <ul class="stack" style="--gap:var(--s-4);list-style:none;margin:0;padding:0">
+                @foreach ($journal as $note)
+                    <li class="stack" style="--gap:var(--s-2)">
+                        <h3 style="margin:0">{{ $note->title }}</h3>
+
+                        @if ($note->entries->isNotEmpty())
+                            <ul class="stack" style="--gap:var(--s-1);margin:0;padding-left:var(--s-5)">
+                                @foreach ($note->entries as $entry)
+                                    <li @class(['muted' => $entry->completed])>
+                                        @if ($entry->completed)
+                                            <s>{{ $entry->body }}</s>
+                                        @else
+                                            {{ $entry->body }}
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        @endif
     </section>
 
     <section class="stack" style="--gap:var(--s-2);margin-top:var(--s-6)">

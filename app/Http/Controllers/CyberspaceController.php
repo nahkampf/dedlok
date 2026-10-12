@@ -51,6 +51,9 @@ use Illuminate\View\View;
  */
 class CyberspaceController extends Controller
 {
+    /** How many known systems the browser draws at once; the filters narrow the rest. */
+    private const KNOWN_LIMIT = 200;
+
     public function index(Request $request, Probe $probe, ChainBuilder $chains, Finder $finder): View
     {
         $character = $this->character($request);
@@ -185,6 +188,80 @@ class CyberspaceController extends Controller
             Navigator::fromConfig($resolver)->jackIn($this->character($request)),
             Text::get('cyberspace.status.jacked_in'),
         );
+    }
+
+    /**
+     * The fragment behind *Browse known systems*: every system you have seen that is still where you saw it and is not
+     * shut, filtered by owner, type and grade (all optional, all combinable), sorted by owner and then name.
+     *
+     * A READ OF MEMORY, AGREED WITH THE WORLD. A contact is a sighting and may be wrong, so each one is kept only while
+     * a system still answers to its address at that position and is not in lockdown; one that has relocated or shut is
+     * not offered. The grade is only what a live scan found out: an unscanned system shows none and is never filtered
+     * by a grade it was not read for.
+     */
+    public function systems(Request $request): View
+    {
+        $character = $this->character($request);
+
+        $contacts = SystemContact::query()
+            ->where('character_id', $character->getKey())
+            ->whereExists(static function ($query): void {
+                $query->selectRaw('1')->from('systems')
+                    ->whereColumn('systems.address', 'system_contacts.address')
+                    ->whereColumn('systems.x', 'system_contacts.x')
+                    ->whereColumn('systems.y', 'system_contacts.y')
+                    ->where(static fn ($open) => $open->whereNull('systems.locked_down_until')->orWhere('systems.locked_down_until', '<=', now()));
+            })
+            ->get();
+
+        // Only what a live scan found out. Keyed by address, like the map's.
+        $grades = SystemScan::query()
+            ->where('character_id', $character->getKey())
+            ->live()
+            ->whereNotNull('grade')
+            ->pluck('grade', 'address');
+
+        $rows = $contacts->map(static fn (SystemContact $c): array => [
+            'name' => $c->name,
+            'owner' => (string) ($c->owner ?? ''),
+            'type' => $c->type,
+            'address' => $c->address,
+            'grade' => $grades->has($c->address) ? (int) $grades->get($c->address) : null,
+        ]);
+
+        $owner = trim((string) $request->query('owner', ''));
+        $type = trim((string) $request->query('type', ''));
+        $grade = trim((string) $request->query('grade', ''));
+
+        // What the selects offer comes from what is known, never from the whole world.
+        $options = [
+            'owners' => $rows->pluck('owner')->filter()->unique()->sortBy(fn (string $o): string => mb_strtolower($o))->values(),
+            'types' => $rows->pluck('type')->unique(fn ($t) => $t->value)->sortBy(fn ($t): string => $t->label())->values(),
+            'grades' => $rows->pluck('grade')->filter()->unique()->sort()->values(),
+        ];
+
+        $shown = $rows
+            ->when($owner !== '', static fn ($r) => $r->where('owner', $owner === '__none' ? '' : $owner))
+            ->when($type !== '', static fn ($r) => $r->filter(static fn (array $row): bool => $row['type']->value === $type))
+            ->when($grade !== '', static fn ($r) => $grade === 'unknown'
+                ? $r->filter(static fn (array $row): bool => $row['grade'] === null)
+                : $r->filter(static fn (array $row): bool => $row['grade'] === (int) $grade))
+            // Alphabetical on owner (the unowned last), then the system's own name.
+            ->sortBy([
+                static fn (array $a, array $b): int => ($a['owner'] === '') <=> ($b['owner'] === '')
+                    ?: strcasecmp($a['owner'], $b['owner']),
+                static fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']),
+            ])
+            ->values();
+
+        return view('cyberspace._systems', [
+            'rows' => $shown->take(self::KNOWN_LIMIT),
+            'total' => $shown->count(),
+            'known' => $rows->count(),
+            'options' => $options,
+            'selected' => ['owner' => $owner, 'type' => $type, 'grade' => $grade],
+            'jackedIn' => $character->isJackedIn(),
+        ]);
     }
 
     /** A spot's button in the Interact box: open the encounter pinned to the system they stand on. */
