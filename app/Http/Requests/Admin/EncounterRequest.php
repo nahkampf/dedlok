@@ -293,6 +293,16 @@ class EncounterRequest extends FormRequest
         $kind = OutcomeKind::tryFrom($kindWord);
 
         if ($kindWord === '') {
+            // A row with nothing in it is the blank the form pads with. A row with something typed in it and no kind
+            // picked is NOT blank: skipping it silently is how somebody types a whole journal note and loses it.
+            foreach (['amount', 'ref', 'item_id', 'entity_id', 'text', 'entry_slug', 'entry_text'] as $field) {
+                if (trim((string) ($o[$field] ?? '')) !== '') {
+                    $errors["{$oat}.kind"] = Text::get('admin.encounters.errors.outcome_no_kind', ['node' => $nodeKey]);
+
+                    break;
+                }
+            }
+
             return null;
         }
 
