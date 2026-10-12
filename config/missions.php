@@ -123,6 +123,12 @@ return [
     | failed job is now worth about half of what a job pays, and grade 1 work
     | alone settles near 48 at three jobs a day and near 112 at seven.
     |
+    | GRADE 1 WAS THEN CUT BY 30% (2026-10-12), standing and loyalty only: its settle-out of 48 and 112 was past
+    | the grade 5 desk's gate of 60, which the grade 1 band was held low to avoid. Standing is exactly 0.7x
+    | (0.014 to 0.042). Loyalty is a whole number rolled in its band, so 2 to 4 became 1 to 3, a third off
+    | rather than 30%. The ceilings are now about 34 at three jobs a day and about 78 at seven on scan work (a
+    | mixed board is a quarter more), so seven a day of grade 1 alone still passes the grade 5 gate.
+    |
     | `standing` here is the BASE handed to the resolver as `standing_gain`,
     | never the figure that lands. A skill or an implant that makes somebody
     | better at being liked is a modifier, and the mission writer never learns
@@ -130,7 +136,7 @@ return [
     |
     */
     'grades' => [
-        1 => ['creds' => [40, 90], 'standing' => [0.02, 0.06], 'loyalty' => [2, 4], 'penalty' => 0.02],
+        1 => ['creds' => [40, 90], 'standing' => [0.014, 0.042], 'loyalty' => [1, 3], 'penalty' => 0.02],
         2 => ['creds' => [90, 200], 'standing' => [0.10, 0.18], 'loyalty' => [4, 8], 'penalty' => 0.07],
         3 => ['creds' => [200, 450], 'standing' => [0.22, 0.42], 'loyalty' => [8, 16], 'penalty' => 0.16],
         4 => ['creds' => [450, 900], 'standing' => [0.52, 0.96], 'loyalty' => [16, 30], 'penalty' => 0.37],
