@@ -82,6 +82,8 @@
                                 <button type="button"
                                     class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty'.($socket->kind->seats() ? ' slot--ghost' : '') }}"
                                     data-open="#socket-{{ $socket->id }}"
+                                    {{-- Hover floats the module's card; a click still opens the socket. --}}
+                                    @if ($module) data-inspect="#detail-{{ $fitting->module_id }}" data-inspect-hover @endif
                                     aria-haspopup="dialog"
                                     aria-label="{{ $node->label() }} — {{ $module?->displayName() ?? Text::get('decks.fitting.empty_socket') }}">
                                     @if ($module)

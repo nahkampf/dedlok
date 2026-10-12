@@ -44,7 +44,7 @@ class MarketController extends Controller
             // asks its program what kind of thing it is and where its picture
             // lives (kindName(), imageType()) — so both come along, one query
             // for the shelf rather than one per card.
-            ->with(['item.useSkill.prerequisites.requiredSkill', 'item.program'])
+            ->with(['item.useSkill.prerequisites.requiredSkill', 'item.program', 'item.deckModule', 'item.weapon', 'item.ammunition', 'item.drug'])
             ->get()
             ->filter(fn (MarketStock $shelf): bool => $shelf->item !== null && $shelf->item->on_market && $shelf->item->use_skill_id === null)
             ->sortBy(fn (MarketStock $shelf): string => (string) $shelf->item?->displayName())
@@ -56,7 +56,7 @@ class MarketController extends Controller
             // named by Item::kindName(), which is what the card already calls
             // it. Alphabetical, as the shelves inside each already are.
             'groups' => $shelves
-                ->groupBy(fn (MarketStock $shelf): string => $shelf->item->kindName())
+                ->groupBy(fn (MarketStock $shelf): string => $shelf->item->marketCategory())
                 ->sortKeys(),
             // Worked out here rather than in the template: what a player can
             // afford is the one number every row on this screen is read
@@ -77,7 +77,7 @@ class MarketController extends Controller
             // anybody happens to be holding today, and it is short.
             'offers' => MarketOffer::query()
                 ->onOffer()
-                ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'seller.user'])
+                ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'row.item.deckModule', 'seller.user'])
                 ->get(),
         ]);
     }

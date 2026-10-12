@@ -21,7 +21,10 @@
                 <div class="panel__bd stack" style="--gap:var(--s-3)">
                     @foreach ($wares as $ware)
                         <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
-                            <span class="item-row__name" style="flex:1 1 160px;min-width:0">{{ $ware->item->displayName() }}</span>
+                            <span class="item-row__name stack" style="flex:1 1 160px;min-width:0;--gap:var(--s-1)">
+                                <span>{{ $ware->item->displayName() }}</span>
+                                <x-program-spec :item="$ware->item" />
+                            </span>
                             <span class="num micro">{{ number_format($ware->unitPrice()) }} ¤</span>
                             @unless ($ware->isUnlimited())
                                 <span class="micro" style="color:var(--ink-3)">{{ $ware->stock > 0 ? Text::get('city.shop.in_stock', ['count' => $ware->stock]) : Text::get('city.shop.sold_out') }}</span>

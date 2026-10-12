@@ -140,7 +140,7 @@
                             <div class="card__hd">
                                 <div class="card__title">{{ $offer->displayName() }}</div>
                                 <div class="card__meta num">
-                                    {{ $service ? Text::get('exchange.store_heat', ['heat' => number_format((float) $character->heat, 1)]) : $item->kindName() }}
+                                    {{ $service ? Text::get('exchange.store_heat', ['heat' => number_format((float) $character->heat, 1)]) : $item->kindLine() }}
                                 </div>
                             </div>
 
@@ -149,6 +149,9 @@
                                     <span class="micro" style="color:var(--ink-3)">{{ $service->describe((float) $offer->service_amount) }}</span>
                                 @elseif ($item->displayFlavor())
                                     <span class="micro" style="color:var(--ink-3)">{{ $item->displayFlavor() }}</span>
+                                @endif
+                                @if ($item)
+                                    <x-program-spec :item="$item" />
                                 @endif
 
                                 <span class="row row--wrap micro num" style="--gap:var(--s-3);color:var(--ink-3)">

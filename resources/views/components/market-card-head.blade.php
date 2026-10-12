@@ -16,7 +16,7 @@
 @if ($skill !== null)
     <div class="card__hd" data-inspect="#{{ $detailId }}" tabindex="0" style="cursor:help">
         <div class="card__title">{{ $item->displayName() }}</div>
-        <div class="card__meta">{{ $item->kindName() }}</div>
+        <div class="card__meta">{{ $item->kindLine() }}</div>
     </div>
 
     <template id="{{ $detailId }}">
@@ -29,6 +29,6 @@
 @else
     <div class="card__hd">
         <div class="card__title">{{ $item->displayName() }}</div>
-        <div class="card__meta">{{ $item->kindName() }}</div>
+        <div class="card__meta">{{ $item->kindLine() }}</div>
     </div>
 @endif

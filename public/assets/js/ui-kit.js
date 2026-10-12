@@ -1353,12 +1353,16 @@
       // Sold out: the shelf lists what is left, so the card goes, and so
       // does a group left with nothing in it.
       if (data.left <= 0) {
-        const group = card.closest("[data-filter-group]");
+        // Groups nest (a kind, then its variants): settle each from the innermost out.
+        const groups = [];
+        for (let g = card.closest("[data-filter-group]"); g; g = g.parentElement && g.parentElement.closest("[data-filter-group]")) groups.push(g);
         card.remove();
-        const shown = group ? group.querySelectorAll("[data-price]").length : 1;
-        const tally = group && group.querySelector("[data-group-count]");
-        if (tally) tally.textContent = String(shown);
-        if (group && shown === 0) group.remove();
+        groups.forEach((group) => {
+          const shown = group.querySelectorAll("[data-price]").length;
+          const tally = group.querySelector("[data-group-count]");
+          if (tally) tally.textContent = String(shown);
+          if (shown === 0) group.remove();
+        });
       }
     }
 

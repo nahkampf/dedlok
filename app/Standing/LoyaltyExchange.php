@@ -152,7 +152,7 @@ final readonly class LoyaltyExchange
     {
         return EntityOffer::query()
             ->onShelf($entity->getKey(), $grade)
-            ->with('item')
+            ->with(['item.program', 'item.deckModule'])
             ->get();
     }
 }
