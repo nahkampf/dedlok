@@ -65,7 +65,7 @@ class SkillRequest extends FormRequest
             // Permanent, like an item's: effects, requirements and saved data
             // reference it, and the skill's imprint is named from it.
             'slug' => $this->isCreating()
-                ? ['required', 'string', 'max:100', 'regex:/^[a-z0-9_]+$/', Rule::unique('skills', 'slug')]
+                ? ['required', 'string', 'max:100', 'regex:/^[a-z0-9_-]+$/', Rule::unique('skills', 'slug')]
                 : ['prohibited'],
 
             'title' => ['required', 'string', 'max:255'],

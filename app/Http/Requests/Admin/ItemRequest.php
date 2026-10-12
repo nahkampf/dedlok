@@ -276,7 +276,7 @@ class ItemRequest extends FormRequest
             // Only on create. A slug is permanent — inventory rows and the
             // imprint naming both reference it — so update() never sees one.
             'slug' => $this->isCreating()
-                ? ['required', 'string', 'max:100', 'regex:/^[a-z0-9_]+$/', Rule::unique('items', 'slug')]
+                ? ['required', 'string', 'max:100', 'regex:/^[a-z0-9_-]+$/', Rule::unique('items', 'slug')]
                 : ['prohibited'],
 
             // An imprint has no name of its own: it composes from the skill

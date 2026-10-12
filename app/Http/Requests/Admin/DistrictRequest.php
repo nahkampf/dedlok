@@ -31,7 +31,7 @@ class DistrictRequest extends FormRequest
         return [
             // A slug is permanent: config and other rows name it.
             'slug' => $district === null
-                ? ['required', 'string', 'max:50', 'regex:/^[a-z0-9-]+$/', 'unique:districts,slug']
+                ? ['required', 'string', 'max:50', 'regex:/^[a-z0-9_-]+$/', 'unique:districts,slug']
                 : ['prohibited'],
             'name' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:2000'],
