@@ -1,3 +1,36 @@
+## 0.51.0 (2026-10-12)
+
+- View ranges changed. They now have specific shapes at various levels. The default for new players is vr2. 
+
+```
+vr0       vr1       vr2       vr3       vr4
+--------- --------- --------- --------- ---------
+--------- --------- --------- --------- ---------
+--------- --------- --------- ----*---- ---***---
+--------- ----*---- ---***--- ---***--- --*****--
+----x---- ---*x*--- --**x**-- --**x**-- --**x**--
+--------- ----*---- ---***--- ---***--- --*****--
+--------- --------- --------- ----*---- ---***---
+--------- --------- --------- --------- ---------
+--------- --------- --------- --------- ---------
+
+vr5       vr6       vr7       vr8       vr9
+--------- --------- --------- ----*---- ---***---
+--------- ----*---- ---***--- --*****-- --*****--
+---***--- ---***--- --*****-- -*******- -*******-
+--*****-- --*****-- -*******- -*******- *********
+-***x***- -***x***- ****x**** ****x**** ****x****
+--*****-- --*****-- -*******- -*******- *********
+---***--- ---***--- --*****-- -*******- -*******-
+--------- ----*---- ---***--- --*****-- --*****--
+--------- --------- --------- ----*---- ---***---
+```
+
+- Network Topology skill now adds +1 view range / level
+- Bugfix: There was a bug that jacked you out on a successful egress after injecting a backdoor. 
+- Encounters can now happen in cyberspace as well.
+- Exchanges now pay double standing and loyalty, except for grade 1 that pays about 20% more instead.
+
 ## 0.50.0 (2026-10-12)
 
 - Skills are no longer sold on the Market tab (this is generally moving towards not being a thing down the line, instead focusing on buying stuff at locations and/or exchanges).
