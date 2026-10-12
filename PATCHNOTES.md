@@ -1,3 +1,7 @@
+## 0.53.2 (2026-10-12)
+
+- Bunch of images added (temporarily, I don't have permission to use them) just for feel.
+
 ## 0.53.1 (2026-10-12)
 
 - Market, shops and exchange stores now list qflops, qb, storage, power draw, thermal units etc for deck hardware and softare.

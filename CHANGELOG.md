@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.53.2] — 2026-10-12
+
+Item pictures are filed the way the market is, and enlarging one never shows somebody else's picture.
+
+### Changed
+
+- **Item picture folders follow the market** (`Item::imageType()`, `Item::imageTypes()`, `public/images/items/README.md`): a module sits under its variant (`ram/opto`, `cpu/socket_k`), weapons under `weapons/<class>`, ammunition under `ammunition/<calibre>` (slugged, made as met), and drugs and implants have folders of their own. The other types are unchanged. A default in a parent folder still stands in for the sections below it.
+- **The shipped item pictures are 640×360**, the originals kept beside them as `_full`.
+
+### Fixed
+
+- **Clicking a picture opened the kind's empty default.** `Image::full()` fell back to `items/_default_full.jpg` for a thing that had a card picture and no full one. A thing with its own card picture and no full version now gets no enlarge dialog, and a type default's full version is looked for only in the folder its card came from.
+
+
 ## [0.53.1] — 2026-10-12
 
 Market listings say what a thing costs to hold and run, and the shelf is split into sections.
@@ -3053,7 +3067,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.53.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.53.2...HEAD
+[0.53.2]: https://github.com/nahkampf/dedlok/compare/v0.53.1...v0.53.2
 [0.53.1]: https://github.com/nahkampf/dedlok/compare/v0.53.0...v0.53.1
 [0.53.0]: https://github.com/nahkampf/dedlok/compare/v0.52.0...v0.53.0
 [0.52.0]: https://github.com/nahkampf/dedlok/compare/v0.51.0...v0.52.0
