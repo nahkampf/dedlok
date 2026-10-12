@@ -583,6 +583,8 @@ consequences and taking what a machine holds all roll.
   takes, and for the same reason.
 - **Two files never merge**, even though the item is unstackable anyway — a summed quantity
   would destroy information.
+- **ONLY A BAD ENDING EJECTS** (`RunEnding::isBad()`: a defeat or a burnout). A Completed run, like an egress, just ends and leaves the
+  player on the grid: the controller used to ask `!== Egress`, which threw somebody off the grid for succeeding (found with `Trail`, 2026-10-12).
 - **`RunEnding::Completed`'s trigger is `runs.extracted` OR `runs.backdoored`** (a run that succeeded always ends as Done; a burn ends its own as Completed), checked in BOTH doors to leaving
   so they cannot disagree.
 - **One line covers every reason a core touch can fail** — unspeakable OS, wrong purpose,
