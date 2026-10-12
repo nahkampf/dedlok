@@ -8,10 +8,13 @@ use App\City\EncounterGraph;
 use App\City\EncounterStart;
 use App\City\OutcomeBranch;
 use App\City\OutcomeKind;
+use App\City\PrerequisiteKind;
+use App\Models\District;
 use App\Models\Encounter;
 use App\Models\Entity;
 use App\Models\Item;
 use App\Models\Npc;
+use App\Models\Skill;
 use App\Stats\StatRegistry;
 use App\Support\Text;
 use Illuminate\Contracts\Validation\Validator;
@@ -37,6 +40,9 @@ class EncounterRequest extends FormRequest
 
     /** @var list<array<string, mixed>> */
     private array $nodes = [];
+
+    /** @var list<array<string, mixed>> */
+    private array $prerequisites = [];
 
     public function authorize(): bool
     {
@@ -70,8 +76,9 @@ class EncounterRequest extends FormRequest
     {
         $validator->after(function (Validator $v): void {
             [$this->nodes, $errors] = $this->build();
+            [$this->prerequisites, $prerequisiteErrors] = $this->buildPrerequisites();
 
-            foreach ($errors as $field => $message) {
+            foreach ([...$errors, ...$prerequisiteErrors] as $field => $message) {
                 $v->errors()->add($field, $message);
             }
         });
@@ -98,6 +105,91 @@ class EncounterRequest extends FormRequest
     public function nodeRows(): array
     {
         return $this->nodes;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function prerequisiteRows(): array
+    {
+        return $this->prerequisites;
+    }
+
+    /**
+     * The posted conditions, cleaned. A row with no kind is a blank the form padded with.
+     *
+     * @return array{0: list<array<string, mixed>>, 1: array<string, string>}
+     */
+    private function buildPrerequisites(): array
+    {
+        $rows = [];
+        $errors = [];
+
+        foreach ((array) $this->input('prerequisites', []) as $i => $raw) {
+            $raw = (array) $raw;
+            $word = trim((string) ($raw['kind'] ?? ''));
+
+            if ($word === '') {
+                continue;
+            }
+
+            $at = "prerequisites.{$i}";
+            $kind = PrerequisiteKind::tryFrom($word);
+
+            if ($kind === null) {
+                $errors["{$at}.kind"] = Text::get('admin.encounters.prerequisite.errors.kind');
+
+                continue;
+            }
+
+            $subject = $kind->needsSubject() ? trim((string) ($raw['subject'] ?? '')) : null;
+            $amount = $kind->needsAmount() ? ($raw['amount'] ?? null) : null;
+            $itemId = $kind->needsItem() ? (int) ($raw['item_id'] ?? 0) : null;
+            $entityId = $kind->needsEntity() ? (int) ($raw['entity_id'] ?? 0) : null;
+
+            if ($kind->needsAmount() && ! is_numeric($amount)) {
+                $errors["{$at}.amount"] = Text::get('admin.encounters.prerequisite.errors.amount', ['kind' => $kind->label()]);
+            }
+
+            // A count is a whole number of at least one; a standing is a figure from -100 to 100.
+            if (is_numeric($amount) && in_array($kind, [PrerequisiteKind::Item, PrerequisiteKind::ScanFiles, PrerequisiteKind::Creds, PrerequisiteKind::Skill], true)
+                && ((float) $amount < 1 || (float) $amount != (int) $amount)) {
+                $errors["{$at}.amount"] = Text::get('admin.encounters.prerequisite.errors.whole', ['kind' => $kind->label()]);
+            }
+
+            if (is_numeric($amount) && $kind === PrerequisiteKind::Standing && abs((float) $amount) > 100) {
+                $errors["{$at}.amount"] = Text::get('admin.encounters.prerequisite.errors.standing');
+            }
+
+            if ($kind === PrerequisiteKind::Flag && preg_match(self::FLAG, (string) $subject) !== 1) {
+                $errors["{$at}.subject"] = Text::get('admin.encounters.prerequisite.errors.flag');
+            }
+
+            if ($kind === PrerequisiteKind::Skill && ! Skill::query()->where('slug', $subject)->exists()) {
+                $errors["{$at}.subject"] = Text::get('admin.encounters.prerequisite.errors.skill');
+            }
+
+            if ($kind === PrerequisiteKind::District && ! District::query()->where('slug', $subject)->exists()) {
+                $errors["{$at}.subject"] = Text::get('admin.encounters.prerequisite.errors.district');
+            }
+
+            if ($kind === PrerequisiteKind::Item && ! Item::query()->whereKey($itemId)->exists()) {
+                $errors["{$at}.item_id"] = Text::get('admin.encounters.prerequisite.errors.item');
+            }
+
+            if ($kind === PrerequisiteKind::Standing && ! Entity::query()->whereKey($entityId)->exists()) {
+                $errors["{$at}.entity_id"] = Text::get('admin.encounters.prerequisite.errors.entity');
+            }
+
+            $rows[] = [
+                'kind' => $kind->value,
+                'subject' => $subject === '' ? null : $subject,
+                'amount' => is_numeric($amount) ? (float) $amount : null,
+                'item_id' => $itemId,
+                'entity_id' => $entityId,
+                'negate' => (bool) ($raw['negate'] ?? false),
+            ];
+        }
+
+        return [$rows, $errors];
     }
 
     /** Whether a posted choice carries any outcome at all (a fight choice may not). @param  array<string, mixed>  $c */

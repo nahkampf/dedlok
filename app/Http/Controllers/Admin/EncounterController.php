@@ -10,6 +10,7 @@ use App\City\EncounterEditor;
 use App\City\EncounterStart;
 use App\City\OutcomeBranch;
 use App\City\OutcomeKind;
+use App\City\PrerequisiteKind;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\EncounterRequest;
 use App\Models\District;
@@ -47,7 +48,7 @@ class EncounterController extends Controller
     {
         $encounter = DB::transaction(function () use ($request): Encounter {
             $encounter = Encounter::create($request->columns());
-            EncounterEditor::apply($encounter, $request->nodeRows());
+            EncounterEditor::apply($encounter, $request->nodeRows(), $request->prerequisiteRows());
 
             return $encounter;
         });
@@ -64,7 +65,7 @@ class EncounterController extends Controller
     {
         DB::transaction(function () use ($request, $encounter): void {
             $encounter->update($request->columns());
-            EncounterEditor::apply($encounter, $request->nodeRows());
+            EncounterEditor::apply($encounter, $request->nodeRows(), $request->prerequisiteRows());
         });
 
         return back()->with('status', Text::get('admin.encounters.updated'));
@@ -125,6 +126,8 @@ class EncounterController extends Controller
                 OutcomeKind::DAMAGE,
             )),
             'stored' => $encounter === null ? [] : EncounterEditor::rows($encounter),
+            'prerequisiteKinds' => PrerequisiteKind::cases(),
+            'storedPrerequisites' => $encounter === null ? [] : EncounterEditor::prerequisiteRows($encounter),
         ];
     }
 }

@@ -35,6 +35,10 @@
         $entryAt = $found === false ? 0 : $found;
     }
     $keys = collect($nodeRows)->pluck('key')->filter()->values();
+
+    // The prerequisites: what was posted back, or what is stored, plus one blank row for the "+".
+    $blankPrerequisite = ['kind' => '', 'subject' => '', 'amount' => '', 'item_id' => null, 'entity_id' => null, 'negate' => false];
+    $prerequisiteRows = old('prerequisites') ?? [...$storedPrerequisites, $blankPrerequisite];
 @endphp
 
 @section('content')
@@ -170,6 +174,20 @@
                         <span class="check__box"></span><span>{{ Text::get('admin.encounters.fields.retired') }}</span>
                     </label>
                 </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.encounters.prerequisite.title') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-3)" data-rows>
+                <span class="field__hint">{{ Text::get('admin.encounters.prerequisite.hint') }}</span>
+
+                @foreach ($prerequisiteRows as $p => $row)
+                    @include('admin.encounters._prerequisite', ['at' => "prerequisites[{$p}]", 'row' => $row])
+                @endforeach
+
+                <template>@include('admin.encounters._prerequisite', ['at' => 'prerequisites[__P__]', 'row' => $blankPrerequisite])</template>
+                <button type="button" class="btn btn--sm btn--ghost cut" data-add-row data-token="__P__" style="align-self:start">+ {{ Text::get('admin.encounters.prerequisite.add') }}</button>
             </div>
         </div>
 

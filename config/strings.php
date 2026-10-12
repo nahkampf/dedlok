@@ -3763,6 +3763,38 @@ return [
             'remove_node' => 'Remove this screen',
             'remove_choice' => 'Remove this choice',
             'remove_outcome' => 'Remove this outcome',
+
+            // What a character must hold before an encounter can be drawn for them. All of them, held and never spent.
+            'prerequisite' => [
+                'title' => 'Prerequisites',
+                'hint' => 'Every row must hold for the encounter to be drawn; none is no condition. Held, never spent: a cost is an outcome. Ticking "not" flips a row (flag not held, fewer than, standing below).',
+                'add' => 'Add a prerequisite',
+                'remove' => 'Remove this prerequisite',
+                'kind' => 'Kind',
+                'subject' => 'Flag, skill or district slug',
+                'amount' => 'Amount',
+                'not' => 'not',
+                'kinds' => [
+                    'flag' => 'Flag held',
+                    'item' => 'Holds items',
+                    'scan_files' => 'Holds scan files',
+                    'creds' => 'Holds creds',
+                    'skill' => 'Skill level',
+                    'standing' => 'Standing with',
+                    'district' => 'Is in district',
+                ],
+                'errors' => [
+                    'kind' => 'A prerequisite kind that does not exist.',
+                    'amount' => ':kind needs an amount.',
+                    'whole' => ':kind needs a whole number of at least one.',
+                    'standing' => 'Standing runs from -100 to 100.',
+                    'flag' => 'A flag is lower case letters, digits and underscores.',
+                    'skill' => 'No skill has that slug.',
+                    'district' => 'No district has that slug.',
+                    'item' => 'Pick the item.',
+                    'entity' => 'Pick the entity.',
+                ],
+            ],
             'node' => [
                 'key' => 'Key',
                 'entry' => 'Opens here',

@@ -37,6 +37,12 @@ class Encounter extends Model
         return 'encounter_'.str_replace('-', '_', $this->slug);
     }
 
+    /** @return HasMany<EncounterPrerequisite, $this> */
+    public function prerequisites(): HasMany
+    {
+        return $this->hasMany(EncounterPrerequisite::class)->orderBy('position');
+    }
+
     /** @return HasMany<EncounterNode, $this> */
     public function nodes(): HasMany
     {

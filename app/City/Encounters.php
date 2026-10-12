@@ -121,9 +121,13 @@ final class Encounters
                 ->where(static fn ($q) => $q->whereNull('district_id')->orWhere('district_id', $districtId));
         }
 
-        return $query->orderBy('id')->get()->filter(
+        $judge = new PrerequisiteJudge;
+
+        return $query->with('prerequisites')->orderBy('id')->get()->filter(
             static fn (Encounter $e): bool => ($e->required_flag === null || Flags::has($character, $e->required_flag))
-                && ! ($e->once && Flags::has($character, $e->seenFlag())),
+                && ! ($e->once && Flags::has($character, $e->seenFlag()))
+                // Every prerequisite holds; an empty list is no condition at all.
+                && $judge->allHold($character, $e->prerequisites),
         )->values();
     }
 
