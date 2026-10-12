@@ -153,6 +153,11 @@ class RunController extends Controller
                 ->pluck('id')
                 ->all(),
             'totals' => $totals,
+            // Why each run-only program would not start beside what is ALREADY running, by row id (the runner's own
+            // question, asked as a run would ask it); absent means it would.
+            'loadoutRefusals' => $loadout
+                ->mapWithKeys(fn (InventoryItem $row): array => [$row->id => app(ProgramRunner::class)->refusalFor($character, $row, duringRun: true)])
+                ->filter(),
             'scripts' => $scripts,
             // Why each script would not start right now, by row id; absent means it would.
             'scriptRefusals' => $scripts

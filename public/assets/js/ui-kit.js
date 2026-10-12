@@ -1597,28 +1597,39 @@
     const freeQ = Number(form.dataset.freeQflops), freeM = Number(form.dataset.freeMemory);
     const cost = (el, k) => Number(el.dataset["cost" + k]) || 0;
     const inputs = [...form.querySelectorAll("[data-cost-qflops]")];
-    const scripts = inputs.filter((el) => el.hasAttribute("data-script"));
-    const refused = new Set(scripts.filter((el) => el.disabled));
+    // Everything that can be ticked and carries a cost: the icebreaker radios, run-only programs and scripts.
+    const choices = inputs.filter((el) => el.closest("label")?.querySelector("[data-unable]"));
+    const refused = new Set(inputs.filter((el) => el.disabled));
     const readout = form.querySelector("[data-free-readout]");
+    const starts = [...form.querySelectorAll('button[name="purpose"]')];
+    const startsOff = new Set(starts.filter((el) => el.disabled));
     const fmt = (n) => String(n / 10);
     const recalc = () => {
       const ticked = inputs.filter((el) => el.checked);
       const usedQ = ticked.reduce((n, el) => n + cost(el, "Qflops"), 0);
       const usedM = ticked.reduce((n, el) => n + cost(el, "Memory"), 0);
       const leftQ = freeQ - usedQ, leftM = freeM - usedM;
-      scripts.forEach((el) => {
+      choices.forEach((el) => {
         if (refused.has(el)) return;
-        // A ticked script is judged by the whole sum, an unticked one by whether it would fit on top of it.
-        const cpu = el.checked ? leftQ < 0 : cost(el, "Qflops") > leftQ;
-        const ram = el.checked ? leftM < 0 : cost(el, "Memory") > leftM;
+        // A ticked one is judged by the whole sum. An unticked one by whether it would fit on top of it, with
+        // the radio it would replace taken off first.
+        let cpu, ram;
+        if (el.checked) {
+          cpu = leftQ < 0; ram = leftM < 0;
+        } else {
+          const swap = el.type === "radio" ? inputs.find((o) => o !== el && o.type === "radio" && o.name === el.name && o.checked) : null;
+          cpu = cost(el, "Qflops") > leftQ + (swap ? cost(swap, "Qflops") : 0);
+          ram = cost(el, "Memory") > leftM + (swap ? cost(swap, "Memory") : 0);
+        }
         // Left enabled while ticked, so it can be ticked off again.
         el.disabled = !el.checked && (cpu || ram);
-        const note = el.closest("label")?.querySelector("[data-unable]");
-        if (note) {
-          note.textContent = cpu && ram ? form.dataset.unableBoth : cpu ? form.dataset.unableCpu : ram ? form.dataset.unableRam : "";
-          note.style.display = cpu || ram ? "block" : "none";
-        }
+        const note = el.closest("label").querySelector("[data-unable]");
+        note.textContent = cpu && ram ? form.dataset.unableBoth : cpu ? form.dataset.unableCpu : ram ? form.dataset.unableRam : "";
+        note.style.display = cpu || ram ? "block" : "none";
       });
+      // A selection that is over the deck cannot start, whatever the buttons were.
+      const over = leftQ < 0 || leftM < 0;
+      starts.forEach((btn) => { btn.disabled = over || startsOff.has(btn); });
       // The deck's own bars (<x-deck-vitals>) move with the selection: what is already spent plus what is ticked.
       const vitals = document.querySelector("[data-format]");
       [["qflops", usedQ], ["memory", usedM]].forEach(([key, extra]) => {

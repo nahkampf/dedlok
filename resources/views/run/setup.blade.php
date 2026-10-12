@@ -267,8 +267,9 @@
                     <span>{{ Text::get('cyberspace.run.setup.loadout_none') }}</span>
                 </label>
                 @foreach ($icebreakers as $row)
+                    @php($refusal = $loadoutRefusals->get($row->id))
                     <label class="check check--radio">
-                        <input data-cost-qflops="{{ \App\Support\Qb::tenths($row->item->program->qflops_cost) }}" data-cost-memory="{{ \App\Support\Qb::tenths($row->item->program->memory_cost) }}" type="radio" name="icebreaker" value="{{ $row->id }}" @checked($row->id === $icebreakers->pluck('id')->intersect($chosen)->first())>
+                        <input data-cost-qflops="{{ \App\Support\Qb::tenths($row->item->program->qflops_cost) }}" data-cost-memory="{{ \App\Support\Qb::tenths($row->item->program->memory_cost) }}" type="radio" name="icebreaker" value="{{ $row->id }}" @checked(! $refusal && $row->id === $icebreakers->pluck('id')->intersect($chosen)->first()) @disabled($refusal)>
                         <span class="check__box"></span>
                         <span>
                             {{ $row->item->displayName() }}
@@ -276,6 +277,11 @@
                                 · {{ Text::get('programs.costs.compute', ['value' => $row->item->program->qflops_cost]) }}
                                 · {{ Text::get('programs.costs.memory', ['value' => $row->item->program->memory_cost]) }}
                             </span>
+                            @if ($refusal)
+                                <span class="micro" style="display:block;color:var(--warn)">{{ $refusal->message() }}</span>
+                            @else
+                                <span class="micro" data-unable style="display:none;color:var(--warn)"></span>
+                            @endif
                         </span>
                     </label>
                 @endforeach
@@ -288,8 +294,9 @@
                     {{ Text::get('cyberspace.run.setup.loadout_other') }}
                 </legend>
                 @foreach ($others as $row)
+                    @php($refusal = $loadoutRefusals->get($row->id))
                     <label class="check">
-                        <input data-cost-qflops="{{ \App\Support\Qb::tenths($row->item->program->qflops_cost) }}" data-cost-memory="{{ \App\Support\Qb::tenths($row->item->program->memory_cost) }}" type="checkbox" name="programs[]" value="{{ $row->id }}" @checked(in_array($row->id, $chosen, true))>
+                        <input data-cost-qflops="{{ \App\Support\Qb::tenths($row->item->program->qflops_cost) }}" data-cost-memory="{{ \App\Support\Qb::tenths($row->item->program->memory_cost) }}" type="checkbox" name="programs[]" value="{{ $row->id }}" @checked(! $refusal && in_array($row->id, $chosen, true)) @disabled($refusal)>
                         <span class="check__box"></span>
                         <span>
                             {{ $row->item->displayName() }}
@@ -298,6 +305,11 @@
                                 · {{ Text::get('programs.costs.compute', ['value' => $row->item->program->qflops_cost]) }}
                                 · {{ Text::get('programs.costs.memory', ['value' => $row->item->program->memory_cost]) }}
                             </span>
+                            @if ($refusal)
+                                <span class="micro" style="display:block;color:var(--warn)">{{ $refusal->message() }}</span>
+                            @else
+                                <span class="micro" data-unable style="display:none;color:var(--warn)"></span>
+                            @endif
                         </span>
                     </label>
                 @endforeach

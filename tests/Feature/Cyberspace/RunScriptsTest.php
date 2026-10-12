@@ -106,6 +106,21 @@ final class RunScriptsTest extends TestCase
         $this->assertStringContainsString('--fill:var(--crit)', $page());
     }
 
+    public function test_an_icebreaker_that_will_not_fit_beside_what_is_already_running_is_marked_and_cannot_be_chosen(): void
+    {
+        $runner = app(ProgramRunner::class);
+        $icebreaker = $this->ownedBy($this->character, Item::query()->where('slug', 'icebreaker-1')->sole());
+
+        // The fixture deck holds 100 QB; leave less than the icebreaker needs.
+        $need = (float) $icebreaker->item->program->memory_cost;
+        $this->assertTrue($runner->start($this->character->fresh(), $this->script(memory: 100.0 - $need + 0.1))->succeeded());
+
+        $html = $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))->assertOk()->getContent();
+
+        $this->assertStringContainsString(ProcessRefusal::NotEnoughMemory->message(), $html);
+        $this->assertMatchesRegularExpression('/value="'.$icebreaker->id.'"[^>]*disabled/', $html);
+    }
+
     public function test_a_row_that_is_not_a_script_is_ignored(): void
     {
         $icebreaker = $this->ownedBy($this->character, Item::query()->where('slug', 'icebreaker-1')->sole());
