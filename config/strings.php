@@ -1690,6 +1690,24 @@ return [
         | The map screen. Jack in and jack out mean cyberspace here and only
         | here; signing into the game is auth.login / auth.logout.
         */
+        // Browse known systems: what you have seen and that is still where you saw it and open.
+        'known' => [
+            'browse' => 'Browse known systems',
+            'title' => 'Known systems',
+            'owner' => 'Owner',
+            'name' => 'System',
+            'type' => 'Type',
+            'grade' => 'Grade',
+            'address' => 'Address',
+            'any' => 'Any',
+            'unowned' => 'No owner',
+            'grade_unknown' => 'Not scanned',
+            'none' => 'You have not seen any system that is still there.',
+            'no_match' => 'Nothing you know matches those filters.',
+            'count' => ':shown systems',
+            'count_capped' => 'Showing :shown of :total systems. Narrow the filters to see the rest.',
+        ],
+
         'map' => [
             'title' => 'Cyberspace',
             'lede' => 'Your view of the cyberspace matrix.',

@@ -316,6 +316,20 @@
       .catch(() => { box.textContent = "Could not load the list."; });
   });
 
+  /* A fragment that filters itself: a form[data-fragment-filter] inside a [data-fragment] box. Any change refetches the
+     fragment with the form's values as the query string and swaps the box's contents, so the filters, the options they
+     offer and the rows all stay the server's. */
+  document.addEventListener("change", (e) => {
+    const form = e.target.closest("form[data-fragment-filter]");
+    const box = form?.closest("[data-fragment]");
+    if (!form || !box) return;
+    const params = new URLSearchParams(new FormData(form));
+    fetch(box.dataset.fragment + "?" + params.toString(), { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+      .then((r) => (r.ok ? r.text() : Promise.reject()))
+      .then((html) => { box.innerHTML = html; })
+      .catch(() => { box.textContent = "Could not load the list."; });
+  });
+
   /* A sortable list that saves itself: <div data-queue-sort="URL"> of [data-queue-row="ID"], each with a
      [data-queue-handle]. Pointer events rather than HTML5 drag, which a phone does not do. Dragging moves
      the row in the DOM as you go; letting go POSTs the whole order as ids. A refusal (422) snaps the rows
