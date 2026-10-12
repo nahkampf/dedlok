@@ -10,10 +10,12 @@ use App\Models\Character;
 use App\Models\CharacterEncounter;
 use App\Models\CityActivity;
 use App\Models\Encounter;
+use App\Models\EncounterCooldown;
 use App\Models\Location;
 use App\Models\Run;
 use App\Models\System;
 use App\Stats\Resolver;
+use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
@@ -158,6 +160,57 @@ final class Encounters
                 // Every prerequisite holds; an empty list is no condition at all.
                 && $judge->allHold($character, $e->prerequisites),
         )->values();
+    }
+
+    /**
+     * The spots on offer at this system for this character: pinned here, their conditions held, and off cooldown.
+     * A read, for the Interact box; `openSpot()` asks it again when the button is pressed.
+     *
+     * @return Collection<int, Encounter>
+     */
+    public function spotsAt(Character $character, System $system): Collection
+    {
+        if (! $this->canHappenTo($character, EncounterStart::Spot)) {
+            return collect();
+        }
+
+        $cooling = EncounterCooldown::query()
+            ->where('character_id', $character->getKey())
+            ->pluck('last_opened_at', 'encounter_id');
+
+        return $this->eligible($character, EncounterStart::Spot, null, null, $system)
+            ->filter(static fn (Encounter $e): bool => (int) $e->spot_system_id === (int) $system->getKey()
+                && ($e->cooldown_hours === null
+                    || ! $cooling->has($e->getKey())
+                    || $cooling->get($e->getKey())->addHours($e->cooldown_hours)->isPast()))
+            ->values();
+    }
+
+    /** The button: open a spot at the system the character stands on. Not rolled. */
+    public function openSpot(Character $character, int $encounterId): CharacterEncounter|CityRefusal
+    {
+        return DB::transaction(function () use ($character, $encounterId): CharacterEncounter|CityRefusal {
+            $locked = Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail();
+            $position = $locked->gridPosition();
+            $system = $position === null ? null : System::query()->at($position)->first();
+
+            if ($system === null) {
+                return CityRefusal::NothingHappening;
+            }
+
+            $encounter = $this->spotsAt($locked, $system)->firstWhere('id', $encounterId);
+
+            if ($encounter === null) {
+                return CityRefusal::NothingHappening;
+            }
+
+            EncounterCooldown::query()->updateOrCreate(
+                ['character_id' => $locked->getKey(), 'encounter_id' => $encounter->getKey()],
+                ['last_opened_at' => CarbonImmutable::now()],
+            );
+
+            return $this->open($locked, $encounter);
+        });
     }
 
     /** Do an encounter's system and run filters let this system (and run) through? A filter left blank passes. */

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\City\CityRefusal;
+use App\City\Encounters;
 use App\Cyberspace\Backdoors;
 use App\Cyberspace\BookmarkKeeper;
 use App\Cyberspace\BookmarkKind;
@@ -160,6 +162,8 @@ class CyberspaceController extends Controller
                 ? System::query()->at($character->gridPosition())->first()
                 : null,
             'canRun' => $target !== null && $target->type->isInteractable() && ! $target->isLockedDown(),
+            // Authored encounters offered at this system: a button each in the Interact box.
+            'spots' => $target === null ? collect() : app(Encounters::class)->spotsAt($character, $target),
             // What the character already holds in this system, for the Interact box: a backdoor row is access, so
             // it is read live off the machine they stand on.
             'heldBackdoor' => $target === null ? null : (new Backdoors)->heldOn($character, $target),
@@ -181,6 +185,16 @@ class CyberspaceController extends Controller
             Navigator::fromConfig($resolver)->jackIn($this->character($request)),
             Text::get('cyberspace.status.jacked_in'),
         );
+    }
+
+    /** A spot's button in the Interact box: open the encounter pinned to the system they stand on. */
+    public function spot(Request $request, int $encounter): RedirectResponse
+    {
+        $result = app(Encounters::class)->openSpot($this->character($request), $encounter);
+
+        return $result instanceof CityRefusal
+            ? back()->with('error', $result->message())
+            : redirect()->route('encounter.show');
     }
 
     public function jackOut(Request $request, Resolver $resolver): RedirectResponse

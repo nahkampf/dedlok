@@ -192,6 +192,15 @@
                     </select>
                 </label>
                 <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.spot_address') }}</span>
+                    <input class="input" name="spot_address" maxlength="16" value="{{ old('spot_address', $spotAddress) }}" style="font-family:var(--font-mono)">
+                    <span class="field__hint">{{ Text::get('admin.encounters.fields.spot_address_hint') }}</span>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.cooldown_hours') }}</span>
+                    <input class="input num" type="number" name="cooldown_hours" min="1" max="8760" value="{{ $value('cooldown_hours') }}">
+                </label>
+                <label class="field">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.required_flag') }}</span>
                     <input class="input" name="required_flag" maxlength="60" value="{{ $value('required_flag') }}">
                 </label>

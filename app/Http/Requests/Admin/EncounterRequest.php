@@ -10,6 +10,7 @@ use App\City\EncounterStart;
 use App\City\OutcomeBranch;
 use App\City\OutcomeKind;
 use App\City\PrerequisiteKind;
+use App\Cyberspace\Grid;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\SystemType;
 use App\Models\District;
@@ -74,6 +75,10 @@ class EncounterRequest extends FormRequest
             'grade_max' => ['nullable', 'integer', 'between:1,9', 'gte:grade_min', 'prohibited_unless:starts_on,system,run'],
             'owner_entity_id' => ['nullable', 'integer', 'exists:entities,id', 'prohibited_unless:starts_on,system'],
             'run_purpose' => ['nullable', Rule::enum(RunPurpose::class), 'prohibited_unless:starts_on,run'],
+            // The spot door: the address of the system it is offered at (stored as that system's id, so it follows
+            // the machine when it moves), and how long a character waits before pressing it again.
+            'spot_address' => ['nullable', 'string', 'max:16', 'required_if:starts_on,spot', 'prohibited_unless:starts_on,spot'],
+            'cooldown_hours' => ['nullable', 'integer', 'between:1,8760', 'prohibited_unless:starts_on,spot'],
             'location_id' => ['nullable', 'integer', 'exists:locations,id', 'required_if:starts_on,place', 'prohibited_unless:starts_on,place'],
             'required_flag' => ['nullable', 'string', 'regex:'.self::FLAG],
             'once' => ['nullable', 'boolean'],
@@ -87,6 +92,13 @@ class EncounterRequest extends FormRequest
         $validator->after(function (Validator $v): void {
             [$this->nodes, $errors] = $this->build();
             [$this->prerequisites, $prerequisiteErrors] = $this->buildPrerequisites();
+
+            // The address must name a system that exists now; it is stored as the system's id.
+            $address = trim((string) $this->input('spot_address'));
+
+            if ($address !== '' && Grid::fromConfig()->find($address) === null) {
+                $v->errors()->add('spot_address', Text::get('admin.encounters.errors.spot_address'));
+            }
 
             foreach ([...$errors, ...$prerequisiteErrors] as $field => $message) {
                 $v->errors()->add($field, $message);
@@ -105,6 +117,8 @@ class EncounterRequest extends FormRequest
             ...$slug,
             ...array_intersect_key($data, array_flip(['title', 'intro', 'starts_on', 'weight', 'district_id', 'location_id', 'required_flag'])),
             ...$this->doorFilters($data),
+            'spot_system_id' => $this->spotSystemId(),
+            'cooldown_hours' => ($data['cooldown_hours'] ?? '') === '' ? null : (int) $data['cooldown_hours'],
             'intro' => ($data['intro'] ?? '') === '' ? null : $data['intro'],
             'required_flag' => ($data['required_flag'] ?? '') === '' ? null : $data['required_flag'],
             'once' => $this->boolean('once'),
@@ -128,6 +142,18 @@ class EncounterRequest extends FormRequest
         }
 
         return $out;
+    }
+
+    /** The pinned system's id, or null. Resolved here so a spot names its machine and not its address. */
+    private function spotSystemId(): ?int
+    {
+        if ((string) $this->input('starts_on') !== EncounterStart::Spot->value) {
+            return null;
+        }
+
+        $system = Grid::fromConfig()->find(trim((string) $this->input('spot_address')));
+
+        return $system === null ? null : (int) $system->getKey();
     }
 
     /** @return list<array<string, mixed>> */

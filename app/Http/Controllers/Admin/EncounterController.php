@@ -21,6 +21,7 @@ use App\Models\Encounter;
 use App\Models\Entity;
 use App\Models\Location;
 use App\Models\Npc;
+use App\Models\System;
 use App\Stats\StatRegistry;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
@@ -131,6 +132,8 @@ class EncounterController extends Controller
             'stored' => $encounter === null ? [] : EncounterEditor::rows($encounter),
             'prerequisiteKinds' => PrerequisiteKind::cases(),
             'systemTypes' => SystemType::cases(),
+            // The pinned system's address AS IT IS NOW: the spot follows the machine, so this can change by itself.
+            'spotAddress' => $encounter?->spot_system_id === null ? '' : (string) System::query()->whereKey($encounter->spot_system_id)->value('address'),
             'purposes' => RunPurpose::cases(),
             'runEnds' => EncounterRunEnd::cases(),
             'owners' => Entity::query()->orderBy('name')->get(['id', 'name']),

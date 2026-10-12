@@ -1,12 +1,16 @@
 # Encounters in cyberspace
 
-**Designed 2026-10-10, built 2026-10-12 except for avatars and the `spot` door.** What differs from the first design:
+**Designed 2026-10-10, built 2026-10-12 except for avatars.** What differs from the first design:
 
 - **The realm is the door's, not a column.** `EncounterStart::isGrid()`: `grid_step`, `system` and `run` are cyberspace's, so
   there is no second field to disagree with `starts_on`.
 - **Doors built:** `grid_step` (an arrival by a step, a jump or a bookmark, never the jack-in), `system` (the position has a
-  system; filters: type, grade range, owner) and `run` (after a turn of a live run; filters: grade range, purpose). Base chances are
-  `cyberspace.encounter.{grid_step,system,run}_chance`. `spot` is not built.
+  system; filters: type, grade range, owner), `run` (after a turn of a live run; filters: grade range, purpose) and `spot`. Base
+  chances are `cyberspace.encounter.{grid_step,system,run}_chance`.
+- **The spot is a button in the Interact box**, not rolled, pinned to a SYSTEM (`encounters.spot_system_id`, a plain id the editor
+  fills from an address, so it follows the machine when it relocates and goes dormant, not deleted, when it is burned). It is
+  offered while its prerequisites and flag hold and its per-character cooldown (`cooldown_hours`, remembered in
+  `encounter_cooldowns`) has run out. `once` is separate and still the flag.
 - **The clock stops** (`App\Characters\EncounterPause`): sweeps skip a held character, scripts and doses are read as at the opening
   and every stored moment moves forward by the encounter's length on close. Crafting credits nothing while held. A fight opened
   inside an encounter is counted in both, which is in the player's favour.
@@ -16,7 +20,7 @@
 - **Outcome kinds built:** `trace` (points, clamped 0 to 99 so it never lands), `wake_ice`, `detected` (the same, and the owner
   minds) and `grid_move` (`ref` = `x,y`; grid doors that are not a run). The first three are refused outside a run encounter.
 - **Prerequisites** are shared with the City (`CITY.md`).
-- **Not built:** avatars and the fight choice, `spot`, and a message for `kill_run`.
+- **Not built:** avatars and the fight choice, and a message for `kill_run`.
 
 **The original design follows, kept for the reasoning.** Every number in it is a default the author has not tuned.
 

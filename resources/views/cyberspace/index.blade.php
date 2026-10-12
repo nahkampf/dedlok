@@ -355,6 +355,15 @@
                             </div>
                         @endif
                     @endif
+
+                    {{-- AUTHORED ENCOUNTERS PINNED TO THIS SYSTEM (the spot door). Not rolled: one button each while its
+                         conditions hold and its cooldown has run out. --}}
+                    @foreach ($spots as $spot)
+                        <form method="POST" action="{{ route('cyberspace.spot', $spot->id) }}" style="margin-top:var(--s-3)">
+                            @csrf
+                            <button type="submit" class="btn cut">{{ $spot->title }}</button>
+                        </form>
+                    @endforeach
                 </div>
             </section>
         @endif
