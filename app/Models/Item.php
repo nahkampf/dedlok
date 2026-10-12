@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Combat\WeaponClass;
 use App\Decks\BoardLayout;
 use App\Decks\Hardware;
 use App\Decks\SlotLayout;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 /**
  * An item definition.
@@ -520,14 +522,41 @@ class Item extends Model
     public function imageType(): string
     {
         if ($this->hardware !== null) {
-            return $this->hardware->value;
+            $variant = $this->hardware->isDeck() ? null : $this->deckModule?->variant;
+
+            return $this->hardware->value.($variant === null ? '' : '/'.$variant->value);
         }
 
         if ($this->program !== null) {
             return $this->program->kind->value;
         }
 
-        return $this->isImprint() ? self::IMAGE_IMPRINT : $this->container;
+        if ($this->isImprint()) {
+            return self::IMAGE_IMPRINT;
+        }
+
+        // The market's categories: ammunition by calibre, weapons by class.
+        if ($this->container === self::CONTAINER_PHYSICAL) {
+            if ($this->ammunition !== null) {
+                $calibre = Str::slug((string) $this->ammunition->calibre);
+
+                return 'ammunition'.($calibre === '' ? '' : '/'.$calibre);
+            }
+
+            if ($this->weapon !== null) {
+                return 'weapons/'.$this->weapon->class->value;
+            }
+
+            if ($this->drug !== null) {
+                return 'drugs';
+            }
+
+            if ($this->isImplant()) {
+                return 'implants';
+            }
+        }
+
+        return $this->container;
     }
 
     /**
@@ -541,11 +570,23 @@ class Item extends Model
      */
     public static function imageTypes(): array
     {
+        $variants = [];
+
+        foreach (Hardware::cases() as $hardware) {
+            foreach ($hardware->variants() as $variant) {
+                $variants[] = $hardware->value.'/'.$variant->value;
+            }
+        }
+
         return [
             ...array_column(Hardware::cases(), 'value'),
+            ...$variants,
             ...ProgramKind::values(),
             self::IMAGE_IMPRINT,
             ...self::CONTAINERS,
+            // What the market calls them; ammunition's calibre folders are made as they are met.
+            'ammunition', 'drugs', 'implants', 'weapons',
+            ...array_map(static fn (WeaponClass $class): string => 'weapons/'.$class->value, WeaponClass::cases()),
         ];
     }
 

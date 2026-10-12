@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Decks\Hardware;
+use App\Decks\Variant;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -230,6 +231,11 @@ final class EntityImageTest extends TestCase
             'items/physical',
             Item::factory()->physical()->create()->imageKind()
         );
+        // The market's sections: a stick of RAM under its variant.
+        $this->assertSame(
+            'items/ram/opto',
+            Item::factory()->module(Hardware::Ram, Variant::Opto)->create()->imageKind()
+        );
     }
 
     /**
@@ -312,15 +318,19 @@ final class EntityImageTest extends TestCase
             array_fill_keys(Character::ATTRIBUTES, 10),
             ['archetype' => 3],
         ));
-        $entry = InventoryItem::factory()
-            ->ownedBy($character)
-            ->of(Item::factory()->physical()->create())
-            ->create();
+        $item = Item::factory()->physical()->create();
+        $entry = InventoryItem::factory()->ownedBy($character)->of($item)->create();
+
+        // The item's own pair of pictures, so the test does not depend on which defaults ship.
+        $dir = public_path('images/items/physical');
+        $files = ["{$dir}/{$item->id}.jpg", "{$dir}/{$item->id}_full.jpg"];
+        array_map(static fn (string $f): int|false => file_put_contents($f, 'x'), $files);
+        $this->beforeApplicationDestroyed(static fn () => array_map('unlink', array_filter($files, 'is_file')));
 
         $html = $this->actingAs($character->user)
             ->get(route('inventory.index'))
             ->assertOk()
-            ->assertSee('/images/items/_default.jpg', false)
+            ->assertSee("/images/items/physical/{$item->id}.jpg", false)
             ->assertSee('data-open="#image-'.$entry->id.'"', false)
             ->assertSee('id="image-'.$entry->id.'"', false)
             ->getContent();

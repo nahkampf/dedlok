@@ -54,12 +54,38 @@ final class Image
      * The full-size image, or null when there is none.
      *
      * Falls back to the default's full version, so a kind can ship one picture
-     * that stands in for everything it has not drawn yet — and null when even
-     * that is missing, which is the signal not to offer a modal at all.
+     * that stands in for everything it has not drawn yet — but only for a thing
+     * that has no picture of its own: one with a card and no full version gets no
+     * modal. Null is the signal not to offer one at all.
      */
     public static function full(string $kind, string|int $id): ?string
     {
-        return self::resolve($kind, (string) $id.'_full', self::DEFAULT.'_full');
+        $own = self::resolve($kind, (string) $id.'_full', self::DEFAULT.'_full', ownOnly: true);
+
+        if ($own !== null) {
+            return $own;
+        }
+
+        // A thing with its own card picture and no full one is not the default:
+        // opening the kind's stand-in over it would show somebody else's picture.
+        if (self::resolve($kind, (string) $id, self::DEFAULT, ownOnly: true) !== null) {
+            return null;
+        }
+
+        // Walk the defaults deepest first and stop where the card's own stand-in
+        // came from: a type that drew its default but no full version of it must
+        // not enlarge into the parent folder's picture.
+        foreach (self::folders($kind) as $folder) {
+            foreach ([self::DEFAULT.'_full', self::DEFAULT] as $name) {
+                $path = self::ROOT."/{$folder}/{$name}.jpg";
+
+                if (is_file(public_path($path))) {
+                    return $name === self::DEFAULT ? null : Asset::url($path);
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -70,7 +96,7 @@ final class Image
      * bundler, nothing renames a file when its contents change, and a replaced
      * picture that nobody sees for a week is the same bug the CSS had.
      */
-    private static function resolve(string $kind, string $own, string $default): ?string
+    private static function resolve(string $kind, string $own, string $default, bool $ownOnly = false): ?string
     {
         $folders = self::folders($kind);
 
@@ -83,7 +109,7 @@ final class Image
         // filed loosely, and finding it there would teach the wrong habit.
         $candidates = [[$folders[0], $own]];
 
-        foreach ($folders as $folder) {
+        foreach ($ownOnly ? [] : $folders as $folder) {
             $candidates[] = [$folder, $default];
         }
 

@@ -3,7 +3,11 @@
 One subdirectory per **type** of item, named by `App\Models\Item::imageType()` —
 the hardware kind (`cpu`, `psu`, `thermal`, …), the program kind (`icebreaker`,
 `daemon`, …), `imprint`, or the inventory an ordinary object lives in
-(`physical`, `data`).
+(`physical`, `data`). It follows the market's categories: `weapons/<class>`
+(`weapons/pistol`), `ammunition/<calibre>` (the calibre slugged: `9mm`,
+`5-56x45`; made as they are met), `drugs` and `implants`; and a module sits
+under its variant (`ram/opto`, `cpu/socket_k`). A default in a parent folder
+stands in for the sections below it.
 
 Inside one of them, by the item's **id**:
 
