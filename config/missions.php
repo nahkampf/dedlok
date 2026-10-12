@@ -116,6 +116,13 @@ return [
     | CREDS WERE CUT TENFOLD on 2026-09-28, every grade alike; the ratios
     | between grades are unchanged.
     |
+    | STANDING AND LOYALTY WERE DOUBLED on 2026-10-12, every grade alike, and
+    | the penalties were left where they were. So the climb is about half the
+    | time (the figures above are the older, slower ones: roughly three
+    | months to the grade 5 desk at three jobs a day, six weeks at seven), a
+    | failed job is now worth about half of what a job pays, and grade 1 work
+    | alone settles near 48 at three jobs a day and near 112 at seven.
+    |
     | `standing` here is the BASE handed to the resolver as `standing_gain`,
     | never the figure that lands. A skill or an implant that makes somebody
     | better at being liked is a modifier, and the mission writer never learns
@@ -123,11 +130,11 @@ return [
     |
     */
     'grades' => [
-        1 => ['creds' => [40, 90], 'standing' => [0.01, 0.03], 'loyalty' => [1, 2], 'penalty' => 0.02],
-        2 => ['creds' => [90, 200], 'standing' => [0.05, 0.09], 'loyalty' => [2, 4], 'penalty' => 0.07],
-        3 => ['creds' => [200, 450], 'standing' => [0.11, 0.21], 'loyalty' => [4, 8], 'penalty' => 0.16],
-        4 => ['creds' => [450, 900], 'standing' => [0.26, 0.48], 'loyalty' => [8, 15], 'penalty' => 0.37],
-        5 => ['creds' => [900, 1800], 'standing' => [0.64, 1.06], 'loyalty' => [15, 30], 'penalty' => 0.85],
+        1 => ['creds' => [40, 90], 'standing' => [0.02, 0.06], 'loyalty' => [2, 4], 'penalty' => 0.02],
+        2 => ['creds' => [90, 200], 'standing' => [0.10, 0.18], 'loyalty' => [4, 8], 'penalty' => 0.07],
+        3 => ['creds' => [200, 450], 'standing' => [0.22, 0.42], 'loyalty' => [8, 16], 'penalty' => 0.16],
+        4 => ['creds' => [450, 900], 'standing' => [0.52, 0.96], 'loyalty' => [16, 30], 'penalty' => 0.37],
+        5 => ['creds' => [900, 1800], 'standing' => [1.28, 2.12], 'loyalty' => [30, 60], 'penalty' => 0.85],
     ],
 
     /*
