@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Characters\EncounterPause;
 use App\Cyberspace\Probe;
 use App\Models\Character;
 use App\Models\SystemScan;
@@ -66,6 +67,8 @@ class SettleScans extends Command
         // and a question each. A read points at its owner, so this is one query
         // however many of them are standing still.
         $characters = Character::query()
+            // The clock stops while an encounter is open on the grid (EncounterPause).
+            ->whereNotIn('id', EncounterPause::held()->keys())
             ->whereIn('id', SystemScan::query()
                 ->whereNotNull('pass_ready_at')
                 ->where('pass_ready_at', '<=', now())

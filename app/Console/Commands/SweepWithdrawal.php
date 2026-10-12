@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Characters\EncounterPause;
 use App\Drugs\DrugLedger;
 use App\Drugs\Family;
 use App\Models\Character;
@@ -43,7 +44,7 @@ class SweepWithdrawal extends Command
             $character = Character::query()->find($books->character_id);
 
             // A fight stops this clock too: what a character is owed is settled when it ends.
-            if ($character === null || $character->current_fight_id !== null) {
+            if ($character === null || $character->current_fight_id !== null || EncounterPause::isHeld($character)) {
                 continue;
             }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Crafting;
 
+use App\Characters\EncounterPause;
 use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\SystemType;
 use App\Decks\DeckTotals;
@@ -182,7 +183,8 @@ final class Crafting
             }
 
             $now = CarbonImmutable::now();
-            $ready = $this->deckReady($character);
+            // The deck must run, and the clock must not be stopped by an encounter on the grid.
+            $ready = $this->deckReady($character) && ! EncounterPause::isHeld($character);
             $delivered = 0;
 
             foreach ($crafts as $craft) {

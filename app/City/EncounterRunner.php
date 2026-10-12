@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\City;
 
 use App\Characters\DownedCause;
+use App\Characters\EncounterPause;
 use App\Characters\Flags;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
@@ -22,6 +23,7 @@ use App\Stats\StatRegistry;
 use App\Support\Text;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -349,6 +351,11 @@ final class EncounterRunner
 
     private function close(Character $locked, CharacterEncounter $live): void
     {
+        // The clock stopped while it was open: move what is stored as a moment forward by its length.
+        if ($live->started_at !== null) {
+            EncounterPause::release($locked, CarbonImmutable::instance($live->started_at));
+        }
+
         $locked->forceFill(['current_encounter_id' => null])->save();
         $live->delete();
     }
