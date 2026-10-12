@@ -1590,5 +1590,62 @@
     dlg.addEventListener("close", () => { clearTimeout(timer); timer = null; location.reload(); });
   });
 
+  /* The run briefing's budget: <form data-run-budget data-free-qflops data-free-memory> (tenths of what the deck has free),
+     each loadout input and script carrying data-cost-qflops / data-cost-memory in the same unit. A script that no longer fits
+     beside everything ticked is disabled and says so. Display only: starting the run asks the runner again. */
+  document.querySelectorAll("[data-run-budget]").forEach((form) => {
+    const freeQ = Number(form.dataset.freeQflops), freeM = Number(form.dataset.freeMemory);
+    const cost = (el, k) => Number(el.dataset["cost" + k]) || 0;
+    const inputs = [...form.querySelectorAll("[data-cost-qflops]")];
+    // Everything that can be ticked and carries a cost: the icebreaker radios, run-only programs and scripts.
+    const choices = inputs.filter((el) => el.closest("label")?.querySelector("[data-unable]"));
+    const refused = new Set(inputs.filter((el) => el.disabled));
+    const readout = form.querySelector("[data-free-readout]");
+    const starts = [...form.querySelectorAll('button[name="purpose"]')];
+    const startsOff = new Set(starts.filter((el) => el.disabled));
+    const fmt = (n) => String(n / 10);
+    const recalc = () => {
+      const ticked = inputs.filter((el) => el.checked);
+      const usedQ = ticked.reduce((n, el) => n + cost(el, "Qflops"), 0);
+      const usedM = ticked.reduce((n, el) => n + cost(el, "Memory"), 0);
+      const leftQ = freeQ - usedQ, leftM = freeM - usedM;
+      choices.forEach((el) => {
+        if (refused.has(el)) return;
+        // A ticked one is judged by the whole sum. An unticked one by whether it would fit on top of it, with
+        // the radio it would replace taken off first.
+        let cpu, ram;
+        if (el.checked) {
+          cpu = leftQ < 0; ram = leftM < 0;
+        } else {
+          const swap = el.type === "radio" ? inputs.find((o) => o !== el && o.type === "radio" && o.name === el.name && o.checked) : null;
+          cpu = cost(el, "Qflops") > leftQ + (swap ? cost(swap, "Qflops") : 0);
+          ram = cost(el, "Memory") > leftM + (swap ? cost(swap, "Memory") : 0);
+        }
+        // Left enabled while ticked, so it can be ticked off again.
+        el.disabled = !el.checked && (cpu || ram);
+        const note = el.closest("label").querySelector("[data-unable]");
+        note.textContent = cpu && ram ? form.dataset.unableBoth : cpu ? form.dataset.unableCpu : ram ? form.dataset.unableRam : "";
+        note.style.display = cpu || ram ? "block" : "none";
+      });
+      // A selection that is over the deck cannot start, whatever the buttons were.
+      const over = leftQ < 0 || leftM < 0;
+      starts.forEach((btn) => { btn.disabled = over || startsOff.has(btn); });
+      // The deck's own bars (<x-deck-vitals>) move with the selection: what is already spent plus what is ticked.
+      const vitals = document.querySelector("[data-format]");
+      [["qflops", usedQ], ["memory", usedM]].forEach(([key, extra]) => {
+        const v = document.querySelector('.vital[data-vital="' + key + '"]');
+        if (!v) return;
+        const used = Math.round(Number(v.dataset.used) * 10) + extra, total = Math.round(Number(v.dataset.total) * 10);
+        meter(v.querySelector(".meter"), total > 0 ? used / total : (used > 0 ? 1 : 0));
+        v.querySelector(".meter").style.setProperty("--fill", (total > 0 ? used >= total : used > 0) ? "var(--crit)" : total > 0 && used * 10 >= total * 9 ? "var(--warn)" : "var(--ok)");
+        const text = v.querySelector("[data-vital-value]");
+        if (text && vitals) text.textContent = vitals.dataset.format.replace(":used", fmt(used)).replace(":total", fmt(total));
+      });
+      if (readout) readout.textContent = fmt(Math.max(0, leftQ)) + " qFLOPS \u00b7 " + fmt(Math.max(0, leftM)) + " QB";
+    };
+    form.addEventListener("change", recalc);
+    recalc();
+  });
+
   window.UI = { toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };
 })();

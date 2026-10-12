@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+## [0.49.2] — 2026-10-12
+
+Scripts can be started from the run briefing, and the deck's bars show what a loadout will cost before you go in.
+
+### Added
+
+- **A *Scripts* box on the run briefing** (`RunController::setup()`, `run/setup.blade.php`): every loose Script held, with its effects, qFLOPS and QB cost and its lifetime, each with a checkbox (`scripts[]`). Ticked scripts are started by `RunStarter::start()` after the loadout and before the arrival roll. Only a Script is accepted through the field; any other row id is ignored.
+- **The page does the fit sum** (`ui-kit.js`, `data-run-budget`): what the deck has free less everything ticked (icebreaker, run-only programs, scripts), in tenths. A script that would not fit is disabled and marked *Unable: Not enough CPU / RAM*; a ticked one that a later tick pushes over is marked too, and stays enabled to be unticked. The server's checks remain the guard.
+- **The deck's compute and memory bars move with the selection** on the briefing (`data-vital`, `data-format` in `deck-vitals.blade.php`).
+
+### Changed
+
+- **A program that will not start rolls the run's start back** (`App\Programs\ProcessRefused`) instead of stopping what had already started. Stopping a Script destroys it, so a refused run must not spend one.
+- **Deck bars are brass within a tenth of their limit and ember at it or over** (compute, memory, storage, power draw; `deck-vitals.blade.php`). Heat keeps its own warning and limit marks. Previously only *over* turned a bar red.
+
+- **Every slug may use hyphens and underscores** (district, location, item, skill, encounter; NPCs already did). A once-only encounter's seen flag writes any hyphen as an underscore (`Encounter::seenFlag()`), since a flag may not carry one.
+- **The admin skills list has a *Price* column** (`skills.base_cost`, what the imprint sells for).
+
+### Removed
+
+- **The `/help` page** (`HelpController`, `help/index.blade.php`, `strings.help`, `HelpPageTest`, the front-page link): the help is to be written by hand. `HELP.md` is untouched.
+
+
 ## [0.49.1] — 2026-10-11
 
 Empty sockets show what they take, files stop wearing their own colours, and a job's systems are ticked off as you do them.
@@ -2916,7 +2939,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.49.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.49.2...HEAD
+[0.49.2]: https://github.com/nahkampf/dedlok/compare/v0.49.1...v0.49.2
 [0.49.1]: https://github.com/nahkampf/dedlok/compare/v0.49.0...v0.49.1
 [0.49.0]: https://github.com/nahkampf/dedlok/compare/v0.48.0...v0.49.0
 [0.48.0]: https://github.com/nahkampf/dedlok/compare/v0.47.0...v0.48.0

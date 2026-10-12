@@ -27,10 +27,14 @@ class Encounter extends Model
         ];
     }
 
-    /** The flag a `once` encounter sets on entry, and the draw checks. */
+    /**
+     * The flag a `once` encounter sets on entry, and the draw checks.
+     *
+     * A slug may carry a hyphen and a flag may not (`Flags::set()`), so it is written as an underscore.
+     */
     public function seenFlag(): string
     {
-        return 'encounter_'.$this->slug;
+        return 'encounter_'.str_replace('-', '_', $this->slug);
     }
 
     /** @return HasMany<EncounterNode, $this> */

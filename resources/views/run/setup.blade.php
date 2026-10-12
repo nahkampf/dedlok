@@ -235,7 +235,13 @@
      one is pressed. An unbuilt intention says so with a tag rather than being
      absent — a screen that grows buttons as features land is a screen nobody
      learns. --}}
-<form method="POST" action="{{ route('run.start') }}">
+@php($free = $totals === null ? ['qflops' => 0, 'memory' => 0] : [
+    'qflops' => max(0, \App\Support\Qb::tenths($totals->qflops) - \App\Support\Qb::tenths($spent['qflops'])),
+    'memory' => max(0, \App\Support\Qb::tenths($totals->quantabits) - \App\Support\Qb::tenths($spent['memory'])),
+])
+{{-- data-free-* is what is left of the deck in TENTHS before anything on this page is ticked; each ticked row carries its
+     own cost the same way, and ui-kit.js does the sum. Display only: the run's start asks the runner again. --}}
+<form method="POST" action="{{ route('run.start') }}" data-run-budget data-unable-cpu="{{ Text::get('cyberspace.run.setup.scripts_unable_cpu') }}" data-unable-ram="{{ Text::get('cyberspace.run.setup.scripts_unable_ram') }}" data-unable-both="{{ Text::get('cyberspace.run.setup.scripts_unable_both') }}" data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
     @csrf
 
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
@@ -261,8 +267,9 @@
                     <span>{{ Text::get('cyberspace.run.setup.loadout_none') }}</span>
                 </label>
                 @foreach ($icebreakers as $row)
+                    @php($refusal = $loadoutRefusals->get($row->id))
                     <label class="check check--radio">
-                        <input type="radio" name="icebreaker" value="{{ $row->id }}" @checked($row->id === $icebreakers->pluck('id')->intersect($chosen)->first())>
+                        <input data-cost-qflops="{{ \App\Support\Qb::tenths($row->item->program->qflops_cost) }}" data-cost-memory="{{ \App\Support\Qb::tenths($row->item->program->memory_cost) }}" type="radio" name="icebreaker" value="{{ $row->id }}" @checked(! $refusal && $row->id === $icebreakers->pluck('id')->intersect($chosen)->first()) @disabled($refusal)>
                         <span class="check__box"></span>
                         <span>
                             {{ $row->item->displayName() }}
@@ -270,6 +277,11 @@
                                 · {{ Text::get('programs.costs.compute', ['value' => $row->item->program->qflops_cost]) }}
                                 · {{ Text::get('programs.costs.memory', ['value' => $row->item->program->memory_cost]) }}
                             </span>
+                            @if ($refusal)
+                                <span class="micro" style="display:block;color:var(--warn)">{{ $refusal->message() }}</span>
+                            @else
+                                <span class="micro" data-unable style="display:none;color:var(--warn)"></span>
+                            @endif
                         </span>
                     </label>
                 @endforeach
@@ -282,8 +294,9 @@
                     {{ Text::get('cyberspace.run.setup.loadout_other') }}
                 </legend>
                 @foreach ($others as $row)
+                    @php($refusal = $loadoutRefusals->get($row->id))
                     <label class="check">
-                        <input type="checkbox" name="programs[]" value="{{ $row->id }}" @checked(in_array($row->id, $chosen, true))>
+                        <input data-cost-qflops="{{ \App\Support\Qb::tenths($row->item->program->qflops_cost) }}" data-cost-memory="{{ \App\Support\Qb::tenths($row->item->program->memory_cost) }}" type="checkbox" name="programs[]" value="{{ $row->id }}" @checked(! $refusal && in_array($row->id, $chosen, true)) @disabled($refusal)>
                         <span class="check__box"></span>
                         <span>
                             {{ $row->item->displayName() }}
@@ -292,6 +305,11 @@
                                 · {{ Text::get('programs.costs.compute', ['value' => $row->item->program->qflops_cost]) }}
                                 · {{ Text::get('programs.costs.memory', ['value' => $row->item->program->memory_cost]) }}
                             </span>
+                            @if ($refusal)
+                                <span class="micro" style="display:block;color:var(--warn)">{{ $refusal->message() }}</span>
+                            @else
+                                <span class="micro" data-unable style="display:none;color:var(--warn)"></span>
+                            @endif
                         </span>
                     </label>
                 @endforeach
@@ -300,6 +318,60 @@
 
         <p class="micro" style="color:var(--ink-2);margin:0">
             {{ Text::get('cyberspace.run.setup.loadout_hint') }}
+        </p>
+    </div>
+</div>
+
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.setup.scripts') }}</h2>
+    </div>
+
+    <div style="padding:var(--s-3) 0;display:grid;gap:var(--s-3)">
+        @if ($scripts->isEmpty())
+            <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.setup.scripts_none') }}</p>
+        @else
+            <fieldset class="stack" style="--gap:var(--s-2);border:0;padding:0;margin:0">
+                @foreach ($scripts as $row)
+                    @php($program = $row->item->program)
+                    @php($refusal = $scriptRefusals->get($row->id))
+                    <label class="check">
+                        <input type="checkbox" name="scripts[]" value="{{ $row->id }}"
+                               data-script data-cost-qflops="{{ \App\Support\Qb::tenths($program->qflops_cost) }}" data-cost-memory="{{ \App\Support\Qb::tenths($program->memory_cost) }}"
+                               @if ($refusal) disabled @endif>
+                        <span class="check__box"></span>
+                        <span>
+                            {{ $row->item->displayName() }}
+                            @if ($row->quantity > 1) <span class="micro num" style="color:var(--ink-2)">× {{ $row->quantity }}</span> @endif
+                            <span class="micro" style="display:block;color:var(--ink-1)">
+                                @php($effects = collect($program->modifiers())->map(fn ($m) => $m->effectText())->unique()->values())
+                                {{ $effects->isEmpty() ? Text::get('cyberspace.run.setup.scripts_no_effect') : $effects->implode(' · ') }}
+                            </span>
+                            <span class="micro num" style="display:block;color:var(--ink-2)">
+                                {{ Text::get('programs.costs.compute', ['value' => \App\Support\Qb::of($program->qflops_cost)]) }}
+                                · {{ Text::get('programs.costs.memory', ['value' => \App\Support\Qb::of($program->memory_cost)]) }}
+                                @if ($program->isTemporary())
+                                    · {{ Text::get('programs.costs.lifetime', ['time' => \Carbon\CarbonInterval::seconds($program->lifetime_seconds)->cascade()->forHumans(['short' => true, 'parts' => 2])]) }}
+                                @endif
+                            </span>
+                            @if ($refusal)
+                                <span class="micro" style="display:block;color:var(--warn)">{{ $refusal->message() }}</span>
+                            @else
+                                <span class="micro" data-unable style="display:none;color:var(--warn)"></span>
+                            @endif
+                        </span>
+                    </label>
+                @endforeach
+            </fieldset>
+
+            <p class="micro num" style="color:var(--ink-2);margin:0">
+                {{ Text::get('cyberspace.run.setup.scripts_free') }}
+                <span data-free-readout>{{ Text::get('programs.costs.compute', ['value' => \App\Support\Qb::of($free['qflops'] / 10)]) }} · {{ Text::get('programs.costs.memory', ['value' => \App\Support\Qb::of($free['memory'] / 10)]) }}</span>
+            </p>
+        @endif
+
+        <p class="micro" style="color:var(--ink-2);margin:0">
+            {{ Text::get('cyberspace.run.setup.scripts_hint') }}
         </p>
     </div>
 </div>

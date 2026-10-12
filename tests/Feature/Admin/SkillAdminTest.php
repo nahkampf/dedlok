@@ -54,6 +54,17 @@ class SkillAdminTest extends TestCase
         ], $overrides);
     }
 
+    public function test_the_list_shows_what_each_skills_imprint_costs(): void
+    {
+        $this->actingAs($this->admin)->post(route('admin.skills.store'), $this->payload(['base_cost' => 12500]));
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.skills.index'))
+            ->assertOk()
+            ->assertSee('Price')
+            ->assertSee('12,500');
+    }
+
     // ---- creating, and the imprint that comes with it ------------------------
 
     public function test_creating_a_skill_creates_its_book(): void

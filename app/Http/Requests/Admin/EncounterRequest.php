@@ -51,7 +51,7 @@ class EncounterRequest extends FormRequest
 
         return [
             'slug' => $encounter === null
-                ? ['required', 'string', 'regex:/^[a-z0-9_]{1,40}$/', 'unique:encounters,slug']
+                ? ['required', 'string', 'regex:/^[a-z0-9_-]{1,40}$/', 'unique:encounters,slug']
                 : ['prohibited'],
             'title' => ['required', 'string', 'max:150'],
             'intro' => ['nullable', 'string', 'max:5000'],

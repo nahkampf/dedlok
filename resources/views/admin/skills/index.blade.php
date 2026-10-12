@@ -64,6 +64,7 @@
                             <th>{{ Text::get('admin.skills.columns.title') }}</th>
                             <th>{{ Text::get('admin.skills.columns.category') }}</th>
                             <th class="t-right">{{ Text::get('admin.skills.columns.rank') }}</th>
+                            <th class="t-right">{{ Text::get('admin.skills.columns.price') }}</th>
                             <th class="t-right">{{ Text::get('admin.skills.columns.requires') }}</th>
                             <th class="t-right">{{ Text::get('admin.skills.columns.unlocks') }}</th>
                             <th>{{ Text::get('admin.skills.columns.book') }}</th>
@@ -76,6 +77,8 @@
                                 <td>{{ $skill->title }}</td>
                                 <td class="muted">{{ $skill->category }}</td>
                                 <td class="t-right num">{{ Text::get('admin.skills.fields.rank_value', ['rank' => $skill->rank]) }}</td>
+                                {{-- What the imprint sells for: `base_cost`, kept in step with it on every save. --}}
+                                <td class="t-right num">{{ number_format($skill->base_cost) }}</td>
                                 <td class="t-right num">{{ $skill->prerequisites_count }}</td>
                                 <td class="t-right num">{{ $skill->unlocks_count }}</td>
                                 <td>

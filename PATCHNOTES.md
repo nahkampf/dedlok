@@ -1,3 +1,9 @@
+## 0.49.2 (2026-10-12)
+
+- The run planning screen now displays scripts as well
+- Run screen now correctly displays ram/cpu etc depending on what you select
+- Help page removed, it needs quite a lot more writing before it is useful
+
 ## 0.49.1 (2026-10-11)
 
 - Missions: Green checkmark next to addresses that are "done"

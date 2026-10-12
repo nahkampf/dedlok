@@ -132,6 +132,14 @@ final class EncounterTest extends TestCase
 
     // ---- the draw ----------------------------------------------------------
 
+    public function test_a_hyphenated_slug_still_makes_a_flag_a_flag_will_accept(): void
+    {
+        $flag = (new Encounter(['slug' => 'back-alley-deal']))->seenFlag();
+
+        $this->assertSame('encounter_back_alley_deal', $flag);
+        $this->assertMatchesRegularExpression('/^[a-z0-9_]{1,60}$/', $flag);
+    }
+
     public function test_a_rare_encounter_is_rare_even_when_it_is_the_only_one(): void
     {
         $rare = $this->simple('rare', ['weight' => 2]);

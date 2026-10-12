@@ -32,7 +32,7 @@ class LocationRequest extends FormRequest
         return [
             'district_id' => ['required', 'integer', 'exists:districts,id'],
             'slug' => $location === null
-                ? ['required', 'string', 'max:60', 'regex:/^[a-z0-9-]+$/', 'unique:locations,slug']
+                ? ['required', 'string', 'max:60', 'regex:/^[a-z0-9_-]+$/', 'unique:locations,slug']
                 : ['prohibited'],
             'name' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:2000'],

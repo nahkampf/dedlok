@@ -1135,6 +1135,14 @@ return [
                 'loadout_other' => 'Other run-only software',
                 'loadout_none' => 'None',
                 'loadout_hint' => 'Select an icebreaker to apply to this run. It cannot be changed once the run is initiated.',
+                'scripts' => 'Scripts',
+                'scripts_none' => 'You hold no scripts.',
+                'scripts_hint' => 'A ticked script starts when you go in and is spent by running: it lasts its lifetime and is gone, and stopping it early destroys it. One that does not fit beside everything else you have ticked is marked Unable, and cannot be ticked.',
+                'scripts_free' => 'Free on the deck after what is ticked:',
+                'scripts_no_effect' => 'No effect on your stats.',
+                'scripts_unable_cpu' => 'Unable: Not enough CPU',
+                'scripts_unable_ram' => 'Unable: Not enough RAM',
+                'scripts_unable_both' => 'Unable: Not enough CPU and RAM',
 
                 /*
                 | THE INTENTIONS. Each is a separate button, because they are
@@ -3116,122 +3124,6 @@ return [
         'description' => 'A cyberpunk browser RPG, inspired by BBS door games like LOD, LORD, Usurper and Darkness - and heavily influenced by mechanics from EVE Online.',
     ],
 
-    // The help page. Short statements, no numbers. A topic's body is blocks: a string is a paragraph, an array is a list.
-    'help' => [
-        'title' => 'Help',
-        'contents' => 'Contents',
-        'groups' => [
-            [
-                'id' => 'start',
-                'title' => 'Start here',
-                'topics' => [
-                    [
-                        'id' => 'screen',
-                        'title' => 'The screen',
-                        'body' => [
-                            [
-                                'Rail on the left: everywhere you can go. Hover or tap to open it.',
-                                'Top bar: Synaptic Integrity, hit points, creds and the number of processes running.',
-                                'Current processes (the ring beside the count) lists every clock that is running.',
-                                'Inbox: what happened while you were away. The badge counts unread messages.',
-                            ],
-                        ],
-                    ],
-                    [
-                        'id' => 'first-steps',
-                        'title' => 'First steps',
-                        'body' => [
-                            [
-                                'Equip a deck. The deck screen names anything that stops it running.',
-                                'Jack in and scan a system.',
-                                'Run it. Take creds, items and files.',
-                                'Sell what you took, or keep it.',
-                                'Spend creds on skills and gear, and queue training.',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-            [
-                'id' => 'character',
-                'title' => 'Your character',
-                'topics' => [
-                    [
-                        'id' => 'skills',
-                        'title' => 'Skills and training',
-                        'body' => [
-                            'A skill must be injected before it can be trained. Injecting uses up its imprint. Imprints are sold on the market or found.',
-                            'Training runs in the background, one skill at a time. Queue a skill and it takes the next level. Queue it again for the one after.',
-                            'A missing prerequisite is a warning. The skill stalls until you meet it.',
-                            'The queue holds five. Drag to reorder, as long as the order still meets every requirement.',
-                        ],
-                    ],
-                    [
-                        'id' => 'si-hp',
-                        'title' => 'SI and HP',
-                        'body' => [
-                            [
-                                'SI is your mind. ICE and failing hardware damage it. It mends over time.',
-                                'HP is your body. It does not mend by itself. Clinics, medkits and some drugs and implants restore it.',
-                                'At zero you are down. You wait, then get up on one point. Getting up is not healing.',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-            [
-                'id' => 'cyberspace',
-                'title' => 'Cyberspace',
-                'topics' => [
-                    [
-                        'id' => 'scanning',
-                        'title' => 'Scanning',
-                        'body' => [
-                            'Scan first. A scan reveals what defences a system has, and the difficulty. Scan data goes stale after a while.',
-                            'A scan takes time and runs by itself. Your deck has to be ready.',
-                        ],
-                    ],
-                    [
-                        'id' => 'runs',
-                        'title' => 'Runs',
-                        'body' => [
-                            'Choose your loadout on the briefing. It cannot be changed inside a run.',
-                            'A run is turn by turn. You act, then the system does.',
-                            [
-                                'The IDS watches you. If it catches you, the ICE wakes.',
-                                'Awake ICE guards the core. Break it or leave.',
-                                'A trace follows your routing chain. Longer chains give you more turns.',
-                                'Egress is a roll. If it fails, the turn is spent and the system acts.',
-                            ],
-                            'How a run ends:',
-                            [
-                                'Egress: you leave.',
-                                'Completed: you did what you came for.',
-                                'Defeat: ICE wins, and its effects apply.',
-                                'Burnout: your deck loses a module.',
-                                'Cancelled: the system was burned or locked down. You lose a point of SI.',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ],
-        'glossary' => [
-            'id' => 'glossary',
-            'title' => 'Glossary',
-            'terms' => [
-                'Creds' => 'Money.',
-                'Egress' => 'Leaving a system during a run.',
-                'Grade' => 'A system\'s level, from 1 to 9. Higher is harder and pays more.',
-                'ICE' => 'Defences that attack you during a run.',
-                'IDS' => 'Watches for intruders. If it detects you, ICE wakes.',
-                'Imprint' => 'A skill stored as an item. Inject it to learn the skill.',
-                'QB' => 'The unit for file size and memory.',
-                'SI' => 'Synaptic Integrity. Your mind\'s health.',
-            ],
-        ],
-    ],
-
     // The invitation shown once, on a new account's first sign-in.
     'supporters' => [
         'title' => 'Supporters',
@@ -3738,7 +3630,7 @@ return [
             'edit' => 'Edit',
             'name' => 'Name',
             'slug' => 'Slug',
-            'slug_hint' => 'Permanent. Lower-case letters, digits and hyphens.',
+            'slug_hint' => 'Permanent. Lower-case letters, digits, hyphens and underscores.',
             'color' => 'Colour',
             'x' => 'Across (%)',
             'y' => 'Down (%)',
@@ -3776,7 +3668,7 @@ return [
             'once_tag' => 'once',
             'fields' => [
                 'slug' => 'Slug',
-                'slug_hint' => 'Lower-case letters, digits and underscores. Permanent. A once-only encounter sets the flag encounter_<slug>.',
+                'slug_hint' => 'Lower-case letters, digits, hyphens and underscores. Permanent. A once-only encounter sets the flag encounter_<slug>, with any hyphen written as an underscore.',
                 'title' => 'Title',
                 'intro' => 'Intro',
                 'intro_hint' => 'Shown above the first screen. Optional.',
@@ -4064,7 +3956,7 @@ return [
 
             'fields' => [
                 'slug' => 'Slug',
-                'slug_hint' => 'Permanent. Lower case, digits and underscores.',
+                'slug_hint' => 'Permanent. Lower case, digits, hyphens and underscores.',
                 'slug_locked' => 'Permanent — inventory rows reference it.',
                 'name' => 'Name',
                 'name_book' => 'An imprint has no name of its own: it reads from the skill it carries.',
@@ -4337,7 +4229,7 @@ return [
                 'modifiers' => 'What knowing it grants',
                 'modifiers_hint' => 'Effects a character gets for having this skill — not the check it feeds, which exists for everybody. Each row applies from the level you give it.',
                 'slug' => 'Slug',
-                'slug_hint' => 'Permanent. Lower case, digits and underscores. The imprint is named from it.',
+                'slug_hint' => 'Permanent. Lower case, digits, hyphens and underscores. The imprint is named from it.',
                 'slug_locked' => 'Permanent — saved progress references it.',
                 'title' => 'Title',
                 'title_hint' => 'What a player reads. The imprint reads from it too.',
@@ -4371,6 +4263,7 @@ return [
                 'title' => 'Title',
                 'category' => 'Category',
                 'rank' => 'Rank',
+                'price' => 'Price',
                 'requires' => 'Requires',
                 'unlocks' => 'Unlocks',
                 'book' => 'Imprint',
@@ -4597,7 +4490,7 @@ return [
             'rider_stun_amount' => 'A stun does no damage: leave its amount blank.',
             'profile_sum' => 'The shares must add up to exactly 100: a hit of 10 has to split into parts that add back to 10.',
             'armour_condition' => 'A resistance on armour may not carry a condition of its own: the location is its condition, and a second would either replace it or leave the resistance working on every hit.',
-            'slug' => 'Use lower case letters, digits and underscores only.',
+            'slug' => 'Use lower case letters, digits, hyphens and underscores only.',
             'slug_immutable' => 'A slug is permanent and cannot be changed.',
             'name_required' => 'Give it a name. Only an imprint may go without one.',
             'container_stacks' => 'A container cannot stack: two of them would merge into one row and the contents of the second would be lost. Untick stackable.',

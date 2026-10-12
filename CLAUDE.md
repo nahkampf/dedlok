@@ -830,6 +830,10 @@ what a bare `items` row cannot.
   (a row id does not survive its stack splitting and merging) and ticked on the next
   briefing. Per browser, deliberately — no column, no migration. A refused run is not
   remembered.
+- **Scripts are ticked on the briefing too** (a *Scripts* box listing the loose Scripts held, their effects, cost and lifetime; `scripts[]`).
+  They are started by `RunStarter::start()` with the loadout and before the arrival roll, and are spent by running. **A program that will not
+  start ROLLS THE TRANSACTION BACK** (`ProcessRefused`) rather than stopping what already started, because stopping a Script destroys it. The page
+  does the RAM/qFLOPS sum in `ui-kit.js` (`data-run-budget`, tenths) and disables what no longer fits; the runner's own checks are the guard.
 - **One icebreaker at a time**, whichever ones — `ProcessRefusal::OneIcebreaker`.
   `icebreaker_damage` sums every running program, so two cheap ones would out-cut a dear
   one and *twenty turns is never enough* would stop being true.
@@ -1059,10 +1063,6 @@ ACCEPTED and not yet finished (`Mission::accepted()`: failed, completed and void
 soonest deadline first, each as the desk's own `<x-mission-card>` with `:actions="false"` (no Complete: a job is handed in at the desk
 it came from) and `:abandon="true"` (giving one up needs no desk; its tooltip is *Costs -X standing*, the row's penalty) and `:desk="true"` (who it is for, the agent, the desk's address). *Journal* and *Tasks* (quests) read "Not yet
 implemented." until they are designed. The rail glyph is U+25C7, one already proved to render.
-
-### The help page
-
-**`/help` is one public page of accordions** (`HelpController`, `resources/views/help/index.blade.php`) read straight from `strings.help`: groups with topics, then a glossary. Every group and topic has an id, so `/help#cyberspace` and `/help#scanning` work, and the page opens the accordion a link points at. Short statements, no numbers, nothing unbuilt. A topic's body is a list of blocks: a string is a paragraph, an array is a bullet list.
 
 ### Supporters
 
