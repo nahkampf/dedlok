@@ -3714,6 +3714,8 @@ return [
                 'weight_hint' => 'Its share of a draw out of 100. Small is rare: 2 is a 2% pick even when it is the only one that qualifies, and the rest is "nothing happens".',
                 'district' => 'Only in district',
                 'location' => 'At place',
+                'chance' => 'Chance, % (overrides the door\'s default)',
+                'chance_hint' => 'Blank: the door\'s default and the weight below. A number: the odds that THIS encounter opens at each opening of its door, rolled on its own (weight is then ignored). Defaults: on the way :travel%, exploring :explore%, a move in cyberspace :move%, arriving at a system :system%, between turns of a run :run%. Not for a place or a spot.',
                 'system_type' => 'System type (arriving at a system)',
                 'grade_min' => 'Grade from (system or run)',
                 'grade_max' => 'Grade to (system or run)',

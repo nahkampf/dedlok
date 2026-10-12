@@ -71,6 +71,8 @@ class EncounterRequest extends FormRequest
             'intro' => ['nullable', 'string', 'max:5000'],
             'starts_on' => ['required', Rule::enum(EncounterStart::class)],
             'weight' => ['required', 'integer', 'between:1,100'],
+            // Its own odds in percent, overriding the door's: only for a door that is rolled.
+            'chance' => ['nullable', 'numeric', 'gt:0', 'lte:100', 'prohibited_if:starts_on,place,spot'],
             'district_id' => ['nullable', 'integer', 'exists:districts,id', 'prohibited_if:starts_on,place,grid_step,system,run'],
             // The grid doors' own filters, each only on the door that reads it.
             'system_type' => ['nullable', Rule::enum(SystemType::class), 'prohibited_unless:starts_on,system'],
@@ -137,6 +139,7 @@ class EncounterRequest extends FormRequest
             ...$this->doorFilters($data),
             'spot_system_id' => $this->spotSystemId(),
             'cooldown_hours' => ($data['cooldown_hours'] ?? '') === '' ? null : (int) $data['cooldown_hours'],
+            'chance' => ($data['chance'] ?? '') === '' ? null : round((float) $data['chance'], 2),
             'intro' => ($data['intro'] ?? '') === '' ? null : $data['intro'],
             'required_flag' => ($data['required_flag'] ?? '') === '' ? null : $data['required_flag'],
             'once' => $this->boolean('once'),
