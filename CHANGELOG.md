@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.53.1] — 2026-10-12
+
+Market listings say what a thing costs to hold and run, and the shelf is split into sections.
+
+### Added
+
+- **Spec lines on every listing** (`<x-program-spec>`, `Item::programRequirements()`, `Item::kindLine()`): software shows qFLOPS, QB, storage, background or run-only and lifetime, plus what a Decryptor breaks and the one-at-a-time rules of Locators and Pathfinders (an icebreaker lists none, being run-only by nature). A deck module shows its defining figure (QB, qFLOPS, …), power draw and TU (`DeckModule::loadLabels()`, also used by `summary()`), and its variant under the title ("RAM · Opto-electrical"). On the market shelf and offers, the exchange store and city shops.
+- **Market sections** (`Item::marketCategory()`, `Item::marketSection()`, `market/_cards.blade.php`): Ammunition (a section per calibre), Weapons (a section per weapon class), Drugs and Implants leave "Physical"; RAM is split by stick type and CPUs by socket. Sections nest as accordions and the search and sold-out handling in `ui-kit.js` work through them.
+- **Hover card on the deck board**: a filled socket floats the module's card (`data-inspect` with `data-inspect-hover`); a click still opens the socket.
+
+
 ## [0.53.0] — 2026-10-12
 
 An encounter can set its own chance, and the encounter editor stops losing work silently.
@@ -3042,7 +3053,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.53.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.53.1...HEAD
+[0.53.1]: https://github.com/nahkampf/dedlok/compare/v0.53.0...v0.53.1
 [0.53.0]: https://github.com/nahkampf/dedlok/compare/v0.52.0...v0.53.0
 [0.52.0]: https://github.com/nahkampf/dedlok/compare/v0.51.0...v0.52.0
 [0.51.0]: https://github.com/nahkampf/dedlok/compare/v0.50.0...v0.51.0
