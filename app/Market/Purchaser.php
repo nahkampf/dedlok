@@ -53,7 +53,7 @@ final class Purchaser
         // Withdrawn from sale is the same answer as never stocked. The flag is
         // the seeder's question, and an item that stopped being on the market
         // should stop being buyable the moment it does.
-        if (! $item->on_market) {
+        if (! $item->on_market || $item->use_skill_id !== null) {
             return PurchaseResult::refused(PurchaseRefusal::NotStocked);
         }
 

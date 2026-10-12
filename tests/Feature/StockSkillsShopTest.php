@@ -46,6 +46,33 @@ final class StockSkillsShopTest extends TestCase
         $this->assertSame($count, $place->shopItems()->count());
     }
 
+    public function test_a_price_of_its_own_on_a_skill_listing_is_put_back_to_list_price(): void
+    {
+        $listed = $this->skill('lockpicking', true);
+        $place = Location::query()->firstOrFail();
+        $other = Item::factory()->create(['base_cost' => 50]);
+        $place->shopItems()->create(['item_id' => $listed->id, 'price' => 5, 'max_stock' => null, 'stock' => 0, 'restock_amount' => 0]);
+        $place->shopItems()->create(['item_id' => $other->id, 'price' => 7, 'max_stock' => null, 'stock' => 0, 'restock_amount' => 0]);
+
+        $this->artisan('city:stock-skills', ['location' => $place->slug])->assertSuccessful();
+
+        $this->assertNull($place->shopItems()->where('item_id', $listed->id)->value('price'));
+        $this->assertSame(7, $place->shopItems()->where('item_id', $other->id)->value('price'), 'only skills follow list price');
+    }
+
+    public function test_with_no_argument_it_stocks_the_configured_shop_and_is_quiet_when_there_is_none(): void
+    {
+        $this->skill('lockpicking', true);
+        $place = Location::query()->firstOrFail();
+        config(['city.skills_shop' => 'no-such-place']);
+
+        $this->artisan('city:stock-skills', ['--quiet-when-idle' => true])->assertSuccessful();
+
+        config(['city.skills_shop' => $place->slug]);
+        $this->artisan('city:stock-skills')->assertSuccessful();
+        $this->assertGreaterThan(0, $place->shopItems()->count());
+    }
+
     public function test_an_unknown_location_fails(): void
     {
         $this->artisan('city:stock-skills', ['location' => 'nowhere'])->assertFailed();

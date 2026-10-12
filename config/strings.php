@@ -574,6 +574,7 @@ return [
                 'not_enough_left' => 'They are not selling that many.',
                 'cannot_afford' => 'You cannot afford that.',
                 'no_storage' => 'Your deck has no room for it. Make room in its storage first.',
+                'not_for_sale' => 'Skills are not sold between players. Shops, loot and loyalty stores are where they come from.',
             ],
         ],
     ],
@@ -4246,7 +4247,8 @@ return [
                 'attribute_hint' => 'Together these decide skill points per minute. They should differ.',
                 'base_cost' => 'Cost',
                 'base_cost_hint' => 'What the imprint sells for. Kept in step with it on every save.',
-                'on_market' => 'Imprint listed on the market',
+                'on_market' => 'Imprint for sale',
+                'on_market_hint' => 'Skills R Us stocks every skill that is for sale, every night, at this price. It also decides whether the imprint turns up as loot. Imprints are never on the regular market.',
             ],
 
             'sections' => [

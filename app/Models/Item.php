@@ -630,6 +630,8 @@ class Item extends Model
      */
     public function scopeRestockable(Builder $query): void
     {
-        $query->onMarket()->where('seed_quantity', '>', 0);
+        // An imprint is never on the shelf: skills are sold by shops (see `city:stock-skills`), found as loot, or
+        // paid out by a loyalty store. `on_market` on an imprint still decides loot and what a shop lists.
+        $query->onMarket()->whereNull('use_skill_id')->where('seed_quantity', '>', 0);
     }
 }

@@ -92,6 +92,10 @@ final readonly class OfferBook
             return OfferRefusal::Worn;
         }
 
+        if ($row->item?->use_skill_id !== null) {
+            return OfferRefusal::NotForSale;
+        }
+
         return DB::transaction(function () use ($seller, $row, $price): OfferRefusal|MarketOffer {
             // Re-asked inside the transaction and through the scope, so the
             // five ways of being spoken for are one question — and so that two

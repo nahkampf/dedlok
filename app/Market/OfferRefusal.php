@@ -59,6 +59,9 @@ enum OfferRefusal: string
     /** The equipped deck has no room for it — see App\Decks\Storage. */
     case NoStorage = 'no_storage';
 
+    /** A skill imprint is not sold between players: shops, loot and loyalty stores are how skills are had. */
+    case NotForSale = 'not_for_sale';
+
     public function message(): string
     {
         return Text::get("market.offers.refused.{$this->value}");

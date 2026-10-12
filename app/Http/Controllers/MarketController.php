@@ -46,7 +46,7 @@ class MarketController extends Controller
             // for the shelf rather than one per card.
             ->with(['item.useSkill.prerequisites.requiredSkill', 'item.program'])
             ->get()
-            ->filter(fn (MarketStock $shelf): bool => $shelf->item !== null && $shelf->item->on_market)
+            ->filter(fn (MarketStock $shelf): bool => $shelf->item !== null && $shelf->item->on_market && $shelf->item->use_skill_id === null)
             ->sortBy(fn (MarketStock $shelf): string => (string) $shelf->item?->displayName())
             ->values();
 
