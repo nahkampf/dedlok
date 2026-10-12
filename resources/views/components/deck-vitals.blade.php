@@ -6,23 +6,25 @@
      the run briefing, which must agree about a deck. --}}
 {{-- One-line @php only: a block form beside another is swallowed by Blade's own regex. --}}
 @php($bars = [
-    ['label' => 'decks.fitting.compute', 'used' => $spent['qflops'], 'total' => $totals->qflops],
-    ['label' => 'decks.fitting.memory', 'used' => $spent['memory'], 'total' => $totals->quantabits],
-    ...($totals->stored === null ? [] : [['label' => 'decks.fitting.storage', 'used' => $totals->stored, 'total' => $totals->storage]]),
+    ['key' => 'qflops', 'label' => 'decks.fitting.compute', 'used' => $spent['qflops'], 'total' => $totals->qflops],
+    ['key' => 'memory', 'label' => 'decks.fitting.memory', 'used' => $spent['memory'], 'total' => $totals->quantabits],
+    ...($totals->stored === null ? [] : [['key' => 'storage', 'label' => 'decks.fitting.storage', 'used' => $totals->stored, 'total' => $totals->storage]]),
 ])
 @php($scale = $thermal->scale())
 @php($load = $totals->netThermalLoad())
 
-<div class="vitals">
+{{-- data-vital / data-used / data-total / data-format are what the run briefing redraws as a loadout is ticked
+     (ui-kit.js, data-run-budget); nothing else reads them. --}}
+<div class="vitals" data-format="{{ Text::get('decks.fitting.used', ['used' => ':used', 'total' => ':total']) }}">
     {{-- What the running programs spend, against what the deck
          resolves: the budget a start is checked against. --}}
     @foreach ($bars as $bar)
-        <div class="vital">
+        <div class="vital" data-vital="{{ $bar['key'] }}" data-used="{{ $bar['used'] }}" data-total="{{ $bar['total'] }}">
             <span class="vital__label">{{ Text::get($bar['label']) }}</span>
             <div class="meter" style="--v:{{ $bar['total'] > 0 ? round(min(1, $bar['used'] / $bar['total']), 3) : ($bar['used'] > 0 ? 1 : 0) }};--fill:var({{ $bar['used'] > $bar['total'] ? '--crit' : '--ok' }})">
                 <div class="meter__fill"></div>
             </div>
-            <span class="vital__value num">{{ Text::get('decks.fitting.used', ['used' => $bar['used'], 'total' => $bar['total']]) }}</span>
+            <span class="vital__value num" data-vital-value>{{ Text::get('decks.fitting.used', ['used' => $bar['used'], 'total' => $bar['total']]) }}</span>
         </div>
     @endforeach
 

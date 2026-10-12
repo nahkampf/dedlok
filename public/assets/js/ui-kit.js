@@ -1619,6 +1619,17 @@
           note.style.display = cpu || ram ? "block" : "none";
         }
       });
+      // The deck's own bars (<x-deck-vitals>) move with the selection: what is already spent plus what is ticked.
+      const vitals = document.querySelector("[data-format]");
+      [["qflops", usedQ], ["memory", usedM]].forEach(([key, extra]) => {
+        const v = document.querySelector('.vital[data-vital="' + key + '"]');
+        if (!v) return;
+        const used = Math.round(Number(v.dataset.used) * 10) + extra, total = Math.round(Number(v.dataset.total) * 10);
+        meter(v.querySelector(".meter"), total > 0 ? used / total : (used > 0 ? 1 : 0));
+        v.querySelector(".meter").style.setProperty("--fill", used > total ? "var(--crit)" : "var(--ok)");
+        const text = v.querySelector("[data-vital-value]");
+        if (text && vitals) text.textContent = vitals.dataset.format.replace(":used", fmt(used)).replace(":total", fmt(total));
+      });
       if (readout) readout.textContent = fmt(Math.max(0, leftQ)) + " qFLOPS \u00b7 " + fmt(Math.max(0, leftM)) + " QB";
     };
     form.addEventListener("change", recalc);
