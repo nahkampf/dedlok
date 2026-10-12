@@ -4263,6 +4263,7 @@ return [
                 'title' => 'Title',
                 'category' => 'Category',
                 'rank' => 'Rank',
+                'price' => 'Price',
                 'requires' => 'Requires',
                 'unlocks' => 'Unlocks',
                 'book' => 'Imprint',
