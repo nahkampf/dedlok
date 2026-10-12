@@ -2467,6 +2467,7 @@ return [
             'deck_cooling' => 'deck cooling',
             'deck_power_draw' => 'deck power draw',
             'routing_hops' => 'routing hops',
+            'view_range' => 'view range',
             'program_threads' => 'program threads',
             'coop_slots' => 'co-op slots',
             'synaptic_regen' => 'SI regeneration',

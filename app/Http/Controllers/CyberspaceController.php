@@ -19,6 +19,7 @@ use App\Cyberspace\ScanExportRefusal;
 use App\Cyberspace\SweepResult;
 use App\Cyberspace\TravelRefusal;
 use App\Cyberspace\TravelResult;
+use App\Cyberspace\ViewShape;
 use App\Models\Bookmark;
 use App\Models\Character;
 use App\Models\System;
@@ -115,7 +116,7 @@ class CyberspaceController extends Controller
             'chain' => $chains->for($character),
             'chainCap' => $chains->hopsAllowed($character),
             'grid' => $grid,
-            'map' => MapView::for($character, $grid),
+            'map' => MapView::for($character, $grid, shape: ViewShape::forCharacter($character, app(Resolver::class))),
             'swept' => MapView::sweptCount($character),
             // Both kinds, in one list, most recent first. The screen tells
             // them apart; the query has no reason to.

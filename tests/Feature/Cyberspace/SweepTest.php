@@ -59,10 +59,10 @@ final class SweepTest extends TestCase
 
         $result = Sweep::fromConfig()->from($character, new Position(8, 8));
 
-        // A range of 2 is a 5 x 5 square, all of it inside a 16 x 16 grid.
-        $this->assertSame(25, $result->positions);
-        $this->assertSame(25, $result->newlySwept);
-        $this->assertSame(25, (new Terrain($character))->sweptCount());
+        // View range 2 is eleven positions (the 3 x 3 and one more either side), all of it inside a 16 x 16 grid.
+        $this->assertSame(11, $result->positions);
+        $this->assertSame(11, $result->newlySwept);
+        $this->assertSame(11, (new Terrain($character))->sweptCount());
     }
 
     /**
@@ -76,8 +76,8 @@ final class SweepTest extends TestCase
 
         $result = Sweep::fromConfig()->from($character, new Position(0, 0));
 
-        $this->assertSame(9, $result->positions, 'a corner sees a 3 x 3 quarter of its window');
-        $this->assertSame(9, (new Terrain($character))->sweptCount());
+        $this->assertSame(5, $result->positions, 'a corner sees the quarter of its shape that is on the grid');
+        $this->assertSame(5, (new Terrain($character))->sweptCount());
         $this->assertFalse((new Terrain($character))->hasSwept(new Position(3, 0)));
     }
 
@@ -118,7 +118,7 @@ final class SweepTest extends TestCase
 
         // Ground walked twice is explored once — the achievement counts what
         // the bitmap grew by, not how often somebody stood there.
-        $this->assertSame(25, (new Achievements)->progressFor($character, Metric::GridExplored));
+        $this->assertSame(11, (new Achievements)->progressFor($character, Metric::GridExplored));
     }
 
     /**
@@ -143,7 +143,7 @@ final class SweepTest extends TestCase
         $this->assertSame(0, SystemContact::query()->count());
 
         $this->assertTrue((new Terrain($character))->hasSwept(new Position(8, 9)));
-        $this->assertSame(25, (new Terrain($character))->sweptCount());
+        $this->assertSame(11, (new Terrain($character))->sweptCount());
     }
 
     /**
@@ -229,11 +229,10 @@ final class SweepTest extends TestCase
         $sweeper->from($character, new Position(8, 8));
         $step = $sweeper->from($character, new Position(9, 8));
 
-        // A 5 x 5 window moved one column: five new positions, twenty already
-        // swept.
-        $this->assertSame(25, $step->positions);
-        $this->assertSame(5, $step->newlySwept);
+        // The shape moved one column: three new positions, eight already swept.
+        $this->assertSame(11, $step->positions);
+        $this->assertSame(3, $step->newlySwept);
         $this->assertTrue($step->foundGround());
-        $this->assertSame(30, (new Terrain($character))->sweptCount());
+        $this->assertSame(14, (new Terrain($character))->sweptCount());
     }
 }

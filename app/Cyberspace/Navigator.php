@@ -258,7 +258,8 @@ final class Navigator
         $sweep = DB::transaction(function () use ($character, $position): SweepResult {
             $character->forceFill(['grid_x' => $position->x, 'grid_y' => $position->y])->save();
 
-            return $this->sweep->from($character, $position);
+            // What they see from here is their resolved view range, asked once per arrival.
+            return $this->sweep->from($character, $position, ViewShape::forCharacter($character, $this->resolver));
         });
 
         // OUTSIDE the sweep's transaction and deliberately so — spawning a

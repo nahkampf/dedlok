@@ -84,8 +84,8 @@ final class BookmarkTest extends TestCase
     {
         $this->sweep(new Position(8, 8));
 
-        // A corner of the 5x5 window, never stood on.
-        $this->assertTrue($this->keeper()->markPosition($this->character, new Position(6, 6))->succeeded());
+        // The far edge of the shape (two to the left), never stood on.
+        $this->assertTrue($this->keeper()->markPosition($this->character, new Position(6, 8))->succeeded());
     }
 
     public function test_a_position_off_the_grid_is_refused_as_the_edge(): void
