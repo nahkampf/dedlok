@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+## [0.50.0] — 2026-10-12
+
+Skills leave the market's shelf and are sold by shops, and a mislabelled operating system is put right.
+
+### Added
+
+- **`city:stock-skills [location]`** (`StockSkillsShop`): lists the imprint of every skill with `on_market` in a shop, unlimited and at list price. It only adds, puts any skill listing that has a price of its own back to list price, and hands the place's clinic, buy list and surgery back unchanged through `FeatureEditor`. Run nightly at 04:20 for `city.skills_shop` (`skillsrus`); `--dry-run` and `--quiet-when-idle`.
+- **Skills R Us** is in the City (authored in the live admin); this is what stocks it.
+
+### Changed
+
+- **Skill imprints are never on the market's own shelf** (`Item::scopeRestockable()`, `Purchaser`, `MarketController`). Players may still sell them to one another. Loot and loyalty stores are unchanged, and `on_market` on an imprint still decides loot and what a shop lists.
+- **An imprint is named for its skill** ("Hacking", no "Eidetic Imprint:" prefix) and its kind reads *Eidetic Imprints* rather than *Data* (`items.imprint.name`, `items.kinds.imprint`).
+- **The admin skills list has a *Price* column**, showing the imprint's price (what a shop charges). The skill's *on market* field is labelled *Imprint for sale*.
+- **Every slug may use hyphens and underscores** (district, location, item, skill, encounter). A once-only encounter writes any hyphen of its slug as an underscore in its seen flag.
+- **Close Quarter Combat 500, Neural Sheathing 2,000, Efficient Cooling 1,000**, on the skill and its imprint.
+
+### Fixed
+
+- **Kernel Exploitation is not an operating system.** It was filed under *Operating Systems*, which the grid seeder reads as the OS ladder, so 491 systems ran it and a scan read "Operating System: Kernel Exploitation". It is under *Intrusion* now, and systems and scans that carried it get the OS their grade would have had.
+- **The run briefing** marks programs that will not fit beside what is already running, and disables the start buttons while the ticked selection is over the deck.
+
+### Migrations
+
+- `2026_10_12_120000_skills_leave_the_market`: clears skill imprints from the market's shelf rows.
+- `2026_10_12_130000_kernel_exploitation_is_not_an_operating_system`: moves the skill to Intrusion and reassigns the systems and scans that carried it.
+- `2026_10_12_140000_three_skills_get_a_price`: sets the three prices above.
+
+
 ## [0.49.2] — 2026-10-12
 
 Scripts can be started from the run briefing, and the deck's bars show what a loadout will cost before you go in.
@@ -2939,7 +2968,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.49.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.50.0...HEAD
+[0.50.0]: https://github.com/nahkampf/dedlok/compare/v0.49.2...v0.50.0
 [0.49.2]: https://github.com/nahkampf/dedlok/compare/v0.49.1...v0.49.2
 [0.49.1]: https://github.com/nahkampf/dedlok/compare/v0.49.0...v0.49.1
 [0.49.0]: https://github.com/nahkampf/dedlok/compare/v0.48.0...v0.49.0

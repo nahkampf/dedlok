@@ -3085,6 +3085,9 @@ return [
         'kinds' => [
             'physical' => 'Physical',
             'data' => 'Data',
+            // What an imprint is called wherever its kind is said (the card tag, the shelf's group): data, but not
+            // "Data".
+            'imprint' => 'Eidetic Imprints',
         ],
 
         /*
@@ -3112,7 +3115,7 @@ return [
         // one breath. The item has no name of its own: it composes from the
         // skill it carries, so renaming the format renames every one of them.
         'imprint' => [
-            'name' => 'Eidetic Imprint: :skill',
+            'name' => ':skill',
             'flavor' => 'Compressed instruction set. One read, then it is gone.',
         ],
     ],
@@ -4246,7 +4249,8 @@ return [
                 'attribute_hint' => 'Together these decide skill points per minute. They should differ.',
                 'base_cost' => 'Cost',
                 'base_cost_hint' => 'What the imprint sells for. Kept in step with it on every save.',
-                'on_market' => 'Imprint listed on the market',
+                'on_market' => 'Imprint for sale',
+                'on_market_hint' => 'Skills R Us stocks every skill that is for sale, every night, at this price. It also decides whether the imprint turns up as loot. Imprints are never on the regular market.',
             ],
 
             'sections' => [

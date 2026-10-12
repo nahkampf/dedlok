@@ -1,3 +1,12 @@
+## 0.50.0 (2026-10-12)
+
+- Skills are no longer sold on the Market tab (this is generally moving towards not being a thing down the line, instead focusing on buying stuff at locations and/or exchanges).
+- There is a location in Downtown called _Skills R Us_ where you can buy most eidetic imprints (skills).
+- Removed prefix "Eidetic Imprint".
+- Bug: Kernel Exploitation skill was filed under OPerating Systems, and that is used to seed what OSes systems are running. Fixed now.
+- More fixes for run planning screen re what can run and not
+- Populating skills that are not avialable at Skills R Us to end up as loyalty purchases at exchanges, in some locations and as loot
+
 ## 0.49.2 (2026-10-12)
 
 - The run planning screen now displays scripts as well

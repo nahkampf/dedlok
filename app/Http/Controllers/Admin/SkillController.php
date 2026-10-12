@@ -39,7 +39,7 @@ class SkillController extends Controller
         ]);
 
         $skills = Skill::query()
-            ->with(['imprint:id,slug,use_skill_id'])
+            ->with(['imprint:id,slug,use_skill_id,base_cost'])
             ->withCount(['prerequisites', 'unlocks'])
             ->when($filters['q'] ?? null, fn ($query, string $term) => $query->where(
                 fn ($inner) => $inner

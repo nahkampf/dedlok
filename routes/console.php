@@ -74,6 +74,14 @@ Schedule::command('cyberspace:restock')
  * below — which runs AFTER this, so a backdoor discovered tonight still paid
  * tonight.
  */
+/*
+ * Skills are sold by shops and not by the market, so the shop that sells them all is kept in step with the
+ * skills that are for sale: new ones are listed and every price follows the imprint's list price.
+ */
+Schedule::command('city:stock-skills --quiet-when-idle')
+    ->dailyAt('04:20')
+    ->withoutOverlapping();
+
 Schedule::command('cyberspace:siphons --quiet-when-idle')
     ->dailyAt('04:15')
     ->withoutOverlapping();

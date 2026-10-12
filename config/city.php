@@ -17,6 +17,12 @@ return [
     'start' => 'old-town',
 
     /*
+    | The shop `city:stock-skills` stocks every night with each skill that is for sale, at list price. A location
+    | slug. A shop that does not exist yet is simply skipped.
+    */
+    'skills_shop' => 'skillsrus',
+
+    /*
     |--------------------------------------------------------------------------
     | Selling to a place
     |--------------------------------------------------------------------------

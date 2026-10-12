@@ -9,7 +9,6 @@ use App\Inventory\ItemGranter;
 use App\Market\Purchaser;
 use App\Market\PurchaseRefusal;
 use App\Models\Character;
-use App\Models\CharacterSkill;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\MarketPurchase;
@@ -276,52 +275,31 @@ final class MarketPurchaseTest extends TestCase
             ->assertDontSee('class="tick"', false);
     }
 
-    /**
-     * AN IMPRINT FOR A SKILL ALREADY INJECTED says so in cyan — and without owning
-     * a copy, because injecting spent the one they had.
-     */
-    public function test_a_book_for_a_skill_you_have_is_ticked_cyan(): void
-    {
-        $skill = Skill::factory()->create();
-        $book = Imprint::ensureFor($skill);
-        $book->forceFill(['on_market' => true])->save();
-
-        MarketStock::query()->create(['item_id' => $book->id, 'quantity' => 3, 'last_seeded_at' => now()]);
-        CharacterSkill::query()->create([
-            'character_id' => $this->character->id,
-            'skill_id' => $skill->id,
-            'skill_points' => 0,
-            'attained_level' => 0,
-        ]);
-
-        $this->actingAs($this->character->user)
-            ->get(route('market.index'))
-            ->assertOk()
-            ->assertSee('style="--tick:var(--cyan)" title="'.Text::get('market.tick.injected').'"', false)
-            ->assertDontSee(Text::get('market.tick.owned'));
-    }
-
-    // ---- an imprint's hover card -----------------------------------------------
+    // ---- skills are not on the market ------------------------------------------
 
     /**
-     * AN IMPRINT IS INSPECTED AS ITS SKILL. The header floats <x-skill-detail>,
-     * the same card the skills screen uses, rather than the card having to
-     * describe a skill in the words of an item.
+     * A SKILL IMPRINT IS NEVER ON THE SHELF, whatever a row says. Skills come from shops, loot and loyalty stores;
+     * a shelf row left over from before is neither drawn nor buyable.
      */
-    public function test_a_book_on_the_shelf_opens_its_skill(): void
+    public function test_an_imprint_is_not_on_the_shelf_and_cannot_be_bought(): void
     {
         $skill = Skill::factory()->create(['description' => 'Split the work and run it twice.']);
         $book = Imprint::ensureFor($skill);
         $book->forceFill(['on_market' => true])->save();
-        $shelf = MarketStock::query()->create(['item_id' => $book->id, 'quantity' => 3, 'last_seeded_at' => now()]);
+        MarketStock::query()->create(['item_id' => $book->id, 'quantity' => 3, 'last_seeded_at' => now()]);
+        $this->character->forceFill(['creds' => 1_000_000])->save();
 
         $this->actingAs($this->character->user)
             ->get(route('market.index'))
             ->assertOk()
-            ->assertSee('data-inspect="#shelf-skill-'.$shelf->id.'"', false)
-            ->assertSee('<template id="shelf-skill-'.$shelf->id.'">', false)
-            ->assertSeeText('Split the work and run it twice.')
-            ->assertSeeText(Text::get('training.card.not_injected'));
+            ->assertDontSeeText('Split the work and run it twice.')
+            ->assertDontSee('data-inspect=', false);
+
+        $result = app(Purchaser::class)->buy($this->character->fresh(), $book);
+
+        $this->assertFalse($result->succeeded());
+        $this->assertSame(3, (int) MarketStock::query()->where('item_id', $book->id)->value('quantity'));
+        $this->assertNotContains($book->id, Item::query()->restockable()->pluck('id')->all());
     }
 
     /** Anything that is not an imprint has no skill to show, and no hover card. */
