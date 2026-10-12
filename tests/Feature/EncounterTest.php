@@ -48,6 +48,9 @@ final class EncounterTest extends TestCase
     {
         parent::setUp();
 
+        // The authored introduction arrives by migration; these tests count rows from nothing.
+        Encounter::query()->delete();
+
         $this->character = Character::factory()->create(array_merge(
             array_fill_keys(Character::ATTRIBUTES, 20),
             ['archetype' => 3, 'creds' => 500],

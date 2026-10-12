@@ -245,6 +245,10 @@ class CyberspaceController extends Controller
             return response()->json(['stop' => true, 'message' => Text::get('cyberspace.locate.traverse_stopped'), 'hunt' => route('hunt.show')]);
         }
 
+        if ($result->metSomething()) {
+            return response()->json(['stop' => true, 'message' => Text::get('cyberspace.locate.traverse_stopped'), 'encounter' => route('encounter.show')]);
+        }
+
         return response()->json(['x' => $result->position->x, 'y' => $result->position->y, 'left' => $result->position->distanceTo($target)]);
     }
 
@@ -519,6 +523,11 @@ class CyberspaceController extends Controller
         // EnsureHuntIsResolved would send the next request there anyway.
         if ($result->wasAmbushed()) {
             return redirect()->route('hunt.show');
+        }
+
+        // Something happened on the way: an encounter has the screen.
+        if ($result->metSomething()) {
+            return redirect()->route('encounter.show');
         }
 
         $said = $success ?? $this->reportSweep($result->sweep);

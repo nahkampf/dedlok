@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Cyberspace;
 
 use App\City\ActivityKind;
+use App\City\Encounters;
+use App\City\EncounterStart;
 use App\Decks\DeckTotals;
 use App\Models\Bookmark;
 use App\Models\Character;
+use App\Models\CharacterEncounter;
 use App\Models\CityActivity;
 use App\Stats\Resolver;
 use Closure;
@@ -105,7 +108,8 @@ final class Navigator
             return TravelResult::refused(TravelRefusal::DeckNotReady);
         }
 
-        return $this->arrive($character, $this->grid->portal());
+        // The portal is where everybody starts and jacking in is not a move, so nothing meets them there.
+        return $this->arrive($character, $this->grid->portal(), mayMeet: false);
     }
 
     /**
@@ -249,7 +253,7 @@ final class Navigator
      * One transaction, because a position written without the sweep that
      * explains it is a map with a hole where the player is standing.
      */
-    private function arrive(Character $character, Position $position): TravelResult
+    private function arrive(Character $character, Position $position, bool $mayMeet = true): TravelResult
     {
         $sweep = DB::transaction(function () use ($character, $position): SweepResult {
             $character->forceFill(['grid_x' => $position->x, 'grid_y' => $position->y])->save();
@@ -263,6 +267,24 @@ final class Navigator
         // happened.
         $hunt = $this->hunters->rolls($character) ? $this->hunters->spawn($character) : null;
 
-        return TravelResult::arrived($position, $sweep, $hunt);
+        // THEN AN ENCOUNTER, by the same rule and in its own write: a hunt that began makes the character
+        // ineligible, so the two never overlap. On the LOCKED row, because two arrivals at once must not both
+        // find nothing open.
+        $encounter = null;
+
+        if ($mayMeet && $hunt === null) {
+            $encounter = DB::transaction(
+                fn (): ?CharacterEncounter => app(Encounters::class)->maybeOpen(
+                    Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail(),
+                    EncounterStart::GridStep,
+                ),
+            );
+
+            if ($encounter !== null) {
+                $character->refresh();
+            }
+        }
+
+        return TravelResult::arrived($position, $sweep, $hunt, $encounter);
     }
 }

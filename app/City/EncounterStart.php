@@ -18,6 +18,15 @@ enum EncounterStart: string
     /** A button on a location's page. The door authored quests walk through. */
     case Place = 'place';
 
+    /** An arrival on the grid by a move (a step, a jump or a bookmark; not the jack-in itself). Cyberspace's own door. */
+    case GridStep = 'grid_step';
+
+    /** The realm is the door's: this one is cyberspace and every other is the City. */
+    public function isGrid(): bool
+    {
+        return $this === self::GridStep;
+    }
+
     public function label(): string
     {
         return Text::get("city.encounter.starts.{$this->value}");

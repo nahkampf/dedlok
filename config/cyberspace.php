@@ -1402,4 +1402,14 @@ return [
     */
     'designation' => ['min' => 1, 'max' => 999],
 
+    /*
+    | Encounters on the grid (ENCOUNTERS_GRID.md): the chance an ARRIVAL by a move opens one, before the resolved
+    | `encounter_chance` stat adjusts it. It is the base of that stat for this door, as `city.encounter.*_chance` is
+    | for the City's. Which encounter, among those eligible, is the same weighted draw. First pass, untuned: two
+    | in a hundred moves.
+    */
+    'encounter' => [
+        'grid_step_chance' => 0.02,
+    ],
+
 ];

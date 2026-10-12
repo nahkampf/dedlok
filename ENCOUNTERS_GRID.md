@@ -1,6 +1,12 @@
 # Encounters in cyberspace
 
-**Designed 2026-10-10, nothing built.** This extends `CITY.md` (*Encounters*) into the grid. Read that first: the
+**Designed 2026-10-10.** *Built 2026-10-12: the `grid_step` door only* (`EncounterStart::GridStep`; an arrival by a step,
+a jump or a bookmark, never the jack-in itself), with the base chance at `cyberspace.encounter.grid_step_chance`. **The
+realm is the door's, not a column**: `EncounterStart::isGrid()`, so there is no second field to disagree with `starts_on`.
+Everything else below (`system`, `run` and `spot` doors, the clock stop, `kill_run` / `continue_run`, the new outcome
+kinds, avatars) is still design. The first authored one is `loa_intro_encounter`, by migration.
+
+**Original status line, kept:** nothing else built. This extends `CITY.md` (*Encounters*) into the grid. Read that first: the
 graph, the checks, the outcome vocabulary and the writers are all the City's and are not repeated here. The
 rules for runs, hunters and the floor are `CYBERSPACE_RULES.md`; the physical fight engine is `COMBAT.md`.
 

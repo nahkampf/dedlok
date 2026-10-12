@@ -306,7 +306,7 @@ return [
             'log_heading' => 'So far',
             'locked' => 'Finish what you are in the middle of.',
             'at_place' => 'Something is going on here',
-            'starts' => ['travel' => 'On the way', 'explore' => 'While exploring', 'place' => 'At a place'],
+            'starts' => ['travel' => 'On the way', 'explore' => 'While exploring', 'place' => 'At a place', 'grid_step' => 'On a move in cyberspace'],
             'kinds' => [
                 'creds' => 'Creds',
                 'item' => 'Item',

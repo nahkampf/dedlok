@@ -1130,6 +1130,11 @@ a graph of nodes and choices with outcomes as rows, authored at `admin/encounter
   reward lives. The destinations are keys snapshotted onto the fight, never a choice id. A fight choice has no
   roll, next screen or outcomes of its own, and restricts the NPC's deletion. **`EnsureEncounterIsResolved` stands
   down while a fight is live**, or the two locks redirect to each other for ever.
+- **A fourth door is cyberspace's: `EncounterStart::GridStep`** (`starts_on = grid_step`; design and what is not built in
+  `ENCOUNTERS_GRID.md`). **The realm is the door's** (`isGrid()`), never a column. `Navigator::arrive()` rolls it after the hunter, in its
+  own write on the LOCKED character, never on the jack-in; `canHappenTo($character, $start)` wants somebody jacked in and not in a run for a
+  grid door and the opposite for a City one. Base chance `cyberspace.encounter.grid_step_chance`. `EncounterController` closes onto the
+  map for somebody jacked in. A player in one is held by the same lock, so they cannot move or jack out until it is answered.
 - **The button shows a band word**, the figure in `title`.
 
 ### Drugs

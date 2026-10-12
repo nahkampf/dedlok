@@ -33,6 +33,9 @@ final class EncounterAdminTest extends TestCase
     {
         parent::setUp();
 
+        // The authored introduction arrives by migration; these tests count encounters from nothing.
+        Encounter::query()->delete();
+
         $this->admin = User::factory()->create();
         $this->admin->forceFill(['is_admin' => true])->save();
     }

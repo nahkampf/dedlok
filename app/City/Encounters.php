@@ -54,15 +54,23 @@ final class Encounters
     /** The odds a matured pass of this kind opens one, resolved. Public so a screen and the roll cannot disagree. */
     public function chanceFor(Character $character, EncounterStart $start): float
     {
-        $base = (float) Config::get("city.encounter.{$start->value}_chance", 0.0);
+        $key = $start->isGrid() ? "cyberspace.encounter.{$start->value}_chance" : "city.encounter.{$start->value}_chance";
+        $base = (float) Config::get($key, 0.0);
 
         return max(0.0, min(1.0, $this->resolver->resolve('encounter_chance', $base, $character->modifiers())->value));
     }
 
-    /** Is the character in a state anything can happen TO? */
-    public function canHappenTo(Character $character): bool
+    /**
+     * Is the character in a state anything can happen TO?
+     *
+     * The realm is the door's. A City encounter needs somebody who is NOT jacked in; a grid one needs somebody who is,
+     * standing on the map (not in a run). Everything else is the same for both.
+     */
+    public function canHappenTo(Character $character, ?EncounterStart $start = null): bool
     {
-        return ! $character->isJackedIn()
+        $grid = $start?->isGrid() ?? false;
+
+        return $character->isJackedIn() === $grid
             && $character->current_run_id === null
             && $character->current_hunt_id === null
             && $character->current_encounter_id === null
@@ -78,7 +86,7 @@ final class Encounters
      */
     public function maybeOpen(Character $character, EncounterStart $start): ?CharacterEncounter
     {
-        if (! $this->canHappenTo($character)) {
+        if (! $this->canHappenTo($character, $start)) {
             return null;
         }
 
@@ -89,7 +97,7 @@ final class Encounters
             return null;
         }
 
-        $pick = $this->draw($this->eligible($character, $start, $character->district_id));
+        $pick = $this->draw($this->eligible($character, $start, $start->isGrid() ? null : $character->district_id));
 
         return $pick === null ? null : $this->open($character, $pick);
     }
