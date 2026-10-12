@@ -79,20 +79,31 @@ class DeckModule extends Model
         return Text::get("decks.units.{$column}", ['value' => in_array($column, ['qflops', 'quantabits', 'storage'], true) ? Qb::format($value) : number_format($value)]);
     }
 
+    /**
+     * What a module costs the deck: power drawn and heat made, each only where
+     * there is any (most modules run cool enough that a zero would be noise).
+     *
+     * @return list<string>
+     */
+    public function loadLabels(Hardware $hardware): array
+    {
+        return array_values(array_filter([
+            $hardware->draws() && $this->power_draw > 0
+                ? Text::get('decks.units.draw', ['value' => number_format($this->power_draw)])
+                : null,
+            $hardware->heats() && $this->thermal_load > 0
+                ? Text::get('decks.units.thermal_load', ['value' => number_format($this->thermal_load)])
+                : null,
+        ]));
+    }
+
     /** One line: "Socket K · 1,200 qFLOPS · 45 W draw". */
     public function summary(Hardware $hardware): string
     {
         $parts = array_filter([
             $this->variant?->label(),
             $this->measureLabel($hardware),
-            $hardware->draws() && $this->power_draw > 0
-                ? Text::get('decks.units.draw', ['value' => number_format($this->power_draw)])
-                : null,
-            // Only where there is any. Most modules run cool enough that a
-            // zero on the spec line would be noise.
-            $hardware->heats() && $this->thermal_load > 0
-                ? Text::get('decks.units.thermal_load', ['value' => number_format($this->thermal_load)])
-                : null,
+            ...$this->loadLabels($hardware),
         ]);
 
         return implode(Text::get('items.summary.separator'), $parts);

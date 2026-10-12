@@ -452,6 +452,48 @@ class Item extends Model
     }
 
     /**
+     * The line under a listing's title: the kind, and for a module its variant
+     * ("RAM · Opto-electrical", "CPU · Socket K"). Separate from kindName()
+     * because that one groups the shelf and must not split a group by variant.
+     */
+    public function kindLine(): string
+    {
+        $variant = $this->hardware?->isDeck() ? null : $this->deckModule?->variant?->label();
+
+        return $variant === null
+            ? $this->kindName()
+            : $this->kindName().Text::get('items.summary.separator').$variant;
+    }
+
+    /**
+     * The market's top accordion: Ammunition, Weapons, Drugs and Implants take
+     * their gear out of the catch-all "Physical"; everything else is its kind.
+     */
+    public function marketCategory(): string
+    {
+        $key = match (true) {
+            $this->ammunition !== null => 'ammunition',
+            $this->weapon !== null => 'weapons',
+            $this->drug !== null => 'drugs',
+            $this->isImplant() => 'implants',
+            default => null,
+        };
+
+        return $key === null ? $this->kindName() : Text::get("market.categories.{$key}");
+    }
+
+    /**
+     * The sub-accordion inside a category: a module's variant, an ammunition's
+     * calibre, a weapon's class. NULL is a category with nothing to split by.
+     */
+    public function marketSection(): ?string
+    {
+        return $this->deckModule?->variant?->label()
+            ?? $this->ammunition?->calibre
+            ?? $this->weapon?->class?->label();
+    }
+
+    /**
      * Which folder under public/images this item's picture is found in.
      *
      * One subdirectory per TYPE of item — `items/cpu`, `items/icebreaker`,
@@ -531,13 +573,55 @@ class Item extends Model
             Text::get('programs.costs.storage', ['value' => Qb::of($program->storage_size)]),
         ];
 
-        $parts[] = Text::get($program->background_process ? 'programs.background' : 'programs.run_only');
+        // An icebreaker is run-only by nature; saying so on every one is noise.
+        if ($program->background_process || $program->kind !== ProgramKind::Icebreaker) {
+            $parts[] = Text::get($program->background_process ? 'programs.background' : 'programs.run_only');
+        }
 
         if ($program->isTemporary()) {
             $parts[] = Text::get('programs.costs.lifetime', ['time' => CarbonInterval::seconds($program->lifetime_seconds)->cascade()->forHumans(['short' => true, 'parts' => 2])]);
         }
 
         return implode(Text::get('items.summary.separator'), $parts);
+    }
+
+    /**
+     * What a program IS and what stands in the way of running it, beside the
+     * cost line: the encryptions a Decryptor can break, and the
+     * one-at-a-time rules `ProgramRunner::refusalFor()` enforces by kind.
+     * There is no skill requirement to run software, so none is listed.
+     *
+     * @return list<string>
+     */
+    public function programRequirements(): array
+    {
+        $program = $this->program;
+
+        if ($program === null) {
+            return [];
+        }
+
+        $lines = [];
+
+        if ($program->kind === ProgramKind::Decryptor) {
+            $names = $program->decrypts === null || $program->decrypts === []
+                ? Text::get('programs.spec.any_encryption')
+                : Skill::query()->whereIn('slug', $program->decrypts)->orderBy('title')->pluck('title')->implode(', ');
+            $lines[] = Text::get('programs.spec.breaks', ['names' => $names]);
+        }
+
+        // An icebreaker's one-at-a-time rules are its nature, so it lists none.
+        if ($program->kind === ProgramKind::Icebreaker) {
+            return $lines;
+        }
+
+        $lines[] = Text::get($program->multithreaded ? 'programs.spec.multithreaded' : 'programs.spec.single_instance');
+
+        if (in_array($program->kind, [ProgramKind::Locator, ProgramKind::Pathfinder], true)) {
+            $lines[] = Text::get('programs.spec.one_locator');
+        }
+
+        return $lines;
     }
 
     public function tierName(): string

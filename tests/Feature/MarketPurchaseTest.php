@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Decks\Hardware;
+use App\Decks\Variant;
 use App\Inventory\Imprint;
 use App\Inventory\ItemGranter;
 use App\Market\Purchaser;
@@ -203,6 +205,36 @@ final class MarketPurchaseTest extends TestCase
             ->assertOk()
             ->assertSeeText($stocked->displayName())
             ->assertDontSeeText($empty->displayName());
+    }
+
+    /** RAM is split under its sticks and a plain kind is not split at all. */
+    public function test_modules_are_split_by_variant_under_their_kind(): void
+    {
+        foreach ([Variant::Opto, Variant::QDram] as $variant) {
+            $item = Item::factory()->module(Hardware::Ram, $variant, draw: 12, thermalLoad: 7)->create(['base_cost' => 50, 'on_market' => true]);
+            MarketStock::query()->create(['item_id' => $item->id, 'quantity' => 3, 'last_seeded_at' => now()]);
+        }
+
+        $this->actingAs($this->character->user)
+            ->get(route('market.index'))
+            ->assertOk()
+            ->assertSeeInOrder(['RAM', Variant::Opto->label(), Variant::QDram->label()])
+            ->assertSeeText('100 QB')
+            ->assertSeeText('12 W draw')
+            ->assertSeeText('7 TU');
+    }
+
+    /** Implants leave Physical for a category of their own. */
+    public function test_physical_gear_is_split_into_sections(): void
+    {
+        $implant = Item::factory()->create(['container' => 'physical', 'base_cost' => 50, 'on_market' => true, 'implant_region' => 'head', 'stackable' => false]);
+        $plain = $this->stocked();
+        MarketStock::query()->create(['item_id' => $implant->id, 'quantity' => 1, 'last_seeded_at' => now()]);
+
+        $this->actingAs($this->character->user)
+            ->get(route('market.index'))
+            ->assertOk()
+            ->assertSeeInOrder([Text::get('market.categories.implants')]);
     }
 
     /** One accordion per kind, each card carrying the words the search box matches. */

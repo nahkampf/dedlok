@@ -179,6 +179,15 @@ return [
             'left' => ':time left',
         ],
 
+        // The listing's spec lines (market, shops, exchange store, stash card).
+        'spec' => [
+            'breaks' => 'Breaks: :names',
+            'any_encryption' => 'any encryption',
+            'multithreaded' => 'Several copies may run at once, given the threads',
+            'single_instance' => 'One copy at a time',
+            'one_locator' => 'Only one Locator or Pathfinder may run at a time',
+        ],
+
         'background' => 'Runs in the background',
         'run_only' => 'Runs only during an intrusion',
 
@@ -522,6 +531,15 @@ return [
         'lede' => 'A glowing web of pulsating transactional threads, billions of credits changing hands every second.',
 
         'shelf' => 'On the shelf',
+        // Top accordions that take their gear out of "Physical"; sections inside
+        // are a variant, a calibre or a weapon class, and `other` is what has none.
+        'categories' => [
+            'ammunition' => 'Ammunition',
+            'weapons' => 'Weapons',
+            'drugs' => 'Drugs',
+            'implants' => 'Implants',
+        ],
+        'sections' => ['other' => 'Other'],
         'empty' => 'Nothing for sale right now. Come back — the shelves refill on their own.',
 
         'price' => ':price ¤',

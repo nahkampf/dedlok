@@ -48,7 +48,7 @@ final class ShopKeeper
     public function wares(Location $place): Collection
     {
         return DB::transaction(function () use ($place): Collection {
-            $rows = ShopItem::query()->with('item')->where('location_id', $place->getKey())->orderBy('id')->lockForUpdate()->get();
+            $rows = ShopItem::query()->with('item.program')->where('location_id', $place->getKey())->orderBy('id')->lockForUpdate()->get();
 
             foreach ($rows as $row) {
                 $row->restock(CarbonImmutable::now());

@@ -1,3 +1,9 @@
+## 0.53.1 (2026-10-12)
+
+- Market, shops and exchange stores now list qflops, qb, storage, power draw, thermal units etc for deck hardware and softare.
+- Split the market categories into beter types: Ammo (by calibre), weapons (by type), drugs, implants. RAM and CPUs subcategorized by type/socket
+- Same hover-modal on deck board hardware as in market
+
 ## 0.53.0 (2026-10-12)
 
 - Encounters can now override the general encounter chance

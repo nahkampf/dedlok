@@ -46,7 +46,7 @@
                      against grey stays two things, so the tier keeps its own
                      colour. --}}
                 <span class="row row--wrap" style="--gap:var(--s-2)">
-                    <span class="tag tag--warn">{{ $item->kindName() }}</span>
+                    <span class="tag tag--warn">{{ $item->kindLine() }}</span>
                     <span class="item-card__tier">{{ $item->tierName() }}</span>
                     {{-- Which deck you are carrying. It used to be said by the
                          stash's "in use" panel, and that panel existed only
