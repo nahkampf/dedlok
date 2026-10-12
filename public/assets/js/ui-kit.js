@@ -1590,5 +1590,34 @@
     dlg.addEventListener("close", () => { clearTimeout(timer); timer = null; location.reload(); });
   });
 
+  /* The run briefing's budget: <form data-run-budget data-free-qflops data-free-memory> (tenths of what the deck has free),
+     each loadout input and script carrying data-cost-qflops / data-cost-memory in the same unit. A script that no longer fits
+     beside everything ticked is disabled and says so. Display only: starting the run asks the runner again. */
+  document.querySelectorAll("[data-run-budget]").forEach((form) => {
+    const freeQ = Number(form.dataset.freeQflops), freeM = Number(form.dataset.freeMemory);
+    const cost = (el, k) => Number(el.dataset["cost" + k]) || 0;
+    const inputs = [...form.querySelectorAll("[data-cost-qflops]")];
+    const scripts = inputs.filter((el) => el.hasAttribute("data-script"));
+    const refused = new Set(scripts.filter((el) => el.disabled));
+    const readout = form.querySelector("[data-free-readout]");
+    const fmt = (n) => String(n / 10);
+    const recalc = () => {
+      const ticked = inputs.filter((el) => el.checked);
+      const usedQ = ticked.reduce((n, el) => n + cost(el, "Qflops"), 0);
+      const usedM = ticked.reduce((n, el) => n + cost(el, "Memory"), 0);
+      const leftQ = freeQ - usedQ, leftM = freeM - usedM;
+      scripts.forEach((el) => {
+        if (refused.has(el)) return;
+        const fits = el.checked || (cost(el, "Qflops") <= leftQ && cost(el, "Memory") <= leftM);
+        el.disabled = !fits;
+        const note = el.closest("label")?.querySelector("[data-wont-fit]");
+        if (note) note.hidden = fits;
+      });
+      if (readout) readout.textContent = fmt(Math.max(0, leftQ)) + " qFLOPS \u00b7 " + fmt(Math.max(0, leftM)) + " QB";
+    };
+    form.addEventListener("change", recalc);
+    recalc();
+  });
+
   window.UI = { toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };
 })();

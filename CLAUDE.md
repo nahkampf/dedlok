@@ -830,6 +830,10 @@ what a bare `items` row cannot.
   (a row id does not survive its stack splitting and merging) and ticked on the next
   briefing. Per browser, deliberately — no column, no migration. A refused run is not
   remembered.
+- **Scripts are ticked on the briefing too** (a *Scripts* box listing the loose Scripts held, their effects, cost and lifetime; `scripts[]`).
+  They are started by `RunStarter::start()` with the loadout and before the arrival roll, and are spent by running. **A program that will not
+  start ROLLS THE TRANSACTION BACK** (`ProcessRefused`) rather than stopping what already started, because stopping a Script destroys it. The page
+  does the RAM/qFLOPS sum in `ui-kit.js` (`data-run-budget`, tenths) and disables what no longer fits; the runner's own checks are the guard.
 - **One icebreaker at a time**, whichever ones — `ProcessRefusal::OneIcebreaker`.
   `icebreaker_damage` sums every running program, so two cheap ones would out-cut a dear
   one and *twenty turns is never enough* would stop being true.

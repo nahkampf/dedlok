@@ -9,7 +9,7 @@ use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Run;
 use App\Models\System;
-use App\Programs\ProcessRefusal;
+use App\Programs\ProcessRefused;
 use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
@@ -116,81 +116,76 @@ final readonly class RunStarter
             return RunResult::refused(RunRefusal::DeckNotReady);
         }
 
-        $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout): Run|ProcessRefusal {
-            $runner = app(ProgramRunner::class);
-            $started = [];
+        try {
+            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout): Run {
+                $runner = app(ProgramRunner::class);
 
-            foreach ($loadout as $row) {
-                $result = $runner->start($character, $row, duringRun: true);
+                foreach ($loadout as $row) {
+                    $result = $runner->start($character, $row, duringRun: true);
 
-                if (! $result->succeeded()) {
-                    foreach ($started as $process) {
-                        $runner->stop($character, $process);
+                    // Rolled back and never stopped: stopping a Script destroys it, and a run that
+                    // did not begin must not have cost anybody one.
+                    if (! $result->succeeded()) {
+                        throw new ProcessRefused($result->refusal);
                     }
-
-                    return $result->refusal;
                 }
 
-                $started[] = $result->process;
-            }
+                $run = Run::query()->create([
+                    'character_id' => $character->getKey(),
+                    'address' => $system->address,
+                    'x' => $at->x,
+                    'y' => $at->y,
+                    'purpose' => $purpose->value,
+                    /*
+                     * THE ROUTE, SNAPSHOTTED. Declared per run and never held
+                     * standing — a backdoor installed after this moment is not on
+                     * this run's route, and one lost during it drops out of it.
+                     *
+                     * Built rather than chosen: every routing backdoor is free to
+                     * include and hinders by its machine's grade, so a picker
+                     * would be a list whose right answer is always "all of them,
+                     * best first". The setup screen shows the same list this
+                     * writes, so what a player was shown is what they got.
+                     */
+                    'chain' => ChainBuilder::fromConfig($this->resolver)
+                        ->for($character, $system)
+                        ->map(static fn (System $hop): int => (int) $hop->getKey())
+                        ->all(),
+                    // Only a backdoor run carries one, so an extraction cannot end
+                    // up holding a permanent property of a machine it never opened.
+                    'backdoor_kind' => $purpose === RunPurpose::Backdoor ? $kind?->value : null,
+                    'turn' => 0,
+                    // Only whether there is anything to get past. Whether they
+                    // can is rolled at the core, turn by turn.
+                    'os_locked' => $this->speaksSomething($system),
+                    'started_at' => CarbonImmutable::now(),
+                ]);
 
-            $run = Run::query()->create([
-                'character_id' => $character->getKey(),
-                'address' => $system->address,
-                'x' => $at->x,
-                'y' => $at->y,
-                'purpose' => $purpose->value,
+                $character->forceFill(['current_run_id' => $run->getKey()])->save();
+
                 /*
-                 * THE ROUTE, SNAPSHOTTED. Declared per run and never held
-                 * standing — a backdoor installed after this moment is not on
-                 * this run's route, and one lost during it drops out of it.
+                 * ARRIVING IS THE FIRST THING ANYTHING GETS TO NOTICE.
                  *
-                 * Built rather than chosen: every routing backdoor is free to
-                 * include and hinders by its machine's grade, so a picker
-                 * would be a list whose right answer is always "all of them,
-                 * best first". The setup screen shows the same list this
-                 * writes, so what a player was shown is what they got.
+                 * Every watcher on the machine rolls against the runner's stealth,
+                 * and any one of them finding them is enough. Nothing is woken by a
+                 * run that goes unnoticed — which is the whole of what stealth
+                 * buys, and why the log starts with whether it worked.
+                 *
+                 * The IDS's SECOND chance is on touching the core, and nothing
+                 * touches the core yet.
                  */
-                'chain' => ChainBuilder::fromConfig($this->resolver)
-                    ->for($character, $system)
-                    ->map(static fn (System $hop): int => (int) $hop->getKey())
-                    ->all(),
-                // Only a backdoor run carries one, so an extraction cannot end
-                // up holding a permanent property of a machine it never opened.
-                'backdoor_kind' => $purpose === RunPurpose::Backdoor ? $kind?->value : null,
-                'turn' => 0,
-                // Only whether there is anything to get past. Whether they
-                // can is rolled at the core, turn by turn.
-                'os_locked' => $this->speaksSomething($system),
-                'started_at' => CarbonImmutable::now(),
-            ]);
+                $log = Simulator::fromConfig(null, $this->resolver)->rouse($character, $run, $system);
 
-            $character->forceFill(['current_run_id' => $run->getKey()])->save();
+                $run->refresh();
+                $run->forceFill(['log' => array_map(
+                    static fn (array $line): array => $line + ['turn' => 0],
+                    $log,
+                )])->save();
 
-            /*
-             * ARRIVING IS THE FIRST THING ANYTHING GETS TO NOTICE.
-             *
-             * Every watcher on the machine rolls against the runner's stealth,
-             * and any one of them finding them is enough. Nothing is woken by a
-             * run that goes unnoticed — which is the whole of what stealth
-             * buys, and why the log starts with whether it worked.
-             *
-             * The IDS's SECOND chance is on touching the core, and nothing
-             * touches the core yet.
-             */
-            $log = Simulator::fromConfig(null, $this->resolver)->rouse($character, $run, $system);
-
-            $run->refresh();
-            $run->forceFill(['log' => array_map(
-                static fn (array $line): array => $line + ['turn' => 0],
-                $log,
-            )])->save();
-
-            return $run;
-        });
-
-        if ($run instanceof ProcessRefusal) {
-            return RunResult::programRefused($run);
+                return $run;
+            });
+        } catch (ProcessRefused $refused) {
+            return RunResult::programRefused($refused->refusal);
         }
 
         return RunResult::started($run);

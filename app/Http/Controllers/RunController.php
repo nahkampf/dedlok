@@ -92,6 +92,18 @@ class RunController extends Controller
             ->with('item.program')
             ->get();
 
+        // Scripts: spent by running, so they are offered here and started with the loadout. Each is asked the
+        // runner's own question now, against what is already running; the page then does the sum for the ticked
+        // ones, and `start()` is the guard.
+        $scripts = $deck === null ? collect() : InventoryItem::query()
+            ->where('character_id', $character->id)
+            ->loose()
+            ->whereHas('item.program', static fn ($q) => $q->where('kind', ProgramKind::Script->value)->where('background_process', true))
+            ->with('item.program')
+            ->get()
+            ->sortBy(static fn (InventoryItem $row): string => (string) $row->item->displayName())
+            ->values();
+
         // What they have read out of it, and what they have not. A file with no answers in it is the
         // same as no file for this purpose: both mean going in blind.
         $scan = SystemScan::query()
@@ -141,6 +153,11 @@ class RunController extends Controller
                 ->pluck('id')
                 ->all(),
             'totals' => $totals,
+            'scripts' => $scripts,
+            // Why each script would not start right now, by row id; absent means it would.
+            'scriptRefusals' => $scripts
+                ->mapWithKeys(fn (InventoryItem $row): array => [$row->id => app(ProgramRunner::class)->refusalFor($character, $row)])
+                ->filter(),
             // Standing below the SI mark they left for themselves: the first turn pulls them out whatever they press.
             'autoEgress' => app(Simulator::class)->siBelowThreshold($character),
             'ready' => $totals?->isReady() ?? false,
@@ -173,16 +190,28 @@ class RunController extends Controller
             'icebreaker' => ['nullable', 'integer'],
             'programs' => ['nullable', 'array', 'max:20'],
             'programs.*' => ['integer', 'distinct'],
+            // Scripts to run before the run begins: loose rows of a Script, started after the loadout and
+            // spent by running. Everything they must fit is `ProgramRunner`'s.
+            'scripts' => ['nullable', 'array', 'max:20'],
+            'scripts.*' => ['integer', 'distinct'],
         ]);
 
         $ids = array_values(array_filter([$data['icebreaker'] ?? null, ...($data['programs'] ?? [])]));
         $rows = $ids === [] ? collect() : InventoryItem::query()->whereKey($ids)->with('item.program')->get();
 
+        // Only a Script may come in through this field: a posted id of anything else is not a loadout.
+        $scriptRows = ($data['scripts'] ?? []) === [] ? collect() : InventoryItem::query()
+            ->whereKey($data['scripts'])
+            ->loose()
+            ->whereHas('item.program', static fn ($q) => $q->where('kind', ProgramKind::Script->value))
+            ->with('item.program')
+            ->get();
+
         $result = $this->runs->start(
             $character,
             RunPurpose::from($data['purpose']),
             ($data['backdoor_kind'] ?? null) === null ? null : BackdoorKind::from($data['backdoor_kind']),
-            $rows,
+            $rows->concat($scriptRows)->all(),
         );
 
         if (! $result->succeeded()) {
