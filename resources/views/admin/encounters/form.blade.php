@@ -138,6 +138,17 @@
                     <span class="field__hint">{{ Text::get('admin.encounters.fields.weight_hint') }}</span>
                 </label>
                 <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.chance') }}</span>
+                    <input class="input num" type="number" name="chance" min="0.01" max="100" step="0.01" value="{{ $value('chance') }}">
+                    <span class="field__hint">{{ Text::get('admin.encounters.fields.chance_hint', [
+                        'travel' => rtrim(rtrim(number_format((float) config('city.encounter.travel_chance') * 100, 2), '0'), '.'),
+                        'explore' => rtrim(rtrim(number_format((float) config('city.encounter.explore_chance') * 100, 2), '0'), '.'),
+                        'move' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.grid_step_chance') * 100, 2), '0'), '.'),
+                        'system' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.system_chance') * 100, 2), '0'), '.'),
+                        'run' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.run_chance') * 100, 2), '0'), '.'),
+                    ]) }}</span>
+                </label>
+                <label class="field">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.district') }}</span>
                     <select class="select" name="district_id">
                         <option value="">{{ Text::get('admin.encounters.anywhere') }}</option>

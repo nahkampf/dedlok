@@ -110,6 +110,28 @@ final class JournalTest extends TestCase
         $this->assertTrue((bool) JournalNote::query()->where('slug', 'njord')->value('completed'));
     }
 
+    public function test_an_outcome_with_text_but_no_kind_is_refused_rather_than_skipped(): void
+    {
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->save();
+        $encounter = Encounter::create(['slug' => 'nk', 'title' => 'x', 'starts_on' => 'travel', 'weight' => 5, 'once' => false, 'retired' => false]);
+
+        $this->actingAs($admin)->put(route('admin.encounters.update', $encounter), [
+            'title' => 'x', 'starts_on' => 'travel', 'weight' => 5, 'entry' => 0,
+            'nodes' => [['key' => 'nk_a', 'body' => 'x', 'ends' => '1', 'outcomes' => [
+                ['branch' => 'always', 'kind' => '', 'ref' => '', 'amount' => '', 'text' => 'A heading', 'entry_slug' => 'a', 'entry_text' => 'A line'],
+            ]]],
+        ])->assertSessionHasErrors('nodes.0.outcomes.0.kind');
+
+        // A truly blank padding row is still just skipped.
+        $this->actingAs($admin)->put(route('admin.encounters.update', $encounter), [
+            'title' => 'x', 'starts_on' => 'travel', 'weight' => 5, 'entry' => 0,
+            'nodes' => [['key' => 'nk_a', 'body' => 'x', 'ends' => '1', 'outcomes' => [
+                ['branch' => 'always', 'kind' => '', 'ref' => '', 'amount' => '', 'text' => '', 'entry_slug' => '', 'entry_text' => '', 'item_id' => '', 'entity_id' => ''],
+            ]]],
+        ])->assertSessionHasNoErrors();
+    }
+
     public function test_the_editor_accepts_a_journal_outcome_and_refuses_an_empty_one(): void
     {
         $admin = User::factory()->create();

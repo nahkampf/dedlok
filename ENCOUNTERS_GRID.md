@@ -20,6 +20,9 @@
 - **Outcome kinds built:** `trace` (points, clamped 0 to 99 so it never lands), `wake_ice`, `detected` (the same, and the owner
   minds) and `grid_move` (`ref` = `x,y`; grid doors that are not a run). The first three are refused outside a run encounter.
 - **Prerequisites** are shared with the City (`CITY.md`).
+- **An encounter may set its own chance** (`encounters.chance`, percent, blank is the door's default): rolled on its own at each opening
+  of its door, still adjusted by the resolved `encounter_chance` stat, tried before the door's roll, and left out of the door's weighted
+  draw (so weight does not matter to it). Refused on a place or a spot, which are buttons.
 - **Not built:** avatars and the fight choice, and a message for `kill_run`.
 
 **The original design follows, kept for the reasoning.** Every number in it is a default the author has not tuned.

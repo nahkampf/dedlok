@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * A narrative encounter definition. Written by `App\City\EncounterEditor` and read
  * by `App\City\Encounters`; see CITY.md, *Encounters*.
  */
-#[Fillable(['slug', 'title', 'intro', 'starts_on', 'weight', 'district_id', 'location_id', 'system_type', 'grade_min', 'grade_max', 'owner_entity_id', 'run_purpose', 'spot_system_id', 'cooldown_hours', 'required_flag', 'once', 'retired'])]
+#[Fillable(['slug', 'title', 'intro', 'starts_on', 'weight', 'chance', 'district_id', 'location_id', 'system_type', 'grade_min', 'grade_max', 'owner_entity_id', 'run_purpose', 'spot_system_id', 'cooldown_hours', 'required_flag', 'once', 'retired'])]
 class Encounter extends Model
 {
     protected function casts(): array
@@ -22,6 +22,7 @@ class Encounter extends Model
         return [
             'starts_on' => EncounterStart::class,
             'weight' => 'integer',
+            'chance' => 'float',
             'once' => 'boolean',
             'retired' => 'boolean',
         ];

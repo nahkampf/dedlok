@@ -71,6 +71,8 @@ class EncounterRequest extends FormRequest
             'intro' => ['nullable', 'string', 'max:5000'],
             'starts_on' => ['required', Rule::enum(EncounterStart::class)],
             'weight' => ['required', 'integer', 'between:1,100'],
+            // Its own odds in percent, overriding the door's: only for a door that is rolled.
+            'chance' => ['nullable', 'numeric', 'gt:0', 'lte:100', 'prohibited_if:starts_on,place,spot'],
             'district_id' => ['nullable', 'integer', 'exists:districts,id', 'prohibited_if:starts_on,place,grid_step,system,run'],
             // The grid doors' own filters, each only on the door that reads it.
             'system_type' => ['nullable', Rule::enum(SystemType::class), 'prohibited_unless:starts_on,system'],
@@ -93,6 +95,21 @@ class EncounterRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $v): void {
+            // PHP DROPS every variable past `max_input_vars` and says nothing, so a big encounter would be saved
+            // with its tail missing and look like it had saved. A form that reached the limit is refused whole.
+            $limit = (int) ini_get('max_input_vars');
+            $leaves = 0;
+            $posted = $this->request->all();
+            array_walk_recursive($posted, static function () use (&$leaves): void {
+                $leaves++;
+            });
+
+            if ($limit > 0 && $leaves >= $limit) {
+                $v->errors()->add('nodes', Text::get('admin.encounters.errors.too_big', ['limit' => $limit]));
+
+                return;
+            }
+
             [$this->nodes, $errors] = $this->build();
             [$this->prerequisites, $prerequisiteErrors] = $this->buildPrerequisites();
 
@@ -122,6 +139,7 @@ class EncounterRequest extends FormRequest
             ...$this->doorFilters($data),
             'spot_system_id' => $this->spotSystemId(),
             'cooldown_hours' => ($data['cooldown_hours'] ?? '') === '' ? null : (int) $data['cooldown_hours'],
+            'chance' => ($data['chance'] ?? '') === '' ? null : round((float) $data['chance'], 2),
             'intro' => ($data['intro'] ?? '') === '' ? null : $data['intro'],
             'required_flag' => ($data['required_flag'] ?? '') === '' ? null : $data['required_flag'],
             'once' => $this->boolean('once'),
@@ -278,6 +296,16 @@ class EncounterRequest extends FormRequest
         $kind = OutcomeKind::tryFrom($kindWord);
 
         if ($kindWord === '') {
+            // A row with nothing in it is the blank the form pads with. A row with something typed in it and no kind
+            // picked is NOT blank: skipping it silently is how somebody types a whole journal note and loses it.
+            foreach (['amount', 'ref', 'item_id', 'entity_id', 'text', 'entry_slug', 'entry_text'] as $field) {
+                if (trim((string) ($o[$field] ?? '')) !== '') {
+                    $errors["{$oat}.kind"] = Text::get('admin.encounters.errors.outcome_no_kind', ['node' => $nodeKey]);
+
+                    break;
+                }
+            }
+
             return null;
         }
 

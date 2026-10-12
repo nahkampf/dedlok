@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [0.53.0] — 2026-10-12
+
+An encounter can set its own chance, and the encounter editor stops losing work silently.
+
+### Added
+
+- **An encounter may set its own chance** (`encounters.chance`, percent, 0.01 to 100; migration `2026_10_12_220000_encounters_have_their_own_chance`). NULL is the door's default and its weighted draw. A number is the odds that THIS encounter opens at each opening of its door, rolled on its own in id order before the door's roll (`Encounters::rollOwn()`), adjusted by the resolved `encounter_chance` stat, and left out of the door's draw. The editor has the field, with the doors' defaults in its hint; it is refused on `place` and `spot`.
+
+### Fixed
+
+- **The encounter editor lost the tail of a large form without saying so.** A mid-sized encounter is about a thousand form fields, and PHP drops every variable past `max_input_vars` silently, so what came last (a journal outcome added to it, later screens) was not saved and looked as if it had been. `EncounterRequest` now refuses a form that reached the limit, with a message naming it; the journal's three inputs are only submitted for a journal outcome (disabled otherwise, `ui-kit.js`); the dev limit is raised to 4000. Production needs `php_admin_value[max_input_vars]` raised in its FPM pool.
+- **An outcome with text in it and no kind was skipped as if it were a blank padding row.** It is refused now, with the screen named.
+
+### Migrations
+
+- `2026_10_12_220000_encounters_have_their_own_chance`: `encounters.chance` and its CHECK.
+
+
 ## [0.52.0] — 2026-10-12
 
 A journal on the Tasks & Missions screen that encounters write to, and a browser for the systems you know.
@@ -3024,7 +3042,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.52.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.53.0...HEAD
+[0.53.0]: https://github.com/nahkampf/dedlok/compare/v0.52.0...v0.53.0
 [0.52.0]: https://github.com/nahkampf/dedlok/compare/v0.51.0...v0.52.0
 [0.51.0]: https://github.com/nahkampf/dedlok/compare/v0.50.0...v0.51.0
 [0.50.0]: https://github.com/nahkampf/dedlok/compare/v0.49.2...v0.50.0

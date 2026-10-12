@@ -56,10 +56,11 @@ final class Encounters
     }
 
     /** The odds a matured pass of this kind opens one, resolved. Public so a screen and the roll cannot disagree. */
-    public function chanceFor(Character $character, EncounterStart $start): float
+    public function chanceFor(Character $character, EncounterStart $start, ?float $own = null): float
     {
         $key = $start->isGrid() ? "cyberspace.encounter.{$start->value}_chance" : "city.encounter.{$start->value}_chance";
-        $base = (float) Config::get($key, 0.0);
+        // An encounter that sets its own chance puts it in the door's place, as the base the stat then adjusts.
+        $base = $own ?? (float) Config::get($key, 0.0);
 
         return max(0.0, min(1.0, $this->resolver->resolve('encounter_chance', $base, $character->modifiers())->value));
     }
@@ -97,13 +98,18 @@ final class Encounters
             return null;
         }
 
+        // The encounters that set their own chance, each rolled on its own, first.
+        if (($own = $this->rollOwn($character, $start, null, null, $system, $run)) !== null) {
+            return $this->open($character, $own, $run);
+        }
+
         $chance = $this->chanceFor($character, $start);
 
         if ($chance <= 0.0 || ($this->roll)(1, 10_000) > (int) round($chance * 10_000)) {
             return null;
         }
 
-        $pick = $this->draw($this->eligible($character, $start, null, null, $system, $run));
+        $pick = $this->draw($this->eligible($character, $start, null, null, $system, $run)->whereNull('chance')->values());
 
         return $pick === null ? null : $this->open($character, $pick, $run);
     }
@@ -119,6 +125,13 @@ final class Encounters
             return null;
         }
 
+        $districtId = $start->isGrid() ? null : $character->district_id;
+
+        // The encounters that set their own chance, each rolled on its own, first.
+        if (($own = $this->rollOwn($character, $start, $districtId)) !== null) {
+            return $this->open($character, $own);
+        }
+
         $chance = $this->chanceFor($character, $start);
 
         // Ten thousandths and inside the bound, like Hunters: a chance of nothing never fires.
@@ -126,9 +139,40 @@ final class Encounters
             return null;
         }
 
-        $pick = $this->draw($this->eligible($character, $start, $start->isGrid() ? null : $character->district_id));
+        $pick = $this->draw($this->eligible($character, $start, $districtId)->whereNull('chance')->values());
 
         return $pick === null ? null : $this->open($character, $pick);
+    }
+
+    /**
+     * Each encounter of this door that sets its own chance rolls it, in id order; the first that lands and is still
+     * eligible for this character is the one that opens.
+     *
+     * The die is rolled BEFORE eligibility is looked into, so a move that rolls nothing (almost all of them) costs
+     * one small query and no more. The resolved `encounter_chance` stat adjusts each chance like the door's.
+     */
+    private function rollOwn(Character $character, EncounterStart $start, ?int $districtId = null, ?int $locationId = null, ?System $system = null, ?Run $run = null): ?Encounter
+    {
+        $own = Encounter::query()
+            ->where('starts_on', $start->value)
+            ->where('retired', false)
+            ->whereNotNull('chance')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($own as $encounter) {
+            $chance = $this->chanceFor($character, $start, (float) $encounter->chance / 100);
+
+            if ($chance <= 0.0 || ($this->roll)(1, 10_000) > (int) round($chance * 10_000)) {
+                continue;
+            }
+
+            if ($this->eligible($character, $start, $districtId, $locationId, $system, $run)->contains('id', $encounter->getKey())) {
+                return $encounter;
+            }
+        }
+
+        return null;
     }
 
     /**
