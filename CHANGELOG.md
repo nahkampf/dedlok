@@ -2,6 +2,43 @@
 
 ## [Unreleased]
 
+## [0.51.0] — 2026-10-12
+
+Encounters come to cyberspace, view range becomes a shape, and a completed run no longer throws the player off the grid.
+
+### Added
+
+- **Cyberspace encounters** (`ENCOUNTERS_GRID.md`). Four new doors on `encounters.starts_on`, the realm being the door's (`EncounterStart::isGrid()`):
+  - `grid_step`: an arrival by a step, a jump or a bookmark (never the jack-in); `Navigator::arrive()` rolls it after the hunter, in its own write on the locked character.
+  - `system`: the position has a system; filters `system_type`, `grade_min`/`grade_max`, `owner_entity_id`.
+  - `run`: after a turn of a live run, from `RunController::resolve()`; filters grade range and `run_purpose`. Every ending carries `encounter_nodes.run_end` (`kill_run` or `continue_run`), required on a run encounter and refused elsewhere. `kill_run` ends the run through `RunStarter::end()` as the new `RunEnding::Encounter`.
+  - `spot`: a button in the grid screen's Interact box, not rolled, pinned to a system by `spot_system_id` (a plain id, so it follows its machine and goes dormant when it is burned), with a per-character `cooldown_hours` held in `encounter_cooldowns`. `POST cyberspace/spot/{encounter}`.
+  - Base chances in `cyberspace.encounter.*_chance`. The run lock stands down for an open encounter.
+- **Prerequisites** (`encounter_prerequisites`, `PrerequisiteKind`, `PrerequisiteJudge`): flag, items, scan files, creds, skill level, standing, district; each negatable; all must hold, none being no condition; held and never spent. Judged where the pool is built. An editor panel writes them.
+- **The player's clocks stop while an encounter is open on the grid** (`App\Characters\EncounterPause`): the regeneration, withdrawal, scan, decryption and crafting sweeps skip a held character, scripts and doses are read as at the moment it opened, and every stored moment moves forward by its length when it closes.
+- **Grid outcome kinds** through the writers that own them: `trace` (points, clamped 0 to 99 so it never lands), `wake_ice`, `detected` (the owner minds) and `grid_move` (`ref` = `x,y`). The run kinds are refused outside a run encounter.
+- **`loa_intro_encounter`**: the first authored one, by migration, with placeholder text. Once per character; both endings set `loa_introduced`.
+- **Cyberspace trail** (`App\Cyberspace\Trail`, `storage/logs/cyberspace.log`): the deck, stash and last run's state and the callers of every `Navigator::jackOut()` and run end. On except in production (`CYBERSPACE_TRAIL`).
+
+### Changed
+
+- **View range is a level from 0 to 9, and each level is a shape** (`cyberspace.view_shapes`, `App\Cyberspace\ViewShape`). The level is the resolved stat `view_range` (base `cyberspace.view_range` = 2). The sweep explores exactly the shape and forgets or re-sees only what stands inside it; the map's lit cells follow it. A bare character now sees 11 cells rather than a 5 x 5 square. Network Topology adds one level per level trained.
+- **Standing and loyalty a job pays are doubled**, at every grade (`missions.grades`), and **grade 1 is then cut by about 30%** (standing 0.014 to 0.042, loyalty 1 to 3). Penalties are unchanged.
+
+### Fixed
+
+- **A completed run ejected the player.** `RunController::resolve()` sent every ending but an egress through `resolveEnding()`, which always jacks out, so egressing after an extraction, a backdoor or a burn threw the player off the grid. Only a bad ending (`RunEnding::isBad()`) ejects.
+
+### Migrations
+
+- `2026_10_12_150000_encounters_can_start_on_the_grid`: `starts_on` gains `grid_step`.
+- `2026_10_12_160000_the_loa_introduction`: authors the first encounter.
+- `2026_10_12_170000_network_topology_widens_sight`: +1 `view_range` per level on Network Topology.
+- `2026_10_12_180000_encounter_prerequisites`: the prerequisites table.
+- `2026_10_12_190000_encounters_on_systems_and_in_runs`: the system and run doors' filters, `run_end` and `character_encounters.run_id`.
+- `2026_10_12_200000_encounter_spots`: the spot door's pin, cooldown and `encounter_cooldowns`.
+
+
 ## [0.50.0] — 2026-10-12
 
 Skills leave the market's shelf and are sold by shops, and a mislabelled operating system is put right.
@@ -2968,7 +3005,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.50.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.51.0...HEAD
+[0.51.0]: https://github.com/nahkampf/dedlok/compare/v0.50.0...v0.51.0
 [0.50.0]: https://github.com/nahkampf/dedlok/compare/v0.49.2...v0.50.0
 [0.49.2]: https://github.com/nahkampf/dedlok/compare/v0.49.1...v0.49.2
 [0.49.1]: https://github.com/nahkampf/dedlok/compare/v0.49.0...v0.49.1

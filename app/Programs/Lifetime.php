@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Programs;
 
+use App\Characters\EncounterPause;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use Carbon\CarbonImmutable;
@@ -31,11 +32,23 @@ final class Lifetime
         return CarbonImmutable::instance($row->started_at)->addSeconds($seconds);
     }
 
-    public static function hasEnded(InventoryItem $row): bool
+    /**
+     * @param  Collection<int, CarbonImmutable>|null  $held  characters whose clock is stopped, and since when;
+     *                                                       read once by a caller judging many rows
+     */
+    public static function hasEnded(InventoryItem $row, ?Collection $held = null): bool
     {
         $end = self::endsAt($row);
 
-        return $end !== null && $end->lte(CarbonImmutable::now());
+        if ($end === null) {
+            return false;
+        }
+
+        // A character in an encounter on the grid is judged as at the moment it opened (EncounterPause).
+        $held ??= EncounterPause::held();
+        $now = $held->get($row->character_id) ?? CarbonImmutable::now();
+
+        return $end->lte($now);
     }
 
     /**
@@ -48,7 +61,8 @@ final class Lifetime
      */
     public static function reap(Collection $rows): Collection
     {
-        $ended = $rows->filter(fn (InventoryItem $row): bool => self::hasEnded($row));
+        $held = EncounterPause::held();
+        $ended = $rows->filter(fn (InventoryItem $row): bool => self::hasEnded($row, $held));
 
         if ($ended->isEmpty()) {
             return $rows;
@@ -56,7 +70,7 @@ final class Lifetime
 
         InventoryItem::query()->whereKey($ended->pluck('id')->all())->delete();
 
-        return $rows->reject(fn (InventoryItem $row): bool => self::hasEnded($row))->values();
+        return $rows->reject(fn (InventoryItem $row): bool => self::hasEnded($row, $held))->values();
     }
 
     /** Every Script this character has running, spent or not, so a count of what is running is true. */

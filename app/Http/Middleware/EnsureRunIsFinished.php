@@ -68,6 +68,12 @@ class EnsureRunIsFinished
             return $next($request);
         }
 
+        // An encounter opened inside the run owns the screen (EnsureEncounterIsResolved runs first and holds the
+        // player to it). Standing down is what stops the two locks sending each other's screen back.
+        if ($character->current_encounter_id !== null) {
+            return $next($request);
+        }
+
         if ($this->isAllowed($request)) {
             return $next($request);
         }

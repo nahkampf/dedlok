@@ -20,15 +20,27 @@ final class EncounterEditor
 {
     /**
      * @param  list<array<string, mixed>>  $nodes  Cleaned by `EncounterRequest`: each with `choices`, each with `outcomes`.
+     * @param  list<array<string, mixed>>|null  $prerequisites  Cleaned by `EncounterRequest`; null leaves them as they are.
      */
-    public static function apply(Encounter $encounter, array $nodes): void
+    public static function apply(Encounter $encounter, array $nodes, ?array $prerequisites = null): void
     {
-        DB::transaction(function () use ($encounter, $nodes): void {
+        DB::transaction(function () use ($encounter, $nodes, $prerequisites): void {
+            // Replaced wholesale like the graph, but only when the form sent them: a caller that does not
+            // know about prerequisites must not clear somebody else's.
+            if ($prerequisites !== null) {
+                $encounter->prerequisites()->delete();
+
+                foreach (array_values($prerequisites) as $position => $row) {
+                    $encounter->prerequisites()->create([...$row, 'position' => $position]);
+                }
+            }
+
             $encounter->nodes()->delete();
 
             foreach ($nodes as $row) {
                 $node = $encounter->nodes()->create([
                     'node_key' => $row['key'], 'body' => $row['body'], 'entry' => $row['entry'], 'ends' => $row['ends'],
+                    'run_end' => $row['run_end'] ?? null,
                 ]);
 
                 // What the screen itself does on arrival: the same rows, owned by the screen.
@@ -47,6 +59,19 @@ final class EncounterEditor
                 }
             }
         });
+    }
+
+    /**
+     * The stored prerequisites as the form's rows.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function prerequisiteRows(Encounter $encounter): array
+    {
+        return $encounter->prerequisites()->get()->map(static fn ($p): array => [
+            'kind' => $p->kind->value, 'subject' => $p->subject, 'amount' => $p->amount,
+            'item_id' => $p->item_id, 'entity_id' => $p->entity_id, 'negate' => $p->negate,
+        ])->all();
     }
 
     /**
@@ -89,7 +114,7 @@ final class EncounterEditor
                 ];
             }
 
-            $rows[] = ['key' => $node->node_key, 'body' => $node->body, 'entry' => $node->entry, 'ends' => $node->ends, 'outcomes' => $arrival, 'choices' => $choices];
+            $rows[] = ['key' => $node->node_key, 'body' => $node->body, 'entry' => $node->entry, 'ends' => $node->ends, 'run_end' => $node->run_end, 'outcomes' => $arrival, 'choices' => $choices];
         }
 
         return $rows;

@@ -7,9 +7,13 @@ namespace App\Http\Controllers\Admin;
 use App\Admin\ItemOptions;
 use App\Admin\ModifierField;
 use App\City\EncounterEditor;
+use App\City\EncounterRunEnd;
 use App\City\EncounterStart;
 use App\City\OutcomeBranch;
 use App\City\OutcomeKind;
+use App\City\PrerequisiteKind;
+use App\Cyberspace\RunPurpose;
+use App\Cyberspace\SystemType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\EncounterRequest;
 use App\Models\District;
@@ -17,6 +21,7 @@ use App\Models\Encounter;
 use App\Models\Entity;
 use App\Models\Location;
 use App\Models\Npc;
+use App\Models\System;
 use App\Stats\StatRegistry;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
@@ -47,7 +52,7 @@ class EncounterController extends Controller
     {
         $encounter = DB::transaction(function () use ($request): Encounter {
             $encounter = Encounter::create($request->columns());
-            EncounterEditor::apply($encounter, $request->nodeRows());
+            EncounterEditor::apply($encounter, $request->nodeRows(), $request->prerequisiteRows());
 
             return $encounter;
         });
@@ -64,7 +69,7 @@ class EncounterController extends Controller
     {
         DB::transaction(function () use ($request, $encounter): void {
             $encounter->update($request->columns());
-            EncounterEditor::apply($encounter, $request->nodeRows());
+            EncounterEditor::apply($encounter, $request->nodeRows(), $request->prerequisiteRows());
         });
 
         return back()->with('status', Text::get('admin.encounters.updated'));
@@ -125,6 +130,14 @@ class EncounterController extends Controller
                 OutcomeKind::DAMAGE,
             )),
             'stored' => $encounter === null ? [] : EncounterEditor::rows($encounter),
+            'prerequisiteKinds' => PrerequisiteKind::cases(),
+            'systemTypes' => SystemType::cases(),
+            // The pinned system's address AS IT IS NOW: the spot follows the machine, so this can change by itself.
+            'spotAddress' => $encounter?->spot_system_id === null ? '' : (string) System::query()->whereKey($encounter->spot_system_id)->value('address'),
+            'purposes' => RunPurpose::cases(),
+            'runEnds' => EncounterRunEnd::cases(),
+            'owners' => Entity::query()->orderBy('name')->get(['id', 'name']),
+            'storedPrerequisites' => $encounter === null ? [] : EncounterEditor::prerequisiteRows($encounter),
         ];
     }
 }

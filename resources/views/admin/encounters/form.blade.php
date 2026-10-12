@@ -35,6 +35,10 @@
         $entryAt = $found === false ? 0 : $found;
     }
     $keys = collect($nodeRows)->pluck('key')->filter()->values();
+
+    // The prerequisites: what was posted back, or what is stored, plus one blank row for the "+".
+    $blankPrerequisite = ['kind' => '', 'subject' => '', 'amount' => '', 'item_id' => null, 'entity_id' => null, 'negate' => false];
+    $prerequisiteRows = old('prerequisites') ?? [...$storedPrerequisites, $blankPrerequisite];
 @endphp
 
 @section('content')
@@ -151,6 +155,51 @@
                         @endforeach
                     </select>
                 </label>
+                {{-- The grid doors' filters. Which apply depends on the door; the others are refused on save. --}}
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.system_type') }}</span>
+                    <select class="select" name="system_type">
+                        <option value=""></option>
+                        @foreach ($systemTypes as $type)
+                            <option value="{{ $type->value }}" @selected($enum('system_type') === $type->value)>{{ $type->label() }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.grade_min') }}</span>
+                    <input class="input num" type="number" name="grade_min" min="1" max="9" value="{{ $value('grade_min') }}">
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.grade_max') }}</span>
+                    <input class="input num" type="number" name="grade_max" min="1" max="9" value="{{ $value('grade_max') }}">
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.owner') }}</span>
+                    <select class="select" name="owner_entity_id">
+                        <option value=""></option>
+                        @foreach ($owners as $owner)
+                            <option value="{{ $owner->id }}" @selected((int) $value('owner_entity_id') === $owner->id)>{{ $owner->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.run_purpose') }}</span>
+                    <select class="select" name="run_purpose">
+                        <option value=""></option>
+                        @foreach ($purposes as $purpose)
+                            <option value="{{ $purpose->value }}" @selected($enum('run_purpose') === $purpose->value)>{{ $purpose->label() }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.spot_address') }}</span>
+                    <input class="input" name="spot_address" maxlength="16" value="{{ old('spot_address', $spotAddress) }}" style="font-family:var(--font-mono)">
+                    <span class="field__hint">{{ Text::get('admin.encounters.fields.spot_address_hint') }}</span>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.cooldown_hours') }}</span>
+                    <input class="input num" type="number" name="cooldown_hours" min="1" max="8760" value="{{ $value('cooldown_hours') }}">
+                </label>
                 <label class="field">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.required_flag') }}</span>
                     <input class="input" name="required_flag" maxlength="60" value="{{ $value('required_flag') }}">
@@ -170,6 +219,20 @@
                         <span class="check__box"></span><span>{{ Text::get('admin.encounters.fields.retired') }}</span>
                     </label>
                 </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.encounters.prerequisite.title') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-3)" data-rows>
+                <span class="field__hint">{{ Text::get('admin.encounters.prerequisite.hint') }}</span>
+
+                @foreach ($prerequisiteRows as $p => $row)
+                    @include('admin.encounters._prerequisite', ['at' => "prerequisites[{$p}]", 'row' => $row])
+                @endforeach
+
+                <template>@include('admin.encounters._prerequisite', ['at' => 'prerequisites[__P__]', 'row' => $blankPrerequisite])</template>
+                <button type="button" class="btn btn--sm btn--ghost cut" data-add-row data-token="__P__" style="align-self:start">+ {{ Text::get('admin.encounters.prerequisite.add') }}</button>
             </div>
         </div>
 

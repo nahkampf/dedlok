@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\City\CityRefusal;
+use App\City\Encounters;
 use App\Cyberspace\Backdoors;
 use App\Cyberspace\BookmarkKeeper;
 use App\Cyberspace\BookmarkKind;
@@ -19,6 +21,7 @@ use App\Cyberspace\ScanExportRefusal;
 use App\Cyberspace\SweepResult;
 use App\Cyberspace\TravelRefusal;
 use App\Cyberspace\TravelResult;
+use App\Cyberspace\ViewShape;
 use App\Models\Bookmark;
 use App\Models\Character;
 use App\Models\System;
@@ -115,7 +118,7 @@ class CyberspaceController extends Controller
             'chain' => $chains->for($character),
             'chainCap' => $chains->hopsAllowed($character),
             'grid' => $grid,
-            'map' => MapView::for($character, $grid),
+            'map' => MapView::for($character, $grid, shape: ViewShape::forCharacter($character, app(Resolver::class))),
             'swept' => MapView::sweptCount($character),
             // Both kinds, in one list, most recent first. The screen tells
             // them apart; the query has no reason to.
@@ -159,6 +162,8 @@ class CyberspaceController extends Controller
                 ? System::query()->at($character->gridPosition())->first()
                 : null,
             'canRun' => $target !== null && $target->type->isInteractable() && ! $target->isLockedDown(),
+            // Authored encounters offered at this system: a button each in the Interact box.
+            'spots' => $target === null ? collect() : app(Encounters::class)->spotsAt($character, $target),
             // What the character already holds in this system, for the Interact box: a backdoor row is access, so
             // it is read live off the machine they stand on.
             'heldBackdoor' => $target === null ? null : (new Backdoors)->heldOn($character, $target),
@@ -180,6 +185,16 @@ class CyberspaceController extends Controller
             Navigator::fromConfig($resolver)->jackIn($this->character($request)),
             Text::get('cyberspace.status.jacked_in'),
         );
+    }
+
+    /** A spot's button in the Interact box: open the encounter pinned to the system they stand on. */
+    public function spot(Request $request, int $encounter): RedirectResponse
+    {
+        $result = app(Encounters::class)->openSpot($this->character($request), $encounter);
+
+        return $result instanceof CityRefusal
+            ? back()->with('error', $result->message())
+            : redirect()->route('encounter.show');
     }
 
     public function jackOut(Request $request, Resolver $resolver): RedirectResponse
@@ -243,6 +258,10 @@ class CyberspaceController extends Controller
 
         if ($result->wasAmbushed()) {
             return response()->json(['stop' => true, 'message' => Text::get('cyberspace.locate.traverse_stopped'), 'hunt' => route('hunt.show')]);
+        }
+
+        if ($result->metSomething()) {
+            return response()->json(['stop' => true, 'message' => Text::get('cyberspace.locate.traverse_stopped'), 'encounter' => route('encounter.show')]);
         }
 
         return response()->json(['x' => $result->position->x, 'y' => $result->position->y, 'left' => $result->position->distanceTo($target)]);
@@ -519,6 +538,11 @@ class CyberspaceController extends Controller
         // EnsureHuntIsResolved would send the next request there anyway.
         if ($result->wasAmbushed()) {
             return redirect()->route('hunt.show');
+        }
+
+        // Something happened on the way: an encounter has the screen.
+        if ($result->metSomething()) {
+            return redirect()->route('encounter.show');
         }
 
         $said = $success ?? $this->reportSweep($result->sweep);

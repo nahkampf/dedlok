@@ -19,6 +19,16 @@
                 <input type="checkbox" name="nodes[{{ $i }}][ends]" value="1" @checked(! empty($node['ends']))>
                 <span class="check__box"></span><span>{{ Text::get('admin.encounters.node.ends') }}</span>
             </label>
+            {{-- On an ending of a run encounter: what becomes of the run. Required there, refused elsewhere. --}}
+            <label class="field" style="margin:0;flex:0 1 220px;min-width:0">
+                <span class="field__label">{{ Text::get('admin.encounters.node.run_end') }}</span>
+                <select class="select" name="nodes[{{ $i }}][run_end]">
+                    <option value=""></option>
+                    @foreach ($runEnds as $runEnd)
+                        <option value="{{ $runEnd->value }}" @selected(($node['run_end'] ?? '') === $runEnd->value)>{{ $runEnd->label() }}</option>
+                    @endforeach
+                </select>
+            </label>
         </div>
         <label class="field" style="margin:0">
             <span class="field__label">{{ Text::get('admin.encounters.node.body') }}</span>

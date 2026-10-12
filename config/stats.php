@@ -466,6 +466,16 @@ return [
             'rounding' => 'floor',
         ],
 
+        // How far a character sees on the grid: a LEVEL from 0 to 9, each one a shape (cyberspace.view_shapes).
+        // Its base is cyberspace.view_range; a skill and a script or two add whole levels, so rounding is rarely
+        // asked, and rounds half up when it is.
+        'view_range' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => 9,
+            'rounding' => 'round',
+        ],
+
         'coop_slots' => [
             'tags' => ['cyberspace'],
             'min' => 0,

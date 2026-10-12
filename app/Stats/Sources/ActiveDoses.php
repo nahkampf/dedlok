@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Stats\Sources;
 
+use App\Characters\EncounterPause;
 use App\Models\Character;
 use App\Models\Dose;
 use App\Models\Fight;
@@ -55,6 +56,8 @@ final readonly class ActiveDoses implements ModifierSource
         $opened = $this->asAt === null && $this->character->current_fight_id !== null
             ? Fight::query()->find($this->character->current_fight_id)?->created_at
             : null;
+        // And on the grid, while an encounter is open (EncounterPause).
+        $opened ??= $this->asAt === null ? EncounterPause::openedAt($this->character) : null;
         $clock = $opened ?? $at;
 
         $doses = Dose::query()

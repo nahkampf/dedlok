@@ -207,6 +207,8 @@ final readonly class RunStarter
             return RunResult::ended($run);
         }
 
+        Trail::note('run_end_begin', $character, ['ending' => $ending->value, 'run' => $run->getKey()]);
+
         DB::transaction(function () use ($character, $run, $ending): void {
             $run->forceFill(['ended_at' => CarbonImmutable::now(), 'ending' => $ending->value])->save();
 
@@ -241,7 +243,10 @@ final readonly class RunStarter
              * already out: a lockdown throws out everybody still inside, and
              * that must never mean the person it was a consequence of.
              */
-            ($this->lockdown ?? Lockdown::fromConfig())->afterRun($run);
+            $shut = ($this->lockdown ?? Lockdown::fromConfig())->afterRun($run);
+
+            // After everything the end does: the deck's answer can be different from the one before it.
+            Trail::note('run_end_done', $character, ['ending' => $ending->value, 'run' => $run->getKey(), 'lockdown_started' => $shut]);
         });
 
         return RunResult::ended($run);

@@ -28,7 +28,7 @@ class EncounterController extends Controller
         $live = $character->currentEncounter()->with('encounter')->first();
 
         if ($live === null) {
-            return redirect()->route('city.index');
+            return redirect()->route($this->home($character));
         }
 
         $node = $runner->nodeOf($live);
@@ -37,7 +37,7 @@ class EncounterController extends Controller
         if ($node === null) {
             $runner->leave($character);
 
-            return redirect()->route('city.index');
+            return redirect()->route($this->home($character));
         }
 
         $choices = $node->ends
@@ -80,9 +80,10 @@ class EncounterController extends Controller
             return redirect()->route('fight.show')->with('status', implode(' ', $result->lines));
         }
 
-        // Closed: back to the City, with what that choice did. Otherwise the next node.
+        // Closed: back to where they are (the City, or the map if they are jacked in), with what that choice did.
+        // Otherwise the next node.
         return $result->closed
-            ? redirect()->route('city.index')->with('status', implode(' ', $result->lines))
+            ? redirect()->route($this->home($this->character($request)))->with('status', implode(' ', $result->lines))
             : redirect()->route('encounter.show')->with('status', implode(' ', $result->lines));
     }
 
@@ -92,7 +93,13 @@ class EncounterController extends Controller
 
         return $result instanceof CityRefusal
             ? redirect()->route('encounter.show')->with('error', $result->message())
-            : redirect()->route('city.index');
+            : redirect()->route($this->home($this->character($request)));
+    }
+
+    /** Where an encounter ends: on the map for somebody who is jacked in, in the City otherwise. */
+    private function home(Character $character): string
+    {
+        return $character->isJackedIn() ? 'cyberspace.index' : 'city.index';
     }
 
     private function character(Request $request): Character

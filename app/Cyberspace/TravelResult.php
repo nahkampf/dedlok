@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Models\CharacterEncounter;
 use App\Models\Hunt;
 
 /**
@@ -30,11 +31,12 @@ final class TravelResult
         public readonly ?SweepResult $sweep,
         public readonly ?TravelRefusal $refusal,
         public readonly ?Hunt $hunt = null,
+        public readonly ?CharacterEncounter $encounter = null,
     ) {}
 
-    public static function arrived(Position $position, SweepResult $sweep, ?Hunt $hunt = null): self
+    public static function arrived(Position $position, SweepResult $sweep, ?Hunt $hunt = null, ?CharacterEncounter $encounter = null): self
     {
-        return new self($position, $sweep, null, $hunt);
+        return new self($position, $sweep, null, $hunt, $encounter);
     }
 
     /** Out. No position, nothing seen, and nothing wrong. */
@@ -57,5 +59,11 @@ final class TravelResult
     public function wasAmbushed(): bool
     {
         return $this->hunt !== null;
+    }
+
+    /** Arrived, and something is happening: an encounter opened on the move. */
+    public function metSomething(): bool
+    {
+        return $this->encounter !== null;
     }
 }

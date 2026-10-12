@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Decryption;
 
+use App\Characters\EncounterPause;
 use App\Checks\CheckRoller;
 use App\Cyberspace\ExtractedFile;
 use App\Models\Character;
@@ -345,6 +346,11 @@ final class DecryptionQueue
     /** @return int files opened */
     private function settleLocked(Character $character, ?CarbonInterface $now = null): int
     {
+        // The clock stops while an encounter is open on the grid; the cycle's start moves on when it closes.
+        if (EncounterPause::isHeld($character)) {
+            return 0;
+        }
+
         $now = CarbonImmutable::instance($now ?? now());
         $cycle = self::cycleSeconds($character);
         $workers = $this->workers($character);

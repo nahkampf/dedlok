@@ -1538,6 +1538,44 @@ final readonly class Simulator
         return $ended;
     }
 
+    /**
+     * An encounter inside the run wakes things (`wake_ice` and `detected`). The same transition arriving makes when
+     * somebody is noticed: detected, the system's ICE up with its integrity. `$owner` says whether the owner minds,
+     * which is the whole of the difference between the two outcomes. A run that is already detected is left alone.
+     */
+    public function alert(Character $character, Run $run, bool $owner): bool
+    {
+        if ($run->detected) {
+            return false;
+        }
+
+        $system = $run->system();
+
+        $run->forceFill([
+            'detected' => true,
+            'ice_id' => $system?->ice_id,
+            'ice_integrity' => $system?->ice?->integrity,
+        ])->save();
+
+        if ($owner) {
+            $this->charge($character, $system, StandingReason::Noticed);
+        }
+
+        return true;
+    }
+
+    /**
+     * Move the run's trace by points, clamped to 0..99: an encounter can bring it to the brink and never land it
+     * (`traceLands()` is the turn's). Returns the points that actually moved.
+     */
+    public function shiftTrace(Run $run, int $points): int
+    {
+        $before = (int) $run->trace;
+        $run->forceFill(['trace' => max(0, min(99, $before + $points))])->save();
+
+        return (int) $run->trace - $before;
+    }
+
     public function rouse(Character $character, Run $run, ?System $system): array
     {
         if ($system === null) {

@@ -45,21 +45,136 @@ return [
     'occupancy' => 70,
 
     /*
-    | How far a jacked-in character sees, in positions, as a Chebyshev radius —
-    | a square window rather than a circle, because the grid is squares and a
-    | round window on a square grid is a lie told in half-lit cells.
+    | The BASE view range of a character with nothing improving it, a level from 0 to 9. The level a character
+    | actually has is the resolved stat `view_range` (this is its base, clamped to 0..9), and each level is a
+    | SHAPE: see `view_shapes` below.
     |
-    | The edges are edges and the grid does not wrap, so a window at the edge
-    | simply sees fewer positions. The corners are the quietest part of the map,
-    | which is a reasonable thing for the corners of a map to be.
+    | TWO, which is 11 positions: the 3 x 3 around you and one more either side. It is deliberately small:
+    | walking is what buys ground, and a wide default would hand a new player most of a neighbourhood for standing
+    | still.
     |
-    | TWO, so a bare character sees a 5 x 5 square. It is deliberately small:
-    | walking is what buys ground, and a wide default would hand a new player
-    | most of a neighbourhood for standing still. It is also exactly what a
-    | 360px phone shows at a 60px cell, so the lit square fits a screen without
-    | anybody scrolling to find the edge of their own sight.
+    | The edges are edges and the grid does not wrap, so a shape at the edge simply sees fewer positions.
     */
     'view_range' => 2,
+
+    /*
+    | WHAT EACH VIEW RANGE LEVEL SEES, drawn 9 x 9 with the player in the middle. `x` is the player (always seen),
+    | `*` is a position seen, `-` is not. Edited as the picture: App\Cyberspace\ViewShape reads it. Every level
+    | contains the one below it, and none reaches further than 4 from the player, so the drawn map (`map_range`)
+    | always shows all of what is lit. An unknown level is clamped to 0..9.
+    */
+    'view_shapes' => [
+        0 => [
+            '---------',
+            '---------',
+            '---------',
+            '---------',
+            '----x----',
+            '---------',
+            '---------',
+            '---------',
+            '---------',
+        ],
+        1 => [
+            '---------',
+            '---------',
+            '---------',
+            '----*----',
+            '---*x*---',
+            '----*----',
+            '---------',
+            '---------',
+            '---------',
+        ],
+        2 => [
+            '---------',
+            '---------',
+            '---------',
+            '---***---',
+            '--**x**--',
+            '---***---',
+            '---------',
+            '---------',
+            '---------',
+        ],
+        3 => [
+            '---------',
+            '---------',
+            '----*----',
+            '---***---',
+            '--**x**--',
+            '---***---',
+            '----*----',
+            '---------',
+            '---------',
+        ],
+        4 => [
+            '---------',
+            '---------',
+            '---***---',
+            '--*****--',
+            '--**x**--',
+            '--*****--',
+            '---***---',
+            '---------',
+            '---------',
+        ],
+        5 => [
+            '---------',
+            '---------',
+            '---***---',
+            '--*****--',
+            '-***x***-',
+            '--*****--',
+            '---***---',
+            '---------',
+            '---------',
+        ],
+        6 => [
+            '---------',
+            '----*----',
+            '---***---',
+            '--*****--',
+            '-***x***-',
+            '--*****--',
+            '---***---',
+            '----*----',
+            '---------',
+        ],
+        7 => [
+            '---------',
+            '---***---',
+            '--*****--',
+            '-*******-',
+            '****x****',
+            '-*******-',
+            '--*****--',
+            '---***---',
+            '---------',
+        ],
+        8 => [
+            '----*----',
+            '--*****--',
+            '-*******-',
+            '-*******-',
+            '****x****',
+            '-*******-',
+            '-*******-',
+            '--*****--',
+            '----*----',
+        ],
+        9 => [
+            '---***---',
+            '--*****--',
+            '-*******-',
+            '*********',
+            '****x****',
+            '*********',
+            '-*******-',
+            '--*****--',
+            '---***---',
+        ],
+    ],
 
     /*
     | How dangerous the world is, as relative weights per grade.
@@ -104,14 +219,12 @@ return [
     | scrolls to fit, and the player is kept in the centre of it.
     */
     /*
-    | CAPPED AT WHAT A CHARACTER COULD EVER SEE. `view_range` is 2 and the
-    | modifiers that will widen it are worth about +5 between them, so seven is
-    | the furthest anybody will ever see in one look — and drawing memory
-    | further out than that is drawing ground the player has no way to refresh
-    | from where they stand.
+    | CAPPED AT WHAT A CHARACTER COULD EVER SEE. The widest `view_shapes` shape reaches 4 from the
+    | player, so anything above that is memory the player has no way to refresh from where they
+    | stand; 7 leaves a margin of remembered ground around the lit shape.
     |
-    | Raise it if sight gets cheaper. The two numbers are related but not the
-    | same one: this is how much is DRAWN and view_range is how much is LIT.
+    | The two numbers are related but not the same one: this is how much is DRAWN and the view
+    | range is how much is LIT.
     */
     'map_range' => 7,
 
@@ -1118,6 +1231,13 @@ return [
     ],
 
     /*
+    | A TRAIL OF EVERY WAY OUT, for finding out why somebody was jacked out (App\Cyberspace\Trail), written to
+    | storage/logs/cyberspace.log. On by default everywhere except production, where `CYBERSPACE_TRAIL=true` turns it
+    | on. It records state and never changes it, and cannot break a request: any failure inside it is swallowed.
+    */
+    'trail' => (bool) env('CYBERSPACE_TRAIL', env('APP_ENV') !== 'production'),
+
+    /*
     | What a deck freezing costs the person inside it.
     |
     | A module breaks from thermal load mid-run, the deck stops being a working
@@ -1401,5 +1521,20 @@ return [
     | machines an entity runs off the side of one of them.
     */
     'designation' => ['min' => 1, 'max' => 999],
+
+    /*
+    | Encounters on the grid (ENCOUNTERS_GRID.md): the chance an ARRIVAL by a move opens one, before the resolved
+    | `encounter_chance` stat adjusts it. It is the base of that stat for this door, as `city.encounter.*_chance` is
+    | for the City's. Which encounter, among those eligible, is the same weighted draw. First pass, untuned: two
+    | in a hundred moves.
+    */
+    'encounter' => [
+        // An arrival by a move, wherever it is.
+        'grid_step_chance' => 0.02,
+        // An arrival at a system (one stands on the position), rolled after the one above found nothing.
+        'system_chance' => 0.05,
+        // After a turn of a run, while it is still live.
+        'run_chance' => 0.05,
+    ],
 
 ];

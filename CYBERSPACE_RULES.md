@@ -339,10 +339,17 @@ and extraction are built. See below for what is not.
 - **The scanned mark clears itself**, keyed by ADDRESS like the grade.
 - **An UNSCANNED grade is not visible from the map** — a sweep is free. A scanned one is
   drawn, and only a live `system_scans` row can supply it.
-- **The window is capped at what anybody could ever see.** `map_range` is 7 because
-  `view_range` is 2 and the modifiers meant to widen it are worth ~+5. **A cell is 60px**;
-  the map scrolls and centres on the player. A bare character's lit square is 5×5, exactly
-  what a 360px phone shows.
+- **The window is capped at what anybody could ever see.** `map_range` is 7 because the widest
+  view shape reaches 4 from the player. **A cell is 60px**; the map scrolls and centres on the
+  player. A bare character's lit shape is 11 cells (level 2), inside the 5-wide span a 360px phone shows.
+- **VIEW RANGE IS A LEVEL, 0 TO 9, AND EACH LEVEL IS A SHAPE** (`cyberspace.view_shapes`, drawn as the
+  picture it is; `App\Cyberspace\ViewShape`). Level 0 is the cell you stand on, level 2 (the base) is 11
+  cells, level 9 is 57, and no shape reaches past 4. Every level contains the one below it. **The level is
+  the resolved stat `view_range`** (base `cyberspace.view_range`, clamped 0..9, rounded half up); Network
+  Topology adds one per level trained and scripts add through `programs.modifiers`, so nothing in the sweep
+  knows where sight comes from. `Navigator::arrive()` asks it once per arrival. **The sweep forgets and
+  re-sees only what stands INSIDE the shape**: a contact in its bounding square but outside it was not looked
+  at, and is kept. Terrain still never un-sets.
 - **The key sits beside the map as its own collapsible rail.** `.gridmap-frame` reserves the
   collapsed width and `.maplegend` OVERLAYS the map's right edge — the map re-centres on
   scroll, so a column that pushed it narrower on hover would move the ground under the
@@ -576,6 +583,8 @@ consequences and taking what a machine holds all roll.
   takes, and for the same reason.
 - **Two files never merge**, even though the item is unstackable anyway — a summed quantity
   would destroy information.
+- **ONLY A BAD ENDING EJECTS** (`RunEnding::isBad()`: a defeat or a burnout). A Completed run, like an egress, just ends and leaves the
+  player on the grid: the controller used to ask `!== Egress`, which threw somebody off the grid for succeeding (found with `Trail`, 2026-10-12).
 - **`RunEnding::Completed`'s trigger is `runs.extracted` OR `runs.backdoored`** (a run that succeeded always ends as Done; a burn ends its own as Completed), checked in BOTH doors to leaving
   so they cannot disagree.
 - **One line covers every reason a core touch can fail** — unspeakable OS, wrong purpose,

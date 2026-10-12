@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Cyberspace;
 
 use App\City\ActivityKind;
+use App\City\Encounters;
+use App\City\EncounterStart;
 use App\Decks\DeckTotals;
 use App\Models\Bookmark;
 use App\Models\Character;
+use App\Models\CharacterEncounter;
 use App\Models\CityActivity;
 use App\Stats\Resolver;
 use Closure;
@@ -105,7 +108,8 @@ final class Navigator
             return TravelResult::refused(TravelRefusal::DeckNotReady);
         }
 
-        return $this->arrive($character, $this->grid->portal());
+        // The portal is where everybody starts and jacking in is not a move, so nothing meets them there.
+        return $this->arrive($character, $this->grid->portal(), mayMeet: false);
     }
 
     /**
@@ -128,6 +132,9 @@ final class Navigator
         if ($character->current_hunt_id !== null) {
             return TravelResult::refused(TravelRefusal::Hunted);
         }
+
+        // BEFORE the position goes: the snapshot is of where they were and why (see Trail).
+        Trail::note('jack_out', $character);
 
         $character->forceFill(['grid_x' => null, 'grid_y' => null])->save();
 
@@ -244,17 +251,38 @@ final class Navigator
     }
 
     /**
+     * Put somebody on a position for a story (an encounter's `grid_move`), and let them look around.
+     *
+     * No hunter roll and no encounter: a move an encounter makes must not open another. Refused for a position off
+     * the grid and for somebody who is not jacked in.
+     */
+    public function relocate(Character $character, Position $to): bool
+    {
+        if (! $character->isJackedIn() || ! $this->grid->contains($to)) {
+            return false;
+        }
+
+        DB::transaction(function () use ($character, $to): void {
+            $character->forceFill(['grid_x' => $to->x, 'grid_y' => $to->y])->save();
+            $this->sweep->from($character, $to, ViewShape::forCharacter($character, $this->resolver));
+        });
+
+        return true;
+    }
+
+    /**
      * Stand here, and look around.
      *
      * One transaction, because a position written without the sweep that
      * explains it is a map with a hole where the player is standing.
      */
-    private function arrive(Character $character, Position $position): TravelResult
+    private function arrive(Character $character, Position $position, bool $mayMeet = true): TravelResult
     {
         $sweep = DB::transaction(function () use ($character, $position): SweepResult {
             $character->forceFill(['grid_x' => $position->x, 'grid_y' => $position->y])->save();
 
-            return $this->sweep->from($character, $position);
+            // What they see from here is their resolved view range, asked once per arrival.
+            return $this->sweep->from($character, $position, ViewShape::forCharacter($character, $this->resolver));
         });
 
         // OUTSIDE the sweep's transaction and deliberately so — spawning a
@@ -263,6 +291,35 @@ final class Navigator
         // happened.
         $hunt = $this->hunters->rolls($character) ? $this->hunters->spawn($character) : null;
 
-        return TravelResult::arrived($position, $sweep, $hunt);
+        // THEN AN ENCOUNTER, by the same rule and in its own write: a hunt that began makes the character
+        // ineligible, so the two never overlap. On the LOCKED row, because two arrivals at once must not both
+        // find nothing open.
+        $encounter = null;
+
+        if ($mayMeet && $hunt === null) {
+            $encounter = DB::transaction(
+                fn (): ?CharacterEncounter => app(Encounters::class)->maybeOpen(
+                    Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail(),
+                    EncounterStart::GridStep,
+                ),
+            );
+
+            // Standing on a system, the system door: same lock, same roll, its own chance and filters.
+            if ($encounter === null && ($system = $this->grid->at($position)) !== null) {
+                $encounter = DB::transaction(
+                    fn (): ?CharacterEncounter => app(Encounters::class)->maybeOpenFor(
+                        Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail(),
+                        EncounterStart::System,
+                        $system,
+                    ),
+                );
+            }
+
+            if ($encounter !== null) {
+                $character->refresh();
+            }
+        }
+
+        return TravelResult::arrived($position, $sweep, $hunt, $encounter);
     }
 }

@@ -10,8 +10,12 @@ use App\Models\Character;
 use App\Models\CharacterEncounter;
 use App\Models\CityActivity;
 use App\Models\Encounter;
+use App\Models\EncounterCooldown;
 use App\Models\Location;
+use App\Models\Run;
+use App\Models\System;
 use App\Stats\Resolver;
+use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
@@ -54,21 +58,54 @@ final class Encounters
     /** The odds a matured pass of this kind opens one, resolved. Public so a screen and the roll cannot disagree. */
     public function chanceFor(Character $character, EncounterStart $start): float
     {
-        $base = (float) Config::get("city.encounter.{$start->value}_chance", 0.0);
+        $key = $start->isGrid() ? "cyberspace.encounter.{$start->value}_chance" : "city.encounter.{$start->value}_chance";
+        $base = (float) Config::get($key, 0.0);
 
         return max(0.0, min(1.0, $this->resolver->resolve('encounter_chance', $base, $character->modifiers())->value));
     }
 
-    /** Is the character in a state anything can happen TO? */
-    public function canHappenTo(Character $character): bool
+    /**
+     * Is the character in a state anything can happen TO?
+     *
+     * The realm is the door's. A City encounter needs somebody who is NOT jacked in; a grid one needs somebody who is,
+     * standing on the map (not in a run). Everything else is the same for both.
+     */
+    public function canHappenTo(Character $character, ?EncounterStart $start = null): bool
     {
-        return ! $character->isJackedIn()
-            && $character->current_run_id === null
+        $grid = $start?->isGrid() ?? false;
+        // A run door needs a live run; every other door needs the character NOT to be in one (they open on the map).
+        $inRun = $start === EncounterStart::Run;
+
+        return $character->isJackedIn() === $grid
+            && ($character->current_run_id !== null) === $inRun
             && $character->current_hunt_id === null
             && $character->current_encounter_id === null
             // A fight is its own state: the sweep must not open an encounter under one.
             && $character->current_fight_id === null
             && ! (new WaitingRoom($this->resolver))->isDown($character);
+    }
+
+    /**
+     * A move arrived at a system, or a run finished a turn: maybe open one.
+     *
+     * Called on the LOCKED character. `$system` is what stands here (the system door) or what the run is in (the run
+     * door), and is what the encounter's filters are read against.
+     */
+    public function maybeOpenFor(Character $character, EncounterStart $start, System $system, ?Run $run = null): ?CharacterEncounter
+    {
+        if (! $this->canHappenTo($character, $start)) {
+            return null;
+        }
+
+        $chance = $this->chanceFor($character, $start);
+
+        if ($chance <= 0.0 || ($this->roll)(1, 10_000) > (int) round($chance * 10_000)) {
+            return null;
+        }
+
+        $pick = $this->draw($this->eligible($character, $start, null, null, $system, $run));
+
+        return $pick === null ? null : $this->open($character, $pick, $run);
     }
 
     /**
@@ -78,7 +115,7 @@ final class Encounters
      */
     public function maybeOpen(Character $character, EncounterStart $start): ?CharacterEncounter
     {
-        if (! $this->canHappenTo($character)) {
+        if (! $this->canHappenTo($character, $start)) {
             return null;
         }
 
@@ -89,7 +126,7 @@ final class Encounters
             return null;
         }
 
-        $pick = $this->draw($this->eligible($character, $start, $character->district_id));
+        $pick = $this->draw($this->eligible($character, $start, $start->isGrid() ? null : $character->district_id));
 
         return $pick === null ? null : $this->open($character, $pick);
     }
@@ -99,7 +136,7 @@ final class Encounters
      *
      * @return Collection<int, Encounter>
      */
-    public function eligible(Character $character, EncounterStart $start, ?int $districtId = null, ?int $locationId = null): Collection
+    public function eligible(Character $character, EncounterStart $start, ?int $districtId = null, ?int $locationId = null, ?System $system = null, ?Run $run = null): Collection
     {
         $query = Encounter::query()
             ->where('retired', false)
@@ -113,10 +150,91 @@ final class Encounters
                 ->where(static fn ($q) => $q->whereNull('district_id')->orWhere('district_id', $districtId));
         }
 
-        return $query->orderBy('id')->get()->filter(
+        $judge = new PrerequisiteJudge;
+
+        return $query->with('prerequisites')->orderBy('id')->get()->filter(
             static fn (Encounter $e): bool => ($e->required_flag === null || Flags::has($character, $e->required_flag))
-                && ! ($e->once && Flags::has($character, $e->seenFlag())),
+                && ! ($e->once && Flags::has($character, $e->seenFlag()))
+                // The door's own filters: what stands here, or what the run is in.
+                && self::matches($e, $system, $run)
+                // Every prerequisite holds; an empty list is no condition at all.
+                && $judge->allHold($character, $e->prerequisites),
         )->values();
+    }
+
+    /**
+     * The spots on offer at this system for this character: pinned here, their conditions held, and off cooldown.
+     * A read, for the Interact box; `openSpot()` asks it again when the button is pressed.
+     *
+     * @return Collection<int, Encounter>
+     */
+    public function spotsAt(Character $character, System $system): Collection
+    {
+        if (! $this->canHappenTo($character, EncounterStart::Spot)) {
+            return collect();
+        }
+
+        $cooling = EncounterCooldown::query()
+            ->where('character_id', $character->getKey())
+            ->pluck('last_opened_at', 'encounter_id');
+
+        return $this->eligible($character, EncounterStart::Spot, null, null, $system)
+            ->filter(static fn (Encounter $e): bool => (int) $e->spot_system_id === (int) $system->getKey()
+                && ($e->cooldown_hours === null
+                    || ! $cooling->has($e->getKey())
+                    || $cooling->get($e->getKey())->addHours($e->cooldown_hours)->isPast()))
+            ->values();
+    }
+
+    /** The button: open a spot at the system the character stands on. Not rolled. */
+    public function openSpot(Character $character, int $encounterId): CharacterEncounter|CityRefusal
+    {
+        return DB::transaction(function () use ($character, $encounterId): CharacterEncounter|CityRefusal {
+            $locked = Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail();
+            $position = $locked->gridPosition();
+            $system = $position === null ? null : System::query()->at($position)->first();
+
+            if ($system === null) {
+                return CityRefusal::NothingHappening;
+            }
+
+            $encounter = $this->spotsAt($locked, $system)->firstWhere('id', $encounterId);
+
+            if ($encounter === null) {
+                return CityRefusal::NothingHappening;
+            }
+
+            EncounterCooldown::query()->updateOrCreate(
+                ['character_id' => $locked->getKey(), 'encounter_id' => $encounter->getKey()],
+                ['last_opened_at' => CarbonImmutable::now()],
+            );
+
+            return $this->open($locked, $encounter);
+        });
+    }
+
+    /** Do an encounter's system and run filters let this system (and run) through? A filter left blank passes. */
+    private static function matches(Encounter $e, ?System $system, ?Run $run): bool
+    {
+        if ($system === null) {
+            return true;
+        }
+
+        if ($e->system_type !== null && $e->system_type !== $system->type->value) {
+            return false;
+        }
+
+        $grade = (int) $system->grade;
+
+        if (($e->grade_min !== null && $grade < $e->grade_min) || ($e->grade_max !== null && $grade > $e->grade_max)) {
+            return false;
+        }
+
+        if ($e->owner_entity_id !== null && (int) $system->owner_id !== (int) $e->owner_entity_id) {
+            return false;
+        }
+
+        return $e->run_purpose === null || $run === null || $e->run_purpose === $run->purpose->value;
     }
 
     /**
@@ -148,14 +266,16 @@ final class Encounters
     }
 
     /** Put a character in an encounter, on its entry node. The only door in. */
-    public function open(Character $character, Encounter $encounter): CharacterEncounter
+    public function open(Character $character, Encounter $encounter, ?Run $run = null): CharacterEncounter
     {
-        return DB::transaction(function () use ($character, $encounter): CharacterEncounter {
+        return DB::transaction(function () use ($character, $encounter, $run): CharacterEncounter {
             $entry = $encounter->nodes()->where('entry', true)->firstOrFail();
 
             $live = CharacterEncounter::create([
                 'character_id' => $character->getKey(),
                 'encounter_id' => $encounter->getKey(),
+                // The run it interrupts, so closing knows which one to end or leave.
+                'run_id' => $run?->getKey(),
                 'node_key' => $entry->node_key,
                 'log' => [],
                 'started_at' => now(),

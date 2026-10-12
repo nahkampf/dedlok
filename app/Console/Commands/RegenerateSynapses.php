@@ -76,47 +76,50 @@ class RegenerateSynapses extends Command
         $minute = intdiv(now()->getTimestamp(), 60);
 
         // Nobody in a fight mends: its clock stops with the player's, or waiting out a fight would be a way to heal in it.
-        Character::query()->whereNull('current_fight_id')->chunkById(200, function ($characters) use ($resolver, $dryRun, $minute, &$healed, &$points, &$hpHealed, &$hpPoints): void {
-            foreach ($characters as $character) {
-                // Hit points: this minute's share of an hourly rate (see the class notes).
-                $perHour = $resolver->resolve('hitpoints_regen', 0.0, $character->modifiers())->toInt();
-                $share = intdiv($perHour * ($minute + 1), 60) - intdiv($perHour * $minute, 60);
+        Character::query()->whereNull('current_fight_id')
+            // The clock stops while an encounter is open on the grid (EncounterPause).
+            ->where(static fn ($q) => $q->whereNull('current_encounter_id')->orWhereNull('grid_x'))
+            ->chunkById(200, function ($characters) use ($resolver, $dryRun, $minute, &$healed, &$points, &$hpHealed, &$hpPoints): void {
+                foreach ($characters as $character) {
+                    // Hit points: this minute's share of an hourly rate (see the class notes).
+                    $perHour = $resolver->resolve('hitpoints_regen', 0.0, $character->modifiers())->toInt();
+                    $share = intdiv($perHour * ($minute + 1), 60) - intdiv($perHour * $minute, 60);
 
-                if ($share > 0) {
-                    $gained = $dryRun
-                        ? min($share, max(0, $character->maximumFor('current_hitpoints') - (int) $character->current_hitpoints))
-                        : $character->recover('current_hitpoints', $share);
+                    if ($share > 0) {
+                        $gained = $dryRun
+                            ? min($share, max(0, $character->maximumFor('current_hitpoints') - (int) $character->current_hitpoints))
+                            : $character->recover('current_hitpoints', $share);
 
-                    if ($gained > 0) {
-                        $hpHealed++;
-                        $hpPoints += $gained;
+                        if ($gained > 0) {
+                            $hpHealed++;
+                            $hpPoints += $gained;
+                        }
+                    }
+
+                    $rate = $resolver->resolve('synaptic_regen', 0.0, $character->modifiers())->toInt();
+
+                    // The slow floor: through the Sheet, because its base lives in
+                    // `stats.bases`, which only the Sheet walks.
+                    if ($minute % max(1, $character->stat('synaptic_mend_minutes')->toInt()) === 0) {
+                        $rate++;
+                    }
+
+                    if ($rate <= 0) {
+                        continue;
+                    }
+
+                    // Asked before writing so a character already at their ceiling
+                    // costs nothing — which is most of them, most of the time.
+                    $restored = $dryRun
+                        ? min($rate, max(0, $character->maximumFor('current_synaptic_integrity') - (int) $character->current_synaptic_integrity))
+                        : $character->recover('current_synaptic_integrity', $rate);
+
+                    if ($restored > 0) {
+                        $healed++;
+                        $points += $restored;
                     }
                 }
-
-                $rate = $resolver->resolve('synaptic_regen', 0.0, $character->modifiers())->toInt();
-
-                // The slow floor: through the Sheet, because its base lives in
-                // `stats.bases`, which only the Sheet walks.
-                if ($minute % max(1, $character->stat('synaptic_mend_minutes')->toInt()) === 0) {
-                    $rate++;
-                }
-
-                if ($rate <= 0) {
-                    continue;
-                }
-
-                // Asked before writing so a character already at their ceiling
-                // costs nothing — which is most of them, most of the time.
-                $restored = $dryRun
-                    ? min($rate, max(0, $character->maximumFor('current_synaptic_integrity') - (int) $character->current_synaptic_integrity))
-                    : $character->recover('current_synaptic_integrity', $rate);
-
-                if ($restored > 0) {
-                    $healed++;
-                    $points += $restored;
-                }
-            }
-        });
+            });
 
         $parts = [];
 

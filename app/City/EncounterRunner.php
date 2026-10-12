@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\City;
 
 use App\Characters\DownedCause;
+use App\Characters\EncounterPause;
 use App\Characters\Flags;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
@@ -12,16 +13,20 @@ use App\Combat\Fight\Result;
 use App\Combat\FightRefusal;
 use App\Combat\FightReturn;
 use App\Combat\Fights;
+use App\Cyberspace\RunEnding;
+use App\Cyberspace\RunStarter;
 use App\Models\Character;
 use App\Models\CharacterEncounter;
 use App\Models\EncounterChoice;
 use App\Models\EncounterNode;
 use App\Models\EncounterOutcome;
 use App\Models\Fight;
+use App\Models\Run;
 use App\Stats\StatRegistry;
 use App\Support\Text;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -349,8 +354,26 @@ final class EncounterRunner
 
     private function close(Character $locked, CharacterEncounter $live): void
     {
+        // The clock stopped while it was open: move what is stored as a moment forward by its length.
+        if ($live->started_at !== null) {
+            EncounterPause::release($locked, CarbonImmutable::instance($live->started_at));
+        }
+
+        // A run encounter's ending decides what becomes of the run. Read BEFORE the row goes: the screen the player is
+        // closing is the one that says. A bare close (no ending screen) is continue_run, the run left as it was.
+        $kill = $live->run_id !== null && $this->nodeOf($live)?->run_end === EncounterRunEnd::KillRun->value;
+
         $locked->forceFill(['current_encounter_id' => null])->save();
         $live->delete();
+
+        if ($kill) {
+            $run = Run::query()->find($live->run_id);
+
+            // A run already over (cancelled under them by a relocation) has nothing left to end.
+            if ($run?->isLive()) {
+                app(RunStarter::class)->end($locked, $run, RunEnding::Encounter);
+            }
+        }
     }
 
     private function applies(EncounterOutcome $outcome, ?bool $passed): bool

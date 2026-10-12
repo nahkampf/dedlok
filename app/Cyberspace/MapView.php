@@ -42,7 +42,7 @@ final class MapView
         public readonly bool $jackedIn,
     ) {}
 
-    public static function for(Character $character, ?Grid $grid = null, ?int $range = null): self
+    public static function for(Character $character, ?Grid $grid = null, ?int $range = null, ?ViewShape $shape = null): self
     {
         $grid ??= Grid::fromConfig();
         $range ??= (int) Config::get('cyberspace.map_range', 10);
@@ -114,10 +114,11 @@ final class MapView
         // the same.
         $newFor = (int) Config::get('cyberspace.new_for_minutes', 10);
 
-        // How far they can see from where they stand. The drawn map is wider
-        // than this on purpose — what is outside it is memory rather than
-        // sight, and the cells say so by stepping back.
-        $sight = $grid->viewRange();
+        // What they can see from where they stand: a shape, which is their
+        // resolved view range. The drawn map is wider than this on purpose —
+        // what is outside it is memory rather than sight, and the cells say so
+        // by stepping back.
+        $sight = $shape ?? ViewShape::base();
 
         $terrain = new Terrain($character);
         $rows = [];
@@ -162,7 +163,7 @@ final class MapView
                     // jacked-out player is reading the whole map from memory.
                     inView: $standing !== null
                         && $onGrid
-                        && $standing->distanceTo($position) <= $sight,
+                        && $sight->covers($standing, $position),
                 );
             }
 

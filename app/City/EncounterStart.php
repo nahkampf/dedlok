@@ -18,6 +18,24 @@ enum EncounterStart: string
     /** A button on a location's page. The door authored quests walk through. */
     case Place = 'place';
 
+    /** An arrival on the grid by a move (a step, a jump or a bookmark; not the jack-in itself). Cyberspace's own door. */
+    case GridStep = 'grid_step';
+
+    /** Arriving at a system on the grid, by whatever move. Filters: its type, a grade range, its owner. */
+    case System = 'system';
+
+    /** Between turns of a run. Filters: a grade range, the run's purpose. Every ending says what becomes of the run. */
+    case Run = 'run';
+
+    /** A button in the grid screen's Interact box, at one authored system. Not rolled: always on offer while it may be. */
+    case Spot = 'spot';
+
+    /** The realm is the door's: these four are cyberspace and every other is the City. */
+    public function isGrid(): bool
+    {
+        return in_array($this, [self::GridStep, self::System, self::Run, self::Spot], true);
+    }
+
     public function label(): string
     {
         return Text::get("city.encounter.starts.{$this->value}");

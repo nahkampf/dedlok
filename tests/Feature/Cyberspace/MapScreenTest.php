@@ -462,9 +462,8 @@ final class MapScreenTest extends TestCase
             }
         }
 
-        // A view range of 2 is a 5x5 square: twenty-five cells lit out of the
-        // eleven-by-eleven drawn.
-        $this->assertCount(25, $inView);
+        // A view range of 2 is eleven cells lit out of the eleven-by-eleven drawn.
+        $this->assertCount(11, $inView);
         $this->assertNotEmpty($distant);
 
         foreach ($distant as $cell) {
