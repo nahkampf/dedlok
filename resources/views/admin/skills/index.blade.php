@@ -77,8 +77,9 @@
                                 <td>{{ $skill->title }}</td>
                                 <td class="muted">{{ $skill->category }}</td>
                                 <td class="t-right num">{{ Text::get('admin.skills.fields.rank_value', ['rank' => $skill->rank]) }}</td>
-                                {{-- What the imprint sells for: `base_cost`, kept in step with it on every save. --}}
-                                <td class="t-right num">{{ number_format($skill->base_cost) }}</td>
+                                {{-- What the imprint sells for: its own `base_cost`, which is what a shop charges. It starts equal
+                                     to the skill's and is kept in step with it whenever the skill is saved. --}}
+                                <td class="t-right num">{{ number_format($skill->imprint?->base_cost ?? $skill->base_cost) }}</td>
                                 <td class="t-right num">{{ $skill->prerequisites_count }}</td>
                                 <td class="t-right num">{{ $skill->unlocks_count }}</td>
                                 <td>
