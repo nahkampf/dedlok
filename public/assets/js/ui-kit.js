@@ -1608,10 +1608,16 @@
       const leftQ = freeQ - usedQ, leftM = freeM - usedM;
       scripts.forEach((el) => {
         if (refused.has(el)) return;
-        const fits = el.checked || (cost(el, "Qflops") <= leftQ && cost(el, "Memory") <= leftM);
-        el.disabled = !fits;
-        const note = el.closest("label")?.querySelector("[data-wont-fit]");
-        if (note) note.hidden = fits;
+        // A ticked script is judged by the whole sum, an unticked one by whether it would fit on top of it.
+        const cpu = el.checked ? leftQ < 0 : cost(el, "Qflops") > leftQ;
+        const ram = el.checked ? leftM < 0 : cost(el, "Memory") > leftM;
+        // Left enabled while ticked, so it can be ticked off again.
+        el.disabled = !el.checked && (cpu || ram);
+        const note = el.closest("label")?.querySelector("[data-unable]");
+        if (note) {
+          note.textContent = cpu && ram ? form.dataset.unableBoth : cpu ? form.dataset.unableCpu : ram ? form.dataset.unableRam : "";
+          note.style.display = cpu || ram ? "block" : "none";
+        }
       });
       if (readout) readout.textContent = fmt(Math.max(0, leftQ)) + " qFLOPS \u00b7 " + fmt(Math.max(0, leftM)) + " QB";
     };

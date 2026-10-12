@@ -1137,10 +1137,12 @@ return [
                 'loadout_hint' => 'Select an icebreaker to apply to this run. It cannot be changed once the run is initiated.',
                 'scripts' => 'Scripts',
                 'scripts_none' => 'You hold no scripts.',
-                'scripts_hint' => 'A ticked script starts when you go in and is spent by running: it lasts its lifetime and is gone, and stopping it early destroys it. A script that does not fit with the rest of what you have ticked cannot be ticked.',
+                'scripts_hint' => 'A ticked script starts when you go in and is spent by running: it lasts its lifetime and is gone, and stopping it early destroys it. One that does not fit beside everything else you have ticked is marked Unable, and cannot be ticked.',
                 'scripts_free' => 'Free on the deck after what is ticked:',
                 'scripts_no_effect' => 'No effect on your stats.',
-                'scripts_wont_fit' => 'Does not fit with the rest.',
+                'scripts_unable_cpu' => 'Unable: Not enough CPU',
+                'scripts_unable_ram' => 'Unable: Not enough RAM',
+                'scripts_unable_both' => 'Unable: Not enough CPU and RAM',
 
                 /*
                 | THE INTENTIONS. Each is a separate button, because they are

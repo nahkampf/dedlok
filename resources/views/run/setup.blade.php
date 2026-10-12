@@ -241,7 +241,7 @@
 ])
 {{-- data-free-* is what is left of the deck in TENTHS before anything on this page is ticked; each ticked row carries its
      own cost the same way, and ui-kit.js does the sum. Display only: the run's start asks the runner again. --}}
-<form method="POST" action="{{ route('run.start') }}" data-run-budget data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
+<form method="POST" action="{{ route('run.start') }}" data-run-budget data-unable-cpu="{{ Text::get('cyberspace.run.setup.scripts_unable_cpu') }}" data-unable-ram="{{ Text::get('cyberspace.run.setup.scripts_unable_ram') }}" data-unable-both="{{ Text::get('cyberspace.run.setup.scripts_unable_both') }}" data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
     @csrf
 
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
@@ -345,7 +345,7 @@
                             @if ($refusal)
                                 <span class="micro" style="display:block;color:var(--warn)">{{ $refusal->message() }}</span>
                             @else
-                                <span class="micro" data-wont-fit hidden style="display:block;color:var(--warn)">{{ Text::get('cyberspace.run.setup.scripts_wont_fit') }}</span>
+                                <span class="micro" data-unable style="display:none;color:var(--warn)"></span>
                             @endif
                         </span>
                     </label>
