@@ -11,6 +11,7 @@ use App\Cyberspace\Simulator;
 use App\Decks\Storage;
 use App\Drugs\DrugTaker;
 use App\Inventory\ItemGranter;
+use App\Journal\Journal;
 use App\Models\Character;
 use App\Models\EncounterOutcome;
 use App\Models\Entity;
@@ -69,6 +70,8 @@ final class EncounterOutcomes
             OutcomeKind::WakeIce => $this->alert($character, owner: false),
             OutcomeKind::Detected => $this->alert($character, owner: true),
             OutcomeKind::GridMove => $this->gridMove($character, (string) $outcome->ref),
+            OutcomeKind::Journal => $this->journal($character, $outcome),
+            OutcomeKind::JournalDone => $this->journalDone($character, (string) $outcome->ref),
         };
     }
 
@@ -102,6 +105,33 @@ final class EncounterOutcomes
         }
 
         return Text::get($owner ? 'city.encounter.outcomes.detected' : 'city.encounter.outcomes.ice_woken');
+    }
+
+    private function journal(Character $character, EncounterOutcome $outcome): ?string
+    {
+        $written = app(Journal::class)->write(
+            $character,
+            (string) $outcome->ref,
+            $outcome->text,
+            $outcome->entry_slug,
+            $outcome->entry_text,
+        );
+
+        return match (true) {
+            $written['note'] => Text::get('city.encounter.outcomes.journal_note'),
+            $written['entry'] => Text::get('city.encounter.outcomes.journal_entry'),
+            default => null,
+        };
+    }
+
+    /** Silent: a thing ticked off in a journal is something the player sees there. */
+    private function journalDone(Character $character, string $slug): null
+    {
+        if ($slug !== '') {
+            app(Journal::class)->complete($character, $slug);
+        }
+
+        return null;
     }
 
     private function gridMove(Character $character, string $ref): ?string

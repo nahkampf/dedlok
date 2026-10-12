@@ -43,6 +43,9 @@ class EncounterRequest extends FormRequest
 
     private const FLAG = '/^[a-z0-9_]{1,60}$/';
 
+    /** A journal note's or line's slug: the same shape every slug has. */
+    private const SLUG = '/^[a-z0-9_-]{1,60}$/';
+
     /** @var list<array<string, mixed>> */
     private array $nodes = [];
 
@@ -316,6 +319,27 @@ class EncounterRequest extends FormRequest
             }
         }
 
+        if ($kind === OutcomeKind::Journal || $kind === OutcomeKind::JournalDone) {
+            if (preg_match(self::SLUG, $ref) !== 1) {
+                $errors["{$oat}.ref"] = Text::get('admin.encounters.errors.journal_slug', ['node' => $nodeKey]);
+            }
+        }
+
+        if ($kind === OutcomeKind::Journal) {
+            $heading = trim((string) ($o['text'] ?? ''));
+            $entrySlug = trim((string) ($o['entry_slug'] ?? ''));
+            $entryText = trim((string) ($o['entry_text'] ?? ''));
+
+            // A journal outcome must write something: a note, a line, or both.
+            if ($heading === '' && $entryText === '') {
+                $errors["{$oat}.text"] = Text::get('admin.encounters.errors.journal_empty', ['node' => $nodeKey]);
+            }
+
+            if (($entryText !== '') !== ($entrySlug !== '') || ($entrySlug !== '' && preg_match(self::SLUG, $entrySlug) !== 1)) {
+                $errors["{$oat}.entry_slug"] = Text::get('admin.encounters.errors.journal_entry', ['node' => $nodeKey]);
+            }
+        }
+
         if ($kind === OutcomeKind::Injury && ! in_array($ref, OutcomeKind::INJURIES, true)) {
             $errors["{$oat}.ref"] = Text::get('admin.encounters.errors.injury', ['node' => $nodeKey, 'ref' => $ref]);
         }
@@ -346,6 +370,9 @@ class EncounterRequest extends FormRequest
             'ref' => $kind->needsRef() ? $ref : null,
             'item_id' => $itemId,
             'entity_id' => $entityId,
+            'text' => $kind === OutcomeKind::Journal ? (trim((string) ($o['text'] ?? '')) ?: null) : null,
+            'entry_slug' => $kind === OutcomeKind::Journal ? (trim((string) ($o['entry_slug'] ?? '')) ?: null) : null,
+            'entry_text' => $kind === OutcomeKind::Journal ? (trim((string) ($o['entry_text'] ?? '')) ?: null) : null,
         ];
     }
 

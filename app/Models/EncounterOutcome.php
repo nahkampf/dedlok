@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** One effect of a choice. Applied only by `App\City\EncounterOutcomes`. */
-#[Fillable(['choice_id', 'node_id', 'branch', 'position', 'kind', 'amount', 'ref', 'item_id', 'entity_id'])]
+#[Fillable(['choice_id', 'node_id', 'branch', 'position', 'kind', 'amount', 'ref', 'item_id', 'entity_id', 'text', 'entry_slug', 'entry_text'])]
 class EncounterOutcome extends Model
 {
     public $timestamps = false;

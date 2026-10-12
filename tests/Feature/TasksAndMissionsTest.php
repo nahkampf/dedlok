@@ -100,7 +100,7 @@ final class TasksAndMissionsTest extends TestCase
         foreach (['>Missions<', '>Journal<', '>Tasks<'] as $heading) {
             $this->assertStringContainsString($heading, $html);
         }
-        $this->assertSame(2, substr_count($html, 'Not yet implemented.'), 'the journal and the tasks');
+        $this->assertSame(1, substr_count($html, 'Not yet implemented.'), 'only the tasks are a placeholder now');
         $this->assertStringContainsString('No missions accepted.', $html);
     }
 

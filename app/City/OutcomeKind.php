@@ -39,6 +39,15 @@ enum OutcomeKind: string
     case GridMove = 'grid_move';
 
     /**
+     * Writes the journal: the note `ref` (made with the heading in `text` if it is new), a line under it
+     * (`entry_slug`, `entry_text`), or both. Writing what already exists adds nothing.
+     */
+    case Journal = 'journal';
+
+    /** Marks the journal note or line `ref` done. A note that is done is not shown; a line is struck through. */
+    case JournalDone = 'journal_done';
+
+    /**
      * The injuries an encounter may deepen or ease: the accumulating ones `InjuryLedger` owns.
      * The drug withdrawals in `config/effects.php` are deliberately absent — `DrugLedger` is the
      * only writer of those.
@@ -66,13 +75,13 @@ enum OutcomeKind: string
     /** Whether `ref` carries the target: a flag slug, an injury key, a resource or a position. */
     public function needsRef(): bool
     {
-        return in_array($this, [self::Flag, self::Injury, self::Damage, self::GridMove], true);
+        return in_array($this, [self::Flag, self::Injury, self::Damage, self::GridMove, self::Journal, self::JournalDone], true);
     }
 
     /** A flag, a dose and the grid effects with no number have no amount; everything else is a signed number. */
     public function needsAmount(): bool
     {
-        return ! in_array($this, [self::Flag, self::Dose, self::WakeIce, self::Detected, self::GridMove], true);
+        return ! in_array($this, [self::Flag, self::Dose, self::WakeIce, self::Detected, self::GridMove, self::Journal, self::JournalDone], true);
     }
 
     /** Needs a live run to act on, so only a run encounter may carry it. */
