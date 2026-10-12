@@ -321,7 +321,7 @@ class InventoryTest extends TestCase
     {
         // One lang entry covers every imprint, so adding a skill never means
         // editing a locale.
-        $this->assertSame('Eidetic Imprint: Hacking', $this->book->displayName());
+        $this->assertSame('Hacking', $this->book->displayName());
         $this->assertSame(Text::get('items.imprint.flavor'), $this->book->displayFlavor());
     }
 

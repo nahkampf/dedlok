@@ -448,7 +448,7 @@ class Item extends Model
     {
         return $this->hardware?->label()
             ?? $this->program?->kind->label()
-            ?? Text::get("items.kinds.{$this->container}");
+            ?? Text::get($this->isImprint() ? 'items.kinds.imprint' : "items.kinds.{$this->container}");
     }
 
     /**
@@ -630,8 +630,9 @@ class Item extends Model
      */
     public function scopeRestockable(Builder $query): void
     {
-        // An imprint is never on the shelf: skills are sold by shops (see `city:stock-skills`), found as loot, or
-        // paid out by a loyalty store. `on_market` on an imprint still decides loot and what a shop lists.
+        // An imprint is never on the SHELF: skills are sold by shops (see `city:stock-skills`), found as loot, or
+        // paid out by a loyalty store. Players may still sell them to one another. `on_market` on an imprint still
+        // decides loot and what a shop lists.
         $query->onMarket()->whereNull('use_skill_id')->where('seed_quantity', '>', 0);
     }
 }

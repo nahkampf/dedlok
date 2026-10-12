@@ -6,11 +6,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Skill imprints are no longer sold on the regular market: shops list them (`city:stock-skills`), runs drop them
- * and loyalty stores pay them out. The code refuses to stock, buy or list one; this clears what was already there.
+ * Skill imprints are no longer on the market's own shelf: shops list them (`city:stock-skills`), runs drop them and
+ * loyalty stores pay them out. The code refuses to stock or sell one from the shelf; this clears what was there.
  *
- * An offer is only a listing, so deleting one puts the imprint back in its seller's stash untouched. A shelf row is
- * the market's own stock and is not a player's.
+ * Only the shelf, which is the market's own stock. Players may still sell imprints to one another, so their
+ * offers are left alone.
  */
 return new class extends Migration
 {
@@ -18,15 +18,11 @@ return new class extends Migration
     {
         $imprints = DB::table('items')->whereNotNull('use_skill_id')->pluck('id');
 
-        DB::table('market_offers')
-            ->whereIn('inventory_item_id', DB::table('inventory_items')->whereIn('item_id', $imprints)->select('id'))
-            ->delete();
-
         DB::table('market_stock')->whereIn('item_id', $imprints)->delete();
     }
 
     public function down(): void
     {
-        // Nothing to put back: a deleted listing and an emptied shelf carry nothing worth restoring.
+        // Nothing to put back: an emptied shelf carries nothing worth restoring.
     }
 };

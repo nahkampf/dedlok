@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Market;
 
+use App\Inventory\Imprint;
 use App\Market\OfferBook;
 use App\Market\OfferRefusal;
 use App\Models\Character;
@@ -11,6 +12,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\MarketOffer;
 use App\Models\Notification;
+use App\Models\Skill;
 use App\Notifications\Category;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -53,6 +55,18 @@ final class OfferBookTest extends TestCase
         // had to learn that a market exists.
         $this->assertFalse($this->isLoose($row));
         $this->assertTrue($row->fresh()->isListed());
+    }
+
+    public function test_a_skill_imprint_may_be_sold_between_players(): void
+    {
+        $skill = Skill::factory()->create();
+        $row = InventoryItem::create([
+            'character_id' => $this->seller->id,
+            'item_id' => Imprint::ensureFor($skill)->id,
+            'quantity' => 1,
+        ]);
+
+        $this->assertInstanceOf(MarketOffer::class, app(OfferBook::class)->list($this->seller, $row, 250));
     }
 
     public function test_withdrawing_puts_it_straight_back(): void

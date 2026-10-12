@@ -421,7 +421,7 @@
                         {{ Text::get('market.offers.withdraw') }}
                     </button>
                 </form>
-            @elseif ($item->use_skill_id === null)
+            @else
                 <form method="POST" action="{{ route('market.list', $entry) }}"
                       class="row row--wrap" style="--gap:var(--s-2);align-items:center">
                     @csrf

@@ -574,7 +574,6 @@ return [
                 'not_enough_left' => 'They are not selling that many.',
                 'cannot_afford' => 'You cannot afford that.',
                 'no_storage' => 'Your deck has no room for it. Make room in its storage first.',
-                'not_for_sale' => 'Skills are not sold between players. Shops, loot and loyalty stores are where they come from.',
             ],
         ],
     ],
@@ -3086,6 +3085,9 @@ return [
         'kinds' => [
             'physical' => 'Physical',
             'data' => 'Data',
+            // What an imprint is called wherever its kind is said (the card tag, the shelf's group): data, but not
+            // "Data".
+            'imprint' => 'Eidetic Imprints',
         ],
 
         /*
@@ -3113,7 +3115,7 @@ return [
         // one breath. The item has no name of its own: it composes from the
         // skill it carries, so renaming the format renames every one of them.
         'imprint' => [
-            'name' => 'Eidetic Imprint: :skill',
+            'name' => ':skill',
             'flavor' => 'Compressed instruction set. One read, then it is gone.',
         ],
     ],

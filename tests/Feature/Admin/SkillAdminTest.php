@@ -107,7 +107,7 @@ class SkillAdminTest extends TestCase
         $book = Imprint::forSkill($skill);
 
         $this->assertNull($book->name);
-        $this->assertSame('Eidetic Imprint: Cryptography', $book->displayName());
+        $this->assertSame('Cryptography', $book->displayName());
     }
 
     public function test_a_slug_must_be_unique_and_well_formed(): void
