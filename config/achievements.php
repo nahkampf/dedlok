@@ -154,6 +154,15 @@ return [
             'secret' => false,
         ],
 
+        // Ten places in the City found by exploring.
+        14 => [
+            'name' => 'The Knowledge',
+            'description' => 'Ten locations in the City explored and discovered.',
+            'metric' => 'locations_discovered',
+            'threshold' => 10,
+            'secret' => false,
+        ],
+
     ],
 
 ];

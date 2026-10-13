@@ -6,8 +6,10 @@ namespace Tests\Feature;
 
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
+use App\City\Discovery;
 use App\Cyberspace\Extractor;
 use App\Models\Character;
+use App\Models\Location;
 use App\Models\Notification;
 use App\Models\System;
 use App\Models\SystemContent;
@@ -51,6 +53,23 @@ final class AchievementTest extends TestCase
     }
 
     // ---- the wiring ---------------------------------------------------------
+
+    /** Only a find that is NEWS counts, and The Knowledge is won across several of them. */
+    public function test_discovering_locations_counts_towards_the_knowledge(): void
+    {
+        Config::set('achievements.unlocks.14.threshold', 2);
+        $character = $this->character();
+        $places = Location::query()->where('discovery', 'explorable')->take(2)->get();
+        $this->assertCount(2, $places, 'the starter city holds explorable places');
+
+        Discovery::unlock($character, $places[0]);
+        Discovery::unlock($character, $places[0]);
+        $this->assertSame(1, $this->achievements->progressFor($character, Metric::LocationsDiscovered));
+        $this->assertNotContains(14, $this->unlocked($character));
+
+        Discovery::unlock($character, $places[1]);
+        $this->assertContains(14, $this->unlocked($character));
+    }
 
     /** The one place creds come off a system is the one place they are counted. */
     public function test_raiding_a_system_counts_towards_the_million(): void

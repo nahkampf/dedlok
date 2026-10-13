@@ -39,6 +39,9 @@ enum Metric: string
      */
     case GridExplored = 'grid_explored';
 
+    /** City locations found by exploring (`Discovery::unlock()` news only). */
+    case LocationsDiscovered = 'locations_discovered';
+
     /** Systems read all the way through. A pass that only half-answered is not one. */
     case SystemsScanned = 'systems_scanned';
 
