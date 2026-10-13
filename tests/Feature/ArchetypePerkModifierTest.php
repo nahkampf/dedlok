@@ -196,7 +196,7 @@ class ArchetypePerkModifierTest extends TestCase
 
         $this->assertSame(30.0, $hp->base);
         $this->assertEqualsWithDelta(31.5, $hp->raw, 0.0001);
-        $this->assertSame(31.0, $hp->value, 'floored, per the stat definition');
+        $this->assertSame(31.5, $hp->value, 'kept to two decimals, per the stat definition');
     }
 
     public function test_another_archetype_gets_the_base_value(): void

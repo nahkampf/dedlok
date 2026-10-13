@@ -33,7 +33,7 @@ final readonly class DownedCause
         public ?string $address = null,
         public ?string $system = null,
         public ?string $ice = null,
-        public ?int $damage = null,
+        public int|float|null $damage = null,
         public ?string $resource = null,
         public array $tags = [],
         public array $effects = [],

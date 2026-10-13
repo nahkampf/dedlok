@@ -59,7 +59,7 @@ return [
             'tags' => ['derived', 'vital'],
             'min' => 1,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'hundredth',
         ],
 
         /*
@@ -201,7 +201,7 @@ return [
             'tags' => ['derived', 'vital'],
             'min' => 0,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'hundredth',
         ],
 
         /*
@@ -221,7 +221,7 @@ return [
             'tags' => ['derived', 'vital'],
             'min' => 0,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'hundredth',
         ],
 
         /*
@@ -717,7 +717,7 @@ return [
             'tags' => ['derived', 'vital'],
             'min' => 1,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'hundredth',
         ],
 
     ],

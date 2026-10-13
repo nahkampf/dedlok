@@ -25,9 +25,9 @@ final readonly class DamageResult
 {
     public function __construct(
         public Damage $damage,
-        public int $requested,
-        public int $resolved,
-        public int $taken,
+        public int|float $requested,
+        public int|float $resolved,
+        public int|float $taken,
         public ResolvedStat $breakdown,
     ) {}
 

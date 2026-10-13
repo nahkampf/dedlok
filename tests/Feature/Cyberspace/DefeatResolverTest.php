@@ -160,7 +160,7 @@ final class DefeatResolverTest extends TestCase
         $rolled = (int) round($maxHp * 28 / 100);
 
         $this->assertSame(
-            $maxHp - (int) round($rolled * 0.5),
+            $maxHp - $rolled * 0.5,
             $character->fresh()->current_hitpoints,
             'half of it was soaked',
         );

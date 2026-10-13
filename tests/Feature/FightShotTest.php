@@ -101,8 +101,8 @@ final class FightShotTest extends TestCase
 
     public function test_a_hit_that_does_nothing_says_so(): void
     {
-        // A weapon doing 1: even a Glancing quarter of it rounds away.
-        $after = $this->engine()->attack($this->state($this->arm(damage: 1.0)), Side::A, new QueueDice([0.999, 0.5]), new MapMitigation);
+        // A weapon doing a hundredth: a near miss of it is under half a hundredth and comes to nothing.
+        $after = $this->engine()->attack($this->state($this->arm(damage: 0.01)), Side::A, new QueueDice([0.999, 0.5]), new MapMitigation);
 
         $this->assertSame(100, $after->b->hp);
         $this->assertStringContainsString('Nothing gets through', $after->log[0]['text']);

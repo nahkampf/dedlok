@@ -8,6 +8,7 @@ use App\Models\Character;
 use App\Models\ClinicOffer;
 use App\Models\Location;
 use App\Stats\InjuryLedger;
+use App\Support\Points;
 use App\Support\Text;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
@@ -41,7 +42,7 @@ final class Clinic
 
         foreach (ClinicOffer::query()->where('location_id', $place->getKey())->orderBy('id')->get() as $offer) {
             $points = $this->owed($character, $offer->service);
-            $rows[] = ['service' => $offer->service, 'points' => $points, 'per_point' => $offer->price, 'total' => $points * $offer->price];
+            $rows[] = ['service' => $offer->service, 'points' => $points, 'per_point' => $offer->price, 'total' => (int) ceil($points * $offer->price)];
         }
 
         return $rows;
@@ -65,11 +66,12 @@ final class Clinic
 
             $points = $this->owed($locked, $service);
 
-            if ($points < 1) {
+            if ($points <= 0) {
                 return CityRefusal::NothingToTreat;
             }
 
-            $total = $points * $offer->price;
+            // A fraction of a point is billed whole, rounded up: creds are whole.
+            $total = (int) ceil($points * $offer->price);
 
             if ((int) $locked->creds < $total) {
                 return CityRefusal::CannotAfford;
@@ -91,11 +93,11 @@ final class Clinic
     }
 
     /** Points of this treatment the character is owed. THE one place it is worked out. */
-    private function owed(Character $character, ClinicService $service): int
+    private function owed(Character $character, ClinicService $service): int|float
     {
         return match ($service) {
-            ClinicService::Hitpoints => max(0, $character->maximumFor('current_hitpoints') - (int) $character->current_hitpoints),
-            ClinicService::SynapticIntegrity => max(0, $character->maximumFor('current_synaptic_integrity') - (int) $character->current_synaptic_integrity),
+            ClinicService::Hitpoints => Points::of(max(0, $character->maximumFor('current_hitpoints') - $character->current_hitpoints)),
+            ClinicService::SynapticIntegrity => Points::of(max(0, $character->maximumFor('current_synaptic_integrity') - $character->current_synaptic_integrity)),
             ClinicService::NeuralDamage => (int) ceil(abs((new InjuryLedger)->carried($character, InjuryLedger::NEURAL))),
             ClinicService::PhysicalTrauma => (int) ceil(abs((new InjuryLedger)->carried($character, InjuryLedger::TRAUMA))),
         };

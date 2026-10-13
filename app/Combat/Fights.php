@@ -28,6 +28,7 @@ use App\Models\Fight;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Npc;
+use App\Support\Points;
 use App\Support\Text;
 use Closure;
 use Illuminate\Support\Collection;
@@ -302,7 +303,7 @@ final class Fights
             $name = (string) $dose->item?->displayName();
 
             if ($amount > 0) {
-                $gained = $character->recover('current_hitpoints', (int) round($amount * (float) $dose->potency));
+                $gained = $character->recover('current_hitpoints', Points::of($amount * (float) $dose->potency));
                 $lines[] = ['round' => $round, 'text' => Text::get('combat.fight.log.dose_heals', ['item' => $name, 'amount' => $gained]), 'tone' => 'ok'];
             } elseif ($amount < 0) {
                 $character->takeDamage('current_hitpoints', -$amount);
@@ -351,7 +352,7 @@ final class Fights
             $lines[] = ['round' => $round, 'text' => Text::get('combat.fight.log.dose_overdose'), 'tone' => 'crit'];
         }
 
-        $after = $after->with(Side::A, $after->a->with(hp: (int) $character->current_hitpoints, si: (int) $character->current_synaptic_integrity))->withLog($lines);
+        $after = $after->with(Side::A, $after->a->with(hp: $character->current_hitpoints, si: $character->current_synaptic_integrity))->withLog($lines);
 
         return $after->a->down() ? $after->ended(Result::ADown) : $after;
     }
@@ -362,8 +363,8 @@ final class Fights
      */
     private function applyToCharacter(Character $character, Fight $fight, FightState $before, FightState $after): void
     {
-        $character->takeDamage('current_hitpoints', max(0, $before->a->hp - $after->a->hp));
-        $character->takeDamage('current_synaptic_integrity', max(0, (int) $before->a->si - (int) $after->a->si));
+        $character->takeDamage('current_hitpoints', Points::of(max(0, $before->a->hp - $after->a->hp)));
+        $character->takeDamage('current_synaptic_integrity', Points::of(max(0, $before->a->si - $after->a->si)));
 
         $this->applyAmmunition($character, $fight, $before->a->ranged, $after->a->ranged);
     }

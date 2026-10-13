@@ -202,7 +202,7 @@
                      read was four sheets a page. --}}
                 @php($hudSheet = $hud->sheet())
                 @foreach (Character::RESOURCES as $resource => $statId)
-                    @php($current = (int) $hud->{$resource})
+                    @php($current = $hud->{$resource} ?? 0)
                     @php($max = $hud->maximumFor($resource, $hudSheet))
                     @php($label = Text::get("character.abbreviations.{$statId}"))
                     @php($ratio = $hud->resourceRatio($resource, $hudSheet))
@@ -221,7 +221,7 @@
                          ]) }}">
                         <span class="dial__in" aria-hidden="true">
                             <span class="dial__label">{{ $label }}</span>
-                            <span class="dial__value">{{ $current }}</span>
+                            <span class="dial__value">{{ (int) ceil($current) }}</span>
                         </span>
                     </div>
                 @endforeach

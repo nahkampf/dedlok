@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Items;
 
 use App\Models\Character;
+use App\Support\Points;
 use App\Support\Text;
 
 /**
@@ -26,27 +27,27 @@ enum UseEffect: string
     }
 
     /** "Restores 20 hit points", for a card. */
-    public function describe(int $amount): string
+    public function describe(int|float $amount): string
     {
         return Text::get("consumables.effects.{$this->value}.card", ['amount' => $amount]);
     }
 
     /** "You recover 12 hit points.", for after it was used. */
-    public function done(int $amount): string
+    public function done(int|float $amount): string
     {
         return Text::get("consumables.effects.{$this->value}.done", ['amount' => $amount]);
     }
 
     /** How much `apply()` would change right now. Reads, never writes. */
-    public function would(Character $character, int $amount): int
+    public function would(Character $character, int|float $amount): int|float
     {
         return match ($this) {
-            self::HealHitpoints => min($amount, max(0, $character->maximumFor('current_hitpoints') - (int) $character->current_hitpoints)),
+            self::HealHitpoints => Points::of(min($amount, max(0, $character->maximumFor('current_hitpoints') - $character->current_hitpoints))),
         };
     }
 
     /** Does it, and returns how much it actually changed. */
-    public function apply(Character $character, int $amount): int
+    public function apply(Character $character, int|float $amount): int|float
     {
         return match ($this) {
             self::HealHitpoints => $character->recover('current_hitpoints', $amount),

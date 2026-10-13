@@ -323,8 +323,8 @@ final class CurrentProcesses
             return $rows;
         }
 
-        $siShort = (int) $character->current_synaptic_integrity < $character->maximumFor('current_synaptic_integrity');
-        $hpShort = (int) $character->current_hitpoints < $character->maximumFor('current_hitpoints');
+        $siShort = $character->current_synaptic_integrity < $character->maximumFor('current_synaptic_integrity');
+        $hpShort = $character->current_hitpoints < $character->maximumFor('current_hitpoints');
 
         if ($siShort) {
             // A point lands on the minute whose number divides by the interval: no stored clock, so the next mark is sums.

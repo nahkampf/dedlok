@@ -89,7 +89,7 @@ final readonly class WaitingRoom
             // waking still broken in the other half would put somebody back on
             // the floor on their next request.
             foreach (array_keys(Character::RESOURCES) as $resource) {
-                if ((int) $character->getAttribute($resource) <= 0) {
+                if ($character->getAttribute($resource) <= 0) {
                     $character->recover($resource, 1);
                 }
             }
@@ -109,7 +109,7 @@ final readonly class WaitingRoom
     public function checkFloor(Character $character, DownedCause $cause): bool
     {
         foreach (array_keys(Character::RESOURCES) as $resource) {
-            if ((int) $character->getAttribute($resource) <= 0) {
+            if ($character->getAttribute($resource) <= 0) {
                 $this->put($character, $cause);
 
                 return true;

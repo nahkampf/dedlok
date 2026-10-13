@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Models\Character;
 use App\Stats\Resolver;
+use App\Support\Points;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -46,7 +47,7 @@ use Illuminate\Support\Facades\Log;
  *
  * ## And hit points, by the hour
  *
- * `hitpoints_regen` is a rate in points per HOUR, zero by default. Each run credits the share of it that belongs to
+ * `hitpoints_regen` is a rate in points per HOUR (to two decimals), zero by default. Each run credits the share of it that belongs to
  * THIS minute: `floor(rate × (m + 1) / 60) − floor(rate × m / 60)` for m the minute since the epoch. Over any sixty
  * consecutive minutes that is exactly `rate` points, spread as evenly as whole points allow, and it needs no stored
  * remainder — the clock carries it, which is this command's whole stance. A minute the scheduler missed is a share
@@ -65,6 +66,18 @@ class RegenerateSynapses extends Command
 
     protected $description = 'Credit a minute of Synaptic Integrity and hit point regeneration, and the two-hourly mend everybody gets';
 
+    /**
+     * This minute's share of an hourly rate, in hundredths of a point so a fraction of a point an hour is exact:
+     * `floor(c × (m + 1) / 60) − floor(c × m / 60)` for c the rate in hundredths. Over any sixty minutes it is exactly
+     * `rate`, with no stored remainder.
+     */
+    private static function share(float|int $perHour, int $minute): float|int
+    {
+        $hundredths = (int) round($perHour * 100);
+
+        return Points::of((intdiv($hundredths * ($minute + 1), 60) - intdiv($hundredths * $minute, 60)) / 100);
+    }
+
     public function handle(Resolver $resolver): int
     {
         $dryRun = (bool) $this->option('dry-run');
@@ -82,26 +95,26 @@ class RegenerateSynapses extends Command
             ->chunkById(200, function ($characters) use ($resolver, $dryRun, $minute, &$healed, &$points, &$hpHealed, &$hpPoints): void {
                 foreach ($characters as $character) {
                     // Hit points: this minute's share of an hourly rate (see the class notes).
-                    $perHour = $resolver->resolve('hitpoints_regen', 0.0, $character->modifiers())->toInt();
-                    $share = intdiv($perHour * ($minute + 1), 60) - intdiv($perHour * $minute, 60);
+                    $perHour = $resolver->resolve('hitpoints_regen', 0.0, $character->modifiers())->value;
+                    $share = self::share($perHour, $minute);
 
                     if ($share > 0) {
                         $gained = $dryRun
-                            ? min($share, max(0, $character->maximumFor('current_hitpoints') - (int) $character->current_hitpoints))
+                            ? Points::of(min($share, max(0, $character->maximumFor('current_hitpoints') - $character->current_hitpoints)))
                             : $character->recover('current_hitpoints', $share);
 
                         if ($gained > 0) {
                             $hpHealed++;
-                            $hpPoints += $gained;
+                            $hpPoints = Points::of($hpPoints + $gained);
                         }
                     }
 
-                    $rate = $resolver->resolve('synaptic_regen', 0.0, $character->modifiers())->toInt();
+                    $rate = $resolver->resolve('synaptic_regen', 0.0, $character->modifiers())->value;
 
                     // The slow floor: through the Sheet, because its base lives in
                     // `stats.bases`, which only the Sheet walks.
                     if ($minute % max(1, $character->stat('synaptic_mend_minutes')->toInt()) === 0) {
-                        $rate++;
+                        $rate += 1;
                     }
 
                     if ($rate <= 0) {
@@ -111,12 +124,12 @@ class RegenerateSynapses extends Command
                     // Asked before writing so a character already at their ceiling
                     // costs nothing — which is most of them, most of the time.
                     $restored = $dryRun
-                        ? min($rate, max(0, $character->maximumFor('current_synaptic_integrity') - (int) $character->current_synaptic_integrity))
+                        ? Points::of(min($rate, max(0, $character->maximumFor('current_synaptic_integrity') - $character->current_synaptic_integrity)))
                         : $character->recover('current_synaptic_integrity', $rate);
 
                     if ($restored > 0) {
                         $healed++;
-                        $points += $restored;
+                        $points = Points::of($points + $restored);
                     }
                 }
             });
@@ -124,11 +137,11 @@ class RegenerateSynapses extends Command
         $parts = [];
 
         if ($healed > 0) {
-            $parts[] = sprintf('%d character(s) recovered %d point(s) of Synaptic Integrity', $healed, $points);
+            $parts[] = sprintf('%d character(s) recovered %s point(s) of Synaptic Integrity', $healed, Points::format($points));
         }
 
         if ($hpHealed > 0) {
-            $parts[] = sprintf('%d character(s) recovered %d point(s) of hit points', $hpHealed, $hpPoints);
+            $parts[] = sprintf('%d character(s) recovered %s point(s) of hit points', $hpHealed, Points::format($hpPoints));
         }
 
         // Nothing healed reads as the SI sentence it always did, with its zeroes.

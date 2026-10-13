@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Stats;
 
 use App\Models\Character;
+use App\Support\Points;
 
 /**
  * The one place a hit becomes a number and a number becomes a smaller pool.
@@ -56,7 +57,7 @@ final class DamageResolver
     public function apply(Character $character, Damage $damage): DamageResult
     {
         $breakdown = $this->preview($character, $damage);
-        $resolved = $breakdown->toInt();
+        $resolved = Points::of($breakdown->value);
 
         return new DamageResult(
             damage: $damage,

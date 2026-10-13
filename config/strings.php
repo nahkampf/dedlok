@@ -2270,7 +2270,7 @@ return [
 
     'character' => [
         'bounty_heading' => 'Bounty',
-        'bounty_none' => 'Nobody is paying for you.',
+        'bounty_none' => 'No bounty on your head.',
         'bounty_hint' => 'Creds on your head. It grows each time word goes out about you.',
         'heat_heading' => 'Heat',
         'heat_none' => 'You are carrying no heat.',

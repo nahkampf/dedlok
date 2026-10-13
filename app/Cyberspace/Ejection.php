@@ -20,7 +20,7 @@ use App\Support\Text;
  */
 final readonly class Ejection
 {
-    public function __construct(public int $damage) {}
+    public function __construct(public int|float $damage) {}
 
     public function message(): string
     {
