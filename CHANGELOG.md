@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.56.0] — 2026-10-13
+
+### Changed
+- Hit points and Synaptic Integrity are carried to two decimal places (`characters.current_hitpoints` and `current_synaptic_integrity` are `DECIMAL(8,2)`; migration `2026_10_13_130000_hit_points_to_hundredths`). Maximums, both regeneration rates and every damage stat round to a hundredth instead of a whole point, so a small percentage resistance or a fraction of a point an hour is no longer rounded away.
+- `App\Support\Points` is the one rounding and `App\Casts\PointsCast` the column cast; a whole figure stays an `int`. `Character::takeDamage()`/`recover()`, `DamageResolver`, the fight engine's `Combatant`, `Mitigation`, `HitDamage`, `Clinic`, `UseEffect` and `characters:regenerate` carry fractions. A hit is no longer rounded to whole points.
+- A clinic bills a fraction of a point rounded up to whole creds. `characters:regenerate` works in hundredths so an hourly rate is exact.
+- The character sheet's bounty and heat boxes are the same height; the empty bounty line reads "No bounty on your head."
+
+
 ## [0.55.1] — 2026-10-13
 
 A heat box on the character sheet.
@@ -3112,7 +3121,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.55.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.56.0...HEAD
+[0.56.0]: https://github.com/nahkampf/dedlok/compare/v0.55.1...v0.56.0
 [0.55.1]: https://github.com/nahkampf/dedlok/compare/v0.55.0...v0.55.1
 [0.55.0]: https://github.com/nahkampf/dedlok/compare/v0.54.0...v0.55.0
 [0.54.0]: https://github.com/nahkampf/dedlok/compare/v0.53.2...v0.54.0

@@ -1,3 +1,7 @@
+## 0.56.0 (2026-10-13)
+
+- HP and SI can now have fractions, and nothing that touches it rounds to integers any more
+
 ## 0.55.1 (2026-10-13)
 
 - Heat now displayed on character sheet
