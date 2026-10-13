@@ -1,3 +1,7 @@
+## 0.54.0 (2026-10-13)
+
+- Minor: Added achievement **The Knowledge**
+
 ## 0.53.2 (2026-10-12)
 
 - Bunch of images added (temporarily, I don't have permission to use them) just for feel.
