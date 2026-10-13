@@ -127,7 +127,7 @@ Schedule::command('characters:bounties --quiet-when-idle')
  * that speeds it up changes nothing here.
  */
 Schedule::command('characters:cool --quiet-when-idle')
-    ->dailyAt('05:10')
+    ->cron((string) config('cadence.heat_cool'))
     ->withoutOverlapping();
 
 /*

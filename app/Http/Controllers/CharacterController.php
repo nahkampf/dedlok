@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Characters\Avatar;
+use App\Characters\HeatDecay;
 use App\Drugs\DrugLedger;
 use App\Drugs\Family;
 use App\Models\Archetype;
@@ -12,8 +13,11 @@ use App\Models\Character;
 use App\Models\Dose;
 use App\Stats\BreakdownStep;
 use App\Support\Text;
+use Carbon\CarbonImmutable;
+use Cron\CronExpression;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\View\View;
 use RuntimeException;
 
@@ -49,6 +53,7 @@ class CharacterController extends Controller
             'attributes' => $this->attributes($character),
             'max' => Character::ATTRIBUTE_MAX,
             'vitals' => $this->vitals($character),
+            'heat' => $this->heat($character),
             // What is in them right now, and how close each family is to the
             // line. Empty for nearly everybody, and then the section is absent
             // rather than a row of zeroes.
@@ -58,6 +63,55 @@ class CharacterController extends Controller
             // id rather than a relation — see Character::modifiers().
             'archetype' => Archetype::roster()->get($character->archetype),
         ]);
+    }
+
+    /**
+     * The heat box: the figure, how full the bar is, what cools it a day, and when it reaches 0.
+     *
+     * Heat has no ceiling, so the bar is a scale of 100 (where the bounty roll stops climbing) and caps there. The
+     * night it reaches 0 is counted from the next run of `characters:cool`, one rate a night, with the same rounding
+     * the job uses — `HeatDecay::tonight()` rounds each night's result to a tenth.
+     *
+     * @return array{value: string, ratio: float, rate: string, zero_at: ?string, days: ?int, fill: string}
+     */
+    private function heat(Character $character): array
+    {
+        $heat = round((float) $character->heat, 1);
+        $rate = round((new HeatDecay)->rateFor($character), 1);
+        $nights = null;
+
+        if ($heat > 0 && $rate > 0) {
+            $left = $heat;
+            $nights = 0;
+
+            while ($left > 0 && $nights < 100000) {
+                $left = round($left - $rate, 1);
+                $nights++;
+            }
+        }
+
+        $zeroAt = null;
+        $days = null;
+        $cron = Config::get('cadence.heat_cool');
+
+        if ($nights !== null && is_string($cron)) {
+            $first = CarbonImmutable::instance(CronExpression::factory($cron)->getNextRunDate(now()));
+            $zeroAt = $first->addDays($nights - 1);
+            $days = max(1, (int) ceil(now()->diffInHours($zeroAt, false) / 24));
+        }
+
+        $format = static fn (float $n): string => rtrim(rtrim(number_format($n, 1), '0'), '.');
+
+        return [
+            'value' => $format($heat),
+            'ratio' => max(0.0, min(1.0, $heat / 100)),
+            'rate' => $format($rate),
+            'zero_at' => $zeroAt?->utc()->format('Y-m-d H:i').' UTC',
+            'days' => $days,
+            // The bands the bounty roll and the hunters read (config/cyberspace.php, heat): under the first they
+            // do nothing; the top two grades start at 62.
+            'fill' => $heat >= 62 ? 'var(--crit)' : ($heat >= 24 ? 'var(--warn)' : 'var(--ok)'),
+        ];
     }
 
     /**

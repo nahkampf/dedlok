@@ -48,6 +48,23 @@ final class CharacterSheetTest extends TestCase
 
     // ---- what is on it -----------------------------------------------------
 
+    public function test_the_heat_box_reads_the_figure_the_rate_and_when_it_reaches_zero(): void
+    {
+        $this->character->forceFill(['heat' => 3.0])->save();
+
+        // Half a point a night: six nights, the first at the next run of characters:cool.
+        $this->visit()
+            ->assertOk()
+            ->assertSeeText(Text::get('character.heat_heading'))
+            ->assertSeeText(Text::get('character.heat_cools', ['rate' => '0.5']))
+            ->assertSee('data-tip="Heat will be 0 in about', false);
+    }
+
+    public function test_the_heat_box_says_so_when_there_is_none(): void
+    {
+        $this->visit()->assertOk()->assertSee('data-tip="'.Text::get('character.heat_none').'"', false);
+    }
+
     public function test_the_sheet_names_the_character_and_their_role(): void
     {
         $this->visit()

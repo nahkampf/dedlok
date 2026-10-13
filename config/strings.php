@@ -2272,6 +2272,13 @@ return [
         'bounty_heading' => 'Bounty',
         'bounty_none' => 'Nobody is paying for you.',
         'bounty_hint' => 'Creds on your head. It grows each time word goes out about you.',
+        'heat_heading' => 'Heat',
+        'heat_none' => 'You are carrying no heat.',
+        'heat_hint' => 'Heat is what the world has noticed about you. It cools by :rate a day.',
+        'heat_never' => 'Nothing is cooling it, so it will not reach 0.',
+        'heat_zero_at' => 'Heat will be 0 in about :days at :at.',
+        'heat_value' => 'Heat :heat.',
+        'heat_cools' => 'Cools :rate a day',
 
         /*
         | THE SHEET ITSELF. Skills, implants and achievements each had a rail
