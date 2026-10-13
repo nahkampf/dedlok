@@ -522,12 +522,16 @@ final readonly class Simulator
             return $this->line('cyberspace.run.log.attack_fails');
         }
 
+        // A hit that lands may be critical; one die, spent only when there is a chance at all.
+        $critical = CriticalHit::rolls($character, $this->roll);
+        $damage = $critical ? CriticalHit::scale($damage) : $damage;
+
         $run->ice_integrity = max(0, (int) $run->ice_integrity - $damage);
 
         // "Your [Icebreaker name] finds an intrusion vector…": the program is a green tag in the middle of the
         // sentence, so the line carries what comes before the tag as well as what follows it.
         return $this->line(
-            'cyberspace.run.log.attack',
+            $critical ? 'cyberspace.run.log.attack_critical' : 'cyberspace.run.log.attack',
             ['damage' => $damage],
             'ok',
             (string) $icebreaker->item?->displayName(),

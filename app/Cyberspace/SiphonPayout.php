@@ -30,7 +30,7 @@ use Illuminate\Support\Number;
  *
  * ## The base is the machine's; the modifiers are the person's
  *
- * `(3000 x grade) / 100` is what the machine is worth draining, and everything
+ * The `cyberspace.backdoors.siphon.by_grade` table is what the machine is worth draining, and everything
  * after that belongs to whoever holds the backdoor: `siphon_yield` goes
  * through `App\Stats\Resolver` like every other number, so the first skill
  * that makes somebody better at this is a row rather than a branch in here.
@@ -144,6 +144,6 @@ final readonly class SiphonPayout
     /** What the machine itself is worth draining, before its holder is asked. */
     public function baseFor(int $grade): int
     {
-        return max(0, $grade) * (int) Config::get('cyberspace.backdoors.siphon.per_grade', 30);
+        return (int) Config::get('cyberspace.backdoors.siphon.by_grade.'.$grade, 0);
     }
 }

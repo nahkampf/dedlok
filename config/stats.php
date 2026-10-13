@@ -572,6 +572,27 @@ return [
             'rounding' => 'tenth',
         ],
 
+        /*
+        | THE CHANCE A PLAYER'S HIT IS CRITICAL, in percent (2 is two in a hundred). Rolled once for every hit that
+        | actually lands, and the hit then does `combat.critical.multiplier` times the damage. One stat per realm:
+        | physical combat (an attack that is not a near miss) and cyberspace (an icebreaker cutting at ICE or a hunter).
+        | A flat base in `bases`, so skills, scripts, implants and drugs reach it as modifiers. Only the player's side
+        | rolls it. `Character::stat('critical_chance_physical')`.
+        */
+        'critical_chance_physical' => [
+            'tags' => ['combat'],
+            'min' => 0,
+            'max' => 100,
+            'rounding' => 'tenth',
+        ],
+
+        'critical_chance_cyberspace' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => 100,
+            'rounding' => 'tenth',
+        ],
+
         'surgery_duration' => [
             'tags' => ['city', 'surgery'],
             'min' => 1,
@@ -799,6 +820,10 @@ return [
         // spread of 8, a starting character is hit about two times in three by an even match.
         'defence' => 8,
         'pursuit' => 8,
+
+        // Two per cent of a player's hits are critical, in either realm.
+        'critical_chance_physical' => 2,
+        'critical_chance_cyberspace' => 2,
 
         // Nobody routes a run through anything until a skill says otherwise.
         // Routing and Advanced Routing grant one hop per level each.

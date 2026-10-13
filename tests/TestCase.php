@@ -28,6 +28,10 @@ abstract class TestCase extends BaseTestCase
         Cache::flush();
         RateLimiter::clear('');
         Archetype::forgetRoster();
+
+        // A critical hit costs one extra die per shot, which would shift every pinned dice order that reaches a
+        // real character's fight or run. Off by default here; the tests about criticals set it back.
+        config(['stats.bases.critical_chance_physical' => 0, 'stats.bases.critical_chance_cyberspace' => 0]);
     }
 
     //

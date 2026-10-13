@@ -78,10 +78,12 @@ final class HunterCombat
             // answering zero, and asking through a Sheet would be wrong here
             // anyway.
             $dealt = $this->resolver->resolve('icebreaker_damage', 0.0, $character->modifiers())->toInt();
+            $critical = $dealt > 0 && CriticalHit::rolls($character, $this->roll);
+            $dealt = $critical ? CriticalHit::scale($dealt) : $dealt;
             $hunt->ice_integrity = max(0, $hunt->ice_integrity - $dealt);
 
             $new[] = $dealt > 0
-                ? $this->line('cyberspace.hunt.log.hit', ['damage' => $dealt], 'ok')
+                ? $this->line($critical ? 'cyberspace.hunt.log.hit_critical' : 'cyberspace.hunt.log.hit', ['damage' => $dealt], 'ok')
                 : $this->line('cyberspace.hunt.log.no_program', tone: 'warn');
 
             if ($hunt->ice_integrity <= 0) {

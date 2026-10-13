@@ -457,7 +457,7 @@ means going back and doing the run again.
 
 | | **Siphon** | **Routing** |
 | --- | --- | --- |
-| What it gives | a little cash every night, paid straight into your creds — **built**: (3000 x grade) / 100, through `siphon_yield` so a skill can raise it | a hop in the chain a trace has to walk — **built**: `ChainBuilder` puts every one you hold on the route, best first |
+| What it gives | a little cash every night, paid straight into your creds — **built**: a table by grade (45 to 290, `backdoors.siphon.by_grade`), through `siphon_yield` so a skill can raise it | a hop in the chain a trace has to walk — **built**: `ChainBuilder` puts every one you hold on the route, best first |
 | Where it is useful | on a system with something worth taking | on any system at all, however worthless |
 | How you lose it | the nightly ageing roll, and nothing else | the ageing roll **or** a completed trace, which takes every routing backdoor in that run's chain at once |
 

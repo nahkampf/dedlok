@@ -63,6 +63,15 @@ return [
     ],
 
     /*
+    | CRITICAL HITS. A player's hit that actually lands (anything above a near miss) is critical with the
+    | resolved `critical_chance_physical` per cent, and then does this many times the damage — before
+    | resistance, so armour still counts. Cyberspace has its own, `cyberspace.critical`.
+    */
+    'critical' => [
+        'multiplier' => 5,
+    ],
+
+    /*
     | How much luck matters in WHICH tier a shot gets (`HitQuality::fromRoll()`): the die moves the
     | chance by up to half of this either way before it is cut into five equal bands. At 0.6 the
     | average damage of a shot is almost exactly chance × damage; raise it for more variance.

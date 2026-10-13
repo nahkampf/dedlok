@@ -317,7 +317,10 @@ final class FightEngine
             $fired++;
             $tier = HitQuality::fromRoll($dice(), $chances[$k]);
             $slot = ArmourSlot::roll($dice());
-            $state = $this->land($state, $attacker, $spec, $tier, $slot, $mitigation);
+            // One die for a hit that actually lands, and only for a side that has any chance at all
+            // (an NPC has none), so the older dice orders are untouched.
+            $critical = $self->critChance > 0 && $tier !== HitQuality::NearMiss && $dice() * 100 < $self->critChance;
+            $state = $this->land($state, $attacker, $spec, $tier, $slot, $mitigation, $critical);
             $state = $this->riders($state, $attacker, $spec, $tier, $dice);
         }
 
@@ -399,13 +402,13 @@ final class FightEngine
     }
 
     /** One hit that has found its tier and its place: split, resolved part by part, and applied. */
-    private function land(FightState $state, Side $attacker, RoundSpec $spec, HitQuality $tier, ArmourSlot $slot, Mitigation $mitigation): FightState
+    private function land(FightState $state, Side $attacker, RoundSpec $spec, HitQuality $tier, ArmourSlot $slot, Mitigation $mitigation, bool $critical = false): FightState
     {
         $target = $attacker->other();
         $victim = $state->combatant($target);
         $dealt = [];
 
-        foreach (HitDamage::parts($spec->damage, $tier, $spec->profile) as $type => $amount) {
+        foreach (HitDamage::parts($spec->damage * ($critical ? (float) config('combat.critical.multiplier') : 1.0), $tier, $spec->profile) as $type => $amount) {
             $origin = DamageOrigin::from($type);
             $resource = (string) $origin->resource();
 
@@ -423,7 +426,7 @@ final class FightEngine
 
         $line = [
             'round' => $state->round,
-            'text' => Text::get($dealt === [] ? 'combat.fight.log.shot_none' : 'combat.fight.log.shot', [
+            'text' => Text::get($dealt === [] ? 'combat.fight.log.shot_none' : ($critical ? 'combat.fight.log.shot_critical' : 'combat.fight.log.shot'), [
                 'attacker' => $state->combatant($attacker)->name,
                 'tier' => $tier->label(),
                 'slot' => $slot->label(),

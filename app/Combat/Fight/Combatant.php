@@ -28,6 +28,8 @@ final readonly class Combatant
         public array $statuses = [],
         public ?int $hpMax = null,
         public ?float $fleesAt = null,
+        /** Percent of its hits that are critical. Zero for an NPC: only a player's side rolls it. */
+        public float $critChance = 0.0,
     ) {}
 
     /** The weapon this side can use at this range, if it has one. */
@@ -104,7 +106,7 @@ final readonly class Combatant
     {
         return new self(
             $this->name, $hp ?? $this->hp, $this->defence, $this->pursuit, $ranged ?? $this->ranged, $melee ?? $this->melee,
-            $si ?? $this->si, $statuses ?? $this->statuses, $this->hpMax, $this->fleesAt,
+            $si ?? $this->si, $statuses ?? $this->statuses, $this->hpMax, $this->fleesAt, $this->critChance,
         );
     }
 
@@ -114,7 +116,7 @@ final readonly class Combatant
         return [
             'name' => $this->name, 'hp' => $this->hp, 'si' => $this->si, 'defence' => $this->defence, 'pursuit' => $this->pursuit,
             'ranged' => $this->ranged?->toArray(), 'melee' => $this->melee?->toArray(), 'statuses' => $this->statuses,
-            'hp_max' => $this->hpMax, 'flees_at' => $this->fleesAt,
+            'hp_max' => $this->hpMax, 'flees_at' => $this->fleesAt, 'crit_chance' => $this->critChance,
         ];
     }
 
@@ -127,6 +129,7 @@ final readonly class Combatant
             $data['melee'] === null ? null : Arm::fromArray($data['melee']),
             $data['si'] === null ? null : (int) $data['si'], array_values((array) ($data['statuses'] ?? [])),
             ($data['hp_max'] ?? null) === null ? null : (int) $data['hp_max'], ($data['flees_at'] ?? null) === null ? null : (float) $data['flees_at'],
+            (float) ($data['crit_chance'] ?? 0),
         );
     }
 }
