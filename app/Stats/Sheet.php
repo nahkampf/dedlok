@@ -143,7 +143,7 @@ final class Sheet
 
         foreach (Character::RESOURCES as $resource => $statId) {
             $max = $bare->value($statId);
-            $current = (int) $character->getAttribute($resource);
+            $current = (float) $character->getAttribute($resource);
 
             $values[self::RATIO_KEYS[$resource]] = $max > 0
                 ? max(0.0, min(1.0, $current / $max))

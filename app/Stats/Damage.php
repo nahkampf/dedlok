@@ -24,7 +24,7 @@ use App\Models\Character;
 final readonly class Damage
 {
     public function __construct(
-        public int $amount,
+        public int|float $amount,
         public string $resource,
         public DamageOrigin $origin,
         /**
@@ -55,13 +55,13 @@ final readonly class Damage
     }
 
     /** Damage to the mind: ICE, a deck failing underneath you, a bad jack-out. */
-    public static function synapticIntegrity(int $amount, DamageOrigin $origin, ?ArmourSlot $location = null): self
+    public static function synapticIntegrity(int|float $amount, DamageOrigin $origin, ?ArmourSlot $location = null): self
     {
         return new self($amount, 'current_synaptic_integrity', $origin, $location);
     }
 
     /** Damage to the body. Neural Shock is the first thing that deals any. */
-    public static function hitpoints(int $amount, DamageOrigin $origin, ?ArmourSlot $location = null, int $penetration = 0): self
+    public static function hitpoints(int|float $amount, DamageOrigin $origin, ?ArmourSlot $location = null, int $penetration = 0): self
     {
         return new self($amount, 'current_hitpoints', $origin, $location, $penetration);
     }

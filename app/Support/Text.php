@@ -48,7 +48,7 @@ final class Text
      *
      * @param  array<string, string|int|float>  $replace
      */
-    public static function plural(string $key, int $count, array $replace = []): string
+    public static function plural(string $key, int|float $count, array $replace = []): string
     {
         $forms = Config::get("strings.{$key}");
 

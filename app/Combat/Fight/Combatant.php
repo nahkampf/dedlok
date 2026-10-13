@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Combat\Fight;
 
 use App\Combat\RiderKind;
+use App\Support\Points;
 
 /**
  * One side of a fight, as a snapshot. Plain data throughout: it has to be stored between requests
@@ -18,15 +19,15 @@ final readonly class Combatant
 {
     public function __construct(
         public string $name,
-        public int $hp,
+        public int|float $hp,
         public float $defence,
         public float $pursuit = 0.0,
         public ?Arm $ranged = null,
         public ?Arm $melee = null,
-        public ?int $si = null,
+        public int|float|null $si = null,
         /** What is on it now: at most one per kind. @var list<array{kind: string, turns: int, amount: int}> */
         public array $statuses = [],
-        public ?int $hpMax = null,
+        public int|float|null $hpMax = null,
         public ?float $fleesAt = null,
         /** Percent of its hits that are critical. Zero for an NPC: only a player's side rolls it. */
         public float $critChance = 0.0,
@@ -90,19 +91,19 @@ final readonly class Combatant
     }
 
     /** The same side minus `$amount` from a resource, floored at nothing. */
-    public function hurt(string $resource, int $amount): self
+    public function hurt(string $resource, int|float $amount): self
     {
         return $resource === 'current_synaptic_integrity'
-            ? $this->but(si: max(0, (int) $this->si - $amount))
-            : $this->but(hp: max(0, $this->hp - $amount));
+            ? $this->but(si: Points::of(max(0, $this->si - $amount)))
+            : $this->but(hp: Points::of(max(0, $this->hp - $amount)));
     }
 
-    public function with(?int $hp = null, ?int $si = null, ?Arm $ranged = null, ?Arm $melee = null): self
+    public function with(int|float|null $hp = null, int|float|null $si = null, ?Arm $ranged = null, ?Arm $melee = null): self
     {
         return $this->but(hp: $hp, si: $si, ranged: $ranged, melee: $melee);
     }
 
-    private function but(?int $hp = null, ?int $si = null, ?Arm $ranged = null, ?Arm $melee = null, ?array $statuses = null): self
+    private function but(int|float|null $hp = null, int|float|null $si = null, ?Arm $ranged = null, ?Arm $melee = null, ?array $statuses = null): self
     {
         return new self(
             $this->name, $hp ?? $this->hp, $this->defence, $this->pursuit, $ranged ?? $this->ranged, $melee ?? $this->melee,
@@ -124,11 +125,11 @@ final readonly class Combatant
     public static function fromArray(array $data): self
     {
         return new self(
-            (string) $data['name'], (int) $data['hp'], (float) $data['defence'], (float) $data['pursuit'],
+            (string) $data['name'], Points::of($data['hp']), (float) $data['defence'], (float) $data['pursuit'],
             $data['ranged'] === null ? null : Arm::fromArray($data['ranged']),
             $data['melee'] === null ? null : Arm::fromArray($data['melee']),
-            $data['si'] === null ? null : (int) $data['si'], array_values((array) ($data['statuses'] ?? [])),
-            ($data['hp_max'] ?? null) === null ? null : (int) $data['hp_max'], ($data['flees_at'] ?? null) === null ? null : (float) $data['flees_at'],
+            $data['si'] === null ? null : Points::of($data['si']), array_values((array) ($data['statuses'] ?? [])),
+            ($data['hp_max'] ?? null) === null ? null : Points::of($data['hp_max']), ($data['flees_at'] ?? null) === null ? null : (float) $data['flees_at'],
             (float) ($data['crit_chance'] ?? 0),
         );
     }

@@ -154,9 +154,9 @@ final class HitRollTest extends TestCase
     public function test_a_hit_scales_by_its_tier_then_splits_by_its_profile(): void
     {
         $this->assertSame(['slashing' => 10], HitDamage::parts(10.0, HitQuality::DeadOn, ['slashing' => 100]));
-        $this->assertSame(['slashing' => 8], HitDamage::parts(10.0, HitQuality::CleanHit, ['slashing' => 100]), '75% of 10 is 7.5, which rounds up');
+        $this->assertSame(['slashing' => 7.5], HitDamage::parts(10.0, HitQuality::CleanHit, ['slashing' => 100]), '75% of 10 is 7.5, kept to two decimals');
         $this->assertSame(['slashing' => 5], HitDamage::parts(10.0, HitQuality::Partial, ['slashing' => 100]));
-        $this->assertSame(['slashing' => 3], HitDamage::parts(10.0, HitQuality::Glancing, ['slashing' => 100]));
+        $this->assertSame(['slashing' => 2.5], HitDamage::parts(10.0, HitQuality::Glancing, ['slashing' => 100]));
         $this->assertSame(['slashing' => 1], HitDamage::parts(10.0, HitQuality::NearMiss, ['slashing' => 100]));
     }
 
@@ -164,22 +164,22 @@ final class HitRollTest extends TestCase
     {
         // A stun baton: 70 blunt, 30 electrical, of a hit of 10.
         $this->assertSame(['blunt' => 7, 'electrical' => 3], HitDamage::parts(10.0, HitQuality::DeadOn, ['blunt' => 70, 'electrical' => 30]));
-        // Half of 10 is 5; 3.5 and 1.5 each round away from zero, so the parts sum to 6. The sum is what lands.
-        $this->assertSame(['blunt' => 4, 'electrical' => 2], HitDamage::parts(10.0, HitQuality::Partial, ['blunt' => 70, 'electrical' => 30]));
+        // Half of 10 is 5, split 3.5 and 1.5, which is exact now.
+        $this->assertSame(['blunt' => 3.5, 'electrical' => 1.5], HitDamage::parts(10.0, HitQuality::Partial, ['blunt' => 70, 'electrical' => 30]));
     }
 
-    public function test_a_part_that_rounds_to_nothing_is_dropped(): void
+    public function test_a_part_that_comes_to_nothing_is_dropped(): void
     {
-        // A near miss of 4 is 0.4; its 70/30 split is 0.28 and 0.12.
-        $this->assertSame([], HitDamage::parts(4.0, HitQuality::NearMiss, ['blunt' => 70, 'electrical' => 30]));
-        // A solid hit with a thin share: 30 percent of 1.5 is 0.45, which is nothing.
-        $this->assertSame(['penetrating' => 1], HitDamage::parts(1.5, HitQuality::DeadOn, ['penetrating' => 70, 'fragmentation' => 30]));
+        // A near miss of 4 is 0.4; its 70/30 split is 0.28 and 0.12, both real now.
+        $this->assertSame(['blunt' => 0.28, 'electrical' => 0.12], HitDamage::parts(4.0, HitQuality::NearMiss, ['blunt' => 70, 'electrical' => 30]));
+        // Under half a hundredth is nothing.
+        $this->assertSame([], HitDamage::parts(0.01, HitQuality::NearMiss, ['blunt' => 70, 'electrical' => 30]));
     }
 
     public function test_the_base_is_not_rounded_before_it_is_scaled(): void
     {
-        // 9.6 at 25% is 2.4 → 2; rounding 9.6 to 10 first would give 2.5 → 3.
-        $this->assertSame(['slashing' => 2], HitDamage::parts(9.6, HitQuality::Glancing, ['slashing' => 100]));
+        // 9.6 at 25% is 2.4; rounding 9.6 to 10 first would give 2.5.
+        $this->assertSame(['slashing' => 2.4], HitDamage::parts(9.6, HitQuality::Glancing, ['slashing' => 100]));
     }
 
     public function test_no_damage_is_no_parts(): void

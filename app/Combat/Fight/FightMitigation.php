@@ -11,7 +11,7 @@ final class FightMitigation implements Mitigation
 {
     public function __construct(private readonly Mitigation $a, private readonly Mitigation $b) {}
 
-    public function resolve(Side $side, Damage $damage): int
+    public function resolve(Side $side, Damage $damage): int|float
     {
         return ($side === Side::A ? $this->a : $this->b)->resolve($side, $damage);
     }

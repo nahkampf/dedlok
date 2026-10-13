@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Combat\Fight;
 
 use App\Stats\Damage;
+use App\Support\Points;
 
 /**
  * An NPC's resistance: a map of damage type to percent off, optionally overridden by body part
@@ -23,7 +24,7 @@ final class NpcMitigation implements Mitigation
      */
     public function __construct(private readonly array $resist = [], private readonly array $bySlot = []) {}
 
-    public function resolve(Side $side, Damage $damage): int
+    public function resolve(Side $side, Damage $damage): int|float
     {
         $type = $damage->origin->value;
         $percent = (float) ($this->resist[$type] ?? 0) + (float) ($damage->location !== null ? ($this->bySlot[$damage->location->value][$type] ?? 0) : 0);
@@ -36,6 +37,6 @@ final class NpcMitigation implements Mitigation
             $percent *= 1 - $damage->penetration / 100;
         }
 
-        return max(0, (int) round($damage->amount * (1 - $percent / 100)));
+        return Points::of(max(0, $damage->amount * (1 - $percent / 100)));
     }
 }

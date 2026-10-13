@@ -79,7 +79,7 @@ final class FightAdaptersTest extends TestCase
 
         $this->assertSame(4, $m->resolve(Side::B, $this->hit(10)));
         $this->assertSame(10, $m->resolve(Side::B, $this->hit(10, 'blunt')), 'no entry, no effect');
-        $this->assertSame(13, $m->resolve(Side::B, $this->hit(10, 'thermal')), 'a quarter more, 12.5 rounding away from zero');
+        $this->assertSame(12.5, $m->resolve(Side::B, $this->hit(10, 'thermal')), 'a quarter more, kept to two decimals');
     }
 
     public function test_a_body_part_adds_to_the_type_and_a_hit_with_no_place_ignores_it(): void
@@ -98,7 +98,7 @@ final class FightAdaptersTest extends TestCase
         $this->assertSame(7, $m->resolve(Side::B, $this->hit(10, 'penetrating', null, 50)), '30% off');
         $this->assertSame(10, $m->resolve(Side::B, $this->hit(10, 'penetrating', null, 100)));
         $this->assertSame(1, $m->resolve(Side::B, $this->hit(10, 'penetrating', null, -50)), '90% off');
-        $this->assertSame(13, $m->resolve(Side::B, $this->hit(10, 'thermal', null, 50)), 'a vulnerability is not softened');
+        $this->assertSame(12.5, $m->resolve(Side::B, $this->hit(10, 'thermal', null, 50)), 'a vulnerability is not softened');
         $this->assertSame(0, $m->resolve(Side::B, $this->hit(10, 'chemical', null, 100)), 'an immunity cannot be pierced');
     }
 

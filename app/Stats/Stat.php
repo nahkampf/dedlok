@@ -32,7 +32,7 @@ final readonly class Stat
 
         $rounding = $definition['rounding'] ?? 'none';
 
-        if (! in_array($rounding, ['round', 'floor', 'ceil', 'tenth', 'none'], true)) {
+        if (! in_array($rounding, ['round', 'floor', 'ceil', 'tenth', 'hundredth', 'none'], true)) {
             throw new \InvalidArgumentException("Stat [{$id}] has unknown rounding [{$rounding}].");
         }
 
@@ -82,6 +82,8 @@ final readonly class Stat
             // rounding it to a whole number would throw away most of what
             // training it buys.
             'tenth' => round($value, 1),
+            // TWO DECIMAL PLACES: hit points and Synaptic Integrity, where a 3% resistance on a hit of 5 is 4.85.
+            'hundredth' => round($value, 2),
             default => $value,
         };
     }

@@ -15,6 +15,7 @@ use App\Models\Weapon;
 use App\Stats\CombatStats;
 use App\Stats\Resolver;
 use App\Stats\Sheet;
+use App\Support\Points;
 use App\Support\Text;
 
 /**
@@ -42,13 +43,13 @@ final class CombatantBuilder
 
         return new Combatant(
             name: $character->handle,
-            hp: (int) $character->current_hitpoints,
+            hp: Points::of($character->current_hitpoints),
             defence: $character->stat('defence')->value,
             pursuit: $character->stat('pursuit')->value,
             ranged: $ranged === null ? null : self::characterRanged($character, $ranged, $damage, $aim),
             melee: $melee === null ? self::bareHands($aim(WeaponClass::Unarmed, 0), $damage(WeaponClass::Unarmed, (float) config('combat.unarmed.damage'))) : self::characterMelee($melee, $damage, $aim),
-            si: (int) $character->current_synaptic_integrity,
-            hpMax: (int) $character->stat('hitpoints_max')->value,
+            si: Points::of($character->current_synaptic_integrity),
+            hpMax: Points::of($character->stat('hitpoints_max')->value),
             critChance: $character->stat('critical_chance_physical')->value,
         );
     }
@@ -67,13 +68,13 @@ final class CombatantBuilder
 
         return new Combatant(
             name: (string) ($spec['name'] ?? 'Opponent'),
-            hp: (int) ($spec['hp'] ?? 40),
+            hp: Points::of($spec['hp'] ?? 40),
             defence: (float) ($spec['defence'] ?? 8),
             pursuit: (float) ($spec['pursuit'] ?? 8),
             ranged: $arm($spec['ranged'] ?? null),
             melee: $arm($spec['melee'] ?? null) ?? self::bareHands($aim, (float) config('combat.unarmed.damage')),
             si: null,
-            hpMax: (int) ($spec['hp'] ?? 40),
+            hpMax: Points::of($spec['hp'] ?? 40),
             fleesAt: isset($spec['flees_at']) ? (float) $spec['flees_at'] : null,
         );
     }

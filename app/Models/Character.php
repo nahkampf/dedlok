@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Casts\PointsCast;
 use App\Cyberspace\Position;
 use App\Programs\Lifetime;
 use App\Skills\TrainingRate;
@@ -18,6 +19,7 @@ use App\Stats\Sources\InstalledImplants;
 use App\Stats\Sources\RunningPrograms;
 use App\Stats\Sources\SkillEffects;
 use App\Stats\Sources\WornArmour;
+use App\Support\Points;
 use App\Support\Qb;
 use Carbon\CarbonImmutable;
 use Database\Factories\CharacterFactory;
@@ -152,7 +154,7 @@ class Character extends Model
     {
         return array_merge(
             array_fill_keys(self::ATTRIBUTES, 'integer'),
-            array_fill_keys(array_keys(self::RESOURCES), 'integer'),
+            array_fill_keys(array_keys(self::RESOURCES), PointsCast::class),
             ['archetype' => 'integer', 'creds' => 'integer', 'heat' => 'float', 'bounty' => 'integer', 'bounty_grade' => 'integer'],
             ['egress_trace_at' => 'integer', 'egress_si_at' => 'integer'],
             ['grid_x' => 'integer', 'grid_y' => 'integer'],
@@ -770,13 +772,13 @@ class Character extends Model
      * resources on every page, and a sheet per question is six modifier
      * sources queried per question.
      */
-    public function maximumFor(string $resource, ?Sheet $sheet = null): int
+    public function maximumFor(string $resource, ?Sheet $sheet = null): int|float
     {
         $statId = self::RESOURCES[$resource] ?? throw new \InvalidArgumentException(
             "[{$resource}] is not a resource. Known: ".implode(', ', array_keys(self::RESOURCES)).'.'
         );
 
-        return (int) ($sheet ?? $this->sheet())->get($statId)->value;
+        return Points::of(($sheet ?? $this->sheet())->get($statId)->value);
     }
 
     /**
@@ -794,7 +796,7 @@ class Character extends Model
             return 0.0;
         }
 
-        return max(0.0, min(1.0, (int) $this->getAttribute($resource) / $max));
+        return max(0.0, min(1.0, (float) $this->getAttribute($resource) / $max));
     }
 
     /**
@@ -819,7 +821,7 @@ class Character extends Model
      * Returns the points actually taken, which is not always what was asked
      * for — a character on 1 loses 1 to a hit of 5.
      */
-    public function takeDamage(string $resource, int $amount): int
+    public function takeDamage(string $resource, int|float $amount): int|float
     {
         if (! array_key_exists($resource, self::RESOURCES)) {
             throw new \InvalidArgumentException(
@@ -831,14 +833,14 @@ class Character extends Model
             throw new \InvalidArgumentException('Damage is never negative. Healing is its own act.');
         }
 
-        $current = (int) $this->getAttribute($resource);
-        $taken = min($current, $amount);
+        $current = Points::of($this->getAttribute($resource));
+        $taken = Points::of(min($current, $amount));
 
         if ($taken === 0) {
             return 0;
         }
 
-        $this->forceFill([$resource => $current - $taken])->save();
+        $this->forceFill([$resource => Points::of($current - $taken)])->save();
 
         return $taken;
     }
@@ -863,7 +865,7 @@ class Character extends Model
      * Returns the points actually restored, which is not always what was asked
      * for: a character one under their ceiling gains 1 from a dose of 5.
      */
-    public function recover(string $resource, int $amount): int
+    public function recover(string $resource, int|float $amount): int|float
     {
         if (! array_key_exists($resource, self::RESOURCES)) {
             throw new \InvalidArgumentException(
@@ -875,14 +877,14 @@ class Character extends Model
             throw new \InvalidArgumentException('Healing is never negative. Damage is its own act.');
         }
 
-        $current = (int) $this->getAttribute($resource);
-        $restored = min($amount, max(0, $this->maximumFor($resource) - $current));
+        $current = Points::of($this->getAttribute($resource));
+        $restored = Points::of(min($amount, max(0, $this->maximumFor($resource) - $current)));
 
         if ($restored === 0) {
             return 0;
         }
 
-        $this->forceFill([$resource => $current + $restored])->save();
+        $this->forceFill([$resource => Points::of($current + $restored)])->save();
 
         return $restored;
     }
@@ -905,9 +907,9 @@ class Character extends Model
                 continue;
             }
 
-            $bounded = max(0, min($this->maximumFor($resource), (int) $current));
+            $bounded = Points::of(max(0, min($this->maximumFor($resource), Points::of($current))));
 
-            if ($bounded !== (int) $current) {
+            if ($bounded !== Points::of($current)) {
                 $this->setAttribute($resource, $bounded);
                 $changed = true;
             }
@@ -936,7 +938,7 @@ class Character extends Model
 
             foreach (self::RESOURCES as $resource => $statId) {
                 if ($character->getAttribute($resource) === null) {
-                    $character->setAttribute($resource, (int) $character->stat($statId)->value);
+                    $character->setAttribute($resource, Points::of($character->stat($statId)->value));
                 }
             }
         });

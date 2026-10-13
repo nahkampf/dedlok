@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Combat;
 
+use App\Support\Points;
+
 /**
  * What one hit does, before resistance: the damage the weapon (and its round) resolved to, scaled
  * by the tier it landed on, split across damage types by the profile. COMBAT.md, steps 3 and 4.
  *
- * Each part is `round(amount × share / 100)` and a part that rounds to nothing is dropped, so the
- * parts can sum to a point more or less than the whole and the sum is what lands. A part goes to
+ * Each part is `amount × share / 100` to two decimals and a part that comes to nothing is dropped, so
+ * the parts can sum to a hundredth more or less than the whole and the sum is what lands. A part goes to
  * `DamageResolver` as its own event under its own type. Pure.
  */
 final class HitDamage
@@ -25,7 +27,7 @@ final class HitDamage
         $parts = [];
 
         foreach ($profile as $type => $share) {
-            $part = (int) round($amount * $share / 100);
+            $part = Points::of($amount * $share / 100);
 
             if ($part > 0) {
                 $parts[$type] = $part;

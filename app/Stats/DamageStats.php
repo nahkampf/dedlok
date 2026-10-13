@@ -62,7 +62,7 @@ final class DamageStats
                 $definitions[self::id($resource, $origin)] = [
                     'tags' => [self::PREFIX, self::resourceTag($resource), $origin->tag(), ...($origin->family() === null ? [] : [$origin->family()])],
                     'min' => 0,
-                    'rounding' => 'round',
+                    'rounding' => 'hundredth',
                 ];
             }
         }

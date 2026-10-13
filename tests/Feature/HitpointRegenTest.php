@@ -115,9 +115,9 @@ final class HitpointRegenTest extends TestCase
         }
 
         $this->assertSame(6, end($seen));
-        // A point every ten minutes, give or take the epoch's own alignment: never two in one minute.
-        $steps = array_map(fn (int $i): int => $seen[$i] - ($seen[$i - 1] ?? 0), array_keys($seen));
-        $this->assertLessThanOrEqual(1, max($steps));
+        // A tenth of a point a minute, give or take the epoch's own alignment: never more than that in one minute.
+        $steps = array_map(fn (int $i): float => round($seen[$i] - ($seen[$i - 1] ?? 0), 2), array_keys($seen));
+        $this->assertLessThanOrEqual(0.1, max($steps));
     }
 
     public function test_it_stops_at_the_maximum_as_it_stands(): void

@@ -109,7 +109,7 @@ final class HunterCombat
 
             $new[] = $this->line('cyberspace.hunt.log.hunter_hits', ['damage' => $result->taken], 'crit');
 
-            if ((int) $character->fresh()->current_synaptic_integrity <= 0) {
+            if ($character->fresh()->current_synaptic_integrity <= 0) {
                 $new[] = $this->lose($character, $hunt);
             } else {
                 $hunt->save();

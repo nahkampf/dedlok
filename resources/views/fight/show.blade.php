@@ -31,7 +31,7 @@
                     <span>{{ Text::get('combat.fight.screen.hit_points') }}</span>
                     <span class="num">{{ $state->b->hp }} / {{ $state->b->hpMax }}</span>
                 </div>
-                <div class="meter" style="--v:{{ round($state->b->hp / max(1, (int) $state->b->hpMax), 3) }};--fill:var(--crit)">
+                <div class="meter" style="--v:{{ round($state->b->hp / max(1, $state->b->hpMax), 3) }};--fill:var(--crit)">
                     <span class="meter__fill"></span>
                 </div>
             </div>
@@ -64,7 +64,7 @@
             <div class="stack" style="--gap:var(--s-1)">
                 <div class="row row--wrap micro" style="--gap:var(--s-2)">
                     <span>{{ Text::get('combat.fight.screen.you') }} · {{ Text::get('combat.fight.screen.'.$label) }}</span>
-                    <span class="num">{{ (int) $character->{$resource} }}</span>
+                    <span class="num">{{ $character->{$resource} }}</span>
                 </div>
                 <div class="meter" data-hot-low style="--v:{{ round($character->resourceRatio($resource), 3) }};--fill:var(--ok)">
                     <span class="meter__fill"></span>

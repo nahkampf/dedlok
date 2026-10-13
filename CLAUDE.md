@@ -329,6 +329,13 @@ today (`WornArmour` is the seventh, under *Physical combat*), and the resolver l
   — a modifier's amount is a number, never an expression. `skill_at_least` is the
   predicate; `Sheet::contextFor()` puts levels into the context as `skill.<slug>`, for the
   skills a character actually has (absent and zero are the same answer).
+- **Hit points and Synaptic Integrity are carried to TWO DECIMALS** (`current_hitpoints`, `current_synaptic_integrity`
+  are `DECIMAL(8,2)`; `hitpoints_max`, `synaptic_integrity_max`, both regens and every `damage.*` stat round to a
+  `hundredth`). **`App\Support\Points::of()` is the one rounding, and a whole figure is an `int`** (a fraction the only
+  thing that is a float), so every `=== 0` and `assertSame(30, …)` still holds. `Character` casts them through
+  `PointsCast`; `takeDamage()`/`recover()` take and return `int|float`. **Never `(int)` a resource, a maximum or a
+  taken amount** — it silently drops the fraction and puts somebody on 0.4 HP on the floor. Creds stay whole: a clinic
+  bills `ceil(points × price)`. The regen command works in hundredths so an hourly rate is exact.
 - **Any pool stat asked for outside a Sheet reads as zero.** `Resolver::resolve('stealth',
   0.0, …)` returns modifiers and nothing else. `Character::stat()` is the way in.
 

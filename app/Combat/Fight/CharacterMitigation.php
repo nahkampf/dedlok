@@ -10,6 +10,7 @@ use App\Stats\Damage;
 use App\Stats\DamageResolver;
 use App\Stats\Modifier;
 use App\Stats\Sheet;
+use App\Support\Points;
 
 /**
  * A character's resistance, for the engine: `DamageResolver`'s own arithmetic, asked rather than
@@ -33,8 +34,8 @@ final class CharacterMitigation implements Mitigation
         $this->resolver = DamageResolver::make();
     }
 
-    public function resolve(Side $side, Damage $damage): int
+    public function resolve(Side $side, Damage $damage): int|float
     {
-        return $this->resolver->against($this->modifiers, $this->context, $damage)->toInt();
+        return Points::of($this->resolver->against($this->modifiers, $this->context, $damage)->value);
     }
 }

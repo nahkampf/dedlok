@@ -12,6 +12,7 @@ use App\Models\Archetype;
 use App\Models\Character;
 use App\Models\Dose;
 use App\Stats\BreakdownStep;
+use App\Support\Points;
 use App\Support\Text;
 use Carbon\CarbonImmutable;
 use Cron\CronExpression;
@@ -204,7 +205,7 @@ class CharacterController extends Controller
      * imply a compounding that does not happen. The run screen's evasion card
      * reads the same steps the same way.
      *
-     * @return list<array{label: string, current: int, max: int, ratio: float, steps: list<BreakdownStep>}>
+     * @return list<array{label: string, current: int|float, max: int|float, ratio: float, steps: list<BreakdownStep>}>
      */
     private function vitals(Character $character): array
     {
@@ -216,8 +217,8 @@ class CharacterController extends Controller
 
             $rows[] = [
                 'label' => Text::get("character.vitals.{$statId}"),
-                'current' => (int) $character->{$resource},
-                'max' => $stat->toInt(),
+                'current' => Points::of($character->{$resource}),
+                'max' => Points::of($stat->value),
                 'ratio' => $character->resourceRatio($resource),
                 'steps' => $stat->steps,
             ];

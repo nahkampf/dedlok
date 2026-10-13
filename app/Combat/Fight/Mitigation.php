@@ -16,6 +16,6 @@ use App\Stats\Damage;
  */
 interface Mitigation
 {
-    /** The whole number of points `$damage` costs `$side` after resistance, never negative. */
-    public function resolve(Side $side, Damage $damage): int;
+    /** The number of points (to two decimals) `$damage` costs `$side` after resistance, never negative. */
+    public function resolve(Side $side, Damage $damage): int|float;
 }

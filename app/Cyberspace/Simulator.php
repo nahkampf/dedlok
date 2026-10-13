@@ -354,7 +354,7 @@ final readonly class Simulator
 
         $max = $character->maximumFor('current_synaptic_integrity');
 
-        return $max > 0 && ((int) $character->current_synaptic_integrity / $max) * 100 < $si;
+        return $max > 0 && ($character->current_synaptic_integrity / $max) * 100 < $si;
     }
 
     /**
@@ -1372,7 +1372,7 @@ final readonly class Simulator
         // consequence, then the ejection, then the screen. RunStarter::end()
         // and jackOut() happen in the controller's ending path, not here —
         // this says only that the run is over and why.
-        if ((int) $character->fresh()->current_synaptic_integrity <= 0) {
+        if ($character->fresh()->current_synaptic_integrity <= 0) {
             return [$line, RunEnding::Defeat];
         }
 
