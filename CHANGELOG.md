@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.55.1] — 2026-10-13
+
+A heat box on the character sheet.
+
+### Added
+
+- **Heat box beside the Bounty box** (`CharacterController::heat()`, `character/index.blade.php`): the figure, a bar on a scale of 100 (green under 24, brass from 24, crit from 62, the bands the bounty roll and hunters read), what cools it a day (the resolved `heat_decay`), and, on hover or focus, when it will be 0. The night it reaches zero is counted at the nightly rounding from the next run of `characters:cool`.
+- **`cadence.heat_cool`** (`10 5 * * *`): the cooling job's time now lives with the other counted-down clocks, and `routes/console.php` reads it, so the sheet and the scheduler cannot disagree.
+- `TODO.md`: a note for a "Utility" market category (Locators, Pathfinders).
+
+
 ## [0.55.0] — 2026-10-13
 
 Critical hits in both realms, a siphon payout table by grade, two new attribute skills sold for loyalty, and a bigger starting purse.
@@ -3101,7 +3112,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.55.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.55.1...HEAD
+[0.55.1]: https://github.com/nahkampf/dedlok/compare/v0.55.0...v0.55.1
 [0.55.0]: https://github.com/nahkampf/dedlok/compare/v0.54.0...v0.55.0
 [0.54.0]: https://github.com/nahkampf/dedlok/compare/v0.53.2...v0.54.0
 [0.53.2]: https://github.com/nahkampf/dedlok/compare/v0.53.1...v0.53.2

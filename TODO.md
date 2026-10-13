@@ -18,6 +18,12 @@ In this order. Each is small enough to build alone.
    the `processes.current` fragment, the chip (no count) and modal in `layouts/app`. Scans, a trip / exploration / operation, decryption (the
    current cycle, and a count of files waiting), the skill being trained, and drugs in effect. Withdrawals, accepted jobs' deadlines and a *Clocks* group (market restock, SI mend, trained regeneration) were added the same day.
    Not in it, by decision: lockdowns / relocations and shop restocks. Read, not looked at: no browser here.
+4. **A top market category, "Utility", for utility programs (noted 2026-10-13).** Locators and Pathfinders end up there, and
+   anything else that is a program but neither an icebreaker, an analyser, a decryptor nor evasion software. Today they sit
+   under their own kind in the market (`Item::marketCategory()` falls back to `kindName()`), so it is a case in
+   `marketCategory()` (and a `market.categories.utility` string); the image folders follow the same split (`Item::imageType()`
+   and `public/images/items/README.md`), so decide there whether `locator/` and `pathfinder/` become `utility/`. Which program
+   kinds count is the author's to say before it is built.
 
 ---
 

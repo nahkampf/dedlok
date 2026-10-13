@@ -17,4 +17,8 @@ return [
 
     // The nightly day off every drug book: addiction and tolerance fall a step, and a withdrawal that falls under its line ends.
     'drugs_metabolise' => '20 5 * * *',
+
+    // The nightly cooling of heat (`characters:cool`), ten minutes behind the bounty roll. The character sheet's heat box
+    // counts down to it.
+    'heat_cool' => '10 5 * * *',
 ];

@@ -1,3 +1,7 @@
+## 0.55.1 (2026-10-13)
+
+- Heat now displayed on character sheet
+
 ## 0.55.0 (2026-10-13)
 
 - We now have **Critical hits**. Any hit that is above "near miss" has a 2% chance of causing a critical hit, which does 5x the damage. This can be further raised by skills, scripts, drugs etc down the line.

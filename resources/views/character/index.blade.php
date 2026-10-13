@@ -118,16 +118,40 @@
             </div>
         </div>
 
-        {{-- THE PRICE ON THEIR HEAD, in creds. Always drawn: zero is an answer. --}}
-        <div class="stack" style="--gap:var(--s-2);margin-top:var(--s-5)">
-            <span class="micro">{{ Text::get('character.bounty_heading') }}</span>
-            <div class="card" style="max-width:min(320px,100%)">
-                <div class="card__bd stack" style="--gap:var(--s-2)">
-                    <div class="readout">
-                        <span class="readout__label">{{ Text::get('character.bounty_heading') }}</span>
-                        <span class="readout__value num">¤ {{ number_format((int) $character->bounty) }}</span>
+        {{-- THE PRICE ON THEIR HEAD, in creds. Always drawn: zero is an answer. Beside it, the HEAT that
+             feeds it: a bar on a scale of 100, what cools it a day, and on hover when it reaches 0. --}}
+        <div class="row row--wrap" style="--gap:var(--s-4);align-items:flex-start;margin-top:var(--s-5)">
+            <div class="stack" style="--gap:var(--s-2);flex:1 1 min(240px,100%);max-width:min(320px,100%)">
+                <span class="micro">{{ Text::get('character.bounty_heading') }}</span>
+                <div class="card">
+                    <div class="card__bd stack" style="--gap:var(--s-2)">
+                        <div class="readout">
+                            <span class="readout__label">{{ Text::get('character.bounty_heading') }}</span>
+                            <span class="readout__value num">¤ {{ number_format((int) $character->bounty) }}</span>
+                        </div>
+                        <span class="micro" style="color:var(--ink-3)">{{ $character->bounty > 0 ? Text::get('character.bounty_hint') : Text::get('character.bounty_none') }}</span>
                     </div>
-                    <span class="micro" style="color:var(--ink-3)">{{ $character->bounty > 0 ? Text::get('character.bounty_hint') : Text::get('character.bounty_none') }}</span>
+                </div>
+            </div>
+
+            <div class="stack" style="--gap:var(--s-2);flex:1 1 min(240px,100%);max-width:min(320px,100%)">
+                <span class="micro">{{ Text::get('character.heat_heading') }}</span>
+                <div class="card">
+                    <div class="card__bd stack" style="--gap:var(--s-2)">
+                        <div class="readout">
+                            <span class="readout__label">{{ Text::get('character.heat_heading') }}</span>
+                            <span class="readout__value num">{{ $heat['value'] }}</span>
+                        </div>
+                        {{-- The tip is the answer to "when": focusable, because a tap is not a hover. --}}
+                        <div class="meter" style="--v:{{ $heat['ratio'] }};--fill:{{ $heat['fill'] }}" tabindex="0" role="img"
+                             aria-label="{{ Text::get('character.heat_value', ['heat' => $heat['value']]) }}"
+                             data-tip="{{ $heat['zero_at'] !== null && $heat['days'] !== null
+                                 ? Text::get('character.heat_zero_at', ['days' => $heat['days'] === 1 ? '1 day' : $heat['days'].' days', 'at' => $heat['zero_at']])
+                                 : ($heat['value'] === '0' ? Text::get('character.heat_none') : Text::get('character.heat_never')) }}">
+                            <div class="meter__fill"></div>
+                        </div>
+                        <span class="micro" style="color:var(--ink-3)">{{ Text::get('character.heat_cools', ['rate' => $heat['rate']]) }}</span>
+                    </div>
                 </div>
             </div>
         </div>
