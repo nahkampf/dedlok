@@ -1,3 +1,11 @@
+## 0.55.0 (2026-10-13)
+
+- We now have **Critical hits**. Any hit that is above "near miss" has a 2% chance of causing a critical hit, which does 5x the damage. This can be further raised by skills, scripts, drugs etc down the line.
+- Raised payout levels for siphons, more at lower levels.
+- Hyperfocus and Microexpressions are two new skills, so now we have skills for every base attribute except Muscle. These can only be found as loyalty purchases at exchanges.
+- Raised starting creds from 2000 -> 3500
+- The playlist now shuffles on play
+
 ## 0.54.0 (2026-10-13)
 
 - Minor: Added achievement **The Knowledge**

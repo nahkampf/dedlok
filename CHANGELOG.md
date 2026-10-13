@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+## [0.55.0] — 2026-10-13
+
+Critical hits in both realms, a siphon payout table by grade, two new attribute skills sold for loyalty, and a bigger starting purse.
+
+### Added
+
+- **Critical hits** (`critical_chance_physical`, `critical_chance_cyberspace` in `config/stats.php`, base 2 each in `stats.bases`, percent points 0 to 100 to a tenth): a hit a player lands is critical with that chance and does `combat.critical.multiplier` / `cyberspace.critical.multiplier` (5) times the damage. Both stats are named under `character.names`, so skills, scripts, implants and drugs can target them.
+  - **Physical:** `FightEngine::attack()` rolls one extra die per shot, only for a side with a `Combatant::$critChance` (the player's, from `CombatantBuilder::forCharacter()`), and not for a near miss. Multiplied before resistance. Logged as `combat.fight.log.shot_critical`.
+  - **Cyberspace:** `App\Cyberspace\CriticalHit` is rolled by `Simulator::attack()` and `HunterCombat::fight()` after a hit that does damage; the die is 1 to 1000 against the resolved stat in tenths.
+- **Hyperfocus** (+1 Focus a level) and **Microexpressions** (+1 Social a level), migration `2026_10_13_100000_the_focus_and_social_skills`: rank 16, base cost 10,000, off the market, imprints made through `Imprint::ensureFor()`. Like the seven existing attribute skills.
+- **The nine attribute skills are on every interactable exchange's loyalty shelf** (migration `2026_10_13_120000_the_attribute_skills_for_loyalty`): 35 loyalty each, standing 1.0, desk grades 1 to 5. A row already present is kept.
+- **The playlist modal links to the playlist at YouTube**, and the embed is told to shuffle once the player is up (`data-embed-shuffle`, `enablejsapi=1`, a `setShuffle` message from `ui-kit.js`).
+
+### Changed
+
+- **Siphon payouts are a table by grade** (`cyberspace.backdoors.siphon.by_grade`, replacing `per_grade`): 45, 65, 95, 125, 160, 190, 220, 260, 290. Still resolved through `siphon_yield`.
+- **The Deck Jockey starts with 3,500 creds** instead of 2,000 (migration `2026_10_13_110000_deck_jockeys_start_with_3500`, which only changes the row while it is still 2,000).
+
+### Tests
+
+- `tests/TestCase.php` sets both critical chances to 0, so pinned dice orders through a real character are unchanged; `CriticalHitTest` sets them back.
+- `LoyaltyStoreTest` clears its entity's offers in setup, since migrations now stock the interactable exchanges.
+
+
 ## [0.54.0] — 2026-10-13
 
 A new achievement, The Knowledge, for exploring and discovering ten locations.
@@ -3077,7 +3101,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.54.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.55.0...HEAD
+[0.55.0]: https://github.com/nahkampf/dedlok/compare/v0.54.0...v0.55.0
 [0.54.0]: https://github.com/nahkampf/dedlok/compare/v0.53.2...v0.54.0
 [0.53.2]: https://github.com/nahkampf/dedlok/compare/v0.53.1...v0.53.2
 [0.53.1]: https://github.com/nahkampf/dedlok/compare/v0.53.0...v0.53.1
