@@ -27,7 +27,12 @@ return [
     'ui' => [
         // The topbar's speaker and note. The label names what pressing does NOT, but the state it is in.
         'sound' => ['on' => 'Sound on. Press to mute.', 'off' => 'Sound off. Press to unmute.'],
-        'music' => ['open' => 'Music', 'title' => 'Official dedlok playlist'],
+        'music' => [
+            'open' => 'Music',
+            'title' => 'Official dedlok playlist',
+            'link' => 'Playlist at YouTube',
+            'url' => 'https://www.youtube.com/playlist?list=PL5TIGn3RVGw9nM6sipiaF925G2enf6woK',
+        ],
         'nav' => [
             'run' => 'Run',
             'character' => 'Character',
@@ -1260,6 +1265,7 @@ return [
                 // "Your" + a green tag naming the icebreaker + this: the tag sits inside the sentence.
                 'attack_before' => 'Your',
                 'attack' => 'finds an intrusion vector and pushes a disruptive payload through, causing :damage system integrity loss.',
+                'attack_critical' => 'finds a critical intrusion vector and drives a devastating payload through, causing :damage system integrity loss.',
                 'attack_fails' => 'You find no viable attack vectors.',
                 'hold' => 'You wait, and the system waits with you.',
                 'egress' => 'You egress.',
@@ -1671,6 +1677,7 @@ return [
             ],
             'log' => [
                 'hit' => 'You land :damage.',
+                'hit_critical' => 'A critical hit: you land :damage.',
                 'no_program' => 'Nothing is running that can touch it.',
                 'miss' => 'It misses.',
                 'hunter_hits' => 'It lands :damage.',
@@ -1963,6 +1970,7 @@ return [
             ],
             'log' => [
                 'shot' => ':attacker: :tier to the :slot for :parts.',
+                'shot_critical' => ':attacker: critical :tier to the :slot for :parts.',
                 'shot_none' => ':attacker: :tier to the :slot. Nothing gets through.',
                 'part' => ':amount :type',
                 'brace' => ':who braces.',
@@ -2487,6 +2495,8 @@ return [
             // two tag sets that reach every class at once.
             'defence' => 'Defence',
             'pursuit' => 'Pursuit',
+            'critical_chance_physical' => 'Critical hit chance in a fight',
+            'critical_chance_cyberspace' => 'Critical hit chance in cyberspace',
             'aim' => 'aim with every weapon',
             'weapon_damage' => 'damage with every weapon',
             'aim.pistol' => 'Aim with a pistol',

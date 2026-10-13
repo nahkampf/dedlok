@@ -49,6 +49,10 @@ final class LoyaltyStoreTest extends TestCase
         $this->character = Character::factory()->create(['creds' => 0]);
         $this->entity = Entity::query()->interactable()->firstOrFail();
 
+        // The shelf starts empty: migrations stock the interactable exchanges (the attribute skills), and these
+        // tests count exactly what they put there.
+        $this->entity->offers()->delete();
+
         $system = System::factory()->at(8, 8)->ownedBy($this->entity)->create([
             'type' => 'exchange',
             'grade' => 1,

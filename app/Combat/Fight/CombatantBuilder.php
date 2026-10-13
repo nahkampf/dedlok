@@ -49,6 +49,7 @@ final class CombatantBuilder
             melee: $melee === null ? self::bareHands($aim(WeaponClass::Unarmed, 0), $damage(WeaponClass::Unarmed, (float) config('combat.unarmed.damage'))) : self::characterMelee($melee, $damage, $aim),
             si: (int) $character->current_synaptic_integrity,
             hpMax: (int) $character->stat('hitpoints_max')->value,
+            critChance: $character->stat('critical_chance_physical')->value,
         );
     }
 

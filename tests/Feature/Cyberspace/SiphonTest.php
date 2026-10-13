@@ -43,14 +43,14 @@ final class SiphonTest extends TestCase
 
     // ---- what a machine is worth draining ----------------------------------
 
-    /** Thirty a grade: (3000 x grade) / 100. */
-    public function test_the_base_is_thirty_a_grade(): void
+    /** The base is a table by grade, not a rate. */
+    public function test_the_base_is_a_table_by_grade(): void
     {
         $siphons = SiphonPayout::fromConfig();
 
-        $this->assertSame(30, $siphons->baseFor(1));
-        $this->assertSame(150, $siphons->baseFor(5));
-        $this->assertSame(270, $siphons->baseFor(9));
+        $this->assertSame(45, $siphons->baseFor(1));
+        $this->assertSame(160, $siphons->baseFor(5));
+        $this->assertSame(290, $siphons->baseFor(9));
     }
 
     public function test_a_night_pays_every_siphon_held(): void
@@ -60,8 +60,8 @@ final class SiphonTest extends TestCase
 
         $result = SiphonPayout::fromConfig()->run();
 
-        $this->assertSame(270 + 120, $result['creds']);
-        $this->assertSame(270 + 120, $this->character->fresh()->creds);
+        $this->assertSame(290 + 125, $result['creds']);
+        $this->assertSame(290 + 125, $this->character->fresh()->creds);
         $this->assertSame(2, $result['backdoors']);
         $this->assertSame(1, $result['characters']);
     }
@@ -85,8 +85,8 @@ final class SiphonTest extends TestCase
 
         SiphonPayout::fromConfig()->run();
 
-        $this->assertSame(270, $this->character->fresh()->creds);
-        $this->assertSame(60, $stranger->fresh()->creds);
+        $this->assertSame(290, $this->character->fresh()->creds);
+        $this->assertSame(65, $stranger->fresh()->creds);
     }
 
     /** Two nights pay twice: there is no stored clock and nothing accrues. */
@@ -97,7 +97,7 @@ final class SiphonTest extends TestCase
         SiphonPayout::fromConfig()->run();
         SiphonPayout::fromConfig()->run();
 
-        $this->assertSame(300, $this->character->fresh()->creds);
+        $this->assertSame(320, $this->character->fresh()->creds);
     }
 
     // ---- and what its holder does to it -------------------------------------
@@ -130,8 +130,8 @@ final class SiphonTest extends TestCase
 
         SiphonPayout::fromConfig()->run();
 
-        // 270 and 30, each half again as much.
-        $this->assertSame(405 + 45, $this->character->fresh()->creds);
+        // 290 and 45, each half again as much (floored).
+        $this->assertSame(435 + 67, $this->character->fresh()->creds);
     }
 
     // ---- the command ---------------------------------------------------------
@@ -141,16 +141,16 @@ final class SiphonTest extends TestCase
         $this->hold($this->machine(1, 3));
 
         $this->artisan('cyberspace:siphons --dry-run')
-            ->expectsOutputToContain('90 creds before modifiers')
+            ->expectsOutputToContain('95 creds before modifiers')
             ->assertSuccessful();
 
         $this->assertSame(0, $this->character->fresh()->creds, 'a dry run wrote nothing');
 
         $this->artisan('cyberspace:siphons')
-            ->expectsOutputToContain('paid 90 creds')
+            ->expectsOutputToContain('paid 95 creds')
             ->assertSuccessful();
 
-        $this->assertSame(90, $this->character->fresh()->creds);
+        $this->assertSame(95, $this->character->fresh()->creds);
     }
 
     public function test_the_command_says_when_nobody_is_draining(): void
@@ -181,10 +181,10 @@ final class SiphonTest extends TestCase
 
         $this->assertSame($this->character->user_id, $report->user_id);
         $this->assertSame(Category::Cyberspace, $report->category);
-        $this->assertSame(Text::get('notifications.messages.siphons_ran', ['creds' => '390']), $report->body);
+        $this->assertSame(Text::get('notifications.messages.siphons_ran', ['creds' => '415']), $report->body);
         $this->assertSame([
-            ['system' => $nine->displayName(), 'address' => 'SIPHON01', 'grade' => 9, 'creds' => 270],
-            ['system' => $four->displayName(), 'address' => 'SIPHON02', 'grade' => 4, 'creds' => 120],
+            ['system' => $nine->displayName(), 'address' => 'SIPHON01', 'grade' => 9, 'creds' => 290],
+            ['system' => $four->displayName(), 'address' => 'SIPHON02', 'grade' => 4, 'creds' => 125],
         ], $report->details);
     }
 
@@ -199,7 +199,7 @@ final class SiphonTest extends TestCase
         SiphonPayout::fromConfig()->run();
 
         $this->assertSame(2, Notification::query()->count());
-        $this->assertSame(120, Notification::query()->where('user_id', $stranger->user_id)->sole()->details[0]['creds']);
+        $this->assertSame(125, Notification::query()->where('user_id', $stranger->user_id)->sole()->details[0]['creds']);
     }
 
     /** Nobody draining anything hears nothing. */
@@ -221,10 +221,10 @@ final class SiphonTest extends TestCase
         $this->actingAs($this->character->user)
             ->get(route('notifications.index'))
             ->assertOk()
-            ->assertSeeText(Text::get('notifications.messages.siphons_ran', ['creds' => '270']))
+            ->assertSeeText(Text::get('notifications.messages.siphons_ran', ['creds' => '290']))
             ->assertSee('data-copy="SIPHON01"', false)
             ->assertSeeText(Text::get('notifications.details.grade', ['grade' => 9]))
-            ->assertSeeText('270 ¤');
+            ->assertSeeText('290 ¤');
     }
 
     private function machine(int $n, int $grade): System

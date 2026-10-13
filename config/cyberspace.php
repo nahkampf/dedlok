@@ -629,13 +629,21 @@ return [
         ],
     ],
 
+    /*
+    | CRITICAL HITS IN CYBERSPACE. Every hit a player's icebreaker lands, on ICE or on a hunter, is critical with
+    | the resolved `critical_chance_cyberspace` per cent, and does this many times the damage.
+    */
+    'critical' => [
+        'multiplier' => 5,
+    ],
+
     'backdoors' => [
 
         /*
         | WHAT A SIPHON PAYS, per night, per backdoor.
         |
-        | (3000 x grade) / 100 — thirty creds a grade, so a grade 1 relay is
-        | pocket change at 30 and a grade 9 is 270 a night for doing nothing.
+        | A table by grade, not a rate: 45 at grade 1 up to 290 at grade 9 for
+        | doing nothing. The steps are uneven on purpose (20 to 35 a grade).
         | Against a node's own haul (a grade 9 holds hundreds) that is
         | deliberately modest: a siphon is the SAFE half of a backdoor
         | portfolio and safe income should be slow income. What makes it worth
@@ -650,7 +658,7 @@ return [
         | touches. The dial to turn is this one.
         */
         'siphon' => [
-            'per_grade' => 30,
+            'by_grade' => [1 => 45, 2 => 65, 3 => 95, 4 => 125, 5 => 160, 6 => 190, 7 => 220, 8 => 260, 9 => 290],
         ],
 
         'ageing' => [

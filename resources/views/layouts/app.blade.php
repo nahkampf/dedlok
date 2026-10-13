@@ -315,10 +315,13 @@
         </div>
         <div class="panel__bd">
             <div class="embed">
-                <iframe data-embed="https://www.youtube-nocookie.com/embed/videoseries?list=PL5TIGn3RVGw9nM6sipiaF925G2enf6woK"
+                <iframe data-embed="https://www.youtube-nocookie.com/embed/videoseries?list=PL5TIGn3RVGw9nM6sipiaF925G2enf6woK&amp;enablejsapi=1" data-embed-shuffle
                         title="{{ Text::get('ui.music.title') }}" allow="autoplay; encrypted-media; picture-in-picture"
                         referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
             </div>
+            <p style="margin:var(--s-3) 0 0;font-size:var(--fs-sm)">
+                <a href="{{ Text::get('ui.music.url') }}" target="_blank" rel="noopener noreferrer">{{ Text::get('ui.music.link') }}</a>
+            </p>
         </div>
     </dialog>
 

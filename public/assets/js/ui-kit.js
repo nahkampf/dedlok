@@ -219,6 +219,19 @@
   document.querySelectorAll("dialog").forEach((dlg) => {
     const frame = dlg.querySelector("iframe[data-embed]");
     if (!frame) return;
+    /* data-embed-shuffle: YouTube has no URL parameter for it, so once the player is up it is told, through the
+       iframe API (the embed URL carries enablejsapi=1), to shuffle the playlist. Sent a few times because the player
+       is not listening the moment `load` fires; shuffling twice before anything plays is harmless. */
+    if (frame.hasAttribute("data-embed-shuffle")) {
+      frame.addEventListener("load", () => {
+        if (!frame.getAttribute("src")) return;
+        const tell = (msg) => frame.contentWindow?.postMessage(JSON.stringify(msg), "https://www.youtube-nocookie.com");
+        [0, 500, 1500].forEach((ms) => setTimeout(() => {
+          tell({ event: "listening", id: 1, channel: "widget" });
+          tell({ event: "command", func: "setShuffle", args: [true] });
+        }, ms));
+      });
+    }
     new MutationObserver(() => {
       if (dlg.open) { if (!frame.getAttribute("src")) frame.src = frame.dataset.embed; }
       else frame.removeAttribute("src");
