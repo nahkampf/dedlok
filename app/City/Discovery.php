@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\City;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Character;
 use App\Models\Location;
 use Illuminate\Support\Facades\DB;
@@ -24,10 +26,16 @@ final class Discovery
             return false;
         }
 
-        return DB::table('character_locations')->insertOrIgnore([
+        $found = DB::table('character_locations')->insertOrIgnore([
             'character_id' => $character->getKey(),
             'location_id' => $location->getKey(),
             'found_at' => now(),
         ]) === 1;
+
+        if ($found) {
+            (new Achievements)->record($character, Metric::LocationsDiscovered);
+        }
+
+        return $found;
     }
 }

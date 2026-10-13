@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.54.0] — 2026-10-13
+
+A new achievement, The Knowledge, for exploring and discovering ten locations.
+
+### Added
+
+- **Achievement 14, The Knowledge** (`config/achievements.php`): reached at ten locations discovered, not secret. Counted by the new `locations_discovered` metric (`Metric::LocationsDiscovered`), recorded in `Discovery::unlock()` only when a location is newly found — the one writer of `character_locations`, so every discovery path counts and a repeat or a non-explorable place adds nothing.
+- **Migration `2026_10_12_230000_the_knowledge_counts_what_was_already_found`** backfills each account's `achievement_progress` from the locations its character has already found. The award itself lands on the player's next metric movement, as with every retroactive achievement.
+
+
 ## [0.53.2] — 2026-10-12
 
 Item pictures are filed the way the market is, and enlarging one never shows somebody else's picture.
@@ -3067,7 +3077,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.53.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.54.0...HEAD
+[0.54.0]: https://github.com/nahkampf/dedlok/compare/v0.53.2...v0.54.0
 [0.53.2]: https://github.com/nahkampf/dedlok/compare/v0.53.1...v0.53.2
 [0.53.1]: https://github.com/nahkampf/dedlok/compare/v0.53.0...v0.53.1
 [0.53.0]: https://github.com/nahkampf/dedlok/compare/v0.52.0...v0.53.0
