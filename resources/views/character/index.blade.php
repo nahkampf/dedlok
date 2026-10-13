@@ -120,10 +120,10 @@
 
         {{-- THE PRICE ON THEIR HEAD, in creds. Always drawn: zero is an answer. Beside it, the HEAT that
              feeds it: a bar on a scale of 100, what cools it a day, and on hover when it reaches 0. --}}
-        <div class="row row--wrap" style="--gap:var(--s-4);align-items:flex-start;margin-top:var(--s-5)">
+        <div class="row row--wrap" style="--gap:var(--s-4);margin-top:var(--s-5)">
             <div class="stack" style="--gap:var(--s-2);flex:1 1 min(240px,100%);max-width:min(320px,100%)">
                 <span class="micro">{{ Text::get('character.bounty_heading') }}</span>
-                <div class="card">
+                <div class="card" style="flex:1">
                     <div class="card__bd stack" style="--gap:var(--s-2)">
                         <div class="readout">
                             <span class="readout__label">{{ Text::get('character.bounty_heading') }}</span>
@@ -136,7 +136,7 @@
 
             <div class="stack" style="--gap:var(--s-2);flex:1 1 min(240px,100%);max-width:min(320px,100%)">
                 <span class="micro">{{ Text::get('character.heat_heading') }}</span>
-                <div class="card">
+                <div class="card" style="flex:1">
                     <div class="card__bd stack" style="--gap:var(--s-2)">
                         <div class="readout">
                             <span class="readout__label">{{ Text::get('character.heat_heading') }}</span>
