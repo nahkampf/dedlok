@@ -6,3 +6,6 @@
 @if ($character?->user?->isSupporter())
     <span class="tag tag--ember" title="{{ Text::get('supporters.badge_hint') }}" {{ $attributes }}>{{ Text::get('supporters.badge') }}</span>
 @endif
+@if ($character?->user?->isTester())
+    <span class="tag" title="{{ Text::get('supporters.tester_hint') }}">{{ Text::get('supporters.tester_badge') }}</span>
+@endif

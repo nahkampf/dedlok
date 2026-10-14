@@ -15,6 +15,8 @@ final readonly class FindQuery
         public ?int $grade = null,
         /** An exact address (8 hex digits), upper case. Only a system you have met can be found by it. */
         public ?string $address = null,
+        /** A grid position, which only a Pathfinder takes: the target is the cell, whether or not anything is there. */
+        public ?Position $position = null,
     ) {}
 
     public function gradeFits(int $known): bool
@@ -33,6 +35,7 @@ final readonly class FindQuery
     {
         return implode(', ', array_filter([
             $this->type?->label(),
+            $this->position === null ? null : $this->position->x.','.$this->position->y,
             $this->address,
             $this->owner,
             $this->grade === null ? null : 'grade '.($this->gradeOp === '=' ? '' : $this->gradeOp).$this->grade,

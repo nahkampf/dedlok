@@ -25,6 +25,7 @@
      nothing for a guest: the inbox belongs to the ACCOUNT, so this asks the
      user rather than the character — the bar has a character to draw and this
      does not need one. --}}
+@php($tasksNew = auth()->user()?->character ? app(\App\Journal\Journal::class)->unseenCount(auth()->user()->character) : 0)
 @php($unread = auth()->check() ? (new \App\Notifications\Notifier)->unreadFor(auth()->user()) : 0)
 @php($latestMessage = auth()->check() ? (new \App\Notifications\Notifier)->latestIdFor(auth()->user()) : 0)
 {{-- One query, and only for a signed-in character: the topbar's process
@@ -107,6 +108,9 @@
             <a class="dock__item" href="{{ route('tasks.index') }}"
                @if (request()->routeIs('tasks.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9671;</span>
+                @if ($tasksNew > 0)
+                    <span class="dock__count">{{ $tasksNew > 99 ? '99+' : $tasksNew }}</span>
+                @endif
                 <span class="dock__label">{{ Text::get('ui.nav.tasks') }}</span>
             </a>
 

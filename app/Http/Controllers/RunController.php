@@ -90,6 +90,7 @@ class RunController extends Controller
         $loadout = InventoryItem::query()
             ->where('character_id', $character->id)
             ->whereNull('running_on_deck_id')
+            ->whereDoesntHave('offer')
             ->whereHas('item.program', static fn ($q) => $q->where('background_process', false))
             ->with('item.program')
             ->get();

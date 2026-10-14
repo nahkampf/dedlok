@@ -41,6 +41,14 @@ final class Finder
         return $this->running($character, ProgramKind::Pathfinder);
     }
 
+    /** Seconds per move of the running Pathfinder: its own `traverse_seconds`, else ten. */
+    public function stepSeconds(Character $character): int
+    {
+        $own = $this->program($character)?->item?->program?->traverse_seconds;
+
+        return max(1, (int) ($own ?? 10));
+    }
+
     private function running(Character $character, ProgramKind ...$kinds): bool
     {
         return $character->runningProcesses()->contains(
@@ -61,6 +69,11 @@ final class Finder
      */
     public function parse(string $query): FindQuery
     {
+        // "5,102" is a position, not two terms: the grade rule would otherwise read the 5.
+        if (preg_match('/^\s*(\d{1,4})\s*,\s*(\d{1,4})\s*$/', $query, $c) === 1) {
+            return new FindQuery(position: new Position((int) $c[1], (int) $c[2]));
+        }
+
         $type = null;
         $owner = null;
         $op = null;
@@ -103,6 +116,22 @@ final class Finder
     {
         $grid ??= Grid::fromConfig();
         $from = $character->gridPosition() ?? $grid->portal();
+
+        // A position is a Pathfinder's alone, and has to be a cell of the grid other than the one stood on.
+        if ($query->position !== null) {
+            if (! $this->canTraverse($character) || ! $grid->contains($query->position) || $from->equals($query->position)) {
+                return null;
+            }
+
+            return new FindResult(
+                contact: null,
+                steps: $from->distanceTo($query->position),
+                direction: self::direction($from, $query->position),
+                grade: null,
+                fromPortal: $character->gridPosition() === null,
+                target: $query->position,
+            );
+        }
 
         $grades = SystemScan::query()
             ->where('character_id', $character->getKey())

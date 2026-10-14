@@ -15,6 +15,9 @@ return [
     // The market's restock pass: every eight hours, on the hour.
     'market_seed' => '0 */8 * * *',
 
+    // The quest runner (`quests:run`): the timed steps of quests, every thirty minutes.
+    'quest_runner' => '*/30 * * * *',
+
     // The nightly day off every drug book: addiction and tolerance fall a step, and a withdrawal that falls under its line ends.
     'drugs_metabolise' => '20 5 * * *',
 

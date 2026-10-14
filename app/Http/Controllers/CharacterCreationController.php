@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Archetypes\LoadoutGranter;
+use App\Beta\AlphaGift;
 use App\Http\Middleware\ForbidSecondCharacter;
 use App\Models\Archetype;
 use App\Models\ArchetypeItem;
@@ -58,7 +59,7 @@ class CharacterCreationController extends Controller
         ]);
     }
 
-    public function store(Request $request, LoadoutGranter $granter): RedirectResponse
+    public function store(Request $request, LoadoutGranter $granter, AlphaGift $gift): RedirectResponse
     {
         $points = $this->attributePoints();
 
@@ -67,7 +68,7 @@ class CharacterCreationController extends Controller
 
         $handle = ValidHandle::normalize($validated['handle']);
 
-        DB::transaction(function () use ($request, $validated, $handle, $granter): void {
+        DB::transaction(function () use ($request, $validated, $handle, $granter, $gift): void {
             $archetype = Archetype::withLoadout()->get((int) $validated['archetype']);
 
             $character = $request->user()->character()->create(array_merge(
@@ -80,6 +81,9 @@ class CharacterCreationController extends Controller
             // promised is worse than no character at all, and nothing would
             // ever notice the difference.
             $granter->grant($character, $archetype);
+
+            // A tester is thanked once; this is a no-op for everybody else.
+            $gift->grant($character);
 
             SuggestedHandle::whereKey($handle)->first()?->update(['in_use' => true]);
         });

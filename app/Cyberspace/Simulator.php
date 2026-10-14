@@ -1317,15 +1317,22 @@ final readonly class Simulator
             $pieces[] = Text::get('cyberspace.run.log.took.creds', ['creds' => $result->creds]);
         }
 
-        if ($result->items > 0) {
-            $pieces[] = Text::plural('cyberspace.run.log.took.items', $result->items, ['count' => $result->items]);
+        // By name and amount when the extractor said what it was; the counts are the fallback for a result built without.
+        foreach ($result->taken as $name => $amount) {
+            $pieces[] = $amount > 1 ? "{$amount} × {$name}" : $name;
         }
 
-        if ($result->files > 0) {
-            $pieces[] = Text::plural('cyberspace.run.log.took.files', $result->files, [
-                'count' => $result->files,
-                'name' => (string) Item::query()->where('slug', ExtractedFile::SEALED_SLUG)->value('name'),
-            ]);
+        if ($result->taken === []) {
+            if ($result->items > 0) {
+                $pieces[] = Text::plural('cyberspace.run.log.took.items', $result->items, ['count' => $result->items]);
+            }
+
+            if ($result->files > 0) {
+                $pieces[] = Text::plural('cyberspace.run.log.took.files', $result->files, [
+                    'count' => $result->files,
+                    'name' => (string) Item::query()->where('slug', ExtractedFile::SEALED_SLUG)->value('name'),
+                ]);
+            }
         }
 
         return match (count($pieces)) {

@@ -499,29 +499,31 @@
                             <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
                                 <span aria-hidden="true" style="font-size:var(--fs-xl);line-height:1">{{ $found->arrow() }}</span>
                                 <div style="min-width:0">
-                                    <div class="item-row__name">{{ $found->contact->name }}</div>
+                                    <div class="item-row__name">{{ $found->contact?->name ?? Text::get('cyberspace.locate.coords_label', ['x' => $found->x(), 'y' => $found->y()]) }}</div>
                                     <div class="micro" style="color:var(--ink-2)">
                                         {{ Text::get('cyberspace.locate.distance', ['steps' => $found->steps]) }}
                                     </div>
                                 </div>
                             </div>
-                            <div class="row row--wrap micro" style="--gap:var(--s-2);align-items:center">
-                                <x-address :address="$found->contact->address" />
-                                <span class="tag">{{ $found->contact->type->label() }}</span>
-                                @if ($found->contact->owner)
-                                    <span class="tag">{{ $found->contact->owner }}</span>
-                                @endif
-                                @if ($found->grade !== null)
-                                    <span class="tag">{{ Text::get('cyberspace.locate.grade', ['grade' => $found->grade]) }}</span>
-                                @endif
-                            </div>
+                            @if ($found->contact)
+                                <div class="row row--wrap micro" style="--gap:var(--s-2);align-items:center">
+                                    <x-address :address="$found->contact->address" />
+                                    <span class="tag">{{ $found->contact->type->label() }}</span>
+                                    @if ($found->contact->owner)
+                                        <span class="tag">{{ $found->contact->owner }}</span>
+                                    @endif
+                                    @if ($found->grade !== null)
+                                        <span class="tag">{{ Text::get('cyberspace.locate.grade', ['grade' => $found->grade]) }}</span>
+                                    @endif
+                                </div>
+                            @endif
                             @if ($found->fromPortal)
                                 <span class="field__hint">{{ Text::get('cyberspace.locate.from_portal') }}</span>
                             @elseif ($locator['canTraverse'])
                                 <div>
                                     <button type="button" class="btn btn--sm cut" data-autotraverse="traverse-dialog"
-                                            data-url="{{ route('cyberspace.traverse') }}" data-x="{{ $found->contact->x }}" data-y="{{ $found->contact->y }}"
-                                            data-steps="{{ $found->steps }}" data-step-ms="10000">{{ Text::get('cyberspace.locate.autotraverse') }}</button>
+                                            data-url="{{ route('cyberspace.traverse') }}" data-x="{{ $found->x() }}" data-y="{{ $found->y() }}"
+                                            data-steps="{{ $found->steps }}" data-step-ms="{{ $locator['stepSeconds'] * 1000 }}">{{ Text::get('cyberspace.locate.autotraverse') }}</button>
                                 </div>
                                 {{-- Over the whole screen: the dialog's backdrop is the yellow half-transparent overlay. --}}
                                 <dialog class="modal modal--traverse" id="traverse-dialog">

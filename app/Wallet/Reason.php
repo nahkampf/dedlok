@@ -28,6 +28,7 @@ enum Reason: string
     case Fight = 'fight';
     case Mugged = 'mugged';
     case Granted = 'granted';
+    case AlphaGift = 'alpha_gift';
 
     public function label(): string
     {

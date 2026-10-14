@@ -24,4 +24,23 @@
             @endif
         </div>
     </div>
+
+    <div class="panel" style="margin-top:var(--s-4)">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('supporters.testers') }}</span>
+            <div class="spacer"></div>
+            <span class="micro num" style="color:var(--ink-2)">{{ $testers->count() }}</span>
+        </div>
+        <div class="panel__bd">
+            @if ($testers->isEmpty())
+                <p class="muted" style="margin:0;font-size:var(--fs-sm)">{{ Text::get('supporters.testers_none') }}</p>
+            @else
+                <ul class="stack" style="--gap:var(--s-2);list-style:none;margin:0;padding:0">
+                    @foreach ($testers as $name)
+                        <li>{{ $name }}</li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
+    </div>
 @endsection

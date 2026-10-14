@@ -17,6 +17,8 @@ use App\Programs\ProcessRefusal;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Stats\Sheet;
+use App\Market\OfferBook;
+use App\Market\OfferRefusal;
 use App\Stats\SkillStats;
 use App\Stats\Sources\RunningPrograms;
 use App\Support\Text;
@@ -111,6 +113,17 @@ final class ProgramTest extends TestCase
         return Item::factory()
             ->program($kind, qflops: $qflops, memory: $memory, modifiers: $modifiers, background: $background)
             ->create();
+    }
+
+    /** A program up for sale is the buyer's promise: it cannot be run, by hand or on a run's loadout, until withdrawn. */
+    public function test_a_listed_program_cannot_be_run(): void
+    {
+        $row = $this->own($this->programItem(ProgramKind::Daemon, qflops: 1, memory: 1, background: true));
+
+        $this->assertNotInstanceOf(OfferRefusal::class, app(OfferBook::class)->list($this->character->fresh(), $row->fresh(), 100));
+
+        $this->assertSame(ProcessRefusal::Listed, $this->runner->start($this->character->fresh(), $row->fresh())->refusal);
+        $this->assertSame(ProcessRefusal::Listed, $this->runner->start($this->character->fresh(), $row->fresh(), true)->refusal);
     }
 
     public function test_a_locator_and_a_pathfinder_share_one_slot(): void

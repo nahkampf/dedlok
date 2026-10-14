@@ -52,6 +52,10 @@ class EnsureEncounterIsResolved
             ], 409);
         }
 
-        return redirect()->route('encounter.show');
+        $redirect = redirect()->route('encounter.show');
+
+        // Said for something PRESSED (Stop, Abandon, a form): a silent redirect reads as a button that does nothing.
+        // Plain navigation is not nagged, the screen it lands on is the explanation.
+        return $request->isMethodSafe() ? $redirect : $redirect->with('error', Text::get('city.encounter.locked'));
     }
 }

@@ -556,6 +556,15 @@
                         @error('lifetime_seconds') <span class="field__error">{{ $message }}</span> @enderror
                     </div>
 
+                    {{-- A Pathfinder's speed: seconds per move when it walks the grid for you. Blank is the default. --}}
+                    <div class="field" style="margin-top:var(--s-3)" @error('traverse_seconds') data-invalid @enderror>
+                        <label class="field__label" for="traverse_seconds">{{ Text::get('admin.items.fields.traverse_seconds') }}</label>
+                        <input class="input num" id="traverse_seconds" name="traverse_seconds" type="number" min="1" max="600" step="1"
+                               value="{{ old('traverse_seconds', $item?->program?->traverse_seconds) }}">
+                        <span class="field__hint">{{ Text::get('admin.items.fields.traverse_seconds_hint') }}</span>
+                        @error('traverse_seconds') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+
                     {{-- Whether two copies may be pointed at two things at
                          once. A property of the SOFTWARE: how many a character
                          may run is the program_threads stat, and an icebreaker

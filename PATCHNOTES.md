@@ -2,9 +2,6 @@
 - Markets at exchanges and city locations now have the full UI from the regular market
 - View range now displayed in cyberspace screen
 - Stash now shows images if available
-
-## 0.56.1 (2026-10-14)
-
 - Shops in the City and the Exchange stores now look like the market, with search and categories
 - The City page is just the map: hover or click a district to see what is there, and to walk, take a pod or explore. The district you are in pulses
 - Cyberspace shows your view range; hover or click it to see where it comes from and what it covers
