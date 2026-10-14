@@ -49,6 +49,8 @@ return [
             // The inbox. "Messages" rather than "Notifications" because the
             // rail is 220px open and one word has to fit beside a glyph.
             'messages' => 'Messages',
+            // The talk panel; it opens over the page rather than leading to one.
+            'chat' => 'Chat',
             'wallet' => 'Wallet',
             // The jobs you have taken, and later the journal and quests. Short enough to sit beside a glyph in a 220px rail.
             'tasks' => 'Tasks & Missions',
@@ -655,6 +657,59 @@ return [
         ],
     ],
 
+    /*
+     | The chat panel in the rail: General, rooms and direct lines.
+     */
+    'chat' => [
+        'title' => 'Chat',
+        'general' => 'General',
+        'empty' => 'Nobody has said anything here yet.',
+        'say' => 'Say something. /msg handle words writes to one person.',
+        'send' => 'Send',
+        'profile' => 'Open :handle\'s profile',
+        'create' => 'Create room',
+        'create_title' => 'Create a room',
+        'name' => 'Room name',
+        'public' => 'Public: anybody can find and join it',
+        'private' => 'Private: members only, by invitation',
+        'make' => 'Create',
+        'invite' => 'Invite',
+        'invite_title' => 'Invite to this room',
+        'handle' => 'Handle',
+        'browse' => 'Public rooms',
+        'join' => 'Join',
+        'joined' => ':handle has joined the chat',
+        'left_line' => ':handle has left the chat.',
+        'accept' => 'Join',
+        'decline' => 'No thanks',
+        'failed' => 'Could not reach the chat.',
+
+        'notices' => [
+            'invited' => 'Invitation sent to :handle.',
+            'ignored' => ':handle is ignored. You will not see their lines.',
+            'unignored' => ':handle is no longer ignored.',
+            'left' => 'You left :room.',
+        ],
+
+        'errors' => [
+            'unknown_command' => 'Commands: /msg handle words, /invite handle, /leave, /ignore handle, /unignore handle.',
+            'rooms_only' => 'That only works in a room.',
+            'invite_usage' => 'To invite somebody: /invite handle.',
+            'ignore_usage' => 'To ignore somebody: /ignore handle.',
+            'unignore_usage' => 'To stop ignoring somebody: /unignore handle.',
+            'no_invite' => 'That invitation is no longer open.',
+            'empty' => 'Say something first.',
+            'long' => 'A line may be at most :max characters.',
+            'name' => 'A room needs a name of at most :max characters.',
+            'msg_usage' => 'To write to one person: /msg handle your words.',
+            'yourself' => 'You cannot write to yourself.',
+            'private' => 'That room is private.',
+            'not_a_member' => 'You are not in that chat.',
+            'no_such' => 'Nobody has that handle.',
+            'already' => ':handle is already in this room.',
+        ],
+    ],
+
     'notifications' => [
         'title' => 'Messages',
         'lede' => 'Notifications and messages.',
@@ -730,6 +785,8 @@ return [
 
         // The closed row of the inbox. One per message key; a key without one shows its category instead.
         'titles' => [
+            'chat_invite' => ':handle invited you to :room',
+            'chat_invite_private' => ':handle invited you to a private chat',
             'decrypted' => 'Decrypted: :label',
             'crafted' => 'Built: :item',
             'supporter_welcome' => 'Thank you for supporting Dedlok',
@@ -759,6 +816,8 @@ return [
         ],
 
         'messages' => [
+            'chat_invite' => ':handle has invited you to the chat room :room.',
+            'chat_invite_private' => ':handle has invited you to a private chat.',
             'decrypted' => 'The :label broke. It is a :item now, worth :value ¤ to the right buyer.',
             'crafted' => 'Your :item is built. It is in your data stash.',
             'supporter_welcome' => 'Thank you for supporting Dedlok. You now have a badge by your name, a training queue with no limit, and your name on the Supporters page. You are also welcome in our Discord: open :url, or paste it into Discord under + then Join a Server, and say hello. It is where to report bugs, give feedback, wish for features or just hang out.',
@@ -2660,6 +2719,7 @@ return [
             'mission_completed' => 'Work completed',
             'store_spend' => 'Traded with them',
             'decay' => 'Time passing',
+            'achievement' => 'You are really getting your name out there!',
             'encounter' => 'Something in the City',
             'defeated' => 'Beat one of their people',
         ],

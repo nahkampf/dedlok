@@ -25,7 +25,7 @@ class TouchLastActive
     {
         $user = $request->user();
 
-        if ($user !== null && $request->route()?->getName() !== 'notifications.unread'
+        if ($user !== null && ! in_array($request->route()?->getName(), ['notifications.unread', 'chat.poll'], true)
             && ($user->last_active_at === null || $user->last_active_at->lt(now()->subMinutes(self::MINUTES)))) {
             DB::table('users')->where('id', $user->getKey())->update(['last_active_at' => now()]);
             $user->last_active_at = now()->toImmutable();

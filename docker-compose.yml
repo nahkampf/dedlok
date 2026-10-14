@@ -40,6 +40,27 @@ services:
     networks:
       - cyberpunk-network
 
+  # Websockets for the chat page (Laravel Reverb). Its own container, like the scheduler: a long-lived process, and
+  # the browser connects to it directly on :8085. The app publishes to it as reverb:8080 (REVERB_HOST in .env).
+  reverb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cyberpunk-reverb
+    restart: unless-stopped
+    user: "1000:1000"
+    working_dir: /var/www/cyberpunk
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./:/var/www/cyberpunk
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    depends_on:
+      - db
+    networks:
+      - cyberpunk-network
+
   # Built from the same Dockerfile as web, not the stock composer image: the
   # platform check reads ext-intl (and the rest of the extensions) from THIS
   # container, and composer.json requires intl.

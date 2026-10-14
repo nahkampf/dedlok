@@ -27,6 +27,7 @@
      does not need one. --}}
 @php($tasksNew = auth()->user()?->character ? app(\App\Journal\Journal::class)->unseenCount(auth()->user()->character) : 0)
 @php($unread = auth()->check() ? (new \App\Notifications\Notifier)->unreadFor(auth()->user()) : 0)
+@php($chatUnread = $hud ? app(\App\Chat\Chats::class)->unreadFor($hud) : 0)
 @php($latestMessage = auth()->check() ? (new \App\Notifications\Notifier)->latestIdFor(auth()->user()) : 0)
 {{-- One query, and only for a signed-in character: the topbar's process
      count and the modal behind it read the same collection. --}}
@@ -152,6 +153,19 @@
                 @endif
                 <span class="dock__label">{{ Text::get('ui.nav.messages') }}</span>
             </a>
+
+            {{-- The chat is its own page, and never locked. Its count is lines unread outside General, redrawn by the
+                 inbox's own poll. --}}
+            @if ($hud)
+                <a class="dock__item" href="{{ route('chat.show') }}" data-chat-badge
+                   @if (request()->routeIs('chat.*')) aria-current="page" @endif>
+                    <span class="dock__icon" aria-hidden="true">&#9993;&#65038;</span>
+                    @if ($chatUnread > 0)
+                        <span class="dock__count">{{ $chatUnread > 99 ? '99+' : $chatUnread }}</span>
+                    @endif
+                    <span class="dock__label">{{ Text::get('ui.nav.chat') }}</span>
+                </a>
+            @endif
 
             {{-- Only ever rendered for an admin. The gate is the guard; this is
                  just the door being visible to the people who have one. --}}

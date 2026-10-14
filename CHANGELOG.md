@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+## [0.58.0] — 2026-10-14
+
+Chat arrives: a General channel, rooms and direct lines on a page of its own, pushed live over a websocket; achievements raise standing; and the grid's edge is hatched.
+
+### Added
+
+- **Chat** (`/chat`, `ChatController`, `App\Chat\Chats` the only writer, `App\Chat\Markup` the renderer): General for every character, named rooms (public or private) and direct lines. Lines are stored as plain text (`PlainText`) and drawn escaped with bold, italic, strikethrough, `- ` lists and `addr:XXXXXXXX` as a copy button. A character's avatar sits beside each line (a supporter's own picture when they have one), the timestamp is on hover, and the tab row carries *General (x)* active players (last 30 minutes, cached a minute) and an ember unread count per tab; the rail's *Chat* item carries the total. The page is never locked (`chat.*` and `broadcasting.auth` are in every lock's allow-list), and its refresh poll does not count as activity.
+- **Commands**: `/msg handle words` (one direct line per pair, found from either side), `/invite handle` (an inbox message with *Join* and *No thanks*; joining writes an italic "X has joined the chat"), `/leave` (an italic "X has left the chat."; an empty room goes), `/ignore` and `/unignore` (their lines, direct lines, unread counts and invitations are hidden from you). A private room of exactly two reads as the other person.
+- **Websockets** (Laravel Reverb, `ChatLine` event, private channels `chat.general` and `chat-user.{characterId}` in `routes/channels.php`): a line appears on every open page at once, drawn by the server (`chat/_line.blade.php`). Without a socket the page polls every five seconds, so a down server never costs a message. Dev gets a `reverb` compose service on `:8085`; production needs the process and an Apache `/app` proxy (see *Chat and websockets* in `CLAUDE.md`).
+- **Achievements are worth +1 standing with every entity** that keeps books (`StandingReason::Achievement`, `standing.reasons.achievement`), on the ledger as "You are really getting your name out there!". Achievements unlocked before this release are not paid back.
+
+### Changed
+
+- **Beyond the edge of the grid** is a 45° hazard stripe in two greys (`.cell--void`) instead of a hole; the tile is half a cell, so the stripes run unbroken across cells.
+- `composer.lock`: installing Reverb moved `guzzlehttp/guzzle` 8 → 7 (with `psr7` and `promises`), `laravel/framework` to 13.36 and a number of Symfony packages. Nothing in the app calls Guzzle directly. The Dockerfile gains `pcntl`.
+
+### Migrations
+
+- `2026_10_14_160000_chat`: `chats` (General seeded), `chat_messages`, `chat_members`.
+- `2026_10_14_170000_chat_commands`: `chat_messages.is_event`, `chat_invites`, `chat_ignores`.
+
+
+
 ## [0.57.0] — 2026-10-14
 
 Alpha testers are thanked, the quest runner arrives, Pathfinders take coordinates and move at their own speed, and a few screens say why they refused.
@@ -3159,7 +3182,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.57.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.58.0...HEAD
+[0.58.0]: https://github.com/nahkampf/dedlok/compare/v0.57.0...v0.58.0
 [0.57.0]: https://github.com/nahkampf/dedlok/compare/v0.56.1...v0.57.0
 [0.56.1]: https://github.com/nahkampf/dedlok/compare/v0.56.0...v0.56.1
 [0.56.0]: https://github.com/nahkampf/dedlok/compare/v0.55.1...v0.56.0

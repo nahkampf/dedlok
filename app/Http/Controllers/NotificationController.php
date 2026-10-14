@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Chat\Chats;
 use App\Models\Notification;
 use App\Models\User;
 use App\Notifications\Notifier;
@@ -66,7 +67,7 @@ class NotificationController extends Controller
      * the page already knew about, which is why this carries an id rather than only a count: a message read and a
      * message arriving between two polls leave the count where it was.
      */
-    public function unread(Request $request, Notifier $notifier): JsonResponse
+    public function unread(Request $request, Notifier $notifier, Chats $chats): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
@@ -74,6 +75,8 @@ class NotificationController extends Controller
         return response()->json([
             'unread' => $notifier->unreadFor($user),
             'latest' => $notifier->latestIdFor($user),
+            // The chat's own badge rides on this poll; there is no second timer.
+            'chat' => $user->character === null ? 0 : $chats->unreadFor($user->character),
         ]);
     }
 

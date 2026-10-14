@@ -3030,9 +3030,20 @@ button.board__node[data-inspect]:focus-visible .board__box { border-color: var(-
    the whole point of drawing it at all. */
 .cell--distant { opacity: .55; filter: blur(1px); }
 
-/* Beyond the edge of the world. THE GRID DOES NOT WRAP, so this is a hole in
-   the drawing rather than a place — no border, no fill, nothing to read. */
-.cell--void { background: transparent; border-color: transparent; }
+/* Beyond the edge of the world. THE GRID DOES NOT WRAP, so this is not a place:
+   a hazard stripe, dark and light grey at 45 degrees. The tile is half the cell
+   on each side and the cells are square, so a tile always starts and ends on a
+   cell's edge and the stripes run on unbroken from one void cell into the next,
+   at any --cell size. The stops at quarter points are what make one tile seamless
+   with itself. */
+.cell--void {
+  border-color: transparent;
+  background-color: var(--line-1);
+  background-image: linear-gradient(45deg,
+    var(--line-1) 25%, var(--ink-3) 25%, var(--ink-3) 50%,
+    var(--line-1) 50%, var(--line-1) 75%, var(--ink-3) 75%, var(--ink-3));
+  background-size: 50% 50%;
+}
 
 /* NEVER LOOKED AT — fog, and the difference from empty ground is a LAYER and
    not a shade. It drops below the map's own ground, loses its hairline, and
@@ -3523,3 +3534,24 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
 /* One box per slot in the region, filled or empty. Wraps, because four
    abdominal slots and a 238px panel do not otherwise agree. */
 .region__slots { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+/* --- Chat panel -----------------------------------------------------------
+   The page: tabs wrap, the log scrolls, and one row is a 32x24 face beside "handle> words". */
+.chat { display: flex; flex-direction: column; gap: var(--s-3); }
+.chat__tabs, .chat__foot { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.chat__log {
+  display: flex; flex-direction: column; gap: var(--s-2);
+  max-height: 45vh; overflow-y: auto;
+  padding: var(--s-2); border: var(--hair) solid var(--line-1); background: var(--bg-1);
+}
+.chat__row { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: var(--s-2); align-items: start; }
+.chat__face { width: 32px; height: 24px; background: var(--bg-3); overflow: hidden; }
+.chat__face img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.chat__line { font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.chat__who { background: none; border: 0; padding: 0; margin-right: var(--s-2); color: var(--ink-0); font: inherit; font-weight: 600; cursor: pointer; }
+.chat__who:hover { text-decoration: underline; }
+.chat__event { font-size: var(--fs-sm); color: var(--ink-2); padding-left: calc(32px + var(--s-2)); }
+.chat__msg ul { margin: 0; padding-left: var(--s-5); }
+.chat__form { display: flex; gap: var(--s-2); }
+.chat__form .input { flex: 1; min-width: 0; }
+.chat__room { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding-top: var(--s-2); }

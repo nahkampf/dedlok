@@ -46,6 +46,9 @@ return [
     */
 
     'reasons' => [
+        // Per achievement, towards EVERY entity: the account is getting its name out there.
+        'achievement' => 1.0,
+
         'noticed' => -0.02,
         'raided' => -0.10,
         'backdoor_found' => -0.05,
