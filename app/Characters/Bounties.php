@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Characters;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Character;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
@@ -148,6 +150,7 @@ final class Bounties
                 'bounty' => (int) $character->bounty + $this->amountFor((float) $character->heat, (int) $character->bounty_grade),
                 'bounty_grade' => 0,
             ])->save();
+            (new Achievements)->reach($character, Metric::BountyOnHead, (int) $character->bounty);
             $this->notifier->send($character, Category::City, 'bounty_word', ['bounty' => number_format($character->bounty)]);
 
             $marked[] = $character;

@@ -513,7 +513,7 @@ return [
             'mission' => 'Mission reward',
             'siphon' => 'Siphon payout',
             'extraction' => 'Taken from a system',
-            'hunt' => 'Hunter bounty',
+            'hunt' => 'Bloodhound bounty',
             'skim' => 'Skimmed by ICE',
             'transfer_out' => 'Transfer sent',
             'transfer_in' => 'Transfer received',
@@ -1747,7 +1747,7 @@ return [
         */
         'hunt' => [
             'title' => 'Hunted',
-            'heading' => 'Cyberspace combat',
+            'heading' => 'A Bloodhound daemon intercepted you',
             'grade' => 'Grade :grade',
             'locked' => 'Somebody is on you. It does not stop because you looked away.',
             'log_heading' => 'The exchange',

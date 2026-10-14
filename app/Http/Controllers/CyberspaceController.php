@@ -249,6 +249,13 @@ class CyberspaceController extends Controller
             ->whereNotNull('grade')
             ->pluck('grade', 'address');
 
+        // An Exchange cannot be scanned and its grade is no secret (the desk's own), so it is read off the system.
+        $exchanges = \App\Models\System::query()
+            ->whereIn('address', $contacts->where('type', \App\Cyberspace\SystemType::Exchange)->pluck('address'))
+            ->whereNotNull('grade')
+            ->pluck('grade', 'address');
+        $grades = $grades->union($exchanges);
+
         $rows = $contacts->map(static fn (SystemContact $c): array => [
             'name' => $c->name,
             'owner' => (string) ($c->owner ?? ''),

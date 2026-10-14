@@ -109,7 +109,7 @@
                                 </td>
                                 <td class="t-right">
                                     <input form="offer-{{ $offer->id }}" class="input num" type="number"
-                                           name="loyalty_price" min="0" style="width:96px"
+                                           name="loyalty_price" min="0" step="0.001" style="width:96px"
                                            value="{{ old('loyalty_price', $offer->loyalty_price) }}"
                                            aria-label="{{ Text::get('admin.entities.price') }}">
                                 </td>
@@ -194,7 +194,7 @@
 
                 <div class="field" @error('loyalty_price') data-invalid @enderror>
                     <label class="field__label" for="loyalty_price">{{ Text::get('admin.entities.price') }}</label>
-                    <input class="input num" id="loyalty_price" name="loyalty_price" type="number" min="0"
+                    <input class="input num" id="loyalty_price" name="loyalty_price" type="number" min="0" step="0.001"
                            value="{{ old('loyalty_price', 0) }}">
                     @error('loyalty_price') <span class="field__error">{{ $message }}</span> @enderror
                 </div>

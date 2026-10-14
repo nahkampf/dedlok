@@ -1761,11 +1761,23 @@ A Data Fortress is the player-owned node. Decisions so far (2026-10-09):
 - **A cap per player**, one at first, raised by skill.
 - **It is a system like any other** (`systems.owner_id` has to learn to point at a player), but the
   seeder, restock and occupancy top-up must treat it as nobody's NPC node and never touch it.
-- **Upgrades, and hosted programs.** Storage, CPU and RAM are upgraded; programs are installed ON the
-  fortress, which has its own totals the way a deck does (same measures, same one-decimal rule).
-- **Upkeep.** A daily drain of cash, by storage, CPU and what is hosted. The gentle failure: hosted
-  programs stop first, then defences go down, then the fortress is **abandoned**. An abandoned
-  fortress stays on the grid with its contents and is **ripe for raiding**; it is not deleted.
+- **Hosted programs, on borrowed totals.** There is no hardware to upgrade: storage, compute and RAM come from
+  Leechers (see *Borrowed resources*), and programs are installed ON the fortress against those totals, the way a
+  deck's are (same measures, same one-decimal rule).
+- **No cash upkeep** (decided 2026-10-15; the earlier daily drain of cash is retired). A fortress runs on stolen
+  resources, so what keeps it alive is keeping its Leechers alive.
+- **Shutdown order when resources are short** (decided 2026-10-15). When the live totals no longer cover what is
+  running, the fortress turns things off by itself, **in this order, until what is left fits**:
+  1. **Producers** (programs that make things passively),
+  2. **Utility programs** (helpers: the cloak, the market, relocation),
+  3. **IDS**,
+  4. **ICE**,
+  5. **the Kernel.**
+  **Within one tier the most demanding goes first**, so the fewest programs are lost.
+  **Stopping the Kernel is what makes the fortress offline, "abandoned"** (see *Storage areas* for the 48 hours and
+  the deletion). Programs stopped this way are only stopped, never destroyed. **The Kernel, ICE and IDS restart
+  automatically** when resources allow (in that order: Kernel, then ICE, then IDS); **producers and utility programs
+  stay stopped until the owner (or somebody with *Administer*) starts them by hand.**
 - **Access.** Private, or public with services anyone can use, or invited-only. **The first service is a
   public market.** Players still never see each other: a visitor meets the fortress, not its owner.
 - **Cloak.** A hosted program that makes the fortress read as empty. It has a **strength**, a
@@ -1778,16 +1790,127 @@ A Data Fortress is the player-owned node. Decisions so far (2026-10-09):
   founding and anything else that picks a square reads `cyberspace.size`.
 
 - **The market is a hosted program**, like the cloak: it has to be installed, run and upkept, and a
-  fortress whose market stops (no upkeep, or abandoned) sells nothing.
+  fortress whose market stops (not enough resources to run it, or abandoned) sells nothing.
 - **Invites live in a settings menu on the fortress**, where the owner handles who is invited and
   whether it is private, invited-only or public.
 - **Building one is a substantial investment on three fronts**: the skill training it requires
   (Node Administration, and what it sits behind), the components, and the Designs. It is meant to be a
   long-term goal, not a purchase; the Kernel's Design should need rare components and more than one skill.
 
-Open: defences (owner-built IDS and ICE; waits on PvP), what raiding takes, the market's shape (whose
-stock, what fee), the invite list's storage, and the actual build numbers (a balance pass once the
-components exist).
+#### Borrowed resources: the Leecher (decided 2026-10-15)
+
+A fortress has **no hardware of its own**; its compute, RAM and storage are **stolen** from other systems.
+
+- **A new run action: *Install Leecher*,** beside Install (backdoor), Plant and the rest. A **Leecher** is a
+  program, crafted from a Design (so Code Crafting and the kind's skill gate it), and **needs skills to build and to
+  use**. It is spent by installing, like the Kernel.
+- **Each Leecher steals a fixed amount of ONE of compute, RAM or storage** from the node it sits on and credits it to
+  one fortress (the player chooses which at install).
+- **A leech counts only while the host system is up and online.** Locked down, relocated, burned or discovered,
+  and its share stops with it; the fortress's totals fall and anything hosted that no longer fits stops, in the
+  failure order above.
+- **The fortress's totals are the sum of its live Leechers**, resolved like a deck's (`DeckTotals` shape, one decimal,
+  `Qb`), and **hosted programs run against them** (a "running" list, same refusal checks as `ProgramRunner`).
+- **One Leecher per player per node**, like a backdoor.
+- **Installing one raises no heat and no trace.**
+- **Discovery.** A Leecher has a base **10% chance of being detected and removed** (config; skills lower it later).
+  Rolled with the nightly backdoor-ageing pass (assumed: one roll per Leecher per night, not per visit). A removed
+  Leecher **sends the fortress's owner a message** and its share stops at once.
+
+#### Defences: crafted, then maintained (decided 2026-10-15)
+
+Fortress IDS and ICE are **not the NPC kinds**. They are programs of their own, hosted on the fortress and paying its
+compute, RAM and storage.
+
+- **Phase 1, craft and install.** The maker starts crafting an ICE or an IDS from components and skills, and **its
+  values (attack, detection, integrity) come out of the CREATOR's skills**, not from a catalogue row. Then it is
+  installed on the fortress.
+- **Phase 2, a maintenance cycle.** Other skills let **anybody with access to the fortress** improve what is
+  installed: raise its values, or lower its compute, storage or RAM demand.
+- **Decay.** An installed ICE or IDS's attack and detection values **fall slowly over time** (unpatched software
+  loses ground to the exploits in circulation). Maintenance is what holds it; neglect is how a fortress becomes
+  ripe for raiding. A rate and a floor belong to config, never to code.
+- **The crafted item CARRIES its numbers** (decided 2026-10-15): attack/detection, the compute/RAM/storage it
+  demands and its last-maintained moment sit on the inventory row (per copy, never on the shared definition), so a
+  skilled maker's product is worth more and two copies of one program differ. It is **unstackable**.
+- **Installing is reversible.** Installing moves the item onto a fortress (the numbers stay with it) and
+  **uninstalling puts it back in the stash**, where it can be sold, traded or installed somewhere else.
+- **Decay runs only while it is INSTALLED** (decided 2026-10-15). In the stash, on a market listing or on a
+  shelf it does not decay, and maintenance does nothing there either. Decay is `stored − rate × time installed
+  since last maintained`, floored, so uninstalling settles it first (the lazy catch-up runs, then the numbers are
+  frozen) and installing restarts the clock.
+- **Data, not PHP.** Values live on the installed row (a per-instance number, like a copy's `data`); the skills'
+  effects are modifiers on their rows, the decay is a config rate read lazily and caught up on look, as every other
+  clock here is.
+
+#### Storage areas (decided 2026-10-15)
+
+A fortress's storage (the stolen storage its Leechers give it) is divided into **areas**. What an area is, and who
+may do what in it, is its own data:
+
+- **Member area.** Anything put here can be seen and taken by **anyone with access** to the fortress.
+- **Owner storage.** Always exists; **only the owner** can use it. It cannot be deleted or opened to anyone.
+- **Role-specific areas**, as many as the owner makes (bounded by the fortress's storage). Each area has, per
+  audience (owner, each role, selected members), the three things it may do: **see**, **deposit**, **withdraw**.
+  A **drop box** is an area where members deposit and cannot withdraw. A **vault** is one only a named group sees.
+- **Program-bound areas.** An area may be wired to an installed program as its **input** (the program *consumes*
+  from it: members upload component files and a producer eats them) or its **output** (the program *dispenses* into
+  it: what a passive producer makes lands here, and the owner and/or a role or chosen members may take it). A
+  program never touches an area it is not wired to.
+- **Capacity.** The areas share the fortress's live storage total, so a Leecher dying (or a host going down) can
+  leave a fortress **over capacity**. As on a deck, nothing is deleted for being over: the areas stop accepting
+  deposits until the owner makes room.
+
+- **Roles are named lists with properties.** The owner defines them; a role carries properties such as *Read*,
+  *Write* and *Administer*, and **a member can hold several**. An area's permissions are given to roles (and to the
+  owner), so **defaults are provided**: a fresh fortress offers ready-made roles and area templates (member area,
+  drop box, vault, producer input and output) for the owner to use as they are or change.
+- **Everything a member does is logged.** Uploading, moving, taking, deleting, installing, changing a setting:
+  one row per action, immutable, who, what, where, when. **The owner can audit it**, and may appoint an **auditor**
+  (a member, read access to the log and nothing else).
+- **The Kernel decides whether a fortress is online.** The Data Fortress Kernel is itself a program that needs
+  compute, RAM and storage from the fortress's live total. **If the Leechers no longer bring in enough for the Kernel
+  to run, the fortress is offline: "abandoned".** Hosted IDS and ICE going without resources does NOT abandon it
+  (they just stop, and the fortress is exposed); only the Kernel does.
+- **Abandonment.** An abandoned fortress is **open to anyone to raid without danger** (its defences are down).
+  **A 48-hour timer starts** when it becomes abandoned; **if it is not rectified within 48 hours the fortress and
+  everything it holds are deleted** (every member's uploads, installed defences and hosted programs included; nothing
+  returns to a stash). **It is rectified by new Leechers bringing in enough resources for the Kernel to run**, at
+  least; the timer then stops. This replaces the earlier "abandoned fortress stays ripe for raiding" line.
+
+#### The market and raiding (decided 2026-10-15)
+
+- **The market is public, and works like an exchange.** Any player standing on the node can interact with the
+  fortress's market without being a member; they meet the fortress, never its owner. It is a hosted utility program
+  (it stops with the helpers, see the shutdown order).
+- **It lists items from ONE storage area** the owner assigns. Only what is in that area is for sale.
+- **Every member with write access to the market sets their OWN prices.** It is a place where members sell their
+  own things, the fortress being the outlet; the owner does not price anybody else's goods.
+- **A tax, set by the owner and administrators.** A percentage of every sale is deducted from the cash and paid
+  into the **fortress wallet**; the rest goes to the seller's wallet as usual (through `Wallet`, a `Reason`, as
+  every creds movement). **Default 3%, 0% allowed, 50% the maximum.** The owner and administrators can reach the
+  fortress wallet (each movement is a ledger line).
+- **A raid on a fortress offers three things** (once its defences are beaten, or it is abandoned and open):
+  1. **Raid the wallet:** take X percent of the funds available.
+  2. **Raid the file storage:** steal files at random, from the areas a raider can reach.
+  3. **Burn the system:** more complex, slower and harder than burning an ordinary node.
+- **Touching the core.** Every raiding operation above works on the Kernel ("touching the core"), and **cannot be
+  performed until the fortress's ICE has been defeated** (the same rule an ordinary node's run follows).
+- **A raid raises an alarm, and its turns are timed.** Starting an intrusion run against a fortress **sends an alarm
+  message to the owner and every administrator**, and a second one **when the ICE is defeated** (two alarms in
+  all, never one per turn), and **each turn of the run takes a fixed 30 seconds**, so the
+  owner has time to react (log in, start things, or fight back). Ordinary nodes keep their own pace.
+- **A burn deletes everything except the Kernel, which becomes FROZEN** (decided 2026-10-15). An **8-hour timer**
+  starts. While frozen **no other player can raid it**. An owner or administrator who can reach it in time can
+  **save it** by getting the Kernel running again (below), and it comes back online as an otherwise empty
+  fortress to rebuild. If the 8 hours pass, the Kernel and the fortress are deleted.
+- **The frozen 8 hours are the grace period, and bringing the Kernel back is the cost of a save.** The burn took
+  the Leechers too, so the owner needs **new Leechers bringing in enough for the Kernel to run**; when it can run
+  again it comes back online and the clock disappears. No other payment.
+
+Open: how many files a raid takes and the X percent of the wallet, what burning requires beyond an ordinary burn,
+the invite list's storage, and the build and decay
+numbers.
 
 ---
 

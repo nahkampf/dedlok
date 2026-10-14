@@ -19,6 +19,8 @@ use App\Stats\DamageResolver;
 use App\Stats\Resolver;
 use App\Support\Text;
 use App\Support\Trace;
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
 use Closure;
@@ -213,6 +215,8 @@ final class HunterCombat
         ])->save();
 
         Wallet::move($character, $creds, Reason::Hunt);
+
+        (new Achievements)->record($character, Metric::BloodhoundsDefeated);
 
         $hunt->forceFill(['won' => true, 'resolved_at' => now()])->save();
 
