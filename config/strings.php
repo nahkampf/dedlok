@@ -678,10 +678,25 @@ return [
         'handle' => 'Handle',
         'browse' => 'Public rooms',
         'join' => 'Join',
-        'invited' => '*invited :handle*',
+        'joined' => ':handle has joined the chat',
+        'accept' => 'Join',
+        'decline' => 'No thanks',
         'failed' => 'Could not reach the chat.',
 
+        'notices' => [
+            'invited' => 'Invitation sent to :handle.',
+            'ignored' => ':handle is ignored. You will not see their lines.',
+            'unignored' => ':handle is no longer ignored.',
+            'left' => 'You left :room.',
+        ],
+
         'errors' => [
+            'unknown_command' => 'Commands: /msg handle words, /invite handle, /leave, /ignore handle, /unignore handle.',
+            'rooms_only' => 'That only works in a room.',
+            'invite_usage' => 'To invite somebody: /invite handle.',
+            'ignore_usage' => 'To ignore somebody: /ignore handle.',
+            'unignore_usage' => 'To stop ignoring somebody: /unignore handle.',
+            'no_invite' => 'That invitation is no longer open.',
             'empty' => 'Say something first.',
             'long' => 'A line may be at most :max characters.',
             'name' => 'A room needs a name of at most :max characters.',
@@ -769,6 +784,7 @@ return [
 
         // The closed row of the inbox. One per message key; a key without one shows its category instead.
         'titles' => [
+            'chat_invite' => ':handle invited you to :room',
             'decrypted' => 'Decrypted: :label',
             'crafted' => 'Built: :item',
             'supporter_welcome' => 'Thank you for supporting Dedlok',
@@ -798,6 +814,7 @@ return [
         ],
 
         'messages' => [
+            'chat_invite' => ':handle has invited you to the chat room :room.',
             'decrypted' => 'The :label broke. It is a :item now, worth :value ¤ to the right buyer.',
             'crafted' => 'Your :item is built. It is in your data stash.',
             'supporter_welcome' => 'Thank you for supporting Dedlok. You now have a badge by your name, a training queue with no limit, and your name on the Supporters page. You are also welcome in our Discord: open :url, or paste it into Discord under + then Join a Server, and say hello. It is where to report bugs, give feedback, wish for features or just hang out.',

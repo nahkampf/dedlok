@@ -118,7 +118,7 @@
                                     <x-scan-facts :facts="$message->details['facts']" />
                                 @elseif (! empty($message->details['link']))
                                     {{-- Only a link in the sentence above: nothing to list. --}}
-                                @elseif ($message->details)
+                                @elseif ($message->details && empty($message->details['chat_invite']))
                                     <div class="prose micro" style="color:var(--ink-2)">
                                         <ul>
                                             @foreach ($message->details as $line)
@@ -139,7 +139,17 @@
                                      (it reads the message), and it sits outside the summary
                                      because a button in a summary is not one a browser draws. --}}
                                 <div class="row row--wrap" style="--gap:var(--s-2)">
-                                @if (! empty($message->details['from']))
+                                @if (! empty($message->details['chat_invite']))
+                                    {{-- A room's invitation: answered here, and the message goes once it has been. --}}
+                                    <form method="POST" action="{{ route('chat.accept', ['chat' => $message->details['chat_invite']]) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn--sm cut">{{ Text::get('chat.accept') }}</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('chat.decline', ['chat' => $message->details['chat_invite']]) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn--sm btn--quiet cut">{{ Text::get('chat.decline') }}</button>
+                                    </form>
+                                @elseif (! empty($message->details['from']))
                                     <a class="btn btn--sm btn--quiet cut" href="{{ route('messages.create', ['to' => $message->details['from']]) }}">{{ Text::get('notifications.compose.reply') }}</a>
                                 @else
                                 <form method="POST" action="{{ route('notifications.open', $message) }}">

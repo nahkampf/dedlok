@@ -1711,11 +1711,17 @@
     const log = () => page.querySelector("[data-chat-log]");
     const bottom = () => { const l = log(); if (l) l.scrollTop = l.scrollHeight; };
     bottom();
+    try {
+      const notice = sessionStorage.getItem("chat.notice");
+      if (notice) { sessionStorage.removeItem("chat.notice"); toast(notice); }
+    } catch { /* nothing to show */ }
 
     const post = (url, body) => fetch(url, { method: "POST", body, headers: { ...headers, Accept: "application/json", "X-CSRF-TOKEN": token() }, credentials: "same-origin" })
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
         if (!r.ok) { toast(data.message || "Could not reach the chat.", { level: "warn" }); return null; }
+        // A command with nothing to draw (invited, ignored, left) says so once, on the page it lands on.
+        if (data.notice) { try { sessionStorage.setItem("chat.notice", data.notice); } catch { /* no toast then */ } }
         return data.chat;
       })
       .catch(() => { toast("Could not reach the chat.", { level: "warn" }); return null; });

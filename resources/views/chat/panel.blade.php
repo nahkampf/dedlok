@@ -21,6 +21,10 @@
 
     <div class="chat__log" data-chat-log>
         @forelse ($lines as $line)
+            @if ($line->is_event)
+                <div class="chat__event" title="{{ $line->created_at->utc()->format('Y-m-d H:i:s') }} UTC"><em>{{ $line->message }}</em></div>
+                @continue
+            @endif
             @php($who = $line->character)
             @php($kind = $who?->user?->isSupporter() ? 'characters/avatars' : 'characters')
             @php($faces[$kind.$who?->getKey()] ??= $who ? Image::card($kind, $who->getKey()) : null)

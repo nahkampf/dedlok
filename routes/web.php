@@ -435,6 +435,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/chat/say', [ChatController::class, 'post'])->middleware('throttle:30,1')->name('chat.say');
     Route::post('/chat/rooms', [ChatController::class, 'store'])->middleware('throttle:10,10')->name('chat.rooms');
     Route::post('/chat/{chat}/join', [ChatController::class, 'join'])->middleware('throttle:30,1')->name('chat.join');
+    Route::post('/chat/{chat}/accept', [ChatController::class, 'accept'])->name('chat.accept');
+    Route::post('/chat/{chat}/decline', [ChatController::class, 'decline'])->name('chat.decline');
     Route::post('/chat/{chat}/invite', [ChatController::class, 'invite'])->middleware('throttle:30,1')->name('chat.invite');
     // Polled every few seconds from every page (`ui-kit.js`): the rail's badge, and the sound for a new message.
     Route::get('/notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');

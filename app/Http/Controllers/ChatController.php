@@ -8,7 +8,9 @@ use App\Chat\ChatRefused;
 use App\Chat\Chats;
 use App\Models\Character;
 use App\Models\Chat;
+use App\Support\Text;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -46,7 +48,7 @@ class ChatController extends Controller
         return view($name, [
             'chat' => $chat,
             'tabs' => $chats->tabs($me),
-            'lines' => $chats->lines($chat),
+            'lines' => $chats->lines($chat, $me),
             'active' => $chats->activeCount(),
             'joinable' => $chats->joinable($me),
             'me' => $me,
@@ -59,15 +61,15 @@ class ChatController extends Controller
         $chat = $chats->visible($me, (int) $request->input('chat'));
         abort_if($chat === null, 404);
 
-        // The line's own chat: a `/msg` lands in a direct line, and the page switches to it.
-        return $this->answer(fn (): int => $chats->post($me, $chat, (string) $request->input('message'))->chat_id);
+        // `chat` is where the page goes next: a `/msg` lands in a direct line, a `/leave` in General.
+        return $this->answer(fn (): array => $chats->say($me, $chat, (string) $request->input('message')));
     }
 
     public function store(Request $request, Chats $chats): JsonResponse
     {
         $me = $this->me($request);
 
-        return $this->answer(fn (): int => $chats->createRoom($me, (string) $request->input('name'), $request->boolean('public'))->getKey());
+        return $this->answer(fn (): array => ['chat' => $chats->createRoom($me, (string) $request->input('name'), $request->boolean('public'))->getKey(), 'notice' => null]);
     }
 
     public function join(Request $request, Chats $chats, int $chat): JsonResponse
@@ -76,10 +78,10 @@ class ChatController extends Controller
         $room = Chat::query()->find($chat);
         abort_if($room === null || $room->kind !== Chat::ROOM || ! $room->is_public, 404);
 
-        return $this->answer(function () use ($chats, $me, $room): int {
+        return $this->answer(function () use ($chats, $me, $room): array {
             $chats->join($me, $room);
 
-            return $room->getKey();
+            return ['chat' => $room->getKey(), 'notice' => null];
         });
     }
 
@@ -89,11 +91,32 @@ class ChatController extends Controller
         $room = $chats->visible($me, $chat);
         abort_if($room === null, 404);
 
-        return $this->answer(function () use ($chats, $me, $room, $request): int {
+        return $this->answer(function () use ($chats, $me, $room, $request): array {
             $chats->invite($me, $room, (string) $request->input('handle'));
 
-            return $room->getKey();
+            return ['chat' => $room->getKey(), 'notice' => Text::get('chat.notices.invited', ['handle' => (string) $request->input('handle')])];
         });
+    }
+
+    /** Answering an invitation from the inbox message: a form post, so it ends on the room (or the inbox). */
+    public function accept(Request $request, Chats $chats, int $chat): JsonResponse|RedirectResponse
+    {
+        $me = $this->me($request);
+
+        try {
+            $room = $chats->accept($me, $chat);
+        } catch (ChatRefused $e) {
+            return redirect()->route('notifications.index')->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('chat.show', ['chat' => $room->getKey()]);
+    }
+
+    public function decline(Request $request, Chats $chats, int $chat): RedirectResponse
+    {
+        $chats->decline($this->me($request), $chat);
+
+        return redirect()->route('notifications.index');
     }
 
     private function me(Request $request): Character
@@ -101,11 +124,11 @@ class ChatController extends Controller
         return $request->user()->character;
     }
 
-    /** @param  callable(): int  $do */
+    /** @param  callable(): array{chat: int, notice: ?string}  $do */
     private function answer(callable $do): JsonResponse
     {
         try {
-            return response()->json(['chat' => $do()]);
+            return response()->json($do());
         } catch (ChatRefused $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

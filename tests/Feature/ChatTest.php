@@ -9,6 +9,8 @@ use App\Chat\Chats;
 use App\Chat\Markup;
 use App\Models\Character;
 use App\Models\Chat;
+use App\Models\ChatMessage;
+use App\Models\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -93,7 +95,7 @@ final class ChatTest extends TestCase
         $this->assertTrue($this->chats()->canSee($other, Chat::query()->findOrFail($id)));
     }
 
-    public function test_only_a_member_may_invite_and_the_invitee_has_it_unread(): void
+    public function test_an_invitation_is_a_message_and_membership_comes_only_from_joining(): void
     {
         $owner = Character::factory()->create();
         $guest = Character::factory()->create();
@@ -102,12 +104,66 @@ final class ChatTest extends TestCase
 
         $this->actingAs($outsider->user)->post(route('chat.invite', ['chat' => $room->getKey()]), ['handle' => $guest->handle])->assertNotFound();
 
-        $this->actingAs($owner->user)->post(route('chat.invite', ['chat' => $room->getKey()]), ['handle' => $guest->handle])->assertOk();
-        $this->assertSame(1, $this->chats()->unreadFor($guest));
+        $this->actingAs($owner->user)->post(route('chat.say'), ['chat' => $room->getKey(), 'message' => "/invite {$guest->handle}"])->assertOk();
+        $this->assertFalse($this->chats()->canSee($guest, $room), 'not a member until they answer');
+        $this->assertSame(1, Notification::query()->where('user_id', $guest->user_id)->where('details->chat_invite', $room->getKey())->count());
 
-        // Opening it reads it.
-        $this->actingAs($guest->user)->get(route('chat.show', ['chat' => $room->getKey()]))->assertOk();
-        $this->assertSame(0, $this->chats()->unreadFor($guest));
+        $this->actingAs($guest->user)->post(route('chat.accept', ['chat' => $room->getKey()]))->assertRedirect(route('chat.show', ['chat' => $room->getKey()]));
+        $this->assertTrue($this->chats()->canSee($guest, $room));
+        $this->assertSame(0, Notification::query()->where('user_id', $guest->user_id)->count(), 'the invitation message goes once answered');
+        $joined = ChatMessage::query()->where('chat_id', $room->getKey())->where('is_event', true)->first();
+        $this->assertSame("{$guest->handle} has joined the chat", $joined->message);
+
+        // Nobody is let in by guessing the join URL.
+        $this->actingAs($outsider->user)->post(route('chat.accept', ['chat' => $room->getKey()]))->assertRedirect(route('notifications.index'));
+        $this->assertFalse($this->chats()->canSee($outsider, $room));
+    }
+
+    public function test_no_thanks_leaves_it_at_that_and_commands_are_for_rooms(): void
+    {
+        $owner = Character::factory()->create();
+        $guest = Character::factory()->create();
+        $room = $this->chats()->createRoom($owner, 'Private', false);
+
+        $this->chats()->say($owner, $room, "/invite {$guest->handle}");
+        $this->actingAs($guest->user)->post(route('chat.decline', ['chat' => $room->getKey()]))->assertRedirect();
+        $this->assertFalse($this->chats()->canSee($guest, $room));
+        $this->assertSame(0, \DB::table('chat_invites')->count());
+
+        $this->expectException(ChatRefused::class);
+        $this->chats()->say($owner, $this->chats()->general(), "/invite {$guest->handle}");
+    }
+
+    public function test_leaving_removes_you_and_an_empty_room_goes(): void
+    {
+        $a = Character::factory()->create();
+        $room = $this->chats()->createRoom($a, 'Brief', true);
+
+        $result = $this->chats()->say($a, $room, '/leave');
+
+        $this->assertSame($this->chats()->general()->getKey(), $result['chat']);
+        $this->assertNull(Chat::query()->find($room->getKey()));
+
+        $this->expectException(ChatRefused::class);
+        $this->chats()->say($a, $this->chats()->general(), '/leave');
+    }
+
+    public function test_ignoring_hides_their_lines_and_their_unread_count(): void
+    {
+        $a = Character::factory()->create();
+        $b = Character::factory()->create();
+        $general = $this->chats()->general();
+
+        $this->chats()->say($a, $general, "/ignore {$b->handle}");
+        $this->chats()->say($b, $general, 'can you hear me');
+        $this->chats()->say($b, $general, "/msg {$a->handle} hello?");
+
+        $this->assertCount(0, $this->chats()->lines($general, $a));
+        $this->assertCount(1, $this->chats()->lines($general, $b));
+        $this->assertSame(0, $this->chats()->unreadFor($a));
+
+        $this->chats()->say($a, $general, "/unignore {$b->handle}");
+        $this->assertCount(1, $this->chats()->lines($general, $a));
     }
 
     public function test_the_unread_count_rides_on_the_inbox_poll_and_the_panel_draws_general(): void

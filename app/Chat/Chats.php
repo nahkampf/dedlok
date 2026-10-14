@@ -7,7 +7,10 @@ namespace App\Chat;
 use App\Models\Character;
 use App\Models\Chat;
 use App\Models\ChatMessage;
+use App\Models\Notification;
 use App\Models\User;
+use App\Notifications\Category;
+use App\Notifications\Notifier;
 use App\Support\PlainText;
 use App\Support\Text;
 use Illuminate\Database\QueryException;
@@ -24,6 +27,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class Chats
 {
+    public function __construct(private readonly Notifier $notifier = new Notifier) {}
+
     public const BODY = 500;
 
     public const NAME = 64;
@@ -50,6 +55,29 @@ final class Chats
         $chat = Chat::query()->find($id);
 
         return $chat !== null && $this->canSee($who, $chat) ? $chat : null;
+    }
+
+    /**
+     * What a player typed in a tab: a command (`/invite`, `/leave`, `/ignore`, `/unignore`) or a line (`post()`).
+     * Answers the chat to show next and, for a command that has nothing to draw, a sentence for a toast.
+     *
+     * @return array{chat: int, notice: ?string}
+     *
+     * @throws ChatRefused
+     */
+    public function say(Character $from, Chat $in, string $raw): array
+    {
+        $text = PlainText::clean($raw, multiline: true);
+
+        if (preg_match('/^\/(invite|leave|ignore|unignore)(?:\s+(\S+))?\s*$/iu', $text, $m) === 1) {
+            return $this->command($from, $in, strtolower($m[1]), $m[2] ?? '');
+        }
+
+        if (preg_match('/^\/(?!msg\b)[a-z]+\b/iu', $text) === 1) {
+            throw new ChatRefused(Text::get('chat.errors.unknown_command'));
+        }
+
+        return ['chat' => $this->post($from, $in, $text)->chat_id, 'notice' => null];
     }
 
     /**
@@ -137,7 +165,8 @@ final class Chats
     }
 
     /**
-     * A member invites somebody into a room. The invitation is a line in the room (so the invitee has something unread).
+     * A member invites somebody into a room. Nothing happens to the invitee's membership: they get an inbox message
+     * with Join and No thanks, and become a member only by answering it.
      *
      * @throws ChatRefused
      */
@@ -157,13 +186,109 @@ final class Chats
             throw new ChatRefused(Text::get('chat.errors.already', ['handle' => $who->handle]));
         }
 
-        DB::transaction(function () use ($by, $chat, $who): void {
-            // Before the line, so the line counts as unread to the one it is about.
-            DB::table('chat_members')->insert([
-                'chat_id' => $chat->getKey(), 'character_id' => $who->getKey(), 'last_read_id' => $this->newestIn($chat),
-            ]);
-            $this->write($by, $chat, Text::get('chat.invited', ['handle' => $who->handle]));
+        // Somebody who ignores the inviter is not told, and the inviter cannot tell.
+        if ($this->ignores($who, $by) || DB::table('chat_invites')->where('chat_id', $chat->getKey())->where('character_id', $who->getKey())->exists()) {
+            return;
+        }
+
+        DB::table('chat_invites')->insert(['chat_id' => $chat->getKey(), 'character_id' => $who->getKey(), 'invited_by' => $by->getKey()]);
+        $this->notifier->send($who, Category::Personal, 'chat_invite', ['handle' => $by->handle, 'room' => (string) $chat->name], ['chat_invite' => $chat->getKey()]);
+    }
+
+    /** Join: the invitation is spent, they are a member, and the room is told. @throws ChatRefused */
+    public function accept(Character $who, int $chatId): Chat
+    {
+        $chat = Chat::query()->find($chatId);
+
+        if ($chat === null || ! DB::table('chat_invites')->where('chat_id', $chatId)->where('character_id', $who->getKey())->exists()) {
+            throw new ChatRefused(Text::get('chat.errors.no_invite'));
+        }
+
+        DB::transaction(function () use ($chat, $who): void {
+            DB::table('chat_invites')->where('chat_id', $chat->getKey())->where('character_id', $who->getKey())->delete();
+            DB::table('chat_members')->insertOrIgnore(['chat_id' => $chat->getKey(), 'character_id' => $who->getKey(), 'last_read_id' => 0]);
+            $this->write($who, $chat, Text::get('chat.joined', ['handle' => $who->handle]), event: true);
         });
+        $this->forgetInvite($who, $chatId);
+
+        return $chat;
+    }
+
+    /** No thanks: the invitation goes and nothing else does. */
+    public function decline(Character $who, int $chatId): void
+    {
+        DB::table('chat_invites')->where('chat_id', $chatId)->where('character_id', $who->getKey())->delete();
+        $this->forgetInvite($who, $chatId);
+    }
+
+    /** @return array{chat: int, notice: ?string} */
+    private function command(Character $from, Chat $in, string $name, string $handle): array
+    {
+        if (in_array($name, ['invite', 'leave'], true) && $in->kind !== Chat::ROOM) {
+            throw new ChatRefused(Text::get('chat.errors.rooms_only'));
+        }
+
+        if ($name === 'leave') {
+            return $this->leave($from, $in);
+        }
+
+        if ($handle === '') {
+            throw new ChatRefused(Text::get("chat.errors.{$name}_usage"));
+        }
+
+        if ($name === 'invite') {
+            $this->invite($from, $in, $handle);
+
+            return ['chat' => $in->getKey(), 'notice' => Text::get('chat.notices.invited', ['handle' => $handle])];
+        }
+
+        $who = Character::query()->where('handle', $handle)->first();
+
+        if ($who === null) {
+            throw new ChatRefused(Text::get('chat.errors.no_such'));
+        }
+
+        if ($who->is($from)) {
+            throw new ChatRefused(Text::get('chat.errors.yourself'));
+        }
+
+        if ($name === 'ignore') {
+            DB::table('chat_ignores')->insertOrIgnore(['character_id' => $from->getKey(), 'ignored_id' => $who->getKey()]);
+        } else {
+            DB::table('chat_ignores')->where('character_id', $from->getKey())->where('ignored_id', $who->getKey())->delete();
+        }
+
+        return ['chat' => $in->getKey(), 'notice' => Text::get("chat.notices.{$name}d", ['handle' => $who->handle])];
+    }
+
+    /** @return array{chat: int, notice: ?string} A room nobody is left in goes with its history. */
+    private function leave(Character $who, Chat $room): array
+    {
+        DB::transaction(function () use ($who, $room): void {
+            DB::table('chat_members')->where('chat_id', $room->getKey())->where('character_id', $who->getKey())->delete();
+
+            if (! DB::table('chat_members')->where('chat_id', $room->getKey())->exists()) {
+                $room->delete();
+            }
+        });
+
+        return ['chat' => $this->general()->getKey(), 'notice' => Text::get('chat.notices.left', ['room' => (string) $room->name])];
+    }
+
+    private function ignores(Character $who, Character $other): bool
+    {
+        return DB::table('chat_ignores')->where('character_id', $who->getKey())->where('ignored_id', $other->getKey())->exists();
+    }
+
+    /** The inbox message that carried an invitation has done its job. */
+    private function forgetInvite(Character $who, int $chatId): void
+    {
+        if ($who->user === null) {
+            return;
+        }
+
+        $ids = Notification::query()->where('user_id', $who->user_id)->where('details->chat_invite', $chatId)->pluck('id')->all();
+        $this->notifier->delete($who->user, $ids);
     }
 
     /** Everything up to the newest line is read. */
@@ -175,10 +300,11 @@ final class Chats
     }
 
     /** The newest lines, oldest first, with who said them (and their account, for the avatar). */
-    public function lines(Chat $chat): Collection
+    public function lines(Chat $chat, Character $viewer): Collection
     {
         return ChatMessage::query()->with('character.user')
-            ->where('chat_id', $chat->getKey())->orderByDesc('id')->limit(self::SHOWN)->get()->reverse()->values();
+            ->where('chat_id', $chat->getKey())
+            ->whereNotIn('character_id', DB::table('chat_ignores')->where('character_id', $viewer->getKey())->select('ignored_id'))->orderByDesc('id')->limit(self::SHOWN)->get()->reverse()->values();
     }
 
     /**
@@ -229,6 +355,7 @@ final class Chats
             ->where('m.character_id', $who->getKey())
             ->whereColumn('x.id', '>', 'm.last_read_id')
             ->where('x.character_id', '!=', $who->getKey())
+            ->whereNotIn('x.character_id', DB::table('chat_ignores')->where('character_id', $who->getKey())->select('ignored_id'))
             ->groupBy('m.chat_id')
             ->selectRaw('m.chat_id, count(*) as n')
             ->pluck('n', 'm.chat_id');
@@ -241,7 +368,7 @@ final class Chats
             ->where('last_active_at', '>=', now()->subMinutes(self::ACTIVE_MINUTES))->count());
     }
 
-    private function write(Character $from, Chat $chat, string $text): ChatMessage
+    private function write(Character $from, Chat $chat, string $text, bool $event = false): ChatMessage
     {
         if ($text === '') {
             throw new ChatRefused(Text::get('chat.errors.empty'));
@@ -255,7 +382,7 @@ final class Chats
             throw new ChatRefused(Text::get('chat.errors.not_a_member'));
         }
 
-        $line = ChatMessage::query()->create(['chat_id' => $chat->getKey(), 'character_id' => $from->getKey(), 'message' => $text]);
+        $line = ChatMessage::query()->create(['chat_id' => $chat->getKey(), 'character_id' => $from->getKey(), 'message' => $text, 'is_event' => $event]);
         $this->markRead($from, $chat);
 
         return $line;

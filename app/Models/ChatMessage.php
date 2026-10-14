@@ -11,14 +11,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * One line said in a chat. Immutable, no `updated_at`; `App\Chat\Chats` is the only writer.
  */
-#[Fillable(['chat_id', 'character_id', 'message'])]
+#[Fillable(['chat_id', 'character_id', 'message', 'is_event'])]
 class ChatMessage extends Model
 {
     public $timestamps = false;
 
     protected function casts(): array
     {
-        return ['created_at' => 'immutable_datetime'];
+        return ['created_at' => 'immutable_datetime', 'is_event' => 'boolean'];
     }
 
     public function character(): BelongsTo
