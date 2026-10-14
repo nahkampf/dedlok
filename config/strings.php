@@ -49,6 +49,8 @@ return [
             // The inbox. "Messages" rather than "Notifications" because the
             // rail is 220px open and one word has to fit beside a glyph.
             'messages' => 'Messages',
+            // The talk panel; it opens over the page rather than leading to one.
+            'chat' => 'Chat',
             'wallet' => 'Wallet',
             // The jobs you have taken, and later the journal and quests. Short enough to sit beside a glyph in a 220px rail.
             'tasks' => 'Tasks & Missions',
@@ -652,6 +654,44 @@ return [
             'not_a_drug' => 'That is not something you can take.',
             'not_owned' => 'You do not have that.',
             'only_in_a_fight' => 'That can only be used in a fight, from your belt.',
+        ],
+    ],
+
+    /*
+     | The chat panel in the rail: General, rooms and direct lines.
+     */
+    'chat' => [
+        'title' => 'Chat',
+        'general' => 'General',
+        'loading' => 'Opening the channel…',
+        'empty' => 'Nobody has said anything here yet.',
+        'say' => 'Say something. /msg handle words writes to one person.',
+        'send' => 'Send',
+        'profile' => 'Open :handle\'s profile',
+        'create' => 'Create room',
+        'create_title' => 'Create a room',
+        'name' => 'Room name',
+        'public' => 'Public: anybody can find and join it',
+        'private' => 'Private: members only, by invitation',
+        'make' => 'Create',
+        'invite' => 'Invite',
+        'invite_title' => 'Invite to this room',
+        'handle' => 'Handle',
+        'browse' => 'Public rooms',
+        'join' => 'Join',
+        'invited' => '*invited :handle*',
+        'failed' => 'Could not reach the chat.',
+
+        'errors' => [
+            'empty' => 'Say something first.',
+            'long' => 'A line may be at most :max characters.',
+            'name' => 'A room needs a name of at most :max characters.',
+            'msg_usage' => 'To write to one person: /msg handle your words.',
+            'yourself' => 'You cannot write to yourself.',
+            'private' => 'That room is private.',
+            'not_a_member' => 'You are not in that chat.',
+            'no_such' => 'Nobody has that handle.',
+            'already' => ':handle is already in this room.',
         ],
     ],
 

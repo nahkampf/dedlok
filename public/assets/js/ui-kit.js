@@ -265,6 +265,20 @@
       el.textContent = unread > 99 ? "99+" : String(unread);
     };
 
+    // The chat's count rides on the same poll: one timer for both.
+    const chatBadge = (n) => {
+      const btn = document.querySelector("[data-chat-badge]");
+      if (!btn) return;
+      let el = btn.querySelector(".dock__count");
+      if (n <= 0) { el?.remove(); return; }
+      if (!el) {
+        el = document.createElement("span");
+        el.className = "dock__count";
+        btn.querySelector(".dock__icon")?.after(el);
+      }
+      el.textContent = n > 99 ? "99+" : String(n);
+    };
+
     const ding = () => {
       if (!audio || !soundOn() || Date.now() - lastPlayed() < COOLDOWN) return;
       stamp();
@@ -277,6 +291,7 @@
         .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((data) => {
           badge(Number(data.unread) || 0);
+          chatBadge(Number(data.chat) || 0);
           if (Number(data.latest) > latest) { latest = Number(data.latest); ding(); }
         })
         .catch(() => {});
@@ -1680,6 +1695,88 @@
     form.addEventListener("change", recalc);
     recalc();
   });
+
+
+  /* --- Chat ---------------------------------------------------------------
+     The panel is a fragment (#chat [data-fragment], filled by the [data-open] handler above). Everything here is
+     delegated, because the fragment is replaced: [data-chat-go] loads another chat into the box; form[data-chat-form]
+     POSTs and gets {chat: id} (or 422 {message}) back, then the box shows that chat; [data-chat-join] joins a public
+     room. Every five seconds, while the dialog is open, the poll URL is fetched and only the tabs and the log are
+     swapped, so what is half typed survives. The server draws every line; nothing is built here from message text. */
+  (function chat() {
+    const dialog = document.getElementById("chat");
+    if (!dialog) return;
+    const box = dialog.querySelector("[data-fragment]");
+    const token = () => document.querySelector('meta[name="csrf-token"]')?.content || "";
+    const headers = { "X-Requested-With": "XMLHttpRequest" };
+    // Whenever the box is refilled (opened, or another tab), start at the newest line.
+    new MutationObserver(() => { const log = box.querySelector("[data-chat-log]"); if (log) log.scrollTop = log.scrollHeight; })
+      .observe(box, { childList: true });
+    const show = (id) => fetch(box.dataset.fragment + "?chat=" + encodeURIComponent(id), { headers, credentials: "same-origin" })
+      .then((r) => (r.ok ? r.text() : Promise.reject()))
+      .then((html) => { box.innerHTML = html; const log = box.querySelector("[data-chat-log]"); if (log) log.scrollTop = log.scrollHeight; })
+      .catch(() => toast(box.dataset.failed || "Could not reach the chat.", { level: "warn" }));
+
+    const post = (url, body) => fetch(url, { method: "POST", body, headers: { ...headers, Accept: "application/json", "X-CSRF-TOKEN": token() }, credentials: "same-origin" })
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) { toast(data.message || "Could not reach the chat.", { level: "warn" }); return null; }
+        return data.chat;
+      })
+      .catch(() => { toast("Could not reach the chat.", { level: "warn" }); return null; });
+
+    document.addEventListener("click", (e) => {
+      const go = e.target.closest("[data-chat-go]");
+      if (go) {
+        e.preventDefault();
+        fetch(go.dataset.chatGo, { headers, credentials: "same-origin" })
+          .then((r) => (r.ok ? r.text() : Promise.reject()))
+          .then((html) => { box.innerHTML = html; const log = box.querySelector("[data-chat-log]"); if (log) log.scrollTop = log.scrollHeight; })
+          .catch(() => toast("Could not reach the chat.", { level: "warn" }));
+        return;
+      }
+      const join = e.target.closest("[data-chat-join]");
+      if (join) { e.preventDefault(); post(join.dataset.chatJoin, new FormData()).then((id) => id && show(id)); return; }
+      const inv = e.target.closest("[data-chat-invite]");
+      if (inv) {
+        const form = document.querySelector("[data-chat-invite-form]");
+        if (form) form.action = inv.dataset.chatInviteUrl;
+      }
+    });
+
+    document.addEventListener("submit", (e) => {
+      const form = e.target.closest("form[data-chat-form]");
+      if (!form) return;
+      e.preventDefault();
+      post(form.action, new FormData(form)).then((id) => {
+        if (!id) return;
+        form.reset();
+        const inner = form.closest("dialog");
+        if (inner && inner !== dialog) inner.close();
+        show(id);
+      });
+    });
+
+    setInterval(() => {
+      const root = box.querySelector("[data-chat-poll]");
+      if (!dialog.open || !root) return;
+      fetch(root.dataset.chatPoll, { headers, credentials: "same-origin" })
+        .then((r) => (r.ok ? r.text() : Promise.reject()))
+        .then((html) => {
+          const next = new DOMParser().parseFromString(html, "text/html");
+          // Dropped if the person moved to another tab while this was in flight.
+          if (next.querySelector("[data-chat]")?.dataset.chat !== root.dataset.chat) return;
+          for (const sel of ["[data-chat-tabs]", "[data-chat-log]"]) {
+            const fresh = next.querySelector(sel), old = root.querySelector(sel);
+            if (!fresh || !old) continue;
+            const atEnd = old.scrollHeight - old.scrollTop - old.clientHeight < 24;
+            old.innerHTML = fresh.innerHTML;
+            if (atEnd) old.scrollTop = old.scrollHeight;
+          }
+        })
+        .catch(() => {});
+    }, 5000);
+  })();
 
   window.UI = { toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };
 })();

@@ -22,7 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureEncounterIsResolved
 {
     /** @var list<string> */
-    private const ALLOWED_ROUTES = ['login', 'logout', 'encounter.show', 'encounter.choose', 'encounter.leave', 'notifications.unread', 'sound.update'];
+    private const ALLOWED_ROUTES = ['login', 'logout', 'encounter.show', 'encounter.choose', 'encounter.leave', 'notifications.unread', 'sound.update', 'chat.show', 'chat.poll', 'chat.say', 'chat.rooms', 'chat.join', 'chat.invite'];
 
     public function handle(Request $request, Closure $next): Response
     {

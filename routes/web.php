@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\SupporterController as AdminSupporterController;
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterController;
 use App\Http\Controllers\CharacterCreationController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CraftingController;
 use App\Http\Controllers\CurrentProcessesController;
@@ -427,6 +428,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/messages/new', [MessageController::class, 'create'])->name('messages.create');
     Route::post('/messages', [MessageController::class, 'store'])->middleware('throttle:15,10')->name('messages.store');
     Route::get('/messages/recipients', [MessageController::class, 'recipients'])->middleware('throttle:120,1')->name('messages.recipients');
+    // The chat panel. `chat.poll` is the same screen asked by the open panel's timer, a route of its own so it is not
+    // counted as activity (`TouchLastActive`) and can be in every lock's allow-list.
+    Route::get('/chat', [ChatController::class, 'show'])->name('chat.show');
+    Route::get('/chat/poll', [ChatController::class, 'show'])->name('chat.poll');
+    Route::post('/chat/say', [ChatController::class, 'post'])->middleware('throttle:30,1')->name('chat.say');
+    Route::post('/chat/rooms', [ChatController::class, 'store'])->middleware('throttle:10,10')->name('chat.rooms');
+    Route::post('/chat/{chat}/join', [ChatController::class, 'join'])->middleware('throttle:30,1')->name('chat.join');
+    Route::post('/chat/{chat}/invite', [ChatController::class, 'invite'])->middleware('throttle:30,1')->name('chat.invite');
     // Polled every few seconds from every page (`ui-kit.js`): the rail's badge, and the sound for a new message.
     Route::get('/notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
     Route::post('/notifications/read', [NotificationController::class, 'read'])->name('notifications.read');

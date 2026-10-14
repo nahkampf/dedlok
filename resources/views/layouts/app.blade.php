@@ -27,6 +27,7 @@
      does not need one. --}}
 @php($tasksNew = auth()->user()?->character ? app(\App\Journal\Journal::class)->unseenCount(auth()->user()->character) : 0)
 @php($unread = auth()->check() ? (new \App\Notifications\Notifier)->unreadFor(auth()->user()) : 0)
+@php($chatUnread = $hud ? app(\App\Chat\Chats::class)->unreadFor($hud) : 0)
 @php($latestMessage = auth()->check() ? (new \App\Notifications\Notifier)->latestIdFor(auth()->user()) : 0)
 {{-- One query, and only for a signed-in character: the topbar's process
      count and the modal behind it read the same collection. --}}
@@ -152,6 +153,18 @@
                 @endif
                 <span class="dock__label">{{ Text::get('ui.nav.messages') }}</span>
             </a>
+
+            {{-- The chat. Not a page: a button that opens the panel over this one (`#chat`, fetched when it opens), so
+                 it is a <button>. Its count is chat lines unread outside General, redrawn by the inbox's own poll. --}}
+            @if ($hud)
+                <button type="button" class="dock__item" data-open="#chat" data-chat-badge aria-haspopup="dialog">
+                    <span class="dock__icon" aria-hidden="true">&#9993;&#65038;</span>
+                    @if ($chatUnread > 0)
+                        <span class="dock__count">{{ $chatUnread > 99 ? '99+' : $chatUnread }}</span>
+                    @endif
+                    <span class="dock__label">{{ Text::get('ui.nav.chat') }}</span>
+                </button>
+            @endif
 
             {{-- Only ever rendered for an admin. The gate is the guard; this is
                  just the door being visible to the people who have one. --}}
@@ -339,6 +352,60 @@
             </p>
         </div>
     </dialog>
+
+    {{-- CHAT. The body is the fragment `chat.show`, fetched when this opens; the two small forms below are drawn here
+         rather than inside it so the handle suggestions (`data-suggest`, bound at load) work. --}}
+    @if ($hud)
+        <dialog id="chat" class="modal modal--chat">
+            <div class="panel__hd">
+                <span class="micro">{{ Text::get('chat.title') }}</span>
+                <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+            </div>
+            <div class="panel__bd" data-fragment="{{ route('chat.show') }}">
+                <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('chat.loading') }}</p>
+            </div>
+        </dialog>
+
+        <dialog id="chat-create" class="modal">
+            <form data-chat-form action="{{ route('chat.rooms') }}">
+                <div class="panel__hd"><span class="micro">{{ Text::get('chat.create_title') }}</span></div>
+                <div class="panel__bd stack" style="--gap:var(--s-4)">
+                    <div class="field">
+                        <label class="field__label" for="chat-room-name">{{ Text::get('chat.name') }}</label>
+                        <input class="input" id="chat-room-name" name="name" type="text" maxlength="64" required autocomplete="off">
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="public" value="1">
+                        <span class="switch__track"></span>
+                        <span>{{ Text::get('chat.public') }}</span>
+                    </label>
+                </div>
+                <div class="panel__ft">
+                    <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+                    <button type="submit" class="btn btn--sm">{{ Text::get('chat.make') }}</button>
+                </div>
+            </form>
+        </dialog>
+
+        <dialog id="chat-invite" class="modal">
+            <form data-chat-form data-chat-invite-form action="">
+                <div class="panel__hd"><span class="micro">{{ Text::get('chat.invite_title') }}</span></div>
+                <div class="panel__bd stack" style="--gap:var(--s-4)">
+                    <div class="field">
+                        <label class="field__label" for="chat-invite-handle">{{ Text::get('chat.handle') }}</label>
+                        <input class="input" id="chat-invite-handle" name="handle" type="text" maxlength="50" list="chat-handles"
+                               autocomplete="off" autocapitalize="off" spellcheck="false" required
+                               data-suggest="{{ route('messages.recipients') }}" data-suggest-into="chat-handles">
+                        <datalist id="chat-handles"></datalist>
+                    </div>
+                </div>
+                <div class="panel__ft">
+                    <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+                    <button type="submit" class="btn btn--sm">{{ Text::get('chat.invite') }}</button>
+                </div>
+            </form>
+        </dialog>
+    @endif
 
     {{-- CURRENT PROCESSES. A readout, not a control surface: the list is the fragment `processes.current`, fetched
          each time this opens (`ui-kit.js`, [data-fragment]) so it is never older than the click. --}}

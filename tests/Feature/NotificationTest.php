@@ -249,7 +249,7 @@ final class NotificationTest extends TestCase
 
     public function test_the_poll_reports_the_unread_count_and_the_newest_id_for_this_account_only(): void
     {
-        $this->actingAs($this->user)->getJson(route('notifications.unread'))->assertOk()->assertExactJson(['unread' => 0, 'latest' => 0]);
+        $this->actingAs($this->user)->getJson(route('notifications.unread'))->assertOk()->assertExactJson(['unread' => 0, 'latest' => 0, 'chat' => 0]);
 
         $a = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
         $b = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'B', 'level' => 1]);
@@ -257,7 +257,7 @@ final class NotificationTest extends TestCase
         $this->notifier()->markRead($a);
 
         $this->actingAs($this->user)->getJson(route('notifications.unread'))
-            ->assertOk()->assertExactJson(['unread' => 1, 'latest' => $b->id]);
+            ->assertOk()->assertExactJson(['unread' => 1, 'latest' => $b->id, 'chat' => 0]);
     }
 
     public function test_a_guest_cannot_poll(): void
