@@ -1,3 +1,11 @@
+## 0.59.0 (2026-10-14)
+
+- Egress now possible in cyberspace combat
+- Hunter cooldown: if you were attacked in cyberspace because of Heat, no new hunter will be spawned for 60 minutes
+- Chat, bio and other places now have beautiful 9x16 VGA font, for that lovely CP437 ASCII art
+- Chat messages can now be 2000 characters long. Shift+Enter for newline
+- You can now rescan systems you've already scanned
+
 ## 0.58.2 (2026-10-14)
 - Some logging and potential bugfixing around cyberspace combat and icebreakers (maybe?) not working as intended
 - Cyberspace combat now kills all running programs before attempting to start an icebreaker

@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.59.0] — 2026-10-14
+
+Hunters can be escaped and are not drawn back to back, block art is drawn properly in chat and bios, and a system can be scanned again.
+
+### Added
+
+- **Egress from a hunter** (`HunterCombat::tryEgress()`, `hunt.act` with `action=egress`, an *Egress* button beside *Fight*): the `egress` stat against `cyberspace.egress.difficulty[hunt grade]` plus the hunter's ICE level, through `CheckRoller`. A pass closes the hunt unpaid (`won` false, heat unchanged), stops run-only programs and jacks out through `Navigator::jackOut()`; a miss costs the exchange and the hunter swings. `CYBERSPACE_RULES.md` updated.
+- **Hunter cooldown** (`cyberspace.heat.hunt.cooldown_minutes`, 60): `Hunters::rolls()` is false while a `hunts` row of that character started inside the window. No column.
+- **Rescan**: a read that is complete and filed (`system_scans.filed_at`) can be scanned again; the press replaces the row with a blank one and begins a pass (`Probe::scan()`, `blankFile()`), and the new file is filed on completion like any other. A complete read that was never filed still refuses (`AlreadyKnown`). The map's button reads *Rescan* (`cyberspace.scan.rescan`).
+- **IBM VGA 9x16** ("Plus" woff, CC BY-SA 4.0, `LICENSE-IBM-VGA-9x16.txt`) is `--font-mono`, with Plex Mono behind it. `.ascii` (and `.input--mono`, `.textarea--mono`, the chat log) set it at 16px with 16px rows, no tracking/kerning/ligatures, greyscale rendering on its own layer (Firefox draws LCD fringes between cells otherwise). Used by the bio (profile and editor) and chat.
+- **Chat input is a textarea**: Enter sends, Shift+Enter is a new line, grows to eight rows. A multi-line message is drawn verbatim (no markdown) except the address button; a block of nothing but `- ` items is still a list.
+- **`App\Support\Trace`** (`config/trace.php`, `TRACE_HANDLES`): per-character verbose log at `storage/logs/trace-YYYY-MM-DD.log` for runs, scans and hunts (state, every roll and die, the hunter's decisions).
+
+### Changed
+
+- **A hunter's arrival stops everything running except Scripts before the best icebreaker is started** (`ProgramRunner::stopAllButScripts()`), so a scanner holding the deck's memory cannot leave the fight with nothing to hit with.
+- **Chat lines are 2000 characters** (`Chats::BODY`, migration `2026_10_14_180000_chat_message_wider`: `chat_messages.message` 500 to 2000) and are **stored exactly as typed**: `PlainText::clean(verbatim: true)` keeps newlines, tabs, blank lines and leading and trailing spaces (tags and invisible characters still go), and `/chat/say` is excluded from `TrimStrings`. The inbox compose screen is still 500.
+- The `.mono`/`code` size is 1em and `.num`/`.readout__value` no longer track negatively, so the bitmap font stays on its grid.
+
+
 ## [0.58.2] — 2026-10-14
 
 A hunter's icebreaker is no longer starved by whatever else is running, and one character's runs, scans and fights can be logged in full.
@@ -3210,7 +3230,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.58.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.59.0...HEAD
+[0.59.0]: https://github.com/nahkampf/dedlok/compare/v0.58.2...v0.59.0
 [0.58.2]: https://github.com/nahkampf/dedlok/compare/v0.58.1...v0.58.2
 [0.58.1]: https://github.com/nahkampf/dedlok/compare/v0.58.0...v0.58.1
 [0.58.0]: https://github.com/nahkampf/dedlok/compare/v0.57.0...v0.58.0
