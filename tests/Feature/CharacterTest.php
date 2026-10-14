@@ -90,6 +90,8 @@ class CharacterTest extends TestCase
             'bounty_word_at',
             // The sum on their head, and the grade it will be priced from.
             'bounty', 'bounty_grade',
+            // When Tasks & Missions was last opened: the rail badge's clock.
+            'tasks_seen_at',
             'created_at', 'updated_at',
         ];
 
