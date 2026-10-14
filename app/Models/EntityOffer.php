@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Casts\PointsCast;
 use App\Standing\Service;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,7 +33,7 @@ class EntityOffer extends Model
         return [
             'min_grade' => 'integer',
             'max_grade' => 'integer',
-            'loyalty_price' => 'integer',
+            'loyalty_price' => PointsCast::class.':3',
             'min_standing' => 'float',
             'service' => Service::class,
             'service_amount' => 'float',

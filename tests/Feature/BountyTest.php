@@ -156,7 +156,8 @@ final class BountyTest extends TestCase
 
         $this->travel(1)->days();
         $this->assertCount(1, $this->bounties(die: 10_000)->tonight());
-        $this->assertSame(2, Notification::query()->count());
+        // Two bounty words, and the second takes the bounty to ten thousand: Wanted.
+        $this->assertSame(3, Notification::query()->count());
     }
 
     /** A roll that misses writes nothing, so it starts no cooldown. */

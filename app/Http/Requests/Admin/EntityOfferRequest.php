@@ -82,7 +82,7 @@ class EntityOfferRequest extends FormRequest
             'min_grade' => ['required', 'integer', 'min:1', 'max:5', 'lte:max_grade'],
             'max_grade' => ['required', 'integer', 'min:1', 'max:5', 'gte:min_grade'],
 
-            'loyalty_price' => ['required', 'integer', 'min:0', 'max:4294967295'],
+            'loyalty_price' => ['required', 'numeric', 'min:0', 'max:999999999'],
 
             // Nobody sells at negative standing — the same rule the desk's own
             // gate keeps, and the same CHECK.
@@ -110,7 +110,7 @@ class EntityOfferRequest extends FormRequest
             'service_amount' => $this->filled('service') ? (float) $this->input('service_amount') : null,
             'min_grade' => (int) $this->input('min_grade'),
             'max_grade' => (int) $this->input('max_grade'),
-            'loyalty_price' => (int) $this->input('loyalty_price'),
+            'loyalty_price' => \App\Support\Points::of($this->input('loyalty_price'), 3),
             'min_standing' => (float) $this->input('min_standing'),
         ];
     }

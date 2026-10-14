@@ -11,6 +11,7 @@ use App\Models\Entity;
 use App\Models\EntityOffer;
 use App\Models\Exchange;
 use App\Models\Item;
+use App\Support\Points;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -75,7 +76,7 @@ final readonly class LoyaltyExchange
             $books = $ledger->booksFor($character, $entity);
 
             $standing = (float) ($books->standing ?? 0.0);
-            $loyalty = (int) ($books->loyalty ?? 0);
+            $loyalty = Points::of($books->loyalty ?? 0, 3);
 
             // The desk first, then the row. Two gates, and the first is the
             // one their missions already read.
@@ -87,7 +88,7 @@ final readonly class LoyaltyExchange
                 return LoyaltyRefusal::NotForYou;
             }
 
-            $price = (int) $live->loyalty_price;
+            $price = Points::of($live->loyalty_price, 3);
 
             if ($loyalty < $price) {
                 return LoyaltyRefusal::CannotAfford;
@@ -136,7 +137,7 @@ final readonly class LoyaltyExchange
      * default it takes a thousand loyalty to move standing by a point, and a
      * thousand loyalty is a great many missions.
      */
-    private function courtesyFor(int $price): float
+    private function courtesyFor(int|float $price): float
     {
         $ratio = (float) config('standing.store.standing_per_loyalty', 0.0);
 

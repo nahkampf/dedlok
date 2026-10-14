@@ -56,4 +56,19 @@ enum Metric: string
      * state rather than an event, so it is reported with `reach()`.
      */
     case RoutingChain = 'routing_chain';
+
+    /** Siphons installed: one per new backdoor of that kind, an event rather than a state. */
+    case SiphonsInstalled = 'siphons_installed';
+
+    /**
+     * Creds of bounty collected by defeating another PLAYER who carried one. Nothing records it yet: there is no
+     * player-versus-player fight, and a Bloodhound's payout is not a bounty claimed.
+     */
+    case BountiesClaimed = 'bounties_claimed';
+
+    /** The bounty on your head, as it stands: a state, so it is reported with `reach()`. */
+    case BountyOnHead = 'bounty_on_head';
+
+    /** Bloodhounds (hunters) beaten, one per win. */
+    case BloodhoundsDefeated = 'bloodhounds_defeated';
 }

@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.60.0] — 2026-10-15
+
+Four new achievements, hunters are Bloodhounds, loyalty can be fractional, and the Known systems browser shows an exchange's grade. Data fortresses are designed in full (docs only).
+
+### Added
+
+- **Achievements 15–18**: *Vampire* (100 siphons installed, `Metric::SiphonsInstalled`, recorded by `Simulator::install()` on a new siphon backdoor), *Headhunter* (25,000 in bounties collected from other players, `Metric::BountiesClaimed`, nothing records it until PvP exists), *Wanted* (10,000 bounty on your head, `Metric::BountyOnHead`, `reach()`ed by `Bounties::tonight()`), *Indomitable* (50 Bloodhounds defeated, `Metric::BloodhoundsDefeated`, recorded by `HunterCombat::win()`).
+- **Fractional loyalty** (migration `2026_10_15_120000_loyalty_is_fractional`): `entity_books.loyalty` and `entity_offers.loyalty_price` are `DECIMAL(12,3)`, and `entity_ledger.delta` widens from `DECIMAL(6,3)` (it could not hold a 1000-loyalty spend) to `DECIMAL(12,3)`. `PointsCast` and `Points::of()` take a `places` argument; a whole figure is still an `int`. The shelf editor accepts `0.2`. `missions.loyalty_reward` stays whole.
+
+### Changed
+
+- **Hunters are called Bloodhounds**: the hunt screen reads *A Bloodhound daemon intercepted you* and the wallet reason is *Bloodhound bounty*.
+- **Known systems** shows an exchange's grade (read off `systems.grade`; an exchange cannot be scanned).
+- `CYBERSPACE.md`: *Data Fortresses* designed in full (Leechers and borrowed resources, crafted and maintained defences with decay, storage areas and roles, the audit log, shutdown order, the Kernel as the online test, abandonment, the public market and its tax, raiding and the frozen Kernel).
+
+
+
 ## [0.59.0] — 2026-10-14
 
 Hunters can be escaped and are not drawn back to back, block art is drawn properly in chat and bios, and a system can be scanned again.
@@ -3230,7 +3247,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.59.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.60.0...HEAD
+[0.60.0]: https://github.com/nahkampf/dedlok/compare/v0.59.0...v0.60.0
 [0.59.0]: https://github.com/nahkampf/dedlok/compare/v0.58.2...v0.59.0
 [0.58.2]: https://github.com/nahkampf/dedlok/compare/v0.58.1...v0.58.2
 [0.58.1]: https://github.com/nahkampf/dedlok/compare/v0.58.0...v0.58.1

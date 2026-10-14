@@ -8,6 +8,7 @@ use App\Models\Character;
 use App\Models\Entity;
 use App\Models\EntityBook;
 use App\Models\EntityLedgerEntry;
+use App\Support\Points;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -105,9 +106,9 @@ final class StandingLedger
     }
 
     /** What they are owed. Absent reads as broke. */
-    public function loyaltyFor(Character $character, Entity $entity): int
+    public function loyaltyFor(Character $character, Entity $entity): int|float
     {
-        return (int) ($this->booksFor($character, $entity)->loyalty ?? 0);
+        return Points::of($this->booksFor($character, $entity)->loyalty ?? 0, 3);
     }
 
     /** The row, made rather than found when there is none. Never saved here. */
@@ -228,14 +229,14 @@ final class StandingLedger
         return round($after - $before, 3);
     }
 
-    /** Floors at zero, has no ceiling, and is only ever a whole favour. */
+    /** Floors at zero, has no ceiling, and is carried to three decimals. */
     private function applyLoyalty(EntityBook $books, float $amount): float
     {
-        $before = (int) $books->loyalty;
-        $after = max(0, $before + (int) round($amount));
+        $before = round((float) $books->loyalty, 3);
+        $after = round(max(0, $before + $amount), 3);
 
         $books->loyalty = $after;
 
-        return (float) ($after - $before);
+        return round($after - $before, 3);
     }
 }

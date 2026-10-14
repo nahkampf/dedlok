@@ -163,6 +163,42 @@ return [
             'secret' => false,
         ],
 
+        // A hundred siphons installed.
+        15 => [
+            'name' => 'Vampire',
+            'description' => 'Installed a hundred siphons.',
+            'metric' => 'siphons_installed',
+            'threshold' => 100,
+            'secret' => false,
+        ],
+
+        // Twenty-five thousand in bounties collected from other players. Unwinnable until PvP exists.
+        16 => [
+            'name' => 'Headhunter',
+            'description' => 'Claimed 25,000 in bounties.',
+            'metric' => 'bounties_claimed',
+            'threshold' => 25_000,
+            'secret' => false,
+        ],
+
+        // The price on your own head, at ten thousand.
+        17 => [
+            'name' => 'Wanted',
+            'description' => 'A total of 10,000 in bounties on your head.',
+            'metric' => 'bounty_on_head',
+            'threshold' => 10_000,
+            'secret' => false,
+        ],
+
+        // Fifty Bloodhounds broken.
+        18 => [
+            'name' => 'Indomitable',
+            'description' => 'Defeated 50 Bloodhounds.',
+            'metric' => 'bloodhounds_defeated',
+            'threshold' => 50,
+            'secret' => false,
+        ],
+
     ],
 
 ];

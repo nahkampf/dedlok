@@ -1,3 +1,10 @@
+## 0.60.0 (2026-10-15)
+
+- New achievements: Vampire, Headhunter, Wanted and Indomitable
+- Hunt programs are now called Bloodhounds
+- "Known systems" now shows the grade of exchanges
+- Loyalty can now be fractional, so a shelf item can cost less than a whole point
+
 ## 0.59.0 (2026-10-14)
 
 - Egress now possible in cyberspace combat

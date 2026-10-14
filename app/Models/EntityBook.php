@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Casts\PointsCast;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,7 +29,7 @@ class EntityBook extends Model
     {
         return [
             'standing' => 'float',
-            'loyalty' => 'integer',
+            'loyalty' => PointsCast::class.':3',
         ];
     }
 

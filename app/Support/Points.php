@@ -17,9 +17,9 @@ namespace App\Support;
  */
 final class Points
 {
-    public static function of(float|int|string|null $value): int|float
+    public static function of(float|int|string|null $value, int $places = 2): int|float
     {
-        $rounded = round((float) $value, 2);
+        $rounded = round((float) $value, $places);
 
         return $rounded === floor($rounded) ? (int) $rounded : $rounded;
     }

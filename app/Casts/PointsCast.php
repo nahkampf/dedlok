@@ -16,13 +16,15 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class PointsCast implements CastsAttributes
 {
+    public function __construct(private readonly int $places = 2) {}
+
     public function get(Model $model, string $key, mixed $value, array $attributes): int|float|null
     {
-        return $value === null ? null : Points::of($value);
+        return $value === null ? null : Points::of($value, $this->places);
     }
 
     public function set(Model $model, string $key, mixed $value, array $attributes): int|float|string|null
     {
-        return $value === null ? null : Points::of($value);
+        return $value === null ? null : Points::of($value, $this->places);
     }
 }

@@ -1158,6 +1158,10 @@ final readonly class Simulator
 
         $run->backdoored = true;
 
+        if ($kind === BackdoorKind::Siphon) {
+            (new Achievements)->record($character, Metric::SiphonsInstalled);
+        }
+
         $log[] = $this->line("cyberspace.run.log.install.{$backdoor->kind->value}", tone: 'ok');
 
         return $log;
