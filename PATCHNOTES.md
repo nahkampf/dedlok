@@ -1,11 +1,11 @@
 ## 0.58.0 (2026-10-14)
 
-- Chat is here! A new Chat page in the sidebar with a General channel for everyone
-- Make your own rooms, public or private, and invite people into them
-- Type /msg <handle> to write to one person, and /invite, /leave, /ignore in rooms
-- Messages show up the moment they are sent
-- Every achievement now gives +1 standing with everyone
-- Anything outside the edge of the map now has a hazard stripe
+- Chat now exists (in sidebar). "General" is where everyone is by default
+- Create your own rooms
+- /msg <handle> to send a message
+- Websockets via Laravel Reverb implemented for chat and messages
+- Achievements now grant +1 standing with everyone
+- Hazard stripes for "out of bounds" on the cyberspce map
 
 ## 0.57.0 (2026-10-14)
 
