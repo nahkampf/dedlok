@@ -2581,6 +2581,17 @@ details.panel > summary.panel__hd:focus-visible {
 .slot--drop { border-style: dashed; border-color: var(--ember); background: var(--crit-a); }
 
 .slot__icon { font-size: 20px; line-height: 1; filter: grayscale(.25); }
+/* A picture in place of the glyph: fills the square and crops, like a card's. */
+.slot__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* The glyph stays, over the picture. */
+.slot__img + .slot__icon { position: relative; z-index: 1; text-shadow: 1px 1px 0 #000; filter: none; }
+/* A scan file's address along the foot of its slot. */
+.slot__addr {
+  position: absolute; left: 0; right: 0; bottom: 2px; z-index: 1;
+  font: 600 9px/1 var(--font-mono); letter-spacing: 0;
+  color: var(--ink-1); text-shadow: 0 1px 2px #000;
+  overflow: hidden; text-overflow: clip; white-space: nowrap;
+}
 
 .slot__qty {
   position: absolute; right: 3px; bottom: 2px;
@@ -2783,6 +2794,12 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 }
 .board__node--cpu .board__box,
 .board__node--here .board__box { background: var(--bg-2); border-color: var(--hue, var(--line-2)); }
+/* Where the body is: the hairline breathes between the district's hue and
+   bone, slowly — a condition rather than an event, so nothing glows. */
+.board__node--here .board__box { animation: here-pulse 3.6s ease-in-out infinite; }
+@keyframes here-pulse {
+  50% { border-color: var(--ink-0); }
+}
 /* A map's node is a NAME in the box, wrapping rather than overflowing: the
    coordinates are inset from the edges, but a long name is still wider than a
    socket. The 120px floor is what lets "Knightsbridge" sit on one line at 320px
@@ -2810,7 +2827,9 @@ button.board__node { background: none; border: 0; padding: 0; font: inherit; cur
 .proc-bar[data-tip]:focus::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 .board__node[data-tip]:focus::after { opacity: 1; transform: translateX(-50%) translateY(0); }
 .board__node[data-tip]:hover, .board__node[data-tip]:focus { z-index: 3; }
-a.board__node:hover .board__box { border-color: var(--hue, var(--ink-2)); background: var(--bg-3); }
+a.board__node:hover .board__box,
+button.board__node[data-inspect]:hover .board__box,
+button.board__node[data-inspect]:focus-visible .board__box { border-color: var(--hue, var(--ink-2)); background: var(--bg-3); }
 /* Sockets are the thing on this screen, so they are drawn at a size you can
    read rather than a size that fits. Everything inside one scales with it — a
    fixed 20px glyph in a 60px socket is a stamp in the middle of a box, and the

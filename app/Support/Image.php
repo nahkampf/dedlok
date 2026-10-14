@@ -51,6 +51,38 @@ final class Image
     }
 
     /**
+     * A picture for a small square (a stash slot), or null when there is only
+     * the generic stand-in: the thing's own, then its type's default, but never
+     * the root `items/_default`, which says nothing about this thing and would
+     * replace every glyph with the same picture.
+     */
+    public static function slot(string $kind, string|int $id): ?string
+    {
+        $folders = self::folders($kind);
+
+        if ($folders === []) {
+            return null;
+        }
+
+        $own = self::resolve($kind, (string) $id, self::DEFAULT, ownOnly: true);
+
+        if ($own !== null) {
+            return $own;
+        }
+
+        // Defaults from the deepest folder up, leaving out the last (the root).
+        foreach (array_slice($folders, 0, max(count($folders) - 1, 0)) as $folder) {
+            $path = self::ROOT."/{$folder}/".self::DEFAULT.'.jpg';
+
+            if (is_file(public_path($path))) {
+                return Asset::url($path);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The full-size image, or null when there is none.
      *
      * Falls back to the default's full version, so a kind can ship one picture

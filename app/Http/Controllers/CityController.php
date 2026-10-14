@@ -31,7 +31,7 @@ use Illuminate\View\View;
  */
 class CityController extends Controller
 {
-    public function index(Request $request, CityClock $clock, Traveller $traveller): View|RedirectResponse
+    public function index(Request $request, CityClock $clock, Traveller $traveller, Explorer $explorer): View|RedirectResponse
     {
         $character = $this->character($request);
 
@@ -45,11 +45,30 @@ class CityController extends Controller
             return redirect()->route('encounter.show');
         }
 
+        $state = $this->activity($character);
+        $districts = District::query()->orderBy('name')->get();
+
         return view('city.index', [
             'character' => $character,
-            'districts' => District::query()->orderBy('name')->get(),
+            'districts' => $districts,
             'links' => District::links(),
-            ...$this->activity($character),
+            // What each district's card on the map says: the places the
+            // character knows there (the same visibility rule as the district
+            // screen) and, while nothing is under way, what getting there
+            // costs — from the same call `begin()` charges by.
+            'locations' => Location::query()
+                ->visibleTo($character)
+                ->withExists(['shopItems', 'clinicServices', 'surgery'])
+                ->orderBy('name')
+                ->get()
+                ->groupBy('district_id'),
+            'quotes' => $state['activity'] === null
+                ? $districts->reject(fn (District $d): bool => $d->getKey() === $character->district_id)
+                    ->mapWithKeys(fn (District $d): array => [$d->getKey() => $traveller->quote($character, $d)])
+                    ->all()
+                : [],
+            'exploreSeconds' => $state['activity'] === null ? $explorer->duration($character) : null,
+            ...$state,
         ]);
     }
 

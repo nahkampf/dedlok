@@ -28,12 +28,15 @@ use App\Models\System;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
 use App\Standing\StandingLedger;
+use App\Stats\Op;
 use App\Stats\Resolver;
+use App\Stats\StatRegistry;
 use App\Support\Text;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -113,6 +116,16 @@ class CyberspaceController extends Controller
             $locator = ['name' => $finder->program($character)?->item?->displayName(), 'canTraverse' => $finder->canTraverse($character) && $character->isJackedIn(), 'raw' => $raw, 'query' => $query, 'result' => $query === null ? null : $finder->nearest($character, $query, $grid)];
         }
 
+        // The same sum ViewShape::forCharacter() does, kept in pieces so the
+        // screen can show where the level comes from.
+        $viewBase = (float) Config::get('cyberspace.view_range', 2);
+        $viewStat = app(StatRegistry::class)->get('view_range');
+        $viewMods = array_values(array_filter(
+            iterator_to_array($character->modifiers(), false),
+            fn ($m): bool => $m->appliesTo($viewStat) && $m->isLiveIn(null),
+        ));
+        $shape = ViewShape::for(app(Resolver::class)->resolve('view_range', $viewBase, $viewMods)->toInt());
+
         return view('cyberspace.index', [
             'locator' => $locator,
             'character' => $character,
@@ -121,7 +134,22 @@ class CyberspaceController extends Controller
             'chain' => $chains->for($character),
             'chainCap' => $chains->hopsAllowed($character),
             'grid' => $grid,
-            'map' => MapView::for($character, $grid, shape: ViewShape::forCharacter($character, app(Resolver::class))),
+            'map' => MapView::for($character, $grid, shape: $shape),
+            'viewRange' => $shape->level,
+            'viewShape' => $shape,
+            'viewBase' => $viewBase,
+            // One line per source and operation, the way a player reads it.
+            'viewParts' => collect($viewMods)
+                ->groupBy(fn ($m): string => ($m->source ?? '—').'|'.$m->op->value)
+                ->map(fn ($g): array => [
+                    'source' => $g->first()->source ?? '—',
+                    'op' => $g->first()->op,
+                    'amount' => $g->first()->op === Op::Multiplier
+                        ? $g->reduce(fn (float $c, $m): float => $c * $m->amount, 1.0)
+                        : $g->sum(fn ($m): float => $m->amount),
+                ])
+                ->values()
+                ->all(),
             'swept' => MapView::sweptCount($character),
             // Both kinds, in one list, most recent first. The screen tells
             // them apart; the query has no reason to.

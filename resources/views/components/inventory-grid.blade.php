@@ -75,7 +75,18 @@
                              would sit on top of the inspector saying half of
                              what it already says. --}}
                         aria-label="{{ $entry->label() }} — {{ Text::get('inventory.inspect') }}">
+                        @php($pic = \App\Support\Image::slot($item->imageKind(), $item->id))
+                        @if ($pic)
+                            <img class="slot__img" src="{{ $pic }}" alt="" loading="lazy" decoding="async">
+                        @endif
                         <span class="slot__icon" aria-hidden="true">{{ $entry->glyph() }}</span>
+
+                        {{-- A scan file is one catalogue row and a different
+                             machine each time, so the address is what tells
+                             two of them apart in the grid. --}}
+                        @if ($scanAddress = $entry->scanFile()?->address)
+                            <span class="slot__addr" aria-hidden="true">{{ $scanAddress }}</span>
+                        @endif
 
                         @if ($grouped)
                             <span class="slot__qty">{{ $group->count() }}</span>
