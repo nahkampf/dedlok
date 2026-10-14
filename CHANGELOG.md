@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.58.1] — 2026-10-14
+
+Characters get a public profile, and the run briefing says what a Placement job is asking for.
+
+### Added
+
+- **Public profile** (`/characters/{handle}`, `ProfileController`, `profile.show`): portrait (a supporter's own picture when they have one), handle, Supporter and Tester tags, the bio as typed (monospace, no reflow, printed escaped), and the standings of that character with every interactable entity (band word and figure, zero hidden). *Start a chat* (`POST /chat/with/{handle}`, `chat.direct`: finds or makes the direct line and goes to it) and *Send a message* (the inbox compose screen with the To field filled in); neither is shown on one's own profile. Shows nothing else about a character. `chat.direct` and `characters.show` are in every lock's allow-list.
+- **A handle in chat links to the profile**, in the page and in pushed lines (`chat/_line.blade.php`).
+
+### Changed
+
+- **The siphon button on the run briefing** reads *Place backdoor* and is `btn--go` while an accepted Placement job (`MissionAction::Plant`) still has this system open (`MissionLedger::hasOpenAgainst()`, the read-only twin of `recordAgainst()`). The press itself is unchanged.
+
+
+
 ## [0.58.0] — 2026-10-14
 
 Chat arrives: a General channel, rooms and direct lines on a page of its own, pushed live over a websocket; achievements raise standing; and the grid's edge is hatched.
@@ -3182,7 +3197,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.58.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.58.1...HEAD
+[0.58.1]: https://github.com/nahkampf/dedlok/compare/v0.58.0...v0.58.1
 [0.58.0]: https://github.com/nahkampf/dedlok/compare/v0.57.0...v0.58.0
 [0.57.0]: https://github.com/nahkampf/dedlok/compare/v0.56.1...v0.57.0
 [0.56.1]: https://github.com/nahkampf/dedlok/compare/v0.56.0...v0.56.1

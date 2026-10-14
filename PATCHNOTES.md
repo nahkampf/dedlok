@@ -1,3 +1,9 @@
+## 0.58.1 (2026-10-14)
+
+- Chars have a public profile now
+- Profile linked from handle in chat
+- Placement jobs replace "Install siphon" with "Place Backdoor"
+
 ## 0.58.0 (2026-10-14)
 
 - Chat now exists (in sidebar). "General" is where everyone is by default
