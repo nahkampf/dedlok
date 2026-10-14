@@ -2848,6 +2848,10 @@ return [
         ],
     ],
 
+    'heat' => [
+        'tip' => 'Heat: :value',
+    ],
+
     'creds' => [
         'name' => 'Creds',
         'amount' => ':amount cr',

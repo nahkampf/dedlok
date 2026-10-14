@@ -244,6 +244,17 @@
                     <span class="sr-only">{{ Text::get('creds.name') }}</span>
                 </span>
 
+                {{-- Heat, as a glyph in the colour of where it stands against the hunters' threshold: green below it, brass
+                     above, crit from twice it (`cyberspace.heat.hunt.floor_below`, where a hunter first becomes possible).
+                     The number is the tooltip. U+26A0 is the City category's glyph, already proved to render. --}}
+                @php($heatNow = round((float) $hud->heat, 1))
+                @php($heatLine = (float) config('cyberspace.heat.hunt.floor_below', 5))
+                <span class="chip-stat" title="{{ Text::get('heat.tip', ['value' => rtrim(rtrim(number_format($heatNow, 1), '0'), '.')]) }}">
+                    <span class="chip-stat__glyph" aria-hidden="true"
+                          style="color:{{ $heatNow >= $heatLine * 2 ? 'var(--crit)' : ($heatNow >= $heatLine ? 'var(--warn)' : 'var(--ok)') }}">&#9888;&#65038;</span>
+                    <span class="sr-only">{{ Text::get('heat.tip', ['value' => rtrim(rtrim(number_format($heatNow, 1), '0'), '.')]) }}</span>
+                </span>
+
                 {{-- Everything in flight (a scan, a decryption, training, a drug, a trip), in a modal fetched when it opens.
                      No count: working one out costs queries the bar is not worth. U+25CD is proved in the map's key. --}}
                 <button type="button" class="chip-stat" data-open="#current-processes" aria-haspopup="dialog"
