@@ -679,6 +679,7 @@ return [
         'browse' => 'Public rooms',
         'join' => 'Join',
         'joined' => ':handle has joined the chat',
+        'left_line' => ':handle has left the chat.',
         'accept' => 'Join',
         'decline' => 'No thanks',
         'failed' => 'Could not reach the chat.',

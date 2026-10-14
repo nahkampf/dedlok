@@ -148,6 +148,20 @@ final class ChatTest extends TestCase
         $this->chats()->say($a, $this->chats()->general(), '/leave');
     }
 
+    public function test_leaving_tells_the_room(): void
+    {
+        $a = Character::factory()->create();
+        $b = Character::factory()->create();
+        $room = $this->chats()->createRoom($a, 'Pair', true);
+        $this->chats()->join($b, $room);
+
+        $this->chats()->say($b, $room, '/leave');
+
+        $line = \App\Models\ChatMessage::query()->where('chat_id', $room->getKey())->where('is_event', true)->latest('id')->first();
+        $this->assertSame("{$b->handle} has left the chat.", $line->message);
+        $this->assertFalse($this->chats()->canSee($b, $room));
+    }
+
     public function test_ignoring_hides_their_lines_and_their_unread_count(): void
     {
         $a = Character::factory()->create();

@@ -265,6 +265,8 @@ final class Chats
     private function leave(Character $who, Chat $room): array
     {
         DB::transaction(function () use ($who, $room): void {
+            // Said while still a member, so the line is theirs to write; the others see it.
+            $this->write($who, $room, Text::get('chat.left_line', ['handle' => $who->handle]), event: true);
             DB::table('chat_members')->where('chat_id', $room->getKey())->where('character_id', $who->getKey())->delete();
 
             if (! DB::table('chat_members')->where('chat_id', $room->getKey())->exists()) {

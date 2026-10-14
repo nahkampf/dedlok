@@ -13,8 +13,9 @@
     "require": {
         "php": "^8.3",
         "ext-intl": "*",
-        "laravel/framework": "^13.17",
         "laravel/fortify": "^1.31",
+        "laravel/framework": "^13.17",
+        "laravel/reverb": "^1.12",
         "laravel/tinker": "^3.0"
     },
     "require-dev": {
