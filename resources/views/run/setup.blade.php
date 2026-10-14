@@ -394,11 +394,14 @@
                 ['intent' => 'burn', 'purpose' => RunPurpose::Burn, 'kind' => null],
             ] as $option)
                 <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
-                    <button type="submit" class="btn cut" style="min-width:min(200px,100%)"
+                    {{-- A Placement job for this system makes the siphon door the job's own: named for it, and green
+                         (the one filled signal button on the screen: it is the whole point of this run). --}}
+                    @php($placing = $placement && $option['intent'] === 'siphon')
+                    <button type="submit" @class(['btn', 'cut', 'btn--go' => $placing]) style="min-width:min(200px,100%)"
                             name="purpose" value="{{ $option['purpose']->value }}"
                             @if ($option['kind']) formaction="{{ route('run.start', ['backdoor_kind' => $option['kind']->value]) }}" @endif
                             @unless ($ready) disabled @endunless>
-                        {{ Text::get('cyberspace.run.setup.intent_'.$option['intent']) }}
+                        {{ Text::get($placing ? 'cyberspace.run.setup.intent_placement' : 'cyberspace.run.setup.intent_'.$option['intent']) }}
                     </button>
                     <span class="micro" style="color:var(--ink-2);flex:1;min-width:min(240px,100%)">
                         {{ Text::get('cyberspace.run.setup.intent_'.$option['intent'].'_hint') }}

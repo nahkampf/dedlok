@@ -9,11 +9,16 @@ use App\Cyberspace\Backdoors;
 use App\Cyberspace\Lockdown;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\ScanFact;
+use App\Missions\MissionAction;
+use App\Missions\MissionState;
 use App\Models\Character;
 use App\Models\CharacterSkill;
+use App\Models\Entity;
+use App\Models\Exchange;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Mission;
 use App\Models\Run;
 use App\Models\Skill;
 use App\Models\System;
@@ -299,6 +304,27 @@ final class RunBriefingTest extends TestCase
             ->assertSeeText('Install a siphon that redirects some cashflow every night')
             ->assertSeeText('Backdoor for routing')
             ->assertSeeText('Add this system to your routing chain. The more systems you route through, the longer a tracer will take to trace you');
+    }
+
+    public function test_a_placement_job_for_this_system_turns_the_siphon_button_into_place_backdoor_and_green(): void
+    {
+        $system = $this->machine();
+
+        $this->visit()->assertSeeText('Install a siphon')->assertDontSeeText('Place backdoor');
+
+        $entity = Entity::query()->interactable()->firstOrFail();
+        $deskSystem = System::factory()->at(2, 2)->ownedBy($entity)->create(['type' => 'exchange', 'grade' => 1]);
+        $desk = Exchange::query()->create(['system_id' => $deskSystem->id, 'grade' => 1, 'agent' => 'Mr Nakata', 'min_standing' => 0]);
+        $job = Mission::query()->create([
+            'character_id' => $this->character->id, 'entity_id' => $entity->id, 'exchange_id' => $desk->id,
+            'action' => MissionAction::Plant, 'state' => MissionState::Accepted, 'quantity_required' => 0,
+            'creds_reward' => 100, 'standing_reward' => 0.02, 'loyalty_reward' => 1, 'penalty' => 0.02, 'offered_at' => now(),
+            'accepted_at' => now(), 'expires_at' => now()->addHours(5),
+        ]);
+        $job->targets()->create(['system_id' => $system->id, 'address' => $system->address]);
+
+        $html = $this->visit()->assertOk()->assertSeeText('Place backdoor')->assertDontSeeText('Install a siphon')->getContent();
+        $this->assertMatchesRegularExpression('/btn--go"[^<]*>\s*Place backdoor/', $html);
     }
 
     // ---- the intentions ------------------------------------------------------

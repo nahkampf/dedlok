@@ -16,6 +16,8 @@ use App\Cyberspace\Simulator;
 use App\Cyberspace\TurnResult;
 use App\Decks\DeckTotals;
 use App\Decks\ThermalExposure;
+use App\Missions\MissionAction;
+use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Run;
@@ -125,6 +127,8 @@ class RunController extends Controller
                 : 0.0,
             'character' => $character,
             'target' => $target,
+            // An accepted Placement job still waiting on this system: the backdoor button then says what it is for.
+            'placement' => app(MissionLedger::class)->hasOpenAgainst($character, $target, MissionAction::Plant),
             'scan' => $scan,
             // The same rows the scanner window shows, every fact either way: an unread one says so.
             'overview' => ($scan ?? new SystemScan)->facts($character),

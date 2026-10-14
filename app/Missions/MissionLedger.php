@@ -19,6 +19,7 @@ use App\Stats\Resolver;
 use App\Support\Text;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Number;
@@ -257,7 +258,25 @@ final readonly class MissionLedger
      */
     public function recordAgainst(Character $character, System $system, MissionAction $action): int
     {
-        $targets = MissionTarget::query()
+        $targets = $this->openTargets($character, $system, $action)->get();
+
+        foreach ($targets as $target) {
+            $target->forceFill(['satisfied_at' => now()])->save();
+        }
+
+        return $targets->count();
+    }
+
+    /** Whether an accepted job of this kind still has this system to do: what `recordAgainst()` would record. Writes nothing. */
+    public function hasOpenAgainst(Character $character, System $system, MissionAction $action): bool
+    {
+        return $this->openTargets($character, $system, $action)->exists();
+    }
+
+    /** @return Builder<MissionTarget> */
+    private function openTargets(Character $character, System $system, MissionAction $action)
+    {
+        return MissionTarget::query()
             ->whereNull('satisfied_at')
             ->where('system_id', $system->getKey())
             ->where('address', $system->address)
@@ -265,14 +284,7 @@ final readonly class MissionLedger
                 ->where('character_id', $character->getKey())
                 ->where('action', $action->value)
                 ->accepted()
-            )
-            ->get();
-
-        foreach ($targets as $target) {
-            $target->forceFill(['satisfied_at' => now()])->save();
-        }
-
-        return $targets->count();
+            );
     }
 
     /**

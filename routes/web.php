@@ -51,6 +51,8 @@ use App\Http\Controllers\TrainingQueueController;
 use App\Http\Controllers\WaitingController;
 use App\Http\Controllers\WalletController;
 use App\Http\Middleware\ForbidSecondCharacter;
+use Illuminate\Broadcasting\BroadcastController;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -432,8 +434,8 @@ Route::middleware('auth')->group(function () {
     // for the same screen without the page around it, a route of its own so it is not counted as activity (`TouchLastActive`).
     // Who may listen to a private channel (`routes/channels.php`). Registered here, and named, rather than by the
     // framework's `withBroadcasting()`, whose route has no name for the locks' allow-lists to say yes to.
-    Route::post('/broadcasting/auth', [\Illuminate\Broadcasting\BroadcastController::class, 'authenticate'])
-        ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class])->name('broadcasting.auth');
+    Route::post('/broadcasting/auth', [BroadcastController::class, 'authenticate'])
+        ->withoutMiddleware([PreventRequestForgery::class])->name('broadcasting.auth');
     Route::get('/chat', [ChatController::class, 'show'])->name('chat.show');
     Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
     Route::post('/chat/say', [ChatController::class, 'post'])->middleware('throttle:30,1')->name('chat.say');

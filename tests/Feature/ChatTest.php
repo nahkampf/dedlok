@@ -13,6 +13,7 @@ use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -181,7 +182,7 @@ final class ChatTest extends TestCase
         // Somebody else's own channel is refused; their own is signed. (The null driver the suite runs on signs
         // anything, so this asks the Reverb one.)
         config(['broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.key' => 'k', 'broadcasting.connections.reverb.secret' => 's', 'broadcasting.connections.reverb.app_id' => 'i']);
-        \Illuminate\Support\Facades\Broadcast::purge();
+        Broadcast::purge();
         require base_path('routes/channels.php'); // channels live on the driver, and this is a new one
         $this->actingAs($a->user)->post('/broadcasting/auth', ['socket_id' => '1.2', 'channel_name' => "private-chat-user.{$a->getKey()}"])->assertOk();
         $this->actingAs($b->user)->post('/broadcasting/auth', ['socket_id' => '1.2', 'channel_name' => "private-chat-user.{$a->getKey()}"])->assertForbidden();

@@ -1254,6 +1254,8 @@ return [
                 'intent' => 'Mission goal',
                 'intent_extraction' => 'Extract data',
                 'intent_siphon' => 'Install a siphon',
+                // The same button while an accepted Placement job names this system.
+                'intent_placement' => 'Place backdoor',
                 'intent_routing' => 'Backdoor for routing',
                 'intent_burn' => 'Burn it',
                 'intent_extraction_hint' => 'Ingress, steal some data, egress. Does not trigger a lockdown',
