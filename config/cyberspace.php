@@ -1040,6 +1040,9 @@ return [
             'certain_at' => 100,
             'cap' => 35.0,
 
+            // After a hunter has been met, none is drawn for this many minutes, however high heat stands.
+            'cooldown_minutes' => 60,
+
             /*
             | FIVE GRADES, each a heat band and the ICE LEVELS it draws from —
             | not new numbers, the real catalogue. A hunter IS an ICE, on the

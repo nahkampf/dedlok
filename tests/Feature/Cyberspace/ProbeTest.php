@@ -307,6 +307,29 @@ final class ProbeTest extends TestCase
         $this->assertSame(1, $this->character->inventory()->whereNotNull('scan_file')->count());
     }
 
+    public function test_a_finished_and_filed_read_can_be_scanned_again_into_a_new_file(): void
+    {
+        $this->machine(grade: 1, os: $this->anOperatingSystem());
+
+        $first = $this->readOnce(0.0);
+        $this->assertNotNull($first->scan->fresh()->filed_at);
+
+        // The file is sold: the read on the map stays, complete and filed.
+        $this->character->inventory()->whereNotNull('scan_file')->delete();
+
+        $press = $this->probe(0.0)->scan($this->character->fresh());
+
+        $this->assertTrue($press->succeeded(), 'a second press is a rescan, not "already scanned"');
+        $this->assertNotSame($first->scan->getKey(), $press->scan->getKey());
+        $this->assertNull($press->scan->filed_at);
+
+        $this->travel(20)->minutes();
+        $again = $this->probe(0.0)->settle($this->character->fresh(), $press->scan->fresh());
+
+        $this->assertTrue($again->scan->isComplete());
+        $this->assertSame(1, $this->character->inventory()->whereNotNull('scan_file')->count(), 'a new file');
+    }
+
     /**
      * Learning nothing is an ordinary outcome, and it still costs a pass.
      *
@@ -450,11 +473,13 @@ final class ProbeTest extends TestCase
         $this->assertTrue($scan->hasExpired());
     }
 
-    public function test_nothing_is_read_twice(): void
+    public function test_a_read_that_was_never_filed_is_not_replaced(): void
     {
         $this->machine(grade: 1, os: $this->anOperatingSystem());
 
         $this->readOnce(0.0);
+        SystemScan::query()->update(['filed_at' => null]);
+
         $result = $this->probe(0.0)->scan($this->character->fresh());
 
         $this->assertSame(ProbeRefusal::AlreadyKnown, $result->refusal);

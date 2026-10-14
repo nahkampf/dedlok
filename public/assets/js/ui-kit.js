@@ -1756,6 +1756,19 @@
     let lazyTimer = null;
     const lazy = () => { clearTimeout(lazyTimer); lazyTimer = setTimeout(swap, 800); };
 
+    // Enter sends, Shift+Enter is a new line; the box is one row until there is more than one, then it grows to fit (up to 8).
+    const fit = (box) => { box.style.height = "auto"; box.style.height = Math.min(box.scrollHeight, 8 * 16 + 18) + "px"; };
+    document.addEventListener("keydown", (e) => {
+      const box = e.target.closest && e.target.closest("[data-chat-form] textarea");
+      if (box && e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        box.form.requestSubmit();
+      }
+    });
+    document.addEventListener("input", (e) => {
+      const box = e.target.closest && e.target.closest("[data-chat-form] textarea");
+      if (box) fit(box);
+    });
     document.addEventListener("submit", (e) => {
       const form = e.target.closest("form[data-chat-form]");
       if (!form) return;
@@ -1763,8 +1776,9 @@
       post(form.action, new FormData(form)).then((id) => {
         if (!id) return;
         form.reset();
+        form.querySelectorAll("textarea").forEach(fit);
         // The same chat stays put (the line arrives by socket, and the swap is the fallback); another is a visit.
-        if (String(id) === page.querySelector("[data-chat]")?.dataset.chat) { swap(); form.querySelector("input[name=message]")?.focus(); } else go(id);
+        if (String(id) === page.querySelector("[data-chat]")?.dataset.chat) { swap(); form.querySelector("[name=message]")?.focus(); } else go(id);
       });
     });
 

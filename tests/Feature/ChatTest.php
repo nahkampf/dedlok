@@ -14,6 +14,7 @@ use App\Models\ChatMessage;
 use App\Models\Entity;
 use App\Models\EntityBook;
 use App\Models\Notification;
+use App\Support\PlainText;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
@@ -238,6 +239,25 @@ final class ChatTest extends TestCase
 
         $this->chats()->say($a, $general, "/unignore {$b->handle}");
         $this->assertCount(1, $this->chats()->lines($general, $a));
+    }
+
+    public function test_a_pasted_block_is_kept_as_art(): void
+    {
+        $html = Markup::render("  __**__\n |  *  |\n  \\_/_");
+
+        $this->assertStringContainsString("  __**__\n |  *  |", $html);
+        $this->assertStringNotContainsString('<em>', $html);
+        $this->assertSame("  x\n y", PlainText::clean("\n  x\n y  ", multiline: true));
+    }
+
+    public function test_a_line_is_stored_exactly_as_typed(): void
+    {
+        $me = Character::factory()->create();
+        $art = "\n  /\\_/\\\n ( o.o )\t \n\n\n  > ^ <   \n";
+
+        $this->actingAs($me->user)->postJson(route('chat.say'), ['chat' => Chat::query()->where('kind', Chat::GENERAL)->value('id'), 'message' => $art])->assertOk();
+
+        $this->assertSame($art, ChatMessage::query()->latest('id')->value('message'));
     }
 
     public function test_the_unread_count_rides_on_the_inbox_poll_and_the_panel_draws_general(): void

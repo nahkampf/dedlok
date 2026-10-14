@@ -6,6 +6,7 @@ namespace App\Cyberspace;
 
 use App\Characters\DownedCause;
 use App\Characters\WaitingRoom;
+use App\Checks\CheckRoller;
 use App\Decks\Storage;
 use App\Inventory\ItemGranter;
 use App\Models\Character;
@@ -50,6 +51,7 @@ final class HunterCombat
         private readonly ProgramRunner $programs,
         private readonly WaitingRoom $waitingRoom,
         private readonly Closure $roll,
+        private readonly CheckRoller $checks,
     ) {}
 
     /** @param  ?Closure(int, int): int  $roll */
@@ -57,7 +59,7 @@ final class HunterCombat
     {
         $roll ??= Trace::die(static fn (int $min, int $max): int => random_int($min, $max));
 
-        return new self($resolver, new ProgramRunner, new WaitingRoom($resolver), $roll);
+        return new self($resolver, new ProgramRunner, new WaitingRoom($resolver), $roll, app(CheckRoller::class));
     }
 
     /**
@@ -68,43 +70,54 @@ final class HunterCombat
      *
      * @return list<array{text: string, tone: string}>
      */
-    public function fight(Character $character, Hunt $hunt): array
+    public function fight(Character $character, Hunt $hunt, bool $egress = false): array
     {
-        return Trace::scope($character, 'hunt.fight', fn (): array => $this->exchange($character, $hunt), [
+        return Trace::scope($character, $egress ? 'hunt.egress' : 'hunt.fight', fn (): array => $this->exchange($character, $hunt, $egress), [
             'hunt' => Trace::describe($hunt), 'ice' => Trace::describe($hunt->ice),
         ]);
     }
 
     /** @return list<array{text: string, tone: string}> */
-    private function exchange(Character $character, Hunt $hunt): array
+    private function exchange(Character $character, Hunt $hunt, bool $egress): array
     {
-        return DB::transaction(function () use ($character, $hunt): array {
+        return DB::transaction(function () use ($character, $hunt, $egress): array {
             $new = [];
 
-            // `icebreaker_damage` hands in zero at its own call site, exactly
-            // as Simulator::attack() does — it is deliberately not in
-            // `stats.bases`, so `Character::stat()` throws for it rather than
-            // answering zero, and asking through a Sheet would be wrong here
-            // anyway.
-            $dealt = $this->resolver->resolve('icebreaker_damage', 0.0, $character->modifiers())->toInt();
-            $critical = $dealt > 0 && CriticalHit::rolls($character, $this->roll);
-            $dealt = $critical ? CriticalHit::scale($dealt) : $dealt;
-            Trace::note('hunt.player_hit', [
-                'icebreaker_damage' => $dealt, 'critical' => $critical,
-                'ice_integrity_before' => $hunt->ice_integrity, 'ice_integrity_after' => max(0, $hunt->ice_integrity - $dealt),
-                'running' => $character->runningProcesses()->pluck('item.name')->all(),
-            ]);
-            $hunt->ice_integrity = max(0, $hunt->ice_integrity - $dealt);
+            if ($egress) {
+                $held = $this->tryEgress($character, $hunt);
 
-            $new[] = $dealt > 0
-                ? $this->line($critical ? 'cyberspace.hunt.log.hit_critical' : 'cyberspace.hunt.log.hit', ['damage' => $dealt], 'ok')
-                : $this->line('cyberspace.hunt.log.no_program', tone: 'warn');
+                if ($held === null) {
+                    return $this->appendLog($hunt, [$this->line('cyberspace.hunt.log.egress', tone: 'ok')]);
+                }
 
-            if ($hunt->ice_integrity <= 0) {
-                $hunt->save();
-                array_push($new, ...$this->win($character, $hunt));
+                $new[] = $held;
+            } else {
+                // `icebreaker_damage` hands in zero at its own call site, exactly
+                // as Simulator::attack() does — it is deliberately not in
+                // `stats.bases`, so `Character::stat()` throws for it rather than
+                // answering zero, and asking through a Sheet would be wrong here
+                // anyway.
+                $dealt = $this->resolver->resolve('icebreaker_damage', 0.0, $character->modifiers())->toInt();
+                $critical = $dealt > 0 && CriticalHit::rolls($character, $this->roll);
+                $dealt = $critical ? CriticalHit::scale($dealt) : $dealt;
+                Trace::note('hunt.player_hit', [
+                    'icebreaker_damage' => $dealt, 'critical' => $critical,
+                    'ice_integrity_before' => $hunt->ice_integrity, 'ice_integrity_after' => max(0, $hunt->ice_integrity - $dealt),
+                    'running' => $character->runningProcesses()->pluck('item.name')->all(),
+                ]);
+                $hunt->ice_integrity = max(0, $hunt->ice_integrity - $dealt);
 
-                return $this->appendLog($hunt, $new);
+                $new[] = $dealt > 0
+                    ? $this->line($critical ? 'cyberspace.hunt.log.hit_critical' : 'cyberspace.hunt.log.hit', ['damage' => $dealt], 'ok')
+                    : $this->line('cyberspace.hunt.log.no_program', tone: 'warn');
+
+                if ($hunt->ice_integrity <= 0) {
+                    $hunt->save();
+                    array_push($new, ...$this->win($character, $hunt));
+
+                    return $this->appendLog($hunt, $new);
+                }
+
             }
 
             $ice = $hunt->ice;
@@ -133,6 +146,33 @@ final class HunterCombat
 
             return $this->appendLog($hunt, $new);
         });
+    }
+
+    /**
+     * Try to pull out of a hunt: the run's own egress roll (the `egress` stat against the grade's difficulty plus
+     * the hunter's level). Null when it worked (hunt closed, heat unchanged, nothing paid, jacked out), else the
+     * line saying it held, and the hunter swings as it would after a miss on the icebreaker.
+     *
+     * @return ?array{text: string, tone: string}
+     */
+    private function tryEgress(Character $character, Hunt $hunt): ?array
+    {
+        $table = (array) Config::get('cyberspace.egress.difficulty', []);
+        $difficulty = (float) ($table[$hunt->grade] ?? ($table[1] ?? 0))
+            + (int) $hunt->ice->level * (float) Config::get('cyberspace.egress.ice_term', 1);
+
+        if (! $this->checks->roll($character->stat('egress')->value, $difficulty, 'egress')->passed) {
+            return $this->line('cyberspace.hunt.log.egress_held', tone: 'warn');
+        }
+
+        $this->programs->stopRunOnly($character);
+
+        $character->forceFill(['current_hunt_id' => null])->save();
+        $hunt->forceFill(['won' => false, 'resolved_at' => now()])->save();
+
+        Navigator::fromConfig($this->resolver)->jackOut($character);
+
+        return null;
     }
 
     /**

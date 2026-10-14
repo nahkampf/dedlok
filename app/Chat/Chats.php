@@ -30,7 +30,7 @@ final class Chats
 {
     public function __construct(private readonly Notifier $notifier = new Notifier) {}
 
-    public const BODY = 500;
+    public const BODY = 2000;
 
     public const NAME = 64;
 
@@ -68,9 +68,9 @@ final class Chats
      */
     public function say(Character $from, Chat $in, string $raw): array
     {
-        $text = PlainText::clean($raw, multiline: true);
+        $text = PlainText::clean($raw, multiline: true, verbatim: true);
 
-        if (preg_match('/^\/(invite|leave|ignore|unignore)(?:\s+(\S+))?\s*$/iu', $text, $m) === 1) {
+        if (preg_match('/^\s*\/(invite|leave|ignore|unignore)(?:\s+(\S+))?\s*$/iu', $text, $m) === 1) {
             return $this->command($from, $in, strtolower($m[1]), $m[2] ?? '');
         }
 
@@ -88,7 +88,7 @@ final class Chats
      */
     public function post(Character $from, Chat $in, string $raw): ChatMessage
     {
-        $text = PlainText::clean($raw, multiline: true);
+        $text = PlainText::clean($raw, multiline: true, verbatim: true);
 
         if (preg_match('/^\/msg(?:\s+(\S+))?(?:\s+(.+))?$/su', $text, $m) === 1) {
             $to = isset($m[1]) ? Character::query()->where('handle', $m[1])->first() : null;
@@ -102,7 +102,7 @@ final class Chats
             }
 
             $in = $this->direct($from, $to);
-            $text = trim($m[2]);
+            $text = $m[2];
         }
 
         return $this->write($from, $in, $text);
@@ -385,7 +385,7 @@ final class Chats
 
     private function write(Character $from, Chat $chat, string $text, bool $event = false): ChatMessage
     {
-        if ($text === '') {
+        if (trim($text) === '') {
             throw new ChatRefused(Text::get('chat.errors.empty'));
         }
 

@@ -1106,6 +1106,7 @@ return [
         */
         'scan' => [
             'action' => 'Scan',
+            'rescan' => 'Rescan',
             'show' => 'Show scan',
             'not_jacked_in' => 'You are not in cyberspace.',
             'nothing_there' => 'There is nothing here to scan.',
@@ -1124,7 +1125,7 @@ return [
                 'many' => ':count scans were lost: their scanners stopped before they finished.',
             ],
             'duration' => 'A pass here takes about :when',
-            'already_known' => 'This system is already fully scanned.',
+            'already_known' => 'This system is already fully scanned. Export the file to scan it again.',
             'nothing_new' => 'Nothing new. Probe unable to reveal anything new.',
             'new_data' => 'System :system [:address] has new scan data',
             'unknown_system' => 'Unknown system',
@@ -1752,8 +1753,11 @@ return [
             'log_heading' => 'The exchange',
             'action' => [
                 'fight' => 'Fight',
+                'egress' => 'Egress',
             ],
             'log' => [
+                'egress' => 'You pull out.',
+                'egress_held' => 'You try to pull out, and it holds on.',
                 'hit' => 'You land :damage.',
                 'hit_critical' => 'A critical hit: you land :damage.',
                 'no_program' => 'Nothing is running that can touch it.',

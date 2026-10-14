@@ -90,7 +90,7 @@ invent components, colours, spacing or type — compose what exists.
 | --- | --- |
 | `public/assets/css/ui-kit.css` | Tokens, then components. No build step. |
 | `public/assets/js/ui-kit.js` | Behaviours, data-attribute driven. Exposes `window.UI`. |
-| `public/assets/fonts/` | Overpass and IBM Plex, self-hosted (SIL OFL). |
+| `public/assets/fonts/` | Overpass and IBM Plex, self-hosted (SIL OFL); IBM VGA 9x16 (CC BY-SA 4.0). |
 | `public/ui-kit.html` | Live gallery with copyable markup. |
 
 The gallery is the reference — read its markup before building a screen. Adding a
@@ -241,6 +241,12 @@ title is the page's own `<title>` plus ` - A cyberpunk browser game`, the pictur
 `og:description` and the tagline are `strings.unfurl.*`.
 
 ### Fonts
+
+**`--font-mono` is IBM VGA 9x16** (the int10h "Plus" woff, with IBM Plex Mono behind it for glyphs it lacks). It is a bitmap
+in outlines: crisp only at **16px or a whole multiple, with `line-height` equal to the size**, so `.ascii`
+(and `.input--mono`, `.textarea--mono`) set 16px/16px, no tracking, kerning or ligatures, `white-space: pre`. Do not give a mono
+element a negative `letter-spacing` or a fractional size; the font has one weight, so `font-weight` changes nothing. Small chrome
+(tags, badges) still sets `--fs-xs`/`--fs-sm` and is scaled, softer than at 16px. Attribution: `LICENSE-IBM-VGA-9x16.txt`.
 
 **Every face is self-hosted and declared in `ui-kit.css`.** No font request leaves the
 origin — the layouts carry no `<link>` and nothing to preconnect to. Overpass is one

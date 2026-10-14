@@ -17,6 +17,16 @@ final class Markup
 {
     public static function render(string $message): string
     {
+        // A pasted block (more than one line) is ART: escaped and kept exactly, with no markdown to eat its `*` and `_`.
+        // Only the address button still applies. The chat line is `white-space: pre-wrap`, so the newlines show as they are.
+        // A block that is nothing but `- ` items is still a list.
+        $lines = explode("\n", $message);
+        $isList = collect($lines)->every(fn (string $l): bool => preg_match('/^-\s+\S/u', $l) === 1);
+
+        if (count($lines) > 1 && ! $isList) {
+            return self::addresses(e($message));
+        }
+
         $out = [];
         $list = [];
         $flush = function () use (&$out, &$list): void {
@@ -49,7 +59,12 @@ final class Markup
         $text = preg_replace('/(?<![*\w])\*(?![\s*])(.+?)(?<![\s*])\*(?![*\w])/u', '<em>$1</em>', $text);
         $text = preg_replace('/(?<![\w])_(?![\s_])(.+?)(?<![\s_])_(?!\w)/u', '<em>$1</em>', $text);
 
-        // Last, so the markup it makes is never meant for the passes above.
+        return self::addresses($text);
+    }
+
+    /** Last, so the markup it makes is never meant for the passes above. */
+    private static function addresses(string $text): string
+    {
         return preg_replace_callback('/\baddr:([0-9A-Fa-f]{8})\b/', fn (array $m): string => sprintf(
             '<button type="button" class="copy" data-copy="%1$s" data-copied="%2$s" data-copy-failed="%3$s" title="%4$s">%1$s</button>',
             strtoupper($m[1]),
