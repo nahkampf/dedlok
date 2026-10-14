@@ -304,6 +304,7 @@ return [
         'here' => 'You are here',
         'in_district' => 'You are in :district.',
         'back' => '← City',
+        'open_district' => 'Open district',
         'jack_out_first' => 'Jack out before you do anything in the City.',
         // Narrative encounters. Text on the rows themselves (an encounter's title,
         // a node's body, a choice's label); only chrome is here.
@@ -1756,6 +1757,10 @@ return [
             // is not a thing the player is told, and a progress bar towards
             // four million would be a promise that exploration ends.
             'swept_count' => ':count positions',
+            'view_range' => 'View range:',
+            'view_range_calc' => 'How your view range adds up',
+            'view_base' => 'Base',
+            'view_total' => 'View range',
 
             'address' => 'Address',
             'jump' => 'Jump',

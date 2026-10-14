@@ -98,6 +98,10 @@
             <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">
                 {{ $entry->scanFileSummary() }}
             </div>
+            {{-- The address, as the kit's copy button everywhere else. --}}
+            <div class="micro" style="margin-top:var(--s-2)">
+                <x-address :address="$entry->scanFile()->address" />
+            </div>
         @elseif ($entry->extractedFileSummary())
             {{-- A real file's own numbers, on the ROW rather than the item —
                  every "Encrypted Data Dump" is the same catalogue entry and a

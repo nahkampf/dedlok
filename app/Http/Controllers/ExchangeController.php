@@ -58,6 +58,7 @@ class ExchangeController extends Controller
         $welcome = $system->exchange->willDealWith($standing);
 
         return view('exchange.show', [
+            ...$this->shopContext($character),
             'character' => $character,
             'system' => $system,
             'desk' => $system->exchange,

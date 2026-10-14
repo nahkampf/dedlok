@@ -95,6 +95,44 @@
                     <span class="micro">{{ Text::get('cyberspace.map.swept') }}</span>
                     <strong>{{ Text::get('cyberspace.map.swept_count', ['count' => $swept]) }}</strong>
                 </span>
+
+                <span class="chip-stat">
+                    <span class="micro">{{ Text::get('cyberspace.map.view_range') }}</span>
+                    {{-- Hover floats the working, a click opens it: the
+                         inspector's one <template>, written once. --}}
+                    <button type="button" class="btn btn--sm btn--ghost cut num" data-inspect="#view-range-calc"
+                            aria-label="{{ Text::get('cyberspace.map.view_range_calc') }}">{{ $viewRange }}</button>
+                </span>
+
+                <template id="view-range-calc">
+                    <div class="item-card" style="min-width:min(260px,100%)">
+                        <div class="item-card__hd"><span class="item-card__name">{{ Text::get('cyberspace.map.view_range_calc') }}</span></div>
+                        <div class="stack num" style="--gap:var(--s-2);padding:var(--s-3);font-size:var(--fs-sm)">
+                            <div class="row" style="justify-content:space-between;--gap:var(--s-3)">
+                                <span>{{ Text::get('cyberspace.map.view_base') }}</span><span>{{ $viewBase + 0 }}</span>
+                            </div>
+                            @foreach ($viewParts as $part)
+                                <div class="row" style="justify-content:space-between;--gap:var(--s-3)">
+                                    <span>{{ $part['source'] }}</span>
+                                    <span style="color:{{ $part['op']->value === 'add' && $part['amount'] < 0 ? 'var(--crit)' : 'var(--ink-0)' }}">
+                                        @switch($part['op']->value)
+                                            @case('add'){{ ($part['amount'] >= 0 ? '+' : '−').abs($part['amount']) }}@break
+                                            @case('percentage_of_base'){{ ($part['amount'] >= 0 ? '+' : '−').abs($part['amount']) }}%@break
+                                            @case('multiplier')×{{ round($part['amount'], 2) }}@break
+                                            @default= {{ $part['amount'] + 0 }}
+                                        @endswitch
+                                    </span>
+                                </div>
+                            @endforeach
+                            <div class="row" style="justify-content:space-between;--gap:var(--s-3);border-top:var(--hair) solid var(--line-1);padding-top:var(--s-2)">
+                                <strong>{{ Text::get('cyberspace.map.view_total') }}</strong><strong>{{ $viewRange }}</strong>
+                            </div>
+                            {{-- The level as the picture it is: the same 9 x 9 the config draws, asked of the shape itself. --}}
+                            <pre class="num" aria-hidden="true" style="margin:0;line-height:1.2;text-align:center;color:var(--ink-1)">@foreach (range(-4, 4) as $dy){{ implode(' ', array_map(fn ($dx) => $dx === 0 && $dy === 0 ? 'x' : ($viewShape->sees($dx, $dy) ? '*' : '-'), range(-4, 4))) }}
+@endforeach</pre>
+                        </div>
+                    </div>
+                </template>
             </div>
 
             {{-- The one filled button on the screen. .btn--go means BEGIN, and

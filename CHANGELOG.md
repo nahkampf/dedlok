@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.56.1] — 2026-10-14
+
+Shops share the market's look, the city map opens district cards, and a few screens say more.
+
+### Changed
+
+- **City shops and Exchange loyalty stores draw the market's cards** (`city/_ware.blade.php`, `exchange/_offer.blade.php`): picture, owned/injected corner tick, `<x-market-card-head>` (an imprint's header opens its skill detail), spec line and price, with search and kind accordions from the shared `market/_grouped.blade.php`. `Controller::shopContext()` supplies the owned items, injected skills and top level.
+- **The City page is the map alone.** The Districts box is gone; hovering a district floats a card and a click opens it as a modal (`city/_district-card.blade.php`, the inspector): description, the locations the character knows, and Walk / Pod / Explore buttons from the same `Traveller::quote()` / `Explorer::duration()` calls. `<x-city-map>` takes an `inspect` key. The district you stand in has its hairline pulse slowly (`here-pulse`) and its card carries the "You are here" tag.
+- **Stash slots show a picture in place of the glyph** (`Image::slot()`: the item's own, then its type's default, never the root `items/_default`), with the glyph over it in a 1px hard shadow. A scan file's slot shows its address, and the detail card carries the address as the copy button.
+
+### Added
+
+- **Cyberspace: View range** chip after the explored count, with a hover/click card of the working (base, every source and operation, total) and the 9 x 9 shape drawn. `CyberspaceController` keeps the `view_range` modifiers in pieces and builds the shape from the same resolve.
+
+
 ## [0.56.0] — 2026-10-13
 
 ### Changed
@@ -3121,7 +3136,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.56.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.56.1...HEAD
+[0.56.1]: https://github.com/nahkampf/dedlok/compare/v0.56.0...v0.56.1
 [0.56.0]: https://github.com/nahkampf/dedlok/compare/v0.55.1...v0.56.0
 [0.55.1]: https://github.com/nahkampf/dedlok/compare/v0.55.0...v0.55.1
 [0.55.0]: https://github.com/nahkampf/dedlok/compare/v0.54.0...v0.55.0

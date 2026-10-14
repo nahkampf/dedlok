@@ -54,6 +54,7 @@ class PlaceController extends Controller
         $wares = $shop->wares($place);
 
         return view('city.place', [
+            ...$this->shopContext($character),
             'character' => $character,
             'place' => $place->load('district'),
             'here' => $character->district_id === $place->district_id,

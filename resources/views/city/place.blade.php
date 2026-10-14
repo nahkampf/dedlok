@@ -18,39 +18,8 @@
         @if ($wares->isNotEmpty())
             <div class="panel">
                 <div class="panel__hd"><span class="micro">{{ Text::get('city.shop.heading') }}</span></div>
-                <div class="panel__bd stack" style="--gap:var(--s-3)">
-                    @foreach ($wares as $ware)
-                        <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
-                            <span class="item-row__name stack" style="flex:1 1 160px;min-width:0;--gap:var(--s-1)">
-                                <span>{{ $ware->item->displayName() }}</span>
-                                <x-program-spec :item="$ware->item" />
-                            </span>
-                            <span class="num micro">{{ number_format($ware->unitPrice()) }} ¤</span>
-                            @unless ($ware->isUnlimited())
-                                <span class="micro" style="color:var(--ink-3)">{{ $ware->stock > 0 ? Text::get('city.shop.in_stock', ['count' => $ware->stock]) : Text::get('city.shop.sold_out') }}</span>
-                            @endunless
-                            @if ($here && ($ware->isUnlimited() || $ware->stock > 0))
-                                <form method="POST" action="{{ route('city.buy', [$place->slug, $ware->item_id]) }}" class="row" style="--gap:var(--s-2)">
-                                    @csrf
-                                    <input class="input num" type="number" name="quantity" min="1" max="99" value="1" style="width:5.5rem" aria-label="{{ Text::get('city.shop.quantity') }}">
-                                    <button type="submit" class="btn btn--sm cut">{{ Text::get('city.shop.buy') }}</button>
-                                </form>
-                                @if (isset($fits[$ware->item_id]))
-                                    @php($fit = $fits[$ware->item_id])
-                                    @if (is_array($fit))
-                                        <form method="POST" action="{{ route('city.buy_and_fit', [$place->slug, $ware->item_id]) }}">
-                                            @csrf
-                                            <button type="submit" class="btn btn--sm cut" @disabled($character->creds < $ware->unitPrice() + $fit['fee'])>
-                                                {{ Text::get('city.surgery.buy_and_fit', ['total' => number_format($ware->unitPrice() + $fit['fee']), 'percent' => round($fit['chance'] * 100)]) }}
-                                            </button>
-                                        </form>
-                                    @elseif ($fit === \App\City\CityRefusal::NoRoom)
-                                        <span class="micro" style="color:var(--ink-3)">{{ Text::get('city.surgery.no_room') }}</span>
-                                    @endif
-                                @endif
-                            @endif
-                        </div>
-                    @endforeach
+                <div class="panel__bd">
+                    @include('market._grouped', ['entries' => $wares, 'itemOf' => fn ($w) => $w->item, 'card' => 'city._ware', 'id' => 'ware-shelves'])
                 </div>
             </div>
         @endif
