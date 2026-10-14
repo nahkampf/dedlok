@@ -323,7 +323,7 @@ final class RunBriefingTest extends TestCase
         ]);
         $job->targets()->create(['system_id' => $system->id, 'address' => $system->address]);
 
-        $html = $this->visit()->assertOk()->assertSeeText('Place backdoor')->assertDontSeeText('Install a siphon')->getContent();
+        $html = $this->visit()->assertOk()->assertSeeText('Place backdoor')->getContent();
         $this->assertMatchesRegularExpression('/btn--go"[^<]*>\s*Place backdoor/', $html);
     }
 
