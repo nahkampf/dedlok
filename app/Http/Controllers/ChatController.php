@@ -99,6 +99,15 @@ class ChatController extends Controller
         });
     }
 
+    /** Start a chat with somebody from their profile: the direct line is found or made, and the page goes to it. */
+    public function direct(Request $request, Chats $chats, Character $character): RedirectResponse
+    {
+        $me = $this->me($request);
+        abort_if($me->is($character), 422);
+
+        return redirect()->route('chat.show', ['chat' => $chats->direct($me, $character)->getKey()]);
+    }
+
     /** Answering an invitation from the inbox message: a form post, so it ends on the room (or the inbox). */
     public function accept(Request $request, Chats $chats, int $chat): JsonResponse|RedirectResponse
     {

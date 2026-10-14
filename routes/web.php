@@ -41,6 +41,7 @@ use App\Http\Controllers\MissionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PatchNotesController;
 use App\Http\Controllers\PlaceController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SkillsController;
 use App\Http\Controllers\SoundController;
@@ -366,6 +367,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/character/bio', [CharacterController::class, 'bio'])->name('character.bio');
 
     Route::get('/standing', [StandingController::class, 'index'])->name('standing.index');
+    // Another character, as another player sees them. By handle, which is unique.
+    Route::get('/characters/{character:handle}', [ProfileController::class, 'show'])->name('characters.show');
 
     Route::get('/skills', SkillsController::class)->name('skills.index');
 
@@ -441,6 +444,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/chat/say', [ChatController::class, 'post'])->middleware('throttle:30,1')->name('chat.say');
     Route::post('/chat/rooms', [ChatController::class, 'store'])->middleware('throttle:10,10')->name('chat.rooms');
     Route::post('/chat/{chat}/join', [ChatController::class, 'join'])->middleware('throttle:30,1')->name('chat.join');
+    // Start a chat with somebody: finds or makes the direct line and goes to it.
+    Route::post('/chat/with/{character:handle}', [ChatController::class, 'direct'])->middleware('throttle:30,1')->name('chat.direct');
     Route::post('/chat/{chat}/accept', [ChatController::class, 'accept'])->name('chat.accept');
     Route::post('/chat/{chat}/decline', [ChatController::class, 'decline'])->name('chat.decline');
     Route::post('/chat/{chat}/invite', [ChatController::class, 'invite'])->middleware('throttle:30,1')->name('chat.invite');

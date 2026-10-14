@@ -14,9 +14,10 @@
          title="{{ $line->created_at->utc()->format('Y-m-d H:i:s') }} UTC">
         <span class="chat__face">@if ($face)<img src="{{ $face }}" alt="" width="32" height="24" loading="lazy">@endif</span>
         <span class="chat__line">
-            {{-- The profile screen is not built yet; the handle carries the character id for when it is. --}}
-            <button type="button" class="chat__who" data-profile="{{ $line->character_id }}"
-                    title="{{ Text::get('chat.profile', ['handle' => $who?->handle]) }}">{{ $who?->handle }}&gt;</button>
+            @if ($who)
+                <a class="chat__who" href="{{ route('characters.show', ['character' => $who->handle]) }}"
+                   title="{{ Text::get('chat.profile', ['handle' => $who->handle]) }}">{{ $who->handle }}&gt;</a>
+            @endif
             <span class="chat__msg">{!! Markup::render($line->message) !!}</span>
         </span>
     </div>

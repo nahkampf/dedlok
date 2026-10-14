@@ -11,6 +11,8 @@ use App\Events\ChatLine;
 use App\Models\Character;
 use App\Models\Chat;
 use App\Models\ChatMessage;
+use App\Models\Entity;
+use App\Models\EntityBook;
 use App\Models\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Broadcast;
@@ -186,6 +188,24 @@ final class ChatTest extends TestCase
         require base_path('routes/channels.php'); // channels live on the driver, and this is a new one
         $this->actingAs($a->user)->post('/broadcasting/auth', ['socket_id' => '1.2', 'channel_name' => "private-chat-user.{$a->getKey()}"])->assertOk();
         $this->actingAs($b->user)->post('/broadcasting/auth', ['socket_id' => '1.2', 'channel_name' => "private-chat-user.{$a->getKey()}"])->assertForbidden();
+    }
+
+    public function test_a_profile_shows_the_character_and_its_two_buttons_open_a_chat_and_a_message(): void
+    {
+        $me = Character::factory()->create();
+        $them = Character::factory()->create(['bio' => '<b>hi</b> there']);
+        $entity = Entity::query()->interactable()->firstOrFail();
+        EntityBook::query()->create(['character_id' => $them->id, 'entity_id' => $entity->id, 'standing' => 12.5, 'loyalty' => 0]);
+
+        $this->actingAs($me->user)->get(route('characters.show', ['character' => $them->handle]))
+            ->assertOk()->assertSeeText($them->handle)->assertSeeText('Start a chat')->assertSeeText('Send a message')
+            ->assertSeeText($entity->name)->assertSee('&lt;b&gt;hi&lt;/b&gt; there', false);
+
+        $this->actingAs($me->user)->get(route('characters.show', ['character' => $me->handle]))->assertOk()->assertDontSeeText('Start a chat');
+
+        $response = $this->actingAs($me->user)->post(route('chat.direct', ['character' => $them->handle]));
+        $line = Chat::query()->where('kind', Chat::DIRECT)->firstOrFail();
+        $response->assertRedirect(route('chat.show', ['chat' => $line->getKey()]));
     }
 
     public function test_leaving_tells_the_room(): void

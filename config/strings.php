@@ -658,6 +658,18 @@ return [
     ],
 
     /*
+     | A character as another player sees them.
+     */
+    'profile' => [
+        'chat' => 'Start a chat',
+        'message' => 'Send a message',
+        'bio' => 'Bio',
+        'bio_empty' => 'Nothing written.',
+        'standing' => 'Standing',
+        'standing_empty' => 'Nobody has an opinion of them yet.',
+    ],
+
+    /*
      | The chat panel in the rail: General, rooms and direct lines.
      */
     'chat' => [

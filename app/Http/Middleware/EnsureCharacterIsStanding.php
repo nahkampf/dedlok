@@ -43,7 +43,7 @@ class EnsureCharacterIsStanding
         // The inbox's badge and sound poll from every page, this one included.
         'notifications.unread',
         // The chat panel and everything it posts, for the same reason: somebody locked in a run can still talk.
-        'chat.show', 'chat.poll', 'chat.say', 'chat.rooms', 'chat.join', 'chat.invite', 'chat.accept', 'chat.decline', 'broadcasting.auth',
+        'chat.show', 'chat.poll', 'chat.say', 'chat.rooms', 'chat.join', 'chat.invite', 'chat.accept', 'chat.decline', 'broadcasting.auth', 'chat.direct', 'characters.show',
         // Muting is the account's, and a player under a lock is exactly who wants it.
         'sound.update',
     ];
