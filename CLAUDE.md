@@ -1047,6 +1047,23 @@ never a `forceFill(['creds' => …])`.
 - **The starter city's links, weights and every location are placeholders** in
   `2026_10_03_110000_the_starter_city`; only the seven district names are the author's.
 
+### Chat and websockets
+
+**`/chat` is its own page, never locked** (every lock's allow-list names `chat.*` and `broadcasting.auth`). General, rooms (`/invite`,
+`/leave`, `/ignore`, `/unignore`, `/msg`) and direct lines; `App\Chat\Chats` is the only writer of `chats`, `chat_messages`,
+`chat_members`, `chat_invites`, `chat_ignores`, and the one place that says who may see a chat (a stranger gets 404).
+
+- **Lines are pushed over a websocket** (Laravel Reverb, the Pusher protocol; `ChatLine` event, private channels in `routes/channels.php`:
+  `chat.general`, and `chat-user.{characterId}` which receives every room and direct line that character is in). The page draws no
+  line in script: the event carries the server-rendered `chat._line`. **A socket that is down never costs a message**: sending
+  is a POST, and the page polls every five seconds (`chat.poll`) whenever it has no socket.
+- **PRODUCTION NEEDS TWO THINGS THE GIT WORKER CANNOT DO**: a `php artisan reverb:start --host=127.0.0.1 --port=8080` process kept
+  alive as `dedlok` (needs ext-pcntl on the CLI PHP), and an Apache proxy of `/app` to it (`ProxyPass /app ws://127.0.0.1:8080/app`,
+  mod_proxy_wstunnel). `.env` there: `BROADCAST_CONNECTION=reverb`, `REVERB_APP_ID/KEY/SECRET`, `REVERB_HOST=127.0.0.1`,
+  `REVERB_PORT=8080`, `REVERB_SCHEME=http` (what the app publishes to) and `REVERB_PUBLIC_HOST=<the site>`, `REVERB_PUBLIC_PORT=443`,
+  `REVERB_PUBLIC_SCHEME=https` (what the browser connects to). Until then the chat works by polling.
+- Dev: the `reverb` compose service, browser on `localhost:8085`.
+
 ### Standing, as a tab
 
 `/standing` is the fifth character tab: entities with a non-zero `entity_books.standing`
