@@ -121,6 +121,19 @@ final class ChatTest extends TestCase
         $this->assertFalse($this->chats()->canSee($outsider, $room));
     }
 
+    public function test_a_private_room_of_two_reads_as_the_other_person(): void
+    {
+        $a = Character::factory()->create();
+        $b = Character::factory()->create();
+        $room = $this->chats()->createRoom($a, 'Back room', false);
+        $this->chats()->say($a, $room, "/invite {$b->handle}");
+        $this->chats()->accept($b, $room->getKey());
+
+        $name = fn (Character $who) => $this->chats()->tabs($who)->firstWhere(fn ($t) => $t['chat']->is($room))['name'];
+        $this->assertSame($b->handle, $name($a));
+        $this->assertSame($a->handle, $name($b));
+    }
+
     public function test_no_thanks_leaves_it_at_that_and_commands_are_for_rooms(): void
     {
         $owner = Character::factory()->create();

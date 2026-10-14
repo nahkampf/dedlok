@@ -786,6 +786,7 @@ return [
         // The closed row of the inbox. One per message key; a key without one shows its category instead.
         'titles' => [
             'chat_invite' => ':handle invited you to :room',
+            'chat_invite_private' => ':handle invited you to a private chat',
             'decrypted' => 'Decrypted: :label',
             'crafted' => 'Built: :item',
             'supporter_welcome' => 'Thank you for supporting Dedlok',
@@ -816,6 +817,7 @@ return [
 
         'messages' => [
             'chat_invite' => ':handle has invited you to the chat room :room.',
+            'chat_invite_private' => ':handle has invited you to a private chat.',
             'decrypted' => 'The :label broke. It is a :item now, worth :value ¤ to the right buyer.',
             'crafted' => 'Your :item is built. It is in your data stash.',
             'supporter_welcome' => 'Thank you for supporting Dedlok. You now have a badge by your name, a training queue with no limit, and your name on the Supporters page. You are also welcome in our Discord: open :url, or paste it into Discord under + then Join a Server, and say hello. It is where to report bugs, give feedback, wish for features or just hang out.',

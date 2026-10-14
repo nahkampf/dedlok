@@ -193,7 +193,8 @@ final class Chats
         }
 
         DB::table('chat_invites')->insert(['chat_id' => $chat->getKey(), 'character_id' => $who->getKey(), 'invited_by' => $by->getKey()]);
-        $this->notifier->send($who, Category::Personal, 'chat_invite', ['handle' => $by->handle, 'room' => (string) $chat->name], ['chat_invite' => $chat->getKey()]);
+        $private = ! $chat->is_public && DB::table('chat_members')->where('chat_id', $chat->getKey())->count() === 1;
+        $this->notifier->send($who, Category::Personal, $private ? 'chat_invite_private' : 'chat_invite', ['handle' => $by->handle, 'room' => (string) $chat->name], ['chat_invite' => $chat->getKey()]);
     }
 
     /** Join: the invitation is spent, they are a member, and the room is told. @throws ChatRefused */
@@ -328,8 +329,13 @@ final class Chats
         $mine = Chat::query()->join('chat_members as m', 'm.chat_id', '=', 'chats.id')
             ->where('m.character_id', $who->getKey())->orderBy('chats.id')->get(['chats.*']);
 
+        // A private room of exactly two is a conversation between two people, and reads as the other person, like a
+        // direct line; one with more, or a public one, keeps its own name.
+        $pairs = DB::table('chat_members')->whereIn('chat_id', $mine->where('kind', Chat::ROOM)->where('is_public', false)->pluck('id'))
+            ->groupBy('chat_id')->havingRaw('count(*) = 2')->pluck('chat_id');
+
         $others = DB::table('chat_members as m')->join('characters as c', 'c.id', '=', 'm.character_id')
-            ->whereIn('m.chat_id', $mine->where('kind', Chat::DIRECT)->pluck('id'))
+            ->whereIn('m.chat_id', $mine->where('kind', Chat::DIRECT)->pluck('id')->concat($pairs))
             ->where('m.character_id', '!=', $who->getKey())->pluck('c.handle', 'm.chat_id');
 
         $general = $this->general();
@@ -337,7 +343,7 @@ final class Chats
         return collect([['chat' => $general, 'name' => Text::get('chat.general'), 'unread' => 0]])
             ->concat($mine->map(fn (Chat $chat): array => [
                 'chat' => $chat,
-                'name' => $chat->kind === Chat::DIRECT ? (string) ($others[$chat->getKey()] ?? '?') : (string) $chat->name,
+                'name' => isset($others[$chat->getKey()]) ? (string) $others[$chat->getKey()] : (string) $chat->name,
                 'unread' => (int) ($unread[$chat->getKey()] ?? 0),
             ]));
     }
