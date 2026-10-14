@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Achievements;
 
 use App\Models\Character;
+use App\Models\Entity;
 use App\Models\User;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Standing\StandingLedger;
+use App\Standing\StandingReason;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -197,6 +200,15 @@ final class Achievements
              * exactly what the inbox is for: nobody presses a button to win
              * one and no screen is about to carry the news.
              */
+            // Getting your name out there: every entity that keeps books thinks +1 better of the character.
+            if ($unlocked > 0 && ($character = Character::query()->where('user_id', $userId)->first()) !== null) {
+                $ledger = new StandingLedger;
+
+                Entity::query()->interactable()->each(
+                    static fn (Entity $entity) => $ledger->record($character, $entity, StandingReason::Achievement),
+                );
+            }
+
             if ($unlocked > 0 && ($user = User::find($userId)) !== null) {
                 (new Notifier)->send($user, Category::Achievement, 'achievement_unlocked', [
                     'name' => $unlock['name'],

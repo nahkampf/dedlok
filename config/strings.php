@@ -2660,6 +2660,7 @@ return [
             'mission_completed' => 'Work completed',
             'store_spend' => 'Traded with them',
             'decay' => 'Time passing',
+            'achievement' => 'You are really getting your name out there!',
             'encounter' => 'Something in the City',
             'defeated' => 'Beat one of their people',
         ],

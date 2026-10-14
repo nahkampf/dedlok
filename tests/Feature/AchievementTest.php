@@ -9,11 +9,14 @@ use App\Achievements\Metric;
 use App\City\Discovery;
 use App\Cyberspace\Extractor;
 use App\Models\Character;
+use App\Models\Entity;
 use App\Models\Location;
 use App\Models\Notification;
 use App\Models\System;
 use App\Models\SystemContent;
 use App\Models\User;
+use App\Standing\StandingLedger;
+use App\Standing\StandingReason;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -112,6 +115,21 @@ final class AchievementTest extends TestCase
 
         $this->assertSame([4], $this->unlocked($character));
         $this->assertSame(200, $this->achievements->progressFor($character, Metric::SystemsBurned));
+    }
+
+    /** Every achievement is one point of standing with every entity that keeps books, once, and says so in the ledger. */
+    public function test_an_achievement_raises_standing_with_every_entity(): void
+    {
+        $character = $this->character();
+        $entity = Entity::query()->interactable()->first();
+        $this->assertNotNull($entity, 'the migrations seed entities');
+        $before = (new StandingLedger)->standingFor($character, $entity);
+
+        $this->achievements->record($character, Metric::SystemsBurned, 100);
+        $this->achievements->record($character, Metric::SystemsBurned, 100);
+
+        $this->assertEqualsWithDelta($before + 1.0, (new StandingLedger)->standingFor($character, $entity), 0.0001, 'once, however often it is crossed');
+        $this->assertSame('You are really getting your name out there!', StandingReason::Achievement->label());
     }
 
     /** Nothing happened is not something to count. */
