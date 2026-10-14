@@ -17,6 +17,7 @@ use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
 use App\Stats\Resolver;
 use App\Support\Text;
+use App\Support\Trace;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
 use Closure;
@@ -54,7 +55,7 @@ final class HunterCombat
     /** @param  ?Closure(int, int): int  $roll */
     public static function fromConfig(Resolver $resolver, ?Closure $roll = null): self
     {
-        $roll ??= static fn (int $min, int $max): int => random_int($min, $max);
+        $roll ??= Trace::die(static fn (int $min, int $max): int => random_int($min, $max));
 
         return new self($resolver, new ProgramRunner, new WaitingRoom($resolver), $roll);
     }
@@ -69,6 +70,14 @@ final class HunterCombat
      */
     public function fight(Character $character, Hunt $hunt): array
     {
+        return Trace::scope($character, 'hunt.fight', fn (): array => $this->exchange($character, $hunt), [
+            'hunt' => Trace::describe($hunt), 'ice' => Trace::describe($hunt->ice),
+        ]);
+    }
+
+    /** @return list<array{text: string, tone: string}> */
+    private function exchange(Character $character, Hunt $hunt): array
+    {
         return DB::transaction(function () use ($character, $hunt): array {
             $new = [];
 
@@ -80,6 +89,11 @@ final class HunterCombat
             $dealt = $this->resolver->resolve('icebreaker_damage', 0.0, $character->modifiers())->toInt();
             $critical = $dealt > 0 && CriticalHit::rolls($character, $this->roll);
             $dealt = $critical ? CriticalHit::scale($dealt) : $dealt;
+            Trace::note('hunt.player_hit', [
+                'icebreaker_damage' => $dealt, 'critical' => $critical,
+                'ice_integrity_before' => $hunt->ice_integrity, 'ice_integrity_after' => max(0, $hunt->ice_integrity - $dealt),
+                'running' => $character->runningProcesses()->pluck('item.name')->all(),
+            ]);
             $hunt->ice_integrity = max(0, $hunt->ice_integrity - $dealt);
 
             $new[] = $dealt > 0
@@ -94,6 +108,8 @@ final class HunterCombat
             }
 
             $ice = $hunt->ice;
+
+            Trace::note('hunt.ice_swings', ['ice' => $ice->name, 'skill' => $ice->skill, 'attack' => $ice->attack]);
 
             if (($this->roll)(1, 100) > $ice->skill) {
                 $hunt->save();

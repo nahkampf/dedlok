@@ -14,6 +14,7 @@ use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
 use App\Stats\Resolver;
+use App\Support\Trace;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -72,6 +73,11 @@ final readonly class RunStarter
      * @param  iterable<InventoryItem>  $loadout
      */
     public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = []): RunResult
+    {
+        return Trace::scope($character, 'run.start', fn () => $this->startTraced($character, $purpose, $kind, $loadout), ['purpose' => $purpose->value, 'kind' => $kind?->value, 'loadout' => is_array($loadout) ? $loadout : Trace::describe($loadout)]);
+    }
+
+    private function startTraced(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = []): RunResult
     {
         if ($character->current_run_id !== null) {
             return RunResult::refused(RunRefusal::AlreadyRunning);
@@ -202,6 +208,11 @@ final readonly class RunStarter
      * under a player in between.
      */
     public function end(Character $character, Run $run, RunEnding $ending): RunResult
+    {
+        return Trace::scope($character, 'run.end', fn () => $this->endTraced($character, $run, $ending), ['ending' => $ending->value, 'run' => Trace::describe($run)]);
+    }
+
+    private function endTraced(Character $character, Run $run, RunEnding $ending): RunResult
     {
         if (! $run->isLive()) {
             return RunResult::ended($run);

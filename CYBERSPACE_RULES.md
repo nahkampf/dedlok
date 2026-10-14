@@ -730,7 +730,7 @@ against ICE generated on the fly, and it locks the screen until it is settled.
   down for a live hunt exactly as it does for a live run, since a hunt can only exist while
   jacked in.
 - **THE FIGHT PICKS ITS OWN LOADOUT.** `Hunters::spawn()` calls
-  `startBestIcebreaker()`, which ranks every owned, idle icebreaker by its resolved
+  `startBestIcebreaker()`, which first stops every running program except Scripts (so a scanner cannot hold the budget), then ranks every owned, idle icebreaker by its resolved
   `icebreaker_damage` and starts the strongest one `ProgramRunner::start()` will accept —
   the player chooses nothing, because there is no briefing to choose it at. Owning none
   starts nothing, and a fight with nothing running still resolves: zero damage a turn is

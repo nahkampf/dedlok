@@ -13,6 +13,7 @@ use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Stats\Modifier;
 use App\Stats\Resolver;
+use App\Support\Trace;
 use Closure;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +61,7 @@ final class Hunters
     /** @param  ?Closure(int, int): int  $roll */
     public static function fromConfig(Resolver $resolver, ?Closure $roll = null): self
     {
-        $roll ??= static fn (int $min, int $max): int => random_int($min, $max);
+        $roll ??= Trace::die(static fn (int $min, int $max): int => random_int($min, $max));
 
         return new self(
             $resolver,
@@ -105,6 +106,8 @@ final class Hunters
     {
         $chance = $this->chanceFor((float) $character->heat);
 
+        Trace::scope($character, 'hunt.roll', fn () => Trace::note('hunt.chance', ['heat' => (float) $character->heat, 'chance' => $chance]));
+
         return $chance > 0.0 && ($this->roll)(1, 10_000) <= (int) round($chance * 10_000);
     }
 
@@ -114,6 +117,11 @@ final class Hunters
      * loadout running against it would be a fight nobody can act on.
      */
     public function spawn(Character $character): Hunt
+    {
+        return Trace::scope($character, 'hunt.spawn', fn (): Hunt => $this->spawnTraced($character));
+    }
+
+    private function spawnTraced(Character $character): Hunt
     {
         $heat = (float) $character->heat;
         $grade = $this->gradeFor($heat);
@@ -183,6 +191,10 @@ final class Hunters
      */
     private function startBestIcebreaker(Character $character): void
     {
+        // Whatever else is running holds the deck's budget; Scripts are spared, since stopping one destroys it.
+        Trace::note('hunt.stopping_programs', ['running' => $character->runningProcesses()->map(fn ($r) => $r->item?->name)->all()]);
+        $this->programs->stopAllButScripts($character);
+
         $owned = InventoryItem::query()
             ->where('character_id', $character->id)
             ->whereNull('running_on_deck_id')
@@ -196,13 +208,15 @@ final class Hunters
 
         $modifiers = $character->modifiers();
 
-        $ranked = $owned->sortByDesc(function (InventoryItem $row) use ($modifiers): float {
+        $ranked_damage = [];
+
+        $ranked = $owned->sortByDesc(function (InventoryItem $row) use ($modifiers, &$ranked_damage): float {
             $ownModifiers = array_map(
                 static fn (array $m): Modifier => Modifier::fromArray($m),
                 $row->item->program->modifiers ?? [],
             );
 
-            return $this->resolver->resolve('icebreaker_damage', 0.0, [...$modifiers, ...$ownModifiers])->value;
+            return $ranked_damage[$row->getKey()] = $this->resolver->resolve('icebreaker_damage', 0.0, [...$modifiers, ...$ownModifiers])->value;
         });
 
         // TRIES STRONGEST FIRST AND STOPS ON THE FIRST NON-FIT REFUSAL. A
@@ -214,6 +228,13 @@ final class Hunters
 
         foreach ($ranked as $row) {
             $result = $this->programs->start($character, $row, duringRun: true);
+
+            Trace::note('hunt.icebreaker_attempt', [
+                'row' => $row->getKey(), 'item' => $row->item?->name,
+                'resolved_damage' => $ranked_damage[$row->getKey()] ?? null,
+                'succeeded' => $result->succeeded(), 'refusal' => $result->refusal?->value ?? $result->refusal?->name,
+                'tries_next' => ! $result->succeeded() && in_array($result->refusal, $doesNotFit, true),
+            ]);
 
             if ($result->succeeded() || ! in_array($result->refusal, $doesNotFit, true)) {
                 return;

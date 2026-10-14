@@ -16,6 +16,7 @@ use App\Notifications\Notifier;
 use App\Programs\ProgramKind;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
+use App\Support\Trace;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -137,6 +138,11 @@ final class Probe
      */
     public function scan(Character $character, ?CarbonInterface $now = null): ProbeResult
     {
+        return Trace::scope($character, 'scan.start', fn () => $this->scanTraced($character, $now), []);
+    }
+
+    private function scanTraced(Character $character, ?CarbonInterface $now = null): ProbeResult
+    {
         $now = CarbonImmutable::instance($now ?? CarbonImmutable::now());
         $at = $character->gridPosition();
 
@@ -235,6 +241,11 @@ final class Probe
      * scan with nothing running is left exactly as it is.
      */
     public function settle(Character $character, ?SystemScan $scan, ?CarbonInterface $now = null): ?ProbeResult
+    {
+        return Trace::scope($character, 'scan.settle', fn () => $this->settleTraced($character, $scan, $now), ['scan' => Trace::describe($scan)]);
+    }
+
+    private function settleTraced(Character $character, ?SystemScan $scan, ?CarbonInterface $now = null): ?ProbeResult
     {
         $now = CarbonImmutable::instance($now ?? CarbonImmutable::now());
         $last = null;
@@ -569,6 +580,11 @@ final class Probe
 
         $found = [];
         $rolls = [];
+
+        Trace::note('scan.resolve', [
+            'address' => $system->address, 'reading' => $reading, 'difficulty' => $difficulty,
+            'unknowns' => $scan->unknowns(), 'scan' => Trace::describe($scan),
+        ]);
 
         foreach ($scan->unknowns() as $unknown) {
             $outcome = $this->roller->roll($reading, $difficulty, 'scan');
