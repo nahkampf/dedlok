@@ -1,3 +1,14 @@
+## 0.57.0 (2026-10-14)
+
+- Testers get a little gift <3
+- Tasks & Missions now show an unread badge
+- Pathfinders now take coordinates
+- Pathfinders now have a traversal_seconds value (the default is 10, the current existing one has 8).
+- Extraction could extract hardware, which is weird. Changed now to only extract data.
+- If you put a program up for sale it cannot be used any more
+- Some bugfixes for edge cases re scanning, hunts, runs etc
+- Top bar now shows a heat marker
+
 ## 0.56.1 (2026-10-14)
 - Markets at exchanges and city locations now have the full UI from the regular market
 - View range now displayed in cyberspace screen

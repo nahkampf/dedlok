@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+## [0.57.0] — 2026-10-14
+
+Alpha testers are thanked, the quest runner arrives, Pathfinders take coordinates and move at their own speed, and a few screens say why they refused.
+
+### Added
+
+- **Alpha testers** (`User::isTester()`: a spent beta key is the fact, no column): a *Tester* tag beside the Supporter badge, and a one-off gift of 5,000 ¤ (`Reason::AlphaGift`, "A gift for alpha testing dedlok!"). `App\Beta\AlphaGift` pays once per character (the ledger line is the once) at character creation and, for everybody already registered, from `php artisan testers:gift` — run it once after deploying, as `dedlok`.
+- **The quest runner** (`php artisan quests:run`, `App\Quests\QuestRunner`, `cadence.quest_runner`, every 30 minutes): the timed steps of quests. The first task sends the Joint Signals Command legal notice once to every character with `njord_jsc_files_read` (marked by the flag `njord_jsc_notice_sent`) and writes a line under the `ghost_process` journal note.
+- **Tasks & Missions badge** on the rail: journal lines and accepted jobs newer than `characters.tasks_seen_at` (`Journal::unseenCount()`); opening the screen clears it (`Journal::markSeen()`). Migration `2026_10_14_130000_tasks_seen_at` stamps every existing character as seen.
+- **Pathfinders take coordinates** (`5,102`, `FindQuery::$position`, `FindResult::$target`) and **move at their own pace**: `programs.traverse_seconds` (migration `2026_10_14_150000_pathfinder_traversal_speed`; blank is 10, the existing Pathfinder is set to 8, edited in the item editor).
+- **Supporters page: a Testers box** listing accounts that spent a beta key, by the name they gave for the credits, else their handle.
+
+- **Heat in the topbar**: a warning glyph coloured against the hunters' threshold (`cyberspace.heat.hunt.floor_below`, 5): green below it, brass at or above, crit at twice it; the number is the tooltip.
+
+### Changed
+
+- **Extraction takes data only.** `Extractor` skips any item that is not data (a stock rule may still place one) and the run log names what came out with amounts, for example "450 creds and 3 × Ghost script" (`ExtractionResult::$taken`).
+- **A listed program cannot be run** (`ProcessRefusal::Listed`, asked in `ProgramRunner::refusalFor()`, and the briefing's loadout leaves listed rows out): the promise `scopeLoose()` made was not kept by `start()`.
+- **The run, hunt, fight and encounter locks say why** when they turn away something pressed (a silent redirect read as a dead button).
+- **`notifications.body` is 1000 wide** for the game's own messages (migration `2026_10_14_120000_notification_body_wider`); a player's own words stay at 500.
+- The quest runner and the Pathfinder changes are covered by `QuestRunnerTest`, `PathfinderCoordinatesTest`, `AlphaGiftTest` and `LockedPressTest`.
+
+
 ## [0.56.1] — 2026-10-14
 
 Shops share the market's look, the city map opens district cards, and a few screens say more.
@@ -3136,7 +3159,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.56.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.57.0...HEAD
+[0.57.0]: https://github.com/nahkampf/dedlok/compare/v0.56.1...v0.57.0
 [0.56.1]: https://github.com/nahkampf/dedlok/compare/v0.56.0...v0.56.1
 [0.56.0]: https://github.com/nahkampf/dedlok/compare/v0.55.1...v0.56.0
 [0.55.1]: https://github.com/nahkampf/dedlok/compare/v0.55.0...v0.55.1
