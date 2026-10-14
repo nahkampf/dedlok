@@ -7,6 +7,7 @@ namespace App\Journal;
 use App\Models\Character;
 use App\Models\JournalEntry;
 use App\Models\JournalNote;
+use App\Models\Mission;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -62,6 +63,35 @@ final class Journal
         $changed = JournalNote::query()->where('character_id', $character->getKey())->where('slug', $slug)->where('completed', false)->update(['completed' => true]);
 
         return $changed + JournalEntry::query()->where('character_id', $character->getKey())->where('slug', $slug)->where('completed', false)->update(['completed' => true]);
+    }
+
+    /**
+     * How many journal lines and accepted jobs are newer than the last time the screen was opened: the rail's badge.
+     * A finished line or job is not news.
+     */
+    public function unseenCount(Character $character): int
+    {
+        $since = $character->tasks_seen_at;
+
+        $lines = JournalEntry::query()
+            ->where('character_id', $character->getKey())
+            ->where('completed', false)
+            ->when($since, fn ($q) => $q->where('created_at', '>', $since))
+            ->count();
+
+        $jobs = Mission::query()
+            ->where('character_id', $character->getKey())
+            ->accepted()
+            ->when($since, fn ($q) => $q->where('accepted_at', '>', $since))
+            ->count();
+
+        return $lines + $jobs;
+    }
+
+    /** Everything is read: the screen has been opened. The only writer of `tasks_seen_at`. */
+    public function markSeen(Character $character): void
+    {
+        $character->forceFill(['tasks_seen_at' => now()])->saveQuietly();
     }
 
     /**

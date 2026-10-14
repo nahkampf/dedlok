@@ -19,6 +19,8 @@ final readonly class ExtractionResult
         public int $files = 0,
         /** Something did not fit the deck's storage and stayed on the system. */
         public bool $leftBehind = false,
+        /** What came off by name, so the log can say it: name => amount. Items and files only; creds are `$creds`. @var array<string, int> */
+        public array $taken = [],
     ) {}
 
     public static function empty(): self

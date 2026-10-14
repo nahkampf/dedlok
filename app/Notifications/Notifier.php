@@ -41,6 +41,9 @@ final class Notifier
     /** As much of a sentence as the column holds. */
     private const MAX_BODY = 500;
 
+    /** What the game itself may say (`notifications.body` is 1000 wide); a player's own words stay at MAX_BODY. */
+    private const MAX_SYSTEM_BODY = 1000;
+
     /**
      * Write one message into somebody's inbox.
      *
@@ -68,7 +71,7 @@ final class Notifier
             // Truncated rather than refused: a message too long for the column
             // is a copy problem, and losing the whole notification over one
             // would be a worse answer than a clipped sentence.
-            'body' => mb_substr(Text::get("notifications.messages.{$key}", $replace), 0, self::MAX_BODY),
+            'body' => mb_substr(Text::get("notifications.messages.{$key}", $replace), 0, self::MAX_SYSTEM_BODY),
             'details' => $details,
         ]);
     }

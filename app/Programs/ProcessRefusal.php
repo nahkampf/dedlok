@@ -76,6 +76,9 @@ enum ProcessRefusal: string
     /** A Locator and a Pathfinder are one slot between them. */
     case OneLocator = 'one_locator';
 
+    /** Listed on the market: the offer promises the buyer it is untouched, so it cannot be run meanwhile. */
+    case Listed = 'listed';
+
     public function message(): string
     {
         return Text::get("programs.refused.{$this->value}");

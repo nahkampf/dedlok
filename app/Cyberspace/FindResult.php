@@ -10,14 +10,26 @@ use App\Models\SystemContact;
 final readonly class FindResult
 {
     public function __construct(
-        public SystemContact $contact,
+        public ?SystemContact $contact,
         public int $steps,
         /** A compass key: n, ne, e, se, s, sw, w or nw. */
         public string $direction,
         public ?int $grade,
         /** True when the character was not on the grid, so the distance is from the portal. */
         public bool $fromPortal,
+        /** The cell, for a coordinate search (`$contact` is then null): nothing need be there. */
+        public ?Position $target = null,
     ) {}
+
+    public function x(): int
+    {
+        return $this->target?->x ?? $this->contact->x;
+    }
+
+    public function y(): int
+    {
+        return $this->target?->y ?? $this->contact->y;
+    }
 
     public function arrow(): string
     {

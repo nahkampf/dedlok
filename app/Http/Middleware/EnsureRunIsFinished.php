@@ -88,7 +88,11 @@ class EnsureRunIsFinished
             ], 409);
         }
 
-        return redirect()->route('run.show');
+        $redirect = redirect()->route('run.show');
+
+        // Said for something PRESSED (Stop, Abandon, a form): a silent redirect reads as a button that does nothing.
+        // Plain navigation is not nagged, the screen it lands on is the explanation.
+        return $request->isMethodSafe() ? $redirect : $redirect->with('error', Text::get('cyberspace.run.locked'));
     }
 
     private function isAllowed(Request $request): bool

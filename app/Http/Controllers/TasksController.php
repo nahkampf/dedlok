@@ -23,6 +23,9 @@ class TasksController extends Controller
     {
         $character = $request->user()->character()->firstOrFail();
 
+        // Opening the screen is reading it all: the rail's badge clears with this request, before the layout counts.
+        app(Journal::class)->markSeen($character);
+
         return view('tasks.index', [
             // Soonest to run out first: that is the order somebody works in.
             'missions' => Mission::query()

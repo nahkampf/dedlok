@@ -113,7 +113,7 @@ class CyberspaceController extends Controller
         if ($finder->available($character)) {
             $raw = trim((string) $request->query('find', ''));
             $query = $request->query->has('find') ? $finder->parse($raw) : null;
-            $locator = ['name' => $finder->program($character)?->item?->displayName(), 'canTraverse' => $finder->canTraverse($character) && $character->isJackedIn(), 'raw' => $raw, 'query' => $query, 'result' => $query === null ? null : $finder->nearest($character, $query, $grid)];
+            $locator = ['name' => $finder->program($character)?->item?->displayName(), 'canTraverse' => $finder->canTraverse($character) && $character->isJackedIn(), 'stepSeconds' => $finder->stepSeconds($character), 'raw' => $raw, 'query' => $query, 'result' => $query === null ? null : $finder->nearest($character, $query, $grid)];
         }
 
         // The same sum ViewShape::forCharacter() does, kept in pieces so the

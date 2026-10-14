@@ -99,6 +99,27 @@ final class ExtractorTest extends TestCase
 
     // ---- a catalogue item --------------------------------------------------
 
+    /** A raid is never in the room: a physical item on a system stays there, and a data one is named in the result. */
+    public function test_only_data_comes_off_and_it_is_named(): void
+    {
+        $system = $this->system();
+        $data = Item::factory()->create(['container' => 'data', 'stackable' => true, 'name' => 'Ghost script']);
+        $physical = Item::factory()->create(['container' => 'physical', 'stackable' => true]);
+
+        foreach ([[$data, 3], [$physical, 1]] as [$item, $quantity]) {
+            SystemContent::query()->create([
+                'system_id' => $system->id, 'kind' => 'item', 'item_id' => $item->id, 'quantity' => $quantity,
+            ]);
+        }
+
+        $character = $this->character();
+        $result = $this->extractor()->extract($character, 'DEADBEEF');
+
+        $this->assertSame([$data->displayName() => 3], $result->taken);
+        $this->assertFalse($character->inventory()->where('item_id', $physical->id)->exists());
+        $this->assertTrue(SystemContent::query()->where('item_id', $physical->id)->exists());
+    }
+
     public function test_an_unstackable_item_becomes_its_own_row(): void
     {
         $system = $this->system();

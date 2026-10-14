@@ -42,7 +42,8 @@ final class FractionalPointsTest extends TestCase
 
     public function test_a_hit_lands_to_the_hundredth(): void
     {
-        $character = Character::factory()->create();
+        // Pinned: the factory picks a random archetype, and some perks resist a type of damage, so the hit is then not a whole 5.
+        $character = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 10), ['archetype' => 3]));
         $max = $character->maximumFor('current_hitpoints');
 
         $result = DamageResolver::make()->apply($character, Damage::hitpoints(5, DamageOrigin::Penetrating));

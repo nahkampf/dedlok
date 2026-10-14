@@ -215,6 +215,7 @@ return [
             'run_only' => 'This only does anything during an intrusion. Choose it on the briefing and the run starts it.',
             'one_icebreaker' => 'Only one icebreaker runs at a time.',
             'one_locator' => 'Only one locator runs at a time.',
+            'listed' => 'It is up for sale on the market. Withdraw the offer before you use it.',
         ],
     ],
 
@@ -523,6 +524,7 @@ return [
             'fight' => 'Won a fight',
             'mugged' => 'Mugged',
             'granted' => 'Granted by the game',
+            'alpha_gift' => 'A gift for alpha testing dedlok!',
         ],
         'refused' => [
             'amount' => 'Send at least 1 ¤.',
@@ -731,6 +733,7 @@ return [
             'decrypted' => 'Decrypted: :label',
             'crafted' => 'Built: :item',
             'supporter_welcome' => 'Thank you for supporting Dedlok',
+            'njord_jsc_notice' => 'Joint Signals Command Legal Department',
             'scan_complete' => 'Scan complete',
             'backdoor_found' => 'Backdoor found',
             'siphons_ran' => 'Siphon report',
@@ -759,6 +762,7 @@ return [
             'decrypted' => 'The :label broke. It is a :item now, worth :value ¤ to the right buyer.',
             'crafted' => 'Your :item is built. It is in your data stash.',
             'supporter_welcome' => 'Thank you for supporting Dedlok. You now have a badge by your name, a training queue with no limit, and your name on the Supporters page. You are also welcome in our Discord: open :url, or paste it into Discord under + then Join a Server, and say hello. It is where to report bugs, give feedback, wish for features or just hang out.',
+            'njord_jsc_notice' => 'It has come to our attention that you may have been the recipient of a classified message. This message was sent by mistake. We are hereby legally informing you that any breach, discussion or mention of that message or its contents will be treated as a national security issue with severe penalties. By reading this message you are also consenting to a full Non Disclosure Agreement regarding this message or anything pertaining to it. Criminal jurisdiction will be applied if this NDA is breached. Have a nice day.',
             'scan_complete' => 'Your scan of :system (:address) completed. The specifications are saved to a file.',
             'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
             // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
@@ -1788,8 +1792,10 @@ return [
         'locate' => [
             'heading' => 'Locator',
             'open' => 'Search',
-            'hint' => 'Type, owner, grade or an address, separated by commas. For example: exchange, lockjaw, grade >2',
-            'placeholder' => 'exchange, lockjaw, grade >2',
+            'hint' => 'Type, owner, grade or an address, separated by commas. For example: exchange, lockjaw, grade >2. A Pathfinder also takes coordinates, such as 5,102.',
+            'placeholder' => 'exchange, lockjaw, grade >2, or 5,102',
+            'coords_none' => 'No such position on the grid, or you are not running a Pathfinder.',
+            'coords_label' => 'Position :x, :y',
             'go' => 'Find nearest',
             'searched_for' => 'Looking for: :terms',
             'none' => 'Nothing you know of fits.',
@@ -2842,6 +2848,10 @@ return [
         ],
     ],
 
+    'heat' => [
+        'tip' => 'Heat: :value',
+    ],
+
     'creds' => [
         'name' => 'Creds',
         'amount' => ':amount cr',
@@ -3202,12 +3212,23 @@ return [
     ],
 
     // The invitation shown once, on a new account's first sign-in.
+    'journal' => [
+        'njord' => [
+            'note' => 'A ghost in the process',
+            'notice' => 'You got a very stern letter from Joint Signals Command about keeping your mouth shut about whatever that.. thing was. So the spooks know who you are, and what you saw. But what _did_ you actually see? Maybe checking out some Agroprom nodes would be a good start, unless you aim to actually hold to that NDA...',
+        ],
+    ],
+
     'supporters' => [
         'title' => 'Supporters',
         'lede' => 'The people who keep this game going. Thank you.',
+        'testers' => 'Testers',
+        'testers_none' => 'No testers listed yet.',
         'none' => 'Nobody yet.',
         'badge' => 'Supporter',
         'badge_hint' => 'Supports the game',
+        'tester_badge' => 'Tester',
+        'tester_hint' => 'Helped test the game in alpha',
     ],
 
     'discord' => [
@@ -4211,6 +4232,8 @@ return [
                 'storage_size' => 'Stored size',
                 'storage_size_hint' => 'Quantabits it occupies just by being owned, running or not.',
                 'lifetime_seconds' => 'Lifetime (seconds)',
+                'traverse_seconds' => 'Traversal speed (seconds per move)',
+                'traverse_seconds_hint' => 'Pathfinders only: how long each step of Autotraverse takes. Blank is the default of 10 seconds.',
                 'lifetime_seconds_hint' => 'Blank is an ordinary program. Set, it is a Script: a running copy lasts this long from the moment it starts and is then spent. Stopping one early destroys it.',
                 'background_process' => 'Runs in the background',
                 'background_process_hint' => 'Whether it may run outside an intrusion. A decryptor must; an icebreaker has nothing to break out there.',

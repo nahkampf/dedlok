@@ -180,6 +180,8 @@ class ItemRequest extends FormRequest
             'fight_only' => $this->boolean('fight_only'),
             // A Script's lifetime: blank is an ordinary program.
             'lifetime_seconds' => $this->numberOrNull('lifetime_seconds'),
+            // A Pathfinder's seconds per move: blank is the default (`cyberspace.locate.step_seconds`).
+            'traverse_seconds' => $this->numberOrNull('traverse_seconds'),
             // A design: the product is what makes the item one. Lines with no component chosen are the form's spare rows.
             'design_product' => $this->filled('design_product') ? $this->input('design_product') : null,
             // The panel's own defaults (a level of 1) mean nothing when there is no product, so they are not values.
@@ -444,6 +446,9 @@ class ItemRequest extends FormRequest
             'multithreaded' => ['boolean'],
             'lifetime_seconds' => $isProgram
                 ? ['nullable', 'integer', 'min:1', 'max:'.self::MAX_MEASURE]
+                : ['prohibited'],
+            'traverse_seconds' => $isProgram
+                ? ['nullable', 'integer', 'min:1', 'max:600']
                 : ['prohibited'],
 
             /*
@@ -934,7 +939,7 @@ class ItemRequest extends FormRequest
         // is a program — the row is what says so — so none of these stay.
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
-            $data['storage_size'], $data['lifetime_seconds'], $data['background_process'], $data['multithreaded'],
+            $data['storage_size'], $data['lifetime_seconds'], $data['traverse_seconds'], $data['background_process'], $data['multithreaded'],
             $data['design_product'], $data['design_seconds'], $data['design_single_use'], $data['design_skill_id'], $data['design_skill_level'], $data['design_lines'],
             $data['program_modifiers'], $data['program_decrypts'],
         );
@@ -1221,6 +1226,7 @@ class ItemRequest extends FormRequest
             'storage_size' => Qb::of($data['storage_size'] ?? 0),
             'background_process' => (bool) ($data['background_process'] ?? false),
             'lifetime_seconds' => isset($data['lifetime_seconds']) ? (int) $data['lifetime_seconds'] : null,
+            'traverse_seconds' => isset($data['traverse_seconds']) ? (int) $data['traverse_seconds'] : null,
             'multithreaded' => (bool) ($data['multithreaded'] ?? false),
             // Null rather than [], because a program that only gates genuinely
             // modifies nothing and the two should not be different spellings

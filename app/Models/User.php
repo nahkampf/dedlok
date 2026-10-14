@@ -60,6 +60,12 @@ class User extends Authenticatable
         return (bool) $this->is_supporter && ($this->supporter_until === null || $this->supporter_until->isFuture());
     }
 
+    /** Registered with an alpha key. The spent key is the fact (`beta_keys.user_id`), so there is no column to keep in step. */
+    public function isTester(): bool
+    {
+        return BetaKey::query()->where('user_id', $this->getKey())->exists();
+    }
+
     public function isAdmin(): bool
     {
         return (bool) $this->is_admin;

@@ -171,6 +171,10 @@ Schedule::command('drugs:withdraw --quiet-when-idle')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+Schedule::command('quests:run')
+    ->cron((string) config('cadence.quest_runner'))
+    ->withoutOverlapping();
+
 Schedule::command('market:seed')
     ->cron((string) config('cadence.market_seed'))
     ->withoutOverlapping();

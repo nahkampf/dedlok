@@ -25,6 +25,7 @@
      nothing for a guest: the inbox belongs to the ACCOUNT, so this asks the
      user rather than the character — the bar has a character to draw and this
      does not need one. --}}
+@php($tasksNew = auth()->user()?->character ? app(\App\Journal\Journal::class)->unseenCount(auth()->user()->character) : 0)
 @php($unread = auth()->check() ? (new \App\Notifications\Notifier)->unreadFor(auth()->user()) : 0)
 @php($latestMessage = auth()->check() ? (new \App\Notifications\Notifier)->latestIdFor(auth()->user()) : 0)
 {{-- One query, and only for a signed-in character: the topbar's process
@@ -107,6 +108,9 @@
             <a class="dock__item" href="{{ route('tasks.index') }}"
                @if (request()->routeIs('tasks.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9671;</span>
+                @if ($tasksNew > 0)
+                    <span class="dock__count">{{ $tasksNew > 99 ? '99+' : $tasksNew }}</span>
+                @endif
                 <span class="dock__label">{{ Text::get('ui.nav.tasks') }}</span>
             </a>
 
@@ -238,6 +242,17 @@
                          can say what is left; the separator is this chip's own. --}}
                     <span class="num" data-creds data-creds-sep=" ">{{ number_format($hud->creds, 0, '.', ' ') }}</span>
                     <span class="sr-only">{{ Text::get('creds.name') }}</span>
+                </span>
+
+                {{-- Heat, as a glyph in the colour of where it stands against the hunters' threshold: green below it, brass
+                     above, crit from twice it (`cyberspace.heat.hunt.floor_below`, where a hunter first becomes possible).
+                     The number is the tooltip. U+26A0 is the City category's glyph, already proved to render. --}}
+                @php($heatNow = round((float) $hud->heat, 1))
+                @php($heatLine = (float) config('cyberspace.heat.hunt.floor_below', 5))
+                <span class="chip-stat" title="{{ Text::get('heat.tip', ['value' => rtrim(rtrim(number_format($heatNow, 1), '0'), '.')]) }}">
+                    <span class="chip-stat__glyph" aria-hidden="true"
+                          style="color:{{ $heatNow >= $heatLine * 2 ? 'var(--crit)' : ($heatNow >= $heatLine ? 'var(--warn)' : 'var(--ok)') }}">&#9888;&#65038;</span>
+                    <span class="sr-only">{{ Text::get('heat.tip', ['value' => rtrim(rtrim(number_format($heatNow, 1), '0'), '.')]) }}</span>
                 </span>
 
                 {{-- Everything in flight (a scan, a decryption, training, a drug, a trip), in a modal fetched when it opens.

@@ -72,6 +72,7 @@ final readonly class Extractor
                 items: $instant->items,
                 files: $files->files,
                 leftBehind: $instant->leftBehind || $files->leftBehind,
+                taken: $this->merged($instant->taken, $files->taken),
             );
         });
     }
@@ -123,8 +124,18 @@ final readonly class Extractor
             $items = 0;
             $room = Storage::free($character);
             $left = [];
+            $taken = [];
+            $skipped = [];
 
             foreach ($contents as $content) {
+                // A raid is never in the room: only DATA comes out of a system. A physical item a stock rule
+                // put there stays where it is, and is not a reason to say something was left for want of room.
+                if ($content->kind === ContentKind::Item && ! ($content->item?->isData() ?? false)) {
+                    $skipped[] = $content->id;
+
+                    continue;
+                }
+
                 // What the deck cannot hold stays on the system, still there
                 // for the next run — never taken and lost.
                 if ($content->kind === ContentKind::Item) {
@@ -141,14 +152,19 @@ final readonly class Extractor
 
                 match ($content->kind) {
                     ContentKind::Creds => $creds += $this->takeCreds($character, $content),
-                    ContentKind::Item => $items += $this->takeItem($character, $content),
+                    ContentKind::Item => $items += $got = $this->takeItem($character, $content),
                     ContentKind::Data => null,
                 };
+
+                if ($content->kind === ContentKind::Item && ($got ?? 0) > 0) {
+                    $name = $content->item->displayName();
+                    $taken[$name] = ($taken[$name] ?? 0) + $got;
+                }
             }
 
-            SystemContent::query()->whereIn('id', $contents->pluck('id')->diff($left))->delete();
+            SystemContent::query()->whereIn('id', $contents->pluck('id')->diff($left)->diff($skipped))->delete();
 
-            return new ExtractionResult(creds: $creds, items: $items, leftBehind: $left !== []);
+            return new ExtractionResult(creds: $creds, items: $items, leftBehind: $left !== [], taken: $taken);
         });
     }
 
@@ -179,9 +195,15 @@ final readonly class Extractor
             }
 
             $files = 0;
+            $taken = [];
 
             foreach ($contents as $content) {
-                $files += $this->takeFile($character, $content);
+                $name = $this->takeFile($character, $content);
+
+                if ($name !== null) {
+                    $files++;
+                    $taken[$name] = ($taken[$name] ?? 0) + 1;
+                }
             }
 
             // Consumed. The node restocks on its own clock — NodeStocker tops
@@ -189,7 +211,7 @@ final readonly class Extractor
             // to refill, the same division of labour the market's shelf keeps.
             SystemContent::query()->whereIn('id', $contents->pluck('id'))->delete();
 
-            return new ExtractionResult(files: $files);
+            return new ExtractionResult(files: $files, taken: $taken);
         });
     }
 
@@ -246,21 +268,35 @@ final readonly class Extractor
      * bug `stack_key` exists to prevent, on the one item where merging would
      * also destroy information a quantity cannot hold.
      */
-    private function takeFile(Character $character, SystemContent $content): int
+    private function takeFile(Character $character, SystemContent $content): ?string
     {
         $dump = Item::query()->where('slug', self::DUMP_SLUG)->first();
 
         if ($dump === null) {
-            return 0;
+            return null;
         }
 
-        $character->inventory()->create([
+        $row = $character->inventory()->create([
             'item_id' => $dump->id,
             'parent_id' => null,
             'quantity' => 1,
             'extracted_file' => ExtractedFile::fromContent($content)->toArray(),
         ]);
 
-        return 1;
+        return $row->load('item')->label();
+    }
+
+    /**
+     * @param  array<string, int>  $a
+     * @param  array<string, int>  $b
+     * @return array<string, int>
+     */
+    private function merged(array $a, array $b): array
+    {
+        foreach ($b as $name => $amount) {
+            $a[$name] = ($a[$name] ?? 0) + $amount;
+        }
+
+        return $a;
     }
 }
