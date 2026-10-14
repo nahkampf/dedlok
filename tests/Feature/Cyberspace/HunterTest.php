@@ -16,6 +16,8 @@ use App\Models\Character;
 use App\Models\Hunt;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Program;
+use App\Programs\ProgramKind;
 use App\Stats\Resolver;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -133,6 +135,27 @@ final class HunterTest extends TestCase
 
         $this->assertSame(1, $running->count());
         $this->assertSame($strong->item_id, $running->first()->item_id, 'the stronger of the two owned icebreakers');
+    }
+
+    public function test_running_programs_are_stopped_so_the_icebreaker_can_start(): void
+    {
+        $this->giveItem(Item::query()->where('slug', 'icebreaker-3')->sole());
+
+        $item = Item::factory()->create(['container' => 'data', 'stackable' => true]);
+        Program::query()->create([
+            'item_id' => $item->id, 'kind' => ProgramKind::Daemon->value,
+            'qflops_cost' => 1, 'memory_cost' => 1, 'storage_size' => 1, 'background_process' => true,
+        ]);
+        $daemon = InventoryItem::query()->create([
+            'character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1,
+            'running_on_deck_id' => $this->character->equipped_deck_id, 'started_at' => now(),
+        ]);
+
+        $this->character->forceFill(['heat' => 50])->save();
+        $this->hunters()->spawn($this->character->fresh());
+
+        $this->assertNull($daemon->fresh()->running_on_deck_id, 'the daemon was stopped');
+        $this->assertSame(1, $this->character->fresh()->runningProcesses()->count(), 'only the icebreaker runs');
     }
 
     // ---- fighting: losing -----------------------------------------------------

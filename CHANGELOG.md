@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.58.2] — 2026-10-14
+
+A hunter's icebreaker is no longer starved by whatever else is running, and one character's runs, scans and fights can be logged in full.
+
+### Changed
+
+- **A hunter's arrival stops everything running except Scripts before the icebreaker is chosen** (`ProgramRunner::stopAllButScripts()`, called first by `Hunters::startBestIcebreaker()`). A scanner, locator or daemon holding the deck's qFLOPS or RAM could leave the best icebreaker "too big", and the fight opened with nothing running ("Nothing is running that can touch it."). What was stopped is not restarted afterwards; a stopped Decryptor settles its queue as for any stop. `CYBERSPACE_RULES.md` updated.
+
+### Added
+
+- **Trace log** (`App\Support\Trace`, `config/trace.php`, the `trace` channel): for the handles in `TRACE_HANDLES` (comma separated, empty is off), one file a day at `storage/logs/trace-YYYY-MM-DD.log` (`TRACE_DAYS`, 30). Wraps `RunStarter::start/end`, `Simulator::take`, `Probe::scan/settle`, `Hunters::spawn`, `HunterCombat::fight`: state in (vitals, resolved stats with their steps, every modifier, deck totals and fittings, running programs, owned icebreakers) and state out with the result, every `CheckRoller` roll, every integer die with its range and the function that asked, and the hunter's decisions (spawn chance, programs stopped, each icebreaker attempt and refusal). Never throws and writes nothing for anyone not named. Separate from `Trail`.
+
+
 ## [0.58.1] — 2026-10-14
 
 Characters get a public profile, and the run briefing says what a Placement job is asking for.
@@ -3197,7 +3210,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.58.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.58.2...HEAD
+[0.58.2]: https://github.com/nahkampf/dedlok/compare/v0.58.1...v0.58.2
 [0.58.1]: https://github.com/nahkampf/dedlok/compare/v0.58.0...v0.58.1
 [0.58.0]: https://github.com/nahkampf/dedlok/compare/v0.57.0...v0.58.0
 [0.57.0]: https://github.com/nahkampf/dedlok/compare/v0.56.1...v0.57.0

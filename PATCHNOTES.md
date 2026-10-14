@@ -1,3 +1,7 @@
+## 0.58.2 (2026-10-14)
+- Some logging and potential bugfixing around cyberspace combat and icebreakers (maybe?) not working as intended
+- Cyberspace combat now kills all running programs before attempting to start an icebreaker
+
 ## 0.58.1 (2026-10-14)
 
 - Chars have a public profile now

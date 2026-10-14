@@ -27,6 +27,7 @@ use App\Stats\Resolver;
 use App\Stats\SkillStats;
 use App\Support\Qb;
 use App\Support\Text;
+use App\Support\Trace;
 use Closure;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -87,7 +88,7 @@ final readonly class Simulator
         ?CheckRoller $checks = null,
     ): self {
         $resolver ??= app(Resolver::class);
-        $roll ??= static fn (int $min, int $max): int => random_int($min, $max);
+        $roll ??= Trace::die(static fn (int $min, int $max): int => random_int($min, $max));
 
         return new self(
             $resolver,
@@ -116,6 +117,11 @@ final readonly class Simulator
      * the only account the player gets.
      */
     public function take(Character $character, Run $run, RunAction $action): TurnResult
+    {
+        return Trace::scope($character, 'run.take', fn () => $this->takeTraced($character, $run, $action), ['action' => $action->value, 'run' => Trace::describe($run)]);
+    }
+
+    private function takeTraced(Character $character, Run $run, RunAction $action): TurnResult
     {
         if (! $run->isLive()) {
             return TurnResult::refused(RunRefusal::AlreadyRunning);
@@ -418,6 +424,8 @@ final readonly class Simulator
         $chance = $this->resolver
             ->resolve('trace_hop_chance', (float) ($table[$next] ?? 100), $character->modifiers())
             ->value;
+
+        Trace::note('run.trace_hop', ['hop' => $run->trace_hop, 'next_grade' => $next, 'chance' => $chance]);
 
         if (($this->roll)(1, 100) > $chance) {
             return false;
@@ -1362,6 +1370,8 @@ final readonly class Simulator
         if ($ice === null) {
             return [$this->line('cyberspace.run.log.ice_silent'), null];
         }
+
+        Trace::note('run.ice_strikes', ['ice' => $ice->name, 'level' => $ice->level, 'skill' => $ice->skill, 'attack' => $ice->attack]);
 
         if (($this->roll)(1, 100) > $ice->skill) {
             // A grey tag naming the ICE, then what it tried: the same shape as its hit, quieter.

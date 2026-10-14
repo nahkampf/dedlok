@@ -296,6 +296,26 @@ final class ProgramRunner
     }
 
     /**
+     * Stop everything running except Scripts (stopping one destroys it).
+     *
+     * What a hunter's arrival calls before it starts an icebreaker, so a scanner
+     * or a daemon holding the deck's compute and memory cannot keep the one
+     * program that can fight back from starting.
+     */
+    public function stopAllButScripts(Character $character): void
+    {
+        $rows = InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->whereNotNull('running_on_deck_id')
+            ->whereHas('item.program', static fn ($q) => $q->whereNull('lifetime_seconds'))
+            ->get();
+
+        foreach ($rows as $row) {
+            $this->putBack($row);
+        }
+    }
+
+    /**
      * How many it is allowed at once.
      *
      * ONE, unless the software says it can multitask — a property of the

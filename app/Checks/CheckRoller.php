@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Checks;
 
+use App\Support\Trace;
 use Closure;
 use Illuminate\Support\Facades\Config;
 
@@ -113,6 +114,12 @@ final class CheckRoller
     {
         $chance = $this->chance($value, $difficulty, $kind, $multiplier);
         $rolled = ($this->die)();
+
+        Trace::note('check', [
+            'kind' => $kind, 'value' => $value, 'difficulty' => $difficulty, 'multiplier' => $multiplier,
+            'margin' => $value - $difficulty, 'spread' => $this->spread, 'floor' => $this->floorFor($kind),
+            'chance' => $chance, 'rolled' => $rolled, 'passed' => $rolled < $chance,
+        ]);
 
         return new CheckOutcome(
             // Strictly below, so a die that can return 0 always passes a

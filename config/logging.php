@@ -74,6 +74,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // One file a day (trace-YYYY-MM-DD.log). What goes in is decided by App\Support\Trace and config/trace.php.
+        'trace' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/trace.log'),
+            'level' => 'debug',
+            'days' => (int) env('TRACE_DAYS', 30),
+            'replace_placeholders' => false,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
