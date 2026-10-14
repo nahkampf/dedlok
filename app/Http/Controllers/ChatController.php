@@ -13,15 +13,26 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * The chat panel in the rail. Every action names a chat by id and is judged by `Chats::visible()`: a chat the character
+ * The chat page. Every action names a chat by id and is judged by `Chats::visible()`: a chat the character
  * cannot see is a 404, the same as one that does not exist.
  *
- * Reads answer with the fragment (`chat.panel`); writes answer JSON `{chat: id}` and the page redraws from the fragment.
+ * Writes answer JSON `{chat: id}` and the page goes to that chat; the page's timer reads `chat.poll`, the same screen without the page around it.
  */
 class ChatController extends Controller
 {
-    /** The panel: tabs, the lines of one chat and its form. `?chat=` picks the chat; General when absent. */
+    /** The chat page. `?chat=` picks the chat; General when absent. */
     public function show(Request $request, Chats $chats): View
+    {
+        return $this->view('chat.index', $request, $chats);
+    }
+
+    /** The same screen without the page around it, for the open page's timer to swap the tabs and log from. */
+    public function poll(Request $request, Chats $chats): View
+    {
+        return $this->view('chat.panel', $request, $chats);
+    }
+
+    private function view(string $name, Request $request, Chats $chats): View
     {
         $me = $this->me($request);
         $chat = $request->filled('chat') ? $chats->visible($me, (int) $request->query('chat')) : $chats->general();
@@ -32,7 +43,7 @@ class ChatController extends Controller
             $chats->markRead($me, $chat);
         }
 
-        return view('chat.panel', [
+        return view($name, [
             'chat' => $chat,
             'tabs' => $chats->tabs($me),
             'lines' => $chats->lines($chat),

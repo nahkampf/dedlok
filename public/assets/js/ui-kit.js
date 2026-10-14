@@ -1698,24 +1698,19 @@
 
 
   /* --- Chat ---------------------------------------------------------------
-     The panel is a fragment (#chat [data-fragment], filled by the [data-open] handler above). Everything here is
-     delegated, because the fragment is replaced: [data-chat-go] loads another chat into the box; form[data-chat-form]
-     POSTs and gets {chat: id} (or 422 {message}) back, then the box shows that chat; [data-chat-join] joins a public
-     room. Every five seconds, while the dialog is open, the poll URL is fetched and only the tabs and the log are
-     swapped, so what is half typed survives. The server draws every line; nothing is built here from message text. */
+     The chat page: [data-chat-page data-chat-url] holding [data-chat] (tabs, log, form). Forms marked
+     form[data-chat-form] POST and get {chat: id} (or 422 {message}) back, then the page goes to that chat;
+     [data-chat-join] joins a public room the same way. Every five seconds the poll URL is fetched and only the tabs
+     and the log are swapped, so what is half typed survives. The server draws every line; nothing is built here from
+     message text. */
   (function chat() {
-    const dialog = document.getElementById("chat");
-    if (!dialog) return;
-    const box = dialog.querySelector("[data-fragment]");
+    const page = document.querySelector("[data-chat-page]");
+    if (!page) return;
     const token = () => document.querySelector('meta[name="csrf-token"]')?.content || "";
     const headers = { "X-Requested-With": "XMLHttpRequest" };
-    // Whenever the box is refilled (opened, or another tab), start at the newest line.
-    new MutationObserver(() => { const log = box.querySelector("[data-chat-log]"); if (log) log.scrollTop = log.scrollHeight; })
-      .observe(box, { childList: true });
-    const show = (id) => fetch(box.dataset.fragment + "?chat=" + encodeURIComponent(id), { headers, credentials: "same-origin" })
-      .then((r) => (r.ok ? r.text() : Promise.reject()))
-      .then((html) => { box.innerHTML = html; const log = box.querySelector("[data-chat-log]"); if (log) log.scrollTop = log.scrollHeight; })
-      .catch(() => toast(box.dataset.failed || "Could not reach the chat.", { level: "warn" }));
+    const log = () => page.querySelector("[data-chat-log]");
+    const bottom = () => { const l = log(); if (l) l.scrollTop = l.scrollHeight; };
+    bottom();
 
     const post = (url, body) => fetch(url, { method: "POST", body, headers: { ...headers, Accept: "application/json", "X-CSRF-TOKEN": token() }, credentials: "same-origin" })
       .then(async (r) => {
@@ -1724,24 +1719,13 @@
         return data.chat;
       })
       .catch(() => { toast("Could not reach the chat.", { level: "warn" }); return null; });
+    const go = (id) => { window.location.href = page.dataset.chatUrl + "?chat=" + encodeURIComponent(id); };
 
     document.addEventListener("click", (e) => {
-      const go = e.target.closest("[data-chat-go]");
-      if (go) {
-        e.preventDefault();
-        fetch(go.dataset.chatGo, { headers, credentials: "same-origin" })
-          .then((r) => (r.ok ? r.text() : Promise.reject()))
-          .then((html) => { box.innerHTML = html; const log = box.querySelector("[data-chat-log]"); if (log) log.scrollTop = log.scrollHeight; })
-          .catch(() => toast("Could not reach the chat.", { level: "warn" }));
-        return;
-      }
       const join = e.target.closest("[data-chat-join]");
-      if (join) { e.preventDefault(); post(join.dataset.chatJoin, new FormData()).then((id) => id && show(id)); return; }
-      const inv = e.target.closest("[data-chat-invite]");
-      if (inv) {
-        const form = document.querySelector("[data-chat-invite-form]");
-        if (form) form.action = inv.dataset.chatInviteUrl;
-      }
+      if (!join) return;
+      e.preventDefault();
+      post(join.dataset.chatJoin, new FormData()).then((id) => id && go(id));
     });
 
     document.addEventListener("submit", (e) => {
@@ -1751,21 +1735,17 @@
       post(form.action, new FormData(form)).then((id) => {
         if (!id) return;
         form.reset();
-        const inner = form.closest("dialog");
-        if (inner && inner !== dialog) inner.close();
-        show(id);
+        go(id);
       });
     });
 
     setInterval(() => {
-      const root = box.querySelector("[data-chat-poll]");
-      if (!dialog.open || !root) return;
+      const root = page.querySelector("[data-chat-poll]");
+      if (document.hidden || !root) return;
       fetch(root.dataset.chatPoll, { headers, credentials: "same-origin" })
         .then((r) => (r.ok ? r.text() : Promise.reject()))
         .then((html) => {
           const next = new DOMParser().parseFromString(html, "text/html");
-          // Dropped if the person moved to another tab while this was in flight.
-          if (next.querySelector("[data-chat]")?.dataset.chat !== root.dataset.chat) return;
           for (const sel of ["[data-chat-tabs]", "[data-chat-log]"]) {
             const fresh = next.querySelector(sel), old = root.querySelector(sel);
             if (!fresh || !old) continue;

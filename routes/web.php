@@ -428,10 +428,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/messages/new', [MessageController::class, 'create'])->name('messages.create');
     Route::post('/messages', [MessageController::class, 'store'])->middleware('throttle:15,10')->name('messages.store');
     Route::get('/messages/recipients', [MessageController::class, 'recipients'])->middleware('throttle:120,1')->name('messages.recipients');
-    // The chat panel. `chat.poll` is the same screen asked by the open panel's timer, a route of its own so it is not
-    // counted as activity (`TouchLastActive`) and can be in every lock's allow-list.
+    // The chat page, which is never locked (every lock's allow-list names it). `chat.poll` is the page's timer asking
+    // for the same screen without the page around it, a route of its own so it is not counted as activity (`TouchLastActive`).
     Route::get('/chat', [ChatController::class, 'show'])->name('chat.show');
-    Route::get('/chat/poll', [ChatController::class, 'show'])->name('chat.poll');
+    Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
     Route::post('/chat/say', [ChatController::class, 'post'])->middleware('throttle:30,1')->name('chat.say');
     Route::post('/chat/rooms', [ChatController::class, 'store'])->middleware('throttle:10,10')->name('chat.rooms');
     Route::post('/chat/{chat}/join', [ChatController::class, 'join'])->middleware('throttle:30,1')->name('chat.join');

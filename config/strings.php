@@ -663,7 +663,6 @@ return [
     'chat' => [
         'title' => 'Chat',
         'general' => 'General',
-        'loading' => 'Opening the channel…',
         'empty' => 'Nobody has said anything here yet.',
         'say' => 'Say something. /msg handle words writes to one person.',
         'send' => 'Send',

@@ -3525,8 +3525,7 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
 .region__slots { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 
 /* --- Chat panel -----------------------------------------------------------
-   Tabs wrap, the log scrolls, and one row is a 32x24 face beside "handle> words". */
-dialog.modal--chat { width: min(560px, calc(100vw - 32px)); }
+   The page: tabs wrap, the log scrolls, and one row is a 32x24 face beside "handle> words". */
 .chat { display: flex; flex-direction: column; gap: var(--s-3); }
 .chat__tabs, .chat__foot { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .chat__log {

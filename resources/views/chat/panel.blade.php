@@ -3,19 +3,19 @@
 @use('App\Support\Image')
 @use('App\Support\Text')
 
-{{-- THE CHAT PANEL, as a fragment: fetched when the dialog opens (`[data-fragment]`) and re-fetched by its own timer
-     (`data-chat-poll`, which swaps only the tabs and the log so what is being typed survives). Lines are drawn on the
+{{-- THE CHAT, the part of the page that is re-fetched by its own timer (`data-chat-poll`, which swaps only the tabs
+     and the log so what is being typed survives). Lines are drawn on the
      server — escaped, then a few markdown forms (`Markup`) — and never built in script from what somebody typed. --}}
 @php($faces = [])
 <div class="chat" data-chat="{{ $chat->getKey() }}" data-chat-poll="{{ route('chat.poll', ['chat' => $chat->getKey()]) }}">
     <div class="chat__tabs" data-chat-tabs role="group" aria-label="{{ Text::get('chat.title') }}">
         @foreach ($tabs as $tab)
-            <button type="button" @class(['btn', 'btn--sm', 'btn--ghost' => ! $tab['chat']->is($chat)])
-                    data-chat-go="{{ route('chat.show', ['chat' => $tab['chat']->getKey()]) }}"
-                    @if ($tab['chat']->is($chat)) aria-current="true" @endif>
+            <a @class(['btn', 'btn--sm', 'btn--ghost' => ! $tab['chat']->is($chat)])
+               href="{{ route('chat.show', ['chat' => $tab['chat']->getKey()]) }}"
+               @if ($tab['chat']->is($chat)) aria-current="page" @endif>
                 {{ $tab['name'] }}@if ($tab['chat']->kind === Chat::GENERAL) ({{ $active }})@endif
                 @if ($tab['unread'] > 0)<span class="tag tag--ember">{{ $tab['unread'] > 99 ? '99+' : $tab['unread'] }}</span>@endif
-            </button>
+            </a>
         @endforeach
     </div>
 

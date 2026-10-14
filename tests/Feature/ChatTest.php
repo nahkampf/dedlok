@@ -117,6 +117,7 @@ final class ChatTest extends TestCase
         $this->chats()->post($a, $this->chats()->general(), "/msg {$b->handle} psst");
 
         $this->actingAs($b->user)->getJson(route('notifications.unread'))->assertJsonPath('chat', 1);
-        $this->actingAs($b->user)->get(route('chat.show'))->assertOk()->assertSee('General');
+        $this->actingAs($b->user)->get(route('chat.show'))->assertOk()->assertSee('General')->assertSee('data-chat-page', false);
+        $this->actingAs($b->user)->get(route('chat.poll'))->assertOk()->assertDontSee('<html', false);
     }
 }
