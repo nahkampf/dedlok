@@ -28,8 +28,10 @@
 
     <form class="chat__form" data-chat-form action="{{ route('chat.say') }}">
         <input type="hidden" name="chat" value="{{ $chat->getKey() }}">
-        <input class="input" name="message" type="text" maxlength="500" autocomplete="off" required
-               placeholder="{{ Text::get('chat.say') }}" aria-label="{{ Text::get('chat.say') }}">
+        {{-- One row to look at, any number to paste: Enter sends, Shift+Enter is a new line (ui-kit.js). --}}
+        <textarea class="input textarea--mono" name="message" rows="1" maxlength="{{ \App\Chat\Chats::BODY }}" autocomplete="off" required
+                  wrap="off" spellcheck="false"
+                  placeholder="{{ Text::get('chat.say') }}" aria-label="{{ Text::get('chat.say') }}"></textarea>
         <button type="submit" class="btn btn--sm">{{ Text::get('chat.send') }}</button>
     </form>
 

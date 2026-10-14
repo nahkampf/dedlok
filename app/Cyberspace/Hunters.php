@@ -106,6 +106,18 @@ final class Hunters
     {
         $chance = $this->chanceFor((float) $character->heat);
 
+        // A hunter met in the last cooldown_minutes means no new one, whatever heat says.
+        $cooldown = (int) Config::get('cyberspace.heat.hunt.cooldown_minutes', 60);
+
+        if ($cooldown > 0 && Hunt::query()
+            ->where('character_id', $character->getKey())
+            ->where('started_at', '>', now()->subMinutes($cooldown))
+            ->exists()) {
+            Trace::scope($character, 'hunt.roll', fn () => Trace::note('hunt.cooldown', ['chance_would_have_been' => $chance, 'minutes' => $cooldown]));
+
+            return false;
+        }
+
         Trace::scope($character, 'hunt.roll', fn () => Trace::note('hunt.chance', ['heat' => (float) $character->heat, 'chance' => $chance]));
 
         return $chance > 0.0 && ($this->roll)(1, 10_000) <= (int) round($chance * 10_000);

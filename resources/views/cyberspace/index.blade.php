@@ -367,8 +367,8 @@
                                     <form method="POST" action="{{ route('cyberspace.scan') }}">
                                         @csrf
                                         <button type="submit" class="btn cut"
-                                                @disabled(! $here || ! $canScan || $scan?->isComplete())>
-                                            {{ Text::get('cyberspace.scan.action') }}
+                                                @disabled(! $here || ! $canScan || ($scan?->isComplete() && $scan->filed_at === null))>
+                                            {{ Text::get($scan?->isComplete() ? 'cyberspace.scan.rescan' : 'cyberspace.scan.action') }}
                                         </button>
                                     </form>
                                 @endif

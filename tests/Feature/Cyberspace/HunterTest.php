@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Characters\WaitingRoom;
+use App\Checks\CheckRoller;
 use App\Cyberspace\HunterCombat;
 use App\Cyberspace\Hunters;
 use App\Cyberspace\Navigator;
@@ -18,6 +20,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Program;
 use App\Programs\ProgramKind;
+use App\Programs\ProgramRunner;
 use App\Stats\Resolver;
 use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -156,6 +159,45 @@ final class HunterTest extends TestCase
 
         $this->assertNull($daemon->fresh()->running_on_deck_id, 'the daemon was stopped');
         $this->assertSame(1, $this->character->fresh()->runningProcesses()->count(), 'only the icebreaker runs');
+    }
+
+    public function test_no_new_hunter_within_the_cooldown_of_the_last_one(): void
+    {
+        $this->character->forceFill(['heat' => 100])->save();
+        $always = Hunters::fromConfig(app(Resolver::class), static fn (int $min, int $max): int => $min);
+
+        $this->assertTrue($always->rolls($this->character->fresh()));
+
+        $hunt = $always->spawn($this->character->fresh());
+        $hunt->forceFill(['started_at' => now()->subMinutes(59)])->save();
+        $this->character->forceFill(['current_hunt_id' => null])->save();
+
+        $this->assertFalse($always->rolls($this->character->fresh()), 'inside the hour');
+
+        $hunt->forceFill(['started_at' => now()->subMinutes(61)])->save();
+
+        $this->assertTrue($always->rolls($this->character->fresh()), 'after the hour');
+    }
+
+    public function test_egress_from_a_hunter_closes_it_unpaid_and_jacks_out_or_the_hunter_swings(): void
+    {
+        $this->character->forceFill(['heat' => 50])->save();
+        $this->hunters()->spawn($this->character->fresh());
+        $hunt = Hunt::query()->latest('id')->first();
+
+        $this->character->refresh();
+        $creds = $this->character->creds;
+
+        // A certain pass: the die returns 0 and an overwhelming egress value.
+        $pass = new CheckRoller(1.0, 0.0, [], static fn (): float => 0.0);
+        $combat = new HunterCombat(app(Resolver::class), new ProgramRunner, new WaitingRoom(app(Resolver::class)), static fn (int $a, int $b): int => $b, $pass);
+        $combat->fight($this->character, $hunt, egress: true);
+
+        $this->character->refresh();
+        $this->assertNull($this->character->current_hunt_id);
+        $this->assertFalse($this->character->isJackedIn());
+        $this->assertSame($creds, $this->character->creds, 'an egress pays nothing');
+        $this->assertFalse((bool) $hunt->fresh()->won);
     }
 
     // ---- fighting: losing -----------------------------------------------------

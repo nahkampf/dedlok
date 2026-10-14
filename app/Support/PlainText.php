@@ -17,7 +17,11 @@ namespace App\Support;
  */
 final class PlainText
 {
-    public static function clean(?string $text, bool $multiline = false): string
+    /**
+     * `$verbatim` is for chat, where a line may be art: tags, script and invisible characters still go, but newlines,
+     * tabs, runs of blank lines and every leading or trailing space are kept exactly as typed.
+     */
+    public static function clean(?string $text, bool $multiline = false, bool $verbatim = false): string
     {
         $text = html_entity_decode((string) $text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = str_replace("\r\n", "\n", $text);
@@ -34,12 +38,21 @@ final class PlainText
         } while ($text !== $before);
 
         // Control and invisible formatting characters (zero-width, bidi overrides), keeping a newline where one is allowed.
-        $text = (string) preg_replace($multiline ? '/[^\P{C}\n]/u' : '/\p{C}/u', '', $text);
+        $text = (string) preg_replace(match (true) {
+            $verbatim => '/[^\P{C}\n\t]/u',
+            $multiline => '/[^\P{C}\n]/u',
+            default => '/\p{C}/u',
+        }, '', $text);
+
+        if ($verbatim) {
+            return $text;
+        }
 
         $text = $multiline
             ? (string) preg_replace("/\n{3,}/", "\n\n", $text)
             : (string) preg_replace('/\s+/u', ' ', $text);
 
-        return trim($text);
+        // A block of text keeps the indent of its first line (it may be art); only blank lines and trailing space go.
+        return $multiline ? rtrim(ltrim($text, "\n")) : trim($text);
     }
 }

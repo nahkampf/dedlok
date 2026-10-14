@@ -241,7 +241,7 @@
 
             <label class="field" style="margin:0">
                 <span class="field__label" for="bio">{{ Text::get('character.bio') }}</span>
-                <textarea class="input input--mono" id="bio" name="bio" rows="6" maxlength="65000" wrap="off" spellcheck="false"
+                <textarea class="input input--mono ascii" id="bio" name="bio" rows="6" maxlength="65000" wrap="off" spellcheck="false"
                           placeholder="{{ Text::get('character.bio_placeholder') }}">{{ old('bio', $character->bio) }}</textarea>
                 <span class="field__hint">{{ Text::get('character.bio_hint') }}</span>
                 @error('bio') <span class="field__error">{{ $message }}</span> @enderror

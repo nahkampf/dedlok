@@ -45,7 +45,7 @@ class HunterController extends Controller
             return redirect()->route('cyberspace.index');
         }
 
-        $combat->fight($character, $hunt);
+        $combat->fight($character, $hunt, $request->input('action') === 'egress');
 
         if ($character->fresh()->current_hunt_id !== null) {
             return redirect()->route('hunt.show');
@@ -54,7 +54,7 @@ class HunterController extends Controller
         // Resolved this exchange — won or lost, the hunt's own log already
         // says which, and the map is where either ending puts you.
         return redirect()->route('cyberspace.index')
-            ->with($hunt->fresh()->won ? 'status' : 'error', $this->outcomeMessage($hunt->fresh()));
+            ->with($hunt->fresh()->won || ! $character->fresh()->isJackedIn() ? 'status' : 'error', $this->outcomeMessage($hunt->fresh()));
     }
 
     private function outcomeMessage(Hunt $hunt): string

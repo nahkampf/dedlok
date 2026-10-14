@@ -195,7 +195,16 @@ final class Probe
         }
 
         if ($scan->isComplete()) {
-            return ProbeResult::refused(ProbeRefusal::AlreadyKnown);
+            // A read that has been exported (and so perhaps sold) is not the end of it: pressing Scan again is a
+            // RESCAN, a new file from nothing, so a job that wants a file of this system can be served again. One
+            // that has NOT been exported is still the player's to export first, since a rescan would replace it.
+            if ($scan->filed_at === null) {
+                return ProbeResult::refused(ProbeRefusal::AlreadyKnown);
+            }
+
+            Trace::note('scan.rescan', ['address' => $system->address, 'replaces' => $scan->getKey()]);
+            $scan->delete();
+            $scan = $this->blankFile($character, $system);
         }
 
         return $this->begin($character, $system, $scan, $now);
@@ -471,6 +480,11 @@ final class Probe
 
         $existing?->delete();
 
+        return $this->blankFile($character, $system);
+    }
+
+    private function blankFile(Character $character, System $system): SystemScan
+    {
         return new SystemScan([
             'character_id' => $character->getKey(),
             'address' => $system->address,

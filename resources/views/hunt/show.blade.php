@@ -8,8 +8,7 @@
 {{-- THE ONLY SCREEN A HUNTED PLAYER CAN REACH.
 
      EnsureHuntIsResolved sends every other request here. Unlike a run there is
-     no door out at all — no egress, no jacking out — so this page has exactly
-     one thing on it: the fight, and the button that presses it.
+     no jacking out — only an egress roll, which can fail and costs the exchange.
 
      The stripe says what the rest of the screen has no room to: this is a
      hunter attacking YOU, not a run against a system — no trace, no IDS. --}}
@@ -36,14 +35,17 @@
         </div>
     </div>
 
-    {{-- NO CHOICE BUT TO FIGHT. Cyberspace combat was specified with no other
-         door, and offering one that does nothing would be worse than offering
-         none. --}}
+    {{-- FIGHT, OR TRY TO EGRESS: a roll that can fail, and a failure costs the exchange (the hunter swings). --}}
     <form method="POST" action="{{ route('hunt.act') }}" style="padding-bottom:var(--s-3)">
         @csrf
-        <button type="submit" class="btn btn--danger cut">
-            {{ Text::get('cyberspace.hunt.action.fight') }}
-        </button>
+        <div class="row row--wrap" style="--gap:var(--s-3)">
+            <button type="submit" class="btn btn--danger cut">
+                {{ Text::get('cyberspace.hunt.action.fight') }}
+            </button>
+            <button type="submit" name="action" value="egress" class="btn cut">
+                {{ Text::get('cyberspace.hunt.action.egress') }}
+            </button>
+        </div>
     </form>
 </div>
 

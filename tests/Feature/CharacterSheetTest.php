@@ -240,7 +240,7 @@ final class CharacterSheetTest extends TestCase
 
     public function test_the_bio_is_a_monospace_field_that_does_not_wrap(): void
     {
-        $this->visit()->assertSee('class="input input--mono" id="bio"', false)->assertSee('wrap="off"', false);
+        $this->visit()->assertSee('class="input input--mono ascii" id="bio"', false)->assertSee('wrap="off"', false);
     }
 
     /**

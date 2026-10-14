@@ -41,6 +41,18 @@
     U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+/* IBM VGA 9x16 ("Plus": CP437 and the Unicode around it), self-hosted — see LICENSE-IBM-VGA-9x16.txt (CC BY-SA 4.0,
+   VileR, int10h.org). A BITMAP font in outlines: crisp only at 16px or a whole multiple, with line-height equal to
+   the font size so block and box-drawing rows meet. The weight range is declared so 600/700 never SYNTHESISE a bold,
+   which would smear it; the font has one weight. Anything it lacks falls through to IBM Plex Mono. */
+@font-face {
+  font-family: "IBM VGA 9x16";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/ibm-vga-9x16-plus.woff") format("woff");
+}
+
 /* IBM Plex, self-hosted the same way — see OFL-IBM-Plex.txt. Nine faces the kit
    actually uses, each split into latin and latin-ext so a page that never shows
    an accented character never fetches the second file. Weights are static
@@ -306,7 +318,7 @@
   --font-head:  "Overpass", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-label: "IBM Plex Sans Condensed", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-sans:  "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-mono:  "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-mono:  "IBM VGA 9x16", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --fs-xs: 0.75rem;    /* 12 — micro labels */
   --fs-sm: 0.875rem;   /* 14 — dense UI, table body */
@@ -456,16 +468,38 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
 .prose li + li { margin-top: var(--s-1); }
 .prose a { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
 .prose a:hover { text-decoration-color: var(--ember); }
-.prose code { font-family: var(--font-mono); font-size: 0.92em; }
+.prose code { font-family: var(--font-mono); font-size: 1em; }
 .prose pre { overflow-x: auto; background: var(--bg-1); border: var(--hair) solid var(--line-1); padding: var(--s-3); }
 .prose blockquote { border-left: var(--hair) solid var(--line-2); padding-left: var(--s-3); color: var(--ink-2); }
 .prose hr { border: 0; border-top: var(--hair) solid var(--line-1); }
 .muted { color: var(--ink-2); }
 .dim   { color: var(--ink-3); }
 
-.mono { font-family: var(--font-mono); font-size: 0.92em; }
+.mono { font-family: var(--font-mono); font-size: 1em; }
+/* Block-style art (CP437): the font's own 16px cell, rows exactly 16px so █ ▓ ═ ║ join, no kerning or ligatures,
+   and no tracking to knock glyphs off the pixel grid. Wide art scrolls instead of wrapping. */
+.ascii {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 16px;
+  letter-spacing: 0;
+  font-kerning: none;
+  font-variant-ligatures: none;
+  font-synthesis: none;
+  /* No smoothing and no legibility pass: antialiased edges are what leave hairline seams between adjacent █ ▓ cells. */
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  text-rendering: optimizeSpeed;
+  /* Firefox on Windows and Linux ignores the smoothing hints above and paints LCD (subpixel) antialiasing, which
+     fringes every cell edge orange and blue. Text on its own compositing layer is drawn greyscale instead, so a
+     bitmap-aligned glyph lands on whole pixels. */
+  will-change: transform;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 4;
+}
 /* Numerals that don't jitter when they tick. Use on every live value. */
-.num  { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.num  { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
 /* A <button> that reads as a link. For in-text triggers — opening a modal,
    revealing a definition — where a real button box would be too heavy and an
@@ -933,12 +967,27 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
 .input::placeholder, .textarea::placeholder { color: var(--ink-3); }
 /* A field whose columns line up: monospace, and no soft wrap, so ASCII art stays the shape it was drawn. Wide
    art scrolls inside the field instead of reflowing. The character bio is the first. */
-.input--mono, .textarea--mono {
+.input.input--mono, .textarea.textarea--mono {
+  /* the .ascii rule above, at higher specificity because .input and .textarea set their own size and line height
+     further down */
   font-family: var(--font-mono);
-  line-height: 1.25;
+  font-size: 16px;
+  line-height: 16px;
+  letter-spacing: 0;
+  font-kerning: none;
+  font-variant-ligatures: none;
+  font-synthesis: none;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  text-rendering: optimizeSpeed;
+  /* Firefox on Windows and Linux ignores the smoothing hints above and paints LCD (subpixel) antialiasing, which
+     fringes every cell edge orange and blue. Text on its own compositing layer is drawn greyscale instead, so a
+     bitmap-aligned glyph lands on whole pixels. */
+  will-change: transform;
   white-space: pre;
   overflow-x: auto;
   tab-size: 4;
+  padding-block: var(--s-2);
 }
 .input:hover, .textarea:hover, .select:hover { border-color: var(--line-2); }
 .input:focus, .textarea:focus, .select:focus {
@@ -948,7 +997,6 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   box-shadow: 0 0 0 3px var(--crit-a);
 }
 .textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
-.input--mono { font-family: var(--font-mono); }
 
 .select {
   appearance: none;
@@ -2225,7 +2273,7 @@ details.panel > summary.panel__hd:focus-visible {
 /* Big readout — one number that matters, with a delta */
 .readout { display: grid; gap: 2px; }
 .readout__label { font-family: var(--font-label); font-size: var(--fs-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-2); font-weight: 600; }
-.readout__value { font: 650 var(--fs-2xl)/1 var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.readout__value { font: 650 var(--fs-2xl)/1 var(--font-mono); font-variant-numeric: tabular-nums; }
 .readout__delta { font: 600 var(--fs-xs)/1 var(--font-mono); color: var(--ink-2); }
 .readout__delta[data-dir="up"]   { color: var(--ok); }
 .readout__delta[data-dir="down"] { color: var(--crit); }
@@ -3547,10 +3595,31 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
 .chat__row { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: var(--s-2); align-items: start; }
 .chat__face { width: 32px; height: 24px; background: var(--bg-3); overflow: hidden; }
 .chat__face img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
-.chat__line { font-size: var(--fs-sm); overflow-wrap: anywhere; }
+/* The chat is set in the .ascii face: the VGA font's own 16px cell and 16px rows, so block art and CP437 lines keep
+   their shape. It wraps (pre-wrap keeps runs of spaces) where .ascii scrolls, because a line can be 500 characters;
+   italics are still synthesised, since the "has joined" line is specified in italics. */
+.chat__log, .chat__form .input {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 16px;
+  letter-spacing: 0;
+  font-kerning: none;
+  font-variant-ligatures: none;
+  font-synthesis: style;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  text-rendering: optimizeSpeed;
+  /* Firefox on Windows and Linux ignores the smoothing hints above and paints LCD (subpixel) antialiasing, which
+     fringes every cell edge orange and blue. Text on its own compositing layer is drawn greyscale instead, so a
+     bitmap-aligned glyph lands on whole pixels. */
+  will-change: transform;
+}
+/* only the message itself: the template's own indentation must not become visible whitespace */
+.chat__msg, .chat__event em { white-space: pre-wrap; }
+.chat__line { overflow-wrap: anywhere; }
 .chat__who { margin-right: var(--s-2); color: var(--ink-0); font-weight: 600; text-decoration: none; }
 .chat__who:hover { text-decoration: underline; }
-.chat__event { font-size: var(--fs-sm); color: var(--ink-2); padding-left: calc(32px + var(--s-2)); }
+.chat__event { color: var(--ink-2); padding-left: calc(32px + var(--s-2)); }
 .chat__msg ul { margin: 0; padding-left: var(--s-5); }
 .chat__form { display: flex; gap: var(--s-2); }
 .chat__form .input { flex: 1; min-width: 0; }

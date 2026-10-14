@@ -723,7 +723,11 @@ against ICE generated on the fly, and it locks the screen until it is settled.
 - **`characters.current_hunt_id` is what "in a hunt" means** — a column, `current_run_id`'s
   own shape. `App\Cyberspace\Hunters::spawn()` is the only writer, inside one transaction
   with the character's pointer.
-- **NO DOOR OUT UNTIL IT IS SETTLED.** `App\Http\Middleware\EnsureHuntIsResolved` is
+- **THE ONE WAY OUT IS AN EGRESS ROLL** (`hunt.act` with `action=egress`, `HunterCombat::tryEgress()`): the `egress` stat against
+  `cyberspace.egress.difficulty[hunt grade]` plus the hunter's ICE level, through `CheckRoller`. A pass closes the hunt unpaid
+  (`won` false, heat unchanged), stops the run-only programs and jacks out; a miss costs the exchange and the hunter swings. A hunter
+  met starts `cyberspace.heat.hunt.cooldown_minutes` (60) in which none is drawn.
+- **NO OTHER DOOR OUT UNTIL IT IS SETTLED.** `App\Http\Middleware\EnsureHuntIsResolved` is
   `EnsureRunIsFinished`'s own shape — named allow-list, 409 JSON for API, redirect for
   web, admin not exempt. `RunStarter` refuses with `RunRefusal::Hunted` and
   `Navigator::jackOut()` refuses with `TravelRefusal::Hunted`; `EnsureDeckStillRuns` stands

@@ -25,7 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // The character bio keeps its leading spaces: it is where ASCII art is drawn, and the framework's blanket
         // trim would shift the first line of an indented drawing left. The controller does its own, gentler trim.
-        $middleware->trimStrings(except: ['bio']);
+        // The chat line is kept as typed too (spaces, tabs, blank lines): a pasted drawing is the point.
+        $middleware->trimStrings(except: ['bio', static fn (Request $request): bool => $request->is('chat/say')]);
 
         // Ko-fi posts here with no session; it is judged by its verification token instead.
         $middleware->validateCsrfTokens(except: ['kofi_webhook']);
