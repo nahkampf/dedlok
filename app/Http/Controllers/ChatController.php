@@ -52,6 +52,7 @@ class ChatController extends Controller
             'active' => $chats->activeCount(),
             'joinable' => $chats->joinable($me),
             'me' => $me,
+            'ignored' => $chats->ignoredIds($me),
         ]);
     }
 

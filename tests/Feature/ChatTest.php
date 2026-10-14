@@ -7,11 +7,13 @@ namespace Tests\Feature;
 use App\Chat\ChatRefused;
 use App\Chat\Chats;
 use App\Chat\Markup;
+use App\Events\ChatLine;
 use App\Models\Character;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 final class ChatTest extends TestCase
@@ -148,6 +150,30 @@ final class ChatTest extends TestCase
         $this->chats()->say($a, $this->chats()->general(), '/leave');
     }
 
+    public function test_a_line_is_pushed_to_the_right_channels_and_listening_is_private(): void
+    {
+        Event::fake([ChatLine::class]);
+        $a = Character::factory()->create();
+        $b = Character::factory()->create();
+        $room = $this->chats()->createRoom($a, 'Pair', false);
+        $this->chats()->say($a, $room, 'psst');
+        $this->chats()->say($a, $this->chats()->general(), 'hello all');
+
+        Event::assertDispatched(ChatLine::class, 2);
+
+        $private = new ChatLine($room, ChatMessage::query()->where('chat_id', $room->getKey())->firstOrFail());
+        $this->assertSame(["private-chat-user.{$a->getKey()}"], array_map(fn ($c) => $c->name, $private->broadcastOn()));
+        $this->assertStringContainsString('psst', $private->broadcastWith()['html']);
+
+        // Somebody else's own channel is refused; their own is signed. (The null driver the suite runs on signs
+        // anything, so this asks the Reverb one.)
+        config(['broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.key' => 'k', 'broadcasting.connections.reverb.secret' => 's', 'broadcasting.connections.reverb.app_id' => 'i']);
+        \Illuminate\Support\Facades\Broadcast::purge();
+        require base_path('routes/channels.php'); // channels live on the driver, and this is a new one
+        $this->actingAs($a->user)->post('/broadcasting/auth', ['socket_id' => '1.2', 'channel_name' => "private-chat-user.{$a->getKey()}"])->assertOk();
+        $this->actingAs($b->user)->post('/broadcasting/auth', ['socket_id' => '1.2', 'channel_name' => "private-chat-user.{$a->getKey()}"])->assertForbidden();
+    }
+
     public function test_leaving_tells_the_room(): void
     {
         $a = Character::factory()->create();
@@ -157,7 +183,7 @@ final class ChatTest extends TestCase
 
         $this->chats()->say($b, $room, '/leave');
 
-        $line = \App\Models\ChatMessage::query()->where('chat_id', $room->getKey())->where('is_event', true)->latest('id')->first();
+        $line = ChatMessage::query()->where('chat_id', $room->getKey())->where('is_event', true)->latest('id')->first();
         $this->assertSame("{$b->handle} has left the chat.", $line->message);
         $this->assertFalse($this->chats()->canSee($b, $room));
     }

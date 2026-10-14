@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Chat;
 
+use App\Events\ChatLine;
 use App\Models\Character;
 use App\Models\Chat;
 use App\Models\ChatMessage;
@@ -277,6 +278,12 @@ final class Chats
         return ['chat' => $this->general()->getKey(), 'notice' => Text::get('chat.notices.left', ['room' => (string) $room->name])];
     }
 
+    /** @return list<int> Whose lines this character does not see; the page applies it to pushed lines. */
+    public function ignoredIds(Character $who): array
+    {
+        return DB::table('chat_ignores')->where('character_id', $who->getKey())->pluck('ignored_id')->map(fn ($id): int => (int) $id)->all();
+    }
+
     private function ignores(Character $who, Character $other): bool
     {
         return DB::table('chat_ignores')->where('character_id', $who->getKey())->where('ignored_id', $other->getKey())->exists();
@@ -386,6 +393,13 @@ final class Chats
 
         $line = ChatMessage::query()->create(['chat_id' => $chat->getKey(), 'character_id' => $from->getKey(), 'message' => $text, 'is_event' => $event]);
         $this->markRead($from, $chat);
+
+        // A socket that is down must never cost somebody their message: the page falls back to polling.
+        try {
+            event(new ChatLine($chat, $line));
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return $line;
     }

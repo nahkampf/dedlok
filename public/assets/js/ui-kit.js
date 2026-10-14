@@ -1699,10 +1699,11 @@
 
   /* --- Chat ---------------------------------------------------------------
      The chat page: [data-chat-page data-chat-url] holding [data-chat] (tabs, log, form). Forms marked
-     form[data-chat-form] POST and get {chat: id} (or 422 {message}) back, then the page goes to that chat;
-     [data-chat-join] joins a public room the same way. Every five seconds the poll URL is fetched and only the tabs
-     and the log are swapped, so what is half typed survives. The server draws every line; nothing is built here from
-     message text. */
+     form[data-chat-form] POST and get {chat: id} (or 422 {message}) back; the same chat stays put and another is
+     visited. [data-chat-join] joins a public room the same way. LINES ARRIVE BY WEBSOCKET (Reverb, the Pusher
+     protocol, spoken below) and the page keeps its socket for as long as it is open; with no socket the poll URL is
+     fetched every five seconds instead. Only the tabs and the log are ever swapped, so what is half typed survives.
+     The server draws every line; nothing is built here from message text. */
   (function chat() {
     const page = document.querySelector("[data-chat-page]");
     if (!page) return;
@@ -1734,21 +1735,11 @@
       post(join.dataset.chatJoin, new FormData()).then((id) => id && go(id));
     });
 
-    document.addEventListener("submit", (e) => {
-      const form = e.target.closest("form[data-chat-form]");
-      if (!form) return;
-      e.preventDefault();
-      post(form.action, new FormData(form)).then((id) => {
-        if (!id) return;
-        form.reset();
-        go(id);
-      });
-    });
-
-    setInterval(() => {
+    // Tabs and log from the server's truth: the poll screen, swapped in without touching the form.
+    const swap = () => {
       const root = page.querySelector("[data-chat-poll]");
-      if (document.hidden || !root) return;
-      fetch(root.dataset.chatPoll, { headers, credentials: "same-origin" })
+      if (!root) return Promise.resolve();
+      return fetch(root.dataset.chatPoll, { headers, credentials: "same-origin" })
         .then((r) => (r.ok ? r.text() : Promise.reject()))
         .then((html) => {
           const next = new DOMParser().parseFromString(html, "text/html");
@@ -1761,7 +1752,84 @@
           }
         })
         .catch(() => {});
-    }, 5000);
+    };
+    let lazyTimer = null;
+    const lazy = () => { clearTimeout(lazyTimer); lazyTimer = setTimeout(swap, 800); };
+
+    document.addEventListener("submit", (e) => {
+      const form = e.target.closest("form[data-chat-form]");
+      if (!form) return;
+      e.preventDefault();
+      post(form.action, new FormData(form)).then((id) => {
+        if (!id) return;
+        form.reset();
+        // The same chat stays put (the line arrives by socket, and the swap is the fallback); another is a visit.
+        if (String(id) === page.querySelector("[data-chat]")?.dataset.chat) { swap(); form.querySelector("input[name=message]")?.focus(); } else go(id);
+      });
+    });
+
+    /* The socket. Reverb speaks the Pusher protocol, which is small enough to speak by hand: connect, answer a
+       ping, ask the app for a signature per private channel, subscribe, and read {event, channel, data}. A line
+       pushed for the open chat is inserted at once (the HTML is the server's); one for another chat only refreshes
+       the tabs. While there is no socket the five-second poll runs, as before. */
+    let live = false;
+    const ignored = new Set(JSON.parse(page.dataset.chatIgnored || "[]"));
+    const onLine = (d) => {
+      if (ignored.has(Number(d.by))) return;
+      const root = page.querySelector("[data-chat]");
+      const box = log();
+      if (root && String(d.chat) === root.dataset.chat && box) {
+        if (!box.querySelector('[data-line="' + d.id + '"]')) {
+          const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 24;
+          box.querySelector(":scope > p")?.remove();
+          box.insertAdjacentHTML("beforeend", d.html);
+          if (atEnd) box.scrollTop = box.scrollHeight;
+        }
+      }
+      lazy();
+    };
+
+    const cfg = (() => { try { return JSON.parse(page.dataset.chatWs || "null"); } catch { return null; } })();
+    if (cfg && cfg.key && "WebSocket" in window) {
+      let retry = 1000;
+      const open = () => {
+        let ws;
+        try { ws = new WebSocket((cfg.scheme === "https" ? "wss" : "ws") + "://" + cfg.host + ":" + cfg.port + "/app/" + cfg.key + "?protocol=7&client=dedlok&version=1"); } catch { return; }
+        const subscribe = (socketId, channel) => fetch(cfg.auth, {
+          method: "POST", credentials: "same-origin",
+          headers: { ...headers, Accept: "application/json", "X-CSRF-TOKEN": token(), "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ socket_id: socketId, channel_name: channel }),
+        })
+          .then((r) => (r.ok ? r.json() : Promise.reject()))
+          .then((a) => ws.send(JSON.stringify({ event: "pusher:subscribe", data: { auth: a.auth, channel } })))
+          .catch(() => {});
+        ws.onmessage = (m) => {
+          let msg, data;
+          try { msg = JSON.parse(m.data); data = typeof msg.data === "string" ? JSON.parse(msg.data) : msg.data; } catch { return; }
+          if (msg.event === "pusher:connection_established") {
+            retry = 1000;
+            subscribe(data.socket_id, "private-chat.general");
+            subscribe(data.socket_id, "private-chat-user." + page.dataset.chatMe);
+          } else if (msg.event === "pusher:ping") {
+            ws.send(JSON.stringify({ event: "pusher:pong", data: {} }));
+          } else if (msg.event === "pusher_internal:subscription_succeeded") {
+            if (!live) { live = true; swap(); }
+          } else if (msg.event === "line") {
+            onLine(data);
+          }
+        };
+        ws.onclose = () => {
+          live = false;
+          setTimeout(open, retry);
+          retry = Math.min(retry * 2, 30000);
+        };
+        ws.onerror = () => ws.close();
+      };
+      open();
+    }
+
+    // The fallback: with no socket, the page asks every five seconds as it always did.
+    setInterval(() => { if (!document.hidden && !live) swap(); }, 5000);
   })();
 
   window.UI = { toast, flash, meter, log, type, esc, captcha, centreMap, modifierRows, nodeGraph };

@@ -19,6 +19,7 @@ ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/do
 # Install PHP extensions
 #   intl   - required for i18n: ICU plural rules, locale-aware dates/numbers
 #   bcmath - arbitrary-precision arithmetic for game economy maths
+#   pcntl  - Laravel Reverb (the chat's websocket server) subscribes to process signals
 RUN chmod +x /usr/local/bin/install-php-extensions && \
     install-php-extensions \
         gd \
@@ -31,7 +32,8 @@ RUN chmod +x /usr/local/bin/install-php-extensions && \
         mbstring \
         readline \
         intl \
-        bcmath
+        bcmath \
+        pcntl
 
 # Install Composer from official image
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

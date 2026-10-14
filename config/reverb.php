@@ -3,6 +3,16 @@
 return [
 
     /*
+    | What the BROWSER connects to, which is not what the app publishes to: in Docker the app reaches the server at
+    | `reverb:8080` and the browser at `localhost:8085`; in production both are the site, over wss, through the proxy.
+    */
+    'public' => [
+        'host' => env('REVERB_PUBLIC_HOST', 'localhost'),
+        'port' => (int) env('REVERB_PUBLIC_PORT', 8085),
+        'scheme' => env('REVERB_PUBLIC_SCHEME', 'http'),
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Default Reverb Server
     |--------------------------------------------------------------------------

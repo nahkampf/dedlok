@@ -3030,9 +3030,20 @@ button.board__node[data-inspect]:focus-visible .board__box { border-color: var(-
    the whole point of drawing it at all. */
 .cell--distant { opacity: .55; filter: blur(1px); }
 
-/* Beyond the edge of the world. THE GRID DOES NOT WRAP, so this is a hole in
-   the drawing rather than a place — no border, no fill, nothing to read. */
-.cell--void { background: transparent; border-color: transparent; }
+/* Beyond the edge of the world. THE GRID DOES NOT WRAP, so this is not a place:
+   a hazard stripe, dark and light grey at 45 degrees. The tile is half the cell
+   on each side and the cells are square, so a tile always starts and ends on a
+   cell's edge and the stripes run on unbroken from one void cell into the next,
+   at any --cell size. The stops at quarter points are what make one tile seamless
+   with itself. */
+.cell--void {
+  border-color: transparent;
+  background-color: var(--line-1);
+  background-image: linear-gradient(45deg,
+    var(--line-1) 25%, var(--ink-3) 25%, var(--ink-3) 50%,
+    var(--line-1) 50%, var(--line-1) 75%, var(--ink-3) 75%, var(--ink-3));
+  background-size: 50% 50%;
+}
 
 /* NEVER LOOKED AT — fog, and the difference from empty ground is a LAYER and
    not a shade. It drops below the map's own ground, loses its hairline, and

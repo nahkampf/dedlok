@@ -5,7 +5,14 @@
 @section('content')
     <h1>{{ Text::get('chat.title') }}</h1>
 
-    <div style="margin-top:var(--s-5);max-width:70ch" data-chat-page data-chat-url="{{ route('chat.show') }}">
+    {{-- `data-chat-ws` is what the page needs to open its socket: where the BROWSER reaches Reverb, the app key and the
+         channel-auth route. Without a server answering, the page polls as it always did. --}}
+    <div style="margin-top:var(--s-5);max-width:70ch" data-chat-page data-chat-url="{{ route('chat.show') }}"
+         data-chat-me="{{ $me->getKey() }}" data-chat-ignored="{{ json_encode($ignored) }}"
+         data-chat-ws="{{ json_encode([
+             'host' => config('reverb.public.host'), 'port' => config('reverb.public.port'), 'scheme' => config('reverb.public.scheme'),
+             'key' => config('broadcasting.connections.reverb.key'), 'auth' => route('broadcasting.auth'),
+         ]) }}">
         @include('chat.panel')
     </div>
 

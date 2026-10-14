@@ -6,7 +6,6 @@
 {{-- THE CHAT, the part of the page that is re-fetched by its own timer (`data-chat-poll`, which swaps only the tabs
      and the log so what is being typed survives). Lines are drawn on the
      server — escaped, then a few markdown forms (`Markup`) — and never built in script from what somebody typed. --}}
-@php($faces = [])
 <div class="chat" data-chat="{{ $chat->getKey() }}" data-chat-poll="{{ route('chat.poll', ['chat' => $chat->getKey()]) }}">
     <div class="chat__tabs" data-chat-tabs role="group" aria-label="{{ Text::get('chat.title') }}">
         @foreach ($tabs as $tab)
@@ -21,22 +20,7 @@
 
     <div class="chat__log" data-chat-log>
         @forelse ($lines as $line)
-            @if ($line->is_event)
-                <div class="chat__event" title="{{ $line->created_at->utc()->format('Y-m-d H:i:s') }} UTC"><em>{{ $line->message }}</em></div>
-                @continue
-            @endif
-            @php($who = $line->character)
-            @php($kind = $who?->user?->isSupporter() ? 'characters/avatars' : 'characters')
-            @php($faces[$kind.$who?->getKey()] ??= $who ? Image::card($kind, $who->getKey()) : null)
-            <div class="chat__row" title="{{ $line->created_at->utc()->format('Y-m-d H:i:s') }} UTC">
-                <span class="chat__face">@if ($faces[$kind.$who?->getKey()])<img src="{{ $faces[$kind.$who?->getKey()] }}" alt="" width="32" height="24" loading="lazy">@endif</span>
-                <span class="chat__line">
-                    {{-- The profile screen is not built yet; the handle carries the character id for when it is. --}}
-                    <button type="button" class="chat__who" data-profile="{{ $line->character_id }}"
-                            title="{{ Text::get('chat.profile', ['handle' => $who?->handle]) }}">{{ $who?->handle }}&gt;</button>
-                    <span class="chat__msg">{!! Markup::render($line->message) !!}</span>
-                </span>
-            </div>
+            @include('chat._line', ['line' => $line])
         @empty
             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('chat.empty') }}</p>
         @endforelse
