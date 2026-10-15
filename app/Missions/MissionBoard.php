@@ -220,6 +220,8 @@ final readonly class MissionBoard
             ->whereBetween('grade', [$low, $high])
             ->whereIn('type', self::targetableTypes())
             ->where(fn ($query) => $query->whereNull('owner_id')->orWhere('owner_id', '!=', $entityId))
+            // There has to be an ICE to wake.
+            ->when($action === MissionAction::Agitate, fn ($query) => $query->whereNotNull('ice_id'))
             ->inRandomOrder()
             ->limit($wanted)
             ->get();

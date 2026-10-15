@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Missions;
 
+use App\Cyberspace\RunEnding;
+use App\Cyberspace\RunPurpose;
+use App\Cyberspace\RunStarter;
 use App\Missions\MissionAction;
 use App\Missions\MissionBoard;
 use App\Missions\MissionLedger;
@@ -12,10 +15,12 @@ use App\Missions\MissionState;
 use App\Models\Character;
 use App\Models\Entity;
 use App\Models\Exchange;
+use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Mission;
 use App\Models\Notification;
+use App\Models\Run;
 use App\Models\Skill;
 use App\Models\System;
 use App\Notifications\Category;
@@ -69,6 +74,40 @@ final class MissionTest extends TestCase
             'agent' => 'Mr Nakata',
             'min_standing' => 0,
         ]);
+    }
+
+    /** A run that woke the ICE and left, shutting the machine, ticks an Agitate target; an unnoticed one does not. */
+    public function test_a_run_that_wakes_the_ice_and_leaves_agitates_the_target(): void
+    {
+        $mission = $this->accepted(MissionAction::Agitate);
+        $target = $mission->targets->first()->system;
+        $target->forceFill(['ice_id' => Ice::query()->firstOrFail()->id])->save();
+
+        $quiet = $this->runAt($target, detected: false);
+        app(RunStarter::class)->end($this->character, $quiet, RunEnding::Egress);
+        $this->assertNull($mission->fresh()->targets->first()->satisfied_at, 'unnoticed: nothing woke');
+
+        $loud = $this->runAt($target, detected: true);
+        app(RunStarter::class)->end($this->character->fresh(), $loud, RunEnding::Egress);
+
+        $this->assertNotNull($mission->fresh()->targets->first()->satisfied_at);
+        $this->assertTrue($target->fresh()->isLockedDown());
+    }
+
+    private function runAt(System $system, bool $detected): Run
+    {
+        $run = Run::query()->create([
+            'character_id' => $this->character->id,
+            'address' => $system->address,
+            'x' => $system->x, 'y' => $system->y,
+            'purpose' => RunPurpose::Extraction->value,
+            'turn' => 1,
+            'detected' => $detected,
+            'started_at' => now(),
+        ]);
+        $this->character->forceFill(['current_run_id' => $run->id])->save();
+
+        return $run;
     }
 
     // ---- the board ----------------------------------------------------------

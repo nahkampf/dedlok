@@ -36,7 +36,7 @@ return [
     'board' => [
         'refresh_minutes' => 60,
         'floor' => 1,
-        'size' => ['min' => 2, 'max' => 4],
+        'size' => ['min' => 4, 'max' => 8],
     ],
 
     /*
@@ -82,6 +82,7 @@ return [
         'scan' => ['creds' => [1 => 3.0, 2 => 2.5, 3 => 2.0, 4 => 1.5, 5 => 1.0], 'standing' => 1.0, 'loyalty' => 1.0],
         'burn' => ['creds' => 2.0, 'standing' => 1.5, 'loyalty' => 2.0],
         'plant' => ['creds' => 1.4, 'standing' => 2.0, 'loyalty' => 2.0],
+        'agitate' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 1.5],
         'supply' => ['creds' => 1.2, 'standing' => 0.5, 'loyalty' => 0.5],
     ],
 

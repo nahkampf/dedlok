@@ -6,6 +6,8 @@ namespace App\Cyberspace;
 
 use App\Cyberspace\Party\Parties;
 use App\Decks\DeckTotals;
+use App\Missions\MissionAction;
+use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Run;
@@ -261,6 +263,15 @@ final readonly class RunStarter
              * that must never mean the person it was a consequence of.
              */
             $shut = ($this->lockdown ?? Lockdown::fromConfig())->afterRun($run);
+
+            // AGITATE: the ICE was woken (the run was noticed), the runner got out, and the machine shut for it.
+            if ($shut && $run->detected && in_array($ending, [RunEnding::Egress, RunEnding::Completed], true)) {
+                $woken = System::query()->where('address', $run->address)->first();
+
+                if ($woken !== null && $woken->ice_id !== null) {
+                    app(MissionLedger::class)->recordAgainst($character, $woken, MissionAction::Agitate);
+                }
+            }
 
             // After everything the end does: the deck's answer can be different from the one before it.
             Trail::note('run_end_done', $character, ['ending' => $ending->value, 'run' => $run->getKey(), 'lockdown_started' => $shut]);

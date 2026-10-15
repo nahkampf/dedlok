@@ -982,6 +982,7 @@ return [
             'scan' => 'Survey',
             'burn' => 'Demolition',
             'plant' => 'Placement',
+            'agitate' => 'Agitation',
             'supply' => 'Supply',
         ],
 
@@ -989,6 +990,7 @@ return [
             'scan' => 'Scan every system named and bring the files back, one for each. The safest work there is, and the slowest.',
             'burn' => 'We want these systems gone. Burned. Shut down.',
             'plant' => 'Leave a backdoor on these systems. The door is ours, not yours - you get paid, and we get the way in.',
+            'agitate' => 'Make a run on these systems and wake their ICE, then get out. We want them locked down. You do not have to take anything.',
             'supply' => 'Bring us files: complete scan files or sealed data dumps. We do not care which systems, only that the picture is whole.',
         ],
 

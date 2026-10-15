@@ -9,7 +9,7 @@ use App\Support\Text;
 /**
  * What a job asks of a runner.
  *
- * FOUR, AND EACH ONE IS A DIFFERENT KIND OF EVIDENCE. That is the whole reason
+ * FIVE, AND EACH ONE IS A DIFFERENT KIND OF EVIDENCE. That is the whole reason
  * the list is short and fixed: `mission_targets.satisfied_at` is one column
  * filled several ways, and an action is the thing that decides which way.
  *
@@ -19,6 +19,8 @@ use App\Support\Text;
  *    itself as it happens.
  *  - PLANT is the same shape as burn: the install writes the flag, and
  *    nothing in the world belongs to the runner afterwards.
+ *  - AGITATE is recorded where it happens, when a run that woke the ICE leaves and the
+ *    machine shuts because of it (`RunStarter::end()`). Only systems with ICE are named.
  *  - SUPPLY names no systems at all. It buys intel by the file, which is what
  *    makes scanning an occupation rather than a chore between runs.
  */
@@ -27,6 +29,7 @@ enum MissionAction: string
     case Scan = 'scan';
     case Burn = 'burn';
     case Plant = 'plant';
+    case Agitate = 'agitate';
     case Supply = 'supply';
 
     /**
@@ -44,6 +47,7 @@ enum MissionAction: string
             self::Scan => [3, 10],
             self::Burn => [1, 2],
             self::Plant => [1, 3],
+            self::Agitate => [1, 2],
             self::Supply => [0, 0],
         };
     }
