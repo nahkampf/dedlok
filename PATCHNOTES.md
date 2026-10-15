@@ -1,3 +1,9 @@
+## 0.61.1 (2026-10-15)
+
+- Bugfix: stackable items were all in if you put them up on market. You can now split and choose quantity when putting it up
+- Market listings now have a small button in the lower right corner, that copies the id. Pasting it in chat makes a modal that leads to the item. The format is `market:<id>`.
+- You can also refer to addresses in chat with `addr:<address>`, which makes the address a copy-to-clipboard link like elsewhere
+
 ## 0.61.0 (2026-10-15)
 
 - Tolerance to drugs now wears off faster: 3 points a day instead of 2

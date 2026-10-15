@@ -167,6 +167,19 @@
     const dlg = document.querySelector(btn.dataset.open);
     if (dlg && dlg.showModal) dlg.showModal();
   });
+  /* A listing link (`market:<id>` in chat or a bio): fetch the card fresh into #listing and open it. */
+  on("click", "[data-listing]", (e, btn) => {
+    e.preventDefault();
+    const dlg = document.querySelector("#listing");
+    const body = dlg && dlg.querySelector("[data-listing-body]");
+    if (!body) return;
+    body.textContent = "…";
+    if (dlg.showModal && !dlg.open) dlg.showModal();
+    fetch(btn.dataset.listing, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+      .then((r) => (r.ok ? r.text() : Promise.reject()))
+      .then((html) => { body.innerHTML = html; })
+      .catch(() => { body.textContent = "Could not load the listing."; });
+  });
   on("click", "[data-close]", (e, btn) => {
     const dlg = btn.closest("dialog");
     if (dlg) dlg.close();

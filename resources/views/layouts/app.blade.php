@@ -604,5 +604,13 @@
 
 <script src="{{ Asset::url('assets/js/ui-kit.js') }}" defer></script>
 @stack('scripts')
+{{-- A pasted `market:<id>` (chat, bios) opens here; filled by ui-kit.js from market.listing. --}}
+    <dialog id="listing" class="modal">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('market.offers.listing') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+        </div>
+        <div class="panel__bd" data-listing-body></div>
+    </dialog>
 </body>
 </html>

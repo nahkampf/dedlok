@@ -82,6 +82,28 @@ class MarketController extends Controller
         ]);
     }
 
+    /**
+     * One player offer as the card the market draws, for the modal a pasted `market:<id>` opens. A fragment, never a
+     * page. An offer that sold or was withdrawn is a sentence, not a 404: the link outlives the listing.
+     */
+    public function listing(Request $request, int $offer): View
+    {
+        $character = $this->character($request);
+        $found = MarketOffer::query()
+            ->onOffer()
+            ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'row.item.deckModule', 'seller.user'])
+            ->find($offer);
+
+        return view('market._listing', [
+            'offer' => $found,
+            'character' => $character,
+            'creds' => (int) $character->creds,
+            'owned' => $character->inventory()->distinct()->pluck('item_id')->flip()->all(),
+            'injected' => $this->injected($character),
+            'maxLevel' => SkillProgression::fromConfig()->maxLevel(),
+        ]);
+    }
+
     public function buy(Request $request, Item $item, Purchaser $purchaser): RedirectResponse|JsonResponse
     {
         $character = $this->character($request);
@@ -160,9 +182,10 @@ class MarketController extends Controller
 
         $data = $request->validate([
             'price' => ['required', 'integer', 'min:0', 'max:99999999'],
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:9999'],
         ]);
 
-        $result = $offers->list($character, $entry, (int) $data['price']);
+        $result = $offers->list($character, $entry, (int) $data['price'], isset($data['quantity']) ? (int) $data['quantity'] : null);
 
         if ($result instanceof OfferRefusal) {
             return back()->with('error', $result->message());

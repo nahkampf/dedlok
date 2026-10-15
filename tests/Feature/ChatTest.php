@@ -270,4 +270,12 @@ final class ChatTest extends TestCase
         $this->actingAs($b->user)->get(route('chat.show'))->assertOk()->assertSee('General')->assertSee('data-chat-page', false);
         $this->actingAs($b->user)->get(route('chat.poll'))->assertOk()->assertDontSee('<html', false);
     }
+
+    public function test_a_market_link_becomes_a_button_that_opens_the_listing(): void
+    {
+        $html = \App\Chat\Markup::render('look market:42 <b>');
+
+        $this->assertStringContainsString('data-listing="/market/listing/42"', $html);
+        $this->assertStringContainsString('&lt;b&gt;', $html);
+    }
 }
