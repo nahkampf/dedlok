@@ -34,7 +34,7 @@
                 <div class="panel__bd">
                     @if (filled($profile->bio))
                         {{-- Printed escaped and as typed: it is where ASCII art is drawn, so no wrapping and no reflow. --}}
-                        <pre class="ascii" style="margin:0">{{ $profile->bio }}</pre>
+                        <pre class="ascii" style="margin:0">{!! \App\Chat\Markup::listings(e($profile->bio)) !!}</pre>
                     @else
                         <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('profile.bio_empty') }}</p>
                     @endif

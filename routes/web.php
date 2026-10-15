@@ -382,6 +382,7 @@ Route::middleware('auth')->group(function () {
      */
     Route::get('/market', [MarketController::class, 'index'])->name('market.index');
     Route::post('/market/{item}', [MarketController::class, 'buy'])->name('market.buy');
+    Route::get('/market/listing/{offer}', [MarketController::class, 'listing'])->name('market.listing');
 
     /*
      * The other half of the market: players selling to each other. An offer is

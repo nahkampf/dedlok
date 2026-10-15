@@ -62,15 +62,25 @@ final class Markup
         return self::addresses($text);
     }
 
+    /** `market:<id>` becomes a button that opens that listing (any signed-in reader; the fragment says if it is gone). */
+    public static function listings(string $text): string
+    {
+        return preg_replace_callback('/\bmarket:(\d{1,10})\b/', fn (array $m): string => sprintf(
+            '<button type="button" class="copy" data-listing="%s">market:%s</button>',
+            e(route('market.listing', ['offer' => (int) $m[1]], false)),
+            $m[1],
+        ), $text);
+    }
+
     /** Last, so the markup it makes is never meant for the passes above. */
     private static function addresses(string $text): string
     {
-        return preg_replace_callback('/\baddr:([0-9A-Fa-f]{8})\b/', fn (array $m): string => sprintf(
+        return self::listings(preg_replace_callback('/\baddr:([0-9A-Fa-f]{8})\b/', fn (array $m): string => sprintf(
             '<button type="button" class="copy" data-copy="%1$s" data-copied="%2$s" data-copy-failed="%3$s" title="%4$s">%1$s</button>',
             strtoupper($m[1]),
             e(Text::get('cyberspace.reading.copied')),
             e(Text::get('cyberspace.reading.copy_failed')),
             e(Text::get('cyberspace.reading.copy')),
-        ), $text);
+        ), $text));
     }
 }
