@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.62.1] — 2026-10-15
+
+Run invitations through chat, a better Known systems list, the character sheet explaining what moves an attribute, and exchange jobs that survive a target going dark.
+
+### Added
+
+- **`run:<id>` in chat** invites to a co-op run, like *Invite people* in the planning screen (`Parties::inviteFromChat`, `RunPartyController::join`). The planning panel has a copy button for the id; chat renders it as "Run: <address>". Only the owner's text invites; General and public rooms never do. Joining is refused when you are not at the system, and the response carries the address so the page copies it for *Jump*.
+- **Known systems**: a green ✓ beside every address with a full scan, and a hover card with name, address, owner, type and the scan results. The inspector is now a `popover="manual"` top-layer element, so it shows above dialogs.
+- **Character sheet**: each attribute lists what moved it (source and signed amount, losses in the warning colour), and each dose in effect lists its own effects (`Dose::effectLines()`), so a Rewire's penalties are visible.
+
+### Changed
+
+- **A mission target that relocates or is burned is replaced rather than voiding the job** (`MissionLedger::retarget()`): a system of the same grade and type, nearest the old position (the desk's band when the old row is gone), never a fortress, an abandoned system or one the job already names. Deadline kept; a Mission Update message names old and new addresses. Done targets are untouched; with nothing to swap in the job voids as before. Checked when the Tasks screen or the desk loads, at hand-in and in the expiry sweep.
+
+### Migrations
+
+None.
+
+
 ## [0.62.0] — 2026-10-15
 
 Co-operative runs, and Data Fortresses: a player's own node, built on borrowed resources.
@@ -3307,7 +3326,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.62.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.62.1...HEAD
+[0.62.1]: https://github.com/nahkampf/dedlok/compare/v0.62.0...v0.62.1
 [0.62.0]: https://github.com/nahkampf/dedlok/compare/v0.61.1...v0.62.0
 [0.61.1]: https://github.com/nahkampf/dedlok/compare/v0.61.0...v0.61.1
 [0.61.0]: https://github.com/nahkampf/dedlok/compare/v0.60.0...v0.61.0
