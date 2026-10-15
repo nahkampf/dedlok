@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.61.1] — 2026-10-15
+
+Listing part of a pile on the player market, links to listings in chat and bios, and a tidier clinic panel in the location editor.
+
+### Added
+
+- **Listing links**: a `#` button on every player offer copies `market:<id>`; `Markup::listings()` turns that text, in a chat line or a bio, into a button (`data-listing`) that fetches `market.listing` (the offer's card, `market/_offer.blade.php`, or a "gone" line) into the `#listing` modal in the app layout.
+
+### Fixed
+
+- **Listing one of a pile listed all of it.** `OfferBook::list()` takes a `quantity` (default the whole row for callers that pass none); a smaller number splits the copies off into their own row, which is listed. The stash card's listing form has a quantity box when more than one is held (`MarketController::list()` validates it). `withdraw()` merges the copies back into the loose pile.
+- **A listed row has no stack key** (`InventoryItem::stackKey()` returns null for a row with an offer), so a pickup never merges into something on sale.
+- **Location editor**: the clinic services are laid out as a grid of label and number rows instead of stacked fields.
+
+
 ## [0.61.0] — 2026-10-15
 
 Drugs and clinics can reset a drug family's tolerance and addiction, and tolerance wears off faster.
@@ -3262,7 +3277,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.61.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.61.1...HEAD
+[0.61.1]: https://github.com/nahkampf/dedlok/compare/v0.61.0...v0.61.1
 [0.61.0]: https://github.com/nahkampf/dedlok/compare/v0.60.0...v0.61.0
 [0.60.0]: https://github.com/nahkampf/dedlok/compare/v0.59.0...v0.60.0
 [0.59.0]: https://github.com/nahkampf/dedlok/compare/v0.58.2...v0.59.0
