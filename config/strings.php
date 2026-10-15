@@ -315,6 +315,7 @@ return [
         'lede' => 'Your body is out here, in one district at a time.',
         'map' => 'The city',
         'district_map' => 'District map',
+        'you_are_here' => 'YOU ARE HERE',
         'here' => 'You are here',
         'in_district' => 'You are in :district.',
         'back' => '← City',

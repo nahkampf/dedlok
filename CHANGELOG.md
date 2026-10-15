@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [0.62.2] — 2026-10-16
+
+Fixes the 500 on the Tasks screen, and marks where you are on the city map.
+
+### Fixed
+
+- **`/tasks` and the exchange desk returned 500 on MySQL.** Re-targeting a lost mission target ordered candidates by `ABS(x - ?)`; `systems.x` and `y` are UNSIGNED, so a candidate left of the old position underflowed (BIGINT UNSIGNED out of range). The distance now casts both columns to SIGNED (`MissionLedger::retarget()`). SQLite never raised it, which is why the suite passed.
+
+### Added
+
+- **City map**: a pulsing ember ◆ before the name of the district you are in, and a "◆ YOU ARE HERE" line beneath the map.
+- **`php artisan missions:retarget`**: replaces the lost targets of every accepted mission without waiting for someone to open a screen.
+
+### Migrations
+
+None.
+
+
 ## [0.62.1] — 2026-10-15
 
 Run invitations through chat, a better Known systems list, the character sheet explaining what moves an attribute, and exchange jobs that survive a target going dark.
@@ -3326,7 +3344,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.62.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.62.2...HEAD
+[0.62.2]: https://github.com/nahkampf/dedlok/compare/v0.62.1...v0.62.2
 [0.62.1]: https://github.com/nahkampf/dedlok/compare/v0.62.0...v0.62.1
 [0.62.0]: https://github.com/nahkampf/dedlok/compare/v0.61.1...v0.62.0
 [0.61.1]: https://github.com/nahkampf/dedlok/compare/v0.61.0...v0.61.1
