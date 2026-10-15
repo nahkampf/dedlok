@@ -45,6 +45,29 @@ enum ProgramKind: string
     case Pathfinder = 'pathfinder';
 
     /**
+     * Steals one of compute, RAM or storage from the system it is installed on for a Data Fortress, and is spent by
+     * installing it (a run action), never run. Its `qflops_cost`, `memory_cost` and `storage_size` are what it TAKES, and
+     * exactly one is non-zero (the first non-zero of compute, RAM, storage is the resource).
+     */
+    case Leecher = 'leecher';
+
+    /** Programs hosted on a Data Fortress, never run on a deck. Tier order for the shutdown: producer, utility, IDS, ICE. */
+    case Producer = 'producer';
+    /** A helper that makes the fortress's producers work faster (its `produces.boost`, per cent). */
+    case Booster = 'booster';
+    case Utility = 'utility';
+    /** The fortress's public market: lists files from one storage area. */
+    case Market = 'market';
+    /** Makes the fortress read as empty; it has a strength, a decloaker beats it. */
+    case Cloak = 'cloak';
+    /** Moves the fortress every so many hours. */
+    case Relocation = 'relocation';
+    case FortressIds = 'fortress_ids';
+    case FortressIce = 'fortress_ice';
+    /** An optional crafted Kernel item; the fortress's own Kernel is implicit (config). Highest tier. */
+    case Kernel = 'kernel';
+
+    /**
      * May a program of this kind run outside a cyberspace run?
      *
      * A default rather than a rule: `programs.background_process` is the
@@ -60,7 +83,33 @@ enum ProgramKind: string
             // scanning IS the safe run type. It idles and listens, which is
             // the shape of a background job.
             self::Decryptor, self::Daemon, self::Analyser, self::Script, self::Locator, self::Pathfinder => true,
-            self::Icebreaker, self::Evasion => false,
+            self::Icebreaker, self::Evasion, self::Leecher,
+            self::Producer, self::Booster, self::Utility, self::Market, self::Cloak, self::Relocation,
+            self::FortressIds, self::FortressIce, self::Kernel => false,
+        };
+    }
+
+    /** Never run on a deck: installed (on a system, or on a fortress). */
+    public function neverRunsOnADeck(): bool
+    {
+        return $this === self::Leecher || $this->isHosted();
+    }
+
+    /** Hosted on a Data Fortress. */
+    public function isHosted(): bool
+    {
+        return in_array($this, [self::Producer, self::Booster, self::Utility, self::Market, self::Cloak, self::Relocation, self::FortressIds, self::FortressIce, self::Kernel], true);
+    }
+
+    /** Where it sits in the shutdown order: the lowest goes first, the Kernel last. */
+    public function tier(): int
+    {
+        return match ($this) {
+            self::Producer => 0,
+            self::Booster, self::Utility, self::Market, self::Cloak, self::Relocation => 1,
+            self::FortressIds => 2,
+            self::FortressIce => 3,
+            default => 4,
         };
     }
 

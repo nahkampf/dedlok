@@ -1122,6 +1122,22 @@ in `RequireCharacter`'s allow-list because the first thing a new account sees is
 marked seen by the migration**, and `UserFactory` makes test users seen, so only a test that sets `seen_discord_at` to NULL meets it.
 Text and URL are `strings.discord.*`.
 
+### Data Fortresses
+
+**`CYBERSPACE.md`, *Data Fortresses*, is the document and has the list of what is built.** A player's own node: a `System` of type `fortress`
+with `owner_character_id`, founded by spending a Kernel item, run on resources its Leechers borrow.
+
+- **Everything is in `App\Cyberspace\Fortress*` and `Leeches`, one writer each**: `Fortresses` (founding, freezing, alarms), `Leeches`,
+  `FortressHost` (hosting and the shutdown order, and the one place the running ICE/IDS/cloak are synced onto the system row),
+  `FortressAccess` (roles, members, settings), `FortressAreas`, `FortressVault`, `FortressMarket`, `FortressDefence`, `FortressRaid`,
+  `FortressRelocation`, `FortressLog`. The simulator reads the system row it always read; nothing in it knows about a fortress except
+  the Extract/Burn branches, the Leech action and the turn gap.
+- **A fortress is never shut, restocked or re-rolled like an NPC node** (`Lockdown::afterRun`, `NodeStocker` and `DefendSystems` skip the type).
+- **`fortress:settle` (every five minutes) and the fortress screen both call `FortressHost::settle()`**, so a fortress is true when looked at
+  and between looks. A hosted program is an `inventory_items` row with `fortress_system_id` set: out of the stash (`scopeLoose`), no stack
+  key, one copy per row.
+- **Every number is a config placeholder** (`cyberspace.fortress.*`); balance is the last step.
+
 ### Narrative encounters
 
 **`CITY.md`, *Encounters*, is the document.** Something that happens to a character in the City:

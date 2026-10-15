@@ -148,7 +148,7 @@ final readonly class MapCell
 
         return match ($type) {
             SystemType::Silo, SystemType::Compute, SystemType::Relay,
-            SystemType::Exchange => "cell--{$type->value}",
+            SystemType::Exchange, SystemType::Fortress => "cell--{$type->value}",
             default => null,
         };
     }
@@ -170,6 +170,7 @@ final readonly class MapCell
             SystemType::Compute => "\u{232C}",   // ⌬ a part that thinks
             SystemType::Relay => "\u{2630}",     // ☰ channels
             SystemType::Exchange => "\u{2696}",  // ⚖ a deal, not a machine
+            SystemType::Fortress => "\u{25C8}",  // ◈ a core within a shell: a keep (one of the proven set; see Item::GLYPHS)
             default => $this->contact !== null ? "\u{25C6}" : '',
         };
 

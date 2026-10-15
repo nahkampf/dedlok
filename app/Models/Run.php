@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'address', 'x', 'y', 'purpose', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
+#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'x', 'y', 'purpose', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -49,6 +49,8 @@ class Run extends Model
             'thermal_load' => 'integer',
             'purpose' => RunPurpose::class,
             'started_at' => 'immutable_datetime',
+            'pull_at' => 'immutable_datetime',
+            'turn_at' => 'immutable_datetime',
             'ended_at' => 'immutable_datetime',
             'log' => 'array',
         ];

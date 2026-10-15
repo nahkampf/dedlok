@@ -2,6 +2,36 @@
 
 ## [Unreleased]
 
+## [0.62.0] — 2026-10-15
+
+Co-operative runs, and Data Fortresses: a player's own node, built on borrowed resources.
+
+### Added
+
+- **Co-op runs.** `coop_slots` is read (`Character::coopSlots()`, Coordinated Strike and Advanced Coordination feed it). A runner forms a party at the door of a system from the run briefing (`run_parties`, `run_party_members`, `Parties` the only writer), invites by handle up to their slots, sets *Share credits* and *Share extraction* (even, 50% cut, full cut, `ShareMode`), and on Start every joined member goes in with the loadout they chose (`runs.run_party_id`). Creds, catalogue items and files are dealt by the chosen mode (`PartyShare`, largest remainder, owner first). A round resolves when everyone has chosen or 30 seconds pass (`PartyTurns`, resolved by whoever's request arrives first, absent runners by a default policy); detection and the ICE are shared, and the ICE strikes once a round at the runner with the highest priority (damage dealt plus how little stealth they have). The IDS rolls for every participant.
+- **Data Fortresses**, all of `CYBERSPACE.md`'s *Data Fortresses* section (the list of what is built is there): founding by spending a Kernel item; Leechers (a run action, nightly discovery) whose live totals are the fortress's resources; hosted programs and the shutdown order, the Kernel implicit and last, offline fortresses deleted after 48 hours; a vault with storage areas, per-audience permissions, custom roles and an audit log; the raid (a random file every five seconds, by itself, with the wallet taken too) and its alarms; the Kernel burn with System Integrity and resistances, and the Frozen Kernel; crafted ICE, IDS and cloak carrying their maker's numbers, decaying while installed, and maintenance; the public market with tax and the fortress wallet; the cloak and its decloaker contest; relocation.
+- **New program kinds** `leecher`, `producer`, `utility`, `market`, `cloak`, `relocation`, `fortress_ids`, `fortress_ice`, `kernel`; stats `defence_quality`, `decloak_strength`, `maintenance_boost`, `maintenance_efficiency`, `fortress_slots`; wallet reasons `fortress_market`, `fortress_sale`, `fortress_wallet`; `fortress:settle` every five minutes and `cyberspace:find-leeches` nightly.
+- **Item card effects**: the stash card lists an item's effects (its modifiers), with names for the older damage stats.
+
+### Changed
+
+- Fractional loyalty, the player market lists a chosen quantity, drug tolerance tools: see 0.61.x.
+
+### Also in 0.62.0
+
+- **Cloak as a disguise**: a running Cloak program lets the owner present the fortress as another grade, type and owner to everyone without access (no decloaker).
+- **Producers and boosters**: per six-hour cycle (the targetable stat `production_cycle_minutes`, 360, shortened by boosters) a producer gives a rolled range of creds, a count of component files, or production towards a program job; a five-job queue; the vault keeps any data item.
+- The fortress map glyph is ◈.
+
+### Migrations (fourteen, all new tables or columns)
+
+`run_parties`, `run_parties_launch`, `party_rounds`, `data_fortresses_found`, `leechers`, `fortress_hosting`, `fortress_raid`, `fortress_kernel_burn`, `fortress_access`, `fortress_defences`, `fortress_roles_areas_log`, `fortress_market_cloak_relocation`, `fortress_cloak_disguise`, `fortress_production`. The program-kind and system-type CHECK constraints are widened (MySQL only).
+
+### Not built
+
+A Design's component filters are not applied by a producer. Every number is a placeholder in `cyberspace.fortress.*`; balance is the last step.
+
+
 ## [0.61.1] — 2026-10-15
 
 Listing part of a pile on the player market, links to listings in chat and bios, and a tidier clinic panel in the location editor.
@@ -3277,7 +3307,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.61.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.62.0...HEAD
+[0.62.0]: https://github.com/nahkampf/dedlok/compare/v0.61.1...v0.62.0
 [0.61.1]: https://github.com/nahkampf/dedlok/compare/v0.61.0...v0.61.1
 [0.61.0]: https://github.com/nahkampf/dedlok/compare/v0.60.0...v0.61.0
 [0.60.0]: https://github.com/nahkampf/dedlok/compare/v0.59.0...v0.60.0

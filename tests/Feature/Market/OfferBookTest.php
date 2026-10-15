@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Market;
 
 use App\Inventory\Imprint;
+use App\Inventory\ItemGranter;
 use App\Market\OfferBook;
 use App\Market\OfferRefusal;
 use App\Models\Character;
@@ -55,6 +56,21 @@ final class OfferBookTest extends TestCase
         // had to learn that a market exists.
         $this->assertFalse($this->isLoose($row));
         $this->assertTrue($row->fresh()->isListed());
+    }
+
+    public function test_a_granted_copy_does_not_merge_into_a_listed_pile(): void
+    {
+        $row = $this->owned($this->seller, stackable: true);
+        $this->assertInstanceOf(MarketOffer::class, app(OfferBook::class)->list($this->seller, $row, 250));
+
+        ItemGranter::grant($this->seller, $row->item, 1);
+
+        $this->assertSame(1, (int) $row->fresh()->quantity, 'the listing is untouched');
+        $this->assertSame(
+            1,
+            InventoryItem::query()->where('character_id', $this->seller->id)->loose()->where('item_id', $row->item_id)->sum('quantity'),
+            'the new copy is loose in the stash',
+        );
     }
 
     public function test_a_skill_imprint_may_be_sold_between_players(): void

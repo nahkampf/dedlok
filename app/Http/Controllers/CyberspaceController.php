@@ -11,6 +11,9 @@ use App\Cyberspace\BookmarkKeeper;
 use App\Cyberspace\BookmarkKind;
 use App\Cyberspace\ChainBuilder;
 use App\Cyberspace\Finder;
+use App\Cyberspace\FortressCloak;
+use App\Cyberspace\Fortresses;
+use App\Cyberspace\FortressRefusal;
 use App\Cyberspace\Grid;
 use App\Cyberspace\MapView;
 use App\Cyberspace\Navigator;
@@ -19,6 +22,7 @@ use App\Cyberspace\Probe;
 use App\Cyberspace\ScanExporter;
 use App\Cyberspace\ScanExportRefusal;
 use App\Cyberspace\SweepResult;
+use App\Cyberspace\SystemType;
 use App\Cyberspace\TravelRefusal;
 use App\Cyberspace\TravelResult;
 use App\Cyberspace\ViewShape;
@@ -190,9 +194,13 @@ class CyberspaceController extends Controller
              *
              */
             'target' => $target = $character->isJackedIn()
-                ? System::query()->at($character->gridPosition())->first()
+                ? ($live = System::query()->at($character->gridPosition())->first()) === null ? null : FortressCloak::mask($live, $character)
                 : null,
             'canRun' => $target !== null && $target->type->isInteractable() && ! $target->isLockedDown(),
+            // A Data Fortress Kernel in the stash, offered only on an empty square (founding is Fortresses' to refuse).
+            'kernel' => $character->isJackedIn() && $target === null
+                ? $character->inventory()->loose()->whereHas('item', fn ($q) => $q->where('slug', config('cyberspace.fortress.kernel')))->first()
+                : null,
             // Authored encounters offered at this system: a button each in the Interact box.
             'spots' => $target === null ? collect() : app(Encounters::class)->spotsAt($character, $target),
             // What the character already holds in this system, for the Interact box: a backdoor row is access, so
@@ -250,8 +258,8 @@ class CyberspaceController extends Controller
             ->pluck('grade', 'address');
 
         // An Exchange cannot be scanned and its grade is no secret (the desk's own), so it is read off the system.
-        $exchanges = \App\Models\System::query()
-            ->whereIn('address', $contacts->where('type', \App\Cyberspace\SystemType::Exchange)->pluck('address'))
+        $exchanges = System::query()
+            ->whereIn('address', $contacts->where('type', SystemType::Exchange)->pluck('address'))
             ->whereNotNull('grade')
             ->pluck('grade', 'address');
         $grades = $grades->union($exchanges);
@@ -597,6 +605,24 @@ class CyberspaceController extends Controller
      * happens to be filled in, so a request carrying both is refused rather
      * than guessed at.
      */
+    /** "Found here": spend a Data Fortress Kernel on the empty square under the character. */
+    public function found(Request $request): RedirectResponse
+    {
+        $character = $this->character($request);
+        $kernel = $character->inventory()->loose()
+            ->whereHas('item', fn ($q) => $q->where('slug', config('cyberspace.fortress.kernel')))->first();
+
+        if ($kernel === null) {
+            return back()->with('error', FortressRefusal::NotAKernel->message());
+        }
+
+        $result = (new Fortresses)->found($character, $kernel);
+
+        return $result instanceof FortressRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get('cyberspace.fortress.founded'));
+    }
+
     public function bookmark(Request $request): RedirectResponse
     {
         $data = $request->validate([

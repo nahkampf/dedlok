@@ -11,6 +11,7 @@ use App\Skills\TrainingRate;
 use App\Stats\Context;
 use App\Stats\Modifier;
 use App\Stats\ResolvedStat;
+use App\Stats\Resolver;
 use App\Stats\Sheet;
 use App\Stats\Sources\ActiveDoses;
 use App\Stats\Sources\ArchetypePerks;
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\App;
 
 /**
  * A player's character. One per user.
@@ -737,6 +739,18 @@ class Character extends Model
     public static function derivedStats(): array
     {
         return array_keys((array) config('stats.formulas', []));
+    }
+
+    /**
+     * How many other runners this character may take into a system or a fortress raid: the `coop_slots` stat, zero
+     * unless Coordinated Strike or Advanced Coordination (or anything else carrying it) says otherwise. The base is
+     * handed in from config, as `program_threads`' is, so the stat is a number and not a formula.
+     */
+    public function coopSlots(): int
+    {
+        return App::make(Resolver::class)
+            ->resolve('coop_slots', (float) config('cyberspace.coop.slots', 0), $this->modifiers())
+            ->toInt();
     }
 
     /**

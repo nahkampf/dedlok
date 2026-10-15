@@ -20,6 +20,7 @@ return [
         'analyser' => 'analyser_crafting',
         'decryptor' => 'decryptor_crafting',
         'script' => 'script_crafting',
+        'leecher' => 'leecher_crafting',
     ],
     'gate_level' => 1,
 

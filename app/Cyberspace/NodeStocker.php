@@ -83,7 +83,7 @@ final class NodeStocker
         $this->weights = LootTable::weights()->all();
 
         System::query()
-            ->whereNot('type', SystemType::Portal->value)
+            ->whereNotIn('type', [SystemType::Portal->value, SystemType::Fortress->value])
             ->whereDoesntHave('contents')
             ->chunkById(self::CHUNK, function ($systems) use ($result, $encryption, $items, $dryRun): void {
                 $rows = [];

@@ -20,6 +20,8 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Mission;
 use App\Models\Run;
+use App\Models\RunParty;
+use App\Models\RunPartyMember;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemScan;
@@ -373,6 +375,51 @@ final class RunBriefingTest extends TestCase
 
     // ---- fixtures ------------------------------------------------------------
 
+    public function test_the_owner_starts_a_run_for_every_joined_member_and_the_party_ends_with_it(): void
+    {
+        Config::set('cyberspace.coop.slots', 2);
+        $this->machine();
+        $friend = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3]));
+        $this->equipReadyDeck($friend);
+        $friend->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
+
+        $owner = $this->actingAs($this->character->user);
+        $owner->post(route('run.party.open'), ['share_credits' => 'even', 'share_extraction' => 'even']);
+        $owner->post(route('run.party.invite'), ['handle' => $friend->handle]);
+        $this->actingAs($friend->user)->post(route('run.party.accept'))->assertRedirect(route('run.setup'));
+
+        // A member cannot start a run of their own.
+        $this->actingAs($friend->user)->post(route('run.start'), ['purpose' => RunPurpose::Extraction->value])
+            ->assertSessionHas('error');
+
+        $this->actingAs($this->character->user)->post(route('run.start'), ['purpose' => RunPurpose::Extraction->value])
+            ->assertRedirect(route('run.show'));
+
+        $mine = $this->character->fresh()->currentRun;
+        $theirs = $friend->fresh()->currentRun;
+        $this->assertNotNull($mine);
+        $this->assertNotNull($theirs);
+        $this->assertNotSame($mine->id, $theirs->id);
+        $this->assertSame($mine->run_party_id, $theirs->run_party_id);
+        $this->assertNotNull($mine->run_party_id);
+
+        // A round: the first choice waits for the other, and the second resolves it for both.
+        $this->actingAs($this->character->user)->post(route('run.act'), ['action' => 'hold'])->assertRedirect(route('run.show'));
+        $this->assertSame('hold', $mine->fresh()->pending_action);
+        $this->assertSame(0, $mine->fresh()->turn);
+
+        // A fresh user: the one held above has the character from before the run began cached on it.
+        $this->actingAs($friend->fresh()->user)->post(route('run.act'), ['action' => 'hold'])->assertRedirect(route('run.show'));
+        $this->assertSame(1, $mine->fresh()->turn);
+        $this->assertSame(1, $theirs->fresh()->turn);
+        $this->assertNull($mine->fresh()->pending_action);
+
+        // Nobody answering is not a stall: past the deadline the next look resolves it by policy.
+        RunParty::query()->update(['round_started_at' => now()->subSeconds(31)]);
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk();
+        $this->assertSame(2, $mine->fresh()->turn);
+    }
+
     private function machine(?int $iceLevel = null): System
     {
         $factory = System::factory()->at(8, 8)->grade(1)->withTracer(2, 4);
@@ -416,5 +463,20 @@ final class RunBriefingTest extends TestCase
     private function visit()
     {
         return $this->actingAs($this->character->fresh()->user)->get(route('run.setup'));
+    }
+
+    public function test_a_trained_runner_forms_a_party_and_invites_from_the_briefing(): void
+    {
+        Config::set('cyberspace.coop.slots', 2);
+        $this->machine();
+        $friend = Character::factory()->create();
+
+        $this->actingAs($this->character->user)->post(route('run.party.open'), ['share_credits' => 'half', 'share_extraction' => 'full'])
+            ->assertRedirect(route('run.setup'));
+        $this->actingAs($this->character->user)->post(route('run.party.invite'), ['handle' => $friend->handle])
+            ->assertRedirect(route('run.setup'));
+
+        $this->visit()->assertOk()->assertSee($friend->handle)->assertSee(Text::get('cyberspace.party.disband'));
+        $this->assertSame(1, RunPartyMember::query()->count());
     }
 }

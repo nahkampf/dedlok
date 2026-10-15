@@ -556,6 +556,19 @@
                         @error('lifetime_seconds') <span class="field__error">{{ $message }}</span> @enderror
                     </div>
 
+                    {{-- A fortress Producer's outputs (blank is none) and a Booster's boost. --}}
+                    <div class="row row--wrap" style="--gap:var(--s-3);margin-top:var(--s-3)">
+                        @foreach (['produce_credits_min' => 'credits_min', 'produce_credits_max' => 'credits_max', 'produce_components' => 'components', 'produce_programs' => 'programs', 'produce_boost' => 'boost'] as $field => $key)
+                            <div class="field" @error($field) data-invalid @enderror>
+                                <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
+                                <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0" step="0.01"
+                                       value="{{ old($field, $item?->program?->produces[$key] ?? '') }}" style="width:8rem">
+                                @error($field) <span class="field__error">{{ $message }}</span> @enderror
+                            </div>
+                        @endforeach
+                    </div>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.produce_hint') }}</span>
+
                     {{-- A Pathfinder's speed: seconds per move when it walks the grid for you. Blank is the default. --}}
                     <div class="field" style="margin-top:var(--s-3)" @error('traverse_seconds') data-invalid @enderror>
                         <label class="field__label" for="traverse_seconds">{{ Text::get('admin.items.fields.traverse_seconds') }}</label>

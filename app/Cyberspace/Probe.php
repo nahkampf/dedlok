@@ -611,7 +611,7 @@ final class Probe
             $found[] = $unknown;
 
             match ($unknown) {
-                'grade' => $scan->grade = $system->grade,
+                'grade' => $scan->grade = FortressCloak::mask($system, $character)->grade,
                 'os' => $scan->os_skill_id = $system->os_skill_id,
                 // A machine with no intrusion detection answers ZERO rather
                 // than staying null: "there is none" is a finding, and it is

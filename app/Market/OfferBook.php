@@ -167,7 +167,7 @@ final readonly class OfferBook
                 ->where('character_id', $row->character_id)
                 ->where('item_id', $row->item_id)
                 ->whereKeyNot($row->getKey())
-                ->whereNull('parent_id')->whereNull('running_on_deck_id')->whereNull('belt_slot')->whereNull('installed_at')
+                ->whereNull('parent_id')->whereNull('running_on_deck_id')->whereNull('belt_slot')->whereNull('installed_at')->whereNull('fortress_system_id')
                 ->whereDoesntHave('offer')
                 ->whereNotNull('stack_key')
                 ->lockForUpdate()

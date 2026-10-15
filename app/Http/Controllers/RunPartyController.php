@@ -1,0 +1,76 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers;
+
+use App\Cyberspace\Party\Parties;
+use App\Cyberspace\Party\PartyRefusal;
+use App\Cyberspace\Party\ShareMode;
+use App\Models\Character;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+/** The party forming at a system's door. Every rule is in Parties; this only carries the answer back. */
+class RunPartyController extends Controller
+{
+    public function open(Request $request, Parties $parties): RedirectResponse
+    {
+        [$credits, $extraction] = $this->modes($request);
+
+        return $this->back($parties->open($this->character($request), $credits, $extraction));
+    }
+
+    public function options(Request $request, Parties $parties): RedirectResponse
+    {
+        [$credits, $extraction] = $this->modes($request);
+
+        return $this->back($parties->options($this->character($request), $credits, $extraction));
+    }
+
+    public function invite(Request $request, Parties $parties): RedirectResponse
+    {
+        $data = $request->validate(['handle' => ['required', 'string', 'max:40']]);
+
+        return $this->back($parties->invite($this->character($request), trim($data['handle'])));
+    }
+
+    public function accept(Request $request, Parties $parties): RedirectResponse
+    {
+        $data = $request->validate(['loadout' => ['nullable', 'array', 'max:20'], 'loadout.*' => ['integer', 'distinct']]);
+
+        return $this->back($parties->accept($this->character($request), $data['loadout'] ?? []));
+    }
+
+    public function leave(Request $request, Parties $parties): RedirectResponse
+    {
+        $parties->leave($this->character($request));
+
+        return redirect()->route('run.setup');
+    }
+
+    /** @return array{0: ShareMode, 1: ShareMode} */
+    private function modes(Request $request): array
+    {
+        $values = array_map(static fn (ShareMode $m): string => $m->value, ShareMode::cases());
+        $data = $request->validate([
+            'share_credits' => ['required', Rule::in($values)],
+            'share_extraction' => ['required', Rule::in($values)],
+        ]);
+
+        return [ShareMode::from($data['share_credits']), ShareMode::from($data['share_extraction'])];
+    }
+
+    private function back(mixed $result): RedirectResponse
+    {
+        $response = redirect()->route('run.setup');
+
+        return $result instanceof PartyRefusal ? $response->with('error', $result->message()) : $response;
+    }
+
+    private function character(Request $request): Character
+    {
+        return $request->user()->character()->firstOrFail();
+    }
+}

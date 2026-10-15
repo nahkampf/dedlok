@@ -551,6 +551,56 @@ return [
         ],
 
         /*
+        | How many Data Fortresses a character may hold. The base is `cyberspace.fortress.cap` (one); a skill raises it.
+        */
+        'fortress_slots' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'floor',
+        ],
+
+        /*
+        | The minutes in one production cycle of a producer this character installed. The base is
+        | `cyberspace.fortress.produce.cycle_minutes` (360) and anything may target it (a skill's percentage of base,
+        | a flat add), so it is a stat and not a number. Boosters running on the fortress shorten it further.
+        */
+        'production_cycle_minutes' => [
+            'tags' => ['crafting'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+
+        /*
+        | What a maintenance pass by this character does to a fortress program: raise its values by this per cent, and cut
+        | its compute, RAM and storage demand by this per cent (each capped in config). Zero until a skill grants it.
+        */
+        'maintenance_boost' => [
+            'tags' => ['crafting'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+        'maintenance_efficiency' => [
+            'tags' => ['crafting'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+
+        /*
+        | How well a maker's fortress ICE and IDS come out, as a percent over their base. Read when a defence is
+        | crafted and then frozen onto that copy. Zero for everybody until a skill grants it.
+        */
+        'defence_quality' => [
+            'tags' => ['crafting'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+
+        /*
         | What an attack rolls against (COMBAT.md, *Defence*). There is no dodge, by decision: a declared stat with a
         | flat base in `bases`, so skills, implants and drugs reach it as modifiers. `Character::stat('defence')`.
         */

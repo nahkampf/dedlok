@@ -79,6 +79,9 @@ enum ProcessRefusal: string
     /** Listed on the market: the offer promises the buyer it is untouched, so it cannot be run meanwhile. */
     case Listed = 'listed';
 
+    /** A Leecher is installed on a system from a run, never run on a deck. */
+    case NotRunnable = 'not_runnable';
+
     public function message(): string
     {
         return Text::get("programs.refused.{$this->value}");
