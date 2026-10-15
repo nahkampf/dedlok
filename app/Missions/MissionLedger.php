@@ -212,7 +212,7 @@ final readonly class MissionLedger
 
             // A target that stopped existing voids the job even at the desk:
             // the runner walked here for nothing, and that is not a failure.
-            if ($this->hasLostATarget($live)) {
+            if (! $this->retarget($live)) {
                 $this->void($live);
 
                 return MissionRefusal::Gone;
@@ -313,7 +313,7 @@ final readonly class MissionLedger
             ->cursor();
 
         foreach ($due as $mission) {
-            if ($this->hasLostATarget($mission)) {
+            if (! $this->retarget($mission)) {
                 $this->void($mission);
                 $voided++;
 
@@ -328,22 +328,61 @@ final readonly class MissionLedger
     }
 
     /**
-     * Has anything this job named stopped being what it named?
+     * Make sure every outstanding target still stands, handing out a new one where it does not.
      *
-     * Detected by the snapshot rather than by watching: the system row is
-     * gone, or its address no longer matches the one the job was written
-     * against. A locked-down target is the same case, because a lockdown's
-     * close is a relocation.
+     * A target that relocated or was burned is replaced by a system of the same grade and type, nearest the old
+     * position (any in the desk's band when the old row is gone), never one the job already names, a fortress or an
+     * abandoned system. The deadline is kept. Returns false only when nothing could stand in, which is the old
+     * void. Detected by the snapshot, as before: the row is gone, or its address is no longer the one written down.
      */
-    private function hasLostATarget(Mission $mission): bool
+    public function retarget(Mission $mission): bool
     {
-        foreach ($mission->targets()->whereNull('satisfied_at')->get() as $target) {
-            if (! $target->stillStands()) {
-                return true;
+        $mission->loadMissing('targets');
+        $character = $mission->character()->first();
+
+        foreach ($mission->targets->whereNull('satisfied_at') as $target) {
+            if ($target->stillStands()) {
+                continue;
+            }
+
+            $old = $target->system()->first();
+            $desk = $mission->exchange()->first();
+
+            $query = System::query()
+                ->whereIn('type', MissionBoard::targetableTypes())
+                ->where('type', '!=', 'fortress')
+                ->whereNull('abandoned_at')
+                ->whereNotIn('id', $mission->targets->pluck('system_id')->filter()->all())
+                ->where(fn ($q) => $q->whereNull('owner_id')->orWhere('owner_id', '!=', $mission->entity_id));
+
+            if ($old !== null) {
+                $query->where('grade', $old->grade)->where('type', $old->type)
+                    ->orderByRaw('ABS(x - ?) + ABS(y - ?)', [$old->x, $old->y]);
+            } elseif ($desk !== null) {
+                [$low, $high] = $desk->targetGrades();
+                $query->whereBetween('grade', [$low, $high])->inRandomOrder();
+            } else {
+                return false;
+            }
+
+            $new = $query->orderBy('id')->first();
+
+            if ($new === null) {
+                return false;
+            }
+
+            $was = (string) $target->address;
+            $target->forceFill(['system_id' => $new->getKey(), 'address' => $new->address])->save();
+
+            if ($character !== null) {
+                (new Notifier)->send($character, Category::Mission, 'mission_retargeted', [
+                    'old' => $was,
+                    'new' => (string) $new->address,
+                ], ['targets' => [['address' => (string) $new->address, 'grade' => $new->grade]]]);
             }
         }
 
-        return false;
+        return true;
     }
 
     /**

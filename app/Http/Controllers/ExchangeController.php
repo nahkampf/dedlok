@@ -20,6 +20,7 @@ use App\Standing\StandingLedger;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Number;
 use Illuminate\View\View;
 
 /**
@@ -56,6 +57,9 @@ class ExchangeController extends Controller
             : 0.0;
 
         $welcome = $system->exchange->willDealWith($standing);
+
+        Mission::query()->where('character_id', $character->id)->accepted()->get()
+            ->each(fn (Mission $m) => app(MissionLedger::class)->retarget($m));
 
         return view('exchange.show', [
             ...$this->shopContext($character),
@@ -161,7 +165,7 @@ class ExchangeController extends Controller
         // "Is yours" is a lie about a service, which lands nowhere.
         return back()->with('status', Text::get($result instanceof Service ? 'exchange.store_served' : 'exchange.store_bought', [
             'item' => $offer->displayName(),
-            'price' => \Illuminate\Support\Number::format((float) $offer->loyalty_price),
+            'price' => Number::format((float) $offer->loyalty_price),
         ]));
     }
 

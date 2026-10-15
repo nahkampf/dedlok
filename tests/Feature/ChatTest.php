@@ -14,6 +14,7 @@ use App\Models\ChatMessage;
 use App\Models\Entity;
 use App\Models\EntityBook;
 use App\Models\Notification;
+use App\Models\RunParty;
 use App\Support\PlainText;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Broadcast;
@@ -278,5 +279,19 @@ final class ChatTest extends TestCase
         $this->assertStringContainsString('data-listing="/market/listing/42"', $html);
         $this->assertStringContainsString('>market:42</button>', $html);
         $this->assertStringContainsString('&lt;b&gt;', $html);
+    }
+
+    public function test_a_run_link_becomes_a_join_button_labelled_with_the_address(): void
+    {
+        $party = RunParty::query()->create([
+            'owner_character_id' => Character::factory()->create()->id,
+            'address' => 'CAFEBABE', 'x' => 1, 'y' => 1,
+        ]);
+
+        $html = Markup::render("join run:{$party->id} or run:999999");
+
+        $this->assertStringContainsString('data-run-join="/run/party/'.$party->id.'/join"', $html);
+        $this->assertStringContainsString('>Run: CAFEBABE</button>', $html);
+        $this->assertStringContainsString('run:999999', $html);
     }
 }

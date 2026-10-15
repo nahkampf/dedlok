@@ -235,7 +235,7 @@ final readonly class MissionBoard
      *
      * @return list<string>
      */
-    private static function targetableTypes(): array
+    public static function targetableTypes(): array
     {
         return array_values(array_map(
             static fn (SystemType $type): string => $type->value,

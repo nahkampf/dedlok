@@ -167,6 +167,34 @@
     const dlg = document.querySelector(btn.dataset.open);
     if (dlg && dlg.showModal) dlg.showModal();
   });
+  /* A run link (`run:<id>` in chat): ask to join that party, say how it went, and go to the briefing on success. */
+  on("click", "[data-run-join]", (e, btn) => {
+    e.preventDefault();
+    const token = document.querySelector('meta[name="csrf-token"]')?.content;
+    fetch(btn.dataset.runJoin, {
+      method: "POST",
+      headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest", ...(token ? { "X-CSRF-TOKEN": token } : {}) },
+      credentials: "same-origin",
+    })
+      .then((r) => r.json().then((j) => ({ ok: r.ok, ...j })))
+      .then(async (j) => {
+        // Invited but elsewhere: the address goes to the clipboard, for Jump.
+        if (j.copy) {
+          try {
+            await navigator.clipboard.writeText(j.copy);
+            toast(j.message);
+          } catch {
+            toast(j.message.replace(/ is copied: paste it/, " (copy it): paste it"), { level: "warn" });
+          }
+
+          return;
+        }
+
+        toast(j.message, { level: j.ok ? "ok" : "warn" });
+        if (j.ok && j.url) setTimeout(() => { location.href = j.url; }, 800);
+      })
+      .catch(() => toast("Could not join the run.", { level: "warn" }));
+  });
   /* A listing link (`market:<id>` in chat or a bio): fetch the card fresh into #listing and open it. */
   on("click", "[data-listing]", (e, btn) => {
     e.preventDefault();
@@ -662,10 +690,13 @@
       layer = document.createElement("div");
       layer.className = "inspector";
       layer.setAttribute("role", "tooltip");
+      // In the top layer, so a card pointed at from inside a modal (the known systems) is not hidden under it.
+      if ("showPopover" in layer) layer.setAttribute("popover", "manual");
       document.body.appendChild(layer);
     }
     layer.replaceChildren(body);
     layer.hidden = false;
+    if (layer.hasAttribute("popover") && !layer.matches(":popover-open")) layer.showPopover();
     place(el);
     layer.setAttribute("data-shown", "");
   }
@@ -674,6 +705,7 @@
     if (!layer) return;
     layer.removeAttribute("data-shown");
     layer.hidden = true;
+    if (layer.hasAttribute("popover") && layer.matches(":popover-open")) layer.hidePopover();
   }
 
   // pointerover/out rather than enter/leave: only the bubbling pair reaches a

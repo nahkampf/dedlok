@@ -295,4 +295,22 @@ final class CharacterSheetTest extends TestCase
     {
         $this->get(route('character.index'))->assertRedirect(route('login'));
     }
+
+    public function test_an_attribute_a_dose_lowered_says_which_dose_and_by_how_much(): void
+    {
+        $character = Character::factory()->create(array_fill_keys(Character::ATTRIBUTES, 20));
+        $drug = Item::factory()->create([
+            'name' => 'Rewire',
+            'modifiers' => [['op' => 'percentage_of_base', 'amount' => -10, 'target' => ['id' => 'intellect']]],
+        ]);
+        Dose::query()->create([
+            'character_id' => $character->id, 'item_id' => $drug->id, 'potency' => 1.0,
+            'started_at' => now()->subMinute(), 'expires_at' => now()->addHour(),
+        ]);
+
+        $this->actingAs($character->user)->get(route('character.index'))
+            ->assertOk()
+            ->assertSee('Rewire')
+            ->assertSee('−2');
+    }
 }

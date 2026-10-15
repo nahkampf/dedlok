@@ -264,12 +264,17 @@ class CyberspaceController extends Controller
             ->pluck('grade', 'address');
         $grades = $grades->union($exchanges);
 
+        // Every live scan the character holds, by address: a whole one is ticked, and any is shown on hover.
+        $scans = SystemScan::query()->where('character_id', $character->getKey())->live()->get()->keyBy('address');
+
         $rows = $contacts->map(static fn (SystemContact $c): array => [
             'name' => $c->name,
             'owner' => (string) ($c->owner ?? ''),
             'type' => $c->type,
             'address' => $c->address,
             'grade' => $grades->has($c->address) ? (int) $grades->get($c->address) : null,
+            'scan' => $scans->get($c->address),
+            'complete' => $scans->get($c->address)?->isComplete() === true,
         ]);
 
         $owner = trim((string) $request->query('owner', ''));
@@ -304,6 +309,7 @@ class CyberspaceController extends Controller
             'options' => $options,
             'selected' => ['owner' => $owner, 'type' => $type, 'grade' => $grade],
             'jackedIn' => $character->isJackedIn(),
+            'character' => $character,
         ]);
     }
 

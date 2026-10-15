@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Chat;
 
+use App\Cyberspace\Party\Parties;
 use App\Events\ChatLine;
 use App\Models\Character;
 use App\Models\Chat;
@@ -105,7 +106,17 @@ final class Chats
             $text = $m[2];
         }
 
-        return $this->write($from, $in, $text);
+        $line = $this->write($from, $in, $text);
+
+        // The owner of a party pasting `run:<id>` in a private line invites the people in it (never in General or a
+        // public room: there are no open invitations).
+        try {
+            (new Parties)->inviteFromChat($from, $text, $in);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return $line;
     }
 
     public function direct(Character $a, Character $b): Chat

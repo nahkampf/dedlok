@@ -8,6 +8,9 @@ use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Party\PartyRefusal;
 use App\Cyberspace\Party\ShareMode;
 use App\Models\Character;
+use App\Models\RunParty;
+use App\Support\Text;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -41,6 +44,28 @@ class RunPartyController extends Controller
         $data = $request->validate(['loadout' => ['nullable', 'array', 'max:20'], 'loadout.*' => ['integer', 'distinct']]);
 
         return $this->back($parties->accept($this->character($request), $data['loadout'] ?? []));
+    }
+
+    /** Accept by id, from a `run:<id>` link in chat; only for somebody invited. JSON for the page's script, a redirect otherwise. */
+    public function join(Request $request, RunParty $party, Parties $parties): JsonResponse|RedirectResponse
+    {
+        $refusal = $parties->acceptInto($this->character($request), $party);
+
+        if ($request->expectsJson()) {
+            // Invited but not at the system: hand back its address to copy, to paste into Jump.
+            $away = $refusal === PartyRefusal::NotAtTheDoor;
+
+            return response()->json([
+                'ok' => $refusal === null,
+                'message' => $away
+                    ? Text::get('cyberspace.party.address_copied', ['address' => $party->address])
+                    : ($refusal?->message() ?? Text::get('cyberspace.party.joined_now')),
+                'url' => route('run.setup'),
+                'copy' => $away ? $party->address : null,
+            ], $refusal === null || $away ? 200 : 422);
+        }
+
+        return $this->back($refusal);
     }
 
     public function leave(Request $request, Parties $parties): RedirectResponse

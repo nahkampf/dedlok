@@ -9,6 +9,7 @@ use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunResult;
 use App\Cyberspace\RunStarter;
 use App\Models\Character;
+use App\Models\Chat;
 use App\Models\InventoryItem;
 use App\Models\Run;
 use App\Models\RunParty;
@@ -144,6 +145,46 @@ final class Parties
 
             return null;
         });
+    }
+
+    /**
+     * Accept the invitation to THIS party (the id from a `run:<id>` link). There are no open invitations on the grid:
+     * a link only works for somebody the owner has actually invited, by handle or by pasting it in a private line.
+     */
+    public function acceptInto(Character $character, RunParty $party): ?PartyRefusal
+    {
+        $invited = RunPartyMember::query()->where('character_id', $character->getKey())->where('run_party_id', $party->getKey())->exists();
+
+        return $invited ? $this->accept($character) : PartyRefusal::NotInvited;
+    }
+
+    /**
+     * A line the owner posted in a direct line or a private room carries `run:<id>`: everybody else in that chat is
+     * invited, as far as the slots go. A public room, or General, invites nobody.
+     */
+    public function inviteFromChat(Character $owner, string $text, Chat $chat): void
+    {
+        if ($chat->kind === Chat::GENERAL || ($chat->kind === Chat::ROOM && $chat->is_public)) {
+            return;
+        }
+
+        if (preg_match_all('/\brun:(\d{1,10})\b/', $text, $m) < 1) {
+            return;
+        }
+
+        $party = RunParty::query()->where('owner_character_id', $owner->getKey())->whereIn('id', array_unique($m[1]))->first();
+
+        if ($party === null) {
+            return;
+        }
+
+        $handles = Character::query()
+            ->whereIn('id', DB::table('chat_members')->where('chat_id', $chat->getKey())->pluck('character_id'))
+            ->whereKeyNot($owner->getKey())->pluck('handle');
+
+        foreach ($handles as $handle) {
+            $this->invite($owner, (string) $handle);
+        }
     }
 
     /** Declining an invitation, leaving the party, or (for the owner) disbanding it: all one door. */

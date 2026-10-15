@@ -350,6 +350,41 @@ final class MissionTest extends TestCase
         $this->assertSame(MissionState::Voided, $mission->fresh()->state);
     }
 
+    /** A relocated target is swapped for the nearest system of its grade and type, and the player is told. */
+    public function test_a_relocated_target_is_replaced_by_one_of_the_same_grade_and_type(): void
+    {
+        $mission = $this->accepted(MissionAction::Scan);
+        $old = $mission->targets->first();
+        $was = $old->address;
+        $spare = $this->targets(1)->first();
+
+        $old->system->forceFill(['address' => 'FFFFFFFF'])->save();
+        Notification::query()->delete();
+
+        $this->assertTrue($this->ledger()->retarget($mission->fresh()));
+
+        $new = $old->fresh();
+        $this->assertSame($spare->id, $new->system_id);
+        $this->assertSame($spare->address, $new->address);
+        $this->assertSame(MissionState::Accepted, $mission->fresh()->state);
+
+        $message = Notification::query()->firstOrFail();
+        $this->assertSame('Mission Update', $message->title);
+        $this->assertSame("{$was} seems to have gone dark. We've assigned a new target for you: {$spare->address}", $message->body);
+    }
+
+    public function test_a_satisfied_target_is_left_alone(): void
+    {
+        $mission = $this->accepted(MissionAction::Scan);
+        $done = $mission->targets->first();
+        $done->forceFill(['satisfied_at' => now()])->save();
+        $done->system->forceFill(['address' => 'FFFFFFFF'])->save();
+        $this->targets(1);
+
+        $this->assertTrue($this->ledger()->retarget($mission->fresh()));
+        $this->assertSame($done->system_id, $done->fresh()->system_id);
+    }
+
     public function test_an_ending_nobody_watched_reaches_the_inbox(): void
     {
         $mission = $this->accepted(MissionAction::Scan);
