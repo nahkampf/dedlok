@@ -53,6 +53,50 @@ final class DrugLedger
         );
     }
 
+    /**
+     * Take tolerance off one family, floored at nothing, and return how much actually came off. Books that reach
+     * nothing on both figures are deleted, as the nightly decay does: absent and zero are the same answer.
+     */
+    public function lowerTolerance(Character $character, Family $family, int|float $amount): int|float
+    {
+        return $this->lower($character, $family, 'tolerance', $amount);
+    }
+
+    /** The same for addiction. A body that drops under the withdrawal line stops wearing it at once. */
+    public function lowerAddiction(Character $character, Family $family, int|float $amount): int|float
+    {
+        $taken = $this->lower($character, $family, 'addiction', $amount);
+
+        $this->reconcile($character, $family);
+
+        return $taken;
+    }
+
+    private function lower(Character $character, Family $family, string $figure, int|float $amount): int|float
+    {
+        $books = DrugUse::query()
+            ->where('character_id', $character->getKey())
+            ->where('family', $family->value)
+            ->lockForUpdate()
+            ->first();
+
+        if ($books === null) {
+            return 0;
+        }
+
+        $before = (float) $books->{$figure};
+        $after = max(0.0, round($before - (float) $amount, 2));
+        $other = (float) $books->{$figure === 'addiction' ? 'tolerance' : 'addiction'};
+
+        if ($after === 0.0 && $other === 0.0) {
+            $books->delete();
+        } else {
+            $books->forceFill([$figure => $after])->save();
+        }
+
+        return \App\Support\Points::of($before - $after);
+    }
+
     /** What a dose of this family is worth to this character right now, 0–1. */
     public function potencyFor(Character $character, Family $family): float
     {

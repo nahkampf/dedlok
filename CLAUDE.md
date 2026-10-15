@@ -1030,7 +1030,8 @@ never a `forceFill(['creds' => …])`.
   unlimited. **What a place buys vanishes** and `ShopKeeper::sell()` only takes what is in
   the character's hands. **`ShopKeeper` is the only door from a City shop to a stash** and writes
   neither of the market's tables nor looks at `on_market`; **`Clinic` prices per point
-  restored**, and its `quote()` and `treat()` share one `owed()`. Both ask `Presence` inside
+  restored** (and treats a drug family's `drug_<family>_addiction` / `_tolerance`, twelve `ClinicService` cases, by the
+  stored figure rounded up, through `DrugLedger::lowerAddiction()` / `lowerTolerance()`), and its `quote()` and `treat()` share one `owed()`. Both ask `Presence` inside
   their own lock — the page hiding a button guards nothing. A hidden place is the same 404
   as a missing one (`PlaceController` resolves through `visibleTo`). Money moves under a
   lock on the character row and recovery happens on that same locked instance.
@@ -1275,6 +1276,9 @@ why it had nothing to offer a medkit. A consumable changes a STORED number a sin
   kept** (`UseRefusal::NothingToDo`, as a service that would do nothing is by `LoyaltyExchange`), so a medkit is never
   wasted at full health. It refuses a stranger's row, a non-consumable, a copy that is not to hand (in a container, fitted),
   and **a live fight** (`InAFight`: COMBAT.md lists items mid-fight as later).
+- **`drug_<family>_tolerance` is a use effect too** (six cases, one per `Drugs\Family`): it takes that many points off the
+  family's stored tolerance through `DrugLedger::lowerTolerance()`, floored at nothing, and a pure consumable at zero tolerance is refused
+  as `NothingToDo`. A drug can carry it (applied after the dose's own gain, in the same transaction).
 - **`App\Items\ConsumableEditor` is the only writer of the table and clears the side an item stopped being.** The item
   editor has a Consumable panel with one whole-number field per kind (blank is none; zero and fractions are errors), and
   `ItemRequest` makes a consumable none of the other kinds (software, hardware, imprint, implant, armour, weapon,

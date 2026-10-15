@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\City;
 
+use App\Drugs\DrugLedger;
 use App\Models\Character;
 use App\Models\ClinicOffer;
 use App\Models\Location;
@@ -84,6 +85,9 @@ final class Clinic
                 ClinicService::SynapticIntegrity => $locked->recover('current_synaptic_integrity', $points),
                 ClinicService::NeuralDamage => (new InjuryLedger)->heal($locked, InjuryLedger::NEURAL, $points),
                 ClinicService::PhysicalTrauma => (new InjuryLedger)->heal($locked, InjuryLedger::TRAUMA, $points),
+                default => $service->figure() === 'addiction'
+                    ? (new DrugLedger)->lowerAddiction($locked, $service->family(), $points)
+                    : (new DrugLedger)->lowerTolerance($locked, $service->family(), $points),
             };
 
             $character->refresh();
@@ -100,6 +104,8 @@ final class Clinic
             ClinicService::SynapticIntegrity => Points::of(max(0, $character->maximumFor('current_synaptic_integrity') - $character->current_synaptic_integrity)),
             ClinicService::NeuralDamage => (int) ceil(abs((new InjuryLedger)->carried($character, InjuryLedger::NEURAL))),
             ClinicService::PhysicalTrauma => (int) ceil(abs((new InjuryLedger)->carried($character, InjuryLedger::TRAUMA))),
+            // A habit: the whole stored figure, rounded up (zero for a family never touched).
+            default => (int) ceil((float) (new DrugLedger)->for($character, $service->family())->{$service->figure()}),
         };
     }
 }

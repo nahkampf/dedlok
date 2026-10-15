@@ -73,7 +73,7 @@ return [
     */
     'decay' => [
         'addiction' => 1.0,
-        'tolerance' => 2.0,
+        'tolerance' => 3.0,
     ],
 
     /*

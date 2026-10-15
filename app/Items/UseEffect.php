@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Items;
 
+use App\Drugs\DrugLedger;
+use App\Drugs\Family;
 use App\Models\Character;
 use App\Support\Points;
 use App\Support\Text;
@@ -21,21 +23,50 @@ enum UseEffect: string
     /** Restores current hit points, never past the maximum as it stands (an injury lowers that maximum). */
     case HealHitpoints = 'heal_hitpoints';
 
+    /**
+     * Takes built-up tolerance off ONE drug family (`drug_<family>_tolerance`), floored at nothing. One case per
+     * `Drugs\Family`: the amount is points of the tolerance figure, the same unit the bands and the nightly decay use.
+     */
+    case DrugStimulantTolerance = 'drug_stimulant_tolerance';
+    case DrugOpiateTolerance = 'drug_opiate_tolerance';
+    case DrugSedativeTolerance = 'drug_sedative_tolerance';
+    case DrugPsychedelicTolerance = 'drug_psychedelic_tolerance';
+    case DrugNootropicTolerance = 'drug_nootropic_tolerance';
+    case DrugMedicalTolerance = 'drug_medical_tolerance';
+
+    /** The family a tolerance kind lowers, or null for any other kind. */
+    public function family(): ?Family
+    {
+        return preg_match('/^drug_([a-z]+)_tolerance$/', $this->value, $m) === 1 ? Family::tryFrom($m[1]) : null;
+    }
+
+    /** Where this kind's three sentences live in `strings.consumables.effects`: all the tolerance kinds share one set. */
+    private function textKey(): string
+    {
+        return $this->family() === null ? $this->value : 'drug_tolerance';
+    }
+
+    /** @return array<string, string> */
+    private function words(int|float $amount): array
+    {
+        return ['amount' => $amount, 'family' => $this->family()?->label() ?? ''];
+    }
+
     public function label(): string
     {
-        return Text::get("consumables.effects.{$this->value}.label");
+        return Text::get("consumables.effects.{$this->textKey()}.label", $this->words(0));
     }
 
     /** "Restores 20 hit points", for a card. */
     public function describe(int|float $amount): string
     {
-        return Text::get("consumables.effects.{$this->value}.card", ['amount' => $amount]);
+        return Text::get("consumables.effects.{$this->textKey()}.card", $this->words($amount));
     }
 
     /** "You recover 12 hit points.", for after it was used. */
     public function done(int|float $amount): string
     {
-        return Text::get("consumables.effects.{$this->value}.done", ['amount' => $amount]);
+        return Text::get("consumables.effects.{$this->textKey()}.done", $this->words($amount));
     }
 
     /** How much `apply()` would change right now. Reads, never writes. */
@@ -43,6 +74,7 @@ enum UseEffect: string
     {
         return match ($this) {
             self::HealHitpoints => Points::of(min($amount, max(0, $character->maximumFor('current_hitpoints') - $character->current_hitpoints))),
+            default => Points::of(min($amount, (float) (new DrugLedger)->for($character, $this->family())->tolerance)),
         };
     }
 
@@ -51,6 +83,7 @@ enum UseEffect: string
     {
         return match ($this) {
             self::HealHitpoints => $character->recover('current_hitpoints', $amount),
+            default => (new DrugLedger)->lowerTolerance($character, $this->family(), $amount),
         };
     }
 

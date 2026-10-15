@@ -463,6 +463,9 @@ return [
                 'synaptic_integrity' => 'Restore Synaptic Integrity',
                 'neural_damage' => 'Mend neural damage',
                 'physical_trauma' => 'Mend physical trauma',
+                // The twelve `drug_<family>_addiction|tolerance` treatments share two sentences.
+                'drug_addiction' => 'Treat :family addiction',
+                'drug_tolerance' => 'Reset :family tolerance',
             ],
         ],
         'districts' => 'Districts',
@@ -2286,6 +2289,12 @@ return [
                 'label' => 'Restores hit points',
                 'card' => 'Restores :amount hit points',
                 'done' => 'You recover :amount hit points.',
+            ],
+            // One set for the six `drug_<family>_tolerance` kinds; :family is the family's label.
+            'drug_tolerance' => [
+                'label' => 'Lowers :family tolerance',
+                'card' => 'Lowers :family tolerance by :amount',
+                'done' => 'Your :family tolerance falls by :amount.',
             ],
         ],
         'refused' => [
@@ -4288,6 +4297,18 @@ return [
                 // The consumable panel: what using one copy does, once.
                 'use_heal_hitpoints' => 'Restores hit points',
                 'use_heal_hitpoints_hint' => 'Using one copy restores this many hit points at once, never past the maximum as it stands. Leave it blank and the item is not a consumable. A medkit is this; a drug is something that lasts. A drug can carry it too: taking the dose then also restores this at once, and tolerance does not weaken it.',
+                'use_drug_stimulant_tolerance' => 'Lowers stimulant tolerance',
+                'use_drug_stimulant_tolerance_hint' => 'Using one copy takes this many points off the stimulant tolerance a body has built up, never below nothing. A drug can carry it too: taking the dose then also lowers it at once. Leave it blank for none.',
+                'use_drug_opiate_tolerance' => 'Lowers opiate tolerance',
+                'use_drug_opiate_tolerance_hint' => 'Using one copy takes this many points off the opiate tolerance a body has built up, never below nothing. A drug can carry it too: taking the dose then also lowers it at once. Leave it blank for none.',
+                'use_drug_sedative_tolerance' => 'Lowers sedative tolerance',
+                'use_drug_sedative_tolerance_hint' => 'Using one copy takes this many points off the sedative tolerance a body has built up, never below nothing. A drug can carry it too: taking the dose then also lowers it at once. Leave it blank for none.',
+                'use_drug_psychedelic_tolerance' => 'Lowers psychedelic tolerance',
+                'use_drug_psychedelic_tolerance_hint' => 'Using one copy takes this many points off the psychedelic tolerance a body has built up, never below nothing. A drug can carry it too: taking the dose then also lowers it at once. Leave it blank for none.',
+                'use_drug_nootropic_tolerance' => 'Lowers nootropic tolerance',
+                'use_drug_nootropic_tolerance_hint' => 'Using one copy takes this many points off the nootropic tolerance a body has built up, never below nothing. A drug can carry it too: taking the dose then also lowers it at once. Leave it blank for none.',
+                'use_drug_medical_tolerance' => 'Lowers medical tolerance',
+                'use_drug_medical_tolerance_hint' => 'Using one copy takes this many points off the medical tolerance a body has built up, never below nothing. A drug can carry it too: taking the dose then also lowers it at once. Leave it blank for none.',
                 'drug_family_hint' => 'Giving it a family makes the item a drug. The books are kept per family, so this decides which figures a dose moves and which withdrawal it answers.',
                 'duration_minutes' => 'Duration (minutes)',
                 'duration_minutes_hint' => 'How long one dose is in effect. Not used by a fight-only drug.',

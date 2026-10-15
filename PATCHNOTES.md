@@ -1,3 +1,11 @@
+## 0.61.0 (2026-10-15)
+
+- Tolerance to drugs now wears off faster: 3 points a day instead of 2
+- Tolerance and addiction values now targetable by clinics (no rehab clinic created yet)
+- Tolerance and addiction values now also targetable by drugs or other items
+- New items to treat HP (TraumaSpray, 4-bromothalalomine)
+- Public clinic in Downtown to treat HP
+
 ## 0.60.0 (2026-10-15)
 
 - New achievements: Vampire, Headhunter, Wanted and Indomitable
