@@ -52,10 +52,11 @@ system.
 | Concurrent runners | **specified only**; a machine holds several at once and they are not instanced. First extraction takes it, and both raids count |
 | A cancelled run | **built**; burned or locked down under you ends the run for 1 flat SI and nothing else. Asked on the lock, never by a sweeper, and the run row carries the ADDRESS so a burned target is an ordinary answer |
 | Coordinated Strike, Advanced Coordination | **not built**; rank 8 (needs Cyberdecks 5) and rank 16 (needs Coordinated Strike 5), +1 co-op slot per level each. Skill ROWS, authored in the editor — but the `coop_slots` stat has to exist first or the modifier editor refuses the target |
-| `coop_slots` | **not built**; the base is 0 in config and every slot is a modifier. `program_threads`' shape, floored at ZERO rather than one, because zero is the gate |
+| `coop_slots` | **built** (2026-10-15: the stat, `Character::coopSlots()`; nothing spends it until parties exist); the base is 0 in config and every slot is a modifier. `program_threads`' shape, floored at ZERO rather than one, because zero is the gate |
+| The party at the door | **built, no screen yet** (2026-10-15): `run_parties` / `run_party_members`, `App\Cyberspace\Party\Parties` the only writer (open, options, invite capped by `coop_slots`, accept at the same position, leave), `ShareMode` (even / half / full) for creds and extraction. Nothing yet starts a run for the party or shares anything |
 | Detection scaling with party size | **decided, and it is no number at all**: every runner rolls their own approach and detection is party-wide, so a party is louder by compounding. A per-runner difficulty term was measured and rejected — it changes nothing at the grades co-op is for |
 | A trace per runner | **specified only**; one meter each on the same clock, so a completed trace burns the chain that runner came in on and not the party's |
-| The turn protocol | **specified only**; a turn resolves when all have chosen or 30 seconds pass, an absent player is resolved by their own thresholds, and `auto-run` hands the whole run to them. Shared with physical combat as a PROTOCOL, never as an engine |
+| The turn protocol | **built for parties** (2026-10-15, `PartyTurns`): each runner keeps their own run row and `pending_action`; the round resolves when all have chosen or 30 seconds pass (the next request past the deadline resolves it, absent runners by a default policy: attack if ICE and a breaker runs, else carry the purpose on, then egress). Detection and the ICE are synced between the runs, and the ICE strikes ONCE a round at the runner who has hurt it most (each runner's share of the damage done to it plus how much less stealthy they are than the rest; equal scores are random). The thresholds still act inside `take()`. `auto-run` is not built. Originally: a turn resolves when all have chosen or 30 seconds pass, an absent player is resolved by their own thresholds, and `auto-run` hands the whole run to them. Shared with physical combat as a PROTOCOL, never as an engine |
 | The two thresholds | **specified only**; they ACT rather than warn, every character is born with 70% trace and 30% SI, and they are changed in an accordion on the cyberspace screen |
 | The notification centre | **built.** One place, reached from the rail, holding what happened while nobody was looking — a finished read, a backdoor found in the night, a level crossed by the clock, an achievement unlocked. Every message carries a CATEGORY and deliberately no priority: a category says where a message came from and never how loud it is, because anything that needs acting on this instant belongs on the screen where the acting happens. `App\Notifications\Notifier` is the only writer |
 | Scanning — the probe | **built** for what a system currently HAS: grade, operating system, intrusion detection and tracer. A machine with none of the last two reads as *None*, which is an answer rather than an unread field. Needs an analyser RUNNING on the equipped deck; one press starts a READ, which goes round pass after pass until the file is whole or the file goes stale |
@@ -1057,18 +1058,22 @@ different plan wearing the same name.
 **One runner leaving does not end it.** They egress, their lock releases, and the
 rest play on. What they had already taken is theirs.
 
-**Who gets what:**
+**Who gets what is the owner's choice at the door** (revised 2026-10-15): *Share credits* and *Share extraction* are each
+Even split, 50% cut (the owner takes half, the others share the rest) or Full cut (the owner takes all). Built:
+`PartyShare` deals whole units by largest remainder, the owner first, so a remainder goes to the owner and the parts
+always add up. **Everybody who has a run of the party counts, including one who has already egressed**: they took the
+risk. Extraction covers files and catalogue items; a runner with no room for their file leaves it with the one who
+pulled it (nothing is ever lost for want of room). **If the OWNER leaves and the run still succeeds**, their share is
+still theirs; the split is by the terms and not by who is nominally next.
 
-- **The owner keeps the files.** The player who called the run is who the haul
-  belongs to. Parties settle the rest between themselves, which is what parties
-  do.
-- **Creds are split evenly, including with the ones who left.** Somebody who
-  egressed at turn three took a risk for the same money and is owed their share
-  of it; a split that paid only the survivors would make leaving a punishment on
-  top of a punishment.
-- **If the OWNER leaves and the run still succeeds, the files pass to one of the
-  others at random.** Not to whoever is nominally next, because there is no
-  ordering that is not somebody's advantage to engineer.
+**The IDS rolls detection for EACH participant** (2026-10-15): on arrival, and again when each one touches the core, every
+runner is rolled against their own stealth, and any one being noticed is the whole party noticed. This is how a party is
+louder by compounding, and it is why each runner has their own run row.
+
+**The ICE gets ONE turn, so it chooses who to attack** (decided 2026-10-15). Each round it picks a priority target by
+weighing the runners' **stealth** and **who has done it the most damage so far**; that runner is attacked. If no
+priority can be made (nothing to separate them, or nobody has hurt it yet and stealth ties), the target is **random**.
+The exact weighting is a balance number, left to the end.
 
 **What this shares with physical combat is the PROTOCOL, not the engine.** They
 are two engines deliberately and stay two — but everybody choosing, a turn
@@ -1750,7 +1755,25 @@ positions, no synchronisation — this is not a game that supports two people
 being in the same place at the same second, and pretending otherwise would drag
 timing into everything.
 
-### Data Fortresses (designed, not built)
+### Data Fortresses (founding built; the rest designed)
+
+**Built (2026-10-15), all of it, in one version.** What exists, by file:
+
+- **Founding.** `SystemType::Fortress`, `systems.owner_character_id`, `Fortresses::found()` (spends the Kernel item named by `cyberspace.fortress.kernel`, gated by the `cyberspace.fortress.skill` slug when that skill exists, capped by the `fortress_slots` stat on a base of `cyberspace.fortress.cap`, on an empty square), the map's *Found here*. The restock, the defence roller and lockdown skip fortresses.
+- **Leechers.** `ProgramKind::Leecher` (its `qflops_cost` / `memory_cost` / `storage_size` are what it TAKES, the first non-zero is the resource), the run action `leech`, `leeches`, `Leeches` (install, `totals()` of the live ones, `discover()`), nightly `cyberspace:find-leeches` (10%, tells the owner).
+- **Hosting and the shutdown order.** Hosted kinds `producer`, `utility`, `market`, `cloak`, `relocation`, `fortress_ids`, `fortress_ice`, `kernel`; `FortressHost` installs, takes down, starts, stops and `settle()`s in tier order (the Kernel last). The fortress's own Kernel is implicit (`kernel_demand`). `fortress:settle` runs every five minutes, deleting one offline past `abandon_hours`.
+- **Roles, areas and the log.** `FortressAccess` (owner, or the roles a member holds; the config roles are the defaults and the owner defines more per fortress, with properties `host`, `maintain`, `alarm`, `audit`), `FortressAreas` (owner storage is NULL; each area gives audiences `members`, `role:<name>`, `member:<id>` *see*, *deposit*, *withdraw*), `FortressLog` (immutable, readable with `audit`).
+- **Vault and raids.** `FortressVault` keeps files as `system_contents` rows; `FortressRaid` pulls a random file every 5 seconds at the deck's bandwidth, by itself, from EVERY area, with the party's modes dealing each; a raid also takes `wallet_raid_percent` of the wallet; a run against a fortress takes a turn `turn_seconds` apart.
+- **Alarms.** The intrusion starting, then the ICE falling (or the core being touched when there was none), to the owner and everyone holding `alarm`.
+- **Burning.** The Kernel's System Integrity and flat resistance (`kernel_integrity`, `kernel_resistance`); immune to a breaker held to zero; at zero `Fortresses::freeze()` and the Frozen Kernel (`frozen_hours`), saved by Leechers that can run it, otherwise deleted.
+- **Defences.** Crafted `fortress_ice` / `fortress_ids` / `cloak` carry their numbers per copy (`inventory_items.defence`), scaled by the maker's `defence_quality`, decaying only while installed; *Maintain* restarts the clock and, by the maintainer's `maintenance_boost` and `maintenance_efficiency`, raises values (ceiling `boost_cap` over crafted) and cuts demand (`cut_cap`). The running ICE / IDS are written to `systems.fortress_ice` / `ids_detection` and onto the run (`runs.ice_attack`).
+- **Market.** The hosted Market lists files from ONE area at each seller's own price; a visitor standing on the node buys; the owner's or an administrator's tax (default 3, at most 50) lands in `systems.wallet` and the rest in the seller's wallet; the wallet is taken out by `host` holders, each a log line. Reasons `fortress_market`, `fortress_sale`, `fortress_wallet`.
+- **Cloak and relocation.** A running Cloak (a utility program) lets the owner choose, in Settings, a grade, a type (data silo, network relay or compute node) and an owner (one entity) to present as; **everyone except the owner and those admitted sees that face instead of the fortress**, in sweeps, in a scan's grade and on the map (`FortressCloak::mask()`, a copy for display; anything that acts reads the real row). No contest, no decloaker. A running Relocation moves it every `relocate_hours` (`RaidLedger::relocate`), putting out anybody inside, rewriting members' bookmarks and telling every member where it went.
+- **Founding only on an empty square** (`Fortresses::found()`: no system of any kind, the portal and exchanges included, already there).
+
+- **Producers** (decided 2026-10-15). A hosted `producer` program works in **cycles** of `cyberspace.fortress.produce.cycle_minutes` (360, six hours) as the targetable stat `production_cycle_minutes` resolves it for whoever installed it, shortened by every running `booster` (`produces.boost`, per cent). Each producer is authored with what it gives **per cycle** (`programs.produces`): creds between `credits_min` and `credits_max` (rolled, captured transactions, into the fortress wallet), `components` files, or `programs` production towards a program job (a Design's craft time in hours is the work). **Components and programs are one queue of at most five jobs** (`fortress_jobs`, first in first out; a components job is a count of files); a program job spends its Design's components out of the fortress's storage when work starts and yields nothing for a cycle without enough, and a finished product waits without room (storage is the ceiling). They draw compute and RAM like any hosted program, so a short fortress stops them in the shutdown order and nothing is worked while stopped; a producer's minutes carry from settle to settle. Output lands in the area `systems.output_area_id` names, the owner's storage by default; a made defence is stamped with the INSTALLER's `defence_quality`. The vault keeps any data item (components, Designs, programs) as `kind=item` rows with their meta, and a raid steals those too. Simplifications: a Design's component filters (grade, OS, owner) are not applied by a producer, and a components job draws at one configured grade (`produce.component_grade`).
+
+**Not yet:** the fortress glyph is final (◈).
 
 A Data Fortress is the player-owned node. Decisions so far (2026-10-09):
 
@@ -1892,7 +1915,7 @@ may do what in it, is its own data:
   fortress wallet (each movement is a ledger line).
 - **A raid on a fortress offers three things** (once its defences are beaten, or it is abandoned and open):
   1. **Raid the wallet:** take X percent of the funds available.
-  2. **Raid the file storage:** steal files at random, from the areas a raider can reach.
+  2. **Raid the file storage:** steal files at random, from every area (cracking the ICE reaches them all).
   3. **Burn the system:** more complex, slower and harder than burning an ordinary node.
 - **Touching the core.** Every raiding operation above works on the Kernel ("touching the core"), and **cannot be
   performed until the fortress's ICE has been defeated** (the same rule an ordinary node's run follows).
@@ -1908,9 +1931,29 @@ may do what in it, is its own data:
   the Leechers too, so the owner needs **new Leechers bringing in enough for the Kernel to run**; when it can run
   again it comes back online and the clock disappears. No other payment.
 
-Open: how many files a raid takes and the X percent of the wallet, what burning requires beyond an ordinary burn,
-the invite list's storage, and the build and decay
-numbers.
+- **Raiding the file storage is the ordinary extraction, run automatically** (decided 2026-10-15). With the ICE
+  defeated and the core touched, files are pulled **at random from every area** (a raider who has cracked the ICE
+  reaches all of them, whatever the roles and permissions say), by the same
+  procedure as pulling from a normal node, so **the NIC and transfer speed limit it**. It runs on its own and the
+  log updates itself; **each tick takes 5 seconds**. It continues **until the raider's storage is full or there is
+  nothing left**, so a raider with enough storage can take everything in one go. There is no percentage.
+- **Burning a Kernel is combat against an icebreaker where the Kernel does not fight back.** It has **hitpoints
+  ("System Integrity")** and **resistances** (such as -1 to all incoming damage), authored on the Kernel. A
+  breaker too weak for the resistances can be reduced to **zero damage**, so the Kernel is **immune** to it and the
+  raiders cannot burn it until they return with a stronger icebreaker. Nothing beyond that distinguishes it from an
+  ordinary burn.
+- **A fortress raid can be a joint one** (decided 2026-10-15; to be built). The raider invites other players, and
+  **how many is the run owner's `coop_slots`**: *Coordinated Strike* and *Advanced Coordination* (+1 per level each),
+  zero without them. Everything above follows the co-op run rules (*A party is a thing you train for*, above): the run is the owner's, and
+  the pull in the raid's file storage step is bounded by the raiders' storage, so more raiders can carry more.
+  **Sharing is set by the owner when the strike or raid is set up, as two independent options** (decided 2026-10-15),
+  *Share credits* and *Share extraction* (the files pulled), each one of: **Even split** (everybody the same),
+  **50% cut** (the owner takes half, the others share the rest evenly) or **Full cut** (the owner takes all).
+  The same three apply to an ordinary co-op strike.
+
+- **Settings menu on the fortress** holds the name, the access lists and invites, revoking access, the market tax,
+  and the like. The invite list is stored with the fortress's settings.
+- **Numbers are balanced last**, as a final step.
 
 ---
 

@@ -184,6 +184,12 @@ class ItemRequest extends FormRequest
             'lifetime_seconds' => $this->numberOrNull('lifetime_seconds'),
             // A Pathfinder's seconds per move: blank is the default (`cyberspace.locate.step_seconds`).
             'traverse_seconds' => $this->numberOrNull('traverse_seconds'),
+            // A Producer's outputs (blank is none) and a Booster's boost: stored together as `programs.produces`.
+            'produce_credits_min' => $this->numberOrNull('produce_credits_min'),
+            'produce_credits_max' => $this->numberOrNull('produce_credits_max'),
+            'produce_components' => $this->numberOrNull('produce_components'),
+            'produce_programs' => $this->numberOrNull('produce_programs'),
+            'produce_boost' => $this->numberOrNull('produce_boost'),
             // A design: the product is what makes the item one. Lines with no component chosen are the form's spare rows.
             'design_product' => $this->filled('design_product') ? $this->input('design_product') : null,
             // The panel's own defaults (a level of 1) mean nothing when there is no product, so they are not values.
@@ -454,6 +460,11 @@ class ItemRequest extends FormRequest
             'traverse_seconds' => $isProgram
                 ? ['nullable', 'integer', 'min:1', 'max:600']
                 : ['prohibited'],
+            'produce_credits_min' => $isProgram ? ['nullable', 'integer', 'min:0', 'max:1000000'] : ['prohibited'],
+            'produce_credits_max' => $isProgram ? ['nullable', 'integer', 'min:0', 'max:1000000', 'gte:produce_credits_min'] : ['prohibited'],
+            'produce_components' => $isProgram ? ['nullable', 'numeric', 'min:0', 'max:1000'] : ['prohibited'],
+            'produce_programs' => $isProgram ? ['nullable', 'numeric', 'min:0', 'max:1000'] : ['prohibited'],
+            'produce_boost' => $isProgram ? ['nullable', 'numeric', 'min:0', 'max:1000'] : ['prohibited'],
 
             /*
              * A DESIGN (CRAFTING.md): plain data with a recipe. The product must be a program of a kind somebody can be taught to build,
@@ -946,6 +957,7 @@ class ItemRequest extends FormRequest
             $data['storage_size'], $data['lifetime_seconds'], $data['traverse_seconds'], $data['background_process'], $data['multithreaded'],
             $data['design_product'], $data['design_seconds'], $data['design_single_use'], $data['design_skill_id'], $data['design_skill_level'], $data['design_lines'],
             $data['program_modifiers'], $data['program_decrypts'],
+            $data['produce_credits_min'], $data['produce_credits_max'], $data['produce_components'], $data['produce_programs'], $data['produce_boost'],
         );
 
         // Armour, weapons and ammunition live in tables of their own, not on the item.
@@ -1233,6 +1245,13 @@ class ItemRequest extends FormRequest
             'background_process' => (bool) ($data['background_process'] ?? false),
             'lifetime_seconds' => isset($data['lifetime_seconds']) ? (int) $data['lifetime_seconds'] : null,
             'traverse_seconds' => isset($data['traverse_seconds']) ? (int) $data['traverse_seconds'] : null,
+            'produces' => ($produces = array_filter([
+                'credits_min' => isset($data['produce_credits_min']) ? (int) $data['produce_credits_min'] : null,
+                'credits_max' => isset($data['produce_credits_max']) ? (int) $data['produce_credits_max'] : null,
+                'components' => isset($data['produce_components']) ? (float) $data['produce_components'] : null,
+                'programs' => isset($data['produce_programs']) ? (float) $data['produce_programs'] : null,
+                'boost' => isset($data['produce_boost']) ? (float) $data['produce_boost'] : null,
+            ], fn ($v): bool => $v !== null)) === [] ? null : $produces,
             'multithreaded' => (bool) ($data['multithreaded'] ?? false),
             // Null rather than [], because a program that only gates genuinely
             // modifies nothing and the two should not be different spellings

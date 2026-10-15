@@ -72,6 +72,8 @@ final class Sweep
         // is the shape's bounding square; what is outside the shape is dropped.
         $standing = $this->grid->within($centre, $reach)
             ->filter(static fn (System $system): bool => $shape->covers($centre, $system->position()))
+            // A cloaked fortress shows the face its owner chose to anybody without access.
+            ->map(fn (System $system): System => FortressCloak::mask($system, $character))
             ->load('owner')
             ->keyBy(static fn (System $system): string => "{$system->x},{$system->y}");
 

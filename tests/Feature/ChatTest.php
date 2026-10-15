@@ -273,9 +273,10 @@ final class ChatTest extends TestCase
 
     public function test_a_market_link_becomes_a_button_that_opens_the_listing(): void
     {
-        $html = \App\Chat\Markup::render('look market:42 <b>');
+        $html = Markup::render('look market:42 <b>');
 
         $this->assertStringContainsString('data-listing="/market/listing/42"', $html);
+        $this->assertStringContainsString('>market:42</button>', $html);
         $this->assertStringContainsString('&lt;b&gt;', $html);
     }
 }

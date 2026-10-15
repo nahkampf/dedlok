@@ -30,6 +30,7 @@ use App\Http\Controllers\EncounterController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\ExchangeController;
 use App\Http\Controllers\FightController;
+use App\Http\Controllers\FortressController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HunterController;
 use App\Http\Controllers\ImplantController;
@@ -43,6 +44,7 @@ use App\Http\Controllers\PatchNotesController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RunController;
+use App\Http\Controllers\RunPartyController;
 use App\Http\Controllers\SkillsController;
 use App\Http\Controllers\SoundController;
 use App\Http\Controllers\StandingController;
@@ -246,6 +248,33 @@ Route::middleware('auth')->group(function () {
     Route::post('/cyberspace/spot/{encounter}', [CyberspaceController::class, 'spot'])->name('cyberspace.spot');
     Route::post('/cyberspace/traverse', [CyberspaceController::class, 'traverse'])->name('cyberspace.traverse');
     Route::post('/cyberspace/jump', [CyberspaceController::class, 'jump'])->name('cyberspace.jump');
+    Route::post('/cyberspace/fortress', [CyberspaceController::class, 'found'])->name('cyberspace.fortress');
+    Route::get('/fortress/{system}', [FortressController::class, 'show'])->name('fortress.show');
+    Route::post('/fortress/{system}/install/{row}', [FortressController::class, 'install'])->name('fortress.install');
+    Route::post('/fortress/{system}/uninstall/{row}', [FortressController::class, 'uninstall'])->name('fortress.uninstall');
+    Route::post('/fortress/{system}/deposit/{row}', [FortressController::class, 'deposit'])->name('fortress.deposit');
+    Route::post('/fortress/{system}/withdraw/{content}', [FortressController::class, 'withdraw'])->name('fortress.withdraw');
+    Route::post('/fortress/{system}/maintain/{row}', [FortressController::class, 'maintain'])->name('fortress.maintain');
+    Route::post('/fortress/{system}/areas', [FortressController::class, 'createArea'])->name('fortress.areas.create');
+    Route::post('/fortress/{system}/areas/{area}', [FortressController::class, 'allowArea'])->name('fortress.areas.allow');
+    Route::delete('/fortress/{system}/areas/{area}', [FortressController::class, 'deleteArea'])->name('fortress.areas.delete');
+    Route::post('/fortress/{system}/roles', [FortressController::class, 'role'])->name('fortress.roles');
+    Route::post('/fortress/{system}/members/{member}/roles', [FortressController::class, 'memberRoles'])->name('fortress.members.roles');
+    Route::get('/fortress/{system}/market', [FortressController::class, 'market'])->name('fortress.market');
+    Route::post('/fortress/{system}/market/buy/{listing}', [FortressController::class, 'buy'])->name('fortress.market.buy');
+    Route::post('/fortress/{system}/market/config', [FortressController::class, 'configureMarket'])->name('fortress.market.config');
+    Route::post('/fortress/{system}/market/list/{content}', [FortressController::class, 'listFile'])->name('fortress.market.list');
+    Route::delete('/fortress/{system}/market/listing/{listing}', [FortressController::class, 'unlistFile'])->name('fortress.market.unlist');
+    Route::post('/fortress/{system}/wallet', [FortressController::class, 'withdrawWallet'])->name('fortress.wallet');
+    Route::post('/fortress/{system}/cloak', [FortressController::class, 'cloak'])->name('fortress.cloak');
+    Route::post('/fortress/{system}/jobs', [FortressController::class, 'queueJob'])->name('fortress.jobs.queue');
+    Route::delete('/fortress/{system}/jobs/{job}', [FortressController::class, 'cancelJob'])->name('fortress.jobs.cancel');
+    Route::post('/fortress/{system}/output', [FortressController::class, 'outputArea'])->name('fortress.output');
+    Route::post('/fortress/{system}/settings', [FortressController::class, 'settings'])->name('fortress.settings');
+    Route::post('/fortress/{system}/invite', [FortressController::class, 'inviteMember'])->name('fortress.invite');
+    Route::post('/fortress/{system}/revoke/{member}', [FortressController::class, 'revokeMember'])->name('fortress.revoke');
+    Route::post('/fortress/{system}/start/{row}', [FortressController::class, 'start'])->name('fortress.start');
+    Route::post('/fortress/{system}/stop/{row}', [FortressController::class, 'stop'])->name('fortress.stop');
 
     // Reading the machine underfoot. No target in the request: the position is
     // the target, because you cannot read a machine you are not standing on.
@@ -304,6 +333,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/missions/{mission}/complete', [MissionController::class, 'complete'])->name('missions.complete');
 
     Route::get('/run/setup', [RunController::class, 'setup'])->name('run.setup');
+    Route::post('/run/party', [RunPartyController::class, 'open'])->name('run.party.open');
+    Route::post('/run/party/options', [RunPartyController::class, 'options'])->name('run.party.options');
+    Route::post('/run/party/invite', [RunPartyController::class, 'invite'])->name('run.party.invite');
+    Route::post('/run/party/accept', [RunPartyController::class, 'accept'])->name('run.party.accept');
+    Route::post('/run/party/leave', [RunPartyController::class, 'leave'])->name('run.party.leave');
     Route::get('/run', [RunController::class, 'show'])->name('run.show');
     Route::post('/run/act', [RunController::class, 'act'])->name('run.act');
     Route::post('/run/egress', [RunController::class, 'egress'])->name('run.egress');

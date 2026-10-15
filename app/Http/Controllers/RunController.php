@@ -9,7 +9,11 @@ use App\City\EncounterStart;
 use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\Backdoors;
 use App\Cyberspace\ChainBuilder;
+use App\Cyberspace\Party\Parties;
+use App\Cyberspace\Party\PartyRefusal;
+use App\Cyberspace\Party\PartyTurns;
 use App\Cyberspace\RunAction;
+use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
@@ -27,8 +31,10 @@ use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
 use App\Stats\Resolver;
+use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -93,7 +99,7 @@ class RunController extends Controller
             ->where('character_id', $character->id)
             ->whereNull('running_on_deck_id')
             ->whereDoesntHave('offer')
-            ->whereHas('item.program', static fn ($q) => $q->where('background_process', false))
+            ->whereHas('item.program', static fn ($q) => $q->where('background_process', false)->whereNotIn('kind', array_map(static fn (ProgramKind $k): string => $k->value, array_filter(ProgramKind::cases(), static fn (ProgramKind $k): bool => $k->neverRunsOnADeck()))))
             ->with('item.program')
             ->get();
 
@@ -133,6 +139,9 @@ class RunController extends Controller
             // The same rows the scanner window shows, every fact either way: an unread one says so.
             'overview' => ($scan ?? new SystemScan)->facts($character),
             'chain' => $chain,
+            // The party forming at this door, if the character owns or is in one; and how many they may call.
+            'party' => app(Parties::class)->partyOf($character)?->load('members.character', 'owner'),
+            'coopSlots' => $character->coopSlots(),
             // What the player has read of each system the trace has to come through, by address. A
             // relay is their own backdoor, but a backdoor says nothing about what is on the machine.
             'hopScans' => SystemScan::query()
@@ -219,11 +228,20 @@ class RunController extends Controller
             ->with('item.program')
             ->get();
 
-        $result = $this->runs->start(
+        // A member of somebody else's party does not start a run of their own: the owner starts it for everybody.
+        $parties = app(Parties::class);
+        $party = $parties->partyOf($character);
+
+        if ($party !== null && $party->owner_character_id !== $character->id) {
+            return back()->with('error', PartyRefusal::NotTheOwner->message());
+        }
+
+        $result = $parties->launch(
             $character,
             RunPurpose::from($data['purpose']),
             ($data['backdoor_kind'] ?? null) === null ? null : BackdoorKind::from($data['backdoor_kind']),
             $rows->concat($scriptRows)->all(),
+            $this->runs,
         );
 
         if (! $result->succeeded()) {
@@ -255,20 +273,40 @@ class RunController extends Controller
      * empty screen: the lock only holds somebody who is IN one, so arriving
      * here without one means it ended while they were looking elsewhere.
      */
-    public function show(Request $request, Simulator $simulator): View|RedirectResponse
+    public function show(Request $request, Simulator $simulator): Response|RedirectResponse
     {
         $character = $this->character($request);
         $run = $this->liveRun($character);
+
+        // An automatic fortress raid pulls a file every five seconds: catch up what has come due.
+        if ($run !== null && $run->pull_at !== null) {
+            $simulator->catchUpRaid($character, $run);
+            $run->refresh();
+        }
+
+        // A party round that is overdue resolves on whoever's request arrives first, this one included.
+        if ($run !== null && PartyTurns::shared($run)) {
+            app(PartyTurns::class)->settle((int) $run->run_party_id);
+            $run = $this->liveRun($character->fresh());
+        }
 
         if ($run === null) {
             return redirect()->route('cyberspace.index');
         }
 
+        // Waiting on the others: the page checks again in a few seconds, since the clock is whoever asks.
+        $refresh = $run->pull_at !== null
+            || ($run->pending_action !== null && PartyTurns::shared($run));
+
         $system = $run->system();
 
-        return view('run.show', [
+        $response = response()->view('run.show', [
             'character' => $character,
             'run' => $run,
+            // Install Leecher is offered only with a Leecher in the stash and a fortress to feed.
+            'fortresses' => $character->inventory()->loose()->whereHas('item.program', static fn ($q) => $q->where('kind', ProgramKind::Leecher->value))->exists()
+                ? System::query()->where('owner_character_id', $character->id)->orderBy('id')->get()
+                : collect(),
             'system' => $system,
             // Worked out here rather than in the template: it is the number the
             // egress decision is made on, and a player should not have to do
@@ -299,6 +337,8 @@ class RunController extends Controller
                 ? null
                 : (int) round($chance * 100),
         ]);
+
+        return $refresh ? $response->header('Refresh', '5') : $response;
     }
 
     /**
@@ -318,12 +358,39 @@ class RunController extends Controller
 
         $data = $request->validate([
             'action' => ['required', Rule::in(RunAction::values())],
+            // Which of your fortresses a Leecher feeds; blank is the first you own.
+            'fortress' => ['nullable', 'integer'],
         ]);
+
+        // A party round: the choice is stored, and the round resolves when all have chosen or the clock runs out.
+        if (PartyTurns::shared($run)) {
+            app(PartyTurns::class)->submit($run, RunAction::from($data['action']));
+
+            $run->refresh();
+
+            if ($run->isLive()) {
+                return redirect()->route('run.show');
+            }
+
+            return redirect()->route('cyberspace.index')->with('status', RunEnding::from((string) $run->ending)->message());
+        }
+
+        // A run against a Data Fortress takes a turn a fixed number of seconds apart, so its owner has time to react.
+        if ($run->system()?->type->isFortress()) {
+            $gap = (int) config('cyberspace.fortress.turn_seconds', 30);
+            $wait = $run->turn_at === null ? 0 : $gap - (int) $run->turn_at->diffInSeconds(now());
+
+            if ($wait > 0) {
+                return back()->with('error', Text::get('cyberspace.run.wait_turn', ['seconds' => $wait]));
+            }
+
+            $run->forceFill(['turn_at' => now()])->save();
+        }
 
         return $this->resolve(
             $character,
             $run,
-            $simulator->take($character, $run, RunAction::from($data['action'])),
+            $simulator->take($character, $run, RunAction::from($data['action']), fortressId: isset($data['fortress']) ? (int) $data['fortress'] : null),
             $simulator,
         );
     }

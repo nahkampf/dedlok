@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Chat;
 
+use App\Models\MarketOffer;
 use App\Support\Text;
 
 /**
@@ -62,13 +63,22 @@ final class Markup
         return self::addresses($text);
     }
 
-    /** `market:<id>` becomes a button that opens that listing (any signed-in reader; the fragment says if it is gone). */
+    /** `market:<id>` becomes a button, titled with the listed item's name, that opens that listing. An unknown id keeps its text. */
     public static function listings(string $text): string
     {
+        preg_match_all('/\bmarket:(\d{1,10})\b/', $text, $found);
+
+        if ($found[1] === []) {
+            return $text;
+        }
+
+        $names = MarketOffer::query()->with('row.item')->whereIn('id', array_unique($found[1]))->get()
+            ->mapWithKeys(fn (MarketOffer $o): array => [$o->getKey() => $o->row?->item?->displayName()]);
+
         return preg_replace_callback('/\bmarket:(\d{1,10})\b/', fn (array $m): string => sprintf(
-            '<button type="button" class="copy" data-listing="%s">market:%s</button>',
+            '<button type="button" class="copy" data-listing="%s">%s</button>',
             e(route('market.listing', ['offer' => (int) $m[1]], false)),
-            $m[1],
+            e($names[(int) $m[1]] ?? $m[0]),
         ), $text);
     }
 

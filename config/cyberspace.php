@@ -739,6 +739,57 @@ return [
     ],
 
     /*
+    | DATA FORTRESSES: what founding one asks for. The skill and the Kernel item are authored in the editors, so they are
+    | named here by slug and a slug that is not in the game gates nothing (the crafting gates' rule). `cap` is how many a
+    | character may hold, one at first; a skill will raise it.
+    */
+    'fortress' => [
+        'skill' => 'node_administration',
+        'kernel' => 'data-fortress-kernel',
+        'cap' => 1,
+        // Per cent chance each Leecher is found and removed on the nightly roll. Skills will lower it.
+        'leech_discovery' => 10,
+        // What a fortress's own Kernel takes from its Leechers' totals just to be online (balance last).
+        'kernel_demand' => ['compute' => 1.0, 'memory' => 1.0, 'storage' => 1.0],
+        // Hours offline before a fortress and everything on it is deleted.
+        'abandon_hours' => 48,
+        // The Kernel's System Integrity and its flat resistance to every point of incoming burn damage (balance last).
+        'kernel_integrity' => 100,
+        'kernel_resistance' => 0,
+        // Hours a burned Kernel stays Frozen, in which the owner can save it.
+        'frozen_hours' => 8,
+        // Base numbers of a crafted defence before the maker's `defence_quality`, and how it decays while installed
+        // (a fraction of its base per day, never under `floor` of it). Balance last.
+        'defence' => [
+            'ice' => ['attack' => 5, 'integrity' => 30],
+            'ids' => ['detection' => 20],
+            'cloak' => ['strength' => 10],
+            'decay_per_day' => 0.02,
+            // Maintenance by a skilled hand may raise a value up to this over what it was crafted as, and cut its demand by
+            // at most this many per cent.
+            'boost_cap' => 0.5,
+            'cut_cap' => 50,
+            'floor' => 0.5,
+        ],
+        // The catalogue ICE a fortress's own ICE borrows its hit chance, tags and name from.
+        'ice_template_level' => 1,
+        // What producers make: the grade a made component is drawn at, and the work a components job takes at speed 1.
+        'produce' => ['component_grade' => 3, 'cycle_minutes' => 360],
+        // Raiding the wallet: the share of the fortress wallet a raid takes when it touches the core.
+        'wallet_raid_percent' => 25,
+        // Hours between a Relocation program's moves.
+        'relocate_hours' => 24,
+        // Seconds between the turns of a run against a fortress.
+        'turn_seconds' => 30,
+        // What each role carries (host, maintain, alarm, audit); the owner carries all of them and defines more per fortress.
+        // What a role may do in a storage AREA is that area's own permissions.
+        'roles' => [
+            'member' => ['maintain'],
+            'administrator' => ['host', 'maintain', 'alarm', 'audit'],
+        ],
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | How fast a trace gets through a routing chain
     |--------------------------------------------------------------------------

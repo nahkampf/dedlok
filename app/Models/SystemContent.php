@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'system_id', 'kind', 'amount', 'item_id', 'quantity',
-    'label', 'size_qb', 'encryption_skill_id', 'value_sealed', 'value_broken',
+    'label', 'size_qb', 'encryption_skill_id', 'value_sealed', 'value_broken', 'area_id', 'deposited_by', 'meta',
 ])]
 class SystemContent extends Model
 {
@@ -40,6 +40,7 @@ class SystemContent extends Model
             'size_qb' => 'float',
             'value_sealed' => 'integer',
             'value_broken' => 'integer',
+            'meta' => 'array',
         ];
     }
 

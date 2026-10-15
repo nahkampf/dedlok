@@ -263,6 +263,21 @@
 
     <p class="micro" style="color:var(--ink-2);margin-top:var(--s-2)">{{ Text::get('cyberspace.map.keys') }}</p>
 
+    @if ($target && $target->type->isFortress() && (int) $target->owner_character_id === $character->id)
+        <a class="btn btn--sm cut" style="margin-top:var(--s-3)" href="{{ route('fortress.show', $target) }}">{{ Text::get('cyberspace.fortress.host.administer') }}</a>
+    @endif
+
+    @if ($target && $target->type->isFortress() && \App\Cyberspace\FortressMarket::isOpen($target) && \App\Cyberspace\FortressMarket::mayVisit($character, $target))
+        <a class="btn btn--sm cut" style="margin-top:var(--s-3)" href="{{ route('fortress.market', $target) }}">{{ Text::get('cyberspace.fortress.host.visit') }}</a>
+    @endif
+
+    @if ($kernel)
+        <form method="POST" action="{{ route('cyberspace.fortress') }}" style="margin-top:var(--s-3)">
+            @csrf
+            <button type="submit" class="btn btn--sm cut">{{ Text::get('cyberspace.fortress.found') }}</button>
+        </form>
+    @endif
+
     {{-- Getting somewhere without walking: an address anyone can hand you, and
          the places you have saved. --}}
     </div>

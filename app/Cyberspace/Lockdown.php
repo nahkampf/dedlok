@@ -95,7 +95,8 @@ final readonly class Lockdown
     {
         $system = System::query()->where('address', $run->address)->first();
 
-        if ($system === null || $system->isLockedDown()) {
+        // A player's fortress is never shut by being noticed or raided: it has its own defences and its own end.
+        if ($system === null || $system->type->isFortress() || $system->isLockedDown()) {
             return false;
         }
 

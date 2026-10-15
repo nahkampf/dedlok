@@ -107,6 +107,10 @@ final class ProgramRunner
             return ProcessRefusal::NotAProgram;
         }
 
+        if ($program->kind->neverRunsOnADeck()) {
+            return ProcessRefusal::NotRunnable;
+        }
+
         if (! $duringRun && ! $program->background_process) {
             return ProcessRefusal::RunOnly;
         }

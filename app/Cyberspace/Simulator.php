@@ -15,6 +15,7 @@ use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\Ice;
 use App\Models\Item;
+use App\Models\Leech;
 use App\Models\Run;
 use App\Models\System;
 use App\Programs\ProgramKind;
@@ -116,18 +117,18 @@ final readonly class Simulator
      * way would leave a run whose log disagrees with its state, and the log is
      * the only account the player gets.
      */
-    public function take(Character $character, Run $run, RunAction $action): TurnResult
+    public function take(Character $character, Run $run, RunAction $action, bool $iceStrikes = true, ?int $fortressId = null): TurnResult
     {
-        return Trace::scope($character, 'run.take', fn () => $this->takeTraced($character, $run, $action), ['action' => $action->value, 'run' => Trace::describe($run)]);
+        return Trace::scope($character, 'run.take', fn () => $this->takeTraced($character, $run, $action, $iceStrikes, $fortressId), ['action' => $action->value, 'run' => Trace::describe($run)]);
     }
 
-    private function takeTraced(Character $character, Run $run, RunAction $action): TurnResult
+    private function takeTraced(Character $character, Run $run, RunAction $action, bool $iceStrikes = true, ?int $fortressId = null): TurnResult
     {
         if (! $run->isLive()) {
             return TurnResult::refused(RunRefusal::AlreadyRunning);
         }
 
-        return DB::transaction(function () use ($character, $run, $action): TurnResult {
+        return DB::transaction(function () use ($character, $run, $action, $iceStrikes, $fortressId): TurnResult {
             $log = [];
 
             $run->turn++;
@@ -205,6 +206,8 @@ final readonly class Simulator
                 $log[] = $this->attack($character, $run);
             } elseif ($action === RunAction::Extract) {
                 $log = [...$log, ...$this->extract($character, $run)];
+            } elseif ($action === RunAction::Leech) {
+                $log = [...$log, ...$this->leech($character, $run, $fortressId)];
             } elseif ($action === RunAction::Install) {
                 $log = [...$log, ...$this->install($character, $run)];
             } elseif ($action === RunAction::Burn) {
@@ -240,7 +243,14 @@ final readonly class Simulator
             if ($run->ice_id !== null && $run->ice_integrity <= 0) {
                 $log[] = $this->line('cyberspace.run.log.ice_broken', tone: 'ok');
                 (new Achievements)->record($character, Metric::IceDefeated);
-                $run->forceFill(['ice_id' => null, 'ice_integrity' => null]);
+
+                // A fortress's second alarm: its ICE has fallen and the core is open.
+                $fortressHere = System::query()->where('address', $run->address)->first();
+
+                if ($fortressHere?->type->isFortress()) {
+                    Fortresses::alarm($fortressHere, 'fortress_core');
+                }
+                $run->forceFill(['ice_id' => null, 'ice_integrity' => null, 'ice_attack' => null]);
                 $run->save();
                 $this->appendLog($run, $log);
 
@@ -253,7 +263,8 @@ final readonly class Simulator
 
             $ending = null;
 
-            if ($run->ice_id !== null) {
+            // A party's ICE has ONE turn a round and chooses whom to hit (PartyTurns), so a member's own turn skips it.
+            if ($run->ice_id !== null && $iceStrikes) {
                 [$line, $ending] = $this->iceStrikes($character, $run);
                 $log[] = $line;
             }
@@ -534,7 +545,9 @@ final readonly class Simulator
         $critical = CriticalHit::rolls($character, $this->roll);
         $damage = $critical ? CriticalHit::scale($damage) : $damage;
 
+        $dealt = min($damage, max(0, (int) $run->ice_integrity));
         $run->ice_integrity = max(0, (int) $run->ice_integrity - $damage);
+        $run->ice_damage = (int) $run->ice_damage + $dealt;
 
         // "Your [Icebreaker name] finds an intrusion vector…": the program is a green tag in the middle of the
         // sentence, so the line carries what comes before the tag as well as what follows it.
@@ -620,6 +633,19 @@ final readonly class Simulator
             $log[] = $this->line('cyberspace.run.log.extract_fails');
 
             return $log;
+        }
+
+        // A fortress is raided by pulling its vault at random, by itself, a tick at a time (FortressRaid).
+        if ($system->type->isFortress()) {
+            $walletBefore = (int) $system->wallet;
+            $raid = FortressRaid::make()->begin($run, $system, $character);
+
+            // Taking from the wallet is a take like any other: one raid, counted once.
+            if ((int) $system->wallet < $walletBefore) {
+                $this->recordTake($character, $run);
+            }
+
+            return [...$log, ...$raid];
         }
 
         $instant = $this->extractor->takeCredsAndItems($character, $run->address);
@@ -1039,12 +1065,28 @@ final readonly class Simulator
      *
      * @return list<array{text: string, tone: string}>
      */
+    /**
+     * The ICE in play for a system: the catalogue row's numbers, or, for a fortress with its own crafted ICE running,
+     * that copy's integrity and attack (the catalogue row is only its template).
+     *
+     * @return array{ice_id: ?int, ice_integrity: ?int, ice_attack: ?int}
+     */
+    private function iceOf(?System $system): array
+    {
+        $own = $system?->fortress_ice;
+
+        return [
+            'ice_id' => $system?->ice_id,
+            'ice_integrity' => $own['integrity'] ?? $system?->ice?->integrity,
+            'ice_attack' => $own['attack'] ?? null,
+        ];
+    }
+
     private function noticedAtTheCore(Character $character, Run $run, System $system, string $line): array
     {
         $run->forceFill([
             'detected' => true,
-            'ice_id' => $system->ice_id,
-            'ice_integrity' => $system->ice?->integrity,
+            ...$this->iceOf($system),
         ]);
 
         // Being seen is the cheapest thing that can cost standing: it is
@@ -1168,6 +1210,53 @@ final readonly class Simulator
     }
 
     /**
+     * Hang a Leecher on the core, feeding one of the character's fortresses.
+     *
+     * A core touch like the others (so the IDS gets its second look and a fight over the core blocks it), spent by
+     * installing: one Leecher item is consumed and a `leeches` row is written. One per player per node. Raises no heat
+     * and no trace of its own.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function leech(Character $character, Run $run, ?int $fortressId): array
+    {
+        $system = System::query()->where('address', $run->address)->first();
+        $log = $this->touchTheCore($character, $run, $system);
+
+        if ($run->inAFight()) {
+            return [...$log, $this->iceGuardsTheCore()];
+        }
+
+        if ($system === null || ! $this->opensTheCore($character, $run, $system)) {
+            $log[] = $this->line('cyberspace.run.log.leech_fails');
+
+            return $log;
+        }
+
+        $outcome = (new Leeches)->install($character, $system, $fortressId);
+
+        if ($outcome === Leeches::ALREADY) {
+            $log[] = $this->line('cyberspace.run.log.leech_already');
+
+            return $log;
+        }
+
+        if (! $outcome instanceof Leech) {
+            $log[] = $this->line('cyberspace.run.log.leech_nothing');
+
+            return $log;
+        }
+
+        $log[] = $this->line('cyberspace.run.log.leech_done', [
+            'amount' => Qb::format((float) $outcome->amount),
+            'resource' => $outcome->resource,
+            'fortress' => System::query()->find($outcome->fortress_system_id)?->displayName() ?? '',
+        ], 'ok');
+
+        return $log;
+    }
+
+    /**
      * Burn it out of existence.
      *
      * ## It is a core touch, like the other two
@@ -1213,6 +1302,11 @@ final readonly class Simulator
             return [$log, false];
         }
 
+        // A Data Fortress's Kernel is worn down like combat against an icebreaker that never fights back.
+        if ($system->type->isFortress()) {
+            return $this->burnKernel($character, $run, $system, $log);
+        }
+
         $character->forceFill([
             // The GRADE of what burned, and more per grade than a trace.
             'heat' => (float) $character->heat + $system->grade * (float) Config::get('cyberspace.burn.heat_per_grade', 2.5),
@@ -1239,6 +1333,63 @@ final readonly class Simulator
         // Completed in `take()`.
         (new Burner)->burn($system, $run->getKey());
 
+        (new Achievements)->record($character, Metric::SystemsBurned);
+
+        return [$log, true];
+    }
+
+    /**
+     * Wear down a fortress's Kernel with the running icebreaker. It has System Integrity and a flat resistance to every
+     * point; a breaker too weak is held to nothing and the Kernel is immune to it. At zero it is burned: the fortress's
+     * contents are destroyed, the Kernel is Frozen, everybody else on it is thrown out.
+     *
+     * @param  list<array{text: string, tone: string}>  $log
+     * @return array{0: list<array{text: string, tone: string}>, 1: bool}
+     */
+    private function burnKernel(Character $character, Run $run, System $system, array $log): array
+    {
+        if (Fortresses::isFrozen($system)) {
+            $log[] = $this->line('cyberspace.run.log.kernel_frozen');
+
+            return [$log, false];
+        }
+
+        $damage = $this->resolver->resolve('icebreaker_damage', 0.0, $character->modifiers())->toInt();
+        $breaker = $character->runningProcesses()
+            ->first(fn ($process): bool => $process->item?->program?->kind === ProgramKind::Icebreaker);
+
+        if ($breaker === null || $damage <= 0) {
+            $log[] = $this->line('cyberspace.run.log.burn_fails');
+
+            return [$log, false];
+        }
+
+        $effective = $damage - (int) Config::get('cyberspace.fortress.kernel_resistance', 0);
+
+        if ($effective <= 0) {
+            $log[] = $this->line('cyberspace.run.log.kernel_immune');
+
+            return [$log, false];
+        }
+
+        $left = max(0, (int) ($system->kernel_integrity ?? Config::get('cyberspace.fortress.kernel_integrity', 100)) - $effective);
+        $system->forceFill(['kernel_integrity' => $left])->save();
+
+        if ($left > 0) {
+            $log[] = $this->line('cyberspace.run.log.kernel_hit', ['damage' => $effective], 'ok');
+
+            return [$log, false];
+        }
+
+        $character->forceFill([
+            'heat' => (float) $character->heat + $system->grade * (float) Config::get('cyberspace.burn.heat_per_grade', 2.5),
+            'bounty_grade' => max((int) $character->bounty_grade, $system->grade),
+        ])->save();
+
+        $log[] = $this->line('cyberspace.run.log.kernel_burned', ['name' => $system->displayName()], 'crit');
+
+        (new Fortresses)->freeze($system);
+        $this->cancelEveryRunOn($run->address, $run->getKey());
         (new Achievements)->record($character, Metric::SystemsBurned);
 
         return [$log, true];
@@ -1384,7 +1535,7 @@ final readonly class Simulator
 
         $result = (new DamageResolver($this->resolver))->apply(
             $character,
-            Damage::synapticIntegrity($ice->attack, DamageOrigin::Ice),
+            Damage::synapticIntegrity((int) ($run->ice_attack ?? $ice->attack), DamageOrigin::Ice),
         );
 
         $line = $this->line('cyberspace.run.log.ice_hits', ['damage' => $result->taken], 'crit', $ice->name);
@@ -1398,6 +1549,46 @@ final readonly class Simulator
         }
 
         return [$line, null];
+    }
+
+    /**
+     * Process the ticks of an automatic fortress raid that have come due, and write what they did to the run's log.
+     * Safe to call on any run; does nothing unless one is pulling. Called when the run is looked at or acted on.
+     */
+    public function catchUpRaid(Character $character, Run $run): void
+    {
+        if ($run->pull_at === null) {
+            return;
+        }
+
+        $result = FortressRaid::make()->catchUp($character, $run, $this->resolver);
+
+        if ($result['took']) {
+            $this->recordTake($character, $run);
+        }
+
+        $run->save();
+
+        if ($result['lines'] !== []) {
+            $this->appendLog($run, $result['lines']);
+        }
+    }
+
+    /**
+     * The ICE's single strike of a party's round, on the runner it chose. Appends to that runner's log and returns the
+     * ending (a Defeat) if it landed one. The caller resolves the ending, as for any turn.
+     */
+    public function strikeIce(Character $character, Run $run): ?RunEnding
+    {
+        if ($run->ice_id === null) {
+            return null;
+        }
+
+        [$line, $ending] = $this->iceStrikes($character, $run);
+        $run->save();
+        $this->appendLog($run, [$line]);
+
+        return $ending;
     }
 
     /**
@@ -1578,8 +1769,7 @@ final readonly class Simulator
 
         $run->forceFill([
             'detected' => true,
-            'ice_id' => $system?->ice_id,
-            'ice_integrity' => $system?->ice?->integrity,
+            ...$this->iceOf($system),
         ])->save();
 
         if ($owner) {
@@ -1632,8 +1822,7 @@ final readonly class Simulator
 
         $run->forceFill([
             'detected' => true,
-            'ice_id' => $system->ice_id,
-            'ice_integrity' => $system->ice?->integrity,
+            ...$this->iceOf($system),
         ])->save();
 
         $this->charge($character, $system, StandingReason::Noticed);

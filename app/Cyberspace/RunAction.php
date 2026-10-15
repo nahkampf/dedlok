@@ -72,6 +72,11 @@ enum RunAction: string
      * and it costs exactly what any other turn costs. A run where waiting were
      * free would be a run with no clock.
      */
+    /**
+     * Hang a Leecher on this system's core, feeding one of your Data Fortresses. Spent by installing; any purpose.
+     */
+    case Leech = 'leech';
+
     case Hold = 'hold';
 
     /** Leave. Always possible, never certain. */

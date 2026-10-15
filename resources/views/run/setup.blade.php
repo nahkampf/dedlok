@@ -241,6 +241,8 @@
 ])
 {{-- data-free-* is what is left of the deck in TENTHS before anything on this page is ticked; each ticked row carries its
      own cost the same way, and ui-kit.js does the sum. Display only: the run's start asks the runner again. --}}
+@include('run._party')
+
 <form method="POST" action="{{ route('run.start') }}" data-run-budget data-unable-cpu="{{ Text::get('cyberspace.run.setup.scripts_unable_cpu') }}" data-unable-ram="{{ Text::get('cyberspace.run.setup.scripts_unable_ram') }}" data-unable-both="{{ Text::get('cyberspace.run.setup.scripts_unable_both') }}" data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
     @csrf
 

@@ -78,7 +78,7 @@ class DefendSystems extends Command
         $dryRun = (bool) $this->option('dry-run');
         $roll = static fn (int $min, int $max): int => random_int($min, $max);
 
-        $query = System::query()->where('type', '!=', SystemType::Portal->value);
+        $query = System::query()->whereNotIn('type', [SystemType::Portal->value, SystemType::Fortress->value]);
 
         if (! $this->option('force')) {
             // Untouched only: a machine that was told what to carry keeps it.

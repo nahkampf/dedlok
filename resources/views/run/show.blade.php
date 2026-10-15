@@ -314,6 +314,18 @@
                     {{ Text::get('cyberspace.run.action.burn') }}
                 </button>
             @endif
+            @if ($fortresses->isNotEmpty())
+                @if ($fortresses->count() > 1)
+                    <select class="input" name="fortress" aria-label="{{ Text::get('cyberspace.run.action.leech') }}">
+                        @foreach ($fortresses as $fortress)
+                            <option value="{{ $fortress->id }}">{{ $fortress->displayName() }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                <button type="submit" name="action" value="leech" class="btn cut" @if ($run->inAFight()) disabled @endif>
+                    {{ Text::get('cyberspace.run.action.leech') }}
+                </button>
+            @endif
             <button type="submit" name="action" value="hold" class="btn btn--ghost cut">
                 {{ Text::get('cyberspace.run.action.hold') }}
             </button>

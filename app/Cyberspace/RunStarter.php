@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Cyberspace\Party\Parties;
 use App\Decks\DeckTotals;
 use App\Models\Character;
 use App\Models\InventoryItem;
@@ -72,12 +73,12 @@ final readonly class RunStarter
      *
      * @param  iterable<InventoryItem>  $loadout
      */
-    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = []): RunResult
+    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null): RunResult
     {
-        return Trace::scope($character, 'run.start', fn () => $this->startTraced($character, $purpose, $kind, $loadout), ['purpose' => $purpose->value, 'kind' => $kind?->value, 'loadout' => is_array($loadout) ? $loadout : Trace::describe($loadout)]);
+        return Trace::scope($character, 'run.start', fn () => $this->startTraced($character, $purpose, $kind, $loadout, $partyId), ['purpose' => $purpose->value, 'kind' => $kind?->value, 'loadout' => is_array($loadout) ? $loadout : Trace::describe($loadout)]);
     }
 
-    private function startTraced(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = []): RunResult
+    private function startTraced(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null): RunResult
     {
         if ($character->current_run_id !== null) {
             return RunResult::refused(RunRefusal::AlreadyRunning);
@@ -123,7 +124,7 @@ final readonly class RunStarter
         }
 
         try {
-            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout): Run {
+            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout, $partyId): Run {
                 $runner = app(ProgramRunner::class);
 
                 foreach ($loadout as $row) {
@@ -138,6 +139,7 @@ final readonly class RunStarter
 
                 $run = Run::query()->create([
                     'character_id' => $character->getKey(),
+                    'run_party_id' => $partyId,
                     'address' => $system->address,
                     'x' => $at->x,
                     'y' => $at->y,
@@ -181,6 +183,10 @@ final readonly class RunStarter
                  * touches the core yet.
                  */
                 $log = Simulator::fromConfig(null, $this->resolver)->rouse($character, $run, $system);
+
+                if ($system->type->isFortress()) {
+                    Fortresses::alarm($system, 'fortress_alarm');
+                }
 
                 $run->refresh();
                 $run->forceFill(['log' => array_map(
@@ -259,6 +265,11 @@ final readonly class RunStarter
             // After everything the end does: the deck's answer can be different from the one before it.
             Trail::note('run_end_done', $character, ['ending' => $ending->value, 'run' => $run->getKey(), 'lockdown_started' => $shut]);
         });
+
+        // The last runner out closes the party's books: nobody is still "in a party" for a run that is over.
+        if ($run->run_party_id !== null) {
+            Parties::runEnded($run);
+        }
 
         return RunResult::ended($run);
     }

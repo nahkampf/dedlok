@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * storage by owning it, compute and memory only while it runs.
  */
 #[Fillable([
-    'item_id', 'kind', 'qflops_cost', 'memory_cost', 'storage_size', 'lifetime_seconds', 'traverse_seconds',
+    'item_id', 'kind', 'produces', 'qflops_cost', 'memory_cost', 'storage_size', 'lifetime_seconds', 'traverse_seconds',
     'background_process', 'multithreaded', 'modifiers', 'decrypts',
 ])]
 class Program extends Model
@@ -34,6 +34,7 @@ class Program extends Model
             'memory_cost' => 'float',
             'storage_size' => 'float',
             'lifetime_seconds' => 'integer',
+            'produces' => 'array',
             'traverse_seconds' => 'integer',
             'background_process' => 'boolean',
             'multithreaded' => 'boolean',

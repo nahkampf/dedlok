@@ -50,6 +50,13 @@ enum SystemType: string
     case Exchange = 'exchange';
 
     /**
+     * A player's own node: founded on an empty square by running a Data Fortress Kernel, owned by a CHARACTER
+     * (`systems.owner_character_id`) rather than an entity, and run on resources its Leechers borrow. Never rolled by the
+     * seeder, never stocked by the restock, and never given an NPC's defences (`CYBERSPACE.md`, *Data Fortresses*).
+     */
+    case Fortress = 'fortress';
+
+    /**
      * The types a generated world is built from.
      *
      * Neither the portal nor an Exchange is one of them: both are PLACED
@@ -62,7 +69,7 @@ enum SystemType: string
     {
         return array_values(array_filter(
             self::cases(),
-            static fn (self $type): bool => ! in_array($type, [self::Portal, self::Exchange], true),
+            static fn (self $type): bool => ! in_array($type, [self::Portal, self::Exchange, self::Fortress], true),
         ));
     }
 
@@ -101,6 +108,12 @@ enum SystemType: string
     public function isOwned(): bool
     {
         return $this !== self::Portal;
+    }
+
+    /** A player's founded node. */
+    public function isFortress(): bool
+    {
+        return $this === self::Fortress;
     }
 
     /** An entity's front desk, with an agent behind it. */

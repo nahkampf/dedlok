@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * size, and Grid is the one place that knows which — see CYBERSPACE.md, *How
  * the grid is stored*.
  */
-#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'os_skill_id', 'stock_rule', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_id', 'ice_bounty'])]
+#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'owner_character_id', 'abandoned_at', 'fortress_ice', 'fortress_cloak', 'cloak_grade', 'cloak_type', 'cloak_owner_id', 'output_area_id', 'production_at', 'wallet', 'market_tax', 'market_area_id', 'relocated_at', 'access', 'kernel_integrity', 'frozen_until', 'os_skill_id', 'stock_rule', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_id', 'ice_bounty'])]
 class System extends Model
 {
     /** @use HasFactory<SystemFactory> */
@@ -49,6 +49,11 @@ class System extends Model
             'stock_rule' => 'array',
             'designation' => 'integer',
             'type' => SystemType::class,
+            'abandoned_at' => 'datetime',
+            'frozen_until' => 'datetime',
+            'relocated_at' => 'datetime',
+            'production_at' => 'datetime',
+            'fortress_ice' => 'array',
         ];
     }
 

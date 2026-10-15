@@ -32,7 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * card is a physical row holding data rows — the item says what kind of thing
  * it is, the row says where it ended up.
  */
-#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'belt_slot', 'extracted_file', 'scan_file', 'loaded_ammo_id', 'loaded_rounds'])]
+#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'fortress_system_id', 'fortress_running', 'fortress_halted', 'fortress_installed_by', 'defence', 'belt_slot', 'extracted_file', 'scan_file', 'loaded_ammo_id', 'loaded_rounds'])]
 class InventoryItem extends Model
 {
     /** @use HasFactory<InventoryItemFactory> */
@@ -43,6 +43,9 @@ class InventoryItem extends Model
         return [
             'installed_at' => 'immutable_datetime',
             'quantity' => 'integer',
+            'fortress_running' => 'boolean',
+            'fortress_halted' => 'boolean',
+            'defence' => 'array',
             'started_at' => 'immutable_datetime',
             'extracted_file' => 'array',
             'scan_file' => 'array',
@@ -275,6 +278,11 @@ class InventoryItem extends Model
          * kill, one subsystem later.
          */
         if ($this->running_on_deck_id !== null) {
+            return null;
+        }
+
+        // INSTALLED ON A FORTRESS is a place too: one row each, so it can be started, stopped and taken down alone.
+        if ($this->fortress_system_id !== null) {
             return null;
         }
 
@@ -559,6 +567,8 @@ class InventoryItem extends Model
             // Installed in a body. Elsewhere in exactly the sense the other
             // three are: it is yours, and it is not in your hands.
             ->whereNull('installed_at')
+            // Installed on a Data Fortress: yours, and not in your hands.
+            ->whereNull('fortress_system_id')
             ->whereDoesntHave('fitting')
             // LISTED ON THE MARKET. The fifth, and the promise the offer makes
             // to whoever is about to buy it: a listed module cannot be fitted,

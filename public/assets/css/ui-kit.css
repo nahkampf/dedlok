@@ -3132,8 +3132,9 @@ button.board__node[data-inspect]:focus-visible .board__box { border-color: var(-
 .cell--compute { --node: var(--cyan); }
 .cell--relay   { --node: var(--jade); }
 .cell--exchange { --node: var(--brass); }
+.cell--fortress { --node: var(--ink-0); }
 
-.cell--silo, .cell--compute, .cell--relay, .cell--exchange { color: var(--node); }
+.cell--silo, .cell--compute, .cell--relay, .cell--exchange, .cell--fortress { color: var(--node); }
 
 /* AN EXCHANGE IS THE PORTAL'S QUIETER SIBLING. It is not a machine — nothing
    is run against it, scanned or burned — so it carries a hairline, which on

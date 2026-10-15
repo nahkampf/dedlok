@@ -29,6 +29,9 @@ enum Reason: string
     case Mugged = 'mugged';
     case Granted = 'granted';
     case AlphaGift = 'alpha_gift';
+    case FortressMarket = 'fortress_market';
+    case FortressSale = 'fortress_sale';
+    case FortressWallet = 'fortress_wallet';
 
     public function label(): string
     {

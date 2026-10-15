@@ -6,6 +6,7 @@ namespace App\Crafting;
 
 use App\Characters\EncounterPause;
 use App\Cyberspace\ExtractedFile;
+use App\Cyberspace\FortressDefence;
 use App\Cyberspace\SystemType;
 use App\Decks\DeckTotals;
 use App\Decks\Storage;
@@ -251,6 +252,14 @@ final class Crafting
         }
 
         ItemGranter::grant($character, $product, 1);
+
+        // A crafted fortress ICE or IDS carries numbers out of its maker's skills, on that copy.
+        $made = InventoryItem::query()->where('character_id', $character->getKey())->where('item_id', $product->getKey())->whereNull('defence')->latest('id')->first();
+
+        if ($made !== null) {
+            FortressDefence::stamp($character, $made->load('item.program'));
+        }
+
         $craft->delete();
 
         $this->notifier->send($character, Category::Cyberspace, 'crafted', ['item' => $craft->name]);

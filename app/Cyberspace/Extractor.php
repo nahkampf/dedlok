@@ -6,6 +6,7 @@ namespace App\Cyberspace;
 
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
+use App\Cyberspace\Party\PartyShare;
 use App\Decks\Storage;
 use App\Inventory\ItemGranter;
 use App\Models\Character;
@@ -197,8 +198,29 @@ final readonly class Extractor
             $files = 0;
             $taken = [];
 
-            foreach ($contents as $content) {
-                $name = $this->takeFile($character, $content);
+            // Who gets which file: a party deals them by its extraction mode, in the order they come off the node.
+            $share = PartyShare::for($character);
+            $deal = [];
+
+            if ($share !== null) {
+                foreach ($share->divide($contents->count(), $share->extraction()) as $id => $count) {
+                    array_push($deal, ...array_fill(0, $count, $id));
+                }
+            }
+
+            foreach ($contents->values() as $i => $content) {
+                $to = $character;
+                $id = $deal[$i] ?? $character->getKey();
+
+                if ($id !== $character->getKey()) {
+                    $candidate = $this->runner($id);
+
+                    if ($candidate !== null && Storage::fits($candidate, (float) $content->size_qb)) {
+                        $to = $candidate;
+                    }
+                }
+
+                $name = $this->takeFile($to, $content);
 
                 if ($name !== null) {
                     $files++;
@@ -215,6 +237,30 @@ final readonly class Extractor
         });
     }
 
+    /** Pay creds taken from a system into the raider's wallet, or the party's by its credits mode. */
+    public function payCreds(Character $character, int $amount): void
+    {
+        // A party divides it by the owner's chosen mode; a solo runner takes all.
+        $share = PartyShare::for($character);
+        $parts = $share === null ? [$character->getKey() => $amount] : $share->divide($amount, $share->credits());
+
+        foreach ($parts as $id => $part) {
+            $who = $id === $character->getKey() ? $character : $this->runner($id);
+
+            if ($who === null || $part <= 0) {
+                continue;
+            }
+
+            Wallet::move($who, $part, Reason::Extraction);
+
+            // Counted HERE rather than at either call site, because this is the
+            // one place creds come off a system — `extract()` and the simulator's
+            // turn both arrive through it, and a second call site would be a
+            // second answer to how much somebody has ever raided.
+            (new Achievements)->record($who, Metric::RaidCreds, $part);
+        }
+    }
+
     private function takeCreds(Character $character, SystemContent $content): int
     {
         $amount = (int) $content->amount;
@@ -223,13 +269,7 @@ final readonly class Extractor
             return 0;
         }
 
-        Wallet::move($character, $amount, Reason::Extraction);
-
-        // Counted HERE rather than at either call site, because this is the
-        // one place creds come off a system — `extract()` and the simulator's
-        // turn both arrive through it, and a second call site would be a
-        // second answer to how much somebody has ever raided.
-        (new Achievements)->record($character, Metric::RaidCreds, $amount);
+        $this->payCreds($character, $amount);
 
         return $amount;
     }
@@ -256,7 +296,36 @@ final readonly class Extractor
         // The merge-or-create is App\Inventory\ItemGranter, shared with the
         // archetype loadout and the market: two piles of the same stackable
         // thing in one place are one pile, however each pile arrived.
-        return ItemGranter::grant($character, $item, $quantity);
+        $share = PartyShare::for($character);
+
+        if ($share === null) {
+            return ItemGranter::grant($character, $item, $quantity);
+        }
+
+        // A party deals the copies out; whoever has no room for theirs leaves it with the one who pulled it.
+        $granted = 0;
+        $size = Storage::sizeOf($item);
+
+        foreach ($share->divide($quantity, $share->extraction()) as $id => $count) {
+            if ($count <= 0) {
+                continue;
+            }
+
+            $who = $id === $character->getKey() ? $character : $this->runner($id);
+
+            if ($who === null || $who->getKey() !== $character->getKey() && ! Storage::fits($who, Qb::of($size * $count))) {
+                $who = $character;
+            }
+
+            $granted += ItemGranter::grant($who, $item, $count);
+        }
+
+        return $granted;
+    }
+
+    private function runner(int $id): ?Character
+    {
+        return Character::query()->lockForUpdate()->find($id);
     }
 
     /**
@@ -268,6 +337,12 @@ final readonly class Extractor
      * bug `stack_key` exists to prevent, on the one item where merging would
      * also destroy information a quantity cannot hold.
      */
+    /** Hand one file to a character as an inventory row; the caller deletes the content. Returns its label. */
+    public function deliver(Character $to, SystemContent $content): ?string
+    {
+        return $this->takeFile($to, $content);
+    }
+
     private function takeFile(Character $character, SystemContent $content): ?string
     {
         $dump = Item::query()->where('slug', self::DUMP_SLUG)->first();

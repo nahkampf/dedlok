@@ -97,6 +97,16 @@ Schedule::command('cyberspace:age-backdoors --quiet-when-idle')
     ->dailyAt('04:25')
     ->withoutOverlapping();
 
+// A fortress is kept inside its Leechers' totals every five minutes; one offline past the grace period is deleted.
+Schedule::command('fortress:settle --quiet-when-idle')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+// Leechers are found on the same nightly cadence as backdoors.
+Schedule::command('cyberspace:find-leeches --quiet-when-idle')
+    ->dailyAt('04:30')
+    ->withoutOverlapping();
+
 /*
  * Word goes out about somebody, which is the first thing heat has ever done.
  *
