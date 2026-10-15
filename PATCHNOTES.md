@@ -1,3 +1,16 @@
+## 0.62.0 (2026-10-15)
+- All item cards should now show effects
+- Big update! Co-op runs and Data Fortresses
+- You can now invite people to join a co-op intrusion run on a system (requires at least level 1 of Coordinated Strike skill). 
+- The creator of the strike sets profit sharing options.
+- ICE attacks the least stealthy and/or the runner that has caused the most damage, but only one gets attacked each round.
+- Rounds are automatic and on time
+- Data Fortresses! These are "constructable" nodes on the cyberspace grid, where players can host their own systems, have shared storage areas, run utility programs or producers
+- Data Fortresses consume resources (ram, cpu, storage) that you leach from other nodes on the system using a new program called Leechers. 
+- If the supply runs short, processes stop and in worst case leave the fortress wide open for raiding
+- Cloaked systems will soon be a real thing
+More info and documentation to follow
+
 ## 0.61.1 (2026-10-15)
 
 - Bugfix: stackable items were all in if you put them up on market. You can now split and choose quantity when putting it up
