@@ -336,6 +336,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/run/party', [RunPartyController::class, 'open'])->name('run.party.open');
     Route::post('/run/party/options', [RunPartyController::class, 'options'])->name('run.party.options');
     Route::post('/run/party/invite', [RunPartyController::class, 'invite'])->name('run.party.invite');
+    Route::post('/run/party/{party}/join', [RunPartyController::class, 'join'])->name('run.party.join');
     Route::post('/run/party/accept', [RunPartyController::class, 'accept'])->name('run.party.accept');
     Route::post('/run/party/leave', [RunPartyController::class, 'leave'])->name('run.party.leave');
     Route::get('/run', [RunController::class, 'show'])->name('run.show');

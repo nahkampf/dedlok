@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Chat;
 
 use App\Models\MarketOffer;
+use App\Models\RunParty;
 use App\Support\Text;
 
 /**
@@ -82,15 +83,41 @@ final class Markup
         ), $text);
     }
 
+    /** `run:<id>` becomes a button that joins that run's party, labelled with the system's address. Unknown id: left as text. */
+    public static function runs(string $text): string
+    {
+        preg_match_all('/\brun:(\d{1,10})\b/', $text, $found);
+
+        if ($found[1] === []) {
+            return $text;
+        }
+
+        $addresses = RunParty::query()->whereIn('id', array_unique($found[1]))->pluck('address', 'id');
+
+        return preg_replace_callback('/\brun:(\d{1,10})\b/', function (array $m) use ($addresses): string {
+            $address = $addresses[(int) $m[1]] ?? null;
+
+            if ($address === null) {
+                return $m[0];
+            }
+
+            return sprintf(
+                '<button type="button" class="copy" data-run-join="%s">%s</button>',
+                e(route('run.party.join', ['party' => (int) $m[1]], false)),
+                e(Text::get('cyberspace.party.link', ['address' => $address])),
+            );
+        }, $text);
+    }
+
     /** Last, so the markup it makes is never meant for the passes above. */
     private static function addresses(string $text): string
     {
-        return self::listings(preg_replace_callback('/\baddr:([0-9A-Fa-f]{8})\b/', fn (array $m): string => sprintf(
+        return self::runs(self::listings(preg_replace_callback('/\baddr:([0-9A-Fa-f]{8})\b/', fn (array $m): string => sprintf(
             '<button type="button" class="copy" data-copy="%1$s" data-copied="%2$s" data-copy-failed="%3$s" title="%4$s">%1$s</button>',
             strtoupper($m[1]),
             e(Text::get('cyberspace.reading.copied')),
             e(Text::get('cyberspace.reading.copy_failed')),
             e(Text::get('cyberspace.reading.copy')),
-        ), $text));
+        ), $text)));
     }
 }

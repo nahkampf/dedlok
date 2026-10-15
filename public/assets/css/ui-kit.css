@@ -2716,7 +2716,9 @@ button.item-row { width: 100%; text-align: left; background: none; font: inherit
    whatever was pointed at. It never takes the pointer: a hover layer you have
    to reach is a layer that closes on the way, which is why the actions live in
    the modal a click opens instead and are hidden here. */
+/* A popover (top layer) so it can sit over a modal; the reset undoes the UA's popover box. */
 .inspector {
+  margin: 0; padding: 0; border: 0; background: none; overflow: visible; inset: auto;
   position: fixed; top: 0; left: 0;
   z-index: var(--z-popover);
   width: max-content;

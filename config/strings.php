@@ -843,6 +843,7 @@ return [
             'mission_failed' => 'Job ran out of time',
             'mission_abandoned' => 'Job abandoned',
             'mission_voided' => 'Job called off',
+            'mission_retargeted' => 'Mission Update',
             'skill_level' => ':skill, level :level',
             'achievement_unlocked' => 'Achievement unlocked!',
             'withdrawal' => 'Withdrawal',
@@ -898,6 +899,7 @@ return [
             'mission_failed' => 'Your :action job for :entity ran out of time.',
             'mission_abandoned' => 'You walked away from the :action job for :entity.',
             'mission_voided' => 'The :action job for :entity is off: something it named is not there any more.',
+            'mission_retargeted' => ':old seems to have gone dark. We\'ve assigned a new target for you: :new',
             'skill_level' => ':skill reached level :level.',
             'achievement_unlocked' => 'You unlocked the achievement :name!',
             'withdrawal' => 'You need it. :family, and going without is starting to show.',
@@ -1325,6 +1327,10 @@ return [
             'decline' => 'Decline',
             'leave' => 'Leave',
             'invited_by' => ':owner has called a co-op run here.',
+            'address_copied' => 'You are not at that system. Its address, :address, is copied: paste it into Jump on the cyberspace screen.',
+            'joined_now' => 'You are in the party. Stay at the system and choose your loadout on the briefing.',
+            'copy_link' => 'Copy this run\'s id. Pasted in a private chat it invites the people there; in General it invites nobody.',
+            'link' => 'Run: :address',
             'terms' => 'Credits: :credits. Extraction: :extraction.',
             'share' => [
                 'even' => 'Even split',
@@ -1344,6 +1350,7 @@ return [
                 'not_invited' => 'You have no invitation.',
                 'not_at_the_door' => 'You have to be standing at the same system.',
                 'not_the_owner' => 'Only the one who called the run starts it.',
+                'started' => 'That run has already begun.',
             ],
         ],
 
@@ -2010,6 +2017,8 @@ return [
         */
         // Browse known systems: what you have seen and that is still where you saw it and open.
         'known' => [
+            'full_scan' => 'You hold a full scan of this system',
+            'no_scan' => 'No scan on file.',
             'browse' => 'Browse known systems',
             'title' => 'Known systems',
             'owner' => 'Owner',

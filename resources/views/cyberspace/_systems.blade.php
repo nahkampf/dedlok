@@ -56,10 +56,38 @@
                 @foreach ($rows as $row)
                     <tr>
                         <td>{{ $row['owner'] !== '' ? $row['owner'] : Text::get('cyberspace.known.unowned') }}</td>
-                        <td>{{ $row['name'] }}</td>
+                        <td>
+                            {{-- Pointing at the name or the address floats the system's card; clicking the name opens it. --}}
+                            <button type="button" class="link" data-inspect="#sys-{{ $row['address'] }}" aria-haspopup="dialog"
+                                    style="background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;cursor:pointer">{{ $row['name'] }}</button>
+                        </td>
                         <td class="muted">{{ $row['type']->label() }}</td>
                         <td class="t-right num">{{ $row['grade'] ?? '—' }}</td>
-                        <td><x-address :address="$row['address']" /></td>
+                        <td>
+                            <span class="row" style="--gap:var(--s-2);align-items:center;flex-wrap:nowrap">
+                                <span data-inspect="#sys-{{ $row['address'] }}" data-inspect-hover><x-address :address="$row['address']" /></span>
+                                @if ($row['complete'])
+                                    <span class="mark--ok" title="{{ Text::get('cyberspace.known.full_scan') }}" aria-label="{{ Text::get('cyberspace.known.full_scan') }}">&#10003;</span>
+                                @endif
+                            </span>
+                            <template id="sys-{{ $row['address'] }}">
+                                <div class="item-card">
+                                    <div class="item-card__hd">
+                                        <strong>{{ $row['name'] }}</strong>
+                                        <div class="micro num"><x-address :address="$row['address']" /></div>
+                                    </div>
+                                    <div class="card__stats" style="padding:0;border:0">
+                                        <div class="card__stat"><span>{{ Text::get('cyberspace.known.owner') }}</span><b>{{ $row['owner'] !== '' ? $row['owner'] : Text::get('cyberspace.known.unowned') }}</b></div>
+                                        <div class="card__stat"><span>{{ Text::get('cyberspace.known.type') }}</span><b>{{ $row['type']->label() }}</b></div>
+                                    </div>
+                                    @if ($row['scan'])
+                                        <x-scan-facts :facts="$row['scan']->facts($character)" />
+                                    @else
+                                        <div class="micro" style="color:var(--ink-3);padding:var(--s-3)">{{ Text::get('cyberspace.known.no_scan') }}</div>
+                                    @endif
+                                </div>
+                            </template>
+                        </td>
                         <td class="t-right">
                             <form method="POST" action="{{ route('cyberspace.jump') }}">
                                 @csrf

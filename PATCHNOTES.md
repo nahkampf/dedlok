@@ -1,3 +1,10 @@
+## 0.62.1 (2026-10-15)
+
+- YOu can paste `run:<id>` in chats to invite someone to your co-op run. Planning screen has a button to copy id. If players are not present at that node, they can copy it instead and jump there.
+- A green checkmark next to the addresses in Known Systems for systems you have a full scan of.
+- Character sheet now displays drug effects on attributes
+- If a mission system dies, you will be assigned a new system
+
 ## 0.62.0 (2026-10-15)
 - All item cards should now show effects
 - Big update! Co-op runs and Data Fortresses

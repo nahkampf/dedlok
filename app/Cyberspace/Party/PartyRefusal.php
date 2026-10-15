@@ -21,6 +21,7 @@ enum PartyRefusal: string
     case NotInvited = 'not_invited';
     case NotAtTheDoor = 'not_at_the_door';
     case NotTheOwner = 'not_the_owner';
+    case Started = 'started';
 
     public function message(): string
     {

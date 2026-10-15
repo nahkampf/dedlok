@@ -26,6 +26,9 @@ class TasksController extends Controller
         // Opening the screen is reading it all: the rail's badge clears with this request, before the layout counts.
         app(Journal::class)->markSeen($character);
 
+        Mission::query()->where('character_id', $character->getKey())->accepted()->get()
+            ->each(fn (Mission $m) => $ledger->retarget($m));
+
         return view('tasks.index', [
             // Soonest to run out first: that is the order somebody works in.
             'missions' => Mission::query()

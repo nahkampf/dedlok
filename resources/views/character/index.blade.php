@@ -64,6 +64,14 @@
                                     <div class="meter__fill"></div>
                                 </div>
                                 <span class="vital__value">{{ $attribute['value'] }}</span>
+                                {{-- Whatever moved it (a dose's cost, an implant, an injury), one line per layer, so a
+                                     lowered attribute says why. Absent while nothing is. --}}
+                                @foreach ($attribute['steps'] as $step)
+                                    <span class="micro" style="grid-column:1/-1;color:{{ $step->delta() < 0 ? 'var(--warn)' : 'var(--ink-3)' }}">
+                                        {{ $step->sources === [] ? $step->op : implode(', ', $step->sources) }}
+                                        <span class="num">{{ $step->delta() >= 0 ? '+' : '−' }}{{ rtrim(rtrim(number_format(abs($step->delta()), 1), '0'), '.') }}</span>
+                                    </span>
+                                @endforeach
                             </div>
                         @endforeach
                     </div>
@@ -210,6 +218,11 @@
                                         <span>{{ Text::get('character.doses_wears_off', ['when' => $dose->expires_at->diffForHumans()]) }}</span>
                                         <span class="num">{{ Text::get('character.doses_potency', ['percent' => (int) round($dose->potency * 100)]) }}</span>
                                     </div>
+                                    {{-- WHAT IT DOES: the dose's effects as the resolver applies them (only what it gives is
+                                         weakened by tolerance, never what it costs), so a drug's price is on the sheet. --}}
+                                    @foreach ($dose->effectLines() as $line)
+                                        <div class="micro" style="margin-left:var(--s-3);color:{{ $line['negative'] ? 'var(--warn)' : 'var(--ink-3)' }}">{{ $line['text'] }}</div>
+                                    @endforeach
                                 @empty
                                     <span class="micro" style="color:var(--ink-3)">{{ Text::get('character.doses_none') }}</span>
                                 @endforelse

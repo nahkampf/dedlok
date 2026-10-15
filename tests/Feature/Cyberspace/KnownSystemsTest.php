@@ -6,6 +6,7 @@ namespace Tests\Feature\Cyberspace;
 
 use App\Cyberspace\SystemType;
 use App\Models\Character;
+use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
@@ -113,6 +114,23 @@ final class KnownSystemsTest extends TestCase
         $this->assertStringNotContainsString('Unscanned', $this->fragment(['grade' => '4']), 'the hidden grade is never filtered on');
         $this->assertStringContainsString('Unscanned', $this->fragment(['grade' => 'unknown']));
         $this->assertStringNotContainsString('Scanned</td>', str_replace('Unscanned', '', $this->fragment(['grade' => 'unknown'])));
+    }
+
+    public function test_a_full_scan_is_ticked_and_every_address_has_a_card(): void
+    {
+        $whole = $this->known('Acme', SystemType::Silo, 'Whole', 2);
+        $part = $this->known('Acme', SystemType::Silo, 'Partial', 3);
+        $os = Skill::query()->first()?->id ?? Skill::factory()->create()->id;
+
+        SystemScan::query()->where('address', $whole->address)->update([
+            'os_skill_id' => $os, 'ids_detection' => 0, 'tracer_detection' => 0, 'tracer_rate' => 0, 'ice_level' => 0,
+        ]);
+
+        $html = $this->fragment();
+
+        $this->assertSame(1, substr_count($html, 'You hold a full scan of this system" aria-label'));
+        $this->assertStringContainsString('id="sys-'.$whole->address.'"', $html);
+        $this->assertStringContainsString('id="sys-'.$part->address.'"', $html);
     }
 
     public function test_the_jump_and_chain_boxes_are_accordions_closed_by_default(): void

@@ -24,6 +24,15 @@
                 <div><button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('cyberspace.party.save') }}</button></div>
             </form>
 
+            {{-- The run's id, to paste in chat: anybody at this system who clicks it joins while there are slots. --}}
+            <div class="row row--wrap" style="--gap:var(--s-2);align-items:center">
+                <button type="button" class="copy" data-copy="run:{{ $party->id }}"
+                        data-copied="{{ Text::get('cyberspace.reading.copied') }}"
+                        data-copy-failed="{{ Text::get('cyberspace.reading.copy_failed') }}"
+                        title="{{ Text::get('cyberspace.party.copy_link') }}">run:{{ $party->id }}</button>
+                <span class="micro" style="color:var(--ink-3)">{{ Text::get('cyberspace.party.copy_link') }}</span>
+            </div>
+
             <ul style="margin:0;padding-left:var(--s-4)">
                 @forelse ($party->members as $member)
                     <li>{{ $member->character?->handle }}

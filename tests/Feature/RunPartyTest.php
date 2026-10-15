@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Chat\Chats;
 use App\Cyberspace\Extractor;
 use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Party\PartyRefusal;
@@ -90,5 +91,45 @@ final class RunPartyTest extends TestCase
         $this->assertSame(51, (int) $owner->fresh()->creds);
         $this->assertSame(25, (int) $a->fresh()->creds);
         $this->assertSame(25, (int) $b->fresh()->creds);
+    }
+
+    public function test_a_run_link_only_works_for_somebody_invited_and_at_the_door(): void
+    {
+        config(['cyberspace.coop.slots' => 2]);
+        $owner = Character::factory()->create();
+        $a = Character::factory()->create(['grid_x' => 3, 'grid_y' => 3]);
+        $stranger = Character::factory()->create(['grid_x' => 3, 'grid_y' => 3]);
+        $far = Character::factory()->create(['grid_x' => 9, 'grid_y' => 9]);
+        $party = RunParty::query()->create(['owner_character_id' => $owner->id, 'address' => 'ABCDEF12', 'x' => 3, 'y' => 3]);
+        $parties = new Parties;
+
+        $this->assertSame(PartyRefusal::NotInvited, $parties->acceptInto($stranger, $party));
+
+        $this->assertNull($parties->invite($owner, $a->handle));
+        $this->assertNull($parties->invite($owner, $far->handle));
+        $this->assertNull($parties->acceptInto($a->fresh(), $party));
+        $this->assertSame(PartyRefusal::NotAtTheDoor, $parties->acceptInto($far->fresh(), $party));
+
+        // Invited but away: the page is given the address to copy, and an uninvited runner is given nothing.
+        $this->actingAs($far->user)->postJson(route('run.party.join', $party))
+            ->assertOk()->assertJson(['copy' => 'ABCDEF12']);
+        $this->actingAs($stranger->user)->postJson(route('run.party.join', $party))
+            ->assertStatus(422)->assertJson(['copy' => null]);
+        $this->assertNotNull($party->members()->where('character_id', $a->id)->first()->joined_at);
+    }
+
+    public function test_pasting_a_run_id_in_a_private_line_invites_its_members_but_not_in_general(): void
+    {
+        config(['cyberspace.coop.slots' => 3]);
+        $owner = Character::factory()->create();
+        $friend = Character::factory()->create();
+        $party = RunParty::query()->create(['owner_character_id' => $owner->id, 'address' => 'ABCDEF12', 'x' => 3, 'y' => 3]);
+        $chats = new Chats;
+
+        $chats->post($owner, $chats->general(), "come run:{$party->id}");
+        $this->assertSame(0, $party->members()->count());
+
+        $chats->post($owner, $chats->direct($owner, $friend), "run:{$party->id}");
+        $this->assertSame(1, $party->members()->where('character_id', $friend->id)->count());
     }
 }

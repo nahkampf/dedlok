@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Stats\Modifier;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -47,5 +48,38 @@ class Dose extends Model
     public function scopeInEffect(Builder $query, ?\DateTimeInterface $at = null): void
     {
         $query->where('expires_at', '>', $at ?? now())->where(static fn ($turns) => $turns->whereNull('turns_left')->orWhere('turns_left', '>', 0));
+    }
+
+    /**
+     * What this dose does to the person right now, one line per effect: the amounts as the resolver applies them
+     * (a gain is worth its potency, a cost is not). For the character sheet.
+     *
+     * @return list<array{text: string, negative: bool}>
+     */
+    public function effectLines(): array
+    {
+        $lines = [];
+
+        foreach ((array) $this->item?->modifiers as $shape) {
+            if (! is_array($shape)) {
+                continue;
+            }
+
+            $amount = $shape['amount'] ?? null;
+
+            if (is_numeric($amount) && $amount > 0 && (float) $this->potency < 1.0) {
+                $shape['amount'] = round((float) $amount * (float) $this->potency, 2);
+            }
+
+            try {
+                $modifier = Modifier::fromArray($shape);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            $lines[] = ['text' => $modifier->effectText(), 'negative' => (float) ($shape['amount'] ?? 0) < 0];
+        }
+
+        return $lines;
     }
 }

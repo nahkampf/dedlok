@@ -183,13 +183,16 @@ class CharacterController extends Controller
         $rows = [];
 
         foreach (Character::ATTRIBUTES as $attribute) {
-            $value = (int) round($sheet->value($attribute));
+            $stat = $sheet->get($attribute);
+            $value = (int) round($stat->value);
 
             $rows[] = [
                 'key' => $attribute,
                 'label' => Text::get("character.names.{$attribute}"),
                 'value' => $value,
                 'ratio' => max(0.0, min(1.0, $value / Character::ATTRIBUTE_MAX)),
+                // What moved it, a line per layer: a drug's cost, an implant's gain. Empty is an unmodified attribute.
+                'steps' => $stat->steps,
             ];
         }
 
