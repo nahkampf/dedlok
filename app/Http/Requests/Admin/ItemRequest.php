@@ -174,7 +174,9 @@ class ItemRequest extends FormRequest
             'drug_family' => $this->filled('drug_family') ? $this->input('drug_family') : null,
             // A consumable: one number per kind of effect, blank meaning none. Whole numbers only, so a stray
             // decimal is a validation error and not a quiet rounding.
-            'use_heal_hitpoints' => $this->filled('use_heal_hitpoints') ? $this->input('use_heal_hitpoints') : null,
+            ...collect(UseEffect::cases())->mapWithKeys(fn (UseEffect $k): array => [
+                'use_'.$k->value => $this->filled('use_'.$k->value) ? $this->input('use_'.$k->value) : null,
+            ])->all(),
             // A fight-only drug counts rounds, so its minutes are not asked (0, unread) and the two fight fields only
             // mean anything when it is one: blank otherwise, however the form posted them.
             'fight_only' => $this->boolean('fight_only'),
@@ -404,9 +406,11 @@ class ItemRequest extends FormRequest
              * A consumable is a PHYSICAL object used up once. It may also be a DRUG (a trauma drip that heals now and
              * mends for ten minutes), and is none of the other kinds.
              */
-            'use_heal_hitpoints' => $hardware !== null || $isProgram || $isImprint || $isGear || $this->filled('implant_region')
-                ? ['prohibited']
-                : ['nullable', 'integer', 'min:1', 'max:10000'],
+            ...collect(UseEffect::cases())->mapWithKeys(fn (UseEffect $k): array => [
+                'use_'.$k->value => $hardware !== null || $isProgram || $isImprint || $isGear || $this->filled('implant_region')
+                    ? ['prohibited']
+                    : ['nullable', 'integer', 'min:1', 'max:10000'],
+            ])->all(),
 
             'fight_only' => ['boolean'],
             'duration_minutes' => $isDrug
@@ -953,7 +957,9 @@ class ItemRequest extends FormRequest
         );
 
         // And so does a consumable.
-        unset($data['use_heal_hitpoints']);
+        foreach (UseEffect::cases() as $kind) {
+            unset($data['use_'.$kind->value]);
+        }
 
         // And so does a drug. Nothing on `items` says an item is one.
         unset(

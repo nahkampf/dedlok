@@ -422,6 +422,34 @@ final class DrugTest extends TestCase
         $this->assertFalse($this->taker()->take($this->character, $row->fresh())->overdosed());
     }
 
+    // ---- a drug that takes tolerance off ------------------------------------
+
+    /** `drug_<family>_tolerance` lowers that family's figure and no other, floored at nothing. */
+    public function test_a_drug_can_lower_one_familys_tolerance(): void
+    {
+        foreach ([[Family::Opiate, 30], [Family::Stimulant, 30]] as [$family, $tolerance]) {
+            DrugUse::query()->create([
+                'character_id' => $this->character->id, 'family' => $family->value, 'addiction' => 0, 'tolerance' => $tolerance,
+            ]);
+        }
+
+        $item = $this->drug(Family::Nootropic, tolerance: 0.0);
+        \App\Items\ConsumableEditor::apply($item, [['kind' => 'drug_opiate_tolerance', 'amount' => 12]]);
+        $row = $this->carrying($item);
+
+        $result = $this->taker()->take($this->character, $row);
+
+        $this->assertSame(['drug_opiate_tolerance' => 12], $result->instant);
+        $this->assertSame(18.0, (float) $this->ledger()->for($this->character, Family::Opiate)->tolerance);
+        $this->assertSame(30.0, (float) $this->ledger()->for($this->character, Family::Stimulant)->tolerance);
+
+        // And never below nothing.
+        \App\Items\ConsumableEditor::apply($item, [['kind' => 'drug_opiate_tolerance', 'amount' => 100]]);
+        $this->taker()->take($this->character, $row->fresh());
+
+        $this->assertSame(0.0, (float) $this->ledger()->for($this->character, Family::Opiate)->tolerance);
+    }
+
     // ---- a day off ---------------------------------------------------------
 
     public function test_both_figures_come_off_overnight(): void
@@ -438,7 +466,7 @@ final class DrugTest extends TestCase
         $books = $this->ledger()->for($this->character, Family::Stimulant);
 
         $this->assertSame(9.0, (float) $books->addiction);
-        $this->assertSame(8.0, (float) $books->tolerance, 'tolerance falls faster');
+        $this->assertSame(7.0, (float) $books->tolerance, 'tolerance falls faster');
     }
 
     /** Books that reach nothing on both figures are deleted rather than kept at zero. */

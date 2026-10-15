@@ -192,6 +192,30 @@ final class CityPlaceTest extends TestCase
         $this->assertSame(CityRefusal::NothingToTreat, app(Clinic::class)->treat($this->character->fresh(), $this->clinic, ClinicService::NeuralDamage));
     }
 
+    public function test_a_clinic_resets_one_familys_tolerance_or_addiction_by_the_point(): void
+    {
+        \App\Models\ClinicOffer::query()->create(['location_id' => $this->clinic->id, 'service' => 'drug_opiate_tolerance', 'price' => 5]);
+        \App\Models\ClinicOffer::query()->create(['location_id' => $this->clinic->id, 'service' => 'drug_opiate_addiction', 'price' => 7]);
+
+        foreach (['opiate' => [45, 12.4], 'stimulant' => [30, 9]] as $family => [$tolerance, $addiction]) {
+            \App\Models\DrugUse::query()->create([
+                'character_id' => $this->character->id, 'family' => $family, 'addiction' => $addiction, 'tolerance' => $tolerance,
+            ]);
+        }
+
+        $clinic = app(Clinic::class);
+        $character = $this->character->fresh();
+
+        $this->assertSame(225, $clinic->treat($character, $this->clinic, ClinicService::DrugOpiateTolerance), '45 points at 5');
+        $this->assertSame(91, $clinic->treat($this->character->fresh(), $this->clinic, ClinicService::DrugOpiateAddiction), '13 points (12.4 rounded up) at 7');
+
+        $ledger = new \App\Drugs\DrugLedger;
+        $this->assertNull(\App\Models\DrugUse::query()->where('character_id', $this->character->id)->where('family', 'opiate')->first(), 'clean books are closed');
+        $this->assertSame(30.0, (float) $ledger->for($this->character, \App\Drugs\Family::Stimulant)->tolerance, 'another family is untouched');
+        $this->assertSame(CityRefusal::NothingToTreat, $clinic->treat($this->character->fresh(), $this->clinic, ClinicService::DrugOpiateTolerance));
+        $this->assertSame(CityRefusal::NotSold, $clinic->treat($this->character->fresh(), $this->clinic, ClinicService::DrugStimulantTolerance));
+    }
+
     public function test_you_cannot_treat_what_you_cannot_pay_for(): void
     {
         $this->character->forceFill(['creds' => 3, 'current_hitpoints' => 1])->save();
