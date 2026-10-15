@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.61.0] — 2026-10-15
+
+Drugs and clinics can reset a drug family's tolerance and addiction, and tolerance wears off faster.
+
+### Added
+
+- **`drug_<family>_tolerance` use effects** (`UseEffect`, six cases): a consumable, or a drug that is also one, takes points off that family's stored tolerance through `DrugLedger::lowerTolerance()`, floored at nothing; books left at zero on both figures are deleted. A pure consumable at zero tolerance is refused as `NothingToDo`. The item editor's Consumable panel gets a field per family (`ItemRequest` now loops `UseEffect::cases()`).
+- **Clinic treatments for habits**: twelve `ClinicService` cases (`drug_<family>_addiction|tolerance`) priced per point of the stored figure, rounded up, through `DrugLedger::lowerAddiction()` / `lowerTolerance()`. Lowering addiction reconciles the withdrawal at once. Migration `2026_10_15_130000_clinics_treat_drug_habits` widens `chk_clinic_services_service` and refreshes the column comment.
+
+### Changed
+
+- **Tolerance decays 3 points a day** (`drugs.decay.tolerance`, was 2). Addiction is unchanged at 1.
+
+
+
 ## [0.60.0] — 2026-10-15
 
 Four new achievements, hunters are Bloodhounds, loyalty can be fractional, and the Known systems browser shows an exchange's grade. Data fortresses are designed in full (docs only).
@@ -3247,7 +3262,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.60.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.61.0...HEAD
+[0.61.0]: https://github.com/nahkampf/dedlok/compare/v0.60.0...v0.61.0
 [0.60.0]: https://github.com/nahkampf/dedlok/compare/v0.59.0...v0.60.0
 [0.59.0]: https://github.com/nahkampf/dedlok/compare/v0.58.2...v0.59.0
 [0.58.2]: https://github.com/nahkampf/dedlok/compare/v0.58.1...v0.58.2
