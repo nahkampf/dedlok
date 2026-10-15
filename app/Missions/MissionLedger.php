@@ -357,7 +357,7 @@ final readonly class MissionLedger
 
             if ($old !== null) {
                 $query->where('grade', $old->grade)->where('type', $old->type)
-                    ->orderByRaw('ABS(x - ?) + ABS(y - ?)', [$old->x, $old->y]);
+                    ->orderByRaw('ABS(CAST(x AS SIGNED) - ?) + ABS(CAST(y AS SIGNED) - ?)', [$old->x, $old->y]);
             } elseif ($desk !== null) {
                 [$low, $high] = $desk->targetGrades();
                 $query->whereBetween('grade', [$low, $high])->inRandomOrder();

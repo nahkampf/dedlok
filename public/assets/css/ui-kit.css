@@ -2850,6 +2850,10 @@ dialog.modal--inspect > .item-card { overflow-y: auto; min-height: 0; }
 @keyframes here-pulse {
   50% { border-color: var(--ink-0); }
 }
+/* The diamond that says "you are here": ember and live, so it pulses. */
+.here-mark { color: var(--ember); animation: here-mark 1.6s ease-in-out infinite; }
+@keyframes here-mark { 50% { opacity: .3; } }
+.here-legend { margin-top: var(--s-2); letter-spacing: .08em; }
 /* A map's node is a NAME in the box, wrapping rather than overflowing: the
    coordinates are inset from the edges, but a long name is still wider than a
    socket. The 120px floor is what lets "Knightsbridge" sit on one line at 320px

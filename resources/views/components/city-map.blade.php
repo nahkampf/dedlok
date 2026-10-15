@@ -50,11 +50,14 @@
                         @if ($pin)
                             <span class="board__pin" aria-hidden="true">&#9672;</span>
                         @else
-                            <span class="board__name">{{ $node['label'] }}</span>
+                            <span class="board__name">@if ($node['here'])<span class="here-mark" aria-hidden="true">&#9670;</span> @endif{{ $node['label'] }}</span>
                         @endif
                     </span>
                 </{{ $tag }}>
             @endforeach
         @endif
     </div>
+    @if (collect($nodes)->contains(fn ($n) => $n['here'] && empty($n['pin'])))
+        <p class="micro here-legend"><span class="here-mark" aria-hidden="true">&#9670;</span> {{ Text::get('city.you_are_here') }}</p>
+    @endif
 </div>
