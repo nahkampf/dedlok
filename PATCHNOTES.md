@@ -1,3 +1,8 @@
+## 0.62.2 (2026-10-16)
+
+- Bugfix: the Tasks screen (and exchange desks) could fail to load for anyone with a mission whose target had gone dark.
+- The city map now clearly marks where you are
+
 ## 0.62.1 (2026-10-15)
 
 - YOu can paste `run:<id>` in chats to invite someone to your co-op run. Planning screen has a button to copy id. If players are not present at that node, they can copy it instead and jump there.
