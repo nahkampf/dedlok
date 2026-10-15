@@ -252,6 +252,9 @@ class InventoryItem extends Model
         });
     }
 
+    /** Set by `OfferBook` for a row it is about to list alongside the pile it was split from: no stack key yet. */
+    public bool $apart = false;
+
     private function stackKey(): ?string
     {
         $item = $this->relationLoaded('item') ? $this->item : Item::find($this->item_id);
@@ -278,6 +281,12 @@ class InventoryItem extends Model
         // ON THE BELT is the same kind of place: the belted pile is one slot's contents, and must not merge into
         // the loose pile of the same item (BeltEquipper merges it back when it comes off).
         if ($this->belt_slot !== null) {
+            return null;
+        }
+
+        // LISTED is the same kind of place: the offered pile is what the buyer takes, so it must not be a second row
+        // of the loose pile (a split-off listing would collide on this key) or have new copies merged into it.
+        if ($this->apart || ($this->exists && MarketOffer::query()->where('inventory_item_id', $this->getKey())->exists())) {
             return null;
         }
 

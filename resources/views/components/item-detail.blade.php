@@ -438,6 +438,16 @@
                                aria-label="{{ Text::get('market.offers.price_label') }}">
                     </label>
 
+                    @if ($entry->quantity > 1)
+                        <label class="field" style="flex:0 0 auto;margin:0">
+                            <span class="sr-only">{{ Text::get('market.offers.quantity') }}</span>
+                            <input class="input num" type="number" name="quantity" value="1"
+                                   min="1" max="{{ $entry->quantity }}" required
+                                   style="width:min(80px, 100%)"
+                                   aria-label="{{ Text::get('market.offers.quantity') }}">
+                        </label>
+                    @endif
+
                     <button type="submit" class="btn btn--sm cut">
                         {{ Text::get('market.offers.list') }}
                     </button>

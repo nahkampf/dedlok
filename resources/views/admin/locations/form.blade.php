@@ -130,12 +130,14 @@
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.locations.clinic') }}</span></div>
             <div class="panel__bd stack" style="--gap:var(--s-3)">
                 <span class="field__hint">{{ Text::get('admin.locations.clinic_hint') }}</span>
-                @foreach ($services as $service)
-                    <label class="field row row--wrap" style="--gap:var(--s-3);align-items:center;margin:0">
-                        <span style="flex:1 1 220px">{{ $service->label() }}</span>
-                        <input class="input num" type="number" min="0" name="clinic[{{ $service->value }}]" value="{{ old('clinic.'.$service->value, $clinic[$service->value] ?? '') }}" style="width:9rem">
-                    </label>
-                @endforeach
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:var(--s-2) var(--s-4)">
+                    @foreach ($services as $service)
+                        <label class="row" style="--gap:var(--s-3);align-items:center;justify-content:space-between;margin:0">
+                            <span style="min-width:0">{{ $service->label() }}</span>
+                            <input class="input num" type="number" min="0" name="clinic[{{ $service->value }}]" value="{{ old('clinic.'.$service->value, $clinic[$service->value] ?? '') }}" style="width:min(7rem,40%);flex:none">
+                        </label>
+                    @endforeach
+                </div>
             </div>
         </div>
 

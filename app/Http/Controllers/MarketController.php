@@ -160,9 +160,10 @@ class MarketController extends Controller
 
         $data = $request->validate([
             'price' => ['required', 'integer', 'min:0', 'max:99999999'],
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:9999'],
         ]);
 
-        $result = $offers->list($character, $entry, (int) $data['price']);
+        $result = $offers->list($character, $entry, (int) $data['price'], isset($data['quantity']) ? (int) $data['quantity'] : null);
 
         if ($result instanceof OfferRefusal) {
             return back()->with('error', $result->message());

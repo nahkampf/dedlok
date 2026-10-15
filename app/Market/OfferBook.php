@@ -68,14 +68,15 @@ use Illuminate\Support\Facades\DB;
  * more of. What one player sold another says nothing about what a shop should
  * order, and writing one would quietly teach the seeder to chase player trade.
  *
- * ponytail: the SELLER still lists a whole pile — there is no listing three of
- * the twenty you hold and keeping seventeen to hand. Add a split at listing
- * time (decrement the source, create the listed row, merge back on withdraw)
- * when somebody actually wants it; the buying side already divides.
+ * ## A SELLER LISTS AS MANY AS THEY CHOOSE
+ *
+ * Listing three of twenty splits three off into a row of their own (it has no stack key while an offer stands, so it
+ * never collides with the pile it came from) and leaves seventeen loose. Withdrawing merges what is left of the
+ * listing back into the loose pile.
  */
 final readonly class OfferBook
 {
-    public function list(Character $seller, InventoryItem $row, int $price): OfferRefusal|MarketOffer
+    public function list(Character $seller, InventoryItem $row, int $price, ?int $quantity = null): OfferRefusal|MarketOffer
     {
         if ($row->character_id !== $seller->getKey()) {
             return OfferRefusal::NotYours;
@@ -92,7 +93,7 @@ final readonly class OfferBook
             return OfferRefusal::Worn;
         }
 
-        return DB::transaction(function () use ($seller, $row, $price): OfferRefusal|MarketOffer {
+        return DB::transaction(function () use ($seller, $row, $price, $quantity): OfferRefusal|MarketOffer {
             // Re-asked inside the transaction and through the scope, so the
             // five ways of being spoken for are one question — and so that two
             // presses cannot both find the row to hand.
@@ -106,11 +107,36 @@ final readonly class OfferBook
                 return OfferRefusal::NotToHand;
             }
 
-            return MarketOffer::query()->create([
+            $row = InventoryItem::query()->whereKey($row->getKey())->lockForUpdate()->firstOrFail();
+            $listed = $row;
+
+            // A SELLER LISTS AS MANY AS THEY CHOOSE of a pile (not the whole of it): the listed copies are split off
+            // into a row of their own, the rest stay loose. Asking for more than there is lists the lot.
+            if ($quantity !== null && $quantity >= 1 && $quantity < (int) $row->quantity) {
+                $row->forceFill(['quantity' => (int) $row->quantity - $quantity])->save();
+
+                $listed = new InventoryItem;
+                $listed->forceFill([
+                    'character_id' => $row->character_id,
+                    'item_id' => $row->item_id,
+                    'parent_id' => null,
+                    'quantity' => $quantity,
+                ]);
+                $listed->apart = true;
+                $listed->save();
+            }
+
+            $offer = MarketOffer::query()->create([
                 'seller_character_id' => $seller->getKey(),
-                'inventory_item_id' => $row->getKey(),
+                'inventory_item_id' => $listed->getKey(),
                 'unit_price' => max(0, $price),
             ]);
+
+            // Saved again now an offer stands, so a whole pile listed as itself drops its stack key too.
+            $listed->apart = false;
+            $listed->save();
+
+            return $offer;
         });
     }
 
@@ -132,9 +158,32 @@ final readonly class OfferBook
             return OfferRefusal::Gone;
         }
 
-        $offer->delete();
+        return DB::transaction(function () use ($offer, $row): InventoryItem {
+            $offer->delete();
 
-        return $row;
+            // What was listed rejoins the loose pile of the same thing, if there is one: two piles of one
+            // stackable thing in one place are one pile.
+            $pile = InventoryItem::query()
+                ->where('character_id', $row->character_id)
+                ->where('item_id', $row->item_id)
+                ->whereKeyNot($row->getKey())
+                ->whereNull('parent_id')->whereNull('running_on_deck_id')->whereNull('belt_slot')->whereNull('installed_at')
+                ->whereDoesntHave('offer')
+                ->whereNotNull('stack_key')
+                ->lockForUpdate()
+                ->first();
+
+            if ($pile !== null && $row->item?->stackable) {
+                $pile->forceFill(['quantity' => (int) $pile->quantity + (int) $row->quantity])->save();
+                $row->delete();
+
+                return $pile;
+            }
+
+            $row->save();
+
+            return $row;
+        });
     }
 
     /**

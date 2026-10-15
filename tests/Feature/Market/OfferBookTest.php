@@ -364,6 +364,28 @@ final class OfferBookTest extends TestCase
         $this->assertSame(1000, (int) $this->buyer->fresh()->creds);
     }
 
+    /** Listing one of two lists one: the other stays loose, and withdrawing merges them back. */
+    public function test_a_seller_lists_part_of_a_pile_and_withdraws_it_back_into_it(): void
+    {
+        $row = $this->owned($this->seller, stackable: true);
+        $row->forceFill(['quantity' => 2])->save();
+
+        $offer = (new OfferBook)->list($this->seller, $row->fresh(), 10, 1);
+
+        $this->assertInstanceOf(MarketOffer::class, $offer);
+        $this->assertSame(1, (int) $offer->row->quantity);
+        $this->assertSame(1, (int) $row->fresh()->quantity, 'one is still in hand');
+        $this->assertTrue($this->isLoose($row->fresh()));
+        $this->assertFalse($this->isLoose($offer->row));
+        $this->assertNotSame($row->getKey(), $offer->row->getKey());
+
+        $back = (new OfferBook)->withdraw($this->seller, $offer);
+
+        $this->assertSame($row->getKey(), $back->getKey());
+        $this->assertSame(2, (int) $back->quantity);
+        $this->assertSame(1, InventoryItem::query()->where('character_id', $this->seller->id)->count());
+    }
+
     private function isLoose(InventoryItem $row): bool
     {
         return InventoryItem::query()->whereKey($row->getKey())->loose()->exists();
