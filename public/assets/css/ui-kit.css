@@ -2241,6 +2241,15 @@ details.panel > summary.panel__hd:focus-visible {
 }
 @keyframes seg-breathe { from { opacity: 0; } }
 
+/* Centred: zero in the middle, the fill running from it to --v (-1…1 of the
+   half-width), so a loss paints left and a gain right. Colour is --fill. */
+.meter--centred .meter__fill {
+  position: absolute; top: 0;
+  left: calc(50% + min(var(--v), 0) * 50%);
+  width: calc(abs(var(--v)) * 50%);
+  transform: none; transition: none;
+}
+
 /* A threshold on a bar: a hairline tick at --x (0–1 of the width), in --mark.
    After the fill in the DOM, so it stands on top of it. */
 .meter__mark {
