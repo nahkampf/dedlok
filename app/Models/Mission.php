@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'character_id', 'entity_id', 'exchange_id', 'action', 'state',
     'quantity_required', 'creds_reward', 'standing_reward', 'loyalty_reward', 'penalty',
-    'offered_at', 'accepted_at', 'expires_at', 'completed_at', 'proceeds',
+    'offered_at', 'accepted_at', 'expires_at', 'completed_at', 'proceeds', 'heat_added',
 ])]
 class Mission extends Model
 {
@@ -36,6 +36,7 @@ class Mission extends Model
             'state' => MissionState::class,
             'quantity_required' => 'integer',
             'proceeds' => 'integer',
+            'heat_added' => 'float',
             'creds_reward' => 'integer',
             'standing_reward' => 'float',
             'loyalty_reward' => 'integer',

@@ -26,6 +26,7 @@ use App\Cyberspace\SystemType;
 use App\Cyberspace\TravelRefusal;
 use App\Cyberspace\TravelResult;
 use App\Cyberspace\ViewShape;
+use App\Missions\MissionLedger;
 use App\Models\Bookmark;
 use App\Models\Character;
 use App\Models\System;
@@ -201,6 +202,8 @@ class CyberspaceController extends Controller
             'kernel' => $character->isJackedIn() && $target === null
                 ? $character->inventory()->loose()->whereHas('item', fn ($q) => $q->where('slug', config('cyberspace.fortress.kernel')))->first()
                 : null,
+            // A transport job whose container this is the place for: the Interact box's Upload button.
+            'upload' => $character->isJackedIn() ? app(MissionLedger::class)->uploadable($character) : null,
             // Authored encounters offered at this system: a button each in the Interact box.
             'spots' => $target === null ? collect() : app(Encounters::class)->spotsAt($character, $target),
             // What the character already holds in this system, for the Interact box: a backdoor row is access, so

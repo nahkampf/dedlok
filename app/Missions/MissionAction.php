@@ -25,6 +25,9 @@ use App\Support\Text;
  *    and hand the decrypted file in (`MissionLedger::handInExtract()`).
  *  - HEIST is recorded where it happens: the creds a runner takes off a named system are held on the job
  *    (`missions.proceeds`) instead of the wallet, and the desk pays a cut of them back at hand-in.
+ *  - TRANSPORT hands the runner a container at the desk and names a system by COORDINATES, not address (an
+ *    address could be jumped to, skipping the hunter the job summons). The delivery is its own act, not a desk
+ *    hand-in (`MissionLedger::deliver()`).
  *  - SUPPLY names no systems at all. It buys intel by the file, which is what
  *    makes scanning an occupation rather than a chore between runs.
  */
@@ -36,6 +39,7 @@ enum MissionAction: string
     case Agitate = 'agitate';
     case Extract = 'extract';
     case Heist = 'heist';
+    case Transport = 'transport';
     case Supply = 'supply';
 
     /**
@@ -56,6 +60,7 @@ enum MissionAction: string
             self::Agitate => [1, 2],
             self::Extract => [1, 1],
             self::Heist => [1, 3],
+            self::Transport => [1, 1],
             self::Supply => [0, 0],
         };
     }

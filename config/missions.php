@@ -56,6 +56,9 @@ return [
     */
     'window_hours' => ['min' => 4, 'max' => 24],
 
+    // A transport job raises your heat to at least this on acceptance (undone when it ends), so a hunter is likely.
+    'transport_heat' => 100,
+
     // A heist's proceeds are handed in; this percent of them is paid back on top of the reward.
     'heist_cut' => 10,
 
@@ -86,6 +89,7 @@ return [
         'burn' => ['creds' => 2.0, 'standing' => 1.5, 'loyalty' => 2.0],
         'plant' => ['creds' => 1.4, 'standing' => 2.0, 'loyalty' => 2.0],
         'agitate' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 1.5],
+        'transport' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 1.5],
         'heist' => ['creds' => 1.2, 'standing' => 1.5, 'loyalty' => 1.5],
         'extract' => ['creds' => 1.8, 'standing' => 1.5, 'loyalty' => 1.5],
         'supply' => ['creds' => 1.2, 'standing' => 0.5, 'loyalty' => 0.5],

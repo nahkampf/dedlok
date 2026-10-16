@@ -31,6 +31,7 @@ use App\Standing\StandingLedger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
+use Tests\Concerns\HasRoomForData;
 use Tests\TestCase;
 
 /**
@@ -43,6 +44,7 @@ use Tests\TestCase;
  */
 final class MissionTest extends TestCase
 {
+    use HasRoomForData;
     use RefreshDatabase;
 
     private Character $character;
@@ -168,6 +170,51 @@ final class MissionTest extends TestCase
         $this->assertInstanceOf(Mission::class, $done);
         // 500 raided elsewhere + the 500 reward + 10% of the 3000 handed in
         $this->assertSame(500 + 500 + 300, (int) $this->character->fresh()->creds);
+    }
+
+    public function test_a_transport_hands_over_a_container_and_raises_heat_until_it_ends(): void
+    {
+        $this->giveRoomForData($this->character);
+        $this->character->forceFill(['heat' => 10.0])->save();
+
+        $mission = $this->accepted(MissionAction::Transport);
+
+        $this->assertSame(1, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'sealed-data-container'))->count());
+        $this->assertSame(100.0, (float) $this->character->fresh()->heat);
+        $this->assertSame(90.0, (float) $mission->fresh()->heat_added);
+
+        // Not a desk's to hand in.
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission->fresh()));
+
+        // Standing on the target with the container: upload finishes it, pays, takes the container and the heat.
+        $target = $mission->targets->first()->system;
+        $this->character->forceFill(['grid_x' => $target->x, 'grid_y' => $target->y])->save();
+
+        $done = $this->ledger()->deliver($this->character->fresh());
+
+        $this->assertInstanceOf(Mission::class, $done);
+        $this->assertSame(MissionState::Completed, $done->state);
+        $this->assertSame(500, (int) $this->character->fresh()->creds);
+        $this->assertSame(10.0, (float) $this->character->fresh()->heat);
+        $this->assertSame(0, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'sealed-data-container'))->count());
+    }
+
+    public function test_losing_to_a_hunter_loses_the_container_and_fails_the_job(): void
+    {
+        $this->giveRoomForData($this->character);
+        $mission = $this->accepted(MissionAction::Transport);
+
+        $this->ledger()->transportLost($this->character->fresh());
+
+        $this->assertSame(MissionState::Failed, $mission->fresh()->state);
+        $this->assertSame(0, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'sealed-data-container'))->count());
+    }
+
+    public function test_a_transport_is_refused_when_there_is_no_room_for_the_container(): void
+    {
+        $offer = $this->anOffer(MissionAction::Transport);
+
+        $this->assertSame(MissionRefusal::NoRoom, $this->ledger()->accept($this->character, $offer));
     }
 
     // ---- the board ----------------------------------------------------------

@@ -415,6 +415,13 @@
                         @endif
                     @endif
 
+                    @if ($upload)
+                        <form method="POST" action="{{ route('missions.upload') }}" style="margin-top:var(--s-3)">
+                            @csrf
+                            <button type="submit" class="btn btn--go cut">{{ Text::get('missions.upload') }}</button>
+                        </form>
+                    @endif
+
                     {{-- AUTHORED ENCOUNTERS PINNED TO THIS SYSTEM (the spot door). Not rolled: one button each while its
                          conditions hold and its cooldown has run out. --}}
                     @foreach ($spots as $spot)

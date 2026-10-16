@@ -449,7 +449,13 @@ class InventoryItem extends Model
      */
     public function isOnPerson(): bool
     {
-        return $this->rounds() > 0 || $this->isWorn() || $this->isWielded() || $this->isBelted();
+        return $this->rounds() > 0 || $this->isWorn() || $this->isWielded() || $this->isBelted() || $this->isJobContainer();
+    }
+
+    /** A transport job's sealed container: it is carried to its drop and nowhere else. */
+    public function isJobContainer(): bool
+    {
+        return isset($this->extracted_file['mission_id']) && $this->item?->slug === 'sealed-data-container';
     }
 
     /** Is this on the belt? Like worn armour, a belted row still lists with everything else. */

@@ -40,6 +40,9 @@ enum MissionRefusal: string
     /** Handing in with something still outstanding. The screen says which, so this does not have to. */
     case NotDone = 'not_done';
 
+    /** Nowhere on the deck to put what the desk hands over. */
+    case NoRoom = 'no_room';
+
     /** The window closed. Said rather than silently failing, because the row is still on screen. */
     case Expired = 'expired';
 

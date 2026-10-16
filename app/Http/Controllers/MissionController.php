@@ -25,6 +25,18 @@ use Illuminate\Http\Request;
  */
 class MissionController extends Controller
 {
+    /** Upload the sealed data container at the system it was addressed to. */
+    public function upload(Request $request, MissionLedger $ledger): RedirectResponse
+    {
+        $result = $ledger->deliver($this->character($request));
+
+        if ($result instanceof MissionRefusal) {
+            return back()->with('error', $result->message());
+        }
+
+        return back()->with('status', Text::get('missions.uploaded'));
+    }
+
     public function accept(Request $request, Mission $mission, MissionLedger $ledger): RedirectResponse
     {
         $character = $this->character($request);

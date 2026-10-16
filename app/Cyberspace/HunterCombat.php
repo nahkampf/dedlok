@@ -241,6 +241,10 @@ final class HunterCombat
     {
         $this->programs->stopRunOnly($character);
 
+        // Whatever it was carrying for an exchange is gone, and the job with it.
+        app(\App\Missions\MissionLedger::class)->transportLost($character);
+        $character->refresh();
+
         [$low, $high] = (array) Config::get('cyberspace.heat.hunt.defeat_heat_loss', [0.05, 0.15]);
         $fraction = $low + (($this->roll)(0, 1000) / 1000) * ($high - $low);
         $newHeat = max(0.0, round((float) $character->heat * (1 - $fraction), 1));

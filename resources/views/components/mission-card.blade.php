@@ -107,7 +107,11 @@
                             @if ($target->isSatisfied() || $inHand)
                                 <span class="mark--ok" title="{{ Text::get($target->isSatisfied() ? 'missions.target_done' : 'missions.file_held') }}">&#x2713;</span>
                             @endif
-                            <x-address :address="$target->address" />
+                            @if ($action === MissionAction::Transport)
+                                {{ Text::get('missions.coordinates', ['xy' => ($target->system?->x ?? '?').','.($target->system?->y ?? '?')]) }}
+                            @else
+                                <x-address :address="$target->address" />
+                            @endif
                         </span>
                         <span class="row row--wrap" style="--gap:var(--s-2);justify-content:flex-end">
                             @if ($target->isSatisfied())
@@ -144,10 +148,12 @@
     @if ($actions)
     <div class="card__ft">
         @if ($active)
-            <form method="POST" action="{{ route('missions.complete', $mission) }}">
-                @csrf
-                <button type="submit" class="btn btn--sm btn--go cut">{{ Text::get('missions.complete') }}</button>
-            </form>
+            @if ($action !== MissionAction::Transport)
+                <form method="POST" action="{{ route('missions.complete', $mission) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm btn--go cut">{{ Text::get('missions.complete') }}</button>
+                </form>
+            @endif
             <div class="spacer"></div>
             <form method="POST" action="{{ route('missions.abandon', $mission) }}">
                 @csrf @method('DELETE')
