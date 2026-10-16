@@ -209,9 +209,9 @@ final class MissionTest extends TestCase
 
         $mission = $this->accepted(MissionAction::Transport);
 
-        // The target fixture is grade 2: the file weighs twice that.
+        // The desk is grade 3: the file weighs twice that.
         $row = InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'sealed-data-container'))->firstOrFail();
-        $this->assertSame(4.0, (float) $row->extracted_file['size_qb']);
+        $this->assertSame(6.0, (float) $row->extracted_file['size_qb']);
 
         // Heat is 100 now, which on its own is a grade 5 hound; the job's own is the desk's grade over the runner's own heat.
         $hunt = Hunters::fromConfig(app(Resolver::class))->spawn($this->character->fresh());

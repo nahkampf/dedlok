@@ -648,12 +648,12 @@ final readonly class MissionLedger
         return $system === null ? '?' : "{$system->x},{$system->y}";
     }
 
-    /** What the container weighs on a deck: twice the grade of the system it is going to. */
+    /** What the container weighs on a deck: twice the grade of the exchange that hands it over. */
     public function containerSize(Mission $mission): float
     {
-        $mission->loadMissing('targets.system');
+        $mission->loadMissing('exchange');
 
-        return (float) (($mission->targets->first()?->system?->grade ?? 1) * 2);
+        return (float) (max(1, (int) ($mission->exchange?->grade ?? 1)) * 2);
     }
 
     public const CONTAINER_SLUG = 'sealed-data-container';
