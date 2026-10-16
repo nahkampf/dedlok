@@ -1,3 +1,8 @@
+## 0.63.1 (2026-10-16)
+
+- Exchanges now offer at most one data transport job at a time.
+- Standings bar shown at exchanges
+
 ## 0.63.0 (2026-10-16)
 
 - New mission type: Agitation. Make a run on a system, wake its ICE, then get out so the system locks down.

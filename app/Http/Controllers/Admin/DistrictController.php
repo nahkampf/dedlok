@@ -60,6 +60,7 @@ class DistrictController extends Controller
         DB::transaction(function () use ($request, $district): void {
             $district->update($request->columns());
             $this->syncLinks($district, $request->linkIds());
+            $this->movePins($district, (string) $request->input('positions'));
         });
 
         return back()->with('status', Text::get('admin.districts.updated'));
@@ -92,6 +93,21 @@ class DistrictController extends Controller
                 ->map(fn (array $pair): int => $pair[0] === $district->getKey() ? $pair[1] : $pair[0])
                 ->values()->all(),
         ];
+    }
+
+    /** The map's drag editor posts {locationId: [x, y]}; clamped to the editor's 25–75 and kept to this district. */
+    private function movePins(District $district, string $json): void
+    {
+        foreach ((array) json_decode($json, true) as $id => $at) {
+            if (! is_array($at) || count($at) !== 2) {
+                continue;
+            }
+
+            $district->locations()->whereKey((int) $id)->update([
+                'map_x' => (int) max(25, min(75, round((float) $at[0]))),
+                'map_y' => (int) max(25, min(75, round((float) $at[1]))),
+            ]);
+        }
     }
 
     /** @param  list<int>  $ids */

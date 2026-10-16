@@ -4075,6 +4075,8 @@ return [
             'x' => 'Across (%)',
             'y' => 'Down (%)',
             'range_hint' => 'Kept inside 20-80 so a name box is never cut off on a phone.',
+            'places' => 'Places on the map',
+            'places_hint' => 'Drag a marker (or focus it and use the arrow keys) to move it, then save.',
             'weight' => 'Travel weight',
             'weight_hint' => 'Multiplies how long crossing this district takes. 1 is the base.',
             'description' => 'Description',

@@ -130,8 +130,11 @@ final readonly class MissionBoard
 
             $size = max((int) config('missions.board.floor', 1), $size);
 
+            $transport = false;
+
             for ($i = 0; $i < $size; $i++) {
-                $this->offer($character, $desk, $entity->getKey());
+                $mission = $this->offer($character, $desk, $entity->getKey(), ! $transport);
+                $transport = $transport || $mission?->action === MissionAction::Transport;
             }
         });
     }
@@ -144,9 +147,9 @@ final readonly class MissionBoard
      * thin simply offers less. The floor is about the board as a whole, and a
      * supply job always has something to ask for.
      */
-    private function offer(Character $character, Exchange $desk, int $entityId): ?Mission
+    private function offer(Character $character, Exchange $desk, int $entityId, bool $allowTransport = true): ?Mission
     {
-        $action = $this->pickAction();
+        $action = $this->pickAction($allowTransport);
         $grade = max(1, min(5, (int) $desk->grade));
         $rewards = $this->rewards($action, $grade);
 
@@ -188,9 +191,13 @@ final readonly class MissionBoard
         return $mission;
     }
 
-    private function pickAction(): MissionAction
+    /** At most one data transport a board: it is the long, dangerous job. */
+    private function pickAction(bool $allowTransport = true): MissionAction
     {
-        $cases = MissionAction::cases();
+        $cases = array_values(array_filter(
+            MissionAction::cases(),
+            static fn (MissionAction $a): bool => $allowTransport || $a !== MissionAction::Transport,
+        ));
 
         return $cases[($this->roll)(0, count($cases) - 1)];
     }

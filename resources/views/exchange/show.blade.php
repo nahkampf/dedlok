@@ -43,6 +43,16 @@
                 </span>
             </div>
 
+            @php($bands = collect(config('standing.bands'))->pluck('at')->map(fn ($at) => (float) $at)->filter(fn ($at) => $at > -100))
+            <div class="meter meter--lg meter--centred"
+                 style="--v:{{ max(-1, min(1, $standing / 100)) }};--fill:{{ $band === \App\Standing\Band::Neutral ? 'var(--ink-3)' : ($standing < 0 ? 'var(--crit)' : 'var(--ok)') }}"
+                 role="img" aria-label="{{ Text::get('entities.standing') }} {{ number_format($standing, 2) }}">
+                <span class="meter__fill"></span>
+                @foreach ($bands as $at)
+                    <span class="meter__mark" style="--x:{{ ($at + 100) / 200 }};--mark:var(--ink-2)"></span>
+                @endforeach
+            </div>
+
             {{-- THE ONE GATE. The work and the shelf read the same column, so
                  an agent who will not deal with somebody does not sell to them
                  either — and the screen says what it would take. --}}
