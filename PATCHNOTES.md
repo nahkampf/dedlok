@@ -1,3 +1,13 @@
+## 0.63.0 (2026-10-16)
+
+- New mission type: Agitation. Make a run on a system, wake its ICE, then get out so the system locks down.
+- New mission type: Extraction. A file is waiting for you on the target system. Pull it, decrypt it and hand it in.
+- New mission type: Heist. Raid one to three systems for cash and hand the proceeds in at the desk. You get 10% of what you collected back on top of the pay.
+- New mission type: Data transport. You are handed a sealed data container and a coordinate. Carry it there and use Upload sealed data. Your heat is raised while you carry it, so expect a bloodhound. If it beats you, the container is lost.
+- Extraction jobs warn you that you will need decryption.
+- Exchanges now offer more missions at a time (4 to 8 instead of 2 to 4).
+- If a system a job names goes dark, you are assigned a new target of the same grade and type. 
+
 ## 0.62.2 (2026-10-16)
 
 - Bugfix: the Tasks screen (and exchange desks) could fail to load for anyone with a mission whose target had gone dark.

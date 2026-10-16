@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+## [0.63.0] — 2026-10-16
+
+Four new exchange jobs, Agitation, Extraction, Heist and Data transport, bigger boards, and fixes since 0.62.1.
+
+### Added
+
+- **`MissionAction::Agitate`**: make a run on a system, wake its ICE (the run is noticed) and leave, so the machine locks down. Recorded where it happens, in `RunStarter::end()`, after `Lockdown::afterRun()`: the machine shut, the run was detected, the ending was an egress or a completed run, and the system has ICE. Only systems with ICE are drawn as targets. Rewards are a placeholder (`missions.actions.agitate`).
+- **`MissionAction::Extract`**: one system whose run is guaranteed to hold a job file for the runner. `MissionLedger::placeJobFile()` seeds a `system_contents` row (`for_character_id`, `mission_id`) when a run starts; only that character sees or pulls it (`SystemContent::visibleTo`, `Extractor::totalFileQb($address, $character)`), and a party deal still hands it to its owner. The file carries `mission_id` (`ExtractedFile::$missionId`) through decryption; the decrypted file is handed in at the desk (`handInExtract()`), spent, and the target ticked. Job files are cleared when the job ends or its target is replaced; `NodeStocker` ignores them when deciding whether a node is empty.
+- **`MissionAction::Heist`**: raid one to three systems for creds. Creds taken off a named system are held on the job (`missions.proceeds`) instead of the wallet (`MissionLedger::holdProceeds()`, called from `Extractor::payCreds()` with the system id), ticking that target. Handing in pays the base reward plus `missions.heist_cut` (10%) of the proceeds; a failed job loses them. Fortresses are never named. Extraction jobs' card carries a hazard-stripe warning that decryption is needed.
+- **`MissionAction::Transport`**: accepting hands over a *Sealed data container* (new item `sealed-data-container`, refused with `MissionRefusal::NoRoom` without deck space), names the drop by COORDINATES, and raises heat to `missions.transport_heat` (100, undone when the job ends; `missions.heat_added`). Standing on the target with the container shows *Upload sealed data* in the Interact box (`missions.upload`, `MissionLedger::deliver()`), which finishes and pays at once; a desk cannot complete it. A hunter's defeat (`HunterCombat::lose()` → `transportLost()`) destroys the container and fails the job. The container cannot be listed, sold or stored (`InventoryItem::isJobContainer()`). It weighs twice the exchange's grade in QB (`containerSize()`, warned about on the offer card when the deck is short); the drop is `missions.transport_steps` Chebyshev steps from the desk by the desk's grade (10-15 at grade 1 to 50-75 at grade 5); and the hunter is graded by the desk's grade over the runner's own heat (`Hunters::spawn()`).
+- **`php artisan missions:retarget`**, and the Tasks/desk re-target pass.
+- **City map**: a pulsing ember ◆ before your district's name and "◆ YOU ARE HERE" under the map.
+- Strings `missions.actions.agitate` and `missions.action_hint.agitate`.
+
+### Changed
+
+- **Boards are larger**: 4 to 8 offers per desk (`missions.board.size`, was 2 to 4).
+
+### Fixed
+
+- `/tasks` and the exchange desk returned 500 on MySQL when re-targeting a mission (unsigned `x`/`y` underflow in the distance sort).
+
+### Migrations
+
+`2026_10_16_100000_agitate_missions`, `2026_10_16_110000_extraction_missions` and `2026_10_16_120000_heist_missions` (adds `missions.proceeds`) and `2026_10_16_130000_transport_missions` (adds `missions.heat_added`, inserts the container item): widen the `missions.action` CHECK (MySQL only) and add `system_contents.for_character_id` and `mission_id`.
+
+
 ## [0.62.2] — 2026-10-16
 
 Fixes the 500 on the Tasks screen, and marks where you are on the city map.
@@ -3344,7 +3371,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.62.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.63.0...HEAD
+[0.63.0]: https://github.com/nahkampf/dedlok/compare/v0.62.2...v0.63.0
 [0.62.2]: https://github.com/nahkampf/dedlok/compare/v0.62.1...v0.62.2
 [0.62.1]: https://github.com/nahkampf/dedlok/compare/v0.62.0...v0.62.1
 [0.62.0]: https://github.com/nahkampf/dedlok/compare/v0.61.1...v0.62.0
