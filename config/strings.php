@@ -2891,6 +2891,7 @@ return [
             'crafting_seconds.analyser' => 'Analyser crafting time (%)',
             'crafting_seconds.daemon' => 'Daemon crafting time (%)',
             'crafting_seconds.script' => 'Script crafting time (%)',
+            'crafting_seconds.leecher' => 'Leecher crafting time (%)',
             'hitpoints_regen' => 'HP regeneration (per hour)',
 
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
