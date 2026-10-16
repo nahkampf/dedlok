@@ -41,6 +41,10 @@
     <div class="card__bd stack" style="--gap:var(--s-3)">
         <p class="micro" style="margin:0;color:var(--ink-2);max-width:70ch">{{ $action->description() }}</p>
 
+        @if ($action === MissionAction::Heist && $active)
+            <p class="micro num" style="margin:0;color:var(--ink-2)">{{ Text::get('missions.proceeds', ['amount' => Number::format((int) $mission->proceeds), 'cut' => config('missions.heist_cut', 10)]) }}</p>
+        @endif
+
         {{-- The file is encrypted and nothing about the job says who can open it: warn before it is taken. --}}
         @if ($action === MissionAction::Extract)
             <div class="panel panel--snug">

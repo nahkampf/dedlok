@@ -144,6 +144,32 @@ final class MissionTest extends TestCase
         $this->assertSame(0, InventoryItem::query()->whereNotNull('extracted_file')->count(), 'the file is spent');
     }
 
+    /** A heist's take is held for the desk, ticks the target, and a tenth comes back on top of the reward. */
+    public function test_a_heist_holds_the_take_and_pays_back_a_cut(): void
+    {
+        $mission = $this->accepted(MissionAction::Heist);
+        $first = $mission->targets->first();
+        $second = $mission->targets->last();
+        $other = System::factory()->at(60, 60)->create(['type' => 'silo', 'grade' => 2]);
+
+        $extractor = new Extractor;
+        $extractor->payCreds($this->character, 1000, $first->system_id);
+        $extractor->payCreds($this->character, 500, $other->id);   // not the job's: an ordinary haul
+
+        $this->assertSame(500, (int) $this->character->fresh()->creds);
+        $this->assertSame(1000, (int) $mission->fresh()->proceeds);
+        $this->assertNotNull($first->fresh()->satisfied_at);
+
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission->fresh()), 'one target left');
+
+        $extractor->payCreds($this->character->fresh(), 2000, $second->system_id);
+        $done = $this->ledger()->complete($this->character->fresh(), $mission->fresh());
+
+        $this->assertInstanceOf(Mission::class, $done);
+        // 500 raided elsewhere + the 500 reward + 10% of the 3000 handed in
+        $this->assertSame(500 + 500 + 300, (int) $this->character->fresh()->creds);
+    }
+
     // ---- the board ----------------------------------------------------------
 
     public function test_a_board_is_rolled_for_whoever_is_standing_there(): void

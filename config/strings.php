@@ -979,6 +979,7 @@ return [
         // Said on the board and again on the row, because a player choosing
         // between two jobs is choosing between two KINDS of evening.
         'job_file' => 'Job file: :label',
+        'proceeds' => 'Proceeds held: :amount ¤. You get :cut% back when you hand it in.',
         'extract_warning_title' => 'Decryption required.',
         'extract_warning' => 'The file is encrypted. You need a Decryptor program running on your deck and the encryption skill that breaks it, or you cannot hand it in.',
         'actions' => [
@@ -987,6 +988,7 @@ return [
             'plant' => 'Placement',
             'agitate' => 'Agitation',
             'extract' => 'Extraction',
+            'heist' => 'Heist',
             'supply' => 'Supply',
         ],
 
@@ -996,6 +998,7 @@ return [
             'plant' => 'Leave a backdoor on these systems. The door is ours, not yours - you get paid, and we get the way in.',
             'agitate' => 'Make a run on these systems and wake their ICE, then get out. We want them locked down. You do not have to take anything.',
             'extract' => 'There is a file on this system we want. Run it, pull the file, decrypt it and bring it to us. It will be there.',
+            'heist' => 'Raid these systems for cash. What you take is not yours: hand it in at the desk and you get a cut back on top of the pay.',
             'supply' => 'Bring us files: complete scan files or sealed data dumps. We do not care which systems, only that the picture is whole.',
         ],
 

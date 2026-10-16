@@ -56,6 +56,9 @@ return [
     */
     'window_hours' => ['min' => 4, 'max' => 24],
 
+    // A heist's proceeds are handed in; this percent of them is paid back on top of the reward.
+    'heist_cut' => 10,
+
     // One active mission per ENTITY. Three desks can have you working at once.
     'active_per_entity' => 1,
 
@@ -83,6 +86,7 @@ return [
         'burn' => ['creds' => 2.0, 'standing' => 1.5, 'loyalty' => 2.0],
         'plant' => ['creds' => 1.4, 'standing' => 2.0, 'loyalty' => 2.0],
         'agitate' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 1.5],
+        'heist' => ['creds' => 1.2, 'standing' => 1.5, 'loyalty' => 1.5],
         'extract' => ['creds' => 1.8, 'standing' => 1.5, 'loyalty' => 1.5],
         'supply' => ['creds' => 1.2, 'standing' => 0.5, 'loyalty' => 0.5],
     ],

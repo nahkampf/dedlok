@@ -23,6 +23,8 @@ use App\Support\Text;
  *    machine shuts because of it (`RunStarter::end()`). Only systems with ICE are named.
  *  - EXTRACT names one system whose run is GUARANTEED to hold a job file for the runner. They pull it, decrypt it
  *    and hand the decrypted file in (`MissionLedger::handInExtract()`).
+ *  - HEIST is recorded where it happens: the creds a runner takes off a named system are held on the job
+ *    (`missions.proceeds`) instead of the wallet, and the desk pays a cut of them back at hand-in.
  *  - SUPPLY names no systems at all. It buys intel by the file, which is what
  *    makes scanning an occupation rather than a chore between runs.
  */
@@ -33,6 +35,7 @@ enum MissionAction: string
     case Plant = 'plant';
     case Agitate = 'agitate';
     case Extract = 'extract';
+    case Heist = 'heist';
     case Supply = 'supply';
 
     /**
@@ -52,6 +55,7 @@ enum MissionAction: string
             self::Plant => [1, 3],
             self::Agitate => [1, 2],
             self::Extract => [1, 1],
+            self::Heist => [1, 3],
             self::Supply => [0, 0],
         };
     }

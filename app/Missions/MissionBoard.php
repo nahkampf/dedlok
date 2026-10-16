@@ -222,6 +222,8 @@ final readonly class MissionBoard
             ->where(fn ($query) => $query->whereNull('owner_id')->orWhere('owner_id', '!=', $entityId))
             // There has to be an ICE to wake.
             ->when($action === MissionAction::Agitate, fn ($query) => $query->whereNotNull('ice_id'))
+            // A fortress is a player's own node: never a job's.
+            ->where('type', '!=', 'fortress')
             ->inRandomOrder()
             ->limit($wanted)
             ->get();

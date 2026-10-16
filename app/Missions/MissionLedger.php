@@ -244,6 +244,15 @@ final readonly class MissionLedger
             $this->pay($character, $live);
             $this->clearJobFiles($live);
 
+            // A heist hands in what it took and the desk pays a cut of it back.
+            if ($live->action === MissionAction::Heist && (int) $live->proceeds > 0) {
+                $back = (int) floor((int) $live->proceeds * (int) config('missions.heist_cut', 10) / 100);
+
+                if ($back > 0) {
+                    Wallet::move($character, $back, Reason::Mission, $live->entity()->first()?->name);
+                }
+            }
+
             $live->forceFill([
                 'state' => MissionState::Completed,
                 'completed_at' => now(),
@@ -475,6 +484,31 @@ final readonly class MissionLedger
             $target->forceFill(['satisfied_at' => now()])->save();
             $row->delete();
         }
+
+        return true;
+    }
+
+    /**
+     * A heist's take: creds raided off one of its named systems go onto the job, not into the wallet, and that target is
+     * done. Returns whether it was held. Called by `Extractor::payCreds()`, the one place creds come off a system.
+     */
+    public function holdProceeds(Character $character, int $systemId, int $amount): bool
+    {
+        $target = MissionTarget::query()
+            ->whereNull('satisfied_at')
+            ->where('system_id', $systemId)
+            ->whereHas('mission', fn ($q) => $q
+                ->where('character_id', $character->getKey())
+                ->where('action', MissionAction::Heist->value)
+                ->accepted())
+            ->first();
+
+        if ($target === null) {
+            return false;
+        }
+
+        $target->forceFill(['satisfied_at' => now()])->save();
+        $target->mission()->increment('proceeds', $amount);
 
         return true;
     }
