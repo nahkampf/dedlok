@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.63.1] — 2026-10-16
+
+A cap on data transports, a standing bar on the exchange screen, and draggable pins in the district editor.
+
+### Added
+
+- **Centred standing bar** on the exchange screen (`.meter--centred`): zero in the middle, -100 left, +100 right, a tick at each `standing.bands` floor. Grey in the Neutral band, red below zero, green above.
+- **District editor map**: an existing district's form shows every location as a pin, draggable (or arrow keys) with the board editor's code, saved through `DistrictController::movePins()` (clamped 25–75, own district only). `<x-city-map>` takes an `edit` field selector.
+
+### Changed
+
+- **`MissionBoard`** offers at most one Data transport per board.
+
+
 ## [0.63.0] — 2026-10-16
 
 Four new exchange jobs, Agitation, Extraction, Heist and Data transport, bigger boards, and fixes since 0.62.1.
@@ -3371,7 +3385,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.63.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.63.1...HEAD
+[0.63.1]: https://github.com/nahkampf/dedlok/compare/v0.63.0...v0.63.1
 [0.63.0]: https://github.com/nahkampf/dedlok/compare/v0.62.2...v0.63.0
 [0.62.2]: https://github.com/nahkampf/dedlok/compare/v0.62.1...v0.62.2
 [0.62.1]: https://github.com/nahkampf/dedlok/compare/v0.62.0...v0.62.1
