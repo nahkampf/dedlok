@@ -755,6 +755,7 @@ return [
 
         // The `:what` of an accepted job's message.
         'mission_what_systems' => 'Systems (:count): :addresses.',
+        'mission_what_transport' => 'Carry the sealed data container to :xy.',
         'mission_what_supply' => 'Bring :count files: complete scan files or sealed data dumps.',
 
         // Writing to another player.
@@ -842,6 +843,8 @@ return [
             'offer_sold' => 'Sold: :item',
             'mission_accepted' => 'Job accepted: :action for :entity',
             'mission_failed' => 'Job ran out of time',
+            'mission_container_lost' => 'Sealed data container lost',
+            'mission_retargeted_coords' => 'Mission Update',
             'mission_abandoned' => 'Job abandoned',
             'mission_voided' => 'Job called off',
             'mission_retargeted' => 'Mission Update',
@@ -898,6 +901,8 @@ return [
             // Sent when a job is ACCEPTED (the one exception: see MissionLedger::briefing()). A record to work from.
             'mission_accepted' => ':action for :entity. :what Pays :creds ¤, standing :standing, loyalty :loyalty; failing costs :penalty standing. Due by :due.',
             'mission_failed' => 'Your :action job for :entity ran out of time.',
+            'mission_container_lost' => 'A hunter took you down and the sealed data container is gone. The :action job for :entity has failed.',
+            'mission_retargeted_coords' => 'The drop point has gone dark. We have assigned a new one for you: :xy',
             'mission_abandoned' => 'You walked away from the :action job for :entity.',
             'mission_voided' => 'The :action job for :entity is off: something it named is not there any more.',
             'mission_retargeted' => ':old seems to have gone dark. We\'ve assigned a new target for you: :new',
@@ -978,10 +983,24 @@ return [
 
         // Said on the board and again on the row, because a player choosing
         // between two jobs is choosing between two KINDS of evening.
+        'job_file' => 'Job file: :label',
+        'container' => 'Sealed data container',
+        'container_short_title' => 'Not enough storage.',
+        'container_needs' => 'The container takes :need QB on your deck. You have :free QB free.',
+        'coordinates' => 'Deliver to :xy',
+        'upload' => 'Upload sealed data',
+        'uploaded' => 'Uploaded. The job is done.',
+        'proceeds' => 'Proceeds held: :amount ¤. You get :cut% back when you hand it in.',
+        'extract_warning_title' => 'Decryption required.',
+        'extract_warning' => 'The file is encrypted. You need a Decryptor program running on your deck and the encryption skill that breaks it, or you cannot hand it in.',
         'actions' => [
             'scan' => 'Survey',
             'burn' => 'Demolition',
             'plant' => 'Placement',
+            'agitate' => 'Agitation',
+            'extract' => 'Extraction',
+            'heist' => 'Heist',
+            'transport' => 'Data transport',
             'supply' => 'Supply',
         ],
 
@@ -989,6 +1008,10 @@ return [
             'scan' => 'Scan every system named and bring the files back, one for each. The safest work there is, and the slowest.',
             'burn' => 'We want these systems gone. Burned. Shut down.',
             'plant' => 'Leave a backdoor on these systems. The door is ours, not yours - you get paid, and we get the way in.',
+            'agitate' => 'Make a run on these systems and wake their ICE, then get out. We want them locked down. You do not have to take anything.',
+            'extract' => 'There is a file on this system we want. Run it, pull the file, decrypt it and bring it to us. It will be there.',
+            'heist' => 'Raid these systems for cash. What you take is not yours: hand it in at the desk and you get a cut back on top of the pay.',
+            'transport' => 'We have some sensitive data that we need a third party to carry to its destination, discretely. Be aware that you might be tracked and intercepted.',
             'supply' => 'Bring us files: complete scan files or sealed data dumps. We do not care which systems, only that the picture is whole.',
         ],
 
@@ -1007,6 +1030,7 @@ return [
             'gone' => 'That work is not on the board any more.',
             'already_working' => 'You are already doing something for this agent. One job at a time.',
             'not_welcome' => 'They will not deal with you yet.',
+            'no_room' => 'You have no room on your deck for what they would hand you.',
             'not_done' => 'Not finished. Come back when it is.',
             'expired' => 'That job ran out of time.',
         ],

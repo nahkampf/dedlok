@@ -649,7 +649,7 @@ final readonly class Simulator
         }
 
         $instant = $this->extractor->takeCredsAndItems($character, $run->address);
-        $fileQb = $this->extractor->totalFileQb($run->address);
+        $fileQb = $this->extractor->totalFileQb($run->address, $character);
 
         if ($instant->tookNothing() && $fileQb <= 0 && ! $instant->leftBehind) {
             $log[] = $this->line('cyberspace.run.log.extract_fails');

@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Missions;
 
+use App\Cyberspace\ExtractedFile;
+use App\Cyberspace\Extractor;
+use App\Cyberspace\Hunters;
+use App\Cyberspace\RunEnding;
+use App\Cyberspace\RunPurpose;
+use App\Cyberspace\RunStarter;
 use App\Missions\MissionAction;
 use App\Missions\MissionBoard;
 use App\Missions\MissionLedger;
@@ -12,17 +18,22 @@ use App\Missions\MissionState;
 use App\Models\Character;
 use App\Models\Entity;
 use App\Models\Exchange;
+use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Mission;
 use App\Models\Notification;
+use App\Models\Run;
 use App\Models\Skill;
 use App\Models\System;
+use App\Models\SystemContent;
 use App\Notifications\Category;
 use App\Standing\StandingLedger;
+use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
+use Tests\Concerns\HasRoomForData;
 use Tests\TestCase;
 
 /**
@@ -35,6 +46,7 @@ use Tests\TestCase;
  */
 final class MissionTest extends TestCase
 {
+    use HasRoomForData;
     use RefreshDatabase;
 
     private Character $character;
@@ -69,6 +81,159 @@ final class MissionTest extends TestCase
             'agent' => 'Mr Nakata',
             'min_standing' => 0,
         ]);
+    }
+
+    /** A run that woke the ICE and left, shutting the machine, ticks an Agitate target; an unnoticed one does not. */
+    public function test_a_run_that_wakes_the_ice_and_leaves_agitates_the_target(): void
+    {
+        $mission = $this->accepted(MissionAction::Agitate);
+        $target = $mission->targets->first()->system;
+        $target->forceFill(['ice_id' => Ice::query()->firstOrFail()->id])->save();
+
+        $quiet = $this->runAt($target, detected: false);
+        app(RunStarter::class)->end($this->character, $quiet, RunEnding::Egress);
+        $this->assertNull($mission->fresh()->targets->first()->satisfied_at, 'unnoticed: nothing woke');
+
+        $loud = $this->runAt($target, detected: true);
+        app(RunStarter::class)->end($this->character->fresh(), $loud, RunEnding::Egress);
+
+        $this->assertNotNull($mission->fresh()->targets->first()->satisfied_at);
+        $this->assertTrue($target->fresh()->isLockedDown());
+    }
+
+    private function runAt(System $system, bool $detected): Run
+    {
+        $run = Run::query()->create([
+            'character_id' => $this->character->id,
+            'address' => $system->address,
+            'x' => $system->x, 'y' => $system->y,
+            'purpose' => RunPurpose::Extraction->value,
+            'turn' => 1,
+            'detected' => $detected,
+            'started_at' => now(),
+        ]);
+        $this->character->forceFill(['current_run_id' => $run->id])->save();
+
+        return $run;
+    }
+
+    /** The file is seeded for the runner whatever the node held, only they can pull it, and it is handed in decrypted. */
+    public function test_an_extraction_job_seeds_a_file_for_its_runner_and_is_handed_in_decrypted(): void
+    {
+        $mission = $this->accepted(MissionAction::Extract);
+        $system = $mission->targets->first()->system;
+        $stranger = Character::factory()->create();
+
+        $this->ledger()->placeJobFile($this->character, $system);
+        $this->ledger()->placeJobFile($this->character, $system);   // seeded once
+
+        $this->assertSame(1, SystemContent::query()->where('mission_id', $mission->id)->count());
+        $this->assertSame(0.0, (new Extractor)->totalFileQb($system->address, $stranger), 'it is nobody else\'s');
+        $this->assertGreaterThan(0.0, (new Extractor)->totalFileQb($system->address, $this->character));
+
+        // Delivered straight, as a party deal or a withdrawal does: this test has no deck to hold it.
+        $content = SystemContent::query()->where('mission_id', $mission->id)->firstOrFail();
+        (new Extractor)->deliver($this->character, $content);
+
+        $row = InventoryItem::query()->where('character_id', $this->character->id)->whereNotNull('extracted_file')->firstOrFail();
+        $this->assertSame($mission->id, ExtractedFile::fromArray($row->extracted_file)?->missionId);
+
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission->fresh()), 'still sealed');
+
+        $row->forceFill(['item_id' => Item::query()->where('slug', ExtractedFile::DECRYPTED_SLUG)->firstOrFail()->id])->save();
+
+        $done = $this->ledger()->complete($this->character->fresh(), $mission->fresh());
+        $this->assertInstanceOf(Mission::class, $done);
+        $this->assertSame(MissionState::Completed, $done->state);
+        $this->assertSame(0, InventoryItem::query()->whereNotNull('extracted_file')->count(), 'the file is spent');
+    }
+
+    /** A heist's take is held for the desk, ticks the target, and a tenth comes back on top of the reward. */
+    public function test_a_heist_holds_the_take_and_pays_back_a_cut(): void
+    {
+        $mission = $this->accepted(MissionAction::Heist);
+        $first = $mission->targets->first();
+        $second = $mission->targets->last();
+        $other = System::factory()->at(60, 60)->create(['type' => 'silo', 'grade' => 2]);
+
+        $extractor = new Extractor;
+        $extractor->payCreds($this->character, 1000, $first->system_id);
+        $extractor->payCreds($this->character, 500, $other->id);   // not the job's: an ordinary haul
+
+        $this->assertSame(500, (int) $this->character->fresh()->creds);
+        $this->assertSame(1000, (int) $mission->fresh()->proceeds);
+        $this->assertNotNull($first->fresh()->satisfied_at);
+
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission->fresh()), 'one target left');
+
+        $extractor->payCreds($this->character->fresh(), 2000, $second->system_id);
+        $done = $this->ledger()->complete($this->character->fresh(), $mission->fresh());
+
+        $this->assertInstanceOf(Mission::class, $done);
+        // 500 raided elsewhere + the 500 reward + 10% of the 3000 handed in
+        $this->assertSame(500 + 500 + 300, (int) $this->character->fresh()->creds);
+    }
+
+    public function test_a_transport_hands_over_a_container_and_raises_heat_until_it_ends(): void
+    {
+        $this->giveRoomForData($this->character);
+        $this->character->forceFill(['heat' => 10.0])->save();
+
+        $mission = $this->accepted(MissionAction::Transport);
+
+        $this->assertSame(1, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'sealed-data-container'))->count());
+        $this->assertSame(100.0, (float) $this->character->fresh()->heat);
+        $this->assertSame(90.0, (float) $mission->fresh()->heat_added);
+
+        // Not a desk's to hand in.
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission->fresh()));
+
+        // Standing on the target with the container: upload finishes it, pays, takes the container and the heat.
+        $target = $mission->targets->first()->system;
+        $this->character->forceFill(['grid_x' => $target->x, 'grid_y' => $target->y])->save();
+
+        $done = $this->ledger()->deliver($this->character->fresh());
+
+        $this->assertInstanceOf(Mission::class, $done);
+        $this->assertSame(MissionState::Completed, $done->state);
+        $this->assertSame(500, (int) $this->character->fresh()->creds);
+        $this->assertSame(10.0, (float) $this->character->fresh()->heat);
+        $this->assertSame(0, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'sealed-data-container'))->count());
+    }
+
+    public function test_a_transports_hound_is_graded_by_the_desk_and_the_container_by_the_target(): void
+    {
+        $this->giveRoomForData($this->character);
+        $this->desk->forceFill(['grade' => 3])->save();
+        $this->character->forceFill(['heat' => 10.0])->save();
+
+        $mission = $this->accepted(MissionAction::Transport);
+
+        // The desk is grade 3: the file weighs twice that.
+        $row = InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'sealed-data-container'))->firstOrFail();
+        $this->assertSame(6.0, (float) $row->extracted_file['size_qb']);
+
+        // Heat is 100 now, which on its own is a grade 5 hound; the job's own is the desk's grade over the runner's own heat.
+        $hunt = Hunters::fromConfig(app(Resolver::class))->spawn($this->character->fresh());
+        $this->assertSame(3, $hunt->grade);
+    }
+
+    public function test_losing_to_a_hunter_loses_the_container_and_fails_the_job(): void
+    {
+        $this->giveRoomForData($this->character);
+        $mission = $this->accepted(MissionAction::Transport);
+
+        $this->ledger()->transportLost($this->character->fresh());
+
+        $this->assertSame(MissionState::Failed, $mission->fresh()->state);
+        $this->assertSame(0, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'sealed-data-container'))->count());
+    }
+
+    public function test_a_transport_is_refused_when_there_is_no_room_for_the_container(): void
+    {
+        $offer = $this->anOffer(MissionAction::Transport);
+
+        $this->assertSame(MissionRefusal::NoRoom, $this->ledger()->accept($this->character, $offer));
     }
 
     // ---- the board ----------------------------------------------------------

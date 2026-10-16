@@ -220,6 +220,26 @@ final readonly class MissionBoard
             ->whereBetween('grade', [$low, $high])
             ->whereIn('type', self::targetableTypes())
             ->where(fn ($query) => $query->whereNull('owner_id')->orWhere('owner_id', '!=', $entityId))
+            // There has to be an ICE to wake.
+            ->when($action === MissionAction::Agitate, fn ($query) => $query->whereNotNull('ice_id'))
+            // A fortress is a player's own node: never a job's.
+            ->where('type', '!=', 'fortress')
+            ->when($action === MissionAction::Transport, function ($query) use ($desk): void {
+                $at = $desk->system;
+                [$near, $far] = (array) config('missions.transport_steps.'.max(1, min(5, (int) $desk->grade)), [10, 15]);
+
+                if ($at === null) {
+                    return;
+                }
+
+                $dx = 'ABS(CAST(x AS SIGNED) - ?)';
+                $dy = 'ABS(CAST(y AS SIGNED) - ?)';
+
+                // Chebyshev distance from the desk between near and far, written so it runs on SQLite as well as MySQL.
+                $query->whereRaw("{$dx} <= ? AND {$dy} <= ? AND ({$dx} >= ? OR {$dy} >= ?)", [
+                    $at->x, $far, $at->y, $far, $at->x, $near, $at->y, $near,
+                ]);
+            })
             ->inRandomOrder()
             ->limit($wanted)
             ->get();

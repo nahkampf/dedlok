@@ -36,7 +36,7 @@ return [
     'board' => [
         'refresh_minutes' => 60,
         'floor' => 1,
-        'size' => ['min' => 2, 'max' => 4],
+        'size' => ['min' => 4, 'max' => 8],
     ],
 
     /*
@@ -55,6 +55,15 @@ return [
     |
     */
     'window_hours' => ['min' => 4, 'max' => 24],
+
+    // A transport job's drop is this many steps (Chebyshev) from the desk, by the desk's grade.
+    'transport_steps' => [1 => [10, 15], 2 => [20, 30], 3 => [30, 45], 4 => [40, 60], 5 => [50, 75]],
+
+    // A transport job raises your heat to at least this on acceptance (undone when it ends), so a hunter is likely.
+    'transport_heat' => 100,
+
+    // A heist's proceeds are handed in; this percent of them is paid back on top of the reward.
+    'heist_cut' => 10,
 
     // One active mission per ENTITY. Three desks can have you working at once.
     'active_per_entity' => 1,
@@ -82,6 +91,10 @@ return [
         'scan' => ['creds' => [1 => 3.0, 2 => 2.5, 3 => 2.0, 4 => 1.5, 5 => 1.0], 'standing' => 1.0, 'loyalty' => 1.0],
         'burn' => ['creds' => 2.0, 'standing' => 1.5, 'loyalty' => 2.0],
         'plant' => ['creds' => 1.4, 'standing' => 2.0, 'loyalty' => 2.0],
+        'agitate' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 1.5],
+        'transport' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 1.5],
+        'heist' => ['creds' => 1.2, 'standing' => 1.5, 'loyalty' => 1.5],
+        'extract' => ['creds' => 1.8, 'standing' => 1.5, 'loyalty' => 1.5],
         'supply' => ['creds' => 1.2, 'standing' => 0.5, 'loyalty' => 0.5],
     ],
 

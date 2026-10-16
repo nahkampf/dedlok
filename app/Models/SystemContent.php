@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'system_id', 'kind', 'amount', 'item_id', 'quantity',
-    'label', 'size_qb', 'encryption_skill_id', 'value_sealed', 'value_broken', 'area_id', 'deposited_by', 'meta',
+    'label', 'size_qb', 'encryption_skill_id', 'value_sealed', 'value_broken', 'area_id', 'deposited_by', 'meta', 'for_character_id', 'mission_id',
 ])]
 class SystemContent extends Model
 {
@@ -42,6 +42,12 @@ class SystemContent extends Model
             'value_broken' => 'integer',
             'meta' => 'array',
         ];
+    }
+
+    /** A job file is for one runner; everything else is for whoever gets there first. */
+    public function scopeVisibleTo(Builder $query, int $characterId): void
+    {
+        $query->where(fn ($q) => $q->whereNull('for_character_id')->orWhere('for_character_id', $characterId));
     }
 
     /** @return BelongsTo<System, $this> */

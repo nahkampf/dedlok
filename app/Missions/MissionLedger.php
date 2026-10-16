@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Missions;
 
+use App\Cyberspace\ExtractedFile;
+use App\Cyberspace\NodeStocker;
 use App\Cyberspace\ScanFile;
+use App\Decks\Storage;
 use App\Models\Character;
 use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\Mission;
 use App\Models\MissionTarget;
 use App\Models\System;
+use App\Models\SystemContent;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
 use App\Standing\LedgerKind;
@@ -98,6 +103,31 @@ final readonly class MissionLedger
                 return MissionRefusal::AlreadyWorking;
             }
 
+            $heat = 0.0;
+
+            if ($live->action === MissionAction::Transport) {
+                $container = Item::query()->where('slug', self::CONTAINER_SLUG)->first();
+
+                $size = $this->containerSize($live);
+
+                if ($container === null || ! Storage::fits($character, $size)) {
+                    return MissionRefusal::NoRoom;
+                }
+
+                $character->inventory()->create([
+                    'item_id' => $container->getKey(),
+                    'parent_id' => null,
+                    'quantity' => 1,
+                    'extracted_file' => (new ExtractedFile(Text::get('missions.container'), $size, null, 0, 0, missionId: $live->getKey()))->toArray(),
+                ]);
+
+                // Enough heat that a hunter is likely on the way; taken off again when the job ends.
+                $before = (float) $character->heat;
+                $after = max($before, (float) config('missions.transport_heat', 100));
+                $character->forceFill(['heat' => $after])->save();
+                $heat = round($after - $before, 1);
+            }
+
             $hours = random_int(
                 (int) config('missions.window_hours.min', 4),
                 (int) config('missions.window_hours.max', 24),
@@ -107,6 +137,7 @@ final readonly class MissionLedger
                 'state' => MissionState::Accepted,
                 'accepted_at' => now(),
                 'expires_at' => now()->addHours($hours),
+                'heat_added' => $heat,
             ])->save();
 
             $accepted = $live->fresh();
@@ -133,9 +164,11 @@ final readonly class MissionLedger
             'grade' => $target->system?->grade,
         ])->all();
 
-        $what = $mission->action->designatesTargets()
+        $what = $mission->action === MissionAction::Transport
+            ? Text::get('notifications.mission_what_transport', ['xy' => $this->coordinates($mission->targets->first()?->system)])
+            : ($mission->action->designatesTargets()
             ? Text::get('notifications.mission_what_systems', ['count' => count($targets), 'addresses' => implode(', ', array_column($targets, 'address'))])
-            : Text::get('notifications.mission_what_supply', ['count' => $mission->quantity_required]);
+            : Text::get('notifications.mission_what_supply', ['count' => $mission->quantity_required]));
 
         (new Notifier)->send($character, Category::Mission, 'mission_accepted', [
             'action' => $mission->action->label(),
@@ -146,7 +179,7 @@ final readonly class MissionLedger
             'loyalty' => (int) $mission->loyalty_reward,
             'penalty' => number_format((float) $mission->penalty, 3),
             'due' => $mission->expires_at?->format('Y-m-d H:i').' UTC',
-        ], $targets === [] ? null : ['targets' => $targets]);
+        ], $targets === [] || $mission->action === MissionAction::Transport ? null : ['targets' => $targets]);
     }
 
     /**
@@ -210,6 +243,11 @@ final readonly class MissionLedger
                 return MissionRefusal::Expired;
             }
 
+            // A transport is delivered on the grid (`deliver()`), never handed in at a desk.
+            if ($live->action === MissionAction::Transport) {
+                return MissionRefusal::NotDone;
+            }
+
             // A target that stopped existing voids the job even at the desk:
             // the runner walked here for nothing, and that is not a failure.
             if (! $this->retarget($live)) {
@@ -224,6 +262,11 @@ final readonly class MissionLedger
                 if ($spent === false) {
                     return MissionRefusal::NotDone;
                 }
+            } elseif ($live->action === MissionAction::Extract) {
+                // The decrypted job file, handed over.
+                if (! $this->handInExtract($character, $live)) {
+                    return MissionRefusal::NotDone;
+                }
             } elseif ($live->action === MissionAction::Scan) {
                 // A survey is handed in: one whole, unexpired file for every system it names.
                 if (! $this->handInSurvey($character, $live)) {
@@ -234,6 +277,16 @@ final readonly class MissionLedger
             }
 
             $this->pay($character, $live);
+            $this->closeOut($live);
+
+            // A heist hands in what it took and the desk pays a cut of it back.
+            if ($live->action === MissionAction::Heist && (int) $live->proceeds > 0) {
+                $back = (int) floor((int) $live->proceeds * (int) config('missions.heist_cut', 10) / 100);
+
+                if ($back > 0) {
+                    Wallet::move($character, $back, Reason::Mission, $live->entity()->first()?->name);
+                }
+            }
 
             $live->forceFill([
                 'state' => MissionState::Completed,
@@ -372,13 +425,18 @@ final readonly class MissionLedger
             }
 
             $was = (string) $target->address;
+            $this->closeOut($mission);
             $target->forceFill(['system_id' => $new->getKey(), 'address' => $new->address])->save();
 
             if ($character !== null) {
-                (new Notifier)->send($character, Category::Mission, 'mission_retargeted', [
-                    'old' => $was,
-                    'new' => (string) $new->address,
-                ], ['targets' => [['address' => (string) $new->address, 'grade' => $new->grade]]]);
+                if ($mission->action === MissionAction::Transport) {
+                    (new Notifier)->send($character, Category::Mission, 'mission_retargeted_coords', ['xy' => $this->coordinates($new)]);
+                } else {
+                    (new Notifier)->send($character, Category::Mission, 'mission_retargeted', [
+                        'old' => $was,
+                        'new' => (string) $new->address,
+                    ], ['targets' => [['address' => (string) $new->address, 'grade' => $new->grade]]]);
+                }
             }
         }
 
@@ -467,6 +525,205 @@ final readonly class MissionLedger
         }
 
         return true;
+    }
+
+    /**
+     * A heist's take: creds raided off one of its named systems go onto the job, not into the wallet, and that target is
+     * done. Returns whether it was held. Called by `Extractor::payCreds()`, the one place creds come off a system.
+     */
+    public function holdProceeds(Character $character, int $systemId, int $amount): bool
+    {
+        $target = MissionTarget::query()
+            ->whereNull('satisfied_at')
+            ->where('system_id', $systemId)
+            ->whereHas('mission', fn ($q) => $q
+                ->where('character_id', $character->getKey())
+                ->where('action', MissionAction::Heist->value)
+                ->accepted())
+            ->first();
+
+        if ($target === null) {
+            return false;
+        }
+
+        $target->forceFill(['satisfied_at' => now()])->save();
+        $target->mission()->increment('proceeds', $amount);
+
+        return true;
+    }
+
+    /**
+     * An extraction job's file is on the system the moment the runner arrives, however the node was stocked.
+     * Seeded once: nothing is made while the runner still holds the file or it is still sitting on the node.
+     * Called when a run starts, inside its transaction.
+     */
+    public function placeJobFile(Character $character, System $system): void
+    {
+        $missions = Mission::query()
+            ->where('character_id', $character->getKey())
+            ->where('action', MissionAction::Extract->value)
+            ->accepted()
+            ->whereHas('targets', fn ($q) => $q->whereNull('satisfied_at')->where('system_id', $system->getKey())->where('address', $system->address))
+            ->get();
+
+        foreach ($missions as $mission) {
+            $sitting = SystemContent::query()->where('mission_id', $mission->getKey())->exists();
+
+            if ($sitting || $this->heldJobFile($character, $mission) !== null) {
+                continue;
+            }
+
+            $file = NodeStocker::fromConfig()->jobFile($system);
+
+            SystemContent::query()->create([
+                ...$file,
+                'system_id' => $system->getKey(),
+                'label' => Text::get('missions.job_file', ['label' => $file['label']]),
+                'for_character_id' => $character->getKey(),
+                'mission_id' => $mission->getKey(),
+            ]);
+        }
+    }
+
+    /** The job's file, once it has been pulled. Decrypted when `$decrypted`, sealed or not otherwise. */
+    private function heldJobFile(Character $character, Mission $mission, bool $decrypted = false): ?InventoryItem
+    {
+        $slugs = $decrypted ? [ExtractedFile::DECRYPTED_SLUG] : [ExtractedFile::DECRYPTED_SLUG, ExtractedFile::SEALED_SLUG];
+
+        return $character->inventory()
+            ->whereHas('item', fn ($q) => $q->whereIn('slug', $slugs))
+            ->whereNotNull('extracted_file')
+            ->get()
+            ->first(fn (InventoryItem $row): bool => ExtractedFile::fromArray($row->extracted_file)?->missionId === $mission->getKey());
+    }
+
+    /** Hand in the DECRYPTED job file: spent, and the target ticked as the receipt. */
+    private function handInExtract(Character $character, Mission $mission): bool
+    {
+        $row = $this->heldJobFile($character, $mission, decrypted: true);
+
+        if ($row === null) {
+            return false;
+        }
+
+        $mission->targets()->whereNull('satisfied_at')->update(['satisfied_at' => now()]);
+        $row->delete();
+
+        return true;
+    }
+
+    /** Whatever of this job is still sitting on a node: nothing outlives its mission. */
+    private function closeOut(Mission $mission): void
+    {
+        SystemContent::query()->where('mission_id', $mission->getKey())->delete();
+
+        if ($mission->action !== MissionAction::Transport) {
+            return;
+        }
+
+        $character = $mission->character()->first();
+
+        if ($character === null) {
+            return;
+        }
+
+        // The container goes with the job, and so does the heat it was given.
+        foreach ($this->heldContainers($character) as $row) {
+            if (ExtractedFile::fromArray($row->extracted_file)?->missionId === $mission->getKey()) {
+                $row->delete();
+            }
+        }
+
+        $added = (float) $mission->heat_added;
+
+        if ($added > 0) {
+            $character->forceFill(['heat' => max(0.0, round((float) $character->heat - $added, 1))])->save();
+            $mission->forceFill(['heat_added' => 0]);
+        }
+    }
+
+    /** `x,y`, the way the grid names a position; a transport names its drop by this and never by address. */
+    private function coordinates(?System $system): string
+    {
+        return $system === null ? '?' : "{$system->x},{$system->y}";
+    }
+
+    /** What the container weighs on a deck: twice the grade of the exchange that hands it over. */
+    public function containerSize(Mission $mission): float
+    {
+        $mission->loadMissing('exchange');
+
+        return (float) (max(1, (int) ($mission->exchange?->grade ?? 1)) * 2);
+    }
+
+    public const CONTAINER_SLUG = 'sealed-data-container';
+
+    /** @return Collection<int, InventoryItem> */
+    private function heldContainers(Character $character): Collection
+    {
+        return $character->inventory()
+            ->whereHas('item', fn ($q) => $q->where('slug', self::CONTAINER_SLUG))
+            ->whereNotNull('extracted_file')
+            ->get();
+    }
+
+    /** The transport job this character can finish where they stand: their target is here and the container is in hand. */
+    public function uploadable(Character $character): ?Mission
+    {
+        if (! $character->isJackedIn()) {
+            return null;
+        }
+
+        $here = System::query()->at($character->gridPosition())->first();
+
+        if ($here === null) {
+            return null;
+        }
+
+        $held = $this->heldContainers($character)
+            ->map(fn (InventoryItem $row): ?int => ExtractedFile::fromArray($row->extracted_file)?->missionId)
+            ->filter()
+            ->all();
+
+        return Mission::query()
+            ->where('character_id', $character->getKey())
+            ->where('action', MissionAction::Transport->value)
+            ->accepted()
+            ->whereIn('id', $held)
+            ->whereHas('targets', fn ($q) => $q->whereNull('satisfied_at')->where('system_id', $here->getKey())->where('address', $here->address))
+            ->first();
+    }
+
+    /** Upload the container at the target: the job is done and pays at once. */
+    public function deliver(Character $character): MissionRefusal|Mission
+    {
+        return DB::transaction(function () use ($character): MissionRefusal|Mission {
+            $found = $this->uploadable($character);
+            $mission = $found === null ? null : Mission::query()->whereKey($found->getKey())->lockForUpdate()->first();
+
+            if ($mission === null || $mission->state !== MissionState::Accepted) {
+                return MissionRefusal::Gone;
+            }
+
+            $mission->targets()->update(['satisfied_at' => now()]);
+            $this->pay($character, $mission);
+            $this->closeOut($mission);
+
+            $mission->forceFill(['state' => MissionState::Completed, 'completed_at' => now()])->save();
+
+            return $mission->fresh();
+        });
+    }
+
+    /** A hunter took the runner down: the container is gone and so is the job. Called by `HunterCombat`. */
+    public function transportLost(Character $character): void
+    {
+        Mission::query()
+            ->where('character_id', $character->getKey())
+            ->where('action', MissionAction::Transport->value)
+            ->accepted()
+            ->get()
+            ->each(fn (Mission $mission) => $this->fail($mission, 'mission_container_lost'));
     }
 
     /**
@@ -562,6 +819,8 @@ final readonly class MissionLedger
                 $this->tell($character, $mission, $message);
             }
 
+            $this->closeOut($mission);
+
             $mission->forceFill([
                 'state' => MissionState::Failed,
                 'completed_at' => now(),
@@ -579,6 +838,8 @@ final readonly class MissionLedger
         if ($character !== null) {
             $this->tell($character, $mission, 'mission_voided');
         }
+
+        $this->closeOut($mission);
 
         $mission->forceFill([
             'state' => MissionState::Voided,

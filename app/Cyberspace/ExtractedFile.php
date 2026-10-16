@@ -39,6 +39,8 @@ final readonly class ExtractedFile
         public ?int $grade = null,
         /** Where it came from; null on a file taken before this was recorded. */
         public ?FileOrigin $origin = null,
+        /** The exchange job this file was seeded for; null on an ordinary file. */
+        public ?int $missionId = null,
     ) {}
 
     public static function fromContent(SystemContent $content): self
@@ -51,6 +53,7 @@ final readonly class ExtractedFile
             valueBroken: (int) $content->value_broken,
             grade: $content->system?->grade,
             origin: FileOrigin::fromSystem($content->system, $content->encryption),
+            missionId: $content->mission_id,
         );
     }
 
@@ -65,6 +68,7 @@ final readonly class ExtractedFile
             'value_broken' => $this->valueBroken,
             'grade' => $this->grade,
             'origin' => $this->origin?->toArray(),
+            'mission_id' => $this->missionId,
         ];
     }
 
@@ -83,6 +87,7 @@ final readonly class ExtractedFile
             valueBroken: (int) ($stored['value_broken'] ?? 0),
             grade: isset($stored['grade']) ? (int) $stored['grade'] : null,
             origin: FileOrigin::fromArray($stored['origin'] ?? null),
+            missionId: isset($stored['mission_id']) ? (int) $stored['mission_id'] : null,
         );
     }
 

@@ -9,6 +9,7 @@ use App\Achievements\Metric;
 use App\Cyberspace\Party\PartyShare;
 use App\Decks\Storage;
 use App\Inventory\ItemGranter;
+use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\Item;
 use App\Models\SystemContent;
@@ -89,13 +90,14 @@ final readonly class Extractor
      */
     public function filesFit(Character $character, string $address): bool
     {
-        return Storage::fits($character, $this->totalFileQb($address));
+        return Storage::fits($character, $this->totalFileQb($address, $character));
     }
 
-    public function totalFileQb(string $address): float
+    public function totalFileQb(string $address, ?Character $for = null): float
     {
         return Qb::of(SystemContent::query()
             ->whereHas('system', fn ($query) => $query->where('address', $address))
+            ->visibleTo((int) $for?->getKey())
             ->ofKind(ContentKind::Data)
             ->sum('size_qb'));
     }
@@ -183,6 +185,7 @@ final readonly class Extractor
             $contents = SystemContent::query()
                 ->with('system')
                 ->whereHas('system', fn ($query) => $query->where('address', $address))
+                ->visibleTo((int) $character->getKey())
                 ->ofKind(ContentKind::Data)
                 ->get();
 
@@ -210,7 +213,8 @@ final readonly class Extractor
 
             foreach ($contents->values() as $i => $content) {
                 $to = $character;
-                $id = $deal[$i] ?? $character->getKey();
+                // A job file is its owner's, whoever pulled it.
+                $id = $content->for_character_id ?? $deal[$i] ?? $character->getKey();
 
                 if ($id !== $character->getKey()) {
                     $candidate = $this->runner($id);
@@ -238,7 +242,7 @@ final readonly class Extractor
     }
 
     /** Pay creds taken from a system into the raider's wallet, or the party's by its credits mode. */
-    public function payCreds(Character $character, int $amount): void
+    public function payCreds(Character $character, int $amount, ?int $systemId = null): void
     {
         // A party divides it by the owner's chosen mode; a solo runner takes all.
         $share = PartyShare::for($character);
@@ -251,7 +255,10 @@ final readonly class Extractor
                 continue;
             }
 
-            Wallet::move($who, $part, Reason::Extraction);
+            // A heist's target keeps the take for the desk; everything else is the raider's.
+            if ($systemId === null || ! app(MissionLedger::class)->holdProceeds($who, $systemId, $part)) {
+                Wallet::move($who, $part, Reason::Extraction);
+            }
 
             // Counted HERE rather than at either call site, because this is the
             // one place creds come off a system — `extract()` and the simulator's
@@ -269,7 +276,7 @@ final readonly class Extractor
             return 0;
         }
 
-        $this->payCreds($character, $amount);
+        $this->payCreds($character, $amount, (int) $content->system_id);
 
         return $amount;
     }

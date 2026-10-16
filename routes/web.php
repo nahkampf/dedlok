@@ -327,6 +327,7 @@ Route::middleware('auth')->group(function () {
      * and a desk is reached by standing on it — which is the whole of the
      * permission, the same call the run briefing makes.
      */
+    Route::post('/missions/upload', [MissionController::class, 'upload'])->name('missions.upload');
     Route::post('/missions/{mission}/accept', [MissionController::class, 'accept'])->name('missions.accept');
     Route::delete('/missions/{mission}', [MissionController::class, 'decline'])->name('missions.decline');
     Route::delete('/missions/{mission}/abandon', [MissionController::class, 'abandon'])->name('missions.abandon');

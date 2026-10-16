@@ -41,6 +41,38 @@
     <div class="card__bd stack" style="--gap:var(--s-3)">
         <p class="micro" style="margin:0;color:var(--ink-2);max-width:70ch">{{ $action->description() }}</p>
 
+        {{-- A transport weighs what a file of its grade weighs: say so, and warn when the deck cannot take it. --}}
+        @if ($action === MissionAction::Transport && ! $active)
+            @php($need = app(\App\Missions\MissionLedger::class)->containerSize($mission))
+            @php($free = \App\Decks\Storage::free(auth()->user()->character))
+            <div class="panel panel--snug">
+                @if ($free < $need)
+                    <div class="hazard-stripe hazard-stripe--thin" role="img" aria-label="{{ Text::get('missions.container_short_title') }}"></div>
+                @endif
+                <p class="micro num" style="margin:var(--s-2) 0 0;color:var(--ink-1)">
+                    @if ($free < $need)
+                        <strong>{{ Text::get('missions.container_short_title') }}</strong>
+                    @endif
+                    {{ Text::get('missions.container_needs', ['need' => \App\Support\Qb::format($need), 'free' => \App\Support\Qb::format($free)]) }}
+                </p>
+            </div>
+        @endif
+
+        @if ($action === MissionAction::Heist && $active)
+            <p class="micro num" style="margin:0;color:var(--ink-2)">{{ Text::get('missions.proceeds', ['amount' => Number::format((int) $mission->proceeds), 'cut' => config('missions.heist_cut', 10)]) }}</p>
+        @endif
+
+        {{-- The file is encrypted and nothing about the job says who can open it: warn before it is taken. --}}
+        @if ($action === MissionAction::Extract)
+            <div class="panel panel--snug">
+                <div class="hazard-stripe hazard-stripe--thin" role="img" aria-label="{{ Text::get('missions.extract_warning_title') }}"></div>
+                <p class="micro" style="margin:var(--s-2) 0 0;color:var(--ink-1)">
+                    <strong>{{ Text::get('missions.extract_warning_title') }}</strong>
+                    {{ Text::get('missions.extract_warning') }}
+                </p>
+            </div>
+        @endif
+
         {{-- WHERE IT CAME FROM, when the card is not drawn at that desk: the one it is for, the agent, and where the desk is. --}}
         @if ($desk)
             <span class="row row--wrap micro" style="--gap:var(--s-2);color:var(--ink-3)">
@@ -92,7 +124,11 @@
                             @if ($target->isSatisfied() || $inHand)
                                 <span class="mark--ok" title="{{ Text::get($target->isSatisfied() ? 'missions.target_done' : 'missions.file_held') }}">&#x2713;</span>
                             @endif
-                            <x-address :address="$target->address" />
+                            @if ($action === MissionAction::Transport)
+                                {{ Text::get('missions.coordinates', ['xy' => ($target->system?->x ?? '?').','.($target->system?->y ?? '?')]) }}
+                            @else
+                                <x-address :address="$target->address" />
+                            @endif
                         </span>
                         <span class="row row--wrap" style="--gap:var(--s-2);justify-content:flex-end">
                             @if ($target->isSatisfied())
@@ -129,10 +165,12 @@
     @if ($actions)
     <div class="card__ft">
         @if ($active)
-            <form method="POST" action="{{ route('missions.complete', $mission) }}">
-                @csrf
-                <button type="submit" class="btn btn--sm btn--go cut">{{ Text::get('missions.complete') }}</button>
-            </form>
+            @if ($action !== MissionAction::Transport)
+                <form method="POST" action="{{ route('missions.complete', $mission) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--sm btn--go cut">{{ Text::get('missions.complete') }}</button>
+                </form>
+            @endif
             <div class="spacer"></div>
             <form method="POST" action="{{ route('missions.abandon', $mission) }}">
                 @csrf @method('DELETE')
