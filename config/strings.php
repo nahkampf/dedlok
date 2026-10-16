@@ -979,6 +979,8 @@ return [
         // Said on the board and again on the row, because a player choosing
         // between two jobs is choosing between two KINDS of evening.
         'job_file' => 'Job file: :label',
+        'extract_warning_title' => 'Decryption required.',
+        'extract_warning' => 'The file is encrypted. You need a Decryptor program running on your deck and the encryption skill that breaks it, or you cannot hand it in.',
         'actions' => [
             'scan' => 'Survey',
             'burn' => 'Demolition',

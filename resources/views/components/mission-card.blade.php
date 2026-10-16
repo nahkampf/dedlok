@@ -41,6 +41,17 @@
     <div class="card__bd stack" style="--gap:var(--s-3)">
         <p class="micro" style="margin:0;color:var(--ink-2);max-width:70ch">{{ $action->description() }}</p>
 
+        {{-- The file is encrypted and nothing about the job says who can open it: warn before it is taken. --}}
+        @if ($action === MissionAction::Extract)
+            <div class="panel panel--snug">
+                <div class="hazard-stripe hazard-stripe--thin" role="img" aria-label="{{ Text::get('missions.extract_warning_title') }}"></div>
+                <p class="micro" style="margin:var(--s-2) 0 0;color:var(--ink-1)">
+                    <strong>{{ Text::get('missions.extract_warning_title') }}</strong>
+                    {{ Text::get('missions.extract_warning') }}
+                </p>
+            </div>
+        @endif
+
         {{-- WHERE IT CAME FROM, when the card is not drawn at that desk: the one it is for, the agent, and where the desk is. --}}
         @if ($desk)
             <span class="row row--wrap micro" style="--gap:var(--s-2);color:var(--ink-3)">
