@@ -551,7 +551,7 @@ return [
         ],
 
         /*
-        | How many Data Fortresses a character may hold. The base is `cyberspace.fortress.cap` (one); a skill raises it.
+        | How many Data Fortresses a character may hold. The base is `cyberspace.fortress.cap` (zero); a skill raises it.
         */
         'fortress_slots' => [
             'tags' => ['cyberspace'],

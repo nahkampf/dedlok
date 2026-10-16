@@ -741,12 +741,12 @@ return [
     /*
     | DATA FORTRESSES: what founding one asks for. The skill and the Kernel item are authored in the editors, so they are
     | named here by slug and a slug that is not in the game gates nothing (the crafting gates' rule). `cap` is how many a
-    | character may hold, one at first; a skill will raise it.
+    | character may hold, none at first; a skill raises it.
     */
     'fortress' => [
         'skill' => 'node_administration',
         'kernel' => 'data-fortress-kernel',
-        'cap' => 1,
+        'cap' => 0,
         // Per cent chance each Leecher is found and removed on the nightly roll. Skills will lower it.
         'leech_discovery' => 10,
         // What a fortress's own Kernel takes from its Leechers' totals just to be online (balance last).

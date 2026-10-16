@@ -29,6 +29,7 @@ final class FortressFoundingTest extends TestCase
     public function test_a_kernel_is_spent_to_found_a_fortress_on_an_empty_square(): void
     {
         Config::set('cyberspace.size', 16);
+        Config::set('cyberspace.fortress.cap', 1);
         $c = Character::factory()->create(['grid_x' => 5, 'grid_y' => 5]);
         $kernel = $this->kernel($c);
 
@@ -40,9 +41,18 @@ final class FortressFoundingTest extends TestCase
         $this->assertDatabaseMissing('inventory_items', ['id' => $kernel->id]);
     }
 
+    public function test_nobody_may_found_one_without_a_slot_granted(): void
+    {
+        Config::set('cyberspace.size', 16);
+        $c = Character::factory()->create(['grid_x' => 5, 'grid_y' => 5]);
+
+        $this->assertSame(FortressRefusal::AtTheCap, (new Fortresses)->found($c, $this->kernel($c)));
+    }
+
     public function test_an_occupied_square_and_the_cap_refuse(): void
     {
         Config::set('cyberspace.size', 16);
+        Config::set('cyberspace.fortress.cap', 1);
         $c = Character::factory()->create(['grid_x' => 5, 'grid_y' => 5]);
         System::factory()->at(5, 5)->create();
         $this->assertSame(FortressRefusal::Occupied, (new Fortresses)->found($c, $this->kernel($c)));
