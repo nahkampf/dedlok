@@ -4395,6 +4395,7 @@ return [
             'level' => 'From level',
             'level_hint' => 'The level at which this starts applying. Blank means from level 0.',
             'choose_target' => 'Choose a target',
+            'filter' => 'Filter targets',
             'carried' => 'This effect also carries :keys, which are kept as they are.',
             'ops' => [
                 'add' => 'Add a flat amount',

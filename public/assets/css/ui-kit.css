@@ -2105,6 +2105,32 @@ dialog.modal[open] { animation: modal-in var(--t-base) var(--ease); }
 .toast--crit { border-left-color: var(--crit); }
 @keyframes toast-in { from { opacity: 0; transform: translateX(12px); } }
 
+/* Target picker: a <details> whose summary looks like a select and whose menu is
+   an accordion of groups. It sets a hidden <select>, which is what posts. */
+.target-picker { position: relative; }
+.field > select[hidden], .target-picker__item[hidden], .target-picker__group[hidden] { display: none; }
+.target-picker > summary { cursor: pointer; list-style: none; }
+.target-picker > summary::-webkit-details-marker { display: none; }
+.target-picker__menu {
+  display: grid; gap: var(--s-2); padding: var(--s-2);
+  max-height: min(420px, 60vh); overflow-y: auto;
+  background: var(--bg-1); border: var(--hair) solid var(--line-1);
+}
+.target-picker__group > summary {
+  cursor: pointer; padding: var(--s-1) var(--s-2);
+  font-family: var(--font-label); font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2);
+  border-bottom: var(--hair) solid var(--line-1);
+}
+.target-picker__items { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); gap: var(--s-1); padding: var(--s-2) 0; }
+.target-picker__item {
+  text-align: left; padding: var(--s-1) var(--s-2);
+  background: none; border: var(--hair) solid transparent; color: var(--ink-1);
+  font: inherit; font-size: var(--fs-sm); cursor: pointer;
+}
+.target-picker__item:hover { background: var(--bg-3); color: var(--ink-0); }
+.target-picker__item[aria-pressed="true"] { border-color: var(--line-1); color: var(--ink-0); }
+
 /* Accordion */
 /* A panel that folds.
 

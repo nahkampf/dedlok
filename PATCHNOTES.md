@@ -1,3 +1,7 @@
+## 0.63.2 (2026-10-16)
+
+- Internal tooling: Updated effects panel for items/skills
+
 ## 0.63.1 (2026-10-16)
 
 - Exchanges now offer at most one data transport job at a time.

@@ -1069,7 +1069,7 @@
       field.querySelector("[data-modifier-add]")?.addEventListener("click", () => {
         list.appendChild(template.content.cloneNode(true));
         reindex();
-        list.lastElementChild?.querySelector("select")?.focus();
+        list.lastElementChild?.querySelector("select:not([hidden])")?.focus();
       });
 
       field.addEventListener("click", (e) => {
@@ -1082,6 +1082,7 @@
           copy.querySelectorAll("input, select").forEach((el, i) => { el.value = live[i].value; });
           row.after(copy);
           reindex();
+          copy.querySelectorAll("[data-target-picker]").forEach(targetLabel);
           copy.querySelector('[data-modifier-field="level"], [data-modifier-field="amount"]')?.focus();
           return;
         }
@@ -1094,6 +1095,46 @@
       reindex();
     });
   }
+
+  /* The target picker: the <select> beside it holds the value, this sets it.
+     Everything is delegated, so rows cloned from the template or by Duplicate
+     work with no wiring; the label is re-read from the select each time. */
+  function targetLabel(picker) {
+    const select = picker.parentElement.querySelector("select");
+    const label = picker.querySelector("[data-target-label]");
+    if (!select || !label) return;
+    label.textContent = select.selectedOptions[0]?.textContent.trim() || "";
+    picker.querySelectorAll("[data-target-pick]").forEach((b) => {
+      b.setAttribute("aria-pressed", b.dataset.targetPick === select.value ? "true" : "false");
+    });
+  }
+
+  on("click", "[data-target-pick]", (e, btn) => {
+    const picker = btn.closest("[data-target-picker]");
+    picker.parentElement.querySelector("select").value = btn.dataset.targetPick;
+    targetLabel(picker);
+    picker.open = false;
+  });
+
+  document.addEventListener("input", (e) => {
+    const box = e.target.closest?.("[data-target-filter]");
+    if (!box) return;
+    const q = box.value.trim().toLowerCase();
+    box.closest("[data-target-picker]").querySelectorAll(".target-picker__group").forEach((group) => {
+      let any = false;
+      group.querySelectorAll("[data-target-pick]").forEach((b) => {
+        const hit = !q || b.textContent.toLowerCase().includes(q);
+        b.hidden = !hit;
+        any = any || hit;
+      });
+      group.hidden = !any;
+      if (q) group.open = any;
+    });
+  });
+
+  function targetPickers() { document.querySelectorAll("[data-target-picker]").forEach(targetLabel); }
+  targetPickers();
+  document.addEventListener("DOMContentLoaded", targetPickers);
 
   modifierRows();
   document.addEventListener("DOMContentLoaded", () => modifierRows());
