@@ -173,6 +173,9 @@ final readonly class RunStarter
 
                 $character->forceFill(['current_run_id' => $run->getKey()])->save();
 
+                // An accepted extraction job has its file on this system now, whatever the node held.
+                app(MissionLedger::class)->placeJobFile($character, $system);
+
                 /*
                  * ARRIVING IS THE FIRST THING ANYTHING GETS TO NOTICE.
                  *

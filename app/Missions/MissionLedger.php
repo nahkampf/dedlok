@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Missions;
 
+use App\Cyberspace\ExtractedFile;
+use App\Cyberspace\NodeStocker;
 use App\Cyberspace\ScanFile;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Mission;
 use App\Models\MissionTarget;
 use App\Models\System;
+use App\Models\SystemContent;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
 use App\Standing\LedgerKind;
@@ -224,6 +227,11 @@ final readonly class MissionLedger
                 if ($spent === false) {
                     return MissionRefusal::NotDone;
                 }
+            } elseif ($live->action === MissionAction::Extract) {
+                // The decrypted job file, handed over.
+                if (! $this->handInExtract($character, $live)) {
+                    return MissionRefusal::NotDone;
+                }
             } elseif ($live->action === MissionAction::Scan) {
                 // A survey is handed in: one whole, unexpired file for every system it names.
                 if (! $this->handInSurvey($character, $live)) {
@@ -234,6 +242,7 @@ final readonly class MissionLedger
             }
 
             $this->pay($character, $live);
+            $this->clearJobFiles($live);
 
             $live->forceFill([
                 'state' => MissionState::Completed,
@@ -372,6 +381,7 @@ final readonly class MissionLedger
             }
 
             $was = (string) $target->address;
+            $this->clearJobFiles($mission);
             $target->forceFill(['system_id' => $new->getKey(), 'address' => $new->address])->save();
 
             if ($character !== null) {
@@ -470,6 +480,72 @@ final readonly class MissionLedger
     }
 
     /**
+     * An extraction job's file is on the system the moment the runner arrives, however the node was stocked.
+     * Seeded once: nothing is made while the runner still holds the file or it is still sitting on the node.
+     * Called when a run starts, inside its transaction.
+     */
+    public function placeJobFile(Character $character, System $system): void
+    {
+        $missions = Mission::query()
+            ->where('character_id', $character->getKey())
+            ->where('action', MissionAction::Extract->value)
+            ->accepted()
+            ->whereHas('targets', fn ($q) => $q->whereNull('satisfied_at')->where('system_id', $system->getKey())->where('address', $system->address))
+            ->get();
+
+        foreach ($missions as $mission) {
+            $sitting = SystemContent::query()->where('mission_id', $mission->getKey())->exists();
+
+            if ($sitting || $this->heldJobFile($character, $mission) !== null) {
+                continue;
+            }
+
+            $file = NodeStocker::fromConfig()->jobFile($system);
+
+            SystemContent::query()->create([
+                ...$file,
+                'system_id' => $system->getKey(),
+                'label' => Text::get('missions.job_file', ['label' => $file['label']]),
+                'for_character_id' => $character->getKey(),
+                'mission_id' => $mission->getKey(),
+            ]);
+        }
+    }
+
+    /** The job's file, once it has been pulled. Decrypted when `$decrypted`, sealed or not otherwise. */
+    private function heldJobFile(Character $character, Mission $mission, bool $decrypted = false): ?InventoryItem
+    {
+        $slugs = $decrypted ? [ExtractedFile::DECRYPTED_SLUG] : [ExtractedFile::DECRYPTED_SLUG, ExtractedFile::SEALED_SLUG];
+
+        return $character->inventory()
+            ->whereHas('item', fn ($q) => $q->whereIn('slug', $slugs))
+            ->whereNotNull('extracted_file')
+            ->get()
+            ->first(fn (InventoryItem $row): bool => ExtractedFile::fromArray($row->extracted_file)?->missionId === $mission->getKey());
+    }
+
+    /** Hand in the DECRYPTED job file: spent, and the target ticked as the receipt. */
+    private function handInExtract(Character $character, Mission $mission): bool
+    {
+        $row = $this->heldJobFile($character, $mission, decrypted: true);
+
+        if ($row === null) {
+            return false;
+        }
+
+        $mission->targets()->whereNull('satisfied_at')->update(['satisfied_at' => now()]);
+        $row->delete();
+
+        return true;
+    }
+
+    /** Whatever of this job is still sitting on a node: nothing outlives its mission. */
+    private function clearJobFiles(Mission $mission): void
+    {
+        SystemContent::query()->where('mission_id', $mission->getKey())->delete();
+    }
+
+    /**
      * Files, counted and spent.
      *
      * ONLY COMPLETE FILES COUNT and only unexpired ones — a one-pass file that
@@ -562,6 +638,8 @@ final readonly class MissionLedger
                 $this->tell($character, $mission, $message);
             }
 
+            $this->clearJobFiles($mission);
+
             $mission->forceFill([
                 'state' => MissionState::Failed,
                 'completed_at' => now(),
@@ -579,6 +657,8 @@ final readonly class MissionLedger
         if ($character !== null) {
             $this->tell($character, $mission, 'mission_voided');
         }
+
+        $this->clearJobFiles($mission);
 
         $mission->forceFill([
             'state' => MissionState::Voided,

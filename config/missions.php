@@ -83,6 +83,7 @@ return [
         'burn' => ['creds' => 2.0, 'standing' => 1.5, 'loyalty' => 2.0],
         'plant' => ['creds' => 1.4, 'standing' => 2.0, 'loyalty' => 2.0],
         'agitate' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 1.5],
+        'extract' => ['creds' => 1.8, 'standing' => 1.5, 'loyalty' => 1.5],
         'supply' => ['creds' => 1.2, 'standing' => 0.5, 'loyalty' => 0.5],
     ],
 

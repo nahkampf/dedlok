@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Missions;
 
+use App\Cyberspace\ExtractedFile;
+use App\Cyberspace\Extractor;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
@@ -23,6 +25,7 @@ use App\Models\Notification;
 use App\Models\Run;
 use App\Models\Skill;
 use App\Models\System;
+use App\Models\SystemContent;
 use App\Notifications\Category;
 use App\Standing\StandingLedger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -108,6 +111,37 @@ final class MissionTest extends TestCase
         $this->character->forceFill(['current_run_id' => $run->id])->save();
 
         return $run;
+    }
+
+    /** The file is seeded for the runner whatever the node held, only they can pull it, and it is handed in decrypted. */
+    public function test_an_extraction_job_seeds_a_file_for_its_runner_and_is_handed_in_decrypted(): void
+    {
+        $mission = $this->accepted(MissionAction::Extract);
+        $system = $mission->targets->first()->system;
+        $stranger = Character::factory()->create();
+
+        $this->ledger()->placeJobFile($this->character, $system);
+        $this->ledger()->placeJobFile($this->character, $system);   // seeded once
+
+        $this->assertSame(1, SystemContent::query()->where('mission_id', $mission->id)->count());
+        $this->assertSame(0.0, (new Extractor)->totalFileQb($system->address, $stranger), 'it is nobody else\'s');
+        $this->assertGreaterThan(0.0, (new Extractor)->totalFileQb($system->address, $this->character));
+
+        // Delivered straight, as a party deal or a withdrawal does: this test has no deck to hold it.
+        $content = SystemContent::query()->where('mission_id', $mission->id)->firstOrFail();
+        (new Extractor)->deliver($this->character, $content);
+
+        $row = InventoryItem::query()->where('character_id', $this->character->id)->whereNotNull('extracted_file')->firstOrFail();
+        $this->assertSame($mission->id, ExtractedFile::fromArray($row->extracted_file)?->missionId);
+
+        $this->assertSame(MissionRefusal::NotDone, $this->ledger()->complete($this->character->fresh(), $mission->fresh()), 'still sealed');
+
+        $row->forceFill(['item_id' => Item::query()->where('slug', ExtractedFile::DECRYPTED_SLUG)->firstOrFail()->id])->save();
+
+        $done = $this->ledger()->complete($this->character->fresh(), $mission->fresh());
+        $this->assertInstanceOf(Mission::class, $done);
+        $this->assertSame(MissionState::Completed, $done->state);
+        $this->assertSame(0, InventoryItem::query()->whereNotNull('extracted_file')->count(), 'the file is spent');
     }
 
     // ---- the board ----------------------------------------------------------

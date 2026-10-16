@@ -89,13 +89,14 @@ final readonly class Extractor
      */
     public function filesFit(Character $character, string $address): bool
     {
-        return Storage::fits($character, $this->totalFileQb($address));
+        return Storage::fits($character, $this->totalFileQb($address, $character));
     }
 
-    public function totalFileQb(string $address): float
+    public function totalFileQb(string $address, ?Character $for = null): float
     {
         return Qb::of(SystemContent::query()
             ->whereHas('system', fn ($query) => $query->where('address', $address))
+            ->visibleTo((int) $for?->getKey())
             ->ofKind(ContentKind::Data)
             ->sum('size_qb'));
     }
@@ -183,6 +184,7 @@ final readonly class Extractor
             $contents = SystemContent::query()
                 ->with('system')
                 ->whereHas('system', fn ($query) => $query->where('address', $address))
+                ->visibleTo((int) $character->getKey())
                 ->ofKind(ContentKind::Data)
                 ->get();
 
@@ -210,7 +212,8 @@ final readonly class Extractor
 
             foreach ($contents->values() as $i => $content) {
                 $to = $character;
-                $id = $deal[$i] ?? $character->getKey();
+                // A job file is its owner's, whoever pulled it.
+                $id = $content->for_character_id ?? $deal[$i] ?? $character->getKey();
 
                 if ($id !== $character->getKey()) {
                     $candidate = $this->runner($id);

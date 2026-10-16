@@ -21,6 +21,8 @@ use App\Support\Text;
  *    nothing in the world belongs to the runner afterwards.
  *  - AGITATE is recorded where it happens, when a run that woke the ICE leaves and the
  *    machine shuts because of it (`RunStarter::end()`). Only systems with ICE are named.
+ *  - EXTRACT names one system whose run is GUARANTEED to hold a job file for the runner. They pull it, decrypt it
+ *    and hand the decrypted file in (`MissionLedger::handInExtract()`).
  *  - SUPPLY names no systems at all. It buys intel by the file, which is what
  *    makes scanning an occupation rather than a chore between runs.
  */
@@ -30,6 +32,7 @@ enum MissionAction: string
     case Burn = 'burn';
     case Plant = 'plant';
     case Agitate = 'agitate';
+    case Extract = 'extract';
     case Supply = 'supply';
 
     /**
@@ -48,6 +51,7 @@ enum MissionAction: string
             self::Burn => [1, 2],
             self::Plant => [1, 3],
             self::Agitate => [1, 2],
+            self::Extract => [1, 1],
             self::Supply => [0, 0],
         };
     }
@@ -67,7 +71,7 @@ enum MissionAction: string
      */
     public function evidenceIsCarried(): bool
     {
-        return $this === self::Scan || $this === self::Supply;
+        return $this === self::Scan || $this === self::Supply || $this === self::Extract;
     }
 
     public function label(): string

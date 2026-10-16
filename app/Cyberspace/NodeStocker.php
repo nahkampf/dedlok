@@ -84,7 +84,8 @@ final class NodeStocker
 
         System::query()
             ->whereNotIn('type', [SystemType::Portal->value, SystemType::Fortress->value])
-            ->whereDoesntHave('contents')
+            // A job file seeded for one runner is not stock: an emptied system still restocks.
+            ->whereDoesntHave('contents', fn ($query) => $query->whereNull('mission_id'))
             ->chunkById(self::CHUNK, function ($systems) use ($result, $encryption, $items, $dryRun): void {
                 $rows = [];
 
@@ -170,6 +171,12 @@ final class NodeStocker
         }
 
         return $contents;
+    }
+
+    /** A file of the kind this system would hold, for an exchange job: always rolled, never left to the dice. */
+    public function jobFile(System $system): array
+    {
+        return $this->file($system->type, (int) $system->grade, $this->encryptionLadder());
     }
 
     /**
