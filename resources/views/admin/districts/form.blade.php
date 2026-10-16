@@ -67,6 +67,21 @@
             </div>
         </div>
 
+        @unless ($creating)
+            <div class="panel">
+                <div class="panel__hd"><span class="micro">{{ Text::get('admin.districts.places') }}</span></div>
+                <div class="panel__bd stack" style="--gap:var(--s-2)">
+                    <span class="field__hint">{{ Text::get('admin.districts.places_hint') }}</span>
+                    <input type="hidden" name="positions" id="positions">
+                    <x-city-map edit="#positions" :label="Text::get('city.district_map')"
+                        :nodes="$district->locations->map(fn ($l) => [
+                            'key' => (string) $l->id, 'label' => $l->name, 'x' => $l->map_x, 'y' => $l->map_y,
+                            'href' => null, 'here' => false, 'pin' => true, 'hue' => $district->color->token(),
+                        ])->all()" />
+                </div>
+            </div>
+        @endunless
+
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.districts.links') }}</span></div>
             <div class="panel__bd stack" style="--gap:var(--s-2)">

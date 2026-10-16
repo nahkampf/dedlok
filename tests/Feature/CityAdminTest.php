@@ -73,6 +73,23 @@ final class CityAdminTest extends TestCase
      * pass validation and then try to write NULL into a NOT NULL column: a 500. A slug is
      * permanent, and the request must not even look at what it was sent.
      */
+    public function test_dragged_pins_are_saved_clamped_and_only_for_this_district(): void
+    {
+        $location = Location::query()->firstOrFail();
+        $other = Location::query()->where('district_id', '!=', $location->district_id)->firstOrFail();
+        $before = [$other->map_x, $other->map_y];
+        $district = District::query()->findOrFail($location->district_id);
+
+        $this->actingAs($this->admin)->put(route('admin.districts.update', $district), [
+            'name' => $district->name, 'color' => $district->color->value, 'map_x' => $district->map_x,
+            'map_y' => $district->map_y, 'travel_weight' => $district->travel_weight,
+            'positions' => json_encode([$location->id => [30.4, 99], $other->id => [60, 60]]),
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame([30, 75], [$location->fresh()->map_x, $location->fresh()->map_y]);
+        $this->assertSame($before, [$other->fresh()->map_x, $other->fresh()->map_y]);
+    }
+
     public function test_a_blank_slug_on_update_is_ignored_not_written(): void
     {
         $location = Location::query()->firstOrFail();

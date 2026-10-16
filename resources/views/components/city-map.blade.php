@@ -7,6 +7,9 @@
     // list<array{0: string, 1: string}> — pairs of node keys, drawn as wires.
     'links' => [],
     'label',
+    // A selector for a hidden field: the map becomes a drag editor (ui-kit.js's board editor) that writes every
+    // node's position into it as JSON keyed by node key.
+    'edit' => null,
 ])
 
 {{-- The deck board's own classes, laid out the same way: percentage
@@ -15,7 +18,7 @@
 @php($at = collect($nodes)->keyBy('key'))
 
 <div class="board-wrap">
-    <div class="frame scanlines brackets board" role="group" aria-label="{{ $label }}">
+    <div class="frame scanlines brackets board" @if ($edit) data-board-edit="{{ $edit }}" data-board-min="25" data-board-max="75" @endif role="group" aria-label="{{ $label }}">
         <span class="frame__label">{{ $label }}</span>
 
         @if (count($nodes) === 0)
@@ -41,6 +44,8 @@
                 @php($tag = ($pin || $inspect) ? 'button' : ($node['href'] ? 'a' : 'div'))
                 <{{ $tag }}
                     @class(['board__node', 'board__node--here' => $node['here']])
+                    data-node="{{ $node['key'] }}"
+                    @if ($edit) tabindex="0" @endif
                     @if ($inspect) type="button" data-inspect="{{ $inspect }}" aria-label="{{ $node['label'] }}" @endif
                     @if ($pin) type="button" data-tip="{{ $node['label'] }}" aria-label="{{ $node['label'] }}" @endif
                     @if ($node['href'] && ! $inspect) href="{{ $node['href'] }}" @endif
