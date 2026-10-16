@@ -41,6 +41,23 @@
     <div class="card__bd stack" style="--gap:var(--s-3)">
         <p class="micro" style="margin:0;color:var(--ink-2);max-width:70ch">{{ $action->description() }}</p>
 
+        {{-- A transport weighs what a file of its grade weighs: say so, and warn when the deck cannot take it. --}}
+        @if ($action === MissionAction::Transport && ! $active)
+            @php($need = app(\App\Missions\MissionLedger::class)->containerSize($mission))
+            @php($free = \App\Decks\Storage::free(auth()->user()->character))
+            <div class="panel panel--snug">
+                @if ($free < $need)
+                    <div class="hazard-stripe hazard-stripe--thin" role="img" aria-label="{{ Text::get('missions.container_short_title') }}"></div>
+                @endif
+                <p class="micro num" style="margin:var(--s-2) 0 0;color:var(--ink-1)">
+                    @if ($free < $need)
+                        <strong>{{ Text::get('missions.container_short_title') }}</strong>
+                    @endif
+                    {{ Text::get('missions.container_needs', ['need' => \App\Support\Qb::format($need), 'free' => \App\Support\Qb::format($free)]) }}
+                </p>
+            </div>
+        @endif
+
         @if ($action === MissionAction::Heist && $active)
             <p class="micro num" style="margin:0;color:var(--ink-2)">{{ Text::get('missions.proceeds', ['amount' => Number::format((int) $mission->proceeds), 'cut' => config('missions.heist_cut', 10)]) }}</p>
         @endif

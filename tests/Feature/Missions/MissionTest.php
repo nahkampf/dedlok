@@ -6,6 +6,7 @@ namespace Tests\Feature\Missions;
 
 use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\Extractor;
+use App\Cyberspace\Hunters;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
@@ -28,6 +29,7 @@ use App\Models\System;
 use App\Models\SystemContent;
 use App\Notifications\Category;
 use App\Standing\StandingLedger;
+use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
@@ -197,6 +199,23 @@ final class MissionTest extends TestCase
         $this->assertSame(500, (int) $this->character->fresh()->creds);
         $this->assertSame(10.0, (float) $this->character->fresh()->heat);
         $this->assertSame(0, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'sealed-data-container'))->count());
+    }
+
+    public function test_a_transports_hound_is_graded_by_the_desk_and_the_container_by_the_target(): void
+    {
+        $this->giveRoomForData($this->character);
+        $this->desk->forceFill(['grade' => 3])->save();
+        $this->character->forceFill(['heat' => 10.0])->save();
+
+        $mission = $this->accepted(MissionAction::Transport);
+
+        // The target fixture is grade 2: the file weighs twice that.
+        $row = InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'sealed-data-container'))->firstOrFail();
+        $this->assertSame(4.0, (float) $row->extracted_file['size_qb']);
+
+        // Heat is 100 now, which on its own is a grade 5 hound; the job's own is the desk's grade over the runner's own heat.
+        $hunt = Hunters::fromConfig(app(Resolver::class))->spawn($this->character->fresh());
+        $this->assertSame(3, $hunt->grade);
     }
 
     public function test_losing_to_a_hunter_loses_the_container_and_fails_the_job(): void

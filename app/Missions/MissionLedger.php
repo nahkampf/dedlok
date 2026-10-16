@@ -108,7 +108,9 @@ final readonly class MissionLedger
             if ($live->action === MissionAction::Transport) {
                 $container = Item::query()->where('slug', self::CONTAINER_SLUG)->first();
 
-                if ($container === null || ! Storage::fits($character, (float) $container->size)) {
+                $size = $this->containerSize($live);
+
+                if ($container === null || ! Storage::fits($character, $size)) {
                     return MissionRefusal::NoRoom;
                 }
 
@@ -116,7 +118,7 @@ final readonly class MissionLedger
                     'item_id' => $container->getKey(),
                     'parent_id' => null,
                     'quantity' => 1,
-                    'extracted_file' => (new ExtractedFile(Text::get('missions.container'), 0.0, null, 0, 0, missionId: $live->getKey()))->toArray(),
+                    'extracted_file' => (new ExtractedFile(Text::get('missions.container'), $size, null, 0, 0, missionId: $live->getKey()))->toArray(),
                 ]);
 
                 // Enough heat that a hunter is likely on the way; taken off again when the job ends.
@@ -644,6 +646,14 @@ final readonly class MissionLedger
     private function coordinates(?System $system): string
     {
         return $system === null ? '?' : "{$system->x},{$system->y}";
+    }
+
+    /** What the container weighs on a deck: twice the grade of the system it is going to. */
+    public function containerSize(Mission $mission): float
+    {
+        $mission->loadMissing('targets.system');
+
+        return (float) (($mission->targets->first()?->system?->grade ?? 1) * 2);
     }
 
     public const CONTAINER_SLUG = 'sealed-data-container';

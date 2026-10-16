@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Missions\MissionAction;
 use App\Models\Character;
 use App\Models\Hunt;
 use App\Models\Ice;
 use App\Models\InventoryItem;
+use App\Models\Mission;
 use App\Programs\ProcessRefusal;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
@@ -137,6 +139,20 @@ final class Hunters
     {
         $heat = (float) $character->heat;
         $grade = $this->gradeFor($heat);
+
+        // A transport job's heat is not the runner's own: the hound is graded by what they were carrying it for.
+        $jobs = Mission::query()
+            ->where('character_id', $character->getKey())
+            ->where('action', MissionAction::Transport->value)
+            ->accepted()
+            ->with('exchange')
+            ->get();
+
+        if ($jobs->isNotEmpty()) {
+            $own = $this->gradeFor(max(0.0, $heat - (float) $jobs->sum('heat_added')));
+            $grade = max($own, (int) $jobs->max(fn ($m) => $m->exchange?->grade ?? 1));
+        }
+
         $ice = $this->drawIce($grade);
 
         return DB::transaction(function () use ($character, $ice, $grade, $heat): Hunt {

@@ -19,7 +19,7 @@ return new class extends Migration
             DB::table('items')->insert([
                 'slug' => 'sealed-data-container',
                 'name' => 'Sealed data container',
-                'flavor' => 'Somebody else\'s secrets in a box you cannot open. Do not lose it.',
+                'flavor' => 'A containerized data file, sealed with high grade encryption. You probably couldn\'t break into the container without alerting your client.',
                 'container' => 'data',
                 'tier' => 1,
                 'rarity' => 'common',

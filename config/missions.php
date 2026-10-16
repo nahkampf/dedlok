@@ -56,6 +56,9 @@ return [
     */
     'window_hours' => ['min' => 4, 'max' => 24],
 
+    // A transport job's drop is this many steps (Chebyshev) from the desk, by the desk's grade.
+    'transport_steps' => [1 => [10, 15], 2 => [20, 30], 3 => [30, 45], 4 => [40, 60], 5 => [50, 75]],
+
     // A transport job raises your heat to at least this on acceptance (undone when it ends), so a hunter is likely.
     'transport_heat' => 100,
 

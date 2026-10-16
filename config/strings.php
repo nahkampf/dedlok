@@ -985,6 +985,8 @@ return [
         // between two jobs is choosing between two KINDS of evening.
         'job_file' => 'Job file: :label',
         'container' => 'Sealed data container',
+        'container_short_title' => 'Not enough storage.',
+        'container_needs' => 'The container takes :need QB on your deck. You have :free QB free.',
         'coordinates' => 'Deliver to :xy',
         'upload' => 'Upload sealed data',
         'uploaded' => 'Uploaded. The job is done.',
