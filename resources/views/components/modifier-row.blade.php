@@ -30,7 +30,9 @@
 
     <div class="field" style="flex:2 1 min(240px,100%)">
         <label class="field__label">{{ Text::get('admin.modifiers.target') }}</label>
-        <select class="select" name="{{ $field('target') }}" data-modifier-field="target">
+        {{-- The select stays as the one value that posts and that the script reads; the picker
+             is a way of setting it, grouped and searchable, because there are a hundred targets. --}}
+        <select class="select" name="{{ $field('target') }}" data-modifier-field="target" hidden>
             <option value="">{{ Text::get('admin.modifiers.choose_target') }}</option>
             @foreach ($targets as $group => $options)
                 <optgroup label="{{ $group }}">
@@ -40,6 +42,22 @@
                 </optgroup>
             @endforeach
         </select>
+        <details class="target-picker" data-target-picker>
+            <summary class="select" data-target-label>{{ Text::get('admin.modifiers.choose_target') }}</summary>
+            <div class="target-picker__menu">
+                <input class="input" type="search" data-target-filter placeholder="{{ Text::get('admin.modifiers.filter') }}" aria-label="{{ Text::get('admin.modifiers.filter') }}">
+                @foreach ($targets as $group => $options)
+                    <details class="target-picker__group">
+                        <summary>{{ $group }} <span class="micro">{{ count($options) }}</span></summary>
+                        <div class="target-picker__items">
+                            @foreach ($options as $value => $label)
+                                <button type="button" class="target-picker__item" data-target-pick="{{ $value }}">{{ $label }}</button>
+                            @endforeach
+                        </div>
+                    </details>
+                @endforeach
+            </div>
+        </details>
     </div>
 
     @foreach ($extras as $extra)
