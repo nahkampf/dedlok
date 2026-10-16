@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.63.2] — 2026-10-16
+
+### Changed
+
+- **Effects editor target picker**: the Target dropdown is now a `<details>` picker (`data-target-picker`) with a filter box and one fold-out group per stat tag. It sets the hidden `<select>`, which is still what posts, so `ModifierField` and validation are untouched; the picker is delegated in `ui-kit.js`, so cloned and duplicated rows work.
+
+
 ## [0.63.1] — 2026-10-16
 
 A cap on data transports, a standing bar on the exchange screen, and draggable pins in the district editor.
@@ -3385,7 +3392,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.63.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.63.2...HEAD
+[0.63.2]: https://github.com/nahkampf/dedlok/compare/v0.63.1...v0.63.2
 [0.63.1]: https://github.com/nahkampf/dedlok/compare/v0.63.0...v0.63.1
 [0.63.0]: https://github.com/nahkampf/dedlok/compare/v0.62.2...v0.63.0
 [0.62.2]: https://github.com/nahkampf/dedlok/compare/v0.62.1...v0.62.2
