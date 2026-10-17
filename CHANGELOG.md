@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+## [0.64.0] — 2026-10-17
+
+Data Fortresses get a production line, a way to steal, and their first helpers.
+
+### Added
+
+- **Fortress Decryptors and Assemblers** (`ProgramKind::FortressDecryptor` / `FortressAssembler`, `FortressProduction`): a Decryptor turns the oldest sealed Encrypted Data Dump in its input area into a component each cycle, deterministically and keeping the file's origin; an Assembler is given a Design and a number of runs (0 for ever), spends the recipe from its input area (only components matching the line's filters, lowest grade first) and delivers the program to its output area. Input and output storage areas per type are set by the owner and administrators (`systems.decryptor_in_area_id` and so on). `production_cycle_minutes.decryptor` / `.assembler` are the stats; Boosters shorten both. First items: Beurling (Decryptor) and gasm-2.6.1 (Assembler), gated by Fortress Decryptor Crafting and Assembler Crafting.
+- **Network Taps and Transactional Wiretaps** (`FortressNetworkTap` / `FortressWiretap`): each cycle they roll their strength against the grade of every other non-fortress node in range; a Tap steals an Encrypted Data Dump into the Decryptors' input area, a Wiretap pays creds by grade (`cyberspace.fortress.wiretap_pay`, raised by the `wiretap_yield` stat) into the fortress wallet. First items: Spigot and Tithe, gated by Network Tap Crafting and Wiretap Crafting; Transactional Skimming raises the yield.
+- **Boosters** (Pacemaker): speed up every producer; stamped by their maker, never decay. Skill Booster Crafting.
+- **Cloaks** (Veil): a fortress shows a chosen false face (grade, type, owner, ICE, IDS, tracer, OS) to scans; each scan file contests the Cloak once (`system_scans.cloak_broken`). Per-item base stealth through `programs.produces.strength` (blank uses the default).
+- **Utility programs** (`ProgramKind::Utility` with `locates`, `walks`, `jumps`): Locator and Pathfinder become Utilities, and the new **Jumper** puts Jump buttons beside addresses in messages, scans, the Locator result, the routing chain and the Tasks & Missions screen (`<x-jump>`, gated by a running Jumper).
+- **Bazaar** (Market) and **Nomad** (Relocation): the fortress's public market and automatic relocation, with relocation settings (interval presets, who is told), an owner bookmark and a message with the new address (`FortressRelocation`).
+- **Maintenance skills** (Hardening, Streamlining) and **Parasitic Concealment** with the `leech_discovery` stat (per-grade chance table, 0.5% floor).
+- **Item editor**: fields for cycle, Assembler reduction, Booster boost, Tap range and strength (shared with Cloak stealth), and a Leecher's resource and amount.
+
+### Changed
+
+- **Producer is split** into the Decryptor and Assembler kinds; the credit output, the free component job and the job queue (`fortress_jobs`) are gone. Vault files keep their origin when deposited and withdrawn.
+- **Leechers** have their own take (`programs.leech_resource`, `leech_amount`); `storage_size` now means only what carrying one costs on a deck, so a storage Leecher no longer fills the deck by its take.
+- **Kernel demand** percentages round away from the base to a tenth, so a small percent still moves it.
+- **`programs.kind`** CHECK rewritten for the new kinds; older migrations patched for the removed Locator and Pathfinder kinds.
+
+### Migrations
+
+Eighteen, from `2026_10_16_140000_fortress_skills_off_the_market` to `2026_10_17_130000_leecher_takes_its_own_columns`. The ones that author game content skip themselves in tests and only create what is missing, so existing rows are left as they are.
+
+
 ## [0.63.2] — 2026-10-16
 
 ### Changed
@@ -3392,7 +3419,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.63.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.64.0...HEAD
+[0.64.0]: https://github.com/nahkampf/dedlok/compare/v0.63.2...v0.64.0
 [0.63.2]: https://github.com/nahkampf/dedlok/compare/v0.63.1...v0.63.2
 [0.63.1]: https://github.com/nahkampf/dedlok/compare/v0.63.0...v0.63.1
 [0.63.0]: https://github.com/nahkampf/dedlok/compare/v0.62.2...v0.63.0

@@ -1,3 +1,21 @@
+## 0.64.0 (2026-10-17)
+
+- New feature: Data fortresses. These are player owned nodes that can host software, store credits and files, defend itself, and produce things.
+- Lots of new mechanics:
+- Decryptors can run on a fortress, which takes encrypted data dumps and converts them into components.
+- Assemblers build programs from designs and components.
+- Daemons: Network Taps steal encrypted data from nodes around your fortress, and Transactional Wiretaps skim credits from nodes around the fortress
+- Boosters reduce cycle times, system demands or increase various stats.
+- Cloakers disguise the data fortress as a regular node system. 
+- Market let's you host a public (or invite-only) marketplace for digital goods, and skim a few percent off the top of every transaction
+- Relocators move your fortress around on the grid at set intervals, updating the address as well
+- ICE and IDS for data fortresses are not off the shelf, but has to be constructed  and the skill of the programmer determines their strengths
+- Leechers are the lifeblood of a fortress: it redirects distributed compute, RAM and storage resources from infected systems to your data fortress
+- All of this stuff for fortresses require various skills to set up and craft, also taking a considerable amount of decrypted data dumps to supply it with component files. Setting up and keeping a data fortress alive is generally going to be a cooperative effort.
+- New utility program for your deck: Jumper. It adds a "Jump" button next to addresses at various places in the UI, a simple QOL hack
+
+Please note that all the required skills for Data Fortresses are off the market, and will be seeded as loyalty or exchange market purchases in the near future. If you want to test the whole thing out, ask admin and I can set you up with a package.
+
 ## 0.63.2 (2026-10-16)
 
 - Internal tooling: Updated effects panel for items/skills
