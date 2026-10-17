@@ -271,12 +271,13 @@
         <a class="btn btn--sm cut" style="margin-top:var(--s-3)" href="{{ route('fortress.market', $target) }}">{{ Text::get('cyberspace.fortress.host.visit') }}</a>
     @endif
 
-    @if ($kernel)
+    @foreach ($kernels as $kernel)
         <form method="POST" action="{{ route('cyberspace.fortress') }}" style="margin-top:var(--s-3)">
             @csrf
-            <button type="submit" class="btn btn--sm cut">{{ Text::get('cyberspace.fortress.found') }}</button>
+            <input type="hidden" name="kernel" value="{{ $kernel->id }}">
+            <button type="submit" class="btn btn--sm cut">{{ Text::get('cyberspace.fortress.found_with', ['kernel' => $kernel->item->displayName()]) }}</button>
         </form>
-    @endif
+    @endforeach
 
     {{-- Getting somewhere without walking: an address anyone can hand you, and
          the places you have saved. --}}
@@ -530,6 +531,7 @@
                             @if ($found->contact)
                                 <div class="row row--wrap micro" style="--gap:var(--s-2);align-items:center">
                                     <x-address :address="$found->contact->address" />
+                                    <x-jump :address="$found->contact->address" />
                                     <span class="tag">{{ $found->contact->type->label() }}</span>
                                     @if ($found->contact->owner)
                                         <span class="tag">{{ $found->contact->owner }}</span>
@@ -583,7 +585,7 @@
                         <li class="row row--wrap" style="--gap:var(--s-2);align-items:center">
                             <span class="micro num" style="color:var(--ink-3)">{{ $loop->iteration }}</span>
                             <span class="item-row__name" style="min-width:0">{{ $hop->displayName() }}</span>
-                            <span class="micro"><x-address :address="$hop->address" /></span>
+                            <span class="micro"><x-address :address="$hop->address" /> <x-jump :address="$hop->address" /></span>
                             <span class="tag">{{ Text::get('cyberspace.run.setup.hop', ['grade' => $hop->grade]) }}</span>
                         </li>
                     @endforeach

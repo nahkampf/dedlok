@@ -12,13 +12,16 @@ use App\Cyberspace\FortressDefence;
 use App\Cyberspace\FortressHost;
 use App\Cyberspace\FortressMarket;
 use App\Cyberspace\FortressProduction;
+use App\Cyberspace\FortressRelocation;
 use App\Cyberspace\FortressVault;
 use App\Cyberspace\Leeches;
 use App\Models\Entity;
 use App\Models\FortressArea;
-use App\Models\FortressJob;
+use App\Models\FortressAssembly;
 use App\Models\FortressListing;
+use App\Models\Ice;
 use App\Models\InventoryItem;
+use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContent;
 use App\Programs\ProgramKind;
@@ -47,8 +50,11 @@ class FortressController extends Controller
             'role' => FortressAccess::roleOf($character, $system),
             'character' => $character,
             'entities' => Entity::query()->orderBy('name')->get(['id', 'name']),
+            'iceLevels' => Ice::query()->orderBy('level')->get(['level', 'name']),
+            'operatingSystems' => Skill::query()->where('category', 'Operating Systems')->orderBy('title')->get(['id', 'title']),
             'listings' => FortressListing::query()->where('system_id', $system->id)->get()->keyBy('content_id'),
             'marketOpen' => FortressMarket::isOpen($system),
+            'relocationInstalled' => FortressRelocation::installed($system),
             'members' => DB::table('fortress_members')->join('characters', 'characters.id', '=', 'fortress_members.character_id')
                 ->where('system_id', $system->id)->get(['characters.id', 'characters.handle', 'fortress_members.role']),
             'hosted' => $host->hosted($system),
@@ -60,7 +66,7 @@ class FortressController extends Controller
                     ->where('system_id', $system->id)->orderByDesc('fortress_log.id')->limit(50)->get(['fortress_log.*', 'characters.handle'])
                 : collect(),
             // Only what this person may see: the owner's storage (area null) to the owner, and each area they may see.
-            'jobs' => FortressJob::query()->where('system_id', $system->id)->orderBy('id')->get(),
+            'assemblies' => FortressAssembly::query()->whereIn('inventory_item_id', $host->hosted($system)->pluck('id'))->get()->keyBy('inventory_item_id'),
             'designs' => SystemContent::query()->where('system_id', $system->id)->where('kind', ContentKind::Item->value)
                 ->whereHas('item.design')->with('item')->get(),
             'vault' => SystemContent::query()->where('system_id', $system->id)->whereIn('kind', [ContentKind::Data->value, ContentKind::Item->value])->with('item')->get()
@@ -249,32 +255,46 @@ class FortressController extends Controller
     public function cloak(Request $request, System $system, FortressCloak $cloak): RedirectResponse
     {
         $character = $request->user()->character()->firstOrFail();
-        $data = $request->validate(['grade' => ['required', 'integer', 'min:1', 'max:9'], 'type' => ['required', 'string'], 'entity' => ['nullable', 'integer']]);
+        $data = $request->validate([
+            'grade' => ['required', 'integer', 'min:1', 'max:9'], 'type' => ['required', 'string'], 'entity' => ['nullable', 'integer'],
+            'ice' => ['required', 'integer', 'min:0', 'max:255'], 'ids' => ['required', 'integer', 'min:0', 'max:65535'],
+            'tracer_detection' => ['required', 'integer', 'min:0', 'max:65535'], 'tracer_rate' => ['required', 'integer', 'min:0', 'max:65535'],
+            'os' => ['required', 'integer'],
+        ]);
 
-        return $this->back($system, $cloak->set($character, $system, (int) $data['grade'], $data['type'], isset($data['entity']) ? (int) $data['entity'] : null));
+        return $this->back($system, $cloak->set(
+            $character, $system, (int) $data['grade'], $data['type'], isset($data['entity']) ? (int) $data['entity'] : null,
+            ['ice' => (int) $data['ice'], 'ids' => (int) $data['ids'], 'tracer_detection' => (int) $data['tracer_detection'], 'tracer_rate' => (int) $data['tracer_rate'], 'os' => (int) $data['os']],
+        ));
     }
 
-    public function queueJob(Request $request, System $system, FortressProduction $production): RedirectResponse
+    public function relocation(Request $request, System $system, FortressRelocation $relocation): RedirectResponse
     {
         $character = $request->user()->character()->firstOrFail();
-        $data = $request->validate(['kind' => ['required', 'in:components,program'], 'design' => ['nullable', 'integer'], 'count' => ['nullable', 'integer', 'min:1', 'max:20']]);
+        $data = $request->validate(['hours' => ['required', 'integer']]);
 
-        return $this->back($system, $production->enqueue($character, $system, $data['kind'], isset($data['design']) ? (int) $data['design'] : null, (int) ($data['count'] ?? 1)));
+        return $this->back($system, $relocation->configure(
+            $character, $system, (int) $data['hours'],
+            $request->boolean('tell_owner'), $request->boolean('tell_admins'), $request->boolean('tell_members'),
+        ));
     }
 
-    public function cancelJob(Request $request, System $system, FortressJob $job, FortressProduction $production): RedirectResponse
+    public function productionAreas(Request $request, System $system, FortressProduction $production): RedirectResponse
     {
         $character = $request->user()->character()->firstOrFail();
+        $data = $request->validate(['type' => ['required', 'in:decryptor,assembler'], 'in' => ['nullable', 'integer'], 'out' => ['nullable', 'integer']]);
 
-        return $this->back($system, $production->cancel($character, $system, $job));
+        return $this->back($system, $production->setAreas(
+            $character, $system, $data['type'], isset($data['in']) ? (int) $data['in'] : null, isset($data['out']) ? (int) $data['out'] : null,
+        ));
     }
 
-    public function outputArea(Request $request, System $system, FortressProduction $production): RedirectResponse
+    public function assembler(Request $request, System $system, InventoryItem $row, FortressProduction $production): RedirectResponse
     {
         $character = $request->user()->character()->firstOrFail();
-        $data = $request->validate(['area' => ['nullable', 'integer']]);
+        $data = $request->validate(['design' => ['nullable', 'integer'], 'runs' => ['required', 'integer', 'min:0', 'max:100000']]);
 
-        return $this->back($system, $production->setOutput($character, $system, isset($data['area']) ? (int) $data['area'] : null));
+        return $this->back($system, $production->assign($character, $system, $row, isset($data['design']) ? (int) $data['design'] : null, (int) $data['runs']));
     }
 
     private function back(System $system, ?string $refusal): RedirectResponse

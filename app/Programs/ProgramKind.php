@@ -38,11 +38,13 @@ enum ProgramKind: string
     /** Spent by running: a program with a lifetime (`programs.lifetime_seconds`) that acts like a timed modifier. */
     case Script = 'script';
 
-    /** Finds the nearest system you have met that fits a description. Always running, and the map screen offers its search while it is. */
-    case Locator = 'locator';
-
-    /** A Locator that can also walk you to what it found (Autotraverse on the map). */
-    case Pathfinder = 'pathfinder';
+    /**
+     * A helper that runs in the background on the deck and does one or more of the things the `programs` flags `locates`,
+     * `walks` and `jumps` name. Locates: finds the nearest system you have met that fits a description (the map screen offers
+     * its search while it runs). Walks: walks you to what a Locator found (Autotraverse). Jumps: puts a Jump button beside
+     * every address. A Pathfinder is a program that locates and walks.
+     */
+    case Utility = 'utility';
 
     /**
      * Steals one of compute, RAM or storage from the system it is installed on for a Data Fortress, and is spent by
@@ -51,11 +53,19 @@ enum ProgramKind: string
      */
     case Leecher = 'leecher';
 
-    /** Programs hosted on a Data Fortress, never run on a deck. Tier order for the shutdown: producer, utility, IDS, ICE. */
-    case Producer = 'producer';
+    /** Programs hosted on a Data Fortress, never run on a deck. Tier order for the shutdown: Decryptors and Assemblers, the helpers, IDS, ICE. */
+    /** Turns the Encrypted Data Dumps held in the fortress into components, one at a time, deterministically. */
+    case FortressDecryptor = 'fortress_decryptor';
+    /** Makes a program from a Design and components held in the fortress, one Design at a time. */
+    case FortressAssembler = 'fortress_assembler';
+    /** Steals Encrypted Data Dumps from the nodes around the fortress into the Decryptors' input area, one roll per node per cycle. */
+    case FortressNetworkTap = 'fortress_network_tap';
+    /** Skims credits from the nodes around the fortress into its wallet, one roll per node per cycle. */
+    case FortressWiretap = 'fortress_wiretap';
     /** A helper that makes the fortress's producers work faster (its `produces.boost`, per cent). */
     case Booster = 'booster';
-    case Utility = 'utility';
+    /** A fortress-hosted helper with no effect of its own yet (the Cloak, Market and Relocation each have a kind of their own). */
+    case FortressDaemon = 'fortress_daemon';
     /** The fortress's public market: lists files from one storage area. */
     case Market = 'market';
     /** Makes the fortress read as empty; it has a strength, a decloaker beats it. */
@@ -82,9 +92,9 @@ enum ProgramKind: string
             // is something you do on the open grid and not only inside a run:
             // scanning IS the safe run type. It idles and listens, which is
             // the shape of a background job.
-            self::Decryptor, self::Daemon, self::Analyser, self::Script, self::Locator, self::Pathfinder => true,
+            self::Decryptor, self::Daemon, self::Analyser, self::Script, self::Utility => true,
             self::Icebreaker, self::Evasion, self::Leecher,
-            self::Producer, self::Booster, self::Utility, self::Market, self::Cloak, self::Relocation,
+            self::FortressDecryptor, self::FortressAssembler, self::FortressNetworkTap, self::FortressWiretap, self::Booster, self::FortressDaemon, self::Market, self::Cloak, self::Relocation,
             self::FortressIds, self::FortressIce, self::Kernel => false,
         };
     }
@@ -98,15 +108,15 @@ enum ProgramKind: string
     /** Hosted on a Data Fortress. */
     public function isHosted(): bool
     {
-        return in_array($this, [self::Producer, self::Booster, self::Utility, self::Market, self::Cloak, self::Relocation, self::FortressIds, self::FortressIce, self::Kernel], true);
+        return in_array($this, [self::FortressDecryptor, self::FortressAssembler, self::FortressNetworkTap, self::FortressWiretap, self::Booster, self::FortressDaemon, self::Market, self::Cloak, self::Relocation, self::FortressIds, self::FortressIce, self::Kernel], true);
     }
 
     /** Where it sits in the shutdown order: the lowest goes first, the Kernel last. */
     public function tier(): int
     {
         return match ($this) {
-            self::Producer => 0,
-            self::Booster, self::Utility, self::Market, self::Cloak, self::Relocation => 1,
+            self::FortressDecryptor, self::FortressAssembler, self::FortressNetworkTap, self::FortressWiretap => 0,
+            self::Booster, self::FortressDaemon, self::Market, self::Cloak, self::Relocation => 1,
             self::FortressIds => 2,
             self::FortressIce => 3,
             default => 4,

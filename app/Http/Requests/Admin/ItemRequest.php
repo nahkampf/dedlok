@@ -184,12 +184,15 @@ class ItemRequest extends FormRequest
             'lifetime_seconds' => $this->numberOrNull('lifetime_seconds'),
             // A Pathfinder's seconds per move: blank is the default (`cyberspace.locate.step_seconds`).
             'traverse_seconds' => $this->numberOrNull('traverse_seconds'),
-            // A Producer's outputs (blank is none) and a Booster's boost: stored together as `programs.produces`.
-            'produce_credits_min' => $this->numberOrNull('produce_credits_min'),
-            'produce_credits_max' => $this->numberOrNull('produce_credits_max'),
-            'produce_components' => $this->numberOrNull('produce_components'),
-            'produce_programs' => $this->numberOrNull('produce_programs'),
+            // A Decryptor's cycle, an Assembler's reduction and a Booster's boost: stored together as `programs.produces`.
+            'produce_cycle_minutes' => $this->numberOrNull('produce_cycle_minutes'),
+            'produce_reduction' => $this->numberOrNull('produce_reduction'),
             'produce_boost' => $this->numberOrNull('produce_boost'),
+            'produce_range' => $this->numberOrNull('produce_range'),
+            // A Leecher: the one resource it takes from the system it hangs on, and how much.
+            'leech_resource' => $this->filled('leech_resource') ? $this->input('leech_resource') : null,
+            'leech_amount' => $this->numberOrNull('leech_amount'),
+            'produce_strength' => $this->numberOrNull('produce_strength'),
             // A design: the product is what makes the item one. Lines with no component chosen are the form's spare rows.
             'design_product' => $this->filled('design_product') ? $this->input('design_product') : null,
             // The panel's own defaults (a level of 1) mean nothing when there is no product, so they are not values.
@@ -209,6 +212,10 @@ class ItemRequest extends FormRequest
             'storage_size' => $this->panelNumber('storage_size', $isProgramForm),
             'background_process' => $this->boolean('background_process'),
             'multithreaded' => $this->boolean('multithreaded'),
+            // A Utility's abilities (see ProgramKind::Utility).
+            'locates' => $this->boolean('locates'),
+            'walks' => $this->boolean('walks'),
+            'jumps' => $this->boolean('jumps'),
             // Which encryptions a Decryptor can break: ticked slugs, none ticked meaning any.
             'program_decrypts' => array_values(array_filter((array) $this->input('program_decrypts', []), 'is_string')),
             // Rows from the effects editor, turned into modifier definitions
@@ -454,17 +461,22 @@ class ItemRequest extends FormRequest
              * something this is false on.
              */
             'multithreaded' => ['boolean'],
+            'locates' => ['boolean'],
+            'walks' => ['boolean'],
+            'jumps' => ['boolean'],
             'lifetime_seconds' => $isProgram
                 ? ['nullable', 'integer', 'min:1', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
             'traverse_seconds' => $isProgram
                 ? ['nullable', 'integer', 'min:1', 'max:600']
                 : ['prohibited'],
-            'produce_credits_min' => $isProgram ? ['nullable', 'integer', 'min:0', 'max:1000000'] : ['prohibited'],
-            'produce_credits_max' => $isProgram ? ['nullable', 'integer', 'min:0', 'max:1000000', 'gte:produce_credits_min'] : ['prohibited'],
-            'produce_components' => $isProgram ? ['nullable', 'numeric', 'min:0', 'max:1000'] : ['prohibited'],
-            'produce_programs' => $isProgram ? ['nullable', 'numeric', 'min:0', 'max:1000'] : ['prohibited'],
+            'produce_cycle_minutes' => $isProgram ? ['nullable', 'numeric', 'min:1', 'max:100000'] : ['prohibited'],
+            'produce_reduction' => $isProgram ? ['nullable', 'numeric', 'min:0', 'max:100'] : ['prohibited'],
             'produce_boost' => $isProgram ? ['nullable', 'numeric', 'min:0', 'max:1000'] : ['prohibited'],
+            'leech_resource' => $isProgram ? ['nullable', 'in:compute,memory,storage'] : ['prohibited'],
+            'leech_amount' => $isProgram ? ['nullable', 'numeric', 'min:0', 'max:1000'] : ['prohibited'],
+            'produce_range' => $isProgram ? ['nullable', 'integer', 'min:0', 'max:20'] : ['prohibited'],
+            'produce_strength' => $isProgram ? ['nullable', 'numeric', 'min:0', 'max:1000'] : ['prohibited'],
 
             /*
              * A DESIGN (CRAFTING.md): plain data with a recipe. The product must be a program of a kind somebody can be taught to build,
@@ -955,9 +967,10 @@ class ItemRequest extends FormRequest
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
             $data['storage_size'], $data['lifetime_seconds'], $data['traverse_seconds'], $data['background_process'], $data['multithreaded'],
+            $data['locates'], $data['walks'], $data['jumps'],
             $data['design_product'], $data['design_seconds'], $data['design_single_use'], $data['design_skill_id'], $data['design_skill_level'], $data['design_lines'],
             $data['program_modifiers'], $data['program_decrypts'],
-            $data['produce_credits_min'], $data['produce_credits_max'], $data['produce_components'], $data['produce_programs'], $data['produce_boost'],
+            $data['produce_cycle_minutes'], $data['produce_reduction'], $data['produce_boost'], $data['produce_range'], $data['produce_strength'], $data['leech_resource'], $data['leech_amount'],
         );
 
         // Armour, weapons and ammunition live in tables of their own, not on the item.
@@ -1243,16 +1256,21 @@ class ItemRequest extends FormRequest
             'memory_cost' => Qb::of($data['memory_cost'] ?? 0),
             'storage_size' => Qb::of($data['storage_size'] ?? 0),
             'background_process' => (bool) ($data['background_process'] ?? false),
+            'leech_resource' => $data['leech_resource'] ?? null,
+            'leech_amount' => Qb::of($data['leech_amount'] ?? 0),
             'lifetime_seconds' => isset($data['lifetime_seconds']) ? (int) $data['lifetime_seconds'] : null,
             'traverse_seconds' => isset($data['traverse_seconds']) ? (int) $data['traverse_seconds'] : null,
             'produces' => ($produces = array_filter([
-                'credits_min' => isset($data['produce_credits_min']) ? (int) $data['produce_credits_min'] : null,
-                'credits_max' => isset($data['produce_credits_max']) ? (int) $data['produce_credits_max'] : null,
-                'components' => isset($data['produce_components']) ? (float) $data['produce_components'] : null,
-                'programs' => isset($data['produce_programs']) ? (float) $data['produce_programs'] : null,
+                'cycle_minutes' => isset($data['produce_cycle_minutes']) ? (float) $data['produce_cycle_minutes'] : null,
+                'reduction' => isset($data['produce_reduction']) ? (float) $data['produce_reduction'] : null,
                 'boost' => isset($data['produce_boost']) ? (float) $data['produce_boost'] : null,
+                'range' => isset($data['produce_range']) ? (int) $data['produce_range'] : null,
+                'strength' => isset($data['produce_strength']) ? (float) $data['produce_strength'] : null,
             ], fn ($v): bool => $v !== null)) === [] ? null : $produces,
             'multithreaded' => (bool) ($data['multithreaded'] ?? false),
+            'locates' => (bool) ($data['locates'] ?? false),
+            'walks' => (bool) ($data['walks'] ?? false),
+            'jumps' => (bool) ($data['jumps'] ?? false),
             // Null rather than [], because a program that only gates genuinely
             // modifies nothing and the two should not be different spellings
             // of one fact.

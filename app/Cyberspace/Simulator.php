@@ -1364,7 +1364,7 @@ final readonly class Simulator
             return [$log, false];
         }
 
-        $effective = $damage - (int) Config::get('cyberspace.fortress.kernel_resistance', 0);
+        $effective = $damage - $system->kernelResistance();
 
         if ($effective <= 0) {
             $log[] = $this->line('cyberspace.run.log.kernel_immune');
@@ -1372,7 +1372,7 @@ final readonly class Simulator
             return [$log, false];
         }
 
-        $left = max(0, (int) ($system->kernel_integrity ?? Config::get('cyberspace.fortress.kernel_integrity', 100)) - $effective);
+        $left = max(0, (int) ($system->kernel_integrity ?? $system->kernelIntegrityMax()) - $effective);
         $system->forceFill(['kernel_integrity' => $left])->save();
 
         if ($left > 0) {

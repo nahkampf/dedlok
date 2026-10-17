@@ -512,6 +512,7 @@
                         <span data-reading-position>—</span>
                         ·
                         <x-address address="—" data-reading-address />
+                        <x-jump address="—" data-reading-jump-address />
                     </p>
                 </div>
 

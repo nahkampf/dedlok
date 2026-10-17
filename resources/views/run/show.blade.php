@@ -121,7 +121,7 @@
             <div class="card__stats" style="padding:0;border:0">
                 <div class="card__stat">
                     <span>{{ Text::get('cyberspace.run.ice_grade') }}</span>
-                    <span class="tag tag--crit">{{ $ice->name }}</span>
+                    <span class="tag tag--crit">{{ \App\Cyberspace\FortressCloak::iceNameFor($run) }}</span>
                 </div>
                 <div class="card__stat">
                     <span>{{ Text::get('cyberspace.run.ice_integrity') }}</span>

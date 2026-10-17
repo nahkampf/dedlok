@@ -7,10 +7,12 @@ namespace Tests\Feature\Cyberspace;
 use App\Cyberspace\Leeches;
 use App\Cyberspace\SystemType;
 use App\Models\Character;
+use App\Models\CharacterSkill;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Leech;
 use App\Models\Program;
+use App\Models\Skill;
 use App\Models\System;
 use App\Programs\ProgramKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,7 +25,7 @@ final class LeechTest extends TestCase
     private function leecher(Character $c, int $copies = 2): void
     {
         $item = Item::query()->create(['slug' => 'storage-leecher', 'name' => 'Storage Leecher', 'container' => 'data', 'stackable' => true]);
-        Program::query()->create(['item_id' => $item->id, 'kind' => ProgramKind::Leecher, 'storage_size' => 4.5, 'qflops_cost' => 0, 'memory_cost' => 0, 'background_process' => false]);
+        Program::query()->create(['item_id' => $item->id, 'kind' => ProgramKind::Leecher, 'storage_size' => 0.4, 'leech_resource' => 'storage', 'leech_amount' => 4.5, 'qflops_cost' => 0, 'memory_cost' => 0, 'background_process' => false]);
         InventoryItem::query()->create(['character_id' => $c->id, 'item_id' => $item->id, 'quantity' => $copies]);
     }
 
@@ -53,5 +55,33 @@ final class LeechTest extends TestCase
         $this->assertSame(1, $leeches->discover(fn (): int => 1));
         $this->assertSame(0.0, $leeches->totals($fortress)['storage']);
         $this->assertSame(0, Leech::query()->count());
+    }
+
+    public function test_the_chance_is_the_hosts_grade_lowered_by_a_percentage_of_it_with_a_floor(): void
+    {
+        $c = Character::factory()->create();
+        System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
+        $host = System::factory()->at(2, 2)->create(['grade' => 5]);
+        $this->leecher($c);
+        $leeches = new Leeches;
+        $leeches->install($c, $host);
+
+        // Grade V is 12 per cent: a roll of exactly 1200 finds it, 1201 does not (and nothing is removed on a dry run).
+        $this->assertSame(0, $leeches->discover(fn (): int => 1201, true));
+        $this->assertSame(1, $leeches->discover(fn (): int => 1200, true));
+
+        // Five levels of 2 per cent of the base is 10 per cent of 12: 10.8. A roll of 1100 now misses; 1080 still finds it.
+        $skill = Skill::factory()->rank(1)->governedBy('memory', 'focus')->create([
+            'slug' => 'concealment_t',
+            'modifiers' => array_map(fn (int $l): array => ['op' => 'percentage_of_base', 'level' => $l, 'amount' => -2, 'target' => ['id' => 'leech_discovery']], range(1, 5)),
+        ]);
+        CharacterSkill::create(['character_id' => $c->id, 'skill_id' => $skill->id, 'skill_points' => $skill->pointsForLevel(5), 'attained_level' => 5]);
+        $this->assertSame(0, $leeches->discover(fn (): int => 1100, true));
+        $this->assertSame(1, $leeches->discover(fn (): int => 1080, true));
+
+        // Never below the floor: a skill that takes it all away still leaves 0.5 per cent.
+        config(['cyberspace.fortress.leech_discovery' => [5 => 0.1]]);
+        $this->assertSame(1, $leeches->discover(fn (): int => 50, true));
+        $this->assertSame(0, $leeches->discover(fn (): int => 51, true));
     }
 }

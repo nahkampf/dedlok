@@ -8,6 +8,7 @@ use App\Decks\Storage;
 use App\Models\Character;
 use App\Models\FortressArea;
 use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\System;
 use App\Models\SystemContent;
 use App\Support\Qb;
@@ -65,6 +66,8 @@ final class FortressVault
                 'value_broken' => $file->valueBroken,
                 'area_id' => $area?->getKey(),
                 'deposited_by' => $character->getKey(),
+                // Where it came from and whether it is still sealed, so a Decryptor can read its grade and a withdrawal gives it back as it was.
+                'meta' => ['extracted_file' => $file->toArray(), 'slug' => $slug],
             ]);
 
             FortressLog::write($fortress, $character, 'deposit', $file->label.($area === null ? '' : " -> {$area->name}"));
@@ -138,7 +141,14 @@ final class FortressVault
                 FortressLog::write($fortress, $character, 'withdraw', ($content->item?->displayName() ?? '').' x'.$content->quantity);
             } else {
                 FortressLog::write($fortress, $character, 'withdraw', (string) $content->label);
-                (new Extractor)->deliver($character, $content);
+                $meta = (array) $content->meta;
+                $kept = isset($meta['extracted_file']) ? Item::query()->where('slug', $meta['slug'] ?? ExtractedFile::SEALED_SLUG)->first() : null;
+
+                if ($kept !== null) {
+                    $character->inventory()->create(['item_id' => $kept->getKey(), 'parent_id' => null, 'quantity' => 1, 'extracted_file' => $meta['extracted_file']]);
+                } else {
+                    (new Extractor)->deliver($character, $content);
+                }
             }
 
             $content->delete();

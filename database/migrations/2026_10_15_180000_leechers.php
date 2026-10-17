@@ -30,13 +30,13 @@ return new class extends Migration
             $table->unique(['character_id', 'host_system_id'], 'uniq_leech_per_player_per_node');
         });
 
-        $this->kinds(ProgramKind::values());
+        $this->kinds([...ProgramKind::values(), 'locator', 'pathfinder']);
     }
 
     public function down(): void
     {
         Schema::dropIfExists('leeches');
-        $this->kinds(array_values(array_diff(ProgramKind::values(), ['leecher'])));
+        $this->kinds(array_values(array_diff([...ProgramKind::values(), 'locator', 'pathfinder'], ['leecher'])));
     }
 
     /** @param  list<string>  $kinds */

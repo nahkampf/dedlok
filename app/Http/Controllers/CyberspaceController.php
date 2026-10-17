@@ -15,6 +15,7 @@ use App\Cyberspace\FortressCloak;
 use App\Cyberspace\Fortresses;
 use App\Cyberspace\FortressRefusal;
 use App\Cyberspace\Grid;
+use App\Cyberspace\Jumper;
 use App\Cyberspace\MapView;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Position;
@@ -198,10 +199,10 @@ class CyberspaceController extends Controller
                 ? ($live = System::query()->at($character->gridPosition())->first()) === null ? null : FortressCloak::mask($live, $character)
                 : null,
             'canRun' => $target !== null && $target->type->isInteractable() && ! $target->isLockedDown(),
-            // A Data Fortress Kernel in the stash, offered only on an empty square (founding is Fortresses' to refuse).
-            'kernel' => $character->isJackedIn() && $target === null
-                ? $character->inventory()->loose()->whereHas('item', fn ($q) => $q->where('slug', config('cyberspace.fortress.kernel')))->first()
-                : null,
+            // The Kernels in the stash, a button each, offered only on an empty square (founding is Fortresses' to refuse).
+            'kernels' => $character->isJackedIn() && $target === null
+                ? $character->inventory()->loose()->kernels()->with('item')->get()
+                : collect(),
             // A transport job whose container this is the place for: the Interact box's Upload button.
             'upload' => $character->isJackedIn() ? app(MissionLedger::class)->uploadable($character) : null,
             // Authored encounters offered at this system: a button each in the Interact box.
@@ -592,10 +593,20 @@ class CyberspaceController extends Controller
             'address' => ['required', 'string', 'max:32'],
         ]);
 
-        return $this->settle(
-            Navigator::fromConfig($resolver)->jump($this->character($request), $data['address']),
-            null,
-        );
+        // A button beside an address (`via` = jumper) needs a Jumper running; the typed box on the map is free.
+        $viaButton = $request->input('via') === 'jumper';
+
+        if ($viaButton && ! Jumper::available($this->character($request))) {
+            return back()->with('error', Text::get('cyberspace.map.jump_needs_jumper'));
+        }
+
+        $result = Navigator::fromConfig($resolver)->jump($this->character($request), $data['address']);
+        $response = $this->settle($result, null);
+
+        // From another screen a landed jump opens the map; a hunt or encounter keeps the screen it took.
+        return $viaButton && $result->succeeded() && ! $result->wasAmbushed() && ! $result->metSomething()
+            ? redirect()->route('cyberspace.index')
+            : $response;
     }
 
     public function recall(Request $request, Bookmark $bookmark, Resolver $resolver): RedirectResponse
@@ -618,8 +629,7 @@ class CyberspaceController extends Controller
     public function found(Request $request): RedirectResponse
     {
         $character = $this->character($request);
-        $kernel = $character->inventory()->loose()
-            ->whereHas('item', fn ($q) => $q->where('slug', config('cyberspace.fortress.kernel')))->first();
+        $kernel = $character->inventory()->loose()->kernels()->whereKey((int) $request->input('kernel'))->first();
 
         if ($kernel === null) {
             return back()->with('error', FortressRefusal::NotAKernel->message());

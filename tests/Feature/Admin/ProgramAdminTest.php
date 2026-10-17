@@ -129,6 +129,16 @@ final class ProgramAdminTest extends TestCase
         $this->assertNull($program->modifiers, 'a program that only gates modifies nothing');
     }
 
+    public function test_a_tap_keeps_its_range_strength_and_cycle_and_a_fraction_of_a_square_is_refused(): void
+    {
+        $tap = ['program_kind' => ProgramKind::FortressNetworkTap->value, 'produce_cycle_minutes' => 120, 'produce_range' => 1, 'produce_strength' => 30];
+        $this->actingAs($this->admin())->post(route('admin.items.store'), $this->payload($tap))->assertRedirect();
+
+        $this->assertEquals(['cycle_minutes' => 120.0, 'range' => 1, 'strength' => 30.0], Item::where('slug', 'ghostwire')->firstOrFail()->program->produces);
+
+        $this->post(route('admin.items.store'), $this->payload(array_merge($tap, ['slug' => 'other', 'produce_range' => 1.5])))->assertSessionHasErrors('produce_range');
+    }
+
     public function test_modifiers_arrive_as_json_and_are_stored_as_data(): void
     {
         $this->actingAs($this->admin())

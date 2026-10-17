@@ -23,12 +23,12 @@ return new class extends Migration
             $table->timestamp('abandoned_at')->nullable()->comment('When a Data Fortress went offline (its Kernel could no longer run on the Leechers\' totals). NULL is online. Past the grace period it is deleted.');
         });
 
-        $this->kinds(ProgramKind::values());
+        $this->kinds([...ProgramKind::values(), 'locator', 'pathfinder']);
     }
 
     public function down(): void
     {
-        $this->kinds(array_values(array_diff(ProgramKind::values(), ['kernel', 'fortress_ids', 'fortress_ice', 'utility', 'producer'])));
+        $this->kinds(array_values(array_diff([...ProgramKind::values(), 'locator', 'pathfinder'], ['kernel', 'fortress_ids', 'fortress_ice', 'utility', 'producer'])));
 
         Schema::table('systems', fn (Blueprint $t) => $t->dropColumn('abandoned_at'));
         Schema::table('inventory_items', function (Blueprint $table): void {

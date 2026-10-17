@@ -8,6 +8,7 @@ use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\ScanFact;
 use App\Cyberspace\ScanFile;
 use App\Cyberspace\SystemType;
+use App\Programs\ProgramKind;
 use App\Support\Qb;
 use App\Support\Text;
 use Carbon\Carbon;
@@ -582,6 +583,12 @@ class InventoryItem extends Model
             // The offer row is the fact — see App\Market\OfferBook — so there
             // is no column to keep in step with it.
             ->whereDoesntHave('offer');
+    }
+
+    /** Data Fortress Kernels: any item whose program is of kind `kernel`. @param  Builder<self>  $query */
+    public function scopeKernels(Builder $query): void
+    {
+        $query->whereHas('item.program', fn (Builder $program) => $program->where('kind', ProgramKind::Kernel->value));
     }
 
     /** @param  Builder<self>  $query */

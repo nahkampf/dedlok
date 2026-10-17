@@ -267,9 +267,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/fortress/{system}/market/listing/{listing}', [FortressController::class, 'unlistFile'])->name('fortress.market.unlist');
     Route::post('/fortress/{system}/wallet', [FortressController::class, 'withdrawWallet'])->name('fortress.wallet');
     Route::post('/fortress/{system}/cloak', [FortressController::class, 'cloak'])->name('fortress.cloak');
-    Route::post('/fortress/{system}/jobs', [FortressController::class, 'queueJob'])->name('fortress.jobs.queue');
-    Route::delete('/fortress/{system}/jobs/{job}', [FortressController::class, 'cancelJob'])->name('fortress.jobs.cancel');
-    Route::post('/fortress/{system}/output', [FortressController::class, 'outputArea'])->name('fortress.output');
+    Route::post('/fortress/{system}/relocation', [FortressController::class, 'relocation'])->name('fortress.relocation');
+    Route::post('/fortress/{system}/production-areas', [FortressController::class, 'productionAreas'])->name('fortress.production.areas');
+    Route::post('/fortress/{system}/assemblers/{row}', [FortressController::class, 'assembler'])->name('fortress.assembler');
     Route::post('/fortress/{system}/settings', [FortressController::class, 'settings'])->name('fortress.settings');
     Route::post('/fortress/{system}/invite', [FortressController::class, 'inviteMember'])->name('fortress.invite');
     Route::post('/fortress/{system}/revoke/{member}', [FortressController::class, 'revokeMember'])->name('fortress.revoke');

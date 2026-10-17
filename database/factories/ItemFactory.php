@@ -205,6 +205,7 @@ class ItemFactory extends Factory
         ?bool $background = null,
         array $modifiers = [],
         ?int $lifetime = null,
+        array $abilities = [],
     ): static {
         return $this
             ->state([
@@ -212,7 +213,7 @@ class ItemFactory extends Factory
                 'hardware' => null,
                 'stackable' => true,
             ])
-            ->afterCreating(function (Item $item) use ($kind, $qflops, $memory, $storage, $background, $modifiers, $lifetime): void {
+            ->afterCreating(function (Item $item) use ($kind, $qflops, $memory, $storage, $background, $modifiers, $lifetime, $abilities): void {
                 Program::create([
                     'item_id' => $item->id,
                     'kind' => $kind,
@@ -222,7 +223,7 @@ class ItemFactory extends Factory
                     'lifetime_seconds' => $lifetime,
                     'background_process' => $background ?? $kind->runsInBackgroundByDefault(),
                     'modifiers' => $modifiers === [] ? null : $modifiers,
-                ]);
+                ] + $abilities);
             });
     }
 }

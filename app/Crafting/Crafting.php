@@ -382,7 +382,8 @@ final class Crafting
             ->values();
     }
 
-    private function accepts(DesignComponent $line, ?ExtractedFile $file): bool
+    /** Does a file of this origin satisfy the line's filters? (A Fortress Assembler asks it too.) */
+    public function accepts(DesignComponent $line, ?ExtractedFile $file): bool
     {
         $origin = $file?->origin;
 

@@ -459,7 +459,7 @@ final class DecryptionQueue
      * (`cyberspace.decryption.components`, every column summing to 100). A file with no recorded grade is read as grade 1.
      * A component whose item has not been authored is skipped, and nothing at all falls back to the Memory Dump.
      */
-    private function outcomeFor(ExtractedFile $file): ?Item
+    public function outcomeFor(ExtractedFile $file): ?Item
     {
         $grade = max(1, min(9, $file->grade ?? 1));
         $weights = [];

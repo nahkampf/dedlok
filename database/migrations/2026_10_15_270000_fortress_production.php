@@ -42,7 +42,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        DB::getDriverName() === 'mysql' && $this->kinds(ProgramKind::values());
+        DB::getDriverName() === 'mysql' && $this->kinds([...ProgramKind::values(), 'locator', 'pathfinder']);
     }
 
     public function down(): void
@@ -53,7 +53,7 @@ return new class extends Migration
         Schema::table('system_contents', fn (Blueprint $t) => $t->dropColumn('meta'));
         Schema::table('programs', fn (Blueprint $t) => $t->dropColumn('produces'));
 
-        DB::getDriverName() === 'mysql' && $this->kinds(array_values(array_diff(ProgramKind::values(), ['booster'])));
+        DB::getDriverName() === 'mysql' && $this->kinds(array_values(array_diff([...ProgramKind::values(), 'locator', 'pathfinder'], ['booster'])));
     }
 
     /** @param  list<string>  $kinds */

@@ -595,6 +595,19 @@ final class Probe
         $found = [];
         $rolls = [];
 
+        /*
+         * A CLOAK IS TESTED ONCE PER FILE, before anything else is read. The owner and anybody admitted are never fooled; for
+         * anybody else it is one roll of the reading against the Cloak's stealth. Seen through, the facts below come from the
+         * real fortress; held, from the false face, and the file never learns there was a disguise.
+         */
+        $source = $system;
+
+        if (FortressCloak::active($system)) {
+            $scan->cloak_broken ??= FortressAccess::admitted($character, $system)
+                || $this->roller->roll($reading, FortressCloak::stealth($system), 'scan')->passed;
+            $source = $scan->cloak_broken ? $system : FortressCloak::face($system);
+        }
+
         Trace::note('scan.resolve', [
             'address' => $system->address, 'reading' => $reading, 'difficulty' => $difficulty,
             'unknowns' => $scan->unknowns(), 'scan' => Trace::describe($scan),
@@ -611,15 +624,15 @@ final class Probe
             $found[] = $unknown;
 
             match ($unknown) {
-                'grade' => $scan->grade = FortressCloak::mask($system, $character)->grade,
-                'os' => $scan->os_skill_id = $system->os_skill_id,
+                'grade' => $scan->grade = $source->grade,
+                'os' => $scan->os_skill_id = $source->os_skill_id,
                 // A machine with no intrusion detection answers ZERO rather
                 // than staying null: "there is none" is a finding, and it is
                 // most of what somebody scans a machine to hear.
-                'ids' => $scan->ids_detection = $system->ids_detection,
+                'ids' => $scan->ids_detection = $source->ids_detection,
                 'tracer' => [
-                    $scan->tracer_detection = $system->tracer_detection,
-                    $scan->tracer_rate = $system->tracer_rate,
+                    $scan->tracer_detection = $source->tracer_detection,
+                    $scan->tracer_rate = $source->tracer_rate,
                 ],
                 // The LEVEL, never the row id: a scan outlives the machine and
                 // must not point at a catalogue row that could be deleted.
@@ -629,8 +642,8 @@ final class Probe
                 // an ICE XII and knowing the owner answers for it are one
                 // assessment, and half of it is half a decision.
                 'ice' => [
-                    $scan->ice_level = $system->ice?->level ?? 0,
-                    $scan->ice_bounty = $system->carriesBounty(),
+                    $scan->ice_level = $source->ice?->level ?? 0,
+                    $scan->ice_bounty = $source->carriesBounty(),
                 ],
                 // Nothing can read a cloak, so ScanFact::Cloaked is not
                 // discoverable and the loop above never yields it. Named all

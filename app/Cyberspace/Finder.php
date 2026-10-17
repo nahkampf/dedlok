@@ -21,38 +21,37 @@ use App\Programs\ProgramKind;
  */
 final class Finder
 {
-    /** Does the character have a Locator (or a Pathfinder, which is one that also walks) running on the equipped deck? */
+    /** Does the character have a Utility that locates (a Locator, or a Pathfinder, which also walks) running on the equipped deck? */
     public function available(Character $character): bool
     {
-        return $this->running($character, ProgramKind::Locator, ProgramKind::Pathfinder);
+        return $this->program($character) !== null;
     }
 
-    /** The Locator or Pathfinder that is running, if any. There is at most one: they share a slot. */
+    /** The Utility that locates, if one is running. There is at most one: locating and walking share a slot. */
     public function program(Character $character): ?InventoryItem
     {
-        return $character->runningProcesses()->first(
-            static fn ($row): bool => in_array($row->item?->program?->kind, [ProgramKind::Locator, ProgramKind::Pathfinder], true),
-        );
+        return $this->running($character, 'locates');
     }
 
-    /** Can the character have the grid walked for them? Only a running Pathfinder does it. */
+    /** Can the character have the grid walked for them? Only a running Utility that walks does it. */
     public function canTraverse(Character $character): bool
     {
-        return $this->running($character, ProgramKind::Pathfinder);
+        return $this->running($character, 'walks') !== null;
     }
 
-    /** Seconds per move of the running Pathfinder: its own `traverse_seconds`, else ten. */
+    /** Seconds per move of the running walker: its own `traverse_seconds`, else ten. */
     public function stepSeconds(Character $character): int
     {
-        $own = $this->program($character)?->item?->program?->traverse_seconds;
+        $own = $this->running($character, 'walks')?->item?->program?->traverse_seconds;
 
         return max(1, (int) ($own ?? 10));
     }
 
-    private function running(Character $character, ProgramKind ...$kinds): bool
+    /** The running Utility with this ability, if any. */
+    private function running(Character $character, string $ability): ?InventoryItem
     {
-        return $character->runningProcesses()->contains(
-            static fn ($row): bool => in_array($row->item?->program?->kind, $kinds, true),
+        return $character->runningProcesses()->first(
+            static fn ($row): bool => $row->item?->program?->kind === ProgramKind::Utility && $row->item->program->{$ability},
         );
     }
 

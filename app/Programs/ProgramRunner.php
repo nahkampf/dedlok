@@ -126,8 +126,13 @@ final class ProgramRunner
         }
 
         // One locator at a time, a Pathfinder counting as one: two would be two search boxes answering one question.
-        if (in_array($program->kind, [ProgramKind::Locator, ProgramKind::Pathfinder], true) && $this->kindRunning($character, ProgramKind::Locator, ProgramKind::Pathfinder)) {
+        if ($program->kind === ProgramKind::Utility && ($program->locates || $program->walks) && $this->utilityRunning($character, 'locates', 'walks')) {
             return ProcessRefusal::OneLocator;
+        }
+
+        // And one Jumper: its own slot, beside a locator.
+        if ($program->kind === ProgramKind::Utility && $program->jumps && $this->utilityRunning($character, 'jumps')) {
+            return ProcessRefusal::OneJumper;
         }
 
         /*
@@ -268,6 +273,22 @@ final class ProgramRunner
     private function icebreakerRunning(Character $character): bool
     {
         return $this->kindRunning($character, ProgramKind::Icebreaker);
+    }
+
+    /** Is a running Utility on the deck with any of these abilities (`locates`, `walks`, `jumps`)? */
+    private function utilityRunning(Character $character, string ...$flags): bool
+    {
+        return InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->whereNotNull('running_on_deck_id')
+            ->whereHas('item.program', static function ($q) use ($flags): void {
+                $q->where('kind', ProgramKind::Utility->value)->where(static function ($w) use ($flags): void {
+                    foreach ($flags as $flag) {
+                        $w->orWhere($flag, true);
+                    }
+                });
+            })
+            ->exists();
     }
 
     private function kindRunning(Character $character, ProgramKind ...$kinds): bool

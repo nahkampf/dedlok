@@ -658,8 +658,13 @@ class Item extends Model
 
         $lines[] = Text::get($program->multithreaded ? 'programs.spec.multithreaded' : 'programs.spec.single_instance');
 
-        if (in_array($program->kind, [ProgramKind::Locator, ProgramKind::Pathfinder], true)) {
-            $lines[] = Text::get('programs.spec.one_locator');
+        if ($program->kind === ProgramKind::Utility) {
+            foreach (['locates', 'walks', 'jumps'] as $ability) {
+                $program->{$ability} && $lines[] = Text::get("programs.spec.{$ability}");
+            }
+
+            ($program->locates || $program->walks) && $lines[] = Text::get('programs.spec.one_locator');
+            $program->jumps && $lines[] = Text::get('programs.spec.one_jumper');
         }
 
         return $lines;
@@ -726,8 +731,7 @@ class Item extends Model
         'analyser' => "\u{2315}",
         'daemon' => "\u{23E3}",
         'script' => "\u{21AF}",
-        'locator' => "\u{27A4}",
-        'pathfinder' => "\u{2B95}",
+        'utility' => "\u{27A4}",
     ];
 
     /** @param  Builder<self>  $query */

@@ -76,6 +76,9 @@ enum ProcessRefusal: string
     /** A Locator and a Pathfinder are one slot between them. */
     case OneLocator = 'one_locator';
 
+    /** One program that puts Jump buttons beside addresses at a time. */
+    case OneJumper = 'one_jumper';
+
     /** Listed on the market: the offer promises the buyer it is untouched, so it cannot be run meanwhile. */
     case Listed = 'listed';
 

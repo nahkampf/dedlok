@@ -10,6 +10,7 @@ use App\Models\Item;
 use App\Models\System;
 use App\Programs\ProgramKind;
 use App\Stats\Resolver;
+use App\Stats\SkillStats;
 
 /**
  * The numbers a crafted fortress ICE or IDS carries on its own inventory row, and how they decay.
@@ -24,27 +25,11 @@ final class FortressDefence
     /** Stamp a freshly crafted row. No-op for a program that is not a fortress defence. */
     public static function stamp(Character $maker, InventoryItem $row): void
     {
-        $kind = $row->item?->program?->kind;
+        $numbers = self::numbersFor($maker, $row->item);
 
-        $key = match ($kind) {
-            ProgramKind::FortressIce => 'ice',
-            ProgramKind::FortressIds => 'ids',
-            ProgramKind::Cloak => 'cloak',
-            default => null,
-        };
-
-        if ($key === null) {
-            return;
+        if ($numbers !== []) {
+            $row->forceFill(['defence' => $numbers])->save();
         }
-
-        $base = (array) config("cyberspace.fortress.defence.{$key}", []);
-        $quality = app(Resolver::class)->resolve('defence_quality', 0.0, $maker->modifiers())->value;
-        $scale = 1 + max(0.0, (float) $quality) / 100;
-
-        $values = array_map(fn ($v): int => (int) round($v * $scale), $base);
-
-        // `crafted` is what it came out as: maintenance may raise the numbers, but not past a ceiling over this.
-        $row->forceFill(['defence' => $values + ['crafted' => $values, 'cut' => 0, 'maintained_at' => null]])->save();
     }
 
     /** The numbers a copy would carry if `$maker` made it (null maker: the base). Used when a producer makes one. @return array<string, mixed> */
@@ -54,6 +39,7 @@ final class FortressDefence
             ProgramKind::FortressIce => 'ice',
             ProgramKind::FortressIds => 'ids',
             ProgramKind::Cloak => 'cloak',
+            ProgramKind::Booster => 'booster',
             default => null,
         };
 
@@ -61,11 +47,50 @@ final class FortressDefence
             return [];
         }
 
-        $base = (array) config("cyberspace.fortress.defence.{$key}", []);
-        $quality = $maker === null ? 0.0 : (float) app(Resolver::class)->resolve('defence_quality', 0.0, $maker->modifiers())->value;
-        $values = array_map(fn ($v): int => (int) round($v * (1 + max(0.0, $quality) / 100)), $base);
+        // A Booster is its boost alone: the program's own figure, scaled by the maker. It neither decays nor is maintained.
+        if ($key === 'booster') {
+            return self::scaled($maker, $key, ['boost' => (float) ($item->program->produces['boost'] ?? 0)]);
+        }
 
+        // A Cloak is its stealth alone, scaled by the maker, and it too neither decays nor is maintained.
+        if ($key === 'cloak') {
+            $stealth = $item->program->produces['strength'] ?? null;
+
+            return self::scaled($maker, $key, $stealth === null ? null : ['strength' => (float) $stealth]);
+        }
+
+        $values = self::scaled($maker, $key);
+
+        // `crafted` is what it came out as: maintenance may raise the numbers, but not past a ceiling over this.
         return $values + ['crafted' => $values, 'cut' => 0, 'maintained_at' => null];
+    }
+
+    /**
+     * The base numbers of one defence ('ice', 'ids', 'cloak') scaled by the maker's quality: the general `defence_quality`
+     * plus, for ICE and IDS, the product's own `defence_quality.<key>`. A Booster (whose base is handed in) and a Cloak take
+     * only their own. A null maker is the base.
+     *
+     * @param  array<string, float>|null  $base
+     * @return array<string, int|float>
+     */
+    private static function scaled(?Character $maker, string $key, ?array $base = null): array
+    {
+        $base ??= (array) config("cyberspace.fortress.defence.{$key}", []);
+        $quality = 0.0;
+
+        if ($maker !== null) {
+            $resolver = app(Resolver::class);
+            $modifiers = $maker->modifiers();
+            $quality = in_array($key, ['booster', 'cloak'], true) ? 0.0 : (float) $resolver->resolve('defence_quality', 0.0, $modifiers)->value;
+
+            if (in_array($key, ['ice', 'ids', 'booster', 'cloak'], true)) {
+                $quality += (float) $resolver->resolve(SkillStats::QUALITY_PREFIX.$key, 0.0, $modifiers)->value;
+            }
+        }
+
+        $scale = 1 + max(0.0, $quality) / 100;
+
+        return array_map(fn ($v): int|float => $key === 'booster' ? round($v * $scale, 1) : (int) round($v * $scale), $base);
     }
 
     /** @return array<string, int> attack/integrity (ICE) or detection (IDS), after decay */
@@ -88,7 +113,7 @@ final class FortressDefence
     /** Called on installing: the clock starts. */
     public static function installed(InventoryItem $row): void
     {
-        if ($row->defence !== null) {
+        if (isset($row->defence['crafted'])) {
             $row->forceFill(['defence' => array_merge($row->defence, ['maintained_at' => now()->getTimestamp()])])->save();
         }
     }
@@ -96,7 +121,7 @@ final class FortressDefence
     /** Called on taking down: settle the decay, then freeze. */
     public static function uninstalled(InventoryItem $row): void
     {
-        if ($row->defence !== null) {
+        if (isset($row->defence['crafted'])) {
             $keep = array_intersect_key((array) $row->defence, ['crafted' => 1, 'cut' => 1]);
             $row->forceFill(['defence' => self::effective($row) + $keep + ['maintained_at' => null]])->save();
         }
@@ -109,7 +134,7 @@ final class FortressDefence
             return 'not_yours';
         }
 
-        if ($row->defence === null || (int) $row->fortress_system_id !== (int) $fortress->getKey()) {
+        if (! isset($row->defence['crafted']) || (int) $row->fortress_system_id !== (int) $fortress->getKey()) {
             return 'not_hosted';
         }
 

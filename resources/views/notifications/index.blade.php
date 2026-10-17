@@ -101,7 +101,7 @@
                                         <ul>
                                             @foreach ($message->details['targets'] as $target)
                                                 <li>
-                                                    <x-address :address="$target['address']" />
+                                                    <x-address :address="$target['address']" /> <x-jump :address="$target['address']" />
                                                     @if (! empty($target['grade']))
                                                         · {{ Text::get('notifications.details.grade', ['grade' => $target['grade']]) }}
                                                     @endif
@@ -113,7 +113,7 @@
                                     {{-- A finished read: every row the system overview shows, as they stood when it
                                          finished. --}}
                                     @if (! empty($message->details['address']))
-                                        <span class="micro"><x-address :address="$message->details['address']" /></span>
+                                        <span class="micro"><x-address :address="$message->details['address']" /> <x-jump :address="$message->details['address']" /></span>
                                     @endif
                                     <x-scan-facts :facts="$message->details['facts']" />
                                 @elseif (! empty($message->details['link']))
@@ -125,7 +125,7 @@
                                                 <li>
                                                     {{ $line['system'] ?? '' }}
                                                     @if (! empty($line['address']))
-                                                        · <x-address :address="$line['address']" />
+                                                        · <x-address :address="$line['address']" /> <x-jump :address="$line['address']" />
                                                     @endif
                                                     · {{ Text::get('notifications.details.grade', ['grade' => $line['grade'] ?? '?']) }}
                                                     · <span class="num">{{ Number::format((int) ($line['creds'] ?? 0)) }} ¤</span>

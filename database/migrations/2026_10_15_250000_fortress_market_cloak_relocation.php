@@ -34,7 +34,7 @@ return new class extends Migration
             $table->timestamp('turn_at')->nullable()->comment('When this run last took a turn. A run against a Data Fortress takes one a fixed 30 seconds apart.');
         });
 
-        DB::getDriverName() === 'mysql' && $this->kinds(ProgramKind::values());
+        DB::getDriverName() === 'mysql' && $this->kinds([...ProgramKind::values(), 'locator', 'pathfinder']);
     }
 
     public function down(): void
@@ -43,7 +43,7 @@ return new class extends Migration
         Schema::dropIfExists('fortress_listings');
         Schema::table('systems', fn (Blueprint $t) => $t->dropColumn(['wallet', 'market_tax', 'market_area_id', 'fortress_cloak', 'relocated_at']));
 
-        DB::getDriverName() === 'mysql' && $this->kinds(array_values(array_diff(ProgramKind::values(), ['market', 'cloak', 'relocation'])));
+        DB::getDriverName() === 'mysql' && $this->kinds(array_values(array_diff([...ProgramKind::values(), 'locator', 'pathfinder'], ['market', 'cloak', 'relocation'])));
     }
 
     /** @param  list<string>  $kinds */

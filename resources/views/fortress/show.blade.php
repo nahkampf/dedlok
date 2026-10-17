@@ -109,42 +109,51 @@
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
     <div class="panel__hd"><span class="micro">{{ Text::get('cyberspace.fortress.host.production') }}</span></div>
     <div class="panel__bd stack" style="--gap:var(--s-3)">
-        @if ($role === 'owner')
-            <form method="POST" action="{{ route('fortress.output', $fortress) }}" class="row row--wrap" style="--gap:var(--s-2);align-items:flex-end">
+        {{-- Where each type takes from and puts to. Not choosing an area is the owner's storage. --}}
+        @foreach (['decryptor', 'assembler'] as $type)
+            <form method="POST" action="{{ route('fortress.production.areas', $fortress) }}" class="row row--wrap" style="--gap:var(--s-2);align-items:flex-end">
                 @csrf
-                <label class="field"><span class="field__label">{{ Text::get('cyberspace.fortress.host.output') }}</span>
-                    <select class="input" name="area">
-                        <option value="">{{ Text::get('cyberspace.fortress.host.owner_storage') }}</option>
-                        @foreach ($areas as $area)
-                            <option value="{{ $area->id }}" @selected((int) $fortress->output_area_id === $area->id)>{{ $area->name }}</option>
-                        @endforeach
-                    </select></label>
+                <input type="hidden" name="type" value="{{ $type }}">
+                <span class="micro" style="flex-basis:100%">{{ Text::get("cyberspace.fortress.host.production_{$type}") }}</span>
+                @foreach (['in' => 'area_in', 'out' => 'area_out'] as $side => $label)
+                    <label class="field"><span class="field__label">{{ Text::get("cyberspace.fortress.host.{$label}") }}</span>
+                        <select class="input" name="{{ $side }}">
+                            <option value="">{{ Text::get('cyberspace.fortress.host.owner_storage') }}</option>
+                            @foreach ($areas as $area)
+                                <option value="{{ $area->id }}" @selected((int) $fortress->{"{$type}_{$side}_area_id"} === $area->id)>{{ $area->name }}</option>
+                            @endforeach
+                        </select></label>
+                @endforeach
                 <button class="btn btn--sm cut" type="submit">{{ Text::get('cyberspace.fortress.host.save') }}</button>
             </form>
-        @endif
-        @foreach ($jobs as $job)
-            <div class="row row--wrap" style="justify-content:space-between;align-items:center">
-                <span>{{ $job->kind === 'program' ? Text::get('cyberspace.fortress.host.job_program') : Text::get('cyberspace.fortress.host.job_components') }}
-                    <span class="micro num" style="color:var(--ink-3)">{{ number_format(min(100, $job->progress / max(0.001, $job->work) * 100)) }}%@if (! $job->started && $job->kind === 'program') · {{ Text::get('cyberspace.fortress.host.blocked') }}@endif</span></span>
-                <form method="POST" action="{{ route('fortress.jobs.cancel', [$fortress, $job]) }}">@csrf @method('DELETE')
-                    <button class="btn btn--sm btn--ghost cut" type="submit">{{ Text::get('cyberspace.fortress.host.cancel') }}</button></form>
-            </div>
         @endforeach
-        <form method="POST" action="{{ route('fortress.jobs.queue', $fortress) }}" class="row row--wrap" style="--gap:var(--s-2);align-items:flex-end">
-            @csrf
-            <select class="input" name="kind">
-                <option value="components">{{ Text::get('cyberspace.fortress.host.job_components') }}</option>
-                <option value="program">{{ Text::get('cyberspace.fortress.host.job_program') }}</option>
-            </select>
-            <select class="input" name="design">
-                <option value="">—</option>
-                @foreach ($designs as $d)
-                    <option value="{{ $d->item_id }}">{{ $d->item?->displayName() }}</option>
-                @endforeach
-            </select>
-            <input class="input num" type="number" name="count" min="1" max="20" value="1" style="width:5rem" aria-label="{{ Text::get('cyberspace.fortress.host.count') }}">
-            <button class="btn btn--sm cut" type="submit">{{ Text::get('cyberspace.fortress.host.queue') }}</button>
-        </form>
+
+        {{-- One Design and a number of runs for each hosted Assembler. --}}
+        @foreach ($hosted->filter(fn ($r) => $r->item?->program?->kind === \App\Programs\ProgramKind::FortressAssembler) as $assembler)
+            @php($job = $assemblies[$assembler->id] ?? null)
+            <form method="POST" action="{{ route('fortress.assembler', [$fortress, $assembler]) }}" class="row row--wrap" style="--gap:var(--s-2);align-items:flex-end">
+                @csrf
+                <span class="micro" style="flex-basis:100%">{{ $assembler->item?->displayName() }}
+                    @if ($job?->started)
+                        · <span class="num">{{ number_format(min(100, $job->progress_minutes / max(0.01, $job->work_minutes) * 100)) }}%</span>
+                    @endif
+                    @if ($job?->design_item_id !== null)
+                        · <span class="num">{{ $job->runs_done }}{{ $job->runs > 0 ? ' / '.$job->runs : '' }}</span>
+                    @endif
+                </span>
+                <label class="field"><span class="field__label">{{ Text::get('cyberspace.fortress.host.design') }}</span>
+                    <select class="input" name="design">
+                        <option value="">—</option>
+                        @foreach ($designs->unique('item_id') as $d)
+                            <option value="{{ $d->item_id }}" @selected((int) $job?->design_item_id === (int) $d->item_id)>{{ $d->item?->displayName() }}</option>
+                        @endforeach
+                    </select></label>
+                <label class="field"><span class="field__label">{{ Text::get('cyberspace.fortress.host.runs') }}</span>
+                    <input class="input num" type="number" name="runs" min="0" max="100000" value="{{ $job?->runs ?? 1 }}" style="width:6rem"></label>
+                <button class="btn btn--sm cut" type="submit">{{ Text::get('cyberspace.fortress.host.save') }}</button>
+            </form>
+        @endforeach
+        <span class="micro" style="color:var(--ink-3)">{{ Text::get('cyberspace.fortress.host.runs_hint') }}</span>
     </div>
 </div>
 @endif
@@ -158,6 +167,32 @@
         @empty
             <p class="muted" style="margin:0">—</p>
         @endforelse
+    </div>
+</div>
+@endif
+
+@if ($relocationInstalled && \App\Cyberspace\FortressAccess::can($character, $fortress, 'host'))
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd"><span class="micro">{{ Text::get('cyberspace.fortress.host.relocation') }}</span></div>
+    <div class="panel__bd">
+        <form method="POST" action="{{ route('fortress.relocation', $fortress) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:flex-end">
+            @csrf
+            <label class="field"><span class="field__label">{{ Text::get('cyberspace.fortress.host.relocation_every') }}</span>
+                <select class="input" name="hours">
+                    @foreach (\App\Cyberspace\FortressRelocation::HOURS as $h)
+                        <option value="{{ $h }}" @selected(\App\Cyberspace\FortressRelocation::hoursFor($fortress) === $h)>{{ Text::get('cyberspace.fortress.host.relocation_hours', ['hours' => $h]) }}</option>
+                    @endforeach
+                </select></label>
+            <span class="micro" style="flex-basis:100%">{{ Text::get('cyberspace.fortress.host.relocation_tell') }}</span>
+            @foreach (['owner' => 'relocate_tell_owner', 'admins' => 'relocate_tell_admins', 'members' => 'relocate_tell_members'] as $who => $column)
+                <label class="check">
+                    <input type="checkbox" name="tell_{{ $who }}" value="1" @checked($fortress->{$column})>
+                    <span class="check__box"></span>
+                    <span>{{ Text::get("cyberspace.fortress.host.relocation_tell_{$who}") }}</span>
+                </label>
+            @endforeach
+            <button class="btn btn--sm cut" type="submit">{{ Text::get('cyberspace.fortress.host.save') }}</button>
+        </form>
     </div>
 </div>
 @endif
@@ -201,6 +236,26 @@
                             <option value="{{ $e->id }}" @selected((int) $fortress->cloak_owner_id === $e->id)>{{ $e->name }}</option>
                         @endforeach
                     </select></label>
+                <label class="field"><span class="field__label">{{ Text::get('cyberspace.fortress.host.cloak_ice') }}</span>
+                    <select class="input" name="ice">
+                        <option value="0" @selected((int) $fortress->cloak_ice_level === 0)>—</option>
+                        @foreach ($iceLevels as $i)
+                            <option value="{{ $i->level }}" @selected((int) $fortress->cloak_ice_level === $i->level)>{{ $i->name }}</option>
+                        @endforeach
+                    </select></label>
+                <label class="field"><span class="field__label">{{ Text::get('cyberspace.fortress.host.cloak_ids') }}</span>
+                    <input class="input" type="number" name="ids" min="0" max="65535" value="{{ (int) $fortress->cloak_ids_detection }}"></label>
+                <label class="field"><span class="field__label">{{ Text::get('cyberspace.fortress.host.cloak_tracer_detection') }}</span>
+                    <input class="input" type="number" name="tracer_detection" min="0" max="65535" value="{{ (int) $fortress->cloak_tracer_detection }}"></label>
+                <label class="field"><span class="field__label">{{ Text::get('cyberspace.fortress.host.cloak_tracer_rate') }}</span>
+                    <input class="input" type="number" name="tracer_rate" min="0" max="65535" value="{{ (int) $fortress->cloak_tracer_rate }}"></label>
+                <label class="field"><span class="field__label">{{ Text::get('cyberspace.fortress.host.cloak_os') }}</span>
+                    <select class="input" name="os">
+                        @foreach ($operatingSystems as $o)
+                            <option value="{{ $o->id }}" @selected((int) $fortress->cloak_os_skill_id === $o->id)>{{ $o->title }}</option>
+                        @endforeach
+                    </select></label>
+                <span class="micro" style="flex-basis:100%">{{ Text::get('cyberspace.fortress.host.cloak_stealth', ['stealth' => (int) $fortress->fortress_cloak]) }}</span>
                 <button class="btn btn--sm cut" type="submit">{{ Text::get('cyberspace.fortress.host.save') }}</button>
             </form>
         @endif

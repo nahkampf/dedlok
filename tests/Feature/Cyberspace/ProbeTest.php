@@ -7,6 +7,7 @@ namespace Tests\Feature\Cyberspace;
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\Checks\CheckRoller;
+use App\Cyberspace\FortressCloak;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Position;
 use App\Cyberspace\Probe;
@@ -14,6 +15,7 @@ use App\Cyberspace\ProbeRefusal;
 use App\Cyberspace\ProbeResult;
 use App\Cyberspace\ScanFact;
 use App\Cyberspace\Sweep;
+use App\Cyberspace\SystemType;
 use App\Inventory\SkillInjector;
 use App\Models\Character;
 use App\Models\CharacterModifier;
@@ -1321,5 +1323,44 @@ final class ProbeTest extends TestCase
         $this->readOnce(0.999);
 
         $this->assertSame(0, Notification::query()->count());
+    }
+
+    private function cloakedFortress(int $stealth): System
+    {
+        $this->anOperatingSystem();
+        $fake = Skill::factory()->create(['slug' => 'fakeos', 'title' => 'FakeOS', 'category' => 'Operating Systems', 'rank' => 2]);
+
+        return System::factory()->at(8, 8)->create([
+            'address' => 'DEADBEEF', 'type' => SystemType::Fortress, 'grade' => 1, 'owner_character_id' => Character::factory()->create()->id,
+            'fortress_cloak' => $stealth, 'cloak_type' => 'relay', 'cloak_grade' => 6, 'cloak_ice_level' => 0, 'cloak_ids_detection' => 0,
+            'cloak_tracer_detection' => 0, 'cloak_tracer_rate' => 0, 'cloak_os_skill_id' => $fake->id, 'ids_detection' => 70,
+        ]);
+    }
+
+    public function test_a_scan_that_misses_the_cloak_reads_only_the_false_face(): void
+    {
+        $this->cloakedFortress(100000);
+
+        $result = $this->readOnce(0.5);
+
+        $this->assertFalse($result->scan->cloak_broken);
+        $this->assertSame(6, $result->scan->grade);
+        $this->assertSame(0, $result->scan->ids_detection);
+        $this->assertSame('FakeOS', $result->scan->operatingSystem->title);
+        $this->assertNull(ScanFact::Cloaked->readFrom($result->scan));
+    }
+
+    public function test_a_scan_that_beats_the_cloak_reads_the_real_fortress_and_the_map_shows_it(): void
+    {
+        $this->cloakedFortress(1);
+
+        $result = $this->readOnce(0.0);
+
+        $this->assertTrue($result->scan->cloak_broken);
+        $this->assertSame(1, $result->scan->grade);
+        $this->assertSame(70, $result->scan->ids_detection);
+        $this->assertNotNull(ScanFact::Cloaked->readFrom($result->scan));
+        $this->assertSame(SystemType::Fortress, FortressCloak::mask(System::query()->first(), $this->character->fresh())->type);
+        $this->assertSame(SystemType::Relay, FortressCloak::mask(System::query()->first(), Character::factory()->create())->type);
     }
 }

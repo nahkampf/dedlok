@@ -20,6 +20,8 @@
                     @endif
                     {{ $known ? $fact['value'] : Text::get('cyberspace.reading.unread') }}
                 </span>
+            @elseif ($known)
+                <span class="tag tag--ember">{{ $fact['value'] }}</span>
             @else
                 <span class="tag">{{ Text::get('cyberspace.reading.not_yet') }}</span>
             @endif

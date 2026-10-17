@@ -11,6 +11,8 @@ use App\Models\System;
 use App\Models\SystemContent;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Programs\ProgramKind;
+use App\Stats\Modifier;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +38,7 @@ final class Fortresses
             return FortressRefusal::NotJackedIn;
         }
 
-        if ($kernel->character_id !== $character->getKey() || $kernel->item?->slug !== config('cyberspace.fortress.kernel')) {
+        if ($kernel->character_id !== $character->getKey() || $kernel->item?->program?->kind !== ProgramKind::Kernel) {
             return $kernel->character_id !== $character->getKey() ? FortressRefusal::NotYours : FortressRefusal::NotAKernel;
         }
 
@@ -71,6 +73,7 @@ final class Fortresses
                 'grade' => Grade::MIN,
                 'designation' => SystemNamer::fromConfig()->designate(),
                 'owner_character_id' => $character->getKey(),
+                ...$this->kernelNumbers($kernel),
             ]);
 
             // Spent: one copy of the Kernel.
@@ -82,6 +85,31 @@ final class Fortresses
 
             return $system;
         });
+    }
+
+    /**
+     * What the spent Kernel makes of the fortress: its own `items.modifiers` resolved against the config bases, and kept on
+     * the system because the item is gone once it is spent.
+     *
+     * @return array{kernel_integrity_max: int, kernel_resistance: int, kernel_demand_percent: int}
+     */
+    private function kernelNumbers(InventoryItem $kernel): array
+    {
+        $modifiers = [];
+
+        foreach ((array) $kernel->item?->modifiers as $shape) {
+            if (is_array($shape)) {
+                $modifiers[] = Modifier::fromArray($shape + ['source' => $kernel->item->displayName()]);
+            }
+        }
+
+        $resolver = app(Resolver::class);
+
+        return [
+            'kernel_integrity_max' => $resolver->resolve('kernel_integrity', (float) config('cyberspace.fortress.kernel_integrity', 100), $modifiers)->toInt(),
+            'kernel_resistance' => $resolver->resolve('kernel_resistance', (float) config('cyberspace.fortress.kernel_resistance', 0), $modifiers)->toInt(),
+            'kernel_demand_percent' => $resolver->resolve('kernel_demand', 100.0, $modifiers)->toInt(),
+        ];
     }
 
     /**
@@ -98,7 +126,7 @@ final class Fortresses
             $fortress->forceFill([
                 'frozen_until' => now()->addHours((int) config('cyberspace.fortress.frozen_hours', 8)),
                 'abandoned_at' => $fortress->abandoned_at ?? now(),
-                'kernel_integrity' => (int) config('cyberspace.fortress.kernel_integrity', 100),
+                'kernel_integrity' => $fortress->kernelIntegrityMax(),
             ])->save();
 
             $owner = Character::query()->find($fortress->owner_character_id);

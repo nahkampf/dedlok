@@ -556,9 +556,9 @@
                         @error('lifetime_seconds') <span class="field__error">{{ $message }}</span> @enderror
                     </div>
 
-                    {{-- A fortress Producer's outputs (blank is none) and a Booster's boost. --}}
+                    {{-- A fortress producer's cycle, an Assembler's reduction, a Booster's boost, a Tap's range and strength and a Cloak's stealth (blank is none). --}}
                     <div class="row row--wrap" style="--gap:var(--s-3);margin-top:var(--s-3)">
-                        @foreach (['produce_credits_min' => 'credits_min', 'produce_credits_max' => 'credits_max', 'produce_components' => 'components', 'produce_programs' => 'programs', 'produce_boost' => 'boost'] as $field => $key)
+                        @foreach (['produce_cycle_minutes' => 'cycle_minutes', 'produce_reduction' => 'reduction', 'produce_boost' => 'boost', 'produce_range' => 'range', 'produce_strength' => 'strength'] as $field => $key)
                             <div class="field" @error($field) data-invalid @enderror>
                                 <label class="field__label" for="{{ $field }}">{{ Text::get("admin.items.fields.{$field}") }}</label>
                                 <input class="input num" id="{{ $field }}" name="{{ $field }}" type="number" min="0" step="0.01"
@@ -569,7 +569,41 @@
                     </div>
                     <span class="field__hint">{{ Text::get('admin.items.fields.produce_hint') }}</span>
 
-                    {{-- A Pathfinder's speed: seconds per move when it walks the grid for you. Blank is the default. --}}
+                    {{-- A Leecher: what it takes from the system it hangs on. Its stored size above is only what carrying it costs. --}}
+                    <div class="row row--wrap" style="--gap:var(--s-3);margin-top:var(--s-3)">
+                        <div class="field" @error('leech_resource') data-invalid @enderror>
+                            <label class="field__label" for="leech_resource">{{ Text::get('admin.items.fields.leech_resource') }}</label>
+                            <select class="input" id="leech_resource" name="leech_resource">
+                                <option value="">—</option>
+                                @foreach (['compute', 'memory', 'storage'] as $resource)
+                                    <option value="{{ $resource }}" @selected(old('leech_resource', $item?->program?->leech_resource) === $resource)>{{ Text::get("admin.items.fields.leech_{$resource}") }}</option>
+                                @endforeach
+                            </select>
+                            @error('leech_resource') <span class="field__error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="field" @error('leech_amount') data-invalid @enderror>
+                            <label class="field__label" for="leech_amount">{{ Text::get('admin.items.fields.leech_amount') }}</label>
+                            <input class="input num" id="leech_amount" name="leech_amount" type="number" min="0" step="0.1"
+                                   value="{{ old('leech_amount', $item?->program?->leech_amount ?: '') }}" style="width:8rem">
+                            @error('leech_amount') <span class="field__error">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.leech_hint') }}</span>
+
+                    {{-- A Utility's abilities: what it does while it runs. --}}
+                    <div class="row row--wrap" style="--gap:var(--s-3);margin-top:var(--s-3)">
+                        @foreach (['locates', 'walks', 'jumps'] as $ability)
+                            <label class="check">
+                                <input type="hidden" name="{{ $ability }}" value="0">
+                                <input type="checkbox" name="{{ $ability }}" value="1" @checked(old($ability, $item?->program?->{$ability} ?? false))>
+                                <span class="check__box"></span>
+                                <span>{{ Text::get("admin.items.fields.{$ability}") }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.utility_hint') }}</span>
+
+                    {{-- A walker's speed: seconds per move when it walks the grid for you. Blank is the default. --}}
                     <div class="field" style="margin-top:var(--s-3)" @error('traverse_seconds') data-invalid @enderror>
                         <label class="field__label" for="traverse_seconds">{{ Text::get('admin.items.fields.traverse_seconds') }}</label>
                         <input class="input num" id="traverse_seconds" name="traverse_seconds" type="number" min="1" max="600" step="1"

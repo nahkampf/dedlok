@@ -4,43 +4,47 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Checks\CheckRoller;
+use App\Crafting\Crafting;
 use App\Decks\Storage;
+use App\Decryption\DecryptionQueue;
 use App\Models\Character;
 use App\Models\Design;
 use App\Models\FortressArea;
-use App\Models\FortressJob;
+use App\Models\FortressAssembly;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContent;
+use App\Notifications\Notifier;
 use App\Programs\ProgramKind;
 use App\Stats\Resolver;
 use App\Support\Qb;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * What a Data Fortress's running Producers make, in CYCLES.
+ * What a Data Fortress's running Decryptors and Assemblers make (CYBERSPACE.md, *Production*).
  *
- * A cycle is `cyberspace.fortress.produce.cycle_minutes` (360) as the `production_cycle_minutes` stat resolves it for whoever
- * installed the producer (so a skill or anything else can target it), divided by what the running Boosters add. Each
- * producer carries its own minutes towards its next cycle; a cycle that has come due is worked once per settle.
+ * **A Decryptor** takes the oldest Encrypted Data Dump in its type's input area and, one cycle later, turns it into a component in
+ * the output area: deterministic, no roll, and the component is picked exactly as a player's decryption picks one
+ * (`DecryptionQueue::outcomeFor()`, by the file's grade) and keeps the file's origin. The cycle is the item's own minutes as the
+ * stat `production_cycle_minutes.decryptor` resolves them for whoever installed it, shortened by every running Booster.
  *
- * Per cycle a producer is authored (`programs.produces`) to give:
- * - **credits**: a number between `credits_min` and `credits_max`, rolled (captured transactions) into the wallet;
- * - **components**: `components` files toward a components job in the queue;
- * - **programs**: `programs` units of work toward a program job (a Design's craft time in hours is its work).
+ * **An Assembler** is assigned one Design and a number of runs (`fortress_assemblies`). A run takes the Design's craft time less the
+ * item's own reduction, then the stat `production_cycle_minutes.assembler`, then the Boosters; the Design's whole recipe is spent
+ * from the input area when it starts, and the product lands in the output area (waiting, finished, without room).
  *
- * Components and programs are one queue of at most five jobs, first in first out. A program job spends its Design's
- * components out of the fortress when work starts and waits (a cycle yields nothing) without enough; a finished product
- * waits without room, so storage is the ceiling. Compute and RAM are drawn by being a running program: a short fortress
- * stops producers first and nothing is worked while they are stopped. Output lands in `systems.output_area_id`, NULL being
- * the owner's storage.
+ * Both are worked from minutes: each row keeps its own progress in `inventory_items.defence`, and nothing is worked while a
+ * producer is stopped (a short fortress stops them first). A producer with nothing to work on waits and banks no time.
  */
 final class FortressProduction
 {
-    public const MAX_QUEUE = 5;
+    /** An upper bound on steps per producer per settle, so a long absence is not a loop without end. */
+    private const STEPS = 200;
 
-    /** @param  \Closure(int, int): int  $roll */
+    /** @param  \Closure(int, int): int  $roll  the die for what a Dump becomes */
     public function __construct(private readonly \Closure $roll) {}
 
     public static function make(): self
@@ -48,69 +52,79 @@ final class FortressProduction
         return new self(static fn (int $min, int $max): int => random_int($min, $max));
     }
 
-    public function enqueue(Character $by, System $fortress, string $kind, ?int $designItemId = null, int $count = 1): ?string
+    /** Set what an Assembler makes: a Design (null to clear it) and a number of runs (0 for ever). Cancels a run in progress. */
+    public function assign(Character $by, System $fortress, InventoryItem $row, ?int $designItemId, int $runs): ?string
     {
         if (! FortressAccess::can($by, $fortress, 'host')) {
             return 'not_yours';
         }
 
-        if (FortressJob::query()->where('system_id', $fortress->getKey())->count() >= self::MAX_QUEUE) {
-            return 'queue_full';
+        if ((int) $row->fortress_system_id !== (int) $fortress->getKey() || $row->item?->program?->kind !== ProgramKind::FortressAssembler) {
+            return 'not_yours';
         }
 
-        if ($kind === 'components') {
-            $work = (float) max(1, min(20, $count));
-        } elseif ($kind === 'program') {
-            $design = Design::query()->where('item_id', (int) $designItemId)->first();
-            $held = SystemContent::query()->where('system_id', $fortress->getKey())->where('kind', ContentKind::Item->value)->where('item_id', (int) $designItemId)->exists();
-
-            if ($design === null || ! $held) {
-                return 'no_design';
-            }
-
-            $work = max(0.01, (float) $design->craft_seconds / 3600);
-        } else {
-            return 'bad_job';
+        if ($designItemId !== null && Design::query()->where('item_id', $designItemId)->doesntExist()) {
+            return 'no_design';
         }
 
-        FortressJob::query()->create([
-            'system_id' => $fortress->getKey(), 'kind' => $kind, 'design_item_id' => $designItemId,
-            'work' => $work, 'queued_by' => $by->getKey(),
+        // Anything in progress is forfeited: the components were spent when the run started.
+        FortressAssembly::query()->updateOrCreate(['inventory_item_id' => $row->getKey()], [
+            'design_item_id' => $designItemId, 'runs' => max(0, min(100000, $runs)), 'runs_done' => 0,
+            'started' => false, 'work_minutes' => 0, 'progress_minutes' => 0,
         ]);
-        FortressLog::write($fortress, $by, 'produce', "queued {$kind}");
+        FortressLog::write($fortress, $by, 'produce', 'assembler set');
 
         return null;
     }
 
-    public function cancel(Character $by, System $fortress, FortressJob $job): ?string
+    /**
+     * A producer is being taken down: what it was holding goes back into storage (a Dump into its input area, a finished
+     * component into its output area), and an Assembler's assignment goes with it.
+     */
+    public function release(System $fortress, InventoryItem $row): void
     {
-        if (! FortressAccess::can($by, $fortress, 'host') || (int) $job->system_id !== (int) $fortress->getKey()) {
-            return 'not_yours';
+        if (! in_array($row->item?->program?->kind, [ProgramKind::FortressDecryptor, ProgramKind::FortressAssembler], true)) {
+            return;
         }
 
-        // Components already spent are not given back: the same rule cancelling a hand build keeps.
-        $job->delete();
+        FortressAssembly::query()->where('inventory_item_id', $row->getKey())->delete();
+        $state = (array) $row->defence;
 
-        return null;
+        if (isset($state['job']) && ($file = ExtractedFile::fromArray($state['job'])) !== null) {
+            SystemContent::query()->create([
+                'system_id' => $fortress->getKey(), 'kind' => ContentKind::Data->value, 'label' => $file->label, 'size_qb' => $file->sizeQb,
+                'encryption_skill_id' => $file->encryptionSkillId, 'value_sealed' => $file->valueSealed, 'value_broken' => $file->valueBroken,
+                'area_id' => $fortress->decryptor_in_area_id, 'meta' => ['extracted_file' => $file->toArray(), 'slug' => ExtractedFile::SEALED_SLUG],
+            ]);
+        }
+
+        if (isset($state['ready'])) {
+            $this->putComponent($fortress, $state['ready']);
+        }
+
+        $row->forceFill(['defence' => null])->save();
     }
 
-    public function setOutput(Character $owner, System $fortress, ?int $areaId): ?string
+    /** The owner or an administrator picks the input and output storage areas of one type (`decryptor` or `assembler`). */
+    public function setAreas(Character $by, System $fortress, string $type, ?int $inArea, ?int $outArea): ?string
     {
-        if (FortressAccess::roleOf($owner, $fortress) !== 'owner') {
+        if (! FortressAccess::can($by, $fortress, 'host') || ! in_array($type, ['decryptor', 'assembler'], true)) {
             return 'not_yours';
         }
 
-        if ($areaId !== null && ! FortressArea::query()->where('system_id', $fortress->getKey())->whereKey($areaId)->exists()) {
-            return 'not_yours';
+        foreach ([$inArea, $outArea] as $areaId) {
+            if ($areaId !== null && ! FortressArea::query()->where('system_id', $fortress->getKey())->whereKey($areaId)->exists()) {
+                return 'not_yours';
+            }
         }
 
-        $fortress->forceFill(['output_area_id' => $areaId])->save();
-        FortressLog::write($fortress, $owner, 'settings', "output area {$areaId}");
+        $fortress->forceFill(["{$type}_in_area_id" => $inArea, "{$type}_out_area_id" => $outArea])->save();
+        FortressLog::write($fortress, $by, 'settings', "{$type} areas {$inArea} -> {$outArea}");
 
         return null;
     }
 
-    /** Work every cycle that has come due since the last settle. Safe to call as often as you like. */
+    /** Work every producer for the time since the last settle. Safe to call as often as you like. */
     public function settle(System $fortress): void
     {
         if (! $fortress->type->isFortress() || $fortress->abandoned_at !== null || Fortresses::isFrozen($fortress)) {
@@ -129,126 +143,307 @@ final class FortressProduction
 
         DB::transaction(function () use ($fortress, $minutes): void {
             $running = InventoryItem::query()->where('fortress_system_id', $fortress->getKey())->where('fortress_running', true)
-                ->with('item.program')->get();
+                ->with('item.program')->orderBy('id')->get();
 
             $boost = $running->filter(fn ($r): bool => $r->item?->program?->kind === ProgramKind::Booster)
-                ->sum(fn ($r): float => (float) ($r->item->program->produces['boost'] ?? 0));
+                ->sum(fn ($r): float => (float) ($r->defence['boost'] ?? $r->item->program->produces['boost'] ?? 0));
 
-            foreach ($running->filter(fn ($r): bool => $r->item?->program?->kind === ProgramKind::Producer) as $row) {
-                $cycle = $this->cycleMinutes($row, $boost);
-                $defence = (array) $row->defence;
-                $carry = (float) ($defence['carry_m'] ?? 0) + $minutes;
-                $cycles = (int) floor($carry / $cycle);
-                $defence['carry_m'] = round($carry - $cycles * $cycle, 3);
-                $row->forceFill(['defence' => $defence])->save();
-
-                // Bounded: a long absence is not a year of cycles, and the loop is the cost.
-                for ($i = 0; $i < min($cycles, 200); $i++) {
-                    $this->cycle($fortress, $row);
-                }
+            foreach ($running as $row) {
+                match ($row->item?->program?->kind) {
+                    ProgramKind::FortressDecryptor => $this->decrypt($fortress, $row, $minutes, $boost),
+                    ProgramKind::FortressAssembler => $this->assemble($fortress, $row, $minutes, $boost),
+                    ProgramKind::FortressNetworkTap, ProgramKind::FortressWiretap => $this->tap($fortress, $row, $minutes, $boost),
+                    default => null,
+                };
             }
         });
     }
 
-    /** Minutes in one of this producer's cycles: the resolved stat for its installer, quickened by the boosters. */
+    /** Minutes in one cycle of this Decryptor: its own, as its installer's stat resolves them, quickened by the Boosters. */
     public function cycleMinutes(InventoryItem $row, float $boostPercent = 0.0): float
     {
-        $installer = $row->fortress_installed_by === null ? null : Character::query()->find($row->fortress_installed_by);
-        $base = (float) config('cyberspace.fortress.produce.cycle_minutes', 360);
-        $hours = $installer === null
-            ? $base
-            : (float) app(Resolver::class)->resolve('production_cycle_minutes', $base, $installer->modifiers())->value;
-
-        return max(1.0, $hours / (1 + max(0.0, $boostPercent) / 100));
+        return $this->minutes($row, 'decryptor', (float) ($row->item?->program?->produces['cycle_minutes'] ?? 60), $boostPercent);
     }
 
-    /** One finished cycle of one producer. */
-    private function cycle(System $fortress, InventoryItem $row): void
+    /** Minutes one run of this Assembler takes for a Design: its craft time, less the item's reduction, then the stat and Boosters. */
+    public function runMinutes(InventoryItem $row, Design $design, float $boostPercent = 0.0): float
     {
+        $reduction = min(100.0, max(0.0, (float) ($row->item?->program?->produces['reduction'] ?? 0)));
+        $base = max(1.0, (float) $design->craft_seconds / 60 * (1 - $reduction / 100));
+
+        return $this->minutes($row, 'assembler', $base, $boostPercent);
+    }
+
+    private function minutes(InventoryItem $row, string $type, float $base, float $boostPercent): float
+    {
+        $installer = $row->fortress_installed_by === null ? null : Character::query()->find($row->fortress_installed_by);
+        $minutes = $installer === null
+            ? $base
+            : (float) app(Resolver::class)->resolve("production_cycle_minutes.{$type}", $base, $installer->modifiers())->value;
+
+        return max(1.0, $minutes / (1 + max(0.0, $boostPercent) / 100));
+    }
+
+    // ---- Taps --------------------------------------------------------------
+
+    /**
+     * A Network Tap or a Transactional Wiretap: each whole cycle it rolls its strength against the grade of every other node in
+     * the square around the fortress (other fortresses are left alone). A Tap's success steals an Encrypted Data Dump into the
+     * Decryptors' input area (lost if there is no room); a Wiretap's skims creds into the fortress wallet. A tap never idles.
+     */
+    private function tap(System $fortress, InventoryItem $row, float $time, float $boost): void
+    {
+        $kind = $row->item->program->kind;
         $produces = (array) $row->item->program->produces;
+        $cycle = $this->minutes($row, $kind === ProgramKind::FortressWiretap ? 'wiretap' : 'tap', (float) ($produces['cycle_minutes'] ?? 60), $boost);
+        $state = (array) $row->defence;
+        $cycles = min(self::STEPS, (int) floor(($time + (float) ($state['carry_m'] ?? 0) + 1e-9) / $cycle));
+        $state['carry_m'] = $cycles >= self::STEPS ? 0 : round(max(0.0, $time + (float) ($state['carry_m'] ?? 0) - $cycles * $cycle), 3);
+        $row->forceFill(['defence' => $state])->save();
 
-        if (isset($produces['credits_min']) || isset($produces['credits_max'])) {
-            $min = (int) ($produces['credits_min'] ?? 0);
-            $max = max($min, (int) ($produces['credits_max'] ?? $min));
-            $amount = ($this->roll)($min, $max);
-
-            if ($amount > 0) {
-                $fortress->forceFill(['wallet' => (int) $fortress->wallet + $amount])->save();
-                FortressLog::write($fortress, null, 'captured', (string) $amount);
-            }
-        }
-
-        $job = FortressJob::query()->where('system_id', $fortress->getKey())->orderBy('id')->get()
-            ->first(fn (FortressJob $j): bool => isset($produces[$j->kind === 'program' ? 'programs' : 'components']));
-
-        if ($job === null) {
+        if ($cycles < 1) {
             return;
         }
 
-        if ($job->kind === 'components') {
-            $files = (int) floor((float) $produces['components']);
-            $make = (int) min($files, ceil($job->work - $job->progress));
+        $nodes = System::query()->within(new Position($fortress->x, $fortress->y), max(0, (int) ($produces['range'] ?? 0)))
+            ->whereKeyNot($fortress->getKey())->where('type', '!=', SystemType::Fortress->value)->get();
+        $strength = (float) ($produces['strength'] ?? 0);
+        $roller = app(CheckRoller::class);
+        $difficulty = (array) config('cyberspace.scan.difficulty', []);
+        $installer = $row->fortress_installed_by === null ? null : Character::query()->find($row->fortress_installed_by);
+        $yield = $installer === null ? 0.0 : (float) app(Resolver::class)->resolve('wiretap_yield', 0.0, $installer->modifiers())->value;
+        $paid = 0;
 
-            for ($i = 0; $i < $make; $i++) {
-                if (! $this->deliver($fortress, $job, $row)) {
+        for ($i = 0; $i < $cycles; $i++) {
+            foreach ($nodes as $node) {
+                if (! $roller->roll($strength, (float) ($difficulty[$node->grade] ?? 0), 'tap')->passed) {
+                    continue;
+                }
+
+                if ($kind === ProgramKind::FortressWiretap) {
+                    [$low, $high] = (array) config("cyberspace.fortress.wiretap_pay.{$node->grade}", [0, 0]);
+                    $paid += (int) round(($this->roll)((int) $low, (int) $high) * (1 + max(0.0, $yield) / 100));
+                } else {
+                    $this->stealDump($fortress, $node);
+                }
+            }
+        }
+
+        if ($paid > 0) {
+            $fortress->forceFill(['wallet' => (int) $fortress->wallet + $paid])->save();
+            FortressLog::write($fortress, null, 'produced', "wiretap {$paid}");
+        }
+    }
+
+    private function stealDump(System $fortress, System $node): void
+    {
+        $made = NodeStocker::fromConfig($this->roll)->jobFile($node);
+        $skill = $made['encryption_skill_id'] === null ? null : Skill::query()->find($made['encryption_skill_id']);
+        $file = new ExtractedFile(
+            label: (string) $made['label'], sizeQb: Qb::of($made['size_qb']), encryptionSkillId: $made['encryption_skill_id'],
+            valueSealed: (int) $made['value_sealed'], valueBroken: (int) $made['value_broken'], grade: (int) $node->grade,
+            origin: FileOrigin::fromSystem($node, $skill),
+        );
+
+        $free = (new Leeches)->totals($fortress)['storage'] - (new FortressHost)->used($fortress)['storage'];
+
+        if (Qb::tenths($file->sizeQb) > Qb::tenths($free)) {
+            return; // no room: the dump is lost
+        }
+
+        SystemContent::query()->create([
+            'system_id' => $fortress->getKey(), 'kind' => ContentKind::Data->value, 'label' => $file->label, 'size_qb' => $file->sizeQb,
+            'encryption_skill_id' => $file->encryptionSkillId, 'value_sealed' => $file->valueSealed, 'value_broken' => $file->valueBroken,
+            'area_id' => $fortress->decryptor_in_area_id, 'meta' => ['extracted_file' => $file->toArray(), 'slug' => ExtractedFile::SEALED_SLUG],
+        ]);
+    }
+
+    // ---- Decryptors --------------------------------------------------------
+
+    private function decrypt(System $fortress, InventoryItem $row, float $time, float $boost): void
+    {
+        $state = (array) $row->defence;
+        $cycle = $this->cycleMinutes($row, $boost);
+
+        for ($step = 0; $step < self::STEPS; $step++) {
+            // A finished component that had nowhere to go is delivered first.
+            if (isset($state['ready'])) {
+                if (! $this->putComponent($fortress, $state['ready'])) {
                     break;
                 }
 
-                $job->progress = $job->progress + 1;
+                unset($state['ready']);
             }
 
-            $job->progress + 1e-9 >= $job->work ? $job->delete() : $job->save();
+            if (! isset($state['job'])) {
+                $file = $this->takeDump($fortress);
 
+                if ($file === null) {
+                    $state['carry_m'] = 0;
+
+                    break;
+                }
+
+                $state['job'] = $file->toArray();
+                $state['carry_m'] = 0;
+            }
+
+            $need = $cycle - (float) ($state['carry_m'] ?? 0);
+
+            if ($time + 1e-9 < $need) {
+                $state['carry_m'] = round((float) ($state['carry_m'] ?? 0) + $time, 3);
+
+                break;
+            }
+
+            $time -= $need;
+            $state['carry_m'] = 0;
+            $file = ExtractedFile::fromArray($state['job']);
+            unset($state['job']);
+            $item = $file === null ? null : $this->decryption()->outcomeFor($file);
+
+            if ($item === null || $file === null) {
+                continue;
+            }
+
+            $state['ready'] = ['item_id' => $item->getKey(), 'file' => $file->toArray()];
+        }
+
+        $row->forceFill(['defence' => $state === [] ? null : $state])->save();
+    }
+
+    /** The oldest sealed Dump in the Decryptors' input area, taken out of storage (the Decryptor holds it while it works). */
+    private function takeDump(System $fortress): ?ExtractedFile
+    {
+        $rows = $this->inArea($fortress, 'decryptor')->where('kind', ContentKind::Data->value)->orderBy('id')->get();
+
+        foreach ($rows as $content) {
+            $meta = (array) $content->meta;
+
+            // A file already broken open is not a Dump; a legacy row (no meta) is a sealed one of unknown grade.
+            if (($meta['slug'] ?? ExtractedFile::SEALED_SLUG) !== ExtractedFile::SEALED_SLUG) {
+                continue;
+            }
+
+            $file = ExtractedFile::fromArray($meta['extracted_file'] ?? null) ?? new ExtractedFile(
+                label: (string) $content->label, sizeQb: Qb::of($content->size_qb), encryptionSkillId: $content->encryption_skill_id,
+                valueSealed: (int) $content->value_sealed, valueBroken: (int) $content->value_broken,
+            );
+            $content->delete();
+
+            return $file;
+        }
+
+        return null;
+    }
+
+    /** @param  array{item_id: int, file: array<string, mixed>}  $ready */
+    private function putComponent(System $fortress, array $ready): bool
+    {
+        $item = Item::query()->find($ready['item_id']);
+
+        if ($item === null) {
+            return true; // the component was retired: the job is simply done
+        }
+
+        if (! $this->fits($fortress, $item)) {
+            return false;
+        }
+
+        SystemContent::query()->create([
+            'system_id' => $fortress->getKey(), 'kind' => ContentKind::Item->value, 'item_id' => $item->getKey(), 'quantity' => 1,
+            'area_id' => $fortress->decryptor_out_area_id, 'meta' => ['extracted_file' => $ready['file']],
+        ]);
+        FortressLog::write($fortress, null, 'produced', $item->displayName());
+
+        return true;
+    }
+
+    // ---- Assemblers --------------------------------------------------------
+
+    private function assemble(System $fortress, InventoryItem $row, float $time, float $boost): void
+    {
+        $job = FortressAssembly::query()->where('inventory_item_id', $row->getKey())->first();
+
+        if ($job === null || $job->design_item_id === null) {
             return;
         }
 
-        if (! $job->started) {
-            if (! $this->startProgram($fortress, $job)) {
-                return; // not enough components: this cycle yields nothing
+        $design = Design::query()->where('item_id', $job->design_item_id)->with('components')->first();
+
+        if ($design === null) {
+            return;
+        }
+
+        for ($step = 0; $step < self::STEPS; $step++) {
+            if (! $job->started) {
+                if ($job->runs > 0 && $job->runs_done >= $job->runs) {
+                    break;
+                }
+
+                // Not enough components or Copies: it waits, and banks no time.
+                if (! $this->startRun($fortress, $design)) {
+                    break;
+                }
+
+                $job->started = true;
+                $job->work_minutes = round($this->runMinutes($row, $design, $boost), 2);
+                $job->progress_minutes = 0;
             }
 
-            $job->started = true;
-        }
+            $need = (float) $job->work_minutes - (float) $job->progress_minutes;
 
-        if ($job->progress + 1e-9 < $job->work) {
-            $job->progress = min($job->work, $job->progress + (float) $produces['programs']);
-        }
+            if ($time + 1e-9 < $need) {
+                $job->progress_minutes = round((float) $job->progress_minutes + $time, 2);
 
-        if ($job->progress + 1e-9 >= $job->work) {
-            $this->deliver($fortress, $job, $row) ? $job->delete() : $job->save(); // no room: it waits, finished
+                break;
+            }
 
-            return;
+            $time -= max(0.0, $need);
+            $job->progress_minutes = $job->work_minutes;
+
+            // No room: the product waits, finished, and the Assembler with it.
+            if (! $this->putProduct($fortress, $row, $design)) {
+                break;
+            }
+
+            $job->started = false;
+            $job->progress_minutes = 0;
+            $job->runs_done++;
         }
 
         $job->save();
     }
 
-    /** Spend the design's components out of the fortress, or report there are not enough. */
-    private function startProgram(System $fortress, FortressJob $job): bool
+    /** Spend the Design's components (and a Copy) from the input area, or report there are not enough. Only components that match a line's filters count, the lowest grade first. */
+    private function startRun(System $fortress, Design $design): bool
     {
-        $design = Design::query()->where('item_id', $job->design_item_id)->with('components')->first();
+        $content = fn (int $itemId) => $this->inArea($fortress, 'assembler')->where('kind', ContentKind::Item->value)->where('item_id', $itemId)->orderBy('id')->get();
+        $crafting = Crafting::make();
 
-        if ($design === null) {
-            $job->delete();
-
+        // The Design itself has to be in the input area; a Copy is spent by the run, an Original is not.
+        if ($content((int) $design->item_id)->sum('quantity') < 1) {
             return false;
         }
 
-        $have = fn (int $itemId) => SystemContent::query()->where('system_id', $fortress->getKey())
-            ->where('kind', ContentKind::Item->value)->where('item_id', $itemId)->orderBy('id')->get();
+        $spend = [];
 
         foreach ($design->components as $line) {
-            if ($have((int) $line->component_item_id)->sum('quantity') < (int) $line->quantity) {
+            $matching = $content((int) $line->component_item_id)
+                ->filter(fn (SystemContent $c): bool => $crafting->accepts($line, ExtractedFile::fromArray(((array) $c->meta)['extracted_file'] ?? null)))
+                ->sortBy(fn (SystemContent $c): array => [ExtractedFile::fromArray(((array) $c->meta)['extracted_file'] ?? null)?->grade ?? 0, $c->getKey()]);
+
+            if ($matching->sum('quantity') < (int) $line->quantity) {
                 return false;
             }
+
+            $spend[] = [$matching, (int) $line->quantity];
         }
 
-        foreach ($design->components as $line) {
-            $left = (int) $line->quantity;
-
-            foreach ($have((int) $line->component_item_id) as $content) {
-                $take = min($left, (int) $content->quantity);
-                $take >= (int) $content->quantity ? $content->delete() : $content->forceFill(['quantity' => $content->quantity - $take])->save();
+        foreach ($spend as [$rows, $left]) {
+            foreach ($rows as $row) {
+                $take = min($left, (int) $row->quantity);
+                $take >= (int) $row->quantity ? $row->delete() : $row->forceFill(['quantity' => $row->quantity - $take])->save();
                 $left -= $take;
 
                 if ($left <= 0) {
@@ -258,8 +453,7 @@ final class FortressProduction
         }
 
         if ($design->single_use) {
-            $copy = SystemContent::query()->where('system_id', $fortress->getKey())->where('kind', ContentKind::Item->value)
-                ->where('item_id', $design->item_id)->orderBy('id')->first();
+            $copy = $content((int) $design->item_id)->first();
 
             if ($copy !== null) {
                 (int) $copy->quantity > 1 ? $copy->forceFill(['quantity' => $copy->quantity - 1])->save() : $copy->delete();
@@ -269,72 +463,55 @@ final class FortressProduction
         return true;
     }
 
-    /** Put the product in the output area, or say there is no room. */
-    private function deliver(System $fortress, FortressJob $job, InventoryItem $producer): bool
+    /** Put the made program in the output area, or say there is no room. */
+    private function putProduct(System $fortress, InventoryItem $producer, Design $design): bool
     {
-        $item = $job->kind === 'components' ? $this->randomComponent() : Design::query()->where('item_id', $job->design_item_id)->first()?->product;
+        $item = $design->product;
 
         if ($item === null) {
-            return true; // nothing to make: the job is simply done
+            return true; // nothing to make: the run is simply done
         }
 
-        $size = (float) Storage::sizeOf($item);
-        $free = (new Leeches)->totals($fortress)['storage'] - (new FortressHost)->used($fortress)['storage'];
-
-        if (Qb::tenths($size) > Qb::tenths($free)) {
+        if (! $this->fits($fortress, $item)) {
             return false;
         }
 
         $meta = null;
 
-        if ($item->program !== null && in_array($item->program->kind, [ProgramKind::FortressIce, ProgramKind::FortressIds, ProgramKind::Cloak], true)) {
+        if ($item->program !== null && in_array($item->program->kind, [ProgramKind::FortressIce, ProgramKind::FortressIds, ProgramKind::Cloak, ProgramKind::Booster], true)) {
             $installer = $producer->fortress_installed_by === null ? null : Character::query()->find($producer->fortress_installed_by);
             $meta = ['defence' => FortressDefence::numbersFor($installer, $item)];
         }
 
         SystemContent::query()->create([
-            'system_id' => $fortress->getKey(),
-            'kind' => ContentKind::Item->value,
-            'item_id' => $item->getKey(),
-            'quantity' => 1,
-            'area_id' => $fortress->output_area_id,
-            'deposited_by' => $job->queued_by,
-            'meta' => $meta,
+            'system_id' => $fortress->getKey(), 'kind' => ContentKind::Item->value, 'item_id' => $item->getKey(), 'quantity' => 1,
+            'area_id' => $fortress->assembler_out_area_id, 'deposited_by' => $producer->fortress_installed_by, 'meta' => $meta,
         ]);
-
         FortressLog::write($fortress, null, 'produced', $item->displayName());
 
         return true;
     }
 
-    /** A component by the configured grade's weights. */
-    private function randomComponent(): ?Item
+    // ---- shared ------------------------------------------------------------
+
+    /** The fortress contents in a type's input area (NULL being the owner's storage). @return Builder<SystemContent> */
+    private function inArea(System $fortress, string $type): Builder
     {
-        $grade = (int) config('cyberspace.fortress.produce.component_grade', 3);
-        $weights = [];
+        $area = $fortress->{"{$type}_in_area_id"};
+        $query = SystemContent::query()->where('system_id', $fortress->getKey());
 
-        foreach ((array) config('cyberspace.decryption.components', []) as $slug => $def) {
-            $w = (int) ($def['weights'][$grade] ?? 0);
+        return $area === null ? $query->whereNull('area_id') : $query->where('area_id', $area);
+    }
 
-            if ($w > 0) {
-                $weights[$slug] = $w;
-            }
-        }
+    private function fits(System $fortress, Item $item): bool
+    {
+        $free = (new Leeches)->totals($fortress)['storage'] - (new FortressHost)->used($fortress)['storage'];
 
-        if ($weights === []) {
-            return null;
-        }
+        return Qb::tenths((float) Storage::sizeOf($item)) <= Qb::tenths($free);
+    }
 
-        $draw = ($this->roll)(1, array_sum($weights));
-
-        foreach ($weights as $slug => $w) {
-            $draw -= $w;
-
-            if ($draw <= 0) {
-                return Item::query()->with('program')->where('slug', $slug)->first();
-            }
-        }
-
-        return null;
+    private function decryption(): DecryptionQueue
+    {
+        return new DecryptionQueue(app(CheckRoller::class), new Notifier, $this->roll);
     }
 }

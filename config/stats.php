@@ -561,13 +561,74 @@ return [
         ],
 
         /*
-        | The minutes in one production cycle of a producer this character installed. The base is
-        | `cyberspace.fortress.produce.cycle_minutes` (360) and anything may target it (a skill's percentage of base,
-        | a flat add), so it is a stat and not a number. Boosters running on the fortress shorten it further.
+        | A founding Kernel's own numbers, resolved from ITS `items.modifiers` when it is spent and kept on the fortress
+        | (`systems.kernel_*`). Bases are `cyberspace.fortress.kernel_integrity` and `kernel_resistance`; demand is a
+        | percentage of the config demand, base 100, so +3% is 103. Nothing else reads them.
         */
-        'production_cycle_minutes' => [
-            'tags' => ['crafting'],
+        'kernel_integrity' => [
+            'tags' => ['fortress'],
             'min' => 1,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+        'kernel_resistance' => [
+            'tags' => ['fortress'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+        /*
+        | The per cent chance each night that one of this character's Leechers is found and removed. The base is the host
+        | grade's own (`cyberspace.fortress.leech_discovery`), handed in at the call site; read to two decimals, because a
+        | skill takes only a small share of it.
+        */
+        'leech_discovery' => [
+            'tags' => ['fortress'],
+            'min' => 0,
+            'max' => 100,
+            'rounding' => 'hundredth',
+        ],
+        'kernel_demand' => [
+            'tags' => ['fortress'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+
+        /*
+        | The minutes in one cycle of a Decryptor this character installed, and in one run of an Assembler. The base is the item's
+        | own (a Decryptor's cycle, an Assembler's Design time less its reduction), so each skill that gates a kind lowers its own,
+        | and a modifier on the `production_cycle` tag reaches both. Boosters running on the fortress shorten them further.
+        */
+        'production_cycle_minutes.decryptor' => [
+            'tags' => ['crafting', 'production_cycle'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+        'production_cycle_minutes.assembler' => [
+            'tags' => ['crafting', 'production_cycle'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+        // The minutes in one cycle of a Network Tap and of a Transactional Wiretap this character installed.
+        'production_cycle_minutes.tap' => [
+            'tags' => ['crafting', 'production_cycle'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+        'production_cycle_minutes.wiretap' => [
+            'tags' => ['crafting', 'production_cycle'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'round',
+        ],
+        // Per cent on the credits a Transactional Wiretap this character installed skims (relative, summed then applied once).
+        'wiretap_yield' => [
+            'tags' => ['fortress'],
+            'min' => 0,
             'max' => null,
             'rounding' => 'round',
         ],

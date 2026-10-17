@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Checks\CheckRoller;
+use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\FortressAccess;
 use App\Cyberspace\FortressAreas;
 use App\Cyberspace\FortressCloak;
@@ -17,28 +19,33 @@ use App\Cyberspace\Grid;
 use App\Cyberspace\Position;
 use App\Cyberspace\Sweep;
 use App\Cyberspace\SystemType;
+use App\Models\Bookmark;
 use App\Models\Character;
-use App\Models\CharacterModifier;
 use App\Models\Design;
-use App\Models\FortressJob;
+use App\Models\FortressArea;
+use App\Models\FortressAssembly;
 use App\Models\FortressListing;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Leech;
+use App\Models\Notification;
 use App\Models\Program;
+use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContact;
 use App\Models\SystemContent;
 use App\Programs\ProgramKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Tests\Concerns\CarriesAWorkingDeck;
+use Tests\Concerns\InjectsSkills;
 use Tests\TestCase;
 
 final class FortressHostTest extends TestCase
 {
     use CarriesAWorkingDeck;
+    use InjectsSkills;
     use RefreshDatabase;
 
     private function program(Character $c, string $slug, ProgramKind $kind, float $cpu, float $ram, float $sto): InventoryItem
@@ -54,6 +61,17 @@ final class FortressHostTest extends TestCase
         Leech::query()->create(['character_id' => $c->id, 'fortress_system_id' => $fortress->id, 'host_system_id' => System::factory()->at($n, $n)->create()->id, 'resource' => $resource, 'amount' => $amount, 'installed_at' => now()]);
     }
 
+    public function test_a_small_kernel_demand_percent_still_moves_the_demand_by_a_tenth(): void
+    {
+        config(['cyberspace.fortress.kernel_demand' => ['compute' => 1.0, 'memory' => 1.0, 'storage' => 1.0]]);
+        $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'kernel_demand_percent' => 103]);
+
+        $this->assertSame(1.1, (new FortressHost)->used($f)['storage']);
+
+        $f->forceFill(['kernel_demand_percent' => 97])->save();
+        $this->assertSame(0.9, (new FortressHost)->used($f->fresh())['storage']);
+    }
+
     public function test_a_shortfall_stops_the_lowest_tier_first_and_the_kernel_last(): void
     {
         config(['cyberspace.fortress.kernel_demand' => ['compute' => 1.0, 'memory' => 1.0, 'storage' => 1.0]]);
@@ -65,7 +83,7 @@ final class FortressHostTest extends TestCase
 
         $host = new FortressHost;
         $ice = $this->program($c, 'ice', ProgramKind::FortressIce, 2, 2, 1);
-        $util = $this->program($c, 'util', ProgramKind::Utility, 2, 2, 1);
+        $util = $this->program($c, 'util', ProgramKind::FortressDaemon, 2, 2, 1);
         foreach ([$ice, $util] as $row) {
             $this->assertNull($host->install($c, $row, $f));
             $this->assertNull($host->start($c, $row->fresh()));
@@ -97,7 +115,7 @@ final class FortressHostTest extends TestCase
         $c = Character::factory()->create();
         $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
         $this->feed($c, $f, 'storage', 2.0, 5);
-        $row = $this->program($c, 'big', ProgramKind::Utility, 0, 0, 5);
+        $row = $this->program($c, 'big', ProgramKind::FortressDaemon, 0, 0, 5);
 
         $this->assertSame('no_storage', (new FortressHost)->install($c, $row, $f));
 
@@ -124,7 +142,7 @@ final class FortressHostTest extends TestCase
         $c = Character::factory()->create();
         $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
         $this->feed($c, $f, 'storage', 5.0, 5);
-        $this->program($c, 'x', ProgramKind::Utility, 0, 0, 1);
+        $this->program($c, 'x', ProgramKind::FortressDaemon, 0, 0, 1);
 
         (new Fortresses)->freeze($f->fresh());
         $this->assertTrue(Fortresses::isFrozen($f->fresh()));
@@ -268,104 +286,315 @@ final class FortressHostTest extends TestCase
         $this->assertSame('fortress', SystemContact::query()->where('character_id', $owner->id)->first()->type->value);
     }
 
-    private function producer(Character $c, System $f, array $produces, string $slug = 'maker'): InventoryItem
+    /** A fortress with room, and a producer of this kind installed and running on it. */
+    private function producing(ProgramKind $kind, array $produces): array
     {
-        $row = $this->program($c, $slug, ProgramKind::Producer, 1, 1, 1);
+        $c = Character::factory()->create();
+        $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
+        $this->feed($c, $f, 'compute', 6.0, 5);
+        $this->feed($c, $f, 'memory', 6.0, 6);
+        $this->feed($c, $f, 'storage', 20.0, 7);
+        $row = $this->program($c, 'worker-'.$kind->value, $kind, 1, 1, 1);
         $row->item->program->forceFill(['produces' => $produces])->save();
         $host = new FortressHost;
         $this->assertNull($host->install($c, $row, $f));
         $this->assertNull($host->start($c, $row->fresh()));
 
-        return $row;
+        return [$c, $f->fresh(), $row->fresh()];
     }
 
-    public function test_a_producer_captures_credits_and_makes_components_a_cycle_at_a_time(): void
+    private function dump(System $f, int $grade = 3, ?int $area = null): SystemContent
     {
-        $c = Character::factory()->create();
-        $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
-        $this->feed($c, $f, 'compute', 6.0, 5);
-        $this->feed($c, $f, 'memory', 6.0, 6);
-        $this->feed($c, $f, 'storage', 20.0, 7);
-        Item::query()->firstOrCreate(['slug' => 'dummy-part'], ['name' => 'Part', 'container' => 'data', 'stackable' => true]);
+        $file = new ExtractedFile(label: 'Customer data', sizeQb: 1.0, encryptionSkillId: null, valueSealed: 100, valueBroken: 400, grade: $grade);
+
+        return SystemContent::query()->create([
+            'system_id' => $f->id, 'kind' => 'data', 'label' => $file->label, 'size_qb' => 1.0, 'value_sealed' => 100, 'value_broken' => 400,
+            'area_id' => $area, 'meta' => ['extracted_file' => $file->toArray(), 'slug' => ExtractedFile::SEALED_SLUG],
+        ]);
+    }
+
+    private function settleAfter(System $f, int $minutes): void
+    {
+        System::query()->whereKey($f->id)->update(['production_at' => now()->subMinutes($minutes)]);
+        (new FortressProduction(fn (int $a, int $b): int => $a))->settle($f->fresh());
+    }
+
+    public function test_a_decryptor_turns_a_dump_into_a_component_a_cycle_later_and_keeps_its_origin(): void
+    {
         config(['cyberspace.decryption.components' => ['dummy-part' => ['headline' => 'x', 'weights' => [3 => 100]]]]);
+        Item::query()->firstOrCreate(['slug' => 'dummy-part'], ['name' => 'Part', 'container' => 'data', 'stackable' => false]);
+        [$c, $f] = $this->producing(ProgramKind::FortressDecryptor, ['cycle_minutes' => 60]);
+        $area = FortressArea::query()->create(['system_id' => $f->id, 'name' => 'Out', 'permissions' => []]);
+        $f->forceFill(['decryptor_out_area_id' => $area->id])->save();
+        $this->dump($f->fresh(), 3);
 
-        $this->producer($c, $f, ['credits_min' => 20, 'credits_max' => 100, 'components' => 2]);
-        $production = new FortressProduction(fn (int $a, int $b): int => $a);
-        $this->assertNull($production->enqueue($c, $f->fresh(), 'components', null, 2));
+        $this->settleAfter($f, 30);
+        $this->assertSame(0, SystemContent::query()->where('system_id', $f->id)->where('kind', 'item')->count(), 'half a cycle is not a cycle');
 
-        // Two hours is not a cycle (six hours): nothing yet.
-        System::query()->whereKey($f->id)->update(['production_at' => now()->subHours(2)]);
-        $production->settle($f->fresh());
-        $this->assertSame(0, (int) $f->fresh()->wallet);
-
-        // Another five: the carried two plus these cross the six. One cycle: the roll's floor, and two files.
-        System::query()->whereKey($f->id)->update(['production_at' => now()->subHours(5)]);
-        $production->settle($f->fresh());
-
-        $this->assertSame(20, (int) $f->fresh()->wallet);
-        $this->assertSame(0, FortressJob::query()->count());
-        $this->assertSame(2, (int) SystemContent::query()->where('system_id', $f->id)->where('kind', 'item')->sum('quantity'));
+        $this->settleAfter($f, 31);
+        $made = SystemContent::query()->where('system_id', $f->id)->where('kind', 'item')->first();
+        $this->assertSame('dummy-part', $made->item->slug);
+        $this->assertSame($area->id, $made->area_id);
+        $this->assertSame(3, $made->meta['extracted_file']['grade']);
+        $this->assertSame(0, SystemContent::query()->where('system_id', $f->id)->where('kind', 'data')->count());
     }
 
-    public function test_a_program_job_waits_for_components_and_the_queue_holds_five(): void
+    public function test_a_decryptor_banks_no_time_while_it_has_nothing_to_work_and_skills_and_boosters_shorten_its_cycle(): void
     {
-        $c = Character::factory()->create();
-        $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
-        $this->feed($c, $f, 'compute', 6.0, 5);
-        $this->feed($c, $f, 'memory', 6.0, 6);
-        $this->feed($c, $f, 'storage', 20.0, 7);
+        config(['cyberspace.decryption.components' => ['dummy-part' => ['headline' => 'x', 'weights' => [3 => 100]]]]);
+        Item::query()->firstOrCreate(['slug' => 'dummy-part'], ['name' => 'Part', 'container' => 'data', 'stackable' => false]);
+        [$c, $f, $row] = $this->producing(ProgramKind::FortressDecryptor, ['cycle_minutes' => 60]);
 
+        // Idle for a long time, then a Dump arrives: the cycle starts then, not before.
+        $this->settleAfter($f, 600);
+        $this->dump($f->fresh());
+        $this->settleAfter($f, 10);
+        $this->assertSame(0, SystemContent::query()->where('system_id', $f->id)->where('kind', 'item')->count());
+
+        $skill = Skill::factory()->rank(1)->governedBy('memory', 'focus')->create([
+            'slug' => 'decryptor_speed',
+            'modifiers' => [['op' => 'percentage_of_base', 'level' => 1, 'amount' => -50, 'target' => ['id' => 'production_cycle_minutes.decryptor']]],
+        ]);
+        $this->inject($c, $skill, $skill->pointsForLevel(1), 1);
+        $this->assertEqualsWithDelta(30.0, (new FortressProduction(fn (int $a, int $b): int => $a))->cycleMinutes($row->fresh()), 1e-9);
+        $this->assertEqualsWithDelta(15.0, (new FortressProduction(fn (int $a, int $b): int => $a))->cycleMinutes($row->fresh(), 100), 1e-9);
+    }
+
+    public function test_an_assembler_spends_the_recipe_and_makes_runs_while_components_last(): void
+    {
+        [$c, $f, $row] = $this->producing(ProgramKind::FortressAssembler, ['reduction' => 50]);
         $part = Item::query()->firstOrCreate(['slug' => 'dummy-part'], ['name' => 'Part', 'container' => 'data', 'stackable' => true]);
         $product = Item::query()->create(['slug' => 'made-script', 'name' => 'Made', 'container' => 'data', 'stackable' => false]);
         $designItem = Item::query()->create(['slug' => 'blueprint', 'name' => 'Blueprint', 'container' => 'data', 'stackable' => false]);
         $design = Design::query()->create(['item_id' => $designItem->id, 'product_item_id' => $product->id, 'craft_seconds' => 7200, 'single_use' => false]);
         $design->components()->create(['position' => 0, 'component_item_id' => $part->id, 'quantity' => 2]);
         SystemContent::query()->create(['system_id' => $f->id, 'kind' => 'item', 'item_id' => $designItem->id, 'quantity' => 1]);
-
-        // Two hours of work needed; the producer gives 1 production a cycle.
-        $this->producer($c, $f, ['programs' => 1]);
+        SystemContent::query()->create(['system_id' => $f->id, 'kind' => 'item', 'item_id' => $part->id, 'quantity' => 3]);
         $production = new FortressProduction(fn (int $a, int $b): int => $a);
-        $this->assertNull($production->enqueue($c, $f->fresh(), 'program', $designItem->id));
 
-        System::query()->whereKey($f->id)->update(['production_at' => now()->subHours(7)]);
-        $production->settle($f->fresh());
-        $this->assertSame(1, FortressJob::query()->count(), 'no components: this cycle yielded nothing');
-        $this->assertSame(0.0, (float) FortressJob::query()->first()->progress);
+        $this->assertSame('no_design', $production->assign($c, $f, $row, 999999, 2));
+        $this->assertNull($production->assign($c, $f, $row, $designItem->id, 2));
 
-        SystemContent::query()->create(['system_id' => $f->id, 'kind' => 'item', 'item_id' => $part->id, 'quantity' => 2]);
-        System::query()->whereKey($f->id)->update(['production_at' => now()->subHours(13)]);
-        $production->settle($f->fresh());
+        // Two hours halved by the item is 60 minutes a run.
+        $this->assertEqualsWithDelta(60.0, $production->runMinutes($row, $design), 1e-9);
+        $this->settleAfter($f, 30);
+        $this->assertSame(0, SystemContent::query()->where('item_id', $product->id)->count());
+        $this->assertSame(1, SystemContent::query()->where('item_id', $part->id)->sum('quantity'), 'the recipe is spent when the run starts');
 
-        // Two cycles of 1 production each finish the two hours of work.
-        $this->assertSame(0, FortressJob::query()->count());
-        $this->assertSame(1, SystemContent::query()->where('system_id', $f->id)->where('item_id', $product->id)->count());
-        $this->assertSame(0, SystemContent::query()->where('system_id', $f->id)->where('item_id', $part->id)->count());
+        // The first run finishes; the second cannot start on one component, so it waits.
+        $this->settleAfter($f, 40);
+        $this->assertSame(1, SystemContent::query()->where('item_id', $product->id)->count());
+        $this->assertSame(1, FortressAssembly::query()->first()->runs_done);
 
-        foreach (range(1, 5) as $_) {
-            $production->enqueue($c, $f->fresh(), 'components');
-        }
-        $this->assertSame('queue_full', $production->enqueue($c, $f->fresh(), 'components'));
+        // Changing the assignment cancels the run in progress.
+        $this->assertNull($production->assign($c, $f, $row, $designItem->id, 0));
+        $this->assertFalse((bool) FortressAssembly::query()->first()->started);
     }
 
-    public function test_the_cycle_length_is_a_stat_that_modifiers_and_boosters_reach(): void
+    public function test_an_assembler_uses_only_components_that_match_the_designs_filters_lowest_grade_first(): void
+    {
+        [$c, $f, $row] = $this->producing(ProgramKind::FortressAssembler, ['reduction' => 0]);
+        $part = Item::query()->firstOrCreate(['slug' => 'dummy-part'], ['name' => 'Part', 'container' => 'data', 'stackable' => false]);
+        $product = Item::query()->create(['slug' => 'made-script', 'name' => 'Made', 'container' => 'data', 'stackable' => false]);
+        $designItem = Item::query()->create(['slug' => 'blueprint', 'name' => 'Blueprint', 'container' => 'data', 'stackable' => false]);
+        $design = Design::query()->create(['item_id' => $designItem->id, 'product_item_id' => $product->id, 'craft_seconds' => 3600, 'single_use' => false]);
+        $design->components()->create(['position' => 0, 'component_item_id' => $part->id, 'quantity' => 1, 'grade_min' => 5]);
+        SystemContent::query()->create(['system_id' => $f->id, 'kind' => 'item', 'item_id' => $designItem->id, 'quantity' => 1]);
+        $part = fn (int $grade) => SystemContent::query()->create([
+            'system_id' => $f->id, 'kind' => 'item', 'item_id' => $part->id, 'quantity' => 1,
+            'meta' => ['extracted_file' => (new ExtractedFile(label: 'x', sizeQb: 1.0, encryptionSkillId: null, valueSealed: 1, valueBroken: 1, grade: $grade))->toArray()],
+        ]);
+        $weak = $part(2);
+        $production = new FortressProduction(fn (int $a, int $b): int => $a);
+        $production->assign($c, $f, $row, $designItem->id, 1);
+
+        $this->settleAfter($f, 90);
+        $this->assertNotNull($weak->fresh(), 'a grade 2 component does not satisfy a grade 5 line');
+        $this->assertFalse((bool) FortressAssembly::query()->first()->started);
+
+        $good = $part(7);
+        $better = $part(5);
+        $this->settleAfter($f, 30);
+        $this->assertNull($better->fresh(), 'the lowest qualifying grade is spent');
+        $this->assertNotNull($good->fresh());
+        $this->assertNotNull($weak->fresh());
+    }
+
+    public function test_areas_are_set_by_hosts_and_a_taken_down_decryptor_gives_back_what_it_held(): void
+    {
+        config(['cyberspace.decryption.components' => ['dummy-part' => ['headline' => 'x', 'weights' => [3 => 100]]]]);
+        Item::query()->firstOrCreate(['slug' => 'dummy-part'], ['name' => 'Part', 'container' => 'data', 'stackable' => false]);
+        [$c, $f, $row] = $this->producing(ProgramKind::FortressDecryptor, ['cycle_minutes' => 60]);
+        $stranger = Character::factory()->create();
+        $production = new FortressProduction(fn (int $a, int $b): int => $a);
+        $area = FortressArea::query()->create(['system_id' => $f->id, 'name' => 'In', 'permissions' => []]);
+
+        $this->assertSame('not_yours', $production->setAreas($stranger, $f, 'decryptor', $area->id, null));
+        $this->assertSame('not_yours', $production->setAreas($c, $f, 'decryptor', 999999, null));
+        $this->assertNull($production->setAreas($c, $f, 'decryptor', $area->id, null));
+        $this->assertSame($area->id, (int) $f->fresh()->decryptor_in_area_id);
+
+        $this->dump($f->fresh(), 5, $area->id);
+        $this->settleAfter($f, 10);
+        $this->assertSame(0, SystemContent::query()->where('kind', 'data')->count(), 'the Decryptor holds the Dump while it works');
+
+        $this->assertNull((new FortressHost)->uninstall($c, $row->fresh()));
+        $back = SystemContent::query()->where('kind', 'data')->first();
+        $this->assertSame($area->id, $back->area_id);
+        $this->assertSame(5, $back->meta['extracted_file']['grade']);
+    }
+
+    public function test_a_network_tap_steals_a_dump_from_each_node_in_range_each_cycle_and_a_failed_roll_steals_none(): void
+    {
+        [$c, $f] = $this->producing(ProgramKind::FortressNetworkTap, ['cycle_minutes' => 60, 'range' => 2, 'strength' => 1000]);
+        System::factory()->at(2, 2)->grade(1)->create();
+        System::factory()->at(3, 3)->grade(2)->create();
+        System::factory()->at(9, 9)->grade(1)->create(); // out of range
+        $this->app->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 0.0));
+
+        $this->settleAfter($f, 30);
+        $this->assertSame(0, SystemContent::query()->where('system_id', $f->id)->where('kind', 'data')->count(), 'half a cycle is not a cycle');
+
+        $this->settleAfter($f, 31);
+        $dumps = SystemContent::query()->where('system_id', $f->id)->where('kind', 'data')->get();
+        $this->assertCount(2, $dumps);
+        $this->assertSame(ExtractedFile::SEALED_SLUG, $dumps[0]->meta['slug']);
+        $this->assertEqualsCanonicalizing([1, 2], $dumps->map(fn ($d) => $d->meta['extracted_file']['grade'])->all());
+
+        SystemContent::query()->where('system_id', $f->id)->delete();
+        $this->app->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 0.9999));
+        $this->settleAfter($f, 61);
+        $this->assertSame(0, SystemContent::query()->where('system_id', $f->id)->where('kind', 'data')->count());
+    }
+
+    public function test_a_wiretap_skims_creds_by_grade_into_the_wallet_and_a_skill_raises_it(): void
+    {
+        [$c, $f] = $this->producing(ProgramKind::FortressWiretap, ['cycle_minutes' => 60, 'range' => 1, 'strength' => 1000]);
+        System::factory()->at(2, 2)->grade(3)->create();
+        config(['cyberspace.fortress.wiretap_pay' => [3 => [20, 40]]]);
+        $this->app->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 0.0));
+
+        $this->settleAfter($f, 61);
+        $this->assertSame(20, (int) $f->fresh()->wallet); // the pinned die takes the minimum
+
+        $skill = Skill::factory()->rank(1)->governedBy('memory', 'focus')->create([
+            'slug' => 'skim', 'modifiers' => [['op' => 'add', 'level' => 1, 'amount' => 50, 'target' => ['id' => 'wiretap_yield']]],
+        ]);
+        $this->inject($c, $skill, $skill->pointsForLevel(1), 1);
+        $this->settleAfter($f, 61);
+        $this->assertSame(50, (int) $f->fresh()->wallet); // 20 + 30
+    }
+
+    public function test_a_defence_skill_lifts_only_its_own_product(): void
+    {
+        $c = Character::factory()->create();
+        $skill = Skill::factory()->rank(1)->governedBy('memory', 'intellect')->create([
+            'slug' => 'ice_quality',
+            'modifiers' => [['op' => 'add', 'level' => 1, 'amount' => 50, 'target' => ['id' => 'defence_quality.ice']]],
+        ]);
+        $this->inject($c, $skill, $skill->pointsForLevel(1), 1);
+        $ice = $this->program($c, 'wall', ProgramKind::FortressIce, 1, 1, 1);
+        $ids = $this->program($c, 'eye', ProgramKind::FortressIds, 1, 1, 1);
+
+        foreach ([$ice, $ids] as $row) {
+            FortressDefence::stamp($c->fresh(), $row->load('item.program'));
+        }
+
+        $this->assertSame(8, $ice->fresh()->defence['attack']);
+        $this->assertSame(45, $ice->fresh()->defence['integrity']);
+        $this->assertSame(20, $ids->fresh()->defence['detection']);
+    }
+
+    public function test_a_boosters_boost_is_stamped_by_its_maker_and_never_decays(): void
+    {
+        $c = Character::factory()->create();
+        $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
+        $skill = Skill::factory()->rank(1)->governedBy('memory', 'intellect')->create([
+            'slug' => 'booster_quality',
+            'modifiers' => [['op' => 'add', 'level' => 1, 'amount' => 10, 'target' => ['id' => 'defence_quality.booster']]],
+        ]);
+        $this->inject($c, $skill, $skill->pointsForLevel(1), 1);
+        $row = $this->program($c, 'pace', ProgramKind::Booster, 1, 1, 1);
+        $row->item->program->update(['produces' => ['boost' => 25]]);
+
+        FortressDefence::stamp($c->fresh(), $row->load('item.program'));
+        $row = $row->fresh();
+        $row->forceFill(['fortress_system_id' => $f->id, 'fortress_running' => true])->save();
+        FortressDefence::installed($row);
+
+        // 25 over base by a 10% maker; no decay clock and no maintenance for a Booster.
+        $this->assertEqualsWithDelta(27.5, $row->fresh()->defence['boost'], 1e-9);
+        $this->assertArrayNotHasKey('maintained_at', $row->fresh()->defence);
+        $this->assertSame('not_hosted', FortressDefence::maintain($c, $row->fresh(), $f));
+    }
+
+    public function test_a_relocation_names_a_bookmark_for_the_owner_and_messages_who_is_chosen(): void
+    {
+        config(['cyberspace.size' => 16]);
+        $owner = Character::factory()->create();
+        $admin = Character::factory()->create();
+        $guest = Character::factory()->create();
+        $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'name' => 'Citadel', 'owner_character_id' => $owner->id, 'relocated_at' => now()->subDays(3)]);
+        DB::table('fortress_members')->insert([
+            ['system_id' => $f->id, 'character_id' => $admin->id, 'role' => 'administrator'],
+            ['system_id' => $f->id, 'character_id' => $guest->id, 'role' => 'member'],
+        ]);
+        $this->feed($owner, $f, 'compute', 6.0, 20);
+        $this->feed($owner, $f, 'memory', 6.0, 21);
+        $this->feed($owner, $f, 'storage', 6.0, 22);
+        $mover = $this->program($owner, 'hop', ProgramKind::Relocation, 1, 1, 1);
+        (new FortressHost)->install($owner, $mover, $f);
+        (new FortressHost)->start($owner, $mover->fresh());
+
+        // The administrator may set the interval and who is told; a guest may not, nor may an interval off the list.
+        $relocation = new FortressRelocation;
+        $this->assertSame('not_yours', $relocation->configure($guest, $f->fresh(), 8, true, true, true));
+        $this->assertSame('bad_interval', $relocation->configure($admin, $f->fresh(), 5, true, true, true));
+        $this->assertNull($relocation->configure($admin, $f->fresh(), 8, true, false, false));
+        $this->assertSame(8, FortressRelocation::hoursFor($f->fresh()));
+
+        System::query()->whereKey($f->id)->update(['relocated_at' => now()->subHours(9)]);
+        $this->assertTrue($relocation->due($f->fresh()));
+
+        $new = $f->fresh();
+        $this->assertSame('Citadel', Bookmark::query()->where('character_id', $owner->id)->where('address', $new->address)->value('label'));
+        $mail = Notification::query()->where('user_id', $owner->user_id)->latest('id')->first();
+        $this->assertSame('Data Fortress Citadel relocated', $mail->title);
+        $this->assertSame("The new position is {$new->x},{$new->y}, address {$new->address}", $mail->body);
+        $this->assertSame(0, Notification::query()->where('user_id', $admin->user_id)->count());
+        $this->assertSame(0, Notification::query()->where('user_id', $guest->user_id)->count());
+
+        // And not before the interval has passed again.
+        $this->assertFalse($relocation->due($new->fresh()));
+    }
+
+    public function test_maintenance_skills_raise_values_and_cut_demand_a_pass_at_a_time(): void
     {
         $c = Character::factory()->create();
         $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
         $this->feed($c, $f, 'compute', 6.0, 5);
         $this->feed($c, $f, 'memory', 6.0, 6);
-        $this->feed($c, $f, 'storage', 20.0, 7);
-        $row = $this->producer($c, $f, ['credits_min' => 1, 'credits_max' => 1])->fresh();
-        $production = new FortressProduction(fn (int $a, int $b): int => $a);
-
-        $this->assertSame(360.0, $production->cycleMinutes($row));
-        $this->assertEqualsWithDelta(180.0, $production->cycleMinutes($row, 100), 1e-9);
-
-        Config::set('effects.quick', [
-            'label' => 'Quick', 'stacking' => 'unique', 'retired' => false,
-            'modifiers' => [['op' => 'percentage_of_base', 'amount' => -50, 'target' => ['id' => 'production_cycle_minutes']]],
+        $this->feed($c, $f, 'storage', 6.0, 7);
+        $hardening = Skill::factory()->rank(1)->governedBy('memory', 'focus')->create([
+            'slug' => 'hardening_t',
+            'modifiers' => array_map(fn (int $l): array => ['op' => 'add', 'level' => $l, 'amount' => 2, 'target' => ['id' => 'maintenance_boost']], range(1, 5)),
         ]);
-        CharacterModifier::query()->create(['character_id' => $c->id, 'definition_key' => 'quick']);
+        $streamlining = Skill::factory()->rank(1)->governedBy('memory', 'focus')->create([
+            'slug' => 'streamlining_t',
+            'modifiers' => array_map(fn (int $l): array => ['op' => 'add', 'level' => $l, 'amount' => 1, 'target' => ['id' => 'maintenance_efficiency']], range(1, 5)),
+        ]);
+        $this->inject($c, $hardening, $hardening->pointsForLevel(3), 3);
+        $this->inject($c, $streamlining, $streamlining->pointsForLevel(2), 2);
+        $ice = $this->program($c, 'wall', ProgramKind::FortressIce, 1, 1, 1);
+        FortressDefence::stamp($c->fresh(), $ice->load('item.program'));
+        (new FortressHost)->install($c, $ice, $f);
 
-        $this->assertEqualsWithDelta(180.0, $production->cycleMinutes($row->fresh()), 1e-9);
+        $this->assertNull(FortressDefence::maintain($c->fresh(), $ice->fresh(), $f));
+
+        // 3 levels of Hardening is 6% a pass (rounded up to a point on 5 and 30); 2 of Streamlining cuts 2 points of demand.
+        $defence = $ice->fresh()->defence;
+        $this->assertSame(6, $defence['attack']);
+        $this->assertSame(32, $defence['integrity']);
+        $this->assertEquals(2, $defence['cut']);
     }
 }

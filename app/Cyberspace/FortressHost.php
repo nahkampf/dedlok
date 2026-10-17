@@ -75,7 +75,8 @@ final class FortressHost
             return 'not_yours';
         }
 
-        DB::transaction(function () use ($row): void {
+        DB::transaction(function () use ($row, $fortress): void {
+            FortressProduction::make()->release($fortress, $row);
             FortressDefence::uninstalled($row);
             $row->forceFill(['fortress_system_id' => null, 'fortress_running' => false, 'fortress_halted' => false])->save();
 
@@ -214,7 +215,7 @@ final class FortressHost
             }
 
             // Back online, and the self-restarting tiers come back in order: Kernel, then ICE, then IDS.
-            $kernel = $this->kernelDemand();
+            $kernel = $this->kernelDemand($fortress);
             $free = function () use (&$running, $fortress, $totals): array {
                 $demand = $this->demand($fortress, $running);
 
@@ -259,7 +260,7 @@ final class FortressHost
         $running = $this->hosted($fortress)->filter(fn (InventoryItem $r): bool => $r->fortress_running);
         $demand = $this->demand($fortress, $running);
         $storage = (float) $this->hosted($fortress)->sum(fn (InventoryItem $r): float => $this->cost($r, 'storage_size'))
-            + $this->kernelDemand()['storage']
+            + $this->kernelDemand($fortress)['storage']
             + FortressVault::stored($fortress);
 
         return ['compute' => $demand['compute'], 'memory' => $demand['memory'], 'storage' => Qb::of($storage)];
@@ -280,7 +281,7 @@ final class FortressHost
      */
     private function demand(System $fortress, Collection $running): array
     {
-        $kernel = $this->kernelDemand();
+        $kernel = $this->kernelDemand($fortress);
 
         return [
             'compute' => Qb::of($kernel['compute'] + (float) $running->sum(fn ($r): float => $this->cost($r, 'qflops_cost'))),
@@ -289,11 +290,16 @@ final class FortressHost
     }
 
     /** @return array{compute: float, memory: float, storage: float} */
-    private function kernelDemand(): array
+    private function kernelDemand(System $fortress): array
     {
         $k = (array) config('cyberspace.fortress.kernel_demand', []);
+        $percent = $fortress->kernelDemandPercent();
 
-        return ['compute' => (float) ($k['compute'] ?? 0), 'memory' => (float) ($k['memory'] ?? 0), 'storage' => (float) ($k['storage'] ?? 0)];
+        // Taken to a tenth AWAY from the base, so a small percent still moves it: +3% on 1.0 is 1.1, not 1.0.
+        $scaled = static fn (mixed $base): float => $percent === 100 ? (float) $base
+            : ($percent > 100 ? ceil(round((float) $base * $percent / 100 * 10, 6)) : floor(round((float) $base * $percent / 100 * 10, 6))) / 10;
+
+        return ['compute' => $scaled($k['compute'] ?? 0), 'memory' => $scaled($k['memory'] ?? 0), 'storage' => $scaled($k['storage'] ?? 0)];
     }
 
     private function weight(InventoryItem $row): float

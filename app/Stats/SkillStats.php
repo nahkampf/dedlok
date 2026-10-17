@@ -51,6 +51,9 @@ final class SkillStats
     /** `crafting_seconds.<kind>`: how long building a program of one kind takes, in seconds. The design hands in its own base. */
     public const CRAFTING_PREFIX = 'crafting_seconds.';
 
+    /** `defence_quality.<ice|ids|booster|cloak>`: a percent over base on a maker's fortress ICE, IDS, Booster or Cloak (ICE and IDS add the general `defence_quality`). */
+    public const QUALITY_PREFIX = 'defence_quality.';
+
     public const ENCRYPTION_CATEGORY = 'Encryption';
 
     /** Cleared by the Skill model, the way the archetype roster is. */
@@ -265,6 +268,15 @@ final class SkillStats
                 'min' => 1,
                 'max' => null,
                 'rounding' => 'ceil',
+            ];
+        }
+
+        foreach (['ice', 'ids', 'booster', 'cloak'] as $key) {
+            $definitions[self::QUALITY_PREFIX.$key] = [
+                'tags' => ['crafting'],
+                'min' => 0,
+                'max' => null,
+                'rounding' => 'round',
             ];
         }
 

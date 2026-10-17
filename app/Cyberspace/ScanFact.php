@@ -74,6 +74,8 @@ enum ScanFact: string
             // take the answer with it. Zero is "there is none", which is an
             // answer like any other.
             self::Ice => $scan->ice_level !== null,
+            // Learned only by seeing through a Cloak; a scan whose disguise held never learns there was one.
+            self::Cloaked => $scan->cloak_broken === true,
             default => false,
         };
     }
@@ -110,6 +112,7 @@ enum ScanFact: string
             self::Ice => $scan->ice_level > 0
                 ? self::iceWithBounty($scan)
                 : Text::get('cyberspace.reading.none'),
+            self::Cloaked => Text::get('cyberspace.reading.cloak_seen'),
             default => null,
         };
     }

@@ -21,6 +21,8 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\System;
 use App\Models\User;
+use App\Programs\ProgramKind;
+use App\Programs\ProgramRunner;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -173,6 +175,29 @@ final class MapScreenTest extends TestCase
         $this->actingAs($this->user)
             ->post(route('cyberspace.jump'), ['address' => 'deadbeef'])
             ->assertRedirect();
+
+        $this->assertTrue($this->character->fresh()->gridPosition()->equals(new Position(2, 13)));
+    }
+
+    public function test_a_jump_button_needs_a_jumper_and_then_opens_the_map(): void
+    {
+        $this->equipReadyDeck();
+        $this->actingAs($this->user)->post(route('cyberspace.jack_in'));
+        System::factory()->at(2, 13)->create(['address' => 'DEADBEEF']);
+
+        // No Jumper: refused, and the typed box (no `via`) is still free.
+        $this->actingAs($this->user)
+            ->post(route('cyberspace.jump'), ['address' => 'DEADBEEF', 'via' => 'jumper'])
+            ->assertSessionHas('error');
+        $this->assertFalse($this->character->fresh()->gridPosition()->equals(new Position(2, 13)));
+
+        $jumper = Item::factory()->program(ProgramKind::Utility, qflops: 0.2, memory: 0.3, storage: 0.3, background: true, abilities: ['jumps' => true])->create();
+        $row = InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $jumper->id, 'quantity' => 1]);
+        $this->assertTrue(app(ProgramRunner::class)->start($this->character->fresh(), $row)->succeeded());
+
+        $this->actingAs($this->user)
+            ->post(route('cyberspace.jump'), ['address' => 'DEADBEEF', 'via' => 'jumper'])
+            ->assertRedirect(route('cyberspace.index'));
 
         $this->assertTrue($this->character->fresh()->gridPosition()->equals(new Position(2, 13)));
     }

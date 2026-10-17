@@ -156,4 +156,11 @@ final class TasksAndMissionsTest extends TestCase
     {
         $this->get(route('tasks.index'))->assertRedirect();
     }
+
+    public function test_a_jump_button_beside_an_address_needs_a_jumper_running(): void
+    {
+        $this->job($this->me, MissionAction::Scan, MissionState::Accepted);
+
+        $this->assertStringNotContainsString('name="via"', $this->page());
+    }
 }

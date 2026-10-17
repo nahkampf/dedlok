@@ -21,9 +21,20 @@ return [
         'decryptor' => 'decryptor_crafting',
         'script' => 'script_crafting',
         'leecher' => 'leecher_crafting',
+        'kernel' => 'kernel_crafting',
+        'fortress_ice' => 'fortress_ice_crafting',
+        'fortress_ids' => 'fortress_ids_crafting',
+        'booster' => 'booster_crafting',
+        'fortress_decryptor' => 'fortress_decryptor_crafting',
+        'fortress_assembler' => 'assembler_crafting',
+        'fortress_network_tap' => 'network_tap_crafting',
+        'fortress_wiretap' => 'wiretap_crafting',
+        'cloak' => 'utility_crafting',
+        'market' => 'utility_crafting',
+        'relocation' => 'utility_crafting',
     ],
     'gate_level' => 1,
 
     // At most this many lines in one recipe, and the rows the design editor draws.
-    'max_components' => 8,
+    'max_components' => 10,
 ];

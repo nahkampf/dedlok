@@ -20,6 +20,8 @@
     'desk' => false,
     // Just Abandon, for a card that has no other buttons (Tasks & Missions): the one thing that can be done from anywhere.
     'abandon' => false,
+    // A Jump button beside each address that still stands (Tasks & Missions): jumps there and opens the map.
+    'jump' => false,
 ])
 
 @php($action = $mission->action)
@@ -128,6 +130,9 @@
                                 {{ Text::get('missions.coordinates', ['xy' => ($target->system?->x ?? '?').','.($target->system?->y ?? '?')]) }}
                             @else
                                 <x-address :address="$target->address" />
+                                @if ($jump && $target->stillStands())
+                                    <x-jump :address="$target->address" />
+                                @endif
                             @endif
                         </span>
                         <span class="row row--wrap" style="--gap:var(--s-2);justify-content:flex-end">

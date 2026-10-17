@@ -40,6 +40,8 @@ Build order, each its own step: **1. decimal QB / qFLOPS** (built, unreleased), 
 
 ---
 
+- **Component substitution** (noted 2026-10-17): let lower-grade components stand in for a higher-grade requirement at a fixed ratio (a line needing 1 grade 2 component also accepts 2 grade 1), for Assemblers and perhaps player crafting. Today a line's grade filters are strict.
+
 ## Decryption: what is left (2026-10-08)
 
 Built: the queue, cycles, simultaneous decryptors, reordering, gates, Cryptology and Precomputation, Ghostkey, buy lists, supply

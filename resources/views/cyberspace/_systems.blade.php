@@ -66,6 +66,7 @@
                         <td>
                             <span class="row" style="--gap:var(--s-2);align-items:center;flex-wrap:nowrap">
                                 <span data-inspect="#sys-{{ $row['address'] }}" data-inspect-hover><x-address :address="$row['address']" /></span>
+                                <x-jump :address="$row['address']" />
                                 @if ($row['complete'])
                                     <span class="mark--ok" title="{{ Text::get('cyberspace.known.full_scan') }}" aria-label="{{ Text::get('cyberspace.known.full_scan') }}">&#10003;</span>
                                 @endif

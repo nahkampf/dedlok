@@ -11,6 +11,7 @@ use App\Models\System;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
 use App\Programs\ProgramKind;
+use App\Stats\Resolver;
 use App\Support\Qb;
 use Illuminate\Support\Facades\DB;
 
@@ -112,16 +113,26 @@ final class Leeches
     }
 
     /**
-     * One roll per Leecher: a base chance (config) that its host noticed it. A found one is removed and its owner told.
-     * Returns how many were removed.
+     * One roll per Leecher against its chance of being found: the host grade's base (config), lowered by the installer's
+     * `leech_discovery` skills, and never under the floor. A found one is removed and its owner told. The die is
+     * 1 to 10,000 (a chance carried to hundredths of a per cent). Returns how many were removed.
      */
     public function discover(\Closure $roll, bool $dryRun = false): int
     {
-        $chance = (int) config('cyberspace.fortress.leech_discovery', 10);
+        $table = (array) config('cyberspace.fortress.leech_discovery', []);
+        $floor = (float) config('cyberspace.fortress.leech_discovery_floor', 0.5);
+        $resolver = app(Resolver::class);
         $removed = 0;
 
         foreach (Leech::query()->get() as $leech) {
-            if ($roll(1, 100) > $chance) {
+            $host = System::query()->find($leech->host_system_id);
+            $owner = Character::query()->find($leech->character_id);
+            $base = (float) ($table[$host?->grade] ?? reset($table) ?: 10);
+            $chance = $owner === null
+                ? $base
+                : (float) $resolver->resolve('leech_discovery', $base, $owner->modifiers())->value;
+
+            if ($roll(1, 10000) > (int) round(max($floor, $chance) * 100)) {
                 continue;
             }
 
@@ -131,8 +142,6 @@ final class Leeches
                 continue;
             }
 
-            $owner = Character::query()->find($leech->character_id);
-            $host = System::query()->find($leech->host_system_id);
             $leech->delete();
 
             if ($owner !== null) {
@@ -148,12 +157,8 @@ final class Leeches
     /** @return array{0: ?string, 1: float} the single resource a Leecher takes, and how much */
     private function spec(Program $program): array
     {
-        foreach (['compute' => 'qflops_cost', 'memory' => 'memory_cost', 'storage' => 'storage_size'] as $resource => $column) {
-            if ((float) $program->{$column} > 0) {
-                return [$resource, (float) $program->{$column}];
-            }
-        }
-
-        return [null, 0.0];
+        return $program->leech_resource === null || (float) $program->leech_amount <= 0
+            ? [null, 0.0]
+            : [(string) $program->leech_resource, (float) $program->leech_amount];
     }
 }

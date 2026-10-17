@@ -248,7 +248,7 @@ final class Sheet
         }
 
         // A crafting time is the design's own number, handed to the resolver at the call site; asked of a sheet it has none.
-        if (str_starts_with($statId, SkillStats::CRAFTING_PREFIX)) {
+        if (str_starts_with($statId, SkillStats::CRAFTING_PREFIX) || str_starts_with($statId, SkillStats::QUALITY_PREFIX)) {
             return 0.0;
         }
 

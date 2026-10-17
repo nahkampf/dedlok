@@ -739,21 +739,24 @@ return [
     ],
 
     /*
-    | DATA FORTRESSES: what founding one asks for. The skill and the Kernel item are authored in the editors, so they are
+    | DATA FORTRESSES: what founding one asks for. The skill is authored in the editor, so it is
     | named here by slug and a slug that is not in the game gates nothing (the crafting gates' rule). `cap` is how many a
     | character may hold, none at first; a skill raises it.
     */
     'fortress' => [
         'skill' => 'node_administration',
-        'kernel' => 'data-fortress-kernel',
         'cap' => 0,
-        // Per cent chance each Leecher is found and removed on the nightly roll. Skills will lower it.
-        'leech_discovery' => 10,
+        // Per cent chance each Leecher is found and removed on the nightly roll, by the grade of the host it sits on. The
+        // installer's `leech_discovery` stat starts from this and skills lower it; `leech_discovery_floor` is the least it
+        // can come to, so no Leecher is ever completely safe.
+        'leech_discovery' => [1 => 4, 2 => 6, 3 => 8, 4 => 10, 5 => 12, 6 => 14, 7 => 16, 8 => 18, 9 => 20],
+        'leech_discovery_floor' => 0.5,
         // What a fortress's own Kernel takes from its Leechers' totals just to be online (balance last).
         'kernel_demand' => ['compute' => 1.0, 'memory' => 1.0, 'storage' => 1.0],
         // Hours offline before a fortress and everything on it is deleted.
         'abandon_hours' => 48,
-        // The Kernel's System Integrity and its flat resistance to every point of incoming burn damage (balance last).
+        // The BASE of a founding Kernel's System Integrity and its flat resistance to every point of incoming burn damage (balance
+        // last). A Kernel item's own modifiers move them, and the result is kept on the fortress when it is founded.
         'kernel_integrity' => 100,
         'kernel_resistance' => 0,
         // Hours a burned Kernel stays Frozen, in which the owner can save it.
@@ -763,7 +766,8 @@ return [
         'defence' => [
             'ice' => ['attack' => 5, 'integrity' => 30],
             'ids' => ['detection' => 20],
-            'cloak' => ['strength' => 10],
+            // The base stealth of a Cloak: a scan's reading is rolled against it (the scale of `scan.difficulty`).
+            'cloak' => ['strength' => 30],
             'decay_per_day' => 0.02,
             // Maintenance by a skilled hand may raise a value up to this over what it was crafted as, and cut its demand by
             // at most this many per cent.
@@ -773,10 +777,10 @@ return [
         ],
         // The catalogue ICE a fortress's own ICE borrows its hit chance, tags and name from.
         'ice_template_level' => 1,
-        // What producers make: the grade a made component is drawn at, and the work a components job takes at speed 1.
-        'produce' => ['component_grade' => 3, 'cycle_minutes' => 360],
         // Raiding the wallet: the share of the fortress wallet a raid takes when it touches the core.
         'wallet_raid_percent' => 25,
+        // What a Transactional Wiretap skims per node it succeeds against, by the node's grade: [min, max] creds (balance last).
+        'wiretap_pay' => [1 => [10, 20], 2 => [15, 25], 3 => [20, 40], 4 => [30, 50], 5 => [40, 60], 6 => [50, 70], 7 => [60, 90], 8 => [75, 120], 9 => [90, 150]],
         // Hours between a Relocation program's moves.
         'relocate_hours' => 24,
         // Seconds between the turns of a run against a fortress.

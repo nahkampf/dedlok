@@ -109,9 +109,10 @@ final class ProgramTest extends TestCase
         float $memory = 10,
         array $modifiers = [],
         ?bool $background = null,
+        array $abilities = [],
     ): Item {
         return Item::factory()
-            ->program($kind, qflops: $qflops, memory: $memory, modifiers: $modifiers, background: $background)
+            ->program($kind, qflops: $qflops, memory: $memory, modifiers: $modifiers, background: $background, abilities: $abilities)
             ->create();
     }
 
@@ -126,13 +127,17 @@ final class ProgramTest extends TestCase
         $this->assertSame(ProcessRefusal::Listed, $this->runner->start($this->character->fresh(), $row->fresh(), true)->refusal);
     }
 
-    public function test_a_locator_and_a_pathfinder_share_one_slot(): void
+    public function test_a_locator_and_a_pathfinder_share_one_slot_and_a_jumper_has_its_own(): void
     {
-        $first = $this->own($this->programItem(ProgramKind::Locator, qflops: 1, memory: 1, background: true));
-        $second = $this->own($this->programItem(ProgramKind::Pathfinder, qflops: 1, memory: 1, background: true));
+        $first = $this->own($this->programItem(ProgramKind::Utility, qflops: 1, memory: 1, background: true, abilities: ['locates' => true]));
+        $second = $this->own($this->programItem(ProgramKind::Utility, qflops: 1, memory: 1, background: true, abilities: ['locates' => true, 'walks' => true]));
+        $jumper = $this->own($this->programItem(ProgramKind::Utility, qflops: 1, memory: 1, background: true, abilities: ['jumps' => true]));
+        $other = $this->own($this->programItem(ProgramKind::Utility, qflops: 1, memory: 1, background: true, abilities: ['jumps' => true]));
 
         $this->assertTrue($this->runner->start($this->character, $first)->succeeded());
         $this->assertSame(ProcessRefusal::OneLocator, $this->runner->start($this->character->fresh(), $second)->refusal);
+        $this->assertTrue($this->runner->start($this->character->fresh(), $jumper)->succeeded());
+        $this->assertSame(ProcessRefusal::OneJumper, $this->runner->start($this->character->fresh(), $other)->refusal);
     }
 
     // ---- the point of the whole phase -----------------------------------

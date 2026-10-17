@@ -1207,7 +1207,7 @@
       // Abandoning posts an address, and the dialog is rendered once for
       // whichever read is being watched — so the form has to follow the poll
       // rather than the page it was rendered on.
-      dlg.querySelectorAll("[data-reading-abandon-address], [data-reading-export-address]")
+      dlg.querySelectorAll("[data-reading-abandon-address], [data-reading-export-address], [data-reading-jump-address]")
         .forEach((field) => { if (data.address) field.value = data.address; });
       set("instrument", data.instrument);
       set("pass", dlg.dataset.readingPass.replace(":pass", data.pass));
