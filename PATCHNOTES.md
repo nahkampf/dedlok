@@ -1,3 +1,7 @@
+## 0.66.0 (2026-10-19)
+- Updated safehouse data
+- Updated food places
+
 ## 0.65.0 (2026-10-19)
 
 - New: Fatigue. Everything you makes you more tired. Resting, eating, and a couple of other things (some not yet built) makes you less tired.

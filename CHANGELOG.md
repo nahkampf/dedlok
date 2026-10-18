@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.66.0] — 2026-10-19
+
+Authored safehouses and places to eat reach the live game.
+
+### Added
+
+- **Content authored in the editors, carried by migration** (`2026_10_20_120000_authored_safehouses_and_food`): the cardboard box as tuned (2 slots, stealth 5, rest 1), four safehouses (Sleeper Coffin, a squat, a one-room apartment, Hard Loft) and three places to eat (Kakurega, Pink House, an Automata vending machine) with their menus. Skipped by slug where they already exist.
+
+### Migrations
+
+- `2026_10_20_120000_authored_safehouses_and_food`
+
+
+
 ## [0.65.0] — 2026-10-19
 
 ### Added
@@ -3475,7 +3489,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.65.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.66.0...HEAD
+[0.66.0]: https://github.com/nahkampf/dedlok/compare/v0.65.0...v0.66.0
 [0.65.0]: https://github.com/nahkampf/dedlok/compare/v0.64.1...v0.65.0
 [0.64.1]: https://github.com/nahkampf/dedlok/compare/v0.64.0...v0.64.1
 [0.64.0]: https://github.com/nahkampf/dedlok/compare/v0.63.2...v0.64.0
