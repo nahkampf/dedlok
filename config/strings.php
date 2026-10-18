@@ -3412,6 +3412,9 @@ return [
             'size' => ':qb QB',
             'encrypted_with' => 'sealed with :skill',
             'unencrypted' => 'unsealed',
+            // An exchange job's file is named for the job, and by whether it is broken yet.
+            'job_encrypted' => ':label (Encrypted)',
+            'job_decrypted' => ':label (Decrypted)',
             'unknown_encryption' => 'an encryption nobody names any more',
             'sealed_value' => 'worth :value sealed',
             'broken_value' => 'worth :value',

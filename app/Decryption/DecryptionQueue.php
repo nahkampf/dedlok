@@ -458,9 +458,14 @@ final class DecryptionQueue
      * What a file becomes: a weighted roll over the components that can come out of a system of its grade
      * (`cyberspace.decryption.components`, every column summing to 100). A file with no recorded grade is read as grade 1.
      * A component whose item has not been authored is skipped, and nothing at all falls back to the Memory Dump.
+     * An exchange job's file is never rolled: the desk takes a Memory Dump and nothing else, so that is what it becomes.
      */
     public function outcomeFor(ExtractedFile $file): ?Item
     {
+        if ($file->missionId !== null) {
+            return Item::query()->where('slug', ExtractedFile::DECRYPTED_SLUG)->first();
+        }
+
         $grade = max(1, min(9, $file->grade ?? 1));
         $weights = [];
 

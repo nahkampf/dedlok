@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Missions;
 
+use App\Checks\CheckRoller;
 use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\Extractor;
 use App\Cyberspace\Hunters;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
+use App\Decryption\DecryptionQueue;
+use App\Inventory\SkillInjector;
 use App\Missions\MissionAction;
 use App\Missions\MissionBoard;
 use App\Missions\MissionLedger;
@@ -28,11 +31,14 @@ use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContent;
 use App\Notifications\Category;
+use App\Programs\ProgramKind;
+use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
 use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
+use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\Concerns\HasRoomForData;
 use Tests\TestCase;
 
@@ -46,6 +52,7 @@ use Tests\TestCase;
  */
 final class MissionTest extends TestCase
 {
+    use CarriesAWorkingDeck;
     use HasRoomForData;
     use RefreshDatabase;
 
@@ -146,6 +153,46 @@ final class MissionTest extends TestCase
         $this->assertInstanceOf(Mission::class, $done);
         $this->assertSame(MissionState::Completed, $done->state);
         $this->assertSame(0, InventoryItem::query()->whereNotNull('extracted_file')->count(), 'the file is spent');
+    }
+
+    /** Job #849 on production: the file went through the real decryption queue and came out a Stack Trace, so it could never be handed in. */
+    public function test_an_extraction_jobs_file_decrypts_into_something_the_desk_takes(): void
+    {
+        // The outcome die would pick the 21st point: a Kernel Log for any other file.
+        $this->app->instance('decryption.die', fn (int $min, int $max): int => 21);
+        $this->app->bind(CheckRoller::class, fn (): CheckRoller => CheckRoller::fromConfig(fn (): float => 0.0));
+
+        $mission = $this->accepted(MissionAction::Extract);
+        $this->ledger()->placeJobFile($this->character, $mission->targets->first()->system);
+        (new Extractor)->deliver($this->character, SystemContent::query()->where('mission_id', $mission->id)->firstOrFail());
+
+        $row = InventoryItem::query()->where('character_id', $this->character->id)->whereNotNull('extracted_file')->firstOrFail();
+        $this->assertStringEndsWith('(Encrypted)', $row->label());
+
+        $character = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3, 'creds' => 0]));
+        $row->forceFill(['character_id' => $character->id])->save();
+        $this->character = $character;
+        $mission->forceFill(['character_id' => $character->id])->save();
+
+        $skill = Skill::factory()->create(['slug' => 'cinder', 'category' => 'Encryption', 'rank' => 2]);
+        $row->forceFill(['extracted_file' => [...$row->extracted_file, 'encryption_skill_id' => $skill->id]])->save();
+        app(SkillInjector::class)->grant($character, $skill, 1);
+        $this->equipReadyDeck($character);
+        $program = Item::factory()->program(ProgramKind::Decryptor)->create();
+        $this->assertNotNull(app(ProgramRunner::class)->start($character->fresh(), $this->ownedBy($character, $program))->process);
+
+        $queue = DecryptionQueue::make();
+        $queue->enqueue($character->fresh(), $row);
+        $queue->settle($character->fresh());
+        $this->travel(6)->minutes();
+        $queue->settle($character->fresh());
+
+        $this->assertSame(ExtractedFile::DECRYPTED_SLUG, $row->fresh()->item->slug);
+        $this->assertStringEndsWith('(Decrypted)', $row->fresh()->label());
+
+        $done = $this->ledger()->complete($character->fresh(), $mission->fresh());
+        $this->assertInstanceOf(Mission::class, $done);
+        $this->assertSame(MissionState::Completed, $done->state);
     }
 
     /** A heist's take is held for the desk, ticks the target, and a tenth comes back on top of the reward. */

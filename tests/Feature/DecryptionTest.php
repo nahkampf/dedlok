@@ -324,6 +324,26 @@ final class DecryptionTest extends TestCase
         $this->assertSame(90, $row->stockPrice(), 'a component is worth the file\'s broken value');
     }
 
+    public function test_an_exchange_jobs_file_is_never_rolled_and_is_named_by_its_state(): void
+    {
+        $this->inject();
+        $file = $this->file(label: 'Job file: User database');
+        $file->forceFill(['extracted_file' => [...$file->extracted_file, 'mission_id' => 849]])->save();
+        $this->assertSame('Job file: User database (Encrypted)', $file->fresh()->label());
+
+        $this->queue()->enqueue($this->character->fresh(), $file);
+        $this->startDecryptor();
+        $this->queue()->settle($this->character->fresh());
+
+        $this->outcomeRoll = 21; // would be a Kernel Log for any other file
+        $this->travel(6)->minutes();
+        $this->queue()->settle($this->character->fresh());
+
+        $row = $file->fresh();
+        $this->assertSame('memory-dump', $row->item->slug);
+        $this->assertSame('Job file: User database (Decrypted)', $row->label());
+    }
+
     public function test_a_passed_cycle_turns_the_file_into_a_memory_dump_in_place_and_says_so(): void
     {
         $this->inject();
