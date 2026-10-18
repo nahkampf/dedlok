@@ -13,6 +13,9 @@ use App\Models\Character;
 use App\Models\CityActivity;
 use App\Models\District;
 use App\Models\Location;
+use App\Models\Safehouse;
+use App\Safehouses\Leads;
+use App\Safehouses\Renter;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,7 +61,7 @@ class CityController extends Controller
             // costs — from the same call `begin()` charges by.
             'locations' => Location::query()
                 ->visibleTo($character)
-                ->withExists(['shopItems', 'clinicServices', 'surgery'])
+                ->withExists(['shopItems', 'clinicServices', 'surgery', 'meals'])
                 ->orderBy('name')
                 ->get()
                 ->groupBy('district_id'),
@@ -72,7 +75,7 @@ class CityController extends Controller
         ]);
     }
 
-    public function district(Request $request, District $district, CityClock $clock, Traveller $traveller, Explorer $explorer): View|RedirectResponse
+    public function district(Request $request, District $district, CityClock $clock, Traveller $traveller, Explorer $explorer, Renter $renter): View|RedirectResponse
     {
         $character = $this->character($request);
 
@@ -97,12 +100,16 @@ class CityController extends Controller
             'locations' => Location::query()
                 ->where('district_id', $district->getKey())
                 ->visibleTo($character)
-                ->withExists(['shopItems', 'clinicServices', 'surgery'])
+                ->withExists(['shopItems', 'clinicServices', 'surgery', 'meals'])
                 ->orderBy('name')
                 ->get(),
             // What each way of getting there would cost, from the same call
             // `begin()` makes. Only while nothing is under way.
             'quote' => $state['activity'] === null && ! $here ? $traveller->quote($character, $district) : null,
+            'leads' => app(Leads::class)->inDistrict($character, $district->getKey()),
+            'safehouses' => Safehouse::query()->where('district_id', $district->getKey())->orderBy('rent')->get(),
+            'home' => $character->home(),
+            'passes' => $renter->passes($character, $district->getKey()),
             'exploreSeconds' => $state['activity'] === null && $here ? $explorer->duration($character) : null,
             ...$state,
         ]);

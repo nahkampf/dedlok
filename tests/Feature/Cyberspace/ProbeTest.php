@@ -201,6 +201,16 @@ final class ProbeTest extends TestCase
         );
     }
 
+    public function test_starting_a_read_tires_and_a_refused_one_does_not(): void
+    {
+        $this->probe(0.0)->scan($this->character->fresh());   // nothing here to read
+        $this->assertSame(0, $this->character->fresh()->current_fatigue);
+
+        $this->machine();
+        $this->probe(0.0)->scan($this->character->fresh());
+        $this->assertSame(0.5, $this->character->fresh()->current_fatigue);
+    }
+
     public function test_you_cannot_read_a_machine_from_outside_cyberspace(): void
     {
         $this->machine();

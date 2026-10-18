@@ -10,6 +10,7 @@ use App\City\Clinic;
 use App\City\ClinicService;
 use App\City\Encounters;
 use App\City\EncounterStart;
+use App\City\Kitchen;
 use App\City\ShopKeeper;
 use App\City\Surgeon;
 use App\City\SurgeryOperation;
@@ -69,6 +70,7 @@ class PlaceController extends Controller
                 ->all(),
             // The same call `treat()` charges from.
             'treatments' => $clinic->quote($character, $place),
+            'menu' => $place->meals()->orderBy('price')->get(),
             // What is going on here, which a button starts. Only while the body is here.
             'happenings' => $character->district_id === $place->district_id
                 ? $encounters->eligible($character, EncounterStart::Place, null, $place->getKey())
@@ -151,6 +153,16 @@ class PlaceController extends Controller
         return $result instanceof CityRefusal
             ? back()->with('error', $result->message())
             : back()->with('status', Text::get('city.shop.sold', ['paid' => number_format($result)]));
+    }
+
+    public function eat(Request $request, string $slug, int $meal, Kitchen $kitchen): RedirectResponse
+    {
+        $character = $this->character($request);
+        $result = $kitchen->eat($character, $this->place($character, $slug), $meal);
+
+        return $result instanceof CityRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get('city.food.eaten'));
     }
 
     public function treat(Request $request, string $slug, string $service, Clinic $clinic): RedirectResponse

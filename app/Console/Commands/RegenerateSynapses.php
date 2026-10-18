@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Characters\Fatigue;
+use App\Characters\Fullness;
+use App\Characters\Mood;
 use App\Models\Character;
 use App\Stats\Resolver;
 use App\Support\Points;
@@ -53,6 +56,11 @@ use Illuminate\Support\Facades\Log;
  * remainder — the clock carries it, which is this command's whole stance. A minute the scheduler missed is a share
  * missed. Like the SI trickle it heals from zero.
  *
+ * ## And fatigue comes off
+ *
+ * `fatigue_recovery` points a MINUTE (half a point by default), the same stance: no stored clock, a missed minute missed.
+ * Skipped in a fight with everything else here. A character already rested costs nothing.
+ *
  * ponytail: resolves a sheet per character per minute, and skips on a zero.
  * Nothing at this scale. If it ever matters the fix is to narrow the query to
  * characters who could possibly regenerate — which cannot be asked in SQL
@@ -64,7 +72,7 @@ class RegenerateSynapses extends Command
                             {--dry-run : Work out what would be credited and write nothing}
                             {--quiet-when-idle : Print nothing unless something healed}';
 
-    protected $description = 'Credit a minute of Synaptic Integrity and hit point regeneration, and the two-hourly mend everybody gets';
+    protected $description = 'Credit a minute of Synaptic Integrity and hit point regeneration, the two-hourly mend everybody gets, and take a minute of fatigue off the tired';
 
     /**
      * This minute's share of an hourly rate, in hundredths of a point so a fraction of a point an hour is exact:
@@ -78,7 +86,7 @@ class RegenerateSynapses extends Command
         return Points::of((intdiv($hundredths * ($minute + 1), 60) - intdiv($hundredths * $minute, 60)) / 100);
     }
 
-    public function handle(Resolver $resolver): int
+    public function handle(Resolver $resolver, Fatigue $fatigue, Fullness $fullness, Mood $mood): int
     {
         $dryRun = (bool) $this->option('dry-run');
 
@@ -86,13 +94,15 @@ class RegenerateSynapses extends Command
         $points = 0;
         $hpHealed = 0;
         $hpPoints = 0;
+        $rested = 0;
+        $restedPoints = 0;
         $minute = intdiv(now()->getTimestamp(), 60);
 
         // Nobody in a fight mends: its clock stops with the player's, or waiting out a fight would be a way to heal in it.
         Character::query()->whereNull('current_fight_id')
             // The clock stops while an encounter is open on the grid (EncounterPause).
             ->where(static fn ($q) => $q->whereNull('current_encounter_id')->orWhereNull('grid_x'))
-            ->chunkById(200, function ($characters) use ($resolver, $dryRun, $minute, &$healed, &$points, &$hpHealed, &$hpPoints): void {
+            ->chunkById(200, function ($characters) use ($resolver, $fatigue, $fullness, $mood, $dryRun, $minute, &$healed, &$points, &$hpHealed, &$hpPoints, &$rested, &$restedPoints): void {
                 foreach ($characters as $character) {
                     // Hit points: this minute's share of an hourly rate (see the class notes).
                     $perHour = $resolver->resolve('hitpoints_regen', 0.0, $character->modifiers())->value;
@@ -107,6 +117,34 @@ class RegenerateSynapses extends Command
                             $hpHealed++;
                             $hpPoints = Points::of($hpPoints + $gained);
                         }
+                    }
+
+                    // Fatigue comes DOWN on its own, `fatigue_recovery` a minute (already in hundredths). Asked only of the
+                    // tired, so a rested character costs no sheet.
+                    if ($character->current_fatigue > 0) {
+                        $recovery = $character->stat('fatigue_recovery')->value;
+                        $eased = $dryRun
+                            ? Points::of(min($recovery, $character->current_fatigue))
+                            : $fatigue->ease($character, $recovery);
+
+                        // Even with nothing eased: a maximum that moved can have changed what they are.
+                        if (! $dryRun) {
+                            $fatigue->sync($character);
+                        }
+
+                        if ($eased > 0) {
+                            $rested++;
+                            $restedPoints = Points::of($restedPoints + $eased);
+                        }
+                    }
+
+                    // Hunger comes back on its own: fullness drains a little each minute.
+                    if (! $dryRun && $character->current_fullness > 0) {
+                        $fullness->drain($character, (float) config('fatigue.fullness.drain_per_minute'));
+                    }
+
+                    if (! $dryRun && (float) $character->mood !== 0.0) {
+                        $mood->drift($character);
                     }
 
                     $rate = $resolver->resolve('synaptic_regen', 0.0, $character->modifiers())->value;
@@ -144,6 +182,10 @@ class RegenerateSynapses extends Command
             $parts[] = sprintf('%d character(s) recovered %s point(s) of hit points', $hpHealed, Points::format($hpPoints));
         }
 
+        if ($rested > 0) {
+            $parts[] = sprintf('%d character(s) shed %s point(s) of fatigue', $rested, Points::format($restedPoints));
+        }
+
         // Nothing healed reads as the SI sentence it always did, with its zeroes.
         $summary = $parts === [] ? sprintf('%d character(s) recovered %d point(s) of Synaptic Integrity', 0, 0) : implode('; ', $parts);
 
@@ -153,7 +195,7 @@ class RegenerateSynapses extends Command
             return self::SUCCESS;
         }
 
-        if ($healed === 0 && $hpHealed === 0) {
+        if ($healed === 0 && $hpHealed === 0 && $rested === 0) {
             if (! $this->option('quiet-when-idle')) {
                 $this->info('Nobody had anything to recover.');
             }

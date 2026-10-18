@@ -260,4 +260,22 @@ final class CityTravelTest extends TestCase
         $this->actingAs($this->character->user)->get(route('city.district', 'dockside'))
             ->assertOk()->assertSeeText('Cancel')->assertDontSeeText('Stop travelling');
     }
+
+    public function test_each_pass_walked_tires_and_each_pass_in_a_pod_eases(): void
+    {
+        $this->traveller()->begin($this->character, $this->district('downtown'), TravelMode::Walk);
+        $this->travel(2)->minutes();
+        $this->settle();
+
+        // Two passes (Dockside, Old Town), five each.
+        $this->assertSame(10, $this->character->fresh()->current_fatigue);
+
+        // Back to the start by query: the instance in hand predates the walk and would not see the move.
+        Character::query()->whereKey($this->character->id)->update(['district_id' => $this->district('dockside')->id]);
+        $this->traveller()->begin($this->character->fresh(), $this->district('downtown'), TravelMode::Pod);
+        $this->travel(2)->minutes();
+        $this->settle();
+
+        $this->assertSame(8, $this->character->fresh()->current_fatigue);
+    }
 }

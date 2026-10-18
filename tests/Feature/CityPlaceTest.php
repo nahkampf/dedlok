@@ -10,9 +10,13 @@ use App\City\Clinic;
 use App\City\ClinicService;
 use App\City\Discovery;
 use App\City\ShopKeeper;
+use App\Drugs\DrugLedger;
+use App\Drugs\Family;
 use App\Models\Character;
 use App\Models\CityActivity;
+use App\Models\ClinicOffer;
 use App\Models\District;
+use App\Models\DrugUse;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\ShopItem;
@@ -194,11 +198,11 @@ final class CityPlaceTest extends TestCase
 
     public function test_a_clinic_resets_one_familys_tolerance_or_addiction_by_the_point(): void
     {
-        \App\Models\ClinicOffer::query()->create(['location_id' => $this->clinic->id, 'service' => 'drug_opiate_tolerance', 'price' => 5]);
-        \App\Models\ClinicOffer::query()->create(['location_id' => $this->clinic->id, 'service' => 'drug_opiate_addiction', 'price' => 7]);
+        ClinicOffer::query()->create(['location_id' => $this->clinic->id, 'service' => 'drug_opiate_tolerance', 'price' => 5]);
+        ClinicOffer::query()->create(['location_id' => $this->clinic->id, 'service' => 'drug_opiate_addiction', 'price' => 7]);
 
         foreach (['opiate' => [45, 12.4], 'stimulant' => [30, 9]] as $family => [$tolerance, $addiction]) {
-            \App\Models\DrugUse::query()->create([
+            DrugUse::query()->create([
                 'character_id' => $this->character->id, 'family' => $family, 'addiction' => $addiction, 'tolerance' => $tolerance,
             ]);
         }
@@ -209,9 +213,9 @@ final class CityPlaceTest extends TestCase
         $this->assertSame(225, $clinic->treat($character, $this->clinic, ClinicService::DrugOpiateTolerance), '45 points at 5');
         $this->assertSame(91, $clinic->treat($this->character->fresh(), $this->clinic, ClinicService::DrugOpiateAddiction), '13 points (12.4 rounded up) at 7');
 
-        $ledger = new \App\Drugs\DrugLedger;
-        $this->assertNull(\App\Models\DrugUse::query()->where('character_id', $this->character->id)->where('family', 'opiate')->first(), 'clean books are closed');
-        $this->assertSame(30.0, (float) $ledger->for($this->character, \App\Drugs\Family::Stimulant)->tolerance, 'another family is untouched');
+        $ledger = new DrugLedger;
+        $this->assertNull(DrugUse::query()->where('character_id', $this->character->id)->where('family', 'opiate')->first(), 'clean books are closed');
+        $this->assertSame(30.0, (float) $ledger->for($this->character, Family::Stimulant)->tolerance, 'another family is untouched');
         $this->assertSame(CityRefusal::NothingToTreat, $clinic->treat($this->character->fresh(), $this->clinic, ClinicService::DrugOpiateTolerance));
         $this->assertSame(CityRefusal::NotSold, $clinic->treat($this->character->fresh(), $this->clinic, ClinicService::DrugStimulantTolerance));
     }

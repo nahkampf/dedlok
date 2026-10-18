@@ -97,6 +97,26 @@
             </div>
         @endif
 
+        @if ($menu->isNotEmpty())
+            <div class="panel">
+                <div class="panel__hd"><span class="micro">{{ Text::get('city.food.heading') }}</span></div>
+                <div class="panel__bd stack" style="--gap:var(--s-3)">
+                    @foreach ($menu as $dish)
+                        <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            <span class="item-row__name" style="flex:1 1 160px;min-width:0">{{ $dish->name }}</span>
+                            <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.meal', ['fullness' => rtrim(rtrim(number_format($dish->meal_fullness, 2), '0'), '.'), 'fatigue' => rtrim(rtrim(number_format($dish->meal_fatigue, 2), '0'), '.')]) }}</span>
+                            @if ($here)
+                                <form method="POST" action="{{ route('city.eat', [$place->slug, $dish->id]) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn--sm cut" @disabled($character->creds < $dish->price)>{{ Text::get('city.food.eat', ['price' => number_format($dish->price)]) }}</button>
+                                </form>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         @if ($happenings->isNotEmpty())
             <div class="panel">
                 <div class="panel__hd"><span class="micro">{{ Text::get('city.encounter.at_place') }}</span></div>
@@ -111,7 +131,7 @@
             </div>
         @endif
 
-        @if ($wares->isEmpty() && $treatments === [] && $sellable === [] && $surgeries === [] && $happenings->isEmpty())
+        @if ($wares->isEmpty() && $menu->isEmpty() && $treatments === [] && $sellable === [] && $surgeries === [] && $happenings->isEmpty())
             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('city.nothing_to_do') }}</p>
         @endif
     </div>

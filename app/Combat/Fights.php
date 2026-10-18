@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Combat;
 
 use App\Characters\DownedCause;
+use App\Characters\Fatigue;
+use App\Characters\Mood;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
 use App\City\EncounterRunner;
@@ -66,7 +68,7 @@ use Illuminate\Support\Facades\DB;
 final class Fights
 {
     /** @param  callable(): float  $die  uniform in [0, 1) */
-    public function __construct(private readonly FightEngine $engine, private readonly mixed $die) {}
+    public function __construct(private readonly FightEngine $engine, private readonly mixed $die, private readonly Fatigue $fatigue = new Fatigue) {}
 
     public static function fromConfig(?Closure $die = null): self
     {
@@ -187,6 +189,9 @@ final class Fights
 
             $this->applyToCharacter($locked, $fight, $before, $after);
 
+            // A round played tires, however it went. The clock that lowers fatigue is stopped for a fight.
+            $this->fatigue->charge($locked, 'fight_round');
+
             // A fight still going: the doses in effect lose a round, and then (so the new one starts with all its
             // rounds) the one the player used this turn is taken.
             if ($after->result === null) {
@@ -218,10 +223,28 @@ final class Fights
             }
 
             $fight->save();
-            $character->forceFill($locked->only(['current_fight_id', 'current_hitpoints', 'current_synaptic_integrity', 'creds']));
+            $character->forceFill($locked->only(['current_fight_id', 'current_hitpoints', 'current_synaptic_integrity', 'current_fatigue', 'creds']));
 
             return $fight;
         });
+    }
+
+    /**
+     * End a live fight as the player's loss, with no round played: a collapse takes them out of it. The same ending a
+     * lost round has (doses, the clock, the encounter's loss screen), but nobody is paid, mugged or maimed for it.
+     */
+    public function forfeit(Character $locked): void
+    {
+        $fight = $locked->current_fight_id === null ? null : Fight::query()->lockForUpdate()->find($locked->current_fight_id);
+
+        if ($fight === null || ! $fight->isLive()) {
+            return;
+        }
+
+        $state = $fight->snapshot()->ended(Result::ADown);
+        $fight->forceFill(['state' => $state->toArray()]);
+        $this->finish($locked, $fight, $state, [], []);
+        $fight->save();
     }
 
     /**
@@ -443,6 +466,12 @@ final class Fights
                 ->get()->each(static fn (Dose $dose) => $dose->forceFill(['expires_at' => $dose->expires_at->addSeconds($took)])->save());
         }
         $character->forceFill(['current_fight_id' => null])->save();
+
+        match ($state->result) {
+            Result::BDown => app(Mood::class)->event($character, 'fight_won'),
+            Result::ADown => app(Mood::class)->event($character, 'fight_lost'),
+            default => null,
+        };
 
         if ($state->result === Result::ADown) {
             app(WaitingRoom::class)->checkFloor($character, new DownedCause(

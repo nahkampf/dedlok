@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Items;
 
+use App\Characters\Meal;
 use App\Drugs\DrugLedger;
 use App\Drugs\Family;
 use App\Models\Character;
@@ -22,6 +23,12 @@ enum UseEffect: string
 {
     /** Restores current hit points, never past the maximum as it stands (an injury lowers that maximum). */
     case HealHitpoints = 'heal_hitpoints';
+
+    /** Fills fullness, never past the maximum. Food. */
+    case Fullness = 'fullness';
+
+    /** Takes fatigue off, never below nothing. Food. */
+    case EaseFatigue = 'ease_fatigue';
 
     /**
      * Takes built-up tolerance off ONE drug family (`drug_<family>_tolerance`), floored at nothing. One case per
@@ -74,6 +81,8 @@ enum UseEffect: string
     {
         return match ($this) {
             self::HealHitpoints => Points::of(min($amount, max(0, $character->maximumFor('current_hitpoints') - $character->current_hitpoints))),
+            self::Fullness => (new Meal(fullness: $amount))->would($character)['fullness'],
+            self::EaseFatigue => (new Meal(fatigue: $amount))->would($character)['fatigue'],
             default => Points::of(min($amount, (float) (new DrugLedger)->for($character, $this->family())->tolerance)),
         };
     }
@@ -83,6 +92,8 @@ enum UseEffect: string
     {
         return match ($this) {
             self::HealHitpoints => $character->recover('current_hitpoints', $amount),
+            self::Fullness => (new Meal(fullness: $amount))->apply($character)['fullness'],
+            self::EaseFatigue => (new Meal(fatigue: $amount))->apply($character)['fatigue'],
             default => (new DrugLedger)->lowerTolerance($character, $this->family(), $amount),
         };
     }

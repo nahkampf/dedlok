@@ -207,6 +207,7 @@ class ItemRequest extends FormRequest
             'addictive' => $this->panelNumber('addictive', $isDrugForm),
             'tolerance_gain' => $this->panelNumber('tolerance_gain', $isDrugForm),
             'lethal_at' => $this->panelNumber('lethal_at', $isDrugForm),
+            'wakefulness' => $this->panelNumber('wakefulness', $isDrugForm),
             'qflops_cost' => $this->panelNumber('qflops_cost', $isProgramForm),
             'memory_cost' => $this->panelNumber('memory_cost', $isProgramForm),
             'storage_size' => $this->panelNumber('storage_size', $isProgramForm),
@@ -436,6 +437,9 @@ class ItemRequest extends FormRequest
             // Signed: positive restores, negative is the drug's price. Whole points.
             'turn_hitpoints' => $isDrug && $this->boolean('fight_only')
                 ? ['required', 'integer', 'min:-100', 'max:100']
+                : ['prohibited'],
+            'wakefulness' => $isDrug
+                ? ['nullable', 'integer', 'min:0', 'max:255']
                 : ['prohibited'],
             'addictive' => $isDrug
                 ? ['required', 'numeric', 'min:0', 'max:100']
@@ -989,7 +993,7 @@ class ItemRequest extends FormRequest
         // And so does a drug. Nothing on `items` says an item is one.
         unset(
             $data['drug_family'], $data['fight_only'], $data['duration_minutes'], $data['duration_turns'], $data['turn_hitpoints'], $data['addictive'],
-            $data['tolerance_gain'], $data['lethal_at'],
+            $data['tolerance_gain'], $data['lethal_at'], $data['wakefulness'],
         );
 
         // Null rather than [], for the reason a program's are: a thing that
@@ -1231,6 +1235,7 @@ class ItemRequest extends FormRequest
             'addictive' => (float) ($data['addictive'] ?? 0),
             'tolerance_gain' => (float) ($data['tolerance_gain'] ?? 0),
             'lethal_at' => ($data['lethal_at'] ?? null) === null ? null : (int) $data['lethal_at'],
+            'wakefulness' => (int) ($data['wakefulness'] ?? 0),
         ];
     }
 

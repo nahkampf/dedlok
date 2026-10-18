@@ -185,6 +185,19 @@ final class NavigatorTest extends TestCase
         $this->assertGreaterThan(0, $result->sweep->newlySwept);
     }
 
+    public function test_a_step_tires_and_a_refused_one_does_not(): void
+    {
+        $this->equipReadyDeck($this->character);
+        $nav = $this->navigator();
+        $nav->jackIn($this->character);
+
+        $nav->step($this->character->fresh(), new Position($this->portal()->x + 5, $this->portal()->y));
+        $this->assertSame(0, $this->character->fresh()->current_fatigue);
+
+        $nav->step($this->character->fresh(), new Position($this->portal()->x + 1, $this->portal()->y));
+        $this->assertSame(0.1, $this->character->fresh()->current_fatigue);
+    }
+
     public function test_two_positions_away_is_not_a_step(): void
     {
         $this->equipReadyDeck($this->character);

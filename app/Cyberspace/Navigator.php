@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Characters\Fatigue;
 use App\City\ActivityKind;
 use App\City\Encounters;
 use App\City\EncounterStart;
@@ -57,6 +58,7 @@ final class Navigator
         private readonly Sweep $sweep,
         private readonly Resolver $resolver,
         private readonly Hunters $hunters,
+        private readonly Fatigue $fatigue = new Fatigue,
     ) {}
 
     /** @param  ?Closure(int, int): int  $roll  Threaded to the hunter roll, so a test can pin it. */
@@ -170,7 +172,14 @@ final class Navigator
             return TravelResult::refused(TravelRefusal::NotAStep);
         }
 
-        return $this->arrive($character, $to);
+        $result = $this->arrive($character, $to);
+
+        // Walking tires. Jumping and recalling are free, like everything else about them.
+        if ($result->succeeded()) {
+            $this->fatigue->charge($character, 'grid_step');
+        }
+
+        return $result;
     }
 
     /**

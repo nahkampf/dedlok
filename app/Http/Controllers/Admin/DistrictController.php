@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DistrictRequest;
 use App\Models\Character;
 use App\Models\District;
+use App\Models\Safehouse;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Config;
@@ -74,6 +75,10 @@ class DistrictController extends Controller
 
         if (Character::query()->where('district_id', $district->getKey())->exists()) {
             return back()->with('error', Text::get('admin.districts.occupied'));
+        }
+
+        if (Safehouse::query()->where('district_id', $district->getKey())->exists()) {
+            return back()->with('error', Text::get('admin.districts.has_safehouses'));
         }
 
         $district->delete();

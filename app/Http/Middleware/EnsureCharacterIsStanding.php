@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Characters\Collapse;
 use App\Characters\WaitingRoom;
 use App\Support\Text;
 use Closure;
@@ -51,6 +52,12 @@ class EnsureCharacterIsStanding
     public function handle(Request $request, Closure $next): Response
     {
         $character = $request->user()?->character;
+
+        // The safe moment a collapse was waiting for: between requests, with nothing half done. They go down now, and
+        // fall through to the waiting screen below.
+        if ($character !== null && $character->collapse_pending) {
+            app(Collapse::class)->trigger($character);
+        }
 
         if ($character === null || $character->waiting_until === null) {
             return $next($request);

@@ -80,6 +80,9 @@ enum DamageOrigin: string
      */
     case Overdose = 'overdose';
 
+    /** A body and mind spent past their maximum: a collapse from fatigue. Written against `all_of: ['damage', 'exhaustion']`. */
+    case Exhaustion = 'exhaustion';
+
     /** Something that happened in the City, by an author's hand. A resistance is written against `all_of: ['damage', 'encounter']`. */
     case Encounter = 'encounter';
 

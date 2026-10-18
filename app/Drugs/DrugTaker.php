@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Drugs;
 
 use App\Characters\DownedCause;
+use App\Characters\Mood;
 use App\Characters\WaitingRoom;
 use App\Models\Character;
 use App\Models\Dose;
@@ -116,6 +117,7 @@ final class DrugTaker
             ]);
 
             $this->ledger->record($character, $drug);
+            app(Mood::class)->event($character, 'dose');
 
             // The item may also be a consumable: what it does AT ONCE lands with the dose, and BEFORE any overdose
             // harm, so a lethal dose is not undone by its own medicine. Tolerance does not touch it: it scales

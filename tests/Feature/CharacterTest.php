@@ -92,6 +92,10 @@ class CharacterTest extends TestCase
             'bounty', 'bounty_grade',
             // When Tasks & Missions was last opened: the rail badge's clock.
             'tasks_seen_at',
+            // The third resource, from nothing up to fatigue_max. See App\Characters\Fatigue.
+            'current_fatigue', 'current_fullness', 'mood', 'collapse_pending',
+            // Their home, or NULL for the fallback.
+            'rent_due_at', 'raid_cooldown_until', 'safehouse_id',
             'created_at', 'updated_at',
         ];
 

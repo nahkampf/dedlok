@@ -159,4 +159,17 @@ final class CityExploreTest extends TestCase
         $this->actingAs($this->character->user)->get(route('city.district', 'knightsbridge-projects'))
             ->assertOk()->assertSeeText('The Sub-Basement')->assertDontSeeText('The Stairwell Market');
     }
+
+    public function test_a_finished_pass_tires_and_is_counted_for_the_district(): void
+    {
+        $this->die(0.9999);
+        $this->explore();
+        $this->explore();
+
+        $this->assertSame(14, $this->character->fresh()->current_fatigue);
+        $this->assertSame(2, (int) DB::table('character_district_passes')
+            ->where('character_id', $this->character->id)
+            ->where('district_id', $this->character->fresh()->district_id)
+            ->value('passes'));
+    }
 }

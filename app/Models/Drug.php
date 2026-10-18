@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * this says which family it belongs to, how long it lasts, and what it costs
  * the two books.
  */
-#[Fillable(['item_id', 'family', 'fight_only', 'duration_minutes', 'duration_turns', 'turn_hitpoints', 'addictive', 'tolerance_gain', 'lethal_at'])]
+#[Fillable(['item_id', 'family', 'fight_only', 'duration_minutes', 'duration_turns', 'turn_hitpoints', 'addictive', 'tolerance_gain', 'lethal_at', 'wakefulness'])]
 class Drug extends Model
 {
     protected function casts(): array
@@ -30,6 +30,7 @@ class Drug extends Model
             'addictive' => 'float',
             'tolerance_gain' => 'float',
             'lethal_at' => 'integer',
+            'wakefulness' => 'integer',
         ];
     }
 

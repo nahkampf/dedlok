@@ -831,6 +831,33 @@ return [
             'rounding' => 'hundredth',
         ],
 
+        /*
+         * The ceiling of fatigue, where a character collapses. Not tagged `vital`: it is not a pool of hit points,
+         * and fatigue is outside Character::RESOURCES. Floor of 1 for the reason the other two have one.
+         */
+        'fatigue_max' => [
+            'tags' => ['derived'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'hundredth',
+        ],
+
+        /* Points of fatigue that come off every minute. Zero is the floor: nothing here makes you more tired by resting. */
+        'fatigue_recovery' => [
+            'tags' => ['derived'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'hundredth',
+        ],
+
+        /* The percent of each point of fatigue that is actually taken. Never under 10, like crafting_cost. */
+        'fatigue_taken' => [
+            'tags' => ['derived'],
+            'min' => 10,
+            'max' => null,
+            'rounding' => 'none',
+        ],
+
     ],
 
     /*
@@ -953,6 +980,13 @@ return [
 
         'crafting_slots' => 1,
         'crafting_cost' => 100,
+
+        // Half a point of fatigue a minute comes off on its own. 500 minutes, a little over eight hours, empties 260.
+        'fatigue_recovery' => 0.5,
+
+        // Every point of fatigue added is scaled by this as a percent: 100 is as written, a stimulant or a Meat skill
+        // takes a share off it.
+        'fatigue_taken' => 100,
     ],
 
     /*
@@ -1109,6 +1143,18 @@ return [
             'memory' => 2,
             'intellect' => 2,
             'meat' => 2,
+        ],
+
+        /*
+         * Fatigue max = (Focus x 2 + Meat x 2 + Social / 3) x 3, which is 6 Focus + 6 Meat + Social. A formula can
+         * only divide, so the six is a divisor of one sixth, written as 0.166667: 6n / 6 stays exactly 6n after the
+         * round-up for every attribute up to the ceiling (n x 6 x 0.9999982 never drops a whole point). Attributes of
+         * 20 give 260.
+         */
+        'fatigue_max' => [
+            'focus' => 0.166667,
+            'meat' => 0.166667,
+            'social' => 1,
         ],
 
     ],

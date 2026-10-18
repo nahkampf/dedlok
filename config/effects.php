@@ -84,6 +84,97 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Fatigue: Tired, Drained, Exhausted
+    |--------------------------------------------------------------------------
+    |
+    | What a body does when it is spent (FATIGUE.md). `App\Characters\Fatigue` is the only thing that writes these rows:
+    | Tired at 75% of the maximum, Drained at 90% (and it REPLACES Tired, one row at a time), Exhausted from a collapse
+    | until fatigue is under 50%. `config/fatigue.php` lists the three keys, and `fatigue_max` is resolved WITHOUT them so
+    | a lower attribute cannot lower the ceiling it is judged against.
+    */
+    'fatigue_tired' => [
+        'label' => 'Tired',
+        'stacking' => 'unique',
+        'retired' => false,
+        'modifiers' => [
+            ['op' => 'add', 'amount' => -3, 'target' => ['id' => 'focus']],
+            ['op' => 'add', 'amount' => -3, 'target' => ['id' => 'intellect']],
+            ['op' => 'add', 'amount' => -3, 'target' => ['id' => 'reflex']],
+        ],
+    ],
+
+    'fatigue_drained' => [
+        'label' => 'Drained',
+        'stacking' => 'unique',
+        'retired' => false,
+        'modifiers' => [
+            ['op' => 'add', 'amount' => -7, 'target' => ['id' => 'focus']],
+            ['op' => 'add', 'amount' => -5, 'target' => ['id' => 'intellect']],
+            ['op' => 'add', 'amount' => -5, 'target' => ['id' => 'reflex']],
+        ],
+    ],
+
+    /* Mood bands (`config/mood.php`). Small by design. */
+    'mood_despondent' => [
+        'label' => 'Despondent',
+        'stacking' => 'unique',
+        'retired' => false,
+        'modifiers' => [
+            ['op' => 'add', 'amount' => -4, 'target' => ['id' => 'focus']],
+            ['op' => 'add', 'amount' => -4, 'target' => ['id' => 'social']],
+        ],
+    ],
+
+    'mood_low' => [
+        'label' => 'Low',
+        'stacking' => 'unique',
+        'retired' => false,
+        'modifiers' => [
+            ['op' => 'add', 'amount' => -2, 'target' => ['id' => 'focus']],
+            ['op' => 'add', 'amount' => -2, 'target' => ['id' => 'social']],
+        ],
+    ],
+
+    'mood_good' => [
+        'label' => 'Good mood',
+        'stacking' => 'unique',
+        'retired' => false,
+        'modifiers' => [
+            ['op' => 'add', 'amount' => 1, 'target' => ['id' => 'focus']],
+            ['op' => 'add', 'amount' => 1, 'target' => ['id' => 'social']],
+        ],
+    ],
+
+    'mood_elated' => [
+        'label' => 'Elated',
+        'stacking' => 'unique',
+        'retired' => false,
+        'modifiers' => [
+            ['op' => 'add', 'amount' => 2, 'target' => ['id' => 'focus']],
+            ['op' => 'add', 'amount' => 2, 'target' => ['id' => 'social']],
+        ],
+    ],
+
+    'fatigue_exhausted' => [
+        'label' => 'Exhausted',
+        'stacking' => 'unique',
+        'retired' => false,
+        'modifiers' => [
+            ['op' => 'add', 'amount' => -10, 'target' => ['id' => 'intellect']],
+            ['op' => 'add', 'amount' => -10, 'target' => ['id' => 'memory']],
+            ['op' => 'add', 'amount' => -10, 'target' => ['id' => 'perception']],
+            ['op' => 'add', 'amount' => -10, 'target' => ['id' => 'reflex']],
+            ['op' => 'add', 'amount' => -10, 'target' => ['id' => 'focus']],
+            ['op' => 'add', 'amount' => -10, 'target' => ['id' => 'social']],
+            ['op' => 'add', 'amount' => -10, 'target' => ['id' => 'meat']],
+            ['op' => 'add', 'amount' => -10, 'target' => ['id' => 'motor']],
+            ['op' => 'add', 'amount' => -10, 'target' => ['id' => 'senses']],
+            ['op' => 'add', 'amount' => -10, 'target' => ['id' => 'muscle']],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Withdrawal, one definition per drug family
     |--------------------------------------------------------------------------
     |

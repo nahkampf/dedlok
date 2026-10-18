@@ -40,11 +40,13 @@ final readonly class CharacterModifiers implements ModifierSource
     /**
      * @param  ?\DateTimeInterface  $asAt  The moment to resolve as of; null is now.
      * @param  Collection<int, CharacterModifier>|null  $rows
+     * @param  list<string>  $without  definition keys to leave out, for a stat that must not read its own consequences
      */
     public function __construct(
         private ?int $characterId,
         private ?\DateTimeInterface $asAt = null,
         private ?Collection $rows = null,
+        private array $without = [],
     ) {}
 
     /** @return list<Modifier> */
@@ -58,6 +60,10 @@ final readonly class CharacterModifiers implements ModifierSource
             ->where('character_id', $this->characterId)
             ->liveAt($this->asAt ?? now())
             ->get();
+
+        if ($this->without !== []) {
+            $rows = $rows->reject(fn (CharacterModifier $row): bool => in_array($row->definition_key, $this->without, true));
+        }
 
         $modifiers = [];
 

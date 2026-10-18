@@ -263,6 +263,17 @@ Schedule::command('cyberspace:lockdowns --quiet-when-idle')
     ->withoutOverlapping();
 
 /*
+ * A job's target that a lockdown just relocated, replaced straight away.
+ *
+ * Retargeting is otherwise lazy (the Tasks and exchange screens), so a runner who
+ * stays away learns nothing until the deadline fails the job. Same cadence as the
+ * lockdown sweep, declared after it so the new address exists when this looks.
+ */
+Schedule::command('missions:retarget')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+/*
  * Scan files that have gone stale, and the one message they are owed.
  *
  * A file's 48 hours are read when something asks — the card, a buyer, a
@@ -304,6 +315,9 @@ Schedule::command('missions:expire --quiet-when-idle')
 Schedule::command('city:settle')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// Safehouse rent that fell due while nobody was looking; lazy settling is what is exact.
+Schedule::command('safehouses:rent --quiet-when-idle')->everyFifteenMinutes()->withoutOverlapping();
 
 // A supporter whose month has run out stops being one. Reads already know; this keeps the stored flag true.
 Schedule::command('supporters:expire')->hourly();

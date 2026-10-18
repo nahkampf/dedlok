@@ -108,9 +108,9 @@ class ShellTest extends TestCase
         $response = $this->actingAs($character->user)->get(route('inventory.index'));
 
         $this->assertSame(
-            count(Character::RESOURCES),
+            count(Character::RESOURCES) + 1,
             substr_count($response->getContent(), 'class="dial" role="meter"'),
-            'one dial per resource, and creds is not one — see Character::RESOURCES'
+            'one dial per resource plus fatigue, and creds is not one — see Character::RESOURCES'
         );
 
         $response->assertSee('data-hot-low', false);

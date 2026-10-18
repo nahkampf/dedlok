@@ -7,6 +7,7 @@ namespace App\Cyberspace;
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\Characters\DownedCause;
+use App\Characters\Fatigue;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
 use App\Decks\DeckTotals;
@@ -81,6 +82,7 @@ final readonly class Simulator
         private Lockdown $lockdown,
         private RaidLedger $raids,
         private Closure $roll,
+        private Fatigue $fatigue = new Fatigue,
     ) {}
 
     public static function fromConfig(
@@ -132,6 +134,9 @@ final readonly class Simulator
             $log = [];
 
             $run->turn++;
+
+            // A turn in a system tires, whatever it comes to.
+            $this->fatigue->charge($character, 'run_turn');
 
             /*
              * THE THRESHOLDS ACT BEFORE ANYTHING ELSE DOES.

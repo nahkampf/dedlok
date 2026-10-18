@@ -126,6 +126,23 @@
             </div>
         </div>
 
+        @php($mealRows = old('meals', $menu))
+        @php($mealRows = array_pad(array_values($mealRows), count($mealRows) + 2, ['name' => '']))
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.locations.menu') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-3)">
+                <span class="field__hint">{{ Text::get('admin.locations.menu_hint') }}</span>
+                @foreach ($mealRows as $i => $row)
+                    <div class="row row--wrap" style="--gap:var(--s-3)">
+                        <input class="input" name="meals[{{ $i }}][name]" maxlength="100" value="{{ $row['name'] ?? '' }}" placeholder="{{ Text::get('admin.locations.meal_name') }}" style="flex:1 1 180px;min-width:0" aria-label="{{ Text::get('admin.locations.meal_name') }}">
+                        <input class="input num" type="number" min="0" name="meals[{{ $i }}][price]" value="{{ $row['price'] ?? '' }}" placeholder="{{ Text::get('admin.locations.price') }}" style="width:7rem" aria-label="{{ Text::get('admin.locations.price') }}">
+                        <input class="input num" type="number" min="0" max="{{ config('fatigue.fullness.max') }}" step="0.01" name="meals[{{ $i }}][meal_fullness]" value="{{ $row['meal_fullness'] ?? '' }}" placeholder="{{ Text::get('meal.fullness') }}" style="width:7rem" aria-label="{{ Text::get('meal.fullness') }}">
+                        <input class="input num" type="number" min="0" step="0.01" name="meals[{{ $i }}][meal_fatigue]" value="{{ $row['meal_fatigue'] ?? '' }}" placeholder="{{ Text::get('meal.fatigue') }}" style="width:7rem" aria-label="{{ Text::get('meal.fatigue') }}">
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.locations.clinic') }}</span></div>
             <div class="panel__bd stack" style="--gap:var(--s-3)">

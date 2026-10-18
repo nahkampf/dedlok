@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $required_flag
  * @property bool|null $shop_items_exists
  * @property bool|null $clinic_services_exists
+ * @property bool|null $meals_exists
  * @property bool|null $surgery_exists
  */
 #[Fillable(['district_id', 'slug', 'name', 'description', 'map_x', 'map_y', 'discovery', 'concealment', 'required_flag'])]
@@ -63,6 +64,12 @@ class Location extends Model
         return $this->hasMany(LocationBuy::class);
     }
 
+    /** @return HasMany<LocationMeal, $this> */
+    public function meals(): HasMany
+    {
+        return $this->hasMany(LocationMeal::class);
+    }
+
     /** @return HasMany<ClinicOffer, $this> */
     public function clinicServices(): HasMany
     {
@@ -80,6 +87,7 @@ class Location extends Model
     {
         return array_values(array_filter([
             ($this->shop_items_exists ?? $this->shopItems()->exists()) ? Feature::Shop : null,
+            ($this->meals_exists ?? $this->meals()->exists()) ? Feature::Food : null,
             ($this->clinic_services_exists ?? $this->clinicServices()->exists()) || ($this->surgery_exists ?? $this->surgery()->exists()) ? Feature::Clinic : null,
         ]));
     }

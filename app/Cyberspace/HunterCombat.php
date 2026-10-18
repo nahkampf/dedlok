@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Characters\DownedCause;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
 use App\Decks\Storage;
 use App\Inventory\ItemGranter;
+use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\Hunt;
 use App\Models\Item;
@@ -19,8 +22,6 @@ use App\Stats\DamageResolver;
 use App\Stats\Resolver;
 use App\Support\Text;
 use App\Support\Trace;
-use App\Achievements\Achievements;
-use App\Achievements\Metric;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
 use Closure;
@@ -242,7 +243,7 @@ final class HunterCombat
         $this->programs->stopRunOnly($character);
 
         // Whatever it was carrying for an exchange is gone, and the job with it.
-        app(\App\Missions\MissionLedger::class)->transportLost($character);
+        app(MissionLedger::class)->transportLost($character);
         $character->refresh();
 
         [$low, $high] = (array) Config::get('cyberspace.heat.hunt.defeat_heat_loss', [0.05, 0.15]);

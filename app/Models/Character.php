@@ -58,6 +58,8 @@ use Illuminate\Support\Facades\App;
  * @property int $bounty
  * @property int $bounty_grade
  * @property int $district_id
+ * @property int|null $safehouse_id
+ * @property CarbonImmutable|null $rent_due_at
  */
 #[Fillable([
     'user_id', 'handle', 'bio', 'archetype', 'creds', 'heat', 'bounty', 'bounty_grade',
@@ -157,6 +159,8 @@ class Character extends Model
         return array_merge(
             array_fill_keys(self::ATTRIBUTES, 'integer'),
             array_fill_keys(array_keys(self::RESOURCES), PointsCast::class),
+            // Not in RESOURCES: full is bad. See App\Characters\Fatigue.
+            ['current_fatigue' => PointsCast::class, 'current_fullness' => PointsCast::class, 'mood' => PointsCast::class, 'collapse_pending' => 'boolean', 'rent_due_at' => 'immutable_datetime', 'raid_cooldown_until' => 'immutable_datetime'],
             ['archetype' => 'integer', 'creds' => 'integer', 'heat' => 'float', 'bounty' => 'integer', 'bounty_grade' => 'integer'],
             ['egress_trace_at' => 'integer', 'egress_si_at' => 'integer'],
             ['grid_x' => 'integer', 'grid_y' => 'integer'],
@@ -171,6 +175,18 @@ class Character extends Model
     public function district(): BelongsTo
     {
         return $this->belongsTo(District::class);
+    }
+
+    /** @return BelongsTo<Safehouse, $this> */
+    public function safehouse(): BelongsTo
+    {
+        return $this->belongsTo(Safehouse::class);
+    }
+
+    /** Where they live: their own safehouse, or the fallback when they have none. */
+    public function home(): Safehouse
+    {
+        return $this->safehouse ?? Safehouse::fallback();
     }
 
     /** @return BelongsTo<User, $this> */
@@ -652,9 +668,10 @@ class Character extends Model
      * Order does not matter. The resolver sorts modifiers into layers by op
      * and sums within each, so two sources cannot fight over which went first.
      *
+     * @param  list<string>  $without  `character_modifiers` definition keys to leave out; only `Sheet` asks, for `fatigue_max`.
      * @return list<Modifier>
      */
-    public function modifiers(?\DateTimeInterface $asAt = null): array
+    public function modifiers(?\DateTimeInterface $asAt = null, array $without = []): array
     {
         $sources = [
             // Permanent by construction, so a past moment cannot change it.
@@ -667,7 +684,7 @@ class Character extends Model
             new InstalledImplants($this, $asAt),
             // The first source that is not derived from something else the
             // character has: injuries and statuses that happened TO them.
-            new CharacterModifiers($this->getKey(), $asAt),
+            new CharacterModifiers($this->getKey(), $asAt, null, $without),
             // What they have in them. The sixth, and the resolver learned
             // nothing new for it — a dose is a list of modifiers with a clock.
             new ActiveDoses($this, $asAt),
@@ -913,6 +930,7 @@ class Character extends Model
     public function clampResources(): bool
     {
         $changed = false;
+        $sheet = $this->sheet();
 
         foreach (array_keys(self::RESOURCES) as $resource) {
             $current = $this->getAttribute($resource);
@@ -921,10 +939,22 @@ class Character extends Model
                 continue;
             }
 
-            $bounded = Points::of(max(0, min($this->maximumFor($resource), Points::of($current))));
+            $bounded = Points::of(max(0, min($this->maximumFor($resource, $sheet), Points::of($current))));
 
             if ($bounded !== Points::of($current)) {
                 $this->setAttribute($resource, $bounded);
+                $changed = true;
+            }
+        }
+
+        // Fatigue is the same rule the other way round: a maximum that drops brings it down, never up.
+        $fatigue = $this->getAttribute('current_fatigue');
+
+        if ($fatigue !== null) {
+            $bounded = Points::of(max(0, min(Points::of($sheet->get('fatigue_max')->value), Points::of($fatigue))));
+
+            if ($bounded !== Points::of($fatigue)) {
+                $this->setAttribute('current_fatigue', $bounded);
                 $changed = true;
             }
         }

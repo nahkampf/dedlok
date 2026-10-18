@@ -9,6 +9,7 @@ use App\Drugs\DoseRefusal;
 use App\Drugs\DrugLedger;
 use App\Drugs\DrugTaker;
 use App\Drugs\Family;
+use App\Items\ConsumableEditor;
 use App\Models\Character;
 use App\Models\CharacterModifier;
 use App\Models\Dose;
@@ -434,7 +435,7 @@ final class DrugTest extends TestCase
         }
 
         $item = $this->drug(Family::Nootropic, tolerance: 0.0);
-        \App\Items\ConsumableEditor::apply($item, [['kind' => 'drug_opiate_tolerance', 'amount' => 12]]);
+        ConsumableEditor::apply($item, [['kind' => 'drug_opiate_tolerance', 'amount' => 12]]);
         $row = $this->carrying($item);
 
         $result = $this->taker()->take($this->character, $row);
@@ -444,7 +445,7 @@ final class DrugTest extends TestCase
         $this->assertSame(30.0, (float) $this->ledger()->for($this->character, Family::Stimulant)->tolerance);
 
         // And never below nothing.
-        \App\Items\ConsumableEditor::apply($item, [['kind' => 'drug_opiate_tolerance', 'amount' => 100]]);
+        ConsumableEditor::apply($item, [['kind' => 'drug_opiate_tolerance', 'amount' => 100]]);
         $this->taker()->take($this->character, $row->fresh());
 
         $this->assertSame(0.0, (float) $this->ledger()->for($this->character, Family::Opiate)->tolerance);

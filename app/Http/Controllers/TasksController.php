@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Journal\Journal;
 use App\Missions\MissionLedger;
 use App\Models\Mission;
+use App\Safehouses\Leads;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -51,6 +52,7 @@ class TasksController extends Controller
                 ->values(),
             // Notes not yet finished, newest first, with their lines.
             'journal' => app(Journal::class)->visible($character),
+            'leads' => app(Leads::class)->all($character),
             // For a survey's per-system tags and a supply job's meter: what is in the stash right now.
             'files' => $ledger->suppliable($character),
             'heldAddresses' => $ledger->heldAddresses($character),

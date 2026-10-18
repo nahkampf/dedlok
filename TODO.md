@@ -5,6 +5,23 @@ what will break if it is left alone.
 
 ---
 
+## Safehouse finding and difficulty (built 2026-10-20, to be balanced)
+
+Built as `Leads` (see CLAUDE.md). Still to do: Attack (needs PvP), whether the owner resting at home should matter, and every number
+(`safehouse.leads.*`, the 2% floor, mood and fatigue costs) against real stat scales.
+
+## Mood and drugs (noted 2026-10-19, not designed)
+
+Drugs will alter mood, short and long term: a dose in effect, addiction, withdrawal and tolerance should each move it. Today a dose is
+only a flat `mood.events.dose`. Everyone starts at 0, and mood drifts to 0 at 0.01 a minute.
+
+## Mood (built 2026-10-19, thin)
+
+Built: `Mood`, stored figure, events, drift, four bands, sheet word. Still to do: wire more events (winnings, creds lost, a
+safehouse's quality, hunger/tiredness as a baseline), decide whether mood should touch anything beyond Focus and Social, and balance.
+
+---
+
 ## Next up (prioritized by the author, 2026-10-08)
 
 In this order. Each is small enough to build alone.

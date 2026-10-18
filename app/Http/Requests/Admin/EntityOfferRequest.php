@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Models\EntityOffer;
 use App\Standing\Service;
+use App\Support\Points;
 use App\Support\Text;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -110,7 +111,7 @@ class EntityOfferRequest extends FormRequest
             'service_amount' => $this->filled('service') ? (float) $this->input('service_amount') : null,
             'min_grade' => (int) $this->input('min_grade'),
             'max_grade' => (int) $this->input('max_grade'),
-            'loyalty_price' => \App\Support\Points::of($this->input('loyalty_price'), 3),
+            'loyalty_price' => Points::of($this->input('loyalty_price'), 3),
             'min_standing' => (float) $this->input('min_standing'),
         ];
     }

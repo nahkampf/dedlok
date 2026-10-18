@@ -57,6 +57,8 @@ final class Storage
     {
         return Qb::sum($character->inventory()
             ->whereNull('parent_id')
+            // Stored at a safehouse is not on the deck.
+            ->whereNull('safehouse_id')
             ->whereHas('item', fn ($query) => $query->where('container', Item::CONTAINER_DATA))
             ->with('item.program')
             ->get()

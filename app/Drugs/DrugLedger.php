@@ -11,6 +11,7 @@ use App\Models\Drug;
 use App\Models\DrugUse;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Support\Points;
 use Illuminate\Support\Facades\Config;
 
 /**
@@ -94,7 +95,7 @@ final class DrugLedger
             $books->forceFill([$figure => $after])->save();
         }
 
-        return \App\Support\Points::of($before - $after);
+        return Points::of($before - $after);
     }
 
     /** What a dose of this family is worth to this character right now, 0–1. */
