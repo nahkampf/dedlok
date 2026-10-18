@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Content authored in the editors: four more safehouses (a coffin, a squat, a one-room apartment, a loft) and three places
+ * Content authored in the editors: the cardboard box as tuned, four more safehouses (a coffin, a squat, a one-room apartment, a loft) and three places
  * to eat (Kakurega, Pink House, an Automata vending machine) with their menus. Each is skipped when its slug already
  * exists, so running this over a database that has them (or after editing them in the admin) changes nothing.
  */
@@ -14,6 +14,16 @@ return new class extends Migration
     {
         $now = now();
         $districts = DB::table('districts')->pluck('id', 'slug');
+
+        // The cardboard box already exists (an earlier migration made it); this is how it was tuned in the editor.
+        DB::table('safehouses')->where('slug', 'cardboard-box')->update([
+            'title' => 'Cardboard box under the bridge',
+            'description' => 'Flattened boxes, a tarp, and a concrete roof that keeps most of the rain off. Nobody will take it from you. Nobody wants it.',
+            'stealth' => 5,
+            'storage_slots' => 2,
+            'rest_rate' => 1,
+            'updated_at' => $now,
+        ]);
 
         foreach ($this->safehouses() as $safehouse) {
             $district = $districts[$safehouse['district']] ?? null;
