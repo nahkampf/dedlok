@@ -1,3 +1,7 @@
+## 0.64.1 (2026-10-18)
+
+- Bugfix: Decryption missions could never complete, since the decryption processed lost the mission id on the produced files. Fixed now.
+
 ## 0.64.0 (2026-10-17)
 
 - New feature: Data fortresses. These are player owned nodes that can host software, store credits and files, defend itself, and produce things.
