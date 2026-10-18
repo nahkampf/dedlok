@@ -10,4 +10,7 @@ enum ActivityKind: string
     case Travel = 'travel';
     case Explore = 'explore';
     case Surgery = 'surgery';
+    case Rest = 'rest';
+    case Stakeout = 'stakeout';
+    case ScopeOut = 'scope_out';
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Stats;
 
+use App\Characters\Mood;
 use App\Models\Character;
 use App\Models\CharacterModifier;
 use Illuminate\Support\Facades\DB;
@@ -51,6 +52,8 @@ final class InjuryLedger
         if ($points <= 0) {
             return $this->carried($character, $key);
         }
+
+        app(Mood::class)->event($character, 'injury', $points);
 
         return $this->adjust($character, $key, -abs($points));
     }

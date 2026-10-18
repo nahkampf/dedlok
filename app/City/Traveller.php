@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\City;
 
+use App\Characters\Fatigue;
 use App\Models\Character;
 use App\Models\CityActivity;
 use App\Models\District;
@@ -37,6 +38,7 @@ final class Traveller
     public function __construct(
         private readonly Resolver $resolver,
         private readonly Encounters $encounters,
+        private readonly Fatigue $fatigue = new Fatigue,
     ) {}
 
     /**
@@ -173,6 +175,9 @@ final class Traveller
             while ($activity->pass_ends_at <= $now) {
                 $step = $activity->step;
                 $next = $route[$step + 1] ?? null;
+
+                // A matured pass tires; in a pod it eases a little instead.
+                $this->fatigue->charge($locked, ($activity->mode ?? TravelMode::Walk) === TravelMode::Pod ? 'travel_pod' : 'travel_pass');
                 // A district an editor has since removed ends the trip where it stands.
                 $reachable = $next !== null && District::query()->whereKey($next)->exists();
 
@@ -240,6 +245,18 @@ final class Traveller
         $activity->delete();
 
         return ['travel_stopped', ['district' => District::query()->find($route[$step])?->name ?? '']];
+    }
+
+    /**
+     * Put somebody in a district for free: no fare, no pass, no encounter roll. For a story that moves a body (a
+     * collapse waking them at home). Whatever city activity they were in simply ends; nothing is refunded.
+     *
+     * A plain write by design: it knows nothing about WHY, and the caller owns the transaction.
+     */
+    public function relocate(Character $character, District $to): void
+    {
+        CityActivity::query()->whereKey($character->getKey())->delete();
+        $character->forceFill(['district_id' => $to->getKey()])->save();
     }
 
     /** Seconds one pass in this district takes: the base times its weight, resolved, then halved for a pod. */

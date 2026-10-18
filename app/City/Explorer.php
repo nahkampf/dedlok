@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\City;
 
+use App\Characters\Fatigue;
 use App\Checks\CheckRoller;
 use App\Models\Character;
 use App\Models\CityActivity;
@@ -11,6 +12,7 @@ use App\Models\District;
 use App\Models\Location;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Safehouses\Leads;
 use App\Stats\Resolver;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -37,6 +39,7 @@ final class Explorer
         private readonly CheckRoller $roller,
         private readonly Resolver $resolver,
         private readonly Encounters $encounters,
+        private readonly Fatigue $fatigue = new Fatigue,
     ) {}
 
     public function begin(Character $character): CityActivity|CityRefusal
@@ -103,11 +106,24 @@ final class Explorer
             $found = $this->roll($locked);
             $activity->delete();
 
+            // A finished pass tires, and counts towards knowing the district.
+            $this->fatigue->charge($locked, 'explore_pass');
+            DB::table('character_district_passes')->upsert(
+                [['character_id' => $locked->getKey(), 'district_id' => $locked->district_id, 'passes' => 1]],
+                ['character_id', 'district_id'],
+                ['passes' => DB::raw('passes + 1')],
+            );
+
             // What the pass found is settled FIRST and is never lost; an encounter may follow it.
             // Finding nothing says nothing: silence is the same whether every roll failed or there
             // was nothing left to roll against, so it can never tell a player how much is hidden.
             if ($found !== null) {
                 $messages[] = ['explore_found', ['place' => $found->name]];
+            }
+
+            // And it may have sensed somebody's home.
+            if ($sensed = app(Leads::class)->discover($locked)) {
+                $messages[] = [$sensed, []];
             }
 
             if ($this->encounters->maybeOpen($locked, EncounterStart::Explore) !== null) {

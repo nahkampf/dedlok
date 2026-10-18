@@ -86,6 +86,7 @@
             <div class="card__ft">
                 <a class="btn btn--sm" href="{{ route('admin.districts.index') }}">{{ Text::get('admin.districts.title') }}</a>
                 <a class="btn btn--sm" href="{{ route('admin.locations.index') }}">{{ Text::get('admin.locations.title') }}</a>
+                <a class="btn btn--sm" href="{{ route('admin.safehouses.index') }}">{{ Text::get('admin.safehouses.title') }} ({{ $safehouses }})</a>
                 <a class="btn btn--sm" href="{{ route('admin.encounters.index') }}">{{ Text::get('admin.encounters.title') }}</a>
             </div>
         </div>

@@ -27,6 +27,9 @@ enum Reason: string
     case Encounter = 'encounter';
     case Fight = 'fight';
     case Mugged = 'mugged';
+    case Rent = 'rent';
+    case Meal = 'meal';
+    case Inquiry = 'inquiry';
     case Granted = 'granted';
     case AlphaGift = 'alpha_gift';
     case FortressMarket = 'fortress_market';

@@ -352,6 +352,16 @@ final class EncounterRunner
         return EncounterNode::query()->where('encounter_id', $live->encounter_id)->where('node_key', $key)->exists();
     }
 
+    /** Walk away from whatever is open, with no outcome: a collapse takes them out of it. */
+    public function abandon(Character $locked): void
+    {
+        $live = $this->live($locked);
+
+        if ($live !== null) {
+            $this->close($locked, $live);
+        }
+    }
+
     private function close(Character $locked, CharacterEncounter $live): void
     {
         // The clock stopped while it was open: move what is stored as a moment forward by its length.

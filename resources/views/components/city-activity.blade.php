@@ -14,6 +14,12 @@
     <div class="panel__bd stack" style="--gap:var(--s-3)">
         @if ($activity->kind === ActivityKind::Surgery)
             <p style="margin:0">{{ Text::get('city.surgery.on_the_table') }}</p>
+        @elseif ($activity->kind === ActivityKind::Rest)
+            <p style="margin:0">{{ Text::get('safehouse.resting') }}</p>
+        @elseif ($activity->kind === ActivityKind::Stakeout)
+            <p style="margin:0">{{ Text::get('safehouse.lead.staking_out') }}</p>
+        @elseif ($activity->kind === ActivityKind::ScopeOut)
+            <p style="margin:0">{{ Text::get('safehouse.lead.sneaking') }}</p>
         @elseif ($activity->kind === ActivityKind::Travel)
             <p style="margin:0">
                 {{ Text::get('city.travelling', ['district' => $inPass, 'to' => end($route) ?: '', 'mode' => $activity->mode?->label()]) }}
@@ -26,7 +32,21 @@
             <p style="margin:0">{{ Text::get('city.exploring', ['district' => $inPass]) }}</p>
         @endif
 
-        @unless ($activity->cancelling || $activity->kind === ActivityKind::Surgery)
+        @if ($activity->kind === ActivityKind::Rest)
+            <form method="POST" action="{{ route('safehouse.rest.stop') }}">
+                @csrf
+                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('safehouse.stop_resting') }}</button>
+            </form>
+        @endif
+
+        @if ($activity->kind === ActivityKind::Stakeout || $activity->kind === ActivityKind::ScopeOut)
+            <form method="POST" action="{{ route('lead.stop') }}">
+                @csrf
+                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get($activity->kind === ActivityKind::Stakeout ? 'safehouse.lead.stop_stakeout' : 'safehouse.lead.stop_scope_out') }}</button>
+            </form>
+        @endif
+
+        @unless ($activity->cancelling || in_array($activity->kind, [ActivityKind::Surgery, ActivityKind::Rest, ActivityKind::Stakeout, ActivityKind::ScopeOut], true))
             <form method="POST" action="{{ route('city.cancel') }}">
                 @csrf
                 {{-- A trip is STOPPED, not cancelled: it finishes the pass it is in and leaves you in that district. --}}

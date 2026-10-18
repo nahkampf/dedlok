@@ -26,7 +26,7 @@
              in the game — and the one place the accent is spent on this screen,
              because being finished is exactly what ember is for. --}}
         <span aria-hidden="true" style="color:var(--crit);font-size:var(--fs-lg)">&#9760;</span>
-        <h2>{{ Text::get('character.waiting.heading') }}</h2>
+        <h2>{{ Text::get($cause?->reason === 'collapse' ? 'character.waiting.heading_collapse' : 'character.waiting.heading') }}</h2>
     </div>
 
     <div class="panel__bd">
@@ -115,7 +115,7 @@
              button that usually does nothing. --}}
         <a class="btn btn--sm cut" href="{{ route('waiting.show') }}">{{ Text::get('character.waiting.up') }}</a>
         <div class="spacer"></div>
-        <span class="micro" style="color:var(--ink-2)">{{ Text::get('character.waiting.up_hint') }}</span>
+        <span class="micro" style="color:var(--ink-2)">{{ Text::get($cause?->reason === 'collapse' ? 'character.waiting.up_hint_collapse' : 'character.waiting.up_hint') }}</span>
     </div>
 </div>
 

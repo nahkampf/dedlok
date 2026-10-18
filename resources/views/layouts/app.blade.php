@@ -244,6 +244,21 @@
                     </div>
                 @endforeach
 
+                {{-- Fatigue is a dial like the others but FULL is bad, so no data-hot-*: the server picks the colour
+                     (yellow from Tired, ember from Drained) from the same lines the effects use. --}}
+                @php($fatigue = app(\App\Characters\Fatigue::class)->reading($hud, $hudSheet))
+                @php($fatigueLabel = Text::get('character.abbreviations.fatigue_max'))
+                <div class="dial" role="meter"
+                     aria-valuenow="{{ (int) round($fatigue['ratio'] * 100) }}" aria-valuemin="0" aria-valuemax="100"
+                     style="--v:{{ $fatigue['ratio'] }};--fill:{{ $fatigue['fill'] }}"
+                     title="{{ $fatigueLabel }} {{ Text::get('ui.hud.ratio', ['current' => $fatigue['current'], 'max' => $fatigue['max']]) }}"
+                     aria-label="{{ Text::get('ui.hud.aria', ['label' => Text::get('character.vitals.fatigue_max'), 'current' => $fatigue['current'], 'max' => $fatigue['max']]) }}">
+                    <span class="dial__in" aria-hidden="true">
+                        <span class="dial__label">{{ $fatigueLabel }}</span>
+                        <span class="dial__value">{{ (int) ceil($fatigue['current']) }}</span>
+                    </span>
+                </div>
+
                 {{-- Money has no maximum, so it has no meter of any shape — see
                      Character::RESOURCES, which is why creds is not in it. The
                      glyph replaces the word to buy the width: U+00A4 is the

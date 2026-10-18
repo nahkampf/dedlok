@@ -41,7 +41,7 @@ class LocationController extends Controller
     {
         $location = DB::transaction(function () use ($request): Location {
             $location = Location::create($request->columns());
-            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows(), $request->surgeryRow());
+            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows(), $request->surgeryRow(), $request->mealRows());
 
             return $location;
         });
@@ -58,7 +58,7 @@ class LocationController extends Controller
     {
         DB::transaction(function () use ($request, $location): void {
             $location->update($request->columns());
-            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows(), $request->surgeryRow());
+            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows(), $request->surgeryRow(), $request->mealRows());
         });
 
         return back()->with('status', Text::get('admin.locations.updated'));
@@ -82,6 +82,7 @@ class LocationController extends Controller
             'items' => ItemOptions::grouped(),
             'shopItems' => ItemOptions::grouped(rich: true),
             'surgery' => $location?->surgery,
+            'menu' => $location?->meals()->orderBy('id')->get(['name', 'price', 'meal_fullness', 'meal_fatigue'])->map(fn ($r): array => $r->only(['name', 'price', 'meal_fullness', 'meal_fatigue']))->all() ?? [],
             'services' => ClinicService::cases(),
             'shop' => $location?->shopItems()->orderBy('id')->get()->map(fn ($r): array => [
                 'item_id' => $r->item_id, 'price' => $r->price, 'max_stock' => $r->max_stock,

@@ -69,6 +69,9 @@ enum CityRefusal: string
     /** The choice costs more creds than are in the wallet. */
     case CannotPay = 'cannot_pay';
 
+    /** A meal, and they are too full to eat any more. */
+    case TooFull = 'too_full';
+
     public function message(): string
     {
         return Text::get("city.refused.{$this->value}");

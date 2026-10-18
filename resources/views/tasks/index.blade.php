@@ -70,6 +70,18 @@
 
     <section class="stack" style="--gap:var(--s-2);margin-top:var(--s-6)">
         <h2>{{ Text::get('tasks.tasks') }}</h2>
-        <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('tasks.not_yet') }}</p>
+        @forelse ($leads as $lead)
+            @php([$heading, $text] = $lead->entry())
+            <div class="stack" style="--gap:var(--s-2)">
+                <h3 style="margin:0">{{ $heading }}</h3>
+                <p style="margin:0">{{ $text }}</p>
+                <form method="POST" action="{{ route('lead.forget', $lead) }}" class="row row--wrap" style="--gap:var(--s-3)">
+                    @csrf
+                    <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('safehouse.lead.forget') }}</button>
+                </form>
+            </div>
+        @empty
+            <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('tasks.not_yet') }}</p>
+        @endforelse
     </section>
 @endsection

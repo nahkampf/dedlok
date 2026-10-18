@@ -67,6 +67,9 @@ return [
         // a Trivial one. See CITY.md.
         'exploration' => 0.0,
 
+        // Sensing a safehouse while exploring: about one pass in fifty, whoever is looking (a strong explorer a little more).
+        'safehouse_find' => 0.02,
+
         // DECRYPTION. A failed cycle costs only time, so the floor is the whole price of a hopeless matchup: at
         // 2% a five-minute cycle averages four hours to a lucky break, and the best decryptor alive still
         // wastes a cycle one time in fifty. See config/cyberspace.php, *Decryption*.

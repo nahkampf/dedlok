@@ -6,6 +6,7 @@ namespace App\Cyberspace;
 
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
+use App\Characters\Fatigue;
 use App\Checks\CheckRoller;
 use App\Models\Character;
 use App\Models\InventoryItem;
@@ -117,6 +118,7 @@ final class Probe
         private readonly Resolver $resolver,
         private readonly int $lifetimeHours,
         private readonly string $skillSlug,
+        private readonly Fatigue $fatigue = new Fatigue,
     ) {}
 
     public static function fromConfig(?CheckRoller $roller = null, ?Resolver $resolver = null): self
@@ -207,7 +209,14 @@ final class Probe
             $scan = $this->blankFile($character, $system);
         }
 
-        return $this->begin($character, $system, $scan, $now);
+        $result = $this->begin($character, $system, $scan, $now);
+
+        // Starting a read tires. A refused one has not started.
+        if ($result->succeeded()) {
+            $this->fatigue->charge($character, 'scan');
+        }
+
+        return $result;
     }
 
     /**

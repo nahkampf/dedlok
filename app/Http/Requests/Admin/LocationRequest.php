@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Characters\Meal;
 use App\City\ClinicService;
 use App\City\Concealment;
 use App\City\DiscoveryRule;
@@ -61,6 +62,10 @@ class LocationRequest extends FormRequest
             'surgery.rating' => ['nullable', 'integer', 'between:0,200', 'required_with:surgery.offered'],
             'surgery.install_price' => ['nullable', 'integer', 'between:0,1000000', 'required_with:surgery.offered'],
             'surgery.removal_price' => ['nullable', 'integer', 'between:0,1000000', 'required_with:surgery.offered'],
+            'meals' => ['nullable', 'array', 'max:30'],
+            'meals.*.name' => ['nullable', 'string', 'max:100'],
+            'meals.*.price' => ['nullable', 'integer', 'between:0,1000000'],
+            ...Meal::rules('meals.*.'),
             'clinic' => ['nullable', 'array'],
             'clinic.*' => ['nullable', 'integer', 'between:0,1000000'],
             // The same slug shape `Flags::set()` insists on.
@@ -97,6 +102,29 @@ class LocationRequest extends FormRequest
         }
 
         return array_values($rows);
+    }
+
+    /**
+     * The menu: a row with a name is a meal, blank rows dropped.
+     *
+     * @return list<array{name: string, price: int, meal_fullness: float, meal_fatigue: float}>
+     */
+    public function mealRows(): array
+    {
+        $rows = [];
+
+        foreach ((array) $this->input('meals', []) as $row) {
+            if (trim((string) ($row['name'] ?? '')) !== '') {
+                $rows[] = [
+                    'name' => trim((string) $row['name']),
+                    'price' => (int) ($row['price'] ?? 0),
+                    'meal_fullness' => (float) ($row['meal_fullness'] ?? 0),
+                    'meal_fatigue' => (float) ($row['meal_fatigue'] ?? 0),
+                ];
+            }
+        }
+
+        return $rows;
     }
 
     /**

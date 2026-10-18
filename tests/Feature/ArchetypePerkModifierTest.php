@@ -77,6 +77,7 @@ class ArchetypePerkModifierTest extends TestCase
             'damage.hitpoints.chemical',
             'damage.hitpoints.electrical',
             'damage.hitpoints.encounter',
+            'damage.hitpoints.exhaustion',
             'damage.hitpoints.fragmentation',
             'damage.hitpoints.ice',
             'damage.hitpoints.neural',

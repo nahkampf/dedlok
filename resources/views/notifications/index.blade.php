@@ -118,6 +118,8 @@
                                     <x-scan-facts :facts="$message->details['facts']" />
                                 @elseif (! empty($message->details['link']))
                                     {{-- Only a link in the sentence above: nothing to list. --}}
+                                @elseif (! empty($message->details['collect']))
+                                    {{-- A lost home's belongings: the button below collects them. --}}
                                 @elseif ($message->details && empty($message->details['chat_invite']))
                                     <div class="prose micro" style="color:var(--ink-2)">
                                         <ul>
@@ -148,6 +150,11 @@
                                     <form method="POST" action="{{ route('chat.decline', ['chat' => $message->details['chat_invite']]) }}">
                                         @csrf
                                         <button type="submit" class="btn btn--sm btn--quiet cut">{{ Text::get('chat.decline') }}</button>
+                                    </form>
+                                @elseif (! empty($message->details['collect']))
+                                    <form method="POST" action="{{ route('safehouse.collect', ['safehouse' => $message->details['collect']]) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn--sm cut">{{ Text::get('safehouse.storage.collect') }}</button>
                                     </form>
                                 @elseif (! empty($message->details['from']))
                                     <a class="btn btn--sm btn--quiet cut" href="{{ route('messages.create', ['to' => $message->details['from']]) }}">{{ Text::get('notifications.compose.reply') }}</a>

@@ -20,13 +20,14 @@ use Illuminate\Database\Eloquent\Model;
  * @property SurgeryOperation|null $operation
  * @property int|null $subject_id
  * @property int|null $location_id
+ * @property int|null $lead_id
  * @property list<int>|null $route
  * @property int $step
  * @property int $paid
  * @property bool $cancelling
  * @property CarbonImmutable $pass_ends_at
  */
-#[Fillable(['character_id', 'kind', 'mode', 'operation', 'subject_id', 'location_id', 'route', 'step', 'paid', 'cancelling', 'pass_ends_at'])]
+#[Fillable(['character_id', 'kind', 'mode', 'operation', 'subject_id', 'location_id', 'lead_id', 'route', 'step', 'paid', 'cancelling', 'pass_ends_at'])]
 class CityActivity extends Model
 {
     protected $primaryKey = 'character_id';

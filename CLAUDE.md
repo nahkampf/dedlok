@@ -1362,6 +1362,81 @@ hunters, the waiting room, recovery and missions. The traps that matter everywhe
 - Locks: `EnsureRunIsFinished`, `EnsureHuntIsResolved`, `EnsureCharacterIsStanding`,
   `EnsureDeckStillRuns` — named allow-lists, admin not exempt.
 
+### Fatigue and Safehouses (phase 1 built — `FATIGUE.md`)
+
+**Fatigue is the third resource, and FULL is bad.** `characters.current_fatigue` (DECIMAL(8,2), starts 0, clamps to `fatigue_max`) is
+deliberately NOT in `Character::RESOURCES`, which means "full is good" to the damage vocabulary, the waiting room and the dials.
+
+- **`App\Characters\Fatigue` is the only writer.** `add()` is scaled by `fatigue_taken` (never `ease()`); `charge($character, $kind, $times)`
+  reads `config('fatigue.costs.*')` (positive adds, negative eases) and is called from grid steps, scans, run turns, fight rounds, travel
+  passes and explore passes. `reading()` is what the topbar dial and the sheet card draw.
+- **`fatigue_max` = 6 Focus + 6 Meat + Social**, a `stats.formulas` entry. `Sheet::baseFor()` resolves its inputs from a second sheet built
+  WITHOUT the three fatigue effects (`Character::modifiers($asAt, $without)`), which closes the loop (fatigue lowering attributes lowering the
+  ceiling). Other effects still move it. `fatigue_recovery` (per minute) and `fatigue_taken` are stats; the minute clock (`characters:regenerate`)
+  eases and syncs, skipping fights and paused encounters.
+- **Breakpoints** (`Fatigue::sync()` after every write): Tired at 75% (−3 Focus/Intellect/Reflex), Drained at 90% (−7/−5/−5, replaces Tired);
+  Exhausted (−10 all attributes) is granted only by a collapse and lifts under 50%. Up to a minute of staleness after a maximum change is accepted.
+- **A collapse is a flag, then a safe point.** Reaching the maximum only sets `characters.collapse_pending`; `EnsureCharacterIsStanding` runs
+  `Collapse::trigger()` on the next request, so no travel/run/fight loop is cut mid-step. One transaction on the locked character: abandon the
+  encounter, close the hunt, end the run (Cancelled), forfeit the fight, drop the grid position; fixed 20% of the maximum as `DamageOrigin::Exhaustion`
+  (HP in a fight or the City, else SI); a mugging (`Reason::Mugged`, 20% chance, 10–33% of creds); a free `Traveller::relocate()` home;
+  Exhausted; `WaitingRoom::put()` for 120s with the `collapse` cause, waking at 95% of the maximum. **Exhausted's −10 lowers the HP and SI maxima
+  and the clamp-down rule cuts both pools beyond the 20% — kept as designed (2026-10-18).** An away character is flagged by the sweep but collapses
+  on their next request.
+- **Safehouses** (`safehouses`, `App\Models\Safehouse`, `admin/safehouses`): a type belongs to ONE district; several players may hold the same type.
+  `characters.safehouse_id` NULL means the fallback (`config('safehouse.fallback')`, the cardboard box in Knightsbridge Projects). Rest rate per
+  type; security and stealth are stored and unread. `character_district_passes` tallies explore passes (the "familiarity" a safehouse will need).
+- **Renting** (`App\Safehouses\Renter`, the only writer of `characters.safehouse_id` / `rent_due_at`): needs the body in the district, at
+  least `safehouse.passes_needed` (5) explore passes there (`character_district_passes`) and the first day's rent, paid now. Renting drops the
+  old one; taking the fallback box is free, needs no passes and is held as `safehouse_id` NULL. Rent is per `safehouse.rent_hours` in advance
+  (`Reason::Rent`, note "Rent: <title> [<district>]"), charged lazily by `CityClock::settle()` and swept by `safehouses:rent` every 15 minutes;
+  never into debt (an unpayable period waits and is paid when the money arrives); a further `grace_hours` unpaid and the home is lost, they
+  fall back to the box and get the `safehouse_lost` message. `Collapse` settles rent first so they wake where they still live.
+- **Actions** (`safehouses.actions`, `App\Safehouses\Action`, `HomeActions`): only in the home's district, only when the type lists them. **Rest
+  is a `city_activities` row (`ActivityKind::Rest`)**, so the lock is the existing one; it eases fatigue at the type's `rest_rate` a minute,
+  credited whenever the City is looked at (the row's `updated_at` is how far it is paid) and ends at nothing or when stopped. Patch, Meditate
+  and Cold shower are instant, with a cooldown each (`character_safehouse_cooldowns`) and figures in `config/safehouse.php` (placeholders).
+  **Eat** eats the type's `meal`.
+- **A meal is `App\Characters\Meal`** (fullness added, fatigue removed): the one place eating is done. A safehouse type carries it as
+  `meal_fullness` / `meal_fatigue` (the same two column names, `Meal::rules()` and `<x-meal-fields>` for anything else that authors one, e.g. a
+  location's menu later); a food item carries it as the two `UseEffect`s below, which build a `Meal` too.
+- **Food at locations**: a location is a place to eat by having `location_meals` rows (name, price, a `Meal`), edited as a *Menu* in the
+  location editor (`FeatureEditor`, replaced wholesale) and bought only through `App\City\Kitchen` (`Presence`, creds, `Meal::refusedFor()`,
+  `Reason::Meal`).
+- **Fullness** (`App\Characters\Fullness`, `characters.current_fullness`): hidden, 0 to `fatigue.fullness.max` (50), drained
+  `drain_per_minute` (0.07) by the minute clock, and only ever a limit on eating. **Food is a consumable** with the `UseEffect`s `fullness` and
+  `ease_fatigue` (edited like `heal_hitpoints`); `Consumer` refuses food as `UseRefusal::TooFull` when full, keeping the copy. Screens: `/safehouse`, and the district screen's "Get a safehouse here" / "Your
+  safehouse".
+- **Storage** (`App\Safehouses\SafehouseStorage`, the only writer of `inventory_items.safehouse_id` / `storage_expires_at`): a type's
+  `storage_slots`, one per row (a stack is one). A stored row is an ordinary inventory row tagged with the safehouse: out of `scopeLoose()`
+  and of the deck's storage count, no stack key (piles merged by hand), data withdrawn only where `Storage::fits()`. **Safe from muggings by
+  construction**: muggings take creds only. Usable only at the home you hold, in its district, idle. Losing or leaving a home gives its stored
+  rows `safehouse.storage_hours` (48) and sends `safehouse_stored` with a Collect button (`details['collect']`, also on `/safehouse`);
+  `collect()` moves what fits, `safehouses:rent` deletes the rest after the deadline, and renting the same place again takes them back. A
+  safehouse holding things cannot be deleted in the admin (RESTRICT).
+- **Wired drugs stop rest**: `drugs.wakefulness` (per drug, in the item editor) adds up over the doses in effect; at
+  `safehouse.rest.wakefulness_limit` (10) `HomeActions::tooWired()` refuses Rest (`Refusal::Wired`) and ends one under way, keeping what it
+  earned. A dose of an `overridden_by` family (opiate, medical) in effect lets them rest anyway.
+- **Finding, working out and raiding a home** (`App\Safehouses\Leads`, the only writer of `safehouse_leads` and of a stakeout's / scouting's
+  `city_activities` row; `LeadController`; `safehouse.leads.*`): a finished explore pass may SENSE a held, non-box home in the district
+  (`exploration` check against `leads.find.difficulty`, floored at 2% by `checks.floors.safehouse_find`), giving a lead ("Suspicious place N")
+  with discovery 0 and security 0. **Stakeout** (passes of a minute until stopped or the owner is known: 50% nothing, 40% +0.1, 10% +0.8) and
+  **Ask around** (instant: nothing / clues for 5-15 creds and +2 / misdirected -2 / a nutjob for 5-25 creds) raise discovery; past the home's
+  `stealth` the owner is known and the place is "Safehouse: <handle>". Then **Scope out the security** (minute passes, +3 security on a check) and
+  **Break in** (a stealth + Perception/Senses check; difficulty falls to its base once security passes the home's, else rises with the shortfall).
+  Inside: **Rob** (up to `steal_rows` stored rows) or **Burn** (the holder loses the home and its storage at once, `Renter::burnDown()`), or Leave.
+  A successful rob puts the HOME on a 24h cooldown for everyone (`characters.raid_cooldown_until`: rob and break-in refuse with `Cooldown`). A failed
+  break-in has a 15% chance (`police_chance`) of the police arriving: a stern talking-to (no pursuit until physical combat) and the scouted security
+  reset to 0. Attack is not built (no PvP). A lead is deleted whenever its target stops holding that home (`Leads::prune()`); the Tasks screen lists leads
+  with a Forget button. Stakeout/scouting are city activities (the existing lock) settled lazily by `CityClock`. Fatigue per pass/step is
+  `fatigue.costs.*`, mood per step `mood.events.*`. All numbers are placeholders.
+- **Mood** (`App\Characters\Mood`, `characters.mood` DECIMAL, -100 to +100, `config/mood.php`): the only writer. A stored figure moved by
+  `event($character, 'fight_won')` (amounts in `mood.events`: fights won/lost, collapse, injury per point, a meal, a dose, raided,
+  burned) and pulled `drift_per_minute` (0.01; `extreme_drift_per_minute` 0.03 beyond ±70) towards 0 by the minute clock. Bands (`mood.bands`) grant `config/effects.php` rows
+  (`mood_despondent`, `mood_low`, `mood_good`, `mood_elated`; small, one at a time) via `sync()` after every write, as Tired and Drained
+  do. Shown on the sheet as a band word with the figure in the tooltip; no dial. Placeholders throughout; more events (winnings, losses of
+  creds, safehouse quality as a baseline) are not wired.
+
 ### Physical combat (in progress — `COMBAT.md`)
 
 **Steps 1–6 of the build are done** (damage types, armour, weapons, wielding, the engine, NPCs, the stored fight, encounters that start fights, and what a win pays and a loss costs). Left: the balance pass, which needs authored content.

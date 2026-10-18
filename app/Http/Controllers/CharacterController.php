@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Characters\Avatar;
+use App\Characters\Fatigue;
 use App\Characters\HeatDecay;
+use App\Characters\Mood;
 use App\Drugs\DrugLedger;
 use App\Drugs\Family;
 use App\Models\Archetype;
@@ -54,6 +56,7 @@ class CharacterController extends Controller
             'attributes' => $this->attributes($character),
             'max' => Character::ATTRIBUTE_MAX,
             'vitals' => $this->vitals($character),
+            'mood' => app(Mood::class)->reading($character),
             'heat' => $this->heat($character),
             // What is in them right now, and how close each family is to the
             // line. Empty for nearly everybody, and then the section is absent
@@ -208,7 +211,7 @@ class CharacterController extends Controller
      * imply a compounding that does not happen. The run screen's evasion card
      * reads the same steps the same way.
      *
-     * @return list<array{label: string, current: int|float, max: int|float, ratio: float, steps: list<BreakdownStep>}>
+     * @return list<array{label: string, current: int|float, max: int|float, ratio: float, steps: list<BreakdownStep>, fill: string, marks: list<array{at: float, colour: string}>}>
      */
     private function vitals(Character $character): array
     {
@@ -224,8 +227,26 @@ class CharacterController extends Controller
                 'max' => Points::of($stat->value),
                 'ratio' => $character->resourceRatio($resource),
                 'steps' => $stat->steps,
+                'fill' => 'var(--ok)',
+                'marks' => [],
             ];
         }
+
+        // Fatigue last: full is BAD, so no low-is-hot test; yellow and ember come from the fatigue lines, ticked on the bar.
+        $stat = $sheet->get('fatigue_max');
+        $reading = app(Fatigue::class)->reading($character, $sheet);
+        $rows[] = [
+            'label' => Text::get('character.vitals.fatigue_max'),
+            'current' => $reading['current'],
+            'max' => $reading['max'],
+            'ratio' => $reading['ratio'],
+            'steps' => $stat->steps,
+            'fill' => $reading['fill'],
+            'marks' => [
+                ['at' => (float) config('fatigue.tired_at'), 'colour' => 'var(--warn)'],
+                ['at' => (float) config('fatigue.drained_at'), 'colour' => 'var(--crit)'],
+            ],
+        ];
 
         return $rows;
     }

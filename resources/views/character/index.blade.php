@@ -93,7 +93,7 @@
                                     </div>
                                     {{-- data-hot-low: ui-kit.js owns what "low" is,
                                          the same test the topbar's dials run. --}}
-                                    <div class="meter" data-hot-low style="--v:{{ $vital['ratio'] }};--fill:var(--ok)"
+                                    <div class="meter" @if ($vital['marks'] === []) data-hot-low @endif style="--v:{{ $vital['ratio'] }};--fill:{{ $vital['fill'] }}"
                                          role="img"
                                          aria-label="{{ Text::get('character.vital_value', [
                                              'vital' => $vital['label'],
@@ -101,6 +101,9 @@
                                              'max' => $vital['max'],
                                          ]) }}">
                                         <div class="meter__fill"></div>
+                                        @foreach ($vital['marks'] as $mark)
+                                            <span class="meter__mark" style="--x:{{ $mark['at'] }};--mark:{{ $mark['colour'] }}"></span>
+                                        @endforeach
                                     </div>
                                 </div>
 
@@ -121,6 +124,14 @@
                                 @endif
                             </div>
                         @endforeach
+                        <div class="card" title="{{ $mood['value'] }}">
+                            <div class="card__bd">
+                                <div class="readout">
+                                    <span class="readout__label">{{ Text::get('character.mood.label') }}</span>
+                                    <span class="readout__value">{{ $mood['word'] }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

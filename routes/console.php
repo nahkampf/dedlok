@@ -316,5 +316,8 @@ Schedule::command('city:settle')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Safehouse rent that fell due while nobody was looking; lazy settling is what is exact.
+Schedule::command('safehouses:rent --quiet-when-idle')->everyFifteenMinutes()->withoutOverlapping();
+
 // A supporter whose month has run out stops being one. Reads already know; this keeps the stored flag true.
 Schedule::command('supporters:expire')->hourly();

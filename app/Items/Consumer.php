@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Items;
 
+use App\Characters\Meal;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +51,13 @@ final class Consumer
             }
 
             $effects = $consumable->kinds();
+
+            // Food cannot be forced down: a full stomach refuses it, whatever else it would do.
+            foreach ($effects as [$kind, $amount]) {
+                if ($kind === UseEffect::Fullness && (new Meal(fullness: $amount))->refusedFor($body)) {
+                    return UseRefusal::TooFull;
+                }
+            }
 
             $anything = false;
 

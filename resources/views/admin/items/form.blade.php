@@ -360,6 +360,15 @@
                         <span class="field__hint">{{ Text::get('admin.items.fields.lethal_at_hint') }}</span>
                         @error('lethal_at') <span class="field__error">{{ $message }}</span> @enderror
                     </div>
+
+                    <div class="field" style="margin-top:var(--s-3)" @error('wakefulness') data-invalid @enderror>
+                        <label class="field__label" for="wakefulness">{{ Text::get('admin.items.fields.wakefulness') }}</label>
+                        <input class="input num" id="wakefulness" name="wakefulness" type="number" min="0" max="255"
+                               style="width:min(180px,100%)"
+                               value="{{ old('wakefulness', $item?->drug?->wakefulness ?? 0) }}">
+                        <span class="field__hint">{{ Text::get('admin.items.fields.wakefulness_hint') }}</span>
+                        @error('wakefulness') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
                 </div>
             </div>
         </details>

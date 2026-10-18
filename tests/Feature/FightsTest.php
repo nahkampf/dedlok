@@ -189,6 +189,19 @@ final class FightsTest extends TestCase
         $this->assertSame($fight->id, $this->character->fresh()->current_fight_id);
     }
 
+    public function test_a_round_tires_and_the_figure_reaches_the_callers_character(): void
+    {
+        $this->load(12);
+        $fights = $this->fights([0.0, 0.5, 0.0, 0.5]);
+        $this->open($this->npc(), [0.0, 0.5, 0.0, 0.5]);
+
+        $character = $this->character->fresh();
+        $fights->act($character, Action::attack());
+
+        $this->assertSame(2.5, $character->current_fatigue);
+        $this->assertSame(2.5, $this->character->fresh()->current_fatigue);
+    }
+
     public function test_synaptic_integrity_that_regenerates_between_rounds_is_not_wiped(): void
     {
         $this->load(12);

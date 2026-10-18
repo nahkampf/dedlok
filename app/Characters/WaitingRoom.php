@@ -53,13 +53,14 @@ final readonly class WaitingRoom
      * they are rather than having their clock restarted, because a second hit
      * on an unconscious character is not a second wait.
      */
-    public function put(Character $character, DownedCause $cause): void
+    public function put(Character $character, DownedCause $cause, ?int $seconds = null): void
     {
         if ($this->isDown($character)) {
             return;
         }
 
-        $seconds = $this->resolver->resolve(
+        // A cause may name its own length (a collapse is two minutes); otherwise it is the resolved recovery time.
+        $seconds ??= $this->resolver->resolve(
             'recovery_seconds',
             (float) Config::get('cyberspace.recovery_seconds', 60),
             $character->modifiers(),
@@ -92,6 +93,13 @@ final readonly class WaitingRoom
                 if ($character->getAttribute($resource) <= 0) {
                     $character->recover($resource, 1);
                 }
+            }
+
+            // A collapse is not a reset: they wake at a share of the maximum (95%), so they must rest at once.
+            if (($character->waiting_cause['reason'] ?? null) === 'collapse') {
+                $fatigue = app(Fatigue::class);
+                $wake = (float) Config::get('fatigue.collapse.wake_at') * $fatigue->maximum($character);
+                $fatigue->ease($character, max(0, (float) $character->current_fatigue - $wake));
             }
 
             $character->forceFill(['waiting_until' => null, 'waiting_cause' => null])->save();

@@ -285,6 +285,23 @@ final class Sheet
          */
         $declared = config("stats.bases.{$statId}");
 
+        // The maximum of fatigue reads attributes WITHOUT the effects fatigue itself causes (Tired, Drained, Exhausted
+        // lower focus and meat), or a lower maximum would deepen them and Exhausted would collapse somebody who has
+        // just woken at 95%. Every other source still moves it. FATIGUE.md, *Breakpoints*.
+        if ($statId === 'fatigue_max') {
+            $clean = self::for(
+                $this->character,
+                $this->context,
+                $this->character->modifiers(null, (array) config('fatigue.effects')),
+            );
+            $formula = (array) config('stats.formulas.fatigue_max');
+
+            return Character::applyFormula($formula, array_map(
+                static fn (ResolvedStat $stat): float => $stat->value,
+                $clean->only(array_keys($formula)),
+            ));
+        }
+
         if ($declared !== null) {
             return (float) $declared;
         }
