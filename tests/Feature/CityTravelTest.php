@@ -199,6 +199,8 @@ final class CityTravelTest extends TestCase
         // Unlink and drop the destination's links first, as an editor would have to.
         DB::table('district_links')->where('district_a_id', $this->district('downtown')->id)
             ->orWhere('district_b_id', $this->district('downtown')->id)->delete();
+        // A district holding a safehouse cannot be deleted from under it, so the editor would remove those first too.
+        DB::table('safehouses')->where('district_id', $this->district('downtown')->id)->delete();
         $this->district('downtown')->delete();
 
         $this->travel(5)->minutes();
