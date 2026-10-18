@@ -114,6 +114,10 @@ class InventoryItem extends Model
             return $name;
         }
 
+        if ($file->missionId !== null && in_array($this->item->slug, [ExtractedFile::SEALED_SLUG, ExtractedFile::DECRYPTED_SLUG], true)) {
+            return Text::get($this->item->slug === ExtractedFile::SEALED_SLUG ? 'inventory.files.job_encrypted' : 'inventory.files.job_decrypted', ['label' => $file->label]);
+        }
+
         $origin = $file->origin;
         $headline = match (config("cyberspace.decryption.components.{$this->item->slug}.headline")) {
             'grade' => $file->grade === null ? null : Text::get('inventory.files.headline.grade', ['grade' => $file->grade]),

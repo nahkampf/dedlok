@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.64.1] — 2026-10-18
+
+Exchange extract jobs can be completed again.
+
+### Fixed
+
+- **A job file decrypted into a component and could never be handed in** (`DecryptionQueue::outcomeFor()`): decryption rolled every file over the grade's components, a job file included, but `MissionLedger::handInExtract()` takes a Memory Dump and nothing else. An extract job's file (one with a `mission_id`) now always becomes the Memory Dump, for the character's Decryptor and for a fortress Decryptor alike. Found on job #849, whose file came out a Stack Trace and which was then given up for the penalty. Rows already rolled into components are not repaired.
+
+### Changed
+
+- **A job file is named by its state** (`InventoryItem::label()`, `inventory.files.job_encrypted` / `job_decrypted`): `Job file: User database (Encrypted)` while sealed, `(Decrypted)` once broken.
+
+### Tests
+
+- `MissionTest` takes a job file through the real decryption queue and hands it in; the old test swapped the item by hand, which hid the bug.
+
+
 ## [0.64.0] — 2026-10-17
 
 Data Fortresses get a production line, a way to steal, and their first helpers.
@@ -3419,7 +3436,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.64.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.64.1...HEAD
+[0.64.1]: https://github.com/nahkampf/dedlok/compare/v0.64.0...v0.64.1
 [0.64.0]: https://github.com/nahkampf/dedlok/compare/v0.63.2...v0.64.0
 [0.63.2]: https://github.com/nahkampf/dedlok/compare/v0.63.1...v0.63.2
 [0.63.1]: https://github.com/nahkampf/dedlok/compare/v0.63.0...v0.63.1
