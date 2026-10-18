@@ -263,6 +263,17 @@ Schedule::command('cyberspace:lockdowns --quiet-when-idle')
     ->withoutOverlapping();
 
 /*
+ * A job's target that a lockdown just relocated, replaced straight away.
+ *
+ * Retargeting is otherwise lazy (the Tasks and exchange screens), so a runner who
+ * stays away learns nothing until the deadline fails the job. Same cadence as the
+ * lockdown sweep, declared after it so the new address exists when this looks.
+ */
+Schedule::command('missions:retarget')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+/*
  * Scan files that have gone stale, and the one message they are owed.
  *
  * A file's 48 hours are read when something asks — the card, a buyer, a

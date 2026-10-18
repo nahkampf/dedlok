@@ -485,7 +485,22 @@ final readonly class MissionLedger
     /** How many files a supply job could be handed right now: whole scan files and sealed dumps. */
     public function suppliable(Character $character): int
     {
-        return $this->heldFiles($character)->count() + $this->heldDumps($character)->count();
+        return $this->heldSupply($character)->count();
+    }
+
+    /**
+     * What a supply job counts and spends: one scan file per SYSTEM (the oldest), then the sealed dumps. A second scan of a
+     * system already held is the same picture twice, so it is neither counted nor spent, and the receipt row a spent file
+     * leaves (unique on mission and system) is never written twice.
+     *
+     * @return Collection<int, InventoryItem>
+     */
+    private function heldSupply(Character $character): Collection
+    {
+        return $this->heldFiles($character)
+            ->unique(static fn (InventoryItem $row): ?string => $row->scanFile()?->address)
+            ->concat($this->heldDumps($character))
+            ->values();
     }
 
     /**
@@ -737,7 +752,7 @@ final readonly class MissionLedger
     private function spendFiles(Character $character, Mission $mission): bool
     {
         // Scan files first, then sealed dumps: a scan perishes and a dump keeps.
-        $held = $this->heldFiles($character)->concat($this->heldDumps($character));
+        $held = $this->heldSupply($character);
 
         if ($held->count() < $mission->quantity_required) {
             return false;
