@@ -2,6 +2,45 @@
 
 ## [Unreleased]
 
+## [0.65.0] — 2026-10-19
+
+### Added
+
+- **Fatigue** (`Fatigue`, `current_fatigue`, `fatigue_max` / `fatigue_recovery` / `fatigue_taken`, `config/fatigue.php`): a third resource that rises with grid steps, scans, run turns, fight rounds, travel and exploring and eases by the minute. Tired (75%) and Drained (90%) effects; a topbar dial and a sheet card with markers at both lines.
+- **Collapse** (`Collapse`, `characters.collapse_pending`, `DamageOrigin::Exhaustion`): at the maximum the character is flagged and falls at the next request: ends whatever they were in, takes 20% damage, may be mugged, is moved home free, gains Exhausted and is down for two minutes, waking at 95%. `Fights::forfeit()`, `EncounterRunner::abandon()`, `Traveller::relocate()`.
+- **Safehouses** (`safehouses`, `characters.safehouse_id`, `admin/safehouses`) with the cardboard box in Knightsbridge Projects as the fallback, and a per-district explore-pass tally (`character_district_passes`). 
+- **Renting a safehouse** (`Renter`, `Reason::Rent`, `safehouses:rent`): five explore passes in the district, the first day paid up front, rent daily and never into debt, lost after a further day unpaid. A "Get a safehouse here" / "Your safehouse" panel on the district screen, and a `/safehouse` screen.
+- **Safehouse actions** (`HomeActions`, `ActivityKind::Rest`, `safehouses.actions`, `character_safehouse_cooldowns`): Rest (a City activity easing fatigue at the type's rate), Patch yourself up, Meditate and Cold shower with cooldowns; Eat is listed but not built. The admin editor ticks which a type offers.
+- **Fullness and food** (`Fullness`, `characters.current_fullness`, `UseEffect::Fullness` / `EaseFatigue`, `UseRefusal::TooFull`, `safehouses.eat_fullness` / `eat_fatigue`): a hidden bar to 50 that drains by the minute; Eat at a safehouse and food items from the stash fill it and ease fatigue.
+- **Safehouse storage** (`SafehouseStorage`, `safehouses.storage_slots`, `inventory_items.safehouse_id` / `storage_expires_at`) with the 48-hour Collect message, and **`Meal`** as the one shared definition of a meal (`meal_fullness` / `meal_fatigue`). Fullness drains 0.07 a minute.
+- **Food at locations** (`location_meals`, `Kitchen`, `Feature::Food`, `Reason::Meal`): a Menu in the location editor and an *Eat* panel on the place screen.
+- **Stimulants block rest** (`drugs.wakefulness`, `HomeActions::tooWired()`, `Refusal::Wired`): doses in effect add up, an opiate or medical dose overrides, and taking one mid-rest ends it.
+- **Mood** (`Mood`, `characters.mood`, `config/mood.php`): -100 to +100, moved by events (fights, collapse, injury, meals, doses, raids and the safehouse work below), drifting to 0 at 0.01 a minute and 0.03 beyond ±70, four small effect bands (Focus and Social), a word on the sheet. Everyone starts at 0.
+- **Finding and raiding a home** (`Leads`, `safehouse_leads`, `LeadController`, `ActivityKind::Stakeout` / `ScopeOut`, `safehouse.leads.*`): exploring may sense a held home (an `exploration` check floored at 2%) as "Suspicious place N". Stakeouts and *Ask around* work out the owner against the home's stealth; *Scope out the security* works out its security; *Break in* is a stealth + Perception + Senses check (harder by the shortfall until the security is scouted). Inside: *Rob the place* (up to two stored rows, which puts the home on a 24h cooldown, `characters.raid_cooldown_until`) or *Burn it* (the holder loses the home and its storage at once). A failed break-in may bring the police (15%): a talking-to for now, and the scouted security is lost. The Tasks screen lists each lead with *Forget about this*. Attack is not built (no player combat).
+
+
+### Changed
+
+- **Fullness drains and mood drifts on the minute clock** (`characters:regenerate`).
+
+### Migrations
+
+- `2026_10_18_100000_fatigue`
+- `2026_10_18_110000_district_explore_passes`
+- `2026_10_18_120000_safehouses`
+- `2026_10_18_130000_collapse_pending`
+- `2026_10_19_100000_safehouse_renting`
+- `2026_10_19_110000_fullness`
+- `2026_10_19_120000_meals_and_storage`
+- `2026_10_19_130000_location_meals`
+- `2026_10_19_140000_drug_wakefulness`
+- `2026_10_19_150000_safehouse_raids`
+- `2026_10_19_160000_mood`
+- `2026_10_20_100000_safehouse_leads`
+- `2026_10_20_110000_raid_cooldown`
+
+
+
 ## [0.64.1] — 2026-10-18
 
 Exchange extract jobs can be completed again.
@@ -3436,7 +3475,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.64.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.65.0...HEAD
+[0.65.0]: https://github.com/nahkampf/dedlok/compare/v0.64.1...v0.65.0
 [0.64.1]: https://github.com/nahkampf/dedlok/compare/v0.64.0...v0.64.1
 [0.64.0]: https://github.com/nahkampf/dedlok/compare/v0.63.2...v0.64.0
 [0.63.2]: https://github.com/nahkampf/dedlok/compare/v0.63.1...v0.63.2

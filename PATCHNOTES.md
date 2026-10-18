@@ -1,3 +1,12 @@
+## 0.65.0 (2026-10-19)
+
+- New: Fatigue. Everything you makes you more tired. Resting, eating, and a couple of other things (some not yet built) makes you less tired.
+- New: Safehouses. A place to hide away, store some stuff, have a meal and a cold shower. These exist in various districts, and in various degrees of expensive and/or comfortable, and have one or more features. Everyone gets a cardboard box underneath the bridge in Knightsbridge Projects by default so you might wanna find a better place.
+- New: Food! There are a couple of locations in the city where you can eat. This reduces hunger and sometimes fatigue as well. 
+- Safehouses are discoverable when exploring. Finding one lets you scope it out to find out who lives there, and then break in and steal (some of) their stuff. Later you'll also be able to fight people there (home invasions!)
+- New: Mood. Yet another bar to keep an eye on. Getting hurt, failing, etc makes you sad. Winning makes you happy. Drugs can make you very happy, for a while, and then very sad for a very long time.
+- Drug effects and interactions: Stimulants will now keep you awake. Some more work has been done to lay the foundation for drug interactions, their effect on mood and fatigue, etc.
+
 ## 0.64.1 (2026-10-18)
 
 - Bugfix: Decryption missions could never complete, since the decryption processed lost the mission id on the produced files. Fixed now.
