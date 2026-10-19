@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Missions;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\NodeStocker;
 use App\Cyberspace\ScanFile;
@@ -321,6 +323,7 @@ final readonly class MissionLedger
                 'state' => MissionState::Completed,
                 'completed_at' => now(),
             ])->save();
+            (new Achievements)->record($character, Metric::MissionsCompleted);
 
             return $live->fresh();
         });
@@ -769,6 +772,7 @@ final readonly class MissionLedger
             $this->closeOut($mission);
 
             $mission->forceFill(['state' => MissionState::Completed, 'completed_at' => now()])->save();
+            (new Achievements)->record($character, Metric::MissionsCompleted);
 
             return $mission->fresh();
         });

@@ -69,6 +69,9 @@ enum Metric: string
     /** The bounty on your head, as it stands: a state, so it is reported with `reach()`. */
     case BountyOnHead = 'bounty_on_head';
 
+    /** Missions handed in or delivered, one per job paid. */
+    case MissionsCompleted = 'missions_completed';
+
     /** Bloodhounds (hunters) beaten, one per win. */
     case BloodhoundsDefeated = 'bloodhounds_defeated';
 }
