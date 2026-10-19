@@ -137,8 +137,8 @@
     </details>
 
     @if ($buying !== [])
-        <div class="panel" style="margin-top:var(--s-4)">
-            <div class="panel__hd"><span class="micro">{{ Text::get('exchange.they_buy') }}</span></div>
+        <details class="panel" open style="margin-top:var(--s-4)">
+            <summary class="panel__hd"><span class="micro">{{ Text::get('exchange.they_buy') }}</span></summary>
             <div class="panel__bd stack" style="--gap:var(--s-3)">
                 @foreach ($buying as $entry)
                     <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
@@ -155,7 +155,7 @@
                     </div>
                 @endforeach
             </div>
-        </div>
+        </details>
     @endif
 
     <p style="margin-top:var(--s-4)">

@@ -3416,7 +3416,7 @@ return [
         'store_heat' => 'You carry :heat heat',
 
         // THE BUY SIDE: what the desk pays creds for.
-        'they_buy' => 'This desk buys',
+        'they_buy' => 'Buying',
         'sale_note' => ':item × :quantity to :place',
 
         // What an entity DOES for loyalty, as App\Standing\Service.
