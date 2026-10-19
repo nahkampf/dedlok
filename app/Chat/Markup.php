@@ -115,7 +115,7 @@ final class Markup
         return preg_replace_callback('/\bimg:([0-9a-f]{16})\b/', function (array $m): string {
             $url = ChatImages::url($m[1]);
 
-            return $url === null ? $m[0] : sprintf('<a href="%1$s" target="_blank" rel="noopener"><img class="chat__img" src="%1$s" alt="%2$s" loading="lazy"></a>', e($url), e(Text::get('chat.image_alt')));
+            return $url === null ? Text::get('chat.image_wiped') : sprintf('<a href="%1$s" target="_blank" rel="noopener"><img class="chat__img" src="%1$s" alt="%2$s" loading="lazy"></a>', e($url), e(Text::get('chat.image_alt')));
         }, $text);
     }
 

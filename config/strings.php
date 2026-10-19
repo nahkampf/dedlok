@@ -716,6 +716,7 @@ return [
      */
     'chat' => [
         'image_alt' => 'A picture pasted into the chat',
+        'image_wiped' => '[ image wiped by age filter ]',
         'title' => 'Chat',
         'general' => 'General',
         'empty' => 'Nobody has said anything here yet.',

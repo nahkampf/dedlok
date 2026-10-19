@@ -59,9 +59,13 @@ final class ChatTest extends TestCase
         $this->assertNotEmpty($m, 'said as an img: line');
         $this->assertSame(800, getimagesize(ChatImages::path($m[1]))[0]);
         $this->assertStringContainsString('class="chat__img"', Markup::render($line->message));
-        $this->assertStringNotContainsString('<img', Markup::render('img:0000000000000000'), 'no file, no picture');
+        $this->assertSame('[ image wiped by age filter ]', Markup::render('img:0000000000000000'), 'no file, no picture');
 
-        @unlink(ChatImages::path($m[1]));
+        // Past its week it is wiped from the line, and the sweep deletes the file.
+        touch(ChatImages::path($m[1]), now()->subDays(8)->getTimestamp());
+        $this->assertSame('[ image wiped by age filter ]', Markup::render($line->message));
+        $this->artisan('chat:sweep-images')->assertSuccessful();
+        $this->assertFileDoesNotExist(ChatImages::path($m[1]));
         $this->actingAs($me->user)->postJson(route('chat.image'), ['chat' => $general->getKey(), 'image' => UploadedFile::fake()->create('x.txt', 1, 'text/plain')])->assertStatus(422);
     }
 
