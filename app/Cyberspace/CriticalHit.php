@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Cyberspace;
 
 use App\Models\Character;
+use App\Support\Points;
 use Closure;
 
 /**
@@ -23,8 +24,8 @@ final class CriticalHit
     }
 
     /** What a critical hit does to the damage. */
-    public static function scale(int $damage): int
+    public static function scale(int|float $damage): int|float
     {
-        return $damage * (int) config('cyberspace.critical.multiplier', 5);
+        return Points::of($damage * (int) config('cyberspace.critical.multiplier', 5));
     }
 }

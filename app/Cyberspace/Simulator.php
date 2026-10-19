@@ -27,6 +27,7 @@ use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
+use App\Support\Points;
 use App\Support\Qb;
 use App\Support\Text;
 use App\Support\Trace;
@@ -533,7 +534,7 @@ final readonly class Simulator
     {
         $damage = $this->resolver
             ->resolve('icebreaker_damage', 0.0, $character->modifiers())
-            ->toInt();
+            ->value;
 
         // A running icebreaker is the gate, and `icebreaker_damage` floors at
         // zero to say so — but the stat alone cannot tell a character with no
@@ -550,9 +551,9 @@ final readonly class Simulator
         $critical = CriticalHit::rolls($character, $this->roll);
         $damage = $critical ? CriticalHit::scale($damage) : $damage;
 
-        $dealt = min($damage, max(0, (int) $run->ice_integrity));
-        $run->ice_integrity = max(0, (int) $run->ice_integrity - $damage);
-        $run->ice_damage = (int) $run->ice_damage + $dealt;
+        $dealt = min($damage, max(0, $run->ice_integrity));
+        $run->ice_integrity = max(0, Points::of($run->ice_integrity - $damage));
+        $run->ice_damage = Points::of($run->ice_damage + $dealt);
 
         // "Your [Icebreaker name] finds an intrusion vector…": the program is a green tag in the middle of the
         // sentence, so the line carries what comes before the tag as well as what follows it.
@@ -1074,7 +1075,7 @@ final readonly class Simulator
      * The ICE in play for a system: the catalogue row's numbers, or, for a fortress with its own crafted ICE running,
      * that copy's integrity and attack (the catalogue row is only its template).
      *
-     * @return array{ice_id: ?int, ice_integrity: ?int, ice_attack: ?int}
+     * @return array{ice_id: ?int, ice_integrity: int|float|null, ice_attack: int|float|null}
      */
     private function iceOf(?System $system): array
     {
@@ -1540,7 +1541,7 @@ final readonly class Simulator
 
         $result = (new DamageResolver($this->resolver))->apply(
             $character,
-            Damage::synapticIntegrity((int) ($run->ice_attack ?? $ice->attack), DamageOrigin::Ice),
+            Damage::synapticIntegrity($run->ice_attack ?? $ice->attack, DamageOrigin::Ice),
         );
 
         $line = $this->line('cyberspace.run.log.ice_hits', ['damage' => $result->taken], 'crit', $ice->name);

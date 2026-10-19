@@ -25,6 +25,8 @@ declare(strict_types=1);
 return [
 
     'ui' => [
+        // A button that wants a second press (data-confirm).
+        'confirm' => 'Are you sure?',
         // The topbar's speaker and note. The label names what pressing does NOT, but the state it is in.
         'sound' => ['on' => 'Sound on. Press to mute.', 'off' => 'Sound off. Press to unmute.'],
         'music' => [

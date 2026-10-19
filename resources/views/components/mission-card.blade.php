@@ -173,13 +173,13 @@
             @if ($action !== MissionAction::Transport)
                 <form method="POST" action="{{ route('missions.complete', $mission) }}">
                     @csrf
-                    <button type="submit" class="btn btn--sm btn--go cut">{{ Text::get('missions.complete') }}</button>
+                    <button type="submit" class="btn btn--sm btn--go cut" @disabled(! app(\App\Missions\MissionLedger::class)->canHandIn(auth()->user()->character, $mission))>{{ Text::get('missions.complete') }}</button>
                 </form>
             @endif
             <div class="spacer"></div>
             <form method="POST" action="{{ route('missions.abandon', $mission) }}">
                 @csrf @method('DELETE')
-                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('missions.abandon') }}</button>
+                <button type="submit" class="btn btn--sm btn--ghost cut" data-confirm="{{ Text::get('ui.confirm') }}">{{ Text::get('missions.abandon') }}</button>
             </form>
         @else
             <form method="POST" action="{{ route('missions.accept', $mission) }}">

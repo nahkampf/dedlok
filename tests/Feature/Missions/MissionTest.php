@@ -845,6 +845,19 @@ final class MissionTest extends TestCase
         $this->assertSame(MissionState::Offered, $offer->fresh()->state);
     }
 
+    public function test_hand_in_is_offered_only_when_it_would_work(): void
+    {
+        $mission = $this->accepted(MissionAction::Agitate);
+
+        $this->assertFalse($this->ledger()->canHandIn($this->character, $mission));
+
+        $mission->targets()->update(['satisfied_at' => now()]);
+        $this->assertTrue($this->ledger()->canHandIn($this->character, $mission->fresh()));
+
+        $mission->forceFill(['expires_at' => now()->subMinute()])->save();
+        $this->assertFalse($this->ledger()->canHandIn($this->character, $mission->fresh()));
+    }
+
     private function anOffer(MissionAction $action): Mission
     {
         // Taking a job needs the body at the desk's node (and jacked in, so a deck is equipped first).

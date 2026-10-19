@@ -77,7 +77,7 @@
                 <p style="margin:0">{{ $text }}</p>
                 <form method="POST" action="{{ route('lead.forget', $lead) }}" class="row row--wrap" style="--gap:var(--s-3)">
                     @csrf
-                    <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('safehouse.lead.forget') }}</button>
+                    <button type="submit" class="btn btn--sm btn--ghost cut" data-confirm="{{ Text::get('ui.confirm') }}">{{ Text::get('safehouse.lead.forget') }}</button>
                 </form>
             </div>
         @empty

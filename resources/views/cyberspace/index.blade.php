@@ -636,7 +636,7 @@
                         </form>
                         <form method="POST" action="{{ route('cyberspace.forget', $mark) }}">
                             @csrf @method('DELETE')
-                            <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('cyberspace.bookmarks.forget') }}</button>
+                            <button type="submit" class="btn btn--sm btn--ghost cut" data-confirm="{{ Text::get('ui.confirm') }}">{{ Text::get('cyberspace.bookmarks.forget') }}</button>
                         </form>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Casts\PointsCast;
 use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\Position;
 use App\Cyberspace\RunPurpose;
@@ -41,7 +42,9 @@ class Run extends Model
             'backdoored' => 'boolean',
             'backdoor_kind' => BackdoorKind::class,
             'detected' => 'boolean',
-            'ice_integrity' => 'integer',
+            'ice_integrity' => PointsCast::class,
+            'ice_attack' => PointsCast::class,
+            'ice_damage' => PointsCast::class,
             'extracting_qb' => 'float',
             'trace' => 'integer',
             'trace_hop' => 'integer',

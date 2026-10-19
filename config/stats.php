@@ -332,7 +332,7 @@ return [
             'tags' => ['software'],
             'min' => 0,
             'max' => null,
-            'rounding' => 'floor',
+            'rounding' => 'hundredth',
         ],
 
         /*

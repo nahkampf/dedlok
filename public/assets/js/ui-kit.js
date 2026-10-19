@@ -47,6 +47,25 @@
     row.remove();
   });
 
+  /* A button that must be pressed twice. The first press swaps its label for the data-confirm text and holds the submit;
+     the second, within four seconds, goes through. Anything else puts the label back. A guard against misclicks, not a
+     security measure: the server still judges the request.
+     <button type="submit" data-confirm="Are you sure?">Forget</button>                                           */
+  on("click", "[data-confirm]", (e, btn) => {
+    if (btn.dataset.armed) {
+      clearTimeout(Number(btn.dataset.armed));
+      delete btn.dataset.armed;
+      return;
+    }
+    e.preventDefault();
+    const label = btn.textContent;
+    btn.textContent = btn.dataset.confirm;
+    btn.dataset.armed = String(setTimeout(() => {
+      btn.textContent = label;
+      delete btn.dataset.armed;
+    }, 4000));
+  });
+
   /* --- Suggestions as you type -------------------------------------------
      An input with data-suggest="URL" and data-suggest-into="LIST-ID" asks the URL for ?q=<what is typed> and puts the JSON
      list of strings it gets back into that <datalist>. The browser does the drawing and the picking. A short pause between

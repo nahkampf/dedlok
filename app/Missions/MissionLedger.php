@@ -228,6 +228,25 @@ final readonly class MissionLedger
     }
 
     /**
+     * Would handing this in work right now? The desk's button greys out on it. Read only, and it mirrors `complete()`'s
+     * checks, so the two have to change together. A target that stopped existing is not asked: that hand-in voids the job,
+     * and the card says so on the target.
+     */
+    public function canHandIn(Character $character, Mission $mission): bool
+    {
+        if ($mission->state !== MissionState::Accepted || $mission->hasExpired() || $mission->action === MissionAction::Transport) {
+            return false;
+        }
+
+        return match ($mission->action) {
+            MissionAction::Supply => $this->suppliable($character) >= $mission->quantity_required,
+            MissionAction::Extract => $this->heldJobFile($character, $mission, decrypted: true) !== null,
+            MissionAction::Scan => $mission->targets()->whereNull('satisfied_at')->pluck('address')->diff($this->heldAddresses($character))->isEmpty(),
+            default => $mission->targetsSatisfied(),
+        };
+    }
+
+    /**
      * Hand it in.
      *
      * TWO KINDS OF EVIDENCE MEET HERE. A designating job is judged on its
