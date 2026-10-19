@@ -1,3 +1,8 @@
+## 0.66.2 (2026-10-19)
+
+- There was an exploitable gap where you could perform delivery missions withot risk. That's fixed now: you must be present at the exchange node in order to accept a mission
+- The Mood box now behaves like the fatigue one
+
 ## 0.66.1 (2026-10-19)
 
 - The safehouse you live in now shows up on its district's map and in the list of places you know.

@@ -124,12 +124,29 @@
                                 @endif
                             </div>
                         @endforeach
-                        <div class="card" title="{{ $mood['value'] }}">
-                            <div class="card__bd">
+                        <div class="card">
+                            <div class="card__bd stack" style="--gap:var(--s-2)">
                                 <div class="readout">
                                     <span class="readout__label">{{ Text::get('character.mood.label') }}</span>
-                                    <span class="readout__value">{{ $mood['word'] }}</span>
+                                    <span class="readout__value num">{{ $mood['word'] }}<span style="font-size:var(--fs-md);color:var(--ink-3)"> {{ $mood['value'] > 0 ? '+' : '' }}{{ $mood['value'] }}</span></span>
                                 </div>
+                                <div class="meter" style="--v:{{ $mood['ratio'] }};--fill:{{ $mood['fill'] }}" role="img"
+                                     aria-label="{{ Text::get('character.mood.label') }} {{ $mood['word'] }} ({{ $mood['value'] }})">
+                                    <div class="meter__fill"></div>
+                                    @foreach ($mood['marks'] as $mark)
+                                        <span class="meter__mark" style="--x:{{ $mark['at'] }};--mark:{{ $mark['colour'] }}"></span>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <div class="card__stats">
+                                @forelse ($mood['effects'] as $effect)
+                                    <div class="card__stat">
+                                        <span>{{ $effect['label'] }}</span>
+                                        <b class="num">{{ $effect['amount'] >= 0 ? '+' : '−' }}{{ abs($effect['amount']) }}</b>
+                                    </div>
+                                @empty
+                                    <span class="card__stat">{{ Text::get('character.mood.no_effect') }}</span>
+                                @endforelse
                             </div>
                         </div>
                     </div>

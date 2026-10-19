@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.66.2] — 2026-10-19
+
+Jobs can only be taken at the desk; the mood card matches fatigue.
+
+### Fixed
+
+- **Taking a job from a stale tab**: `MissionLedger::accept()` now requires the character to be jacked in on the desk's own node, checked on every accept (`MissionRefusal::NotAtDesk`). Previously a board left open could be accepted after walking to the target elsewhere, so a delivery cost no risk.
+
+### Changed
+
+- **Mood card** on the character sheet is drawn like the fatigue one: a bar from -100 to +100 ticked at the band edges, the band word with the figure, and what the band does to attributes. `Mood::reading()` returns the bar's ratio, fill, marks and effects.
+
+
 ## [0.66.1] — 2026-10-19
 
 The safehouse you live in appears on its district.
@@ -3498,7 +3511,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.66.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.66.2...HEAD
+[0.66.2]: https://github.com/nahkampf/dedlok/compare/v0.66.1...v0.66.2
 [0.66.1]: https://github.com/nahkampf/dedlok/compare/v0.66.0...v0.66.1
 [0.66.0]: https://github.com/nahkampf/dedlok/compare/v0.65.0...v0.66.0
 [0.65.0]: https://github.com/nahkampf/dedlok/compare/v0.64.1...v0.65.0

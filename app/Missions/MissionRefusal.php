@@ -46,6 +46,9 @@ enum MissionRefusal: string
     /** The window closed. Said rather than silently failing, because the row is still on screen. */
     case Expired = 'expired';
 
+    /** Not standing on the desk's node on the grid right now. */
+    case NotAtDesk = 'not_at_desk';
+
     public function message(): string
     {
         return Text::get("missions.refused.{$this->value}");

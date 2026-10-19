@@ -1073,6 +1073,7 @@ return [
             'no_room' => 'You have no room on your deck for what they would hand you.',
             'not_done' => 'Not finished. Come back when it is.',
             'expired' => 'That job ran out of time.',
+            'not_at_desk' => 'You have to be at their node to take the job.',
         ],
 
         'accepted' => 'Taken. You have :time.',
@@ -2717,6 +2718,7 @@ return [
             'despondent' => 'Despondent',
             'low' => 'Low',
             'steady' => 'Steady',
+            'no_effect' => 'Nothing is changing how you act.',
             'good' => 'Good',
             'elated' => 'Elated',
         ],

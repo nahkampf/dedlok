@@ -49,13 +49,39 @@ final class Mood
         }
     }
 
-    /** @return array{value: int|float, word: string} */
+    /**
+     * What the sheet draws, shaped like a vital: the bar runs -100 to +100, ticked where the bands begin.
+     *
+     * @return array{value: int|float, word: string, ratio: float, fill: string, marks: list<array{at: float, colour: string}>, effects: list<array{label: string, amount: int|float}>}
+     */
     public function reading(Character $character): array
     {
         $value = Points::of($character->mood);
         $band = $this->band((float) $value);
+        $min = (float) config('mood.min');
+        $span = (float) config('mood.max') - $min;
+        $at = static fn (float $v): float => round(($v - $min) / $span, 3);
+        $effects = [];
 
-        return ['value' => $value, 'word' => Text::get('character.mood.'.($band['word'] ?? 'steady'))];
+        foreach ((array) config('effects.'.($band['effect'] ?? '').'.modifiers') as $modifier) {
+            $effects[] = ['label' => Text::get('character.names.'.$modifier['target']['id']), 'amount' => $modifier['amount']];
+        }
+
+        return [
+            'value' => $value,
+            'word' => Text::get('character.mood.'.($band['word'] ?? 'steady')),
+            'ratio' => $at((float) $value),
+            'fill' => match (true) {
+                $value <= -75 => 'var(--crit)',
+                $value <= -40 => 'var(--warn)',
+                default => 'var(--ok)',
+            },
+            'marks' => array_map(
+                static fn (array $b): array => ['at' => $at((float) $b['at']), 'colour' => $b['at'] < 0 ? 'var(--warn)' : 'var(--ok)'],
+                (array) config('mood.bands'),
+            ),
+            'effects' => $effects,
+        ];
     }
 
     /** The effect rows tell the truth about the figure. */
