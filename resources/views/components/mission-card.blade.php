@@ -80,7 +80,7 @@
             <span class="row row--wrap micro" style="--gap:var(--s-2);color:var(--ink-3)">
                 <span>{{ Text::get('tasks.from', ['entity' => $mission->entity?->name, 'agent' => $mission->exchange?->agent]) }}</span>
                 @if ($mission->exchange?->system)
-                    <span>· {{ Text::get('tasks.desk') }} <x-address :address="$mission->exchange->system->address" /></span>
+                    <span>· {{ Text::get('tasks.desk') }} <x-address :address="$mission->exchange->system->address" />@if ($jump) <x-jump :address="$mission->exchange->system->address" />@endif</span>
                 @endif
             </span>
         @endif
