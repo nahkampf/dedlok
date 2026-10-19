@@ -82,6 +82,15 @@ final readonly class MissionLedger
                 return MissionRefusal::Gone;
             }
 
+            // Checked on every accept: a board left open in a tab says nothing about where the body is now.
+            $here = $character->isJackedIn()
+                ? System::query()->at($character->gridPosition())->with('exchange')->first()
+                : null;
+
+            if ($here?->exchange?->getKey() !== $live->exchange_id) {
+                return MissionRefusal::NotAtDesk;
+            }
+
             $desk = $live->exchange()->first();
             $standing = (new StandingLedger)->standingFor($character, $live->entity()->first());
 

@@ -832,8 +832,24 @@ final class MissionTest extends TestCase
     }
 
     /** One offer of a named action, built the way the board builds one. */
+    /** The cheat: open the board, walk away on the grid, then take the job from the stale tab. */
+    public function test_a_job_cannot_be_taken_away_from_the_desks_node(): void
+    {
+        $offer = $this->anOffer(MissionAction::Agitate);
+        $this->character->forceFill(['grid_x' => null, 'grid_y' => null])->save();
+
+        $this->assertSame(MissionRefusal::NotAtDesk, $this->ledger()->accept($this->character, $offer), 'jacked out');
+
+        $this->character->forceFill(['grid_x' => 9, 'grid_y' => 9])->save();
+        $this->assertSame(MissionRefusal::NotAtDesk, $this->ledger()->accept($this->character, $offer), 'elsewhere on the grid');
+        $this->assertSame(MissionState::Offered, $offer->fresh()->state);
+    }
+
     private function anOffer(MissionAction $action): Mission
     {
+        // Taking a job needs the body at the desk's node (and jacked in, so a deck is equipped first).
+        $this->character->forceFill(['grid_x' => 8, 'grid_y' => 8])->save();
+
         $mission = Mission::query()->create([
             'character_id' => $this->character->id,
             'entity_id' => $this->entity->id,
