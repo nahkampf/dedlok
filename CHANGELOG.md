@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.66.3] — 2026-10-19
+
+Skill cards say what they change.
+
+### Fixed
+
+- **Bare "+4%" on skill cards**: fourteen stats that skills raise had no entry under `strings.character.names`, so `Modifier::effectText()` printed only the amount. Attack Vectors now reads "+4% icebreaker damage"; also named are the four decryption-chance stats, siphon yield, heat cooling, deck memory and power supply, recovery time, standing gained, trace hop chance, ensnare time and fortress slots.
+
+
 ## [0.66.2] — 2026-10-19
 
 Jobs can only be taken at the desk; the mood card matches fatigue.
@@ -3511,7 +3520,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.66.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.66.3...HEAD
+[0.66.3]: https://github.com/nahkampf/dedlok/compare/v0.66.2...v0.66.3
 [0.66.2]: https://github.com/nahkampf/dedlok/compare/v0.66.1...v0.66.2
 [0.66.1]: https://github.com/nahkampf/dedlok/compare/v0.66.0...v0.66.1
 [0.66.0]: https://github.com/nahkampf/dedlok/compare/v0.65.0...v0.66.0
