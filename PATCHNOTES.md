@@ -1,3 +1,14 @@
+## 0.67.0 (2026-10-19)
+
+- You can now paste (non-animated) images into chat. THey live for a week before being removed.
+- ICE and Icebreakers did their damage cast to integers, so any fractions caused by skill application was lost. They are now decimals instead.
+- UI: "Forget" and "Give it up" buttons now require confirmation
+- UI: "Hand it in" is now greyed out until you can actually hand the job in
+- UI: Delivery jobs no longer reveal coordinates until you have taken the job, to further reduce the risk of "cheating"
+- UI: Placement jobs now correctly state "Place backdoor" instead of "Install siphon" inside the run
+- UI: Exchanges now have accordions for mission board, loyalty store etc.
+- Two new achievements: Loyal Service (100 missions) and The Grind (2000).
+
 ## 0.66.3 (2026-10-19)
 
 - Fixes a load of skills that were not displaying their effects properly
