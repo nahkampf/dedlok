@@ -1032,6 +1032,7 @@ return [
         'container' => 'Sealed data container',
         'container_short_title' => 'Not enough storage.',
         'container_needs' => 'The container takes :need QB on your deck. You have :free QB free.',
+        'coordinates_hidden' => 'Coordinates given when you take the job.',
         'coordinates' => 'Deliver to :xy',
         'upload' => 'Upload sealed data',
         'uploaded' => 'Uploaded. The job is done.',
@@ -1609,6 +1610,9 @@ return [
                 // Names the kind, because it is permanent once it lands and
                 // the player chose it a screen ago.
                 'install' => 'Install :kind',
+                // The same button while an accepted Placement job names this system (the planning screen's wording).
+                'place' => 'Place backdoor',
+                'place_done' => 'Backdoor placed',
                 'leech' => 'Install Leecher',
                 'install_done' => ':kind installed',
                 // The one action that ends the run by succeeding, so it says
@@ -1889,7 +1893,6 @@ return [
             | player to tell two blanks apart.
             */
             'unread' => 'UNKNOWN',
-            'not_yet' => 'NOT YET',
             'cloak_seen' => 'SEEN THROUGH',
             /*
             | A FINDING, NOT AN ABSENCE. A scan that comes back with nothing on

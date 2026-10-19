@@ -13,6 +13,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Mission;
 use App\Models\MissionTarget;
+use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemContent;
 use App\Notifications\Category;
@@ -352,6 +353,21 @@ final readonly class MissionLedger
     public function hasOpenAgainst(Character $character, System $system, MissionAction $action): bool
     {
         return $this->openTargets($character, $system, $action)->exists();
+    }
+
+    /** Is this run placing a backdoor for an accepted Placement job: one still open on the system, or ticked during this run? */
+    public function isPlacing(Character $character, System $system, Run $run): bool
+    {
+        return MissionTarget::query()
+            ->where('system_id', $system->getKey())
+            ->where('address', $system->address)
+            ->where(fn ($q) => $q->whereNull('satisfied_at')->orWhere('satisfied_at', '>=', $run->started_at))
+            ->whereHas('mission', fn ($query) => $query
+                ->where('character_id', $character->getKey())
+                ->where('action', MissionAction::Plant->value)
+                ->accepted()
+            )
+            ->exists();
     }
 
     /** @return Builder<MissionTarget> */
