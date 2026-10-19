@@ -92,12 +92,12 @@
             </div>
         </div>
 
-        <div class="panel" style="margin-top:var(--s-4)">
-            <div class="panel__hd">
+        <details class="panel" open style="margin-top:var(--s-4)">
+            <summary class="panel__hd">
                 <span class="micro">{{ Text::get('missions.board') }}</span>
                 <div class="spacer"></div>
                 <span class="micro" style="color:var(--ink-3)">{{ Text::get('missions.refresh') }}</span>
-            </div>
+            </summary>
 
             <div class="panel__bd">
                 @if (count($board) === 0)
@@ -110,7 +110,7 @@
                     </div>
                 @endif
             </div>
-        </div>
+        </details>
     @endif
 
     {{-- THE LOYALTY STORE. One currency and only one: nothing converts
@@ -118,12 +118,12 @@
          can compare to the market's. What is on the shelf belongs to this
          entity at THIS grade — a grade 4 desk keeps things the grade 1 desk
          round the corner does not. --}}
-    <div class="panel" style="margin-top:var(--s-4)">
-        <div class="panel__hd">
+    <details class="panel" style="margin-top:var(--s-4)">
+        <summary class="panel__hd">
             <span class="micro">{{ Text::get('exchange.store') }}</span>
             <div class="spacer"></div>
             <span class="chip-stat num">{{ Text::get('exchange.store_have', ['loyalty' => Number::format($loyalty)]) }}</span>
-        </div>
+        </summary>
 
         <div class="panel__bd">
             @if (! $welcome)
@@ -134,7 +134,7 @@
                 @include('market._grouped', ['entries' => $shelf, 'itemOf' => fn ($o) => $o->item, 'card' => 'exchange._offer', 'id' => 'offer-shelves'])
             @endif
         </div>
-    </div>
+    </details>
 
     @if ($buying !== [])
         <div class="panel" style="margin-top:var(--s-4)">

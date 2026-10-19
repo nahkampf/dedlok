@@ -997,7 +997,7 @@ return [
 
     'missions' => [
         'heading' => 'Work',
-        'board' => 'On offer',
+        'board' => 'Mission board',
         'board_empty' => 'Nothing on the board. Come back on the hour.',
         'active' => 'What you are doing',
         'active_none' => 'You are not working for this desk.',
