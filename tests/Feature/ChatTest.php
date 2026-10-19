@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Chat\ChatImages;
 use App\Chat\ChatRefused;
 use App\Chat\Chats;
 use App\Chat\Markup;
@@ -17,6 +18,7 @@ use App\Models\Notification;
 use App\Models\RunParty;
 use App\Support\PlainText;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
@@ -38,6 +40,33 @@ final class ChatTest extends TestCase
         $this->assertSame('<ul><li>one</li><li><strong>two</strong></li></ul>', Markup::render("- one\n- **two**"));
         $this->assertStringContainsString('data-copy="1F38E7C7"', Markup::render('go to addr:1f38e7c7 now'));
         $this->assertStringNotContainsString('data-copy', Markup::render('addr:nothex'));
+    }
+
+    public function test_a_pasted_picture_is_shrunk_stored_and_drawn_responsively(): void
+    {
+        $me = Character::factory()->create();
+        $general = $this->chats()->general();
+        $png = tempnam(sys_get_temp_dir(), 'img');
+        imagepng(imagecreatetruecolor(1600, 900), $png);
+
+        $response = $this->actingAs($me->user)->post(route('chat.image'), [
+            'chat' => $general->getKey(),
+            'image' => new UploadedFile($png, 'p.png', 'image/png', null, true),
+        ])->assertOk();
+
+        $line = ChatMessage::query()->latest('id')->firstOrFail();
+        preg_match('/^img:([0-9a-f]{16})$/', $line->message, $m);
+        $this->assertNotEmpty($m, 'said as an img: line');
+        $this->assertSame(800, getimagesize(ChatImages::path($m[1]))[0]);
+        $this->assertStringContainsString('class="chat__img"', Markup::render($line->message));
+        $this->assertSame('[ image wiped by age filter ]', Markup::render('img:0000000000000000'), 'no file, no picture');
+
+        // Past its week it is wiped from the line, and the sweep deletes the file.
+        touch(ChatImages::path($m[1]), now()->subDays(8)->getTimestamp());
+        $this->assertSame('[ image wiped by age filter ]', Markup::render($line->message));
+        $this->artisan('chat:sweep-images')->assertSuccessful();
+        $this->assertFileDoesNotExist(ChatImages::path($m[1]));
+        $this->actingAs($me->user)->postJson(route('chat.image'), ['chat' => $general->getKey(), 'image' => UploadedFile::fake()->create('x.txt', 1, 'text/plain')])->assertStatus(422);
     }
 
     public function test_html_is_stripped_before_it_is_stored(): void

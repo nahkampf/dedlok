@@ -9,6 +9,7 @@ use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\System;
 use App\Programs\ProgramKind;
+use App\Support\Points;
 use App\Support\Qb;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -171,7 +172,7 @@ final class FortressHost
 
         $fortress->forceFill([
             'ice_id' => $ice === null ? null : $template,
-            'fortress_ice' => $ice === null || $template === null ? null : ['attack' => (int) ($ice['attack'] ?? 0), 'integrity' => (int) ($ice['integrity'] ?? 1)],
+            'fortress_ice' => $ice === null || $template === null ? null : ['attack' => Points::of($ice['attack'] ?? 0), 'integrity' => Points::of($ice['integrity'] ?? 1)],
             'ids_detection' => (int) ($ids ?? 0),
             'fortress_cloak' => $cloak === null ? null : (int) $cloak,
         ])->save();

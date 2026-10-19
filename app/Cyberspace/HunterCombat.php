@@ -20,6 +20,7 @@ use App\Stats\Damage;
 use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
 use App\Stats\Resolver;
+use App\Support\Points;
 use App\Support\Text;
 use App\Support\Trace;
 use App\Wallet\Reason;
@@ -100,15 +101,15 @@ final class HunterCombat
                 // `stats.bases`, so `Character::stat()` throws for it rather than
                 // answering zero, and asking through a Sheet would be wrong here
                 // anyway.
-                $dealt = $this->resolver->resolve('icebreaker_damage', 0.0, $character->modifiers())->toInt();
+                $dealt = $this->resolver->resolve('icebreaker_damage', 0.0, $character->modifiers())->value;
                 $critical = $dealt > 0 && CriticalHit::rolls($character, $this->roll);
                 $dealt = $critical ? CriticalHit::scale($dealt) : $dealt;
                 Trace::note('hunt.player_hit', [
                     'icebreaker_damage' => $dealt, 'critical' => $critical,
-                    'ice_integrity_before' => $hunt->ice_integrity, 'ice_integrity_after' => max(0, $hunt->ice_integrity - $dealt),
+                    'ice_integrity_before' => $hunt->ice_integrity, 'ice_integrity_after' => max(0, Points::of($hunt->ice_integrity - $dealt)),
                     'running' => $character->runningProcesses()->pluck('item.name')->all(),
                 ]);
-                $hunt->ice_integrity = max(0, $hunt->ice_integrity - $dealt);
+                $hunt->ice_integrity = max(0, Points::of($hunt->ice_integrity - $dealt));
 
                 $new[] = $dealt > 0
                     ? $this->line($critical ? 'cyberspace.hunt.log.hit_critical' : 'cyberspace.hunt.log.hit', ['damage' => $dealt], 'ok')
@@ -257,7 +258,7 @@ final class HunterCombat
         $this->waitingRoom->checkFloor($character, new DownedCause(
             reason: 'hunter',
             ice: $hunt->ice->name,
-            damage: (int) $hunt->ice->attack,
+            damage: $hunt->ice->attack,
             resource: 'current_synaptic_integrity',
         ));
 

@@ -18,6 +18,7 @@ use App\Models\EntityLedgerEntry;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Program;
 use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemContent;
@@ -241,6 +242,19 @@ final class FightTest extends TestCase
         $this->assertTrue($result->succeeded());
         $this->assertSame(29, $result->run->ice_integrity, 'thirty less the one it cuts for');
         $this->assertSame(1, $result->run->turn);
+    }
+
+    public function test_a_fractional_cut_is_not_rounded_away(): void
+    {
+        $this->machine(1);
+        $this->runIcebreaker(1);
+        Program::query()->where('item_id', Item::query()->where('slug', 'icebreaker-1')->value('id'))
+            ->update(['modifiers' => [['op' => 'add', 'amount' => 1.25, 'target' => ['id' => 'icebreaker_damage']]]]);
+        $run = $this->begin();
+
+        $result = $this->simulator(101)->take($this->character->fresh(), $run, RunAction::Attack);
+
+        $this->assertSame(28.75, $result->run->fresh()->ice_integrity);
     }
 
     public function test_the_log_names_your_icebreaker_in_a_green_tag_and_the_ice_in_a_grey_one(): void

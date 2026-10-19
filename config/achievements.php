@@ -199,6 +199,22 @@ return [
             'secret' => false,
         ],
 
+        // A hundred jobs paid, and two thousand.
+        19 => [
+            'name' => 'Loyal Service',
+            'description' => 'Completed 100 missions.',
+            'metric' => 'missions_completed',
+            'threshold' => 100,
+            'secret' => false,
+        ],
+        20 => [
+            'name' => 'The Grind',
+            'description' => 'Completed 2000 missions.',
+            'metric' => 'missions_completed',
+            'threshold' => 2000,
+            'secret' => false,
+        ],
+
     ],
 
 ];

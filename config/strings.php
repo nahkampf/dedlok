@@ -25,6 +25,8 @@ declare(strict_types=1);
 return [
 
     'ui' => [
+        // A button that wants a second press (data-confirm).
+        'confirm' => 'Are you sure?',
         // The topbar's speaker and note. The label names what pressing does NOT, but the state it is in.
         'sound' => ['on' => 'Sound on. Press to mute.', 'off' => 'Sound off. Press to unmute.'],
         'music' => [
@@ -713,6 +715,8 @@ return [
      | The chat panel in the rail: General, rooms and direct lines.
      */
     'chat' => [
+        'image_alt' => 'A picture pasted into the chat',
+        'image_wiped' => '[ image wiped by age filter ]',
         'title' => 'Chat',
         'general' => 'General',
         'empty' => 'Nobody has said anything here yet.',
@@ -744,6 +748,7 @@ return [
         ],
 
         'errors' => [
+            'image' => 'That is not a picture the chat can read.',
             'unknown_command' => 'Commands: /msg handle words, /invite handle, /leave, /ignore handle, /unignore handle.',
             'rooms_only' => 'That only works in a room.',
             'invite_usage' => 'To invite somebody: /invite handle.',
@@ -992,7 +997,7 @@ return [
 
     'missions' => [
         'heading' => 'Work',
-        'board' => 'On offer',
+        'board' => 'Mission board',
         'board_empty' => 'Nothing on the board. Come back on the hour.',
         'active' => 'What you are doing',
         'active_none' => 'You are not working for this desk.',
@@ -1027,6 +1032,7 @@ return [
         'container' => 'Sealed data container',
         'container_short_title' => 'Not enough storage.',
         'container_needs' => 'The container takes :need QB on your deck. You have :free QB free.',
+        'coordinates_hidden' => 'Coordinates given when you take the job.',
         'coordinates' => 'Deliver to :xy',
         'upload' => 'Upload sealed data',
         'uploaded' => 'Uploaded. The job is done.',
@@ -1604,6 +1610,9 @@ return [
                 // Names the kind, because it is permanent once it lands and
                 // the player chose it a screen ago.
                 'install' => 'Install :kind',
+                // The same button while an accepted Placement job names this system (the planning screen's wording).
+                'place' => 'Place backdoor',
+                'place_done' => 'Backdoor placed',
                 'leech' => 'Install Leecher',
                 'install_done' => ':kind installed',
                 // The one action that ends the run by succeeding, so it says
@@ -1884,7 +1893,6 @@ return [
             | player to tell two blanks apart.
             */
             'unread' => 'UNKNOWN',
-            'not_yet' => 'NOT YET',
             'cloak_seen' => 'SEEN THROUGH',
             /*
             | A FINDING, NOT AN ABSENCE. A scan that comes back with nothing on
@@ -3411,7 +3419,7 @@ return [
         'store_heat' => 'You carry :heat heat',
 
         // THE BUY SIDE: what the desk pays creds for.
-        'they_buy' => 'This desk buys',
+        'they_buy' => 'Buying',
         'sale_note' => ':item × :quantity to :place',
 
         // What an entity DOES for loyalty, as App\Standing\Service.

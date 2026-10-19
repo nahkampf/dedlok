@@ -11,6 +11,8 @@
 <div class="card__stats" style="padding:0;border:0">
     @foreach ($facts as $fact)
         @php($known = $fact['value'] !== null)
+        {{-- A fact nothing can read yet shows only once it has been learned (a cloak seen through), never as a blank. --}}
+        @continue(! $fact['discoverable'] && ! $known)
         <div class="card__stat" data-fact="{{ $fact['key'] }}">
             <span>{{ $fact['label'] }}</span>
             @if ($fact['discoverable'])
@@ -20,10 +22,8 @@
                     @endif
                     {{ $known ? $fact['value'] : Text::get('cyberspace.reading.unread') }}
                 </span>
-            @elseif ($known)
-                <span class="tag tag--ember">{{ $fact['value'] }}</span>
             @else
-                <span class="tag">{{ Text::get('cyberspace.reading.not_yet') }}</span>
+                <span class="tag tag--ember">{{ $fact['value'] }}</span>
             @endif
         </div>
     @endforeach

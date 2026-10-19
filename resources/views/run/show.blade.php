@@ -301,9 +301,17 @@
             @if ($run->purpose === RunPurpose::Backdoor)
                 <button type="submit" name="action" value="install" class="btn cut @if ($coreOpen && ! $run->backdoored) btn--go @endif"
                         @if ($run->backdoored || $run->inAFight()) disabled @endif>
-                    {{ Text::get($run->backdoored ? 'cyberspace.run.action.install_done' : 'cyberspace.run.action.install', [
-                        'kind' => $run->backdoorKind()?->label() ?? '',
-                    ]) }}
+                    {{-- The planning screen calls it "Place backdoor" while a Placement job names the system; so does the run. --}}
+                    @php($placing = $run->backdoorKind() === \App\Cyberspace\BackdoorKind::Siphon
+                        && ($here = \App\Models\System::query()->where('address', $run->address)->first()) !== null
+                        && app(\App\Missions\MissionLedger::class)->isPlacing($run->character, $here, $run))
+                    @if ($placing)
+                        {{ Text::get($run->backdoored ? 'cyberspace.run.action.place_done' : 'cyberspace.run.action.place') }}
+                    @else
+                        {{ Text::get($run->backdoored ? 'cyberspace.run.action.install_done' : 'cyberspace.run.action.install', [
+                            'kind' => $run->backdoorKind()?->label() ?? '',
+                        ]) }}
+                    @endif
                 </button>
             @endif
             {{-- THE ONLY BUTTON THAT ENDS THE RUN BY WORKING, so it is the only one that wears the accent:

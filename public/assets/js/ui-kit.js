@@ -47,6 +47,25 @@
     row.remove();
   });
 
+  /* A button that must be pressed twice. The first press swaps its label for the data-confirm text and holds the submit;
+     the second, within four seconds, goes through. Anything else puts the label back. A guard against misclicks, not a
+     security measure: the server still judges the request.
+     <button type="submit" data-confirm="Are you sure?">Forget</button>                                           */
+  on("click", "[data-confirm]", (e, btn) => {
+    if (btn.dataset.armed) {
+      clearTimeout(Number(btn.dataset.armed));
+      delete btn.dataset.armed;
+      return;
+    }
+    e.preventDefault();
+    const label = btn.textContent;
+    btn.textContent = btn.dataset.confirm;
+    btn.dataset.armed = String(setTimeout(() => {
+      btn.textContent = label;
+      delete btn.dataset.armed;
+    }, 4000));
+  });
+
   /* --- Suggestions as you type -------------------------------------------
      An input with data-suggest="URL" and data-suggest-into="LIST-ID" asks the URL for ?q=<what is typed> and puts the JSON
      list of strings it gets back into that <datalist>. The browser does the drawing and the picking. A short pause between
@@ -1854,6 +1873,19 @@
     document.addEventListener("input", (e) => {
       const box = e.target.closest && e.target.closest("[data-chat-form] textarea");
       if (box) fit(box);
+    });
+    // A picture on the clipboard is uploaded and said as a line of its own; text still pastes as text.
+    document.addEventListener("paste", (e) => {
+      const box = e.target.closest && e.target.closest("[data-chat-form] textarea");
+      const file = box && [...(e.clipboardData?.files || [])].find((f) => f.type.startsWith("image/"));
+      if (!file) return;
+      e.preventDefault();
+      const data = new FormData();
+      data.append("image", file);
+      data.append("chat", box.form.querySelector("[name=chat]").value);
+      post(box.form.dataset.imageUrl, data).then((id) => {
+        if (id && String(id) === page.querySelector("[data-chat]")?.dataset.chat) swap();
+      });
     });
     document.addEventListener("submit", (e) => {
       const form = e.target.closest("form[data-chat-form]");

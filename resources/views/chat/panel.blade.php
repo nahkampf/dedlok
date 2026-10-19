@@ -26,7 +26,7 @@
         @endforelse
     </div>
 
-    <form class="chat__form" data-chat-form action="{{ route('chat.say') }}">
+    <form class="chat__form" data-chat-form action="{{ route('chat.say') }}" data-image-url="{{ route('chat.image') }}">
         <input type="hidden" name="chat" value="{{ $chat->getKey() }}">
         {{-- One row to look at, any number to paste: Enter sends, Shift+Enter is a new line (ui-kit.js). --}}
         <textarea class="input textarea--mono" name="message" rows="1" maxlength="{{ \App\Chat\Chats::BODY }}" autocomplete="off" required

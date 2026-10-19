@@ -228,15 +228,17 @@ final class RunBriefingTest extends TestCase
 
     // ---- the overview ---------------------------------------------------------
 
-    public function test_the_overview_lists_every_scanner_fact_either_way(): void
+    public function test_the_overview_lists_every_fact_a_scan_can_read_either_way(): void
     {
         $this->machine();
 
         $html = $this->visit()->assertOk()->assertSeeText(Text::get('cyberspace.run.setup.known'))->getContent();
 
-        foreach (ScanFact::cases() as $fact) {
+        foreach (ScanFact::discoverable() as $fact) {
             $this->assertStringContainsString('data-fact="'.$fact->value.'"', $html, "{$fact->value} is listed even though nothing is read");
         }
+
+        $this->assertStringNotContainsString('data-fact="cloaked"', $html, 'a cloak nobody has seen through is not a blank row');
     }
 
     public function test_an_incomplete_file_wears_a_thin_hazard_stripe_and_a_complete_one_does_not(): void

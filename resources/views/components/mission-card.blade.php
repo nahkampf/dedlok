@@ -80,7 +80,7 @@
             <span class="row row--wrap micro" style="--gap:var(--s-2);color:var(--ink-3)">
                 <span>{{ Text::get('tasks.from', ['entity' => $mission->entity?->name, 'agent' => $mission->exchange?->agent]) }}</span>
                 @if ($mission->exchange?->system)
-                    <span>· {{ Text::get('tasks.desk') }} <x-address :address="$mission->exchange->system->address" /></span>
+                    <span>· {{ Text::get('tasks.desk') }} <x-address :address="$mission->exchange->system->address" />@if ($jump) <x-jump :address="$mission->exchange->system->address" />@endif</span>
                 @endif
             </span>
         @endif
@@ -127,7 +127,8 @@
                                 <span class="mark--ok" title="{{ Text::get($target->isSatisfied() ? 'missions.target_done' : 'missions.file_held') }}">&#x2713;</span>
                             @endif
                             @if ($action === MissionAction::Transport)
-                                {{ Text::get('missions.coordinates', ['xy' => ($target->system?->x ?? '?').','.($target->system?->y ?? '?')]) }}
+                                {{-- Not before it is taken: a place you can read could be visited, bookmarked and jumped to for free. --}}
+                                {{ $active ? Text::get('missions.coordinates', ['xy' => ($target->system?->x ?? '?').','.($target->system?->y ?? '?')]) : Text::get('missions.coordinates_hidden') }}
                             @else
                                 <x-address :address="$target->address" />
                                 @if ($jump && $target->stillStands())
@@ -173,13 +174,13 @@
             @if ($action !== MissionAction::Transport)
                 <form method="POST" action="{{ route('missions.complete', $mission) }}">
                     @csrf
-                    <button type="submit" class="btn btn--sm btn--go cut">{{ Text::get('missions.complete') }}</button>
+                    <button type="submit" class="btn btn--sm btn--go cut" @disabled(! app(\App\Missions\MissionLedger::class)->canHandIn(auth()->user()->character, $mission))>{{ Text::get('missions.complete') }}</button>
                 </form>
             @endif
             <div class="spacer"></div>
             <form method="POST" action="{{ route('missions.abandon', $mission) }}">
                 @csrf @method('DELETE')
-                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('missions.abandon') }}</button>
+                <button type="submit" class="btn btn--sm btn--ghost cut" data-confirm="{{ Text::get('ui.confirm') }}">{{ Text::get('missions.abandon') }}</button>
             </form>
         @else
             <form method="POST" action="{{ route('missions.accept', $mission) }}">

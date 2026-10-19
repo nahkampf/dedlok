@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Casts\PointsCast;
 use App\Cyberspace\AttackTag;
 use App\Cyberspace\DefeatTag;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -40,8 +41,8 @@ class Ice extends Model
     {
         return [
             'level' => 'integer',
-            'integrity' => 'integer',
-            'attack' => 'integer',
+            'integrity' => PointsCast::class,
+            'attack' => PointsCast::class,
             'skill' => 'integer',
             'detection' => 'integer',
             'defeat_tags' => 'array',

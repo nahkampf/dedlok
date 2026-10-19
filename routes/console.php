@@ -120,6 +120,9 @@ Schedule::command('cyberspace:find-leeches --quiet-when-idle')
  * housekeeping job here. `withoutOverlapping()` because two copies would be
  * two decisions about the same person on the same night.
  */
+/* Chat pictures live a week (`ChatImages::DAYS`); the hourly sweep deletes the files, and a line shows them as wiped from then on regardless. */
+Schedule::command('chat:sweep-images')->hourly();
+
 Schedule::command('characters:bounties --quiet-when-idle')
     ->dailyAt('05:00')
     ->withoutOverlapping();

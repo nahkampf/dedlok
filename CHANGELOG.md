@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+## [0.67.0] — 2026-10-19
+
+ICE and icebreakers work in hundredths; pictures in the chat; fewer misclicks.
+
+### Added
+
+- **Achievements** Loyal Service (100 missions) and The Grind (2000), over a new `missions_completed` metric counted when a job is handed in or delivered.
+- **Pictures in the chat**: paste an image into the chat box and it is uploaded (`chat.image`, `App\Chat\ChatImages`, the only writer of `public/images/chat/`), shrunk to 800px wide, re-encoded as a fresh JPEG and said as the line `img:<token>`; `Markup::images()` draws it responsively (`.chat__img`, fits the box, opens full size in a new tab). Ten pastes a minute. A picture lives a week: after that the line reads "[ image wiped by age filter ]" and the hourly `chat:sweep-images` deletes the file.
+- **Two-press buttons**: `data-confirm` in `ui-kit.js`. Bookmarks' Forget, a mission's Give it up and a lead's Forget now need a second press ("Are you sure?").
+
+### Changed
+
+- **ICE and icebreakers carry two decimals** like Hit Points and Synaptic Integrity: `icebreaker_damage` rounds to a hundredth, `ice.integrity/attack`, `runs.ice_integrity/ice_attack/ice_damage` and `hunts.ice_integrity` are `DECIMAL(8,2)` through `PointsCast`, and critical hits and the fight code no longer round. A fortress's kernel integrity is still whole.
+- **Hand it in** is disabled unless it would work (`MissionLedger::canHandIn()`).
+
+### Fixed
+
+- **Delivery coordinates** are hidden on the board until the job is taken (they could be visited and bookmarked for a free jump).
+- **Placement runs** say "Place backdoor" / "Backdoor placed" in the run, as the planning screen does, instead of "Install siphon".
+- **Cloaked systems** no longer show as a blank "NOT YET" row on scans: the row appears only once a cloak has been seen through.
+- **Exchange**: the board and the Loyalty store fold (board open, store closed), "Buying" folds too, and "On offer" is "Mission board".
+- The Jumper's button also appears beside the "Desk at" address on Tasks & Missions.
+
+
+### Migrations
+
+- `2026_10_20_130000_ice_in_decimals`
+
+
 ## [0.66.3] — 2026-10-19
 
 Skill cards say what they change.
@@ -3520,7 +3549,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.66.3...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.67.0...HEAD
+[0.67.0]: https://github.com/nahkampf/dedlok/compare/v0.66.3...v0.67.0
 [0.66.3]: https://github.com/nahkampf/dedlok/compare/v0.66.2...v0.66.3
 [0.66.2]: https://github.com/nahkampf/dedlok/compare/v0.66.1...v0.66.2
 [0.66.1]: https://github.com/nahkampf/dedlok/compare/v0.66.0...v0.66.1

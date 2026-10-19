@@ -342,6 +342,7 @@ today (`WornArmour` is the seventh, under *Physical combat*), and the resolver l
   `PointsCast`; `takeDamage()`/`recover()` take and return `int|float`. **Never `(int)` a resource, a maximum or a
   taken amount** — it silently drops the fraction and puts somebody on 0.4 HP on the floor. Creds stay whole: a clinic
   bills `ceil(points × price)`. The regen command works in hundredths so an hourly rate is exact.
+- **ICE and icebreakers are carried to two decimals too** (`ice.integrity/attack`, `runs.ice_integrity/ice_attack/ice_damage`, `hunts.ice_integrity` are `DECIMAL(8,2)` through `PointsCast`; `icebreaker_damage` rounds to a `hundredth`; `CriticalHit::scale()` and the fight code use `Points::of()`), so a skill's few percent is not rounded away. A fortress's kernel (`kernel_integrity`, burned by `Simulator`) is still whole.
 - **Any pool stat asked for outside a Sheet reads as zero.** `Resolver::resolve('stealth',
   0.0, …)` returns modifiers and nothing else. `Character::stat()` is the way in.
 

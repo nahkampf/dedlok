@@ -147,12 +147,12 @@ final class PartyTurns
         $stealth = $live->mapWithKeys(fn (Run $r): array => [
             $r->id => (float) Character::query()->find($r->character_id)?->stat('stealth')->value,
         ]);
-        $total = max(1, (int) $live->sum('ice_damage'));
+        $total = max(1.0, (float) $live->sum('ice_damage'));
         $range = $stealth->max() - $stealth->min();
 
         $score = $live->mapWithKeys(fn (Run $r): array => [
             $r->id => round(
-                (int) $r->ice_damage / $total + ($range > 0 ? ($stealth->max() - $stealth[$r->id]) / $range : 0.0),
+                (float) $r->ice_damage / $total + ($range > 0 ? ($stealth->max() - $stealth[$r->id]) / $range : 0.0),
                 6,
             ),
         ]);

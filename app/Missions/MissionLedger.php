@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Missions;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\NodeStocker;
 use App\Cyberspace\ScanFile;
@@ -13,6 +15,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Mission;
 use App\Models\MissionTarget;
+use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemContent;
 use App\Notifications\Category;
@@ -228,6 +231,25 @@ final readonly class MissionLedger
     }
 
     /**
+     * Would handing this in work right now? The desk's button greys out on it. Read only, and it mirrors `complete()`'s
+     * checks, so the two have to change together. A target that stopped existing is not asked: that hand-in voids the job,
+     * and the card says so on the target.
+     */
+    public function canHandIn(Character $character, Mission $mission): bool
+    {
+        if ($mission->state !== MissionState::Accepted || $mission->hasExpired() || $mission->action === MissionAction::Transport) {
+            return false;
+        }
+
+        return match ($mission->action) {
+            MissionAction::Supply => $this->suppliable($character) >= $mission->quantity_required,
+            MissionAction::Extract => $this->heldJobFile($character, $mission, decrypted: true) !== null,
+            MissionAction::Scan => $mission->targets()->whereNull('satisfied_at')->pluck('address')->diff($this->heldAddresses($character))->isEmpty(),
+            default => $mission->targetsSatisfied(),
+        };
+    }
+
+    /**
      * Hand it in.
      *
      * TWO KINDS OF EVIDENCE MEET HERE. A designating job is judged on its
@@ -301,6 +323,7 @@ final readonly class MissionLedger
                 'state' => MissionState::Completed,
                 'completed_at' => now(),
             ])->save();
+            (new Achievements)->record($character, Metric::MissionsCompleted);
 
             return $live->fresh();
         });
@@ -333,6 +356,21 @@ final readonly class MissionLedger
     public function hasOpenAgainst(Character $character, System $system, MissionAction $action): bool
     {
         return $this->openTargets($character, $system, $action)->exists();
+    }
+
+    /** Is this run placing a backdoor for an accepted Placement job: one still open on the system, or ticked during this run? */
+    public function isPlacing(Character $character, System $system, Run $run): bool
+    {
+        return MissionTarget::query()
+            ->where('system_id', $system->getKey())
+            ->where('address', $system->address)
+            ->where(fn ($q) => $q->whereNull('satisfied_at')->orWhere('satisfied_at', '>=', $run->started_at))
+            ->whereHas('mission', fn ($query) => $query
+                ->where('character_id', $character->getKey())
+                ->where('action', MissionAction::Plant->value)
+                ->accepted()
+            )
+            ->exists();
     }
 
     /** @return Builder<MissionTarget> */
@@ -734,6 +772,7 @@ final readonly class MissionLedger
             $this->closeOut($mission);
 
             $mission->forceFill(['state' => MissionState::Completed, 'completed_at' => now()])->save();
+            (new Achievements)->record($character, Metric::MissionsCompleted);
 
             return $mission->fresh();
         });

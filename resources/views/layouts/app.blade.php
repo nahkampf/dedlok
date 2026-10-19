@@ -554,6 +554,8 @@
                      the left and what the machine gave up on the right. --}}
                 <div class="card__stats" style="padding:0;border:0" data-reading-facts>
                     @foreach ((new \App\Models\SystemScan)->facts() as $fact)
+                        {{-- Only what a scan can find out: a cloak shows up on a finished scan once it has been seen through, never as a blank. --}}
+                        @continue(! $fact['discoverable'])
                         <div class="card__stat" data-fact="{{ $fact['key'] }}">
                             <span>{{ $fact['label'] }}</span>
                             {{-- BOTH BLANKS WEAR THE SAME BOX. "Nobody can read
@@ -563,11 +565,7 @@
                                  of nothing apart. What separates them is that one
                                  can change: a discoverable row is the one that
                                  turns ember when the instrument comes back. --}}
-                            @if ($fact['discoverable'])
-                                <span class="tag" data-fact-value>{{ Text::get('cyberspace.reading.unread') }}</span>
-                            @else
-                                <span class="tag">{{ Text::get('cyberspace.reading.not_yet') }}</span>
-                            @endif
+                            <span class="tag" data-fact-value>{{ Text::get('cyberspace.reading.unread') }}</span>
                         </div>
                     @endforeach
                 </div>
