@@ -109,15 +109,25 @@ final class Markup
         }, $text);
     }
 
+    /** `img:<token>` becomes the picture pasted into the chat (`ChatImages`), opening full size in a new tab. A missing file keeps its text. */
+    public static function images(string $text): string
+    {
+        return preg_replace_callback('/\bimg:([0-9a-f]{16})\b/', function (array $m): string {
+            $url = ChatImages::url($m[1]);
+
+            return $url === null ? $m[0] : sprintf('<a href="%1$s" target="_blank" rel="noopener"><img class="chat__img" src="%1$s" alt="%2$s" loading="lazy"></a>', e($url), e(Text::get('chat.image_alt')));
+        }, $text);
+    }
+
     /** Last, so the markup it makes is never meant for the passes above. */
     private static function addresses(string $text): string
     {
-        return self::runs(self::listings(preg_replace_callback('/\baddr:([0-9A-Fa-f]{8})\b/', fn (array $m): string => sprintf(
+        return self::images(self::runs(self::listings(preg_replace_callback('/\baddr:([0-9A-Fa-f]{8})\b/', fn (array $m): string => sprintf(
             '<button type="button" class="copy" data-copy="%1$s" data-copied="%2$s" data-copy-failed="%3$s" title="%4$s">%1$s</button>',
             strtoupper($m[1]),
             e(Text::get('cyberspace.reading.copied')),
             e(Text::get('cyberspace.reading.copy_failed')),
             e(Text::get('cyberspace.reading.copy')),
-        ), $text)));
+        ), $text))));
     }
 }

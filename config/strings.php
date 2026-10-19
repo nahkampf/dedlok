@@ -715,6 +715,7 @@ return [
      | The chat panel in the rail: General, rooms and direct lines.
      */
     'chat' => [
+        'image_alt' => 'A picture pasted into the chat',
         'title' => 'Chat',
         'general' => 'General',
         'empty' => 'Nobody has said anything here yet.',
@@ -746,6 +747,7 @@ return [
         ],
 
         'errors' => [
+            'image' => 'That is not a picture the chat can read.',
             'unknown_command' => 'Commands: /msg handle words, /invite handle, /leave, /ignore handle, /unignore handle.',
             'rooms_only' => 'That only works in a room.',
             'invite_usage' => 'To invite somebody: /invite handle.',

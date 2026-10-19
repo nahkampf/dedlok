@@ -1874,6 +1874,19 @@
       const box = e.target.closest && e.target.closest("[data-chat-form] textarea");
       if (box) fit(box);
     });
+    // A picture on the clipboard is uploaded and said as a line of its own; text still pastes as text.
+    document.addEventListener("paste", (e) => {
+      const box = e.target.closest && e.target.closest("[data-chat-form] textarea");
+      const file = box && [...(e.clipboardData?.files || [])].find((f) => f.type.startsWith("image/"));
+      if (!file) return;
+      e.preventDefault();
+      const data = new FormData();
+      data.append("image", file);
+      data.append("chat", box.form.querySelector("[name=chat]").value);
+      post(box.form.dataset.imageUrl, data).then((id) => {
+        if (id && String(id) === page.querySelector("[data-chat]")?.dataset.chat) swap();
+      });
+    });
     document.addEventListener("submit", (e) => {
       const form = e.target.closest("form[data-chat-form]");
       if (!form) return;

@@ -53,3 +53,4 @@ Homestead.yaml
 
 # Pictures supporters upload for their own character (App\Characters\Avatar); the shipped default stays tracked.
 /public/images/characters/avatars/
+/public/images/chat/

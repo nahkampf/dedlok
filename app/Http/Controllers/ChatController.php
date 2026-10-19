@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Chat\ChatImages;
 use App\Chat\ChatRefused;
 use App\Chat\Chats;
 use App\Models\Character;
@@ -64,6 +65,17 @@ class ChatController extends Controller
 
         // `chat` is where the page goes next: a `/msg` lands in a direct line, a `/leave` in General.
         return $this->answer(fn (): array => $chats->say($me, $chat, (string) $request->input('message')));
+    }
+
+    /** A picture pasted into the box: stored, then said as the line `img:<token>`. */
+    public function image(Request $request, Chats $chats, ChatImages $images): JsonResponse
+    {
+        $me = $this->me($request);
+        $chat = $chats->visible($me, (int) $request->input('chat'));
+        abort_if($chat === null, 404);
+        $request->validate(['image' => ['required', 'file', 'max:8192']]);
+
+        return $this->answer(fn (): array => $chats->say($me, $chat, 'img:'.$images->store($request->file('image'))));
     }
 
     public function store(Request $request, Chats $chats): JsonResponse

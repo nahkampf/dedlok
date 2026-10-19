@@ -3662,6 +3662,7 @@ button.cell:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px
 .chat__who { margin-right: var(--s-2); color: var(--ink-0); font-weight: 600; text-decoration: none; }
 .chat__who:hover { text-decoration: underline; }
 .chat__event { color: var(--ink-2); padding-left: calc(32px + var(--s-2)); }
+.chat__img { display: block; max-width: 100%; height: auto; max-height: 60vh; margin-top: var(--s-1); border: 1px solid var(--line-1); }
 .chat__msg ul { margin: 0; padding-left: var(--s-5); }
 .chat__form { display: flex; gap: var(--s-2); }
 .chat__form .input { flex: 1; min-width: 0; }

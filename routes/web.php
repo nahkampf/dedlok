@@ -499,6 +499,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat', [ChatController::class, 'show'])->name('chat.show');
     Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
     Route::post('/chat/say', [ChatController::class, 'post'])->middleware('throttle:30,1')->name('chat.say');
+    Route::post('/chat/image', [ChatController::class, 'image'])->middleware('throttle:10,1')->name('chat.image');
     Route::post('/chat/rooms', [ChatController::class, 'store'])->middleware('throttle:10,10')->name('chat.rooms');
     Route::post('/chat/{chat}/join', [ChatController::class, 'join'])->middleware('throttle:30,1')->name('chat.join');
     // Start a chat with somebody: finds or makes the direct line and goes to it.
