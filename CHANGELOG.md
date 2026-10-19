@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.66.1] — 2026-10-19
+
+The safehouse you live in appears on its district.
+
+### Changed
+
+- **District screen**: the home you hold shows as a hollow-diamond pin on the district map (a fixed spot; safehouses have no coordinates yet) and is listed first under "Places you know here". "Your safehouse" is now the green button. `<x-city-map>` nodes accept an optional `glyph`.
+
+
 ## [0.66.0] — 2026-10-19
 
 Authored safehouses and places to eat reach the live game.
@@ -3489,7 +3498,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.66.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.66.1...HEAD
+[0.66.1]: https://github.com/nahkampf/dedlok/compare/v0.66.0...v0.66.1
 [0.66.0]: https://github.com/nahkampf/dedlok/compare/v0.65.0...v0.66.0
 [0.65.0]: https://github.com/nahkampf/dedlok/compare/v0.64.1...v0.65.0
 [0.64.1]: https://github.com/nahkampf/dedlok/compare/v0.64.0...v0.64.1

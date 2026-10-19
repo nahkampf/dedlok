@@ -1,3 +1,8 @@
+## 0.66.1 (2026-10-19)
+
+- The safehouse you live in now shows up on its district's map and in the list of places you know.
+- "Your safehouse" is now a green button.
+
 ## 0.66.0 (2026-10-19)
 - Updated safehouse data
 - Updated food places

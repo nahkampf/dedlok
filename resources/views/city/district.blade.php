@@ -44,7 +44,7 @@
         @php($options = $safehouses->where('id', '!=', $home->id))
         @if ($here && $safehouses->isNotEmpty())
             @if ($home->district_id === $district->getKey())
-                <p style="margin:0"><a class="btn cut" href="{{ route('safehouse.show') }}">{{ Text::get('safehouse.yours') }}</a></p>
+                <p style="margin:0"><a class="btn btn--go cut" href="{{ route('safehouse.show') }}">{{ Text::get('safehouse.yours') }}</a></p>
             @endif
             @if ($options->isNotEmpty())
             <div class="panel">
@@ -98,11 +98,30 @@
                 'here' => false,
                 'pin' => true,
                 'hue' => $district->color->token(),
-            ])->all()" />
+            ])->when($home->district_id === $district->getKey(), fn ($nodes) => $nodes->push([
+                // ponytail: a fixed spot, safehouses have no coordinates; may overlap a pin, add map_x/map_y when it does.
+                'key' => 'home',
+                'glyph' => '&#x25C7;',
+                'label' => $home->title,
+                'x' => 30,
+                'y' => 70,
+                'href' => null,
+                'here' => false,
+                'pin' => true,
+                'hue' => $district->color->token(),
+            ]))->all()" />
 
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('city.locations') }}</span></div>
             <div class="panel__bd stack" style="--gap:var(--s-3)">
+                @if ($home->district_id === $district->getKey())
+                    <div class="stack" style="--gap:2px">
+                        <a class="item-row__name" href="{{ route('safehouse.show') }}"><span aria-hidden="true">&#x25C7;</span> {{ $home->title }}</a>
+                        @if ($home->description)
+                            <span class="muted" style="font-size:var(--fs-sm)">{{ $home->description }}</span>
+                        @endif
+                    </div>
+                @endif
                 @forelse ($locations as $location)
                     <div class="stack" style="--gap:2px">
                         <a class="item-row__name" href="{{ route('city.place', $location->slug) }}">{{ $location->name }}</a>
@@ -118,7 +137,9 @@
                         @endif
                     </div>
                 @empty
-                    <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('city.no_locations') }}</p>
+                    @if ($home->district_id !== $district->getKey())
+                        <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('city.no_locations') }}</p>
+                    @endif
                 @endforelse
             </div>
         </div>

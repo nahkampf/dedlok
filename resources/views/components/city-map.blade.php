@@ -2,6 +2,7 @@
 @props([
     // list<array{key: string, label: string, x: int, y: int, href: ?string, here: bool, hue?: ?string}>
     // `hue` is a CSS colour token such as `var(--jade)`: which district it is.
+    // `glyph` is an HTML entity replacing the pin's diamond (U+25C7 is proved to render).
     // `pin` => true draws an icon with the name as a tooltip instead of a name box.
     'nodes',
     // list<array{0: string, 1: string}> — pairs of node keys, drawn as wires.
@@ -53,7 +54,7 @@
                     style="left:{{ $node['x'] }}%;top:{{ $node['y'] }}%@if (! empty($node['hue']));--hue:{{ $node['hue'] }}@endif">
                     <span class="board__box">
                         @if ($pin)
-                            <span class="board__pin" aria-hidden="true">&#9672;</span>
+                            <span class="board__pin" aria-hidden="true">{!! $node['glyph'] ?? '&#9672;' !!}</span>
                         @else
                             <span class="board__name">@if ($node['here'])<span class="here-mark" aria-hidden="true">&#9670;</span> @endif{{ $node['label'] }}</span>
                         @endif
