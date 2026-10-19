@@ -2925,6 +2925,20 @@ return [
             // What skill effects reach, named so a skill's card can say what
             // it changes. Unnamed, an effect renders as a bare amount.
             'scan_duration' => 'scan time',
+            'icebreaker_damage' => 'icebreaker damage',
+            'decryption_chance.cinder' => 'chance to break Cinder encryption',
+            'decryption_chance.halcyon3' => 'chance to break Halcyon-3 encryption',
+            'decryption_chance.blackglass' => 'chance to break Blackglass encryption',
+            'decryption_chance.ouroboros' => 'chance to break Ouroboros encryption',
+            'siphon_yield' => 'siphon yield',
+            'heat_decay' => 'heat cooling',
+            'deck_quantabits' => 'deck memory',
+            'deck_power_supply' => 'deck power supply',
+            'recovery_seconds' => 'recovery time',
+            'standing_gain' => 'standing gained',
+            'trace_hop_chance' => 'chance a trace hops',
+            'ensnare_reduction' => 'ensnare time',
+            'fortress_slots' => 'fortress slots',
             // The combat numbers (COMBAT.md), named so an implant or a drug that moves one can say what
             // it changes on a card, and so the modifier picker offers them. Per weapon class, plus the
             // two tag sets that reach every class at once.
