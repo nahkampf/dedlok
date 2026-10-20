@@ -801,6 +801,7 @@ return [
             'cancel' => '← Back to messages',
             'from' => 'From: :handle',
             'reply' => 'Reply',
+            'reply_prefix' => 'Re: ',
             'sent' => 'Message sent to :handle.',
             'errors' => [
                 'to' => 'Say who the message is for.',

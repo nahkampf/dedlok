@@ -26,13 +26,14 @@
             <div class="field" @error('title') data-invalid @enderror>
                 <label class="field__label" for="title">{{ Text::get('notifications.compose.subject') }}</label>
                 <input class="input" id="title" name="title" type="text" maxlength="{{ $max['title'] }}" required
-                       value="{{ old('title') }}">
+                       value="{{ old('title', $title) }}">
                 @error('title') <span class="field__error">{{ $message }}</span> @enderror
             </div>
 
             <div class="field" @error('message') data-invalid @enderror>
                 <label class="field__label" for="message">{{ Text::get('notifications.compose.message') }}</label>
-                <textarea class="textarea" id="message" name="message" rows="8" maxlength="{{ $max['body'] }}" required>{{ old('message') }}</textarea>
+                <textarea class="textarea" id="message" name="message" rows="8" maxlength="{{ $max['body'] }}" required>
+{{ old('message', $quote) }}</textarea>
                 <span class="field__hint">{{ Text::get('notifications.compose.message_hint', ['max' => $max['body']]) }}</span>
                 @error('message') <span class="field__error">{{ $message }}</span> @enderror
             </div>

@@ -165,7 +165,7 @@
                                         <button type="submit" class="btn btn--sm cut">{{ Text::get('safehouse.storage.collect') }}</button>
                                     </form>
                                 @elseif (! empty($message->details['from']))
-                                    <a class="btn btn--sm btn--quiet cut" href="{{ route('messages.create', ['to' => $message->details['from']]) }}">{{ Text::get('notifications.compose.reply') }}</a>
+                                    <a class="btn btn--sm btn--quiet cut" href="{{ route('messages.create', ['to' => $message->details['from'], 're' => $message->getKey()]) }}">{{ Text::get('notifications.compose.reply') }}</a>
                                 @else
                                 <form method="POST" action="{{ route('notifications.open', $message) }}">
                                     @csrf

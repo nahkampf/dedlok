@@ -142,4 +142,19 @@ final class PlayerMessageTest extends TestCase
         $this->assertSame("a\n\nb", PlainText::clean("a\n\n\n\n\nb", multiline: true));
         $this->assertSame('', PlainText::clean(null));
     }
+
+    public function test_a_reply_is_titled_re_and_quotes_the_message_below(): void
+    {
+        $this->send(['to' => 'Recipient_Two', 'title' => 'Hello', 'message' => "line one\nline two"])->assertRedirect();
+        $message = Notification::query()->where('user_id', $this->them->user_id)->firstOrFail();
+
+        $page = $this->actingAs($this->them->user)->get(route('messages.create', ['to' => 'Sender_One', 're' => $message->id]))->assertOk();
+        $page->assertSee('value="Re: Hello"', false);
+        $page->assertSee("\n\n&gt; line one\n&gt; line two", false);
+
+        // Replying to a reply does not stack prefixes, and somebody else's message is not quoted.
+        $message->update(['title' => 'Re: Hello']);
+        $this->actingAs($this->them->user)->get(route('messages.create', ['re' => $message->id]))->assertSee('value="Re: Hello"', false);
+        $this->actingAs($this->me->user)->get(route('messages.create', ['re' => $message->id]))->assertDontSee('line one');
+    }
 }
