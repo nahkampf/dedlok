@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Cyberspace\Grade;
 use App\Cyberspace\SystemType;
+use App\Support\Text;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -17,6 +18,17 @@ class SubnetRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user()?->can('admin') ?? false;
+    }
+
+    /** @return array<string, string> The form's own labels, so a refusal names the field as the page does. */
+    public function attributes(): array
+    {
+        return [
+            'size' => Text::get('admin.subnets.size'),
+            'entry_x' => Text::get('admin.subnets.entry_x'),
+            'entry_y' => Text::get('admin.subnets.entry_y'),
+            'prefix' => Text::get('admin.subnets.prefix'),
+        ];
     }
 
     /** @return array<string, list<mixed>> */

@@ -54,6 +54,7 @@
                     <label class="field">
                         <span class="field__label">{{ Text::get('admin.subnets.entry_y') }}</span>
                         <input class="input num" type="number" name="entry_y" min="0" required value="{{ $value('entry_y', 16) }}">
+                        <span class="field__hint">{{ Text::get('admin.subnets.entry_hint') }}</span>
                     </label>
                 @else
                     <p class="muted" style="font-size:var(--fs-sm)">{{ $grid->prefix }} · {{ $grid->size }}×{{ $grid->size }} · {{ Text::get('admin.subnets.entry', ['x' => $grid->entry_x, 'y' => $grid->entry_y]) }} · {{ Text::get('admin.subnets.systems') }}: {{ $count }}</p>

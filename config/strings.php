@@ -4444,6 +4444,7 @@ return [
             'size_hint' => 'Positions along one edge, 8 to 215. Permanent.',
             'entry_x' => 'Entry across',
             'entry_y' => 'Entry down',
+            'entry_hint' => 'Where the gateway stands, counted from the top-left corner (0, 0). Across is left to right, down is top to bottom. Each is 0 to one less than Size. Permanent.',
             'entry' => 'entered at :x, :y',
             'systems' => 'Systems',
             'gateways' => 'Gateways',
