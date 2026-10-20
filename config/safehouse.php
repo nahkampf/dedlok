@@ -31,6 +31,8 @@ return [
         'wakefulness_limit' => 10,
         // Synaptic Integrity mended per minute of resting, whatever the home.
         'synaptic_per_minute' => 0.083,
+        // Hit points mended per minute of resting, whatever the home.
+        'hitpoints_per_minute' => 0.05,
         'overridden_by' => ['opiate', 'medical'],
     ],
 
