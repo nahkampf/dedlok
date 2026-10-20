@@ -96,6 +96,8 @@ class CharacterTest extends TestCase
             'current_fatigue', 'current_fullness', 'mood', 'collapse_pending',
             // Their home, or NULL for the fallback.
             'rent_due_at', 'raid_cooldown_until', 'safehouse_id',
+            // Safehouse training sessions: the Work out and Study meters, and Simstim's daily allowance.
+            'workout_progress', 'study_progress', 'simstim_seconds', 'simstim_day',
             // The grid the body is on, or was last on (grids; 1 is the main grid).
             'grid_id',
             // Where a jack-in resumes on a subnet (NULL: the main portal).
