@@ -120,6 +120,14 @@
                                     {{-- Only a link in the sentence above: nothing to list. --}}
                                 @elseif (! empty($message->details['collect']))
                                     {{-- A lost home's belongings: the button below collects them. --}}
+                                @elseif (! empty($message->details['lost']))
+                                    <div class="prose micro" style="color:var(--ink-2)">
+                                        <ul>
+                                            @foreach ($message->details['lost'] as $line)
+                                                <li>{{ $line }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
                                 @elseif ($message->details && empty($message->details['chat_invite']))
                                     <div class="prose micro" style="color:var(--ink-2)">
                                         <ul>

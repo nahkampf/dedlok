@@ -11,6 +11,8 @@ use App\Models\DeckFitting;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Notifications\Category;
+use App\Notifications\Notifier;
 use App\Programs\ProgramRunner;
 use App\Stats\Damage;
 use App\Stats\DamageOrigin;
@@ -83,13 +85,14 @@ final readonly class DefeatResolver
     public function apply(Character $character, Ice $ice): array
     {
         $log = [];
+        $lost = [];
 
         foreach ($ice->defeatTags() as $entry) {
             $line = match ($entry['tag']) {
                 DefeatTag::Flatline => $this->flatline($character, $entry['level']),
                 DefeatTag::NeuralShock => $this->neuralShock($character, $entry['level']),
-                DefeatTag::Surge => $this->surge($character, $entry['level']),
-                DefeatTag::Erase => $this->erase($character, $entry['level']),
+                DefeatTag::Surge => $this->surge($character, $entry['level'], $lost),
+                DefeatTag::Erase => $this->erase($character, $entry['level'], $lost),
                 DefeatTag::Skim => $this->skim($character, $entry['level']),
                 // Structurally unreachable — Bounty is never in this list — but
                 // match must be exhaustive, and a silent skip is the honest
@@ -102,7 +105,25 @@ final readonly class DefeatResolver
             }
         }
 
+        // One message for everything this ending destroyed, summed by name: 53 × Scan File, not 53 lines.
+        if ($lost !== []) {
+            ksort($lost);
+
+            (new Notifier)->send($character, Category::Cyberspace, 'damage_report', details: [
+                'lost' => array_map(fn (string $name, int $n): string => $n.' × '.$name, array_keys($lost), $lost),
+            ]);
+        }
+
         return $log;
+    }
+
+    /** @param  array<string, int>  $lost  name => copies, added to */
+    private function noteLost(array &$lost, ?InventoryItem $row): void
+    {
+        if ($row !== null) {
+            $name = $row->label();
+            $lost[$name] = ($lost[$name] ?? 0) + max(1, (int) $row->quantity);
+        }
     }
 
     /**
@@ -192,9 +213,10 @@ final readonly class DefeatResolver
      * anyway — is a no-op, and that is an ordinary answer rather than a
      * failure.
      *
+     * @param  array<string, int>  $lost
      * @return ?array{text: string, tone: string}
      */
-    private function surge(Character $character, int $level): ?array
+    private function surge(Character $character, int $level, array &$lost): ?array
     {
         $config = Config::get("cyberspace.defeat_tags.surge.{$level}", []);
         $chance = (int) ($config['chance'] ?? 0);
@@ -222,7 +244,9 @@ final readonly class DefeatResolver
 
             // The fitting row cascades with it — module_id is
             // cascadeOnDelete — so nothing here has to clear it by hand.
-            InventoryItem::query()->whereKey($fitting->module_id)->delete();
+            $module = InventoryItem::query()->with('item')->find($fitting->module_id);
+            $this->noteLost($lost, $module);
+            $module?->delete();
             $destroyed++;
         }
 
@@ -251,9 +275,10 @@ final readonly class DefeatResolver
      * it. Level three's `share: 100` is everything, which is why it is the
      * most expensive thing in the tag set.
      *
+     * @param  array<string, int>  $lost
      * @return ?array{text: string, tone: string}
      */
-    private function erase(Character $character, int $level): ?array
+    private function erase(Character $character, int $level, array &$lost): ?array
     {
         $config = Config::get("cyberspace.defeat_tags.erase.{$level}", []);
 
@@ -276,8 +301,10 @@ final readonly class DefeatResolver
             return null;
         }
 
-        DB::transaction(function () use ($character, $targets): void {
+        DB::transaction(function () use ($character, $targets, &$lost): void {
             foreach ($targets as $row) {
+                $this->noteLost($lost, $row);
+
                 if ($row->running_on_deck_id !== null) {
                     $this->runner->stop($character, $row);
                 }
