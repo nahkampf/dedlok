@@ -53,11 +53,17 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           NOTES: ${{ steps.extract_notes.outputs.notes }}
         run: |
-          # Format JSON payload using jq to properly escape newlines and quotes
-          PAYLOAD=$(jq -n --arg content "$NOTES" '{content: $content}')
+          # Discord refuses a message over 2000 characters, so send the notes in pieces of whole lines.
+          printf '%s\n' "$NOTES" | awk '
+            { if (length(buf) + length($0) + 1 > 1900) { print buf > ("chunk_" n++); buf = "" } buf = buf $0 "\n" }
+            END { print buf > ("chunk_" n) }
+          '
 
-          # POST to Discord
-          curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "$PAYLOAD" \
-               "$DISCORD_WEBHOOK_URL"
+          for f in $(ls chunk_* | sort -V); do
+            PAYLOAD=$(jq -n --rawfile content "$f" '{content: $content}')
+            curl --fail-with-body -H "Content-Type: application/json" \
+                 -X POST \
+                 -d "$PAYLOAD" \
+                 "$DISCORD_WEBHOOK_URL"
+            sleep 1
+          done
