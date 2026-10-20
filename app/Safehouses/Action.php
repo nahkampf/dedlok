@@ -14,6 +14,15 @@ enum Action: string
     case Patch = 'patch';
     case Meditate = 'meditate';
     case Shower = 'shower';
+    case Workout = 'workout';
+    case Study = 'study';
+    case Simstim = 'simstim';
+
+    /** A session runs for as long as somebody keeps at it (a city activity) instead of happening at once. */
+    public function isSession(): bool
+    {
+        return in_array($this, [self::Rest, self::Workout, self::Study, self::Simstim], true);
+    }
 
     public function label(): string
     {

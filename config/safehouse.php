@@ -36,6 +36,17 @@ return [
         'overridden_by' => ['opiate', 'medical'],
     ],
 
+    /*
+     * Work out, Study and Simstim: open-ended, like resting. PLACEHOLDERS until balance. Per MINUTE: `fatigue` is added
+     * (scaled by fatigue_taken), `progress` fills the meter (at 100 one of `attributes` goes up by one and it resets),
+     * `mood` is added. Simstim may be done `daily_seconds` a day (UTC).
+     */
+    'sessions' => [
+        'workout' => ['fatigue' => 2, 'progress' => 0.3, 'attributes' => ['meat', 'motor', 'muscle']],
+        'study' => ['fatigue' => 2, 'progress' => 0.3, 'attributes' => ['intellect', 'memory', 'focus']],
+        'simstim' => ['fatigue' => 1, 'mood' => 0.4, 'daily_seconds' => 7200],
+    ],
+
     /* Hours to collect what was stored in a home that was lost, before it is deleted. */
     'storage_hours' => 48,
 

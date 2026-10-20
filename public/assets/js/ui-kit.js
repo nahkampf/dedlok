@@ -266,6 +266,12 @@
     if (dlg.showModal) dlg.showModal();
   });
 
+  /* A dialog the server asks to have open again after a reload: <dialog id="x" data-reopen>. Clicking its own opener
+     rather than calling showModal() keeps whatever the opener does (the Running modal's lists are fetched on that click). */
+  document.querySelectorAll("dialog[data-reopen][id]").forEach((dlg) => {
+    document.querySelector(`[data-open="#${dlg.id}"]`)?.click();
+  });
+
   /* Sound on or off: <button data-sound-toggle="URL" aria-pressed="true|false" data-label-on data-label-off> holding
      [data-sound-glyph]. Pressing flips it, redraws the glyph and POSTs the choice to the account. Everything that
      plays a sound asks UI.soundOn() first, so the toggle is the one switch. */

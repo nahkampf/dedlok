@@ -36,6 +36,7 @@ final class CityClock
     {
         // A rest is credited as it is looked at, and the rent that fell due is charged.
         $this->home->settleRest($character, $now);
+        $this->home->settleSession($character, $now);
         $this->renter->settle($character, $now);
 
         return [
