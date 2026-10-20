@@ -1,3 +1,13 @@
+## 0.69.0 (2026-10-20)
+
+- New safehouse actions: **Work out** (slowly raises Meat, Motor and Muscle), **Study** (slowly raises Intellect, Memory and Focus), **Simstim** (raises Mood). All at the cost of fatigue. Not all safehouses have these actions.
+- Resting at safehouses now heals a bit of HP as well
+- Clinics can now do partial treatments, if you can't afford the full treatment
+- Being incapacitated and losing items/programs/files now sends a message containing what was lost
+- Fix: Destroying something in a stack destroyed the whole stack. Now takes quantity
+- Fix: The "Running" window closed after each stop/run, now stays open
+- Replying to a message now reuses the title and quotes the previous message
+
 ## 0.68.1 (2026-10-20)
 
 - UI: Fixed skill list that got broken
