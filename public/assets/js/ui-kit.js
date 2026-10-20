@@ -269,7 +269,9 @@
   /* A dialog the server asks to have open again after a reload: <dialog id="x" data-reopen>. Clicking its own opener
      rather than calling showModal() keeps whatever the opener does (the Running modal's lists are fetched on that click). */
   document.querySelectorAll("dialog[data-reopen][id]").forEach((dlg) => {
-    document.querySelector(`[data-open="#${dlg.id}"]`)?.click();
+    // Deferred: the click handlers further down (the Running modal's fetches) are not registered yet, and a click
+    // fired now would open the modal and never fill it.
+    setTimeout(() => document.querySelector(`[data-open="#${dlg.id}"]`)?.click(), 0);
   });
 
   /* Sound on or off: <button data-sound-toggle="URL" aria-pressed="true|false" data-label-on data-label-off> holding

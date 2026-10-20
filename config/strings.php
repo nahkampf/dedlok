@@ -185,6 +185,8 @@ return [
         'not_equipped' => 'Nothing runs on a deck you are not carrying.',
         'open_deck' => 'Open the deck',
         'running_none' => 'Nothing running',
+        // Under a running decryptor that has a file in hand.
+        'decrypting' => 'Decrypting file…',
         // The Running modal's second list: what the deck could start right now.
         'startable' => 'Could run',
         'startable_loading' => 'Looking at what your deck can run…',
