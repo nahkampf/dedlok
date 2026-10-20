@@ -55,11 +55,28 @@ enum AttackTag: string
      */
     case Ensnare = 'ensnare';
 
+    /**
+     * A damaging hit may throw the runner out of the subnet.
+     *
+     * ROLLED PER HIT THAT DOES DAMAGE (`chance`, per cent), and only inside a subnet: the main grid has nowhere to eject to.
+     * The run ends as `RunEnding::Ejected`, the runner takes `damage` points of Synaptic Integrity as ICE damage through
+     * `DamageResolver` and lands on the main-grid gateway they came through, still jacked in. A hit that already emptied
+     * the runner is a defeat, never an ejection.
+     */
+    case Eject = 'eject';
+
+    /**
+     * A damaging hit may infect the runner (`App\Cyberspace\Virus`): Synaptic Integrity every tick, tapering to nothing, that
+     * outlives the run. Rolled per hit that did damage (`chance`, per cent); `damage` is the first tick, `turns` the base
+     * lifetime. One infection at a time; a fresh hit refreshes it.
+     */
+    case Virus = 'virus';
+
     /** Does this tag come in strengths, or is it one thing that happens? */
     public function isLevelled(): bool
     {
         return match ($this) {
-            self::Ensnare => true,
+            self::Ensnare, self::Eject, self::Virus => true,
         };
     }
 

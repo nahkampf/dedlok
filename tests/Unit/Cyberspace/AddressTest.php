@@ -52,10 +52,16 @@ final class AddressTest extends TestCase
         $this->assertSame('A3F91C08', Address::normalise('A3F91C08'));
     }
 
+    public function test_a_subnet_address_is_a_prefix_and_four_hex(): void
+    {
+        $this->assertSame('mil:4A19', Address::normalise(' MIL:4a19 '));
+    }
+
     /** Null means "that is not an address", which a screen can say. */
     public function test_normalising_something_that_is_not_an_address_gives_null(): void
     {
-        $this->assertNull(Address::normalise('mil:4A19'), 'a subnet address is its own space');
+        $this->assertNull(Address::normalise('mil4A19'));
+        $this->assertNull(Address::normalise('m:4A19'), 'a prefix is two to five letters');
         $this->assertNull(Address::normalise('hello'));
         $this->assertNull(Address::normalise(''));
     }

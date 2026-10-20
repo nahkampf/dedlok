@@ -151,6 +151,7 @@ return [
             'market' => 'Market',
             'cloak' => 'Cloak',
             'relocation' => 'Relocation',
+            'tunnel' => 'Secure Tunnelling',
             'fortress_ids' => 'Fortress IDS',
             'fortress_ice' => 'Fortress ICE',
             'kernel' => 'Kernel',
@@ -780,7 +781,7 @@ return [
         // The `:what` of an accepted job's message.
         'mission_what_systems' => 'Systems (:count): :addresses.',
         'mission_what_transport' => 'Carry the sealed data container to :xy.',
-        'mission_what_supply' => 'Bring :count files: complete scan files or sealed data dumps.',
+        'mission_what_supply' => 'Bring :count files: complete scan files.',
 
         // Writing to another player.
         'compose' => [
@@ -1048,6 +1049,7 @@ return [
             'heist' => 'Heist',
             'transport' => 'Data transport',
             'supply' => 'Supply',
+            'denial' => 'Denial',
         ],
 
         'action_hint' => [
@@ -1058,7 +1060,8 @@ return [
             'extract' => 'There is a file on this system we want. Run it, pull the file, decrypt it and bring it to us. It will be there.',
             'heist' => 'Raid these systems for cash. What you take is not yours: hand it in at the desk and you get a cut back on top of the pay.',
             'transport' => 'We have some sensitive data that we need a third party to carry to its destination, discretely. Be aware that you might be tracked and intercepted.',
-            'supply' => 'Bring us files: complete scan files or sealed data dumps. We do not care which systems, only that the picture is whole.',
+            'denial' => 'Flood these systems with traffic until they lock down. Hit them hard enough and fast enough, and get out. You do not have to take anything.',
+            'supply' => 'Bring us files: complete scan files. We do not care which systems, only that the picture is whole.',
         ],
 
         'states' => [
@@ -1135,6 +1138,8 @@ return [
             'exchange' => 'Exchange',
             // Somebody's own node, founded rather than found.
             'fortress' => 'Data fortress',
+            // One end of a door between grids.
+            'gateway' => 'Gateway',
         ],
 
         /*
@@ -1354,6 +1359,7 @@ return [
                 'nothing_for_sale' => 'Nothing is for sale.',
                 'vault_empty' => 'No files kept here.',
                 'withdraw' => 'Take out',
+                'locked' => 'Locked in',
                 'deposit' => 'Store',
                 'refused' => [
                     'not_yours' => 'That is not yours to administer.',
@@ -1362,6 +1368,7 @@ return [
                     'offline' => 'The fortress is offline.',
                     'not_enough' => 'Not enough compute or memory left. Stop something, or bring in more Leechers.',
                     'not_a_file' => 'That is not a file.',
+                    'locked' => 'That stays in the vault for as long as the fortress stands.',
                     'bad_role' => 'There is no such role.',
                     'no_such_runner' => 'Nobody by that handle.',
                     'yourself' => 'That is you.',
@@ -1392,6 +1399,7 @@ return [
                 'occupied' => 'Something is already here.',
                 'no_skill' => 'You have not trained to administer a node.',
                 'at_the_cap' => 'You already hold as many fortresses as you may.',
+                'no_certificate' => 'A fortress on a subnet needs a Subnet Certificate for that subnet in your stash.',
             ],
         ],
         'party' => [
@@ -1424,6 +1432,7 @@ return [
             ],
             'refused' => [
                 'no_slots' => 'You have not trained to call a co-op run.',
+                'too_noisy' => 'A multi-user run would cause too much noise.',
                 'not_jacked_in' => 'You are not in cyberspace.',
                 'nothing_there' => 'There is nothing here to run against.',
                 'in_a_run' => 'Somebody is already in a run.',
@@ -1560,10 +1569,14 @@ return [
                 'intent_placement' => 'Place backdoor',
                 'intent_routing' => 'Backdoor for routing',
                 'intent_burn' => 'Burn it',
+                'intent_infiltrate' => 'Infiltrate',
+                'intent_denial' => 'Flood it',
+                'intent_denial_hint' => 'Throw your bandwidth at it until it locks down. The system pushes back every turn and its ICE wakes at once. Takes nothing. No co-op.',
                 'intent_extraction_hint' => 'Ingress, steal some data, egress. Does not trigger a lockdown',
                 'intent_siphon_hint' => 'Install a siphon that redirects some cashflow every night',
                 'intent_routing_hint' => 'Add this system to your routing chain. The more systems you route through, the longer a tracer will take to trace you',
                 'intent_burn_hint' => 'Complete system wipe. No haul, no way back.',
+                'intent_infiltrate_hint' => 'Several very hard stealth checks in a row, and the way through is open. One failure wakes the ICE. No co-op: a multi-user run would cause too much noise.',
                 'held' => 'You already hold a backdoor into this one. Security systems bypassed when you connect.',
                 'held_kind' => 'It is a :kind, and that cannot be changed.',
             ],
@@ -1618,6 +1631,8 @@ return [
                 // The one action that ends the run by succeeding, so it says
                 // what it does rather than what it is aimed at.
                 'burn' => 'Burn it',
+                'infiltrate' => 'Slip deeper',
+                'flood' => 'Flood',
                 'hold' => 'Hold',
                 'egress' => 'Egress',
             ],
@@ -1648,6 +1663,8 @@ return [
                 'ice_broken' => 'The ICE freezes, glitches for a few milliseconds and then vanishes, stuck in a crash loop. It is now disabled.',
                 // The line opens with a tag naming the ICE ("ICE VII"), written beside the text, not in it.
                 'ice_hits' => 'lands a code payload for :damage SI.',
+                'virus_infects' => 'Something in the payload takes hold. You are infected.',
+                'virus_hits' => 'The virus eats :damage SI.',
                 // After a grey tag naming the ICE ("ICE VII").
                 'ice_misses' => 'attempts to find an open attack vector, but fails.',
                 'ice_silent' => 'Whatever was fighting you is no longer there.',
@@ -1663,6 +1680,13 @@ return [
                 | and the tracer both, and a noticed one is a different night.
                 */
                 'unnoticed' => 'You are in, and nothing seems to have reacted.',
+                'infiltrate_step' => 'You slip past another layer of the watch (:done of :needed).',
+                'infiltrate_through' => 'The last layer lets you by. The gateway is open to you.',
+                'flood_loud' => 'The traffic is impossible to miss. Everything on the system turns to look.',
+                'flood_gain' => 'You flood the node with :gain QB of connection requests. The node is now at :pressure/:target capacity.',
+                'flood_shaken_off' => 'The system shrugs off the last of the traffic and cuts you loose.',
+                'flood_through' => 'The system buckles under the load and shuts itself down.',
+                'infiltrate_seen' => 'Something in the gateway sees you, and what you had won is lost.',
                 // THE BACKDOOR'S HALF OF THE RISK. Said differently from an
                 // ordinary quiet arrival, because it is not luck — it is the
                 // thing they went to the trouble of installing, working.
@@ -1695,7 +1719,7 @@ return [
                 'kernel_burned' => ':name burns, and its Kernel locks.',
                 'leech_done' => 'A Leecher is in place, drawing :amount of :resource for :fortress.',
                 'leech_already' => 'You already have a Leecher on this system.',
-                'leech_nothing' => 'You have no Leecher to install, or no fortress to feed.',
+                'leech_nothing' => 'You have no Leecher to install, or no fortress on this grid to feed.',
                 /*
                 | BURNING. The machine is named because it is the last thing
                 | anybody will be able to call it — the address goes out of
@@ -1819,23 +1843,29 @@ return [
             'transferring' => 'Downloading data — :qb QB left.',
 
             'log_heading' => 'Run log',
+            'pressure' => 'Node bandwidth capacity',
 
             'purpose' => [
                 'extraction' => 'Extraction',
                 'backdoor' => 'Backdoor',
                 'burn' => 'Burn',
+                'infiltrate' => 'Infiltrate',
+                'denial' => 'Denial',
             ],
 
             'purpose_hint' => [
                 'extraction' => 'Pilfer sensitive data from this system. Often a low risk operation.',
                 'backdoor' => 'Install a backdoor, to assert covert control over this system. If successful, will erase all logs to make it seem like this never happened.',
                 'burn' => 'Destroy the system. A very hostile act with no subtlety.',
+                'infiltrate' => 'Slip past the gateway unseen, turn after turn. Be seen once and its ICE wakes.',
+                'denial' => 'Overwhelm the system with traffic until it locks down. Loud: its ICE wakes at once.',
             ],
 
             'refused' => [
                 'not_jacked_in' => 'You are not jacked in.',
                 'nothing_there' => 'There is nothing here to break into.',
                 'not_intrudable' => 'The portal is not a system you can make an intrusion into.',
+                'wrong_purpose' => 'A gateway can only be infiltrated, and nothing else can.',
                 'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
                 'already_running' => 'You are already in a run.',
                 'hunted' => 'Somebody is on you. Deal with that first.',
@@ -1851,6 +1881,7 @@ return [
                 'egress' => 'You egressed the run.',
                 'defeat' => 'You were defeated.',
                 'burnout' => 'Your deck cooked a module and unsafely dropped you out of cyberspace.',
+                'ejected' => 'The ICE threw you out of the subnet. You are back at the gateway, hurt.',
                 'encounter' => 'Something ended the run. You are still on the grid.',
                 // WHAT ACTUALLY HAPPENED, because a player thrown out of a run
                 // they were winning, by something they could not see, with no
@@ -2084,8 +2115,14 @@ return [
             'not_jacked_in' => 'You are not jacked in.',
             'not_a_step' => 'That is not one step from where you are standing.',
             'off_the_grid' => 'There is nothing that way. The grid ends here.',
-            'not_an_address' => 'An address is eight hexadecimal characters. That is not one.',
+            'not_an_address' => 'An address is eight hexadecimal characters, or a subnet\'s prefix, a colon and four. That is not one.',
             'not_yours' => 'That bookmark is not yours.',
+            'no_gateway' => 'There is no gateway here.',
+            'no_tunnel' => 'There is no way to tunnel to that fortress: it is not yours to use, it is offline, or nothing is running on it that opens a tunnel.',
+            'tunnel_cooling' => 'That tunnel was used a moment ago. Give it a few minutes.',
+            'tunnel_busy' => 'Something has hold of you. You cannot tunnel now.',
+            'tunnel_too_hurt' => 'You are too hurt to pay for a tunnel.',
+            'gateway_closed' => 'The gateway does not recognise you, and it does not open.',
             // Not a failure. The system that wore it has moved or burned, and
             // an address is a fact about right now rather than a name.
             'no_such_address' => 'Nothing answers to that address any more.',
@@ -2104,8 +2141,21 @@ return [
         | here; signing into the game is auth.login / auth.logout.
         */
         // Browse known systems: what you have seen and that is still where you saw it and open.
+        'gateway' => [
+            'pass' => 'Pass through',
+        ],
+
+        'tunnel' => [
+            'title' => 'Secure tunnels',
+            'hint' => 'A fortress of yours with a tunnel running puts you on it from anywhere, and jacks you in if you are not. It costs a little Synaptic Integrity, and each fortress cools for a few minutes.',
+            'open' => 'Tunnel',
+            'cooling' => 'Cooling: :time',
+            'done' => 'You tunnel to :name.',
+        ],
+
         'known' => [
-            'full_scan' => 'You hold a full scan of this system',
+            'full_scan' => 'Fully scanned',
+            'backdoor' => 'Backdoor installed',
             'no_scan' => 'No scan on file.',
             'browse' => 'Browse known systems',
             'title' => 'Known systems',
@@ -2138,6 +2188,8 @@ return [
             'marked' => 'Saved position',
             'backdoored' => 'Your backdoor',
             'rebooting' => 'Rebooting',
+            'warden' => 'A Warden',
+            'runner' => 'Another runner',
             'scanned' => 'Scanned',
             'grade_key' => 'Grade, once scanned',
             'position' => 'Position',
@@ -2218,7 +2270,7 @@ return [
                 // The gate that paces exploration, said as a fact about the
                 // player rather than as a rule they broke.
                 'never_swept' => 'You have not been there. Walk it before you mark it.',
-                'not_an_address' => 'An address is eight hexadecimal characters. That is not one.',
+                'not_an_address' => 'An address is eight hexadecimal characters, or a subnet\'s prefix, a colon and four. That is not one.',
                 'not_yours' => 'That bookmark is not yours.',
             ],
         ],
@@ -2235,6 +2287,7 @@ return [
         'status' => [
             'jacked_in' => 'You are in. The portal hums around you.',
             'jacked_out' => 'You are jacked out.',
+            'passed' => 'You pass through the gateway.',
             'saved' => 'Saved.',
             'forgotten' => 'Forgotten.',
 
@@ -2506,6 +2559,7 @@ return [
             'overdose' => 'Overdose',
             'exhaustion' => 'Exhaustion',
             'encounter' => 'Street',
+            'tunnel' => 'Tunnelling',
             'blunt' => 'Blunt',
             'slashing' => 'Slashing',
             'penetrating' => 'Penetrating',
@@ -2790,6 +2844,8 @@ return [
                 'fight' => 'Beaten in a fight.',
                 'burnout' => 'Your deck cooked a module and threw you through the wall.',
                 'readiness' => 'Your deck stopped running while you were inside it.',
+                'ejected' => 'The ICE threw you out of the subnet, and the damage finished you.',
+                'virus' => 'A virus ate the last of your Synaptic Integrity.',
                 'hunter' => 'Somebody came looking for you, and found you.',
                 'encounter' => 'Something went wrong in the City, and it went wrong on you.',
                 'collapse' => 'You have collapsed from the combined effects of stress and exertion.',
@@ -3006,6 +3062,7 @@ return [
             'crafting_seconds.kernel' => 'Kernel crafting time (%)',
             'defence_quality' => 'Fortress defence quality (%)',
             'leech_discovery' => 'Leecher discovery chance (%)',
+            'virus_lifetime' => 'Virus duration (%)',
             'production_cycle_minutes.decryptor' => 'Fortress Decryptor cycle (minutes)',
             'production_cycle_minutes.assembler' => 'Fortress Assembler run time (minutes)',
             'production_cycle_minutes.tap' => 'Fortress Network Tap cycle (minutes)',
@@ -3026,11 +3083,13 @@ return [
             'crafting_seconds.cloak' => 'Cloak crafting time (%)',
             'crafting_seconds.market' => 'Market program crafting time (%)',
             'crafting_seconds.relocation' => 'Relocation program crafting time (%)',
+            'crafting_seconds.tunnel' => 'Secure Tunnelling crafting time (%)',
             'defence_quality.cloak' => 'Cloak stealth (%)',
             'kernel_integrity' => 'Fortress Kernel integrity (%)',
             'kernel_resistance' => 'Fortress Kernel resistance (points off each burn)',
             'kernel_demand' => 'Fortress Kernel resource demand (%)',
             'hitpoints_regen' => 'HP regeneration (per hour)',
+            'addiction_recovery' => 'Addiction recovery (per minute)',
 
             // Tag sets, named as a whole — see App\Stats\Target::nameKey().
             // The key is the tags in alphabetical order, because a set has no
@@ -3077,6 +3136,8 @@ return [
             'damage.synaptic_integrity.ice' => 'ICE damage',
             'damage.hitpoints.run_cancelled' => 'run cancellation damage to the body',
             'damage.synaptic_integrity.run_cancelled' => 'run cancellation damage to the mind',
+            'damage.hitpoints.tunnel' => 'tunnelling damage to the body',
+            'damage.synaptic_integrity.tunnel' => 'tunnelling damage to the mind',
             'damage.hitpoints.overdose' => 'overdose damage to the body',
             'damage.synaptic_integrity.overdose' => 'overdose damage to the mind',
             'damage.hitpoints.exhaustion' => 'exhaustion damage to the body',
@@ -3351,6 +3412,12 @@ return [
         'training' => 'Training :skill, level :level',
         'dose' => ':item in your system',
         'withdrawal' => 'Withdrawal: :family',
+        'virus' => 'Infected',
+        'virus_left' => [
+            'zero' => 'Clearing',
+            'one' => '1 tick left',
+            'many' => ':count ticks left',
+        ],
         'withdrawal_nights' => ['zero' => '', 'one' => 'Fades after tonight, or when you take another', 'many' => 'Fades in :count nights, or when you take another'],
         'mission' => ':action for :entity',
         'timers' => 'Clocks',
@@ -4362,6 +4429,59 @@ return [
             'occupied' => 'Somebody is standing in that district, so it cannot be deleted.',
             'is_start' => 'That is the district new characters begin in, so it cannot be deleted.',
             'has_safehouses' => 'A safehouse stands in that district, so it cannot be deleted. Move or delete the safehouse first.',
+        ],
+        'subnets' => [
+            'title' => 'Subnets',
+            'lede' => 'Smaller grids behind gateways. Creating one makes its grid, a gateway at its entry square and the partner gateway on the main grid. The prefix, size and entry square are permanent.',
+            'new' => 'New subnet',
+            'edit' => 'Edit',
+            'name' => 'Name',
+            'slug' => 'Slug',
+            'slug_hint' => 'Permanent. Lower-case letters, digits, hyphens and underscores.',
+            'prefix' => 'Address prefix',
+            'prefix_hint' => 'Permanent. Two to five lower-case letters: mil gives mil:3FCD.',
+            'size' => 'Size',
+            'size_hint' => 'Positions along one edge, 8 to 215. Permanent.',
+            'entry_x' => 'Entry across',
+            'entry_y' => 'Entry down',
+            'entry' => 'entered at :x, :y',
+            'systems' => 'Systems',
+            'gateways' => 'Gateways',
+            'ice' => 'Gateway ICE',
+            'no_ice' => 'None',
+            'ice_hint' => 'Carried by both gateways. A failed Infiltrate wakes it.',
+            'flag' => 'Entry flag',
+            'flag_hint' => 'A character with this flag may pass. Blank for none.',
+            'infiltrate' => 'Entry by Infiltrate',
+            'wardens' => 'Wardens',
+            'wardens_hint' => 'Hunters that walk the subnet, one step a minute, and attack a runner they notice within 1 or 2 steps. Generate stands them up to this count; a beaten one is replaced, one a minute.',
+            'warden_count' => 'How many',
+            'warden_grade_min' => 'Lowest grade (1 to 5)',
+            'warden_grade_max' => 'Highest grade (1 to 5)',
+            'certificate' => 'Subnet Certificates',
+            'certificate_hint' => 'Nodes of the ticked types may hold a certificate for this subnet when they are stocked. None ticked, none held.',
+            'certificate_chance' => 'Chance per node (%)',
+            'certificate_min_grade' => 'Lowest grade that holds one',
+            'spec' => 'What fills it',
+            'grade_min' => 'Lowest grade',
+            'grade_max' => 'Highest grade',
+            'occupancy' => 'Occupancy (%)',
+            'types' => 'System types',
+            'types_hint' => 'None ticked means every ordinary type.',
+            'entities' => 'Owners',
+            'entities_hint' => 'None ticked means every entity.',
+            'save' => 'Save',
+            'generate' => 'Generate systems',
+            'delete' => 'Delete subnet',
+            'confirm_delete' => 'Delete this subnet, every system in it and its gateway on the main grid?',
+            'gateway_in' => 'Gateway: :name',
+            'gateway_out' => 'Gateway: the grid',
+            'created' => 'Subnet created. Generate its systems when ready.',
+            'updated' => 'Subnet saved.',
+            'generated' => ':created system(s) added; the subnet is now :percent% occupied.',
+            'deleted' => 'Subnet deleted.',
+            'occupied' => 'Somebody is in that subnet, or will come back to it, so it cannot be deleted.',
+            'no_room' => 'The main grid has no free square for the partner gateway.',
         ],
         'safehouses' => [
             'title' => 'Safehouses',

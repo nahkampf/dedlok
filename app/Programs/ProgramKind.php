@@ -72,6 +72,8 @@ enum ProgramKind: string
     case Cloak = 'cloak';
     /** Moves the fortress every so many hours. */
     case Relocation = 'relocation';
+    /** Lets the fortress's owner and members tunnel straight to it from anywhere, bypassing any gateway (`FortressTunnel`). */
+    case Tunnel = 'tunnel';
     case FortressIds = 'fortress_ids';
     case FortressIce = 'fortress_ice';
     /** An optional crafted Kernel item; the fortress's own Kernel is implicit (config). Highest tier. */
@@ -95,7 +97,7 @@ enum ProgramKind: string
             self::Decryptor, self::Daemon, self::Analyser, self::Script, self::Utility => true,
             self::Icebreaker, self::Evasion, self::Leecher,
             self::FortressDecryptor, self::FortressAssembler, self::FortressNetworkTap, self::FortressWiretap, self::Booster, self::FortressDaemon, self::Market, self::Cloak, self::Relocation,
-            self::FortressIds, self::FortressIce, self::Kernel => false,
+            self::FortressIds, self::FortressIce, self::Kernel, self::Tunnel => false,
         };
     }
 
@@ -108,7 +110,7 @@ enum ProgramKind: string
     /** Hosted on a Data Fortress. */
     public function isHosted(): bool
     {
-        return in_array($this, [self::FortressDecryptor, self::FortressAssembler, self::FortressNetworkTap, self::FortressWiretap, self::Booster, self::FortressDaemon, self::Market, self::Cloak, self::Relocation, self::FortressIds, self::FortressIce, self::Kernel], true);
+        return in_array($this, [self::FortressDecryptor, self::FortressAssembler, self::FortressNetworkTap, self::FortressWiretap, self::Booster, self::FortressDaemon, self::Market, self::Cloak, self::Relocation, self::Tunnel, self::FortressIds, self::FortressIce, self::Kernel], true);
     }
 
     /** Where it sits in the shutdown order: the lowest goes first, the Kernel last. */
@@ -116,7 +118,7 @@ enum ProgramKind: string
     {
         return match ($this) {
             self::FortressDecryptor, self::FortressAssembler, self::FortressNetworkTap, self::FortressWiretap => 0,
-            self::Booster, self::FortressDaemon, self::Market, self::Cloak, self::Relocation => 1,
+            self::Booster, self::FortressDaemon, self::Market, self::Cloak, self::Relocation, self::Tunnel => 1,
             self::FortressIds => 2,
             self::FortressIce => 3,
             default => 4,

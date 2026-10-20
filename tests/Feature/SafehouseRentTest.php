@@ -205,6 +205,22 @@ final class SafehouseRentTest extends TestCase
         $this->assertNull(CityActivity::query()->find($this->character->id));
     }
 
+    public function test_resting_also_mends_synaptic_integrity_exactly_however_often_somebody_looks(): void
+    {
+        $this->home();
+        $this->character->forceFill(['current_fatigue' => 100, 'current_synaptic_integrity' => 5])->save();
+        $actions = app(HomeActions::class);
+        $actions->startRest($this->character->fresh());
+
+        $this->travelTo(now()->addMinutes(10));
+        $actions->settleRest($this->character->fresh());
+        $this->assertEquals(5.83, $this->character->fresh()->current_synaptic_integrity);
+
+        $this->travelTo(now()->addMinutes(5));
+        $actions->stopRest($this->character->fresh());
+        $this->assertEquals(6.24, $this->character->fresh()->current_synaptic_integrity);
+    }
+
     public function test_a_rest_ends_by_itself_at_nothing(): void
     {
         $this->home();

@@ -194,14 +194,12 @@ come back. Subnets are the exception, because things there attack you for moving
 
 ### Subnets
 
-A subnet is a separate, much smaller grid reached through a relay. **Subnet
+A subnet is a separate, much smaller grid reached through a gateway. **Subnet
 addresses are in their own space and are not confusable with grid addresses:** a
-prefix naming the subnet, then a **16-bit address — 4 hex characters**:
-`mil:4A19`, `dark:00FE`.
-
-65 536 addresses is far more than a small grid needs, which is fine. What
-matters is that the prefix makes the space unambiguous, so nothing has to guess
-which grid an address belongs to.
+prefix naming the subnet (2 to 5 letters, authored in the admin), then a
+**16-bit address, 4 hex characters**: `mil:4A19`, `dark:00FE`. The address is
+stored whole, so `mil:3FCD` and `dark:3FCD` are different systems and the unique
+key stays one column. Design, build order and what is decided: *Subnets* below.
 
 ### Discovery: two records, not one
 
@@ -1665,7 +1663,7 @@ anywhere else.
 
 > **Built (2026-10-08)** as described below, with these decisions: a failed cycle only wastes time; the check is
 > `check.<encryption>` against a per-encryption difficulty; it requires a Decryptor program running on the equipped deck (the
-> standing claim on compute and memory); every running decryptor works one file and several run side by side; the queue is reorderable like the training queue; it works during a run; supply jobs take sealed dumps; heat is not accumulated. The
+> standing claim on compute and memory); every running decryptor works one file and several run side by side; the queue is reorderable like the training queue; it works during a run; supply jobs take scan files only (dumps until 2026-10-20); heat is not accumulated. The
 > open questions 6 and 7 are settled accordingly.
 
 Every file comes off a system encrypted, and breaking one is **a slow background
@@ -1989,13 +1987,150 @@ may do what in it, is its own data:
 
 ## Subnets
 
-Smaller grids behind relays: military, darknet, AI. Entry needs prerequisites or
-an intrusion against the relay itself, and what is inside is different in kind
-rather than in degree.
+**Designed 2026-10-21, not built.** Smaller grids behind gateways: military, darknet, AI. What is inside is different in kind
+rather than in degree. Several are planned; the first is built alone.
 
-**Rogue programs wander subnets and attack on movement.** This is the one place
-exploration is not merely patience, and the reason a subnet is somewhere you go
-deliberately rather than somewhere you drift into.
+**Decided**
+
+- **A subnet is its own grid** (Option A, a real `grid_id`, not a region of the main coordinate space): so its addresses can be
+  their own space. `grids` is one row per grid, the main grid being the first (no prefix, 8-hex addresses). A row holds slug, name,
+  a unique `prefix` (2 to 5 letters, edited by hand in a new admin *Subnets*), size, entry position and the generation spec.
+  `grid_id` joins the eight coordinate tables (`systems`, `characters`, `bookmarks`, `character_terrain`, `runs`, `run_parties`,
+  `system_contacts`, `system_scans`); `systems` is unique on (grid_id, x, y). `Grid` becomes per grid (`Grid::for($id)`, `Grid::main()`)
+  and every caller asks the character's grid.
+- **Addresses:** a subnet's are 4 hex (`mil:3FCD`), stored whole in a widened column and normalised by `Address`; unique per grid by
+  construction. 65 536 addresses cap a subnet at 65 536 SYSTEMS (256 x 256 cells if every one is full, about 306 x 306 at 70% occupancy).
+  Random draws and relocation (a new address each move) want slack, so keep a subnet under about half the space (around 215 x 215).
+  Subnets are meant to be far smaller, so this never binds.
+- **Gateways** (`SystemType::Gateway`): paired, one on the main grid and one at the subnet's entry square, each pointing at the other
+  (`links_to_system_id`). **They never relocate.** Not scannable, burnable or ownable, placed rather than rolled; each carries ICE that
+  its entry rule can wake. Leaving is walking onto the subnet-side gateway: you come out at the very gateway you went in by.
+- **Entry rules** sit on the main-grid gateway as a list, and ANY one passing lets you through: **a flag** (`subnet_mil_access`, set by
+  `Flags::set` or an encounter outcome) or **Infiltrate**: a run against the gateway for several turns, each a very hard stealth/evasion
+  check, all of which must be survived. **A failed Infiltrate wakes the ICE assigned to the gateway** (the run becomes the fight). More
+  rule kinds later are new list entries, not new columns.
+- **Where you are:** `characters.grid_id` beside `grid_x`/`grid_y`. Jacking out inside a subnet remembers the grid and position and the
+  next jack-in returns there (a main-grid jack-out still comes back at the main portal). **Flatline or 0 SI inside a subnet ejects**: the
+  resume point is cleared and the next jack-in is at the main portal. It slots into the bad-ending order (damage, consequence, jack out,
+  floor).
+- **Eject** (`AttackTag::Eject`, levelled I, II, III, numbers in `config/cyberspace.attack_tags`): on each successful hit that does
+  damage, a chance (higher per level) that the ICE ends the run, throws the player out of the subnet and deals SI damage (more per level)
+  through `DamageResolver` as ICE damage. **They land on the main-grid gateway they came through, still jacked in.** If the SI damage
+  reaches 0 the ordinary floor rules take over. It does nothing on the main grid, which has nowhere to eject to.
+- **Generation** (`GridSeeder` with a grid's spec): a list of entities (one or many), a list of system types, a range of grades and an
+  occupancy; tops up to a target like the main grid. **Subnet systems relocate (within their own subnet), restock and lock down like main
+  grid ones.** New subnet-only node types are authored later by the author; each is a `SystemType` case.
+- **Wardens** (rogue programs that walk a subnet and attack) are built: see *Wardens*. Heat drawing more of them is not.
+
+**Build order**
+
+1. `grids` and `grid_id` with nothing visible changing; the suite is the net. **Done.**
+2. Gateways, the teleport, the resume point and ejection on flatline. **Done**, except what belongs to step 4: nothing creates a
+   gateway pair or a subnet yet (tests do), `GridSeeder`, `ExchangePlacer` and the admin's address check are main-grid only, and a
+   subnet's systems do not relocate (`RaidLedger::relocate` refuses anything off its grid). Built: `SystemType::Gateway` (placed,
+   never rolled, owned by nobody, not run against), `systems.links_to_system_id`, `Navigator::pass()` (every gateway passes until
+   step 3), addresses `mil:3FCD` (columns widened to 10, CHECKs restated), `Grid::forId()`/`of()`, a grid-aware sweep, bookmarks,
+   scans, runs and parties, and the resume point (`characters.resume_x/y`; kept by jacking out inside a subnet, cleared when SI
+   is emptied; a collapse also drops it). A jump or recall to another grid's address is "nothing answers to it". A fortress can
+   only be founded on the main grid. Chat's `addr:` markup still only knows the 8-hex form.
+3. Entry rules: the flag, then Infiltrate. **Done.** `systems.entry_rules` is a JSON list on the main-grid gateway, any one passing
+   (`EntryRules`; empty is an open door): `flag`, and `infiltrate`. **A gateway is an ordinary defended system** (grade 9 by authoring,
+   ICE, lockdown) that cannot be scanned and takes ONE run purpose, `RunPurpose::Infiltrate`, and never a co-op one (`PartyRefusal::TooNoisy`:
+   "a multi-user run would cause too much noise"); nothing else takes that purpose (`RunRefusal::WrongPurpose`). The run's only
+   action is `RunAction::Infiltrate`: a stealth check against `cyberspace.infiltrate.difficulty` (above the best IDS), `turns` in a
+   row (`runs.infiltrated`) win the run as Completed; one failure resets the count and wakes the gateway's ICE (the run goes on as the
+   fight), and a detected run locks the gateway down like any other. A win is the receipt `EntryRules` reads: a completed Infiltrate
+   run against this gateway ended within `window_minutes`, and then *Pass through* works. A lockdown that ends cannot relocate a gateway.
+4. Subnet generation from a spec, and the admin *Subnets* screen. **Done.** `Subnets` (the only writer of non-main `grids` rows and
+   the gateway pair) creates the grid, a grade 9 gateway at the entry square and its partner on a free main-grid square, both carrying
+   the author's ICE; the entry rules (a flag, Infiltrate) go on the partner. Prefix, size and entry are permanent. `GridSeeder::forGrid()`
+   tops a subnet up to its spec (owners, system types, an even draw from the grade range, occupancy; no portal; addresses under the
+   prefix), from the screen's *Generate* button or `cyberspace:seed <slug>`. `RaidLedger::relocate()` moves a system within its own
+   grid under its prefix, so lockdown, backdoor discovery and burn work in a subnet; restocking and defending already ran over every
+   system. Exchanges are placed on the main grid only, and a fortress cannot be founded in a subnet until the Certificate exists.
+5. The Eject tag. **Done.** `AttackTag::Eject` (levels I–III, `cyberspace.attack_tags.eject`: `chance` per cent and `damage`, placeholders
+   10/3, 20/6, 30/10). Rolled in `Simulator::iceStrikes()` after a hit that did damage and did not empty the runner, only on a subnet
+   (the die is drawn only for ICE that carries the tag). The run ends as `RunEnding::Ejected` (a bad ending, so it goes through
+   `resolveEnding()`): the Eject damage lands as ICE damage, the run is ended, and `Navigator::expel()` arrives them on the main-grid
+   gateway linked to the subnet's entry gateway, still jacked in. Emptied by it, they are jacked out and the floor takes over (the
+   subnet resume point is cleared by `checkFloor`). No editor yet: the tag is data on `ice.attack_tags` (`[{"tag":"eject","level":2}]`).
+
+---
+
+## Wardens
+
+**Built.** A hunter that lives in a subnet (`wardens`, `App\Models\Warden`; `App\Cyberspace\Wardens` is the only writer). A subnet's spec says how many
+(`grids.spec.wardens`: count, lowest and highest hunter grade, 1 to 5, on the Subnets screen); *Generate* stands them up to that count, never within
+`keep_away` steps of the entry square, and the minute clock replaces a missing one, one a minute.
+
+- **They walk.** One random step to a neighbouring square a minute (`step_seconds`), systems do not block them. Lazy and swept: `wardens:move` (every
+  minute, `withoutOverlapping`) and any arrival move the ones that are due, up to `catch_up` steps at once.
+- **They notice.** When a runner is within a Warden's **reach** (1 step for grades 1 and 2, 2 for grades 3 to 5; `cyberspace.wardens.reach`) the Warden
+  makes a check against the runner's Stealth: the runner rolls to go unnoticed against `detection[grade]`, and a failure is an attack. Asked on **arrival**
+  (`Navigator::arrive()`, before heat's hunter roll) and whenever a Warden steps near a runner (`Wardens::minute()`). Not asked of anybody in a run,
+  hunt, fight, encounter or the waiting room, and never on the main grid.
+- **They attack as a Watchdog does:** through `Hunters::spawn($character, $grade, $wardenId)`, so the fight, the loadout and the payout are the Bloodhound's
+  (the grade is the Warden's, not heat's); the hunt remembers `warden_id`, and **beating it removes the Warden** (`HunterCombat::win()`).
+- **They are seen** only inside the runner's sight: a pulsing ember dot in a cell's top-left corner (`.cell__warden`, the one free corner; the legend lists it).
+All numbers are placeholders.
+
+---
+
+## Subnet fortresses
+
+**Built.** A Data Fortress can be founded in a subnet, and Secure Tunnelling bypasses the gateway to it. (Cross-grid jumps are still refused:
+the tunnel is the one exception, and only to a fortress.)
+
+- **The Subnet Certificate** is an authored item (`subnet_certificate`, data, unstackable, not for sale) that lives on subnet nodes as ordinary item
+  loot. Which nodes is the subnet's spec (`grids.spec.certificate`: node types, a per cent chance and a least grade, set on the Subnets screen);
+  `NodeStocker::contentsFor()` rolls it, and only for subnet nodes. **Taking one stamps it** with the node's grid (`inventory_items.grid_id`,
+  `Extractor::stamped()`), so a copy from `mil` only founds in `mil`.
+- **Founding in a subnet** (`Fortresses::found()`, the old `NotOnTheGrid` placeholder is gone) needs the Kernel and a certificate stamped for THIS
+  grid, loose in the stash (`FortressRefusal::NoCertificate`). The fortress gets the grid, an address under the grid's prefix, and **the certificate is
+  moved into its vault and locked there** (`system_contents.meta.locked`): `FortressVault::withdraw()` refuses it and a raid never picks it. A burned
+  fortress loses it with everything else. A subnet fortress relocates within its subnet, and its Leechers draw only on that subnet's nodes.
+- **Secure Tunnelling** is a hosted program kind (`ProgramKind::Tunnel`, craftable under `utility_crafting`, authored in the item editor). While one is
+  RUNNING on a fortress, its owner and everybody admitted to it (`FortressAccess::admitted`) can `FortressTunnel::tunnel()` onto it from anywhere:
+  any grid, and **also when not jacked in** (it jacks them in there, with the ordinary jack-in refusals). It costs `cyberspace.tunnel.si` (2) Synaptic
+  Integrity as `DamageOrigin::Tunnel` and has a cooldown per character per fortress (`cooldown_minutes`, 5; `fortress_tunnels`). Refused when
+  something has hold of the character (run, hunt, fight, encounter, the waiting room) or they have too little SI. The map screen lists the tunnels
+  you can use under *Secure tunnels*.
+
+---
+
+## Denial
+
+**Built, and meant for parties.** A mission action (`MissionAction::Denial`, 1 to 2 systems, `missions.actions.denial`) and a run purpose
+(`RunPurpose::Denial`) with one action, `RunAction::Flood`. Each Flood adds `cyberspace.denial.per_bandwidth` (10) x the deck's RESOLVED
+bandwidth (`bandwidthFor()`; 2 to 18 on today's NICs, 2 on the starting kit) to `runs.pressure`; the node falls at its grade's `target` (100 at grade 1,
+880 at grade 9). **Every turn the node pushes back a random whole number drawn evenly from its grade's range** (`drain[grade]`, from 0 to twice
+a mean of 34 at grade 1; target and range both grow 1.3 times a grade), and **after `turns` (12) it shakes the runner off** (the run ends as an egress). **The first Flood is noticed**: the run is
+detected and the ICE wakes, so it is a fight against the clock (Attack and Egress still work).
+
+**Balance, by simulation of that model** (12 floods, push-back after each): grade 1 is about 60% for ONE runner on a deck one NIC step above
+the starting kit (bandwidth 3, plus a few skills' percentages: about 3.75, so 37 a flood) and a few per cent on the starting kit alone; each grade wants about 1.3 times the decks of the last (two for grade 2, three for 4, four to five for 5 to 6, seven for 8), and at
+grade 9 eight such runners succeed about 40% of the time and nine about 68%. Placeholders until played.
+
+**A party's meter is the node's, one for all of it**: every runner's Flood in a round adds up, the node pushes back ONCE a round (not once per
+runner), `syncShared` carries the meter between the runs, and an absent runner floods by default. A full meter ends the run (solo: at once; a
+party: at the end of the round, every live run together, each recording its own job, and a flooded run is never cancelled by the lockdown the
+first of them causes: `cancelEveryRunOn` skips it). The ending locks the node down through `Lockdown` (it was noticed). The mission target
+is ticked where it happens (`recordAgainst`, like Burn and Plant). Never against a gateway. Another purpose's Flood is a wasted turn.
+
+---
+
+## Virus
+
+**Built.** `AttackTag::Virus` (levels I–III, `cyberspace.attack_tags.virus`: `chance`, `damage`, `turns`; placeholders). On a hit that did damage
+(and did not eject or empty the runner) there is a chance to infect. **One infection at a time, kept on the character** (`characters.virus_damage`,
+`virus_turns`, `virus_elapsed`; `App\Cyberspace\Virus` is the only writer), so it outlives the run; a fresh hit refreshes it.
+A tick takes `damage` x (1 - elapsed / lifetime) Synaptic Integrity, so it tapers to nothing: **a tick is a run turn inside a run (before the
+ICE's half of the turn) and a minute outside one** (`characters:regenerate`, which already skips fights and paused encounters). Damage is
+`DamageOrigin::Ice` through `DamageResolver`, so a resistance to ICE resists it. The lifetime is the stat `virus_lifetime`, started from the tag's
+`turns` and read on every tick: **an Antiviral is any program (a Daemon, say) whose modifiers lower `virus_lifetime`**, and one started after the
+infection still shortens it. Emptied inside a run it is a `Defeat`; outside, it jacks out and asks the floor (reason `virus`), and a downed character is clean.
+Shown in Current processes as *Infected*.
+**The two Antivirals** arrive by migration `2026_10_22_110000_the_antivirals` as background Utility programs (tier 1, one copy each): *Condom 0.49.1* (-33%, 0.5 QB/qFLOPS/storage, 300 creds, common x5) and *Purge Pro* (-50%, 1.0 each, 1500, uncommon x3). Running both diminishes as for any two programs of one kind.
 
 ---
 

@@ -116,7 +116,7 @@ class EncounterRequest extends FormRequest
             // The address must name a system that exists now; it is stored as the system's id.
             $address = trim((string) $this->input('spot_address'));
 
-            if ($address !== '' && Grid::fromConfig()->find($address) === null) {
+            if ($address !== '' && Grid::findAnywhere($address) === null) {
                 $v->errors()->add('spot_address', Text::get('admin.encounters.errors.spot_address'));
             }
 
@@ -172,7 +172,7 @@ class EncounterRequest extends FormRequest
             return null;
         }
 
-        $system = Grid::fromConfig()->find(trim((string) $this->input('spot_address')));
+        $system = Grid::findAnywhere(trim((string) $this->input('spot_address')));
 
         return $system === null ? null : (int) $system->getKey();
     }

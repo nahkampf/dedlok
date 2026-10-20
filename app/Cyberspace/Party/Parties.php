@@ -50,6 +50,10 @@ final class Parties
             return PartyRefusal::NothingThere;
         }
 
+        if ($system->type->isGateway()) {
+            return PartyRefusal::TooNoisy;
+        }
+
         if ($this->partyOf($owner) !== null) {
             return PartyRefusal::AlreadyInParty;
         }
@@ -57,6 +61,7 @@ final class Parties
         return RunParty::query()->create([
             'owner_character_id' => $owner->getKey(),
             'address' => $system->address,
+            'grid_id' => $at->grid,
             'x' => $at->x,
             'y' => $at->y,
             'share_credits' => $credits,

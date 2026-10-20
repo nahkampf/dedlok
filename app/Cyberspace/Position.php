@@ -29,6 +29,8 @@ final readonly class Position implements Stringable
     public function __construct(
         public int $x,
         public int $y,
+        /** Which grid (`grids.id`). 1 is the main grid, so every existing `new Position($x, $y)` still means it. */
+        public int $grid = 1,
     ) {}
 
     public static function of(int $x, int $y): self
@@ -38,7 +40,7 @@ final readonly class Position implements Stringable
 
     public function equals(self $other): bool
     {
-        return $this->x === $other->x && $this->y === $other->y;
+        return $this->grid === $other->grid && $this->x === $other->x && $this->y === $other->y;
     }
 
     /**
@@ -58,7 +60,7 @@ final readonly class Position implements Stringable
 
     public function isAdjacentTo(self $other): bool
     {
-        return ! $this->equals($other) && $this->distanceTo($other) === 1;
+        return $this->grid === $other->grid && ! $this->equals($other) && $this->distanceTo($other) === 1;
     }
 
     /**
@@ -77,7 +79,7 @@ final readonly class Position implements Stringable
         for ($dy = -1; $dy <= 1; $dy++) {
             for ($dx = -1; $dx <= 1; $dx++) {
                 if ($dx !== 0 || $dy !== 0) {
-                    $around[] = new self($this->x + $dx, $this->y + $dy);
+                    $around[] = new self($this->x + $dx, $this->y + $dy, $this->grid);
                 }
             }
         }

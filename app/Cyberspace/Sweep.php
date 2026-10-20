@@ -66,11 +66,14 @@ final class Sweep
         $shape ??= ViewShape::base();
         $reach = $shape->radius();
 
-        $positions = $this->window($centre, $shape);
+        // The grid the centre is on, which is a subnet's when they are in one.
+        $grid = $centre->grid === $this->grid->id() ? $this->grid : Grid::forId($centre->grid);
+
+        $positions = $this->window($centre, $shape, $grid);
         // The owner comes along for the snapshot below, so it is eager-loaded
         // rather than fetched once per system standing in the window. The query
         // is the shape's bounding square; what is outside the shape is dropped.
-        $standing = $this->grid->within($centre, $reach)
+        $standing = $grid->within($centre, $reach)
             ->filter(static fn (System $system): bool => $shape->covers($centre, $system->position()))
             // A cloaked fortress shows the face its owner chose to anybody without access.
             ->map(fn (System $system): System => FortressCloak::mask($system, $character))
@@ -97,7 +100,7 @@ final class Sweep
 
         $newlySwept = 0;
 
-        DB::transaction(function () use ($character, $positions, $standing, $remembered, &$newlySwept): void {
+        DB::transaction(function () use ($character, $centre, $positions, $standing, $remembered, &$newlySwept): void {
             $newlySwept = (new Terrain($character))->sweep($positions);
 
             // Only what stands inside the shape is forgotten and re-seen. A contact in the shape's bounding square
@@ -114,11 +117,12 @@ final class Sweep
             $now = now();
 
             SystemContact::query()->insert($standing->map(
-                static function (System $system) use ($character, $remembered, $now): array {
+                static function (System $system) use ($character, $centre, $remembered, $now): array {
                     $before = $remembered->get("{$system->x},{$system->y}");
 
                     return [
                         'character_id' => $character->id,
+                        'grid_id' => $centre->grid,
                         'x' => $system->x,
                         'y' => $system->y,
                         'address' => $system->address,
@@ -174,14 +178,14 @@ final class Sweep
      *
      * @return list<Position>
      */
-    private function window(Position $centre, ViewShape $shape): array
+    private function window(Position $centre, ViewShape $shape, Grid $grid): array
     {
         $positions = [];
 
         foreach ($shape->offsets as [$dx, $dy]) {
-            $position = new Position($centre->x + $dx, $centre->y + $dy);
+            $position = new Position($centre->x + $dx, $centre->y + $dy, $centre->grid);
 
-            if ($this->grid->contains($position)) {
+            if ($grid->contains($position)) {
                 $positions[] = $position;
             }
         }

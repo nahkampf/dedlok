@@ -512,31 +512,14 @@ final readonly class MissionLedger
             ->values();
     }
 
-    /**
-     * The SEALED data dumps in hand: loose Encrypted Data Dumps, which a supply job takes as files too. A decrypted one
-     * (a Memory Dump) is worth more to a buyer than to a desk that only wants bulk, so it does not count.
-     *
-     * @return Collection<int, InventoryItem>
-     */
-    public function heldDumps(Character $character): Collection
-    {
-        return InventoryItem::query()
-            ->where('character_id', $character->getKey())
-            ->whereNotNull('extracted_file')
-            ->whereHas('item', static fn ($q) => $q->where('slug', 'encrypted-data-dump'))
-            ->loose()
-            ->orderBy('id')
-            ->get();
-    }
-
-    /** How many files a supply job could be handed right now: whole scan files and sealed dumps. */
+    /** How many files a supply job could be handed right now: whole scan files. */
     public function suppliable(Character $character): int
     {
         return $this->heldSupply($character)->count();
     }
 
     /**
-     * What a supply job counts and spends: one scan file per SYSTEM (the oldest), then the sealed dumps. A second scan of a
+     * What a supply job counts and spends: one scan file per SYSTEM (the oldest). Sealed dumps are never taken: they are worth more sold or decrypted. A second scan of a
      * system already held is the same picture twice, so it is neither counted nor spent, and the receipt row a spent file
      * leaves (unique on mission and system) is never written twice.
      *
@@ -546,7 +529,6 @@ final readonly class MissionLedger
     {
         return $this->heldFiles($character)
             ->unique(static fn (InventoryItem $row): ?string => $row->scanFile()?->address)
-            ->concat($this->heldDumps($character))
             ->values();
     }
 
@@ -799,7 +781,6 @@ final readonly class MissionLedger
      */
     private function spendFiles(Character $character, Mission $mission): bool
     {
-        // Scan files first, then sealed dumps: a scan perishes and a dump keeps.
         $held = $this->heldSupply($character);
 
         if ($held->count() < $mission->quantity_required) {

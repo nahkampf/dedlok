@@ -16,6 +16,7 @@ use App\Models\Skill;
 use App\Models\System;
 use App\Programs\ProgramKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 final class LeechTest extends TestCase
@@ -41,6 +42,25 @@ final class LeechTest extends TestCase
         $this->assertSame(Leeches::ALREADY, $leeches->install($c, $host));
         $this->assertSame(['compute' => 0.0, 'memory' => 0.0, 'storage' => 4.5], $leeches->totals($fortress));
         $this->assertSame(1, InventoryItem::query()->where('character_id', $c->id)->first()->quantity);
+    }
+
+    public function test_a_fortress_draws_only_on_nodes_of_its_own_grid(): void
+    {
+        DB::table('grids')->insert(['id' => 2, 'slug' => 'mil', 'name' => 'Military', 'prefix' => 'mil', 'size' => 8, 'entry_x' => 4, 'entry_y' => 4, 'created_at' => now(), 'updated_at' => now()]);
+        $c = Character::factory()->create();
+        $fortress = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
+        $inSubnet = System::factory()->at(2, 2)->create(['grid_id' => 2, 'address' => 'mil:0002']);
+        $this->leecher($c);
+        $leeches = new Leeches;
+
+        $this->assertNull($leeches->install($c, $inSubnet));
+        $this->assertSame(0, Leech::query()->count());
+
+        $subFortress = System::factory()->at(3, 3)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id, 'grid_id' => 2, 'address' => 'mil:0003']);
+        $leech = $leeches->install($c, $inSubnet);
+
+        $this->assertInstanceOf(Leech::class, $leech);
+        $this->assertSame($subFortress->id, $leech->fortress_system_id);
     }
 
     public function test_a_found_leecher_is_removed_and_stops_counting(): void

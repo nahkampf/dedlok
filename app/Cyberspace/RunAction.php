@@ -79,6 +79,12 @@ enum RunAction: string
 
     case Hold = 'hold';
 
+    /** The turn of an Infiltrate run: one very hard stealth check towards the gateway's watch being slipped. */
+    case Infiltrate = 'infiltrate';
+
+    /** The turn of a Denial run: the deck's bandwidth is thrown at the node, building its pressure. */
+    case Flood = 'flood';
+
     /** Leave. Always possible, never certain. */
     case Egress = 'egress';
 

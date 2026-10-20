@@ -322,8 +322,12 @@
                         <button class="btn btn--sm btn--ghost cut" type="submit">{{ Text::get('cyberspace.fortress.host.list') }}</button>
                     </form>
                 @endif
-                <form method="POST" action="{{ route('fortress.withdraw', [$fortress, $file]) }}">@csrf
-                    <button class="btn btn--sm btn--ghost cut" type="submit">{{ Text::get('cyberspace.fortress.host.withdraw') }}</button></form>
+                @if (($file->meta['locked'] ?? false) === true)
+                    <span class="tag">{{ Text::get('cyberspace.fortress.host.locked') }}</span>
+                @else
+                    <form method="POST" action="{{ route('fortress.withdraw', [$fortress, $file]) }}">@csrf
+                        <button class="btn btn--sm btn--ghost cut" type="submit">{{ Text::get('cyberspace.fortress.host.withdraw') }}</button></form>
+                @endif
             </div>
         @empty
             <p class="muted" style="margin:0">{{ Text::get('cyberspace.fortress.host.vault_empty') }}</p>

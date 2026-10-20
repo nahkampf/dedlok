@@ -12,6 +12,7 @@ use App\Models\Item;
 use App\Models\Npc;
 use App\Models\Safehouse;
 use App\Models\Skill;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -30,6 +31,7 @@ class DashboardController extends Controller
             'skills' => Skill::count(),
             'districts' => District::count(),
             'safehouses' => Safehouse::count(),
+            'subnets' => DB::table('grids')->where('id', '>', 1)->count(),
             'npcs' => Npc::count(),
             'skillsWithoutBooks' => Skill::query()
                 ->whereDoesntHave('imprint')

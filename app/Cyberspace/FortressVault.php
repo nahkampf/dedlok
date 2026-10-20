@@ -121,6 +121,11 @@ final class FortressVault
             return 'not_yours';
         }
 
+        // A Subnet Certificate stays in the vault for as long as the fortress stands.
+        if (($content->meta['locked'] ?? false) === true) {
+            return 'locked';
+        }
+
         $isItem = $content->kind === ContentKind::Item;
         $size = $isItem ? Qb::of(Storage::sizeOf($content->item) * (int) $content->quantity) : (float) $content->size_qb;
 

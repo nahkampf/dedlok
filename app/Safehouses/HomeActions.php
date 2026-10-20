@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
  * ## Rest is a City activity
  *
  * So the lock is the one that already exists: nothing else starts while the row is there, and you cannot jack in. It
- * eases fatigue at the safehouse's `rest_rate` a minute, credited whenever somebody looks (the row's `updated_at` is how
+ * eases fatigue at the safehouse's `rest_rate` a minute and mends SI at `safehouse.rest.synaptic_per_minute`, credited whenever somebody looks (the row's `updated_at` is how
  * far it has been paid), and ends by itself when fatigue reaches nothing. The player may stop at any time.
  *
  * ## The others are instant, once per cooldown
@@ -182,6 +182,15 @@ final class HomeActions
 
             if ($seconds > 0) {
                 $this->fatigue->ease($locked, Points::of($locked->home()->rest_rate * $seconds / 60));
+
+                // SI mends while resting: whole hundredths of the running total, so the sum is exact however often somebody looks.
+                $before = (int) floor($from->diffInSeconds(CarbonImmutable::instance($activity->created_at), true));
+                $mend = (float) config('safehouse.rest.synaptic_per_minute') * 100 / 60;
+                $hundredths = (int) floor($mend * ($before + $seconds)) - (int) floor($mend * $before);
+
+                if ($hundredths > 0) {
+                    $locked->recover('current_synaptic_integrity', Points::of($hundredths / 100));
+                }
             }
 
             // Wired up part-way through a rest ends it, keeping what it earned.

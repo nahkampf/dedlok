@@ -14,6 +14,7 @@ use App\Models\SystemContent;
 use App\Stats\Resolver;
 use App\Support\Qb;
 use App\Support\Text;
+use Illuminate\Support\Collection;
 
 /**
  * Raiding a Data Fortress's vault once the core is touched: files are pulled AT RANDOM, by themselves, a tick every five
@@ -61,7 +62,7 @@ final class FortressRaid
             FortressLog::write($fortress, $raider, 'raided', "wallet {$take}");
         }
 
-        if (! SystemContent::query()->where('system_id', $fortress->getKey())->whereIn('kind', [ContentKind::Data->value, ContentKind::Item->value])->exists()) {
+        if ($this->raidable($fortress)->isEmpty()) {
             return [['text' => Text::get('cyberspace.run.log.raid_empty'), 'tone' => 'warn']];
         }
 
@@ -142,9 +143,20 @@ final class FortressRaid
         return ['lines' => $lines, 'took' => $took];
     }
 
+    /**
+     * The ids of what a raid may take: never what is locked in (a Subnet Certificate).
+     *
+     * @return Collection<int, int>
+     */
+    private function raidable(System $fortress): Collection
+    {
+        return SystemContent::query()->where('system_id', $fortress->getKey())->whereIn('kind', [ContentKind::Data->value, ContentKind::Item->value])->get()
+            ->reject(fn (SystemContent $c): bool => ($c->meta['locked'] ?? false) === true)->pluck('id')->values();
+    }
+
     private function pick(System $fortress): ?SystemContent
     {
-        $ids = SystemContent::query()->where('system_id', $fortress->getKey())->whereIn('kind', [ContentKind::Data->value, ContentKind::Item->value])->pluck('id');
+        $ids = $this->raidable($fortress);
 
         return $ids->isEmpty() ? null : SystemContent::query()->find($ids[($this->roll)(0, $ids->count() - 1)]);
     }

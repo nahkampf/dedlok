@@ -12,6 +12,7 @@ use App\Cyberspace\Hunters;
 use App\Cyberspace\Lockdown;
 use App\Cyberspace\Probe;
 use App\Cyberspace\Simulator;
+use App\Cyberspace\Wardens;
 use App\Models\User;
 use App\Stats\CombatStats;
 use App\Stats\DamageStats;
@@ -94,6 +95,7 @@ class AppServiceProvider extends ServiceProvider
          * a test pin where a relocating machine lands and have the COMMAND use
          * that die.
          */
+        $this->app->bind(Wardens::class, static fn (): Wardens => Wardens::fromConfig());
         $this->app->bind(Lockdown::class, static fn (): Lockdown => Lockdown::fromConfig());
 
         // Not for a die this time — it has none — but because it needs a

@@ -130,15 +130,16 @@ final class Hunters
      * and writes the row in one transaction — a hunt recorded without a
      * loadout running against it would be a fight nobody can act on.
      */
-    public function spawn(Character $character): Hunt
+    public function spawn(Character $character, ?int $grade = null, ?int $wardenId = null): Hunt
     {
-        return Trace::scope($character, 'hunt.spawn', fn (): Hunt => $this->spawnTraced($character));
+        return Trace::scope($character, 'hunt.spawn', fn (): Hunt => $this->spawnTraced($character, $grade, $wardenId));
     }
 
-    private function spawnTraced(Character $character): Hunt
+    /** A Warden's attack passes its own grade and id; heat's hunter passes neither. */
+    private function spawnTraced(Character $character, ?int $fixedGrade, ?int $wardenId): Hunt
     {
         $heat = (float) $character->heat;
-        $grade = $this->gradeFor($heat);
+        $grade = $fixedGrade ?? $this->gradeFor($heat);
 
         // A transport job's heat is not the runner's own: the hound is graded by what they were carrying it for.
         $jobs = Mission::query()
@@ -148,20 +149,21 @@ final class Hunters
             ->with('exchange')
             ->get();
 
-        if ($jobs->isNotEmpty()) {
+        if ($fixedGrade === null && $jobs->isNotEmpty()) {
             $own = $this->gradeFor(max(0.0, $heat - (float) $jobs->sum('heat_added')));
             $grade = max($own, (int) $jobs->max(fn ($m) => $m->exchange?->grade ?? 1));
         }
 
         $ice = $this->drawIce($grade);
 
-        return DB::transaction(function () use ($character, $ice, $grade, $heat): Hunt {
+        return DB::transaction(function () use ($character, $ice, $grade, $heat, $wardenId): Hunt {
             $hunt = Hunt::query()->create([
                 'character_id' => $character->id,
                 'ice_id' => $ice->id,
                 'ice_integrity' => $ice->integrity,
                 'grade' => $grade,
                 'heat_at_spawn' => $heat,
+                'warden_id' => $wardenId,
                 'started_at' => now(),
             ]);
 

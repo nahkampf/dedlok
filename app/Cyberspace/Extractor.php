@@ -306,7 +306,7 @@ final readonly class Extractor
         $share = PartyShare::for($character);
 
         if ($share === null) {
-            return ItemGranter::grant($character, $item, $quantity);
+            return $this->stamped($character, $item, $content, ItemGranter::grant($character, $item, $quantity));
         }
 
         // A party deals the copies out; whoever has no room for theirs leaves it with the one who pulled it.
@@ -324,7 +324,20 @@ final readonly class Extractor
                 $who = $character;
             }
 
-            $granted += ItemGranter::grant($who, $item, $count);
+            $granted += $this->stamped($who, $item, $content, ItemGranter::grant($who, $item, $count));
+        }
+
+        return $granted;
+    }
+
+    /**
+     * A Subnet Certificate is valid for the subnet it was taken from and no other: the fresh copies are stamped with the
+     * node's grid. Anything else passes straight through.
+     */
+    private function stamped(Character $who, Item $item, SystemContent $content, int $granted): int
+    {
+        if ($granted > 0 && $item->slug === Fortresses::CERTIFICATE_SLUG) {
+            $who->inventory()->where('item_id', $item->getKey())->whereNull('grid_id')->update(['grid_id' => (int) ($content->system?->grid_id ?? 1)]);
         }
 
         return $granted;

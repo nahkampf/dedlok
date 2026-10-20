@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * blob's meaning is Chunk's arithmetic, and a second place that knew which bit
  * was which would be a second place to get the bit order wrong.
  */
-#[Fillable(['character_id', 'chunk_x', 'chunk_y', 'bits'])]
+#[Fillable(['character_id', 'grid_id', 'chunk_x', 'chunk_y', 'bits'])]
 class TerrainChunk extends Model
 {
     protected $table = 'character_terrain';
@@ -48,12 +48,12 @@ class TerrainChunk extends Model
     /** Which square of the grid this is. */
     public function chunk(): Chunk
     {
-        return new Chunk($this->chunk_x, $this->chunk_y);
+        return new Chunk($this->chunk_x, $this->chunk_y, (int) $this->grid_id);
     }
 
     /** @param  Builder<self>  $query */
     public function scopeForChunk(Builder $query, Chunk $chunk): void
     {
-        $query->where('chunk_x', $chunk->x)->where('chunk_y', $chunk->y);
+        $query->where('grid_id', $chunk->grid)->where('chunk_x', $chunk->x)->where('chunk_y', $chunk->y);
     }
 }

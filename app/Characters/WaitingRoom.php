@@ -120,6 +120,13 @@ final readonly class WaitingRoom
             if ($character->getAttribute($resource) <= 0) {
                 $this->put($character, $cause);
 
+                // Emptied of SI, they are thrown out of a subnet for good: the next jack-in is at the main portal. Only
+                // SI (losing a fight on the street is not a flatline of the mind), and only once out of cyberspace, since
+                // every bad ending jacks out first.
+                if ($resource === 'current_synaptic_integrity' && ! $character->isJackedIn() && (int) $character->grid_id !== 1) {
+                    $character->forceFill(['grid_id' => 1, 'resume_x' => null, 'resume_y' => null])->save();
+                }
+
                 return true;
             }
         }

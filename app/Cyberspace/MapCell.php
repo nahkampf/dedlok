@@ -61,6 +61,10 @@ final readonly class MapCell
          * so that the day they exist is a query and not a design argument.
          */
         public bool $hasBackdoor = false,
+        /** A Warden stands here and the runner can see this square: drawn as a pulsing dot in the corner. */
+        public bool $hasWarden = false,
+        /** Another jacked-in runner stands here and this runner can see the square: a yellow dot beside the Warden's corner. */
+        public bool $hasRunner = false,
         /**
          * Is it locked down and coming back up?
          *
@@ -148,7 +152,7 @@ final readonly class MapCell
 
         return match ($type) {
             SystemType::Silo, SystemType::Compute, SystemType::Relay,
-            SystemType::Exchange, SystemType::Fortress => "cell--{$type->value}",
+            SystemType::Exchange, SystemType::Fortress, SystemType::Gateway => "cell--{$type->value}",
             default => null,
         };
     }
@@ -170,6 +174,7 @@ final readonly class MapCell
             SystemType::Compute => "\u{232C}",   // ⌬ a part that thinks
             SystemType::Relay => "\u{2630}",     // ☰ channels
             SystemType::Exchange => "\u{2696}",  // ⚖ a deal, not a machine
+            SystemType::Gateway => "\u{25CD}",   // ◍ the portal's aperture again: a door, drawn as one
             SystemType::Fortress => "\u{25C8}",  // ◈ a core within a shell: a keep (one of the proven set; see Item::GLYPHS)
             default => $this->contact !== null ? "\u{25C6}" : '',
         };

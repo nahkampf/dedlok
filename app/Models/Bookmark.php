@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Written only by App\Cyberspace\BookmarkKeeper, which is where the rule that
  * a waypoint must sit on swept ground lives.
  */
-#[Fillable(['character_id', 'kind', 'x', 'y', 'address', 'label'])]
+#[Fillable(['character_id', 'kind', 'grid_id', 'x', 'y', 'address', 'label'])]
 class Bookmark extends Model
 {
     protected function casts(): array
@@ -48,7 +48,7 @@ class Bookmark extends Model
     /** Where a waypoint points, or null on a system bookmark. */
     public function position(): ?Position
     {
-        return $this->isWaypoint() ? new Position($this->x, $this->y) : null;
+        return $this->isWaypoint() ? new Position($this->x, $this->y, (int) ($this->grid_id ?? 1)) : null;
     }
 
     /**

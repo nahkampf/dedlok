@@ -246,7 +246,7 @@ and extraction are built. See below for what is not.
   encryption skill INJECTED. Settling is lazy and catches up (every elapsed whole cycle rolls until one passes) with
   `decryption:settle` each minute for the inbox message and the next clock; **every way of stopping a decryptor goes through
   `ProgramRunner::putBack()`, which settles first and then closes the cycle**, so a gap is never credited. The file being worked on
-  that is being worked on cannot be removed while jacked in. It keeps working DURING A RUN: nothing about a run stops a background program, and the run's loadout simply starts with what compute and memory the decryptor left. **A SUPPLY JOB takes sealed dumps as files** (`MissionLedger::suppliable()`: whole scan files first, then loose Encrypted Data Dumps; a Memory Dump does not count). Not built: heat accumulation (see MECHANICS.md, *Thermal load*).
+  that is being worked on cannot be removed while jacked in. It keeps working DURING A RUN: nothing about a run stops a background program, and the run's loadout simply starts with what compute and memory the decryptor left. **A SUPPLY JOB takes scan files only** (`MissionLedger::suppliable()`; it took sealed dumps until 2026-10-20, which spent players' dumps unannounced). Not built: heat accumulation (see MECHANICS.md, *Thermal load*).
 - **A file is labelled for the machine it came off** (`strings.cyberspace.files.words` per
   type) — flavour, not mechanics.
 - **`systems.stock_rule` is how a machine is TOLD what to hold**, NULL on nearly every row.

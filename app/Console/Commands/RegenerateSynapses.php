@@ -7,7 +7,10 @@ namespace App\Console\Commands;
 use App\Characters\Fatigue;
 use App\Characters\Fullness;
 use App\Characters\Mood;
+use App\Cyberspace\Virus;
+use App\Drugs\DrugLedger;
 use App\Models\Character;
+use App\Models\DrugUse;
 use App\Stats\Resolver;
 use App\Support\Points;
 use Illuminate\Console\Command;
@@ -86,7 +89,7 @@ class RegenerateSynapses extends Command
         return Points::of((intdiv($hundredths * ($minute + 1), 60) - intdiv($hundredths * $minute, 60)) / 100);
     }
 
-    public function handle(Resolver $resolver, Fatigue $fatigue, Fullness $fullness, Mood $mood): int
+    public function handle(Resolver $resolver, Fatigue $fatigue, Fullness $fullness, Mood $mood, DrugLedger $drugs): int
     {
         $dryRun = (bool) $this->option('dry-run');
 
@@ -102,8 +105,13 @@ class RegenerateSynapses extends Command
         Character::query()->whereNull('current_fight_id')
             // The clock stops while an encounter is open on the grid (EncounterPause).
             ->where(static fn ($q) => $q->whereNull('current_encounter_id')->orWhereNull('grid_x'))
-            ->chunkById(200, function ($characters) use ($resolver, $fatigue, $fullness, $mood, $dryRun, $minute, &$healed, &$points, &$hpHealed, &$hpPoints, &$rested, &$restedPoints): void {
+            ->chunkById(200, function ($characters) use ($resolver, $fatigue, $fullness, $mood, $drugs, $dryRun, $minute, &$healed, &$points, &$hpHealed, &$hpPoints, &$rested, &$restedPoints): void {
                 foreach ($characters as $character) {
+                    // An infection ticks a minute at a time outside a run (inside one it ticks a turn).
+                    if (! $dryRun && $character->virus_damage !== null && $character->current_run_id === null) {
+                        Virus::make()->tickAway($character);
+                    }
+
                     // Hit points: this minute's share of an hourly rate (see the class notes).
                     $perHour = $resolver->resolve('hitpoints_regen', 0.0, $character->modifiers())->value;
                     $share = self::share($perHour, $minute);
@@ -145,6 +153,22 @@ class RegenerateSynapses extends Command
 
                     if (! $dryRun && (float) $character->mood !== 0.0) {
                         $mood->drift($character);
+                    }
+
+                    // Addiction comes down on its own for whoever carries `addiction_recovery` (a Script, say): that many points a
+                    // minute off every family they are hooked on. Asked only of those with books, so the rest cost no resolve.
+                    if (! $dryRun) {
+                        $books = DrugUse::query()->where('character_id', $character->getKey())->where('addiction', '>', 0)->get();
+
+                        if ($books->isNotEmpty()) {
+                            $cure = $resolver->resolve('addiction_recovery', 0.0, $character->modifiers())->value;
+
+                            if ($cure > 0) {
+                                foreach ($books as $book) {
+                                    $drugs->lowerAddiction($character, $book->family, $cure);
+                                }
+                            }
+                        }
                     }
 
                     $rate = $resolver->resolve('synaptic_regen', 0.0, $character->modifiers())->value;

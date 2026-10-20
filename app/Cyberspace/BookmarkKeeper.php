@@ -41,7 +41,9 @@ final class BookmarkKeeper
      */
     public function markPosition(Character $character, Position $position, ?string $label = null): BookmarkResult
     {
-        if (! $this->grid->contains($position)) {
+        $grid = $position->grid === $this->grid->id() ? $this->grid : Grid::forId($position->grid);
+
+        if (! $grid->contains($position)) {
             return BookmarkResult::refused(BookmarkRefusal::OffTheGrid);
         }
 
@@ -51,6 +53,7 @@ final class BookmarkKeeper
 
         $existing = Bookmark::query()
             ->where('character_id', $character->id)
+            ->where('grid_id', $position->grid)
             ->where('x', $position->x)
             ->where('y', $position->y)
             ->first();
@@ -62,6 +65,7 @@ final class BookmarkKeeper
         return BookmarkResult::saved(Bookmark::query()->create([
             'character_id' => $character->id,
             'kind' => BookmarkKind::Waypoint,
+            'grid_id' => $position->grid,
             'x' => $position->x,
             'y' => $position->y,
             'label' => $this->clean($label),

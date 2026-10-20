@@ -43,6 +43,8 @@ final readonly class Chunk implements Stringable
     public function __construct(
         public int $x,
         public int $y,
+        /** Which grid (`grids.id`) the chunk is on; 1 is the main grid. */
+        public int $grid = 1,
     ) {}
 
     /** Which chunk a position falls in. */
@@ -51,12 +53,13 @@ final readonly class Chunk implements Stringable
         return new self(
             intdiv($position->x, self::SIZE),
             intdiv($position->y, self::SIZE),
+            $position->grid,
         );
     }
 
     public function equals(self $other): bool
     {
-        return $this->x === $other->x && $this->y === $other->y;
+        return $this->grid === $other->grid && $this->x === $other->x && $this->y === $other->y;
     }
 
     /**
@@ -122,6 +125,7 @@ final readonly class Chunk implements Stringable
     /** How a chunk is keyed wherever one is held in an array. */
     public function __toString(): string
     {
-        return "{$this->x},{$this->y}";
+        // The main grid keeps its old key; another grid's is prefixed, so one array can hold both.
+        return ($this->grid === 1 ? '' : "{$this->grid}:")."{$this->x},{$this->y}";
     }
 }

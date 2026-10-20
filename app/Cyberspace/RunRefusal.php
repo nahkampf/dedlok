@@ -23,6 +23,9 @@ enum RunRefusal: string
     case NothingThere = 'nothing_there';
     case NotIntrudable = 'not_intrudable';
 
+    /** A gateway takes Infiltrate and nothing else, and nothing else takes Infiltrate. */
+    case WrongPurpose = 'wrong_purpose';
+
     /** The deck stopped meeting its own requirements. Checked again here, cheaply. */
     case DeckNotReady = 'deck_not_ready';
 

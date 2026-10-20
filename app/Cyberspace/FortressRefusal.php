@@ -15,6 +15,7 @@ enum FortressRefusal: string
     case Occupied = 'occupied';
     case NoSkill = 'no_skill';
     case AtTheCap = 'at_the_cap';
+    case NoCertificate = 'no_certificate';
 
     public function message(): string
     {

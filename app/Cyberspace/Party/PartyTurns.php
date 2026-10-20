@@ -7,7 +7,10 @@ namespace App\Cyberspace\Party;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
+use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
+use App\Missions\MissionAction;
+use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\Run;
 use App\Models\RunParty;
@@ -109,9 +112,70 @@ final class PartyTurns
             $this->syncShared(self::liveRuns($party->getKey()), $run);
         }
 
+        // A Denial round: the node pushes back once, and a full meter ends everybody's run together.
+        if ($this->denialRound($party)) {
+            $party->update(['round_started_at' => now()]);
+
+            return;
+        }
+
         $this->strike($party);
 
         $party->update(['round_started_at' => now()]);
+    }
+
+    /**
+     * The round's end for a Denial party: the node's push-back (once, however many are flooding), then, if the shared
+     * meter is full, every live run completes and records its own job. Returns whether the node fell.
+     */
+    private function denialRound(RunParty $party): bool
+    {
+        $live = self::liveRuns($party->getKey())->filter(fn (Run $r): bool => $r->purpose === RunPurpose::Denial);
+
+        if ($live->isEmpty()) {
+            return false;
+        }
+
+        $target = Simulator::denialTarget($live->first());
+
+        if ((float) $live->max('pressure') < $target) {
+            $pressure = max(0.0, round((float) $live->max('pressure') - $this->simulator->rollDenialDrain($live->first()), 1));
+            $live->each(fn (Run $r) => $r->forceFill(['pressure' => $pressure])->save());
+
+            // Out of time: the node shakes the whole party off.
+            if ((int) $live->max('turn') >= (int) config('cyberspace.denial.turns', 12)) {
+                foreach ($live as $run) {
+                    $character = Character::query()->find($run->character_id);
+
+                    if ($character !== null) {
+                        app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Egress);
+                        (new Notifier)->send($character, Category::Cyberspace, 'party_run_ended', ['ending' => RunEnding::Egress->message()]);
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        foreach ($live as $run) {
+            $character = Character::query()->find($run->character_id);
+            $system = $run->system();
+
+            if ($character === null) {
+                continue;
+            }
+
+            if ($system !== null) {
+                app(MissionLedger::class)->recordAgainst($character, $system, MissionAction::Denial);
+            }
+
+            app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Completed);
+            (new Notifier)->send($character, Category::Cyberspace, 'party_run_ended', ['ending' => RunEnding::Completed->message()]);
+        }
+
+        return true;
     }
 
     /** The ICE's one strike of the round. */
@@ -176,6 +240,10 @@ final class PartyTurns
     /** What an absent runner does: their own purpose, carried on, and out once it is done. */
     private function defaultFor(Character $character, Run $run): RunAction
     {
+        if ($run->purpose === RunPurpose::Denial) {
+            return RunAction::Flood;
+        }
+
         if ($run->ice_id !== null) {
             $breaker = $character->runningProcesses()
                 ->first(fn ($p): bool => $p->item?->program?->kind === ProgramKind::Icebreaker);
@@ -210,6 +278,8 @@ final class PartyTurns
 
         $detected = $runs->contains(fn (Run $r): bool => (bool) $r->detected);
         $ice = $runs->filter(fn (Run $r): bool => $r->ice_id !== null)->sortBy('ice_integrity')->first();
+        // A Denial meter is the node's, one for the party: the run that just acted carries it, else the highest.
+        $pressure = $from !== null && $from->purpose === RunPurpose::Denial ? (float) $from->fresh()?->pressure : (float) $runs->max('pressure');
 
         // A broken one (the source cleared it) wins over a stale copy still holding it.
         $cleared = $from !== null && $from->ice_id === null && $runs->contains(fn (Run $r): bool => $r->ice_id !== null) && $from->fresh()?->ice_id === null;
@@ -217,6 +287,7 @@ final class PartyTurns
         foreach ($runs as $run) {
             $run->forceFill([
                 'detected' => $detected,
+                'pressure' => $pressure,
                 'ice_id' => $cleared ? null : $ice?->ice_id,
                 'ice_integrity' => $cleared ? null : $ice?->ice_integrity,
                 'ice_attack' => $cleared ? null : $ice?->ice_attack,

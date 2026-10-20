@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Checks\CheckRoller;
 use App\Models\Entity;
 use App\Models\Ice;
 use App\Models\Skill;
 use App\Models\System;
+use App\Stats\Resolver;
 use App\Support\Text;
 use Closure;
 use Illuminate\Support\Facades\Config;
@@ -75,6 +77,8 @@ final class GridSeeder
         private readonly SystemNamer $namer,
         private readonly int $occupancy,
         private readonly Closure $roll,
+        /** @var ?array{entities?: list<int>, types?: list<string>, grade_min?: int, grade_max?: int} A subnet's spec; null on the main grid. */
+        private readonly ?array $spec = null,
     ) {}
 
     /** @param  ?Closure(int, int): int  $roll */
@@ -90,12 +94,30 @@ final class GridSeeder
         );
     }
 
+    /**
+     * The seeder for grid `$id`: the main grid from the global settings, a subnet from its row's spec.
+     *
+     * @param  ?Closure(int, int): int  $roll
+     */
+    public static function forGrid(int $id, ?Closure $roll = null): self
+    {
+        if ($id === 1) {
+            return self::fromConfig($roll);
+        }
+
+        $roll ??= static fn (int $min, int $max): int => random_int($min, $max);
+        $spec = (array) json_decode((string) (DB::table('grids')->where('id', $id)->value('spec') ?? '[]'), true);
+
+        return new self(Grid::forId($id), SystemNamer::fromConfig($roll), (int) ($spec['occupancy'] ?? Config::get('cyberspace.occupancy', 70)), $roll, $spec);
+    }
+
     public function run(bool $dryRun = false): GridSeedResult
     {
         $positions = $this->grid->positions();
         $target = (int) round($positions * $this->occupancy / 100);
 
-        [$portalPlaced, $occupantMoved, $portalCreated] = $this->ensurePortal($dryRun);
+        // A subnet has no portal: it is entered through its gateway, placed by `Subnets`.
+        [$portalPlaced, $occupantMoved, $portalCreated] = $this->grid->id() === 1 ? $this->ensurePortal($dryRun) : [false, false, false];
 
         // A dry run wrote nothing, so a portal it WOULD have created has to be
         // counted by hand. One it would only have moved is already in the
@@ -104,6 +126,11 @@ final class GridSeeder
         $wanted = max(0, $target - $occupied);
 
         $created = $dryRun ? $wanted : $this->fill($wanted);
+
+        // A subnet's Wardens stand up to their spec with the rest of what it holds.
+        if (! $dryRun && $this->grid->id() !== 1) {
+            (new Wardens(app(Resolver::class), app(CheckRoller::class), $this->roll))->populate($this->grid->id());
+        }
 
         return new GridSeedResult(
             positions: $positions,
@@ -199,6 +226,17 @@ final class GridSeeder
     {
         $types = SystemType::ordinary();
 
+        if (($this->spec['types'] ?? []) !== []) {
+            $types = array_values(array_filter($types, fn (SystemType $t): bool => in_array($t->value, $this->spec['types'], true))) ?: $types;
+        }
+
+        // A subnet draws its grades evenly from its range; the main grid keeps the steep weights.
+        $weights = null;
+
+        if (isset($this->spec['grade_min'], $this->spec['grade_max'])) {
+            $weights = array_fill_keys(range((int) $this->spec['grade_min'], (int) $this->spec['grade_max']), 1);
+        }
+
         // Every machine has an owner, drawn evenly. Read once for the whole
         // pass rather than per row: the roster is small, fixed, and arrives by
         // migration, so a query per system would be 2 866 round trips to learn
@@ -206,7 +244,7 @@ final class GridSeeder
         //
         // An empty roster is not an error. It means the entities migration has
         // not run, and a world of unowned machines is better than no world.
-        $owners = Entity::query()->pluck('id')->all();
+        $owners = Entity::query()->when(($this->spec['entities'] ?? []) !== [], fn ($q) => $q->whereIn('id', $this->spec['entities']))->pluck('id')->all();
 
         /*
          * The operating systems, cheapest first.
@@ -273,13 +311,14 @@ final class GridSeeder
             }
 
             $type = $types[($this->roll)(0, count($types) - 1)];
-            $grade = Grade::roll($this->roll);
+            $grade = Grade::roll($this->roll, $weights);
             $address = $this->address($takenAddresses);
 
             $takenPositions["{$free->x},{$free->y}"] = true;
             $takenAddresses[$address] = true;
 
             $rows[] = [
+                'grid_id' => $this->grid->id(),
                 'address' => $address,
                 'x' => $free->x,
                 'y' => $free->y,
@@ -333,13 +372,13 @@ final class GridSeeder
     private function address(array $taken = []): string
     {
         for ($try = 0; $try < 8; $try++) {
-            $address = Address::generate();
+            $address = Address::generate(null, $this->grid->prefix());
 
             if (! isset($taken[$address])) {
                 return $address;
             }
         }
 
-        return Address::generate();
+        return Address::generate(null, $this->grid->prefix());
     }
 }

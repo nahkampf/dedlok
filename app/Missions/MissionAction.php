@@ -28,6 +28,7 @@ use App\Support\Text;
  *  - TRANSPORT hands the runner a container at the desk and names a system by COORDINATES, not address (an
  *    address could be jumped to, skipping the hunter the job summons). The delivery is its own act, not a desk
  *    hand-in (`MissionLedger::deliver()`).
+ *  - DENIAL is recorded where it happens: a Denial run whose flood meter fills (`Simulator::flood()`).
  *  - SUPPLY names no systems at all. It buys intel by the file, which is what
  *    makes scanning an occupation rather than a chore between runs.
  */
@@ -41,6 +42,7 @@ enum MissionAction: string
     case Heist = 'heist';
     case Transport = 'transport';
     case Supply = 'supply';
+    case Denial = 'denial';
 
     /**
      * How many systems this action names, as a range.
@@ -62,6 +64,7 @@ enum MissionAction: string
             self::Heist => [1, 3],
             self::Transport => [1, 1],
             self::Supply => [0, 0],
+            self::Denial => [1, 2],
         };
     }
 

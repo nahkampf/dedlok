@@ -72,6 +72,18 @@ enum TravelRefusal: string
     /** Eight hexadecimal characters, and that was not eight of them. */
     case NotAnAddress = 'not_an_address';
 
+    /** No usable Secure Tunnel on that fortress: not yours to use, not online, or no tunnel program running on it. */
+    case NoTunnel = 'no_tunnel';
+
+    /** The tunnel to that fortress was used a moment ago. */
+    case TunnelCooling = 'tunnel_cooling';
+
+    /** Something has hold of the character (a run, a hunt, an encounter, a fight, the waiting room). */
+    case TunnelBusy = 'tunnel_busy';
+
+    /** Too little Synaptic Integrity left to pay a tunnel's toll. */
+    case TunnelTooHurt = 'tunnel_too_hurt';
+
     /**
      * Nothing answers to that address.
      *
@@ -81,6 +93,12 @@ enum TravelRefusal: string
      * mechanic that keeps exploration from being a thing you finish.
      */
     case NoSuchAddress = 'no_such_address';
+
+    /** Not standing on a gateway, or on one that leads nowhere. */
+    case NoGateway = 'no_gateway';
+
+    /** A gateway whose entry rules this character does not meet. */
+    case GatewayClosed = 'gateway_closed';
 
     /** Somebody else's bookmark. */
     case NotYours = 'not_yours';

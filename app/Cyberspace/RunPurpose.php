@@ -44,6 +44,19 @@ enum RunPurpose: string
     /** Destroy it. Dead, then empty, then eventually something new. */
     case Burn = 'burn';
 
+    /**
+     * Slip past a gateway's watch. The only purpose a gateway takes and one nothing else does: its turns are very hard
+     * stealth checks, `cyberspace.infiltrate.turns` of them in a row, and winning is a pass through (`EntryRules`).
+     */
+    case Infiltrate = 'infiltrate';
+
+    /**
+     * Overwhelm it. Nothing is taken: each Flood adds the deck's bandwidth to a pressure meter (`runs.pressure`), the node
+     * pushes it back every turn, and a full meter locks the node down. Loud by nature, so the first Flood is noticed and the
+     * ICE wakes. Never a party's.
+     */
+    case Denial = 'denial';
+
     public function label(): string
     {
         return Text::get("cyberspace.run.purpose.{$this->value}");

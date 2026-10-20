@@ -241,7 +241,9 @@
 ])
 {{-- data-free-* is what is left of the deck in TENTHS before anything on this page is ticked; each ticked row carries its
      own cost the same way, and ui-kit.js does the sum. Display only: the run's start asks the runner again. --}}
-@include('run._party')
+@unless ($target->type->isGateway())
+    @include('run._party')
+@endunless
 
 <form method="POST" action="{{ route('run.start') }}" data-run-budget data-unable-cpu="{{ Text::get('cyberspace.run.setup.scripts_unable_cpu') }}" data-unable-ram="{{ Text::get('cyberspace.run.setup.scripts_unable_ram') }}" data-unable-both="{{ Text::get('cyberspace.run.setup.scripts_unable_both') }}" data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
     @csrf
@@ -394,7 +396,12 @@
                 ['intent' => 'siphon', 'purpose' => RunPurpose::Backdoor, 'kind' => BackdoorKind::Siphon],
                 ['intent' => 'routing', 'purpose' => RunPurpose::Backdoor, 'kind' => BackdoorKind::Routing],
                 ['intent' => 'burn', 'purpose' => RunPurpose::Burn, 'kind' => null],
+                ['intent' => 'infiltrate', 'purpose' => RunPurpose::Infiltrate, 'kind' => null],
+                ['intent' => 'denial', 'purpose' => RunPurpose::Denial, 'kind' => null],
             ] as $option)
+                {{-- A gateway takes Infiltrate and nothing else; nothing else takes Infiltrate. --}}
+                @continue(($option['purpose'] === RunPurpose::Infiltrate) !== $target->type->isGateway() && $option['purpose'] !== RunPurpose::Denial)
+                @continue($option['purpose'] === RunPurpose::Denial && $target->type->isGateway())
                 <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
                     {{-- A Placement job for this system makes the siphon door the job's own: named for it, and green
                          (the one filled signal button on the screen: it is the whole point of this run). --}}

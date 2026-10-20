@@ -131,9 +131,10 @@ final readonly class MissionBoard
             $size = max((int) config('missions.board.floor', 1), $size);
 
             $transport = false;
+            $terms = (array) (config('missions.entities', [])[$entity->name] ?? []);
 
             for ($i = 0; $i < $size; $i++) {
-                $mission = $this->offer($character, $desk, $entity->getKey(), ! $transport);
+                $mission = $this->offer($character, $desk, $entity->getKey(), ! $transport, $terms);
                 $transport = $transport || $mission?->action === MissionAction::Transport;
             }
         });
@@ -147,11 +148,11 @@ final readonly class MissionBoard
      * thin simply offers less. The floor is about the board as a whole, and a
      * supply job always has something to ask for.
      */
-    private function offer(Character $character, Exchange $desk, int $entityId, bool $allowTransport = true): ?Mission
+    private function offer(Character $character, Exchange $desk, int $entityId, bool $allowTransport = true, array $terms = []): ?Mission
     {
-        $action = $this->pickAction($allowTransport);
+        $action = $this->pickAction($allowTransport, (array) ($terms['without'] ?? []), (array) ($terms['only'] ?? []));
         $grade = max(1, min(5, (int) $desk->grade));
-        $rewards = $this->rewards($action, $grade);
+        $rewards = $this->rewards($action, $grade, $terms);
 
         $quantity = 0;
         $targets = collect();
@@ -192,11 +193,11 @@ final readonly class MissionBoard
     }
 
     /** At most one data transport a board: it is the long, dangerous job. */
-    private function pickAction(bool $allowTransport = true): MissionAction
+    private function pickAction(bool $allowTransport = true, array $without = [], array $only = []): MissionAction
     {
         $cases = array_values(array_filter(
             MissionAction::cases(),
-            static fn (MissionAction $a): bool => $allowTransport || $a !== MissionAction::Transport,
+            static fn (MissionAction $a): bool => ($allowTransport || $a !== MissionAction::Transport) && ! in_array($a->value, $without, true) && ($only === [] || in_array($a->value, $only, true)),
         ));
 
         return $cases[($this->roll)(0, count($cases) - 1)];
@@ -275,7 +276,7 @@ final readonly class MissionBoard
      *
      * @return array{creds: int, standing: float, loyalty: int, penalty: float}
      */
-    private function rewards(MissionAction $action, int $grade): array
+    private function rewards(MissionAction $action, int $grade, array $terms = []): array
     {
         $band = config("missions.grades.{$grade}");
         $scale = config("missions.actions.{$action->value}");
@@ -288,11 +289,11 @@ final readonly class MissionBoard
             // and the grade 1 band is hundredths wide.
             'standing' => round(
                 ($this->roll)((int) round($band['standing'][0] * 1000), (int) round($band['standing'][1] * 1000))
-                / 1000 * $scale['standing'],
+                / 1000 * $scale['standing'] * (float) ($terms['standing'] ?? 1),
                 3,
             ),
-            'loyalty' => (int) round(($this->roll)((int) $band['loyalty'][0], (int) $band['loyalty'][1]) * $scale['loyalty']),
-            'penalty' => round((float) $band['penalty'], 3),
+            'loyalty' => (int) round(($this->roll)((int) $band['loyalty'][0], (int) $band['loyalty'][1]) * $scale['loyalty'] * (float) ($terms['loyalty'] ?? 1)),
+            'penalty' => round((float) $band['penalty'] * (float) ($terms['penalty'] ?? 1), 3),
         ];
     }
 }

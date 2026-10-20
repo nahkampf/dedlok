@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Chat;
 
+use App\Cyberspace\Address;
 use App\Models\MarketOffer;
 use App\Models\RunParty;
 use App\Support\Text;
@@ -12,7 +13,7 @@ use App\Support\Text;
  * A stored chat line, drawn as HTML.
  *
  * ESCAPED FIRST, and only then are the few markdown forms turned into tags, so nothing a player typed can arrive as markup:
- * the tags in the result are the ones written below. Bold, italic, strikethrough and `- ` lists; `addr:XXXXXXXX` becomes the
+ * the tags in the result are the ones written below. Bold, italic, strikethrough and `- ` lists; `addr:XXXXXXXX` (or a subnet's `addr:mil:XXXX`) becomes the
  * copy-an-address button.
  */
 final class Markup
@@ -122,9 +123,9 @@ final class Markup
     /** Last, so the markup it makes is never meant for the passes above. */
     private static function addresses(string $text): string
     {
-        return self::images(self::runs(self::listings(preg_replace_callback('/\baddr:([0-9A-Fa-f]{8})\b/', fn (array $m): string => sprintf(
+        return self::images(self::runs(self::listings(preg_replace_callback('/\baddr:([0-9A-Fa-f]{8}|[a-zA-Z]{2,5}:[0-9A-Fa-f]{4})\b/', fn (array $m): string => ($address = Address::normalise($m[1])) === null ? $m[0] : sprintf(
             '<button type="button" class="copy" data-copy="%1$s" data-copied="%2$s" data-copy-failed="%3$s" title="%4$s">%1$s</button>',
-            strtoupper($m[1]),
+            $address,
             e(Text::get('cyberspace.reading.copied')),
             e(Text::get('cyberspace.reading.copy_failed')),
             e(Text::get('cyberspace.reading.copy')),

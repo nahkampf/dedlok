@@ -70,10 +70,13 @@ final class Navigator
     /**
      * Into cyberspace, at the portal.
      *
-     * EVERY ARRIVAL IS THE PORTAL. A position is not resumed on the way back
-     * in, because the design's answer to "how do I get back to the frontier"
-     * is a bookmark rather than a saved coordinate — which is what keeps a
-     * bookmark worth having.
+     * THE MAIN GRID'S ARRIVAL IS ALWAYS THE PORTAL. A position is not resumed on the
+     * way back in, because the design's answer to "how do I get back to the frontier"
+     * is a bookmark rather than a saved coordinate — which is what keeps a bookmark
+     * worth having. A SUBNET IS THE ONE EXCEPTION: leaving it by jacking out keeps
+     * the spot (`resume_x`, `resume_y`, on the grid `grid_id` names) and the next
+     * jack-in is there, since getting back in would mean passing the gateway's
+     * entry rules again. A flatline clears it (`WaitingRoom::checkFloor()`).
      */
     public function jackIn(Character $character): TravelResult
     {
@@ -81,9 +84,23 @@ final class Navigator
             return TravelResult::refused(TravelRefusal::AlreadyJackedIn);
         }
 
+        if (($refusal = $this->jackInRefusal($character)) !== null) {
+            return TravelResult::refused($refusal);
+        }
+
+        // A subnet position held over from the last jack-out, if it is still a place; otherwise the main portal.
+        $resume = $this->resumePoint($character);
+
+        // The portal is where everybody starts and jacking in is not a move, so nothing meets them there.
+        return $this->arrive($character, $resume ?? $this->grid->portal(), mayMeet: false);
+    }
+
+    /** What stops a body that is not jacked in from jacking in: a fight, a City activity, no deck, a deck that will not run. */
+    private function jackInRefusal(Character $character): ?TravelRefusal
+    {
         // A fight owns the character until it is settled, whatever they asked for.
         if ($character->current_fight_id !== null) {
-            return TravelResult::refused(TravelRefusal::Fighting);
+            return TravelRefusal::Fighting;
         }
 
         // No City activity overlaps a jack-in. Surgery has its own words (a body on the
@@ -93,25 +110,35 @@ final class Navigator
         $kind = CityActivity::query()->whereKey($character->getKey())->value('kind');
 
         if ($kind !== null) {
-            return TravelResult::refused(
-                ($kind instanceof ActivityKind ? $kind : ActivityKind::from($kind)) === ActivityKind::Surgery
-                    ? TravelRefusal::UnderTheKnife
-                    : TravelRefusal::BusyInTheCity,
-            );
+            return ($kind instanceof ActivityKind ? $kind : ActivityKind::from($kind)) === ActivityKind::Surgery
+                ? TravelRefusal::UnderTheKnife
+                : TravelRefusal::BusyInTheCity;
         }
 
         $deck = $character->equippedDeck;
 
         if ($deck === null) {
-            return TravelResult::refused(TravelRefusal::NoDeck);
+            return TravelRefusal::NoDeck;
         }
 
         if (! DeckTotals::forCharacter($character, $deck, $this->resolver)->isReady()) {
-            return TravelResult::refused(TravelRefusal::DeckNotReady);
+            return TravelRefusal::DeckNotReady;
         }
 
-        // The portal is where everybody starts and jacking in is not a move, so nothing meets them there.
-        return $this->arrive($character, $this->grid->portal(), mayMeet: false);
+        return null;
+    }
+
+    /**
+     * Put somebody on a position by a Secure Tunnel (`FortressTunnel`): jacked in already, they simply arrive; not jacked in,
+     * they must be able to (the same refusals as jacking in) and jack in there. Nothing meets them on the way.
+     */
+    public function tunnelTo(Character $character, Position $position): TravelResult
+    {
+        if (! $character->isJackedIn() && ($refusal = $this->jackInRefusal($character)) !== null) {
+            return TravelResult::refused($refusal);
+        }
+
+        return $this->arrive($character, $position, mayMeet: false);
     }
 
     /**
@@ -138,9 +165,34 @@ final class Navigator
         // BEFORE the position goes: the snapshot is of where they were and why (see Trail).
         Trail::note('jack_out', $character);
 
-        $character->forceFill(['grid_x' => null, 'grid_y' => null])->save();
+        // On a subnet the spot is kept for the next jack-in; the main grid keeps nothing.
+        $character->forceFill([
+            'resume_x' => (int) $character->grid_id === 1 ? null : $character->grid_x,
+            'resume_y' => (int) $character->grid_id === 1 ? null : $character->grid_y,
+            'grid_x' => null,
+            'grid_y' => null,
+        ])->save();
 
         return TravelResult::left();
+    }
+
+    /**
+     * Throw a runner out of a subnet: they arrive on the main-grid gateway linked to the subnet's entry gateway, still jacked in.
+     * False when there is no such gateway (nothing moved).
+     */
+    public function expel(Character $character): bool
+    {
+        $inside = $this->gridOf($character);
+        $gateway = $inside->at($inside->portal());
+        $outer = $gateway?->type->isGateway() ? $gateway->linksTo : null;
+
+        if ($outer === null) {
+            return false;
+        }
+
+        $this->arrive($character, $outer->position(), mayMeet: false);
+
+        return true;
     }
 
     /**
@@ -161,10 +213,13 @@ final class Navigator
             return TravelResult::refused(TravelRefusal::NotJackedIn);
         }
 
+        // A step is on the grid you stand on, whatever grid the caller's coordinates were written for.
+        $to = new Position($to->x, $to->y, $from->grid);
+
         // The edge before adjacency, because the two are different sentences
         // and a player walking west from the west edge deserves the one about
         // there being nothing that way.
-        if (! $this->grid->contains($to)) {
+        if (! $this->gridOf($character)->contains($to)) {
             return TravelResult::refused(TravelRefusal::OffTheGrid);
         }
 
@@ -206,7 +261,9 @@ final class Navigator
             return TravelResult::refused(TravelRefusal::NotAnAddress);
         }
 
-        $system = $this->grid->find($address);
+        // Only what answers on the grid you are on: another grid's address is "nothing answers to it", and the
+        // way between grids is a gateway, with its rules, never a jump.
+        $system = $this->gridOf($character)->find($address);
 
         if ($system === null) {
             return TravelResult::refused(TravelRefusal::NoSuchAddress);
@@ -254,7 +311,7 @@ final class Navigator
         // A grid that has shrunk under a waypoint is the only way this fails,
         // and it is a world-configuration change rather than anything the
         // player did.
-        return $this->grid->contains($position)
+        return $position->grid === (int) $character->grid_id && $this->gridOf($character)->contains($position)
             ? $this->arrive($character, $position)
             : TravelResult::refused(TravelRefusal::OffTheGrid);
     }
@@ -267,7 +324,7 @@ final class Navigator
      */
     public function relocate(Character $character, Position $to): bool
     {
-        if (! $character->isJackedIn() || ! $this->grid->contains($to)) {
+        if (! $character->isJackedIn() || $to->grid !== (int) $character->grid_id || ! $this->gridOf($character)->contains($to)) {
             return false;
         }
 
@@ -280,6 +337,62 @@ final class Navigator
     }
 
     /**
+     * Through the gateway under their feet, to its other end.
+     *
+     * A gateway is one end of a pair (`systems.links_to_system_id`) and passing is an arrival at the other, which is on
+     * the other grid: into a subnet from the main grid, back out of it from the subnet's. Nothing meets them on the way
+     * (the hunter's roll still happens, as on any arrival). A gateway with entry rules (`EntryRules`) lets through only
+     * those who meet one; the subnet's own end carries none.
+     */
+    public function pass(Character $character): TravelResult
+    {
+        $here = $character->gridPosition();
+
+        if ($here === null) {
+            return TravelResult::refused(TravelRefusal::NotJackedIn);
+        }
+
+        $gateway = $this->gridOf($character)->at($here);
+        $other = $gateway?->type->isGateway() ? $gateway->linksTo : null;
+
+        if ($other === null) {
+            return TravelResult::refused(TravelRefusal::NoGateway);
+        }
+
+        if (! EntryRules::allow($character, $gateway)) {
+            return TravelResult::refused(TravelRefusal::GatewayClosed);
+        }
+
+        return $this->arrive($character, $other->position(), mayMeet: false);
+    }
+
+    /**
+     * Where a jack-in resumes on a subnet, or null for the main portal: nothing kept, or what was kept is no longer a place.
+     */
+    private function resumePoint(Character $character): ?Position
+    {
+        if ((int) $character->grid_id === 1 || $character->resume_x === null || $character->resume_y === null) {
+            return null;
+        }
+
+        $position = new Position((int) $character->resume_x, (int) $character->resume_y, (int) $character->grid_id);
+
+        try {
+            return Grid::forId($position->grid)->contains($position) ? $position : null;
+        } catch (\RuntimeException) {
+            return null;
+        }
+    }
+
+    /** The grid this character is on: the one held, or the subnet's. */
+    private function gridOf(Character $character): Grid
+    {
+        $id = (int) ($character->grid_id ?? 1);
+
+        return $this->grid->id() === $id ? $this->grid : Grid::forId($id);
+    }
+
+    /**
      * Stand here, and look around.
      *
      * One transaction, because a position written without the sweep that
@@ -288,7 +401,14 @@ final class Navigator
     private function arrive(Character $character, Position $position, bool $mayMeet = true): TravelResult
     {
         $sweep = DB::transaction(function () use ($character, $position): SweepResult {
-            $character->forceFill(['grid_x' => $position->x, 'grid_y' => $position->y])->save();
+            // Jacked in, so there is nothing to resume: the spot is where they stand.
+            $character->forceFill([
+                'grid_id' => $position->grid,
+                'grid_x' => $position->x,
+                'grid_y' => $position->y,
+                'resume_x' => null,
+                'resume_y' => null,
+            ])->save();
 
             // What they see from here is their resolved view range, asked once per arrival.
             return $this->sweep->from($character, $position, ViewShape::forCharacter($character, $this->resolver));
@@ -298,7 +418,8 @@ final class Navigator
         // hunter is its own complete write (the row, the lock, the loadout),
         // and it failing must never take back an arrival that already
         // happened.
-        $hunt = $this->hunters->rolls($character) ? $this->hunters->spawn($character) : null;
+        // A Warden within reach that notices them attacks first; otherwise heat may draw a hunter.
+        $hunt = app(Wardens::class)->ambush($character) ?? ($this->hunters->rolls($character) ? $this->hunters->spawn($character) : null);
 
         // THEN AN ENCOUNTER, by the same rule and in its own write: a hunt that began makes the character
         // ineligible, so the two never overlap. On the LOCKED row, because two arrivals at once must not both
@@ -314,7 +435,7 @@ final class Navigator
             );
 
             // Standing on a system, the system door: same lock, same roll, its own chance and filters.
-            if ($encounter === null && ($system = $this->grid->at($position)) !== null) {
+            if ($encounter === null && ($system = $this->gridOf($character)->at($position)) !== null) {
                 $encounter = DB::transaction(
                     fn (): ?CharacterEncounter => app(Encounters::class)->maybeOpenFor(
                         Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail(),

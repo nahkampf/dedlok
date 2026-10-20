@@ -317,6 +317,21 @@
             {{-- THE ONLY BUTTON THAT ENDS THE RUN BY WORKING, so it is the only one that wears the accent:
                  ember means destructive, and there is nothing in the game this word fits better. It cannot
                  be pressed twice — the system is gone and the run is over the moment it lands. --}}
+            @if ($run->purpose === RunPurpose::Denial)
+                <div style="min-width:min(160px,100%)">
+                    <span class="micro">{{ Text::get('cyberspace.run.pressure') }}</span>
+                    <div class="meter" style="--v:{{ min(1, max(0, $run->pressure / \App\Cyberspace\Simulator::denialTarget($run))) }}"
+                         title="{{ Text::get('cyberspace.run.pressure') }}: {{ $run->pressure }}" role="img" aria-label="{{ Text::get('cyberspace.run.pressure') }} {{ $run->pressure }}"><div class="meter__fill"></div></div>
+                </div>
+                <button type="submit" name="action" value="flood" class="btn cut btn--go">
+                    {{ Text::get('cyberspace.run.action.flood') }}
+                </button>
+            @endif
+            @if ($run->purpose === RunPurpose::Infiltrate)
+                <button type="submit" name="action" value="infiltrate" class="btn cut btn--go">
+                    {{ Text::get('cyberspace.run.action.infiltrate') }}
+                </button>
+            @endif
             @if ($run->purpose === RunPurpose::Burn)
                 <button type="submit" name="action" value="burn" class="btn btn--danger cut" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get('cyberspace.run.action.burn') }}

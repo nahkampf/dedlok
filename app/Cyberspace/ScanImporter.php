@@ -84,6 +84,7 @@ final readonly class ScanImporter
             return SystemScan::query()->create([
                 'character_id' => $character->id,
                 'address' => $file->address,
+                'grid_id' => $system->position()->grid,
                 'x' => $system->x,
                 'y' => $system->y,
                 'grade' => $file->grade,

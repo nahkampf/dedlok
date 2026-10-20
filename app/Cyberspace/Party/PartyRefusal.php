@@ -12,6 +12,7 @@ enum PartyRefusal: string
     case NoSlots = 'no_slots';
     case NotJackedIn = 'not_jacked_in';
     case NothingThere = 'nothing_there';
+    case TooNoisy = 'too_noisy';
     case InARun = 'in_a_run';
     case AlreadyInParty = 'already_in_party';
     case NoParty = 'no_party';

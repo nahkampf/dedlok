@@ -30,7 +30,7 @@ final class Leeches
     /**
      * Spend one Leecher from the stash on $host, feeding the chosen fortress (or the first one owned).
      *
-     * @return Leech|string|null the row; ALREADY; or null when there is no Leecher to spend or no fortress to feed
+     * @return Leech|string|null the row; ALREADY; or null when there is no Leecher to spend or no fortress on the host's grid to feed
      */
     public function install(Character $character, System $host, ?int $fortressId = null): Leech|string|null
     {
@@ -38,8 +38,10 @@ final class Leeches
             return null;
         }
 
+        // A fortress draws only on nodes of its own grid: a subnet's fortress feeds on that subnet's nodes.
         $fortress = System::query()
             ->where('owner_character_id', $character->getKey())
+            ->where('grid_id', $host->position()->grid)
             ->when($fortressId !== null, fn ($q) => $q->whereKey($fortressId))
             ->orderBy('id')
             ->first();

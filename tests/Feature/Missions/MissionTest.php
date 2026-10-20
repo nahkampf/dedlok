@@ -108,6 +108,17 @@ final class MissionTest extends TestCase
         $this->assertTrue($target->fresh()->isLockedDown());
     }
 
+    public function test_a_denial_job_is_ticked_where_the_flood_fills(): void
+    {
+        $mission = $this->accepted(MissionAction::Denial);
+        $target = $mission->targets->first()->system;
+
+        $this->assertNull($mission->targets->first()->satisfied_at);
+
+        $this->assertGreaterThan(0, app(MissionLedger::class)->recordAgainst($this->character, $target, MissionAction::Denial));
+        $this->assertNotNull($mission->fresh()->targets->first()->satisfied_at);
+    }
+
     private function runAt(System $system, bool $detected): Run
     {
         $run = Run::query()->create([
@@ -301,6 +312,33 @@ final class MissionTest extends TestCase
         $this->assertEmpty($mine->pluck('id')->intersect($theirs->pluck('id')));
     }
 
+    public function test_an_entitys_own_terms_leave_out_actions_and_scale_standing_loyalty_and_penalty(): void
+    {
+        Config::set('missions.entities', [$this->entity->name => ['without' => ['transport'], 'standing' => 2, 'loyalty' => 2, 'penalty' => 3]]);
+        Config::set('missions.board.size', ['min' => 4, 'max' => 4]);
+        $this->targets(30);
+        $band = config('missions.grades.1');
+
+        for ($i = 0; $i < 12; $i++) {
+            foreach ($this->board()->forCharacter(Character::factory()->create(), $this->desk) as $offer) {
+                $this->assertNotSame(MissionAction::Transport, $offer->action);
+                $this->assertEqualsWithDelta(3 * (float) $band['penalty'], (float) $offer->penalty, 0.0005);
+            }
+        }
+    }
+
+    public function test_an_entity_with_only_one_action_offers_nothing_else(): void
+    {
+        Config::set('missions.entities', [$this->entity->name => ['only' => ['supply']]]);
+        Config::set('missions.board.size', ['min' => 4, 'max' => 4]);
+        $this->targets(10);
+
+        $board = $this->board()->forCharacter($this->character, $this->desk);
+
+        $this->assertCount(4, $board);
+        $this->assertSame([MissionAction::Supply], $board->pluck('action')->unique()->values()->all());
+    }
+
     public function test_the_board_is_not_rerolled_within_the_hour(): void
     {
         $this->targets(6);
@@ -403,7 +441,7 @@ final class MissionTest extends TestCase
 
         $message = Notification::query()->sole();
 
-        $this->assertStringContainsString('Bring 3 files: complete scan files or sealed data dumps.', $message->body);
+        $this->assertStringContainsString('Bring 3 files: complete scan files.', $message->body);
         $this->assertNull($message->details);
     }
 
@@ -710,35 +748,32 @@ final class MissionTest extends TestCase
         $this->assertSame(2, InventoryItem::query()->whereNotNull('scan_file')->count(), 'a refusal spends nothing');
     }
 
-    /** Sealed data dumps are files too; a decrypted one (a Memory Dump) is not bulk and does not count. */
-    public function test_supply_takes_sealed_dumps_after_scan_files_and_not_memory_dumps(): void
+    /** Supply takes scan files only: sealed dumps and Memory Dumps are never counted or spent. */
+    public function test_supply_never_takes_dumps(): void
     {
         $mission = $this->accepted(MissionAction::Supply);
-        $this->scanFiles(1);
+        $this->scanFiles(2);
 
-        $dump = fn (string $slug): InventoryItem => InventoryItem::create([
-            'character_id' => $this->character->id,
-            'item_id' => Item::query()->where('slug', $slug)->value('id'),
-            'quantity' => 1,
-            'extracted_file' => ['label' => 'Logs', 'size_qb' => 2, 'encryption_skill_id' => null, 'value_sealed' => 40, 'value_broken' => 90, 'grade' => 1],
-        ]);
-
-        $dump('encrypted-data-dump');
-        $dump('memory-dump');
+        foreach (['encrypted-data-dump', 'memory-dump', 'encrypted-data-dump'] as $slug) {
+            InventoryItem::create([
+                'character_id' => $this->character->id,
+                'item_id' => Item::query()->where('slug', $slug)->value('id'),
+                'quantity' => 1,
+                'extracted_file' => ['label' => 'Logs', 'size_qb' => 2, 'encryption_skill_id' => null, 'value_sealed' => 40, 'value_broken' => 90, 'grade' => 1],
+            ]);
+        }
 
         $this->assertSame(
             MissionRefusal::NotDone,
             $this->ledger()->complete($this->character->fresh(), $mission),
-            'one scan file and one sealed dump are two files, and a Memory Dump is not a third',
+            'two scan files are two files; the dumps are not a third',
         );
-        $this->assertSame(1, InventoryItem::query()->whereNotNull('scan_file')->count(), 'a refusal spends nothing');
+        $this->assertSame(3, InventoryItem::query()->whereNotNull('extracted_file')->count(), 'a refusal spends nothing');
 
-        $dump('encrypted-data-dump');
+        $this->scanFiles(1);
 
         $this->assertNotInstanceOf(MissionRefusal::class, $this->ledger()->complete($this->character->fresh(), $mission));
-        $this->assertSame(0, InventoryItem::query()->whereNotNull('scan_file')->count());
-        $this->assertSame(1, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'memory-dump'))->count(), 'the Memory Dump is untouched');
-        $this->assertSame(0, InventoryItem::query()->whereHas('item', fn ($q) => $q->where('slug', 'encrypted-data-dump'))->count());
+        $this->assertSame(3, InventoryItem::query()->whereNotNull('extracted_file')->count(), 'the dumps are untouched');
     }
 
     /** A one-pass file that learned the grade and nothing else is not intel. */

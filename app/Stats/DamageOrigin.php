@@ -86,6 +86,9 @@ enum DamageOrigin: string
     /** Something that happened in the City, by an author's hand. A resistance is written against `all_of: ['damage', 'encounter']`. */
     case Encounter = 'encounter';
 
+    /** The toll of a Secure Tunnel (`App\Cyberspace\FortressTunnel`): a few points of Synaptic Integrity. */
+    case Tunnel = 'tunnel';
+
     /*
      * THE DAMAGE TYPES — what KIND of hurt a weapon does, which is the axis armour,
      * plating, a skill or a painkiller is written against. COMBAT.md.

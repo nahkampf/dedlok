@@ -1,3 +1,23 @@
+## 0.68.0 (2026-10-20)
+Lots of new features:
+
+- **Subnets**: Smaller networks locked behind gateways on the main grid.
+  - Have their own address space (a prefix followed by a 2-byte hexadecimal number), like `foo:3FC9`. Subnet max size is therefor 256x256, but most subnets will be substantially smaller than that
+  - Subnets often have **Wardens** roaming. They are automated sentry programs interrogating and removing intruders. They are visible on the grid and will wander around. Getting too close to one will trigger their attention and may cause them to attack.
+  - Entering a subnet requires either a valid gateway key, or making an **Iinfiltration** run (new run type) on the gateway. Infiltration runs are very difficult.
+  - Exiting a subnet through the gateway is always free
+  - Some ICE in Subnets now have the tag **Eject**, which may throw you out of the subnet.
+  - Data fortresses can be installed in subnets. You will need a Subnet Certificate (can be extracted from subnet nodes).
+  - Data Fortresses can only be supplied by Leechers installed on the same subnet 
+  - New fortress daemon: **Secure Tunnelling**. Creates an encrypted connection to the main net, allowing you and authorized data fortress users to jump directly to the fortress, bypassing the gateway.
+- New ICE tag: **Virus**. On a successful infection, you will take SI damage every turn for a few turns. Antiviral programs now also available, that cuts down on infection time.
+- New mission: Denial. Flood a node with junk data and bogus connection requests until it becomes overwhelmed and locks down. This is rarely a solo activity.
+- Resting at a safe house now also slowly heals Synpatic Integrity
+- Some UI fixes for _Known Systems_. Fully scanned systems marked with a checkmark, and you can filter on fully scanned
+- TAO ("Tailored Access Operations") is a a new, military entity that you can interact with. 
+
+Please note that much of this content relies on encounters, flags etc that are not authored yet, so may be unavialble or unreachable right now.
+
 ## 0.67.0 (2026-10-19)
 
 - You can now paste (non-animated) images into chat. THey live for a week before being removed.

@@ -6,6 +6,7 @@ namespace App\Characters;
 
 use App\City\ActivityKind;
 use App\Crafting\Crafting;
+use App\Cyberspace\Virus;
 use App\Decryption\DecryptionQueue;
 use App\Drugs\DrugLedger;
 use App\Drugs\Family;
@@ -56,6 +57,7 @@ final class CurrentProcesses
                 ...$this->doses($character, $now),
                 ...$this->scripts($character, $now),
                 ...$this->withdrawals($character, $now),
+                ...$this->virus($character),
                 ...$this->missions($character, $now),
             ]),
             // ...and the world's clocks that will move something of theirs.
@@ -276,6 +278,26 @@ final class CurrentProcesses
         }
 
         return $rows;
+    }
+
+    /** @return list<array{kind: string, label: string, detail: string|null, ratio: float|null, seconds: int|null}> */
+    private function virus(Character $character): array
+    {
+        $virus = Virus::make();
+
+        if (! $virus->infected($character)) {
+            return [];
+        }
+
+        $left = $virus->remaining($character);
+
+        return [[
+            'kind' => 'virus',
+            'label' => Text::get('processes.virus'),
+            'detail' => Text::plural('processes.virus_left', $left, ['count' => $left]),
+            'ratio' => round($left / $virus->lifetime($character), 4),
+            'seconds' => null,
+        ]];
     }
 
     /** @return list<array{kind: string, label: string, detail: string|null, ratio: float|null, seconds: int|null}> */
