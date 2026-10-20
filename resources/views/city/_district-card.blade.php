@@ -23,9 +23,14 @@
 
         <div class="stack" style="--gap:var(--s-2)">
             <span class="micro">{{ Text::get('city.locations') }}</span>
+            @if ($home->district_id === $district->getKey())
+                <div class="stack" style="--gap:2px">
+                    <a class="item-row__name" href="{{ route('safehouse.show') }}"><span aria-hidden="true">&#x25C7;</span> {{ $home->title }}</a>
+                </div>
+            @endif
             @forelse ($places as $place)
                 <div class="stack" style="--gap:2px">
-                    <span class="item-row__name">{{ $place->name }}</span>
+                    <a class="item-row__name" href="{{ route('city.place', $place->slug) }}">{{ $place->name }}</a>
                     @if ($place->features() !== [])
                         <span class="row row--wrap" style="--gap:var(--s-2)">
                             @foreach ($place->features() as $feature)
@@ -35,7 +40,9 @@
                     @endif
                 </div>
             @empty
-                <span class="muted" style="font-size:var(--fs-sm)">{{ Text::get('city.no_locations') }}</span>
+                @if ($home->district_id !== $district->getKey())
+                    <span class="muted" style="font-size:var(--fs-sm)">{{ Text::get('city.no_locations') }}</span>
+                @endif
             @endforelse
         </div>
 

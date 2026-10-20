@@ -26,7 +26,7 @@
 
         @foreach ($districts as $district)
             <template id="district-{{ $district->id }}">
-                @include('city._district-card', ['district' => $district, 'places' => $locations[$district->id] ?? collect(), 'quote' => $quotes[$district->id] ?? null])
+                @include('city._district-card', ['district' => $district, 'places' => $locations[$district->id] ?? collect(), 'quote' => $quotes[$district->id] ?? null, 'home' => $home])
             </template>
         @endforeach
     </div>

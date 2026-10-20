@@ -485,6 +485,11 @@ return [
             'points' => ':points to treat · :price ¤ a point',
             'treat' => 'Treat — :total ¤',
             'treated' => 'Treated for :paid ¤.',
+            'partial' => 'Partial treatment',
+            'partial_title' => 'Partial treatment: :service',
+            'partial_label' => ':value points · :total ¤',
+            'partial_go' => 'Treat',
+            'partial_close' => 'Close',
             'note' => ':service at :place',
             'services' => [
                 'hitpoints' => 'Restore hit points',
@@ -1060,7 +1065,7 @@ return [
             'extract' => 'There is a file on this system we want. Run it, pull the file, decrypt it and bring it to us. It will be there.',
             'heist' => 'Raid these systems for cash. What you take is not yours: hand it in at the desk and you get a cut back on top of the pay.',
             'transport' => 'We have some sensitive data that we need a third party to carry to its destination, discretely. Be aware that you might be tracked and intercepted.',
-            'denial' => 'Flood these systems with traffic until they lock down. Hit them hard enough and fast enough, and get out. You do not have to take anything.',
+            'denial' => 'Flood this node with as much traffic as possible, to make it go down. Note: This is very hard to solo, you likely need a crew to help you out.',
             'supply' => 'Bring us files: complete scan files. We do not care which systems, only that the picture is whole.',
         ],
 
@@ -3747,6 +3752,7 @@ return [
 
         // Destroying something. Real, irreversible, and confirmed once.
         'destroy' => [
+            'how_many' => 'How many to destroy (of :max)',
             'title' => 'Destroy :item',
             'warning' => 'This cannot be undone. :item is gone for good.',
             'contents' => 'Everything on it goes too — :count of them.',

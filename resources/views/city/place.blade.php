@@ -90,11 +90,41 @@
                                         {{ Text::get('city.clinic.treat', ['total' => number_format($row['total'])]) }}
                                     </button>
                                 </form>
+                                @if ($row['points'] > 1)
+                                    <button type="button" class="btn btn--sm btn--ghost cut" data-open="#partial-{{ $row['service']->value }}">{{ Text::get('city.clinic.partial') }}</button>
+                                @endif
                             @endif
                         </div>
                     @endforeach
                 </div>
             </div>
+
+            @if ($here)
+                @foreach ($treatments as $row)
+                    @if ($row['points'] > 1)
+                        @php($max = min((int) ceil($row['points']) - 1, $row['per_point'] > 0 ? intdiv((int) $character->creds, $row['per_point']) : PHP_INT_MAX))
+                        @php($label = Text::get('city.clinic.partial_label', ['value' => '{value}', 'total' => '{total}']))
+                        <dialog class="modal" id="partial-{{ $row['service']->value }}">
+                            <div class="panel__hd">
+                                <span class="micro">{{ Text::get('city.clinic.partial_title', ['service' => $row['service']->label()]) }}</span>
+                                <div class="spacer"></div>
+                                <button type="button" class="btn btn--sm btn--ghost" data-close aria-label="{{ Text::get('city.clinic.partial_close') }}">✕</button>
+                            </div>
+                            <form method="POST" action="{{ route('city.treat', [$place->slug, $row['service']->value]) }}" class="panel__bd stack" style="--gap:var(--s-4)">
+                                @csrf
+                                <label class="field">
+                                    <span data-range-out>{{ str_replace(['{value}', '{total}'], [1, number_format((int) ceil($row['per_point']))], $label) }}</span>
+                                    <input class="range" type="range" name="points" min="1" max="{{ $max }}" step="1" value="1"
+                                           data-unit-price="{{ $row['per_point'] }}" data-format="{{ $label }}">
+                                </label>
+                                <div class="row row--wrap" style="--gap:var(--s-3)">
+                                    <button type="submit" class="btn cut">{{ Text::get('city.clinic.partial_go') }}</button>
+                                </div>
+                            </form>
+                        </dialog>
+                    @endif
+                @endforeach
+            @endif
         @endif
 
         @if ($menu->isNotEmpty())
