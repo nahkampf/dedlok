@@ -586,6 +586,19 @@ final class ProgramTest extends TestCase
         $this->assertSame(0, InventoryItem::query()->running()->count());
     }
 
+    public function test_the_running_modal_asks_to_be_reopened_after_a_start(): void
+    {
+        $row = $this->own($this->programItem());
+
+        $this->actingAs($this->character->user)
+            ->post(route('inventory.run', $row), ['reopen' => 'processes'])
+            ->assertSessionHas('reopen', 'processes');
+
+        $this->actingAs($this->character->user)
+            ->post(route('inventory.run', InventoryItem::query()->running()->firstOrFail()))
+            ->assertSessionMissing('reopen');
+    }
+
     /**
      * Offered rather than hidden, so the refusal can teach: "the run starts
      * this, not you" says more than an absent button.

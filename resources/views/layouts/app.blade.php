@@ -393,7 +393,7 @@
          the decision actually needs. This is the glance: it is on every page,
          and it is the only place a background process is visible at all once
          you have walked away from it. So it counts, and it points. --}}
-    <dialog id="processes" class="modal">
+    <dialog id="processes" class="modal" @if (session('reopen') === 'processes') data-reopen @endif>
         <div class="panel__hd">
             <span class="micro">{{ Text::get('programs.running') }}</span>
             <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
@@ -457,6 +457,7 @@
                              asks. --}}
                         <form method="POST" action="{{ route('inventory.run', $process) }}">
                             @csrf
+                            <input type="hidden" name="reopen" value="processes">
                             <button type="submit" class="btn btn--sm btn--ghost cut"
                                     @if ($program?->isTemporary()) title="{{ Text::get('programs.action.stop_spent') }}" @endif>
                                 {{ Text::get('programs.action.stop') }}

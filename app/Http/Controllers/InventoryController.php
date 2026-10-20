@@ -443,11 +443,14 @@ class InventoryController extends Controller
             ? $runner->stop($character, $entry)
             : $runner->start($character, $entry);
 
+        // The Running modal asks to be opened again after the page reloads.
+        $reopen = $request->input('reopen') === 'processes' ? ['reopen' => 'processes'] : [];
+
         if (! $result->succeeded()) {
-            return back()->with('error', $result->refusal->message());
+            return back()->with('error', $result->refusal->message())->with($reopen);
         }
 
-        $status = back()->with('status', Text::get(
+        $status = back()->with($reopen)->with('status', Text::get(
             $result->process !== null ? 'programs.started' : 'programs.stopped',
             ['program' => $name],
         ));

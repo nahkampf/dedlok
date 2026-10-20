@@ -22,6 +22,7 @@
             </div>
             <form method="POST" action="{{ route('inventory.run', $row) }}">
                 @csrf
+                <input type="hidden" name="reopen" value="processes">
                 <button type="submit" class="btn btn--sm cut">{{ Text::get('programs.action.start') }}</button>
             </form>
         </div>
