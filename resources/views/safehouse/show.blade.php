@@ -50,6 +50,7 @@
             <div class="panel">
                 <div class="panel__hd"><span class="micro">{{ Text::get('safehouse.actions_heading') }}</span></div>
                 <div class="panel__bd stack" style="--gap:var(--s-3)">
+                    <img class="banner-img" src="{{ \App\Support\Asset::url('images/locations/safehouse.png') }}" alt="">
                     @forelse ($rows as $row)
                         @php($action = $row['action'])
                         <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
