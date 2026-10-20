@@ -2,6 +2,42 @@
 
 ## [Unreleased]
 
+## [0.68.0] — 2026-10-20
+
+Subnets: smaller grids behind gateways, with their own hunters, fortresses and a new kind of mission.
+
+### Added
+
+- **Subnets**: a `grids` row per grid (`grid_id` on the coordinate tables), prefixed addresses (`mil:3FCD`), paired gateways (`systems.links_to_system_id`) and a resume point (`characters.resume_x/y`). `Subnets` is the only writer of non-main grids and their gateway pair; `GridSeeder::forGrid()` fills one from its spec (`cyberspace:seed <slug>`); admin *Subnets* creates, edits and generates them. Systems relocate, restock and lock down inside their own grid.
+- **Entry rules** on the main-grid gateway (`EntryRules`): a flag, or an Infiltrate run (`RunPurpose::Infiltrate`, `RunAction::Infiltrate`). Leaving through the subnet-side gateway is free and undefended.
+- **Eject** ICE tag (levels I–III): ends the run and lands the runner on the main-grid gateway, still jacked in.
+- **Virus** ICE tag (levels I–III) and `App\Cyberspace\Virus`: an infection kept on the character that tapers off over `virus_lifetime`, ticking per run turn in a run and per minute outside one. Two Antivirals, Condom 0.49.1 and Purge Pro, arrive by migration.
+- **Denial missions**: `MissionAction::Denial`, `RunPurpose::Denial`, `RunAction::Flood`, `runs.pressure`. Per-grade target and random push-back, a 12-turn limit, one shared meter for a party. The run screen labels the meter "Node bandwidth capacity".
+- **Subnet certificates** (`inventory_items.grid_id`, stamped when taken) needed to found a fortress in a subnet; the certificate is locked in the vault. Leechers in a subnet fortress draw only on that subnet's nodes.
+- **Secure Tunnelling**: `ProgramKind::Tunnel`, `FortressTunnel` (`fortress_tunnels`), `DamageOrigin::Tunnel`. A running tunnel program on a fortress lets its owner and members tunnel onto it from any grid, even when not jacked in. Listed on the map under *Secure tunnels*.
+- **Wardens**: `wardens`, `hunts.warden_id`, `App\Cyberspace\Wardens`, `wardens:move` every minute. Hunters that walk a subnet and attack runners who fail a Stealth check; beating one removes it. Shown as a pulsing ember dot on the map.
+- **Other runners on the map**: jacked-in runners within sight show as a yellow dot (`MapCell::hasRunner`).
+- **TAO**, a military entity (needs `cyberspace:exchanges` for its desks).
+
+### Changed
+
+- **Resting mends Synaptic Integrity** at `safehouse.rest.synaptic_per_minute` (0.083), counted exactly from the start of the rest.
+- **Known systems**: names lose the "Type - " prefix, a ✓ marks fully scanned systems and a ◈ marks a backdoor, new *Fully scanned* filter, a wider modal, and one Jump button per row.
+- **Chat addresses** accept the prefixed form.
+
+### Migrations
+
+- `2026_10_21_100000_the_tao_entity`
+- `2026_10_21_200000_grids`
+- `2026_10_22_100000_virus`
+- `2026_10_22_110000_the_antivirals`
+- `2026_10_22_120000_denial_missions`
+- `2026_10_22_130000_certificates_and_tunnels`
+- `2026_10_22_140000_wardens`
+
+After deploying: `sudo -u dedlok php artisan cyberspace:exchanges` to place the TAO desks.
+
+
 ## [0.67.0] — 2026-10-19
 
 ICE and icebreakers work in hundredths; pictures in the chat; fewer misclicks.
@@ -3549,7 +3585,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.67.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.68.0...HEAD
+[0.68.0]: https://github.com/nahkampf/dedlok/compare/v0.67.0...v0.68.0
 [0.67.0]: https://github.com/nahkampf/dedlok/compare/v0.66.3...v0.67.0
 [0.66.3]: https://github.com/nahkampf/dedlok/compare/v0.66.2...v0.66.3
 [0.66.2]: https://github.com/nahkampf/dedlok/compare/v0.66.1...v0.66.2
