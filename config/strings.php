@@ -485,6 +485,11 @@ return [
             'points' => ':points to treat · :price ¤ a point',
             'treat' => 'Treat — :total ¤',
             'treated' => 'Treated for :paid ¤.',
+            'partial' => 'Partial treatment',
+            'partial_title' => 'Partial treatment: :service',
+            'partial_label' => ':value points · :total ¤',
+            'partial_go' => 'Treat',
+            'partial_close' => 'Close',
             'note' => ':service at :place',
             'services' => [
                 'hitpoints' => 'Restore hit points',
@@ -796,6 +801,7 @@ return [
             'cancel' => '← Back to messages',
             'from' => 'From: :handle',
             'reply' => 'Reply',
+            'reply_prefix' => 'Re: ',
             'sent' => 'Message sent to :handle.',
             'errors' => [
                 'to' => 'Say who the message is for.',
@@ -863,6 +869,9 @@ return [
             'fortress_burned' => 'Your fortress Kernel is burned',
             'party_dropped' => 'Left out of a co-op run',
             'siphons_ran' => 'Siphon report',
+            'damage_report' => 'Damage report',
+            'workout_gain' => 'Gains!',
+            'study_gain' => 'Sharpening the mind',
             'backdoor_lost' => 'Backdoor lost',
             'file_stale' => 'Scan file gone stale',
             'offer_sold' => 'Sold: :item',
@@ -922,6 +931,9 @@ return [
             // THE NIGHT'S TAKE, one report per character. The systems it came
             // from are the message's list, drawn under this line.
             'siphons_ran' => 'Siphons ran: :creds ¤',
+            'damage_report' => 'You were incapacitated and lost some items or files:',
+            'workout_gain' => "You've been working out. It shows. You gain +1 to :attribute!",
+            'study_gain' => "You've been reading and studying. You gain +1 to :attribute!",
             'backdoor_lost' => 'Your backdoor into :system is gone. The system shut its doors while you were elsewhere.',
             // A FILE DIES WITH NOBODY LOOKING AT IT. Says it is still there,
             // because nothing deletes one - destroying it is the player's call
@@ -1060,7 +1072,7 @@ return [
             'extract' => 'There is a file on this system we want. Run it, pull the file, decrypt it and bring it to us. It will be there.',
             'heist' => 'Raid these systems for cash. What you take is not yours: hand it in at the desk and you get a cut back on top of the pay.',
             'transport' => 'We have some sensitive data that we need a third party to carry to its destination, discretely. Be aware that you might be tracked and intercepted.',
-            'denial' => 'Flood these systems with traffic until they lock down. Hit them hard enough and fast enough, and get out. You do not have to take anything.',
+            'denial' => 'Flood this node with as much traffic as possible, to make it go down. Note: This is very hard to solo, you likely need a crew to help you out.',
             'supply' => 'Bring us files: complete scan files. We do not care which systems, only that the picture is whole.',
         ],
 
@@ -3290,12 +3302,22 @@ return [
         'ready_in' => 'Ready in :time',
         'resting' => 'You are resting. Fatigue is easing.',
         'stop_resting' => 'Get up',
+        'stop' => ['workout' => 'Stop working out', 'study' => 'Stop studying', 'simstim' => 'Jack out of the simstim'],
+        'doing' => [
+            'workout' => 'You are working out. It tires you.',
+            'study' => 'You are reading and studying. It tires you.',
+            'simstim' => 'You are lost in a simstim.',
+        ],
+        'simstim_left' => 'Simstim left today: :time',
         'actions' => [
             'eat' => 'Eat something',
             'rest' => 'Rest',
             'patch' => 'Patch yourself up',
             'meditate' => 'Meditate',
             'shower' => 'Take a cold shower',
+            'workout' => 'Work out',
+            'study' => 'Study',
+            'simstim' => 'Simstim',
         ],
         'done' => [
             'rest' => 'You lie down.',
@@ -3303,6 +3325,9 @@ return [
             'patch' => 'You patch yourself up.',
             'meditate' => 'You sit quietly until your head clears.',
             'shower' => 'The cold water clears your head.',
+            'workout' => 'You start working out.',
+            'study' => 'You sit down to study.',
+            'simstim' => 'You plug in to a simstim.',
             'eat' => 'You eat.',
             'rented' => 'You now live at :place.',
         ],
@@ -3318,6 +3343,7 @@ return [
             'cooldown' => 'Not again so soon.',
             'nothing_to_do' => 'That would do nothing for you right now.',
             'not_resting' => 'You are not resting.',
+            'simstim_limit' => 'You have had all the simstim you can take today.',
             'too_full' => 'You are too full to eat any more.',
             'wired' => 'You are too wired to rest.',
             'no_storage' => 'There is nowhere to keep things here.',
@@ -3747,6 +3773,7 @@ return [
 
         // Destroying something. Real, irreversible, and confirmed once.
         'destroy' => [
+            'how_many' => 'How many to destroy (of :max)',
             'title' => 'Destroy :item',
             'warning' => 'This cannot be undone. :item is gone for good.',
             'contents' => 'Everything on it goes too — :count of them.',

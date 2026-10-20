@@ -63,6 +63,9 @@ class SafehouseController extends Controller
             'places' => Safehouse::query()->with('district')->get()->keyBy('id'),
             'wired' => $actions->tooWired($character),
             'resting' => CityActivity::query()->whereKey($character->getKey())->where('kind', 'rest')->exists(),
+            // The session under way (an Action value), if any: its row shows Stop instead of its button.
+            'session' => CityActivity::query()->whereKey($character->getKey())->whereIn('kind', ['rest', 'workout', 'study', 'simstim'])->value('kind')?->value,
+            'simstimLeft' => $actions->simstimLeft($character),
             'paysRent' => $character->safehouse_id !== null && $character->rent_due_at !== null,
         ]);
     }
@@ -89,7 +92,11 @@ class SafehouseController extends Controller
         $clock->settle($character);
         $character->refresh();
 
-        $result = $kind === Action::Rest ? $actions->startRest($character) : $actions->use($character, $kind);
+        $result = match (true) {
+            $kind === Action::Rest => $actions->startRest($character),
+            $kind->isSession() => $actions->startSession($character, $kind),
+            default => $actions->use($character, $kind),
+        };
 
         return $result instanceof Refusal
             ? back()->with('error', $result->message())

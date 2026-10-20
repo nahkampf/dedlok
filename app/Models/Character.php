@@ -160,7 +160,7 @@ class Character extends Model
             array_fill_keys(self::ATTRIBUTES, 'integer'),
             array_fill_keys(array_keys(self::RESOURCES), PointsCast::class),
             // Not in RESOURCES: full is bad. See App\Characters\Fatigue.
-            ['current_fatigue' => PointsCast::class, 'current_fullness' => PointsCast::class, 'mood' => PointsCast::class, 'collapse_pending' => 'boolean', 'rent_due_at' => 'immutable_datetime', 'raid_cooldown_until' => 'immutable_datetime'],
+            ['current_fatigue' => PointsCast::class, 'current_fullness' => PointsCast::class, 'mood' => PointsCast::class, 'collapse_pending' => 'boolean', 'rent_due_at' => 'immutable_datetime', 'simstim_day' => 'date', 'raid_cooldown_until' => 'immutable_datetime'],
             ['archetype' => 'integer', 'creds' => 'integer', 'heat' => 'float', 'bounty' => 'integer', 'bounty_grade' => 'integer'],
             ['egress_trace_at' => 'integer', 'egress_si_at' => 'integer'],
             ['virus_damage' => PointsCast::class, 'virus_turns' => 'integer', 'virus_elapsed' => 'integer'],

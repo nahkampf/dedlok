@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.69.0] — 2026-10-20
+
+### Added
+
+- **Safehouse training sessions**: *Work out*, *Study* and *Simstim* (`Action`, `ActivityKind`, `HomeActions`), open-ended `city_activities` like Rest, credited per minute whenever the City is looked at. Work out and Study add `fatigue` and fill a meter (`characters.workout_progress`, `study_progress`, 0–100); a full meter gains one point of a random attribute (Meat/Motor/Muscle, or Intellect/Memory/Focus) and resets. Simstim adds fatigue and mood, capped at `daily_seconds` a UTC day (`simstim_seconds`, `simstim_day`). Figures are placeholders in `config/safehouse.php`. Migration `2026_10_23_100000_safehouse_training_sessions`.
+- **Damage report**: a defeat in cyberspace lists what it destroyed.
+- **Clinics**: partial treatment; linked places and the safehouse show on the district card; a new Denial mission blurb.
+
+### Changed
+
+- **Inbox**: *Reply* opens the compose screen with the title `Re: <title>` and the original quoted below, each line prefixed `> ` (`?re=` names the message; only your own personal messages are quoted).
+- Resting in a safehouse also mends hit points.
+
+### Fixed
+
+- **Inventory**: destroying from a pile destroys only the number asked for.
+- **Programs**: the Running modal stays open after running or stopping a program.
+- **Release**: `bin/release` no longer asks before committing, and prints the failing tests' output. `CharacterTest` lists the new `characters` columns.
+
+
 ## [0.68.1] — 2026-10-20
 
 ### Fixed
@@ -3594,7 +3614,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.68.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.69.0...HEAD
+[0.69.0]: https://github.com/nahkampf/dedlok/compare/v0.68.1...v0.69.0
 [0.68.1]: https://github.com/nahkampf/dedlok/compare/v0.68.0...v0.68.1
 [0.68.0]: https://github.com/nahkampf/dedlok/compare/v0.67.0...v0.68.0
 [0.67.0]: https://github.com/nahkampf/dedlok/compare/v0.66.3...v0.67.0

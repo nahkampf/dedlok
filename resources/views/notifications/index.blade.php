@@ -120,6 +120,14 @@
                                     {{-- Only a link in the sentence above: nothing to list. --}}
                                 @elseif (! empty($message->details['collect']))
                                     {{-- A lost home's belongings: the button below collects them. --}}
+                                @elseif (! empty($message->details['lost']))
+                                    <div class="prose micro" style="color:var(--ink-2)">
+                                        <ul>
+                                            @foreach ($message->details['lost'] as $line)
+                                                <li>{{ $line }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
                                 @elseif ($message->details && empty($message->details['chat_invite']))
                                     <div class="prose micro" style="color:var(--ink-2)">
                                         <ul>
@@ -157,7 +165,7 @@
                                         <button type="submit" class="btn btn--sm cut">{{ Text::get('safehouse.storage.collect') }}</button>
                                     </form>
                                 @elseif (! empty($message->details['from']))
-                                    <a class="btn btn--sm btn--quiet cut" href="{{ route('messages.create', ['to' => $message->details['from']]) }}">{{ Text::get('notifications.compose.reply') }}</a>
+                                    <a class="btn btn--sm btn--quiet cut" href="{{ route('messages.create', ['to' => $message->details['from'], 're' => $message->getKey()]) }}">{{ Text::get('notifications.compose.reply') }}</a>
                                 @else
                                 <form method="POST" action="{{ route('notifications.open', $message) }}">
                                     @csrf

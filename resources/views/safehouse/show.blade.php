@@ -53,12 +53,12 @@
                     @forelse ($rows as $row)
                         @php($action = $row['action'])
                         <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
-                            @if ($action === \App\Safehouses\Action::Rest && $resting)
+                            @if ($session === $action->value)
                                 <form method="POST" action="{{ route('safehouse.rest.stop') }}">
                                     @csrf
-                                    <button type="submit" class="btn cut">{{ Text::get('safehouse.stop_resting') }}</button>
+                                    <button type="submit" class="btn cut">{{ Text::get($action === \App\Safehouses\Action::Rest ? 'safehouse.stop_resting' : 'safehouse.stop.'.$action->value) }}</button>
                                 </form>
-                                <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.resting') }}</span>
+                                <span class="micro" style="color:var(--ink-3)">{{ Text::get($action === \App\Safehouses\Action::Rest ? 'safehouse.resting' : 'safehouse.doing.'.$action->value) }}</span>
                             @else
                                 <form method="POST" action="{{ route('safehouse.act', $action->value) }}">
                                     @csrf
@@ -66,6 +66,9 @@
                                 </form>
                                 @if ($action === \App\Safehouses\Action::Rest && $wired)
                                     <span class="micro" style="color:var(--ink-3)">{{ \App\Safehouses\Refusal::Wired->message() }}</span>
+                                @endif
+                                @if ($action === \App\Safehouses\Action::Simstim)
+                                    <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.simstim_left', ['time' => CarbonInterval::seconds($simstimLeft)->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}</span>
                                 @endif
                                 @if ($action === \App\Safehouses\Action::Eat)
                                     <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.meal', ['fullness' => rtrim(rtrim(number_format($home->meal_fullness, 2), '0'), '.'), 'fatigue' => rtrim(rtrim(number_format($home->meal_fatigue, 2), '0'), '.')]) }}</span>

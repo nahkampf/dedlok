@@ -257,6 +257,18 @@ class ItemActionsTest extends TestCase
         $this->assertNull($entry->fresh());
     }
 
+    public function test_destroying_from_a_pile_takes_only_what_was_asked(): void
+    {
+        $entry = $this->own(Item::factory()->physical()->create());
+        $entry->update(['quantity' => 3]);
+
+        $this->actingAs($this->character->user)->post(route('inventory.destroy', $entry))->assertRedirect();
+        $this->assertSame(2, $entry->fresh()->quantity);
+
+        $this->actingAs($this->character->user)->post(route('inventory.destroy', $entry), ['quantity' => 2])->assertRedirect();
+        $this->assertNull($entry->fresh());
+    }
+
     public function test_the_confirmation_is_offered_before_the_button(): void
     {
         $entry = $this->own(Item::factory()->physical()->create(['name' => 'Rail rifle']));

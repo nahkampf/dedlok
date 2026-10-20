@@ -16,6 +16,8 @@
             <p style="margin:0">{{ Text::get('city.surgery.on_the_table') }}</p>
         @elseif ($activity->kind === ActivityKind::Rest)
             <p style="margin:0">{{ Text::get('safehouse.resting') }}</p>
+        @elseif (in_array($activity->kind, [ActivityKind::Workout, ActivityKind::Study, ActivityKind::Simstim], true))
+            <p style="margin:0">{{ Text::get('safehouse.doing.'.$activity->kind->value) }}</p>
         @elseif ($activity->kind === ActivityKind::Stakeout)
             <p style="margin:0">{{ Text::get('safehouse.lead.staking_out') }}</p>
         @elseif ($activity->kind === ActivityKind::ScopeOut)
@@ -32,10 +34,10 @@
             <p style="margin:0">{{ Text::get('city.exploring', ['district' => $inPass]) }}</p>
         @endif
 
-        @if ($activity->kind === ActivityKind::Rest)
+        @if ($activity->kind->isSession())
             <form method="POST" action="{{ route('safehouse.rest.stop') }}">
                 @csrf
-                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('safehouse.stop_resting') }}</button>
+                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get($activity->kind === ActivityKind::Rest ? 'safehouse.stop_resting' : 'safehouse.stop.'.$activity->kind->value) }}</button>
             </form>
         @endif
 
@@ -46,7 +48,7 @@
             </form>
         @endif
 
-        @unless ($activity->cancelling || in_array($activity->kind, [ActivityKind::Surgery, ActivityKind::Rest, ActivityKind::Stakeout, ActivityKind::ScopeOut], true))
+        @unless ($activity->cancelling || $activity->kind->isSession() || in_array($activity->kind, [ActivityKind::Surgery, ActivityKind::Stakeout, ActivityKind::ScopeOut], true))
             <form method="POST" action="{{ route('city.cancel') }}">
                 @csrf
                 {{-- A trip is STOPPED, not cancelled: it finishes the pass it is in and leaves you in that district. --}}

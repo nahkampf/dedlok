@@ -50,9 +50,9 @@ final class Clinic
     }
 
     /** @return int|CityRefusal creds spent */
-    public function treat(Character $character, Location $place, ClinicService $service): int|CityRefusal
+    public function treat(Character $character, Location $place, ClinicService $service, ?int $partial = null): int|CityRefusal
     {
-        return DB::transaction(function () use ($character, $place, $service): int|CityRefusal {
+        return DB::transaction(function () use ($character, $place, $service, $partial): int|CityRefusal {
             $locked = Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail();
 
             if ($refusal = Presence::refusal($locked, $place)) {
@@ -69,6 +69,15 @@ final class Clinic
 
             if ($points <= 0) {
                 return CityRefusal::NothingToTreat;
+            }
+
+            // A partial treatment is whole points, fewer than are owed; the full one takes whatever is owed.
+            if ($partial !== null) {
+                if ($partial < 1 || $partial >= $points) {
+                    return CityRefusal::NothingToTreat;
+                }
+
+                $points = $partial;
             }
 
             // A fraction of a point is billed whole, rounded up: creds are whole.

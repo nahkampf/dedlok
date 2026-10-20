@@ -159,6 +159,20 @@
     out.textContent = (range.dataset.format || "{value}").replace("{band}", band).replace("{value}", String(v));
   });
 
+  /* --- Range with a price ------------------------------------------------
+     A slider whose steps cost something: data-unit-price is the price of one,
+     data-format has {value} and {total}. The server renders the first label.
+     <label><span data-range-out>…</span>
+       <input type="range" data-unit-price="40" data-format="{value} points · {total} ¤"></label> */
+  on("input", "input[type=range][data-unit-price]", (e, range) => {
+    const out = range.closest("label, .field")?.querySelector("[data-range-out]");
+    if (!out) return;
+    const v = Number(range.value);
+    const total = Math.ceil(v * Number(range.dataset.unitPrice));
+    out.textContent = (range.dataset.format || "{value}")
+      .replace("{value}", String(v)).replace("{total}", total.toLocaleString("en-US"));
+  });
+
   /* --- Tabs -------------------------------------------------------------
      <div class="tabs" role="tablist">
        <button class="tab" role="tab" aria-selected="true" data-tab="a">…</button>
@@ -250,6 +264,12 @@
       }, { once: true });
     }
     if (dlg.showModal) dlg.showModal();
+  });
+
+  /* A dialog the server asks to have open again after a reload: <dialog id="x" data-reopen>. Clicking its own opener
+     rather than calling showModal() keeps whatever the opener does (the Running modal's lists are fetched on that click). */
+  document.querySelectorAll("dialog[data-reopen][id]").forEach((dlg) => {
+    document.querySelector(`[data-open="#${dlg.id}"]`)?.click();
   });
 
   /* Sound on or off: <button data-sound-toggle="URL" aria-pressed="true|false" data-label-on data-label-off> holding

@@ -20,6 +20,7 @@ enum Refusal: string
     case Cooldown = 'cooldown';
     case NothingToDo = 'nothing_to_do';
     case NotResting = 'not_resting';
+    case SimstimLimit = 'simstim_limit';
     case TooFull = 'too_full';
     case Wired = 'wired';
     case NoStorage = 'no_storage';

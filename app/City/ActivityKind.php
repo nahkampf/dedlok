@@ -11,6 +11,15 @@ enum ActivityKind: string
     case Explore = 'explore';
     case Surgery = 'surgery';
     case Rest = 'rest';
+    case Workout = 'workout';
+    case Study = 'study';
+    case Simstim = 'simstim';
     case Stakeout = 'stakeout';
     case ScopeOut = 'scope_out';
+
+    /** Rest and the safehouse sessions: open-ended, stopped by getting up, settled by `HomeActions`. */
+    public function isSession(): bool
+    {
+        return in_array($this, [self::Rest, self::Workout, self::Study, self::Simstim], true);
+    }
 }

@@ -14,6 +14,7 @@ use App\Models\DeckFitting;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Notification;
 use App\Models\Program;
 use App\Programs\ProgramKind;
 use App\Stats\InjuryLedger;
@@ -316,6 +317,20 @@ final class DefeatResolverTest extends TestCase
         $this->assertNull(InventoryItem::find($dump->id), 'and so is a component');
         $this->assertNull(InventoryItem::find($script->id), 'a running Script is destroyed, not put back');
         $this->assertNotNull(Craft::find($craft->id), 'a build under way was paid for already');
+    }
+
+    /** What a wipe destroyed comes back as one Damage report, summed by name. */
+    public function test_erase_sends_a_damage_report_listing_what_was_lost(): void
+    {
+        $character = $this->character();
+        $this->putDataItems($character, 3);
+
+        $this->resolver(1)->apply($character, $this->iceWithTags(['erase']));
+
+        $message = Notification::query()->where('user_id', $character->user_id)->latest('id')->firstOrFail();
+        $this->assertSame('Damage report', $message->title);
+        $this->assertCount(3, $message->details['lost']);
+        $this->assertStringContainsString(' × ', $message->details['lost'][0]);
     }
 
     /** Nothing in deck storage is an ordinary answer. */

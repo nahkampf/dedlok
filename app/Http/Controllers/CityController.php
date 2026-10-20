@@ -54,6 +54,7 @@ class CityController extends Controller
         return view('city.index', [
             'character' => $character,
             'districts' => $districts,
+            'home' => $character->home(),
             'links' => District::links(),
             // What each district's card on the map says: the places the
             // character knows there (the same visibility rule as the district

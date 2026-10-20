@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Character;
+use App\Models\Notification;
+use App\Notifications\Category;
 use App\Notifications\Notifier;
 use App\Support\PlainText;
 use App\Support\Text;
@@ -30,11 +32,42 @@ class MessageController extends Controller
 
     public function create(Request $request): View
     {
+        [$title, $quote] = $this->replyTo($request);
+
         return view('notifications.compose', [
+            'title' => $title,
+            'quote' => $quote,
             // `?to=` is how a reply arrives. Cleaned like anything else typed.
             'to' => PlainText::clean((string) $request->query('to')),
             'max' => ['title' => self::TITLE, 'body' => self::BODY],
         ]);
+    }
+
+    /**
+     * `?re=` is the message being answered: its title as "Re: <title>" and its body quoted below a blank line to write in.
+     * Only the signed-in account's own personal messages count, and the quote is cut so a reply still has room.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function replyTo(Request $request): array
+    {
+        $original = Notification::query()
+            ->where('user_id', $request->user()->getKey())
+            ->where('category', Category::Personal)
+            ->find((int) $request->query('re'));
+
+        if ($original === null) {
+            return ['', ''];
+        }
+
+        $title = (string) $original->title;
+        $prefix = Text::get('notifications.compose.reply_prefix');
+        $title = str_starts_with($title, $prefix) ? $title : $prefix.$title;
+        $quote = collect(preg_split('/\R/', mb_substr((string) $original->body, 0, 300)))
+            ->map(fn (string $line): string => '> '.$line)
+            ->implode("\n");
+
+        return [mb_substr($title, 0, self::TITLE), "\n\n".$quote];
     }
 
     public function store(Request $request, Notifier $notifier): RedirectResponse

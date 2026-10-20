@@ -171,7 +171,9 @@ class PlaceController extends Controller
         $place = $this->place($character, $slug);
         $kind = ClinicService::tryFrom($service);
 
-        $result = $kind === null ? CityRefusal::NotSold : $clinic->treat($character, $place, $kind);
+        $partial = $request->filled('points') ? (int) $request->validate(['points' => ['integer', 'min:1']])['points'] : null;
+
+        $result = $kind === null ? CityRefusal::NotSold : $clinic->treat($character, $place, $kind, $partial);
 
         return $result instanceof CityRefusal
             ? back()->with('error', $result->message())

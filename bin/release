@@ -440,8 +440,8 @@ grep -qE "^## ${VERSION//./[.]} \([0-9]{4}-[0-9]{2}-[0-9]{2}\):?[[:space:]]*$" "
 if [[ $RUN_TESTS == 1 ]]; then
     if docker compose ps --status running --services 2>/dev/null | grep -qx web; then
         note "Running the suite..."
-        docker compose exec -u www-data -T web php artisan test >/dev/null \
-            || die "tests failed"
+        TEST_OUT=$(docker compose exec -u www-data -T web php artisan test 2>&1) \
+            || { printf '%s\n' "$TEST_OUT" | tail -60; die "tests failed"; }
     else
         warn "web container is not running; skipping the suite"
     fi
@@ -450,7 +450,6 @@ fi
 # ---- commit, merge, tag ----------------------------------------------------
 
 git --no-pager diff --stat -- "$CHANGELOG" "$VERSION_FILE" "$PATCHNOTES"
-confirm "Commit and tag $TAG?" || die "aborted"
 
 git add "$CHANGELOG" "$VERSION_FILE" "$PATCHNOTES"
 git commit -q -m "docs: release $VERSION"

@@ -349,6 +349,19 @@ class InventoryController extends Controller
 
         $name = $entry->item?->displayName() ?? '';
 
+        // A pile loses only what was asked for (one, by default); the row goes with its last copy.
+        $count = $entry->quantity > 1
+            ? (int) ($request->validate(['quantity' => ['nullable', 'integer', 'min:1']])['quantity'] ?? 1)
+            : 1;
+
+        if ($count < $entry->quantity) {
+            $entry->decrement('quantity', $count);
+
+            return redirect()
+                ->route('inventory.index')
+                ->with('status', Text::get('inventory.destroyed', ['item' => $name]));
+        }
+
         /*
          * Anything running on it stops first, and the programs go back to the
          * stash. Not politeness — `inventory_items.running_on_deck_id` is
@@ -430,11 +443,14 @@ class InventoryController extends Controller
             ? $runner->stop($character, $entry)
             : $runner->start($character, $entry);
 
+        // The Running modal asks to be opened again after the page reloads.
+        $reopen = $request->input('reopen') === 'processes' ? ['reopen' => 'processes'] : [];
+
         if (! $result->succeeded()) {
-            return back()->with('error', $result->refusal->message());
+            return back()->with('error', $result->refusal->message())->with($reopen);
         }
 
-        $status = back()->with('status', Text::get(
+        $status = back()->with($reopen)->with('status', Text::get(
             $result->process !== null ? 'programs.started' : 'programs.stopped',
             ['program' => $name],
         ));
