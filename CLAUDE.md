@@ -1790,6 +1790,7 @@ never pushes** (`--help` has the flags). Push with `git push origin main --follo
 - **When Claude is asked to cut one**: Claude writes both entries to files, and the user
   runs `bin/release X.Y.Z --changelog FILE --patchnotes FILE` in their own terminal —
   nano (patch notes) cannot open inside Claude's shell.
+  The changelog file must start with its own `## [X.Y.Z] — YYYY-MM-DD` heading (the script dies without it); the patch notes file is the body only, no heading.
 - **Patch notes are for players**: short and plain, no class names, migrations or reasoning.
 - It refuses to rewind a `main` that has been pushed (`git fetch` first, or `--no-branch`),
   and a patch release that adds a migration must be confirmed.
