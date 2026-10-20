@@ -38,6 +38,12 @@
         <div class="row row--wrap" style="--gap:var(--s-3)">
             <form method="POST" action="{{ route('inventory.destroy', $entry) }}">
                 @csrf
+                @if ($entry->quantity > 1)
+                    <label class="field">
+                        <span class="micro">{{ Text::get('inventory.destroy.how_many', ['max' => $entry->quantity]) }}</span>
+                        <input class="input" type="number" name="quantity" min="1" max="{{ $entry->quantity }}" value="1">
+                    </label>
+                @endif
                 <button type="submit" class="btn btn--danger cut">
                     {{ Text::get('inventory.destroy.confirm') }}
                 </button>

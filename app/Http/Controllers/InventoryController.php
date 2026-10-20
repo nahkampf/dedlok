@@ -349,6 +349,19 @@ class InventoryController extends Controller
 
         $name = $entry->item?->displayName() ?? '';
 
+        // A pile loses only what was asked for (one, by default); the row goes with its last copy.
+        $count = $entry->quantity > 1
+            ? (int) ($request->validate(['quantity' => ['nullable', 'integer', 'min:1']])['quantity'] ?? 1)
+            : 1;
+
+        if ($count < $entry->quantity) {
+            $entry->decrement('quantity', $count);
+
+            return redirect()
+                ->route('inventory.index')
+                ->with('status', Text::get('inventory.destroyed', ['item' => $name]));
+        }
+
         /*
          * Anything running on it stops first, and the programs go back to the
          * stash. Not politeness — `inventory_items.running_on_deck_id` is
