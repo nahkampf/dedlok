@@ -1271,6 +1271,8 @@ cap-widget {
 }
 .panel__hd > .micro { flex: 1; }
 .panel__bd { padding: var(--s-4); }
+/* A wide picture: full width inside the padding, whole picture shown at its own ratio. */
+.banner-img { display: block; width: 100%; height: auto; border: var(--hair) solid var(--line-1); }
 .panel__ft {
   display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-3);
   padding: var(--s-3) var(--s-4);

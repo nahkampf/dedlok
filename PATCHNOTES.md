@@ -1,3 +1,7 @@
+## 0.69.1 (2026-10-20)
+- Districts how have an image, and the safehouse too. Temporary eye candy during alpha phase, this has got to be cleared or removed later.
+- Some UI tidying on the district page
+
 ## 0.69.0 (2026-10-20)
 
 - New safehouse actions: **Work out** (slowly raises Meat, Motor and Muscle), **Study** (slowly raises Intellect, Memory and Focus), **Simstim** (raises Mood). All at the cost of fatigue. Not all safehouses have these actions.

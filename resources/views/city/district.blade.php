@@ -7,7 +7,11 @@
     <p style="margin:0"><a href="{{ route('city.index') }}">{{ Text::get('city.back') }}</a></p>
     <h1 style="margin-top:var(--s-2)"><span aria-hidden="true" style="color:{{ $district->color->token() }}">&#9672;</span> {{ $district->name }}</h1>
     @if ($district->description)
-        <p class="lede" style="margin-top:var(--s-3);max-width:70ch">{{ $district->description }}</p>
+        <p class="lede" style="margin-top:var(--s-3)">{{ $district->description }}</p>
+    @endif
+    @php($picture = file_exists(public_path("images/locations/{$district->slug}.png")) ? "{$district->slug}.png" : '_default.png')
+    @if (file_exists(public_path("images/locations/{$picture}")))
+        <img class="banner-img" style="margin-top:var(--s-3)" src="{{ \App\Support\Asset::url("images/locations/{$picture}") }}" alt="">
     @endif
     @if ($district->id === $character->district_id)
         <p style="margin-top:var(--s-3)"><span class="tag">{{ Text::get('city.here') }}</span></p>
@@ -47,8 +51,8 @@
                 <p style="margin:0"><a class="btn btn--go cut" href="{{ route('safehouse.show') }}">{{ Text::get('safehouse.yours') }}</a></p>
             @endif
             @if ($options->isNotEmpty())
-            <div class="panel">
-                <div class="panel__hd"><span class="micro">{{ Text::get('safehouse.get') }}</span></div>
+            <details class="panel">
+                <summary class="panel__hd"><span class="micro">{{ Text::get('safehouse.get') }}</span></summary>
                 <div class="panel__bd stack" style="--gap:var(--s-3)">
                     @php($needed = (int) config('safehouse.passes_needed'))
                     @foreach ($options as $option)
@@ -73,7 +77,7 @@
                         </div>
                     @endforeach
                 </div>
-            </div>
+            </details>
             @endif
         @endif
 
@@ -88,31 +92,8 @@
             </div>
         @endif
 
-        <x-city-map :label="Text::get('city.district_map')"
-            :nodes="$locations->map(fn ($location) => [
-                'key' => 'l'.$location->id,
-                'label' => $location->name.($location->features() === [] ? '' : ' · '.implode(', ', array_map(fn ($f) => $f->label(), $location->features()))),
-                'x' => $location->map_x,
-                'y' => $location->map_y,
-                'href' => route('city.place', $location->slug),
-                'here' => false,
-                'pin' => true,
-                'hue' => $district->color->token(),
-            ])->when($home->district_id === $district->getKey(), fn ($nodes) => $nodes->push([
-                // ponytail: a fixed spot, safehouses have no coordinates; may overlap a pin, add map_x/map_y when it does.
-                'key' => 'home',
-                'glyph' => '&#x25C7;',
-                'label' => $home->title,
-                'x' => 30,
-                'y' => 70,
-                'href' => route('safehouse.show'),
-                'here' => false,
-                'pin' => true,
-                'hue' => $district->color->token(),
-            ]))->all()" />
-
-        <div class="panel">
-            <div class="panel__hd"><span class="micro">{{ Text::get('city.locations') }}</span></div>
+        <details class="panel">
+            <summary class="panel__hd"><span class="micro">{{ Text::get('city.locations') }}</span></summary>
             <div class="panel__bd stack" style="--gap:var(--s-3)">
                 @if ($home->district_id === $district->getKey())
                     <div class="stack" style="--gap:2px">
@@ -142,6 +123,29 @@
                     @endif
                 @endforelse
             </div>
-        </div>
+        </details>
+
+        <x-city-map :label="Text::get('city.district_map')"
+            :nodes="$locations->map(fn ($location) => [
+                'key' => 'l'.$location->id,
+                'label' => $location->name.($location->features() === [] ? '' : ' · '.implode(', ', array_map(fn ($f) => $f->label(), $location->features()))),
+                'x' => $location->map_x,
+                'y' => $location->map_y,
+                'href' => route('city.place', $location->slug),
+                'here' => false,
+                'pin' => true,
+                'hue' => $district->color->token(),
+            ])->when($home->district_id === $district->getKey(), fn ($nodes) => $nodes->push([
+                // ponytail: a fixed spot, safehouses have no coordinates; may overlap a pin, add map_x/map_y when it does.
+                'key' => 'home',
+                'glyph' => '&#x25C7;',
+                'label' => $home->title,
+                'x' => 30,
+                'y' => 70,
+                'href' => route('safehouse.show'),
+                'here' => false,
+                'pin' => true,
+                'hue' => $district->color->token(),
+            ]))->all()" />
     </div>
 @endsection

@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.69.1] — 2026-10-20
+
+### Added
+
+- **Location pictures**: a wide banner on the district screen (between the description and *You are here*) and at the top of the safehouse's *What you can do here* panel. Found by convention in `public/images/locations/`: `<district slug>.png`, falling back to `_default.png`; the safehouse uses `safehouse.png`. Stamped through `Asset::url()`. New `.banner-img` in the kit: full width inside the padding, at the picture's own ratio.
+
+### Changed
+
+- **District screen**: *Places you know here* comes before the district map; it and *Get a safehouse here* are accordions (`details.panel`), closed by default. The description is no longer capped at 70ch.
+- `CLAUDE.md` is split into `docs/` by subsystem.
+
+
 ## [0.69.0] — 2026-10-20
 
 ### Added
@@ -3614,7 +3626,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.69.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.69.1...HEAD
+[0.69.1]: https://github.com/nahkampf/dedlok/compare/v0.69.0...v0.69.1
 [0.69.0]: https://github.com/nahkampf/dedlok/compare/v0.68.1...v0.69.0
 [0.68.1]: https://github.com/nahkampf/dedlok/compare/v0.68.0...v0.68.1
 [0.68.0]: https://github.com/nahkampf/dedlok/compare/v0.67.0...v0.68.0
