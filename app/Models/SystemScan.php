@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written only by App\Cyberspace\Probe.
  */
-#[Fillable(['character_id', 'address', 'x', 'y', 'grade', 'os_skill_id', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_level', 'ice_bounty', 'cloak_broken', 'passes', 'pass_started_at', 'pass_ready_at', 'reading_process_id', 'scanned_at', 'expires_at'])]
+#[Fillable(['character_id', 'address', 'grid_id', 'x', 'y', 'grade', 'os_skill_id', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_level', 'ice_bounty', 'cloak_broken', 'passes', 'pass_started_at', 'pass_ready_at', 'reading_process_id', 'scanned_at', 'expires_at'])]
 class SystemScan extends Model
 {
     public $timestamps = false;
@@ -85,7 +85,7 @@ class SystemScan extends Model
 
     public function position(): Position
     {
-        return new Position($this->x, $this->y);
+        return new Position($this->x, $this->y, (int) ($this->grid_id ?? 1));
     }
 
     /**

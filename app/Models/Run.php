@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'x', 'y', 'purpose', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
+#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'ended_at', 'ending', 'log'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -46,6 +46,7 @@ class Run extends Model
             'ice_attack' => PointsCast::class,
             'ice_damage' => PointsCast::class,
             'extracting_qb' => 'float',
+            'pressure' => 'float',
             'trace' => 'integer',
             'trace_hop' => 'integer',
             'chain' => 'array',
@@ -201,7 +202,7 @@ class Run extends Model
 
     public function position(): Position
     {
-        return new Position($this->x, $this->y);
+        return new Position($this->x, $this->y, (int) ($this->grid_id ?? 1));
     }
 
     /** Is this run still being played? */

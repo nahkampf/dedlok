@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Models\Character;
 use App\Models\System;
 use Closure;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The world, and the ONE place that knows how it is stored.
@@ -31,6 +33,10 @@ final class Grid
         private readonly int $size,
         private readonly Position $portal,
         private readonly int $viewRange,
+        /** Which grid this is (`grids.id`). 1 is the main grid; `fromConfig()` is always it. */
+        private readonly int $id = 1,
+        /** A subnet's address prefix (`mil`); null on the main grid, whose addresses carry none. */
+        private readonly ?string $prefix = null,
     ) {}
 
     public static function fromConfig(): self
@@ -45,6 +51,47 @@ final class Grid
             new Position(intdiv($size, 2), intdiv($size, 2)),
             (int) Config::get('cyberspace.view_range', 3),
         );
+    }
+
+    public function prefix(): ?string
+    {
+        return $this->prefix;
+    }
+
+    /** `grids.id`: 1 for the main grid. */
+    public function id(): int
+    {
+        return $this->id;
+    }
+
+    /**
+     * Grid number `$id`: the main one from the settings, a subnet from its row (entered at its entry point).
+     *
+     * @throws \RuntimeException for a grid that is not there
+     */
+    public static function forId(int $id): self
+    {
+        if ($id === 1) {
+            return self::fromConfig();
+        }
+
+        $row = DB::table('grids')->find($id) ?? throw new \RuntimeException("There is no grid {$id}.");
+
+        return new self((int) $row->size, new Position((int) $row->entry_x, (int) $row->entry_y, $id), (int) Config::get('cyberspace.view_range', 3), $id, $row->prefix);
+    }
+
+    /** The grid a character stands on, or last stood on. */
+    public static function of(Character $character): self
+    {
+        return self::forId((int) ($character->grid_id ?? 1));
+    }
+
+    /** The system answering to this address on ANY grid (an admin typing an address knows only the address). */
+    public static function findAnywhere(string $address): ?System
+    {
+        $address = Address::normalise($address);
+
+        return $address === null ? null : System::query()->firstWhere('address', $address);
     }
 
     public function size(): int
@@ -110,7 +157,7 @@ final class Grid
     {
         $address = Address::normalise($address);
 
-        return $address === null ? null : System::query()->firstWhere('address', $address);
+        return $address === null ? null : System::query()->where('grid_id', $this->id)->firstWhere('address', $address);
     }
 
     /**
@@ -160,7 +207,7 @@ final class Grid
     public function freePosition(Closure $roll, array $taken = [], int $attempts = 200): ?Position
     {
         for ($try = 0; $try < $attempts; $try++) {
-            $position = new Position($roll(0, $this->size - 1), $roll(0, $this->size - 1));
+            $position = new Position($roll(0, $this->size - 1), $roll(0, $this->size - 1), $this->id);
 
             if (isset($taken["{$position->x},{$position->y}"])) {
                 continue;
@@ -193,7 +240,7 @@ final class Grid
     {
         $taken = [];
 
-        foreach (System::query()->select(['x', 'y'])->cursor() as $system) {
+        foreach (System::query()->where('grid_id', $this->id)->select(['x', 'y'])->cursor() as $system) {
             $taken["{$system->x},{$system->y}"] = true;
         }
 
@@ -214,7 +261,7 @@ final class Grid
     public function freePositionAmong(array $taken, Closure $roll, int $attempts = 200): ?Position
     {
         for ($try = 0; $try < $attempts; $try++) {
-            $position = new Position($roll(0, $this->size - 1), $roll(0, $this->size - 1));
+            $position = new Position($roll(0, $this->size - 1), $roll(0, $this->size - 1), $this->id);
 
             if (! isset($taken["{$position->x},{$position->y}"])) {
                 return $position;
@@ -227,6 +274,6 @@ final class Grid
     /** How many systems are standing on the grid right now. */
     public function occupied(): int
     {
-        return System::query()->count();
+        return System::query()->where('grid_id', $this->id)->count();
     }
 }

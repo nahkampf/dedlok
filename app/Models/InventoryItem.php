@@ -33,7 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * card is a physical row holding data rows — the item says what kind of thing
  * it is, the row says where it ended up.
  */
-#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'fortress_system_id', 'fortress_running', 'fortress_halted', 'fortress_installed_by', 'defence', 'belt_slot', 'extracted_file', 'scan_file', 'loaded_ammo_id', 'loaded_rounds', 'safehouse_id', 'storage_expires_at'])]
+#[Fillable(['character_id', 'item_id', 'parent_id', 'quantity', 'running_on_deck_id', 'started_at', 'installed_at', 'fortress_system_id', 'grid_id', 'fortress_running', 'fortress_halted', 'fortress_installed_by', 'defence', 'belt_slot', 'extracted_file', 'scan_file', 'loaded_ammo_id', 'loaded_rounds', 'safehouse_id', 'storage_expires_at'])]
 class InventoryItem extends Model
 {
     /** @use HasFactory<InventoryItemFactory> */

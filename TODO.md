@@ -62,7 +62,7 @@ Build order, each its own step: **1. decimal QB / qFLOPS** (built, unreleased), 
 ## Decryption: what is left (2026-10-08)
 
 Built: the queue, cycles, simultaneous decryptors, reordering, gates, Cryptology and Precomputation, Ghostkey, buy lists, supply
-jobs taking sealed dumps. Left, in the author's hands or undecided:
+jobs (scan files only). Left, in the author's hands or undecided:
 
 - **Decryptors for Halcyon-3, BLACKGLASS and Ouroboros** (the author is building them; `programs.decrypts` limits one to some encryptions).
 - **Other outcomes than a Memory Dump** — `DecryptionQueue::outcomeFor()` is the one place a table by grade goes; and a use for a Memory Dump beyond selling it.
@@ -694,8 +694,9 @@ defend before there is a game to defend it against.
   it yet, and the first skill that does needs no code in `characters:cool`.
 - **It can be CLEANED**, through processes not yet designed, and that is where
   the money sink is.
-- **Later: heat draws rogue programs** while moving through cyberspace, and
-  especially through subnets.
+- **Later: heat draws more Wardens** (rogue programs) while moving through
+  cyberspace, and especially through subnets. Wardens themselves are built
+  (CYBERSPACE.md, *Wardens*); heat does not yet draw extra ones.
 
 ---
 
@@ -968,3 +969,26 @@ Maybe players can also buy "houses" and "apartments" - figure out what this woul
 **Mirror of the safe house** (see *Bounty collection and player-versus-player*): a place to camp and to store important items or cash, much harder for other players to raid. Decide the two together.
 
 Systems in cyberspace that a player can "build". Should take quite a lot of skill, and time and resources to build. Works more or less like a normal system, but players can stash cash here, run "programs" that do things like generate passive income etc, use it as a very good route in the chain etc. Prime target for other players to attack. Players should here have to "construct" their own IDS and ICE, which should take skills and the higher the skill and the longer they work on it the stronger their systems become. A data fortress built by a skilled runner should more or less require a team to take down.
+
+## Romanceable characters (idea, not designed)
+
+At some point, introduce characters through encounters that a player can build a relationship with and ultimately romance. Five of them: one woman, one man, one trans woman, one trans man, one non-binary character. Not designed or scheduled: it needs an encounter chain per character and some way to keep a relationship's state (flags and journal notes cover the first cut).
+
+## UI review, 2026-10-19 (headless Chrome, 320px and 1280px, every signed-in page; exchange and run screens not reached)
+
+No console errors and no page-level horizontal overflow anywhere. Suggestions, most useful first:
+
+- **Chat does not scroll to the bottom after a pasted picture loads**: the new line is cut off until the image arrives. Scroll again on the image's `load`.
+- **Safehouse screen lists every stash row, 100+ buttons at once** (`/safehouse`, one "Store" per Scan File). Group identical rows ("Scan File x40"), collapse the list into an accordion, or cap it with a filter.
+- **Wallet is a wide table at 320px** (the header and rows run past the viewport): turn each entry into a stacked two-line row on narrow screens. Also 50 rows of "Taken from a system" and "Siphon payout" say little: group by day, or add a type filter.
+- **Market page opens with 20 closed category accordions before any item**: open the first non-empty one, or show a count plus the first few items; the "Sales orders" heading sits in the middle of the list.
+- **Character screen is very long on a phone** (attributes, vitals, bounty, heat, drugs, bio): make Bounty and Heat one "Standing" row when both are zero, and fold Drugs away when clean. The picture upload and the bio box could live behind an "Edit" accordion.
+- **Fatigue, Mood, Heat and Bounty cards all say "Nothing is changing…" or "No bounty"**: when empty, show one line instead of a card each.
+- **Deck screen**: the board labels overlap at 320px ("RAM: OPTO-ELECTR…", "I/O: ELECTRODE" runs into the nodes). Shorten the labels or show the board as a list on narrow screens. Decryption and Crafting are closed panels with "0" and "0 / 1"; fine, but Crafting shows an unbuildable design in yellow even when empty.
+- **Cyberspace map**: the grid is cropped on the right at 320px, and Jump, Thresholds, Routing chain and Bookmarks are four stacked accordions. Bookmarks mix two button layouts (the first row wraps under the name, the others sit beside it); make them one layout.
+- **Stash (Carried) shows one item and a lot of empty space**: fine, but "Point at a slot for details, or tap it" could go once the player has tapped one.
+- **Skills list**: each skill shows a diamond, a name, the two attributes and a bar. The diamond adds nothing; the "0/5" skills (Eidetic Implants, Neural Sheathing) could be dimmed.
+- **Tab bar on the character pages scrolls sideways** (six tabs at 320px). Works, but nothing says there are more tabs to the right.
+- **Rail menu icons are all the same weight**: the two envelope icons (notifications and chat) look alike. Give chat a speech-bubble glyph.
+
+

@@ -31,6 +31,11 @@
             <option value="unknown" @selected($selected['grade'] === 'unknown')>{{ Text::get('cyberspace.known.grade_unknown') }}</option>
         </select>
     </label>
+    <label class="check" style="margin:0">
+        <input type="checkbox" name="full" value="1" @checked($selected['full'])>
+        <span class="check__box"></span>
+        <span>{{ Text::get('cyberspace.known.full_scan') }}</span>
+    </label>
 </form>
 
 @if ($rows->isEmpty())
@@ -65,11 +70,13 @@
                         <td class="t-right num">{{ $row['grade'] ?? '—' }}</td>
                         <td>
                             <span class="row" style="--gap:var(--s-2);align-items:center;flex-wrap:nowrap">
-                                <span data-inspect="#sys-{{ $row['address'] }}" data-inspect-hover><x-address :address="$row['address']" /></span>
-                                <x-jump :address="$row['address']" />
+                                @if ($row['backdoor'])
+                                    <span class="mark--ok" title="{{ Text::get('cyberspace.known.backdoor') }}" aria-label="{{ Text::get('cyberspace.known.backdoor') }}">&#9672;</span>
+                                @endif
                                 @if ($row['complete'])
                                     <span class="mark--ok" title="{{ Text::get('cyberspace.known.full_scan') }}" aria-label="{{ Text::get('cyberspace.known.full_scan') }}">&#10003;</span>
                                 @endif
+                                <span data-inspect="#sys-{{ $row['address'] }}" data-inspect-hover><x-address :address="$row['address']" /></span>
                             </span>
                             <template id="sys-{{ $row['address'] }}">
                                 <div class="item-card">

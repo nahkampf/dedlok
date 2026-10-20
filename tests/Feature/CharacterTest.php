@@ -96,6 +96,10 @@ class CharacterTest extends TestCase
             'current_fatigue', 'current_fullness', 'mood', 'collapse_pending',
             // Their home, or NULL for the fallback.
             'rent_due_at', 'raid_cooldown_until', 'safehouse_id',
+            // The grid the body is on, or was last on (grids; 1 is the main grid).
+            'grid_id',
+            // Where a jack-in resumes on a subnet (NULL: the main portal).
+            'resume_x', 'resume_y', 'virus_damage', 'virus_turns', 'virus_elapsed',
             'created_at', 'updated_at',
         ];
 

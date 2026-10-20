@@ -95,6 +95,7 @@ return [
         'transport' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 1.5],
         'heist' => ['creds' => 1.2, 'standing' => 1.5, 'loyalty' => 1.5],
         'extract' => ['creds' => 1.8, 'standing' => 1.5, 'loyalty' => 1.5],
+        'denial' => ['creds' => 1.7, 'standing' => 1.5, 'loyalty' => 1.5],
         'supply' => ['creds' => 1.2, 'standing' => 0.5, 'loyalty' => 0.5],
     ],
 
@@ -148,6 +149,15 @@ return [
     | it exists.
     |
     */
+    /*
+    | An entity's own terms, keyed by NAME (like `cyberspace.exchanges.grades`); absent is the defaults. `without` leaves
+    | actions off its board, `only` leaves nothing else on it; `standing`, `loyalty` and `penalty` multiply what a job pays in each and what failing it costs.
+    */
+    'entities' => [
+        'Anansi Data Weaving' => ['only' => ['supply']],
+        'TAO' => ['without' => ['transport'], 'standing' => 2, 'loyalty' => 2, 'penalty' => 3],
+    ],
+
     'grades' => [
         1 => ['creds' => [40, 90], 'standing' => [0.014, 0.042], 'loyalty' => [1, 3], 'penalty' => 0.02],
         2 => ['creds' => [90, 200], 'standing' => [0.10, 0.18], 'loyalty' => [4, 8], 'penalty' => 0.07],

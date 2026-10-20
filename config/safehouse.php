@@ -29,6 +29,8 @@ return [
      */
     'rest' => [
         'wakefulness_limit' => 10,
+        // Synaptic Integrity mended per minute of resting, whatever the home.
+        'synaptic_per_minute' => 0.083,
         'overridden_by' => ['opiate', 'medical'],
     ],
 

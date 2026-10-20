@@ -14,6 +14,7 @@ use App\Cyberspace\Finder;
 use App\Cyberspace\FortressCloak;
 use App\Cyberspace\Fortresses;
 use App\Cyberspace\FortressRefusal;
+use App\Cyberspace\FortressTunnel;
 use App\Cyberspace\Grid;
 use App\Cyberspace\Jumper;
 use App\Cyberspace\MapView;
@@ -43,6 +44,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -66,11 +68,12 @@ class CyberspaceController extends Controller
     public function index(Request $request, Probe $probe, ChainBuilder $chains, Finder $finder): View
     {
         $character = $this->character($request);
-        $grid = Grid::fromConfig();
+        $grid = Grid::of($character);
 
         $scan = $character->isJackedIn()
             ? SystemScan::query()
                 ->where('character_id', $character->id)
+                ->where('grid_id', $grid->id())
                 ->where('x', $character->grid_x)
                 ->where('y', $character->grid_y)
                 ->live()
@@ -132,7 +135,12 @@ class CyberspaceController extends Controller
         ));
         $shape = ViewShape::for(app(Resolver::class)->resolve('view_range', $viewBase, $viewMods)->toInt());
 
+        $tunnelling = FortressTunnel::make();
+
         return view('cyberspace.index', [
+            'tunnels' => $tunnelling->available($character)->map(fn (System $s): array => [
+                'system' => $s, 'cooldown' => $tunnelling->cooldownLeft($character, $s),
+            ]),
             'locator' => $locator,
             'character' => $character,
             // The route a run would take from here: the same call the briefing makes, so what this box shows is what
@@ -271,19 +279,25 @@ class CyberspaceController extends Controller
         // Every live scan the character holds, by address: a whole one is ticked, and any is shown on hover.
         $scans = SystemScan::query()->where('character_id', $character->getKey())->live()->get()->keyBy('address');
 
+        // Addresses the character holds a backdoor on.
+        $backdoored = (new Backdoors)->heldBy($character)->pluck('system.address')->filter()->flip();
+
         $rows = $contacts->map(static fn (SystemContact $c): array => [
-            'name' => $c->name,
+            // The Type column says what it is, so the composed name's "<Type> - " lead is dropped.
+            'name' => Str::after($c->name, $c->type->label().' - '),
             'owner' => (string) ($c->owner ?? ''),
             'type' => $c->type,
             'address' => $c->address,
             'grade' => $grades->has($c->address) ? (int) $grades->get($c->address) : null,
             'scan' => $scans->get($c->address),
             'complete' => $scans->get($c->address)?->isComplete() === true,
+            'backdoor' => $backdoored->has($c->address),
         ]);
 
         $owner = trim((string) $request->query('owner', ''));
         $type = trim((string) $request->query('type', ''));
         $grade = trim((string) $request->query('grade', ''));
+        $full = (string) $request->query('full', '') === '1';
 
         // What the selects offer comes from what is known, never from the whole world.
         $options = [
@@ -295,6 +309,7 @@ class CyberspaceController extends Controller
         $shown = $rows
             ->when($owner !== '', static fn ($r) => $r->where('owner', $owner === '__none' ? '' : $owner))
             ->when($type !== '', static fn ($r) => $r->filter(static fn (array $row): bool => $row['type']->value === $type))
+            ->when($full, static fn ($r) => $r->filter(static fn (array $row): bool => $row['complete']))
             ->when($grade !== '', static fn ($r) => $grade === 'unknown'
                 ? $r->filter(static fn (array $row): bool => $row['grade'] === null)
                 : $r->filter(static fn (array $row): bool => $row['grade'] === (int) $grade))
@@ -311,7 +326,7 @@ class CyberspaceController extends Controller
             'total' => $shown->count(),
             'known' => $rows->count(),
             'options' => $options,
-            'selected' => ['owner' => $owner, 'type' => $type, 'grade' => $grade],
+            'selected' => ['owner' => $owner, 'type' => $type, 'grade' => $grade, 'full' => $full],
             'jackedIn' => $character->isJackedIn(),
             'character' => $character,
         ]);
@@ -332,6 +347,15 @@ class CyberspaceController extends Controller
         return $this->settle(
             Navigator::fromConfig($resolver)->jackOut($this->character($request)),
             Text::get('cyberspace.status.jacked_out'),
+        );
+    }
+
+    /** Through the gateway underfoot, to its other end. */
+    public function pass(Request $request, Resolver $resolver): RedirectResponse
+    {
+        return $this->settle(
+            Navigator::fromConfig($resolver)->pass($this->character($request)),
+            Text::get('cyberspace.status.passed'),
         );
     }
 
@@ -369,8 +393,8 @@ class CyberspaceController extends Controller
 
         abort_unless($finder->canTraverse($character), 403);
 
-        $target = new Position((int) $data['x'], (int) $data['y']);
         $from = $character->gridPosition();
+        $target = new Position((int) $data['x'], (int) $data['y'], (int) $character->grid_id);
 
         if ($from === null) {
             return response()->json(['stop' => true, 'message' => TravelRefusal::NotJackedIn->message()]);
@@ -609,6 +633,14 @@ class CyberspaceController extends Controller
             : $response;
     }
 
+    /** Secure Tunnelling: straight onto a fortress you may use, bypassing any gateway. */
+    public function tunnel(Request $request, System $system): RedirectResponse
+    {
+        $result = FortressTunnel::make()->tunnel($this->character($request), $system);
+
+        return $this->settle($result, Text::get('cyberspace.tunnel.done', ['name' => $system->displayName()]));
+    }
+
     public function recall(Request $request, Bookmark $bookmark, Resolver $resolver): RedirectResponse
     {
         return $this->settle(
@@ -656,7 +688,7 @@ class CyberspaceController extends Controller
 
         if ($data['kind'] === BookmarkKind::Waypoint->value) {
             [$x, $y] = array_map(intval(...), explode(',', $data['at']));
-            $result = $keeper->markPosition($character, new Position($x, $y), $data['label'] ?? null);
+            $result = $keeper->markPosition($character, new Position($x, $y, (int) $character->grid_id), $data['label'] ?? null);
         } else {
             $result = $keeper->markAddress($character, $data['address'], $data['label'] ?? null);
         }

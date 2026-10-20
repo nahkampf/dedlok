@@ -497,6 +497,7 @@ final class Probe
         return new SystemScan([
             'character_id' => $character->getKey(),
             'address' => $system->address,
+            'grid_id' => $system->position()->grid,
             'x' => $system->x,
             'y' => $system->y,
             'passes' => 0,

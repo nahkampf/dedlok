@@ -110,6 +110,19 @@ final readonly class RunStarter
             return RunResult::refused(RunRefusal::NotIntrudable);
         }
 
+        // The subnet side of a gateway is the way OUT: free, undefended, and nothing to run against.
+        if ($system->type->isGateway() && (int) $system->grid_id !== 1) {
+            return RunResult::refused(RunRefusal::NotIntrudable);
+        }
+
+        if (($purpose === RunPurpose::Infiltrate) !== $system->type->isGateway()) {
+            return RunResult::refused(RunRefusal::WrongPurpose);
+        }
+
+        if ($partyId !== null && $system->type->isGateway()) {
+            return RunResult::refused(RunRefusal::WrongPurpose);
+        }
+
         // SHUT. It found out about somebody, and until the window closes there
         // is no way in — after which there is no machine here at all, because
         // what ends a lockdown is the machine moving.
@@ -143,6 +156,7 @@ final readonly class RunStarter
                     'character_id' => $character->getKey(),
                     'run_party_id' => $partyId,
                     'address' => $system->address,
+                    'grid_id' => $at->grid,
                     'x' => $at->x,
                     'y' => $at->y,
                     'purpose' => $purpose->value,

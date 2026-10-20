@@ -88,6 +88,7 @@
                 <a class="btn btn--sm" href="{{ route('admin.locations.index') }}">{{ Text::get('admin.locations.title') }}</a>
                 <a class="btn btn--sm" href="{{ route('admin.safehouses.index') }}">{{ Text::get('admin.safehouses.title') }} ({{ $safehouses }})</a>
                 <a class="btn btn--sm" href="{{ route('admin.encounters.index') }}">{{ Text::get('admin.encounters.title') }}</a>
+                <a class="btn btn--sm" href="{{ route('admin.subnets.index') }}">{{ Text::get('admin.subnets.title') }} ({{ $subnets }})</a>
             </div>
         </div>
 

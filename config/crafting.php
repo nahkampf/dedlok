@@ -32,6 +32,7 @@ return [
         'cloak' => 'utility_crafting',
         'market' => 'utility_crafting',
         'relocation' => 'utility_crafting',
+        'tunnel' => 'utility_crafting',
     ],
     'gate_level' => 1,
 

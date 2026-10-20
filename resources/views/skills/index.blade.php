@@ -314,8 +314,6 @@
                              on a phone. The card is <x-skill-detail>, written
                              once in the template below. --}}
                         <div class="item-row" data-inspect="#skill-{{ $skill->id }}" tabindex="0" style="cursor:help">
-                            <span class="slot__icon" aria-hidden="true">&#9670;</span>
-
                             <span class="stack" style="--gap:2px;min-width:0">
                                 <span class="item-row__name">{{ $skill->title }}</span>
 

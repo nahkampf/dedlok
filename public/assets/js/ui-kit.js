@@ -1556,6 +1556,15 @@
   countdowns();
   document.addEventListener("DOMContentLoaded", countdowns);
 
+  /* A tab strip that scrolls says so: data-more is set while there is more to the right (CSS draws the fade and arrow). */
+  const tabsMore = () => document.querySelectorAll(".tabs").forEach((t) => {
+    const set = () => t.toggleAttribute("data-more", t.scrollLeft + t.clientWidth < t.scrollWidth - 8);
+    t.addEventListener("scroll", set, { passive: true });
+    set();
+  });
+  document.addEventListener("DOMContentLoaded", tabsMore);
+  window.addEventListener("resize", () => document.querySelectorAll(".tabs").forEach((t) => t.toggleAttribute("data-more", t.scrollLeft + t.clientWidth < t.scrollWidth - 8)));
+
 
   /* --- A node graph -----------------------------------------------------
      UI.nodeGraph(el, spec) draws a directed graph as an SVG inside el (a .graph).
@@ -1840,6 +1849,12 @@
       post(join.dataset.chatJoin, new FormData()).then((id) => id && go(id));
     });
 
+    // Scroll to the end now, and again as each picture in the log finishes loading (it grows the log after the fact).
+    const stick = (box) => {
+      box.scrollTop = box.scrollHeight;
+      box.querySelectorAll("img").forEach((i) => { if (!i.complete) i.addEventListener("load", () => { box.scrollTop = box.scrollHeight; }, { once: true }); });
+    };
+
     // Tabs and log from the server's truth: the poll screen, swapped in without touching the form.
     const swap = () => {
       const root = page.querySelector("[data-chat-poll]");
@@ -1853,7 +1868,7 @@
             if (!fresh || !old) continue;
             const atEnd = old.scrollHeight - old.scrollTop - old.clientHeight < 24;
             old.innerHTML = fresh.innerHTML;
-            if (atEnd) old.scrollTop = old.scrollHeight;
+            if (atEnd) stick(old);
           }
         })
         .catch(() => {});
@@ -1915,7 +1930,7 @@
           const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 24;
           box.querySelector(":scope > p")?.remove();
           box.insertAdjacentHTML("beforeend", d.html);
-          if (atEnd) box.scrollTop = box.scrollHeight;
+          if (atEnd) stick(box);
         }
       }
       lazy();

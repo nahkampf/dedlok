@@ -588,6 +588,16 @@ return [
             'max' => 100,
             'rounding' => 'hundredth',
         ],
+        /*
+        | How many ticks a Virus infection lasts. The base is the tag's own length (`virus_turns`), handed in at the call site;
+        | an Antiviral (a program lowering this with `percentage_of_base`) shortens it, and it is read on every tick.
+        */
+        'virus_lifetime' => [
+            'tags' => ['virus'],
+            'min' => 1,
+            'max' => null,
+            'rounding' => 'round',
+        ],
         'kernel_demand' => [
             'tags' => ['fortress'],
             'min' => 1,
@@ -844,6 +854,15 @@ return [
 
         /* Points of fatigue that come off every minute. Zero is the floor: nothing here makes you more tired by resting. */
         'fatigue_recovery' => [
+            'tags' => ['derived'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'hundredth',
+        ],
+
+        /* Points of addiction that come off every family's book each minute (`characters:regenerate`). Zero for everybody: only an
+           effect carrying it (a Script, say) works the need off faster than the nightly day off. */
+        'addiction_recovery' => [
             'tags' => ['derived'],
             'min' => 0,
             'max' => null,

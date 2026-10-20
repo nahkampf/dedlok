@@ -113,7 +113,7 @@ final class Finder
 
     public function nearest(Character $character, FindQuery $query, ?Grid $grid = null): ?FindResult
     {
-        $grid ??= Grid::fromConfig();
+        $grid ??= Grid::of($character);
         $from = $character->gridPosition() ?? $grid->portal();
 
         // A position is a Pathfinder's alone, and has to be a cell of the grid other than the one stood on.
@@ -141,6 +141,7 @@ final class Finder
         // A portal is never a sighting; it is added below.
         $contacts = SystemContact::query()
             ->where('type', '!=', SystemType::Portal->value)
+            ->where('grid_id', $grid->id())
             ->where('character_id', $character->getKey())
             ->when($query->address, static fn ($q, string $a) => $q->where('address', $a))
             ->when($query->type, static fn ($q, SystemType $t) => $q->where('type', $t->value))

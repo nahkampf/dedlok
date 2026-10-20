@@ -30,7 +30,7 @@ use Illuminate\Support\Facades\Config;
  * which is what "the LAST thing they saw" means. `seen_at` is the only clock,
  * so there is no `updated_at` free to say a different moment.
  */
-#[Fillable(['character_id', 'x', 'y', 'address', 'name', 'type', 'owner', 'locked_down_until', 'seen_at', 'first_seen_at'])]
+#[Fillable(['character_id', 'grid_id', 'x', 'y', 'address', 'name', 'type', 'owner', 'locked_down_until', 'seen_at', 'first_seen_at'])]
 class SystemContact extends Model
 {
     public $timestamps = false;
@@ -56,7 +56,7 @@ class SystemContact extends Model
     /** Where this was seen. The position is permanent; the sighting is not. */
     public function position(): Position
     {
-        return new Position($this->x, $this->y);
+        return new Position($this->x, $this->y, (int) ($this->grid_id ?? 1));
     }
 
     /**
@@ -95,7 +95,7 @@ class SystemContact extends Model
     /** @param  Builder<self>  $query */
     public function scopeAt(Builder $query, Position $position): void
     {
-        $query->where('x', $position->x)->where('y', $position->y);
+        $query->where('grid_id', $position->grid)->where('x', $position->x)->where('y', $position->y);
     }
 
     /**
@@ -109,7 +109,8 @@ class SystemContact extends Model
      */
     public function scopeWithin(Builder $query, Position $centre, int $range): void
     {
-        $query->whereBetween('x', [$centre->x - $range, $centre->x + $range])
+        $query->where('grid_id', $centre->grid)
+            ->whereBetween('x', [$centre->x - $range, $centre->x + $range])
             ->whereBetween('y', [$centre->y - $range, $centre->y + $range]);
     }
 

@@ -324,3 +324,11 @@ Schedule::command('safehouses:rent --quiet-when-idle')->everyFifteenMinutes()->w
 
 // A supporter whose month has run out stops being one. Reads already know; this keeps the stored flag true.
 Schedule::command('supporters:expire')->hourly();
+
+/*
+ * The Wardens of the subnets take their step, every minute. withoutOverlapping because a second pass on top of a slow one
+ * would be a second step; a missed minute is caught up lazily (a Warden moves up to `catch_up` steps when somebody looks).
+ */
+Schedule::command('wardens:move')
+    ->everyMinute()
+    ->withoutOverlapping();

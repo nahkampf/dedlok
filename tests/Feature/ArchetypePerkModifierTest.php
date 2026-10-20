@@ -92,6 +92,7 @@ class ArchetypePerkModifierTest extends TestCase
             'damage.hitpoints.run_cancelled',
             'damage.hitpoints.slashing',
             'damage.hitpoints.thermal',
+            'damage.hitpoints.tunnel',
         ], $matched, 'every way of being hurt in the body, and nothing in the mind');
     }
 

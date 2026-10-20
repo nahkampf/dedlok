@@ -9,6 +9,7 @@ use App\Models\Bookmark;
 use App\Models\Character;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
+use App\Models\Warden;
 use Illuminate\Support\Facades\Config;
 
 /**
@@ -44,7 +45,7 @@ final class MapView
 
     public static function for(Character $character, ?Grid $grid = null, ?int $range = null, ?ViewShape $shape = null): self
     {
-        $grid ??= Grid::fromConfig();
+        $grid ??= Grid::of($character);
         $range ??= (int) Config::get('cyberspace.map_range', 10);
 
         // Standing somewhere, or looking at the world from outside it. The
@@ -69,12 +70,13 @@ final class MapView
          * backdoor is a fact about the player, and they know what they hold.
          */
         $backdoors = (new Backdoors)->heldBy($character)
-            ->filter(static fn (Backdoor $held): bool => $held->system !== null)
+            ->filter(static fn (Backdoor $held): bool => $held->system !== null && (int) $held->system->grid_id === $grid->id())
             ->keyBy(static fn (Backdoor $held): string => "{$held->system->x},{$held->system->y}");
 
         $waypoints = Bookmark::query()
             ->where('character_id', $character->id)
             ->ofKind(BookmarkKind::Waypoint)
+            ->where('grid_id', $grid->id())
             ->whereBetween('x', [$centre->x - $range, $centre->x + $range])
             ->whereBetween('y', [$centre->y - $range, $centre->y + $range])
             ->get()
@@ -120,6 +122,13 @@ final class MapView
         // by stepping back.
         $sight = $shape ?? ViewShape::base();
 
+        // Wardens on this grid, by square. Only a jacked-in runner sees any, and only within their sight (see inView below).
+        $wardens = $standing === null ? collect() : Warden::query()->where('grid_id', $grid->id())->get()->keyBy(fn ($w): string => "{$w->x},{$w->y}");
+
+        // Other runners jacked in on this grid, by square, the same way (sight decides below).
+        $runners = $standing === null ? collect() : Character::query()->where('grid_id', $grid->id())->whereNotNull('grid_x')->whereNotNull('grid_y')
+            ->whereKeyNot($character->getKey())->get(['id', 'grid_x', 'grid_y'])->keyBy(fn ($c): string => "{$c->grid_x},{$c->grid_y}");
+
         $terrain = new Terrain($character);
         $rows = [];
 
@@ -127,7 +136,7 @@ final class MapView
             $row = [];
 
             for ($x = $centre->x - $range; $x <= $centre->x + $range; $x++) {
-                $position = new Position($x, $y);
+                $position = new Position($x, $y, $grid->id());
                 $key = "{$x},{$y}";
                 $onGrid = $grid->contains($position);
 
@@ -146,6 +155,8 @@ final class MapView
                     // you come back — the same way its address does.
                     isRebooting: $contacts->get($key)?->wasLockedDown() ?? false,
                     hasBackdoor: $backdoors->has($key),
+                    hasWarden: $wardens->has($key) && $standing !== null && $onGrid && $sight->covers($standing, $position),
+                    hasRunner: $runners->has($key) && $standing !== null && $onGrid && $sight->covers($standing, $position),
                     isYou: $standing !== null && $standing->equals($position),
                     isStep: $standing !== null && $grid->isStep($standing, $position),
                     // Only a machine can be new. Ground cannot: a position

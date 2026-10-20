@@ -535,6 +535,20 @@ return [
             2 => ['reduction' => 40],
             3 => ['reduction' => 55],
         ],
+
+        // Per cent chance per damaging hit to be thrown out of a subnet, and the Synaptic Integrity that costs. Placeholders.
+        'eject' => [
+            1 => ['chance' => 10, 'damage' => 3],
+            2 => ['chance' => 20, 'damage' => 6],
+            3 => ['chance' => 30, 'damage' => 10],
+        ],
+
+        // Virus: per cent chance per damaging hit to infect, SI on the first tick, and the base lifetime in ticks. Placeholders.
+        'virus' => [
+            1 => ['chance' => 15, 'damage' => 1, 'turns' => 6],
+            2 => ['chance' => 25, 'damage' => 2, 'turns' => 8],
+            3 => ['chance' => 35, 'damage' => 3, 'turns' => 10],
+        ],
     ],
 
     /*
@@ -743,6 +757,61 @@ return [
     | named here by slug and a slug that is not in the game gates nothing (the crafting gates' rule). `cap` is how many a
     | character may hold, none at first; a skill raises it.
     */
+    /*
+    | INFILTRATING A GATEWAY (RunPurpose::Infiltrate). Each turn is one stealth check against `difficulty`, which is deliberately
+    | above the best IDS (grade 9: 58) because it is "very hard"; `turns` of them in a row win, one failure resets the count and
+    | wakes the gateway's ICE. A win leaves the way open for `window_minutes`, long enough to walk back to the gateway's own
+    | button. Placeholders: balance is the last step.
+    */
+    /*
+    | SECURE TUNNELLING (App\Cyberspace\FortressTunnel): the toll in Synaptic Integrity and the minutes before the same
+    | character may tunnel to the same fortress again. Placeholders.
+    */
+    'tunnel' => [
+        'si' => 2,
+        'cooldown_minutes' => 5,
+    ],
+
+    /*
+    | WARDENS (App\Cyberspace\Wardens): hunters that walk a subnet. `reach` is how many steps away a Warden of that hunter grade
+    | (1 to 5) notices a runner, `detection` the difficulty of the Stealth check the runner must pass to go unnoticed, `step_seconds`
+    | how often one steps, `catch_up` the most steps taken at once when nobody looked for a while, and `keep_away` how far from
+    | the entry square one may start. Placeholders.
+    */
+    'wardens' => [
+        'step_seconds' => 60,
+        'catch_up' => 3,
+        'keep_away' => 4,
+        'reach' => [1 => 1, 2 => 1, 3 => 2, 4 => 2, 5 => 2],
+        'detection' => [1 => 35, 2 => 45, 3 => 55, 4 => 65, 5 => 75],
+    ],
+
+    'infiltrate' => [
+        'turns' => 3,
+        'difficulty' => 70,
+        'window_minutes' => 10,
+    ],
+
+    /*
+    | DENIAL (RunPurpose::Denial). Each Flood adds `per_bandwidth` x the deck's resolved bandwidth to the node's pressure; at the
+    | node's `target` (by grade: a bigger node takes more traffic to fill) it locks down. Every turn (every ROUND for a party,
+    | whose floods add up) the node pushes back a whole number drawn evenly from its grade's `drain` range, and after `turns` it
+    | shakes the runner off. TUNED BY SIMULATION (12 floods, a flood being about 37 on a deck one NIC step above the starting
+    | kit, with a few skills): grade 1 is about 64% for ONE runner and next to nothing on the starting kit alone. Everything
+    | scales 1.3 times per grade, so a grade needs about that many times the decks: two for grade 2, two or three for 3,
+    | three for 4, four for 5-6, five for 7, seven for 8 and, at grade 9, eight such runners are about 40% and nine about 68%.
+    | Placeholders: balance is the last step.
+    */
+    'denial' => [
+        'per_bandwidth' => 10,
+        'turns' => 12,
+        'target' => [1 => 100, 2 => 131, 3 => 172, 4 => 226, 5 => 297, 6 => 389, 7 => 511, 8 => 671, 9 => 880],
+        'drain' => [
+            1 => [0, 68], 2 => [0, 90], 3 => [0, 118], 4 => [0, 154], 5 => [0, 202],
+            6 => [0, 264], 7 => [0, 348], 8 => [0, 456], 9 => [0, 598],
+        ],
+    ],
+
     'fortress' => [
         'skill' => 'node_administration',
         'cap' => 0,

@@ -40,6 +40,7 @@ final class ChatTest extends TestCase
         $this->assertSame('<ul><li>one</li><li><strong>two</strong></li></ul>', Markup::render("- one\n- **two**"));
         $this->assertStringContainsString('data-copy="1F38E7C7"', Markup::render('go to addr:1f38e7c7 now'));
         $this->assertStringNotContainsString('data-copy', Markup::render('addr:nothex'));
+        $this->assertStringContainsString('data-copy="mil:3FCD"', Markup::render('go to addr:mil:3fcd now'));
     }
 
     public function test_a_pasted_picture_is_shrunk_stored_and_drawn_responsively(): void

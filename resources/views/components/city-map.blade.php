@@ -42,13 +42,13 @@
                      it as a modal (ui-kit.js's inspector), so the node is a
                      button and the card carries the way on. --}}
                 @php($inspect = $node['inspect'] ?? null)
-                @php($tag = ($pin || $inspect) ? 'button' : ($node['href'] ? 'a' : 'div'))
+                @php($tag = $inspect ? 'button' : ($node['href'] ? 'a' : ($pin ? 'button' : 'div')))
                 <{{ $tag }}
                     @class(['board__node', 'board__node--here' => $node['here']])
                     data-node="{{ $node['key'] }}"
                     @if ($edit) tabindex="0" @endif
                     @if ($inspect) type="button" data-inspect="{{ $inspect }}" aria-label="{{ $node['label'] }}" @endif
-                    @if ($pin) type="button" data-tip="{{ $node['label'] }}" aria-label="{{ $node['label'] }}" @endif
+                    @if ($pin) @if ($tag === 'button') type="button" @endif data-tip="{{ $node['label'] }}" aria-label="{{ $node['label'] }}" @endif
                     @if ($node['href'] && ! $inspect) href="{{ $node['href'] }}" @endif
                     @if ($node['here']) aria-current="location" @endif
                     style="left:{{ $node['x'] }}%;top:{{ $node['y'] }}%@if (! empty($node['hue']));--hue:{{ $node['hue'] }}@endif">

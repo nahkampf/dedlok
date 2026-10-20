@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * size, and Grid is the one place that knows which — see CYBERSPACE.md, *How
  * the grid is stored*.
  */
-#[Fillable(['address', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'owner_character_id', 'abandoned_at', 'fortress_ice', 'fortress_cloak', 'cloak_grade', 'cloak_type', 'cloak_owner_id', 'cloak_ice_level', 'cloak_ids_detection', 'cloak_tracer_detection', 'cloak_tracer_rate', 'cloak_os_skill_id', 'output_area_id', 'production_at', 'wallet', 'market_tax', 'market_area_id', 'relocated_at', 'relocate_hours', 'relocate_tell_owner', 'relocate_tell_admins', 'relocate_tell_members', 'access', 'kernel_integrity', 'kernel_integrity_max', 'kernel_resistance', 'kernel_demand_percent', 'frozen_until', 'os_skill_id', 'stock_rule', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_id', 'ice_bounty'])]
+#[Fillable(['address', 'grid_id', 'links_to_system_id', 'entry_rules', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'owner_character_id', 'abandoned_at', 'fortress_ice', 'fortress_cloak', 'cloak_grade', 'cloak_type', 'cloak_owner_id', 'cloak_ice_level', 'cloak_ids_detection', 'cloak_tracer_detection', 'cloak_tracer_rate', 'cloak_os_skill_id', 'output_area_id', 'production_at', 'wallet', 'market_tax', 'market_area_id', 'relocated_at', 'relocate_hours', 'relocate_tell_owner', 'relocate_tell_admins', 'relocate_tell_members', 'access', 'kernel_integrity', 'kernel_integrity_max', 'kernel_resistance', 'kernel_demand_percent', 'frozen_until', 'os_skill_id', 'stock_rule', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_id', 'ice_bounty'])]
 class System extends Model
 {
     /** @use HasFactory<SystemFactory> */
@@ -37,6 +37,7 @@ class System extends Model
     protected function casts(): array
     {
         return [
+            'entry_rules' => 'array',
             'x' => 'integer',
             'y' => 'integer',
             'grade' => 'integer',
@@ -135,7 +136,7 @@ class System extends Model
     /** Where it is standing right now. */
     public function position(): Position
     {
-        return new Position($this->x, $this->y);
+        return new Position($this->x, $this->y, (int) ($this->grid_id ?? 1));
     }
 
     public function isPortal(): bool
@@ -156,6 +157,16 @@ class System extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(Entity::class, 'owner_id');
+    }
+
+    /**
+     * A gateway's other end, on the other grid. Null for everything else.
+     *
+     * @return BelongsTo<System, $this>
+     */
+    public function linksTo(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'links_to_system_id');
     }
 
     /**
@@ -205,7 +216,7 @@ class System extends Model
     /** @param  Builder<self>  $query */
     public function scopeAt(Builder $query, Position $position): void
     {
-        $query->where('x', $position->x)->where('y', $position->y);
+        $query->where('grid_id', $position->grid)->where('x', $position->x)->where('y', $position->y);
     }
 
     /**
@@ -219,7 +230,8 @@ class System extends Model
      */
     public function scopeWithin(Builder $query, Position $centre, int $range): void
     {
-        $query->whereBetween('x', [$centre->x - $range, $centre->x + $range])
+        $query->where('grid_id', $centre->grid)
+            ->whereBetween('x', [$centre->x - $range, $centre->x + $range])
             ->whereBetween('y', [$centre->y - $range, $centre->y + $range]);
     }
 

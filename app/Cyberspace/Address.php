@@ -24,16 +24,17 @@ use Closure;
  * rather than an error.
  *
  * Subnet addresses are a different space and deliberately not confusable with
- * these: a prefix naming the subnet and 16 bits of address, `mil:4A19`. They
- * arrive with subnets in phase 7; nothing here should be widened to guess which
- * space an address belongs to, because the prefix is what removes the guess.
+ * these: a prefix naming the subnet (2 to 5 lower-case letters) and 16 bits of
+ * address, `mil:4A19`. The prefix is what removes the guess about which space an
+ * address belongs to, so it is stored whole and is globally unique; 16 bits is
+ * 65,536 of them, so a collision is ordinary there and the writer retries.
  */
 final class Address
 {
     public const LENGTH = 8;
 
     /** Upper case, and the schema's CHECK says the same thing in SQL. */
-    private const PATTERN = '/^[0-9A-F]{8}$/';
+    private const PATTERN = '/^([0-9A-F]{8}|[a-z]{2,5}:[0-9A-F]{4})$/';
 
     /**
      * A new address.
@@ -48,13 +49,17 @@ final class Address
      * billion values against a grid of four million, so a collision is a thing
      * that happens once in a long while and never twice in a row.
      *
+     * A subnet's address takes its prefix (`grids.prefix`) and two random bytes.
+     *
      * @param  ?Closure(int): string  $bytes
      */
-    public static function generate(?Closure $bytes = null): string
+    public static function generate(?Closure $bytes = null, ?string $prefix = null): string
     {
         $bytes ??= static fn (int $length): string => random_bytes($length);
 
-        return strtoupper(bin2hex($bytes(self::LENGTH / 2)));
+        return $prefix === null
+            ? strtoupper(bin2hex($bytes(self::LENGTH / 2)))
+            : $prefix.':'.strtoupper(bin2hex($bytes(2)));
     }
 
     public static function isValid(string $address): bool
@@ -73,7 +78,11 @@ final class Address
      */
     public static function normalise(string $input): ?string
     {
-        $address = strtoupper(trim($input));
+        // The prefix is lower case and the hex upper, so each half is folded to its own case.
+        $input = trim($input);
+        $address = str_contains($input, ':')
+            ? strtolower(strstr($input, ':', true)).':'.strtoupper(substr(strstr($input, ':'), 1))
+            : strtoupper($input);
 
         return self::isValid($address) ? $address : null;
     }

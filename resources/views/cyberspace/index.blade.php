@@ -201,11 +201,11 @@
                                     data-step="{{ $cell->position->x - $map->centre->x }},{{ $cell->position->y - $map->centre->y }}"
                                     title="{{ Text::get('cyberspace.map.step') }} — {{ $title }}"
                                     @if ($cell->gradeRatio() !== null) style="--g:{{ $cell->gradeRatio() }}" @endif
-                                    aria-label="{{ Text::get('cyberspace.map.step') }} {{ $title }}">{{ $cell->glyph() }}</button>
+                                    aria-label="{{ Text::get('cyberspace.map.step') }} {{ $title }}">{{ $cell->glyph() }}@if ($cell->hasWarden)<span class="cell__warden" title="{{ Text::get('cyberspace.map.warden') }}"></span>@endif @if ($cell->hasRunner)<span class="cell__runner" title="{{ Text::get('cyberspace.map.runner') }}"></span>@endif</button>
                         @else
                             <div class="{{ $classes }}" title="{{ $title }}"
                                  @if ($cell->gradeRatio() !== null) style="--g:{{ $cell->gradeRatio() }}" @endif
-                                 @if ($cell->isYou) aria-label="{{ Text::get('cyberspace.map.here') }}" @endif>{{ $cell->glyph() }}</div>
+                                 @if ($cell->isYou) aria-label="{{ Text::get('cyberspace.map.here') }}" @endif>{{ $cell->glyph() }}@if ($cell->hasWarden)<span class="cell__warden" title="{{ Text::get('cyberspace.map.warden') }}"></span>@endif @if ($cell->hasRunner)<span class="cell__runner" title="{{ Text::get('cyberspace.map.runner') }}"></span>@endif</div>
                         @endif
                     @endforeach
                 @endforeach
@@ -237,6 +237,7 @@
                 ['cell--system cell--compute', Text::get('cyberspace.types.compute'), '⌬'],
                 ['cell--system cell--relay', Text::get('cyberspace.types.relay'), '☰'],
                 ['cell--portal', Text::get('cyberspace.types.portal'), '◍'],
+                ['cell--system cell--gateway', Text::get('cyberspace.types.gateway'), '◍'],
                 ['cell--system cell--exchange', Text::get('cyberspace.types.exchange'), '⚖'],
                 ['cell--empty', Text::get('cyberspace.map.empty'), ''],
                 ['cell--unswept', Text::get('cyberspace.map.unswept'), ''],
@@ -245,6 +246,8 @@
                 ['cell--system cell--relay cell--rebooting', Text::get('cyberspace.map.rebooting'), '☰'],
                 ['cell--system cell--silo cell--scanned', Text::get('cyberspace.map.scanned'), '▤'],
                 ['cell--empty cell--marked', Text::get('cyberspace.map.marked'), ''],
+                ['cell--empty cell--warden-key', Text::get('cyberspace.map.warden'), ''],
+                ['cell--empty cell--runner-key', Text::get('cyberspace.map.runner'), ''],
             ] as [$class, $label, $glyph])
                 <span class="maplegend__key">
                     <span class="gridmap__swatch cell {{ $class }}" aria-hidden="true">{{ $glyph }}</span>
@@ -349,6 +352,17 @@
                         <a class="btn cut" href="{{ route('exchange.show') }}">
                             {{ Text::get('exchange.visit') }}
                         </a>
+                    @elseif ($target->type->isGateway())
+                        {{-- Two ways through: whatever the gateway's rules let you, or a run at its watch. --}}
+                        <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            <form method="POST" action="{{ route('cyberspace.pass') }}">
+                                @csrf
+                                <button type="submit" class="btn cut">{{ Text::get('cyberspace.gateway.pass') }}</button>
+                            </form>
+                            @if ($canRun && (int) $target->grid_id === 1)
+                                <a class="btn cut" href="{{ route('run.setup') }}">{{ Text::get('cyberspace.run.setup.intent_infiltrate') }}</a>
+                            @endif
+                        </div>
                     @else
                         {{-- Two instructions, in the order a player does them. "Plan a run" says by
                              its colour whether the read is whole: green when everything is known,
@@ -565,6 +579,36 @@
             </section>
         @endif
 
+        {{-- SECURE TUNNELS (App\Cyberspace\FortressTunnel): a fortress of yours, or one you are admitted to, with a tunnel
+             program running puts you on it from anywhere, jacked in or not. --}}
+        @if ($tunnels->isNotEmpty())
+            <details class="panel panel--snug">
+                <summary class="panel__hd">
+                    <h2>{{ Text::get('cyberspace.tunnel.title') }}</h2>
+                    <div class="spacer"></div>
+                    <span class="micro num">{{ $tunnels->count() }}</span>
+                </summary>
+                <p class="micro" style="color:var(--ink-2);margin:var(--s-3) 0 0">{{ Text::get('cyberspace.tunnel.hint') }}</p>
+                <ul class="stack" style="--gap:var(--s-2);margin:var(--s-3) 0 0;padding:0;list-style:none">
+                    @foreach ($tunnels as $tunnel)
+                        <li class="row row--wrap" style="--gap:var(--s-2);align-items:center">
+                            <span class="item-row__name" style="min-width:0">{{ $tunnel['system']->displayName() }}</span>
+                            <span class="micro"><x-address :address="$tunnel['system']->address" /></span>
+                            <div class="spacer"></div>
+                            @if ($tunnel['cooldown'] > 0)
+                                <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.tunnel.cooling', ['time' => '']) }}<span data-countdown="{{ $tunnel['cooldown'] }}"></span></span>
+                            @else
+                                <form method="POST" action="{{ route('cyberspace.tunnel', $tunnel['system']) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn--sm cut">{{ Text::get('cyberspace.tunnel.open') }}</button>
+                                </form>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </details>
+        @endif
+
         {{-- THE ROUTING CHAIN, as the next run would build it (App\Cyberspace\ChainBuilder): every system you hold a
              routing backdoor on, highest grade first, up to the most your Routing skills allow. Nothing to pick, so
              nothing to press. --}}
@@ -650,7 +694,7 @@
 
     {{-- BROWSE KNOWN SYSTEMS. The body is the fragment `cyberspace.systems`, fetched each time this opens and again when a
          filter changes, so it is never older than the click. --}}
-    <dialog id="known-systems" class="modal">
+    <dialog id="known-systems" class="modal modal--wide">
         <div class="panel__hd">
             <span class="micro">{{ Text::get('cyberspace.known.title') }}</span>
             <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>

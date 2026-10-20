@@ -122,13 +122,19 @@ final readonly class RaidLedger
      */
     public function relocate(System $system): bool
     {
-        $position = $this->grid->freePosition($this->roll);
+        // A gateway never moves. A system moves within its OWN grid (a subnet's relocates inside the subnet, under its prefix).
+        if ($system->type->isGateway()) {
+            return false;
+        }
+
+        $grid = $system->position()->grid === $this->grid->id() ? $this->grid : Grid::forId($system->position()->grid);
+        $position = $grid->freePosition($this->roll);
 
         if ($position === null) {
             return false;
         }
 
-        return DB::transaction(function () use ($system, $position): bool {
+        return DB::transaction(function () use ($system, $position, $grid): bool {
             // A DOOR INTO A BOX THAT HAS MOVED IS NOT A DOOR. Asked here as
             // well as at `Lockdown::shut()` because this is the physical fact
             // rather than the machine noticing — the nightly ageing roll
@@ -138,7 +144,7 @@ final readonly class RaidLedger
             $system->forceFill([
                 'x' => $position->x,
                 'y' => $position->y,
-                'address' => $this->freeAddress(),
+                'address' => $this->freeAddress($grid->prefix()),
                 'raids' => 0,
             ])->save();
 
@@ -155,16 +161,16 @@ final readonly class RaidLedger
      * in memory, which is the right shape for placing a thousand machines and
      * the wrong one for moving a single machine.
      */
-    private function freeAddress(): string
+    private function freeAddress(?string $prefix): string
     {
         for ($try = 0; $try < 8; $try++) {
-            $address = Address::generate();
+            $address = Address::generate(null, $prefix);
 
             if (! System::query()->where('address', $address)->exists()) {
                 return $address;
             }
         }
 
-        return Address::generate();
+        return Address::generate(null, $prefix);
     }
 }

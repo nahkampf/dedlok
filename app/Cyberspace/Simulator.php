@@ -10,6 +10,7 @@ use App\Characters\DownedCause;
 use App\Characters\Fatigue;
 use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
+use App\Cyberspace\Party\PartyTurns;
 use App\Decks\DeckTotals;
 use App\Missions\MissionAction;
 use App\Missions\MissionLedger;
@@ -214,6 +215,29 @@ final readonly class Simulator
                 $log = [...$log, ...$this->extract($character, $run)];
             } elseif ($action === RunAction::Leech) {
                 $log = [...$log, ...$this->leech($character, $run, $fortressId)];
+            } elseif ($action === RunAction::Infiltrate) {
+                $log = [...$log, ...$this->infiltrate($character, $run)];
+
+                // Through: nothing is left to strike back at, so the machine's half of the turn does not happen.
+                if ($run->purpose === RunPurpose::Infiltrate && (int) $run->infiltrated >= (int) Config::get('cyberspace.infiltrate.turns', 3)) {
+                    $run->save();
+                    $this->appendLog($run, $log);
+                    $this->runs->end($character, $run, RunEnding::Completed);
+
+                    return TurnResult::resolved($run, $log, RunEnding::Completed);
+                }
+            } elseif ($action === RunAction::Flood) {
+                [$lines, $through] = $this->flood($character, $run);
+                $log = [...$log, ...$lines];
+
+                // Overwhelmed: nothing is left to strike back. The run ends as done and the ending locks the node down (it was noticed).
+                if ($through) {
+                    $run->save();
+                    $this->appendLog($run, $log);
+                    $this->runs->end($character, $run, RunEnding::Completed);
+
+                    return TurnResult::resolved($run, $log, RunEnding::Completed);
+                }
             } elseif ($action === RunAction::Install) {
                 $log = [...$log, ...$this->install($character, $run)];
             } elseif ($action === RunAction::Burn) {
@@ -267,12 +291,40 @@ final readonly class Simulator
 
             $log = [...$log, ...$this->advanceTrace($character, $run)];
 
+            // The node pushes back at the end of every solo Denial turn. A party's pushes back once a ROUND (PartyTurns).
+            if ($run->purpose === RunPurpose::Denial && $run->pressure > 0 && ! PartyTurns::shared($run)) {
+                $run->pressure = max(0, round((float) $run->pressure - $this->rollDenialDrain($run), 1));
+            }
+
             $ending = null;
 
             // A party's ICE has ONE turn a round and chooses whom to hit (PartyTurns), so a member's own turn skips it.
-            if ($run->ice_id !== null && $iceStrikes) {
-                [$line, $ending] = $this->iceStrikes($character, $run);
+            // The virus, if they carry one, eats first: a tick of the turn, before the ICE's half.
+            $virusTick = Virus::make()->tick($character);
+
+            if ($virusTick !== null && $virusTick['taken'] > 0) {
+                $log[] = $this->line('cyberspace.run.log.virus_hits', ['damage' => $virusTick['taken']], 'crit');
+            }
+
+            if ($virusTick !== null && $virusTick['emptied']) {
+                $ending = RunEnding::Defeat;
+            } elseif ($run->ice_id !== null && $iceStrikes) {
+                [$line, $ending, $extra] = $this->iceStrikes($character, $run);
                 $log[] = $line;
+
+                if ($extra !== null) {
+                    $log[] = $extra;
+                }
+            }
+
+            // The node shakes a solo flooder off after enough turns (a party's round does it, in PartyTurns).
+            if ($ending === null && $run->purpose === RunPurpose::Denial && ! PartyTurns::shared($run) && $run->turn >= (int) Config::get('cyberspace.denial.turns', 12)) {
+                $log[] = $this->line('cyberspace.run.log.flood_shaken_off', tone: 'warn');
+                $run->save();
+                $this->appendLog($run, $log);
+                $this->runs->end($character, $run, RunEnding::Egress);
+
+                return TurnResult::resolved($run, $log, RunEnding::Egress);
             }
 
             $run->save();
@@ -1529,14 +1581,14 @@ final readonly class Simulator
         $ice = Ice::query()->find($run->ice_id);
 
         if ($ice === null) {
-            return [$this->line('cyberspace.run.log.ice_silent'), null];
+            return [$this->line('cyberspace.run.log.ice_silent'), null, null];
         }
 
         Trace::note('run.ice_strikes', ['ice' => $ice->name, 'level' => $ice->level, 'skill' => $ice->skill, 'attack' => $ice->attack]);
 
         if (($this->roll)(1, 100) > $ice->skill) {
             // A grey tag naming the ICE, then what it tried: the same shape as its hit, quieter.
-            return [$this->line('cyberspace.run.log.ice_misses', tag: $ice->name, tagTone: ''), null];
+            return [$this->line('cyberspace.run.log.ice_misses', tag: $ice->name, tagTone: ''), null, null];
         }
 
         $result = (new DamageResolver($this->resolver))->apply(
@@ -1551,10 +1603,27 @@ final readonly class Simulator
         // and jackOut() happen in the controller's ending path, not here —
         // this says only that the run is over and why.
         if ($character->fresh()->current_synaptic_integrity <= 0) {
-            return [$line, RunEnding::Defeat];
+            return [$line, RunEnding::Defeat, null];
         }
 
-        return [$line, null];
+        // Eject: a hit that did damage, in a subnet, may throw the runner out of it.
+        $eject = $ice->attackLevel(AttackTag::Eject);
+
+        if ($eject !== null && $result->taken > 0 && (int) $run->grid_id !== 1
+            && ($this->roll)(1, 100) <= (int) (AttackTag::Eject->levelValue($eject)['chance'] ?? 0)) {
+            return [$line, RunEnding::Ejected, null];
+        }
+
+        // Virus: the same roll on the same kind of hit, and a fresh infection replaces the old.
+        $virus = $ice->attackLevel(AttackTag::Virus);
+
+        if ($virus !== null && $result->taken > 0 && ($this->roll)(1, 100) <= (int) (AttackTag::Virus->levelValue($virus)['chance'] ?? 0)) {
+            Virus::make()->infect($character, $virus);
+
+            return [$line, null, $this->line('cyberspace.run.log.virus_infects', tone: 'crit')];
+        }
+
+        return [$line, null, null];
     }
 
     /**
@@ -1590,9 +1659,9 @@ final readonly class Simulator
             return null;
         }
 
-        [$line, $ending] = $this->iceStrikes($character, $run);
+        [$line, $ending, $extra] = $this->iceStrikes($character, $run);
         $run->save();
-        $this->appendLog($run, [$line]);
+        $this->appendLog($run, array_filter([$line, $extra]));
 
         return $ending;
     }
@@ -1619,6 +1688,12 @@ final readonly class Simulator
         // a burnout's cost is the module it took and the SI the freeze already
         // dealt, and a cancelled run costs its own flat point. Neither reaches
         // this list.
+        if ($ending === RunEnding::Ejected) {
+            $this->eject($character, $run, $ice);
+
+            return;
+        }
+
         $effects = ($ending === RunEnding::Defeat && $ice !== null)
             ? array_column($this->defeats->apply($character, $ice), 'text')
             : [];
@@ -1686,6 +1761,37 @@ final readonly class Simulator
     }
 
     /**
+     * Thrown out of a subnet by ICE: the Synaptic Integrity it costs, the run over, and the main-grid gateway they came by.
+     * Emptied by it, they are jacked out and the floor takes over like any bad ending.
+     */
+    private function eject(Character $character, Run $run, ?Ice $ice): void
+    {
+        $level = $ice?->attackLevel(AttackTag::Eject) ?? 1;
+        $result = (new DamageResolver($this->resolver))->apply(
+            $character,
+            Damage::synapticIntegrity((int) (AttackTag::Eject->levelValue($level)['damage'] ?? 0), DamageOrigin::Ice),
+        );
+
+        $this->runs->end($character, $run, RunEnding::Ejected);
+
+        $navigator = Navigator::fromConfig($this->resolver);
+        $landed = $character->fresh()->current_synaptic_integrity > 0 && $navigator->expel($character);
+
+        if ($landed) {
+            return;
+        }
+
+        $navigator->jackOut($character);
+        $this->waitingRoom->checkFloor($character, new DownedCause(
+            reason: RunEnding::Ejected->value,
+            address: $run->address,
+            damage: $result->taken,
+            ice: $ice?->name,
+            resource: 'current_synaptic_integrity',
+        ));
+    }
+
+    /**
      * Arrive, and find out whether anything noticed.
      *
      * ## Everything hostile gets a look, not just the IDS
@@ -1744,6 +1850,11 @@ final readonly class Simulator
 
         foreach ($runs as $run) {
             if ($except !== null && $run->getKey() === $except) {
+                continue;
+            }
+
+            // A flooded node is not cancelled under the party that flooded it: they finish together (PartyTurns).
+            if ($run->purpose === RunPurpose::Denial && (float) $run->pressure >= self::denialTarget($run)) {
                 continue;
             }
 
@@ -1837,6 +1948,100 @@ final readonly class Simulator
             $system->ice_id === null ? 'cyberspace.run.log.noticed' : 'cyberspace.run.log.noticed_ice',
             tone: 'crit',
         )];
+    }
+
+    /** The pressure that overwhelms this run's node: a number for its grade (a bigger node takes more traffic to fill). */
+    public static function denialTarget(Run $run): float
+    {
+        return (float) Config::get('cyberspace.denial.target.'.(int) ($run->system()?->grade ?? 1), 100);
+    }
+
+    /** What the node pushes back with this turn (solo) or round (a party): a roll in its grade's range. */
+    public function rollDenialDrain(Run $run): float
+    {
+        [$min, $max] = array_map('intval', (array) Config::get('cyberspace.denial.drain.'.(int) ($run->system()?->grade ?? 1), [0, 0]));
+
+        return (float) ($this->roll)($min, max($min, $max));
+    }
+
+    /**
+     * One Flood: the deck's bandwidth becomes pressure on the node. The first one is noticed and wakes its ICE.
+     * On any other purpose the press is a wasted turn.
+     *
+     * @return array{0: list<array{text: string, tone: string}>, 1: bool} The lines, and whether the meter is full.
+     */
+    private function flood(Character $character, Run $run): array
+    {
+        if ($run->purpose !== RunPurpose::Denial) {
+            return [[$this->line('cyberspace.run.log.hold')], false];
+        }
+
+        $lines = [];
+        $system = $run->system();
+
+        if (! $run->detected) {
+            $run->forceFill(['detected' => true, ...($system === null ? [] : $this->iceOf($system))])->save();
+            $lines[] = $this->line('cyberspace.run.log.flood_loud', tone: 'crit');
+        }
+
+        $target = self::denialTarget($run);
+        $gain = round($this->bandwidthFor($character) * (float) Config::get('cyberspace.denial.per_bandwidth', 0.4), 1);
+        $run->pressure = min($target, round((float) $run->pressure + $gain, 1));
+
+        if ($run->pressure < $target) {
+            $lines[] = $this->line('cyberspace.run.log.flood_gain', ['gain' => $gain, 'pressure' => $run->pressure, 'target' => (int) $target], 'ok');
+
+            return [$lines, false];
+        }
+
+        $lines[] = $this->line('cyberspace.run.log.flood_through', tone: 'ok');
+
+        // A party's meter fills for all of it: the round ends every run together (PartyTurns), and records each one's job.
+        if (PartyTurns::shared($run)) {
+            return [$lines, false];
+        }
+
+        if ($system !== null) {
+            app(MissionLedger::class)->recordAgainst($character, $system, MissionAction::Denial);
+        }
+
+        return [$lines, true];
+    }
+
+    /**
+     * One turn of slipping past a gateway: a very hard stealth check, `cyberspace.infiltrate.turns` of them in a row.
+     *
+     * A pass adds one to `runs.infiltrated`. A failure drops it to nothing and wakes the gateway's ICE (once: a run already
+     * noticed stays noticed), and the run goes on as the fight it has become. On any other purpose the press is a wasted turn.
+     *
+     * @return list<array{text: string, tone: string}>
+     */
+    private function infiltrate(Character $character, Run $run): array
+    {
+        if ($run->purpose !== RunPurpose::Infiltrate) {
+            return [$this->line('cyberspace.run.log.hold')];
+        }
+
+        $needed = (int) Config::get('cyberspace.infiltrate.turns', 3);
+
+        if ($this->checks->roll($character->stat('stealth')->value, (float) Config::get('cyberspace.infiltrate.difficulty', 70), 'detection')->passed) {
+            $run->infiltrated = (int) $run->infiltrated + 1;
+
+            return [(int) $run->infiltrated >= $needed
+                ? $this->line('cyberspace.run.log.infiltrate_through', tone: 'ok')
+                : $this->line('cyberspace.run.log.infiltrate_step', ['done' => (int) $run->infiltrated, 'needed' => $needed], 'ok')];
+        }
+
+        $run->infiltrated = 0;
+        $lines = [$this->line('cyberspace.run.log.infiltrate_seen', tone: 'crit')];
+
+        if (! $run->detected) {
+            $system = $run->system();
+            $run->forceFill(['detected' => true, ...($system === null ? [] : $this->iceOf($system))])->save();
+            $lines[] = $this->line($system?->ice_id === null ? 'cyberspace.run.log.noticed' : 'cyberspace.run.log.noticed_ice', tone: 'crit');
+        }
+
+        return $lines;
     }
 
     /**

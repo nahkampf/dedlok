@@ -104,7 +104,9 @@
                         @endforelse
 
                         @if ($stash->isNotEmpty())
-                            <span class="micro">{{ Text::get('safehouse.storage.carrying') }}</span>
+                            <details>
+                            <summary class="micro" style="cursor:pointer">{{ Text::get('safehouse.storage.carrying') }} ({{ $stash->count() }})</summary>
+                            <div class="stack" style="--gap:var(--s-3);margin-top:var(--s-3)">
                             @foreach ($stash as $row)
                                 <form method="POST" action="{{ route('safehouse.store', $row) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center">
                                     @csrf
@@ -115,6 +117,8 @@
                                     <button type="submit" class="btn btn--sm cut">{{ Text::get('safehouse.storage.store') }}</button>
                                 </form>
                             @endforeach
+                            </div>
+                            </details>
                         @endif
                     </div>
                 </div>

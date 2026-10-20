@@ -57,6 +57,14 @@ enum SystemType: string
     case Fortress = 'fortress';
 
     /**
+     * One end of a pair that joins two grids (`systems.links_to_system_id`): a door on the main grid into a subnet, and its
+     * mirror inside. Placed, never rolled, never relocated, owned by nobody. It is otherwise an ordinary defended system (it
+     * has a grade, ICE, a lockdown) that cannot be scanned and takes ONE kind of run, Infiltrate, and never a co-op one: a
+     * multi-user run would cause too much noise (CYBERSPACE.md, *Subnets*).
+     */
+    case Gateway = 'gateway';
+
+    /**
      * The types a generated world is built from.
      *
      * Neither the portal nor an Exchange is one of them: both are PLACED
@@ -69,7 +77,7 @@ enum SystemType: string
     {
         return array_values(array_filter(
             self::cases(),
-            static fn (self $type): bool => ! in_array($type, [self::Portal, self::Exchange, self::Fortress], true),
+            static fn (self $type): bool => ! in_array($type, [self::Portal, self::Exchange, self::Fortress, self::Gateway], true),
         ));
     }
 
@@ -86,10 +94,10 @@ enum SystemType: string
         return ! in_array($this, [self::Portal, self::Exchange], true);
     }
 
-    /** Can a probe read anything out of it? An Exchange has nothing to find. */
+    /** Can a probe read anything out of it? An Exchange has nothing to find, and a gateway gives nothing away. */
     public function isScannable(): bool
     {
-        return $this->isInteractable();
+        return $this->isInteractable() && $this !== self::Gateway;
     }
 
     /** Does it defend itself? Nothing placed rather than rolled does. */
@@ -107,7 +115,13 @@ enum SystemType: string
      */
     public function isOwned(): bool
     {
-        return $this !== self::Portal;
+        return ! in_array($this, [self::Portal, self::Gateway], true);
+    }
+
+    /** One end of a pair of doors between grids. */
+    public function isGateway(): bool
+    {
+        return $this === self::Gateway;
     }
 
     /** A player's founded node. */

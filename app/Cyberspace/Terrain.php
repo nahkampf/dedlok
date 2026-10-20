@@ -138,6 +138,7 @@ final class Terrain
                 if ($row === null) {
                     $this->loaded[$key] = TerrainChunk::query()->create([
                         'character_id' => $this->character->id,
+                        'grid_id' => $chunk->grid,
                         'chunk_x' => $chunk->x,
                         'chunk_y' => $chunk->y,
                         'bits' => $bits,
@@ -216,6 +217,9 @@ final class Terrain
 
         $rows = TerrainChunk::query()
             ->where('character_id', $this->character->id)
+            ->whereIn('grid_id', array_values(array_unique(array_map(
+                static fn (Chunk $chunk): int => $chunk->grid, $wanted
+            ))))
             ->whereIn('chunk_x', array_values(array_unique(array_map(
                 static fn (Chunk $chunk): int => $chunk->x, $wanted
             ))))

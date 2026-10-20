@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cyberspace;
 
+use App\Cyberspace\BackdoorKind;
+use App\Cyberspace\Backdoors;
 use App\Cyberspace\SystemType;
 use App\Models\Character;
 use App\Models\Skill;
@@ -128,9 +130,27 @@ final class KnownSystemsTest extends TestCase
 
         $html = $this->fragment();
 
-        $this->assertSame(1, substr_count($html, 'You hold a full scan of this system" aria-label'));
+        $this->assertSame(1, substr_count($html, 'Fully scanned" aria-label'));
+
+        $this->assertStringNotContainsString('Backdoor installed', $html);
+        (new Backdoors)->install($this->character, $whole, BackdoorKind::Siphon);
+        $this->assertSame(1, substr_count($this->fragment(), 'Backdoor installed" aria-label'));
+
+        $only = $this->fragment(['full' => '1']);
+        $this->assertStringContainsString('Whole', $only);
+        $this->assertStringNotContainsString('Partial', $only);
         $this->assertStringContainsString('id="sys-'.$whole->address.'"', $html);
         $this->assertStringContainsString('id="sys-'.$part->address.'"', $html);
+    }
+
+    public function test_the_composed_name_drops_its_type_lead(): void
+    {
+        $system = $this->known('Acme', SystemType::Silo, 'Acme 7', 2);
+        $lead = SystemType::Silo->label().' - ';
+        SystemContact::query()->where('address', $system->address)->update(['name' => $lead.'Acme 7']);
+
+        $this->assertStringContainsString('>Acme 7</button>', $this->fragment());
+        $this->assertStringNotContainsString($lead.'Acme 7', $this->fragment());
     }
 
     public function test_the_jump_and_chain_boxes_are_accordions_closed_by_default(): void

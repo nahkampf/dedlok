@@ -15,6 +15,7 @@ use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\Hunt;
 use App\Models\Item;
+use App\Models\Warden;
 use App\Programs\ProgramRunner;
 use App\Stats\Damage;
 use App\Stats\DamageOrigin;
@@ -221,6 +222,11 @@ final class HunterCombat
         (new Achievements)->record($character, Metric::BloodhoundsDefeated);
 
         $hunt->forceFill(['won' => true, 'resolved_at' => now()])->save();
+
+        // A Warden that is beaten is gone from its subnet.
+        if ($hunt->warden_id !== null) {
+            Warden::query()->whereKey($hunt->warden_id)->delete();
+        }
 
         $lines = [$this->line('cyberspace.hunt.log.won', ['creds' => $creds, 'heat' => round($newHeat, 1)], 'ok')];
 

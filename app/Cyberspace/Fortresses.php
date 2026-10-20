@@ -26,6 +26,9 @@ use Illuminate\Support\Facades\DB;
  */
 final class Fortresses
 {
+    /** The slug of the item a subnet fortress is founded with. */
+    public const CERTIFICATE_SLUG = 'subnet_certificate';
+
     public function found(Character $character, InventoryItem $kernel): FortressRefusal|System
     {
         if ($character->current_run_id !== null || $character->current_fight_id !== null || $character->current_hunt_id !== null) {
@@ -49,7 +52,19 @@ final class Fortresses
             return FortressRefusal::NoSkill;
         }
 
-        return DB::transaction(function () use ($character, $kernel, $at): FortressRefusal|System {
+        // On a subnet a fortress needs that subnet's certificate, which is locked into the fortress's vault once it stands.
+        $certificate = null;
+
+        if ($at->grid !== 1) {
+            $certificate = $character->inventory()->loose()->where('grid_id', $at->grid)
+                ->whereHas('item', fn ($q) => $q->where('slug', self::CERTIFICATE_SLUG))->first();
+
+            if ($certificate === null) {
+                return FortressRefusal::NoCertificate;
+            }
+        }
+
+        return DB::transaction(function () use ($character, $kernel, $at, $certificate): FortressRefusal|System {
             // The character row is the lock: two presses cannot both pass the cap.
             Character::query()->whereKey($character->getKey())->lockForUpdate()->first();
 
@@ -66,7 +81,8 @@ final class Fortresses
             }
 
             $system = System::query()->create([
-                'address' => Address::generate(),
+                'address' => Address::generate(null, $at->grid === 1 ? null : Grid::forId($at->grid)->prefix()),
+                'grid_id' => $at->grid,
                 'x' => $at->x,
                 'y' => $at->y,
                 'type' => SystemType::Fortress,
@@ -75,6 +91,19 @@ final class Fortresses
                 'owner_character_id' => $character->getKey(),
                 ...$this->kernelNumbers($kernel),
             ]);
+
+            // The certificate goes into the vault and stays: nothing withdraws it (FortressVault) and no raid takes it.
+            if ($certificate !== null) {
+                SystemContent::query()->create([
+                    'system_id' => $system->getKey(),
+                    'kind' => ContentKind::Item->value,
+                    'item_id' => $certificate->item_id,
+                    'quantity' => 1,
+                    'deposited_by' => $character->getKey(),
+                    'meta' => ['locked' => true, 'grid_id' => $at->grid],
+                ]);
+                $certificate->delete();
+            }
 
             // Spent: one copy of the Kernel.
             if ($kernel->quantity > 1) {

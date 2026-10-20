@@ -159,7 +159,7 @@
             @if ($hud)
                 <a class="dock__item" href="{{ route('chat.show') }}" data-chat-badge
                    @if (request()->routeIs('chat.*')) aria-current="page" @endif>
-                    <span class="dock__icon" aria-hidden="true">&#9993;&#65038;</span>
+                    <span class="dock__icon" aria-hidden="true">&#8943;</span>
                     @if ($chatUnread > 0)
                         <span class="dock__count">{{ $chatUnread > 99 ? '99+' : $chatUnread }}</span>
                     @endif

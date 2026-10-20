@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Cyberspace\GridSeeder;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Log;
 class SeedGrid extends Command
 {
     protected $signature = 'cyberspace:seed
+                            {grid=main : Slug of the grid to fill (a subnet\'s, or main)}
                             {--dry-run : Work out what the world needs and write nothing}';
 
     protected $description = 'Fill the cyberspace grid up to its target occupancy';
@@ -30,7 +32,15 @@ class SeedGrid extends Command
     {
         $dryRun = (bool) $this->option('dry-run');
 
-        $result = GridSeeder::fromConfig()->run(dryRun: $dryRun);
+        $id = (int) DB::table('grids')->where('slug', $this->argument('grid'))->value('id');
+
+        if ($id === 0) {
+            $this->error('There is no grid with that slug.');
+
+            return self::FAILURE;
+        }
+
+        $result = GridSeeder::forGrid($id)->run(dryRun: $dryRun);
 
         $summary = sprintf(
             '%d position(s), target %d, %d standing before, %d instantiated, %s%% occupied%s',

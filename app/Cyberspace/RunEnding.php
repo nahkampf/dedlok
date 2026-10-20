@@ -43,6 +43,12 @@ enum RunEnding: string
      */
     case Encounter = 'encounter';
 
+    /**
+     * ICE with the Eject tag threw them out of the subnet. It costs Synaptic Integrity, and they land on the main-grid gateway
+     * they came through, still jacked in (unless that emptied them: then the ordinary floor rules take over).
+     */
+    case Ejected = 'ejected';
+
     public function message(): string
     {
         return Text::get("cyberspace.run.ended.{$this->value}");
@@ -51,6 +57,6 @@ enum RunEnding: string
     /** Did this end badly enough to need the bad-ending order? */
     public function isBad(): bool
     {
-        return $this === self::Defeat || $this === self::Burnout;
+        return $this === self::Defeat || $this === self::Burnout || $this === self::Ejected;
     }
 }

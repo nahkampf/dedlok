@@ -13,6 +13,7 @@ use App\Models\SystemContent;
 use App\Support\Text;
 use Closure;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Filling the world's machines back up. The only writer of `system_contents`.
@@ -83,7 +84,7 @@ final class NodeStocker
         $this->weights = LootTable::weights()->all();
 
         System::query()
-            ->whereNotIn('type', [SystemType::Portal->value, SystemType::Fortress->value])
+            ->whereNotIn('type', [SystemType::Portal->value, SystemType::Fortress->value, SystemType::Gateway->value])
             // A job file seeded for one runner is not stock: an emptied system still restocks.
             ->whereDoesntHave('contents', fn ($query) => $query->whereNull('mission_id'))
             ->chunkById(self::CHUNK, function ($systems) use ($result, $encryption, $items, $dryRun): void {
@@ -170,7 +171,48 @@ final class NodeStocker
             $contents[] = $item;
         }
 
+        if (($certificate = $this->certificateFor($system)) !== null) {
+            $contents[] = $certificate;
+        }
+
         return $contents;
+    }
+
+    /** @var array<int, array<string, mixed>> The certificate rule of each subnet, by grid id, read once. */
+    private array $certificateRules = [];
+
+    /**
+     * A Subnet Certificate, on the node types a subnet's spec names (`grids.spec.certificate`: types, chance per cent, least
+     * grade). Only a subnet's nodes ever roll for one, so the main grid's dice are untouched.
+     *
+     * @return ?array<string, mixed>
+     */
+    private function certificateFor(System $system): ?array
+    {
+        $grid = (int) ($system->grid_id ?? 1);
+
+        if ($grid === 1) {
+            return null;
+        }
+
+        if (! isset($this->certificateRules[$grid])) {
+            $spec = (array) json_decode((string) DB::table('grids')->where('id', $grid)->value('spec'), true);
+            $this->certificateRules[$grid] = (array) ($spec['certificate'] ?? []);
+        }
+
+        $rule = $this->certificateRules[$grid];
+
+        if (! in_array($system->type->value, (array) ($rule['types'] ?? []), true) || (int) $system->grade < (int) ($rule['min_grade'] ?? 1)) {
+            return null;
+        }
+
+        if (($this->roll)(1, 100) > (int) ($rule['chance'] ?? 0)) {
+            return null;
+        }
+
+        $id = Item::query()->where('slug', Fortresses::CERTIFICATE_SLUG)->value('id');
+
+        return $id === null ? null : $this->item((int) $id, 1);
     }
 
     /** A file of the kind this system would hold, for an exchange job: always rolled, never left to the dice. */
