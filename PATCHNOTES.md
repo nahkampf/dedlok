@@ -1,3 +1,7 @@
+## 0.68.1 (2026-10-20)
+
+- UI: Fixed skill list that got broken
+
 ## 0.68.0 (2026-10-20)
 Lots of new features:
 

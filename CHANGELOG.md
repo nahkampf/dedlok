@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.68.1] — 2026-10-20
+
+### Fixed
+
+- **Skills list**: the rows on the Skills tab lost their icon in 0.68.0, which left the name and level meter squeezed into the 32px icon column of the `.item-row` grid. The icon is back.
+- **Subnet editor**: validation refusals name the fields as the form does ("Entry across", not `entry_x`), and the entry coordinates carry a hint saying they count from the top-left corner.
+- **CI**: long patch notes are sent to Discord in pieces under its 2000 character limit.
+
+
 ## [0.68.0] — 2026-10-20
 
 Subnets: smaller grids behind gateways, with their own hunters, fortresses and a new kind of mission.
@@ -3585,7 +3594,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.68.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.68.1...HEAD
+[0.68.1]: https://github.com/nahkampf/dedlok/compare/v0.68.0...v0.68.1
 [0.68.0]: https://github.com/nahkampf/dedlok/compare/v0.67.0...v0.68.0
 [0.67.0]: https://github.com/nahkampf/dedlok/compare/v0.66.3...v0.67.0
 [0.66.3]: https://github.com/nahkampf/dedlok/compare/v0.66.2...v0.66.3
