@@ -893,6 +893,8 @@ return [
             'backdoor_lost' => 'Backdoor lost',
             'file_stale' => 'Scan file gone stale',
             'offer_sold' => 'Sold: :item',
+            'session_stopped_rest' => 'Too tired to go on: resting',
+            'session_stopped' => 'Too tired to go on',
             'offer_contract' => 'Contract from :seller: :item',
             'mission_accepted' => 'Job accepted: :action for :entity',
             'mission_failed' => 'Job ran out of time',
@@ -963,6 +965,8 @@ return [
             // walked away from, so the sale lands on nobody's screen - and
             // creds arriving with nothing to explain them is the gap.
             'offer_sold' => 'Sold: :quantity × :item, for :price ¤.',
+            'session_stopped_rest' => 'You were close to collapsing, so you stopped :activity and started resting instead.',
+            'session_stopped' => 'You were close to collapsing, so you stopped :activity. There was nowhere to rest.',
             'offer_contract' => ':seller has made you a contract: :quantity × :item for :price ¤ each. Only you can see it, in the market.',
             // WORK THAT ENDED WITHOUT YOU THERE. Completing is not here:
             // that happens at the desk with somebody pressing a button.
@@ -3366,6 +3370,7 @@ return [
             'simstim' => 'You are lost in a simstim.',
         ],
         'simstim_left' => 'Simstim left today: :time',
+        'progress' => 'Progress toward the next point: :percent%',
         'actions' => [
             'eat' => 'Eat something',
             'rest' => 'Rest',
@@ -4327,6 +4332,14 @@ return [
     | Item and skill NAMES are still columns — these are the words around them.
     */
     'admin' => [
+        'sudo' => [
+            'title' => 'Sudo',
+            'lede' => 'Play as another character, for debugging. You are signed in as them until you press Exit sudo in the side menu.',
+            'handle' => 'Character name',
+            'go' => 'Play as',
+            'exit' => 'Exit sudo',
+            'no_such' => 'There is no other account with a character by that name.',
+        ],
         // The Beta keys section, present only while `features.alpha_testing` is on.
         'characters' => [
             'title' => 'Characters',

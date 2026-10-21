@@ -41,7 +41,9 @@ return [
      * (scaled by fatigue_taken), `progress` fills the meter (at 100 one of `attributes` goes up by one and it resets),
      * `mood` is added. Simstim may be done `daily_seconds` a day (UTC).
      */
+    // Work out and Study stop this many points of fatigue short of the maximum, and rest instead: nobody collapses from training.
     'sessions' => [
+        'margin' => 1,
         'workout' => ['fatigue' => 2, 'progress' => 0.3, 'attributes' => ['meat', 'motor', 'muscle']],
         'study' => ['fatigue' => 2, 'progress' => 0.3, 'attributes' => ['intellect', 'memory', 'focus']],
         'simstim' => ['fatigue' => 1, 'mood' => 0.4, 'daily_seconds' => 7200],

@@ -43,6 +43,22 @@
             </div>
         </div>
 
+        {{-- SUDO: play as a character, for debugging. The reload lands on their page; "Exit sudo" in the rail is the way back. --}}
+        <div class="card">
+            <div class="card__hd">
+                <div class="card__title">{{ Text::get('admin.sudo.title') }}</div>
+            </div>
+            <div class="card__bd">{{ Text::get('admin.sudo.lede') }}</div>
+            <form method="POST" action="{{ route('admin.sudo') }}" class="card__ft">
+                @csrf
+                <input class="input" type="text" name="handle" maxlength="50" required autocomplete="off" autocapitalize="off" spellcheck="false"
+                       list="sudo-handles" placeholder="{{ Text::get('admin.sudo.handle') }}" aria-label="{{ Text::get('admin.sudo.handle') }}"
+                       data-suggest="{{ route('messages.recipients') }}" data-suggest-into="sudo-handles" style="flex:1;min-width:0">
+                <datalist id="sudo-handles"></datalist>
+                <button type="submit" class="btn btn--sm cut">{{ Text::get('admin.sudo.go') }}</button>
+            </form>
+        </div>
+
         <div class="card">
             <div class="card__hd">
                 <div class="card__title">{{ Text::get('admin.supporters.title') }}</div>

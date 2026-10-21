@@ -292,8 +292,8 @@ them.
 
 ### Where a modifier comes from
 
-**`Character::modifiers()` is the whole list; each entry is a `ModifierSource`.** Seven
-today (`WornArmour` is the seventh, under *Physical combat* in `docs/fatigue-and-combat.md`), and the resolver learns nothing new when an eighth arrives.
+**`Character::modifiers()` is the whole list; each entry is a `ModifierSource`.** Eight
+today (`WornArmour` is the seventh, under *Physical combat* in `docs/fatigue-and-combat.md`; `FittedModules` the eighth), and the resolver learns nothing new when a ninth arrives.
 
 | Source | Is |
 | --- | --- |
@@ -304,6 +304,7 @@ today (`WornArmour` is the seventh, under *Physical combat* in `docs/fatigue-and
 | `CharacterModifiers` | injuries and statuses, `character_modifiers` table |
 | `ActiveDoses` | drugs in effect, `character_doses` table |
 | `WornArmour` | worn armour's damage modifiers, wrapped in `hit_location_in` |
+| `FittedModules` | `items.modifiers` of every module fitted in the EQUIPPED deck (an expansion card's effect; a module's own measure is still its `deck_modules` column) |
 
 - **A thing with a row carries its modifiers ON that row** — hence no
   `config/implants.php` and no `skill_effects` table. **`config/effects.php` is only for

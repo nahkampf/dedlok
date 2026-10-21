@@ -32,6 +32,7 @@ class EnsureHuntIsResolved
     private const ALLOWED_ROUTES = [
         'login',
         'logout',
+        'sudo.exit',
         'hunt.show',
         'hunt.act',
         // The inbox's badge and sound poll from every page.

@@ -183,6 +183,17 @@
                 </a>
             @endcan
 
+            {{-- Playing as somebody else (admin, for debugging): the way back. --}}
+            @if (session(\App\Http\Controllers\Admin\SudoController::SESSION_KEY))
+                <form method="POST" action="{{ route('sudo.exit') }}">
+                    @csrf
+                    <button type="submit" class="dock__item">
+                        <span class="dock__icon" aria-hidden="true">&#8617;&#65038;</span>
+                        <span class="dock__label">{{ Text::get('admin.sudo.exit') }}</span>
+                    </button>
+                </form>
+            @endif
+
             <div class="spacer"></div>
             <div class="dock__sep"></div>
 

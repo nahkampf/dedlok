@@ -82,6 +82,18 @@ final class HomeActions
         return (float) $character->current_fatigue >= (float) $this->fatigue->maximum($character);
     }
 
+    /** The most fatigue a Work out or Study may take them to: just short of the collapse. */
+    private function ceiling(Character $character): float
+    {
+        return (float) $this->fatigue->maximum($character) - (float) config('safehouse.sessions.margin', 1);
+    }
+
+    /** What a session really adds a minute: its figure, scaled by what the character takes of fatigue. */
+    private function perMinute(Character $character, array $set): float
+    {
+        return (float) $set['fatigue'] * (float) $character->stat('fatigue_taken')->value / 100;
+    }
+
     /** Seconds of simstim still allowed today (UTC); the day's count is zero on any other day. */
     public function simstimLeft(Character $character): int
     {
@@ -102,7 +114,7 @@ final class HomeActions
                 || (float) $character->current_synaptic_integrity < (float) $character->maximumFor('current_synaptic_integrity'),
             Action::Shower => (float) $character->current_fatigue > 0
                 || DrugUse::query()->where('character_id', $character->getKey())->where('addiction', '>', 0)->exists(),
-            Action::Workout, Action::Study => ! $this->exhausted($character),
+            Action::Workout, Action::Study => (float) $character->current_fatigue < $this->ceiling($character),
             Action::Simstim => ! $this->exhausted($character) && $this->simstimLeft($character) > 0,
             Action::Eat => ! $home->meal()->isEmpty() && ! $home->meal()->refusedFor($character),
         };
@@ -154,11 +166,13 @@ final class HomeActions
 
             $set = (array) config("safehouse.sessions.{$action->value}");
 
-            // Until fatigue would be full at this pace, and for simstim no longer than today's allowance.
-            $seconds = (int) ceil(((float) $this->fatigue->maximum($locked) - (float) $locked->current_fatigue) / max(0.01, (float) $set['fatigue']) * 60);
-
+            // Simstim: until fatigue would be full at this pace, and no longer than today's allowance. Work out and Study
+            // stop where the ceiling is, just short of a collapse (settleSession enforces it whenever it is credited).
             if ($action === Action::Simstim) {
+                $seconds = (int) ceil(((float) $this->fatigue->maximum($locked) - (float) $locked->current_fatigue) / max(0.01, (float) $set['fatigue']) * 60);
                 $seconds = min($seconds, $this->simstimLeft($locked));
+            } else {
+                $seconds = (int) floor(($this->ceiling($locked) - (float) $locked->current_fatigue) / max(0.01, $this->perMinute($locked, $set)) * 60);
             }
 
             CityActivity::query()->create([
@@ -209,6 +223,19 @@ final class HomeActions
                 $seconds = min($seconds, $this->simstimLeft($locked));
             }
 
+            // NEVER CROSS THE THRESHOLD: a Work out or Study is credited only as far as the ceiling, and ends there.
+            $atCeiling = false;
+
+            if ($action !== Action::Simstim) {
+                $rate = $this->perMinute($locked, $set);
+                $room = $rate > 0 ? (int) floor(max(0.0, $this->ceiling($locked) - (float) $locked->current_fatigue) / $rate * 60) : $seconds;
+
+                if ($seconds >= $room) {
+                    $seconds = $room;
+                    $atCeiling = true;
+                }
+            }
+
             if ($seconds > 0) {
                 $this->fatigue->add($locked, (float) $set['fatigue'] * $seconds / 60);
 
@@ -221,12 +248,17 @@ final class HomeActions
                 }
             }
 
-            $finished = $activity->pass_ends_at <= $now || $this->exhausted($locked)
+            $finished = $activity->pass_ends_at <= $now || $this->exhausted($locked) || $atCeiling
                 || ($action === Action::Simstim && $this->simstimLeft($locked) <= 0);
 
             if ($stop || $finished) {
                 $activity->delete();
                 $ended = true;
+
+                // Stopped by the ceiling rather than by the player: rest instead, from the moment it stopped, if that can be done.
+                if ($atCeiling && ! $stop) {
+                    $this->restInstead($locked, $action, $from->addSeconds($seconds), $now);
+                }
             } else {
                 $activity->forceFill(['updated_at' => $from->addSeconds($seconds)])->save();
             }
@@ -235,6 +267,36 @@ final class HomeActions
         });
 
         return $ended;
+    }
+
+    /**
+     * A Work out or Study that reached its ceiling hands over to a rest started at the moment it stopped (so the time
+     * since is credited as rest), and says so. No rest to be had (wired, or the home offers none) and it simply ends.
+     */
+    private function restInstead(Character $locked, Action $was, CarbonImmutable $at, CarbonImmutable $now): void
+    {
+        $home = $locked->home();
+        $canRest = $home->offers(Action::Rest) && $home->rest_rate > 0 && ! $this->tooWired($locked) && (float) $locked->current_fatigue > 0;
+
+        if ($canRest) {
+            $activity = new CityActivity;
+            $activity->forceFill([
+                'character_id' => $locked->getKey(),
+                'kind' => ActivityKind::Rest,
+                'step' => 0,
+                'paid' => 0,
+                'cancelling' => false,
+                'pass_ends_at' => $at->addMinutes((int) ceil((float) $locked->current_fatigue / $home->rest_rate)),
+                'created_at' => $at,
+                'updated_at' => $at,
+            ])->save();
+        }
+
+        (new Notifier)->send($locked, Category::City, $canRest ? 'session_stopped_rest' : 'session_stopped', ['activity' => mb_strtolower($was->label())]);
+
+        if ($canRest) {
+            $this->settleRest($locked, $now);
+        }
     }
 
     /** Add to a meter; every time it passes 100 one attribute of the action's three rises by one (any not yet at the cap) and it resets to 0. */

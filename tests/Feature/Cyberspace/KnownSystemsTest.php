@@ -8,6 +8,7 @@ use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\Backdoors;
 use App\Cyberspace\SystemType;
 use App\Models\Character;
+use App\Models\Exchange;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContact;
@@ -116,6 +117,15 @@ final class KnownSystemsTest extends TestCase
         $this->assertStringNotContainsString('Unscanned', $this->fragment(['grade' => '4']), 'the hidden grade is never filtered on');
         $this->assertStringContainsString('Unscanned', $this->fragment(['grade' => 'unknown']));
         $this->assertStringNotContainsString('Scanned</td>', str_replace('Unscanned', '', $this->fragment(['grade' => 'unknown'])));
+    }
+
+    public function test_an_exchange_shows_its_desks_grade_not_the_systems_floor(): void
+    {
+        $system = $this->known('Acme', SystemType::Exchange, 'Front Desk', null, ['grade' => 1]);
+        Exchange::query()->create(['system_id' => $system->id, 'grade' => 3, 'agent' => 'Wren', 'min_standing' => 20]);
+
+        $this->assertStringContainsString('Front Desk', $this->fragment(['grade' => '3']));
+        $this->assertStringNotContainsString('Front Desk', $this->fragment(['grade' => '1']));
     }
 
     public function test_a_full_scan_is_ticked_and_every_address_has_a_card(): void

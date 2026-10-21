@@ -38,6 +38,7 @@ class RequireCharacter
         'handles.available',
         'locale.update',
         'logout',
+        'sudo.exit',
     ];
 
     /** Every route name under the admin tools. */

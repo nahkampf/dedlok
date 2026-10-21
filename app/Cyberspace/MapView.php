@@ -7,6 +7,7 @@ namespace App\Cyberspace;
 use App\Models\Backdoor;
 use App\Models\Bookmark;
 use App\Models\Character;
+use App\Models\Exchange;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
 use App\Models\Warden;
@@ -103,6 +104,15 @@ final class MapView
 
         $scans = $files->filter(static fn (SystemScan $file): bool => $file->grade !== null)
             ->map(static fn (SystemScan $file): int => $file->grade);
+
+        // A desk's grade is no secret and cannot be scanned: its own, never the system's floor grade.
+        $scans = $scans->union(
+            Exchange::query()
+                ->join('systems', 'systems.id', '=', 'exchanges.system_id')
+                ->whereIn('systems.address', $contacts->where('type', SystemType::Exchange)->pluck('address'))
+                ->pluck('exchanges.grade', 'systems.address')
+                ->map(static fn ($grade): int => (int) $grade),
+        );
 
         // A MACHINE YOU HAVE READ SOMETHING OUT OF, which is not the same as
         // one you have pointed an instrument at: a file that has learned

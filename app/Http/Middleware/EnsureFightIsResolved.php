@@ -31,6 +31,7 @@ class EnsureFightIsResolved
     private const ALLOWED_ROUTES = [
         'login',
         'logout',
+        'sudo.exit',
         'fight.show',
         'fight.act',
         // The inbox's badge and sound poll from every page.

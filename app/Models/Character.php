@@ -16,6 +16,7 @@ use App\Stats\Sheet;
 use App\Stats\Sources\ActiveDoses;
 use App\Stats\Sources\ArchetypePerks;
 use App\Stats\Sources\CharacterModifiers;
+use App\Stats\Sources\FittedModules;
 use App\Stats\Sources\InstalledImplants;
 use App\Stats\Sources\RunningPrograms;
 use App\Stats\Sources\SkillEffects;
@@ -693,6 +694,8 @@ class Character extends Model
             // part the piece covers, via a condition the source adds. Nothing records when a
             // piece came off, so a past moment cannot be asked.
             new WornArmour($this),
+            // What is fitted in the equipped deck: an expansion card's effects, on the item like any other.
+            new FittedModules($this),
         ];
 
         $modifiers = [];

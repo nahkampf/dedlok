@@ -78,6 +78,13 @@
                                     <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.ready_in', ['time' => CarbonInterval::seconds(max(1, (int) now()->diffInSeconds($row['cooldown'], false)))->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}</span>
                                 @endif
                             @endif
+                            {{-- How near the next point: the meter's 0 to 100, from `HomeActions::gainProgress()`. --}}
+                            @if (in_array($action->value, ['workout', 'study'], true))
+                                @php($progress = (float) $character->{$action->value.'_progress'})
+                                <div class="meter meter--sm" style="--v:{{ round(min(100, max(0, $progress)) / 100, 3) }};--fill:var(--ok);flex:0 0 min(96px,100%)"
+                                     data-tip="{{ Text::get('safehouse.progress', ['percent' => (int) floor($progress)]) }}" tabindex="0" role="img"
+                                     aria-label="{{ Text::get('safehouse.progress', ['percent' => (int) floor($progress)]) }}"><div class="meter__fill"></div></div>
+                            @endif
                         </div>
                     @empty
                         <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('safehouse.none_offered') }}</p>
