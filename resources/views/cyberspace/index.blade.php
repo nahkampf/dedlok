@@ -81,7 +81,7 @@
                                 <span class="micro">{{ Text::get('cyberspace.scan.reading') }}</span>
                                 <span class="meter" data-pass-bar style="--v:{{ round($scan->progress(), 3) }};width:80px"
                                       title="{{ Text::get('cyberspace.scan.ready_in', ['when' => $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE])]) }}">
-                                    <span class="meter__fill"></span>
+                                    <div class="meter__fill"></div>
                                 </span>
                                 <span class="micro" data-pass-left>{{ $scan->pass_ready_at->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE]) }}</span>
                             </button>
@@ -734,10 +734,30 @@
     <dialog id="known-systems" class="modal modal--wide">
         <div class="panel__hd">
             <span class="micro">{{ Text::get('cyberspace.known.title') }}</span>
-            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+            <button type="button" class="btn btn--sm cut" data-overview="{{ route('cyberspace.overview') }}" data-open="#overview-map">{{ Text::get('cyberspace.known.overview') }}</button>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
         </div>
         <div class="panel__bd" data-fragment="{{ route('cyberspace.systems') }}">
             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('processes.loading') }}</p>
+        </div>
+    </dialog>
+
+    {{-- THE OVERVIEW MAP: the whole grid as remembered, one 10px cell per place, drawn on a canvas by `ui-kit.js`
+         ([data-overview]). The colours are the map's own node tokens; fortresses are ember and the cell you stand in pulses white and black. --}}
+    <dialog id="overview-map" class="modal modal--full">
+        <div class="panel__hd">
+            <span class="micro" data-overview-title>{{ Text::get('cyberspace.known.overview') }}</span>
+            <span class="row row--wrap" style="--gap:var(--s-3)">
+                @foreach (['silo' => 'steel', 'compute' => 'cyan', 'relay' => 'jade', 'exchange' => 'brass', 'fortress' => 'ember', 'gateway' => 'info', 'portal' => 'brass'] as $type => $token)
+                    <span class="micro row" style="--gap:var(--s-1);align-items:center"><span class="swatch @if ($type === 'exchange') swatch--wash @elseif ($type === 'gateway') swatch--wash swatch--late @endif" style="background:var(--{{ $token }})"></span>{{ \App\Cyberspace\SystemType::from($type)->label() }}</span>
+                @endforeach
+                <span class="micro row" style="--gap:var(--s-1);align-items:center"><span class="swatch swatch--pulse"></span>{{ Text::get('cyberspace.known.overview_you') }}</span>
+            </span>
+            <span class="micro" style="color:var(--ink-3)">{{ Text::get('cyberspace.known.overview_hint') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
+        </div>
+        <div class="overview" data-overview-view>
+            <canvas></canvas>
         </div>
     </dialog>
 

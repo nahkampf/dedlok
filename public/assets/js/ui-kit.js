@@ -416,6 +416,93 @@
       .catch(() => { box.textContent = "Could not load the list."; });
   });
 
+  /* THE OVERVIEW MAP: the opener's data-overview is the JSON (size, cells [x, y, type], portal, you). One 10px cell per
+     place on a canvas, coloured by the map's own tokens; you are ember. The view scrolls toward whichever edge or corner
+     the cursor is near, and opens centred on you. */
+  const OVERVIEW_CELL = 10;
+  let overviewPulse = null;
+  const OVERVIEW_TOKEN = { silo: "--steel", compute: "--cyan", relay: "--jade", exchange: "--brass", fortress: "--ember", gateway: "--brass", portal: "--brass" };
+  on("click", "[data-overview]", (e, btn) => {
+    const view = document.querySelector("[data-overview-view]");
+    const canvas = view?.querySelector("canvas");
+    if (!canvas) return;
+    fetch(btn.dataset.overview, { headers: { Accept: "application/json" }, credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((d) => {
+        document.querySelector("[data-overview-title]").textContent = d.title;
+        const css = getComputedStyle(document.documentElement);
+        const tok = (name) => css.getPropertyValue(name).trim();
+        const px = d.size * OVERVIEW_CELL;
+        canvas.width = px;
+        canvas.height = px;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = tok("--bg-2");
+        ctx.fillRect(0, 0, px, px);
+        const cell = (x, y, colour) => {
+          ctx.fillStyle = colour;
+          ctx.fillRect(x * OVERVIEW_CELL, y * OVERVIEW_CELL, OVERVIEW_CELL, OVERVIEW_CELL);
+        };
+        cell(d.portal[0], d.portal[1], tok(OVERVIEW_TOKEN.portal));
+        d.cells.forEach(([x, y, type]) => cell(x, y, tok(OVERVIEW_TOKEN[type] || "--ink-2")));
+        const at = d.you || d.portal;
+        view.scrollLeft = (at[0] + 0.5) * OVERVIEW_CELL - view.clientWidth / 2;
+        view.scrollTop = (at[1] + 0.5) * OVERVIEW_CELL - view.clientHeight / 2;
+        // While the map is open, where you stand pulses white and black (quickly) and exchanges and gateways brass and ember (2 seconds a cycle).
+        clearInterval(overviewPulse);
+        const ember = tok("--ember");
+        const washed = [
+          [d.cells.filter((c) => c[2] === "exchange"), 0],
+          // Gateways run the same wash half a cycle behind, so the two read apart.
+          [d.cells.filter((c) => c[2] === "gateway"), Math.PI],
+        ];
+        const brass = tok(OVERVIEW_TOKEN.exchange);
+        const white = tok("--ink-0");
+        const dark = tok("--bg-0");
+        let n = 0;
+        overviewPulse = setInterval(() => {
+          if (!view.closest("dialog")?.open) { clearInterval(overviewPulse); return; }
+          n++;
+          if (d.you && n % 3 === 0) cell(d.you[0], d.you[1], (n / 3) % 2 ? white : dark);
+          washed.forEach(([list, phase]) => {
+            ctx.globalAlpha = 1;
+            list.forEach(([x, y]) => cell(x, y, brass));
+            ctx.globalAlpha = (Math.sin((n * Math.PI * 2) / 25 + phase) + 1) / 2;
+            list.forEach(([x, y]) => cell(x, y, ember));
+            ctx.globalAlpha = 1;
+          });
+        }, 80);
+      });
+  });
+  (() => {
+    const EDGE = 0.2;
+    const SPEED = 14;
+    let view = null;
+    let dx = 0;
+    let dy = 0;
+    let running = false;
+    const tick = () => {
+      if (!view || !(dx || dy)) { running = false; return; }
+      view.scrollLeft += dx;
+      view.scrollTop += dy;
+      requestAnimationFrame(tick);
+    };
+    // Pushing harder the nearer the edge: 0 at the edge's inner line, full at the edge itself.
+    const push = (pos, size) => {
+      const f = pos / size;
+      if (f < EDGE) return -SPEED * (1 - f / EDGE);
+      if (f > 1 - EDGE) return SPEED * (1 - (1 - f) / EDGE);
+      return 0;
+    };
+    document.addEventListener("mousemove", (e) => {
+      view = e.target.closest?.("[data-overview-view]");
+      if (!view) { dx = dy = 0; return; }
+      const r = view.getBoundingClientRect();
+      dx = push(e.clientX - r.left, r.width);
+      dy = push(e.clientY - r.top, r.height);
+      if ((dx || dy) && !running) { running = true; requestAnimationFrame(tick); }
+    });
+    document.addEventListener("mouseleave", () => { dx = dy = 0; });
+  })();
   /* A modal body that is fetched each time it opens: <div data-fragment="URL"> inside the <dialog> that the opener
      [data-open="#id"] names. Never older than the click. */
   document.addEventListener("click", (e) => {
