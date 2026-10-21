@@ -41,6 +41,12 @@
     ->whereIn('reading_process_id', $processes->modelKeys())
     ->live()
     ->pluck('address', 'reading_process_id'))
+{{-- Which of them is a decryptor with a file in hand: a queue entry names its worker (`decryption_queue.worker_id`). --}}
+@php($decrypting = $hud === null || $processes->isEmpty() ? collect() : \App\Models\DecryptionEntry::query()
+    ->where('character_id', $hud->id)
+    ->whereIn('worker_id', $processes->modelKeys())
+    ->pluck('worker_id')
+    ->flip())
 
 <div class="shell @auth shell--docked @endauth">
 
@@ -424,6 +430,9 @@
                                 &middot; {{ Text::get('programs.costs.left', ['time' => $spentAt->diffForHumans(['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE])]) }}
                             @endif
                         </div>
+                        @if ($decrypting->has($process->getKey()))
+                            <div class="micro" style="color:var(--ink-3)">{{ Text::get('programs.decrypting') }}</div>
+                        @endif
 
                         @if ($reading->has($process->getKey()))
                             @php($address = $reading->get($process->getKey()))

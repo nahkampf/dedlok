@@ -1,3 +1,7 @@
+## 0.69.2 (2026-10-21)
+- "Running" window misbehaved; running or stopping program hung the window in an incomplete state. Fixed now.
+- A decryptor in the "Running" window that is decrypting a file will now say so.
+
 ## 0.69.1 (2026-10-20)
 - Districts how have an image, and the safehouse too. Temporary eye candy during alpha phase, this has got to be cleared or removed later.
 - Some UI tidying on the district page
