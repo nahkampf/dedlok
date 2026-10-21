@@ -214,6 +214,7 @@ return [
             'locates' => 'Locates: finds the nearest system you have met',
             'walks' => 'Walks: takes you to what it found',
             'jumps' => 'Jumps: a Jump button beside addresses',
+            'tracks' => 'Tracks: searches the grid for a system that fits a filter',
         ],
 
         'background' => 'Runs in the background',
@@ -643,7 +644,7 @@ return [
             'listing' => 'Listing',
             'yours' => 'Yours',
             'buy' => 'Buy',
-            'list' => 'Show on market',
+            'list' => 'Put on market',
             'price_label' => 'Asking price, each',
             'quantity' => 'How many',
             'available' => ['zero' => 'none left', 'one' => ':count on offer', 'many' => ':count on offer'],
@@ -873,6 +874,7 @@ return [
             'siphons_ran' => 'Siphon report',
             'damage_report' => 'Damage report',
             'workout_gain' => 'Gains!',
+            'tracker_found' => 'Tracker: Node found',
             'study_gain' => 'Sharpening the mind',
             'backdoor_lost' => 'Backdoor lost',
             'file_stale' => 'Scan file gone stale',
@@ -935,6 +937,7 @@ return [
             'siphons_ran' => 'Siphons ran: :creds ¤',
             'damage_report' => 'You were incapacitated and lost some items or files:',
             'workout_gain' => "You've been working out. It shows. You gain +1 to :attribute!",
+            'tracker_found' => 'Tracker has found the requested node: :address',
             'study_gain' => "You've been reading and studying. You gain +1 to :attribute!",
             'backdoor_lost' => 'Your backdoor into :system is gone. The system shut its doors while you were elsewhere.',
             // A FILE DIES WITH NOBODY LOOKING AT IT. Says it is still there,
@@ -2241,6 +2244,20 @@ return [
         ],
 
         // The Locator program's search on the map screen.
+        // The Tracker's box on the map screen (`App\Cyberspace\Tracker`).
+        'tracker' => [
+            'heading' => 'Tracker',
+            'set_filter' => 'Set filter',
+            'release' => 'Release Tracker',
+            'filter_title' => 'Tracker filter',
+            'lock_in' => 'Lock in',
+            'looking_for' => 'Looking for: :filter',
+            'no_filter_set' => 'No filter set. Choose what to look for, then release it.',
+            'searching' => 'Searching: a pass every minute. You will be told when it finds something.',
+            'no_filter' => 'Choose at least one of owner, type or grade.',
+            'not_running' => 'No Tracker is running.',
+            'no_room' => 'Not enough RAM or CPU to run active Tracker',
+        ],
         'locate' => [
             'heading' => 'Locator',
             'open' => 'Search',
@@ -3765,7 +3782,7 @@ return [
         */
         'actions' => [
             'details' => 'Details',
-            'market' => 'Show on market',
+            'market' => 'Put on market',
             'fit' => 'Fit to deck',
             'unfit' => 'Take out of deck',
             'disassemble' => 'Disassemble',
@@ -5066,6 +5083,7 @@ return [
                 'locates' => 'Locates',
                 'walks' => 'Walks',
                 'jumps' => 'Jumps',
+                'tracks' => 'Tracks',
                 'utility_hint' => 'A Utility (kind Utility) does what is ticked while it runs: Locates finds the nearest system you have met, Walks takes you to what it found (a Pathfinder is both), Jumps puts a Jump button beside addresses. Ignored by every other kind.',
                 'traverse_seconds_hint' => 'Programs that walk only: how long each step of Autotraverse takes. Blank is the default of 10 seconds.',
                 'lifetime_seconds_hint' => 'Blank is an ordinary program. Set, it is a Script: a running copy lasts this long from the moment it starts and is then spent. Stopping one early destroys it.',

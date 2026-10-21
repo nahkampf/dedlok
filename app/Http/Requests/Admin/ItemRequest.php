@@ -217,6 +217,7 @@ class ItemRequest extends FormRequest
             'locates' => $this->boolean('locates'),
             'walks' => $this->boolean('walks'),
             'jumps' => $this->boolean('jumps'),
+            'tracks' => $this->boolean('tracks'),
             // Which encryptions a Decryptor can break: ticked slugs, none ticked meaning any.
             'program_decrypts' => array_values(array_filter((array) $this->input('program_decrypts', []), 'is_string')),
             // Rows from the effects editor, turned into modifier definitions
@@ -468,6 +469,7 @@ class ItemRequest extends FormRequest
             'locates' => ['boolean'],
             'walks' => ['boolean'],
             'jumps' => ['boolean'],
+            'tracks' => ['boolean'],
             'lifetime_seconds' => $isProgram
                 ? ['nullable', 'integer', 'min:1', 'max:'.self::MAX_MEASURE]
                 : ['prohibited'],
@@ -971,7 +973,7 @@ class ItemRequest extends FormRequest
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
             $data['storage_size'], $data['lifetime_seconds'], $data['traverse_seconds'], $data['background_process'], $data['multithreaded'],
-            $data['locates'], $data['walks'], $data['jumps'],
+            $data['locates'], $data['walks'], $data['jumps'], $data['tracks'],
             $data['design_product'], $data['design_seconds'], $data['design_single_use'], $data['design_skill_id'], $data['design_skill_level'], $data['design_lines'],
             $data['program_modifiers'], $data['program_decrypts'],
             $data['produce_cycle_minutes'], $data['produce_reduction'], $data['produce_boost'], $data['produce_range'], $data['produce_strength'], $data['leech_resource'], $data['leech_amount'],
@@ -1276,6 +1278,7 @@ class ItemRequest extends FormRequest
             'locates' => (bool) ($data['locates'] ?? false),
             'walks' => (bool) ($data['walks'] ?? false),
             'jumps' => (bool) ($data['jumps'] ?? false),
+            'tracks' => (bool) ($data['tracks'] ?? false),
             // Null rather than [], because a program that only gates genuinely
             // modifies nothing and the two should not be different spellings
             // of one fact.

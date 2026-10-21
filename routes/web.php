@@ -54,6 +54,7 @@ use App\Http\Controllers\SoundController;
 use App\Http\Controllers\StandingController;
 use App\Http\Controllers\SupportersController;
 use App\Http\Controllers\TasksController;
+use App\Http\Controllers\TrackerController;
 use App\Http\Controllers\TrainingQueueController;
 use App\Http\Controllers\WaitingController;
 use App\Http\Controllers\WalletController;
@@ -255,6 +256,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/cyberspace/jump', [CyberspaceController::class, 'jump'])->name('cyberspace.jump');
     Route::post('/cyberspace/tunnel/{system}', [CyberspaceController::class, 'tunnel'])->name('cyberspace.tunnel');
     Route::post('/cyberspace/fortress', [CyberspaceController::class, 'found'])->name('cyberspace.fortress');
+    Route::post('/cyberspace/tracker/filter', [TrackerController::class, 'filter'])->name('tracker.filter');
+    Route::post('/cyberspace/tracker/release', [TrackerController::class, 'release'])->name('tracker.release');
     Route::get('/fortress/{system}', [FortressController::class, 'show'])->name('fortress.show');
     Route::post('/fortress/{system}/install/{row}', [FortressController::class, 'install'])->name('fortress.install');
     Route::post('/fortress/{system}/uninstall/{row}', [FortressController::class, 'uninstall'])->name('fortress.uninstall');

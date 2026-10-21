@@ -25,12 +25,14 @@ use App\Cyberspace\ScanExporter;
 use App\Cyberspace\ScanExportRefusal;
 use App\Cyberspace\SweepResult;
 use App\Cyberspace\SystemType;
+use App\Cyberspace\Tracker;
 use App\Cyberspace\TravelRefusal;
 use App\Cyberspace\TravelResult;
 use App\Cyberspace\ViewShape;
 use App\Missions\MissionLedger;
 use App\Models\Bookmark;
 use App\Models\Character;
+use App\Models\Entity;
 use App\Models\System;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
@@ -65,7 +67,7 @@ class CyberspaceController extends Controller
     /** How many known systems the browser draws at once; the filters narrow the rest. */
     private const KNOWN_LIMIT = 200;
 
-    public function index(Request $request, Probe $probe, ChainBuilder $chains, Finder $finder): View
+    public function index(Request $request, Probe $probe, ChainBuilder $chains, Finder $finder, Tracker $tracker): View
     {
         $character = $this->character($request);
         $grid = Grid::of($character);
@@ -125,6 +127,17 @@ class CyberspaceController extends Controller
             $locator = ['name' => $finder->program($character)?->item?->displayName(), 'canTraverse' => $finder->canTraverse($character) && $character->isJackedIn(), 'stepSeconds' => $finder->stepSeconds($character), 'raw' => $raw, 'query' => $query, 'result' => $query === null ? null : $finder->nearest($character, $query, $grid)];
         }
 
+        // The Tracker's box: drawn only while one runs. Passes that went by are rolled first, so a find has already ended it.
+        $tracker->settle($character);
+        $trackerRow = $tracker->program($character);
+        $trackerSearch = $trackerRow === null ? null : $tracker->searchOf($trackerRow);
+        $trackerBox = $trackerRow === null ? null : [
+            'name' => $trackerRow->item?->displayName(),
+            'search' => $trackerSearch,
+            'owners' => Entity::query()->whereIn('id', System::query()->whereNotNull('owner_id')->select('owner_id'))->orderBy('name')->pluck('name', 'id'),
+            'types' => array_values(array_filter(SystemType::cases(), static fn (SystemType $t): bool => $t !== SystemType::Portal)),
+        ];
+
         // The same sum ViewShape::forCharacter() does, kept in pieces so the
         // screen can show where the level comes from.
         $viewBase = (float) Config::get('cyberspace.view_range', 2);
@@ -142,6 +155,7 @@ class CyberspaceController extends Controller
                 'system' => $s, 'cooldown' => $tunnelling->cooldownLeft($character, $s),
             ]),
             'locator' => $locator,
+            'tracker' => $trackerBox,
             'character' => $character,
             // The route a run would take from here: the same call the briefing makes, so what this box shows is what
             // the next run gets. Not tied to a target, so every routing backdoor held is listed.

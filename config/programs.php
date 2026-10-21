@@ -34,4 +34,17 @@ return [
     */
     'threads' => 1,
 
+    /*
+    | THE TRACKER (`programs.tracks`). While it only waits it costs what its row says; while it runs passes it also
+    | holds these on the deck instead, and a release the deck cannot hold is refused. A pass is `pass_seconds` long
+    | and looks at one random place and its eight neighbours. `max_catchup` bounds the passes one settle will roll
+    | for a character nobody has looked at.
+    */
+    'tracker' => [
+        'active_qflops' => 2,
+        'active_memory' => 2,
+        'pass_seconds' => 60,
+        'max_catchup' => 1440,
+    ],
+
 ];
