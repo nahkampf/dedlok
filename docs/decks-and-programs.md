@@ -209,3 +209,13 @@ what a bare `items` row cannot.
 - **Autotraverse** (Pathfinder only, jacked in): the page posts `cyberspace.traverse` every ten seconds (`data-autotraverse` in `ui-kit.js`), each post one ordinary `Navigator::step()` toward the target (so a sweep and a hunter roll as by hand). The overlay is the dialog's backdrop (`dialog.modal--traverse`). It lives in the open page: reloading or leaving cancels it, and a refusal or a hunter stops it.
 - The two items (`azimuth`, `loco_motive`) arrive by migration `2026_10_09_320000_the_locators`.
 
+
+### The Tracker
+
+**A Tracker is a Utility with `programs.tracks`**, and `App\Cyberspace\Tracker` is the whole of it, with `tracker_searches` (one row per RUNNING copy: owner, type, grade, and `pass_started_at`, NULL until released) as its only table. The map screen's *Tracker* box (drawn only while one runs) is its only screen.
+
+- **Filter, then release.** *Set filter* opens a modal of owner (any entity that owns a system), type and grade; at least one is required, and locking it in takes the Tracker back to waiting. *Release Tracker* starts the passes.
+- **A pass is `programs.tracker.pass_seconds` (60).** It picks one random place on the character's grid and looks at it and the eight around it (real systems, not what is known; a locked-down one is skipped; an Exchange's grade is the desk's). The first fit stops the program and sends *Tracker: Node found* with the address.
+- **Two costs.** Waiting, it costs its row's compute and memory. Running passes it holds `programs.tracker.active_*` (2 and 2) instead, which `ProgramRunner::spentOn()` reads; **a release the deck cannot hold is refused** (`ProgramRunner::hasRoomFor()`) and nothing starts. The deck is checked at release only.
+- **Settling is lazy and swept** (`tracker:settle`, every minute): whole passes since `pass_started_at`, at most `max_catchup`. Stopping the program by any route deletes its search (`ProgramRunner::putBack()`).
+- The item arrives by migration `2026_10_24_100000_the_tracker`.

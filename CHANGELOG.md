@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.70.0] — 2026-10-21
+
+### Added
+
+- **The Tracker** (`App\Cyberspace\Tracker`): a Utility (`programs.tracks`, tier 2, rare, 500 ¤, off the market) that, given a filter (owner, type, grade) and released, rolls a pass a minute (`programs.tracker.pass_seconds`) at one random place on the grid and its eight neighbours for a system that fits. The first fit stops the program and sends *Tracker: Node found* with the address. Its box on the map screen (drawn while one runs) has *Set filter* (a modal of the same three choices as the known systems) and *Release Tracker*. Waiting it costs its row's compute and memory; running passes it holds `programs.tracker.active_qflops` / `active_memory` (2 and 2) instead, read by `ProgramRunner::spentOn()`, and a release the deck cannot hold is refused (`ProgramRunner::hasRoomFor()`): *Not enough RAM or CPU to run active Tracker*. Passes are settled lazily and swept by `tracker:settle` every minute. Migration `2026_10_24_100000_the_tracker` adds `programs.tracks`, the `tracker_searches` table and the item. The item editor gets a *Tracks* checkbox.
+
+### Changed
+
+- *Show on market* is now *Put on market*.
+
+
 ## [0.69.2] — 2026-10-21
 
 ### Added
@@ -3637,7 +3648,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.69.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.70.0...HEAD
+[0.70.0]: https://github.com/nahkampf/dedlok/compare/v0.69.2...v0.70.0
 [0.69.2]: https://github.com/nahkampf/dedlok/compare/v0.69.1...v0.69.2
 [0.69.1]: https://github.com/nahkampf/dedlok/compare/v0.69.0...v0.69.1
 [0.69.0]: https://github.com/nahkampf/dedlok/compare/v0.68.1...v0.69.0

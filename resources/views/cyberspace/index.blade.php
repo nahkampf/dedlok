@@ -579,6 +579,43 @@
             </section>
         @endif
 
+        {{-- THE TRACKER (App\Cyberspace\Tracker): drawn only while the program runs. A filter, then Release: a pass a minute
+             until something fits, and a message when it does. --}}
+        @if ($tracker !== null)
+            @php($search = $tracker['search'])
+            <section class="panel panel--snug" id="tracker">
+                <div class="panel__hd">
+                    <h2>{{ Text::get('cyberspace.tracker.heading') }}</h2>
+                    <div class="spacer"></div>
+                    @if ($tracker['name'])
+                        <span class="tag">{{ $tracker['name'] }}</span>
+                    @endif
+                </div>
+                <p class="micro" style="color:var(--ink-2);margin:var(--s-3) 0 0">
+                    @if ($search?->hasFilter())
+                        {{ Text::get('cyberspace.tracker.looking_for', ['filter' => implode(' · ', array_filter([
+                            $search->owner?->name,
+                            $search->systemType()?->label(),
+                            $search->grade !== null ? Text::get('cyberspace.locate.grade', ['grade' => $search->grade]) : null,
+                        ]))]) }}
+                    @else
+                        {{ Text::get('cyberspace.tracker.no_filter_set') }}
+                    @endif
+                </p>
+                <div class="row row--wrap" style="--gap:var(--s-3);align-items:center;margin-top:var(--s-3)">
+                    <button type="button" class="btn btn--sm cut" data-open="#tracker-filter">{{ Text::get('cyberspace.tracker.set_filter') }}</button>
+                    @if ($search?->isReleased())
+                        <span class="micro" style="color:var(--ink-2)">{{ Text::get('cyberspace.tracker.searching') }}</span>
+                    @elseif ($search?->hasFilter())
+                        <form method="POST" action="{{ route('tracker.release') }}">
+                            @csrf
+                            <button type="submit" class="btn btn--sm cut">{{ Text::get('cyberspace.tracker.release') }}</button>
+                        </form>
+                    @endif
+                </div>
+            </section>
+        @endif
+
         {{-- SECURE TUNNELS (App\Cyberspace\FortressTunnel): a fortress of yours, or one you are admitted to, with a tunnel
              program running puts you on it from anywhere, jacked in or not. --}}
         @if ($tunnels->isNotEmpty())
@@ -703,4 +740,50 @@
             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('processes.loading') }}</p>
         </div>
     </dialog>
+
+    {{-- THE TRACKER'S FILTER: a modal of the same three choices as the known systems. Locking it in takes the Tracker back to
+         waiting, so a changed filter is always released again on purpose. --}}
+    @if ($tracker !== null)
+        <dialog id="tracker-filter" class="modal">
+            <form method="POST" action="{{ route('tracker.filter') }}">
+                @csrf
+                <div class="panel__hd">
+                    <span class="micro">{{ Text::get('cyberspace.tracker.filter_title') }}</span>
+                    <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+                </div>
+                <div class="panel__bd stack" style="--gap:var(--s-3)">
+                    <label class="field" style="margin:0">
+                        <span class="field__label">{{ Text::get('cyberspace.known.owner') }}</span>
+                        <select class="select" name="owner_id">
+                            <option value="">{{ Text::get('cyberspace.known.any') }}</option>
+                            @foreach ($tracker['owners'] as $id => $name)
+                                <option value="{{ $id }}" @selected($tracker['search']?->owner_id === $id)>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="field" style="margin:0">
+                        <span class="field__label">{{ Text::get('cyberspace.known.type') }}</span>
+                        <select class="select" name="type">
+                            <option value="">{{ Text::get('cyberspace.known.any') }}</option>
+                            @foreach ($tracker['types'] as $type)
+                                <option value="{{ $type->value }}" @selected($tracker['search']?->type === $type->value)>{{ $type->label() }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="field" style="margin:0">
+                        <span class="field__label">{{ Text::get('cyberspace.known.grade') }}</span>
+                        <select class="select" name="grade">
+                            <option value="">{{ Text::get('cyberspace.known.any') }}</option>
+                            @foreach (range(1, 9) as $grade)
+                                <option value="{{ $grade }}" @selected($tracker['search']?->grade === $grade)>{{ $grade }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                </div>
+                <div class="panel__ft">
+                    <button type="submit" class="btn cut">{{ Text::get('cyberspace.tracker.lock_in') }}</button>
+                </div>
+            </form>
+        </dialog>
+    @endif
 @endsection

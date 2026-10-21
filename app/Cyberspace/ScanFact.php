@@ -17,7 +17,7 @@ use App\Support\Text;
  * which.
  *
  * THE UNBUILT ONES ARE LISTED ANYWAY, and that is the same decision the item
- * card takes with *Show on market* and *Disassemble*: an answer that does not
+ * card takes with *Put on market* and *Disassemble*: an answer that does not
  * exist yet says so, rather than being absent. A screen that grows rows as
  * features land is a screen nobody learns, and a player reading a scan should
  * be able to see the shape of what a scan will eventually tell them.

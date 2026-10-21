@@ -218,6 +218,10 @@ Schedule::command('decryption:settle --quiet-when-idle')
  * Scripts are spent by the clock (`programs.lifetime_seconds`). Whoever looks at their running programs
  * sees an expired one gone already; this keeps the table true for the character nobody is looking at.
  */
+Schedule::command('tracker:settle --quiet-when-idle')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 Schedule::command('programs:expire')
     ->everyMinute()
     ->withoutOverlapping();

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Programs;
 
 use App\Crafting\Crafting;
+use App\Cyberspace\Tracker;
 use App\Decks\DeckTotals;
 use App\Decryption\DecryptionQueue;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Program;
+use App\Models\TrackerSearch;
 use App\Stats\Resolver;
 use App\Stats\Sources\RunningPrograms;
 use App\Support\Qb;
@@ -379,9 +381,31 @@ final class ProgramRunner
 
             $qflops += $program->qflops_cost;
             $memory += $program->memory_cost;
+
+            // A Tracker in the middle of its passes holds more than it does waiting (`programs.tracker`).
+            if ($program->tracks && Tracker::isActive((int) $row->getKey())) {
+                $qflops += max(0.0, (float) config('programs.tracker.active_qflops') - $program->qflops_cost);
+                $memory += max(0.0, (float) config('programs.tracker.active_memory') - $program->memory_cost);
+            }
         }
 
         return ['qflops' => Qb::of($qflops), 'memory' => Qb::of($memory)];
+    }
+
+    /** Would the equipped deck still have this much compute and memory free on top of what is running? A read. */
+    public function hasRoomFor(Character $character, float $qflops, float $memory): bool
+    {
+        $deck = $character->equippedDeck;
+
+        if ($deck === null) {
+            return false;
+        }
+
+        $totals = $this->totals($character, $deck);
+        $spent = $this->spentOn($character, (int) $deck->id);
+
+        return Qb::tenths($totals->qflops) >= Qb::tenths($spent['qflops']) + Qb::tenths($qflops)
+            && Qb::tenths($totals->quantabits) >= Qb::tenths($spent['memory']) + Qb::tenths($memory);
     }
 
     /**
@@ -438,6 +462,11 @@ final class ProgramRunner
             if ($owner !== null) {
                 DecryptionQueue::make()->stopped($owner, $row->getKey());
             }
+        }
+
+        // A Tracker's filter and clock belong to the running copy and go with it.
+        if ($row->item?->program?->tracks) {
+            TrackerSearch::query()->where('inventory_item_id', $row->getKey())->delete();
         }
 
         // A Script is spent by running, so stopping one early destroys it; there is no pile to put it back in.

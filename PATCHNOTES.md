@@ -1,3 +1,8 @@
+## 0.70.0 (2026-10-21)
+
+- New utility program: **Tracker**. Give it a filter (owner, type, grade) and release it - and it will search the grid in the background until it finds the requested node. 
+- "Show on market" is now "Put on market"
+
 ## 0.69.2 (2026-10-21)
 - "Running" window misbehaved; running or stopping program hung the window in an incomplete state. Fixed now.
 - A decryptor in the "Running" window that is decrypting a file will now say so.
