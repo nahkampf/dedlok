@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.71.1] — 2026-10-21
+
+### Changed
+- Co-op runs: a runner who egresses, is ejected or is reduced to 0 no longer ends the run for the others. The node's lockdown is decided when the LAST runner of the party is out (`RunStarter::end`), as the party left it: a backdoor landed by any of them prevents it.
+- Co-op runs: a landed backdoor, like a burn, completes every live run of the party (`PartyTurns`, `Simulator::cancelEveryRunOn`) instead of cancelling the others.
+- Co-op runs: the party has one log. Every line is written to each runner's log with who it was about (`by`) and is told in the third person from `cyberspace.run.party_log.*`; lines without a wording there fall back to the runner's own line with their handle in front. `Simulator::line()` now keeps its `key` and `replace`.
+- Co-op runs: after choosing an action the run screen says "Waiting for all runners to take action", and a runner who has not chosen yet gets the 5-second refresh once anybody else has.
+
+
 ## [0.71.0] — 2026-10-21
 
 ### Added
@@ -3661,7 +3670,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.71.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.71.1...HEAD
+[0.71.1]: https://github.com/nahkampf/dedlok/compare/v0.71.0...v0.71.1
 [0.71.0]: https://github.com/nahkampf/dedlok/compare/v0.70.0...v0.71.0
 [0.70.0]: https://github.com/nahkampf/dedlok/compare/v0.69.2...v0.70.0
 [0.69.2]: https://github.com/nahkampf/dedlok/compare/v0.69.1...v0.69.2

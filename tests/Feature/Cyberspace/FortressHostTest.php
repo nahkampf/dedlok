@@ -181,6 +181,8 @@ final class FortressHostTest extends TestCase
     public function test_a_running_crafted_defence_arms_the_fortress_and_decays_only_while_installed(): void
     {
         Ice::query()->firstOrCreate(['level' => 1], ['name' => 'ICE I', 'integrity' => 10, 'attack' => 1, 'skill' => 50, 'detection' => 5, 'grade_min' => 1, 'grade_max' => 3]);
+        // Decay is floored, so a clock second between install and read would take a point off.
+        $this->freezeTime();
         $c = Character::factory()->create();
         $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
         $this->feed($c, $f, 'compute', 6.0, 5);

@@ -30,18 +30,18 @@ final class ItemTypeFilterTest extends TestCase
 
     public function test_each_kind_finds_its_own_items(): void
     {
-        Item::factory()->create(['container' => 'physical', 'name' => 'Alpha Plain']);
-        $medic = Item::factory()->create(['container' => 'physical', 'name' => 'Beta Medic']);
+        Item::factory()->create(['container' => 'physical', 'slug' => '0-alpha-plain', 'name' => 'Alpha Plain']);
+        $medic = Item::factory()->create(['container' => 'physical', 'slug' => '0-beta-medic', 'name' => 'Beta Medic']);
         Drug::query()->create(['item_id' => $medic->id, 'family' => Family::Medical, 'duration_minutes' => 10, 'addictive' => 0, 'tolerance_gain' => 0]);
-        $stim = Item::factory()->create(['container' => 'physical', 'name' => 'Gamma Stim']);
+        $stim = Item::factory()->create(['container' => 'physical', 'slug' => '0-gamma-stim', 'name' => 'Gamma Stim']);
         Drug::query()->create(['item_id' => $stim->id, 'family' => Family::Stimulant, 'fight_only' => true, 'duration_minutes' => 0, 'duration_turns' => 3, 'addictive' => 0, 'tolerance_gain' => 0]);
-        $vest = Item::factory()->create(['container' => 'physical', 'name' => 'Delta Vest', 'stackable' => false]);
+        $vest = Item::factory()->create(['container' => 'physical', 'slug' => '0-delta-vest', 'name' => 'Delta Vest', 'stackable' => false]);
         Armour::create(['item_id' => $vest->id, 'slots' => ['torso']]);
-        $knife = Item::factory()->create(['container' => 'physical', 'name' => 'Epsilon Knife', 'stackable' => false]);
+        $knife = Item::factory()->create(['container' => 'physical', 'slug' => '0-epsilon-knife', 'name' => 'Epsilon Knife', 'stackable' => false]);
         Weapon::create(['item_id' => $knife->id, 'class' => WeaponClass::Blade, 'damage' => 4, 'damage_profile' => ['slashing' => 100], 'accuracy' => 0, 'rate' => 1]);
-        $kit = Item::factory()->create(['container' => 'physical', 'name' => 'Zeta Kit']);
+        $kit = Item::factory()->create(['container' => 'physical', 'slug' => '0-zeta-kit', 'name' => 'Zeta Kit']);
         ConsumableEditor::apply($kit, [['kind' => 'heal_hitpoints', 'amount' => 5]]);
-        Item::factory()->create(['container' => 'data', 'name' => 'Eta Cpu', 'hardware' => Hardware::Cpu]);
+        Item::factory()->create(['container' => 'data', 'slug' => '0-eta-cpu', 'name' => 'Eta Cpu', 'hardware' => Hardware::Cpu]);
 
         $this->assertSame(['Beta Medic', 'Gamma Stim'], $this->names('drug'));
         $this->assertSame(['Beta Medic'], $this->names('drug:medical'));

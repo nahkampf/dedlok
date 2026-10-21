@@ -295,14 +295,17 @@ class RunController extends Controller
         }
 
         // Waiting on the others: the page checks again in a few seconds, since the clock is whoever asks.
+        // Anybody's choice counts: the runner who has not chosen yet must see the round move too.
+        $waiting = $run->pending_action !== null && PartyTurns::shared($run);
         $refresh = $run->pull_at !== null
-            || ($run->pending_action !== null && PartyTurns::shared($run));
+            || ($run->run_party_id !== null && PartyTurns::shared($run) && PartyTurns::liveRuns((int) $run->run_party_id)->contains(fn (Run $r): bool => $r->pending_action !== null));
 
         $system = $run->system();
 
         $response = response()->view('run.show', [
             'character' => $character,
             'run' => $run,
+            'waiting' => $waiting,
             // Install Leecher is offered only with a Leecher in the stash and a fortress to feed.
             'fortresses' => $character->inventory()->loose()->whereHas('item.program', static fn ($q) => $q->where('kind', ProgramKind::Leecher->value))->exists()
                 ? System::query()->where('owner_character_id', $character->id)->orderBy('id')->get()

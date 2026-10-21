@@ -279,7 +279,20 @@ final readonly class RunStarter
              * already out: a lockdown throws out everybody still inside, and
              * that must never mean the person it was a consequence of.
              */
-            $shut = ($this->lockdown ?? Lockdown::fromConfig())->afterRun($run);
+            // A party's node shuts when the LAST of them is out, as the party left it (one backdoor among them cleans up).
+            $shut = false;
+            $mates = $run->run_party_id === null ? null : Run::query()->where('run_party_id', $run->run_party_id);
+
+            if ($mates === null || ! (clone $mates)->live()->exists()) {
+                $probe = $run;
+
+                if ($mates !== null && (clone $mates)->where('backdoored', true)->exists()) {
+                    $probe = $run->replicate();
+                    $probe->backdoored = true;
+                }
+
+                $shut = ($this->lockdown ?? Lockdown::fromConfig())->afterRun($probe);
+            }
 
             // AGITATE: the ICE was woken (the run was noticed), the runner got out, and the machine shut for it.
             if ($shut && $run->detected && in_array($ending, [RunEnding::Egress, RunEnding::Completed], true)) {

@@ -160,6 +160,68 @@ final class DenialTest extends TestCase
         $this->assertEquals($before, [$ca->fresh()->current_synaptic_integrity, $cb->fresh()->current_synaptic_integrity]);
     }
 
+    public function test_the_node_shuts_when_the_last_runner_is_out_and_nobody_is_cancelled_before(): void
+    {
+        Config::set('cyberspace.denial.target', [1 => 1000]);
+        $owner = Character::factory()->create();
+        $party = RunParty::query()->create(['owner_character_id' => $owner->id, 'address' => 'DEADBEEF', 'x' => 8, 'y' => 8]);
+        [$ca, $a] = $this->partyMember($party, 8);
+        [$cb, $b] = $this->partyMember($party, 8);
+        Run::query()->whereKey([$a->id, $b->id])->update(['detected' => true]);
+        $before = $cb->current_synaptic_integrity;
+        $turns = new PartyTurns($this->simulator());
+
+        $turns->submit($a, RunAction::Egress);
+        $turns->submit($b, RunAction::Hold);
+
+        $this->assertNotNull($a->fresh()->ended_at);
+        $this->assertNull($b->fresh()->ended_at, 'the others carry on');
+        $this->assertFalse($this->node->fresh()->isLockedDown());
+        $this->assertEquals($before, $cb->fresh()->current_synaptic_integrity);
+
+        $this->simulator()->take($cb->fresh(), $b->fresh(), RunAction::Egress);
+
+        $this->assertNotNull($b->fresh()->ended_at);
+        $this->assertTrue($this->node->fresh()->isLockedDown());
+    }
+
+    public function test_a_landed_backdoor_ends_the_run_for_the_whole_party(): void
+    {
+        Config::set('cyberspace.denial.target', [1 => 1000]);
+        $owner = Character::factory()->create();
+        $party = RunParty::query()->create(['owner_character_id' => $owner->id, 'address' => 'DEADBEEF', 'x' => 8, 'y' => 8]);
+        [, $a] = $this->partyMember($party, 8);
+        [, $b] = $this->partyMember($party, 8);
+        Run::query()->whereKey($a->id)->update(['backdoored' => true]);
+        $turns = new PartyTurns($this->simulator());
+
+        $turns->submit($a, RunAction::Hold);
+        $turns->submit($b, RunAction::Hold);
+
+        $this->assertSame('completed', $a->fresh()->getRawOriginal('ending'));
+        $this->assertSame('completed', $b->fresh()->getRawOriginal('ending'));
+        $this->assertFalse($this->node->fresh()->isLockedDown());
+    }
+
+    public function test_a_party_reads_one_log_that_names_who_did_what(): void
+    {
+        Config::set('cyberspace.denial.target', [1 => 1000]);
+        $owner = Character::factory()->create();
+        $party = RunParty::query()->create(['owner_character_id' => $owner->id, 'address' => 'DEADBEEF', 'x' => 8, 'y' => 8]);
+        [$ca, $a] = $this->partyMember($party, 8);
+        [$cb, $b] = $this->partyMember($party, 8);
+        $turns = new PartyTurns($this->simulator());
+
+        $turns->submit($a, RunAction::Hold);
+        $turns->submit($b, RunAction::Hold);
+
+        $this->assertSame(
+            collect($a->fresh()->log)->pluck('by')->filter()->sort()->values()->all(),
+            collect($b->fresh()->log)->pluck('by')->filter()->sort()->values()->all(),
+        );
+        $this->assertEqualsCanonicalizing([$ca->handle, $cb->handle], collect($a->fresh()->log)->pluck('by')->filter()->unique()->values()->all());
+    }
+
     public function test_the_pushback_is_a_roll_in_the_grades_range(): void
     {
         Config::set('cyberspace.denial.drain', [1 => [0, 68]]);

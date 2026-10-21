@@ -1,3 +1,10 @@
+## 0.71.1 (2026-10-21)
+- Co-op runs now have some fixes to make it more streamlined.
+  - Run isn't aborted because a runner egresses of goes down, it carries on until it's completed or everyone is out
+  - Some edge cases covered that could result in an ambigious run, stale data or hung progress
+  - Changed so that everyone sees the same log
+  - No forced waiting on the turn timer, if everyone has made their action the turn progresses
+
 ## 0.71.0 (2026-10-21)
 
 - UI: Removed effects from the attribute table in Character sheet. Attribute names are now hoverable to discover current effects

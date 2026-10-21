@@ -282,6 +282,10 @@
          That is the moment the run's own action stops being a gamble, and its button says so by turning green. --}}
     @php($coreOpen = ! $run->inAFight() && $core === null)
 
+    @if ($waiting)
+        <p class="micro" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.waiting') }}</p>
+    @endif
+
     <form method="POST" action="{{ route('run.act') }}" style="padding-bottom:var(--s-3)">
         @csrf
         <div class="row row--wrap" style="--gap:var(--s-2)">
@@ -396,15 +400,25 @@
                          words before it ("Your [icebreaker] finds…"). The tag's colour is stored with it:
                          `crit` for the ICE hitting you (also what a line from before the colour was kept
                          says), `ok` for your icebreaker, none for the ICE failing. --}}
+                    {{-- A party's log is one account told in the third person: "ICE I lands a code payload on Skavian". --}}
+                    @php($told = isset($line['by'], $line['key']) ? Text::get('cyberspace.run.party_log.'.substr($line['key'], strlen('cyberspace.run.log.')), ($line['replace'] ?? []) + ['player' => $line['by'], 'tag' => $line['tag'] ?? '']) : null)
+                    @php($told = $told !== null && ! str_starts_with($told, 'cyberspace.run.party_log.') ? $told : null)
                     <span>
-                        @if (! empty($line['before']))
-                            {{ $line['before'] }}
+                        @if ($told !== null)
+                            {{ $told }}
+                        @else
+                            @if (! empty($line['by']))
+                                <b>{{ $line['by'] }}</b>
+                            @endif
+                            @if (! empty($line['before']))
+                                {{ $line['before'] }}
+                            @endif
+                            @if (! empty($line['tag']))
+                                @php($tagTone = array_key_exists('tag_tone', $line) ? $line['tag_tone'] : 'crit')
+                                <span class="tag{{ $tagTone !== '' ? ' tag--'.$tagTone : '' }}">{{ $line['tag'] }}</span>
+                            @endif
+                            {{ $line['text'] }}
                         @endif
-                        @if (! empty($line['tag']))
-                            @php($tagTone = array_key_exists('tag_tone', $line) ? $line['tag_tone'] : 'crit')
-                            <span class="tag{{ $tagTone !== '' ? ' tag--'.$tagTone : '' }}">{{ $line['tag'] }}</span>
-                        @endif
-                        {{ $line['text'] }}
                     </span>
                 </p>
             @endforeach
