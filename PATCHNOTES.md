@@ -1,3 +1,8 @@
+## 0.71.0 (2026-10-21)
+
+- UI: Removed effects from the attribute table in Character sheet. Attribute names are now hoverable to discover current effects
+- Golden Path now hands out _Path of Repentance_ scripts if you do work for them. They are said to help overcome addictions, but... Golden Path is also a cult.
+
 ## 0.70.0 (2026-10-21)
 
 - New utility program: **Tracker**. Give it a filter (owner, type, grade) and release it - and it will search the grid in the background until it finds the requested node. 
