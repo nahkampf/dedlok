@@ -3083,6 +3083,7 @@ return [
             'crafting_time' => 'All crafting time (%)',
             'crafting_slots' => 'crafting slots',
             'crafting_cost' => 'crafting component quantities (%)',
+            'fatigue_taken' => 'fatigue taken (%)',
             'crafting_seconds.icebreaker' => 'Icebreaker crafting time (%)',
             'crafting_seconds.decryptor' => 'Decryptor crafting time (%)',
             'crafting_seconds.evasion' => 'Evasion crafting time (%)',

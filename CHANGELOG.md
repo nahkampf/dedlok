@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.71.0] — 2026-10-21
+
+### Added
+
+- **Path of Repentance** now does what its flavour claims, a little: `addiction_recovery +0.01` (a hundredth of a point of addiction a minute off every family, while it runs), beside its `fatigue_taken +10`. Migration `2026_10_24_110000_path_of_repentance_cures` adds the modifier only when the item has none for it.
+- **Path of Repentance** leaves the market and is sold at Golden Path's loyalty shelf: 15 loyalty, minimum standing 0, any desk grade (`entity_offers`). Migration `2026_10_24_120000_path_of_repentance_at_golden_path`, which finds the entity and the item by name and slug and is a no-op when either is missing.
+
+### Changed
+
+- **Character sheet**: an attribute's effects (a dose, an implant, an injury) are on its label's tooltip instead of lines under the bar. The label is a dotted link only while something moves it. New kit classes `.tip-link` and `.tip--lines` (a newline in `data-tip` starts a line).
+- `fatigue_taken` has a display name (*fatigue taken (%)*), so a card naming it no longer shows the raw key.
+
+
 ## [0.70.0] — 2026-10-21
 
 ### Added
@@ -3648,7 +3661,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.70.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.71.0...HEAD
+[0.71.0]: https://github.com/nahkampf/dedlok/compare/v0.70.0...v0.71.0
 [0.70.0]: https://github.com/nahkampf/dedlok/compare/v0.69.2...v0.70.0
 [0.69.2]: https://github.com/nahkampf/dedlok/compare/v0.69.1...v0.69.2
 [0.69.1]: https://github.com/nahkampf/dedlok/compare/v0.69.0...v0.69.1
