@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.71.2] — 2026-10-21
+
+### Added
+- The Known systems modal has an **Overview map** button: a full-screen canvas of the whole grid from the character's remembered systems (`system_contacts`), one 10px cell per place, titled with its grid ("Main Grid", or the subnet's name). `CyberspaceController::overview` returns it as JSON and caches the memory for a minute per character and grid; where they stand is read fresh. Cells use the map's node tokens; fortresses are ember, the character's own cell pulses white and black, exchanges and gateways pulse brass and ember (gateways half a cycle behind). The view scrolls toward whichever edge or corner the cursor is near (`ui-kit.js`).
+
+### Changed
+- The Running and Current processes modals say Close rather than Cancel (`ui.action.close`).
+- Bloodhound fight lines reworded: the hunter's miss, its hit, and the player's hit and critical hit (`cyberspace.hunt.log.*`).
+
+### Fixed
+- The ICE meter on the Bloodhound fight (and the fills in the exchange, fight and cyberspace views) was an inline `<span>` and drew nothing; they are `<div>`s like the kit's other meters.
+
+
 ## [0.71.1] — 2026-10-21
 
 ### Changed
@@ -3670,7 +3683,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.71.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.71.2...HEAD
+[0.71.2]: https://github.com/nahkampf/dedlok/compare/v0.71.1...v0.71.2
 [0.71.1]: https://github.com/nahkampf/dedlok/compare/v0.71.0...v0.71.1
 [0.71.0]: https://github.com/nahkampf/dedlok/compare/v0.70.0...v0.71.0
 [0.70.0]: https://github.com/nahkampf/dedlok/compare/v0.69.2...v0.70.0

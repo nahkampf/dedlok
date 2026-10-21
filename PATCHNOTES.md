@@ -1,3 +1,10 @@
+## 0.71.2 (2026-10-21)
+
+- The "Known systems" modal now has a button for "Overview map" that shows you the whole of the grid, as you know it.
+- The ICE health bar in Bloodhound encounters (plus a few other health bars elsewhere) were not updating, fixed now
+- Changed the wording for BLoodhound logs
+- "Running" modal "Cancel" changed to "Close"
+
 ## 0.71.1 (2026-10-21)
 - Co-op runs now have some fixes to make it more streamlined.
   - Run isn't aborted because a runner egresses of goes down, it carries on until it's completed or everyone is out
