@@ -51,6 +51,7 @@ class EnsureRunIsFinished
     private const ALLOWED_ROUTES = [
         'login',
         'logout',
+        'sudo.exit',
         'run.show',
         'run.act',
         'run.egress',

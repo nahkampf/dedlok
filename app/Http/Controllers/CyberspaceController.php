@@ -34,6 +34,7 @@ use App\Missions\MissionLedger;
 use App\Models\Bookmark;
 use App\Models\Character;
 use App\Models\Entity;
+use App\Models\Exchange;
 use App\Models\System;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
@@ -337,11 +338,11 @@ class CyberspaceController extends Controller
             ->whereNotNull('grade')
             ->pluck('grade', 'address');
 
-        // An Exchange cannot be scanned and its grade is no secret (the desk's own), so it is read off the system.
-        $exchanges = System::query()
-            ->whereIn('address', $contacts->where('type', SystemType::Exchange)->pluck('address'))
-            ->whereNotNull('grade')
-            ->pluck('grade', 'address');
+        // An Exchange cannot be scanned and its grade is no secret: the DESK's own (the system's is only the floor).
+        $exchanges = Exchange::query()
+            ->join('systems', 'systems.id', '=', 'exchanges.system_id')
+            ->whereIn('systems.address', $contacts->where('type', SystemType::Exchange)->pluck('address'))
+            ->pluck('exchanges.grade', 'systems.address');
         $grades = $grades->union($exchanges);
 
         // Every live scan the character holds, by address: a whole one is ticked, and any is shown on hover.

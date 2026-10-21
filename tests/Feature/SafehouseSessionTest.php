@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Characters\Fatigue;
+use App\City\ActivityKind;
 use App\Models\Character;
+use App\Models\CityActivity;
 use App\Models\Notification;
 use App\Models\Safehouse;
 use App\Safehouses\Action;
@@ -54,6 +57,23 @@ final class SafehouseSessionTest extends TestCase
         $this->assertSame(0.0, (float) $fresh->study_progress);
         $this->assertSame(61, $fresh->intellect + $fresh->memory + $fresh->focus);
         $this->assertSame('Sharpening the mind', Notification::query()->latest('id')->firstOrFail()->title);
+    }
+
+    public function test_a_workout_never_crosses_the_collapse_line_and_hands_over_to_a_rest(): void
+    {
+        Safehouse::fallback()->forceFill(['actions' => ['workout', 'study', 'simstim', 'rest'], 'rest_rate' => 1])->save();
+        $max = (float) (new Fatigue)->maximum($this->character);
+        $this->character->forceFill(['current_fatigue' => $max - 5])->save();
+        $this->assertTrue($this->home->startSession($this->character->fresh(), Action::Workout));
+
+        // Far longer than there is room for: it would have been a collapse.
+        $this->home->settleSession($this->character, now()->addHours(2));
+
+        $fresh = $this->character->fresh();
+        $this->assertFalse((bool) $fresh->collapse_pending);
+        $this->assertLessThan($max, (float) $fresh->current_fatigue);
+        $this->assertSame(ActivityKind::Rest, CityActivity::query()->whereKey($fresh->id)->firstOrFail()->kind);
+        $this->assertSame('Too tired to go on: resting', Notification::query()->latest('id')->firstOrFail()->title);
     }
 
     public function test_simstim_lifts_mood_and_stops_at_two_hours_a_day(): void

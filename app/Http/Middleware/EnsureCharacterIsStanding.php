@@ -40,6 +40,7 @@ class EnsureCharacterIsStanding
     private const ALLOWED_ROUTES = [
         'login',
         'logout',
+        'sudo.exit',
         'waiting.show',
         // The inbox's badge and sound poll from every page, this one included.
         'notifications.unread',

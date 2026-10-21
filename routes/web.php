@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\NpcController as AdminNpcController;
 use App\Http\Controllers\Admin\SafehouseController as AdminSafehouseController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
 use App\Http\Controllers\Admin\SubnetController as AdminSubnetController;
+use App\Http\Controllers\Admin\SudoController;
 use App\Http\Controllers\Admin\SupporterController as AdminSupporterController;
 use App\Http\Controllers\AvailableHandlesController;
 use App\Http\Controllers\CharacterController;
@@ -556,11 +557,15 @@ Route::middleware('auth')->group(function () {
  * No `show` route on either resource. The edit form IS the detail view, and a
  * read-only copy of it would be a second place to add every new column.
  */
+// Leaving a sudo: outside the admin gate, because the account being played is not an admin.
+Route::post('/sudo/exit', [SudoController::class, 'exit'])->middleware('auth')->name('sudo.exit');
+
 Route::middleware(['auth', 'can:admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
         Route::get('/', DashboardController::class)->name('index');
+        Route::post('sudo', [SudoController::class, 'start'])->name('sudo');
 
         Route::resource('items', AdminItemController::class)->except(['show']);
         Route::resource('skills', AdminSkillController::class)->except(['show']);
