@@ -34,6 +34,9 @@
                     <span>{{ Text::plural('market.offers.available', $row->quantity) }}</span>
                 @endif
                 <span>{{ Text::get("market.offers.seller", ["name" => $offer->seller?->handle]) }} <x-supporter-badge :character="$offer->seller" /></span>
+                @if ($offer->recipient_character_id !== null)
+                    <span class="tag">{{ $mine ? Text::get('market.offers.contract_for', ['name' => $offer->recipient?->handle]) : Text::get('market.offers.contract_to_you') }}</span>
+                @endif
             </span>
         </div>
 

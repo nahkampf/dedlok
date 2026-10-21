@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written only by `App\Market\OfferBook`.
  */
-#[Fillable(['seller_character_id', 'inventory_item_id', 'unit_price'])]
+#[Fillable(['seller_character_id', 'recipient_character_id', 'inventory_item_id', 'unit_price'])]
 class MarketOffer extends Model
 {
     protected function casts(): array
@@ -33,6 +33,12 @@ class MarketOffer extends Model
     public function seller(): BelongsTo
     {
         return $this->belongsTo(Character::class, 'seller_character_id');
+    }
+
+    /** The one character a contract is for; null for an ordinary listing. @return BelongsTo<Character, $this> */
+    public function recipient(): BelongsTo
+    {
+        return $this->belongsTo(Character::class, 'recipient_character_id');
     }
 
     /** @return BelongsTo<InventoryItem, $this> */
@@ -56,6 +62,18 @@ class MarketOffer extends Model
     public function total(int $quantity): int
     {
         return $this->unit_price * $quantity;
+    }
+
+    /**
+     * What this character may see: every ordinary listing, their own, and the contracts made out to them.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeVisibleTo(Builder $query, Character $viewer): void
+    {
+        $query->where(static fn (Builder $q) => $q->whereNull('recipient_character_id')
+            ->orWhere('recipient_character_id', $viewer->getKey())
+            ->orWhere('seller_character_id', $viewer->getKey()));
     }
 
     /**

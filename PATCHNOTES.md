@@ -1,3 +1,9 @@
+## 0.72.0 (2026-10-21)
+
+- New: **Contracts**. You can now put an item up as a contract. It is basically the same as putting it on the market, but with a specific recipient who is the only one that sees it and can buy it.
+- Overview map now allows you to copy addresses or coordinates.
+- Overview map now distinguishes between empty nodes and unexplored
+
 ## 0.71.2 (2026-10-21)
 
 - The "Known systems" modal now has a button for "Overview map" that shows you the whole of the grid, as you know it.

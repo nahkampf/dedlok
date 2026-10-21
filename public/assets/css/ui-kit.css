@@ -2096,7 +2096,7 @@ dialog.modal--wide { width: min(1200px, calc(100vw - 32px)); max-height: 90vh; }
 /* Fills the screen; the body is whatever scrolls, so it needs no padding of its own. */
 dialog.modal--full { width: calc(100vw - 32px); height: calc(100vh - 32px); max-height: none; }
 dialog.modal--full > .overview { flex: 1; min-height: 0; overflow: auto; background: var(--bg-0); scrollbar-width: none; }
-dialog.modal--full > .overview canvas { display: block; margin: 0 auto; max-width: none; image-rendering: pixelated; }
+dialog.modal--full > .overview canvas { cursor: crosshair; display: block; margin: 0 auto; max-width: none; image-rendering: pixelated; }
 .swatch { display: inline-block; width: var(--s-2); height: var(--s-2); }
 .swatch--wash { animation: swatch-wash 1s ease-in-out infinite alternate; }
 .swatch--late { animation-delay: -.5s; }

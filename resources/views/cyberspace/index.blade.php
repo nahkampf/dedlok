@@ -753,10 +753,13 @@
                 @endforeach
                 <span class="micro row" style="--gap:var(--s-1);align-items:center"><span class="swatch swatch--pulse"></span>{{ Text::get('cyberspace.known.overview_you') }}</span>
             </span>
-            <span class="micro" style="color:var(--ink-3)">{{ Text::get('cyberspace.known.overview_hint') }}</span>
+            <span class="micro" style="color:var(--ink-3)" data-overview-note data-note="{{ Text::get('cyberspace.known.overview_hint') }}">{{ Text::get('cyberspace.known.overview_hint') }}</span>
             <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
         </div>
-        <div class="overview" data-overview-view>
+        <div class="overview" data-overview-view
+             data-copied-address="{{ Text::get('cyberspace.known.overview_copied_address') }}"
+             data-copied-coords="{{ Text::get('cyberspace.known.overview_copied_coords') }}"
+             data-copy-failed="{{ Text::get('cyberspace.reading.copy_failed') }}">
             <canvas></canvas>
         </div>
     </dialog>

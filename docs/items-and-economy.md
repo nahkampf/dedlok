@@ -203,3 +203,12 @@ shelf. Money existed for four releases with nothing to spend it on.
   holding. Buy is an ordinary button and never `btn--go` — the green one is rationed to
   one per screen and a shelf of twenty would say nothing.
 
+
+### Contracts
+
+**A contract is a player offer (`market_offers`, written only by `App\Market\OfferBook`) with a named buyer** — `recipient_character_id`, NULL for an ordinary listing. It is made from the same card form as "Put on market", with a *Recipient* field and its own **Add contract** button (the market button refuses a typed name and Add contract refuses a blank one, so a name can never quietly become a public listing), that suggests handles as it is typed (the message screen's `data-suggest`, delegated in `ui-kit.js` so it also works in the inspector's cloned card).
+
+- **Visibility is one scope, `MarketOffer::visibleTo($character)`**: every ordinary listing, the viewer's own, and contracts made out to them. The market screen and the `market:<id>` modal read through it; a hidden contract's link answers "this listing is gone".
+- **`OfferBook::buy()` answers anybody but the recipient `Gone`**, inside the lock, so a stale page or a guessed URL learns nothing. The seller can still withdraw.
+- **Chat never names one**: `Chat\Markup` leaves a contract's `market:<id>` as plain text.
+- **The recipient is told** by an inbox row (`offer_contract`) when it goes up. A name that matches nobody, or the seller's own, is refused by the form. The FK cascades, so a deleted recipient takes the contract with it rather than turning it into a public listing.

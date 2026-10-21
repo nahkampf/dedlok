@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.72.0] — 2026-10-21
+
+### Added
+- **Contracts**: a player offer with one named buyer. `market_offers.recipient_character_id` (migration `2026_10_25_100000_contracts`, cascades, so a deleted recipient takes the contract with it). The item card has a *Recipient* field (handle suggestions, the message screen's `data-suggest`, now delegated in `ui-kit.js` so it works in the inspector's cloned card) and an **Add contract** button beside *Put on market*; the market button refuses a typed name and Add contract refuses a blank one. `MarketOffer::visibleTo()` shows the recipient and the seller the offer and nobody else; `OfferBook::buy()` answers anybody else `Gone`; chat links never name one; the recipient gets an inbox row (`offer_contract`). The market screen has a collapsible *Contracts* accordion beside a now collapsible *Sales orders*.
+- Overview map: clicking a cell copies the address of the system there, or `x,y` when there is none; the header says what was copied for three seconds.
+
+### Changed
+- Overview map: ground never looked at is the darker grey (`--bg-1`), swept ground with nothing on it a lighter one (`--bg-4`). `CyberspaceController::overview` also returns which ground is swept (rows of 1s and 0s, cached with the systems) and each cell's remembered address. Gateways share the exchanges' brass and ember wash, half a cycle behind.
+
+
 ## [0.71.2] — 2026-10-21
 
 ### Added
@@ -3683,7 +3693,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.71.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.72.0...HEAD
+[0.72.0]: https://github.com/nahkampf/dedlok/compare/v0.71.2...v0.72.0
 [0.71.2]: https://github.com/nahkampf/dedlok/compare/v0.71.1...v0.71.2
 [0.71.1]: https://github.com/nahkampf/dedlok/compare/v0.71.0...v0.71.1
 [0.71.0]: https://github.com/nahkampf/dedlok/compare/v0.70.0...v0.71.0

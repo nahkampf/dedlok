@@ -25,6 +25,7 @@ use App\Cyberspace\ScanExporter;
 use App\Cyberspace\ScanExportRefusal;
 use App\Cyberspace\SweepResult;
 use App\Cyberspace\SystemType;
+use App\Cyberspace\Terrain;
 use App\Cyberspace\Tracker;
 use App\Cyberspace\TravelRefusal;
 use App\Cyberspace\TravelResult;
@@ -264,7 +265,7 @@ class CyberspaceController extends Controller
      * by a grade it was not read for.
      */
     /**
-     * The overview map: every system this character remembers on their grid, as [x, y, type]. The memory is cached for a
+     * The overview map: every system this character remembers on their grid, as [x, y, type, address]. The memory is cached for a
      * minute per character and grid (the map redraws from it), and where they stand is read fresh.
      */
     public function overview(Request $request): JsonResponse
@@ -272,13 +273,33 @@ class CyberspaceController extends Controller
         $character = $this->character($request);
         $grid = Grid::of($character);
 
-        $cells = Cache::remember(
+        // Both halves of the memory, cached together: the systems seen, and which ground has been looked at (one row of
+        // 1s and 0s per y, so a full grid is 16 KB rather than a list of sixteen thousand pairs).
+        $memory = Cache::remember(
             "cyberspace.overview.{$character->getKey()}.{$grid->id()}",
             60,
-            static fn (): array => SystemContact::query()
-                ->where('character_id', $character->getKey())->where('grid_id', $grid->id())
-                ->get(['x', 'y', 'type'])
-                ->map(static fn (SystemContact $c): array => [$c->x, $c->y, $c->type->value])->all(),
+            static function () use ($character, $grid): array {
+                $terrain = new Terrain($character);
+                $swept = [];
+
+                for ($y = 0; $y < $grid->size(); $y++) {
+                    $row = '';
+
+                    for ($x = 0; $x < $grid->size(); $x++) {
+                        $row .= $terrain->hasSwept(new Position($x, $y, $grid->id())) ? '1' : '0';
+                    }
+
+                    $swept[] = $row;
+                }
+
+                return [
+                    'cells' => SystemContact::query()
+                        ->where('character_id', $character->getKey())->where('grid_id', $grid->id())
+                        ->get(['x', 'y', 'type', 'address'])
+                        ->map(static fn (SystemContact $c): array => [$c->x, $c->y, $c->type->value, $c->address])->all(),
+                    'swept' => $swept,
+                ];
+            },
         );
         $at = $character->gridPosition();
 
@@ -287,7 +308,8 @@ class CyberspaceController extends Controller
                 'grid' => $grid->id() === 1 ? Text::get('cyberspace.known.main_grid') : (string) DB::table('grids')->where('id', $grid->id())->value('name'),
             ]),
             'size' => $grid->size(),
-            'cells' => $cells,
+            'cells' => $memory['cells'],
+            'swept' => $memory['swept'],
             'portal' => [$grid->portal()->x, $grid->portal()->y],
             'you' => $at === null ? null : [$at->x, $at->y],
         ]);
