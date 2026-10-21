@@ -32,7 +32,7 @@
                     <span class="num">{{ $state->b->hp }} / {{ $state->b->hpMax }}</span>
                 </div>
                 <div class="meter" style="--v:{{ round($state->b->hp / max(1, $state->b->hpMax), 3) }};--fill:var(--crit)">
-                    <span class="meter__fill"></span>
+                    <div class="meter__fill"></div>
                 </div>
             </div>
 
@@ -67,7 +67,7 @@
                     <span class="num">{{ $character->{$resource} }}</span>
                 </div>
                 <div class="meter" data-hot-low style="--v:{{ round($character->resourceRatio($resource), 3) }};--fill:var(--ok)">
-                    <span class="meter__fill"></span>
+                    <div class="meter__fill"></div>
                 </div>
             </div>
         @endforeach

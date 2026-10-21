@@ -380,7 +380,7 @@
     <dialog id="current-processes" class="modal">
         <div class="panel__hd">
             <span class="micro">{{ Text::get('processes.title') }}</span>
-            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
         </div>
         <div class="panel__bd" data-fragment="{{ route('processes.current') }}">
             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('processes.loading') }}</p>
@@ -402,7 +402,7 @@
     <dialog id="processes" class="modal" @if (session('reopen') === 'processes') data-reopen @endif>
         <div class="panel__hd">
             <span class="micro">{{ Text::get('programs.running') }}</span>
-            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.cancel') }}</button>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
         </div>
 
         <div class="panel__bd">

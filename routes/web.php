@@ -251,6 +251,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/cyberspace/pass', [CyberspaceController::class, 'pass'])->name('cyberspace.pass');
     Route::post('/cyberspace/step', [CyberspaceController::class, 'step'])->name('cyberspace.step');
     Route::get('/cyberspace/systems', [CyberspaceController::class, 'systems'])->name('cyberspace.systems');
+    Route::get('/cyberspace/overview', [CyberspaceController::class, 'overview'])->name('cyberspace.overview');
     Route::post('/cyberspace/spot/{encounter}', [CyberspaceController::class, 'spot'])->name('cyberspace.spot');
     Route::post('/cyberspace/traverse', [CyberspaceController::class, 'traverse'])->name('cyberspace.traverse');
     Route::post('/cyberspace/jump', [CyberspaceController::class, 'jump'])->name('cyberspace.jump');

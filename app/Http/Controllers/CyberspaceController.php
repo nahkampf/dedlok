@@ -45,7 +45,9 @@ use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -261,6 +263,36 @@ class CyberspaceController extends Controller
      * not offered. The grade is only what a live scan found out: an unscanned system shows none and is never filtered
      * by a grade it was not read for.
      */
+    /**
+     * The overview map: every system this character remembers on their grid, as [x, y, type]. The memory is cached for a
+     * minute per character and grid (the map redraws from it), and where they stand is read fresh.
+     */
+    public function overview(Request $request): JsonResponse
+    {
+        $character = $this->character($request);
+        $grid = Grid::of($character);
+
+        $cells = Cache::remember(
+            "cyberspace.overview.{$character->getKey()}.{$grid->id()}",
+            60,
+            static fn (): array => SystemContact::query()
+                ->where('character_id', $character->getKey())->where('grid_id', $grid->id())
+                ->get(['x', 'y', 'type'])
+                ->map(static fn (SystemContact $c): array => [$c->x, $c->y, $c->type->value])->all(),
+        );
+        $at = $character->gridPosition();
+
+        return response()->json([
+            'title' => Text::get('cyberspace.known.overview_title', [
+                'grid' => $grid->id() === 1 ? Text::get('cyberspace.known.main_grid') : (string) DB::table('grids')->where('id', $grid->id())->value('name'),
+            ]),
+            'size' => $grid->size(),
+            'cells' => $cells,
+            'portal' => [$grid->portal()->x, $grid->portal()->y],
+            'you' => $at === null ? null : [$at->x, $at->y],
+        ]);
+    }
+
     public function systems(Request $request): View
     {
         $character = $this->character($request);

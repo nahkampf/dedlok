@@ -31,7 +31,7 @@
              hunter's health, not the player's own — that lives in the topbar's
              dial on every screen already. --}}
         <div class="meter" style="--v:{{ round($hunt->ice_integrity / max(1, $hunt->ice->integrity), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
-            <span class="meter__fill"></span>
+            <div class="meter__fill"></div>
         </div>
     </div>
 

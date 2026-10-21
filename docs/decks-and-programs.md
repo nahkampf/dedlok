@@ -208,6 +208,7 @@ what a bare `items` row cannot.
 - **The query is one line of terms** (`exchange, lockjaw, grade >2`): a system type, a grade comparison, anything else is the owner. Result: nearest in steps (Chebyshev, then straight line), shown as one of eight arrows (`Finder::direction()`, north is a smaller y) and the distance. Measured from the portal when not jacked in.
 - **Autotraverse** (Pathfinder only, jacked in): the page posts `cyberspace.traverse` every ten seconds (`data-autotraverse` in `ui-kit.js`), each post one ordinary `Navigator::step()` toward the target (so a sweep and a hunter roll as by hand). The overlay is the dialog's backdrop (`dialog.modal--traverse`). It lives in the open page: reloading or leaving cancels it, and a refusal or a hunter stops it.
 - The two items (`azimuth`, `loco_motive`) arrive by migration `2026_10_09_320000_the_locators`.
+- **The overview map** is a button in the Known systems modal (`#overview-map`, `modal--full`): the whole grid from `system_contacts` as 10px cells on a canvas in the map's node tokens (fortresses ember), the character's own cell pulsing white and black. `CyberspaceController::overview` returns it as JSON and caches the memory for a minute per character and grid; where they stand is read fresh. `ui-kit.js` scrolls it toward whichever edge or corner the cursor is near.
 
 
 ### The Tracker

@@ -47,7 +47,7 @@
             <div class="meter meter--lg meter--centred"
                  style="--v:{{ max(-1, min(1, $standing / 100)) }};--fill:{{ $band === \App\Standing\Band::Neutral ? 'var(--ink-3)' : ($standing < 0 ? 'var(--crit)' : 'var(--ok)') }}"
                  role="img" aria-label="{{ Text::get('entities.standing') }} {{ number_format($standing, 2) }}">
-                <span class="meter__fill"></span>
+                <div class="meter__fill"></div>
                 @foreach ($bands as $at)
                     <span class="meter__mark" style="--x:{{ ($at + 100) / 200 }};--mark:var(--ink-2)"></span>
                 @endforeach
