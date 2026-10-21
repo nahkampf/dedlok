@@ -82,23 +82,30 @@
 
          Below the shelf because the shop is the same every day and this is
          whatever anybody happens to be holding. --}}
-    <div class="panel" style="margin-top:var(--s-4)">
-        <div class="panel__hd">
-            <span class="micro">{{ Text::get('market.offers.heading') }}</span>
-            <div class="spacer"></div>
-            <span class="micro num">{{ count($offers) }}</span>
-        </div>
+    {{-- Contracts (offers with a named buyer: yours to make, or made out to you) are their own accordion, so a
+         contract for you is not lost among everybody's listings. --}}
+    @php($contracts = $offers->whereNotNull('recipient_character_id'))
+    @php($orders = $offers->whereNull('recipient_character_id'))
 
-        <div class="panel__bd">
-            @if (count($offers) === 0)
-                <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('market.offers.empty') }}</p>
-            @else
-                <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
-                    @foreach ($offers as $offer)
-                        @include('market._offer', ['offer' => $offer])
-                    @endforeach
-                </div>
-            @endif
-        </div>
-    </div>
+    @foreach ([['market.offers.heading', 'market.offers.empty', $orders], ['market.contracts.heading', 'market.contracts.empty', $contracts]] as [$heading, $empty, $list])
+        <details class="panel" style="margin-top:var(--s-4)">
+            <summary class="panel__hd">
+                <span class="micro">{{ Text::get($heading) }}</span>
+                <div class="spacer"></div>
+                <span class="micro num">{{ count($list) }}</span>
+            </summary>
+
+            <div class="panel__bd">
+                @if (count($list) === 0)
+                    <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get($empty) }}</p>
+                @else
+                    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
+                        @foreach ($list as $offer)
+                            @include('market._offer', ['offer' => $offer])
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </details>
+    @endforeach
 @endsection

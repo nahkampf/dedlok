@@ -72,30 +72,32 @@
      keystrokes, and a late answer to an older question is thrown away. Suggestions are a courtesy: the server still judges
      whatever is sent, and a failed request just leaves the list as it was.
      <input list="x" data-suggest="/handles" data-suggest-into="x"> <datalist id="x"></datalist>                   */
-  document.querySelectorAll("input[data-suggest]").forEach((input) => {
+  // Delegated, so an input cloned into a modal (an item card's contract recipient) suggests too.
+  const suggestState = new WeakMap();
+  document.addEventListener("input", (e) => {
+    const input = e.target.closest?.("input[data-suggest]");
+    if (!input) return;
     const list = document.getElementById(input.dataset.suggestInto);
     if (!list) return;
-    let timer = null;
-    let asked = 0;
-    input.addEventListener("input", () => {
-      clearTimeout(timer);
-      const q = input.value.trim();
-      if (q === "") { list.replaceChildren(); return; }
-      timer = setTimeout(() => {
-        const mine = ++asked;
-        fetch(input.dataset.suggest + "?q=" + encodeURIComponent(q), {
-          headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
-          credentials: "same-origin",
+    const state = suggestState.get(input) || { timer: null, asked: 0 };
+    suggestState.set(input, state);
+    clearTimeout(state.timer);
+    const q = input.value.trim();
+    if (q === "") { list.replaceChildren(); return; }
+    state.timer = setTimeout(() => {
+      const mine = ++state.asked;
+      fetch(input.dataset.suggest + "?q=" + encodeURIComponent(q), {
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+        credentials: "same-origin",
+      })
+        .then((r) => (r.ok ? r.json() : []))
+        .then((names) => {
+          if (mine !== state.asked || !Array.isArray(names)) return;
+          // textContent through option.value, never innerHTML: a handle is player-supplied.
+          list.replaceChildren(...names.map((n) => Object.assign(document.createElement("option"), { value: String(n) })));
         })
-          .then((r) => (r.ok ? r.json() : []))
-          .then((names) => {
-            if (mine !== asked || !Array.isArray(names)) return;
-            // textContent through option.value, never innerHTML: a handle is player-supplied.
-            list.replaceChildren(...names.map((n) => Object.assign(document.createElement("option"), { value: String(n) })));
-          })
-          .catch(() => {});
-      }, 150);
-    });
+        .catch(() => {});
+    }, 150);
   });
 
   /* --- A default that follows another field ------------------------------

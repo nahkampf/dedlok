@@ -77,6 +77,7 @@ class MarketController extends Controller
             // anybody happens to be holding today, and it is short.
             'offers' => MarketOffer::query()
                 ->onOffer()
+                ->visibleTo($character)
                 ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'row.item.deckModule', 'seller.user'])
                 ->get(),
         ]);
@@ -91,6 +92,7 @@ class MarketController extends Controller
         $character = $this->character($request);
         $found = MarketOffer::query()
             ->onOffer()
+            ->visibleTo($character)
             ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'row.item.deckModule', 'seller.user'])
             ->find($offer);
 
@@ -183,15 +185,34 @@ class MarketController extends Controller
         $data = $request->validate([
             'price' => ['required', 'integer', 'min:0', 'max:99999999'],
             'quantity' => ['nullable', 'integer', 'min:1', 'max:9999'],
+            'recipient' => ['nullable', 'string', 'max:50'],
         ]);
 
-        $result = $offers->list($character, $entry, (int) $data['price'], isset($data['quantity']) ? (int) $data['quantity'] : null);
+        // A contract names its buyer by handle and is made with its own button; the market button never takes a name,
+        // so a typed recipient cannot quietly turn into a public listing.
+        $recipient = null;
+        $named = trim((string) ($data['recipient'] ?? '')) !== '';
+
+        if ($request->boolean('contract') !== $named) {
+            return back()->withInput()->with('error', Text::get($named ? 'market.offers.name_needs_contract' : 'market.offers.contract_needs_name'));
+        }
+
+        if ($named) {
+            $recipient = Character::query()->where('handle', trim($data['recipient']))->first();
+
+            if ($recipient === null || $recipient->is($character)) {
+                return back()->withInput()->with('error', Text::get('market.offers.no_recipient'));
+            }
+        }
+
+        $result = $offers->list($character, $entry, (int) $data['price'], isset($data['quantity']) ? (int) $data['quantity'] : null, $recipient);
 
         if ($result instanceof OfferRefusal) {
             return back()->with('error', $result->message());
         }
 
-        return back()->with('status', Text::get('market.offers.listed', [
+        return back()->with('status', Text::get($recipient === null ? 'market.offers.listed' : 'market.offers.listed_contract', [
+            'recipient' => $recipient?->handle,
             'item' => $entry->item?->displayName(),
             'price' => number_format($result->unit_price),
         ]));

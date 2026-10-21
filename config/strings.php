@@ -636,6 +636,10 @@ return [
         | stash, which is why everything here names the object rather than the
         | catalogue entry behind it.
         */
+        'contracts' => [
+            'heading' => 'Contracts',
+            'empty' => 'No contracts, made or received.',
+        ],
         'offers' => [
             'heading' => 'Sales orders',
             'empty' => 'Nobody is selling anything right now.',
@@ -656,6 +660,15 @@ return [
             // A listed row is still yours and still in the stash — it simply
             // cannot be used while somebody might be about to buy it.
             'on_market' => 'On the market at :price ¤ each',
+            'listed_contract' => ':item is offered to :recipient at :price ¤ each. Nobody else can see it.',
+            'no_recipient' => 'There is nobody by that name to make a contract with.',
+            'recipient_label' => 'Contract recipient (for Add contract)',
+            'recipient_placeholder' => 'Recipient',
+            'add_contract' => 'Add contract',
+            'name_needs_contract' => 'A recipient is for a contract. Press Add contract, or clear the name to put it on the market for everybody.',
+            'contract_needs_name' => 'A contract needs a recipient.',
+            'contract_for' => 'Contract for :name',
+            'contract_to_you' => 'Contract, for you alone',
 
             'refused' => [
                 'not_yours' => 'That is not yours to sell.',
@@ -880,6 +893,7 @@ return [
             'backdoor_lost' => 'Backdoor lost',
             'file_stale' => 'Scan file gone stale',
             'offer_sold' => 'Sold: :item',
+            'offer_contract' => 'Contract from :seller: :item',
             'mission_accepted' => 'Job accepted: :action for :entity',
             'mission_failed' => 'Job ran out of time',
             'mission_container_lost' => 'Sealed data container lost',
@@ -949,6 +963,7 @@ return [
             // walked away from, so the sale lands on nobody's screen - and
             // creds arriving with nothing to explain them is the gap.
             'offer_sold' => 'Sold: :quantity × :item, for :price ¤.',
+            'offer_contract' => ':seller has made you a contract: :quantity × :item for :price ¤ each. Only you can see it, in the market.',
             // WORK THAT ENDED WITHOUT YOU THERE. Completing is not here:
             // that happens at the desk with somebody pressing a button.
             // Sent when a job is ACCEPTED (the one exception: see MissionLedger::briefing()). A record to work from.

@@ -74,7 +74,7 @@ final class Markup
             return $text;
         }
 
-        $names = MarketOffer::query()->with('row.item')->whereIn('id', array_unique($found[1]))->get()
+        $names = MarketOffer::query()->with('row.item')->whereNull('recipient_character_id')->whereIn('id', array_unique($found[1]))->get()
             ->mapWithKeys(fn (MarketOffer $o): array => [$o->getKey() => $o->row?->item?->displayName()]);
 
         return preg_replace_callback('/\bmarket:(\d{1,10})\b/', fn (array $m): string => sprintf(

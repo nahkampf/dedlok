@@ -430,6 +430,9 @@
                 <span class="tag tag--ember">
                     {{ Text::get('market.offers.on_market', ['price' => number_format($entry->offer->unit_price)]) }}
                 </span>
+                @if ($entry->offer->recipient)
+                    <span class="tag">{{ Text::get('market.offers.contract_for', ['name' => $entry->offer->recipient->handle]) }}</span>
+                @endif
                 <form method="POST" action="{{ route('market.withdraw', $entry->offer) }}">
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn--sm btn--ghost cut">
@@ -459,8 +462,24 @@
                         </label>
                     @endif
 
+                    {{-- A CONTRACT: name somebody and only they see it and can buy it. The suggestions are the
+                         message screen's (data-suggest, ui-kit.js); the server checks the name that is sent. --}}
+                    <label class="field" style="flex:1 1 auto;margin:0">
+                        <span class="sr-only">{{ Text::get('market.offers.recipient_label') }}</span>
+                        <input class="input" type="text" name="recipient" maxlength="50" autocomplete="off"
+                               autocapitalize="off" spellcheck="false" list="contract-recipients-{{ $entry->id }}"
+                               style="width:min(180px, 100%)"
+                               data-suggest="{{ route('messages.recipients') }}" data-suggest-into="contract-recipients-{{ $entry->id }}"
+                               placeholder="{{ Text::get('market.offers.recipient_placeholder') }}"
+                               aria-label="{{ Text::get('market.offers.recipient_label') }}">
+                        <datalist id="contract-recipients-{{ $entry->id }}"></datalist>
+                    </label>
+
                     <button type="submit" class="btn btn--sm cut">
                         {{ Text::get('market.offers.list') }}
+                    </button>
+                    <button type="submit" name="contract" value="1" class="btn btn--sm btn--ghost cut">
+                        {{ Text::get('market.offers.add_contract') }}
                     </button>
                 </form>
             @endif

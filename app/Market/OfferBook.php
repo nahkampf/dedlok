@@ -68,6 +68,11 @@ use Illuminate\Support\Facades\DB;
  * more of. What one player sold another says nothing about what a shop should
  * order, and writing one would quietly teach the seeder to chase player trade.
  *
+ * ## A CONTRACT is an offer with a named recipient
+ *
+ * `market_offers.recipient_character_id`: only that character (and the seller) sees it, and `buy()` answers anybody else
+ * as if it were gone. The recipient is told by an inbox row when it goes up.
+ *
  * ## A SELLER LISTS AS MANY AS THEY CHOOSE
  *
  * Listing three of twenty splits three off into a row of their own (it has no stack key while an offer stands, so it
@@ -76,7 +81,7 @@ use Illuminate\Support\Facades\DB;
  */
 final readonly class OfferBook
 {
-    public function list(Character $seller, InventoryItem $row, int $price, ?int $quantity = null): OfferRefusal|MarketOffer
+    public function list(Character $seller, InventoryItem $row, int $price, ?int $quantity = null, ?Character $recipient = null): OfferRefusal|MarketOffer
     {
         if ($row->character_id !== $seller->getKey()) {
             return OfferRefusal::NotYours;
@@ -93,7 +98,7 @@ final readonly class OfferBook
             return OfferRefusal::Worn;
         }
 
-        return DB::transaction(function () use ($seller, $row, $price, $quantity): OfferRefusal|MarketOffer {
+        return DB::transaction(function () use ($seller, $row, $price, $quantity, $recipient): OfferRefusal|MarketOffer {
             // Re-asked inside the transaction and through the scope, so the
             // five ways of being spoken for are one question — and so that two
             // presses cannot both find the row to hand.
@@ -128,6 +133,7 @@ final readonly class OfferBook
 
             $offer = MarketOffer::query()->create([
                 'seller_character_id' => $seller->getKey(),
+                'recipient_character_id' => $recipient?->getKey(),
                 'inventory_item_id' => $listed->getKey(),
                 'unit_price' => max(0, $price),
             ]);
@@ -135,6 +141,16 @@ final readonly class OfferBook
             // Saved again now an offer stands, so a whole pile listed as itself drops its stack key too.
             $listed->apart = false;
             $listed->save();
+
+            // A contract tells its recipient, who has no other way to know there is something waiting.
+            if ($recipient !== null) {
+                (new Notifier)->send($recipient, Category::Market, 'offer_contract', [
+                    'seller' => $seller->handle,
+                    'quantity' => (string) $listed->quantity,
+                    'item' => (string) $listed->item?->displayName(),
+                    'price' => number_format($offer->unit_price),
+                ]);
+            }
 
             return $offer;
         });
@@ -214,6 +230,11 @@ final readonly class OfferBook
                 ->first();
 
             if ($live === null) {
+                return OfferRefusal::Gone;
+            }
+
+            // A contract is not there for anybody else.
+            if ($live->recipient_character_id !== null && $live->recipient_character_id !== $buyer->getKey()) {
                 return OfferRefusal::Gone;
             }
 
