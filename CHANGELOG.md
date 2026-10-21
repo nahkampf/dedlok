@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.69.2] — 2026-10-21
+
+### Added
+
+- **Running modal**: a running decryptor that has a file in hand shows *Decrypting file…* under its name (`programs.decrypting`; the worker is named by `decryption_queue.worker_id`).
+
+### Fixed
+
+- **Running modal**: after running or stopping a program the reload reopened the modal by a synthetic click that fired before the handler fetching the *Could run* list was registered, so the list stayed on its loading line. The reopen click in `ui-kit.js` is now deferred a tick.
+
+
 ## [0.69.1] — 2026-10-20
 
 ### Added
@@ -3626,7 +3637,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.69.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.69.2...HEAD
+[0.69.2]: https://github.com/nahkampf/dedlok/compare/v0.69.1...v0.69.2
 [0.69.1]: https://github.com/nahkampf/dedlok/compare/v0.69.0...v0.69.1
 [0.69.0]: https://github.com/nahkampf/dedlok/compare/v0.68.1...v0.69.0
 [0.68.1]: https://github.com/nahkampf/dedlok/compare/v0.68.0...v0.68.1
