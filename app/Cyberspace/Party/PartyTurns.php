@@ -112,6 +112,22 @@ final class PartyTurns
             $this->syncShared(self::liveRuns($party->getKey()), $run);
         }
 
+        // A backdoor that has landed is the job done: nothing is left to do inside, so everybody finishes together.
+        $live = self::liveRuns($party->getKey());
+
+        if ($live->contains(fn (Run $r): bool => (bool) $r->backdoored)) {
+            foreach ($live as $run) {
+                $character = Character::query()->find($run->character_id);
+
+                if ($character !== null) {
+                    app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Completed);
+                    (new Notifier)->send($character, Category::Cyberspace, 'party_run_ended', ['ending' => RunEnding::Completed->message()]);
+                }
+            }
+
+            return;
+        }
+
         // A Denial round: the node pushes back once, and a full meter ends everybody's run together.
         if ($this->denialRound($party)) {
             $party->update(['round_started_at' => now()]);

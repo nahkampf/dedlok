@@ -1629,6 +1629,20 @@ return [
             'evasion_snare' => 'Ensnare :level',
             'evasion_snare_cost' => ':points points of chance',
             'evasion_result' => 'Evasion chance for egress',
+            'waiting' => 'Waiting for all runners to take action',
+            // A party's log, told in the third person for everybody (same keys as `log`); a key missing here falls back to
+            // the runner's own line with their handle in front. `:tag` is the ICE or the icebreaker named on the line.
+            'party_log' => [
+                'attack' => ':player hits the ICE with :tag for :damage SI.',
+                'attack_critical' => ':player critically hits the ICE with :tag for :damage SI.',
+                'attack_fails' => ':player finds no viable attack vectors.',
+                'hold' => ':player waits.',
+                'egress' => ':player egresses.',
+                'egress_held' => ':player reaches for the way out, and the system does not let go.',
+                'ice_hits' => ':tag hits :player for :damage SI.',
+                'ice_misses' => ':tag attacks :player, but fails.',
+                'ice_broken' => 'The ICE is broken. It freezes and vanishes, stuck in a crash loop.',
+            ],
             'action' => [
                 'attack' => 'Continue run',
                 'extract' => 'Extract',

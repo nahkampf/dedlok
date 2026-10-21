@@ -1864,6 +1864,14 @@ final readonly class Simulator
                 continue;
             }
 
+            // Somebody in the same party burned it: they finish together, nobody is thrown out of their own win.
+            if ($run->run_party_id !== null && $run->run_party_id === Run::query()->whereKey($except)->value('run_party_id')) {
+                $this->runs->end($character, $run, RunEnding::Completed);
+                $ended++;
+
+                continue;
+            }
+
             $this->resolveEnding($character, $run, RunEnding::Cancelled);
             $ended++;
         }
@@ -2095,19 +2103,33 @@ final readonly class Simulator
      */
     private function line(string $key, array $replace = [], string $tone = '', ?string $tag = null, string $tagTone = 'crit', ?string $before = null): array
     {
-        return ['text' => Text::get($key, $replace), 'tone' => $tone]
+        return ['text' => Text::get($key, $replace), 'tone' => $tone, 'key' => $key, 'replace' => $replace]
             + ($tag === null ? [] : ['tag' => $tag, 'tag_tone' => $tagTone])
             + ($before === null ? [] : ['before' => Text::get($before)]);
     }
 
-    /** @param  list<array{text: string, tone: string, tag?: string, tag_tone?: string, before?: string}>  $lines */
+    /**
+     * A party has ONE account: every line is written to each runner's log, marked with who it was about (`by`), and the
+     * screen tells it in the third person ("ICE I hits Skavian"). A solo run's lines stay as they were.
+     *
+     * @param  list<array{text: string, tone: string, tag?: string, tag_tone?: string, before?: string}>  $lines
+     */
     private function appendLog(Run $run, array $lines): void
     {
-        $run->forceFill([
-            'log' => array_merge($run->log ?? [], array_map(
-                static fn (array $line): array => $line + ['turn' => $run->turn],
-                $lines,
-            )),
-        ])->save();
+        $stamp = static fn (array $line): array => $line + ['turn' => $run->turn];
+
+        if ($run->run_party_id === null) {
+            $run->forceFill(['log' => array_merge($run->log ?? [], array_map($stamp, $lines))])->save();
+
+            return;
+        }
+
+        $by = (string) Character::query()->whereKey($run->character_id)->value('handle');
+        $lines = array_map(static fn (array $line): array => $stamp($line) + ['by' => $by], $lines);
+
+        foreach (Run::query()->where('run_party_id', $run->run_party_id)->get() as $mate) {
+            $mate = $mate->is($run) ? $run : $mate;
+            $mate->forceFill(['log' => array_merge($mate->log ?? [], $lines)])->save();
+        }
     }
 }
