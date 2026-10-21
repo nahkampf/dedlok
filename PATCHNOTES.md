@@ -1,3 +1,9 @@
+## 0.72.1 (2026-10-21)
+- "Work out" and "Study" could push you beyond fatigue collapse, it now halts 1 point before that. When halting that way, it puts you in rest mode automatically.
+- "Work out" and "Study" now also have a small progress bar to see how far along you are towards _GAINS_!
+- Exchange desks now show their real grade
+- The Hitachi expansion board had the correct effect, but Expansion Gate modifiers were never applied to the deck
+
 ## 0.72.0 (2026-10-21)
 
 - New: **Contracts**. You can now put an item up as a contract. It is basically the same as putting it on the market, but with a specific recipient who is the only one that sees it and can buy it.

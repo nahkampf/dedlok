@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.72.1] — 2026-10-21
+
+### Added
+- **Sudo** for admins: a card on the admin dashboard with a handle autocomplete signs the admin in as that character; an *Exit sudo* button in the side menu returns them (`Admin\SudoController`, `sudo.exit` outside the admin gate and on every lock's allow-list, so it works mid-run or mid-fight).
+- **`FittedModules`, the eighth modifier source**: `items.modifiers` of every module fitted in the equipped deck. An expansion card's effect (the Hitachi MemCartridge III's +4 `deck_quantabits`) now applies; a module's own measure is still its `deck_modules` column.
+- Work out and Study show a small progress bar toward the next attribute point.
+
+### Changed
+- Work out and Study never cross the collapse line: `HomeActions::settleSession()` credits only up to `safehouse.sessions.margin` (1) short of the fatigue maximum, ends there and starts a Rest from that moment (or just ends if resting is not possible), with an inbox message. The planned length now honours `fatigue_taken`.
+- An Exchange's grade in Known systems and on the map is the desk's own (`exchanges.grade`), not the system's floor grade.
+
+
 ## [0.72.0] — 2026-10-21
 
 ### Added
@@ -3693,7 +3705,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.72.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.72.1...HEAD
+[0.72.1]: https://github.com/nahkampf/dedlok/compare/v0.72.0...v0.72.1
 [0.72.0]: https://github.com/nahkampf/dedlok/compare/v0.71.2...v0.72.0
 [0.71.2]: https://github.com/nahkampf/dedlok/compare/v0.71.1...v0.71.2
 [0.71.1]: https://github.com/nahkampf/dedlok/compare/v0.71.0...v0.71.1
