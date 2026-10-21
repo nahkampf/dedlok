@@ -52,8 +52,14 @@
                          not: ten bars in a single column is a scroll. --}}
                     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));--gap:var(--s-2)">
                         @foreach ($attributes as $attribute)
+                            {{-- Whatever moved it (a dose's cost, an implant, an injury), one line per layer, so a lowered
+                                 attribute says why: on the label's tooltip, which makes the label a link only when
+                                 something did. --}}
+                            @php($effects = collect($attribute['steps'])->map(fn ($step) => ($step->sources === [] ? $step->op : implode(', ', $step->sources))
+                                .' '.($step->delta() >= 0 ? '+' : '−').rtrim(rtrim(number_format(abs($step->delta()), 1), '0'), '.'))->implode("\n"))
                             <div class="vital vital--wide">
-                                <span class="vital__label">{{ $attribute['label'] }}</span>
+                                <span class="vital__label @if ($effects !== '') tip-link tip--start tip--lines @endif"
+                                      @if ($effects !== '') data-tip="{!! str_replace("\n", '&#10;', e($effects)) !!}" tabindex="0" @endif>{{ $attribute['label'] }}</span>
                                 <div class="meter" style="--v:{{ $attribute['ratio'] }};--fill:var(--ok)"
                                      role="img"
                                      aria-label="{{ Text::get('character.attribute_value', [
@@ -64,14 +70,6 @@
                                     <div class="meter__fill"></div>
                                 </div>
                                 <span class="vital__value">{{ $attribute['value'] }}</span>
-                                {{-- Whatever moved it (a dose's cost, an implant, an injury), one line per layer, so a
-                                     lowered attribute says why. Absent while nothing is. --}}
-                                @foreach ($attribute['steps'] as $step)
-                                    <span class="micro" style="grid-column:1/-1;color:{{ $step->delta() < 0 ? 'var(--warn)' : 'var(--ink-3)' }}">
-                                        {{ $step->sources === [] ? $step->op : implode(', ', $step->sources) }}
-                                        <span class="num">{{ $step->delta() >= 0 ? '+' : '−' }}{{ rtrim(rtrim(number_format(abs($step->delta()), 1), '0'), '.') }}</span>
-                                    </span>
-                                @endforeach
                             </div>
                         @endforeach
                     </div>

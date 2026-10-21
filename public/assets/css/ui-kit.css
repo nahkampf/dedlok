@@ -2063,6 +2063,11 @@ a.tab { text-decoration: none; }
 }
 [data-tip].tip--start:hover::after,
 [data-tip].tip--start:focus-visible::after { transform: translateY(0); }
+/* A tooltip of several lines: a newline in data-tip (&#10;) starts one. */
+[data-tip].tip--lines::after { white-space: pre-line; }
+/* A label with more to say on hover: dotted underline, the way .copy marks what answers a press. */
+.tip-link { text-decoration: underline dotted var(--line-2); text-underline-offset: 3px; cursor: help; }
+.tip-link:hover, .tip-link:focus-visible { color: var(--ink-0); text-decoration-color: var(--ink-2); }
 
 /* A small warning triangle: brass, the kit's "careful" (a condition to manage, never the accent). An inline SVG
    rather than a glyph, so it cannot come back at notdef width. */
