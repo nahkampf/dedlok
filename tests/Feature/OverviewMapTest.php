@@ -31,8 +31,10 @@ final class OverviewMapTest extends TestCase
         $json = $this->actingAs($me->user)->getJson(route('cyberspace.overview'))->assertOk()->json();
 
         $this->assertSame('Overview map: Main Grid', $json['title']);
-        $this->assertSame([[2, 3, 'silo']], $json['cells']);
+        $this->assertSame([[2, 3, 'silo', 'AAAAAAAA']], $json['cells']);
         $this->assertSame([5, 6], $json['you']);
+        $this->assertCount((int) config('cyberspace.size'), $json['swept']);
+        $this->assertSame(str_repeat('0', (int) config('cyberspace.size')), $json['swept'][0]);
         $this->assertSame((int) config('cyberspace.size'), $json['size']);
 
         // A new sighting is not on the map until the minute is up; where they stand is always current.

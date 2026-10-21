@@ -421,6 +421,7 @@
      the cursor is near, and opens centred on you. */
   const OVERVIEW_CELL = 10;
   let overviewPulse = null;
+  let overviewAddress = new Map();
   const OVERVIEW_TOKEN = { silo: "--steel", compute: "--cyan", relay: "--jade", exchange: "--brass", fortress: "--ember", gateway: "--brass", portal: "--brass" };
   on("click", "[data-overview]", (e, btn) => {
     const view = document.querySelector("[data-overview-view]");
@@ -436,14 +437,17 @@
         canvas.width = px;
         canvas.height = px;
         const ctx = canvas.getContext("2d");
-        ctx.fillStyle = tok("--bg-2");
-        ctx.fillRect(0, 0, px, px);
         const cell = (x, y, colour) => {
           ctx.fillStyle = colour;
           ctx.fillRect(x * OVERVIEW_CELL, y * OVERVIEW_CELL, OVERVIEW_CELL, OVERVIEW_CELL);
         };
+        // Ground never looked at is the darker grey, ground swept with nothing on it a little lighter.
+        const unexplored = tok("--bg-1");
+        const empty = tok("--bg-4");
+        d.swept.forEach((row, y) => [...row].forEach((bit, x) => cell(x, y, bit === "1" ? empty : unexplored)));
         cell(d.portal[0], d.portal[1], tok(OVERVIEW_TOKEN.portal));
         d.cells.forEach(([x, y, type]) => cell(x, y, tok(OVERVIEW_TOKEN[type] || "--ink-2")));
+        overviewAddress = new Map(d.cells.map(([x, y, , address]) => [`${x},${y}`, address]));
         const at = d.you || d.portal;
         view.scrollLeft = (at[0] + 0.5) * OVERVIEW_CELL - view.clientWidth / 2;
         view.scrollTop = (at[1] + 0.5) * OVERVIEW_CELL - view.clientHeight / 2;
@@ -472,6 +476,26 @@
           });
         }, 80);
       });
+  });
+  /* Clicking a cell copies the address of the system there, or its coordinates when there is none (unexplored or empty). */
+  on("click", "[data-overview-view] canvas", async (e, canvas) => {
+    const view = canvas.closest("[data-overview-view]");
+    const note = document.querySelector("[data-overview-note]");
+    const r = canvas.getBoundingClientRect();
+    const x = Math.floor(((e.clientX - r.left) * canvas.width) / r.width / OVERVIEW_CELL);
+    const y = Math.floor(((e.clientY - r.top) * canvas.height) / r.height / OVERVIEW_CELL);
+    const address = overviewAddress.get(`${x},${y}`);
+    const value = address || `${x},${y}`;
+    let message;
+    try {
+      await navigator.clipboard.writeText(value);
+      message = (address ? view.dataset.copiedAddress : view.dataset.copiedCoords).replace(":value", value);
+    } catch {
+      message = view.dataset.copyFailed;
+    }
+    note.textContent = message;
+    clearTimeout(note._restore);
+    note._restore = setTimeout(() => { note.textContent = note.dataset.note; }, 3000);
   });
   (() => {
     const EDGE = 0.2;
