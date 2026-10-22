@@ -1,3 +1,9 @@
+## 0.73.1 (2026-10-22)
+
+- Study, Work out and Simstim now hook into the one-minute clock cycle, so that the fatigue meter actually updates correctly.
+- The fatigue box on the Character screen now lists the current effects
+- Slight UI change for attributes
+
 ## 0.73.0 (2026-10-22)
 - New achievement: **Netrunner**. Make a successful run on a grade 9 system.
 - New program: **Wormhole**. Creates a "bridge" between a data fortress in a subnet to the main grid, bypassing the gateway. Comes with a cost and a cooldown.

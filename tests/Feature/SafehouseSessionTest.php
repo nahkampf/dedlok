@@ -89,6 +89,8 @@ final class SafehouseSessionTest extends TestCase
 
     public function test_simstim_lifts_mood_and_stops_at_two_hours_a_day(): void
     {
+        // The allowance is per calendar day, and three hours on must not cross midnight.
+        $this->travelTo(now()->startOfDay()->addHours(8));
         $this->assertTrue($this->home->startSession($this->character, Action::Simstim));
 
         $this->home->settleSession($this->character, now()->addHours(3));
