@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Cyberspace;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Cyberspace\Party\Parties;
 use App\Decks\DeckTotals;
 use App\Missions\MissionAction;
@@ -258,6 +260,10 @@ final readonly class RunStarter
             app(ProgramRunner::class)->stopRunOnly($character);
 
             $this->chargeTheTrace($character, $run, $ending);
+
+            if ($ending === RunEnding::Completed && ($grade = $run->system()?->grade) !== null) {
+                (new Achievements)->reach($character, Metric::RunGradeCompleted, (int) $grade);
+            }
 
             /*
              * DOES THE MACHINE NOW KNOW?

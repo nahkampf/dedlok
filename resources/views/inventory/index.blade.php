@@ -12,7 +12,7 @@
          row can never appear in the wrong tab: Character::inventoryIn() filters
          through the definition's container. --}}
     <div style="margin-top:var(--s-5)">
-        <div class="tabs" role="tablist">
+        <div class="tabs" role="tablist" data-tab-remember="stash">
             <button class="tab" role="tab" aria-selected="true" data-tab="physical">
                 {{ Text::get('inventory.physical') }}
             </button>

@@ -18,6 +18,7 @@ use App\Models\Entity;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Run;
+use App\Notifications\Notifier;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
 use App\Stats\Damage;
@@ -72,6 +73,7 @@ final class EncounterOutcomes
             OutcomeKind::GridMove => $this->gridMove($character, (string) $outcome->ref),
             OutcomeKind::Journal => $this->journal($character, $outcome),
             OutcomeKind::JournalDone => $this->journalDone($character, (string) $outcome->ref),
+            OutcomeKind::Message => $this->message($character, $outcome),
         };
     }
 
@@ -122,6 +124,14 @@ final class EncounterOutcomes
             $written['entry'] => Text::get('city.encounter.outcomes.journal_entry'),
             default => null,
         };
+    }
+
+    /** Silent: the player finds it in the inbox, now or after its delay. */
+    private function message(Character $character, EncounterOutcome $outcome): null
+    {
+        app(Notifier::class)->story($character, (string) $outcome->ref, (string) $outcome->text, (string) $outcome->entry_text, (int) round((float) $outcome->amount));
+
+        return null;
     }
 
     /** Silent: a thing ticked off in a journal is something the player sees there. */

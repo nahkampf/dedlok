@@ -368,6 +368,18 @@ class EncounterRequest extends FormRequest
             }
         }
 
+        if ($kind === OutcomeKind::Message) {
+            $delay = $o['amount'] ?? null;
+
+            if ($ref === '' || trim((string) ($o['text'] ?? '')) === '' || trim((string) ($o['entry_text'] ?? '')) === '') {
+                $errors["{$oat}.text"] = Text::get('admin.encounters.errors.message_empty', ['node' => $nodeKey]);
+            }
+
+            if (($delay !== null && $delay !== '' && ! is_numeric($delay)) || (float) $delay < 0 || (float) $delay > OutcomeKind::MESSAGE_MAX_DELAY) {
+                $errors["{$oat}.amount"] = Text::get('admin.encounters.errors.message_delay', ['node' => $nodeKey, 'max' => OutcomeKind::MESSAGE_MAX_DELAY]);
+            }
+        }
+
         if ($kind === OutcomeKind::Injury && ! in_array($ref, OutcomeKind::INJURIES, true)) {
             $errors["{$oat}.ref"] = Text::get('admin.encounters.errors.injury', ['node' => $nodeKey, 'ref' => $ref]);
         }
@@ -394,13 +406,13 @@ class EncounterRequest extends FormRequest
         return [
             'branch' => $branch->value,
             'kind' => $kind->value,
-            'amount' => $kind->needsAmount() ? (float) ($o['amount'] ?? 0) : null,
+            'amount' => $kind->needsAmount() ? (float) ($o['amount'] ?? 0) : ($kind === OutcomeKind::Message ? (float) ($o['amount'] ?? 0) : null),
             'ref' => $kind->needsRef() ? $ref : null,
             'item_id' => $itemId,
             'entity_id' => $entityId,
-            'text' => $kind === OutcomeKind::Journal ? (trim((string) ($o['text'] ?? '')) ?: null) : null,
+            'text' => in_array($kind, [OutcomeKind::Journal, OutcomeKind::Message], true) ? (trim((string) ($o['text'] ?? '')) ?: null) : null,
             'entry_slug' => $kind === OutcomeKind::Journal ? (trim((string) ($o['entry_slug'] ?? '')) ?: null) : null,
-            'entry_text' => $kind === OutcomeKind::Journal ? (trim((string) ($o['entry_text'] ?? '')) ?: null) : null,
+            'entry_text' => in_array($kind, [OutcomeKind::Journal, OutcomeKind::Message], true) ? (trim((string) ($o['entry_text'] ?? '')) ?: null) : null,
         ];
     }
 

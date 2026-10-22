@@ -79,6 +79,9 @@ enum Category: string
     /** A message another player wrote to you. */
     case Personal = 'personal';
 
+    /** A story's own voice: an encounter wrote it, and its sender is on the message. */
+    case Story = 'story';
+
     public function label(): string
     {
         return Text::get("notifications.categories.{$this->value}");
@@ -110,6 +113,8 @@ enum Category: string
             self::Personal => "\u{25C7}",
             // The star the achievements use: already proved to render, and a thank-you is the same kind of mark.
             self::Support => "\u{2605}",
+            // The glyph of Current processes in the bar: proved to render.
+            self::Story => "\u{25CD}",
         };
     }
 
@@ -141,6 +146,8 @@ enum Category: string
             // A reply is the next thing anybody does with one; the message itself says who it is from.
             self::Personal => 'messages.create',
             self::Support => 'supporters.index',
+            // The journal lives under Tasks.
+            self::Story => 'tasks.index',
         };
     }
 }

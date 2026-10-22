@@ -74,8 +74,15 @@ final class ProgramRunner
 
         $deck = $character->equippedDeck;
 
-        return DB::transaction(function () use ($row, $deck): ProcessResult {
-            return ProcessResult::started($this->splitOne($row, (int) $deck->id));
+        return DB::transaction(function () use ($row, $deck, $character): ProcessResult {
+            $started = $this->splitOne($row, (int) $deck->id);
+
+            // A decryptor takes its first waiting file now, not at the next sweep.
+            if ($row->item?->program?->kind === ProgramKind::Decryptor) {
+                DecryptionQueue::make()->settle($character);
+            }
+
+            return ProcessResult::started($started);
         });
     }
 

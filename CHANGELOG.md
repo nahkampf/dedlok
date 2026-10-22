@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+## [0.73.0] — 2026-10-22
+
+### Added
+- **Story messages from encounters**: `OutcomeKind::Message` (sender in `ref`, title in `text`, words in `entry_text`, delay in `amount` seconds, 0 or none for at once, at most 48 hours). `Notifier::story()` writes it straight to the inbox in the new `Category::Story`, or holds it in `scheduled_messages` (migration `2026_10_26_110000_encounter_messages`) for `messages:deliver`, scheduled every minute. The encounter editor has fields for it.
+- **"A strange dataset"** sends a Non-Disclosure Agreement from Joint Signals Command's legal department twenty minutes after the ending (migration `2026_10_26_140000_nda_after_the_strange_dataset`); the encounter is `once`, and so is the message. Migration `2026_10_26_100000_njord_encounter_fixes` repairs the Njord encounters (the ghost process now sets `njord_encountered`, and the status file no longer loops back to the help file).
+- **Netrunner** (achievement 21): a successful run on a grade 9 system. `Metric::RunGradeCompleted`, a high-water mark reported by `RunStarter::end()` when a run ends `Completed`.
+- **Wormhole** (`tunnel`, Secure Tunnelling): program, Design and Design Copy, 1/1/1 to run, made under Utility Crafting (migration `2026_10_26_120000_wormhole_secure_tunnelling`).
+- **Lockjaw sells** the Design and Design Copy of the Nomad, the Wormhole and every Leecher: 300 and 75 loyalty, standing 2, desks of grade 1 and up; the large Leechers (Poacher, Stripminer, Vampiir) from grade 4 and standing 4 (migration `2026_10_26_130000_lockjaw_sells_nomad_wormhole_leechers`).
+- **Error pages**: every common HTTP error (400 to 503) is rendered in the kit with its own words from `errors.http.*` and a link back (`resources/views/errors/`, `ErrorPageTest`).
+- The safehouse describes each action beside its button (`safehouse.blurb.*`).
+- The inbox's tracker message carries the address it found, so it can be jumped to.
+
+### Changed
+- **The stash sorts by type, then by name**, each case-insensitively. `Character::inventoryIn()` handed `sortBy` a list of one-argument closures, which Laravel calls as comparators, so it never sorted at all and the stash came out in the order things arrived.
+- Both stash tabs reopen where they were left (`data-tab-remember`, kept in `sessionStorage`), so an action that comes back to the page lands on the same tab.
+- A Decryptor takes its first waiting file the moment it is started rather than at the next sweep (`ProgramRunner::start()` settles the queue).
+- An achievement is worth 0.5 standing with every entity, down from 1 (`standing.reasons.achievement`).
+- The safehouse buttons are disabled while any session is running, not only their own.
+- A mission card's target name spans the icon column it has no icon for.
+
+### Migrations
+- `2026_10_26_100000_njord_encounter_fixes`, `2026_10_26_110000_encounter_messages` (new table `scheduled_messages`), `2026_10_26_120000_wormhole_secure_tunnelling`, `2026_10_26_130000_lockjaw_sells_nomad_wormhole_leechers`, `2026_10_26_140000_nda_after_the_strange_dataset`. The last three are content and skip themselves under test.
+
+
 ## [0.72.1] — 2026-10-21
 
 ### Added
@@ -3705,7 +3729,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.72.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.73.0...HEAD
+[0.73.0]: https://github.com/nahkampf/dedlok/compare/v0.72.1...v0.73.0
 [0.72.1]: https://github.com/nahkampf/dedlok/compare/v0.72.0...v0.72.1
 [0.72.0]: https://github.com/nahkampf/dedlok/compare/v0.71.2...v0.72.0
 [0.71.2]: https://github.com/nahkampf/dedlok/compare/v0.71.1...v0.71.2

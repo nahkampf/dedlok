@@ -122,7 +122,8 @@
                          survey the file it needs is in hand. --}}
                     @php($inHand = $active && $action === MissionAction::Scan && $target->stillStands() && in_array($target->address, $held, true))
                     <div class="item-row">
-                        <span class="item-row__name">
+                        {{-- No icon in this row, so the name spans the icon column too instead of wrapping inside it. --}}
+                        <span class="item-row__name" style="grid-column:1 / 3">
                             @if ($target->isSatisfied() || $inHand)
                                 <span class="mark--ok" title="{{ Text::get($target->isSatisfied() ? 'missions.target_done' : 'missions.file_held') }}">&#x2713;</span>
                             @endif
