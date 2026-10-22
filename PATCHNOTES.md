@@ -1,3 +1,15 @@
+## 0.73.0 (2026-10-22)
+- New achievement: **Netrunner**. Make a successful run on a grade 9 system.
+- New program: **Wormhole**. Creates a "bridge" between a data fortress in a subnet to the main grid, bypassing the gateway. Comes with a cost and a cooldown.
+- Encounters can now send messages.
+- Stash is now sorted by type, alphabetically.
+- Stash remembers which tab you were on
+- Starting a decryptor now continues the decryption queue
+- Dropped achievement standing gain from +1 to +0.5
+- Safehouse UI fixes
+- Error pages now "in character"
+- Part of the Njord encounter chain fixed
+
 ## 0.72.1 (2026-10-21)
 - "Work out" and "Study" could push you beyond fatigue collapse, it now halts 1 point before that. When halting that way, it puts you in rest mode automatically.
 - "Work out" and "Study" now also have a small progress bar to see how far along you are towards _GAINS_!
