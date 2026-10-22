@@ -10,7 +10,9 @@ use App\Models\Character;
 use App\Models\CharacterSkill;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Program;
 use App\Models\Skill;
+use App\Programs\ProgramKind;
 use App\Support\Text;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -86,6 +88,30 @@ class InventoryTest extends TestCase
 
         $this->assertSame([$rifle->id], $physical->pluck('item_id')->all());
         $this->assertSame([$shard->id], $data->pluck('item_id')->all());
+    }
+
+    public function test_the_stash_sorts_by_type_then_by_name_ignoring_case(): void
+    {
+        $make = function (string $name, ProgramKind $kind): Item {
+            $item = Item::factory()->data()->create(['name' => $name]);
+            Program::query()->create(['item_id' => $item->id, 'kind' => $kind, 'qflops_cost' => 0, 'memory_cost' => 0, 'storage_size' => 0, 'background_process' => false]);
+
+            return $item;
+        };
+
+        $zed = $make('Zed', ProgramKind::Icebreaker);
+        $alpha = $make('alpha', ProgramKind::Icebreaker);
+        $beta = $make('Beta', ProgramKind::Evasion);
+        $aaa = $make('Aaa', ProgramKind::Utility);
+
+        foreach ([$aaa, $zed, $beta, $alpha] as $item) {
+            $this->give($item);
+        }
+
+        $this->assertSame(
+            [$beta->id, $alpha->id, $zed->id, $aaa->id],
+            $this->character->inventoryIn(Item::CONTAINER_DATA)->pluck('item_id')->all(),
+        );
     }
 
     public function test_imprints_live_in_the_data_inventory(): void

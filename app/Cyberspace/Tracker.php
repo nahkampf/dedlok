@@ -145,7 +145,7 @@ final class Tracker
         });
 
         if ($found !== null) {
-            (new Notifier)->send($character, Category::Cyberspace, 'tracker_found', ['address' => $found->address]);
+            (new Notifier)->send($character, Category::Cyberspace, 'tracker_found', ['address' => $found->address], ['address' => $found->address]);
         }
 
         return $found !== null;

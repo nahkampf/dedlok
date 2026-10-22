@@ -53,38 +53,47 @@
                     <img class="banner-img" src="{{ \App\Support\Asset::url('images/locations/safehouse.png') }}" alt="">
                     @forelse ($rows as $row)
                         @php($action = $row['action'])
+                        {{-- A table of rows: the button on the left, what it does on the right. Wraps under the button on a phone. --}}
                         <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
-                            @if ($session === $action->value)
-                                <form method="POST" action="{{ route('safehouse.rest.stop') }}">
-                                    @csrf
-                                    <button type="submit" class="btn cut">{{ Text::get($action === \App\Safehouses\Action::Rest ? 'safehouse.stop_resting' : 'safehouse.stop.'.$action->value) }}</button>
-                                </form>
-                                <span class="micro" style="color:var(--ink-3)">{{ Text::get($action === \App\Safehouses\Action::Rest ? 'safehouse.resting' : 'safehouse.doing.'.$action->value) }}</span>
-                            @else
-                                <form method="POST" action="{{ route('safehouse.act', $action->value) }}">
-                                    @csrf
-                                    <button type="submit" class="btn cut" @disabled($row['cooldown'] !== null || ! $row['useful'] || ($action === \App\Safehouses\Action::Rest && $wired))>{{ $action->label() }}</button>
-                                </form>
-                                @if ($action === \App\Safehouses\Action::Rest && $wired)
-                                    <span class="micro" style="color:var(--ink-3)">{{ \App\Safehouses\Refusal::Wired->message() }}</span>
+                            <div style="flex:0 0 min(22ch,100%)">
+                                @if ($session === $action->value)
+                                    <form method="POST" action="{{ route('safehouse.rest.stop') }}">
+                                        @csrf
+                                        <button type="submit" class="btn cut">{{ Text::get($action === \App\Safehouses\Action::Rest ? 'safehouse.stop_resting' : 'safehouse.stop.'.$action->value) }}</button>
+                                    </form>
+                                @else
+                                    <form method="POST" action="{{ route('safehouse.act', $action->value) }}">
+                                        @csrf
+                                        <button type="submit" class="btn cut" @disabled($session !== null || $row['cooldown'] !== null || ! $row['useful'] || ($action === \App\Safehouses\Action::Rest && $wired))>{{ $action->label() }}</button>
+                                    </form>
                                 @endif
-                                @if ($action === \App\Safehouses\Action::Simstim)
-                                    <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.simstim_left', ['time' => CarbonInterval::seconds($simstimLeft)->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}</span>
+                            </div>
+                            <div class="stack" style="--gap:2px;flex:1 1 min(24ch,100%)">
+                                <span>{{ Text::get('safehouse.blurb.'.$action->value) }}</span>
+                                @if ($session === $action->value)
+                                    <span class="micro" style="color:var(--ink-3)">{{ Text::get($action === \App\Safehouses\Action::Rest ? 'safehouse.resting' : 'safehouse.doing.'.$action->value) }}</span>
+                                @else
+                                    @if ($action === \App\Safehouses\Action::Rest && $wired)
+                                        <span class="micro" style="color:var(--ink-3)">{{ \App\Safehouses\Refusal::Wired->message() }}</span>
+                                    @endif
+                                    @if ($action === \App\Safehouses\Action::Simstim)
+                                        <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.simstim_left', ['time' => CarbonInterval::seconds($simstimLeft)->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}</span>
+                                    @endif
+                                    @if ($action === \App\Safehouses\Action::Eat)
+                                        <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.meal', ['fullness' => rtrim(rtrim(number_format($home->meal_fullness, 2), '0'), '.'), 'fatigue' => rtrim(rtrim(number_format($home->meal_fatigue, 2), '0'), '.')]) }}</span>
+                                    @endif
+                                    @if ($row['cooldown'] !== null)
+                                        <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.ready_in', ['time' => CarbonInterval::seconds(max(1, (int) now()->diffInSeconds($row['cooldown'], false)))->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}</span>
+                                    @endif
                                 @endif
-                                @if ($action === \App\Safehouses\Action::Eat)
-                                    <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.meal', ['fullness' => rtrim(rtrim(number_format($home->meal_fullness, 2), '0'), '.'), 'fatigue' => rtrim(rtrim(number_format($home->meal_fatigue, 2), '0'), '.')]) }}</span>
+                                {{-- How near the next point: the meter's 0 to 100, from `HomeActions::gainProgress()`. --}}
+                                @if (in_array($action->value, ['workout', 'study'], true))
+                                    @php($progress = (float) $character->{$action->value.'_progress'})
+                                    <div class="meter meter--sm" style="--v:{{ round(min(100, max(0, $progress)) / 100, 3) }};--fill:var(--ok);max-width:min(96px,100%)"
+                                         data-tip="{{ Text::get('safehouse.progress', ['percent' => (int) floor($progress)]) }}" tabindex="0" role="img"
+                                         aria-label="{{ Text::get('safehouse.progress', ['percent' => (int) floor($progress)]) }}"><div class="meter__fill"></div></div>
                                 @endif
-                                @if ($row['cooldown'] !== null)
-                                    <span class="micro" style="color:var(--ink-3)">{{ Text::get('safehouse.ready_in', ['time' => CarbonInterval::seconds(max(1, (int) now()->diffInSeconds($row['cooldown'], false)))->cascade()->forHumans(['parts' => 2, 'short' => true])]) }}</span>
-                                @endif
-                            @endif
-                            {{-- How near the next point: the meter's 0 to 100, from `HomeActions::gainProgress()`. --}}
-                            @if (in_array($action->value, ['workout', 'study'], true))
-                                @php($progress = (float) $character->{$action->value.'_progress'})
-                                <div class="meter meter--sm" style="--v:{{ round(min(100, max(0, $progress)) / 100, 3) }};--fill:var(--ok);flex:0 0 min(96px,100%)"
-                                     data-tip="{{ Text::get('safehouse.progress', ['percent' => (int) floor($progress)]) }}" tabindex="0" role="img"
-                                     aria-label="{{ Text::get('safehouse.progress', ['percent' => (int) floor($progress)]) }}"><div class="meter__fill"></div></div>
-                            @endif
+                            </div>
                         </div>
                     @empty
                         <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('safehouse.none_offered') }}</p>

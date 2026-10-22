@@ -143,6 +143,7 @@
     // The journal's three inputs only exist for a journal outcome: a disabled field is not submitted, which keeps
     // the form under the server's field limit.
     select.closest("[data-row]")?.querySelectorAll("input[data-journal]").forEach((i) => { i.disabled = select.value !== "journal"; });
+    select.closest("[data-row]")?.querySelectorAll("input[data-message]").forEach((i) => { i.disabled = select.value !== "message"; });
   });
 
   /* --- Range with a word -------------------------------------------------
@@ -183,12 +184,25 @@
   on("click", ".tab[data-tab]", (e, tab) => {
     const list = tab.closest(".tabs");
     const key = tab.dataset.tab;
+    if (list.dataset.tabRemember) {
+      try { sessionStorage.setItem("tab." + list.dataset.tabRemember, key); } catch { /* it opens on the first tab then */ }
+    }
     list.querySelectorAll(".tab").forEach((t) =>
       t.setAttribute("aria-selected", String(t === tab))
     );
     const scope = list.parentElement;
     scope.querySelectorAll("[data-panel]").forEach((p) => {
       p.hidden = p.dataset.panel !== key;
+    });
+  });
+
+  /* A tablist marked data-tab-remember="name" reopens on the tab it was left on, so a form that posts and
+     comes back (decrypt, use, fit) lands on the same view. Per browser tab, and gone with it. */
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".tabs[data-tab-remember]").forEach((list) => {
+      let key = null;
+      try { key = sessionStorage.getItem("tab." + list.dataset.tabRemember); } catch { /* first tab */ }
+      list.querySelector(`.tab[data-tab="${CSS.escape(key ?? "")}"]`)?.click();
     });
   });
 

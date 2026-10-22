@@ -48,6 +48,15 @@ enum OutcomeKind: string
     case JournalDone = 'journal_done';
 
     /**
+     * Sends the player an inbox message in the Story category: the sender in `ref`, the title in `text`, the words in
+     * `entry_text`, and `amount` seconds to wait (0 or none for at once, at most `MESSAGE_MAX_DELAY`).
+     */
+    case Message = 'message';
+
+    /** The longest an encounter may hold a message back: 48 hours, in seconds. */
+    public const MESSAGE_MAX_DELAY = 172800;
+
+    /**
      * The injuries an encounter may deepen or ease: the accumulating ones `InjuryLedger` owns.
      * The drug withdrawals in `config/effects.php` are deliberately absent — `DrugLedger` is the
      * only writer of those.
@@ -75,13 +84,13 @@ enum OutcomeKind: string
     /** Whether `ref` carries the target: a flag slug, an injury key, a resource or a position. */
     public function needsRef(): bool
     {
-        return in_array($this, [self::Flag, self::Injury, self::Damage, self::GridMove, self::Journal, self::JournalDone], true);
+        return in_array($this, [self::Flag, self::Injury, self::Damage, self::GridMove, self::Journal, self::JournalDone, self::Message], true);
     }
 
     /** A flag, a dose and the grid effects with no number have no amount; everything else is a signed number. */
     public function needsAmount(): bool
     {
-        return ! in_array($this, [self::Flag, self::Dose, self::WakeIce, self::Detected, self::GridMove, self::Journal, self::JournalDone], true);
+        return ! in_array($this, [self::Flag, self::Dose, self::WakeIce, self::Detected, self::GridMove, self::Journal, self::JournalDone, self::Message], true);
     }
 
     /** Needs a live run to act on, so only a run encounter may carry it. */

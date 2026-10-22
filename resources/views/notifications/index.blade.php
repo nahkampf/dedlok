@@ -116,6 +116,9 @@
                                         <span class="micro"><x-address :address="$message->details['address']" /> <x-jump :address="$message->details['address']" /></span>
                                     @endif
                                     <x-scan-facts :facts="$message->details['facts']" />
+                                @elseif (! empty($message->details['address']))
+                                    {{-- A Tracker's find: the node's address, copyable, with the Jump button. --}}
+                                    <span class="micro"><x-address :address="$message->details['address']" /> <x-jump :address="$message->details['address']" /></span>
                                 @elseif (! empty($message->details['link']))
                                     {{-- Only a link in the sentence above: nothing to list. --}}
                                 @elseif (! empty($message->details['collect']))

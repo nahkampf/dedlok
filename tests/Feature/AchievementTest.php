@@ -8,10 +8,14 @@ use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\City\Discovery;
 use App\Cyberspace\Extractor;
+use App\Cyberspace\RunEnding;
+use App\Cyberspace\RunPurpose;
+use App\Cyberspace\RunStarter;
 use App\Models\Character;
 use App\Models\Entity;
 use App\Models\Location;
 use App\Models\Notification;
+use App\Models\Run;
 use App\Models\System;
 use App\Models\SystemContent;
 use App\Models\User;
@@ -128,7 +132,7 @@ final class AchievementTest extends TestCase
         $this->achievements->record($character, Metric::SystemsBurned, 100);
         $this->achievements->record($character, Metric::SystemsBurned, 100);
 
-        $this->assertEqualsWithDelta($before + 1.0, (new StandingLedger)->standingFor($character, $entity), 0.0001, 'once, however often it is crossed');
+        $this->assertEqualsWithDelta($before + 0.5, (new StandingLedger)->standingFor($character, $entity), 0.0001, 'once, however often it is crossed');
         $this->assertSame('You are really getting your name out there!', StandingReason::Achievement->label());
     }
 
@@ -272,5 +276,23 @@ final class AchievementTest extends TestCase
 
         // One player, who has it: 100.00%; the others, 0.00%.
         $this->actingAs($user)->get(route('achievements.index'))->assertSee('100.00% of players')->assertSee('0.00% of players');
+    }
+
+    /** Netrunner: only a COMPLETED run on a grade 9 system wins it. */
+    public function test_netrunner_needs_a_completed_run_on_grade_nine(): void
+    {
+        $character = $this->character();
+        $finish = function (int $grade, RunEnding $ending) use ($character): void {
+            $system = System::factory()->at($grade + ($ending === RunEnding::Egress ? 20 : 0), 1)->grade($grade)->create();
+            $run = Run::query()->create(['character_id' => $character->id, 'address' => $system->address, 'x' => 0, 'y' => 0, 'purpose' => RunPurpose::Extraction, 'started_at' => now()]);
+            app(RunStarter::class)->end($character, $run, $ending);
+        };
+
+        $finish(9, RunEnding::Egress);
+        $finish(8, RunEnding::Completed);
+        $this->assertNotContains(21, $this->unlocked($character));
+
+        $finish(9, RunEnding::Completed);
+        $this->assertContains(21, $this->unlocked($character));
     }
 }

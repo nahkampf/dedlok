@@ -215,6 +215,15 @@ return [
             'secret' => false,
         ],
 
+        // A run carried through on a grade 9 system.
+        21 => [
+            'name' => 'Netrunner',
+            'description' => 'Made a successful run on a grade 9 system.',
+            'metric' => 'run_grade_completed',
+            'threshold' => 9,
+            'secret' => false,
+        ],
+
     ],
 
 ];

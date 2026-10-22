@@ -74,4 +74,7 @@ enum Metric: string
 
     /** Bloodhounds (hunters) beaten, one per win. */
     case BloodhoundsDefeated = 'bloodhounds_defeated';
+
+    /** The highest grade of system a run has been successfully completed on. HIGH-WATER: a state, reported with `reach()`. */
+    case RunGradeCompleted = 'run_grade_completed';
 }

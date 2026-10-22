@@ -366,6 +366,7 @@ return [
                 'grid_move' => 'Move on the grid (x,y in the text)',
                 'journal' => 'Journal: write a note and/or a line',
                 'journal_done' => 'Journal: mark a note or line done',
+                'message' => 'Send a message',
             ],
             // How a rolled choice reads on its button. The figure is in the
             // button's title, not on it: an unmeasured number reads as a promise.
@@ -863,6 +864,7 @@ return [
             'wallet' => 'Wallet',
             'personal' => 'Message',
             'support' => 'Supporter',
+            'story' => 'Story',
         ],
 
         // The closed row of the inbox. One per message key; a key without one shows its category instead.
@@ -3369,6 +3371,16 @@ return [
             'study' => 'You are reading and studying. It tires you.',
             'simstim' => 'You are lost in a simstim.',
         ],
+        'blurb' => [
+            'eat' => 'Have a meal. Eases fatigue and fills fullness.',
+            'rest' => 'Lie down and rest, reducing fatigue.',
+            'patch' => 'With the tools at hand, do a little first aid.',
+            'meditate' => 'Sit, relax, and still your mind. Restores SI and decreases fatigue.',
+            'shower' => 'Decreases fatigue and slightly reduces addiction.',
+            'workout' => 'Work towards your gains. Increases fatigue.',
+            'study' => 'Sharpen your mind. Increases fatigue.',
+            'simstim' => 'Zone out to some simstim entertainment. Increases mood but adds some fatigue.',
+        ],
         'simstim_left' => 'Simstim left today: :time',
         'progress' => 'Progress toward the next point: :percent%',
         'actions' => [
@@ -3748,6 +3760,21 @@ return [
     ],
 
     'errors' => [
+        'back' => 'Back to main',
+        'http' => [
+            400 => 'The server cannot or will not process the request due to something that is perceived to be a client error. Malformed request syntax, invalid request framing, deceptive request routing etc.',
+            401 => 'You are trying to access a resource that requires you to be signed in.',
+            403 => 'You don\'t have access to this resource.',
+            404 => 'I cannot find the requested resource.',
+            405 => 'Method not allowed.',
+            406 => 'Content negotiation could not find any content that conforms to the criteria given by the client.',
+            408 => 'The request timed out.',
+            409 => 'There was a state conflict.',
+            410 => 'This content has been removed with no forwarding assigned.',
+            419 => 'The session has expired.',
+            500 => 'An internal error occurred. For debugging purposes, please tell the admins in detail what you did to end up here.',
+            503 => 'Dedlok is down for maintenance. We will return shortly.',
+        ],
         'throttle' => [
             'title' => 'Slow down',
             'body' => 'Too many requests. Try again in :seconds seconds.',
@@ -4801,12 +4828,14 @@ return [
                 'branch' => 'When',
                 'kind' => 'Does',
                 'amount' => 'Amount',
-                'ref' => 'Flag, injury, resource or journal slug',
+                'ref' => 'Flag, injury, resource, journal slug or sender',
                 'item' => 'Item',
                 'entity' => 'Entity',
                 'journal_heading' => 'Journal: heading, for a note that is new',
                 'journal_line_slug' => 'Journal: line slug',
                 'journal_line' => 'Journal: line text',
+                'message_title' => 'Title',
+                'message_body' => 'Message',
                 'hint' => 'Amounts are signed. Item: a quantity. Damage: hitpoints or synaptic_integrity. Pass and fail apply only to a choice that rolls.',
             ],
             'branches' => ['always' => 'Always', 'pass' => 'On pass', 'fail' => 'On fail'],
@@ -4816,6 +4845,8 @@ return [
                 'grid_position' => 'Screen ":node": a position is written x,y and is inside the grid (0 to :size).',
                 'spot_address' => 'No system answers to that address.',
                 'journal_slug' => 'Screen ":node": a journal slug is lower case letters, digits, hyphens and underscores (up to 60).',
+                'message_empty' => 'Sender, title or message missing',
+                'message_delay' => 'Must be 0 (immediate) or a positive number in seconds, max 48 hours.',
                 'journal_empty' => 'Screen ":node": a journal outcome needs a heading for a new note, a line of text, or both.',
                 'journal_entry' => 'Screen ":node": a journal line needs both its slug and its text.',
                 'too_big' => 'This encounter has more form fields than the server accepts (:limit), so part of it would have been dropped without a word. Nothing was saved. Raise max_input_vars for PHP, or split the encounter.',

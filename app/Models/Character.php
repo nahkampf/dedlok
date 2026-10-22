@@ -417,10 +417,9 @@ class Character extends Model
             ->loose()
             ->inContainer($container)
             ->get()
-            ->sortBy([
-                fn (InventoryItem $row) => -$row->item->tier,
-                fn (InventoryItem $row) => $row->item->displayName(),
-            ])
+            // By type (the folder its picture lives in), then by name, each without regard to case. One array key: sortBy
+            // given a list of closures calls each as a two-argument comparator, which these are not.
+            ->sortBy(fn (InventoryItem $row) => [$row->item->imageType(), mb_strtolower($row->item->displayName()), $row->id])
             ->values();
     }
 

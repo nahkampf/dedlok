@@ -9,6 +9,7 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Support\PlainText;
 use App\Support\Text;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The only writer of `notifications`, and the only thing that marks one read.
@@ -108,6 +109,59 @@ final class Notifier
             'title' => mb_substr(PlainText::clean($title), 0, 120),
             'body' => mb_substr(PlainText::clean($body, multiline: true), 0, self::MAX_BODY),
             'details' => ['from' => (string) $from->handle],
+        ]);
+    }
+
+    /**
+     * A message an encounter sends: the story's own words, written as given (never through `Text::get()`), from
+     * `$sender`. With `$delay` seconds it waits in `scheduled_messages` for `deliverDue()`.
+     */
+    public function story(Character $to, string $sender, string $title, string $body, int $delay = 0): void
+    {
+        if ($to->user_id === null) {
+            return;
+        }
+
+        if ($delay > 0) {
+            DB::table('scheduled_messages')->insert([
+                'user_id' => (int) $to->user_id,
+                'sender' => $sender,
+                'title' => mb_substr($title, 0, 120),
+                'body' => mb_substr($body, 0, self::MAX_BODY),
+                'deliver_at' => now()->addSeconds($delay),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return;
+        }
+
+        $this->write((int) $to->user_id, $sender, $title, $body);
+    }
+
+    /** Move every story message whose time has come into its inbox. @return int delivered */
+    public function deliverDue(): int
+    {
+        $due = DB::table('scheduled_messages')->where('deliver_at', '<=', now())->orderBy('id')->get();
+
+        foreach ($due as $row) {
+            DB::transaction(function () use ($row): void {
+                $this->write((int) $row->user_id, $row->sender, $row->title, $row->body);
+                DB::table('scheduled_messages')->where('id', $row->id)->delete();
+            });
+        }
+
+        return $due->count();
+    }
+
+    private function write(int $userId, string $sender, string $title, string $body): void
+    {
+        Notification::create([
+            'user_id' => $userId,
+            'category' => Category::Story,
+            'title' => mb_substr($title, 0, 120),
+            'body' => mb_substr($body, 0, self::MAX_BODY),
+            'details' => ['from' => $sender],
         ]);
     }
 
