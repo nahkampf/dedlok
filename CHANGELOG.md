@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [0.73.1] — 2026-10-22
+
+### Fixed
+- **Study, Work out and Simstim showed no fatigue until somebody opened the City.** They are credited lazily, and the top-bar dial never settles them. `characters:regenerate` now settles every running session before it eases fatigue, so the dial moves each minute (`SafehouseSessionTest`).
+- **The item editor hid the Module panel for Storage and Thermal items**, so a storage device's QB could not be edited. The panel's `data-hardware` list now names both.
+
+### Added
+- The fatigue card on the character sheet lists the Tired, Drained or Exhausted effect you have, one line per attribute (`character.vitals_effects`, `CharacterController::fatigueEffects()`).
+
+### Changed
+- Attribute rows on the character sheet read label, number, bar (`.vital--wide`, and the kit gallery's demo).
+
+### Removed
+- The `fortress_daemon` program kind: nothing was gated on it. The `programs.kind` check constraint still lists the value, which is harmless.
+
+
 ## [0.73.0] — 2026-10-22
 
 ### Added
@@ -3729,7 +3745,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.73.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.73.1...HEAD
+[0.73.1]: https://github.com/nahkampf/dedlok/compare/v0.73.0...v0.73.1
 [0.73.0]: https://github.com/nahkampf/dedlok/compare/v0.72.1...v0.73.0
 [0.72.1]: https://github.com/nahkampf/dedlok/compare/v0.72.0...v0.72.1
 [0.72.0]: https://github.com/nahkampf/dedlok/compare/v0.71.2...v0.72.0
