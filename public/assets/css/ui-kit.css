@@ -2333,7 +2333,7 @@ details.panel > summary.panel__hd:focus-visible {
 .vital--tight { grid-template-columns: minmax(0, 48px) minmax(0, 1fr) auto; }
 /* Wide label column, for whole words: PERCEPTION overflows 76px, and the
    meter is positioned, so a label that spills paints UNDER the bar. */
-.vital--wide { grid-template-columns: minmax(0, 96px) minmax(0, 1fr) auto; }
+.vital--wide { grid-template-columns: minmax(0, 96px) auto minmax(0, 1fr); }
 .vital__label { font-family: var(--font-label); font-size: var(--fs-xs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
 .vital__value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-xs); color: var(--ink-1); min-width: 54px; text-align: right; }
 

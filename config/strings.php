@@ -148,7 +148,6 @@ return [
             'fortress_wiretap' => 'Fortress Wiretap',
             'booster' => 'Booster',
             'utility' => 'Utility',
-            'fortress_daemon' => 'Fortress Daemon',
             'market' => 'Market',
             'cloak' => 'Cloak',
             'relocation' => 'Relocation',
@@ -2859,6 +2858,7 @@ return [
             'elated' => 'Elated',
         ],
         'vitals_modified' => 'Maximum changed by',
+        'vitals_effects' => 'Currently affecting you',
         'vitals_unmodified' => 'Nothing is changing the maximum.',
 
         // What is in them right now — one card per family they carry anything

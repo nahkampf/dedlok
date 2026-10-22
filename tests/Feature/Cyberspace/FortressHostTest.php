@@ -83,7 +83,7 @@ final class FortressHostTest extends TestCase
 
         $host = new FortressHost;
         $ice = $this->program($c, 'ice', ProgramKind::FortressIce, 2, 2, 1);
-        $util = $this->program($c, 'util', ProgramKind::FortressDaemon, 2, 2, 1);
+        $util = $this->program($c, 'util', ProgramKind::Tunnel, 2, 2, 1);
         foreach ([$ice, $util] as $row) {
             $this->assertNull($host->install($c, $row, $f));
             $this->assertNull($host->start($c, $row->fresh()));
@@ -115,7 +115,7 @@ final class FortressHostTest extends TestCase
         $c = Character::factory()->create();
         $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
         $this->feed($c, $f, 'storage', 2.0, 5);
-        $row = $this->program($c, 'big', ProgramKind::FortressDaemon, 0, 0, 5);
+        $row = $this->program($c, 'big', ProgramKind::Tunnel, 0, 0, 5);
 
         $this->assertSame('no_storage', (new FortressHost)->install($c, $row, $f));
 
@@ -142,7 +142,7 @@ final class FortressHostTest extends TestCase
         $c = Character::factory()->create();
         $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
         $this->feed($c, $f, 'storage', 5.0, 5);
-        $this->program($c, 'x', ProgramKind::FortressDaemon, 0, 0, 1);
+        $this->program($c, 'x', ProgramKind::Tunnel, 0, 0, 1);
 
         (new Fortresses)->freeze($f->fresh());
         $this->assertTrue(Fortresses::isFrozen($f->fresh()));

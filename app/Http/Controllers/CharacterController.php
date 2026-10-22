@@ -12,6 +12,7 @@ use App\Drugs\DrugLedger;
 use App\Drugs\Family;
 use App\Models\Archetype;
 use App\Models\Character;
+use App\Models\CharacterModifier;
 use App\Models\Dose;
 use App\Stats\BreakdownStep;
 use App\Support\Points;
@@ -229,6 +230,7 @@ class CharacterController extends Controller
                 'steps' => $stat->steps,
                 'fill' => 'var(--ok)',
                 'marks' => [],
+                'effects' => [],
             ];
         }
 
@@ -241,6 +243,7 @@ class CharacterController extends Controller
             'max' => $reading['max'],
             'ratio' => $reading['ratio'],
             'steps' => $stat->steps,
+            'effects' => $this->fatigueEffects($character),
             'fill' => $reading['fill'],
             'marks' => [
                 ['at' => (float) config('fatigue.tired_at'), 'colour' => 'var(--warn)'],
@@ -249,6 +252,29 @@ class CharacterController extends Controller
         ];
 
         return $rows;
+    }
+
+    /**
+     * What Tired, Drained or Exhausted is taking off them right now, one line per attribute, for the fatigue card.
+     *
+     * @return list<array{label: string, amount: int|float}>
+     */
+    private function fatigueEffects(Character $character): array
+    {
+        $effects = [];
+        $keys = CharacterModifier::query()->where('character_id', $character->getKey())
+            ->whereIn('definition_key', [Fatigue::TIRED, Fatigue::DRAINED, Fatigue::EXHAUSTED])->pluck('definition_key');
+
+        foreach ($keys as $key) {
+            foreach ((array) config("effects.{$key}.modifiers") as $modifier) {
+                $effects[] = [
+                    'label' => config("effects.{$key}.label").': '.Text::get('character.names.'.$modifier['target']['id']),
+                    'amount' => $modifier['amount'],
+                ];
+            }
+        }
+
+        return $effects;
     }
 
     /**

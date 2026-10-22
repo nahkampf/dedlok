@@ -765,7 +765,7 @@
         {{-- A module's own row. Which fields apply follows from the kind, and
              every one that does not is prohibited rather than ignored — see
              App\Http\Requests\Admin\ItemRequest::moduleRules(). --}}
-        <details class="panel" data-hardware="cpu npu ram nic expansion psu" @unless ($isModule) hidden @endunless @if ($errors->any()) open @endif>
+        <details class="panel" data-hardware="cpu npu ram nic expansion psu thermal storage" @unless ($isModule) hidden @endunless @if ($errors->any()) open @endif>
             <summary class="panel__hd"><span class="micro">{{ Text::get('admin.items.sections.module') }}</span></summary>
             <div class="panel__bd grid" style="grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr))">
 

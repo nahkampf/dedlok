@@ -7,10 +7,13 @@ namespace App\Console\Commands;
 use App\Characters\Fatigue;
 use App\Characters\Fullness;
 use App\Characters\Mood;
+use App\City\ActivityKind;
 use App\Cyberspace\Virus;
 use App\Drugs\DrugLedger;
 use App\Models\Character;
+use App\Models\CityActivity;
 use App\Models\DrugUse;
+use App\Safehouses\HomeActions;
 use App\Stats\Resolver;
 use App\Support\Points;
 use Illuminate\Console\Command;
@@ -100,6 +103,16 @@ class RegenerateSynapses extends Command
         $rested = 0;
         $restedPoints = 0;
         $minute = intdiv(now()->getTimestamp(), 60);
+
+        // A Work out, Study or Simstim is credited lazily, so the dial would only move when somebody opened the City. Settle
+        // them here, before the ease below reads the figure.
+        if (! $dryRun) {
+            $home = app(HomeActions::class);
+
+            foreach (CityActivity::query()->whereIn('kind', [ActivityKind::Workout->value, ActivityKind::Study->value, ActivityKind::Simstim->value])->pluck('character_id') as $id) {
+                $home->settleSession(Character::query()->findOrFail($id));
+            }
+        }
 
         // Nobody in a fight mends: its clock stops with the player's, or waiting out a fight would be a way to heal in it.
         Character::query()->whereNull('current_fight_id')

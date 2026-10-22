@@ -60,6 +60,7 @@
                             <div class="vital vital--wide">
                                 <span class="vital__label @if ($effects !== '') tip-link tip--start tip--lines @endif"
                                       @if ($effects !== '') data-tip="{!! str_replace("\n", '&#10;', e($effects)) !!}" tabindex="0" @endif>{{ $attribute['label'] }}</span>
+                                <span class="vital__value">{{ $attribute['value'] }}</span>
                                 <div class="meter" style="--v:{{ $attribute['ratio'] }};--fill:var(--ok)"
                                      role="img"
                                      aria-label="{{ Text::get('character.attribute_value', [
@@ -69,7 +70,6 @@
                                      ]) }}">
                                     <div class="meter__fill"></div>
                                 </div>
-                                <span class="vital__value">{{ $attribute['value'] }}</span>
                             </div>
                         @endforeach
                     </div>
@@ -104,6 +104,18 @@
                                         @endforeach
                                     </div>
                                 </div>
+
+                                @if (! empty($vital['effects']))
+                                    <div class="card__stats">
+                                        <span class="micro" style="color:var(--ink-2)">{{ Text::get('character.vitals_effects') }}</span>
+                                        @foreach ($vital['effects'] as $effect)
+                                            <div class="card__stat">
+                                                <span>{{ $effect['label'] }}</span>
+                                                <b class="num">{{ $effect['amount'] >= 0 ? '+' : '−' }}{{ abs($effect['amount']) }}</b>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
 
                                 @if ($vital['steps'] === [])
                                     <div class="card__stats">

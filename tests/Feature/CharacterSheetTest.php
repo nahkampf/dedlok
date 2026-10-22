@@ -121,6 +121,18 @@ final class CharacterSheetTest extends TestCase
             ->assertSeeText(Text::get('character.vitals_unmodified'));
     }
 
+    public function test_the_fatigue_card_lists_the_tired_effect_when_you_have_it(): void
+    {
+        $this->visit()->assertDontSeeText(Text::get('character.vitals_effects'));
+
+        CharacterModifier::query()->create(['character_id' => $this->character->id, 'definition_key' => 'fatigue_tired']);
+
+        $this->visit()
+            ->assertSeeText(Text::get('character.vitals_effects'))
+            ->assertSeeText('Tired: '.Text::get('character.names.focus'))
+            ->assertSee('−3', false);
+    }
+
     /**
      * The dose panel is per FAMILY, and a family with nothing in it and clean
      * books is left out — a row of zeroes would describe a problem nobody has.

@@ -59,6 +59,17 @@ final class SafehouseSessionTest extends TestCase
         $this->assertSame('Sharpening the mind', Notification::query()->latest('id')->firstOrFail()->title);
     }
 
+    public function test_the_minute_clock_credits_a_session_nobody_is_looking_at(): void
+    {
+        $this->home->startSession($this->character, Action::Study);
+
+        $this->travel(10)->minutes();
+        $this->artisan('characters:regenerate')->assertSuccessful();
+
+        // 10 minutes at 2 a minute, less the clock's own ease: well above what a bare ease could leave.
+        $this->assertGreaterThan(10, (float) $this->character->fresh()->current_fatigue);
+    }
+
     public function test_a_workout_never_crosses_the_collapse_line_and_hands_over_to_a_rest(): void
     {
         Safehouse::fallback()->forceFill(['actions' => ['workout', 'study', 'simstim', 'rest'], 'rest_rate' => 1])->save();
