@@ -75,20 +75,6 @@ class SlotTypeTest extends TestCase
         }
     }
 
-    public function test_an_io_port_seats_nothing(): void
-    {
-        foreach ([Variant::Electrode, Variant::Neuralink] as $port) {
-            $socket = $this->socket(SlotKind::Io, $port);
-
-            foreach (Hardware::cases() as $hardware) {
-                $this->assertFalse($socket->accepts($hardware, null));
-                $this->assertFalse($socket->accepts($hardware, $port));
-            }
-        }
-
-        $this->assertNull(SlotKind::Io->seats());
-    }
-
     public function test_every_expansion_bus_takes_only_its_own_cards(): void
     {
         $xgate = $this->socket(SlotKind::Expansion, Variant::XGate);
@@ -127,7 +113,6 @@ class SlotTypeTest extends TestCase
             'psu',
             'thermal',
             'storage',
-            'io_electrode', 'io_neuralink',
         ], array_map(static fn (SlotType $type): string => $type->key(), SlotType::all()));
     }
 
@@ -142,15 +127,11 @@ class SlotTypeTest extends TestCase
         $this->assertTrue(SlotType::fromRow('ram', 'universal')?->isLegal());
     }
 
-    public function test_the_io_ports_are_one_each_while_a_kind_caps_its_variants_together(): void
+    public function test_a_kind_caps_its_variants_together(): void
     {
         // Five expansion slots means five, not five of each.
         $this->assertSame(5, SlotKind::Expansion->maxPerDeck());
         $this->assertSame(5, $this->socket(SlotKind::Expansion, Variant::Pei)->max());
-
-        // The ports are the exception: one electrode, one neuralink.
-        $this->assertSame(1, $this->socket(SlotKind::Io, Variant::Electrode)->max());
-        $this->assertSame(2, SlotKind::Io->maxPerDeck());
     }
 
     public function test_every_module_kind_knows_its_socket_and_its_measure(): void

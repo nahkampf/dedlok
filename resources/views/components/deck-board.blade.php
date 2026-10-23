@@ -80,7 +80,7 @@
                                      dialog behind it is rendered outside the
                                      board — see below. --}}
                                 <button type="button"
-                                    class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty'.($socket->kind->seats() ? ' slot--ghost' : '') }}"
+                                    class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty slot--ghost' }}"
                                     data-open="#socket-{{ $socket->id }}"
                                     {{-- Hover floats the module's card; a click still opens the socket. --}}
                                     @if ($module) data-inspect="#detail-{{ $fitting->module_id }}" data-inspect-hover @endif
@@ -88,16 +88,16 @@
                                     aria-label="{{ $node->label() }} — {{ $module?->displayName() ?? Text::get('decks.fitting.empty_socket') }}">
                                     @if ($module)
                                         <span class="slot__icon" aria-hidden="true">{{ $module->glyph() }}</span>
-                                    @elseif ($socket->kind->seats())
+                                    @else
                                         <span class="slot__icon" aria-hidden="true">{{ \App\Models\Item::GLYPHS[$socket->kind->seats()->value] }}</span>
                                     @endif
                                 </button>
                             @else
-                                <span class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty'.($socket->kind->seats() ? ' slot--ghost' : '') }}"
+                                <span class="slot {{ $module ? 'slot--filled '.$module->tierClass().' '.$thermal->verdict($socket->id)->slotClass() : 'slot--empty slot--ghost' }}"
                                       @if ($module) title="{{ $module->displayName() }}" @endif>
                                     @if ($module)
                                         <span class="slot__icon" aria-hidden="true">{{ $module->glyph() }}</span>
-                                    @elseif ($socket->kind->seats())
+                                    @else
                                         <span class="slot__icon" aria-hidden="true">{{ \App\Models\Item::GLYPHS[$socket->kind->seats()->value] }}</span>
                                     @endif
                                 </span>
@@ -183,11 +183,6 @@
                             {{ Text::get('inventory.actions.details') }}
                         </button>
                     </div>
-                @elseif ($socket->kind->seats() === null)
-                    {{-- An IO port is not an empty socket, it is a socket that
-                         seats nothing. Saying "nothing you own fits" would
-                         send a player looking for the thing that does. --}}
-                    <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('decks.fitting.seats_nothing') }}</p>
                 @elseif ($fits->isEmpty())
                     <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('decks.fitting.nothing_fits') }}</p>
                 @else

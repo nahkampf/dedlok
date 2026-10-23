@@ -57,7 +57,7 @@ class DeckBoardTest extends TestCase
             'ram_opto' => 1,
             'cpu_socket_z' => 1,
             'psu' => 1,
-            'io_neuralink' => 1,
+            'nic' => 1,
         ]));
 
         $hub = $board->hub();
