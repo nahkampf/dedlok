@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.75.2] — 2026-10-24
+
+### Fixed
+- **A defeat could be resolved several times.** A lost run stays live until `Simulator::resolveEnding()`, so overlapping requests for the same turn (a double tap, a slow answer) each reached it with a copy of the run that still read as live, and each applied every defeat tag. Noodle lost a deck's files, six modules and several rounds of creds and max SI to one ICE XII. `resolveEnding()` now locks the run row and re-reads `ended_at` in a transaction; a caller that finds the run already ended resolves nothing (`ResolveEndingOnceTest`). The body moved unchanged to `settleEnding()`.
+
+### Changed
+- Migration `2026_10_27_110000_restore_noodles_double_defeat` makes Noodle whole: the six lost modules back in the stash (which fitting each sat in is not recorded), 1,934 creds through the wallet as `granted` (the one extra skim the balance actually lost; three read the same balance and wrote it back once), and 15 points of neural damage healed (four flatlines landed where one was owed, and the real one is not recorded, so he keeps the smallest the arithmetic allows). Does nothing without a character named Noodle. No schema change.
+
+Known and not fixed: `Wallet::move()` reads creds off the in-memory character and writes them back, so two simultaneous writers on other paths can still overwrite each other.
+
+Run `php artisan migrate`.
+
+
 ## [0.75.1] — 2026-10-27
 
 ### Fixed
@@ -3780,7 +3793,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.75.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.75.2...HEAD
+[0.75.2]: https://github.com/nahkampf/dedlok/compare/v0.75.1...v0.75.2
 [0.75.1]: https://github.com/nahkampf/dedlok/compare/v0.75.0...v0.75.1
 [0.75.0]: https://github.com/nahkampf/dedlok/compare/v0.74.0...v0.75.0
 [0.74.0]: https://github.com/nahkampf/dedlok/compare/v0.73.1...v0.74.0

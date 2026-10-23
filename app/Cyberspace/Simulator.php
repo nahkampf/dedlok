@@ -1678,8 +1678,24 @@ final readonly class Simulator
      * Separate from the turn on purpose. A turn says what happened; this says
      * what it cost, and keeping them apart is what stops the ordering from
      * being an accident of where a line sits.
+     *
+     * ONCE PER RUN. A defeat leaves the run live until here, so several requests for the same turn (a double tap, a
+     * slow answer) each reach this with a run their own copy still calls live — and each applied every tag: Noodle lost
+     * a deck's files and six modules to one ICE, and was skimmed four times. The run row is locked and re-read, and
+     * whoever finds it already ended has nothing to resolve.
      */
     public function resolveEnding(Character $character, Run $run, RunEnding $ending): void
+    {
+        DB::transaction(function () use ($character, $run, $ending): void {
+            if (! Run::query()->whereKey($run->getKey())->whereNull('ended_at')->lockForUpdate()->exists()) {
+                return;
+            }
+
+            $this->settleEnding($character, $run, $ending);
+        });
+    }
+
+    private function settleEnding(Character $character, Run $run, RunEnding $ending): void
     {
         $ice = $run->ice_id === null ? null : Ice::query()->find($run->ice_id);
         $system = System::query()->where('address', $run->address)->first();
