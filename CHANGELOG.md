@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.75.0] — 2026-10-27
+
+### Added
+- **The runner dot on the cyberspace map opens a modal** listing everyone on that square: avatar, handle and what they are doing (`RunnerActivity`: Running for a live run, Scanning while a scan pass is pending, otherwise Idle). `MapView` groups runners by coordinate and hands `MapCell` a `runnerList`; one `<dialog id="runners-X-Y">` per occupied square (`WardenTest`). Strings `cyberspace.map.runners_here` (placeholder title) and `cyberspace.map.activity.*`. The dot does not yet open with Enter or Space.
+- **Forty pieces of deck hardware**, migration `2026_10_27_100000_new_deck_hardware`: 13 storage modules, 4 CPUs, a QDRAM stick, a second tier-1 NPU, and XGate, PEI and Horizon cards, each with its `deck_modules` row and a Chrome Palace listing at list price (5 on the shelf, one back every two hours). Flavour is a placeholder. Skips anything that already exists by slug. Replaces the deleted local `DeckHardwareSeeder`.
+
+### Changed
+- **Loyalty from Extract, Transport and Denial jobs is ×3** (`config/missions.php` `actions.*.loyalty`: extract 1.5 to 3.0, transport and denial 1.5 to 3.0). Applies to jobs generated from now on.
+
+### Fixed
+- **An extraction job showed no tick in Tasks & Missions once the decrypted file was in hand**, though the exchange accepted it. Carried-evidence jobs are only satisfied at hand-in; the card now ticks the target as "in hand" (`MissionLedger::holdsDecryptedJobFile()`, `mission-card.blade.php`). The "N OF M DONE" count still counts only satisfied targets.
+
+Run `php artisan migrate`.
+
+
 ## [0.74.0] — 2026-10-23
 
 ### Fixed
@@ -3758,7 +3773,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.74.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.75.0...HEAD
+[0.75.0]: https://github.com/nahkampf/dedlok/compare/v0.74.0...v0.75.0
 [0.74.0]: https://github.com/nahkampf/dedlok/compare/v0.73.1...v0.74.0
 [0.73.1]: https://github.com/nahkampf/dedlok/compare/v0.73.0...v0.73.1
 [0.73.0]: https://github.com/nahkampf/dedlok/compare/v0.72.1...v0.73.0
