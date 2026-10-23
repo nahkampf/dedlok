@@ -1,3 +1,7 @@
+## 0.75.2 (2026-10-24)
+
+- Bugfix: Defeats against an ICE with multiple defeat tags could be resolved multiple times. This has now been covered by a transaction.
+
 ## 0.75.1 (2026-10-23)
 
 - Expansion cards, icebreakers and analysers now explicitly state their modifiers/effects
