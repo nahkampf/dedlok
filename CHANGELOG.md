@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.75.1] — 2026-10-27
+
+### Fixed
+- **Shop listings showed no effects for expansion cards, icebreakers or analysers.** `<x-program-spec>` now lists an expansion card's `items.modifiers` and a program's own `programs.modifiers` (an icebreaker's damage, an analyser's profiling bonus), worded as the stash card words them. The stash card (`item-detail`) now includes a program's modifiers under Effects too.
+- **An expansion card's own number was never stated.** `DeckModule::measure()`/`measureLabel()` fall back to whichever measure column the row sets (qFLOPS, QB, cooling, storage) when the kind has none of its own, so the shop line reads "20 TU cooling · 8 W draw" (`DeckHardwareTest`).
+
+
 ## [0.75.0] — 2026-10-27
 
 ### Added
@@ -3773,7 +3780,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.75.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.75.1...HEAD
+[0.75.1]: https://github.com/nahkampf/dedlok/compare/v0.75.0...v0.75.1
 [0.75.0]: https://github.com/nahkampf/dedlok/compare/v0.74.0...v0.75.0
 [0.74.0]: https://github.com/nahkampf/dedlok/compare/v0.73.1...v0.74.0
 [0.73.1]: https://github.com/nahkampf/dedlok/compare/v0.73.0...v0.73.1

@@ -1,3 +1,7 @@
+## 0.75.1 (2026-10-23)
+
+- Expansion cards, icebreakers and analysers now explicitly state their modifiers/effects
+
 ## 0.75.0 (2026-10-23)
 - The dot that shows other players on the cyberspace grid can now be clicked to display who's there
 - The deck hardware wasn't seeded to Chrome Palace. It is now, however.
