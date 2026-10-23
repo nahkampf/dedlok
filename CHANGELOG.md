@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.74.0] — 2026-10-23
+
+### Fixed
+- **A subnet fortress's Tap and Wiretap swept main-grid squares.** `FortressProduction` now passes the fortress's `grid_id` to the range query, so only nodes on its own grid are in reach (`FortressHostTest`).
+- **Installed fortress ICE and IDS lost a point in the first second.** `FortressDefence::effective()` floored the decayed value; it now rounds.
+
+### Removed
+- **The Electrode and NeuraLink IO ports.** `SlotKind::Io` and `Variant::Electrode`/`Neuralink` are gone, with their strings, the deck board's "seats nothing" branch, the one-of-each cap in `SlotType::max()` and the docs. `SlotKind::seats()` is no longer nullable. Migration `2026_10_26_150000_remove_the_io_ports` deletes the `io` rows from `deck_slots`, drops any `io_*` keys from `items.board_layout` and takes `io` out of `chk_deck_slots_kind` and `chk_deck_slots_variant` (MySQL only; the rollback restores the allowance, not the rows).
+
+### Added
+- `database/seeders/DeckHardwareSeeder` (run by hand, local only, not in `DatabaseSeeder`): 40 pieces of deck hardware (13 storage modules, 4 CPUs, a 4 QB QDRAM stick, a second tier-1 NPU, and XGate, PEI and Horizon cards), each listed at Chrome Palace at list price, 5 on the shelf, restocking one every two hours. Items are authored in the live admin, so this reaches production only when authored there or migrated.
+
+
 ## [0.73.1] — 2026-10-22
 
 ### Fixed
@@ -3745,7 +3758,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.73.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.74.0...HEAD
+[0.74.0]: https://github.com/nahkampf/dedlok/compare/v0.73.1...v0.74.0
 [0.73.1]: https://github.com/nahkampf/dedlok/compare/v0.73.0...v0.73.1
 [0.73.0]: https://github.com/nahkampf/dedlok/compare/v0.72.1...v0.73.0
 [0.72.1]: https://github.com/nahkampf/dedlok/compare/v0.72.0...v0.72.1

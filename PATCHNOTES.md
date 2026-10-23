@@ -1,3 +1,10 @@
+## 0.74.0 (2026-10-23)
+
+- Fix: Fortresses in subnets now only target subnet systems with Tap and Wiretap.
+- Fix: A bug caused ICE and IDS to lose strenth in the first second after installing them
+- Removed: Electrode and Neuralink ports are now gone. It was a mechanic that didn't pan out.
+- Content: LOTS of new deck hardware. All available at Chrome Palace for now, some might be pulled off market later and put into encounters, loot or loyalty stores.
+
 ## 0.73.1 (2026-10-22)
 
 - Study, Work out and Simstim now hook into the one-minute clock cycle, so that the fatigue meter actually updates correctly.
