@@ -51,6 +51,26 @@ Built so far: scan, burn, plant, supply, agitate, extract, heist and data transp
 - **Production**: the desk hands over a Design copy (a blueprint), the runner builds the program with their own components and
   returns the built program. Only offered by grade 4 and 5 exchanges.
 
+## Idea: Headhunters and Traps (noted 2026-10-23, not designed)
+
+A utility program that works like Tracer, but looks for a player. Kind: **Headhunter**. Several of them; what sets them apart:
+
+- how fast a search cycle is (as Tracer),
+- how large their view range is,
+- how good they are at detecting players (a check against the player's stealth).
+
+**Traps** work together with Headhunters. A Headhunter (not all of them) can, on finding a player, try to trap them in place.
+A Headhunter has two attributes: its **strength** (a check against the player's evasion) and **how long** it holds the player if it succeeds.
+
+- On locating a player the Headhunter messages whoever sent it: address (if any) and coordinates, plus one more message if a
+  connected Trap succeeded, and for how long.
+- **Trapped is a waiting room**: for the duration you cannot reach anything else in cyberspace, except combat (the trapper
+  can jump to the address and start one).
+- After being trapped there is a **60 minute cooldown** in which that player cannot be trapped again (anti-griefing).
+
+Open: nothing decided on how a Headhunter is sent, what it costs, or how a trapped player sees it. Read `Tracer` in
+`ProgramKind` first.
+
 ## Code Crafting (designed 2026-10-08, `CRAFTING.md`)
 
 Build order, each its own step: **1. decimal QB / qFLOPS** (built, unreleased), **2. lifetime programs and the Script kind** (built, unreleased), **3. components and 4. designs, slots, the pausable clock, skills and screens** (built, unreleased), 5. ICE shredding (already covered by `DefeatTag::Erase`; see `CRAFTING.md`), 6. balance. See *As built* in `CRAFTING.md` for what is left inside them.
