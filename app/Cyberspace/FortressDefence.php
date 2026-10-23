@@ -107,7 +107,8 @@ final class FortressDefence
         $days = max(0.0, (now()->getTimestamp() - (int) $at) / 86400);
         $loss = min(1 - (float) config('cyberspace.fortress.defence.floor', 0.5), $days * (float) config('cyberspace.fortress.defence.decay_per_day', 0.02));
 
-        return array_map(fn ($v): int => (int) floor($v * (1 - $loss)), $stored);
+        // Rounded, not floored: a floor takes a whole point off in the first second of being installed.
+        return array_map(fn ($v): int => (int) round($v * (1 - $loss)), $stored);
     }
 
     /** Called on installing: the clock starts. */

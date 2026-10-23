@@ -181,7 +181,6 @@ final class FortressHostTest extends TestCase
     public function test_a_running_crafted_defence_arms_the_fortress_and_decays_only_while_installed(): void
     {
         Ice::query()->firstOrCreate(['level' => 1], ['name' => 'ICE I', 'integrity' => 10, 'attack' => 1, 'skill' => 50, 'detection' => 5, 'grade_min' => 1, 'grade_max' => 3]);
-        // Decay is floored, so a clock second between install and read would take a point off.
         $this->freezeTime();
         $c = Character::factory()->create();
         $f = System::factory()->at(1, 1)->create(['type' => SystemType::Fortress, 'owner_character_id' => $c->id]);
@@ -204,6 +203,11 @@ final class FortressHostTest extends TestCase
         $this->assertSame(5, $f->fortress_ice['attack']);
         $this->assertSame(20, (int) $f->ids_detection);
         $this->assertNotNull($f->ice_id);
+
+        // A minute in, nothing has been lost yet: decay rounds rather than takes a whole point off at once.
+        $this->travel(1)->minutes();
+        $this->assertSame(5, FortressDefence::effective($ice->fresh())['attack']);
+        $this->assertSame(20, FortressDefence::effective($ids->fresh())['detection']);
 
         // Ten days installed: 20% off. Taking it down freezes that.
         $this->travel(10)->days();
@@ -467,6 +471,22 @@ final class FortressHostTest extends TestCase
         $this->app->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 0.9999));
         $this->settleAfter($f, 61);
         $this->assertSame(0, SystemContent::query()->where('system_id', $f->id)->where('kind', 'data')->count());
+    }
+
+    public function test_a_subnet_fortress_taps_its_own_grid_and_not_the_main_grid_at_the_same_square(): void
+    {
+        DB::table('grids')->insert(['id' => 2, 'slug' => 'mil', 'name' => 'Military', 'prefix' => 'mil', 'size' => 8, 'entry_x' => 4, 'entry_y' => 4, 'created_at' => now(), 'updated_at' => now()]);
+        [$c, $f] = $this->producing(ProgramKind::FortressNetworkTap, ['cycle_minutes' => 60, 'range' => 1, 'strength' => 1000]);
+        $f->forceFill(['grid_id' => 2, 'address' => 'mil:0F0F'])->save();
+        System::factory()->at(2, 2)->grade(1)->create();                                       // main grid, beside the same coordinates
+        System::factory()->at(2, 1)->grade(2)->create(['grid_id' => 2, 'address' => 'mil:0A0A']); // the subnet's own neighbour
+        $this->app->instance(CheckRoller::class, CheckRoller::fromConfig(static fn (): float => 0.0));
+
+        $this->settleAfter($f, 61);
+
+        $dumps = SystemContent::query()->where('system_id', $f->id)->where('kind', 'data')->get();
+        $this->assertCount(1, $dumps);
+        $this->assertSame(2, $dumps[0]->meta['extracted_file']['grade']);
     }
 
     public function test_a_wiretap_skims_creds_by_grade_into_the_wallet_and_a_skill_raises_it(): void
