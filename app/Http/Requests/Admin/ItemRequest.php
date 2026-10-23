@@ -584,7 +584,7 @@ class ItemRequest extends FormRequest
      * One rule per socket type, capped at what a deck may present of it.
      *
      * Per type rather than one `slots.*`, because the caps differ: five
-     * expansion slots, but only one neuralink port. The cap that spans the
+     * expansion slots, but four CPUs. The cap that spans the
      * variants of a kind is withValidator()'s, since no per-field rule can
      * see the other fields.
      *

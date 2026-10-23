@@ -7,7 +7,7 @@ namespace App\Decks;
 use App\Support\Text;
 
 /**
- * One (kind, variant) pair: a Socket K, a QDRAM slot, a neuralink port.
+ * One (kind, variant) pair: a Socket K, a QDRAM slot.
  *
  * The fourteen of these are the whole vocabulary a deck is specified in, and
  * this class is the single place that vocabulary is written down. The editor
@@ -116,12 +116,11 @@ final class SlotType
      * How many of THIS type one deck may present.
      *
      * A kind's cap applies across its variants, so this is the same number
-     * for every variant of a kind — except the IO ports, which are one each
-     * rather than two of either.
+     * for every variant of a kind.
      */
     public function max(): int
     {
-        return $this->kind === SlotKind::Io ? 1 : $this->kind->maxPerDeck();
+        return $this->kind->maxPerDeck();
     }
 
     /** Does a module of this kind and variant go in this socket? */

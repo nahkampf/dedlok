@@ -917,7 +917,6 @@ counter per type, the request validates against the same list, and
 | `expansion` | XGate, PEI, Horizon | 5 |
 | `psu` | — | 2 |
 | `thermal` | — | 4 |
-| `io` | Electrode, NeuraLink | 1 of each |
 
 **A cap is on the kind, not on each of its variants.** Five expansion slots
 means five altogether, not five of each — which is why it cannot be a CHECK
@@ -930,12 +929,6 @@ two are game design rather than data integrity, and are a line each to remove.
 of stick; no stick is both. That asymmetry is the reason a slot's variant and
 a module's variant are checked against separate lists, and the reason fit is
 `Variant::accepts()` rather than `===`.
-
-**An IO port seats nothing.** The electrode and neuralink ports are where the
-deck reaches the person using it. They are rows rather than two booleans on
-`items` because "what interfaces does this deck present" is one question, and
-answering half of it with rows and half with flags means every screen that
-lists a deck's hardware reads two shapes and joins them by hand.
 
 ### The modules
 

@@ -87,7 +87,7 @@ class SlotLayoutTest extends TestCase
 
     public function test_rows_and_types_are_the_same_layout_read_twice(): void
     {
-        $original = SlotLayout::fromCounts(['io_neuralink' => 1, 'cpu_socket_g' => 1, 'ram_universal' => 2]);
+        $original = SlotLayout::fromCounts(['nic' => 1, 'cpu_socket_g' => 1, 'ram_universal' => 2]);
 
         // What the editor stores, read back the way the model reads it.
         $stored = SlotLayout::fromTypes(array_map(

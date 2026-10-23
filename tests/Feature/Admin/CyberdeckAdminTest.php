@@ -77,7 +77,7 @@ class CyberdeckAdminTest extends TestCase
                 'cpu_socket_g', 'cpu_socket_k', 'cpu_socket_z', 'npu',
                 'ram_opto', 'ram_qdram', 'ram_universal', 'nic',
                 'expansion_xgate', 'expansion_pei', 'expansion_horizon', 'psu',
-                'thermal', 'io_electrode', 'io_neuralink',
+                'thermal',
             ], 0),
         ], $overrides);
     }
@@ -107,7 +107,7 @@ class CyberdeckAdminTest extends TestCase
                 'nic' => 1,
                 'expansion_xgate' => 2,
                 'psu' => 1,
-                'io_neuralink' => 1,
+                'thermal' => 1,
             ]))
             ->assertRedirect()
             ->assertSessionHasNoErrors();
@@ -122,7 +122,7 @@ class CyberdeckAdminTest extends TestCase
         $this->assertSame(11, $layout->total());
         $this->assertSame(2, $layout->ofKind(SlotKind::Cpu));
         $this->assertSame(2, $layout->ofKind(SlotKind::Expansion));
-        $this->assertSame(1, $layout->ofKind(SlotKind::Io));
+        $this->assertSame(1, $layout->ofKind(SlotKind::Thermal));
         $this->assertSame(0, $layout->ofKind(SlotKind::Npu));
 
         // Positions are written from one, in canonical order.
@@ -176,17 +176,6 @@ class CyberdeckAdminTest extends TestCase
                 'expansion_horizon' => 1,
             ]))
             ->assertSessionHasNoErrors();
-    }
-
-    public function test_an_io_port_is_one_or_none(): void
-    {
-        $this->actingAs($this->admin)
-            ->post('/admin/items', $this->deck([
-                'cpu_socket_k' => 1,
-                'psu' => 1,
-                'io_neuralink' => 2,
-            ]))
-            ->assertSessionHasErrors('slots.io_neuralink');
     }
 
     public function test_a_cyberdeck_cannot_stack(): void
@@ -472,7 +461,7 @@ class CyberdeckAdminTest extends TestCase
             ->get("/admin/items/{$deck->id}/edit")
             ->assertOk()
             ->assertSee('slots[cpu_socket_z]', false)
-            ->assertSee('slots[io_neuralink]', false)
+            ->assertSee('slots[thermal]', false)
             ->assertSee('962-pin');
 
         $this->actingAs($this->admin)

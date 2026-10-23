@@ -10,9 +10,8 @@ use App\Support\Text;
  * What a cyberdeck presents: its sockets, counted by type.
  *
  * This is the collection the whole feature is about. A deck's specification
- * is not a set of columns — it is "two Socket K, four QDRAM, three XGate, a
- * neuralink port" — and that is a shape neither `items` nor a fixed set of
- * counters can hold honestly, because no two decks present the same set.
+ * is not a set of columns — it is "two Socket K, four QDRAM, three XGate" — and that is a shape
+ * neither `items` nor a fixed set of counters can hold honestly, because no two decks present the same set.
  *
  * Pure, and deliberately not a model: the editor needs a layout for a deck
  * that has not been saved yet (the one the form is proposing) exactly as much
@@ -166,7 +165,7 @@ final class SlotLayout
         return $rows;
     }
 
-    /** One line: "2× Socket K · 4× QDRAM · NIC · NeuraLink". */
+    /** One line: "2× Socket K · 4× QDRAM · NIC". */
     public function summary(): string
     {
         $parts = [];

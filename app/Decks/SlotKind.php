@@ -9,12 +9,7 @@ use App\Support\Text;
 /**
  * A kind of socket on a cyberdeck.
  *
- * Six of the seven seat a module. `Io` does not: an electrode harness and a
- * neuralink port are where the deck reaches the person using it, and nothing
- * is fitted into them. They are here rather than as two booleans on `items`
- * because "what interfaces does this deck present" is one question, and
- * answering half of it with rows and half with flags would mean every screen
- * that lists a deck's hardware reads two shapes and joins them by hand.
+ * Every kind seats exactly one kind of module (see seats()).
  */
 enum SlotKind: string
 {
@@ -42,9 +37,6 @@ enum SlotKind: string
      */
     case Storage = 'storage';
 
-    /** Electrode and neuralink ports. Seats nothing. */
-    case Io = 'io';
-
     /**
      * The sub-types this kind of socket comes in, in the order a form should
      * offer them. Empty means the kind has exactly one flavour and its slots
@@ -58,13 +50,12 @@ enum SlotKind: string
             self::Cpu => [Variant::SocketG, Variant::SocketK, Variant::SocketZ],
             self::Ram => [Variant::Opto, Variant::QDram, Variant::Universal],
             self::Expansion => [Variant::XGate, Variant::Pei, Variant::Horizon],
-            self::Io => [Variant::Electrode, Variant::Neuralink],
             default => [],
         };
     }
 
-    /** The kind of module this socket seats, or null for an IO port. */
-    public function seats(): ?Hardware
+    /** The kind of module this socket seats. */
+    public function seats(): Hardware
     {
         return match ($this) {
             self::Cpu => Hardware::Cpu,
@@ -75,7 +66,6 @@ enum SlotKind: string
             self::Psu => Hardware::Psu,
             self::Thermal => Hardware::Thermal,
             self::Storage => Hardware::Storage,
-            self::Io => null,
         };
     }
 
@@ -102,9 +92,6 @@ enum SlotKind: string
             // Same shape cap as memory: a deck may present several, and a
             // number field typo must not write four hundred rows.
             self::Storage => 8,
-            // One electrode port and one neuralink port. The per-variant cap
-            // in App\Decks\SlotType is what makes that one of each.
-            self::Io => 2,
         };
     }
 

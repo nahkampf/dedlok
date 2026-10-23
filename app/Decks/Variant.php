@@ -42,11 +42,6 @@ enum Variant: string
 
     case Horizon = 'horizon';
 
-    // The two ways a deck reaches a nervous system.
-    case Electrode = 'electrode';
-
-    case Neuralink = 'neuralink';
-
     /**
      * May a module of variant $module go into a socket of this variant?
      *
@@ -67,8 +62,7 @@ enum Variant: string
     }
 
     /**
-     * Everything a module may be. `Universal` is not among them, and neither
-     * are the two IO ports: nothing is fitted into those yet.
+     * Everything a module may be. `Universal` is not among them.
      *
      * @return list<self>
      */
@@ -76,9 +70,7 @@ enum Variant: string
     {
         return array_values(array_filter(
             self::cases(),
-            static fn (self $variant): bool => $variant !== self::Universal
-                && $variant !== self::Electrode
-                && $variant !== self::Neuralink,
+            static fn (self $variant): bool => $variant !== self::Universal,
         ));
     }
 

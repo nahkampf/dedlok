@@ -205,7 +205,7 @@ final class FortressProduction
             return;
         }
 
-        $nodes = System::query()->within(new Position($fortress->x, $fortress->y), max(0, (int) ($produces['range'] ?? 0)))
+        $nodes = System::query()->within(new Position($fortress->x, $fortress->y, (int) ($fortress->grid_id ?? 1)), max(0, (int) ($produces['range'] ?? 0)))
             ->whereKeyNot($fortress->getKey())->where('type', '!=', SystemType::Fortress->value)->get();
         $strength = (float) ($produces['strength'] ?? 0);
         $roller = app(CheckRoller::class);

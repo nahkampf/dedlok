@@ -4102,7 +4102,6 @@ return [
             'psu' => 'PSU',
             'thermal' => 'Thermal exhaust',
             'storage' => 'Storage',
-            'io' => 'IO port',
         ],
 
         /*
@@ -4115,7 +4114,6 @@ return [
             'cpu' => 'CPU',
             'ram' => 'RAM',
             'expansion' => 'XP',
-            'io' => 'I/O',
         ],
 
         // The sub-types, short enough to sit in a spec line.
@@ -4129,8 +4127,6 @@ return [
             'xgate' => 'XGate',
             'pei' => 'PEI',
             'horizon' => 'Horizon',
-            'electrode' => 'Electrode',
-            'neuralink' => 'NeuraLink',
         ],
 
         /*
@@ -4177,7 +4173,6 @@ return [
             'nothing_fits' => 'You are carrying nothing that fits this socket.',
             // An IO port seats nothing at all, which is a different sentence
             // from "you happen to own nothing that fits".
-            'seats_nothing' => 'This is where the deck reaches you. Nothing is fitted into it.',
             'fitted' => ':module is in the :socket socket.',
             'removed' => 'Taken out. It is back in your stash.',
 

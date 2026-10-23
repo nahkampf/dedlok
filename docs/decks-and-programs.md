@@ -21,7 +21,6 @@ what a bare `items` row cannot.
   needs a power socket".
 - **`universal` is a socket and never a module.** The two sides validate against separate
   lists and fit is `Variant::accepts()`, never `===`.
-- **An IO port seats nothing** — electrode and neuralink ports are rows like any socket.
 - **At most one measure per module** (`chk_deck_modules_one_measure`): qFLOPS, quantabits,
   QB/s and watts do not convert. An expansion card fills none.
 - **A supply gives power and draws none** (`chk_deck_modules_supply`).

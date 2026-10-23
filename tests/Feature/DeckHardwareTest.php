@@ -6,7 +6,6 @@ use App\Decks\Hardware;
 use App\Decks\HardwareEditor;
 use App\Decks\SlotKind;
 use App\Decks\SlotLayout;
-use App\Decks\SlotType;
 use App\Decks\Variant;
 use App\Models\DeckModule;
 use App\Models\DeckSlot;
@@ -35,7 +34,7 @@ class DeckHardwareTest extends TestCase
             'ram_qdram' => 4,
             'nic' => 1,
             'psu' => 1,
-            'io_neuralink' => 1,
+            'thermal' => 1,
         ])->create(['slug' => 'hosaka_reaver', 'name' => 'Hosaka Reaver']);
 
         $this->assertTrue($deck->isCyberdeck());
@@ -46,8 +45,7 @@ class DeckHardwareTest extends TestCase
 
         $this->assertSame(2, $layout->ofKind(SlotKind::Cpu));
         $this->assertSame(4, $layout->ofKind(SlotKind::Ram));
-        $this->assertSame(1, $layout->count(SlotType::of(SlotKind::Io, Variant::Neuralink)));
-        $this->assertSame(0, $layout->count(SlotType::of(SlotKind::Io, Variant::Electrode)));
+        $this->assertSame(1, $layout->ofKind(SlotKind::Thermal));
         $this->assertSame(0, $layout->ofKind(SlotKind::Npu));
     }
 
@@ -116,12 +114,12 @@ class DeckHardwareTest extends TestCase
         $deck = Item::factory()->cyberdeck([
             'cpu_socket_k' => 2,
             'ram_qdram' => 4,
-            'io_neuralink' => 1,
+            'nic' => 1,
             'psu' => 1,
         ])->create();
 
         $this->assertSame(
-            '2× Socket K · 4× QDRAM · PSU · NeuraLink',
+            '2× Socket K · 4× QDRAM · NIC · PSU',
             $deck->fresh()->hardwareSummary(),
         );
 
