@@ -61,15 +61,22 @@ class DeckModule extends Model
     /** The number this kind of module is measured by, if it has one. */
     public function measure(Hardware $hardware): int|float|null
     {
-        $column = $hardware->measure();
+        $column = $this->measureColumn($hardware);
 
         return $column === null ? null : $this->{$column};
+    }
+
+    /** The kind's own measure column; an expansion card has none of its own, so it is whichever one its row sets. */
+    private function measureColumn(Hardware $hardware): ?string
+    {
+        return $hardware->measure() ?? collect(['qflops', 'quantabits', 'bandwidth', 'watts', 'cooling', 'storage'])
+            ->first(fn (string $column): bool => $this->{$column} !== null);
     }
 
     /** That number with its unit: "1,200 qFLOPS", "45 W". */
     public function measureLabel(Hardware $hardware): ?string
     {
-        $column = $hardware->measure();
+        $column = $this->measureColumn($hardware);
         $value = $this->measure($hardware);
 
         if ($column === null || $value === null) {

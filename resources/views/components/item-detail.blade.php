@@ -134,7 +134,8 @@
     @endif
 
     {{-- What it does while it is in play, from the row's own modifiers: the same text the resolver's Modifier renders. --}}
-    @php($effects = collect((array) $item->modifiers)->map(fn ($m) => \App\Stats\Modifier::fromArray($m)->effectText()))
+    @php($effects = collect((array) $item->modifiers)->map(fn ($m) => \App\Stats\Modifier::fromArray($m)->effectText())
+        ->merge(collect($item->program?->modifiers())->map(fn ($m) => $m->effectText()))->unique()->values())
     @if ($effects->isNotEmpty())
         <div class="item-card__stats">
             <div class="item-card__stat"><span>{{ Text::get('inventory.effects') }}</span></div>

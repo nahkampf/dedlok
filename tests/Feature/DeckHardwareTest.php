@@ -27,6 +27,20 @@ class DeckHardwareTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_an_expansion_card_states_whichever_measure_its_row_sets(): void
+    {
+        $item = Item::factory()->create(['hardware' => 'expansion']);
+        $module = DeckModule::query()->create([
+            'item_id' => $item->id, 'variant' => 'xgate', 'power_draw' => 8, 'thermal_load' => 0, 'cooling' => 20,
+        ]);
+
+        $this->assertSame('20 TU cooling', $module->measureLabel(Hardware::Expansion));
+        $this->assertSame('XGate · 20 TU cooling · 8 W draw', $module->summary(Hardware::Expansion));
+
+        $bare = DeckModule::query()->create(['item_id' => Item::factory()->create(['hardware' => 'expansion'])->id, 'variant' => 'xgate', 'power_draw' => 5, 'thermal_load' => 2]);
+        $this->assertNull($bare->measureLabel(Hardware::Expansion));
+    }
+
     public function test_a_deck_is_an_item_and_its_sockets_are_rows(): void
     {
         $deck = Item::factory()->cyberdeck([

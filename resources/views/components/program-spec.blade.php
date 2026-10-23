@@ -6,11 +6,18 @@
 @php($module = $item->hardware && ! $item->hardware->isDeck() ? $item->deckModule : null)
 @php($measure = $module?->measureLabel($item->hardware))
 @php($load = $module?->loadLabels($item->hardware) ?? [])
-@if ($item->program || $measure || $load)
+{{-- What it does while in play: an expansion card's own modifiers, or a program's (an icebreaker's damage), as the stash card words them. --}}
+@php($effects = $module
+    ? collect((array) $item->modifiers)->map(fn ($m) => \App\Stats\Modifier::fromArray($m)->effectText())
+    : collect($item->program?->modifiers())->map(fn ($m) => $m->effectText())->unique()->values())
+@if ($item->program || $measure || $load || $effects->isNotEmpty())
     <div class="stack" style="--gap:var(--s-1)">
         @if ($measure)
             <span class="micro num" style="color:var(--ink-3)">{{ $measure }}</span>
         @endif
+        @foreach ($effects as $effect)
+            <span class="micro num" style="color:var(--ink-3)">{{ $effect }}</span>
+        @endforeach
         @if ($load)
             <span class="micro num" style="color:var(--ink-3)">{{ implode(Text::get('items.summary.separator'), $load) }}</span>
         @endif
