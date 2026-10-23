@@ -66,6 +66,12 @@ final readonly class MapCell
         /** Another jacked-in runner stands here and this runner can see the square: a yellow dot beside the Warden's corner. */
         public bool $hasRunner = false,
         /**
+         * Who they are: one entry per runner on this square that this runner can see, for the modal the dot opens.
+         *
+         * @var list<array{handle: string, face: ?string, activity: RunnerActivity}>
+         */
+        public array $runnerList = [],
+        /**
          * Is it locked down and coming back up?
          *
          * The other half of the same sentence: lockdown is phase 6, the cell

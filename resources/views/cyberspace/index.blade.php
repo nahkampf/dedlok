@@ -201,11 +201,11 @@
                                     data-step="{{ $cell->position->x - $map->centre->x }},{{ $cell->position->y - $map->centre->y }}"
                                     title="{{ Text::get('cyberspace.map.step') }} — {{ $title }}"
                                     @if ($cell->gradeRatio() !== null) style="--g:{{ $cell->gradeRatio() }}" @endif
-                                    aria-label="{{ Text::get('cyberspace.map.step') }} {{ $title }}">{{ $cell->glyph() }}@if ($cell->hasWarden)<span class="cell__warden" title="{{ Text::get('cyberspace.map.warden') }}"></span>@endif @if ($cell->hasRunner)<span class="cell__runner" title="{{ Text::get('cyberspace.map.runner') }}"></span>@endif</button>
+                                    aria-label="{{ Text::get('cyberspace.map.step') }} {{ $title }}">{{ $cell->glyph() }}@if ($cell->hasWarden)<span class="cell__warden" title="{{ Text::get('cyberspace.map.warden') }}"></span>@endif @if ($cell->hasRunner)<span class="cell__runner" role="button" tabindex="0" data-open="#runners-{{ $cell->position->x }}-{{ $cell->position->y }}" title="{{ Text::get('cyberspace.map.runner') }}" aria-label="{{ Text::get('cyberspace.map.runner') }}"></span>@endif</button>
                         @else
                             <div class="{{ $classes }}" title="{{ $title }}"
                                  @if ($cell->gradeRatio() !== null) style="--g:{{ $cell->gradeRatio() }}" @endif
-                                 @if ($cell->isYou) aria-label="{{ Text::get('cyberspace.map.here') }}" @endif>{{ $cell->glyph() }}@if ($cell->hasWarden)<span class="cell__warden" title="{{ Text::get('cyberspace.map.warden') }}"></span>@endif @if ($cell->hasRunner)<span class="cell__runner" title="{{ Text::get('cyberspace.map.runner') }}"></span>@endif</div>
+                                 @if ($cell->isYou) aria-label="{{ Text::get('cyberspace.map.here') }}" @endif>{{ $cell->glyph() }}@if ($cell->hasWarden)<span class="cell__warden" title="{{ Text::get('cyberspace.map.warden') }}"></span>@endif @if ($cell->hasRunner)<span class="cell__runner" role="button" tabindex="0" data-open="#runners-{{ $cell->position->x }}-{{ $cell->position->y }}" title="{{ Text::get('cyberspace.map.runner') }}" aria-label="{{ Text::get('cyberspace.map.runner') }}"></span>@endif</div>
                         @endif
                     @endforeach
                 @endforeach
@@ -728,6 +728,30 @@
     </div>
     </div>
     </div>
+
+    {{-- WHO IS ON A SQUARE: one dialog per square with a runner dot, opened by the dot (`data-open`). Kept out of the map's
+         form, where a dialog would not belong. --}}
+    @foreach ($map->rows as $row)
+        @foreach ($row as $cell)
+            @if ($cell->hasRunner)
+                <dialog id="runners-{{ $cell->position->x }}-{{ $cell->position->y }}" class="modal">
+                    <div class="panel__hd">
+                        <span class="micro">{{ Text::get('cyberspace.map.runners_here', ['x' => $cell->position->x, 'y' => $cell->position->y]) }}</span>
+                        <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
+                    </div>
+                    <div class="panel__bd">
+                        @foreach ($cell->runnerList as $runner)
+                            <div class="item-row">
+                                <span class="chat__face">@if ($runner['face'])<img src="{{ $runner['face'] }}" alt="" width="32" height="24" loading="lazy">@endif</span>
+                                <span class="item-row__name">{{ $runner['handle'] }}</span>
+                                <span class="item-row__meta">{{ $runner['activity']->label() }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </dialog>
+            @endif
+        @endforeach
+    @endforeach
 
     {{-- BROWSE KNOWN SYSTEMS. The body is the fragment `cyberspace.systems`, fetched each time this opens and again when a
          filter changes, so it is never older than the click. --}}

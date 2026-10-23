@@ -6,9 +6,12 @@ namespace Tests\Feature\Cyberspace;
 
 use App\Checks\CheckRoller;
 use App\Cyberspace\HunterCombat;
+use App\Cyberspace\RunPurpose;
 use App\Cyberspace\Wardens;
 use App\Models\Character;
 use App\Models\Hunt;
+use App\Models\Run;
+use App\Models\SystemScan;
 use App\Models\Warden;
 use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -198,5 +201,28 @@ final class WardenTest extends TestCase
 
         Character::query()->whereKey($other->id)->update(['grid_x' => null, 'grid_y' => null]);
         $this->assertStringNotContainsString('class="cell__runner"', $page());
+    }
+
+    public function test_the_runner_dot_opens_a_list_of_everyone_on_the_square_and_what_they_are_doing(): void
+    {
+        [$running, $scanning, $idle] = [
+            Character::factory()->create(['handle' => 'Runnerone']),
+            Character::factory()->create(['handle' => 'Scannertwo']),
+            Character::factory()->create(['handle' => 'Idlerthree']),
+        ];
+        Character::query()->whereIn('id', [$running->id, $scanning->id, $idle->id])->update(['grid_id' => 2, 'grid_x' => 4, 'grid_y' => 3]);
+        Run::query()->create(['character_id' => $running->id, 'address' => 'AB12CD34', 'x' => 4, 'y' => 3, 'purpose' => RunPurpose::Extraction, 'started_at' => now()]);
+        SystemScan::query()->create([
+            'character_id' => $scanning->id, 'address' => 'AB12CD34', 'x' => 4, 'y' => 3, 'passes' => 0, 'scanned_at' => now(),
+            'pass_started_at' => now()->subMinute(), 'pass_ready_at' => now()->addMinutes(5), 'expires_at' => now()->addDay(),
+        ]);
+
+        $page = $this->actingAs($this->character->user)->get(route('cyberspace.index'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('data-open="#runners-4-3"', $page);
+        $this->assertSame(1, substr_count($page, 'id="runners-4-3"'));
+        $this->assertMatchesRegularExpression('/Runnerone<\/span>\s*<span class="item-row__meta">Running</', $page);
+        $this->assertMatchesRegularExpression('/Scannertwo<\/span>\s*<span class="item-row__meta">Scanning</', $page);
+        $this->assertMatchesRegularExpression('/Idlerthree<\/span>\s*<span class="item-row__meta">Idle</', $page);
     }
 }

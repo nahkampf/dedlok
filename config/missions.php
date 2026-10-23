@@ -92,10 +92,10 @@ return [
         'burn' => ['creds' => 2.0, 'standing' => 1.5, 'loyalty' => 2.0],
         'plant' => ['creds' => 1.4, 'standing' => 2.0, 'loyalty' => 2.0],
         'agitate' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 1.5],
-        'transport' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 1.5],
+        'transport' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 3.0],
         'heist' => ['creds' => 1.2, 'standing' => 1.5, 'loyalty' => 1.5],
-        'extract' => ['creds' => 1.8, 'standing' => 1.5, 'loyalty' => 1.5],
-        'denial' => ['creds' => 1.7, 'standing' => 1.5, 'loyalty' => 1.5],
+        'extract' => ['creds' => 1.8, 'standing' => 1.5, 'loyalty' => 3.0],
+        'denial' => ['creds' => 1.7, 'standing' => 1.5, 'loyalty' => 3.0],
         'supply' => ['creds' => 1.2, 'standing' => 0.5, 'loyalty' => 0.5],
     ],
 

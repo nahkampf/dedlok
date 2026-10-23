@@ -120,7 +120,11 @@
                 @foreach ($mission->targets as $target)
                     {{-- A green tick when this system's part is done: the act is recorded (burn, plant), or for a
                          survey the file it needs is in hand. --}}
-                    @php($inHand = $active && $action === MissionAction::Scan && $target->stillStands() && in_array($target->address, $held, true))
+                    @php($inHand = $active && $target->stillStands() && match ($action) {
+                        MissionAction::Scan => in_array($target->address, $held, true),
+                        MissionAction::Extract => $fileInHand ??= app(\App\Missions\MissionLedger::class)->holdsDecryptedJobFile(auth()->user()->character, $mission),
+                        default => false,
+                    })
                     <div class="item-row">
                         {{-- No icon in this row, so the name spans the icon column too instead of wrapping inside it. --}}
                         <span class="item-row__name" style="grid-column:1 / 3">
@@ -150,6 +154,8 @@
                             {{-- A survey is handed in as files: say whether this system's is in hand. --}}
                             @if ($active && $action === MissionAction::Scan && ! $target->isSatisfied() && $target->stillStands())
                                 <span class="tag {{ $inHand ? 'tag--ok' : '' }}">{{ Text::get($inHand ? 'missions.file_held' : 'missions.file_needed') }}</span>
+                            @elseif ($inHand && ! $target->isSatisfied())
+                                <span class="tag tag--ok">{{ Text::get('missions.file_held') }}</span>
                             @endif
                         </span>
                     </div>
