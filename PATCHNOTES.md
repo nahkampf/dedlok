@@ -1,3 +1,9 @@
+## 0.75.0 (2026-10-23)
+- The dot that shows other players on the cyberspace grid can now be clicked to display who's there
+- The deck hardware wasn't seeded to Chrome Palace. It is now, however.
+- Extraction, Transport and Denial missions doubled their loyalty payouts
+- Extraction jobs didn't show a green tick when they were ready to be handed in
+
 ## 0.74.0 (2026-10-23)
 
 - Fix: Fortresses in subnets now only target subnet systems with Tap and Wiretap.

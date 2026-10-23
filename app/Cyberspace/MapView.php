@@ -8,9 +8,11 @@ use App\Models\Backdoor;
 use App\Models\Bookmark;
 use App\Models\Character;
 use App\Models\Exchange;
+use App\Models\Run;
 use App\Models\SystemContact;
 use App\Models\SystemScan;
 use App\Models\Warden;
+use App\Support\Image;
 use Illuminate\Support\Facades\Config;
 
 /**
@@ -136,8 +138,15 @@ final class MapView
         $wardens = $standing === null ? collect() : Warden::query()->where('grid_id', $grid->id())->get()->keyBy(fn ($w): string => "{$w->x},{$w->y}");
 
         // Other runners jacked in on this grid, by square, the same way (sight decides below).
-        $runners = $standing === null ? collect() : Character::query()->where('grid_id', $grid->id())->whereNotNull('grid_x')->whereNotNull('grid_y')
-            ->whereKeyNot($character->getKey())->get(['id', 'grid_x', 'grid_y'])->keyBy(fn ($c): string => "{$c->grid_x},{$c->grid_y}");
+        $runners = $standing === null ? collect() : Character::query()->with('user')->where('grid_id', $grid->id())->whereNotNull('grid_x')->whereNotNull('grid_y')
+            ->whereKeyNot($character->getKey())->get(['id', 'user_id', 'handle', 'grid_x', 'grid_y'])->groupBy(fn ($c): string => "{$c->grid_x},{$c->grid_y}")
+            ->map(fn ($group) => $group->filter(fn (Character $c): bool => $sight->covers($standing, new Position((int) $c->grid_x, (int) $c->grid_y, $grid->id()))));
+        $runners = $runners->filter(fn ($group): bool => $group->isNotEmpty());
+
+        // What the runners in sight are doing: a live run beats a scan pass still counting down; neither is idle.
+        $ids = $runners->flatten(1)->pluck('id');
+        $running = Run::query()->live()->whereIn('character_id', $ids)->pluck('character_id')->flip();
+        $scanning = SystemScan::query()->whereIn('character_id', $ids)->where('pass_ready_at', '>', now())->pluck('character_id')->flip();
 
         $terrain = new Terrain($character);
         $rows = [];
@@ -166,7 +175,12 @@ final class MapView
                     isRebooting: $contacts->get($key)?->wasLockedDown() ?? false,
                     hasBackdoor: $backdoors->has($key),
                     hasWarden: $wardens->has($key) && $standing !== null && $onGrid && $sight->covers($standing, $position),
-                    hasRunner: $runners->has($key) && $standing !== null && $onGrid && $sight->covers($standing, $position),
+                    hasRunner: $onGrid && $runners->has($key),
+                    runnerList: ! $onGrid ? [] : ($runners->get($key) ?? collect())->map(static fn (Character $c): array => [
+                        'handle' => $c->handle,
+                        'face' => Image::card($c->user?->isSupporter() ? 'characters/avatars' : 'characters', $c->getKey()),
+                        'activity' => $running->has($c->getKey()) ? RunnerActivity::Running : ($scanning->has($c->getKey()) ? RunnerActivity::Scanning : RunnerActivity::Idle),
+                    ])->values()->all(),
                     isYou: $standing !== null && $standing->equals($position),
                     isStep: $standing !== null && $grid->isStep($standing, $position),
                     // Only a machine can be new. Ground cannot: a position

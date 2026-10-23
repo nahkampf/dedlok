@@ -2,30 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Database\Seeders;
-
-use App\Models\DeckModule;
-use App\Models\Item;
-use App\Models\Location;
-use App\Models\ShopItem;
-use Illuminate\Database\Seeder;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Storage modules, cheap and mid CPUs, a QDRAM stub, a second tier-1 NPU, and the XGate, PEI and Horizon cards.
+ * Forty pieces of deck hardware: storage, cheap and mid CPUs, a QDRAM stub, a second tier-1 NPU, and the Horizon, XGate and PEI
+ * cards, each on the shelf at Chrome Palace at list price, five at a time.
  *
- * LOCAL ONLY, run by hand: `php artisan db:seed --class=DeckHardwareSeeder`. Items are authored in the live admin, so this
- * is scaffolding until the content is migrated, not a second source. Upserts by slug; safe to run twice.
+ * Flavour text is a placeholder, to be edited in the admin. Every step skips what already exists by slug, so a copy someone
+ * has authored by hand is left alone.
  */
-class DeckHardwareSeeder extends Seeder
+return new class extends Migration
 {
     private const FLAVOR = 'This is placeholder text, to be edited.';
 
-    public function run(): void
+    public function up(): void
     {
-        $palace = Location::query()->where('slug', 'chrome_palace')->firstOrFail();
+        $palace = DB::table('locations')->where('slug', 'chrome_palace')->value('id');
+        $now = now();
 
         foreach ($this->catalogue() as [$slug, $name, $hardware, $tier, $rarity, $cost, $variant, $draw, $heat, $measure, $tolerance, $modifiers]) {
-            $item = Item::query()->updateOrCreate(['slug' => $slug], [
+            $itemId = DB::table('items')->where('slug', $slug)->value('id') ?? DB::table('items')->insertGetId([
+                'slug' => $slug,
                 'name' => $name,
                 'flavor' => self::FLAVOR,
                 'container' => 'physical',
@@ -38,33 +36,48 @@ class DeckHardwareSeeder extends Seeder
                 'base_cost' => $cost,
                 'on_market' => true,
                 'seed_quantity' => ['common' => 100, 'uncommon' => 40, 'rare' => 10][$rarity],
-                'modifiers' => $modifiers,
+                'modifiers' => $modifiers === null ? null : json_encode($modifiers),
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
 
-            DeckModule::query()->updateOrCreate(['item_id' => $item->getKey()], [
+            DB::table('deck_modules')->insertOrIgnore([
+                'item_id' => $itemId,
                 'variant' => $variant,
                 'power_draw' => $draw,
                 'thermal_load' => $heat,
                 'qflops' => $measure['qflops'] ?? null,
                 'quantabits' => $measure['quantabits'] ?? null,
-                'bandwidth' => null,
-                'watts' => null,
                 'cooling' => $measure['cooling'] ?? null,
                 'storage' => $measure['storage'] ?? null,
                 'thermal_warning' => $tolerance[0] ?? null,
                 'thermal_limit' => $tolerance[1] ?? null,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
 
-            // On the shelf at Chrome Palace at list price (a NULL price is the item's base_cost): five, restocking one every two hours like its other five-shelf listings.
-            ShopItem::query()->firstOrCreate(['location_id' => $palace->getKey(), 'item_id' => $item->getKey()], [
-                'price' => null,
-                'max_stock' => 5,
-                'stock' => 5,
-                'restock_amount' => 1,
-                'restock_hours' => 2,
-                'restocked_at' => now(),
-            ]);
+            // A NULL price is the item's base_cost. Five on the shelf, one back every two hours, like the shop's other five-shelf listings.
+            if ($palace !== null) {
+                DB::table('shop_items')->insertOrIgnore([
+                    'location_id' => $palace,
+                    'item_id' => $itemId,
+                    'price' => null,
+                    'max_stock' => 5,
+                    'stock' => 5,
+                    'restock_amount' => 1,
+                    'restock_hours' => 2,
+                    'restocked_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
         }
+    }
+
+    /** Removes the items (and with them their module rows and shelf listings, by cascade). Refuses nothing: a copy a player owns would block the delete. */
+    public function down(): void
+    {
+        DB::table('items')->whereIn('slug', array_column($this->catalogue(), 0))->delete();
     }
 
     /** @return list<array{string, string, string, int, string, int, ?string, int, int, array<string, int|float>, list<int>, ?list<array<string, mixed>>}> */
@@ -128,4 +141,4 @@ class DeckHardwareSeeder extends Seeder
             ['hrx_paloma_4', 'HRX Paloma-4', 'expansion', 2, 'rare', 9000, 'pei', 9, 4, [], [], $add($hp, -3)],
         ];
     }
-}
+};

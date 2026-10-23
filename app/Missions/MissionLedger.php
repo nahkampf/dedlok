@@ -629,6 +629,12 @@ final readonly class MissionLedger
         }
     }
 
+    /** Is the extraction job's file in hand and decrypted, so that only the hand-in is left? The mission card ticks its target on it. */
+    public function holdsDecryptedJobFile(Character $character, Mission $mission): bool
+    {
+        return $this->heldJobFile($character, $mission, decrypted: true) !== null;
+    }
+
     /** The job's file, once it has been pulled. Decrypted when `$decrypted`, sealed or not otherwise. */
     private function heldJobFile(Character $character, Mission $mission, bool $decrypted = false): ?InventoryItem
     {

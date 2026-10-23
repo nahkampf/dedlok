@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Cyberspace\ExtractedFile;
 use App\Missions\MissionAction;
 use App\Missions\MissionState;
 use App\Models\Character;
 use App\Models\Entity;
 use App\Models\Exchange;
+use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\Mission;
 use App\Models\System;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -162,5 +165,21 @@ final class TasksAndMissionsTest extends TestCase
         $this->job($this->me, MissionAction::Scan, MissionState::Accepted);
 
         $this->assertStringNotContainsString('name="via"', $this->page());
+    }
+
+    public function test_an_extraction_job_ticks_its_target_once_the_decrypted_file_is_in_hand(): void
+    {
+        $mission = $this->job($this->me, MissionAction::Extract, MissionState::Accepted);
+
+        $this->assertStringNotContainsString('class="mark--ok"', $this->page());
+
+        $file = new ExtractedFile('Job file', 4.0, null, 0, 0, missionId: $mission->getKey());
+        InventoryItem::query()->create([
+            'character_id' => $this->me->id,
+            'item_id' => Item::query()->where('slug', ExtractedFile::DECRYPTED_SLUG)->firstOrFail()->id,
+            'extracted_file' => $file->toArray(), 'quantity' => 1, 'container' => 'data',
+        ]);
+
+        $this->assertStringContainsString('class="mark--ok"', $this->page());
     }
 }

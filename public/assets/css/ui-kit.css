@@ -3301,6 +3301,10 @@ button.board__node[data-inspect]:focus-visible .board__box { border-color: var(-
   background: var(--warn);
 }
 
+/* The dot is a button: a hit area wider than the dot itself, so a thumb can find it on a phone. */
+.cell__runner { cursor: pointer; }
+.cell__runner::after { content: ""; position: absolute; inset: -6px; }
+
 /* THE GRADE, ONCE SOMEBODY HAS SCANNED IT OUT OF THE MACHINE — a bar at the
    foot of the cell, `--g` wide, in bone. Nine steps is more than colour can
    carry and a map of four hundred traffic lights is not a map anybody reads;

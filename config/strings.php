@@ -2249,6 +2249,13 @@ return [
             'rebooting' => 'Rebooting',
             'warden' => 'A Warden',
             'runner' => 'Another runner',
+            // PLACEHOLDER, to be written by the author: the title of the modal a runner dot opens.
+            'runners_here' => 'Runners at :x, :y',
+            'activity' => [
+                'running' => 'Running',
+                'scanning' => 'Scanning',
+                'idle' => 'Idle',
+            ],
             'scanned' => 'Scanned',
             'grade_key' => 'Grade, once scanned',
             'position' => 'Position',
