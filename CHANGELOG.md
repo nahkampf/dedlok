@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.75.3] — 2026-10-24
+
+### Added
+- **Standing grants** (`config/standing.grants`, `App\Standing\StandingGrants`): the first time a gain in standing with an entity reaches `at`, the character is given a flag and an inbox message. `StandingLedger::record()` runs it after every standing gain (loyalty and the nightly drift do not). `Flags::set()` returning true is what makes it once only. The entity is matched by `entities.id`, not name, so an admin rename cannot silence it.
+- **Lockjaw (entity 125) gives `darknet_access` at standing 10.** The message (`notifications.titles.darknet_access`, `notifications.messages.darknet_access`, category Cyberspace) names the main-grid gateway into the `darknet` grid, found through the grid's gateway pair rather than written down. Nobody is at 10 yet (the highest is 8.5), so there is no backfill (`StandingGrantsTest`).
+
+No migration.
+
+
 ## [0.75.2] — 2026-10-24
 
 ### Fixed
@@ -3793,7 +3802,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.75.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.75.3...HEAD
+[0.75.3]: https://github.com/nahkampf/dedlok/compare/v0.75.2...v0.75.3
 [0.75.2]: https://github.com/nahkampf/dedlok/compare/v0.75.1...v0.75.2
 [0.75.1]: https://github.com/nahkampf/dedlok/compare/v0.75.0...v0.75.1
 [0.75.0]: https://github.com/nahkampf/dedlok/compare/v0.74.0...v0.75.0

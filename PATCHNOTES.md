@@ -1,3 +1,6 @@
+## 0.75.3 (2026-10-24)
+- Jah bless, big up! LockJaw a release di Darknet subnet access fi di real head dem wi a put in di hard wok. You affi reach a proper rank fi drop inna di circle.
+
 ## 0.75.2 (2026-10-24)
 
 - Bugfix: Defeats against an ICE with multiple defeat tags could be resolved multiple times. This has now been covered by a transaction.
