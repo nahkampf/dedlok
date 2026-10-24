@@ -126,6 +126,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Grants
+    |--------------------------------------------------------------------------
+    |
+    | A flag handed over the first time standing with an entity (by `entities.id`) reaches `at`, with a message saying so. `grid` is
+    | the slug of the subnet the flag opens: the message names the address of its gateway on the main grid.
+    | Read by `StandingGrants`, which every standing change runs; flags are one way, so it is earned once.
+    |
+    */
+
+    'grants' => [
+        // 125 is Lockjaw: the id, because a name can be edited in the admin.
+        ['entity' => 125, 'at' => 10.0, 'flag' => 'darknet_access', 'grid' => 'darknet', 'message' => 'darknet_access'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | The loyalty store
     |--------------------------------------------------------------------------
     |

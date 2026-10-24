@@ -61,7 +61,7 @@ final class StandingLedger
             return null;
         }
 
-        return DB::transaction(function () use ($character, $entity, $reason, $amount, $kind): float {
+        $landed = DB::transaction(function () use ($character, $entity, $reason, $amount, $kind): float {
             $books = EntityBook::query()
                 ->where('character_id', $character->getKey())
                 ->where('entity_id', $entity->getKey())
@@ -97,6 +97,12 @@ final class StandingLedger
 
             return $landed;
         });
+
+        if ($kind === LedgerKind::Standing && $landed > 0) {
+            (new StandingGrants)->check($character, $entity);
+        }
+
+        return $landed;
     }
 
     /** What this entity thinks of them right now. Absent reads as neutral. */
