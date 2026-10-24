@@ -888,6 +888,7 @@ return [
             'party_dropped' => 'Left out of a co-op run',
             'siphons_ran' => 'Siphon report',
             'damage_report' => 'Damage report',
+            'darknet_access' => 'Darknet acesss',
             'workout_gain' => 'Gains!',
             'tracker_found' => 'Tracker: Node found',
             'study_gain' => 'Sharpening the mind',
@@ -954,6 +955,7 @@ return [
             // from are the message's list, drawn under this line.
             'siphons_ran' => 'Siphons ran: :creds ¤',
             'damage_report' => 'You were incapacitated and lost some items or files:',
+            'darknet_access' => "Wagaan mi bredda? Yuh favor a wicked bredrin, suh wi gi yuh di pass fi dip inna di darknet. Knowledge a power, mi fam. Nuh fuck up di dance. Di spot deh deh: :address. Jah love continuous, keep di livity righteous. // Masta o' arms, di LockJaw kru",
             'workout_gain' => "You've been working out. It shows. You gain +1 to :attribute!",
             'tracker_found' => 'Tracker has found the requested node: :address',
             'study_gain' => "You've been reading and studying. You gain +1 to :attribute!",
