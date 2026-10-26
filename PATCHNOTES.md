@@ -1,11 +1,6 @@
 ## 0.76.1 (2026-10-26)
-<!-- DRAFT: rewrite the entries below, then delete this line. -->
 
-- **Implants listed no effects on the market.** `x-program-spec` worded an item's modifiers only for deck modules and programs; an implant's now show too, in the city shop and the exchange as well.
-
-- **Weapons and ammunition list their figures** in `x-program-spec`: class, accuracy, rate, magazine and calibre; damage with its type split (a firearm's comes from its round); a round's calibre, type and penetration; riders. Text is `market.spec.*` in `config/strings.php`.
-
-
+- Implants, weapons and ammunition actually list their stats/effects on the market now
 
 ## 0.76.0 (2026-10-26)
 
