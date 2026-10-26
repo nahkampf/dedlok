@@ -1,4 +1,4 @@
-# Fatigue (designed 2026-10-18, nothing built)
+# Fatigue (designed 2026-10-18, phase 1 built)
 
 Fatigue is a third resource beside hit points and Synaptic Integrity, but it runs the other way: you start at 0, almost every
 action raises it, a clock lowers it, and reaching the maximum is a **Collapse**. Rest, stimulants and food push it back down.

@@ -115,7 +115,7 @@ Three things it still cannot do, all of them because `dedlok` has no sudo:
 
 **THIS IS HOW A MIGRATION REACHES PRODUCTION**, since 2026-09-28. Development used to
 share the live database, so a migration had already run from a laptop before the code
-arrived. Now development has its own copy (see *Two databases* in `CLAUDE.md`), and the worker's
+arrived. Now development has its own copy (see *Two databases* in `docs/database.md`), and the worker's
 `migrate --force` after the pull is the only way a schema change reaches the live game.
 
 The one GitHub Actions workflow is `.github/workflows/patchnotes.yml`: a `v*` tag push
