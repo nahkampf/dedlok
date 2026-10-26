@@ -127,6 +127,36 @@
             @endif
         @endif
 
+        @foreach ($policies as $policy)
+            <div class="panel">
+                <div class="panel__hd"><span class="micro">{{ Text::get('city.insurance.heading') }} · {{ $policy['kind']->label() }}</span></div>
+                <div class="panel__bd stack" style="--gap:var(--s-3)">
+                    <p class="muted" style="font-size:var(--fs-sm);margin:0">
+                        @if ($policy['active'])
+                            {{ Text::get('city.insurance.in_force', ['share' => $policy['active']->share, 'until' => $policy['active']->ends_at->format('Y-m-d H:i')]) }}
+                        @else
+                            {{ Text::get('city.insurance.none') }}
+                        @endif
+                        @if ($policy['queued'])
+                            · {{ Text::get('city.insurance.queued', ['share' => $policy['queued']->share, 'from' => $policy['queued']->starts_at->format('Y-m-d H:i')]) }}
+                        @endif
+                    </p>
+                    @foreach ($policy['offers'] as $offer)
+                        <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            <span class="item-row__name" style="flex:1 1 160px;min-width:0">{{ Text::get('city.insurance.share', ['share' => $offer->share]) }}</span>
+                            <span class="micro" style="color:var(--ink-3)">{{ Text::get('city.insurance.price', ['price' => number_format($offer->price), 'days' => config('insurance.term_days')]) }}</span>
+                            @if ($here)
+                                <form method="POST" action="{{ route('city.insure', [$place->slug, $policy['kind']->value, $offer->share]) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn--sm cut" @disabled($character->creds < $offer->price || $policy['queued'])>{{ Text::get($policy['active'] ? 'city.insurance.renew' : 'city.insurance.sign') }}</button>
+                                </form>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endforeach
+
         @if ($menu->isNotEmpty())
             <div class="panel">
                 <div class="panel__hd"><span class="micro">{{ Text::get('city.food.heading') }}</span></div>

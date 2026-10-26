@@ -10,7 +10,7 @@ use Carbon\CarbonImmutable;
 
 /**
  * The only writer of a place's listings: `shop_items`, `location_buys`,
- * `clinic_services`, `clinic_surgeries` and `location_meals`.
+ * `clinic_services`, `clinic_surgeries`, `location_meals` and `insurance_offers`.
  *
  * SHOP LISTINGS AND THE BUY LIST ARE A DIFF, because a listing carries a count worth
  * keeping: saving the editor must not refill every shelf or reset a buyer's limit. An existing listing
@@ -27,8 +27,9 @@ final class FeatureEditor
      * @param  list<array{item_id: int, percent: int, max_quantity: int|null}>  $buys
      * @param  array{rating: int, install_price: int, removal_price: int}|null  $surgery
      * @param  list<array{name: string, price: int, meal_fullness: float, meal_fatigue: float}>  $meals  the menu, replaced wholesale
+     * @param  list<array{kind: string, share: int, price: int}>  $insurance  the policies sold, replaced wholesale
      */
-    public static function apply(Location $location, array $shop, array $clinic, array $buys = [], ?array $surgery = null, array $meals = []): void
+    public static function apply(Location $location, array $shop, array $clinic, array $buys = [], ?array $surgery = null, array $meals = [], array $insurance = []): void
     {
         $now = CarbonImmutable::now();
         $existing = $location->shopItems()->get()->keyBy('item_id');
@@ -59,6 +60,12 @@ final class FeatureEditor
 
         foreach ($meals as $meal) {
             $location->meals()->create($meal);
+        }
+
+        $location->insuranceOffers()->delete();
+
+        foreach ($insurance as $offer) {
+            $location->insuranceOffers()->create($offer);
         }
 
         $location->surgery()->delete();

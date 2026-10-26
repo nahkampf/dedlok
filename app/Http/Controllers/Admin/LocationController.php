@@ -11,6 +11,8 @@ use App\City\DiscoveryRule;
 use App\City\FeatureEditor;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\LocationRequest;
+use App\Insurance\Insurance;
+use App\Insurance\InsuranceKind;
 use App\Models\District;
 use App\Models\Location;
 use App\Support\Text;
@@ -41,7 +43,7 @@ class LocationController extends Controller
     {
         $location = DB::transaction(function () use ($request): Location {
             $location = Location::create($request->columns());
-            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows(), $request->surgeryRow(), $request->mealRows());
+            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows(), $request->surgeryRow(), $request->mealRows(), $request->insuranceRows());
 
             return $location;
         });
@@ -58,7 +60,7 @@ class LocationController extends Controller
     {
         DB::transaction(function () use ($request, $location): void {
             $location->update($request->columns());
-            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows(), $request->surgeryRow(), $request->mealRows());
+            FeatureEditor::apply($location, $request->shopRows(), $request->clinicRows(), $request->buyRows(), $request->surgeryRow(), $request->mealRows(), $request->insuranceRows());
         });
 
         return back()->with('status', Text::get('admin.locations.updated'));
@@ -84,6 +86,9 @@ class LocationController extends Controller
             'surgery' => $location?->surgery,
             'menu' => $location?->meals()->orderBy('id')->get(['name', 'price', 'meal_fullness', 'meal_fatigue'])->map(fn ($r): array => $r->only(['name', 'price', 'meal_fullness', 'meal_fatigue']))->all() ?? [],
             'services' => ClinicService::cases(),
+            'insuranceKinds' => InsuranceKind::cases(),
+            'insuranceShares' => Insurance::TIERS,
+            'insurance' => $location?->insuranceOffers()->get()->mapWithKeys(fn ($o): array => [$o->kind->value.'.'.$o->share => $o->price])->all() ?? [],
             'shop' => $location?->shopItems()->orderBy('id')->get()->map(fn ($r): array => [
                 'item_id' => $r->item_id, 'price' => $r->price, 'max_stock' => $r->max_stock,
                 'restock_amount' => $r->restock_amount ?: null, 'restock_hours' => $r->restock_hours,

@@ -158,6 +158,23 @@
             </div>
         </div>
 
+        <div class="panel">
+            <div class="panel__hd"><span class="micro">{{ Text::get('admin.locations.insurance') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-3)">
+                <span class="field__hint">{{ Text::get('admin.locations.insurance_hint') }}</span>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:var(--s-2) var(--s-4)">
+                    @foreach ($insuranceKinds as $kind)
+                        @foreach ($insuranceShares as $share)
+                            <label class="row" style="--gap:var(--s-3);align-items:center;justify-content:space-between;margin:0">
+                                <span style="min-width:0">{{ ucfirst($kind->value) }} {{ $share }}%</span>
+                                <input class="input num" type="number" min="0" name="insurance[{{ $kind->value }}][{{ $share }}]" value="{{ old('insurance.'.$kind->value.'.'.$share, $insurance[$kind->value.'.'.$share] ?? '') }}" style="width:min(7rem,40%);flex:none">
+                            </label>
+                        @endforeach
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
         @php($sg = old('surgery', $surgery ? ['offered' => 1, 'rating' => $surgery->rating, 'install_price' => $surgery->install_price, 'removal_price' => $surgery->removal_price] : []))
         <div class="panel">
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.locations.surgery') }}</span></div>

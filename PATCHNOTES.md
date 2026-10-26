@@ -1,3 +1,9 @@
+## 0.76.0 (2026-10-26)
+
+- New: **Insurance**. Locations can now offer insurance policies of two kinds: Property or Medical. Property covers item loss, and medical covers permanent HP/SI injury, and they both come in 50%, 70% or 90% coverage (percentage of the list price of property lost, or of the average cost to restore injured SI/HP at clinics). Insurance policies run for 14 days and must then be renewed.
+- Two places sell insurance: TraumaTeam in Downtown sells Medical, and Vectra Indemnity Corp in Eastside sells Property.
+- The Run screen incorrectly used a cast to integer for determining if an ICE had 0 integrity left, which could lead to situations where it looked as if the ICE had been neutralized but it could still attack.
+
 ## 0.75.3 (2026-10-24)
 - Jah bless, big up! LockJaw a release di Darknet subnet access fi di real head dem wi a put in di hard wok. You affi reach a proper rank fi drop inna di circle.
 

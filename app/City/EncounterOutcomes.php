@@ -10,6 +10,7 @@ use App\Cyberspace\Position;
 use App\Cyberspace\Simulator;
 use App\Decks\Storage;
 use App\Drugs\DrugTaker;
+use App\Insurance\Insurance;
 use App\Inventory\ItemGranter;
 use App\Journal\Journal;
 use App\Models\Character;
@@ -228,9 +229,12 @@ final class EncounterOutcomes
             return null;
         }
 
-        $points > 0
-            ? $this->injuries->inflict($character, $key, $points)
-            : $this->injuries->heal($character, $key, abs($points));
+        if ($points > 0) {
+            $this->injuries->inflict($character, $key, $points);
+            (new Insurance)->claimInjury($character, $key, $points);
+        } else {
+            $this->injuries->heal($character, $key, abs($points));
+        }
 
         return Text::get($points > 0 ? 'city.encounter.outcomes.injury_gain' : 'city.encounter.outcomes.injury_loss', [
             'injury' => (string) Config::get("effects.{$key}.label", $key),

@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.76.0] — 2026-10-26
+
+### Added
+- **Insurance** (`INSURANCE.md`, `App\Insurance\Insurance`). Two policies a character can hold at once, **property** and **medical**, each at 50, 70 or 90% and each for a term of `insurance.term_days` (14). Tables `insurance_offers` (what a location sells: kind, share, price) and `insurance_policies` (one row per term). A location sells cover by having offer rows, like a clinic, and shows the Insurance feature; the admin location editor has an Insurance panel (`LocationRequest::insuranceRows()`, `FeatureEditor`).
+- **Renewal queues**: signing while cover runs adds a term starting when the current one ends; one term ahead only (`CityRefusal::AlreadyCovered`). `insurance:remind` (hourly) sends the two-days-left and lapsed messages once each, never for a renewed term.
+- **Property claims** pay the share of catalogue `base_cost` times quantity for what an ICE Surge or Erase destroys (`DefeatResolver`, via `Insurance::claimLoss()`). **Medical claims** pay the share of the clinics' average price per point for a Flatline, a fight's maiming and an encounter outcome that deepens an injury (`Insurance::claimInjury()`). Surgery's injury and drug overdoses are not covered. Payments are wallet entries with `Reason::Insurance`.
+- Migration `2026_10_28_100000_insurance` creates both tables and inserts Vectra Indemnity Corp (Eastside) with placeholder prices for both kinds (property 400/900/1800, medical 250/600/1200). Nothing destroys items in a burnout, hunt, encounter or fight yet, so there is nothing to claim there.
+
+### Fixed
+- **An ICE with a fraction of integrity left read as gone.** `Run::inAFight()` cast `ice_integrity` to int, so 0.4 counted as 0: the ICE panel said no ICE was engaged and drew no bar while it kept striking.
+
+### Changed
+- `CLAUDE.md` trimmed to the rules every task needs; the subsystem rules moved to `docs/frontend.md`, `docs/mechanics-rules.md`, `docs/laravel-app.md`, `docs/releasing.md` and `docs/database.md`.
+
+Run `php artisan migrate`.
+
+
 ## [0.75.3] — 2026-10-24
 
 ### Added
@@ -3802,7 +3819,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.75.3...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.76.0...HEAD
+[0.76.0]: https://github.com/nahkampf/dedlok/compare/v0.75.3...v0.76.0
 [0.75.3]: https://github.com/nahkampf/dedlok/compare/v0.75.2...v0.75.3
 [0.75.2]: https://github.com/nahkampf/dedlok/compare/v0.75.1...v0.75.2
 [0.75.1]: https://github.com/nahkampf/dedlok/compare/v0.75.0...v0.75.1
