@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.76.1] — 2026-10-26
+
+### Fixed
+- **Implants listed no effects on the market.** `x-program-spec` worded an item's modifiers only for deck modules and programs; an implant's now show too, in the city shop and the exchange as well.
+
+### Added
+- **Weapons and ammunition list their figures** in `x-program-spec`: class, accuracy, rate, magazine and calibre; damage with its type split (a firearm's comes from its round); a round's calibre, type and penetration; riders. Text is `market.spec.*` in `config/strings.php`.
+
+
 ## [0.76.0] — 2026-10-26
 
 ### Added
@@ -3819,7 +3828,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.76.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.76.1...HEAD
+[0.76.1]: https://github.com/nahkampf/dedlok/compare/v0.76.0...v0.76.1
 [0.76.0]: https://github.com/nahkampf/dedlok/compare/v0.75.3...v0.76.0
 [0.75.3]: https://github.com/nahkampf/dedlok/compare/v0.75.2...v0.75.3
 [0.75.2]: https://github.com/nahkampf/dedlok/compare/v0.75.1...v0.75.2

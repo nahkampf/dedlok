@@ -5,6 +5,12 @@ what will break if it is left alone.
 
 ---
 
+## Market spec lines for weapons and ammo (noted 2026-10-26)
+
+`market.spec.weapon` is `:class :accuracy :rate` with no labels, so a blade reads like "Blade 5 2". Label the figures. The firearm line
+omits accuracy and rate, and the ammo line omits penetration and damage's own line shows only where a string uses it; decide what a
+card should show. The inventory item card (`item-detail`) lists no weapon or ammo stats at all and could reuse the same strings.
+
 ## Safehouse finding and difficulty (built 2026-10-20, to be balanced)
 
 Built as `Leads` (see CLAUDE.md). Still to do: Attack (needs PvP), whether the owner resting at home should matter, and every number
