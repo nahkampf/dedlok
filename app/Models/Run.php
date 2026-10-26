@@ -84,7 +84,7 @@ class Run extends Model
     /** Is something still swinging at them? */
     public function inAFight(): bool
     {
-        return $this->ice_id !== null && (int) $this->ice_integrity > 0;
+        return $this->ice_id !== null && (float) $this->ice_integrity > 0;
     }
 
     /** How fast the trace is walking, per turn. Zero when nothing is following. */
