@@ -1,3 +1,7 @@
+## 0.76.1 (2026-10-26)
+
+- Implants, weapons and ammunition actually list their stats/effects on the market now
+
 ## 0.76.0 (2026-10-26)
 
 - New: **Insurance**. Locations can now offer insurance policies of two kinds: Property or Medical. Property covers item loss, and medical covers permanent HP/SI injury, and they both come in 50%, 70% or 90% coverage (percentage of the list price of property lost, or of the average cost to restore injured SI/HP at clinics). Insurance policies run for 14 days and must then be renewed.

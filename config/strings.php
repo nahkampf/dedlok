@@ -632,6 +632,15 @@ return [
             'injected' => 'Skill already injected',
         ],
 
+        // Spec lines on a weapon's or a round's card. Placeholder text until written.
+        'spec' => [
+            'weapon' => ':class :accuracy :rate',
+            'damage' => 'Damage: :damage (:profile)',
+            'firearm' => 'Firearm: :class (:calibre - capacity :magazine)',
+            'ammo' => 'Ammo: :calibre :type',
+            'rider' => ':kind (:chance chance, :turns turns)',
+        ],
+
         'bought' => ':quantity × :item, for :paid ¤.',
 
         /*
