@@ -62,7 +62,7 @@ class CityController extends Controller
             // costs — from the same call `begin()` charges by.
             'locations' => Location::query()
                 ->visibleTo($character)
-                ->withExists(['shopItems', 'clinicServices', 'surgery', 'meals'])
+                ->withExists(['shopItems', 'clinicServices', 'surgery', 'meals', 'insuranceOffers'])
                 ->orderBy('name')
                 ->get()
                 ->groupBy('district_id'),
@@ -101,7 +101,7 @@ class CityController extends Controller
             'locations' => Location::query()
                 ->where('district_id', $district->getKey())
                 ->visibleTo($character)
-                ->withExists(['shopItems', 'clinicServices', 'surgery', 'meals'])
+                ->withExists(['shopItems', 'clinicServices', 'surgery', 'meals', 'insuranceOffers'])
                 ->orderBy('name')
                 ->get(),
             // What each way of getting there would cost, from the same call

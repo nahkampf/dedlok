@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Combat;
 
 use App\Combat\Fight\Result;
+use App\Insurance\Insurance;
 use App\Inventory\ItemGranter;
 use App\Models\Character;
 use App\Models\Entity;
@@ -167,6 +168,7 @@ final readonly class FightEnding
         $points = max(1, (int) round($character->maximumFor('current_hitpoints') * $percent / 100));
 
         $this->injuries->inflict($character, InjuryLedger::TRAUMA, (float) $points);
+        (new Insurance)->claimInjury($character, InjuryLedger::TRAUMA, (float) $points);
 
         // The model's saving hook clamps current hit points to the lower ceiling.
         $character->save();

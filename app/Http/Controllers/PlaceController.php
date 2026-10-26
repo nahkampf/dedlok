@@ -14,12 +14,17 @@ use App\City\Kitchen;
 use App\City\ShopKeeper;
 use App\City\Surgeon;
 use App\City\SurgeryOperation;
+use App\Insurance\Insurance;
+use App\Insurance\InsuranceKind;
 use App\Models\Character;
+use App\Models\InsuranceOffer;
+use App\Models\InsurancePolicy;
 use App\Models\InventoryItem;
 use App\Models\Location;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -34,7 +39,7 @@ use Illuminate\View\View;
  */
 class PlaceController extends Controller
 {
-    public function show(Request $request, string $slug, CityClock $clock, Clinic $clinic, ShopKeeper $shop, Surgeon $surgeon, Encounters $encounters): View|RedirectResponse
+    public function show(Request $request, string $slug, CityClock $clock, Clinic $clinic, ShopKeeper $shop, Surgeon $surgeon, Encounters $encounters, Insurance $insurance): View|RedirectResponse
     {
         $character = $this->character($request);
 
@@ -70,6 +75,7 @@ class PlaceController extends Controller
                 ->all(),
             // The same call `treat()` charges from.
             'treatments' => $clinic->quote($character, $place),
+            'policies' => $this->policies($character, $place, $insurance),
             'menu' => $place->meals()->orderBy('price')->get(),
             // What is going on here, which a button starts. Only while the body is here.
             'happenings' => $character->district_id === $place->district_id
@@ -142,6 +148,25 @@ class PlaceController extends Controller
         return $out;
     }
 
+    /**
+     * What this place sells in cover, by kind, with what the character holds of each.
+     *
+     * @return list<array{kind: InsuranceKind, offers: Collection<int, InsuranceOffer>, active: ?InsurancePolicy, queued: ?InsurancePolicy}>
+     */
+    private function policies(Character $character, Location $place, Insurance $insurance): array
+    {
+        $offers = $place->insuranceOffers()->orderBy('share')->get()->groupBy(fn ($o): string => $o->kind->value);
+        $out = [];
+
+        foreach (InsuranceKind::cases() as $kind) {
+            if (isset($offers[$kind->value])) {
+                $out[] = ['kind' => $kind, 'offers' => $offers[$kind->value], 'active' => $insurance->active($character, $kind), 'queued' => $insurance->queued($character, $kind)];
+            }
+        }
+
+        return $out;
+    }
+
     public function sell(Request $request, string $slug, int $row, ShopKeeper $shop): RedirectResponse
     {
         $character = $this->character($request);
@@ -178,6 +203,19 @@ class PlaceController extends Controller
         return $result instanceof CityRefusal
             ? back()->with('error', $result->message())
             : back()->with('status', Text::get('city.clinic.treated', ['paid' => number_format($result)]));
+    }
+
+    public function insure(Request $request, string $slug, string $kind, int $share, Insurance $insurance): RedirectResponse
+    {
+        $character = $this->character($request);
+        $place = $this->place($character, $slug);
+        $type = InsuranceKind::tryFrom($kind);
+
+        $result = $type === null ? CityRefusal::NotSold : $insurance->sign($character, $place, $type, $share);
+
+        return $result instanceof CityRefusal
+            ? back()->with('error', $result->message())
+            : back()->with('status', Text::get('city.insurance.signed', ['paid' => number_format($result)]));
     }
 
     public function encounter(Request $request, string $slug, int $encounter, Encounters $encounters): RedirectResponse

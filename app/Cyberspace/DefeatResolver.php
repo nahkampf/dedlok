@@ -6,6 +6,7 @@ namespace App\Cyberspace;
 
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
+use App\Insurance\Insurance;
 use App\Models\Character;
 use App\Models\DeckFitting;
 use App\Models\Ice;
@@ -86,13 +87,14 @@ final readonly class DefeatResolver
     {
         $log = [];
         $lost = [];
+        $worth = 0;
 
         foreach ($ice->defeatTags() as $entry) {
             $line = match ($entry['tag']) {
                 DefeatTag::Flatline => $this->flatline($character, $entry['level']),
                 DefeatTag::NeuralShock => $this->neuralShock($character, $entry['level']),
-                DefeatTag::Surge => $this->surge($character, $entry['level'], $lost),
-                DefeatTag::Erase => $this->erase($character, $entry['level'], $lost),
+                DefeatTag::Surge => $this->surge($character, $entry['level'], $lost, $worth),
+                DefeatTag::Erase => $this->erase($character, $entry['level'], $lost, $worth),
                 DefeatTag::Skim => $this->skim($character, $entry['level']),
                 // Structurally unreachable — Bounty is never in this list — but
                 // match must be exhaustive, and a silent skip is the honest
@@ -112,15 +114,21 @@ final readonly class DefeatResolver
             (new Notifier)->send($character, Category::Cyberspace, 'damage_report', details: [
                 'lost' => array_map(fn (string $name, int $n): string => $n.' × '.$name, array_keys($lost), $lost),
             ]);
+
+            (new Insurance)->claimLoss($character, $worth, $lost);
         }
 
         return $log;
     }
 
-    /** @param  array<string, int>  $lost  name => copies, added to */
-    private function noteLost(array &$lost, ?InventoryItem $row): void
+    /**
+     * @param  array<string, int>  $lost  name => copies, added to
+     * @param  int  $worth  base value of all of it, added to (what a property policy pays a share of)
+     */
+    private function noteLost(array &$lost, int &$worth, ?InventoryItem $row): void
     {
         if ($row !== null) {
+            $worth += (int) $row->item?->base_cost * max(1, (int) $row->quantity);
             $name = $row->label();
             $lost[$name] = ($lost[$name] ?? 0) + max(1, (int) $row->quantity);
         }
@@ -149,6 +157,7 @@ final readonly class DefeatResolver
         $points = (int) round($max * $pct / 100);
 
         $this->injuries->inflict($character, InjuryLedger::NEURAL, (float) $points);
+        (new Insurance)->claimInjury($character, InjuryLedger::NEURAL, (float) $points);
 
         // The tag is what "flatlined" means, so this is the one place it can
         // be counted — a run ending badly is not the same event, and most of
@@ -216,7 +225,7 @@ final readonly class DefeatResolver
      * @param  array<string, int>  $lost
      * @return ?array{text: string, tone: string}
      */
-    private function surge(Character $character, int $level, array &$lost): ?array
+    private function surge(Character $character, int $level, array &$lost, int &$worth): ?array
     {
         $config = Config::get("cyberspace.defeat_tags.surge.{$level}", []);
         $chance = (int) ($config['chance'] ?? 0);
@@ -245,7 +254,7 @@ final readonly class DefeatResolver
             // The fitting row cascades with it — module_id is
             // cascadeOnDelete — so nothing here has to clear it by hand.
             $module = InventoryItem::query()->with('item')->find($fitting->module_id);
-            $this->noteLost($lost, $module);
+            $this->noteLost($lost, $worth, $module);
             $module?->delete();
             $destroyed++;
         }
@@ -278,7 +287,7 @@ final readonly class DefeatResolver
      * @param  array<string, int>  $lost
      * @return ?array{text: string, tone: string}
      */
-    private function erase(Character $character, int $level, array &$lost): ?array
+    private function erase(Character $character, int $level, array &$lost, int &$worth): ?array
     {
         $config = Config::get("cyberspace.defeat_tags.erase.{$level}", []);
 
@@ -301,9 +310,9 @@ final readonly class DefeatResolver
             return null;
         }
 
-        DB::transaction(function () use ($character, $targets, &$lost): void {
+        DB::transaction(function () use ($character, $targets, &$lost, &$worth): void {
             foreach ($targets as $row) {
-                $this->noteLost($lost, $row);
+                $this->noteLost($lost, $worth, $row);
 
                 if ($row->running_on_deck_id !== null) {
                     $this->runner->stop($character, $row);

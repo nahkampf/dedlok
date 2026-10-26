@@ -468,6 +468,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/city/place/{slug}/encounter/{encounter}', [PlaceController::class, 'encounter'])->name('city.place.encounter');
     Route::post('/city/place/{slug}/sell/{row}', [PlaceController::class, 'sell'])->name('city.sell');
     Route::post('/city/place/{slug}/eat/{meal}', [PlaceController::class, 'eat'])->name('city.eat');
+    Route::post('/city/place/{slug}/insure/{kind}/{share}', [PlaceController::class, 'insure'])->whereNumber('share')->name('city.insure');
     Route::post('/city/place/{slug}/treat/{service}', [PlaceController::class, 'treat'])->name('city.treat');
     Route::post('/city-explore', [CityController::class, 'explore'])->name('city.explore');
     Route::post('/city-cancel', [CityController::class, 'cancel'])->name('city.cancel');

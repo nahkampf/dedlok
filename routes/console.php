@@ -226,6 +226,10 @@ Schedule::command('tracker:settle --quiet-when-idle')
     ->everyMinute()
     ->withoutOverlapping();
 
+Schedule::command('insurance:remind --quiet-when-idle')
+    ->hourly()
+    ->withoutOverlapping();
+
 Schedule::command('programs:expire')
     ->everyMinute()
     ->withoutOverlapping();

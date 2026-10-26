@@ -8,6 +8,8 @@ use App\Characters\Meal;
 use App\City\ClinicService;
 use App\City\Concealment;
 use App\City\DiscoveryRule;
+use App\Insurance\Insurance;
+use App\Insurance\InsuranceKind;
 use App\Models\Location;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -66,6 +68,9 @@ class LocationRequest extends FormRequest
             'meals.*.name' => ['nullable', 'string', 'max:100'],
             'meals.*.price' => ['nullable', 'integer', 'between:0,1000000'],
             ...Meal::rules('meals.*.'),
+            'insurance' => ['nullable', 'array'],
+            'insurance.*' => ['nullable', 'array'],
+            'insurance.*.*' => ['nullable', 'integer', 'between:0,1000000'],
             'clinic' => ['nullable', 'array'],
             'clinic.*' => ['nullable', 'integer', 'between:0,1000000'],
             // The same slug shape `Flags::set()` insists on.
@@ -179,6 +184,26 @@ class LocationRequest extends FormRequest
         foreach ((array) $this->input('clinic', []) as $service => $price) {
             if (ClinicService::tryFrom((string) $service) !== null && $price !== null && $price !== '') {
                 $rows[(string) $service] = (int) $price;
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * The policies sold: a blank price means not offered. Only real kinds and tiers.
+     *
+     * @return list<array{kind: string, share: int, price: int}>
+     */
+    public function insuranceRows(): array
+    {
+        $rows = [];
+
+        foreach ((array) $this->input('insurance', []) as $kind => $tiers) {
+            foreach ((array) $tiers as $share => $price) {
+                if (InsuranceKind::tryFrom((string) $kind) !== null && in_array((int) $share, Insurance::TIERS, true) && $price !== null && $price !== '') {
+                    $rows[] = ['kind' => (string) $kind, 'share' => (int) $share, 'price' => (int) $price];
+                }
             }
         }
 

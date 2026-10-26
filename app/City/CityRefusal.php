@@ -72,6 +72,9 @@ enum CityRefusal: string
     /** A meal, and they are too full to eat any more. */
     case TooFull = 'too_full';
 
+    /** The next term of this policy is already bought. */
+    case AlreadyCovered = 'already_covered';
+
     public function message(): string
     {
         return Text::get("city.refused.{$this->value}");
