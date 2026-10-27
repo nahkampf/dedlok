@@ -15,8 +15,13 @@
 @php($round = $item->ammunition)
 @php($profile = fn (array $p): string => collect($p)->map(fn ($share, $type) => $share.'% '.\App\Stats\DamageOrigin::from($type)->label())->implode(', '))
 @php($riders = collect($weapon?->riders() ?? $round?->riders() ?? [])->map(fn ($r) => Text::get('market.spec.rider', ['kind' => \App\Combat\RiderKind::from($r['kind'])->label(), 'chance' => $r['chance'], 'turns' => $r['turns']])))
-@if ($item->program || $measure || $load || $effects->isNotEmpty() || $weapon || $round)
+{{-- A cyberdeck's sockets, the line its stash card carries. --}}
+@php($sockets = $item->hardware?->isDeck() ? $item->hardwareSummary() : null)
+@if ($item->program || $sockets || $measure || $load || $effects->isNotEmpty() || $weapon || $round)
     <div class="stack" style="--gap:var(--s-1)">
+        @if ($sockets)
+            <span class="micro num" style="color:var(--ink-3)">{{ $sockets }}</span>
+        @endif
         @if ($measure)
             <span class="micro num" style="color:var(--ink-3)">{{ $measure }}</span>
         @endif
