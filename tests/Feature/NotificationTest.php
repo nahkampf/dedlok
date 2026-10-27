@@ -13,6 +13,7 @@ use App\Models\Skill;
 use App\Models\User;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Notifications\Priority;
 use App\Support\Text;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -249,15 +250,63 @@ final class NotificationTest extends TestCase
 
     public function test_the_poll_reports_the_unread_count_and_the_newest_id_for_this_account_only(): void
     {
-        $this->actingAs($this->user)->getJson(route('notifications.unread'))->assertOk()->assertExactJson(['unread' => 0, 'latest' => 0, 'chat' => 0]);
+        $this->actingAs($this->user)->getJson(route('notifications.unread'))->assertOk()->assertExactJson(['unread' => 0, 'priority' => 0, 'latest' => 0, 'chat' => 0]);
 
         $a = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
-        $b = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'B', 'level' => 1]);
+        $b = $this->notifier()->send($this->character, Category::City, 'bounty_word', ['bounty' => '1']);
         $this->notifier()->send(Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3])), Category::Training, 'skill_level', ['skill' => 'C', 'level' => 1]);
         $this->notifier()->markRead($a);
 
         $this->actingAs($this->user)->getJson(route('notifications.unread'))
-            ->assertOk()->assertExactJson(['unread' => 1, 'latest' => $b->id, 'chat' => 0]);
+            ->assertOk()->assertExactJson(['unread' => 1, 'priority' => 1, 'latest' => $b->id, 'chat' => 0]);
+    }
+
+    public function test_every_priority_key_is_a_real_message(): void
+    {
+        $this->assertSame([], array_values(array_diff(config('notifications.important'), array_keys(config('strings.notifications.messages')))));
+    }
+
+    public function test_a_flagged_key_lands_in_priority_and_the_rest_in_standard_and_a_players_words_in_priority(): void
+    {
+        $this->assertSame(Priority::Important, $this->notifier()->send($this->character, Category::City, 'bounty_word', ['bounty' => '1'])->fresh()->priority);
+        $this->assertSame(Priority::Standard, $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1])->fresh()->priority);
+
+        $other = Character::factory()->create(array_merge(array_fill_keys(Character::ATTRIBUTES, 20), ['archetype' => 3]));
+        $this->assertSame(Priority::Important, $this->notifier()->sendFrom($other, $this->character, 'Hi', 'Hello')->fresh()->priority);
+    }
+
+    public function test_the_badge_is_grey_when_only_standard_mail_is_unread_and_ember_with_priority(): void
+    {
+        $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))->assertSee('dock__count dock__count--quiet', false);
+
+        $this->notifier()->send($this->character, Category::City, 'bounty_word', ['bounty' => '1']);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))->assertDontSee('dock__count--quiet', false);
+    }
+
+    public function test_the_inbox_lands_on_the_box_with_unread_mail_and_shows_one_box_at_a_time(): void
+    {
+        $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'Pistols', 'level' => 3]);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))->assertSee('Pistols reached level 3.');
+
+        $this->notifier()->send($this->character, Category::City, 'bounty_word', ['bounty' => '1']);
+
+        $this->actingAs($this->user)->get(route('notifications.index'))->assertDontSee('Pistols reached level 3.')->assertSee('a price on your head', false);
+        $this->actingAs($this->user)->get(route('notifications.index', ['box' => 'standard']))->assertSee('Pistols reached level 3.');
+    }
+
+    public function test_mark_all_read_only_reads_the_box_it_is_asked_about(): void
+    {
+        $std = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+        $imp = $this->notifier()->send($this->character, Category::City, 'bounty_word', ['bounty' => '1']);
+
+        $this->actingAs($this->user)->post(route('notifications.read'), ['box' => 'important']);
+
+        $this->assertNotNull($imp->fresh()->read_at);
+        $this->assertNull($std->fresh()->read_at);
     }
 
     public function test_a_guest_cannot_poll(): void
@@ -267,7 +316,7 @@ final class NotificationTest extends TestCase
 
     public function test_the_rail_carries_what_the_poll_needs_and_the_sound_exists(): void
     {
-        $m = $this->notifier()->send($this->character, Category::Training, 'skill_level', ['skill' => 'A', 'level' => 1]);
+        $m = $this->notifier()->send($this->character, Category::City, 'bounty_word', ['bounty' => '1']);
 
         $this->actingAs($this->user)->get(route('notifications.index'))->assertOk()
             ->assertSee('data-inbox="'.route('notifications.unread').'"', false)

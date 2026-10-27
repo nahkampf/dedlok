@@ -8,6 +8,7 @@ use App\Chat\Chats;
 use App\Models\Notification;
 use App\Models\User;
 use App\Notifications\Notifier;
+use App\Notifications\Priority;
 use App\Support\Text;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -45,18 +46,32 @@ class NotificationController extends Controller
         /** @var User $user */
         $user = $request->user();
 
+        $counts = Notification::query()
+            ->where('user_id', $user->getKey())
+            ->unread()
+            ->selectRaw('priority, count(*) as n')
+            ->groupBy('priority')
+            ->pluck('n', 'priority');
+        $important = (int) $counts->get(Priority::Important->value, 0);
+        $standard = (int) $counts->get(Priority::Standard->value, 0);
+
+        // Land on the box with something unread, Priority first.
+        $box = Priority::tryFrom((string) $request->query('box'))
+            ?? ($important === 0 && $standard > 0 ? Priority::Standard : Priority::Important);
+
         $messages = Notification::query()
             ->where('user_id', $user->getKey())
+            ->where('priority', $box)
             ->newest()
             ->limit(self::SHOWN)
             ->get();
 
         return view('notifications.index', [
             'messages' => $messages,
-            // Counted off the rows in hand rather than queried again: the
-            // screen shows the newest hundred, and a badge that disagreed with
-            // what is on the page would be the more confusing of the two.
-            'unread' => $messages->whereNull('read_at')->count(),
+            'box' => $box,
+            'unreadImportant' => $important,
+            'unreadStandard' => $standard,
+            'unread' => $box === Priority::Important ? $important : $standard,
         ]);
     }
 
@@ -74,6 +89,7 @@ class NotificationController extends Controller
 
         return response()->json([
             'unread' => $notifier->unreadFor($user),
+            'priority' => $notifier->unreadPriorityFor($user),
             'latest' => $notifier->latestIdFor($user),
             // The chat's own badge rides on this poll; there is no second timer.
             'chat' => $user->character === null ? 0 : $chats->unreadFor($user->character),
@@ -136,7 +152,7 @@ class NotificationController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $marked = $notifier->markAllRead($user);
+        $marked = $notifier->markAllRead($user, Priority::tryFrom((string) $request->input('box')));
 
         return back()->with('status', Text::plural('notifications.marked', $marked));
     }

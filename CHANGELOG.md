@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.78.0] — 2026-10-30
+
+### Added
+- **Two inbox boxes: Priority and Standard.** `notifications.priority` (`App\Notifications\Priority`, default standard). Which message key is Priority is the list in `config/notifications.php`; an unlisted key is Standard, and a test holds the list to real keys. Player-written messages (`sendFrom()`) and encounter story messages (`story()`) are always Priority. `NotificationController::index` shows one box at a time (`?box=important|standard`, tabs with unread counts) and lands on Priority unless only Standard has unread mail. *Mark all read* reads only the box it is in.
+- **Rail badge**: counts both boxes, ember only while a Priority message is unread, grey (`.dock__count--quiet`) otherwise. The poll (`notifications.unread`) carries `priority` beside `unread`; opening a message asks again at once so the colour follows.
+- **Chime**: `latest` (what plays `message.wav`) is now the newest Priority id, so Standard mail is silent.
+- Migration `2026_10_30_100000_message_priority` adds the column and flags existing messages (by category: personal, story, support, wallet; and by the title a listed key would have had). Run `php artisan migrate`.
+- Strings: `notifications.boxes.*`.
+
+### Changed
+- Shelf cards (market, shop, exchange) show a cyberdeck's sockets, the line its stash card carries (`program-spec` component).
+- `docs/archetypes-and-inbox.md`: the inbox section describes the boxes.
+- `TODO.md`: achievements should raise standing by 0.5, not 1.
+
+
 ## [0.77.0] — 2026-10-27
 
 ### Added
@@ -3841,7 +3856,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.77.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.78.0...HEAD
+[0.78.0]: https://github.com/nahkampf/dedlok/compare/v0.77.0...v0.78.0
 [0.77.0]: https://github.com/nahkampf/dedlok/compare/v0.76.1...v0.77.0
 [0.76.1]: https://github.com/nahkampf/dedlok/compare/v0.76.0...v0.76.1
 [0.76.0]: https://github.com/nahkampf/dedlok/compare/v0.75.3...v0.76.0

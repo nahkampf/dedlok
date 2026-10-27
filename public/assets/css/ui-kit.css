@@ -1694,6 +1694,8 @@ cap-widget {
   font: 650 var(--fs-xs)/1 var(--font-mono);
   border-radius: 2px;
 }
+/* Only standard mail is unread: the count stays, without the ember. */
+.dock__count--quiet { background: var(--ink-3); color: var(--ink-0); }
 
 .dock__sep { height: var(--hair); margin: var(--s-2) 0; background: var(--line-0); flex: none; }
 

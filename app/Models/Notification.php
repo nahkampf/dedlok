@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Notifications\Category;
+use App\Notifications\Priority;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -17,13 +18,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * writes one and the only thing that marks one read, so there is no method
  * here that changes anything.
  */
-#[Fillable(['user_id', 'category', 'title', 'body', 'details', 'read_at'])]
+#[Fillable(['user_id', 'category', 'priority', 'title', 'body', 'details', 'read_at'])]
 class Notification extends Model
 {
     protected function casts(): array
     {
         return [
             'category' => Category::class,
+            'priority' => Priority::class,
             'details' => 'array',
             'read_at' => 'immutable_datetime',
         ];

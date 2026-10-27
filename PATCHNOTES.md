@@ -1,3 +1,10 @@
+## 0.78.0 (2026-10-27)
+
+- Messages are now either Priority or Standard. Most low-urgency notifications are standard, while all player written and/or urgent/important messages are Priority.
+- There are now essentially two inboxes, one for priority and one for standard, and the badge changes color depending on what's unread.
+- Message chime only sounds on priority messages
+- Cyberdecks now show their stats/slots on their item cards.
+
 ## 0.77.0 (2026-10-27)
 
 - New utility programs: Assessors. These give you a roough estimate of your success chance for an intrusion run. They have different precisions - the more precise ones are rare and not available on the market.

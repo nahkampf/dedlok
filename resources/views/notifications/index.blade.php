@@ -7,9 +7,19 @@
     <h1>{{ Text::get('notifications.title') }}</h1>
     <p class="lede" style="margin-top:var(--s-3);max-width:70ch">{{ Text::get('notifications.lede') }}</p>
 
-    <div class="panel" style="margin-top:var(--s-5)">
+    {{-- TWO BOXES: Priority and Standard, each with what is unread in it. --}}
+    <nav class="tabs" aria-label="{{ Text::get('notifications.boxes.label') }}" style="margin-top:var(--s-5)">
+        @foreach ([[\App\Notifications\Priority::Important, $unreadImportant], [\App\Notifications\Priority::Standard, $unreadStandard]] as [$tab, $count])
+            <a class="tab" href="{{ route('notifications.index', ['box' => $tab->value]) }}"
+               @if ($box === $tab) aria-current="page" @endif>
+                {{ Text::get("notifications.boxes.{$tab->value}") }}@if ($count > 0) <span class="num">({{ $count }})</span>@endif
+            </a>
+        @endforeach
+    </nav>
+
+    <div class="panel" style="margin-top:var(--s-4)">
         <div class="panel__hd">
-            <span class="micro">{{ Text::get('notifications.inbox') }}</span>
+            <span class="micro">{{ Text::get("notifications.boxes.{$box->value}") }}</span>
             <div class="spacer"></div>
 
             <a class="btn btn--sm cut" href="{{ route('messages.create') }}">{{ Text::get('notifications.compose.button') }}</a>
@@ -21,6 +31,7 @@
 
                 <form method="POST" action="{{ route('notifications.read') }}">
                     @csrf
+                    <input type="hidden" name="box" value="{{ $box->value }}">
                     <button type="submit" class="btn btn--sm btn--quiet cut">
                         {{ Text::get('notifications.mark_read') }}
                     </button>
