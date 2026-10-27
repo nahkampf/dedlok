@@ -85,6 +85,14 @@ stood on this not existing.
   severity and no colour on them — the kit's aliases mean good, careful and bad, and
   painting Training green would say something untrue about it. The category also decides
   where reading one takes you (`route()`), so no URL is ever stored.
+- **Two boxes: Priority and Standard** (`App\Notifications\Priority`, `notifications.priority`, default standard). It is how much a
+  message matters, which `Category` still refuses to say. **Which system key is Priority is the list in `config/notifications.php`**;
+  an unlisted key is Standard, and a test holds the list to real message keys. **A message a player wrote (`sendFrom()`) and a story
+  message (`story()`) are always Priority.** The inbox shows one box at a time (`?box=important|standard`, tabs with their unread counts)
+  and lands on Priority unless only Standard has unread mail. *Mark all read* reads the box it is in. **The rail badge counts both
+  boxes but is ember only while a Priority message is unread, grey (`.dock__count--quiet`) otherwise**; the poll carries `priority`
+  beside `unread`. **`latest`, which plays the chime, is the newest Priority id**, so Standard mail is silent. Messages sent before
+  the column were flagged by `2026_10_30_100000_message_priority` (by category and by the title a listed key would have had).
 - **Every sender is something nobody pressed a button for** — a finished read, the nightly backdoor roll, a lockdown or burn taking a door, a skill level, an achievement (`insertOrIgnore`'s row count is what makes "said once" true), a mission expiring, a trip landing, cash arriving. Grep `Notifier::send` for the list.
 - **The inbox is polled every five seconds from every page** (`notifications.unread`, JSON `{unread, latest}`: two indexed
   reads, in every lock's allow-list so a player locked into a run, fight, hunt, encounter or the down screen keeps their

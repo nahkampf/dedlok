@@ -834,6 +834,12 @@ return [
         'lede' => 'Notifications and messages.',
 
         'inbox' => 'Inbox',
+        // The two boxes.
+        'boxes' => [
+            'label' => 'Message box',
+            'important' => 'Priority',
+            'standard' => 'Messages',
+        ],
         'empty' => 'Nothing yet. This fills up while you are away.',
         'new' => 'New',
         'mark_read' => 'Mark all read',

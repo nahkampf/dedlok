@@ -68,6 +68,7 @@ final class Notifier
         return Notification::create([
             'user_id' => (int) $userId,
             'category' => $category,
+            'priority' => Priority::forKey($key),
             'title' => $this->title($key, $replace),
             // Truncated rather than refused: a message too long for the column
             // is a copy problem, and losing the whole notification over one
@@ -106,6 +107,8 @@ final class Notifier
         return Notification::create([
             'user_id' => (int) $to->user_id,
             'category' => Category::Personal,
+            // Everything a player writes to another is Important.
+            'priority' => Priority::Important,
             'title' => mb_substr(PlainText::clean($title), 0, 120),
             'body' => mb_substr(PlainText::clean($body, multiline: true), 0, self::MAX_BODY),
             'details' => ['from' => (string) $from->handle],
@@ -159,6 +162,7 @@ final class Notifier
         Notification::create([
             'user_id' => $userId,
             'category' => Category::Story,
+            'priority' => Priority::Important,
             'title' => mb_substr($title, 0, 120),
             'body' => mb_substr($body, 0, self::MAX_BODY),
             'details' => ['from' => $sender],
@@ -179,10 +183,12 @@ final class Notifier
         }
     }
 
-    public function markAllRead(User $user): int
+    /** Everything unread in one box, or in both when `$box` is null. */
+    public function markAllRead(User $user, ?Priority $box = null): int
     {
         return Notification::query()
             ->where('user_id', $user->getKey())
+            ->when($box, fn ($q) => $q->where('priority', $box))
             ->unread()
             ->update(['read_at' => now()]);
     }
@@ -202,10 +208,23 @@ final class Notifier
             ->delete();
     }
 
-    /** The id of this account's newest message, 0 for none: what the page compares to know something arrived. */
+    /**
+     * The id of this account's newest PRIORITY message, 0 for none: what the page compares to know something arrived.
+     * Standard mail raises no chime, so it does not move this.
+     */
     public function latestIdFor(User $user): int
     {
-        return (int) Notification::query()->where('user_id', $user->getKey())->max('id');
+        return (int) Notification::query()->where('user_id', $user->getKey())->where('priority', Priority::Important)->max('id');
+    }
+
+    /** Unread Priority messages: the badge is ember while this is above zero and grey otherwise. */
+    public function unreadPriorityFor(User $user): int
+    {
+        return Notification::query()
+            ->where('user_id', $user->getKey())
+            ->where('priority', Priority::Important)
+            ->unread()
+            ->count();
     }
 
     /** What the rail's badge counts. */

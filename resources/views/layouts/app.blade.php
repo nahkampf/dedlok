@@ -27,7 +27,8 @@
      does not need one. --}}
 @php($tasksNew = auth()->user()?->character ? app(\App\Journal\Journal::class)->unseenCount(auth()->user()->character) : 0)
 @php($unread = auth()->check() ? (new \App\Notifications\Notifier)->unreadFor(auth()->user()) : 0)
-@php($chatUnread = $hud ? app(\App\Chat\Chats::class)->unreadFor($hud) : 0)
+@php($unreadPriority = auth()->check() ? (new \App\Notifications\Notifier)->unreadPriorityFor(auth()->user()) : 0)
+@php($chatUnread =$hud ? app(\App\Chat\Chats::class)->unreadFor($hud) : 0)
 @php($latestMessage = auth()->check() ? (new \App\Notifications\Notifier)->latestIdFor(auth()->user()) : 0)
 {{-- One query, and only for a signed-in character: the topbar's process
      count and the modal behind it read the same collection. --}}
@@ -155,7 +156,7 @@
                @if (request()->routeIs('notifications.*')) aria-current="page" @endif>
                 <span class="dock__icon" aria-hidden="true">&#9993;&#65038;</span>
                 @if ($unread > 0)
-                    <span class="dock__count">{{ $unread > 99 ? '99+' : $unread }}</span>
+                    <span class="dock__count{{ $unreadPriority === 0 ? ' dock__count--quiet' : '' }}">{{ $unread > 99 ? '99+' : $unread }}</span>
                 @endif
                 <span class="dock__label">{{ Text::get('ui.nav.messages') }}</span>
             </a>

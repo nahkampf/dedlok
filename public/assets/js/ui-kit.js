@@ -352,7 +352,8 @@
     const lastPlayed = () => { try { return Number(localStorage.getItem(KEY)) || 0; } catch { return 0; } };
     const stamp = () => { try { localStorage.setItem(KEY, String(Date.now())); } catch { /* the cooldown is per page then */ } };
 
-    const badge = (unread) => {
+    // Ember while a Priority message is unread, grey when only standard mail is.
+    const badge = (unread, priority) => {
       let el = link.querySelector(".dock__count");
       if (unread <= 0) { el?.remove(); return; }
       if (!el) {
@@ -360,6 +361,7 @@
         el.className = "dock__count";
         link.querySelector(".dock__icon")?.after(el);
       }
+      el.classList.toggle("dock__count--quiet", priority <= 0);
       el.textContent = unread > 99 ? "99+" : String(unread);
     };
 
@@ -388,7 +390,7 @@
       fetch(link.dataset.inbox, { headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
         .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((data) => {
-          badge(Number(data.unread) || 0);
+          badge(Number(data.unread) || 0, Number(data.priority) || 0);
           chatBadge(Number(data.chat) || 0);
           if (Number(data.latest) > latest) { latest = Number(data.latest); ding(); }
         })
@@ -396,6 +398,8 @@
     };
 
     setInterval(poll, INTERVAL);
+    // Reading a message on the inbox page asks at once, so the badge's colour follows.
+    document.addEventListener("inbox:refresh", poll);
   })();
 
   /* The training plan's level picker: <form data-plan data-plan-floors='{"SKILL_ID": FLOOR}' data-plan-max="5"
@@ -678,6 +682,7 @@
           if (Number.isNaN(left)) return;
           if (left > 0) badge.textContent = String(left); else badge.remove();
         }
+        document.dispatchEvent(new Event("inbox:refresh"));
       }).catch(() => {});
     });
   });

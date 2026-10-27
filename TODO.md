@@ -1042,3 +1042,4 @@ No console errors and no page-level horizontal overflow anywhere. Suggestions, m
 - **Rail menu icons are all the same weight**: the two envelope icons (notifications and chat) look alike. Give chat a speech-bubble glyph.
 
 
+- **Achievements should raise standing by 0.5, not 1**: lower the standing increase an achievement gives from 1 to 0.5 (find where it is granted, and check that standing is stored with a fraction).
