@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.77.0] — 2026-10-27
+
+### Added
+- **The Assessor** (`ASSESSOR.md`, `App\Cyberspace\Assessor`, `config/assessor.php`). A Utility with `programs.assess_step` (a multiple of 5, item editor, Utility only) shows rough odds, rounded to its step and never 0 or 100. Only one runs at a time (`ProcessRefusal::OneAssessor`). Every figure is `null`, shown `[???]`, when the scan has not read a fact it needs, and each is the chance the roll itself uses (new public `Simulator` helpers `osChanceFor`, `egressChanceFor`, `egressDifficultyFor`, `unnoticedChance`; the roll goes through them too).
+- **Briefing**: the overall chance to finish the job and get out, recalculated on every loadout tick by `GET /run/assess`. Ticked stash rows are counted as running on the in-memory character only (`Character::$assumedRunning`, read by `RunningPrograms`), so stacking, pools and modifiers are the real ones. The estimate plays the run out 400 times on a private seeded generator; with no icebreaker, an unnoticed chance of 90% or more is judged as if there were no ICE, below it as p x the no-ICE chance.
+- **Run screen**: the purpose action's chance this turn, and during an ICE fight its strike chance and the turns the icebreaker needs. Chances are tags: green from 85%, yellow from 50%, red below.
+- Migration `2026_10_29_100000_assess_step` adds the column and inserts Runstats (20), MonteCarlo (15), Predictor (10) and SIGHTLINE (5). Run `php artisan migrate`.
+- `CHEATSHEET.md`: the game's mechanics and numbers, short.
+
+### Changed
+- `TODO.md`: regeneration rates on the character screen, Lockjaw's gateway to DEADBEEF, comparison, the legend's log, market spec labels.
+
+
 ## [0.76.1] — 2026-10-26
 
 ### Fixed
@@ -3828,7 +3841,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.76.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.77.0...HEAD
+[0.77.0]: https://github.com/nahkampf/dedlok/compare/v0.76.1...v0.77.0
 [0.76.1]: https://github.com/nahkampf/dedlok/compare/v0.76.0...v0.76.1
 [0.76.0]: https://github.com/nahkampf/dedlok/compare/v0.75.3...v0.76.0
 [0.75.3]: https://github.com/nahkampf/dedlok/compare/v0.75.2...v0.75.3
