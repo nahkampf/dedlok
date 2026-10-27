@@ -1916,6 +1916,26 @@
     const starts = [...form.querySelectorAll('button[name="purpose"]')];
     const startsOff = new Set(starts.filter((el) => el.disabled));
     const fmt = (n) => String(n / 10);
+    // The Assessor's overall for what is ticked: the server works it out (and a later tick wins over an earlier answer);
+    // this only sends the ticks and shows what comes back.
+    const assess = document.querySelector("[data-assess-readout]");
+    let asked = 0, lastQuery = null;
+    const askAssessor = () => {
+      if (!assess) return;
+      const q = new URLSearchParams();
+      const pick = form.querySelector('input[name="icebreaker"]:checked');
+      if (pick && pick.value) q.set("icebreaker", pick.value);
+      form.querySelectorAll('input[name="programs[]"]:checked').forEach((el) => q.append("programs[]", el.value));
+      const query = q.toString();
+      // The first call is the page as the server drew it, already answered.
+      if (lastQuery === null || query === lastQuery) { lastQuery = query; return; }
+      lastQuery = query;
+      const mine = ++asked;
+      fetch(assess.dataset.assessUrl + "?" + query, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => { if (j && mine === asked) assess.innerHTML = j.overall; })
+        .catch(() => {});
+    };
     const recalc = () => {
       const ticked = inputs.filter((el) => el.checked);
       const usedQ = ticked.reduce((n, el) => n + cost(el, "Qflops"), 0);
@@ -1953,6 +1973,7 @@
         const text = v.querySelector("[data-vital-value]");
         if (text && vitals) text.textContent = vitals.dataset.format.replace(":used", fmt(used)).replace(":total", fmt(total));
       });
+      askAssessor();
       if (readout) readout.textContent = fmt(Math.max(0, leftQ)) + " qFLOPS \u00b7 " + fmt(Math.max(0, leftM)) + " QB";
     };
     form.addEventListener("change", recalc);

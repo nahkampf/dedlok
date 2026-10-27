@@ -345,6 +345,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/missions/{mission}/complete', [MissionController::class, 'complete'])->name('missions.complete');
 
     Route::get('/run/setup', [RunController::class, 'setup'])->name('run.setup');
+    Route::get('/run/assess', [RunController::class, 'assess'])->name('run.assess');
     Route::post('/run/party', [RunPartyController::class, 'open'])->name('run.party.open');
     Route::post('/run/party/options', [RunPartyController::class, 'options'])->name('run.party.options');
     Route::post('/run/party/invite', [RunPartyController::class, 'invite'])->name('run.party.invite');

@@ -5,6 +5,30 @@ what will break if it is left alone.
 
 ---
 
+## Lockjaw's subnet gateway to DEADBEEF (noted 2026-10-27)
+
+The Lockjaw subnet gateway should hold the reserved address `DEADBEEF`. Needs a migration that moves the gateway to it and updates every
+reference to its current address (scans, bookmarks, contacts, missions, the darknet entry rules and `links_to_system_id`, seeded text and
+tests). Check first what else holds addresses by value and that `DEADBEEF` is free (the tests use it as a throwaway address).
+
+## Regeneration rates on the character screen (noted 2026-10-27)
+
+List the character's HP and SI regeneration rate underneath the HP and SI progress bars on the character screen. Open: where the rates come
+from (the base rate, safehouse rest at 0.05 HP and 0.083 SI a minute, drugs and other modifiers), and whether to show the rate in effect right now.
+
+## Comparison (noted 2026-10-26, not designed)
+
+A quick way to bring up the item currently equipped beside the one being looked at (market, shop, stash), so the differences show. Open:
+which kinds first (weapons, armour, deck modules, implants), where the control sits, and whether it shows only the lines that differ.
+It can reuse the spec lines in `x-program-spec`.
+
+## The legend's log: a collectible lore quest (noted 2026-10-26, not designed)
+
+Pieces of a log file, ezine or similar are found around the net (grid loot, data files, exchanges, the darknet), each a small flavour text about
+one of the greatest hackers ever. Finding every piece gives a clue that leads to a reward. Open: who the hacker is, where the pieces drop
+(data content, a mission reward, a hidden system), how a found piece is remembered (a flag per piece, as standing grants do), and what the
+clue unlocks. Player text is the user's to write.
+
 ## Market spec lines for weapons and ammo (noted 2026-10-26)
 
 `market.spec.weapon` is `:class :accuracy :rate` with no labels, so a blade reads like "Blade 5 2". Label the figures. The firearm line

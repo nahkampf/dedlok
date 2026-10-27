@@ -19,6 +19,7 @@ use App\Models\Ice;
 use App\Models\Item;
 use App\Models\Leech;
 use App\Models\Run;
+use App\Models\Skill;
 use App\Models\System;
 use App\Programs\ProgramKind;
 use App\Standing\StandingLedger;
@@ -892,8 +893,15 @@ final readonly class Simulator
      */
     private function osValue(Character $character, ?System $system): float
     {
-        $skill = $system?->operatingSystem()->first();
+        return $this->osValueFor($character, $system?->operatingSystem()->first());
+    }
 
+    /**
+     * The runner's standing in one operating system's language. Public for the Assessor, which knows the skill from a
+     * scan and not a `System`; `osValue()` is this with a system's skill, so the roll and the estimate share the working.
+     */
+    public function osValueFor(Character $character, ?Skill $skill): float
+    {
         if ($skill === null) {
             return 0.0;
         }
@@ -917,6 +925,12 @@ final readonly class Simulator
         return $this->resolver
             ->resolve(SkillStats::checkId($skill->slug), $base, $character->modifiers())
             ->value;
+    }
+
+    /** The chance a core opens to this character, for a given operating system: the roll's own figure. */
+    public function osChanceFor(Character $character, ?Skill $skill): float
+    {
+        return $this->checks->chance($this->osValueFor($character, $skill), $this->osDifficulty(), 'os');
     }
 
     private function osDifficulty(): float
@@ -1009,19 +1023,51 @@ final readonly class Simulator
      */
     private function egressDifficulty(Run $run): float
     {
+        $grade = System::query()->where('address', $run->address)->value('grade');
+        $level = $run->ice_id === null ? 0 : (int) (Ice::query()->whereKey($run->ice_id)->value('level') ?? 0);
+
+        return $this->egressDifficultyFor((int) $grade, $level);
+    }
+
+    /** What leaving a system of this grade asks, with an awake ICE of this level (0 for none). Public for the Assessor. */
+    public function egressDifficultyFor(int $grade, int $iceLevel = 0): float
+    {
         /** @var array<int, int> $table */
         $table = Config::get('cyberspace.egress.difficulty', []);
+        $difficulty = (float) ($table[$grade] ?? ($table[1] ?? 0));
 
-        $grade = System::query()->where('address', $run->address)->value('grade');
-        $difficulty = (float) ($table[(int) $grade] ?? ($table[1] ?? 0));
+        return $difficulty + ($iceLevel * (float) Config::get('cyberspace.egress.ice_term', 1));
+    }
 
-        if ($run->ice_id === null) {
-            return $difficulty;
+    /** The chance of leaving a system of this grade, with this ICE awake (null for none). The roll's own figure. */
+    public function egressChanceFor(Character $character, int $grade, ?Ice $awake = null): float
+    {
+        return $this->checks->chance(
+            $character->stat('egress')->value,
+            $this->egressDifficultyFor($grade, (int) $awake?->level),
+            'egress',
+            $awake === null ? 1.0 : $this->ensnareMultiplier($character, $awake->attackLevel(AttackTag::Ensnare)),
+        );
+    }
+
+    /**
+     * The chance of passing every watcher that rolls at the core, given each one's detection (zero or less means absent).
+     * Public for the Assessor; `spottedBy()` rolls the same checks against the same stealth.
+     *
+     * @param  list<int>  $detections
+     */
+    public function unnoticedChance(Character $character, array $detections): float
+    {
+        $stealth = $character->stat('stealth')->value;
+        $chance = 1.0;
+
+        foreach ($detections as $difficulty) {
+            if ($difficulty > 0) {
+                $chance *= $this->checks->chance($stealth, (float) $difficulty, 'detection');
+            }
         }
 
-        $level = (int) (Ice::query()->whereKey($run->ice_id)->value('level') ?? 0);
-
-        return $difficulty + ($level * (float) Config::get('cyberspace.egress.ice_term', 1));
+        return $chance;
     }
 
     /**

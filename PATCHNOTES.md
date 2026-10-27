@@ -1,3 +1,7 @@
+## 0.77.0 (2026-10-27)
+
+- New utility programs: Assessors. These give you a roough estimate of your success chance for an intrusion run. They have different precisions - the more precise ones are rare and not available on the market.
+
 ## 0.76.1 (2026-10-26)
 
 - Implants, weapons and ammunition actually list their stats/effects on the market now

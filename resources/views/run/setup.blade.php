@@ -76,6 +76,14 @@
         @endif
 
         <x-scan-facts :facts="$overview" />
+
+        {{-- THE ASSESSOR'S OVERALL, while one runs on the deck. The figure for the loadout as ticked, worked out by the
+             server on every tick (`run.assess`); the briefing's script only shows what comes back. --}}
+        @if ($assess)
+            <p class="micro" style="color:var(--ink-2);margin:var(--s-3) 0 0">
+                {{ Text::get('assessor.overall') }} <b class="num" data-assess-readout data-assess-url="{{ route('run.assess') }}">{!! $assess !!}</b>
+            </p>
+        @endif
     </div>
 </div>
 

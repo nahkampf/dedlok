@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\City\Encounters;
 use App\City\EncounterStart;
+use App\Cyberspace\Assessor;
 use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\Backdoors;
 use App\Cyberspace\ChainBuilder;
@@ -32,10 +33,13 @@ use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
 use App\Stats\Resolver;
 use App\Support\Text;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -125,7 +129,14 @@ class RunController extends Controller
 
         $chain = $chains->for($character, $target);
 
+        // The Assessor's overall for the loadout as it is ticked now. The page asks `assess()` for a new one on every tick.
+        $ticked = $loadout
+            ->filter(static fn (InventoryItem $row): bool => in_array($row->item_id, self::rememberedLoadout($request), true))
+            ->unique('item_id');
+        $assess = ($step = Assessor::step($character)) === null ? null : Assessor::tag($this->assessLoadout($character, $scan, $ticked), $step);
+
         return view('run.setup', [
+            'assess' => $assess,
             // What the system's owner makes of you, on the screen where the
             // run is decided rather than after it.
             'standing' => $target->owner?->interactable
@@ -163,11 +174,7 @@ class RunController extends Controller
             // The last loadout that went in, ticked again. Remembered as ITEMS,
             // one row each, because a row id does not survive its stack being
             // split and merged back.
-            'chosen' => $loadout
-                ->filter(static fn (InventoryItem $row): bool => in_array($row->item_id, self::rememberedLoadout($request), true))
-                ->unique('item_id')
-                ->pluck('id')
-                ->all(),
+            'chosen' => $ticked->pluck('id')->all(),
             'totals' => $totals,
             // Why each run-only program would not start beside what is ALREADY running, by row id (the runner's own
             // question, asked as a run would ask it); absent means it would.
@@ -193,6 +200,45 @@ class RunController extends Controller
             'lockedDown' => $target->isLockedDown(),
             'backdoor' => (new Backdoors)->heldOn($character, $target),
         ]);
+    }
+
+    /**
+     * The Assessor's overall for a loadout as ticked on the briefing, as JSON: `{overall: "60%"}`. The page asks on every
+     * tick; all the arithmetic is the server's. 404 unless an Assessor runs, the same gate the figure itself has.
+     */
+    public function assess(Request $request): JsonResponse
+    {
+        $character = $this->character($request);
+        $step = Assessor::step($character);
+        $target = $character->isJackedIn() ? System::query()->at($character->gridPosition())->first() : null;
+
+        abort_if($step === null || $target === null, 404);
+
+        $ids = array_map('intval', array_filter([$request->query('icebreaker'), ...(array) $request->query('programs', [])], 'is_numeric'));
+        $rows = InventoryItem::query()
+            ->where('character_id', $character->id)
+            ->whereNull('running_on_deck_id')
+            ->whereIn('id', $ids)
+            ->whereHas('item.program')
+            ->with('item.program')
+            ->get();
+
+        $scan = SystemScan::query()->where('character_id', $character->id)->where('address', $target->address)->live()->first();
+
+        return response()->json(['overall' => Assessor::tag($this->assessLoadout($character, $scan, $rows), $step)]);
+    }
+
+    /**
+     * The overall chance with these stash rows counted as running. They are assumed on the in-memory character only: nothing
+     * is started or saved, and the stacking, the pools and every modifier go through the same sources as a real run.
+     *
+     * @param  Collection<int, InventoryItem>  $rows
+     */
+    private function assessLoadout(Character $character, ?SystemScan $scan, Collection $rows): ?float
+    {
+        $character->assumedRunning = $rows->values();
+
+        return app(Assessor::class)->overall($character, $scan);
     }
 
     /** Go in. The purpose is chosen here and never changed. */
@@ -303,6 +349,7 @@ class RunController extends Controller
         $system = $run->system();
 
         $response = response()->view('run.show', [
+            'assess' => $this->assessment($character, $run),
             'character' => $character,
             'run' => $run,
             'waiting' => $waiting,
@@ -342,6 +389,36 @@ class RunController extends Controller
         ]);
 
         return $refresh ? $response->header('Refresh', '5') : $response;
+    }
+
+    /**
+     * The Assessor's lines for this turn, worded and rounded, or null when none runs. Only what is a roll or a count:
+     * the chance the purpose action gets through unnoticed and past the core, and while an ICE fights, its strike and
+     * the turns the icebreaker needs. Egress and the core already show their exact figures.
+     *
+     * @return array{turn?: HtmlString, strike?: HtmlString, breaks?: string}|null
+     */
+    private function assessment(Character $character, Run $run): ?array
+    {
+        if (($step = Assessor::step($character)) === null) {
+            return null;
+        }
+
+        $assessor = app(Assessor::class);
+        $scan = SystemScan::query()->where('character_id', $character->id)->where('address', $run->address)->live()->first();
+        $out = [];
+
+        if ($run->inAFight()) {
+            $out['strike'] = Assessor::line('assessor.strikes', Assessor::tag($assessor->strike($scan), $step));
+            $turns = $assessor->turnsToBreak($character, $scan, (float) $run->ice_integrity);
+            $out['breaks'] = $turns === null ? Text::get('assessor.unknown') : (string) $turns;
+        } elseif (in_array($run->purpose, [RunPurpose::Extraction, RunPurpose::Backdoor, RunPurpose::Burn], true)) {
+            $seen = $run->detected ? 1.0 : ($run->extracting_qb !== null ? $assessor->unnoticedPull($character, $scan) : $assessor->unnoticed($character, $scan));
+            $core = $run->os_locked ? $assessor->core($character, $scan) : 1.0;
+            $out['turn'] = Assessor::line('assessor.this_turn', Assessor::tag($seen === null || $core === null ? null : $seen * $core, $step));
+        }
+
+        return $out;
     }
 
     /**

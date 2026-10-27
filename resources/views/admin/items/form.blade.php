@@ -621,6 +621,15 @@
                         @error('traverse_seconds') <span class="field__error">{{ $message }}</span> @enderror
                     </div>
 
+                    {{-- An Assessor's rounding step. Blank is not an Assessor. --}}
+                    <div class="field" style="margin-top:var(--s-3)" @error('assess_step') data-invalid @enderror>
+                        <label class="field__label" for="assess_step">{{ Text::get('admin.items.fields.assess_step') }}</label>
+                        <input class="input num" id="assess_step" name="assess_step" type="number" min="5" max="50" step="5"
+                               value="{{ old('assess_step', $item?->program?->assess_step) }}">
+                        <span class="field__hint">{{ Text::get('admin.items.fields.assess_step_hint') }}</span>
+                        @error('assess_step') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+
                     {{-- Whether two copies may be pointed at two things at
                          once. A property of the SOFTWARE: how many a character
                          may run is the program_threads stat, and an icebreaker

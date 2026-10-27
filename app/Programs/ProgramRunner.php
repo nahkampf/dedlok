@@ -144,6 +144,11 @@ final class ProgramRunner
             return ProcessRefusal::OneJumper;
         }
 
+        // And one Assessor.
+        if ($program->kind === ProgramKind::Utility && $program->assess_step !== null && $this->assessorRunning($character)) {
+            return ProcessRefusal::OneAssessor;
+        }
+
         /*
          * HOW MANY OF THIS ONE THING ARE ALREADY GOING.
          *
@@ -282,6 +287,16 @@ final class ProgramRunner
     private function icebreakerRunning(Character $character): bool
     {
         return $this->kindRunning($character, ProgramKind::Icebreaker);
+    }
+
+    /** Is an Assessor running on the deck? (`assess_step` is a number, so `utilityRunning()`'s flags cannot ask.) */
+    private function assessorRunning(Character $character): bool
+    {
+        return InventoryItem::query()
+            ->where('character_id', $character->getKey())
+            ->whereNotNull('running_on_deck_id')
+            ->whereHas('item.program', static fn ($q) => $q->where('kind', ProgramKind::Utility->value)->whereNotNull('assess_step'))
+            ->exists();
     }
 
     /** Is a running Utility on the deck with any of these abilities (`locates`, `walks`, `jumps`)? */
