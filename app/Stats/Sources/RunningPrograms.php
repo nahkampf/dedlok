@@ -118,7 +118,7 @@ final readonly class RunningPrograms implements ModifierSource
      */
     public static function processesOn(Character $character, int $deckId, ?\DateTimeInterface $asAt = null)
     {
-        return Lifetime::reap(InventoryItem::query()
+        $rows = Lifetime::reap(InventoryItem::query()
             ->where('character_id', $character->id)
             ->where('running_on_deck_id', $deckId)
             ->when($asAt !== null, static function ($query) use ($asAt): void {
@@ -134,5 +134,8 @@ final readonly class RunningPrograms implements ModifierSource
             })
             ->with('item.program')
             ->get());
+
+        // Rows assumed to be running (the Assessor's what-if) count beside the real ones.
+        return $character->assumedRunning === null ? $rows : $rows->concat($character->assumedRunning);
     }
 }

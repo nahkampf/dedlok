@@ -211,6 +211,8 @@ return [
             'single_instance' => 'One copy at a time',
             'one_locator' => 'Only one program that locates or walks may run at a time',
             'one_jumper' => 'Only one program that jumps may run at a time',
+            'one_assessor' => 'Only one assessor may run at a time',
+            'assesses' => 'Estimates your odds, rounded to :step%',
             'locates' => 'Locates: finds the nearest system you have met',
             'walks' => 'Walks: takes you to what it found',
             'jumps' => 'Jumps: a Jump button beside addresses',
@@ -240,6 +242,7 @@ return [
             'one_icebreaker' => 'Only one icebreaker runs at a time.',
             'one_locator' => 'Only one locator runs at a time.',
             'one_jumper' => 'Only one jumper runs at a time.',
+            'one_assessor' => 'Only one assessor runs at a time.',
             'not_runnable' => 'This is not run on a deck: it is installed on a system during a run, or on a fortress.',
             'listed' => 'It is up for sale on the market. Withdraw the offer before you use it.',
         ],
@@ -600,6 +603,16 @@ return [
             'yourself' => 'You cannot send cash to yourself.',
             'cannot_afford' => 'You do not have that much.',
         ],
+    ],
+
+    // The Assessor (ASSESSOR.md). Drafted by Claude: rewrite freely. `unknown` is the author's own mark.
+    'assessor' => [
+        'unknown' => '[???]',
+        'percent' => ':chance%',
+        'overall' => 'Assessed chance to finish the run and egress:',
+        'turns_to_break' => 'Turns to break the ICE: about :turns.',
+        'this_turn' => 'Chance this turn: :chance.',
+        'strikes' => 'ICE lands a strike: :chance per turn.',
     ],
 
     'market' => [
@@ -5207,6 +5220,8 @@ return [
                 'jumps' => 'Jumps',
                 'tracks' => 'Tracks',
                 'utility_hint' => 'A Utility (kind Utility) does what is ticked while it runs: Locates finds the nearest system you have met, Walks takes you to what it found (a Pathfinder is both), Jumps puts a Jump button beside addresses. Ignored by every other kind.',
+                'assess_step' => 'Assessor step (%)',
+                'assess_step_hint' => 'Utilities only: makes this an Assessor, which shows rough odds on the run screens, rounded to this many percent (5 is the finest). Blank is not an Assessor.',
                 'traverse_seconds_hint' => 'Programs that walk only: how long each step of Autotraverse takes. Blank is the default of 10 seconds.',
                 'lifetime_seconds_hint' => 'Blank is an ordinary program. Set, it is a Script: a running copy lasts this long from the moment it starts and is then spent. Stopping one early destroys it.',
                 'background_process' => 'Runs in the background',

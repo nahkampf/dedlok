@@ -665,6 +665,7 @@ class Item extends Model
 
             ($program->locates || $program->walks) && $lines[] = Text::get('programs.spec.one_locator');
             $program->jumps && $lines[] = Text::get('programs.spec.one_jumper');
+            $program->assess_step !== null && $lines[] = Text::get('programs.spec.assesses', ['step' => $program->assess_step]).' '.Text::get('programs.spec.one_assessor');
         }
 
         return $lines;

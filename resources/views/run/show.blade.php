@@ -379,6 +379,14 @@
         @if ($egress->isSnared())
             <p class="micro" style="color:var(--warn);margin:var(--s-2) 0 0">{{ Text::get('cyberspace.run.egress_snared') }}</p>
         @endif
+        {{-- THE ASSESSOR, while one runs: rough, rounded to its step, [???] where the scan did not read what it needs. --}}
+        @if ($assess)
+            <p class="micro num" style="color:var(--ink-2);margin:var(--s-2) 0 0">
+                @isset($assess['turn']) {{ $assess['turn'] }} @endisset
+                @isset($assess['strike']) {{ $assess['strike'] }} @endisset
+                @isset($assess['breaks']) {{ Text::get('assessor.turns_to_break', ['turns' => $assess['breaks']]) }} @endisset
+            </p>
+        @endif
     </form>
 </div>
 

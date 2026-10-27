@@ -709,6 +709,14 @@ class Character extends Model
     }
 
     /**
+     * Stash rows to count as RUNNING for this instance's modifiers, though nothing has started them (the Assessor judging a
+     * loadout before the run). In memory only; never saved. `RunningPrograms` adds them to what the deck really runs.
+     *
+     * @var \Illuminate\Support\Collection<int, InventoryItem>|null
+     */
+    public ?\Illuminate\Support\Collection $assumedRunning = null;
+
+    /**
      * The unmodified starting value for a stat, from stored numbers alone.
      *
      * DEPRECATED as the way to compute a derived stat, and kept because the
