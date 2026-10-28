@@ -1,3 +1,9 @@
+## 0.79.0 (2026-10-28)
+
+- Programs can now have a "family", and be targeted by modifiers.
+- New utility type programs: Compressors. These give you more storage space while they are active.
+- KOMPRESSOR.EXE is available on the market, and the more advanced OmniStacker 5 isn't.
+
 ## 0.78.1 (2026-10-28)
 
 - Several small bugs when checking for stack id for items, which caused things like items moving from deck to safe house etc. Should all be resolved now.

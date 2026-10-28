@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.79.0] — 2026-10-28
+
+### Added
+- **Program families.** `programs.family` (nullable, Utility only, chosen in the item editor from the stats tagged `family`) groups programs a skill can sharpen together without naming them. The stat `family.compressor` (base 0, a per cent) is granted by skills like any stat; `RunningPrograms` scales every modifier of a running program in that family by `1 + stat/100` via `Modifier::scaledBy()`, resolving the stat from `SkillEffects` alone so the source never asks itself. A new family is a stat in `config/stats.php` tagged `family`. `Program::families()` lists them. Test: `CompressorFamilyTest`. Migration `2026_10_31_100000_program_family` adds the column. Run `php artisan migrate`.
+- **The first two Compressors**, seeded by migration `2026_10_31_110000_the_first_compressors` as authored in the item editor: KOMPRESSOR.EXE (market, +7% of base `deck_storage`) and OmniStacker 5 (off-market, +12%), the latter kept by the Bureau of Network Integrity for 35 loyalty from standing 2 (`entity_offers`). An existing slug or offer is left as it is.
+
+### Changed
+- **Skill editor: Category is a drop-down** of the existing categories, with a "new category" box beside it that wins when filled (`SkillRequest::prepareForValidation`).
+
+
 ## [0.78.1] — 2026-10-28
 
 ### Fixed
@@ -3864,7 +3874,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.78.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.79.0...HEAD
+[0.79.0]: https://github.com/nahkampf/dedlok/compare/v0.78.1...v0.79.0
 [0.78.1]: https://github.com/nahkampf/dedlok/compare/v0.78.0...v0.78.1
 [0.78.0]: https://github.com/nahkampf/dedlok/compare/v0.77.0...v0.78.0
 [0.77.0]: https://github.com/nahkampf/dedlok/compare/v0.76.1...v0.77.0
