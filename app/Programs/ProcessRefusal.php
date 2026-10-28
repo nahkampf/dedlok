@@ -71,7 +71,7 @@ enum ProcessRefusal: string
      */
     case RunOnly = 'run_only';
 
-    /** It is stored at a safehouse, installed somewhere or on the belt: not in hand to run. */
+    /** It is in a container, stored at a safehouse, installed somewhere or on the belt: not in hand to run. */
     case NotToHand = 'not_to_hand';
 
     case OneIcebreaker = 'one_icebreaker';

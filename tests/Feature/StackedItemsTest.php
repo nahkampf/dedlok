@@ -104,4 +104,12 @@ final class StackedItemsTest extends TestCase
         $this->assertSame(ProcessRefusal::NotToHand, $result->refusal);
         $this->assertNull($this->stored->fresh()->running_on_deck_id);
     }
+
+    public function test_a_copy_inside_a_container_cannot_be_started(): void
+    {
+        $card = $this->ownedBy($this->character, Item::factory()->holds('data', 64)->create());
+        $boxed = InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $this->item->id, 'quantity' => 1, 'parent_id' => $card->id]);
+
+        $this->assertSame(ProcessRefusal::NotToHand, app(ProgramRunner::class)->start($this->character, $boxed)->refusal);
+    }
 }
