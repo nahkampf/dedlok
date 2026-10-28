@@ -62,15 +62,15 @@ final class SafehouseSessionTest extends TestCase
         $this->home->startSession($this->character, Action::Workout);
         $this->home->settleSession($this->character, now()->addMinutes(10), stop: true);
 
-        // -0.1 a minute for ten minutes.
-        $this->assertEqualsWithDelta(-1.0, (float) $this->character->fresh()->mood, 0.05);
+        // -0.075 a minute for ten minutes.
+        $this->assertEqualsWithDelta(-0.75, (float) $this->character->fresh()->mood, 0.05);
 
         $this->character->forceFill(['study_progress' => 99.9, 'mood' => 0])->save();
         $this->home->startSession($this->character->fresh(), Action::Study);
         $this->home->settleSession($this->character->fresh(), now()->addMinute());
 
-        // +10 for the point, -0.1 for the minute.
-        $this->assertEqualsWithDelta(9.9, (float) $this->character->fresh()->mood, 0.05);
+        // +10 for the point, -0.075 for the minute.
+        $this->assertEqualsWithDelta(9.925, (float) $this->character->fresh()->mood, 0.05);
     }
 
     public function test_a_full_meter_gains_a_point_sends_a_message_and_resets(): void

@@ -46,8 +46,8 @@ return [
     // Work out and Study stop this many points of fatigue short of the maximum, and rest instead: nobody collapses from training.
     'sessions' => [
         'margin' => 1,
-        'workout' => ['fatigue' => 2.5, 'progress' => 0.3, 'reference' => 60, 'exponent' => 1, 'mood' => -0.1, 'gain_mood' => 10, 'attributes' => ['meat', 'motor', 'muscle']],
-        'study' => ['fatigue' => 2.5, 'progress' => 0.3, 'reference' => 60, 'exponent' => 1, 'mood' => -0.1, 'gain_mood' => 10, 'attributes' => ['intellect', 'memory', 'focus']],
+        'workout' => ['fatigue' => 3, 'progress' => 0.3, 'reference' => 60, 'exponent' => 1, 'mood' => -0.075, 'gain_mood' => 10, 'attributes' => ['meat', 'motor', 'muscle']],
+        'study' => ['fatigue' => 2.5, 'progress' => 0.3, 'reference' => 60, 'exponent' => 1, 'mood' => -0.075, 'gain_mood' => 10, 'attributes' => ['intellect', 'memory', 'focus']],
         'simstim' => ['fatigue' => 1, 'mood' => 0.4, 'daily_seconds' => 7200],
     ],
 
