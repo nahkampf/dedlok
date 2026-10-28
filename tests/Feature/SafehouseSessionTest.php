@@ -46,6 +46,33 @@ final class SafehouseSessionTest extends TestCase
         $this->assertGreaterThan(0, (float) $fresh->current_fatigue);
     }
 
+    public function test_the_better_you_already_are_the_slower_the_meter_fills(): void
+    {
+        // Sum 150 instead of 60: 0.3 x 60/150 = 0.12 a minute.
+        $this->character->forceFill(['meat' => 50, 'motor' => 50, 'muscle' => 50])->save();
+        $this->home->startSession($this->character->fresh(), Action::Workout);
+
+        $this->home->settleSession($this->character->fresh(), now()->addMinutes(10));
+
+        $this->assertEqualsWithDelta(1.2, (float) $this->character->fresh()->workout_progress, 0.01);
+    }
+
+    public function test_training_drains_mood_and_a_gain_lifts_it(): void
+    {
+        $this->home->startSession($this->character, Action::Workout);
+        $this->home->settleSession($this->character, now()->addMinutes(10), stop: true);
+
+        // -0.1 a minute for ten minutes.
+        $this->assertEqualsWithDelta(-1.0, (float) $this->character->fresh()->mood, 0.05);
+
+        $this->character->forceFill(['study_progress' => 99.9, 'mood' => 0])->save();
+        $this->home->startSession($this->character->fresh(), Action::Study);
+        $this->home->settleSession($this->character->fresh(), now()->addMinute());
+
+        // +10 for the point, -0.1 for the minute.
+        $this->assertEqualsWithDelta(9.9, (float) $this->character->fresh()->mood, 0.05);
+    }
+
     public function test_a_full_meter_gains_a_point_sends_a_message_and_resets(): void
     {
         $this->character->forceFill(['study_progress' => 99.9])->save();

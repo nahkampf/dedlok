@@ -39,13 +39,15 @@ return [
     /*
      * Work out, Study and Simstim: open-ended, like resting. PLACEHOLDERS until balance. Per MINUTE: `fatigue` is added
      * (scaled by fatigue_taken), `progress` fills the meter (at 100 one of `attributes` goes up by one and it resets),
-     * `mood` is added. Simstim may be done `daily_seconds` a day (UTC).
+     * `mood` is added. Simstim may be done `daily_seconds` a day (UTC). For Work out and Study `progress` is the rate when
+     * the three attributes sum to `reference`, scaled by (reference / sum) ^ `exponent` (stored values); `mood` is
+     * a drain per minute and `gain_mood` the jump when a point is gained.
      */
     // Work out and Study stop this many points of fatigue short of the maximum, and rest instead: nobody collapses from training.
     'sessions' => [
         'margin' => 1,
-        'workout' => ['fatigue' => 2, 'progress' => 0.3, 'attributes' => ['meat', 'motor', 'muscle']],
-        'study' => ['fatigue' => 2, 'progress' => 0.3, 'attributes' => ['intellect', 'memory', 'focus']],
+        'workout' => ['fatigue' => 2.5, 'progress' => 0.3, 'reference' => 60, 'exponent' => 1, 'mood' => -0.1, 'gain_mood' => 10, 'attributes' => ['meat', 'motor', 'muscle']],
+        'study' => ['fatigue' => 2.5, 'progress' => 0.3, 'reference' => 60, 'exponent' => 1, 'mood' => -0.1, 'gain_mood' => 10, 'attributes' => ['intellect', 'memory', 'focus']],
         'simstim' => ['fatigue' => 1, 'mood' => 0.4, 'daily_seconds' => 7200],
     ],
 
