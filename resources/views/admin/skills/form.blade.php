@@ -58,16 +58,15 @@
 
                 <div class="field" @error('category') data-invalid @enderror>
                     <label class="field__label" for="category">{{ Text::get('admin.skills.fields.category') }}</label>
-                    {{-- A free text field with suggestions, not a <select>: a
-                         category is created by being typed, and the tree draws
-                         a lane for whatever it finds. --}}
-                    <input class="input" id="category" name="category" list="categories"
-                           value="{{ $value('category') }}" required>
-                    <datalist id="categories">
+                    {{-- A drop-down of the existing lanes; a category is still created by typing
+                         one in the second field, and the tree draws a lane for whatever it finds. --}}
+                    <select class="select" id="category" name="category">
                         @foreach ($categories as $category)
-                            <option value="{{ $category }}"></option>
+                            <option value="{{ $category }}" @selected($value('category') === $category)>{{ $category }}</option>
                         @endforeach
-                    </datalist>
+                    </select>
+                    <input class="input" id="new_category" name="new_category" value="{{ old('new_category') }}"
+                           placeholder="{{ Text::get('admin.skills.fields.new_category') }}" style="margin-top:var(--s-2)">
                     <span class="field__hint">{{ Text::get('admin.skills.fields.category_hint') }}</span>
                     @error('category') <span class="field__error">{{ $message }}</span> @enderror
                 </div>

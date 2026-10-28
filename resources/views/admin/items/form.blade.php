@@ -630,6 +630,19 @@
                         @error('assess_step') <span class="field__error">{{ $message }}</span> @enderror
                     </div>
 
+                    {{-- A Utility's family: the group a skill can sharpen together. Blank is none. --}}
+                    <div class="field" style="margin-top:var(--s-3)" @error('family') data-invalid @enderror>
+                        <label class="field__label" for="family">{{ Text::get('admin.items.fields.family') }}</label>
+                        <select class="select" id="family" name="family">
+                            <option value="">{{ Text::get('admin.items.fields.family_none') }}</option>
+                            @foreach (\App\Models\Program::families() as $family)
+                                <option value="{{ $family }}" @selected(old('family', $item?->program?->family) === $family)>{{ $family }}</option>
+                            @endforeach
+                        </select>
+                        <span class="field__hint">{{ Text::get('admin.items.fields.family_hint') }}</span>
+                        @error('family') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+
                     {{-- Whether two copies may be pointed at two things at
                          once. A property of the SOFTWARE: how many a character
                          may run is the program_threads stat, and an icebreaker

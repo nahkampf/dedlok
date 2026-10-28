@@ -42,6 +42,8 @@ class SkillRequest extends FormRequest
     {
         $this->merge([
             'on_market' => $this->boolean('on_market'),
+            // A category typed into the new-category box wins over the drop-down.
+            'category' => $this->filled('new_category') ? trim((string) $this->input('new_category')) : $this->input('category'),
             'description' => $this->filled('description') ? $this->input('description') : null,
             // A form with every prerequisite row removed sends nothing at all,
             // which has to mean "no prerequisites" rather than "leave them be".

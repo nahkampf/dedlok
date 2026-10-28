@@ -5229,6 +5229,9 @@ return [
                 'utility_hint' => 'A Utility (kind Utility) does what is ticked while it runs: Locates finds the nearest system you have met, Walks takes you to what it found (a Pathfinder is both), Jumps puts a Jump button beside addresses. Ignored by every other kind.',
                 'assess_step' => 'Assessor step (%)',
                 'assess_step_hint' => 'Utilities only: makes this an Assessor, which shows rough odds on the run screens, rounded to this many percent (5 is the finest). Blank is not an Assessor.',
+                'family' => 'Family',
+                'family_none' => 'None',
+                'family_hint' => 'Utilities only: the group this belongs to. A skill that sharpens the family scales every modifier this carries while it runs (a Compressor\'s storage, say). Blank is none.',
                 'traverse_seconds_hint' => 'Programs that walk only: how long each step of Autotraverse takes. Blank is the default of 10 seconds.',
                 'lifetime_seconds_hint' => 'Blank is an ordinary program. Set, it is a Script: a running copy lasts this long from the moment it starts and is then spent. Stopping one early destroys it.',
                 'background_process' => 'Runs in the background',
@@ -5395,7 +5398,8 @@ return [
                 'title_hint' => 'What a player reads. The imprint reads from it too.',
                 'description' => 'Description',
                 'category' => 'Category',
-                'category_hint' => 'The lane it hangs in on the skill tree. Reuse an existing one to group it.',
+                'category_hint' => 'The lane it hangs in on the skill tree. Pick one, or type a new one below to start a lane.',
+                'new_category' => 'Or a new category',
                 'rank' => 'Rank',
                 // The rank as a VALUE rather than as a field label: the
                 // select's options and the listing's column each show one.
