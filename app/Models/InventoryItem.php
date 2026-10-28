@@ -375,6 +375,18 @@ class InventoryItem extends Model
         return $this->hasOne(MarketOffer::class, 'inventory_item_id');
     }
 
+    /** In a container, stored at a safehouse, installed on a fortress or in a body, or on the belt: yours, and not in your hands to run. */
+    public function isElsewhere(): bool
+    {
+        return $this->parent_id !== null || $this->safehouse_id !== null || $this->fortress_system_id !== null || $this->installed_at !== null || $this->belt_slot !== null;
+    }
+
+    /** @param  Builder<self>  $query */
+    public function scopeNotElsewhere(Builder $query): void
+    {
+        $query->whereNull('parent_id')->whereNull('safehouse_id')->whereNull('fortress_system_id')->whereNull('installed_at')->whereNull('belt_slot');
+    }
+
     public function isListed(): bool
     {
         return $this->offer()->exists();

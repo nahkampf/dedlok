@@ -15,10 +15,12 @@ use App\Cyberspace\RunRefusal;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\TravelRefusal;
 use App\Models\Character;
+use App\Models\District;
 use App\Models\Hunt;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Program;
+use App\Models\Safehouse;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use App\Stats\Resolver;
@@ -138,6 +140,27 @@ final class HunterTest extends TestCase
 
         $this->assertSame(1, $running->count());
         $this->assertSame($strong->item_id, $running->first()->item_id, 'the stronger of the two owned icebreakers');
+    }
+
+    public function test_an_icebreaker_stored_away_is_not_started_and_the_one_in_hand_is(): void
+    {
+        $weak = $this->giveItem(Item::query()->where('slug', 'icebreaker-1')->sole());
+        $strong = $this->giveItem(Item::query()->where('slug', 'icebreaker-3')->sole());
+        $home = Safehouse::create([
+            'slug' => 'capsule', 'title' => 'Capsule hotel', 'district_id' => District::query()->where('slug', 'dockside')->firstOrFail()->id,
+            'rent' => 40, 'security' => 0, 'stealth' => 0, 'rest_rate' => 2, 'storage_slots' => 2, 'actions' => ['rest'],
+        ]);
+        $strong->forceFill(['safehouse_id' => $home->id])->save();
+
+        $this->character->forceFill(['heat' => 50])->save();
+        $this->hunters()->spawn($this->character->fresh());
+
+        $running = $this->character->fresh()->runningProcesses();
+
+        $this->assertSame(1, $running->count());
+        $this->assertSame($weak->item_id, $running->first()->item_id, 'the stored one is not in hand');
+        $this->assertSame($home->id, $strong->fresh()->safehouse_id);
+        $this->assertNull($strong->fresh()->running_on_deck_id);
     }
 
     public function test_running_programs_are_stopped_so_the_icebreaker_can_start(): void

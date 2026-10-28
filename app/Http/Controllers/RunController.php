@@ -102,6 +102,7 @@ class RunController extends Controller
         $loadout = InventoryItem::query()
             ->where('character_id', $character->id)
             ->whereNull('running_on_deck_id')
+            ->notElsewhere()
             ->whereDoesntHave('offer')
             ->whereHas('item.program', static fn ($q) => $q->where('background_process', false)->whereNotIn('kind', array_map(static fn (ProgramKind $k): string => $k->value, array_filter(ProgramKind::cases(), static fn (ProgramKind $k): bool => $k->neverRunsOnADeck()))))
             ->with('item.program')
@@ -238,7 +239,12 @@ class RunController extends Controller
     {
         $character->assumedRunning = $rows->values();
 
-        return app(Assessor::class)->overall($character, $scan);
+        // Cleared afterwards: the page goes on to read what is really spent from this same character.
+        try {
+            return app(Assessor::class)->overall($character, $scan);
+        } finally {
+            $character->assumedRunning = null;
+        }
     }
 
     /** Go in. The purpose is chosen here and never changed. */

@@ -1,3 +1,9 @@
+## 0.78.1 (2026-10-28)
+
+- Several small bugs when checking for stack id for items, which caused things like items moving from deck to safe house etc. Should all be resolved now.
+- Similarly programs that were not on-deck could also be run in certain situations
+- Assessors sometimes remembered the last loadlout and got the CPU calculation all messed up. Fixed now.
+
 ## 0.78.0 (2026-10-27)
 
 - Messages are now either Priority or Standard. Most low-urgency notifications are standard, while all player written and/or urgent/important messages are Priority.

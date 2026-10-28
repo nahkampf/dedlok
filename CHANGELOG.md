@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.78.1] — 2026-10-28
+
+### Fixed
+- **The run briefing counted the remembered loadout as running.** `RunController::assessLoadout()` set `Character::$assumedRunning` for the Assessor's estimate and left it set, so `spentOn()` on the same page added the ticked stash programs to the deck's compute and memory in use (a lone Predictor read as 20 qFLOPS). It is cleared once the estimate is made. Regression test in `AssessorScreensTest`.
+- **A copy of a stackable item joined the wrong pile.** Four hand-written "merge into the pile already there" queries looked for a row by item and parent only, so a copy that was stopped (`ProgramRunner::putBack`), taken off the belt (`BeltEquipper::take`), granted or bought (`ItemGranter::grant`) or taken out of a container (`ItemPlacer::moveInto`) could fold into a copy stored at a safehouse, running, listed on the market or installed. They now require `stack_key`, which only a real pile has. Found by a report (Noodle's Surveyor stopped by a Bloodhound joined the one stored at his safehouse). `StackedItemsSimulationTest` plays a stackable program through loose, running, stored, listed, sold and boxed in random order (40 seeds, 300 more run once) and checks the copies in each place after every step; `StackedItemsTest` holds the four cases.
+- **A program that was not in hand could be run.** `ProgramRunner::refusalFor()` never asked where the row was, and the hunter (`Hunters::startBestIcebreaker`) and the briefing's loadout took any row the character owned, so the strongest icebreaker could be one stored at a safehouse, installed on a fortress or in a body, or on the belt. New `ProcessRefusal::NotToHand` (`InventoryItem::isElsewhere()`: in a container, stored at a safehouse, installed, or belted), and both queries use the new `notElsewhere()` scope, so a refused row cannot end the hunter's try-the-next loop. Player text `programs.refused.not_to_hand` is a placeholder.
+
+
 ## [0.78.0] — 2026-10-30
 
 ### Added
@@ -3856,7 +3864,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.78.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.78.1...HEAD
+[0.78.1]: https://github.com/nahkampf/dedlok/compare/v0.78.0...v0.78.1
 [0.78.0]: https://github.com/nahkampf/dedlok/compare/v0.77.0...v0.78.0
 [0.77.0]: https://github.com/nahkampf/dedlok/compare/v0.76.1...v0.77.0
 [0.76.1]: https://github.com/nahkampf/dedlok/compare/v0.76.0...v0.76.1

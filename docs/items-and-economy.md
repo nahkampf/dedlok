@@ -58,6 +58,12 @@ _Split out of CLAUDE.md. Heading levels are as they were there._
   (nulls are distinct in a unique index, so each object gets a row) and
   `character:item:parent` for stackable ones. **Derived on every save by the model, never
   set by hand.** A generated column cannot read `items.stackable`.
+- **A PILE IS A ROW WITH A STACK KEY, and any code that merges a row into "the pile already there" must ask for
+  `->whereNotNull('stack_key')`.** A copy that is running, stored at a safehouse, installed on a fortress, belted or listed has
+  no key, because it is a place of its own. Merging by item and parent alone (as `putBack()`, `ItemGranter`, `BeltEquipper`
+  and `ItemPlacer::moveInto()` once did) folded a stopped, unbelted or taken-out copy into a copy stored at the safehouse.
+  `StackedItemsSimulationTest` walks a stackable program through every place in random order and compares the copies in each
+  place to what the step should have made them; extend it when a new place a row can be in appears.
 - **The stash is a slot grid, and the detail card is the only place words are.** One
   `.slot` per *loose* row, deliberately unpadded (neither inventory has a capacity).
   Everything else lives in one `<x-item-detail>` rendered into a `<template>` beside the

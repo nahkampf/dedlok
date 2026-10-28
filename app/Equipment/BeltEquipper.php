@@ -85,6 +85,7 @@ final class BeltEquipper
                     ->whereNull('belt_slot')
                     ->whereNull('running_on_deck_id')
                     ->whereNull('parent_id')
+                    ->whereNotNull('stack_key')
                     ->whereKeyNot($row->getKey())
                     ->first()
                 : null;
