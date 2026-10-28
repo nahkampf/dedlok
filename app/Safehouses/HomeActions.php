@@ -403,7 +403,12 @@ final class HomeActions
             $seconds = max(0, (int) floor($from->diffInSeconds($until, false)));
 
             if ($seconds > 0) {
-                $this->fatigue->ease($locked, Points::of($locked->home()->rest_rate * $seconds / 60));
+                $eased = $this->fatigue->ease($locked, Points::of($locked->home()->rest_rate * $seconds / 60));
+
+                // Rest lifts a low mood fast and a good one hardly at all: per point of fatigue eased, so a better home does it
+                // quicker (its rate) without a different total.
+                $tier = (float) $locked->mood < 0 ? 'below_zero' : 'above_zero';
+                $this->mood->add($locked, (float) config("safehouse.rest.mood_per_fatigue.{$tier}") * (float) $eased);
 
                 // SI and HP mend while resting: whole hundredths of the running total, so the sum is exact however often somebody looks.
                 $before = (int) floor($from->diffInSeconds(CarbonImmutable::instance($activity->created_at), true));

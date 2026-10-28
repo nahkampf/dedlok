@@ -33,6 +33,8 @@ return [
         'synaptic_per_minute' => 0.083,
         // Hit points mended per minute of resting, whatever the home.
         'hitpoints_per_minute' => 0.05,
+        // Mood gained per point of fatigue eased: much more while it is below zero than once it is up.
+        'mood_per_fatigue' => ['below_zero' => 0.05, 'above_zero' => 0.005],
         'overridden_by' => ['opiate', 'medical'],
     ],
 

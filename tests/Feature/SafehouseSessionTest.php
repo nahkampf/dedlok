@@ -73,6 +73,21 @@ final class SafehouseSessionTest extends TestCase
         $this->assertEqualsWithDelta(9.925, (float) $this->character->fresh()->mood, 0.05);
     }
 
+    public function test_resting_lifts_a_low_mood_quickly_and_a_good_one_hardly(): void
+    {
+        $this->character->home()->forceFill(['rest_rate' => 1, 'actions' => ['rest']])->save();
+
+        foreach ([[-20, -19.75], [20, 20.025]] as [$mood, $expected]) {
+            $this->character->forceFill(['current_fatigue' => 10, 'mood' => $mood])->save();
+            $this->home->startRest($this->character->fresh());
+
+            $this->home->settleRest($this->character->fresh(), now()->addMinutes(5), stop: true);
+
+            // Five points of fatigue eased: 0.05 each below zero, 0.005 each above.
+            $this->assertEqualsWithDelta($expected, (float) $this->character->fresh()->mood, 0.01);
+        }
+    }
+
     public function test_a_full_meter_gains_a_point_sends_a_message_and_resets(): void
     {
         $this->character->forceFill(['study_progress' => 99.9])->save();
