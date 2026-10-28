@@ -513,6 +513,8 @@ final class ProgramRunner
             ->where('character_id', $row->character_id)
             ->where('item_id', $row->item_id)
             ->whereNull('running_on_deck_id')
+            // A real pile only: a copy stored at a safehouse, on a fortress or installed has no stack key and is not one.
+            ->whereNotNull('stack_key')
             ->where(fn ($q) => $row->parent_id === null
                 ? $q->whereNull('parent_id')
                 : $q->where('parent_id', $row->parent_id))

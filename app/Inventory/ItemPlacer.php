@@ -120,6 +120,8 @@ final class ItemPlacer
                 ->where('character_id', $row->character_id)
                 ->where('item_id', $row->item_id)
                 ->where('parent_id', $parentId)
+                // A real pile only: a copy running, stored, listed or belted has no stack key and is not one.
+                ->whereNotNull('stack_key')
                 ->whereKeyNot($row->getKey())
                 ->lockForUpdate()
                 ->first()

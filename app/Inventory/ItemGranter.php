@@ -65,6 +65,8 @@ final class ItemGranter
             // A copy that is running (or belted) is a row of its own; adding to it would hand a running Script a second life.
             ->whereNull('running_on_deck_id')
             ->whereNull('belt_slot')
+            // A real pile only: a copy stored at a safehouse, on a fortress or installed is a place of its own.
+            ->whereNotNull('stack_key')
             // A pile on the player market is spoken for: merging into it would hand the copy to whoever buys the listing.
             ->whereDoesntHave('offer')
             ->first();
