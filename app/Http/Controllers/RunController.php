@@ -238,7 +238,12 @@ class RunController extends Controller
     {
         $character->assumedRunning = $rows->values();
 
-        return app(Assessor::class)->overall($character, $scan);
+        // Cleared afterwards: the page goes on to read what is really spent from this same character.
+        try {
+            return app(Assessor::class)->overall($character, $scan);
+        } finally {
+            $character->assumedRunning = null;
+        }
     }
 
     /** Go in. The purpose is chosen here and never changed. */

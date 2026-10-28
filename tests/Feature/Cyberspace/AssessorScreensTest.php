@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Cyberspace;
 
 use App\Cyberspace\RunPurpose;
+use App\Decks\DeckTotals;
 use App\Models\Character;
 use App\Models\Ice;
 use App\Models\InventoryItem;
@@ -15,6 +16,8 @@ use App\Models\SystemScan;
 use App\Programs\ProcessRefusal;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
+use App\Stats\Resolver;
+use App\Support\Qb;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
@@ -117,6 +120,26 @@ final class AssessorScreensTest extends TestCase
 
         $this->assertNotSame($plain, $ticked);
         $this->assertNull($row->fresh()->running_on_deck_id);
+    }
+
+    public function test_assuming_a_loadout_does_not_spend_the_decks_compute_on_the_briefing(): void
+    {
+        app(ProgramRunner::class)->start($this->character, $this->assessor());
+
+        $before = app(ProgramRunner::class)->spentOn($this->character->fresh(), (int) $this->character->equippedDeck->id);
+
+        $evasion = Item::factory()->program(ProgramKind::Evasion, qflops: 1, memory: 1, background: false)->create();
+        $row = $this->ownedBy($this->character, $evasion);
+
+        // The remembered loadout (a cookie) is what the briefing assumes is running for the estimate.
+        $html = $this->actingAs($this->character->user)
+            ->withCookie('run_loadout', (string) $row->item_id)
+            ->get(route('run.setup'))->assertOk()->getContent();
+
+        preg_match('/data-free-qflops="(\d+)"/', $html, $m);
+        $totals = DeckTotals::forCharacter($this->character->fresh(), $this->character->equippedDeck, app(Resolver::class));
+
+        $this->assertSame(max(0, Qb::tenths($totals->qflops) - Qb::tenths($before['qflops'])), (int) $m[1], 'the ticked program is not running, so it spends nothing');
     }
 
     public function test_the_assessment_is_refused_without_an_assessor(): void
