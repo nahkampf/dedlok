@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Programs\ProgramKind;
 use App\Stats\Modifier;
+use App\Stats\StatRegistry;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * storage by owning it, compute and memory only while it runs.
  */
 #[Fillable([
-    'item_id', 'kind', 'produces', 'leech_resource', 'leech_amount', 'qflops_cost', 'memory_cost', 'storage_size', 'lifetime_seconds', 'traverse_seconds', 'assess_step',
+    'item_id', 'kind', 'produces', 'leech_resource', 'leech_amount', 'qflops_cost', 'memory_cost', 'storage_size', 'lifetime_seconds', 'traverse_seconds', 'assess_step', 'family',
     'background_process', 'multithreaded', 'modifiers', 'decrypts', 'locates', 'walks', 'jumps', 'tracks',
 ])]
 class Program extends Model
@@ -47,6 +48,19 @@ class Program extends Model
             'modifiers' => 'array',
             'decrypts' => 'array',
         ];
+    }
+
+    /**
+     * The families a program may be put in: every stat `family.<name>` in config/stats.php.
+     *
+     * @return list<string>
+     */
+    public static function families(): array
+    {
+        return array_map(
+            static fn (string $id): string => substr($id, 7),
+            StatRegistry::fromConfig()->tagged('family'),
+        );
     }
 
     /** Spent by running: a copy lasts `lifetime_seconds` and is then gone (see App\Programs\Lifetime). */

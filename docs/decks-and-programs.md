@@ -150,6 +150,10 @@ what a bare `items` row cannot.
   program's five per-level grants do not penalise each other. Different kinds
   never discount each other. **This is the game's rule for things of one type stacking
   anywhere**: the next source that can hold two reads the same list.
+- **`programs.family` groups programs a skill can sharpen together** (Utility only, chosen in the item editor from the stats tagged `family`). The stat `family.<name>` (`family.compressor`, base 0, a per cent) is
+  granted by skills like any stat; `RunningPrograms` scales every modifier of a running program in that family by `1 + stat/100` (`Modifier::scaledBy()`),
+  resolving the stat from `SkillEffects` alone so the source never asks itself. A new family is a stat in `config/stats.php` tagged `family`, nothing else.
+  The Kompressor is a Utility in `compressor` carrying `percentage_of_base 15` on `deck_storage`; no item is seeded.
 - **`programs.multithreaded` decides whether more than one is a question at all** — a
   property of the software, false by default, exposed in the item editor.
 - **Run-only software is the LOADOUT, chosen on the briefing.** `RunStarter::start()` is

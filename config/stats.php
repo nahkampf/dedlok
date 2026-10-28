@@ -735,6 +735,18 @@ return [
             'rounding' => 'floor',
         ],
 
+        /*
+        | How much better the programs of one FAMILY are, in per cent: a running program whose `programs.family` is
+        | `compressor` has every modifier it carries scaled by 1 + this/100. The base is zero (as written); a skill
+        | grants it ("Utility: Compressors +3% / level"). Read by `App\Stats\Sources\RunningPrograms`.
+        */
+        'family.compressor' => [
+            'tags' => ['software', 'family'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'tenth',
+        ],
+
         'deck_storage' => [
             'tags' => ['deck', 'storage'],
             'min' => 0,

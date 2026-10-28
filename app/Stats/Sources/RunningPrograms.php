@@ -8,7 +8,9 @@ use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Programs\Lifetime;
 use App\Stats\Modifier;
+use App\Stats\Resolver;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 
 /**
@@ -62,6 +64,7 @@ final readonly class RunningPrograms implements ModifierSource
         // modifiers on one row (see MECHANICS), and those must not penalise
         // each other.
         $stacks = [];
+        $boosts = [];
 
         foreach (self::processesOn($this->character, $deckId, $this->asAt) as $row) {
             $program = $row->item?->program;
@@ -70,7 +73,11 @@ final readonly class RunningPrograms implements ModifierSource
                 continue;   // something non-program marked as running: not ours to fix
             }
 
+            $boosts[$program->family] ??= $this->familyBoost($program->family);
+            $boost = $boosts[$program->family];
+
             foreach ($program->modifiers($row->item?->name) as $modifier) {
+                $boost > 0 && $modifier = $modifier->scaledBy(1 + $boost / 100);
                 $target = $modifier->target->id ?? implode('+', $modifier->target->allOf);
                 $stacks[$program->kind->value.'|'.$modifier->op->value.'|'.$target][$row->id][] = $modifier;
             }
@@ -100,6 +107,21 @@ final readonly class RunningPrograms implements ModifierSource
         }
 
         return $modifiers;
+    }
+
+    /**
+     * What the character's skills add to a program family, in per cent. Resolved from the skills alone: the programs
+     * are the thing being scaled, so asking the whole sheet would ask this source about itself.
+     */
+    private function familyBoost(?string $family): float
+    {
+        if ($family === null || ! array_key_exists('family.'.$family, (array) Config::get('stats.stats'))) {
+            return 0.0;
+        }
+
+        return App::make(Resolver::class)
+            ->resolve('family.'.$family, 0.0, (new SkillEffects($this->character))->modifiers())
+            ->value;
     }
 
     /** @param  list<Modifier>  $modifiers */

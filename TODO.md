@@ -1043,3 +1043,4 @@ No console errors and no page-level horizontal overflow anywhere. Suggestions, m
 
 
 - **Achievements should raise standing by 0.5, not 1**: lower the standing increase an achievement gives from 1 to 0.5 (find where it is granted, and check that standing is stored with a fraction).
+- **Program families**: `programs.family` now exists (the Kompressor is the first, `compressor`). We may have to come back and give a family to certain existing programs, and check whether any skill should target a family (`family.<name>`) instead of the effect stat it targets today.
