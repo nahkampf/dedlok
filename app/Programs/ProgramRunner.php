@@ -106,6 +106,10 @@ final class ProgramRunner
         }
 
         // The one list of checks, so the briefing's loadout and a posted id meet it as well as the stash's Run.
+        if ($row->isElsewhere()) {
+            return ProcessRefusal::NotToHand;
+        }
+
         if ($row->isListed()) {
             return ProcessRefusal::Listed;
         }

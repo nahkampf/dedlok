@@ -102,6 +102,7 @@ class RunController extends Controller
         $loadout = InventoryItem::query()
             ->where('character_id', $character->id)
             ->whereNull('running_on_deck_id')
+            ->notElsewhere()
             ->whereDoesntHave('offer')
             ->whereHas('item.program', static fn ($q) => $q->where('background_process', false)->whereNotIn('kind', array_map(static fn (ProgramKind $k): string => $k->value, array_filter(ProgramKind::cases(), static fn (ProgramKind $k): bool => $k->neverRunsOnADeck()))))
             ->with('item.program')

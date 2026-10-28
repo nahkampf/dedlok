@@ -14,6 +14,7 @@ use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Safehouse;
 use App\Models\Skill;
+use App\Programs\ProcessRefusal;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -94,5 +95,13 @@ final class StackedItemsTest extends TestCase
 
         $this->assertSame(1, $this->stored->fresh()->quantity);
         $this->assertSame(1, InventoryItem::query()->loose()->where('character_id', $this->character->id)->where('item_id', $this->item->id)->sum('quantity'));
+    }
+
+    public function test_a_copy_stored_at_a_safehouse_cannot_be_started(): void
+    {
+        $result = app(ProgramRunner::class)->start($this->character, $this->stored);
+
+        $this->assertSame(ProcessRefusal::NotToHand, $result->refusal);
+        $this->assertNull($this->stored->fresh()->running_on_deck_id);
     }
 }

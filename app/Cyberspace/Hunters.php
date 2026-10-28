@@ -228,6 +228,7 @@ final class Hunters
         $owned = InventoryItem::query()
             ->where('character_id', $character->id)
             ->whereNull('running_on_deck_id')
+            ->notElsewhere()
             ->whereHas('item.program', static fn ($q) => $q->where('kind', ProgramKind::Icebreaker->value))
             ->with('item.program')
             ->get();

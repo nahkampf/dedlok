@@ -245,6 +245,7 @@ return [
             'one_assessor' => 'Only one assessor runs at a time.',
             'not_runnable' => 'This is not run on a deck: it is installed on a system during a run, or on a fortress.',
             'listed' => 'It is up for sale on the market. Withdraw the offer before you use it.',
+            'not_to_hand' => '[not_to_hand]',
         ],
     ],
 
