@@ -288,6 +288,17 @@ class Character extends Model
             ->withTimestamps();
     }
 
+    /** @var list<int>|null Skill ids this character has injected, read once per instance (a card per imprint asks). */
+    private ?array $injectedSkillIds = null;
+
+    /** Has this character injected the skill? A `character_skills` row is what that means. */
+    public function hasInjectedSkillId(int $skillId): bool
+    {
+        $this->injectedSkillIds ??= $this->characterSkills()->pluck('skill_id')->map(static fn (mixed $id): int => (int) $id)->all();
+
+        return in_array($skillId, $this->injectedSkillIds, true);
+    }
+
     /**
      * The rows themselves, for training state rather than skill definitions.
      *
