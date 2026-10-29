@@ -1,3 +1,8 @@
+## 0.83.1 (2026-10-29)
+
+- An update to 0.83.0: We also needed to support CUU/CUB/CUB, absolute position and save/restore cursor to cover all ANSI cases.
+- You can now preview your bio rendered beautifully ("Preview" button).
+
 ## 0.83.0 (2026-10-29)
 
 - What is a hacker game without ANSI art? Bio now supports a subset of ANSI escape codes (reset, foreground, background, high intensity and cursor forward). ANSI is rendered as an 80-char width 8px cell format. SAUCE is supported (for reading the ICE flag), but is stripped from output.
