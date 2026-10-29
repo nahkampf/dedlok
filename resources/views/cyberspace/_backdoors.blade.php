@@ -8,11 +8,11 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>{{ Text::get('cyberspace.known.name') }}</th>
+                    <th data-sort="text" aria-sort="none">{{ Text::get('cyberspace.known.name') }}</th>
                     <th>{{ Text::get('cyberspace.known.address') }}</th>
-                    <th>{{ Text::get('cyberspace.known.type') }}</th>
-                    <th class="t-right">{{ Text::get('cyberspace.known.grade') }}</th>
-                    <th>{{ Text::get('cyberspace.backdoors.kind') }}</th>
+                    <th data-sort="text" aria-sort="none">{{ Text::get('cyberspace.known.type') }}</th>
+                    <th class="t-right" data-sort="num" aria-sort="none">{{ Text::get('cyberspace.known.grade') }}</th>
+                    <th data-sort="text" aria-sort="none">{{ Text::get('cyberspace.backdoors.kind') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -26,8 +26,8 @@
                                 <x-jump :address="$system->address" />
                             </span>
                         </td>
-                        <td class="muted">{{ $system->type->label() }}</td>
-                        <td class="t-right num">{{ $system->grade ?? '—' }}</td>
+                        <td><span class="tag tag--{{ $system->type->value }}">{{ $system->type->label() }}</span></td>
+                        <td class="t-right num"><span class="tag">{{ $system->grade ?? '—' }}</span></td>
                         <td>{{ $backdoor->kind->label() }}</td>
                     </tr>
                 @endforeach
