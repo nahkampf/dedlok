@@ -321,7 +321,7 @@ ignored. An author who wants a bad pill is writing a story that can kill — tha
 
 **The spawn roll is not a check**, so it is a flat percentile with an injected die, bound in the
 container (`Hunters`' shape). Its chance is the **resolved `encounter_chance` stat**, based on
-`city.encounter.travel_chance` (6%) or `explore_chance` (11%) and handed in at the call site, so a
+`city.encounter.travel_chance` (11%) or `explore_chance` (40%) and handed in at the call site, so a
 skill that quiets the street is a modifier.
 
 **Which encounter is a weighted draw out of `max(eligible weights, city.encounter.pool)`**

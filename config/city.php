@@ -118,8 +118,8 @@ return [
     |
     */
     'encounter' => [
-        'travel_chance' => 0.06,
-        'explore_chance' => 0.11,
+        'travel_chance' => 0.11,
+        'explore_chance' => 0.40,
         'pool' => 100,
         // How rare an encounter's weight reads in the editor, lowest first: the first row whose
         // ceiling the weight does not exceed. The weight is its share of the pool, 1 to 100.
