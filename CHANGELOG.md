@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.83.1] — 2026-10-29
+
+### Added
+- **Preview bio**, a button beside *Save bio* on the character sheet. `POST /character/bio/preview` (`CharacterController::preview`) draws the text in the box, saved or not, in a modal (`#bio-preview`, filled by `[data-bio-preview]` in `ui-kit.js`), through the same partial the profile page uses (`profile/_bio.blade.php`), so ANSI art, `market:` buttons and the 8px grid look as they will; it applies the character's stored iCE flag and writes nothing. A refused request closes the modal. Tests: `AnsiBioTest`.
+
+### Fixed
+- **ANSI art that moves the cursor was drawn in the wrong places.** `App\Support\Ansi` now draws on an 80-column screen grid and applies cursor up, down, forward and back (`ESC[nA`, `B`, `C`, `D`), position (`ESC[r;cH`, `f`) and save and restore (`s`, `u`); moving never paints, a later write replaces a cell, rows are capped at 2000, and every other sequence (`2J`, `K`) is still dropped. A file that only goes forward and down renders as before (checked cell by cell on ZII-GOLD.ANS). Tests: `AnsiBioTest`.
+
+### Changed
+- Player text for the preview button (`character.bio_preview`), the user's.
+
+
 ## [0.83.0] — 2026-10-29
 
 ### Added
@@ -3917,7 +3929,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.83.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.83.1...HEAD
+[0.83.1]: https://github.com/nahkampf/dedlok/compare/v0.83.0...v0.83.1
 [0.83.0]: https://github.com/nahkampf/dedlok/compare/v0.82.0...v0.83.0
 [0.82.0]: https://github.com/nahkampf/dedlok/compare/v0.81.0...v0.82.0
 [0.81.0]: https://github.com/nahkampf/dedlok/compare/v0.80.0...v0.81.0

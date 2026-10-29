@@ -415,6 +415,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/character/avatar', [CharacterController::class, 'removeAvatar'])->name('character.avatar.remove');
     Route::post('/character/bio', [CharacterController::class, 'bio'])->name('character.bio');
     Route::post('/character/bio/ansi', [CharacterController::class, 'ansi'])->name('character.bio.ansi');
+    Route::post('/character/bio/preview', [CharacterController::class, 'preview'])->name('character.bio.preview');
 
     Route::get('/standing', [StandingController::class, 'index'])->name('standing.index');
     // Another character, as another player sees them. By handle, which is unique.

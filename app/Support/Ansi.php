@@ -7,9 +7,11 @@ namespace App\Support;
 /**
  * A bio that carries ANSI art, drawn as HTML the way a DOS screen would have shown it.
  *
- * A SMALL SUBSET, AS IT WAS WRITTEN: `ESC[...m` with 0 (reset), 1 (high intensity), 5 (blink), 30-37 (foreground) and 40-47
- * (background); and `ESC[nC` (cursor forward, n blank cells that are NOT painted with the current background, as in DOS). Every
- * other parameter and every other escape sequence is dropped, so nothing in a paste can do anything else.
+ * A SMALL SUBSET, AS IT WAS WRITTEN, drawn on an 80-column screen grid so art that moves the cursor lands where DOS put it:
+ * `ESC[...m` with 0 (reset), 1 (high intensity), 5 (blink), 30-37 (foreground) and 40-47 (background); and the cursor
+ * movements `ESC[nA` up, `B` down, `C` forward, `D` back, `ESC[r;cH` / `f` to a position, `s` and `u` to save and restore it. Moving the
+ * cursor does NOT paint (as in DOS): a cell nobody writes stays blank, and a later write replaces what was there. Every other
+ * parameter and every other escape sequence (`2J`, `K`, ...) is dropped, so nothing in a paste can do anything else.
  *
  * `$ice` is iCE colours: blink is no longer blink but a bright BACKGROUND (the video card's blink bit repurposed), so all sixteen
  * colours are available behind the text and nothing flashes. A real file keeps that flag in its SAUCE record, which is cut off
@@ -23,6 +25,9 @@ namespace App\Support;
 final class Ansi
 {
     private const COLUMNS = 80;
+
+    /** Rows past this are not drawn: `ESC[9999B` must not make a page of blank lines. */
+    private const ROWS = 2000;
 
     /** SGR 30-37 order (black, red, green, yellow, blue, magenta, cyan, white) to the DOS palette index. */
     private const DOS = [0, 4, 2, 6, 1, 5, 3, 7];
@@ -41,76 +46,99 @@ final class Ansi
         $text = explode("\x1a", $text, 2)[0];
         preg_match_all('/\x1b\[([0-?]*)[ -\/]*([@-~])|\n|\t|\p{Cc}|./su', $text, $tokens, PREG_SET_ORDER);
 
-        $out = '';
-        $run = '';
-        $style = '';
-        [$fg, $bg, $bold, $blink, $col] = [7, 0, false, false, 0];
-
-        // Close the run in progress: plain when nothing but the defaults is set.
-        $flush = function () use (&$out, &$run, &$style): void {
-            // (phpstan does not see $run and $style change through the references, hence the ignores.)
-            // @phpstan-ignore identical.alwaysTrue, identical.alwaysTrue
-            $out .= $run === '' ? '' : ($style === '' ? e($run) : '<span class="'.$style.'">'.e($run).'</span>');
-            $run = '';
-        };
-        // Blank cells nothing paints: the default style, whatever the current one.
-        $skip = function (int $n) use ($flush, &$out, &$col): void {
-            $flush();
-            $n = max(0, min($n, self::COLUMNS - $col));
-            $out .= str_repeat(' ', $n);
-            $col += $n;
-        };
+        /** @var array<int, array<int, array{string, string}>> $grid row => column => [character, style classes] */
+        $grid = [];
+        [$fg, $bg, $bold, $blink, $row, $col, $last, $saved] = [7, 0, false, false, 0, 0, 0, [0, 0]];
 
         foreach ($tokens as $t) {
             $token = $t[0];
 
             if (str_starts_with($token, "\x1b[")) {
-                $params = $t[1];
+                if (preg_match('/^[\d;]*$/', $t[1]) !== 1) {
+                    continue;
+                }
 
-                if ($t[2] === 'C' && preg_match('/^\d*$/', $params) === 1) {
-                    $skip($params === '' ? 1 : (int) $params);
-                } elseif ($t[2] === 'm' && preg_match('/^[\d;]*$/', $params) === 1) {
-                    foreach (explode(';', $params) as $p) {
-                        $p = (int) $p;
-                        match (true) {
-                            $p === 0 => [$fg, $bg, $bold, $blink] = [7, 0, false, false],
-                            $p === 1 => $bold = true,
-                            $p === 5 => $blink = true,
-                            $p >= 30 && $p <= 37 => $fg = self::DOS[$p - 30],
-                            $p >= 40 && $p <= 47 => $bg = self::DOS[$p - 40],
-                            default => null,
-                        };
-                    }
+                $params = array_map('intval', explode(';', $t[1]));
+                $n = max(1, $params[0]);
 
-                    $new = trim(
-                        ($fg + ($bold ? 8 : 0) !== 7 ? 'a-f'.($fg + ($bold ? 8 : 0)).' ' : '')
-                        .($bg + ($ice && $blink ? 8 : 0) !== 0 ? 'a-b'.($bg + ($ice && $blink ? 8 : 0)).' ' : '')
-                        .($blink && ! $ice ? 'a-bl' : '')
-                    );
-
-                    if ($new !== $style) {
-                        $flush();
-                        $style = $new;
-                    }
+                switch ($t[2]) {
+                    case 'm':
+                        foreach ($params as $p) {
+                            match (true) {
+                                $p === 0 => [$fg, $bg, $bold, $blink] = [7, 0, false, false],
+                                $p === 1 => $bold = true,
+                                $p === 5 => $blink = true,
+                                $p >= 30 && $p <= 37 => $fg = self::DOS[$p - 30],
+                                $p >= 40 && $p <= 47 => $bg = self::DOS[$p - 40],
+                                default => null,
+                            };
+                        }
+                        break;
+                    case 'A': $row = max(0, $row - $n);
+                        break;
+                    case 'B': $row = min(self::ROWS, $row + $n);
+                        break;
+                    case 'C': $col = min(self::COLUMNS - 1, $col + $n);
+                        break;
+                    case 'D': $col = max(0, $col - $n);
+                        break;
+                    case 'H':
+                    case 'f':
+                        $row = min(self::ROWS, max(1, $params[0]) - 1);
+                        $col = min(self::COLUMNS - 1, max(1, $params[1] ?? 1) - 1);
+                        break;
+                    case 's': $saved = [$row, $col];
+                        break;
+                    case 'u': [$row, $col] = $saved;
+                        break;
+                    default:
                 }
             } elseif ($token === "\n") {
-                $run .= "\n";
+                $row = min(self::ROWS, $row + 1);
                 $col = 0;
+                $last = max($last, $row);
             } elseif ($token === "\t") {
-                $skip(8 - $col % 8);
+                $col = min(self::COLUMNS - 1, intdiv($col, 8) * 8 + 8);
             } elseif (preg_match('/^\p{Cc}$/u', $token) !== 1) {
+                // Wraps when a character would land in column 81, not before, so a newline after a full line is no blank row.
                 if ($col === self::COLUMNS) {
-                    $run .= "\n";
+                    $row = min(self::ROWS, $row + 1);
                     $col = 0;
                 }
 
-                $run .= $token;
+                $high = $fg + ($bold ? 8 : 0);
+                $back = $bg + ($ice && $blink ? 8 : 0);
+                $grid[$row][$col] = [$token, trim(
+                    ($high !== 7 ? 'a-f'.$high.' ' : '').($back !== 0 ? 'a-b'.$back.' ' : '').($blink && ! $ice ? 'a-bl' : '')
+                )];
                 $col++;
+                $last = max($last, $row);
             }
         }
 
-        $flush();
+        $lines = [];
 
-        return $out;
+        for ($r = 0; $r <= $last; $r++) {
+            $cells = $grid[$r] ?? [];
+            $line = '';
+            $run = '';
+            $style = '';
+
+            for ($c = 0, $end = $cells === [] ? 0 : max(array_keys($cells)) + 1; $c < $end; $c++) {
+                [$ch, $css] = $cells[$c] ?? [' ', ''];
+
+                if ($css !== $style) {
+                    $line .= $run === '' ? '' : ($style === '' ? e($run) : '<span class="'.$style.'">'.e($run).'</span>');
+                    $run = '';
+                    $style = $css;
+                }
+
+                $run .= $ch;
+            }
+
+            $lines[] = $line.($run === '' ? '' : ($style === '' ? e($run) : '<span class="'.$style.'">'.e($run).'</span>'));
+        }
+
+        return implode("\n", $lines);
     }
 }

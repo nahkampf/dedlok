@@ -300,8 +300,19 @@
 
             <div class="row" style="--gap:var(--s-2)">
                 <button type="submit" class="btn btn--sm cut">{{ Text::get('character.bio_save') }}</button>
+                <button type="button" class="btn btn--sm btn--ghost cut" data-bio-preview="{{ route('character.bio.preview') }}"
+                        data-from="#bio" data-dialog="#bio-preview" data-preview-loading="{{ Text::get('processes.loading') }}">{{ Text::get('character.bio_preview') }}</button>
             </div>
         </form>
+
+        {{-- The body is the server's own drawing of what is in the box (`character.bio.preview`), fetched each time this opens. --}}
+        <dialog id="bio-preview" class="modal modal--wide">
+            <div class="panel__hd">
+                <span class="micro">{{ Text::get('character.bio') }}</span>
+                <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
+            </div>
+            <div class="panel__bd" data-preview-body></div>
+        </dialog>
 
         <form method="POST" action="{{ route('character.bio.ansi') }}" enctype="multipart/form-data" class="stack"
               style="--gap:var(--s-2);margin-top:var(--s-3);max-width:70ch">

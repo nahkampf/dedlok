@@ -2956,6 +2956,7 @@ return [
         'bio_hint' => 'Bio text takes basic ANSI escape sequences, rendered at 8px grid size, CP437, 16 colors.',
         'bio_placeholder' => 'Whatever you want anyone who looks you up to find.',
         'bio_save' => 'Save bio',
+        'bio_preview' => 'Preview bio',
         'bio_saved' => 'Bio saved.',
         'ansi_add' => 'Add ANSI file',
         'ansi_invalid' => 'Invalid ANSI codes',
