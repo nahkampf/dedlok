@@ -28,8 +28,9 @@ are, rather than what you are carrying.
   MEDIUMTEXT because the form allows 65,000 CHARACTERS and TEXT holds 65,535 BYTES — a bio
   in Japanese is three bytes a character. Clearing the box writes NULL: empty and absent
   are one state, and a row of spaces is not a bio.
-  **A bio may carry ANSI art**: `ESC[…m` (reset, high intensity, blink, 16 DOS colours) and `ESC[nC` only, everything else dropped,
-  wrapped at column 80, drawn by `App\Support\Ansi` (see *Frontend*). The *Add ANSI file* button (`character.bio.ansi`,
+  **A bio may carry ANSI art**: `ESC[…m` (reset, high intensity, blink, 16 DOS colours) and the cursor moves (`A B C D`, `H`/`f`, `s`/`u`), everything else
+  dropped, drawn on an 80-column grid by `App\Support\Ansi` (see *Frontend*): moving never paints, a later write replaces a cell, and a
+  character that would land in column 81 wraps. The *Add ANSI file* button (`character.bio.ansi`,
   `CharacterController::ansi`) converts a CP437 file to UTF-8 and appends it after a newline; it reads the SAUCE iCE flag into
   `characters.bio_ice` and cuts the record (everything from the first U+001A). Pasted ANSI has no SAUCE, so it is never iCE. Chat does
   not render ANSI: `PlainText` still strips ESC there.

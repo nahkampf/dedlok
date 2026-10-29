@@ -48,6 +48,15 @@ class AnsiBioTest extends TestCase
         $this->assertSame('<span class="a-b1">a</span>   <span class="a-b1">b</span>', Ansi::render(self::E.'44ma'.self::E.'3Cb'));
     }
 
+    public function test_the_cursor_moves_and_a_later_write_replaces_what_was_there(): void
+    {
+        $this->assertSame("-b\nc", Ansi::render(self::E.'mab'.self::E.'2D'.'-'.self::E.'1B'.self::E.'2D'.'c'), 'back and down');
+        $this->assertSame('- b', Ansi::render(self::E.'ma'.self::E.'1D'.'-'.self::E.'1C'.'b'), 'forward does not paint');
+        $this->assertSame("a\n\n\nz", Ansi::render(self::E.'ma'.self::E.'1;1H'.self::E.'3B'.'z'.self::E.'H'.'a'), 'absolute position');
+        $this->assertSame("x\ny", Ansi::render(self::E.'mx'.self::E.'s'."\n".'y'.self::E.'u'), 'save and restore');
+        $this->assertSame("12\nxy", Ansi::render(self::E.'m1'."\n".'xy'.self::E.'1A'.self::E.'2D'.self::E.'1C'.'2'), 'up');
+    }
+
     public function test_it_wraps_at_80_but_a_newline_after_a_full_line_is_not_a_blank_row(): void
     {
         $full = str_repeat('x', 80);
