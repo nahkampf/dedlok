@@ -222,8 +222,8 @@ final class EncounterTest extends TestCase
 
     public function test_the_chance_is_the_resolved_stat(): void
     {
-        $this->assertEqualsWithDelta(0.05, app(Encounters::class)->chanceFor($this->character, EncounterStart::Travel), 1e-9);
-        $this->assertEqualsWithDelta(0.08, app(Encounters::class)->chanceFor($this->character, EncounterStart::Explore), 1e-9);
+        $this->assertEqualsWithDelta(0.06, app(Encounters::class)->chanceFor($this->character, EncounterStart::Travel), 1e-9);
+        $this->assertEqualsWithDelta(0.11, app(Encounters::class)->chanceFor($this->character, EncounterStart::Explore), 1e-9);
     }
 
     // ---- answering one -------------------------------------------------------
