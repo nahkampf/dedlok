@@ -78,6 +78,10 @@
             <div class="micro" style="color:var(--ink-3);margin-top:var(--s-2)">
                 {{ Text::get('inventory.teaches', ['skill' => $item->useSkill->title]) }}
             </div>
+            @if (auth()->user()?->character?->hasInjectedSkillId($item->use_skill_id))
+                {{-- The market's cyan tick says this on a listing; the stash card says it here, on the hover and in the modal. --}}
+                <div class="micro" style="color:var(--cyan);margin-top:var(--s-1)">{{ Text::get('market.tick.injected') }}</div>
+            @endif
         @elseif ($item->hardwareSummary())
             {{-- A deck's sockets or a module's numbers. It is what the item IS,
                  so it reads where the imprint's skill does. --}}

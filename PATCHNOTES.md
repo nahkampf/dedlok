@@ -1,3 +1,8 @@
+## 0.82.0 (2026-10-29)
+
+- BNI, Golden Path, JSC, Lockjaw and Directorate of Revenue Enforcement now buys various components at their exchanges.
+- Eidetic imprint cards still had a few cases where they didn't display that they were already injected.
+
 ## 0.81.0 (2026-10-29)
 
 - There is now a box in the run planning screen to suspend background processes before the run, to free up resources. These are then restarted automatically after the run.
