@@ -77,12 +77,12 @@ final readonly class RunStarter
      *
      * @param  iterable<InventoryItem>  $loadout
      */
-    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null): RunResult
+    public function start(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = []): RunResult
     {
-        return Trace::scope($character, 'run.start', fn () => $this->startTraced($character, $purpose, $kind, $loadout, $partyId), ['purpose' => $purpose->value, 'kind' => $kind?->value, 'loadout' => is_array($loadout) ? $loadout : Trace::describe($loadout)]);
+        return Trace::scope($character, 'run.start', fn () => $this->startTraced($character, $purpose, $kind, $loadout, $partyId, $suspend), ['purpose' => $purpose->value, 'kind' => $kind?->value, 'loadout' => is_array($loadout) ? $loadout : Trace::describe($loadout)]);
     }
 
-    private function startTraced(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null): RunResult
+    private function startTraced(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = []): RunResult
     {
         if ($character->current_run_id !== null) {
             return RunResult::refused(RunRefusal::AlreadyRunning);
@@ -141,8 +141,11 @@ final readonly class RunStarter
         }
 
         try {
-            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout, $partyId): Run {
+            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout, $partyId, $suspend): Run {
                 $runner = app(ProgramRunner::class);
+
+                // Room for the loadout first. Rolled back with everything else if the run does not begin.
+                $runner->suspend($character, $suspend);
 
                 foreach ($loadout as $row) {
                     $result = $runner->start($character, $row, duringRun: true);
@@ -258,6 +261,7 @@ final readonly class RunStarter
 
             // Nothing run-only outlives the run that started it.
             app(ProgramRunner::class)->stopRunOnly($character);
+            app(ProgramRunner::class)->resumeSuspended($character);
 
             $this->chargeTheTrace($character, $run, $ending);
 

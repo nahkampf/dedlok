@@ -245,7 +245,8 @@ return [
             'one_assessor' => 'Only one assessor runs at a time.',
             'not_runnable' => 'This is not run on a deck: it is installed on a system during a run, or on a fortress.',
             'listed' => 'It is up for sale on the market. Withdraw the offer before you use it.',
-            'not_to_hand' => '[not_to_hand]',
+            'would_overfill_storage' => 'Your deck storage would overfill if this was deactivated.',
+            'not_to_hand' => 'That one is packed away. Take it out first.',
         ],
     ],
 
@@ -932,6 +933,7 @@ return [
             'fortress_moved' => 'Data Fortress :system relocated',
             'fortress_burned' => 'Your fortress Kernel is burned',
             'party_dropped' => 'Left out of a co-op run',
+            'programs_not_resumed' => 'Processes not restarted',
             'siphons_ran' => 'Siphon report',
             'damage_report' => 'Damage report',
             'insurance_property_claim' => 'Insurance Property Claim',
@@ -998,6 +1000,7 @@ return [
             'fortress_moved' => 'The new position is :x,:y, address :address',
             'fortress_burned' => 'Your fortress Kernel was burned. Everything else on it is gone and the Kernel is Frozen for :hours hours: bring in new Leechers that can run it, or lose it.',
             'party_dropped' => ':owner started the co-op run without you: your deck was not ready or you were not at the door.',
+            'programs_not_resumed' => 'THe run is over, but these programs would not start again: :programs',
             // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
             // a burn: the holder was not there, and naming the cause would tell
             // them about a stranger's run they could not otherwise know of.
@@ -1641,6 +1644,9 @@ return [
                 'loadout_other' => 'Other run-only software',
                 'loadout_none' => 'None',
                 'loadout_hint' => 'Select an icebreaker to apply to this run. It cannot be changed once the run is initiated.',
+                'suspend' => 'Suspend background processes',
+                'suspend_none' => 'No background processes',
+                'suspend_hint' => 'Stop background processes for this run. They will reactive after the run.',
                 'scripts' => 'Scripts',
                 'scripts_none' => 'You hold no scripts.',
                 'scripts_hint' => 'A ticked script starts when you go in and is spent by running: it lasts its lifetime and is gone, and stopping it early destroys it. One that does not fit beside everything else you have ticked is marked Unable, and cannot be ticked.',
@@ -2381,6 +2387,13 @@ return [
             'steps_left' => ':steps steps left',
             'traverse_cancel' => 'Cancel',
             'traverse_stopped' => 'Autotraverse stopped.',
+        ],
+
+        'backdoors' => [
+            'button' => 'My backdoors',
+            'title' => 'My backdoors',
+            'none' => 'You hold no backdoors.',
+            'kind' => 'Backdoor',
         ],
 
         'bookmarks' => [
@@ -5231,7 +5244,7 @@ return [
                 'assess_step_hint' => 'Utilities only: makes this an Assessor, which shows rough odds on the run screens, rounded to this many percent (5 is the finest). Blank is not an Assessor.',
                 'family' => 'Family',
                 'family_none' => 'None',
-                'family_hint' => 'Utilities only: the group this belongs to. A skill that sharpens the family scales every modifier this carries while it runs (a Compressor\'s storage, say). Blank is none.',
+                'family_hint' => 'Utilities only. For targeting specific subtypes of utilities with effects/modifiers',
                 'traverse_seconds_hint' => 'Programs that walk only: how long each step of Autotraverse takes. Blank is the default of 10 seconds.',
                 'lifetime_seconds_hint' => 'Blank is an ordinary program. Set, it is a Script: a running copy lasts this long from the moment it starts and is then spent. Stopping one early destroys it.',
                 'background_process' => 'Runs in the background',
@@ -5399,7 +5412,7 @@ return [
                 'description' => 'Description',
                 'category' => 'Category',
                 'category_hint' => 'The lane it hangs in on the skill tree. Pick one, or type a new one below to start a lane.',
-                'new_category' => 'Or a new category',
+                'new_category' => 'Or start a new category',
                 'rank' => 'Rank',
                 // The rank as a VALUE rather than as a field label: the
                 // select's options and the listing's column each show one.

@@ -175,17 +175,29 @@ class Run extends Model
         return count(array_filter($this->routingGrades(), static fn (?int $grade): bool => $grade !== null));
     }
 
-    /** The chain the trace has to walk: the machine, the hops, and you. */
+    /**
+     * The chain the trace has to walk, as the Trace panel draws it: the machine, every hop of the route this run declared
+     * in the order the trace meets them, and you. A hop that has since gone dark keeps its place (`gone`) because the
+     * stored route is never rewritten; `passed` is where the trace has got to.
+     *
+     * @return list<array{label: ?string, kind: string, passed: bool, gone: bool}>
+     */
     public function traceChain(): array
     {
-        // ROUTING IS NOT BUILT, so the chain is the shortest one there is —
-        // the machine you are in, and you. Every backdoored relay a player
-        // routes through will land between these two, and the widget already
-        // draws a chain rather than a pair so that it does not have to change.
-        return [
-            ['label' => $this->address, 'kind' => 'target'],
-            ['label' => null, 'kind' => 'you'],
-        ];
+        $route = array_values((array) ($this->chain ?? []));
+        $addresses = $route === [] ? collect() : System::query()->whereIn('id', $route)->pluck('address', 'id');
+        $grades = $this->routingGrades();
+
+        $nodes = [['label' => $this->address, 'kind' => 'target', 'passed' => true, 'gone' => false]];
+
+        foreach ($route as $i => $id) {
+            $gone = ($grades[$i] ?? null) === null;
+            $nodes[] = ['label' => $gone ? null : $addresses->get($id), 'kind' => 'hop', 'passed' => $i < (int) $this->trace_hop, 'gone' => $gone];
+        }
+
+        $nodes[] = ['label' => null, 'kind' => 'you', 'passed' => $this->trace >= 100, 'gone' => false];
+
+        return $nodes;
     }
 
     /**

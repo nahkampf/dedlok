@@ -7,11 +7,14 @@ namespace App\Programs;
 use App\Crafting\Crafting;
 use App\Cyberspace\Tracker;
 use App\Decks\DeckTotals;
+use App\Decks\Storage;
 use App\Decryption\DecryptionQueue;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Program;
 use App\Models\TrackerSearch;
+use App\Notifications\Category;
+use App\Notifications\Notifier;
 use App\Stats\Resolver;
 use App\Stats\Sources\RunningPrograms;
 use App\Support\Qb;
@@ -326,6 +329,109 @@ final class ProgramRunner
             ->whereNotNull('running_on_deck_id')
             ->whereHas('item.program', static fn ($q) => $q->whereIn('kind', array_map(static fn (ProgramKind $k): string => $k->value, $kinds)))
             ->exists();
+    }
+
+    /**
+     * The background processes the briefing may switch off: running on the equipped deck and not a Script (stopping one
+     * destroys it). One row per running copy.
+     *
+     * @return Collection<int, InventoryItem>
+     */
+    public function suspendable(Character $character): Collection
+    {
+        $deckId = $character->equipped_deck_id;
+
+        if ($deckId === null) {
+            return new Collection;
+        }
+
+        return RunningPrograms::processesOn($character, (int) $deckId)
+            ->filter(static fn (InventoryItem $row): bool => $row->id !== null
+                && $row->item?->program?->background_process === true && ! $row->item->program->isTemporary())
+            ->sortBy(static fn (InventoryItem $row): string => (string) $row->item->displayName())
+            ->values();
+    }
+
+    /**
+     * Would the deck hold what is stored on it with these running rows stopped? A Compressor is what makes it no.
+     *
+     * @param  list<int>  $ids  running inventory row ids
+     */
+    public function wouldOverfill(Character $character, array $ids): bool
+    {
+        $character->assumedStopped = $ids;
+
+        try {
+            return Qb::of(Storage::used($character)) > Qb::of(Storage::capacity($character));
+        } finally {
+            $character->assumedStopped = null;
+        }
+    }
+
+    /**
+     * Stop these running rows and remember them, for the run that is about to begin; `resumeSuspended()` starts them
+     * again. Only what `suspendable()` offers is taken, and a set that would leave the deck over its storage is refused.
+     * Meant to run inside the run's own transaction, so a refusal anywhere rolls the stops back.
+     *
+     * @param  list<int>  $ids  running inventory row ids
+     *
+     * @throws ProcessRefused
+     */
+    public function suspend(Character $character, array $ids): void
+    {
+        $rows = $this->suspendable($character)->whereIn('id', $ids)->values();
+
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        if ($this->wouldOverfill($character, $rows->pluck('id')->all())) {
+            throw new ProcessRefused(ProcessRefusal::WouldOverfillStorage);
+        }
+
+        $kept = (array) ($character->suspended_programs ?? []);
+
+        foreach ($rows as $row) {
+            $kept[$row->item_id] = ($kept[$row->item_id] ?? 0) + 1;
+            $this->putBack($row);
+        }
+
+        $character->forceFill(['suspended_programs' => $kept])->save();
+    }
+
+    /**
+     * Start what `suspend()` stopped, as far as it still fits. The record is cleared either way; what would not start is
+     * told to the character in one message.
+     */
+    public function resumeSuspended(Character $character): void
+    {
+        $kept = (array) ($character->suspended_programs ?? []);
+
+        if ($kept === []) {
+            return;
+        }
+
+        $character->forceFill(['suspended_programs' => null])->save();
+        $left = [];
+
+        foreach ($kept as $itemId => $copies) {
+            for ($i = 0; $i < $copies; $i++) {
+                $row = InventoryItem::query()
+                    ->where('character_id', $character->getKey())
+                    ->where('item_id', $itemId)
+                    ->loose()
+                    ->with('item.program')
+                    ->first();
+
+                if ($row === null || ! $this->start($character, $row)->succeeded()) {
+                    $left[] = $row?->item?->displayName() ?? (string) InventoryItem::query()->where('item_id', $itemId)->first()?->item?->displayName();
+                }
+            }
+        }
+
+        if ($left !== []) {
+            (new Notifier)->send($character, Category::Cyberspace, 'programs_not_resumed', ['programs' => implode(', ', array_unique($left))]);
+        }
     }
 
     /**

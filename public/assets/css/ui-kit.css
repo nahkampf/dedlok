@@ -3212,6 +3212,19 @@ button.board__node[data-inspect]:focus-visible .board__box { border-color: var(-
 
 .cell--silo, .cell--compute, .cell--relay, .cell--exchange, .cell--fortress, .cell--gateway { color: var(--node); }
 
+/* A TYPE AS A TAG, in the colour its node has on the map: the same `--node`, read by a tag instead of a glyph. */
+.tag--silo    { --node: var(--steel); }
+.tag--compute { --node: var(--cyan); }
+.tag--relay   { --node: var(--jade); }
+.tag--exchange { --node: var(--brass); }
+.tag--fortress { --node: var(--ink-0); }
+.tag--gateway { --node: var(--info); }
+.tag--silo, .tag--compute, .tag--relay, .tag--exchange, .tag--fortress, .tag--gateway {
+  color: var(--node);
+  border-color: color-mix(in srgb, var(--node) 40%, transparent);
+  background: color-mix(in srgb, var(--node) 13%, transparent);
+}
+
 /* AN EXCHANGE IS THE PORTAL'S QUIETER SIBLING. It is not a machine — nothing
    is run against it, scanned or burned — so it carries a hairline, which on
    this map is reserved for what is not ordinary. Brass and STILL: the portal

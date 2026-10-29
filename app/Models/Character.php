@@ -165,7 +165,7 @@ class Character extends Model
             ['archetype' => 'integer', 'creds' => 'integer', 'heat' => 'float', 'bounty' => 'integer', 'bounty_grade' => 'integer'],
             ['egress_trace_at' => 'integer', 'egress_si_at' => 'integer'],
             ['virus_damage' => PointsCast::class, 'virus_turns' => 'integer', 'virus_elapsed' => 'integer'],
-            ['grid_x' => 'integer', 'grid_y' => 'integer'],
+            ['grid_x' => 'integer', 'grid_y' => 'integer', 'suspended_programs' => 'array'],
             // On the floor, and what put them there. The cause is an array
             // because none of what it describes is built — see the migration.
             ['waiting_until' => 'immutable_datetime', 'waiting_cause' => 'array'],
@@ -715,6 +715,14 @@ class Character extends Model
      * @var \Illuminate\Support\Collection<int, InventoryItem>|null
      */
     public ?\Illuminate\Support\Collection $assumedRunning = null;
+
+    /**
+     * Ids of running rows to count as STOPPED for this instance's modifiers (the briefing's Suspend box, before it is
+     * pressed). In memory only; never saved. `RunningPrograms` leaves them out.
+     *
+     * @var list<int>|null
+     */
+    public ?array $assumedStopped = null;
 
     /**
      * The unmodified starting value for a stat, from stored numbers alone.

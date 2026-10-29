@@ -213,15 +213,15 @@ final class Parties
      * The owner's run starts first and decides it: a refusal there starts nobody. A member who cannot start (deck not
      * ready, moved off the door, a program that will not start) is dropped from the party, told, and the rest go.
      */
-    public function launch(Character $owner, RunPurpose $purpose, ?BackdoorKind $kind, array $ownerLoadout, RunStarter $starter): RunResult
+    public function launch(Character $owner, RunPurpose $purpose, ?BackdoorKind $kind, array $ownerLoadout, RunStarter $starter, array $ownerSuspend = []): RunResult
     {
         $party = RunParty::query()->where('owner_character_id', $owner->getKey())->first();
 
         if ($party === null || $party->started_at !== null) {
-            return $starter->start($owner, $purpose, $kind, $ownerLoadout);
+            return $starter->start($owner, $purpose, $kind, $ownerLoadout, null, $ownerSuspend);
         }
 
-        $result = $starter->start($owner, $purpose, $kind, $ownerLoadout, $party->getKey());
+        $result = $starter->start($owner, $purpose, $kind, $ownerLoadout, $party->getKey(), $ownerSuspend);
 
         if (! $result->succeeded()) {
             return $result;
