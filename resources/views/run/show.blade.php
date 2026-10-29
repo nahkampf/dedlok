@@ -85,13 +85,12 @@
     <div style="padding:0 var(--s-2)">
         @if ($run->traceRate() > 0 || $run->trace > 0)
             @php($chain = $run->traceChain())
-            @php($reached = $run->trace / 100 * (count($chain) - 1))
 
             <div class="trace" style="--v:{{ round($run->trace / 100, 3) }}">
-                @foreach ($chain as $index => $node)
-                    <span class="trace__node trace__node--{{ $node['kind'] }} @if ($index <= $reached) trace__node--passed @endif"
+                @foreach ($chain as $node)
+                    <span class="trace__node trace__node--{{ $node['kind'] }} @if ($node['passed']) trace__node--passed @endif"
                           @if ($node['label']) title="{{ $node['label'] }}" @endif>
-                        {{ $node['kind'] === 'you' ? '◉' : '◇' }}
+                        {{ $node['kind'] === 'you' ? '◉' : ($node['gone'] ? '◌' : '◇') }}
                     </span>
                 @endforeach
             </div>
