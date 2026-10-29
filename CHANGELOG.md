@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.80.0] — 2026-10-29
+
+### Changed
+- **Work out and Study cost more and get slower the better you are.** Fatigue per minute is 3 for Work out and 2.5 for Study (`safehouse.sessions.*.fatigue`). Progress per minute is `progress × (reference / S) ^ exponent` (0.3, 60, 1), where S is the sum of the stored attribute columns the activity raises (Meat+Motor+Muscle, Intellect+Memory+Focus; capped attributes count), computed by `HomeActions::progressPerMinute()` and read at each settle, so a rate that moves mid-session applies from then on. Both activities wear mood by 0.075 a minute (`mood`), and a gained point lifts it by 10 (`gain_mood`). Tests in `SafehouseSessionTest`. Texts `safehouse.blurb.workout` and `.study` are the user's.
+- **Resting lifts mood.** `HomeActions::settleRest` adds mood per point of fatigue eased: 0.05 while mood is below 0, 0.005 at or above (`safehouse.rest.mood_per_fatigue`). It follows the home's rest rate, so a rest gives the same total anywhere and the better home gets there sooner.
+- **A meal eases 2 points less fatigue** in every home that has a table (squat 10, apartment 18, loft 20). Migration `2026_11_01_100000_meals_ease_less` (reversible). Run `php artisan migrate`.
+- **The study and workout gain messages are Priority** (`study_gain`, `workout_gain` in `config/notifications.php`). Old ones stay Standard.
+
+
 ## [0.79.0] — 2026-10-28
 
 ### Added
@@ -3874,7 +3883,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.79.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.80.0...HEAD
+[0.80.0]: https://github.com/nahkampf/dedlok/compare/v0.79.0...v0.80.0
 [0.79.0]: https://github.com/nahkampf/dedlok/compare/v0.78.1...v0.79.0
 [0.78.1]: https://github.com/nahkampf/dedlok/compare/v0.78.0...v0.78.1
 [0.78.0]: https://github.com/nahkampf/dedlok/compare/v0.77.0...v0.78.0

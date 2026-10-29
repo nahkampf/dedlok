@@ -1,3 +1,14 @@
+## 0.80.0 (2026-10-29)
+
+- **Work Out** and **Study** relabalanced: 
+  - Study now costs 2.5 fatigue / min (up from previous 2).
+  - Work Out now costs 3 fatigue per minute (up from previous 2). Working Out is more tiring than studying.
+  - Curve for the progress rate (P) per minute: P = (base progress rate * reference) / attribute pool, where BPR = 0.3, reference = 60 (a reference point, a pool of say 3 attributes at 20 each), and attribute pool is the value of Meat+Motor+Muscle or Intellect+Memory+Focus. This means that P = BPR (0.3) / minute for a pool value of 60, and gives a faster progress rate if you're below that, and a slower progress rate as your attributes increase (you need to hit 100 progress to gain a point).
+  - Both activities cause a -0.075 to Mood per minute. When reaching 100% progress and getting an attribute point, Mood gets +10.
+- Resting now also affects Mood. +0.05 Mood / fatigue point gained while Mood < 0, +0.005 while Mood >= 0. This means Mood regain scales with fatigue regain rates for various safehouses.
+- Meals were slightly too good at reducing fatigue, and have been dropped by -2 across the board at various safehouses.
+- Study/Work Out messages changed from Standard to Priority (ie "point gained").
+
 ## 0.79.0 (2026-10-28)
 
 - Programs can now have a "family", and be targeted by modifiers.
