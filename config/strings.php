@@ -2953,10 +2953,14 @@ return [
         'doses_withdrawing' => 'Withdrawal',
         // The one thing on the sheet the game never reads.
         'bio' => 'Bio',
-        'bio_hint' => 'Yours, and nothing in the game reads it. Clear the box to take it down.',
+        'bio_hint' => 'Bio text takes basic ANSI escape sequences, rendered at 8px grid size, CP437, 16 colors.',
         'bio_placeholder' => 'Whatever you want anyone who looks you up to find.',
         'bio_save' => 'Save bio',
         'bio_saved' => 'Bio saved.',
+        'ansi_add' => 'Add ANSI file',
+        'ansi_invalid' => 'Invalid ANSI codes',
+        'ansi_too_long' => 'ANSI too long > 65k chars',
+        'ansi_added' => 'ANSI added!',
         // A supporter's own picture.
         'avatar' => 'Your picture',
         'avatar_hint' => 'JPG, PNG, WebP or GIF. It is cropped from the centre to 300 by 400.',

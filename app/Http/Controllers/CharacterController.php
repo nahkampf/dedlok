@@ -143,9 +143,66 @@ class CharacterController extends Controller
         $raw = str_replace(["\r\n", "\r"], "\n", (string) ($data['bio'] ?? ''));
         $bio = rtrim(ltrim($raw, "\n"));
 
-        $character->forceFill(['bio' => trim($bio) === '' ? null : $bio])->save();
+        $character->forceFill(['bio' => trim($bio) === '' ? null : $bio] + (trim($bio) === '' ? ['bio_ice' => false] : []))->save();
 
         return back()->with('status', Text::get('character.bio_saved'));
+    }
+
+    /**
+     * Attach an ANSI file to the bottom of the bio, on a line of its own so there is somewhere to type `@@ice` above it.
+     *
+     * A DOS file is CP437 bytes, so it is converted to UTF-8 here (one that already is UTF-8 is kept); the iCE flag is read
+     * from the SAUCE record (ANSiFlags, bit 0) and kept on the character; everything from the first U+001A on, the record
+     * included, is cut; line endings become LF. It must hold at least one colour sequence.
+     */
+    public function ansi(Request $request): RedirectResponse
+    {
+        $character = $this->character($request);
+
+        $request->validate(['ansi' => ['required', 'file', 'max:64']]);
+
+        $file = (string) file_get_contents($request->file('ansi')->getRealPath());
+        $sauce = strlen($file) >= 128 ? substr($file, -128) : '';
+        $ice = str_starts_with($sauce, 'SAUCE00') && ord($sauce[94]) === 1 && (ord($sauce[105]) & 1) === 1;
+        $raw = explode("\x1a", $file, 2)[0];
+
+        $blob = preg_match('/[\x80-\xFF]/', $raw) === 1 && mb_check_encoding($raw, 'UTF-8') ? $raw : strtr($raw, self::cp437());
+        $blob = str_replace(["\r\n", "\r"], "\n", preg_replace('/[\x00\x07\x08]/', '', $blob));
+        $bio = (string) $character->bio;
+        $joined = $bio === '' ? $blob : $bio."\n".$blob;
+
+        if (preg_match('/\x1b\[[0-?]*m/', $blob) !== 1) {
+            return back()->withErrors(['ansi' => Text::get('character.ansi_invalid')]);
+        }
+
+        if (mb_strlen($joined) > 65000) {
+            return back()->withErrors(['ansi' => Text::get('character.ansi_too_long')]);
+        }
+
+        $character->forceFill(['bio' => rtrim($joined), 'bio_ice' => $ice])->save();
+
+        return back()->with('status', Text::get('character.ansi_added'));
+    }
+
+    /** CP437 byte => UTF-8, for the glyph bytes (1-31 bar the controls a file uses, 127-255). */
+    private static function cp437(): array
+    {
+        $low = '☺☻♥♦♣♠•◘○◙♂♀♪♫☼►◄↕‼¶§▬↨↑↓→←∟↔▲▼';
+        $high = '⌂ÇüéâäàåçêëèïîìÄÅÉæÆôöòûùÿÖÜ¢£¥₧ƒáíóúñÑªº¿⌐¬½¼¡«»░▒▓│┤╡╢╖╕╣║╗╝╜╛┐└┴┬├─┼╞╟╚╔╩╦╠═╬╧╨╤╥╙╘╒╓╫╪┘┌█▄▌▐▀αßΓπΣσµτΦΘΩδ∞φε∩≡±≥≤⌠⌡÷≈°∙·√ⁿ²■ ';
+        $map = [];
+
+        foreach (mb_str_split($low) as $i => $glyph) {
+            // 7 and 8 are bell and backspace, 9 tab, 10 and 13 line ends, 26 end of file, 27 the escape itself.
+            if (! in_array($i + 1, [7, 8, 9, 10, 13, 26, 27], true)) {
+                $map[chr($i + 1)] = $glyph;
+            }
+        }
+
+        foreach (mb_str_split($high) as $i => $glyph) {
+            $map[chr(127 + $i)] = $glyph;
+        }
+
+        return $map;
     }
 
     /** A supporter's own picture: centre-cropped to 300x400 by `Avatar`, replacing what stood there. */

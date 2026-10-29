@@ -302,5 +302,17 @@
                 <button type="submit" class="btn btn--sm cut">{{ Text::get('character.bio_save') }}</button>
             </div>
         </form>
+
+        <form method="POST" action="{{ route('character.bio.ansi') }}" enctype="multipart/form-data" class="stack"
+              style="--gap:var(--s-2);margin-top:var(--s-3);max-width:70ch">
+            @csrf
+            <div class="field" style="margin:0">
+                <input class="input" id="ansi" name="ansi" type="file" accept=".ans,.asc,.diz,.txt" required>
+                @error('ansi') <span class="field__error">{{ $message }}</span> @enderror
+            </div>
+            <div class="row" style="--gap:var(--s-2)">
+                <button type="submit" class="btn btn--sm cut">{{ Text::get('character.ansi_add') }}</button>
+            </div>
+        </form>
     </div>
 @endsection
