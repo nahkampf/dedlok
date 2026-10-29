@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.82.0] — 2026-10-30
+
+### Added
+- **Five entities' exchange desks buy components.** Migration `2026_11_03_100000_exchanges_buy_components` lists 20 pairs in `entity_buys` at 50% of the file's own value (`InventoryItem::stockPrice()`: a decrypted component keeps its rolled value), every desk grade, no limit per window: Bureau of Network Integrity (Config File, Software Manifest), Directorate of Revenue Enforcement (Customer Record), Lockjaw (Security Profile, Experimental Data), Joint Signals Command (Cipher Fragment, Config File, Backup, Customer Record, Software Manifest, Security Profile, Research Data, Design Document, Experimental Data, Field Test Data, Parameterized Dataset, Vectorized Dataset) and Golden Path (Customer Record, Project File, Research Data). Entities are found by name and items by slug; a pair already listed, or whose entity or item is missing, is left as it is. `down()` removes only rows at 50% for these pairs. Tests: `ExchangesBuyComponentsTest`. Run `php artisan migrate`.
+
+### Fixed
+- **An eidetic imprint's card did not say its skill was already injected.** The market's corner tick did, the stash card (modal and hover) did not. `<x-item-detail>` now shows "Skill already injected" in cyan under *Teaches …* when the character holds the skill (`Character::hasInjectedSkillId()`, read once per instance so a stash of imprints costs one query). Test: `ImprintCardKnownTest`.
+
+
 ## [0.81.0] — 2026-10-29
 
 ### Added
@@ -3897,7 +3906,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.81.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.82.0...HEAD
+[0.82.0]: https://github.com/nahkampf/dedlok/compare/v0.81.0...v0.82.0
 [0.81.0]: https://github.com/nahkampf/dedlok/compare/v0.80.0...v0.81.0
 [0.80.0]: https://github.com/nahkampf/dedlok/compare/v0.79.0...v0.80.0
 [0.79.0]: https://github.com/nahkampf/dedlok/compare/v0.78.1...v0.79.0
