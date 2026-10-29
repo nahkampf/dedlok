@@ -89,6 +89,22 @@ class AnsiBioTest extends TestCase
         $this->assertFalse($character->fresh()->bio_ice);
     }
 
+    public function test_the_preview_draws_the_box_as_the_profile_would_and_writes_nothing(): void
+    {
+        $character = Character::factory()->create(['bio' => 'saved', 'bio_ice' => true]);
+
+        $html = $this->actingAs($character->user)->post(route('character.bio.preview'), ['bio' => "\x1b[5;42m<b>x\r\n"])->assertOk()->getContent();
+
+        $this->assertStringContainsString('class="ascii ansi"', $html);
+        $this->assertStringContainsString('<span class="a-b10">&lt;b&gt;x</span>', $html, 'escaped, and the stored iCE flag applies');
+        $this->assertSame('saved', $character->fresh()->bio);
+
+        $this->actingAs($character->user)->post(route('character.bio.preview'), ['bio' => 'plain'])->assertSee('<pre class="ascii" style="margin:0">plain</pre>', false);
+        $this->actingAs($character->user)->post(route('character.bio.preview'), ['bio' => str_repeat('a', 65_001)])->assertSessionHasErrors('bio');
+        $this->post(route('logout'));
+        $this->post(route('character.bio.preview'), ['bio' => 'x'])->assertRedirect(route('login'));
+    }
+
     public function test_a_file_without_colour_is_refused(): void
     {
         $character = Character::factory()->create();

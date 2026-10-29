@@ -134,18 +134,36 @@ class CharacterController extends Controller
             'bio' => ['nullable', 'string', 'max:65000'],
         ]);
 
-        // Empty and absent are the same thing here: clearing the box is how
-        // somebody takes their bio down, and a row of spaces is not a bio.
-        //
-        // NOT `trim()`: the bio is monospace and may be ASCII art, so the indentation of its FIRST line is part of
-        // the drawing. Blank lines at the start and whitespace at the end go; leading spaces on a line do not. Line
-        // endings are one kind, because a browser submits CRLF.
-        $raw = str_replace(["\r\n", "\r"], "\n", (string) ($data['bio'] ?? ''));
-        $bio = rtrim(ltrim($raw, "\n"));
+        // Empty and absent are the same thing here: clearing the box is how somebody takes their bio down, and a row of
+        // spaces is not a bio.
+        $bio = $this->tidyBio($data['bio'] ?? '');
 
         $character->forceFill(['bio' => trim($bio) === '' ? null : $bio] + (trim($bio) === '' ? ['bio_ice' => false] : []))->save();
 
         return back()->with('status', Text::get('character.bio_saved'));
+    }
+
+    /**
+     * What the bio would look like, for the sheet's Preview button: the same file the profile page uses, drawn from the text
+     * in the box (saved or not) and the character's stored iCE flag. Nothing is written.
+     */
+    public function preview(Request $request): View
+    {
+        $character = $this->character($request);
+
+        $data = $request->validate(['bio' => ['nullable', 'string', 'max:65000']]);
+
+        return view('profile._bio', ['bio' => $this->tidyBio($data['bio'] ?? ''), 'ice' => $character->bio_ice]);
+    }
+
+    /**
+     * NOT `trim()`: the bio is monospace and may be ASCII art, so the indentation of its FIRST line is part of the
+     * drawing. Blank lines at the start and whitespace at the end go; leading spaces on a line do not. Line endings are
+     * one kind, because a browser submits CRLF.
+     */
+    private function tidyBio(?string $text): string
+    {
+        return rtrim(ltrim(str_replace(["\r\n", "\r"], "\n", (string) $text), "\n"));
     }
 
     /**

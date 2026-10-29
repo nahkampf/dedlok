@@ -216,6 +216,28 @@
     const dlg = document.querySelector(btn.dataset.open);
     if (dlg && dlg.showModal) dlg.showModal();
   });
+  /* A preview of a draft: button[data-bio-preview="URL"] posts the textarea that data-from names and puts the server's
+     drawing of it in the dialog data-dialog names ([data-preview-body]), so a draft is drawn by the code that will draw
+     the saved one. A refusal closes the dialog. */
+  on("click", "[data-bio-preview]", (e, btn) => {
+    e.preventDefault();
+    const dlg = document.querySelector(btn.dataset.dialog);
+    const box = dlg?.querySelector("[data-preview-body]");
+    const source = document.querySelector(btn.dataset.from);
+    if (!box || !source) return;
+    const token = document.querySelector('meta[name="csrf-token"]')?.content;
+    box.textContent = btn.dataset.previewLoading ?? "";
+    dlg.showModal();
+    fetch(btn.dataset.bioPreview, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "X-Requested-With": "XMLHttpRequest", ...(token ? { "X-CSRF-TOKEN": token } : {}) },
+      credentials: "same-origin",
+      body: new URLSearchParams({ bio: source.value }),
+    })
+      .then((r) => (r.ok ? r.text() : Promise.reject()))
+      .then((html) => { box.innerHTML = html; })
+      .catch(() => dlg.close());
+  });
   /* A run link (`run:<id>` in chat): ask to join that party, say how it went, and go to the briefing on success. */
   on("click", "[data-run-join]", (e, btn) => {
     e.preventDefault();
