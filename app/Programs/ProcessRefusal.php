@@ -88,6 +88,9 @@ enum ProcessRefusal: string
     /** Listed on the market: the offer promises the buyer it is untouched, so it cannot be run meanwhile. */
     case Listed = 'listed';
 
+    /** Stopping it would shrink the deck below what is stored on it (a Compressor holding the room). */
+    case WouldOverfillStorage = 'would_overfill_storage';
+
     /** A Leecher is installed on a system from a run, never run on a deck. */
     case NotRunnable = 'not_runnable';
 

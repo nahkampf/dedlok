@@ -182,6 +182,12 @@ class RunController extends Controller
             'loadoutRefusals' => $loadout
                 ->mapWithKeys(fn (InventoryItem $row): array => [$row->id => app(ProgramRunner::class)->refusalFor($character, $row, duringRun: true)])
                 ->filter(),
+            // The background processes that may be switched off for this run, and which of them cannot be because the
+            // deck would then hold less than is stored on it.
+            'suspendable' => $suspendable = app(ProgramRunner::class)->suspendable($character),
+            'suspendBlocked' => $suspendable
+                ->filter(fn (InventoryItem $row): bool => app(ProgramRunner::class)->wouldOverfill($character, [$row->id]))
+                ->pluck('id')->all(),
             'scripts' => $scripts,
             // Why each script would not start right now, by row id; absent means it would.
             'scriptRefusals' => $scripts
@@ -216,6 +222,7 @@ class RunController extends Controller
         abort_if($step === null || $target === null, 404);
 
         $ids = array_map('intval', array_filter([$request->query('icebreaker'), ...(array) $request->query('programs', [])], 'is_numeric'));
+        $stopped = array_map('intval', array_filter((array) $request->query('suspend', []), 'is_numeric'));
         $rows = InventoryItem::query()
             ->where('character_id', $character->id)
             ->whereNull('running_on_deck_id')
@@ -226,7 +233,7 @@ class RunController extends Controller
 
         $scan = SystemScan::query()->where('character_id', $character->id)->where('address', $target->address)->live()->first();
 
-        return response()->json(['overall' => Assessor::tag($this->assessLoadout($character, $scan, $rows), $step)]);
+        return response()->json(['overall' => Assessor::tag($this->assessLoadout($character, $scan, $rows, $stopped), $step)]);
     }
 
     /**
@@ -234,16 +241,19 @@ class RunController extends Controller
      * is started or saved, and the stacking, the pools and every modifier go through the same sources as a real run.
      *
      * @param  Collection<int, InventoryItem>  $rows
+     * @param  list<int>  $stopped  running rows to count as switched off
      */
-    private function assessLoadout(Character $character, ?SystemScan $scan, Collection $rows): ?float
+    private function assessLoadout(Character $character, ?SystemScan $scan, Collection $rows, array $stopped = []): ?float
     {
         $character->assumedRunning = $rows->values();
+        $character->assumedStopped = $stopped === [] ? null : $stopped;
 
         // Cleared afterwards: the page goes on to read what is really spent from this same character.
         try {
             return app(Assessor::class)->overall($character, $scan);
         } finally {
             $character->assumedRunning = null;
+            $character->assumedStopped = null;
         }
     }
 
@@ -267,6 +277,9 @@ class RunController extends Controller
             // spent by running. Everything they must fit is `ProgramRunner`'s.
             'scripts' => ['nullable', 'array', 'max:20'],
             'scripts.*' => ['integer', 'distinct'],
+            // Running background processes to switch off for the run; the runner takes only what it offers.
+            'suspend' => ['nullable', 'array', 'max:50'],
+            'suspend.*' => ['integer', 'distinct'],
         ]);
 
         $ids = array_values(array_filter([$data['icebreaker'] ?? null, ...($data['programs'] ?? [])]));
@@ -294,6 +307,7 @@ class RunController extends Controller
             ($data['backdoor_kind'] ?? null) === null ? null : BackdoorKind::from($data['backdoor_kind']),
             $rows->concat($scriptRows)->all(),
             $this->runs,
+            array_map('intval', $data['suspend'] ?? []),
         );
 
         if (! $result->succeeded()) {

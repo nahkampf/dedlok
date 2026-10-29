@@ -170,6 +170,12 @@ what a bare `items` row cannot.
   They are started by `RunStarter::start()` with the loadout and before the arrival roll, and are spent by running. **A program that will not
   start ROLLS THE TRANSACTION BACK** (`ProcessRefused`) rather than stopping what already started, because stopping a Script destroys it. The page
   does the RAM/qFLOPS sum in `ui-kit.js` (`data-run-budget`, tenths) and disables what no longer fits; the runner's own checks are the guard.
+- **The briefing's *Suspend background processes* box** lists the background processes running on the equipped deck (`ProgramRunner::suspendable()`, Scripts
+  left out: stopping one destroys it). Ticking one only gives its compute and memory back to the page's sums (`data-gain-*`) and to the Assessor's figure
+  (`Character::$assumedStopped`). `RunStarter::start()` stops the ticked rows inside the run's transaction (`ProgramRunner::suspend()`), so a refused run
+  leaves them running, and records them in `characters.suspended_programs` as item id => copies (a stopped copy merges into its pile, so row ids do not
+  survive). **`RunStarter::end()` starts them again** (`resumeSuspended()`), best effort through `start()`; what no longer fits is named in one message.
+  A set that would leave the deck below what is stored on it (a Compressor) is refused (`WouldOverfillStorage`). The owner's own only: a party member's run is not affected.
 - **One icebreaker at a time**, whichever ones — `ProcessRefusal::OneIcebreaker`.
   `icebreaker_damage` sums every running program, so two cheap ones would out-cut a dear
   one and *twenty turns is never enough* would stop being true.

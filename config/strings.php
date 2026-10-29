@@ -245,6 +245,7 @@ return [
             'one_assessor' => 'Only one assessor runs at a time.',
             'not_runnable' => 'This is not run on a deck: it is installed on a system during a run, or on a fortress.',
             'listed' => 'It is up for sale on the market. Withdraw the offer before you use it.',
+            'would_overfill_storage' => '[would_overfill_storage]',
             'not_to_hand' => '[not_to_hand]',
         ],
     ],
@@ -932,6 +933,7 @@ return [
             'fortress_moved' => 'Data Fortress :system relocated',
             'fortress_burned' => 'Your fortress Kernel is burned',
             'party_dropped' => 'Left out of a co-op run',
+            'programs_not_resumed' => '[programs_not_resumed]',
             'siphons_ran' => 'Siphon report',
             'damage_report' => 'Damage report',
             'insurance_property_claim' => 'Insurance Property Claim',
@@ -998,6 +1000,7 @@ return [
             'fortress_moved' => 'The new position is :x,:y, address :address',
             'fortress_burned' => 'Your fortress Kernel was burned. Everything else on it is gone and the Kernel is Frozen for :hours hours: bring in new Leechers that can run it, or lose it.',
             'party_dropped' => ':owner started the co-op run without you: your deck was not ready or you were not at the door.',
+            'programs_not_resumed' => '[programs_not_resumed] :programs',
             // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
             // a burn: the holder was not there, and naming the cause would tell
             // them about a stranger's run they could not otherwise know of.
@@ -1641,6 +1644,9 @@ return [
                 'loadout_other' => 'Other run-only software',
                 'loadout_none' => 'None',
                 'loadout_hint' => 'Select an icebreaker to apply to this run. It cannot be changed once the run is initiated.',
+                'suspend' => 'Suspend background processes',
+                'suspend_none' => '[suspend_none]',
+                'suspend_hint' => '[suspend_hint]',
                 'scripts' => 'Scripts',
                 'scripts_none' => 'You hold no scripts.',
                 'scripts_hint' => 'A ticked script starts when you go in and is spent by running: it lasts its lifetime and is gone, and stopping it early destroys it. One that does not fit beside everything else you have ticked is marked Unable, and cannot be ticked.',

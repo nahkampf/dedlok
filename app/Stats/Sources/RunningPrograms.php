@@ -157,7 +157,12 @@ final readonly class RunningPrograms implements ModifierSource
             ->with('item.program')
             ->get());
 
-        // Rows assumed to be running (the Assessor's what-if) count beside the real ones.
+        // Rows assumed stopped (the briefing's Suspend box) do not count; rows assumed to be running (the Assessor's
+        // what-if) count beside the real ones.
+        if ($character->assumedStopped !== null) {
+            $rows = $rows->reject(static fn (InventoryItem $row): bool => in_array($row->id, $character->assumedStopped, true))->values();
+        }
+
         return $character->assumedRunning === null ? $rows : $rows->concat($character->assumedRunning);
     }
 }

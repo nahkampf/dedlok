@@ -143,6 +143,44 @@
     </div>
 </div>
 
+{{-- SUSPEND BACKGROUND PROCESSES. A ticked one is stopped when the run begins and started again when it ends; ticking only
+     gives its compute and memory back to the sums on this page. A Compressor the deck's storage needs cannot be ticked. An accordion closed until wanted; its inputs belong to the run form by `form=`, not by sitting
+     inside it. --}}
+<details class="panel panel--snug" style="margin-top:var(--s-4)">
+    <summary class="panel__hd"><h2>{{ Text::get('cyberspace.run.setup.suspend') }}</h2></summary>
+
+    <div style="padding:var(--s-3) 0;display:grid;gap:var(--s-3)">
+        @if ($suspendable->isEmpty())
+            <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.setup.suspend_none') }}</p>
+        @else
+            <fieldset class="stack" style="--gap:var(--s-2);border:0;padding:0;margin:0">
+                @foreach ($suspendable as $row)
+                    @php($program = $row->item->program)
+                    @php($blocked = in_array($row->id, $suspendBlocked, true))
+                    <label class="check">
+                        <input type="checkbox" name="suspend[]" value="{{ $row->id }}" form="run-form"
+                               data-gain-qflops="{{ \App\Support\Qb::tenths($program->qflops_cost) }}" data-gain-memory="{{ \App\Support\Qb::tenths($program->memory_cost) }}"
+                               @if ($blocked) disabled @endif>
+                        <span class="check__box"></span>
+                        <span>
+                            {{ $row->item->displayName() }}
+                            <span class="micro num" style="display:block;color:var(--ink-2)">
+                                {{ Text::get('programs.costs.compute', ['value' => \App\Support\Qb::of($program->qflops_cost)]) }}
+                                · {{ Text::get('programs.costs.memory', ['value' => \App\Support\Qb::of($program->memory_cost)]) }}
+                            </span>
+                            @if ($blocked)
+                                <span class="micro" style="display:block;color:var(--warn)">{{ \App\Programs\ProcessRefusal::WouldOverfillStorage->message() }}</span>
+                            @endif
+                        </span>
+                    </label>
+                @endforeach
+            </fieldset>
+        @endif
+
+        <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.setup.suspend_hint') }}</p>
+    </div>
+</details>
+
 {{-- THE ROUTE. Shown rather than chosen: every routing backdoor is free to include and hinders by its
      system's grade, so there is nothing to pick. See App\Cyberspace\ChainBuilder.
 
@@ -253,7 +291,7 @@
     @include('run._party')
 @endunless
 
-<form method="POST" action="{{ route('run.start') }}" data-run-budget data-unable-cpu="{{ Text::get('cyberspace.run.setup.scripts_unable_cpu') }}" data-unable-ram="{{ Text::get('cyberspace.run.setup.scripts_unable_ram') }}" data-unable-both="{{ Text::get('cyberspace.run.setup.scripts_unable_both') }}" data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
+<form id="run-form" method="POST" action="{{ route('run.start') }}" data-run-budget data-unable-cpu="{{ Text::get('cyberspace.run.setup.scripts_unable_cpu') }}" data-unable-ram="{{ Text::get('cyberspace.run.setup.scripts_unable_ram') }}" data-unable-both="{{ Text::get('cyberspace.run.setup.scripts_unable_both') }}" data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
     @csrf
 
 <div class="panel panel--snug" style="margin-top:var(--s-4)">

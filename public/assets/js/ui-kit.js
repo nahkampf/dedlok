@@ -1909,11 +1909,14 @@
 
   /* The run briefing's budget: <form data-run-budget data-free-qflops data-free-memory> (tenths of what the deck has free),
      each loadout input and script carrying data-cost-qflops / data-cost-memory in the same unit. A script that no longer fits
-     beside everything ticked is disabled and says so. Display only: starting the run asks the runner again. */
+     beside everything ticked is disabled and says so. A running process ticked to be suspended (data-gain-qflops /
+     data-gain-memory, the same unit) gives its cost back. Display only: starting the run asks the runner again. */
   document.querySelectorAll("[data-run-budget]").forEach((form) => {
     const freeQ = Number(form.dataset.freeQflops), freeM = Number(form.dataset.freeMemory);
     const cost = (el, k) => Number(el.dataset["cost" + k]) || 0;
     const inputs = [...form.querySelectorAll("[data-cost-qflops]")];
+    // Outside the form (an accordion higher up the page) and tied to it by form="id".
+    const gains = [...document.querySelectorAll("[data-gain-qflops]")];
     // Everything that can be ticked and carries a cost: the icebreaker radios, run-only programs and scripts.
     const choices = inputs.filter((el) => el.closest("label")?.querySelector("[data-unable]"));
     const refused = new Set(inputs.filter((el) => el.disabled));
@@ -1931,6 +1934,7 @@
       const pick = form.querySelector('input[name="icebreaker"]:checked');
       if (pick && pick.value) q.set("icebreaker", pick.value);
       form.querySelectorAll('input[name="programs[]"]:checked').forEach((el) => q.append("programs[]", el.value));
+      document.querySelectorAll('input[name="suspend[]"]:checked').forEach((el) => q.append("suspend[]", el.value));
       const query = q.toString();
       // The first call is the page as the server drew it, already answered.
       if (lastQuery === null || query === lastQuery) { lastQuery = query; return; }
@@ -1943,8 +1947,9 @@
     };
     const recalc = () => {
       const ticked = inputs.filter((el) => el.checked);
-      const usedQ = ticked.reduce((n, el) => n + cost(el, "Qflops"), 0);
-      const usedM = ticked.reduce((n, el) => n + cost(el, "Memory"), 0);
+      const freed = gains.filter((el) => el.checked);
+      const usedQ = ticked.reduce((n, el) => n + cost(el, "Qflops"), 0) - freed.reduce((n, el) => n + Number(el.dataset.gainQflops), 0);
+      const usedM = ticked.reduce((n, el) => n + cost(el, "Memory"), 0) - freed.reduce((n, el) => n + Number(el.dataset.gainMemory), 0);
       const leftQ = freeQ - usedQ, leftM = freeM - usedM;
       choices.forEach((el) => {
         if (refused.has(el)) return;
@@ -1982,6 +1987,7 @@
       if (readout) readout.textContent = fmt(Math.max(0, leftQ)) + " qFLOPS \u00b7 " + fmt(Math.max(0, leftM)) + " QB";
     };
     form.addEventListener("change", recalc);
+    gains.forEach((el) => el.addEventListener("change", recalc));
     recalc();
   });
 
