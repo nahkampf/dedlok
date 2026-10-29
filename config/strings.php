@@ -2383,6 +2383,13 @@ return [
             'traverse_stopped' => 'Autotraverse stopped.',
         ],
 
+        'backdoors' => [
+            'button' => 'My backdoors',
+            'title' => 'My backdoors',
+            'none' => 'You hold no backdoors.',
+            'kind' => 'Backdoor',
+        ],
+
         'bookmarks' => [
             'heading' => 'Bookmarks',
             'none' => 'Nothing saved yet. Mark a position you want to come back to.',

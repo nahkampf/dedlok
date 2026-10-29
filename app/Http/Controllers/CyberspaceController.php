@@ -401,6 +401,19 @@ class CyberspaceController extends Controller
         ]);
     }
 
+    /** The fragment behind *My backdoors*: every system the character holds one on, by name. */
+    public function backdoors(Request $request): View
+    {
+        $character = $this->character($request);
+
+        $rows = (new Backdoors)->heldBy($character)->load('system.owner')
+            ->filter(static fn ($backdoor): bool => $backdoor->system !== null)
+            ->sortBy(static fn ($backdoor): string => mb_strtolower($backdoor->system->displayName()))
+            ->values();
+
+        return view('cyberspace._backdoors', ['rows' => $rows]);
+    }
+
     /** A spot's button in the Interact box: open the encounter pinned to the system they stand on. */
     public function spot(Request $request, int $encounter): RedirectResponse
     {

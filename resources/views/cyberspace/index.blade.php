@@ -677,6 +677,10 @@
         <section class="panel panel--snug">
             <div class="panel__hd"><h2>{{ Text::get('cyberspace.bookmarks.heading') }}</h2></div>
 
+            <button type="button" class="btn btn--sm cut" data-open="#my-backdoors" style="margin-bottom:var(--s-3)">
+                {{ Text::get('cyberspace.backdoors.button') }}
+            </button>
+
             @if ($map->jackedIn)
                 <form method="POST" action="{{ route('cyberspace.bookmark') }}" style="margin-bottom:var(--s-3)">
                     @csrf
@@ -752,6 +756,17 @@
             @endif
         @endforeach
     @endforeach
+
+    {{-- MY BACKDOORS. The body is the fragment `cyberspace.backdoors`, fetched each time this opens. --}}
+    <dialog id="my-backdoors" class="modal modal--wide">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('cyberspace.backdoors.title') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
+        </div>
+        <div class="panel__bd" data-fragment="{{ route('cyberspace.backdoors') }}">
+            <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('processes.loading') }}</p>
+        </div>
+    </dialog>
 
     {{-- BROWSE KNOWN SYSTEMS. The body is the fragment `cyberspace.systems`, fetched each time this opens and again when a
          filter changes, so it is never older than the click. --}}
