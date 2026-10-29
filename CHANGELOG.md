@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.83.0] — 2026-10-29
+
+### Added
+- **A bio takes ANSI art.** `App\Support\Ansi` draws `ESC[…m` (0 reset, 1 high intensity, 5 blink, 30–37 foreground, 40–47 background) and `ESC[nC` (cursor forward: n blank cells the current background does not paint, as in DOS); every other parameter and sequence is dropped. Wrapped at column 80, but only once a character would land in column 81, so a newline after a full line is not an extra blank row. Colours are the real DOS palette (`--dos-0`…`--dos-15`, `.a-f*`, `.a-b*`, `.a-bl` in `ui-kit.css`; numbered as the palette is, 1 blue and 4 red, SGR order is mapped in `Ansi`) on a black ground, in 8-pixel cells (`.ascii.ansi`, `letter-spacing: -1px` on the 9px font). Blink is a CSS step animation that the kit's reduced-motion rule leaves steady. A bio without an escape is printed as before. Chat is untouched: `PlainText` still strips ESC there. Gallery: `ui-kit.html#ansi`. Tests: `AnsiBioTest`.
+- **Add ANSI file**, under the bio editor (`POST /character/bio/ansi`, `CharacterController::ansi`). Converts a CP437 file to UTF-8 (a file that is already UTF-8 is kept), reads the iCE flag from the SAUCE record (ANSiFlags bit 0, on a character file) and cuts everything from the first U+001A, then appends the file to the bio after a newline. Refused over 64 KB, without a colour sequence, or when the bio would pass 65,000 characters.
+- **iCE colours.** `characters.bio_ice` keeps the SAUCE flag, because the record itself is cut: with it, `5` is a bright background and nothing blinks. Set by the last file attached, cleared with the bio. Pasted ANSI has no SAUCE, so it is never iCE. Migration `2026_11_04_100000_a_bio_may_use_ice_colours` adds the column. Run `php artisan migrate`.
+
+### Changed
+- Player text for the upload (`character.ansi_add`, `ansi_invalid`, `ansi_too_long`, `ansi_added`) and the bio hint (`character.bio_hint`), all the user's.
+
+
 ## [0.82.0] — 2026-10-30
 
 ### Added
@@ -3906,7 +3917,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.82.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.83.0...HEAD
+[0.83.0]: https://github.com/nahkampf/dedlok/compare/v0.82.0...v0.83.0
 [0.82.0]: https://github.com/nahkampf/dedlok/compare/v0.81.0...v0.82.0
 [0.81.0]: https://github.com/nahkampf/dedlok/compare/v0.80.0...v0.81.0
 [0.80.0]: https://github.com/nahkampf/dedlok/compare/v0.79.0...v0.80.0
