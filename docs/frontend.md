@@ -55,6 +55,13 @@ component means adding a demo in the same `<template class="demo-src">` pattern.
   that only sets `background` renders as an ordinary button with tinted text. Set
   `--cut-line` and `--cut-fill`.
 
+### ANSI art in a bio is the one place the kit's colours do not apply
+
+`App\Support\Ansi` draws a bio's ANSI escape codes in the real **DOS palette** (`--dos-0`…`--dos-15` and `.a-f*`, `.a-b*`,
+`.a-bl` in `ui-kit.css`, numbered as the palette is: 1 blue, 4 red), on a black ground, in **8-pixel cells** (`.ascii.ansi` sets
+`letter-spacing: -1px` on the 9px font). It is deliberately outside Ash & Ember: a file must look as it did on a DOS screen. Nothing
+else may use these tokens. Spans carry only those fixed class names, never player text. Gallery: `public/ui-kit.html#ansi`.
+
 ### Responsive rules — all of these shipped broken once
 
 The user tests on an Android phone. Audit every layout at **320px and 360px**. There is

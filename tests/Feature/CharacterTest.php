@@ -39,6 +39,8 @@ class CharacterTest extends TestCase
             // The only column on this row the game never reads: the
             // player's own words about themselves.
             'bio',
+            // Whether the bio's ANSI art is drawn with iCE colours, read from the SAUCE record of the file attached to it.
+            'bio_ice',
             'archetype',
             // Where the body is: always set. See CITY.md.
             'district_id',

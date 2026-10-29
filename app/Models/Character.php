@@ -169,7 +169,7 @@ class Character extends Model
             // On the floor, and what put them there. The cause is an array
             // because none of what it describes is built — see the migration.
             ['waiting_until' => 'immutable_datetime', 'waiting_cause' => 'array'],
-            ['bounty_word_at' => 'immutable_datetime'],
+            ['bounty_word_at' => 'immutable_datetime', 'bio_ice' => 'boolean'],
         );
     }
 

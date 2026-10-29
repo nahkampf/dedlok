@@ -1,3 +1,8 @@
+## 0.83.0 (2026-10-29)
+
+- What is a hacker game without ANSI art? Bio now supports a subset of ANSI escape codes (reset, foreground, background, high intensity and cursor forward). ANSI is rendered as an 80-char width 8px cell format. SAUCE is supported (for reading the ICE flag), but is stripped from output.
+- Option to upload ANSI file to bio.
+
 ## 0.82.0 (2026-10-29)
 
 - BNI, Golden Path, JSC, Lockjaw and Directorate of Revenue Enforcement now buys various components at their exchanges.

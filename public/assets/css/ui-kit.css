@@ -498,6 +498,63 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   overflow-x: auto;
   tab-size: 4;
 }
+/* ANSI art in a bio (App\Support\Ansi): the DOS palette itself, deliberately outside the Ash & Ember tokens, so a file looks
+   as it did on a DOS screen. Numbered as the palette is (1 blue, 4 red). */
+:root {
+  --dos-0: #000000;
+  --dos-1: #0000AA;
+  --dos-2: #00AA00;
+  --dos-3: #00AAAA;
+  --dos-4: #AA0000;
+  --dos-5: #AA00AA;
+  --dos-6: #AA5500;
+  --dos-7: #AAAAAA;
+  --dos-8: #555555;
+  --dos-9: #5555FF;
+  --dos-10: #55FF55;
+  --dos-11: #55FFFF;
+  --dos-12: #FF5555;
+  --dos-13: #FF55FF;
+  --dos-14: #FFFF55;
+  --dos-15: #FFFFFF;
+}
+/* 8-pixel cells, which is how ANSI art is drawn (a SAUCE record says so): the font's 9th column dropped, so the advance is a whole 8px. */
+.ascii.ansi { background: var(--dos-0); color: var(--dos-7); padding: var(--s-2); letter-spacing: -1px; }
+.a-f0 { color: var(--dos-0); }
+.a-f1 { color: var(--dos-1); }
+.a-f2 { color: var(--dos-2); }
+.a-f3 { color: var(--dos-3); }
+.a-f4 { color: var(--dos-4); }
+.a-f5 { color: var(--dos-5); }
+.a-f6 { color: var(--dos-6); }
+.a-f7 { color: var(--dos-7); }
+.a-f8 { color: var(--dos-8); }
+.a-f9 { color: var(--dos-9); }
+.a-f10 { color: var(--dos-10); }
+.a-f11 { color: var(--dos-11); }
+.a-f12 { color: var(--dos-12); }
+.a-f13 { color: var(--dos-13); }
+.a-f14 { color: var(--dos-14); }
+.a-f15 { color: var(--dos-15); }
+.a-b0 { background-color: var(--dos-0); }
+.a-b1 { background-color: var(--dos-1); }
+.a-b2 { background-color: var(--dos-2); }
+.a-b3 { background-color: var(--dos-3); }
+.a-b4 { background-color: var(--dos-4); }
+.a-b5 { background-color: var(--dos-5); }
+.a-b6 { background-color: var(--dos-6); }
+.a-b7 { background-color: var(--dos-7); }
+.a-b8 { background-color: var(--dos-8); }
+.a-b9 { background-color: var(--dos-9); }
+.a-b10 { background-color: var(--dos-10); }
+.a-b11 { background-color: var(--dos-11); }
+.a-b12 { background-color: var(--dos-12); }
+.a-b13 { background-color: var(--dos-13); }
+.a-b14 { background-color: var(--dos-14); }
+.a-b15 { background-color: var(--dos-15); }
+/* Blink hides the glyph half the time. Reduced motion: the global rule above ends the animation after one step, so it rests visible. */
+.a-bl { animation: dos-blink 1.06s steps(1, end) infinite; }
+@keyframes dos-blink { 50% { color: transparent; } }
 /* Numerals that don't jitter when they tick. Use on every live value. */
 .num  { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 

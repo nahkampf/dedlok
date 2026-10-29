@@ -86,6 +86,7 @@
       <a class="rail__item" href="#use">Using the kit</a>
       <a class="rail__item" href="#color">Colour</a>
       <a class="rail__item" href="#type">Type</a>
+      <a class="rail__item" href="#ansi">ANSI art</a>
       <a class="rail__item" href="#geometry">Geometry</a>
       <a class="rail__item" href="#buttons">Buttons</a>
       <a class="rail__item" href="#forms">Forms</a>
@@ -226,6 +227,20 @@ public/assets/
           <div class="row"><span class="kbd">Ctrl</span><span class="kbd">Shift</span><span class="kbd">J</span></div>
           <p style="font-size:var(--fs-sm)">A <button type="button" class="link">link-styled button</button> sits inside running text without a button box — for triggers that open a definition or a modal, where an <code class="inl">&lt;a href="#"&gt;</code> would be a lie.</p>
         </div>
+      </template>
+    </div>
+  </section>
+
+  <section id="ansi">
+    <div class="sec__hd"><h2 class="h1">ANSI art</h2>
+      <p class="muted" style="font-size:var(--fs-sm);margin-top:var(--s-2)">The one place the kit leaves its own colours. A bio that carries ANSI escape codes (<code class="inl">App\Support\Ansi</code>) is drawn on a black ground in the DOS palette itself, so a file looks as it did on a DOS screen. 8-pixel cells, 80 columns, and the colours are numbered as the palette is: 1 blue, 4 red, 6 brown, 8–15 the bright versions. Foregrounds take all sixteen, backgrounds the first eight; with iCE colours, blink is a bright background instead.</p>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Palette</h3><p><code class="inl">.ascii.ansi</code> with <code class="inl">.a-f0</code>–<code class="inl">.a-f15</code> for the foreground, <code class="inl">.a-b0</code>–<code class="inl">.a-b15</code> for the background and <code class="inl">.a-bl</code> for blink. The classes are fixed; nothing a player types ever reaches an attribute.</p></div>
+      <template class="demo-src">
+          <pre class="ascii ansi" style="margin:0"><span class="a-f0">█▓▒░</span><span class="a-f1">█▓▒░</span><span class="a-f2">█▓▒░</span><span class="a-f3">█▓▒░</span><span class="a-f4">█▓▒░</span><span class="a-f5">█▓▒░</span><span class="a-f6">█▓▒░</span><span class="a-f7">█▓▒░</span><span class="a-f8">█▓▒░</span><span class="a-f9">█▓▒░</span><span class="a-f10">█▓▒░</span><span class="a-f11">█▓▒░</span><span class="a-f12">█▓▒░</span><span class="a-f13">█▓▒░</span><span class="a-f14">█▓▒░</span><span class="a-f15">█▓▒░</span>
+<span class="a-b0">  </span><span class="a-b1">  </span><span class="a-b2">  </span><span class="a-b3">  </span><span class="a-b4">  </span><span class="a-b5">  </span><span class="a-b6">  </span><span class="a-b7">  </span><span class="a-b8">  </span><span class="a-b9">  </span><span class="a-b10">  </span><span class="a-b11">  </span><span class="a-b12">  </span><span class="a-b13">  </span><span class="a-b14">  </span><span class="a-b15">  </span>
+<span class="a-f14 a-b1">DOS</span> <span class="a-f15 a-b4 a-bl">blink</span></pre>
       </template>
     </div>
   </section>
