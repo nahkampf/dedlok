@@ -1,3 +1,11 @@
+## 0.81.0 (2026-10-29)
+
+- There is now a box in the run planning screen to suspend background processes before the run, to free up resources. These are then restarted automatically after the run.
+- In "Bookmarks" there is now a button that opens a modal that contains all the systems you have backdoors on.
+- Encounter chances tweaked. 40% base chance on district exploration, and 11% on travel.
+- Some placeholder strings edited
+- Trace planel during a run didn't display the hops, fixed now
+
 ## 0.80.0 (2026-10-29)
 
 - **Work Out** and **Study** relabalanced: 

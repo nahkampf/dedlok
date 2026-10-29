@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.81.0] — 2026-10-29
+
+### Added
+- **Suspend background processes, on the run briefing.** An accordion under *Your deck* (closed by default) lists the background processes running on the equipped deck (`ProgramRunner::suspendable()`; Scripts are left out, stopping one destroys it). Ticking one gives its compute and memory back to the page's sums (`data-gain-*` in `ui-kit.js`, tied to the run form by `form="run-form"`), to the deck bars and to the Assessor (`run.assess` takes `suspend[]`; `Character::$assumedStopped`, read by `RunningPrograms::processesOn()`). `RunStarter::start()` stops the ticked rows inside the run's transaction (`ProgramRunner::suspend()`), before the loadout, so a run that does not begin leaves them running. They are recorded in `characters.suspended_programs` as item id => copies (a stopped copy merges into its pile) and `RunStarter::end()` starts them again (`resumeSuspended()`), best effort through `start()`; what no longer fits is named in one inbox message (`programs_not_resumed`). A set that would leave the deck below what is stored on it (a Compressor) is refused (`ProcessRefusal::WouldOverfillStorage`), greyed out on the page and refused again on the server. The owner's own processes only. Tests: `SuspendProcessesTest`. Migration `2026_11_02_100000_suspended_programs` adds the column. Run `php artisan migrate`.
+- **My backdoors**, a button in the cyberspace Bookmarks box that opens a modal (`cyberspace.backdoors`, fragment `cyberspace/_backdoors`) of every system the character holds a backdoor on: name, address (copyable, with the Jumper's jump button while one runs), type and grade as tags, and the kind of backdoor. Type tags wear the colour of their node on the map (`.tag--silo` and the rest, from the same `--node`); the System, Type, Grade and Backdoor columns sort. Tests: `MyBackdoorsTest`.
+
+### Changed
+- **Encounter chances.** A matured explore pass opens an encounter on 40% (`city.encounter.explore_chance`, was 8%), a travel pass on 11% (`travel_chance`, was 5%). `CITY.md` and `EncounterTest` follow.
+- Player text for the suspend box, the not-restarted message, `programs.refused.not_to_hand`, the item editor's Family field and the skill editor's new-category field.
+
+### Fixed
+- **The run's Trace panel drew only the machine and you.** `Run::traceChain()` was a stub from before routing existed, so a run through four hops looked like it had none. It now returns the machine, every hop of the route the run declared (a lost hop keeps its place as a gap) and you, each with whether the trace has passed it (the run's `trace_hop`). Tests: `TraceChainTest`.
+
+
 ## [0.80.0] — 2026-10-29
 
 ### Changed
@@ -3883,7 +3897,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.80.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.81.0...HEAD
+[0.81.0]: https://github.com/nahkampf/dedlok/compare/v0.80.0...v0.81.0
 [0.80.0]: https://github.com/nahkampf/dedlok/compare/v0.79.0...v0.80.0
 [0.79.0]: https://github.com/nahkampf/dedlok/compare/v0.78.1...v0.79.0
 [0.78.1]: https://github.com/nahkampf/dedlok/compare/v0.78.0...v0.78.1
