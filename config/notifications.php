@@ -26,7 +26,7 @@ return [
         // The City.
         'encounter_waiting', 'withdrawal', 'bounty_word', 'njord_jsc_notice', 'surgery_failed',
         'safehouse_lost', 'safehouse_stored', 'safehouse_raided', 'safehouse_burned', 'safehouse_raid_failed',
-        'insurance_ending', 'insurance_lapsed',
+        'insurance_ending', 'insurance_lapsed', 'study_gain', 'workout_gain',
     ],
 
 ];

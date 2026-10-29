@@ -94,6 +94,20 @@ final class HomeActions
         return (float) $set['fatigue'] * (float) $character->stat('fatigue_taken')->value / 100;
     }
 
+    /**
+     * The meter's fill per minute: `progress` at the reference sum of the action's three attributes, falling as the sum
+     * rises (progress × (reference / sum) ^ exponent). STORED values, not resolved ones, so an implant or a drug does
+     * not slow the training; an attribute at the cap still counts.
+     *
+     * @param  array<string, mixed>  $set
+     */
+    private function progressPerMinute(Character $character, Action $action, array $set): float
+    {
+        $sum = array_sum(array_map(fn (string $a): int => (int) $character->{$a}, (array) $set['attributes']));
+
+        return (float) $set['progress'] * (((float) $set['reference'] / max(1, $sum)) ** (float) $set['exponent']);
+    }
+
     /** Seconds of simstim still allowed today (UTC); the day's count is zero on any other day. */
     public function simstimLeft(Character $character): int
     {
@@ -239,12 +253,13 @@ final class HomeActions
             if ($seconds > 0) {
                 $this->fatigue->add($locked, (float) $set['fatigue'] * $seconds / 60);
 
+                $this->mood->add($locked, (float) ($set['mood'] ?? 0) * $seconds / 60);
+
                 if ($action === Action::Simstim) {
                     $today = $locked->simstim_day?->isSameDay($now);
                     $locked->forceFill(['simstim_seconds' => ($today ? (int) $locked->simstim_seconds : 0) + $seconds, 'simstim_day' => $now->toDateString()])->save();
-                    $this->mood->add($locked, (float) $set['mood'] * $seconds / 60);
                 } else {
-                    $this->gainProgress($locked, $action, (float) $set['progress'] * $seconds / 60);
+                    $this->gainProgress($locked, $action, $this->progressPerMinute($locked, $action, $set) * $seconds / 60);
                 }
             }
 
@@ -323,6 +338,7 @@ final class HomeActions
             (new Notifier)->send($locked, Category::City, $action === Action::Workout ? 'workout_gain' : 'study_gain', [
                 'attribute' => Text::get("character.names.{$gained}"),
             ]);
+            $this->mood->add($locked, (float) config("safehouse.sessions.{$action->value}.gain_mood", 0));
         }
     }
 
@@ -387,7 +403,12 @@ final class HomeActions
             $seconds = max(0, (int) floor($from->diffInSeconds($until, false)));
 
             if ($seconds > 0) {
-                $this->fatigue->ease($locked, Points::of($locked->home()->rest_rate * $seconds / 60));
+                $eased = $this->fatigue->ease($locked, Points::of($locked->home()->rest_rate * $seconds / 60));
+
+                // Rest lifts a low mood fast and a good one hardly at all: per point of fatigue eased, so a better home does it
+                // quicker (its rate) without a different total.
+                $tier = (float) $locked->mood < 0 ? 'below_zero' : 'above_zero';
+                $this->mood->add($locked, (float) config("safehouse.rest.mood_per_fatigue.{$tier}") * (float) $eased);
 
                 // SI and HP mend while resting: whole hundredths of the running total, so the sum is exact however often somebody looks.
                 $before = (int) floor($from->diffInSeconds(CarbonImmutable::instance($activity->created_at), true));
