@@ -96,14 +96,16 @@
             <ul class="stack" style="--gap:2px;list-style:none;margin:0;padding:0">
                 @foreach ($tasks as $task)
                     <li>
-                        <form method="POST" action="{{ route('tasks.complete', $task) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center;background:var(--bg-2);padding:var(--s-2) var(--s-3)">
+                        <form method="POST" action="{{ route('tasks.complete', $task) }}" class="stack" style="--gap:var(--s-2);background:var(--bg-2);padding:var(--s-2) var(--s-3)">
                             @csrf
-                            <label class="check" style="min-width:0">
-                                <input type="checkbox" data-autosubmit>
-                                <span class="check__box"></span>
-                            </label>
-                            <span class="tag {{ $task->priority->tag() }}">{{ $task->priority->label() }}</span>
-                            <span style="min-width:0;overflow-wrap:anywhere">{{ $task->title }}</span>
+                            <div class="row" style="--gap:var(--s-3);align-items:center">
+                                <label class="check">
+                                    <input type="checkbox" data-autosubmit>
+                                    <span class="check__box"></span>
+                                </label>
+                                <span class="tag {{ $task->priority->tag() }}">{{ $task->priority->label() }}</span>
+                            </div>
+                            <span style="overflow-wrap:anywhere">{{ $task->title }}</span>
                         </form>
                     </li>
                 @endforeach
@@ -118,12 +120,14 @@
                 <ul class="stack" style="--gap:2px;list-style:none;margin:0;padding:0">
                     @foreach ($doneTasks as $task)
                         <li>
-                            <form method="POST" action="{{ route('tasks.reintroduce', $task) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center;background:var(--bg-3);padding:var(--s-2) var(--s-3)">
+                            <form method="POST" action="{{ route('tasks.reintroduce', $task) }}" class="stack" style="--gap:var(--s-2);background:var(--bg-3);padding:var(--s-2) var(--s-3)">
                                 @csrf
-                                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('tasks.reintroduce') }}</button>
-                                <span class="tag {{ $task->priority->tag() }}">{{ $task->priority->label() }}</span>
-                                <s class="muted" style="min-width:0;overflow-wrap:anywhere">{{ $task->title }}</s>
-                                <button type="submit" class="btn btn--sm btn--danger cut" formaction="{{ route('tasks.destroy', $task) }}" data-confirm="{{ Text::get('ui.confirm') }}">{{ Text::get('tasks.delete') }}</button>
+                                <div class="row" style="--gap:var(--s-3);align-items:center">
+                                    <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('tasks.reintroduce') }}</button>
+                                    <span class="tag {{ $task->priority->tag() }}">{{ $task->priority->label() }}</span>
+                                </div>
+                                <s class="muted" style="overflow-wrap:anywhere">{{ $task->title }}</s>
+                                <div><button type="submit" class="btn btn--sm btn--danger cut" formaction="{{ route('tasks.destroy', $task) }}" data-confirm="{{ Text::get('ui.confirm') }}">{{ Text::get('tasks.delete') }}</button></div>
                             </form>
                         </li>
                     @endforeach
