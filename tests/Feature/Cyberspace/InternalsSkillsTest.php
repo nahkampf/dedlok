@@ -41,6 +41,8 @@ final class InternalsSkillsTest extends TestCase
             $skill = Skill::query()->where('slug', $os.'_internals')->firstOrFail();
 
             $this->assertSame($rank, (int) $skill->rank, $os);
+            $this->assertFalse((bool) $skill->on_market, $os);
+            $this->assertSame(['auroos' => 3000, 'prismv' => 7500, 'ironclad' => 18000, 'lattice' => 60000][$os], (int) $skill->base_cost, $os);
             $this->assertSame(['memory', 'intellect'], [$skill->primary_attribute, $skill->secondary_attribute], $os);
             $this->assertNotSame('Operating Systems', $skill->category, 'that category is the grid\'s ladder of systems');
             $this->assertSame(
@@ -79,5 +81,14 @@ final class InternalsSkillsTest extends TestCase
         $this->assertEqualsWithDelta($chance(35.1, 35 * 0.925), $at($lattice), 0.001);
         $this->assertGreaterThan($bareLattice, $at($lattice));
         $this->assertSame($bareAura, $at($auroos));
+    }
+
+    public function test_kernel_exploitation_leaves_the_operating_systems_category(): void
+    {
+        Skill::query()->where('slug', 'kernel_exploitation')->update(['category' => 'Operating Systems']);
+
+        (require database_path('migrations/2026_11_08_110000_kernel_exploitation_is_not_an_operating_system.php'))->up();
+
+        $this->assertSame('Intrusion', Skill::query()->where('slug', 'kernel_exploitation')->value('category'));
     }
 }

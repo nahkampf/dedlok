@@ -13,16 +13,16 @@ use Illuminate\Support\Facades\DB;
  *
  * NOT IN THE OPERATING SYSTEMS CATEGORY, which is a ladder: `GridSeeder` gives a machine the skill of its grade out of every skill
  * there, and the fortress screen offers them as the OS to run. These are filed under Intrusion, and each asks for Cyberdecks 5 and
- * its own operating system at level 3.
+ * its own operating system at level 3. Not on the market.
  */
 return new class extends Migration
 {
     /** os slug => [title, rank, base cost] */
     private const SKILLS = [
-        'auroos' => ['AuraOS', 4, 5000],
-        'prismv' => ['Prism-V', 4, 5000],
-        'ironclad' => ['IRONCLAD', 8, 15000],
-        'lattice' => ['Lattice', 16, 150000],
+        'auroos' => ['AuraOS', 4, 3000],
+        'prismv' => ['Prism-V', 4, 7500],
+        'ironclad' => ['IRONCLAD', 8, 18000],
+        'lattice' => ['Lattice', 16, 60000],
     ];
 
     public function up(): void
@@ -47,7 +47,7 @@ return new class extends Migration
                 'primary_attribute' => 'memory',
                 'secondary_attribute' => 'intellect',
                 'base_cost' => $cost,
-                'on_market' => true,
+                'on_market' => false,
                 'modifiers' => array_map(
                     static fn (int $level): array => [
                         'op' => 'percentage_of_base',
