@@ -10,6 +10,7 @@ use App\Combat\DamageProfile;
 use App\Combat\Riders;
 use App\Combat\WeaponClass;
 use App\Combat\WearSlot;
+use App\Crafting\Crafting;
 use App\Cyberspace\SystemType;
 use App\Decks\BoardLayout;
 use App\Decks\Hardware;
@@ -504,7 +505,7 @@ class ItemRequest extends FormRequest
                 : ['nullable', 'integer', Rule::exists('programs', 'item_id'), function (string $attribute, mixed $value, \Closure $fail): void {
                     $kind = Program::query()->where('item_id', (int) $value)->value('kind');
 
-                    if (config('crafting.gate.'.($kind instanceof ProgramKind ? $kind->value : (string) $kind)) === null) {
+                    if (! Crafting::builds($kind instanceof ProgramKind ? $kind->value : (string) $kind)) {
                         $fail(Text::get('crafting.refused.uncraftable'));
                     }
                 }],

@@ -5,15 +5,20 @@ declare(strict_types=1);
 namespace Tests\Feature\Cyberspace;
 
 use App\Checks\CheckRoller;
+use App\Crafting\Crafting;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
 use App\Models\Character;
+use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\Run;
 use App\Models\Skill;
 use App\Models\System;
 use App\Models\SystemContent;
+use App\Programs\ProgramKind;
+use App\Programs\ProgramRunner;
 use App\Stats\Modifier;
 use App\Stats\Resolver;
 use App\Stats\Sheet;
@@ -121,6 +126,42 @@ final class OperatingSystemTest extends TestCase
         Config::set('cyberspace.os.difficulty.lattice', 24);
 
         $this->assertEqualsWithDelta(0.8002, app(Simulator::class)->coreChance($this->character->fresh(), $run), 0.001);
+    }
+
+    /** A running program that eases an OS by a percentage of its difficulty moves the roll, and nothing is rounded: 35 less 12% is 30.8. */
+    public function test_a_running_program_eases_the_difficulty_of_its_own_os(): void
+    {
+        $this->machine();
+        $run = $this->begin();
+        $this->knowsTheOs(3);
+
+        $ease = fn (string $os, int $percent): Item => Item::factory()->program(ProgramKind::Utility, qflops: 0.1, memory: 0.1, storage: 0.1, background: true, modifiers: [
+            ['op' => 'percentage_of_base', 'amount' => $percent, 'target' => ['id' => 'os_difficulty.'.$os]],
+        ])->create();
+
+        $other = $ease('auroos', -10);
+        $mine = $ease('lattice', -12);
+
+        $start = function (Item $item): void {
+            $row = InventoryItem::create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1]);
+            $this->assertTrue(app(ProgramRunner::class)->start($this->character->fresh(), $row)->succeeded());
+        };
+
+        $bare = app(Simulator::class)->coreChance($this->character->fresh(), $run);
+        $this->assertEqualsWithDelta(1 / (1 + exp(-(24.0 - 35.0) / 8)), $bare, 0.0001);
+
+        $start($other);
+        $this->assertSame($bare, app(Simulator::class)->coreChance($this->character->fresh(), $run), 'an AuraOS program does nothing against Lattice');
+
+        $start($mine);
+        $this->assertEqualsWithDelta(1 / (1 + exp(-(24.0 - 30.8) / 8)), app(Simulator::class)->coreChance($this->character->fresh(), $run), 0.0001);
+    }
+
+    public function test_a_utility_can_be_built_without_a_gate_skill_and_a_daemon_still_cannot(): void
+    {
+        $this->assertTrue(Crafting::builds('utility'));
+        $this->assertTrue(Crafting::builds('icebreaker'));
+        $this->assertFalse(Crafting::builds('daemon'));
     }
 
     /** An OS skill grants nothing to any check: the level table is the whole curve, and AuraOS does nothing for Prism-V. */

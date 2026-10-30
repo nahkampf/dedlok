@@ -267,12 +267,16 @@ final class Crafting
         return true;
     }
 
+    /** Can a program of this kind be built at all: it has a gate skill, or is on the `ungated` list. */
+    public static function builds(string $kind): bool
+    {
+        return config("crafting.gate.{$kind}") !== null || in_array($kind, (array) config('crafting.ungated', []), true);
+    }
+
     /** @param  list<CraftLine>  $lines */
     private function blockedBy(Character $character, Design $design, string $kind, array $lines): ?CraftingRefusal
     {
-        $kindSkill = config("crafting.gate.{$kind}");
-
-        if ($kindSkill === null) {
+        if (! self::builds($kind)) {
             return CraftingRefusal::Uncraftable;
         }
 

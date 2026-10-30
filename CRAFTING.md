@@ -13,7 +13,7 @@ Some products are programs that already exist (an icebreaker, a decryptor). Othe
   (a new `ProcessRefusal` case). Scripts stay off training stats until `RunningPrograms` can look back.
 - **A Design names one product item and a recipe**, and has no "kind" of its own: whether the product is permanent or a Script lives on the product.
   A recipe line is a component item, a quantity, and optional filters on its origin (grade min/max, OS, owner, system type, ICE and IDS minimums).
-  A design needs a skill and level beyond the general gate. **The editor refuses a product whose program kind has no crafting skill.**
+  A design needs a skill and level beyond the general gate. **The editor refuses a product whose program kind has no crafting skill**, unless the kind is on `crafting.ungated` (today only `utility`: built with Code Crafting and whatever the design asks for, no gate skill of its own; `Crafting::builds()` is the one test).
 - **Two Design types.** A **Design Copy** is deleted when the craft starts; a **Design Original** is multi-use. Both are loose data items, sellable,
   and can be destroyed by ICE (a later step: a new `AttackTag` case). A craft needs the Design in the stash.
 - **Components are spent when the craft starts** ("locked in"), and the recipe is snapshotted on the craft. Cancelling forfeits them.
@@ -75,6 +75,14 @@ eligible components (a config test holds both). A recipe can be satisfied from o
 | Vectorized Dataset | grade | — | — | — | — | — | — | 5 | 7 | 10 |
 
 (A first proposal; the author may change it. Access Token and Watchdog Signature were dropped.)
+
+## The OS-difficulty Utilities
+
+**SecRing Ablater** (AuraOS and Prism-V cores, -10% difficulty; 3 compute, 6 RAM, 6 QB storage) and **CoreMod Isolator** (IRONCLAD and Lattice, -12%; 6, 9, 16): Utility
+background processes, one copy at a time (not multithreaded), modifying `os_difficulty.<slug>` (a stat per Operating Systems skill, generated in
+`SkillStats`, a percentage of the base `Simulator::osDifficulty()` hands in, never rounded: 35 less 12% is 30.8). Designs ask for Code Crafting 5 and 16 hours; the recipes are
+Kernel Log, Config File, Stack Trace and Error Log filtered by OS: 4 AuraOS + 4 Prism-V, and 6 IRONCLAD + 2 Lattice, by quantity. Migration
+`2026_11_07_100000_secring_ablater_and_coremod_isolator`; nothing sells the designs yet.
 
 ## The first Script
 
