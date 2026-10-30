@@ -196,4 +196,17 @@ final class SuspendProcessesTest extends TestCase
             ->assertDontSee('value="'.$row->id.'" disabled', false)
             ->assertDontSee(ProcessRefusal::NotEnoughCompute->message());
     }
+
+    public function test_a_running_scanner_comes_ticked_and_another_process_does_not(): void
+    {
+        $scanner = $this->scanner();
+        $other = Item::factory()->program(ProgramKind::Utility, qflops: 0.1, memory: 0.1, storage: 0.1, background: true)->create();
+        [$scan] = $this->running($scanner);
+        [$util] = $this->running($other);
+
+        $html = $this->actingAs($this->character->user)->get(route('run.setup'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/name="suspend\[\]" value="'.$scan->id.'"[^>]*\schecked/', $html);
+        $this->assertDoesNotMatchRegularExpression('/name="suspend\[\]" value="'.$util->id.'"[^>]*\schecked/', $html);
+    }
 }

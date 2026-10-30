@@ -143,7 +143,7 @@
     </div>
 </div>
 
-{{-- SUSPEND BACKGROUND PROCESSES. A ticked one is stopped when the run begins and started again when it ends; ticking only
+{{-- SUSPEND BACKGROUND PROCESSES. A ticked one is stopped when the run begins and started again when it ends; scanners (Analysers) come ticked; ticking only
      gives its compute and memory back to the sums on this page. A Compressor the deck's storage needs cannot be ticked. An accordion closed until wanted; its inputs belong to the run form by `form=`, not by sitting
      inside it. --}}
 <details class="panel panel--snug" style="margin-top:var(--s-4)">
@@ -160,7 +160,7 @@
                     <label class="check">
                         <input type="checkbox" name="suspend[]" value="{{ $row->id }}" form="run-form"
                                data-gain-qflops="{{ \App\Support\Qb::tenths($program->qflops_cost) }}" data-gain-memory="{{ \App\Support\Qb::tenths($program->memory_cost) }}"
-                               @if ($blocked) disabled @endif>
+                               @if ($blocked) disabled @elseif ($program->kind === \App\Programs\ProgramKind::Analyser) checked @endif>
                         <span class="check__box"></span>
                         <span>
                             {{ $row->item->displayName() }}

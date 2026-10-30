@@ -1971,7 +1971,8 @@
       document.querySelectorAll('input[name="suspend[]"]:checked').forEach((el) => q.append("suspend[]", el.value));
       const query = q.toString();
       // The first call is the page as the server drew it, already answered.
-      if (lastQuery === null || query === lastQuery) { lastQuery = query; return; }
+      // Unless something comes pre-ticked in the Suspend box: the server drew the page with nothing stopped.
+      if ((lastQuery === null && !q.has("suspend[]")) || query === lastQuery) { lastQuery = query; return; }
       lastQuery = query;
       const mine = ++asked;
       fetch(assess.dataset.assessUrl + "?" + query, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
