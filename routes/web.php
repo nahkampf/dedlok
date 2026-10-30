@@ -46,6 +46,7 @@ use App\Http\Controllers\MissionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PatchNotesController;
 use App\Http\Controllers\PlaceController;
+use App\Http\Controllers\PlayerTaskController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\RunPartyController;
@@ -409,6 +410,9 @@ Route::middleware('auth')->group(function () {
      */
     // Tasks & Missions: the exchange jobs you have taken, with the journal and quests still to come.
     Route::get('/tasks', TasksController::class)->name('tasks.index');
+    Route::post('/tasks', [PlayerTaskController::class, 'store'])->name('tasks.store');
+    Route::post('/tasks/{task}/complete', [PlayerTaskController::class, 'complete'])->name('tasks.complete');
+    Route::post('/tasks/{task}/reintroduce', [PlayerTaskController::class, 'reintroduce'])->name('tasks.reintroduce');
 
     Route::get('/character', [CharacterController::class, 'index'])->name('character.index');
     Route::post('/character/avatar', [CharacterController::class, 'avatar'])->middleware('throttle:10,10')->name('character.avatar');

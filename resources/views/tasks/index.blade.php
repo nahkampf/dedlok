@@ -68,9 +68,69 @@
         @endif
     </section>
 
-    <section class="stack" style="--gap:var(--s-2);margin-top:var(--s-6)">
+    {{-- TASKS: what the player set for themselves (App\Models\PlayerTask, a reminder nothing reads), high priority first and
+         newest first within one, then the safehouse leads. The checkbox ticks one off and sends it to the modal. --}}
+    <section class="stack" style="--gap:var(--s-3);margin-top:var(--s-6)">
         <h2>{{ Text::get('tasks.tasks') }}</h2>
-        @forelse ($leads as $lead)
+        <p class="micro" style="color:var(--ink-3);margin:0;max-width:70ch">{{ Text::get('tasks.tasks_intro') }}</p>
+
+        <form method="POST" action="{{ route('tasks.store') }}" class="stack" style="--gap:var(--s-3);max-width:70ch">
+            @csrf
+            <div class="field">
+                <input class="input" type="text" name="title" maxlength="255" required value="{{ old('title') }}" placeholder="{{ Text::get('tasks.task_placeholder') }}" aria-label="{{ Text::get('tasks.task_placeholder') }}">
+                @error('title') <span class="field__error">{{ $message }}</span> @enderror
+            </div>
+            @php($levels = \App\Tasks\TaskPriority::cases())
+            <div class="field">
+                <label class="field__label" for="task-priority">{{ Text::get('tasks.priority') }}
+                    <span data-range-label="#task-priority" style="margin-left:var(--s-2);color:var(--ink-2)">{{ \App\Tasks\TaskPriority::Medium->label() }}</span>
+                </label>
+                <input class="range" id="task-priority" name="priority" type="range" min="1" max="3" step="1" value="2"
+                       data-labels='@json(array_map(fn ($p) => $p->label(), $levels))'>
+                @error('priority') <span class="field__error">{{ $message }}</span> @enderror
+            </div>
+            <div><button type="submit" class="btn btn--sm cut">{{ Text::get('tasks.save') }}</button></div>
+        </form>
+
+        @if ($tasks->isNotEmpty())
+            <ul class="stack" style="--gap:var(--s-2);list-style:none;margin:0;padding:0">
+                @foreach ($tasks as $task)
+                    <li>
+                        <form method="POST" action="{{ route('tasks.complete', $task) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            @csrf
+                            <label class="check" style="min-width:0">
+                                <input type="checkbox" data-autosubmit>
+                                <span class="check__box"></span>
+                                <span style="overflow-wrap:anywhere">{{ $task->title }}</span>
+                            </label>
+                            <span class="tag {{ $task->priority->tag() }}">{{ $task->priority->label() }}</span>
+                        </form>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+
+        <div><button type="button" class="btn btn--sm btn--ghost cut" data-open="#done-tasks">{{ Text::get('tasks.completed_tasks') }}</button></div>
+
+        <dialog class="modal" id="done-tasks">
+            <div class="panel__hd"><span class="micro">{{ Text::get('tasks.completed_tasks') }}</span><div class="spacer"></div><button type="button" class="btn btn--sm btn--ghost" data-close>✕</button></div>
+            <div class="panel__bd">
+                <ul class="stack" style="--gap:var(--s-3);list-style:none;margin:0;padding:0">
+                    @foreach ($doneTasks as $task)
+                        <li>
+                            <form method="POST" action="{{ route('tasks.reintroduce', $task) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                                @csrf
+                                <s class="muted" style="min-width:0;overflow-wrap:anywhere">{{ $task->title }}</s>
+                                <span class="tag {{ $task->priority->tag() }}">{{ $task->priority->label() }}</span>
+                                <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('tasks.reintroduce') }}</button>
+                            </form>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </dialog>
+
+        @foreach ($leads as $lead)
             @php([$heading, $text] = $lead->entry())
             <div class="stack" style="--gap:var(--s-2)">
                 <h3 style="margin:0">{{ $heading }}</h3>
@@ -80,8 +140,6 @@
                     <button type="submit" class="btn btn--sm btn--ghost cut" data-confirm="{{ Text::get('ui.confirm') }}">{{ Text::get('safehouse.lead.forget') }}</button>
                 </form>
             </div>
-        @empty
-            <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('tasks.not_yet') }}</p>
-        @endforelse
+        @endforeach
     </section>
 @endsection

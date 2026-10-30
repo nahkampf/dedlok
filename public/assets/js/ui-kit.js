@@ -1888,6 +1888,18 @@
     try { nodeGraph(el, JSON.parse(el.dataset.graph)); } catch (e) { /* a bad spec draws nothing */ }
   });
 
+  /* A checkbox marked [data-autosubmit] sends its form the moment it changes. A range with [data-labels] (a JSON list) names
+     its position in the [data-range-label="#id"] span beside its label: 1 is the first word. */
+  document.addEventListener("change", (e) => {
+    if (e.target.matches?.("[data-autosubmit]")) e.target.form.requestSubmit();
+  });
+  document.querySelectorAll("input[type=range][data-labels]").forEach((range) => {
+    const words = JSON.parse(range.dataset.labels), out = document.querySelector('[data-range-label="#' + range.id + '"]');
+    const show = () => { if (out) out.textContent = words[Number(range.value) - Number(range.min)] ?? ""; };
+    range.addEventListener("input", show);
+    show();
+  });
+
   /* Autotraverse: <button data-autotraverse="DIALOG-ID" data-url data-x data-y data-steps data-step-ms>. Opens the modal
      dialog (its backdrop is the overlay) and posts one step toward the target every data-step-ms. Cancelling, or the
      dialog closing any other way, stops it where it stands and reloads to show the new position; so does arriving or
