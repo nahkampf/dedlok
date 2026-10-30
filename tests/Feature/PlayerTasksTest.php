@@ -82,7 +82,7 @@ final class PlayerTasksTest extends TestCase
         $theirs = $this->task('Theirs', TaskPriority::Low, done: true, who: Character::factory()->create());
 
         $this->actingAs($this->me->user)->post(route('tasks.destroy', $theirs))->assertNotFound();
-        $this->actingAs($this->me->user)->post(route('tasks.destroy', $mine))->assertRedirect();
+        $this->actingAs($this->me->user)->post(route('tasks.destroy', $mine))->assertRedirect()->assertSessionHas('done_tasks_open');
 
         $this->assertSame(['Theirs'], PlayerTask::pluck('title')->all());
     }

@@ -114,7 +114,7 @@
 
         <div><button type="button" class="btn btn--sm btn--ghost cut" data-open="#done-tasks">{{ Text::get('tasks.completed_tasks') }}</button></div>
 
-        <dialog class="modal" id="done-tasks">
+        <dialog class="modal" id="done-tasks" @if (session('done_tasks_open')) data-show-on-load @endif>
             <div class="panel__hd"><span class="micro">{{ Text::get('tasks.completed_tasks') }}</span><div class="spacer"></div><button type="button" class="btn btn--sm btn--ghost" data-close>✕</button></div>
             <div class="panel__bd">
                 <ul class="stack" style="--gap:2px;list-style:none;margin:0;padding:0">

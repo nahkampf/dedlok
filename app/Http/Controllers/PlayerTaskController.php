@@ -47,7 +47,8 @@ class PlayerTaskController extends Controller
     {
         $this->mine($request, $task)->delete();
 
-        return back();
+        // Deleting is done from the Completed tasks modal, so it opens again with the page.
+        return back()->with('done_tasks_open', true);
     }
 
     private function mine(Request $request, PlayerTask $task): PlayerTask
