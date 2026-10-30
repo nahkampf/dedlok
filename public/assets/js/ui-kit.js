@@ -1889,13 +1889,19 @@
   });
 
   /* A checkbox marked [data-autosubmit] sends its form the moment it changes. A range with [data-labels] (a JSON list) names
-     its position in the [data-range-label="#id"] span beside its label: 1 is the first word. */
+     its position in the [data-range-label="#id"] span beside its label: 1 is the first word. A [data-tags] list (the same
+     length) gives that span the kit tag class of the position too. */
   document.addEventListener("change", (e) => {
     if (e.target.matches?.("[data-autosubmit]")) e.target.form.requestSubmit();
   });
   document.querySelectorAll("input[type=range][data-labels]").forEach((range) => {
-    const words = JSON.parse(range.dataset.labels), out = document.querySelector('[data-range-label="#' + range.id + '"]');
-    const show = () => { if (out) out.textContent = words[Number(range.value) - Number(range.min)] ?? ""; };
+    const words = JSON.parse(range.dataset.labels), tags = JSON.parse(range.dataset.tags || "[]"), out = document.querySelector('[data-range-label="#' + range.id + '"]');
+    const show = () => {
+      if (!out) return;
+      const i = Number(range.value) - Number(range.min);
+      out.textContent = words[i] ?? "";
+      if (tags.length) out.className = "tag " + (tags[i] ?? "");
+    };
     range.addEventListener("input", show);
     show();
   });

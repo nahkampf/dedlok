@@ -83,10 +83,10 @@
             @php($levels = \App\Tasks\TaskPriority::cases())
             <div class="field">
                 <label class="field__label" for="task-priority">{{ Text::get('tasks.priority') }}
-                    <span data-range-label="#task-priority" style="margin-left:var(--s-2);color:var(--ink-2)">{{ \App\Tasks\TaskPriority::Medium->label() }}</span>
+                    <span data-range-label="#task-priority" class="tag {{ \App\Tasks\TaskPriority::Medium->tag() }}" style="margin-left:var(--s-2)">{{ \App\Tasks\TaskPriority::Medium->label() }}</span>
                 </label>
                 <input class="range" id="task-priority" name="priority" type="range" min="1" max="3" step="1" value="2"
-                       data-labels='@json(array_map(fn ($p) => $p->label(), $levels))'>
+                       data-labels='@json(array_map(fn ($p) => $p->label(), $levels))' data-tags='@json(array_map(fn ($p) => $p->tag(), $levels))'>
                 @error('priority') <span class="field__error">{{ $message }}</span> @enderror
             </div>
             <div><button type="submit" class="btn btn--sm cut">{{ Text::get('tasks.save') }}</button></div>
