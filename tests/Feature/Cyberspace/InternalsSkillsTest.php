@@ -7,6 +7,7 @@ namespace Tests\Feature\Cyberspace;
 use App\Cyberspace\Simulator;
 use App\Inventory\SkillInjector;
 use App\Models\Character;
+use App\Models\Item;
 use App\Models\Skill;
 use App\Stats\Sheet;
 use App\Stats\SkillStats;
@@ -90,5 +91,37 @@ final class InternalsSkillsTest extends TestCase
         (require database_path('migrations/2026_11_08_110000_kernel_exploitation_is_not_an_operating_system.php'))->up();
 
         $this->assertSame('Intrusion', Skill::query()->where('slug', 'kernel_exploitation')->value('category'));
+    }
+
+    /** Who sells the imprints and the two Utilities' designs, at what: every desk grade, priced in loyalty and standing. */
+    public function test_the_exchanges_that_offer_them(): void
+    {
+        foreach (['secring_ablater-design-copy', 'coremod_isolator-design-copy', 'secring_ablater-design-original', 'coremod_isolator-design-original'] as $slug) {
+            Item::factory()->create(['slug' => $slug]);
+        }
+
+        $this->migrate();
+
+        $expected = [
+            'imprint_auroos_internals' => [35, 1.5, ['Joint Signals Command', 'Lockjaw', 'Ninth Circle Security', 'TAO']],
+            'imprint_prismv_internals' => [35, 1.5, ['Joint Signals Command', 'Lockjaw', 'Ninth Circle Security', 'TAO']],
+            'imprint_ironclad_internals' => [65, 2.5, ['Joint Signals Command', 'TAO']],
+            'imprint_lattice_internals' => [115, 3, ['TAO']],
+            'secring_ablater-design-copy' => [55, 1.5, ['Joint Signals Command', 'Lockjaw', 'Ninth Circle Security', 'TAO']],
+            'coremod_isolator-design-copy' => [150, 5, ['Joint Signals Command', 'TAO']],
+            'secring_ablater-design-original' => [225, 4, ['Lockjaw', 'TAO']],
+            'coremod_isolator-design-original' => [400, 7, ['Lockjaw', 'TAO']],
+        ];
+
+        foreach ($expected as $slug => [$loyalty, $standing, $desks]) {
+            $rows = DB::table('entity_offers')->join('entities', 'entities.id', '=', 'entity_offers.entity_id')
+                ->where('item_id', Item::query()->where('slug', $slug)->value('id'))->orderBy('entities.name')
+                ->get(['entities.name', 'loyalty_price', 'min_standing', 'min_grade', 'max_grade']);
+
+            $this->assertSame($desks, $rows->pluck('name')->all(), $slug);
+            $this->assertEqualsWithDelta($loyalty, (float) $rows->first()->loyalty_price, 0.0001, $slug);
+            $this->assertEqualsWithDelta($standing, (float) $rows->first()->min_standing, 0.0001, $slug);
+            $this->assertSame([1, 5], [(int) $rows->first()->min_grade, (int) $rows->first()->max_grade], $slug);
+        }
     }
 }

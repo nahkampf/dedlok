@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
  *
  * NOT IN THE OPERATING SYSTEMS CATEGORY, which is a ladder: `GridSeeder` gives a machine the skill of its grade out of every skill
  * there, and the fortress screen offers them as the OS to run. These are filed under Intrusion, and each asks for Cyberdecks 5 and
- * its own operating system at level 3. Not on the market.
+ * its own operating system at level 3. Not on the market. Their imprints, and the designs of the two Utilities, are on offer at
+ * the exchanges named in `OFFERS`.
  */
 return new class extends Migration
 {
@@ -71,6 +72,48 @@ return new class extends Migration
             }
 
             Imprint::ensureFor($skill);
+        }
+
+        $this->offer();
+    }
+
+    /**
+     * Who hands them over, and for how much: item slug => [loyalty, standing, entities]. The imprints, and the Ablater's and
+     * Isolator's designs (which another migration makes). Every desk grade keeps them. An entity or item that is not in the game is
+     * left out, and a row that already exists is repriced.
+     */
+    private const OFFERS = [
+        'imprint_auroos_internals' => [35, 1.5, ['Lockjaw', 'Ninth Circle Security', 'Joint Signals Command', 'TAO']],
+        'imprint_prismv_internals' => [35, 1.5, ['Lockjaw', 'Ninth Circle Security', 'Joint Signals Command', 'TAO']],
+        'imprint_ironclad_internals' => [65, 2.5, ['TAO', 'Joint Signals Command']],
+        'imprint_lattice_internals' => [115, 3, ['TAO']],
+        'secring_ablater-design-copy' => [55, 1.5, ['Lockjaw', 'Ninth Circle Security', 'TAO', 'Joint Signals Command']],
+        'coremod_isolator-design-copy' => [150, 5, ['TAO', 'Joint Signals Command']],
+        'secring_ablater-design-original' => [225, 4, ['Lockjaw', 'TAO']],
+        'coremod_isolator-design-original' => [400, 7, ['Lockjaw', 'TAO']],
+    ];
+
+    private function offer(): void
+    {
+        foreach (self::OFFERS as $slug => [$loyalty, $standing, $entities]) {
+            $itemId = DB::table('items')->where('slug', $slug)->value('id');
+
+            if ($itemId === null) {
+                continue;
+            }
+
+            foreach ($entities as $name) {
+                $entityId = DB::table('entities')->where('name', $name)->value('id');
+
+                if ($entityId === null) {
+                    continue;
+                }
+
+                DB::table('entity_offers')->updateOrInsert(
+                    ['entity_id' => $entityId, 'item_id' => $itemId],
+                    ['min_grade' => 1, 'max_grade' => 5, 'loyalty_price' => $loyalty, 'min_standing' => $standing, 'created_at' => now(), 'updated_at' => now()],
+                );
+            }
         }
     }
 
