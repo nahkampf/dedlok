@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.83.2] — 2026-10-30
+
+### Fixed
+- **Declining every job at an exchange bought a fresh board.** `MissionLedger::decline()` deleted the offer, and `MissionBoard` counts an empty board as stale, so the next visit rolled new work at once; a player could decline until the job they wanted came up. The row is now kept with the new state `MissionState::Declined` (the column is a string, no migration), the board counts offered and declined rows together when it asks whether the hour has passed, and the refresh clears both. A player who declines everything sees an empty desk until the hour is up (the old "floor" of one job is gone). Tests: `MissionTest`.
+
+
 ## [0.83.1] — 2026-10-29
 
 ### Added
@@ -3929,7 +3935,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.83.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.83.2...HEAD
+[0.83.2]: https://github.com/nahkampf/dedlok/compare/v0.83.1...v0.83.2
 [0.83.1]: https://github.com/nahkampf/dedlok/compare/v0.83.0...v0.83.1
 [0.83.0]: https://github.com/nahkampf/dedlok/compare/v0.82.0...v0.83.0
 [0.82.0]: https://github.com/nahkampf/dedlok/compare/v0.81.0...v0.82.0

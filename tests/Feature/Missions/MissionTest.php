@@ -349,15 +349,17 @@ final class MissionTest extends TestCase
         $this->assertSame($first->all(), $again->all());
     }
 
-    public function test_an_emptied_board_is_rolled_again_on_the_next_visit(): void
+    public function test_declining_everything_does_not_buy_a_new_board(): void
     {
         $this->targets(6);
 
         $this->board()->forCharacter($this->character, $this->desk)
-            ->each(fn (Mission $offer) => $offer->delete());
+            ->each(fn (Mission $offer) => $this->ledger()->decline($this->character, $offer));
 
-        // THE FLOOR HOLDS. Somebody who declined everything finds work waiting
-        // rather than an empty desk until the hour is up.
+        $this->assertCount(0, $this->board()->forCharacter($this->character, $this->desk));
+
+        $this->travel(61)->minutes();
+
         $this->assertGreaterThan(0, $this->board()->forCharacter($this->character, $this->desk)->count());
     }
 
@@ -482,13 +484,13 @@ final class MissionTest extends TestCase
         );
     }
 
-    /** Turning one down deletes it: an offer nobody took is not history. */
+    /** Turning one down keeps the row, marked, so the board still counts as rolled. */
     public function test_declining_takes_it_off_the_board(): void
     {
         $offer = $this->anOffer(MissionAction::Scan);
 
         $this->assertTrue($this->ledger()->decline($this->character, $offer));
-        $this->assertNull(Mission::query()->find($offer->id));
+        $this->assertSame(MissionState::Declined, $offer->fresh()->state);
     }
 
     // ---- the three endings --------------------------------------------------

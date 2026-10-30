@@ -9,7 +9,7 @@ use App\Support\Text;
 /**
  * Where a job is in its life.
  *
- * FIVE, AND THE LAST THREE ARE ENDINGS. A mission is offered, taken, and then
+ * SIX, AND THE LAST THREE ARE ENDINGS. A mission is offered, taken, and then
  * finishes one of three ways — which is the same shape `RunEnding` takes, and
  * for the same reason: what separates the endings is what they COST, not what
  * happened.
@@ -24,6 +24,9 @@ enum MissionState: string
     /** On the board, not taken. Cleared by the next refresh whether or not anybody looked. */
     case Offered = 'offered';
 
+    /** Turned down. Kept, not deleted, so the board still counts as rolled this hour and declining cannot buy a fresh one. */
+    case Declined = 'declined';
+
     /** Taken, and the clock is running. The one state a character may only hold one of per entity. */
     case Accepted = 'accepted';
 
@@ -37,7 +40,7 @@ enum MissionState: string
 
     public function isOver(): bool
     {
-        return $this !== self::Offered && $this !== self::Accepted;
+        return ! in_array($this, [self::Offered, self::Declined, self::Accepted], true);
     }
 
     public function label(): string

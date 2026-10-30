@@ -197,9 +197,9 @@ final readonly class MissionLedger
     /**
      * Turn it down.
      *
-     * The row is DELETED rather than marked, because an offer nobody took is
-     * not history. What it costs is the offer itself until the board refreshes
-     * — which is what makes the hour a real decision.
+     * The row is kept, marked `Declined`, so the board still counts as rolled:
+     * deleting it let an emptied board be re-rolled at once, and a player could
+     * decline until the job they wanted came up. The next board is the hour's.
      */
     public function decline(Character $character, Mission $mission): MissionRefusal|bool
     {
@@ -211,7 +211,7 @@ final readonly class MissionLedger
             return MissionRefusal::Gone;
         }
 
-        $mission->delete();
+        $mission->forceFill(['state' => MissionState::Declined])->save();
 
         return true;
     }

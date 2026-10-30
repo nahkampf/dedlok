@@ -1,3 +1,7 @@
+## 0.83.2 (2026-10-30)
+
+- Plugged an exploit where you could milk the exchanges for the missions you wanted
+
 ## 0.83.1 (2026-10-29)
 
 - An update to 0.83.0: We also needed to support CUU/CUB/CUB, absolute position and save/restore cursor to cover all ANSI cases.
