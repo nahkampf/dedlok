@@ -1095,6 +1095,7 @@ return [
         'save' => 'Save',
         'completed_tasks' => 'Completed tasks',
         'reintroduce' => 'Reintroduce',
+        'delete' => 'Delete',
         'from' => 'From :entity, through :agent',
         'desk' => 'Desk at',
     ],

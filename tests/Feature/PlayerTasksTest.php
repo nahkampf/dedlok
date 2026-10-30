@@ -76,6 +76,17 @@ final class PlayerTasksTest extends TestCase
         $this->assertNull($task->fresh()->completed_at);
     }
 
+    public function test_a_task_can_be_deleted_by_its_owner_only(): void
+    {
+        $mine = $this->task('Mine', TaskPriority::Low, done: true);
+        $theirs = $this->task('Theirs', TaskPriority::Low, done: true, who: Character::factory()->create());
+
+        $this->actingAs($this->me->user)->post(route('tasks.destroy', $theirs))->assertNotFound();
+        $this->actingAs($this->me->user)->post(route('tasks.destroy', $mine))->assertRedirect();
+
+        $this->assertSame(['Theirs'], PlayerTask::pluck('title')->all());
+    }
+
     public function test_somebody_elses_task_cannot_be_touched(): void
     {
         $theirs = $this->task('Theirs', TaskPriority::Low, who: Character::factory()->create());

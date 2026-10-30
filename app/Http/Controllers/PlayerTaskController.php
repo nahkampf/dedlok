@@ -43,6 +43,13 @@ class PlayerTaskController extends Controller
         return back();
     }
 
+    public function destroy(Request $request, PlayerTask $task): RedirectResponse
+    {
+        $this->mine($request, $task)->delete();
+
+        return back();
+    }
+
     private function mine(Request $request, PlayerTask $task): PlayerTask
     {
         abort_unless($task->character_id === $request->user()->character()->firstOrFail()->getKey(), 404);

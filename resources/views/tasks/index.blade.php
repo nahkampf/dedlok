@@ -101,9 +101,9 @@
                             <label class="check" style="min-width:0">
                                 <input type="checkbox" data-autosubmit>
                                 <span class="check__box"></span>
-                                <span style="overflow-wrap:anywhere">{{ $task->title }}</span>
                             </label>
                             <span class="tag {{ $task->priority->tag() }}">{{ $task->priority->label() }}</span>
+                            <span style="min-width:0;overflow-wrap:anywhere">{{ $task->title }}</span>
                         </form>
                     </li>
                 @endforeach
@@ -120,9 +120,10 @@
                         <li>
                             <form method="POST" action="{{ route('tasks.reintroduce', $task) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center">
                                 @csrf
-                                <s class="muted" style="min-width:0;overflow-wrap:anywhere">{{ $task->title }}</s>
-                                <span class="tag {{ $task->priority->tag() }}">{{ $task->priority->label() }}</span>
                                 <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('tasks.reintroduce') }}</button>
+                                <span class="tag {{ $task->priority->tag() }}">{{ $task->priority->label() }}</span>
+                                <s class="muted" style="min-width:0;overflow-wrap:anywhere">{{ $task->title }}</s>
+                                <button type="submit" class="btn btn--sm btn--danger cut" formaction="{{ route('tasks.destroy', $task) }}" data-confirm="{{ Text::get('ui.confirm') }}">{{ Text::get('tasks.delete') }}</button>
                             </form>
                         </li>
                     @endforeach

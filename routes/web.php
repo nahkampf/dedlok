@@ -412,6 +412,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/tasks', TasksController::class)->name('tasks.index');
     Route::post('/tasks', [PlayerTaskController::class, 'store'])->name('tasks.store');
     Route::post('/tasks/{task}/complete', [PlayerTaskController::class, 'complete'])->name('tasks.complete');
+    Route::post('/tasks/{task}/delete', [PlayerTaskController::class, 'destroy'])->name('tasks.destroy');
     Route::post('/tasks/{task}/reintroduce', [PlayerTaskController::class, 'reintroduce'])->name('tasks.reintroduce');
 
     Route::get('/character', [CharacterController::class, 'index'])->name('character.index');
