@@ -9,6 +9,7 @@ use App\Models\Character;
 use App\Models\Exchange;
 use App\Models\Mission;
 use App\Models\System;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -32,9 +33,10 @@ use Illuminate\Support\Facades\DB;
  *
  * Which is what makes the hour a real decision. Turning down a burn costs you
  * that desk's offer of it until the clock comes round, and a board somebody
- * has picked over is a board with less on it. THE FLOOR HOLDS EVEN THEN — the
- * board is never empty, so somebody who declines everything still finds one
- * job waiting, and it is not the one they threw back.
+ * has picked over is a board with less on it, and declining everything leaves
+ * the desk empty until the hour is up. The declined rows are kept (state
+ * `Declined`) so the board still counts as rolled; deleting them let an
+ * emptied board be re-rolled at once, which made declining a way to shop for a job.
  *
  * ## The die is injected
  *
@@ -77,20 +79,23 @@ final readonly class MissionBoard
             ->get();
     }
 
+    /** Every offer rolled for this character here, taken-down ones included. @return Builder<Mission> */
+    private function board(Character $character, Exchange $desk): Builder
+    {
+        return Mission::query()
+            ->where('character_id', $character->getKey())
+            ->where('exchange_id', $desk->getKey())
+            ->whereIn('state', [MissionState::Offered->value, MissionState::Declined->value]);
+    }
+
     /**
      * Has the hour come round?
      *
-     * An empty board is stale by definition, which is what makes the floor
-     * work: somebody who declined everything gets a fresh roll on the next
-     * visit rather than an empty desk until the hour is up.
+     * Declined offers count: they are the proof the board was rolled.
      */
     private function isStale(Character $character, Exchange $desk): bool
     {
-        $newest = Mission::query()
-            ->where('character_id', $character->getKey())
-            ->where('exchange_id', $desk->getKey())
-            ->offered()
-            ->max('offered_at');
+        $newest = $this->board($character, $desk)->max('offered_at');
 
         if ($newest === null) {
             return true;
@@ -117,11 +122,7 @@ final readonly class MissionBoard
         }
 
         DB::transaction(function () use ($character, $desk, $entity): void {
-            Mission::query()
-                ->where('character_id', $character->getKey())
-                ->where('exchange_id', $desk->getKey())
-                ->offered()
-                ->delete();
+            $this->board($character, $desk)->delete();
 
             $size = ($this->roll)(
                 (int) config('missions.board.size.min', 2),
