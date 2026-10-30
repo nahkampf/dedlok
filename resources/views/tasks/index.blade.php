@@ -93,10 +93,10 @@
         </form>
 
         @if ($tasks->isNotEmpty())
-            <ul class="stack" style="--gap:var(--s-2);list-style:none;margin:0;padding:0">
+            <ul class="stack" style="--gap:2px;list-style:none;margin:0;padding:0">
                 @foreach ($tasks as $task)
                     <li>
-                        <form method="POST" action="{{ route('tasks.complete', $task) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                        <form method="POST" action="{{ route('tasks.complete', $task) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center;background:var(--bg-2);padding:var(--s-2) var(--s-3)">
                             @csrf
                             <label class="check" style="min-width:0">
                                 <input type="checkbox" data-autosubmit>
@@ -115,10 +115,10 @@
         <dialog class="modal" id="done-tasks">
             <div class="panel__hd"><span class="micro">{{ Text::get('tasks.completed_tasks') }}</span><div class="spacer"></div><button type="button" class="btn btn--sm btn--ghost" data-close>✕</button></div>
             <div class="panel__bd">
-                <ul class="stack" style="--gap:var(--s-3);list-style:none;margin:0;padding:0">
+                <ul class="stack" style="--gap:2px;list-style:none;margin:0;padding:0">
                     @foreach ($doneTasks as $task)
                         <li>
-                            <form method="POST" action="{{ route('tasks.reintroduce', $task) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                            <form method="POST" action="{{ route('tasks.reintroduce', $task) }}" class="row row--wrap" style="--gap:var(--s-3);align-items:center;background:var(--bg-3);padding:var(--s-2) var(--s-3)">
                                 @csrf
                                 <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('tasks.reintroduce') }}</button>
                                 <span class="tag {{ $task->priority->tag() }}">{{ $task->priority->label() }}</span>
