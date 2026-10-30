@@ -1251,47 +1251,57 @@ return [
 
         /*
         | THE CHECK VALUE PER LEVEL, and the curve it makes against the
-        | difficulty below at the default spread of 8:
+        | difficulty of AuraOS (24) at the default spread of 8:
         |
         |   level 0     0.0    4.7%     never trained it, and it shows
-        |   level 1    11.9     18%     you have seen one before
-        |   level 2    23.4     48%     near enough a coin flip
-        |   level 3    33.7     77%
-        |   level 4    40.7     89%
-        |   level 5    65.0   99.15%    the certainty floor answers, not this number
+        |   level 1    10.1     15%     you have seen one before
+        |   level 2    17.2     30%
+        |   level 3    24.0     50%     a coin flip
+        |   level 4    29.3     66%
+        |   level 5    35.1     80%     the best anybody gets against it
         |
-        | A TABLE RATHER THAN A MULTIPLIER, because the curve is hand-shaped
-        | and a straight line cannot draw it: the step from 0 to 1 is worth
-        | nearly twice the step from 3 to 4, which is the shape of learning
-        | something rather than the shape of a formula. Each value is simply
-        | what the logistic needs to land on the chance beside it.
+        | THE SAME TABLE FOR EVERY OPERATING SYSTEM; what differs is the
+        | difficulty below, so a maxed skill is 80% against AuraOS and a coin
+        | flip against Lattice. Nothing here reaches 100%: a skill alone never
+        | makes a core certain, though a program, implant or dose that raises
+        | the check can carry it past 80%.
         |
-        | LEVEL 5 IS PAST THE CLAMP ON PURPOSE. Anything above about 62 is
-        | already at `checks.certainty_floor` from the other side, so the
-        | number is chosen to be comfortably there — the floor is what answers
-        | at the top of the curve, not the table, and it keeps answering if the
-        | spread is ever retuned.
-        |
+        | A TABLE RATHER THAN A MULTIPLIER, because the curve is hand-shaped.
         | The chances move if `checks.spread` moves, which is correct: that
         | number is how decisive the whole game is, and an OS curve that held
         | still while everything else loosened would be opting out of it.
         |
         | DECIMAL, because each is the BASE of the skill's `check.<slug>` stat
-        | and that stat no longer rounds down (`App\Stats\SkillStats`) — a
-        | check was never really a whole number, and truncating it here bought
-        | nothing but a slightly-off curve. Anything else that helps with an
-        | operating system is a modifier on that same check.
+        | and that stat no longer rounds down (`App\Stats\SkillStats`).
+        | Anything else that helps with an operating system is a modifier on
+        | that same check, and the four OS skills themselves grant nothing to
+        | any check: AuraOS does nothing against Prism-V.
         */
         'values' => [
             0 => 0.0,
-            1 => 11.9,
-            2 => 23.4,
-            3 => 33.7,
-            4 => 40.7,
-            5 => 65.0,
+            1 => 10.1,
+            2 => 17.2,
+            3 => 24.0,
+            4 => 29.3,
+            5 => 35.1,
         ],
 
-        'difficulty' => 24,
+        /*
+        | HOW HARD EACH OPERATING SYSTEM IS TO SPEAK, by the skill's slug: what
+        | a level 5 skill reaches is 80% against AuraOS, 71% Prism-V, 60%
+        | IRONCLAD and 50% Lattice. The grade of a machine decides which one it
+        | runs (`GridSeeder::operatingSystemFor()`), so the ladder of grades is
+        | also a ladder of difficulty. A machine running something not listed
+        | here is rolled at `default_difficulty`.
+        */
+        'difficulty' => [
+            'auroos' => 24,
+            'prismv' => 28,
+            'ironclad' => 32,
+            'lattice' => 35,
+        ],
+
+        'default_difficulty' => 24,
     ],
 
     'scan' => [

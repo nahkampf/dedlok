@@ -28,7 +28,7 @@ final class AssessorTest extends TestCase
         parent::setUp();
 
         // The skill first: its check stat is generated from the rows that exist when the registry is first built.
-        $this->os = Skill::factory()->create(['slug' => 'lattice', 'rank' => 1]);
+        $this->os = Skill::factory()->create(['slug' => 'auroos', 'rank' => 1]);
         $this->character = Character::factory()->create();
         $this->assessor = app(Assessor::class);
     }
