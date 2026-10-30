@@ -179,9 +179,11 @@ class RunController extends Controller
             'totals' => $totals,
             // Why each run-only program would not start beside what is ALREADY running, by row id (the runner's own
             // question, asked as a run would ask it); absent means it would.
-            'loadoutRefusals' => $loadout
+            // Asked with everything Suspend could stop counted as stopped: the page's own sum (`data-run-budget`) takes
+            // it from there, and a row refused for what is running NOW could never be enabled by ticking a box.
+            'loadoutRefusals' => $this->withSuspendable($character, fn () => $loadout
                 ->mapWithKeys(fn (InventoryItem $row): array => [$row->id => app(ProgramRunner::class)->refusalFor($character, $row, duringRun: true)])
-                ->filter(),
+                ->filter()),
             // The background processes that may be switched off for this run, and which of them cannot be because the
             // deck would then hold less than is stored on it.
             'suspendable' => $suspendable = app(ProgramRunner::class)->suspendable($character),
@@ -190,9 +192,9 @@ class RunController extends Controller
                 ->pluck('id')->all(),
             'scripts' => $scripts,
             // Why each script would not start right now, by row id; absent means it would.
-            'scriptRefusals' => $scripts
+            'scriptRefusals' => $this->withSuspendable($character, fn () => $scripts
                 ->mapWithKeys(fn (InventoryItem $row): array => [$row->id => app(ProgramRunner::class)->refusalFor($character, $row)])
-                ->filter(),
+                ->filter()),
             // Standing below the SI mark they left for themselves: the first turn pulls them out whatever they press.
             'autoEgress' => app(Simulator::class)->siBelowThreshold($character),
             'ready' => $totals?->isReady() ?? false,
@@ -253,6 +255,18 @@ class RunController extends Controller
             return app(Assessor::class)->overall($character, $scan);
         } finally {
             $character->assumedRunning = null;
+            $character->assumedStopped = null;
+        }
+    }
+
+    /** Runs `$ask` with every background process the Suspend box offers assumed stopped, on the in-memory character only. */
+    private function withSuspendable(Character $character, \Closure $ask): mixed
+    {
+        $character->assumedStopped = app(ProgramRunner::class)->suspendable($character)->pluck('id')->all() ?: null;
+
+        try {
+            return $ask();
+        } finally {
             $character->assumedStopped = null;
         }
     }
