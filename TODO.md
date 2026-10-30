@@ -5,6 +5,15 @@ what will break if it is left alone.
 
 ---
 
+## The operating-system roll repeats for free (noted 2026-10-30, for the balance pass)
+
+The OS table tops out at 80% (AuraOS level 5, down to 50% for Lattice; `cyberspace.os.values` and `.difficulty`, one difficulty per OS skill), but
+a failed roll only costs the turn and a landed one keeps the core open for the rest of the run (`runs.os_locked`), so the cap barely bites:
+level 5 AuraOS opens within 3 turns 99% of the time, and even level 5 Lattice within 6 turns 98%. Where it still costs is low levels on the hard
+systems (Lattice level 1 averages 23.5 rolls, about a whole trace at a tracer rate of 5) and only while detected, since the trace moves only then.
+Levers if it proves too cheap, none built: a penalty that grows with each failed attempt, a failed attempt adding trace or waking ICE faster, or a
+ceiling that applies to the run rather than the roll. Retune the numbers after real runs against each OS.
+
 ## Lockjaw's subnet gateway to DEADBEEF (noted 2026-10-27)
 
 The Lockjaw subnet gateway should hold the reserved address `DEADBEEF`. Needs a migration that moves the gateway to it and updates every
