@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## [0.84.0] — 2026-10-31
+
+### Added
+- **A task list of your own**, under *Tasks* on Tasks & Missions. `PlayerTask` (table `player_tasks`, `PlayerTaskController`: `tasks.store`, `tasks.complete`, `tasks.reintroduce`, `tasks.destroy`): a one-line text (255) and a priority from a range input (`App\Tasks\TaskPriority`: low, medium, high, with the kit tags grey, yellow, ember; the word above the range wears the same tag and changes with it). Open tasks are listed high first and newest first within a priority, each strip as checkbox, tag, title; the checkbox ticks one off at once (`[data-autosubmit]`) and sends it to the *Completed tasks* modal, where each row is *Reintroduce*, tag, struck-through title and *Delete* (two presses, opens the modal again). Safehouse leads stay beneath. The old "Not yet implemented." line is gone. Migration `2026_11_05_100000_a_character_keeps_its_own_tasks`. Tests: `PlayerTasksTest`.
+- **SecRing Ablater and CoreMod Isolator**, two craftable Utilities (background processes, one copy at a time, rare, tier 1) that ease an operating system's core difficulty while they run: the Ablater AuraOS and Prism-V by 10% (3 compute, 6 RAM, 6 QB storage), the Isolator IRONCLAD and Lattice by 12% (6, 9, 16). The difficulty is a percentage of its base and is never rounded (35 less 12% is 30.8). Each has a Design Original and a Design Copy (16 hours, Code Crafting 5): Kernel Log, Config File, Stack Trace and Error Log filtered by OS, 4 AuraOS + 4 Prism-V and 6 IRONCLAD + 2 Lattice by quantity. Migration `2026_11_07_100000_secring_ablater_and_coremod_isolator`. Tests: `OperatingSystemTest`.
+- **`crafting.ungated`**: kinds built with Code Crafting and whatever the design asks for, with no gate skill of their own. Today `utility`. `Crafting::builds()` is the one test (the engine, the admin request and the design-product list use it).
+- **`os_difficulty.<slug>`**, a stat per Operating Systems skill (generated in `SkillStats`, base handed in by `Simulator::osDifficulty()`, no rounding), which programs and skills ease as a percentage. Labels in `strings.character.names` ("AuraOS difficulty" and so on).
+- **Four "<OS> Internals" skills** (Intrusion, Memory/Intellect, off the market; ranks 4, 4, 8, 16; prices 3000, 7500, 18000, 60000; Cyberdecks 5 and the OS at 3): each level takes 1.5% off that one OS's difficulty, 7.5% at level 5. Their imprints are offered at exchanges: AuraOS and Prism-V at Lockjaw, Ninth Circle Security, Joint Signals Command and TAO (35 loyalty, 1.5 standing); IRONCLAD at TAO and Joint Signals Command (65, 2.5); Lattice at TAO (115, 3). The Ablater's design copy (55, 1.5) at Lockjaw, Ninth Circle Security, TAO and Joint Signals Command, its original (225, 4) at Lockjaw and TAO; the Isolator's copy (150, 5) at TAO and Joint Signals Command, its original (400, 7) at Lockjaw and TAO. Every desk grade keeps them. Migration `2026_11_08_100000_the_internals_skills`. Tests: `InternalsSkillsTest`.
+- **Running scanners come ticked in the briefing's Suspend box.** Every running Analyser is ticked when the page loads (one that cannot be suspended stays unticked); the Assessor's figure counts them from the first view (`ui-kit.js`). Tests: `SuspendProcessesTest`.
+
+### Changed
+- **Operating-system access chances top out lower, and differ by system.** One level table for all four (`cyberspace.os.values`: 0, 10.1, 17.2, 24.0, 29.3, 35.1) and a difficulty each (`cyberspace.os.difficulty`: AuraOS 24, Prism-V 28, IRONCLAD 32, Lattice 35, `default_difficulty` 24 for any other), so a maxed skill is 80% against AuraOS, 71% Prism-V, 60% IRONCLAD and 50% Lattice instead of 99% everywhere. The roll, the core chance on the run screen and the Assessor share `Simulator::osDifficulty()`. Programs, implants and doses can still raise the check past 80%. The four OS skills no longer grant +1% a level to every OS check (migration `2026_11_06_100000_the_os_skills_grant_nothing_to_other_systems` clears their modifiers); Kernel Exploitation still reaches every OS check. The roll repeating for free is noted in `TODO.md` for the balance pass. Tests: `OperatingSystemTest`, `AssessorTest`.
+- **Kernel Exploitation moves from Operating Systems to Intrusion** (migration `2026_11_08_110000_kernel_exploitation_is_not_an_operating_system`): that category is the grid's ladder of systems (`GridSeeder`) and the fortress OS picker, and it is no system. Its effect is unchanged.
+- **Declining a mission keeps the row** as the new state `MissionState::Declined` instead of deleting it. The board counts offered and declined rows together when it asks whether the hour has passed, and the refresh clears both, so declining everything no longer buys a fresh board; the desk stays empty until the hour is up (the old "floor" of one job is gone). Tests: `MissionTest`.
+
+### Fixed
+- **The run briefing disabled an icebreaker or script for compute that Suspend would give back.** The server refused a row from what was running at that moment and the page's script treated a disabled row as refused for good, so ticking Suspend could not re-enable it. `RunController` now asks `refusalFor()` with every suspendable process assumed stopped; the page's own sum does the rest and `start()` asks again after the stops. Test: `SuspendProcessesTest`.
+
+Run `php artisan migrate`.
+
+
 ## [0.83.2] — 2026-10-30
 
 ### Fixed
@@ -3935,7 +3956,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.83.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.84.0...HEAD
+[0.84.0]: https://github.com/nahkampf/dedlok/compare/v0.83.2...v0.84.0
 [0.83.2]: https://github.com/nahkampf/dedlok/compare/v0.83.1...v0.83.2
 [0.83.1]: https://github.com/nahkampf/dedlok/compare/v0.83.0...v0.83.1
 [0.83.0]: https://github.com/nahkampf/dedlok/compare/v0.82.0...v0.83.0

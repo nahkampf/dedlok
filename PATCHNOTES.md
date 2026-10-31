@@ -1,3 +1,12 @@
+## 0.84.0 (2026-10-31)
+
+- There is now a user tasklist in _Tasks & Missions_. You can set priority, check it when it's done, and see completed tasks (and reactivate them).
+- A pretty big rebalance of how difficuly, Operating Systems and core checks work. The TL;DR is that core checks became more difficult now, and you really want to have your OS skill (for instance AuraOS) at level 5 when making a core breach.
+  - A few things were introduced to make it easier: OS Internals skills (AuraOS Internals etc). These reduce the difficulty for their inteded OS _only_. They are available as imprints on a few Exchanges.
+  - Two new utility programs (single-threaded, background process): SecRing Ablater (works against AuraOS and Prism-V) and CoreMod Isolator (works against IRONCLAD and Lattice) also reduce difficulty. Available as designs from a few select Exchanges.
+- Scanners are now pre-checked in the Suspend box on the Run planning screen.
+- There was a small bug where suspending decryptors didn't affect the cpu/ram calculation on the run planing screen, now fixed.
+
 ## 0.83.2 (2026-10-30)
 
 - Plugged an exploit where you could milk the exchanges for the missions you wanted
