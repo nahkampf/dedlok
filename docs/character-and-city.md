@@ -214,8 +214,10 @@ soonest deadline first, each as the desk's own `<x-mission-card>` with `:actions
 it came from) and `:abandon="true"` (giving one up needs no desk; its tooltip is *Costs -X standing*, the row's penalty) and `:desk="true"` (who it is for, the agent, the desk's address). *Journal* lists the notes an encounter has written
 (`App\Journal\Journal`, the only writer of `journal_notes` and `journal_entries`): a note is a heading with a slug, a line is a row under one with a
 slug of its own; newest first at both levels, a completed note is not shown and a completed line is struck through. **Encounter outcomes write
-it** (`OutcomeKind::Journal`: a note, a line, or both, idempotent by slug; and `JournalDone` by slug). *Tasks* (quests) reads "Not yet implemented."
-until it is designed. The rail glyph is U+25C7, one already proved to render.
+it** (`OutcomeKind::Journal`: a note, a line, or both, idempotent by slug; and `JournalDone` by slug). *Tasks* is the player's own list (`PlayerTask`, table `player_tasks`; `PlayerTaskController`; a reminder that
+nothing in the game reads): a one-line text (255) and a priority range (low, medium, high; `App\Tasks\TaskPriority`, whose tags are grey, yellow, ember),
+listed high first and newest first within one. The checkbox beside a title ticks it off at once (`[data-autosubmit]`) and sends it to the
+*Completed tasks* modal, where *Reintroduce* brings it back. Safehouse leads are listed beneath. The rail glyph is U+25C7, one already proved to render.
 
 ### Supporters
 

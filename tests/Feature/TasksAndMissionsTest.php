@@ -17,7 +17,7 @@ use App\Models\System;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/** The Tasks & Missions screen: the jobs taken and not yet finished, plus the two placeholders. */
+/** The Tasks & Missions screen: the jobs taken and not yet finished, plus the player's own tasks. */
 final class TasksAndMissionsTest extends TestCase
 {
     use RefreshDatabase;
@@ -103,7 +103,7 @@ final class TasksAndMissionsTest extends TestCase
         foreach (['>Missions<', '>Journal<', '>Tasks<'] as $heading) {
             $this->assertStringContainsString($heading, $html);
         }
-        $this->assertSame(1, substr_count($html, 'Not yet implemented.'), 'only the tasks are a placeholder now');
+        $this->assertStringNotContainsString('Not yet implemented.', $html, 'tasks are real now');
         $this->assertStringContainsString('No missions accepted.', $html);
     }
 

@@ -36,6 +36,9 @@ return [
     ],
     'gate_level' => 1,
 
+    // Kinds anybody with Code Crafting may build from a design, with no skill of their own to gate them.
+    'ungated' => ['utility'],
+
     // At most this many lines in one recipe, and the rows the design editor draws.
     'max_components' => 10,
 ];

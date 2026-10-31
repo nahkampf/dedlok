@@ -54,6 +54,11 @@ final class SkillStats
     /** `defence_quality.<ice|ids|booster|cloak>`: a percent over base on a maker's fortress ICE, IDS, Booster or Cloak (ICE and IDS add the general `defence_quality`). */
     public const QUALITY_PREFIX = 'defence_quality.';
 
+    /** `os_difficulty.<slug>`: how hard one operating system's core is to open; the roll hands in the difficulty as the base. */
+    public const OS_DIFFICULTY_PREFIX = 'os_difficulty.';
+
+    public const OS_CATEGORY = 'Operating Systems';
+
     public const ENCRYPTION_CATEGORY = 'Encryption';
 
     /** Cleared by the Skill model, the way the archetype roster is. */
@@ -241,6 +246,16 @@ final class SkillStats
                 'max' => null,
                 'rounding' => 'none',
             ];
+
+            // Every operating system has a difficulty stat: programs ease it, as a percentage of the base the roll hands in.
+            if ($skill->category === self::OS_CATEGORY) {
+                $definitions[self::OS_DIFFICULTY_PREFIX.$skill->slug] = [
+                    'tags' => ['os_difficulty'],
+                    'min' => 0,
+                    'max' => null,
+                    'rounding' => 'none',
+                ];
+            }
 
             /*
              * Every encryption has a chance stat, tagged `decryption_chance` so a modifier on that tag set reaches all

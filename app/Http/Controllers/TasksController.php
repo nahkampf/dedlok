@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Journal\Journal;
 use App\Missions\MissionLedger;
 use App\Models\Mission;
+use App\Models\PlayerTask;
 use App\Safehouses\Leads;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -53,6 +54,11 @@ class TasksController extends Controller
             // Notes not yet finished, newest first, with their lines.
             'journal' => app(Journal::class)->visible($character),
             'leads' => app(Leads::class)->all($character),
+            // To do: high first, newest first within a priority. Done ones are in the modal, newest ticked first.
+            'tasks' => PlayerTask::query()->where('character_id', $character->getKey())->whereNull('completed_at')
+                ->orderByDesc('priority')->orderByDesc('id')->get(),
+            'doneTasks' => PlayerTask::query()->where('character_id', $character->getKey())->whereNotNull('completed_at')
+                ->orderByDesc('completed_at')->orderByDesc('id')->get(),
             // For a survey's per-system tags and a supply job's meter: what is in the stash right now.
             'files' => $ledger->suppliable($character),
             'heldAddresses' => $ledger->heldAddresses($character),

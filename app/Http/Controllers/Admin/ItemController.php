@@ -292,7 +292,7 @@ class ItemController extends Controller
             'encryptions' => Skill::query()->where('category', 'Encryption')->orderBy('rank')->get(['slug', 'title']),
             'drugFamilies' => Family::cases(),
             // A design's pickers: the programs it can make, the data items it can ask for, and the origin filters.
-            'designProducts' => Item::query()->whereHas('program', fn ($q) => $q->whereIn('kind', array_keys((array) config('crafting.gate'))))->orderBy('name')->get(['id', 'name']),
+            'designProducts' => Item::query()->whereHas('program', fn ($q) => $q->whereIn('kind', [...array_keys((array) config('crafting.gate')), ...(array) config('crafting.ungated', [])]))->orderBy('name')->get(['id', 'name']),
             'designComponents' => Item::query()->where('container', Item::CONTAINER_DATA)->whereDoesntHave('program')->orderBy('name')->get(['id', 'name']),
             'operatingSystems' => Skill::query()->where('category', 'Operating Systems')->orderBy('title')->get(['slug', 'title']),
             'owners' => Entity::query()->orderBy('name')->get(['id', 'name']),

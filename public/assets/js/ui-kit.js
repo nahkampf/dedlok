@@ -1888,6 +1888,24 @@
     try { nodeGraph(el, JSON.parse(el.dataset.graph)); } catch (e) { /* a bad spec draws nothing */ }
   });
 
+  /* A checkbox marked [data-autosubmit] sends its form the moment it changes. A range with [data-labels] (a JSON list) names
+     its position in the [data-range-label="#id"] span beside its label: 1 is the first word. A [data-tags] list (the same
+     length) gives that span the kit tag class of the position too. */
+  document.addEventListener("change", (e) => {
+    if (e.target.matches?.("[data-autosubmit]")) e.target.form.requestSubmit();
+  });
+  document.querySelectorAll("input[type=range][data-labels]").forEach((range) => {
+    const words = JSON.parse(range.dataset.labels), tags = JSON.parse(range.dataset.tags || "[]"), out = document.querySelector('[data-range-label="#' + range.id + '"]');
+    const show = () => {
+      if (!out) return;
+      const i = Number(range.value) - Number(range.min);
+      out.textContent = words[i] ?? "";
+      if (tags.length) out.className = "tag " + (tags[i] ?? "");
+    };
+    range.addEventListener("input", show);
+    show();
+  });
+
   /* Autotraverse: <button data-autotraverse="DIALOG-ID" data-url data-x data-y data-steps data-step-ms>. Opens the modal
      dialog (its backdrop is the overlay) and posts one step toward the target every data-step-ms. Cancelling, or the
      dialog closing any other way, stops it where it stands and reloads to show the new position; so does arriving or
@@ -1959,7 +1977,8 @@
       document.querySelectorAll('input[name="suspend[]"]:checked').forEach((el) => q.append("suspend[]", el.value));
       const query = q.toString();
       // The first call is the page as the server drew it, already answered.
-      if (lastQuery === null || query === lastQuery) { lastQuery = query; return; }
+      // Unless something comes pre-ticked in the Suspend box: the server drew the page with nothing stopped.
+      if ((lastQuery === null && !q.has("suspend[]")) || query === lastQuery) { lastQuery = query; return; }
       lastQuery = query;
       const mine = ++asked;
       fetch(assess.dataset.assessUrl + "?" + query, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })

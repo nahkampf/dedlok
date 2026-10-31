@@ -845,7 +845,7 @@ final readonly class Simulator
             return true;
         }
 
-        if (! $this->checks->roll($this->osValue($character, $system), $this->osDifficulty(), 'os')->passed) {
+        if (! $this->checks->roll($this->osValue($character, $system), $this->osDifficulty($character, $system?->operatingSystem()->first()), 'os')->passed) {
             return false;
         }
 
@@ -875,7 +875,7 @@ final readonly class Simulator
             return null;
         }
 
-        return $this->checks->chance($this->osValue($character, $system), $this->osDifficulty(), 'os');
+        return $this->checks->chance($this->osValue($character, $system), $this->osDifficulty($character, $system->operatingSystem()->first()), 'os');
     }
 
     /**
@@ -930,12 +930,25 @@ final readonly class Simulator
     /** The chance a core opens to this character, for a given operating system: the roll's own figure. */
     public function osChanceFor(Character $character, ?Skill $skill): float
     {
-        return $this->checks->chance($this->osValueFor($character, $skill), $this->osDifficulty(), 'os');
+        return $this->checks->chance($this->osValueFor($character, $skill), $this->osDifficulty($character, $skill), 'os');
     }
 
-    private function osDifficulty(): float
+    /**
+     * How hard this operating system is to speak: its own figure, or the default for one not listed, eased by whatever
+     * the character runs that targets `os_difficulty.<slug>` (a percentage of the base, never rounded).
+     */
+    private function osDifficulty(Character $character, ?Skill $skill): float
     {
-        return (float) Config::get('cyberspace.os.difficulty', 24);
+        $default = Config::get('cyberspace.os.default_difficulty', 24);
+
+        // Only an Operating Systems skill has the stat; anything else is the default, unmoved.
+        if ($skill === null || $skill->category !== SkillStats::OS_CATEGORY) {
+            return (float) ($skill === null ? $default : Config::get('cyberspace.os.difficulty.'.$skill->slug, $default));
+        }
+
+        return $this->resolver
+            ->resolve(SkillStats::OS_DIFFICULTY_PREFIX.$skill->slug, (float) Config::get('cyberspace.os.difficulty.'.$skill->slug, $default), $character->modifiers())
+            ->value;
     }
 
     /**

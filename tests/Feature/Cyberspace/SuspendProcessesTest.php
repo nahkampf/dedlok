@@ -7,6 +7,7 @@ namespace Tests\Feature\Cyberspace;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
+use App\Decks\DeckTotals;
 use App\Decks\Storage;
 use App\Models\Character;
 use App\Models\Ice;
@@ -16,6 +17,7 @@ use App\Models\System;
 use App\Programs\ProcessRefusal;
 use App\Programs\ProgramKind;
 use App\Programs\ProgramRunner;
+use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Testing\TestResponse;
@@ -177,5 +179,34 @@ final class SuspendProcessesTest extends TestCase
 
         $this->actingAs($this->character->user)->get(route('run.setup'))->assertOk()
             ->assertSee('name="suspend[]" value="'.$row->id.'"', false);
+    }
+
+    /** The page's sum counts what Suspend gives back, so a row that fits once the hog is stopped must not be disabled by the server. */
+    public function test_the_briefing_does_not_disable_a_row_for_compute_it_could_have_after_suspending(): void
+    {
+        $deck = $this->character->equippedDeck;
+        $total = DeckTotals::forCharacter($this->character, $deck, app(Resolver::class))->qflops;
+        $hog = Item::factory()->program(ProgramKind::Analyser, qflops: $total - 0.5, memory: 0.1, storage: 0.1, background: true)->create();
+        $this->running($hog);
+        $breaker = Item::factory()->program(ProgramKind::Icebreaker, qflops: 1, memory: 0.1, storage: 0.1, background: false)->create();
+        $row = InventoryItem::create(['character_id' => $this->character->id, 'item_id' => $breaker->id, 'quantity' => 1]);
+
+        $this->actingAs($this->character->user)->get(route('run.setup'))->assertOk()
+            ->assertSee('name="icebreaker" value="'.$row->id.'"', false)
+            ->assertDontSee('value="'.$row->id.'" disabled', false)
+            ->assertDontSee(ProcessRefusal::NotEnoughCompute->message());
+    }
+
+    public function test_a_running_scanner_comes_ticked_and_another_process_does_not(): void
+    {
+        $scanner = $this->scanner();
+        $other = Item::factory()->program(ProgramKind::Utility, qflops: 0.1, memory: 0.1, storage: 0.1, background: true)->create();
+        [$scan] = $this->running($scanner);
+        [$util] = $this->running($other);
+
+        $html = $this->actingAs($this->character->user)->get(route('run.setup'))->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/name="suspend\[\]" value="'.$scan->id.'"[^>]*\schecked/', $html);
+        $this->assertDoesNotMatchRegularExpression('/name="suspend\[\]" value="'.$util->id.'"[^>]*\schecked/', $html);
     }
 }
