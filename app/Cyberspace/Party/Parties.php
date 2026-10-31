@@ -6,6 +6,7 @@ namespace App\Cyberspace\Party;
 
 use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\RunPurpose;
+use App\Cyberspace\RunRefusal;
 use App\Cyberspace\RunResult;
 use App\Cyberspace\RunStarter;
 use App\Models\Character;
@@ -28,6 +29,9 @@ use Illuminate\Support\Facades\DB;
  */
 final class Parties
 {
+    /** An invitation nobody answered lapses after this long. */
+    public const INVITE_MINUTES = 15;
+
     public function open(Character $owner, ShareMode $credits = ShareMode::Even, ShareMode $extraction = ShareMode::Even): PartyRefusal|RunParty
     {
         if ($owner->coopSlots() < 1) {
@@ -101,6 +105,10 @@ final class Parties
                 return PartyRefusal::Yourself;
             }
 
+            if ($party->started_at !== null) {
+                return PartyRefusal::Started;
+            }
+
             if ($party->members()->count() >= $owner->coopSlots()) {
                 return PartyRefusal::Full;
             }
@@ -137,6 +145,10 @@ final class Parties
 
             $at = $character->gridPosition();
             $party = $member->party;
+
+            if ($party->started_at !== null) {
+                return PartyRefusal::Started;
+            }
 
             if ($at === null || $at->x !== $party->x || $at->y !== $party->y) {
                 return PartyRefusal::NotAtTheDoor;
@@ -195,13 +207,24 @@ final class Parties
     /** Declining an invitation, leaving the party, or (for the owner) disbanding it: all one door. */
     public function leave(Character $character): void
     {
-        RunParty::query()->where('owner_character_id', $character->getKey())->delete();
+        // A party with runs still inside stays until the last is out: the others' rounds are settled through it.
+        RunParty::query()->where('owner_character_id', $character->getKey())
+            ->whereNotIn('id', Run::query()->live()->whereNotNull('run_party_id')->select('run_party_id'))->delete();
         RunPartyMember::query()->where('character_id', $character->getKey())->delete();
+    }
+
+    /** The owner left cyberspace: a party still forming at the door goes with them, invitations and all. */
+    public function abandon(Character $owner): void
+    {
+        RunParty::query()->where('owner_character_id', $owner->getKey())->whereNull('started_at')->delete();
     }
 
     /** The party this character owns or is invited to / in, if any. */
     public function partyOf(Character $character): ?RunParty
     {
+        RunPartyMember::query()->where('character_id', $character->getKey())->whereNull('joined_at')
+            ->where('created_at', '<', now()->subMinutes(self::INVITE_MINUTES))->delete();
+
         return RunParty::query()->where('owner_character_id', $character->getKey())->first()
             ?? RunPartyMember::query()->where('character_id', $character->getKey())->first()?->party;
     }
@@ -219,6 +242,13 @@ final class Parties
 
         if ($party === null || $party->started_at !== null) {
             return $starter->start($owner, $purpose, $kind, $ownerLoadout, null, $ownerSuspend);
+        }
+
+        // The party forms at the door: an owner who walked off does not take it with them.
+        $here = $owner->gridPosition();
+
+        if ($here === null || $here->x !== $party->x || $here->y !== $party->y) {
+            return RunResult::refused(RunRefusal::NothingThere);
         }
 
         $result = $starter->start($owner, $purpose, $kind, $ownerLoadout, $party->getKey(), $ownerSuspend);

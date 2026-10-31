@@ -141,7 +141,12 @@ final readonly class RunStarter
         }
 
         try {
-            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout, $partyId, $suspend): Run {
+            $run = DB::transaction(function () use ($character, $system, $at, $purpose, $kind, $loadout, $partyId, $suspend): ?Run {
+                // The check at the top read a model that may be stale: ask the row, locked, so two presses make one run.
+                if (Character::query()->whereKey($character->getKey())->lockForUpdate()->value('current_run_id') !== null) {
+                    return null;
+                }
+
                 $runner = app(ProgramRunner::class);
 
                 // Room for the loadout first. Rolled back with everything else if the run does not begin.
@@ -222,6 +227,10 @@ final readonly class RunStarter
             });
         } catch (ProcessRefused $refused) {
             return RunResult::programRefused($refused->refusal);
+        }
+
+        if ($run === null) {
+            return RunResult::refused(RunRefusal::AlreadyRunning);
         }
 
         return RunResult::started($run);
