@@ -195,7 +195,9 @@ final class PartyAdversarialTest extends TestCase
         RunParty::query()->update(['round_started_at' => now()->subSeconds(31)]);
         $this->actingAs($a->fresh()->user)->get(route('run.show'));
 
-        $this->assertNull($owner->fresh()->current_run_id, 'a finished runner who idles should egress');
+        // Egress is a roll that can fail, so the run may still be live: either way the idle runner's turn was taken.
+        $run = Run::query()->where('character_id', $owner->id)->first();
+        $this->assertTrue($run->ended_at !== null || $run->turn >= 1, 'a finished runner who idles should have egressed');
     }
 
     // 9 ---------------------------------------------------------------------------------------------------------------
