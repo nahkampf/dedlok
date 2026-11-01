@@ -1,3 +1,7 @@
+## 0.85.0 (2026-11-01)
+
+- TL;DR lots of bugs for co-op runs dealt with.
+
 ## 0.84.0 (2026-10-31)
 
 - There is now a user tasklist in _Tasks & Missions_. You can set priority, check it when it's done, and see completed tasks (and reactivate them).
