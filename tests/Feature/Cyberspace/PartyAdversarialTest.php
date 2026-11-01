@@ -325,7 +325,7 @@ final class PartyAdversarialTest extends TestCase
     /** @return array<int, array{string, string}> */
     public static function seeds(): array
     {
-        return array_map(fn (int $i): array => [(string) $i, (string) $i], range(1, 20));
+        return array_map(fn (int $i): array => [(string) $i], range(1, 20));
     }
 
     /**
