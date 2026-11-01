@@ -34,6 +34,9 @@ final class PartyTurns
 {
     public const DEADLINE_SECONDS = 30;
 
+    /** A runner who never opens the screen cannot hold the first round for longer than this. */
+    public const FIRST_ROUND_GRACE_SECONDS = 300;
+
     public function __construct(private readonly Simulator $simulator) {}
 
     /** The live runs of a party, owner first. @return Collection<int, Run> */
@@ -75,8 +78,7 @@ final class PartyTurns
                 return;
             }
 
-            $opened = $party->round_started_at ?? $party->started_at ?? now();
-            $due = now()->diffInSeconds($opened, false) <= -self::DEADLINE_SECONDS;
+            $due = $this->due($party, $runs);
             $ready = $runs->every(fn (Run $r): bool => $r->pending_action !== null);
 
             if (! $ready && ! $due) {
@@ -85,6 +87,31 @@ final class PartyTurns
 
             $this->resolve($party, $runs);
         });
+    }
+
+    /**
+     * The first round's clock starts when the last runner has opened the screen (so nobody loses turn 0 unseen), unless
+     * somebody never does; every later round runs from the last one.
+     *
+     * @param  Collection<int, Run>  $runs
+     */
+    private function due(RunParty $party, Collection $runs): bool
+    {
+        if ($party->round_started_at !== null) {
+            return now()->diffInSeconds($party->round_started_at, false) <= -self::DEADLINE_SECONDS;
+        }
+
+        $started = $party->started_at ?? now();
+
+        if (now()->diffInSeconds($started, false) <= -self::FIRST_ROUND_GRACE_SECONDS) {
+            return true;
+        }
+
+        if ($runs->contains(fn (Run $r): bool => $r->party_seen_at === null)) {
+            return false;
+        }
+
+        return now()->diffInSeconds($runs->max('party_seen_at'), false) <= -self::DEADLINE_SECONDS;
     }
 
     /** @param  Collection<int, Run>  $runs */
@@ -265,6 +292,11 @@ final class PartyTurns
                 ->first(fn ($p): bool => $p->item?->program?->kind === ProgramKind::Icebreaker);
 
             return $breaker !== null ? RunAction::Attack : RunAction::Hold;
+        }
+
+        // Part way through a download, it carries on; nothing left to take or install, an idle runner gets out.
+        if ($run->extracting_qb !== null) {
+            return RunAction::Extract;
         }
 
         if ($run->extracted || $run->backdoored) {

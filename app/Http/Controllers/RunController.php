@@ -312,7 +312,20 @@ class RunController extends Controller
         $party = $parties->partyOf($character);
 
         if ($party !== null && $party->owner_character_id !== $character->id) {
-            return back()->with('error', PartyRefusal::NotTheOwner->message());
+            // Only somebody who has joined is committed to the owner's run; a bare invitation is dropped and the run is theirs.
+            if ($party->members()->where('character_id', $character->id)->whereNotNull('joined_at')->exists()) {
+                return back()->with('error', PartyRefusal::NotTheOwner->message());
+            }
+
+            $parties->leave($character);
+            $party = null;
+        }
+
+        // The party forms at the door: an owner who walked off does not take it with them.
+        $at = $character->gridPosition();
+
+        if ($party !== null && $party->started_at === null && ($at === null || $at->x !== $party->x || $at->y !== $party->y)) {
+            return back()->with('error', PartyRefusal::NotAtTheDoor->message());
         }
 
         $result = $parties->launch(
@@ -366,6 +379,11 @@ class RunController extends Controller
 
         // A party round that is overdue resolves on whoever's request arrives first, this one included.
         if ($run !== null && PartyTurns::shared($run)) {
+            // The first round's clock waits for every runner to have seen it.
+            if ($run->party_seen_at === null) {
+                $run->forceFill(['party_seen_at' => now()])->save();
+            }
+
             app(PartyTurns::class)->settle((int) $run->run_party_id);
             $run = $this->liveRun($character->fresh());
         }
@@ -579,6 +597,13 @@ class RunController extends Controller
 
         if ($run === null) {
             return redirect()->route('cyberspace.index');
+        }
+
+        // In a party, leaving is a choice of the round like any other.
+        if (PartyTurns::shared($run)) {
+            app(PartyTurns::class)->submit($run, RunAction::Egress);
+
+            return redirect()->route($run->refresh()->isLive() ? 'run.show' : 'cyberspace.index');
         }
 
         return $this->resolve($character, $run, $simulator->take($character, $run, RunAction::Egress), $simulator);

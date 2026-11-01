@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.85.0] — 2026-10-31
+
+### Fixed
+- **A co-op runner idle for thirty seconds was jacked out mid-run.** `PartyTurns::defaultFor()` chose Egress for any runner who had `extracted`, even one part way through a download. A runner with `extracting_qb` set now carries on with Extract; Egress is the default only once nothing is left to take or install.
+- **A member who opened the run screen late lost turn 0.** The first round's clock started at launch. It now starts when every runner has opened the screen (`runs.party_seen_at`, set in `RunController::show`), with `PartyTurns::FIRST_ROUND_GRACE_SECONDS` (300) as the cap for one who never does.
+- **An unanswered invitation locked the invitee.** It refused every solo run (`NotTheOwner`), never lapsed, and outlived the owner jacking out. Invitations now lapse after `Parties::INVITE_MINUTES` (15), an owner jacking out drops a party still forming (`Parties::abandon`), and an invitee who has not joined starts a solo run of their own, which drops the invitation.
+- **Inviting or accepting after launch stranded the invitee in a party with no run.** `invite` and `accept` now refuse with the existing `PartyRefusal::Started`.
+- **Disbanding with three or more runners deadlocked the round.** `Parties::leave` deleted the party row while runs were live, so `PartyTurns::settle` returned early for ever. The row now stays until the last run is out.
+- **An owner could walk away from the door and launch,** splitting the party over two systems. `Parties::launch` and `RunController::start` require the owner at the party's system.
+- **Two simultaneous starts made two live runs.** `RunStarter` now re-reads `current_run_id` on the locked character row inside the transaction.
+- **`run.egress` spent a turn outside a party round.** In a shared party it is now the runner's choice for the round.
+
+### Added
+- **`PartyAdversarialTest`**: seventeen scripted co-op scenarios and a seeded random-operation fuzz (with and without ICE) checking the run/character pointers, the party row, the shared ICE and detection state, and that the clock alone always moves a stuck round on.
+- Migration `2026_11_09_100000_runs_party_seen_at` (`runs.party_seen_at`).
+
+Run `php artisan migrate`.
+
+
 ## [0.84.0] — 2026-10-31
 
 ### Added
@@ -3956,7 +3975,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.84.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.85.0...HEAD
+[0.85.0]: https://github.com/nahkampf/dedlok/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/nahkampf/dedlok/compare/v0.83.2...v0.84.0
 [0.83.2]: https://github.com/nahkampf/dedlok/compare/v0.83.1...v0.83.2
 [0.83.1]: https://github.com/nahkampf/dedlok/compare/v0.83.0...v0.83.1

@@ -8,6 +8,7 @@ use App\Characters\Fatigue;
 use App\City\ActivityKind;
 use App\City\Encounters;
 use App\City\EncounterStart;
+use App\Cyberspace\Party\Parties;
 use App\Decks\DeckTotals;
 use App\Models\Bookmark;
 use App\Models\Character;
@@ -164,6 +165,8 @@ final class Navigator
 
         // BEFORE the position goes: the snapshot is of where they were and why (see Trail).
         Trail::note('jack_out', $character);
+
+        app(Parties::class)->abandon($character);
 
         // On a subnet the spot is kept for the next jack-in; the main grid keeps nothing.
         $character->forceFill([
