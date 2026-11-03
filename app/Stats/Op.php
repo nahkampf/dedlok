@@ -7,7 +7,7 @@ namespace App\Stats;
 /**
  * The operations a modifier can perform, in resolution order.
  *
- * Add, PercentageOfBase and Multiplier are commutative within their own layer,
+ * Add, PercentageOfBase, Flat and Multiplier are commutative within their own layer,
  * which is what makes the result independent of the order modifiers arrive in.
  * Override is the only one that is not, which is why it alone carries a
  * priority. Any new op must either be commutative or resolve in the override
@@ -27,6 +27,14 @@ enum Op: string
      */
     case PercentageOfBase = 'percentage_of_base';
 
+    /**
+     * Flat addition AFTER the percentages: the number is exactly what it says, whatever
+     * fatigue, a resistance or any other percentage does to the rest. For a passive
+     * piece of hardware (a damage filter, a fixed capacity) rather than something the
+     * character does. Sits before `multiplier` so an immunity stays absolute.
+     */
+    case Flat = 'flat';
+
     /** A compounding factor. Multiplied together. Use sparingly. */
     case Multiplier = 'multiplier';
 
@@ -39,8 +47,9 @@ enum Op: string
         return match ($this) {
             self::Add => 1,
             self::PercentageOfBase => 2,
-            self::Multiplier => 3,
-            self::Override => 4,
+            self::Flat => 3,
+            self::Multiplier => 4,
+            self::Override => 5,
         };
     }
 }

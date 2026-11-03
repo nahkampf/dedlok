@@ -441,12 +441,17 @@ Every modifier belongs to a layer. Layers always resolve in this order:
 | --- | --- | --- | --- |
 | 1 | `add` | sum | `+2 focus` from a skill rank |
 | 2 | `percentage_of_base` | **summed, applied once** | `-10% focus` from an implant |
-| 3 | `multiplier` | product | `×0.5` from a hard debuff |
-| 4 | `override` | highest priority wins | `focus = 0` while unconscious |
-| 5 | clamp | stat definition | attributes to `0..100` |
-| 6 | round | stat definition | once, at the very end |
+| 3 | `flat` | sum, **after** the percentages | `-2` ICE damage from a damage filter |
+| 4 | `multiplier` | product | `×0.5` from a hard debuff |
+| 5 | `override` | highest priority wins | `focus = 0` while unconscious |
+| 6 | clamp | stat definition | attributes to `0..100` |
+| 7 | round | stat definition | once, at the very end |
 
-Layers 1–3 are commutative, so evaluation order inside a layer cannot change
+`flat` is `add` that no percentage touches. Use it for passive hardware, implants and kernels, whose card says
+a number and should deliver that number whatever fatigue or a resistance is doing; keep `add` for what the
+character does (skills, programs, drugs). It sits before `multiplier`, so an immunity (`×0`) still zeroes it.
+
+Layers 1–4 are commutative, so evaluation order inside a layer cannot change
 the result. Only `override` carries a priority, because it is the only op that
 is not commutative. **A unit test asserts this**; if you add an op, it must
 either be commutative or live in the `override` layer.

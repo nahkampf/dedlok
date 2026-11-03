@@ -66,6 +66,15 @@ class ResolverTest extends TestCase
         $this->assertNotEqualsWithDelta(14.0, $r->value, 0.0001, 'must not apply the percentage to the raw base');
     }
 
+    public function test_flat_is_untouched_by_percentages_but_not_by_immunity(): void
+    {
+        $flat = new Modifier(Op::Flat, -2, Target::id('unbounded'));
+        $resist = new Modifier(Op::PercentageOfBase, -15, Target::id('unbounded'));
+
+        $this->assertSame(6.5, $this->resolver()->resolve('unbounded', 10, [$flat, $resist])->value, '10 x 0.85 - 2');
+        $this->assertSame(0.0, $this->resolver()->resolve('unbounded', 10, [$flat, new Modifier(Op::Multiplier, 0, Target::id('unbounded'))])->value);
+    }
+
     public function test_multipliers_compound(): void
     {
         $r = $this->resolver()->resolve('unbounded', 100, [
