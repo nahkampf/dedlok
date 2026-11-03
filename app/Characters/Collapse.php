@@ -120,7 +120,7 @@ final class Collapse
 
         if ($locked->current_hunt_id !== null) {
             $hunt = Hunt::query()->find($locked->current_hunt_id);
-            app(ProgramRunner::class)->stopRunOnly($locked);
+            $hunt === null ? app(ProgramRunner::class)->stopRunOnly($locked) : app(ProgramRunner::class)->endHunt($locked, $hunt);
             $locked->forceFill(['current_hunt_id' => null])->save();
             $hunt?->forceFill(['won' => false, 'resolved_at' => now()])->save();
         }

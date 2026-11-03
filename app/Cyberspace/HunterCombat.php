@@ -170,7 +170,7 @@ final class HunterCombat
             return $this->line('cyberspace.hunt.log.egress_held', tone: 'warn');
         }
 
-        $this->programs->stopRunOnly($character);
+        $this->programs->endHunt($character, $hunt);
 
         $character->forceFill(['current_hunt_id' => null])->save();
         $hunt->forceFill(['won' => false, 'resolved_at' => now()])->save();
@@ -203,7 +203,7 @@ final class HunterCombat
      */
     private function win(Character $character, Hunt $hunt): array
     {
-        $this->programs->stopRunOnly($character);
+        $this->programs->endHunt($character, $hunt);
 
         $grade = $hunt->grade;
         [$low, $high] = (array) Config::get("cyberspace.heat.hunt.grades.{$grade}.creds", [0, 0]);
@@ -247,7 +247,7 @@ final class HunterCombat
      */
     private function lose(Character $character, Hunt $hunt): array
     {
-        $this->programs->stopRunOnly($character);
+        $this->programs->endHunt($character, $hunt);
 
         // Whatever it was carrying for an exchange is gone, and the job with it.
         app(MissionLedger::class)->transportLost($character);

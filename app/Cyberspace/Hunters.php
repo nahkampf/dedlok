@@ -169,7 +169,7 @@ final class Hunters
 
             $character->forceFill(['current_hunt_id' => $hunt->id])->save();
 
-            $this->startBestIcebreaker($character);
+            $hunt->forceFill(['stopped_programs' => $this->startBestIcebreaker($character) ?: null])->save();
 
             return $hunt;
         });
@@ -218,12 +218,14 @@ final class Hunters
      * duplicating `ProgramRunner::start()`'s own compute, memory, thread and
      * readiness checks — it already owns every one of them, and asking it
      * twice would be a second, worse copy of the answer.
+     *
+     * @return array<int, int> what starting it stopped, as {item id: copies}, for the hunt to remember
      */
-    private function startBestIcebreaker(Character $character): void
+    private function startBestIcebreaker(Character $character): array
     {
         // Whatever else is running holds the deck's budget; Scripts are spared, since stopping one destroys it.
         Trace::note('hunt.stopping_programs', ['running' => $character->runningProcesses()->map(fn ($r) => $r->item?->name)->all()]);
-        $this->programs->stopAllButScripts($character);
+        $stopped = $this->programs->stopAllButScripts($character);
 
         $owned = InventoryItem::query()
             ->where('character_id', $character->id)
@@ -234,7 +236,7 @@ final class Hunters
             ->get();
 
         if ($owned->isEmpty()) {
-            return;
+            return $stopped;
         }
 
         $modifiers = $character->modifiers();
@@ -268,8 +270,10 @@ final class Hunters
             ]);
 
             if ($result->succeeded() || ! in_array($result->refusal, $doesNotFit, true)) {
-                return;
+                break;
             }
         }
+
+        return $stopped;
     }
 }

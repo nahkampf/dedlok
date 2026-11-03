@@ -223,6 +223,34 @@ final class HunterTest extends TestCase
         $this->assertFalse((bool) $hunt->fresh()->won);
     }
 
+    public function test_what_the_hunter_stopped_runs_again_when_the_hunt_ends(): void
+    {
+        $this->giveItem(Item::query()->where('slug', 'icebreaker-3')->sole());
+        $item = Item::factory()->create(['container' => 'data', 'stackable' => true]);
+        Program::query()->create([
+            'item_id' => $item->id, 'kind' => ProgramKind::Daemon->value,
+            'qflops_cost' => 1, 'memory_cost' => 1, 'storage_size' => 1, 'background_process' => true,
+        ]);
+        InventoryItem::query()->create([
+            'character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1,
+            'running_on_deck_id' => $this->character->equipped_deck_id, 'started_at' => now(),
+        ]);
+
+        $this->character->forceFill(['heat' => 50])->save();
+        $hunt = $this->hunters()->spawn($this->character->fresh());
+
+        $this->assertSame([$item->id => 1], $hunt->fresh()->stopped_programs);
+
+        $pass = new CheckRoller(1.0, 0.0, [], static fn (): float => 0.0);
+        $combat = new HunterCombat(app(Resolver::class), new ProgramRunner, new WaitingRoom(app(Resolver::class)), static fn (int $a, int $b): int => $b, $pass);
+        $combat->fight($this->character->fresh(), $hunt->fresh(), egress: true);
+
+        $running = $this->character->fresh()->runningProcesses();
+
+        $this->assertSame([$item->id], $running->pluck('item_id')->all(), 'the daemon is back, the icebreaker is not');
+        $this->assertNull($hunt->fresh()->stopped_programs);
+    }
+
     // ---- fighting: losing -----------------------------------------------------
 
     public function test_losing_drops_heat_by_a_random_slice_rather_than_to_zero(): void
