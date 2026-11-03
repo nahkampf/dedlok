@@ -116,7 +116,7 @@
                                     <span>{{ $part['source'] }}</span>
                                     <span style="color:{{ $part['op']->value === 'add' && $part['amount'] < 0 ? 'var(--crit)' : 'var(--ink-0)' }}">
                                         @switch($part['op']->value)
-                                            @case('add'){{ ($part['amount'] >= 0 ? '+' : '−').abs($part['amount']) }}@break
+                                            @case('add')@case('flat'){{ ($part['amount'] >= 0 ? '+' : '−').abs($part['amount']) }}@break
                                             @case('percentage_of_base'){{ ($part['amount'] >= 0 ? '+' : '−').abs($part['amount']) }}%@break
                                             @case('multiplier')×{{ round($part['amount'], 2) }}@break
                                             @default= {{ $part['amount'] + 0 }}

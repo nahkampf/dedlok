@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## [0.86.0] — 2026-11-03
+
+### Added
+- **A `flat` op**, resolved after the percentages and before the multiplier (`Op::Flat`, layer 3; multiplier and override move to 4 and 5). It is `add` that no percentage touches, for passive hardware whose card says a number: fatigue or a resistance no longer scales it, and an immunity (`multiplier` 0) still zeroes it. Chosen from the modifier editor as "Add flat (unaffected) amount". `MECHANICS.md` and `docs/mechanics-rules.md` give the new order. Tests: `ResolverTest`.
+- **`hunts.stopped_programs`** and **`run_party_members.dropped_at`**, see below.
+- Migrations `2026_11_10_100000_passive_hardware_goes_flat`, `2026_11_10_110000_hunts_remember_what_they_stopped`, `2026_11_10_120000_party_members_can_be_dropped`.
+
+### Changed
+- **Passive hardware, implants and kernels use `flat`.** The migration moves the `add` modifiers of Nexura CODA, IRQX N82 Katchū, ICEmate II and III, HRX Paloma-4, Hitachi MemCard3, both kernels, Exocortex, Mnemonic Subprocessor and the ten placeholder implants. Programs, drugs, VanderTek Aanval, skills and the fatigue, mood and injury effects stay on `add`. A CODA with a 15% ICE resistance gave 1.7 instead of 2; it gives 2.
+- **`ProgramRunner::stopAllButScripts()` returns what it stopped**, and `RunStarter` has `occupied()` and `deckReady()` as the one list the start, the launch and the setup screen ask.
+
+### Fixed
+- **A Bloodhound's arrival stopped your processes for good.** The background programs it stops to make room for the icebreaker are remembered on the hunt and started again, as far as they fit, when it ends by a win, a defeat, an egress or a collapse (`ProgramRunner::endHunt()`). What would not restart is told in one message (`hunt_programs_not_resumed`).
+- **A co-op member the launch dropped could start a solo run beside the party.** Production runs 2377 and 2578: the member was dropped, started a run of their own on the same system, and when it ended the lockdown threw the owner out. A dropped member now keeps a marked seat (`dropped_at`) until the party ends, `leave` does not free it, and `RunController::start` refuses them as any joined member.
+- **Nobody was told who was dropped.** The owner and every member who went in get `party_member_dropped` with the reason; the dropped member still gets `party_dropped`.
+- **The door did not say who could go.** The setup screen shows each joined member as Ready or with what blocks them (`Parties::obstacle()`), from the same checks the launch makes. The launch also names a refused start's own reason.
+- `HRX Paloma-4` targets hit points, which almost no ICE damage touches (`DefeatResolver` neural shock only); left as authored.
+
+Run `php artisan migrate`.
+
+
 ## [0.85.0] — 2026-10-31
 
 ### Fixed
@@ -3975,7 +3996,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.85.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.86.0...HEAD
+[0.86.0]: https://github.com/nahkampf/dedlok/compare/v0.85.0...v0.86.0
 [0.85.0]: https://github.com/nahkampf/dedlok/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/nahkampf/dedlok/compare/v0.83.2...v0.84.0
 [0.83.2]: https://github.com/nahkampf/dedlok/compare/v0.83.1...v0.83.2

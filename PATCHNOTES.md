@@ -1,3 +1,9 @@
+## 0.86.0 (2026-11-03)
+
+- Being cornered by a bloodhound stops all non-essential background processes to free up resources for your best icebreaker - but the state before turning processes off is now stored, and if possible processes are started back up again automatically once the bloodhound confrontation is over.
+- Some bonuses should not go in the regular resolver, these are "flat" ops. A deck hardware that provides a flat bonus should not be affected by (for instance) fatigue debuffs. Passive hardware, implants, kernels are exaples that should apply their bonuses without being recalculated.
+- A few more fixes for co-op runs, to make it less confusing and more apparent if a participant dropped out of the run or not. We're not 1.0 on coop yet, but getting better at least :)
+
 ## 0.85.0 (2026-11-01)
 
 - TL;DR lots of bugs for co-op runs dealt with.

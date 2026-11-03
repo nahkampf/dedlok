@@ -13,6 +13,7 @@ use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Models\Character;
 use App\Models\Ice;
+use App\Models\Notification;
 use App\Models\Run;
 use App\Models\RunParty;
 use App\Models\RunPartyMember;
@@ -261,7 +262,33 @@ final class PartyAdversarialTest extends TestCase
 
         $parties->launch($owner->fresh(), RunPurpose::Extraction, null, [], app(RunStarter::class));
 
-        $this->assertNull(RunPartyMember::query()->where('character_id', $m->id)->first(), 'dropped member still has a seat');
+        $seat = RunPartyMember::query()->where('character_id', $m->id)->first();
+        $this->assertNotNull($seat?->dropped_at, 'the member stays, marked, so they cannot start a run of their own beside the party');
+        $this->assertNull($m->fresh()->current_run_id);
+
+        $parties->leave($m);
+        $this->assertNotNull(RunPartyMember::query()->where('character_id', $m->id)->first(), 'leaving does not free a dropped seat');
+
+        $handle = $m->handle;
+        $this->assertSame(1, Notification::query()->where('user_id', $owner->user_id)->where('title', 'Co-op run member dropped')->where('body', 'like', "%{$handle}%")->count(), 'the owner is told who dropped');
+
+        app(RunStarter::class)->end($owner, $owner->fresh()->currentRun, RunEnding::Egress);
+        $this->assertNull(RunPartyMember::query()->where('character_id', $m->id)->first(), 'the seat goes with the party');
+    }
+
+    public function test_the_screen_and_the_launch_agree_on_who_can_go(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $party = $parties->open($owner);
+        $m = $this->runner();
+        $parties->invite($owner, $m->handle);
+        $parties->accept($m);
+
+        $this->assertNull($parties->obstacle($m->fresh(), $party, app(RunStarter::class)));
+
+        $m->forceFill(['grid_x' => 3, 'grid_y' => 3])->save();
+        $this->assertNotNull($parties->obstacle($m->fresh(), $party, app(RunStarter::class)), 'away from the door');
     }
 
     // 14 --------------------------------------------------------------------------------------------------------------

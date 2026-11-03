@@ -10,6 +10,7 @@ use App\Decks\DeckTotals;
 use App\Decks\Storage;
 use App\Decryption\DecryptionQueue;
 use App\Models\Character;
+use App\Models\Hunt;
 use App\Models\InventoryItem;
 use App\Models\Program;
 use App\Models\TrackerSearch;
@@ -412,6 +413,16 @@ final class ProgramRunner
         }
 
         $character->forceFill(['suspended_programs' => null])->save();
+        $this->restart($character, array_map('intval', $kept));
+    }
+
+    /**
+     * Start these again, as far as they still fit; what would not start is told to the character in one message.
+     *
+     * @param  array<int, int>  $kept  {item id: copies}
+     */
+    private function restart(Character $character, array $kept, string $notice = 'programs_not_resumed'): void
+    {
         $left = [];
 
         foreach ($kept as $itemId => $copies) {
@@ -430,7 +441,7 @@ final class ProgramRunner
         }
 
         if ($left !== []) {
-            (new Notifier)->send($character, Category::Cyberspace, 'programs_not_resumed', ['programs' => implode(', ', array_unique($left))]);
+            (new Notifier)->send($character, Category::Cyberspace, $notice, ['programs' => implode(', ', array_unique($left))]);
         }
     }
 
@@ -460,17 +471,45 @@ final class ProgramRunner
      * What a hunter's arrival calls before it starts an icebreaker, so a scanner
      * or a daemon holding the deck's compute and memory cannot keep the one
      * program that can fight back from starting.
+     *
+     * @return array<int, int> the background programs it stopped, as {item id: copies}, for `endHunt()` to start again
      */
-    public function stopAllButScripts(Character $character): void
+    public function stopAllButScripts(Character $character): array
     {
         $rows = InventoryItem::query()
             ->where('character_id', $character->getKey())
             ->whereNotNull('running_on_deck_id')
             ->whereHas('item.program', static fn ($q) => $q->whereNull('lifetime_seconds'))
+            ->with('item.program')
             ->get();
 
+        $stopped = [];
+
         foreach ($rows as $row) {
+            // Run-only programs are not restarted by hand, so they are not remembered.
+            if ($row->item?->program?->background_process === true) {
+                $stopped[$row->item_id] = ($stopped[$row->item_id] ?? 0) + 1;
+            }
+
             $this->putBack($row);
+        }
+
+        return $stopped;
+    }
+
+    /**
+     * A hunt is over, however it ended: stop what ran for it and start again what its arrival stopped, as far as it
+     * still fits. The one call every way out of a hunt makes.
+     */
+    public function endHunt(Character $character, Hunt $hunt): void
+    {
+        $this->stopRunOnly($character);
+
+        $kept = (array) ($hunt->stopped_programs ?? []);
+
+        if ($kept !== []) {
+            $hunt->forceFill(['stopped_programs' => null])->save();
+            $this->restart($character, $kept, 'hunt_programs_not_resumed');
         }
     }
 

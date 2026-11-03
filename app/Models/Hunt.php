@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Written by `App\Cyberspace\Hunters` (spawning) and `App\Cyberspace\
  * HunterCombat` (fighting it) and nothing else.
  */
-#[Fillable(['character_id', 'ice_id', 'ice_integrity', 'grade', 'heat_at_spawn', 'started_at', 'resolved_at', 'won', 'warden_id', 'log'])]
+#[Fillable(['character_id', 'ice_id', 'ice_integrity', 'grade', 'heat_at_spawn', 'started_at', 'resolved_at', 'won', 'warden_id', 'stopped_programs', 'log'])]
 class Hunt extends Model
 {
     protected function casts(): array
@@ -33,6 +33,7 @@ class Hunt extends Model
             'started_at' => 'immutable_datetime',
             'resolved_at' => 'immutable_datetime',
             'won' => 'boolean',
+            'stopped_programs' => 'array',
             'log' => 'array',
         ];
     }

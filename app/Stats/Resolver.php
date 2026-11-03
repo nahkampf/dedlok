@@ -16,6 +16,7 @@ namespace App\Stats;
  *   base
  *     -> + sum(Add)
  *     -> x (1 + sum(PercentageOfBase)/100)      summed, applied once
+ *     -> + sum(Flat)                            untouched by the percentages above
  *     -> x product(Multiplier)
  *     -> Override, highest priority wins
  *     -> clamp
@@ -44,7 +45,7 @@ final class Resolver
         $stat = $this->stats->get($statId);
 
         /** @var array<int, list<Modifier>> $layers */
-        $layers = [1 => [], 2 => [], 3 => [], 4 => []];
+        $layers = [1 => [], 2 => [], 3 => [], 4 => [], 5 => []];
 
         // Conditions are tested BEFORE the arithmetic and never inside it: a
         // modifier is in the bag or it is not, and the layer order below stays
@@ -74,22 +75,29 @@ final class Resolver
             $value = $after;
         }
 
-        // --- 3. multiplicative -------------------------------------------
+        // --- 3. flat, after the percentages ------------------------------
         if ($layers[3] !== []) {
+            $sum = array_sum(array_map(fn (Modifier $m): float => $m->amount, $layers[3]));
+            $steps[] = new BreakdownStep(Op::Flat->value, $sum, $value, $value + $sum, self::sources($layers[3]));
+            $value += $sum;
+        }
+
+        // --- 4. multiplicative -------------------------------------------
+        if ($layers[4] !== []) {
             $product = 1.0;
 
-            foreach ($layers[3] as $modifier) {
+            foreach ($layers[4] as $modifier) {
                 $product *= $modifier->amount;
             }
 
             $after = $value * $product;
-            $steps[] = new BreakdownStep(Op::Multiplier->value, $product, $value, $after, self::sources($layers[3]));
+            $steps[] = new BreakdownStep(Op::Multiplier->value, $product, $value, $after, self::sources($layers[4]));
             $value = $after;
         }
 
-        // --- 4. override --------------------------------------------------
-        if ($layers[4] !== []) {
-            $winner = self::winningOverride($layers[4]);
+        // --- 5. override --------------------------------------------------
+        if ($layers[5] !== []) {
+            $winner = self::winningOverride($layers[5]);
             $steps[] = new BreakdownStep(
                 Op::Override->value, $winner->amount, $value, $winner->amount,
                 $winner->source !== null ? [$winner->source] : []

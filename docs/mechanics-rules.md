@@ -10,7 +10,7 @@ before adding an item, skill or effect. Short version:
 - Every modifier is data, never PHP — a `config/` entry or a row. If new content needs
   new PHP, the design has leaked; fix the op set.
 - One pure resolver does the arithmetic, fixed order: `add` → `percentage_of_base` →
-  `multiplier` → `override` → clamp → round.
+  `flat` (passive hardware, untouched by percentages) → `multiplier` → `override` → clamp → round.
 - `percentage_of_base` applies to **base + flat**; percentages are **summed then applied
   once**, never compounded.
 - **Clamp and round once, at the end.**

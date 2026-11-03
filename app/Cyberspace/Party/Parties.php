@@ -210,7 +210,8 @@ final class Parties
         // A party with runs still inside stays until the last is out: the others' rounds are settled through it.
         RunParty::query()->where('owner_character_id', $character->getKey())
             ->whereNotIn('id', Run::query()->live()->whereNotNull('run_party_id')->select('run_party_id'))->delete();
-        RunPartyMember::query()->where('character_id', $character->getKey())->delete();
+        // A member the launch left out stays until the party is over, so they cannot start a run of their own beside it.
+        RunPartyMember::query()->where('character_id', $character->getKey())->whereNull('dropped_at')->delete();
     }
 
     /** The owner left cyberspace: a party still forming at the door goes with them, invitations and all. */
@@ -227,6 +228,32 @@ final class Parties
 
         return RunParty::query()->where('owner_character_id', $character->getKey())->first()
             ?? RunPartyMember::query()->where('character_id', $character->getKey())->first()?->party;
+    }
+
+    /**
+     * Why this runner could not go in with the party right now, or null when they could: not at the door, or any of
+     * the refusals a start would give. THE launch asks it and so does the screen, so what a member is shown is what
+     * the owner's Start will do.
+     */
+    public function obstacle(Character $runner, RunParty $party, RunStarter $starter): ?string
+    {
+        $at = $runner->gridPosition();
+
+        if ($at === null || $at->x !== $party->x || $at->y !== $party->y) {
+            return PartyRefusal::NotAtTheDoor->message();
+        }
+
+        $refusal = $starter->occupied($runner);
+
+        if ($refusal === null && System::query()->at($at)->first()?->isLockedDown()) {
+            $refusal = RunRefusal::LockedDown;
+        }
+
+        if ($refusal === null && ! $starter->deckReady($runner)) {
+            $refusal = RunRefusal::DeckNotReady;
+        }
+
+        return $refusal?->message();
     }
 
     /**
@@ -259,24 +286,37 @@ final class Parties
 
         $party->update(['started_at' => now()]);
 
+        $in = [$owner];
+        $left = [];
+
         foreach ($party->members()->whereNotNull('joined_at')->with('character')->get() as $member) {
             $runner = $member->character;
-            $at = $runner?->gridPosition();
-            $started = false;
+            $why = $runner === null ? null : $this->obstacle($runner, $party, $starter);
 
-            if ($runner !== null && $at !== null && $at->x === $party->x && $at->y === $party->y) {
+            if ($runner !== null && $why === null) {
                 $rows = InventoryItem::query()->whereIn('id', $member->loadout ?? [])
                     ->where('character_id', $runner->getKey())->with('item.program')->get()->all();
-                $started = $starter->start($runner, $purpose, $kind, $rows, $party->getKey())->succeeded();
+                $started = $starter->start($runner, $purpose, $kind, $rows, $party->getKey());
+                $why = $started->succeeded() ? null : $started->message();
             }
 
-            if (! $started) {
-                $member->delete();
+            if ($runner === null || $why !== null) {
+                $member->update(['dropped_at' => now()]);
+
                 if ($runner !== null) {
+                    $left[$runner->handle] = $why;
                     (new Notifier)->send($runner, Category::Cyberspace, 'party_dropped', ['owner' => $owner->handle]);
                 }
             } else {
+                $in[] = $runner;
                 (new Notifier)->send($runner, Category::Cyberspace, 'party_started', ['owner' => $owner->handle]);
+            }
+        }
+
+        // Everybody who went in is told who did not, and why.
+        foreach ($left as $handle => $reason) {
+            foreach ($in as $participant) {
+                (new Notifier)->send($participant, Category::Cyberspace, 'party_member_dropped', ['handle' => $handle, 'reason' => $reason]);
             }
         }
 

@@ -934,6 +934,8 @@ return [
             'fortress_burned' => 'Your fortress Kernel is burned',
             'party_dropped' => 'Left out of a co-op run',
             'programs_not_resumed' => 'Processes not restarted',
+            'hunt_programs_not_resumed' => 'Processes not restarted',
+            'party_member_dropped' => 'Co-op run member dropped',
             'siphons_ran' => 'Siphon report',
             'damage_report' => 'Damage report',
             'insurance_property_claim' => 'Insurance Property Claim',
@@ -1001,6 +1003,8 @@ return [
             'fortress_burned' => 'Your fortress Kernel was burned. Everything else on it is gone and the Kernel is Frozen for :hours hours: bring in new Leechers that can run it, or lose it.',
             'party_dropped' => ':owner started the co-op run without you: your deck was not ready or you were not at the door.',
             'programs_not_resumed' => 'THe run is over, but these programs would not start again: :programs',
+            'hunt_programs_not_resumed' => 'You were cornered by a Bloodhound program and some processes could not restart after it was resolved.',
+            'party_member_dropped' => ':handle was dropped from the run because :reason',
             // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
             // a burn: the holder was not there, and naming the cause would tell
             // them about a stranger's run they could not otherwise know of.
@@ -1515,6 +1519,8 @@ return [
             'share_extraction' => 'Share extraction',
             'invited' => 'Invited',
             'joined' => 'Joined',
+            'ready' => 'Ready',
+            'dropped' => 'Dropped out',
             'nobody' => 'Nobody invited yet.',
             'handle' => 'Handle',
             'invite' => 'Invite',
@@ -1535,9 +1541,9 @@ return [
                 'full' => 'Full cut (the owner takes all)',
             ],
             'refused' => [
-                'no_slots' => 'You have not trained to call a co-op run.',
+                'no_slots' => 'You lack the skills to create a co-op run or you have no slots left.',
                 'too_noisy' => 'A multi-user run would cause too much noise.',
-                'not_jacked_in' => 'You are not in cyberspace.',
+                'not_jacked_in' => 'You are not jacked in.',
                 'nothing_there' => 'There is nothing here to run against.',
                 'in_a_run' => 'Somebody is already in a run.',
                 'already_in_party' => 'Already in a party.',
@@ -1546,7 +1552,7 @@ return [
                 'yourself' => 'You are already in your own party.',
                 'no_such_runner' => 'Nobody by that handle.',
                 'not_invited' => 'You have no invitation.',
-                'not_at_the_door' => 'You have to be standing at the same system.',
+                'not_at_the_door' => 'You have to be present at the same node.',
                 'not_the_owner' => 'Only the one who called the run starts it.',
                 'started' => 'That run has already begun.',
             ],
@@ -1989,7 +1995,7 @@ return [
                 'wrong_purpose' => 'A gateway can only be infiltrated, and nothing else can.',
                 'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
                 'already_running' => 'You are already in a run.',
-                'hunted' => 'Somebody is on you. Deal with that first.',
+                'hunted' => 'You are currently locked in a confrontation with another entity.',
                 'fighting' => 'You are in a fight.',
                 'program_refused' => 'Something on your loadout would not start.',
                 // Said plainly: a lockdown is a consequence of something
@@ -5042,6 +5048,7 @@ return [
             'carried' => 'This effect also carries :keys, which are kept as they are.',
             'ops' => [
                 'add' => 'Add a flat amount',
+                'flat' => 'Add flat (unaffected) amount',
                 'percentage_of_base' => 'Add a percentage',
                 'multiplier' => 'Multiply by',
                 'override' => 'Replace with',
