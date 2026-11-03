@@ -82,18 +82,32 @@ final readonly class RunStarter
         return Trace::scope($character, 'run.start', fn () => $this->startTraced($character, $purpose, $kind, $loadout, $partyId, $suspend), ['purpose' => $purpose->value, 'kind' => $kind?->value, 'loadout' => is_array($loadout) ? $loadout : Trace::describe($loadout)]);
     }
 
+    /** Already in a run, hunted or fighting: the three things that come before everything else. THE one list, for the screen as much as for the start. */
+    public function occupied(Character $character): ?RunRefusal
+    {
+        return match (true) {
+            $character->current_run_id !== null => RunRefusal::AlreadyRunning,
+            $character->current_hunt_id !== null => RunRefusal::Hunted,
+            $character->current_fight_id !== null => RunRefusal::Fighting,
+            default => null,
+        };
+    }
+
+    /**
+     * No deck at all is the emptiest possible failure of readiness, and it is the same refusal: what the player has
+     * to do about it is identical.
+     */
+    public function deckReady(Character $character): bool
+    {
+        $deck = $character->equippedDeck;
+
+        return $deck !== null && DeckTotals::forCharacter($character, $deck, $this->resolver)->isReady();
+    }
+
     private function startTraced(Character $character, RunPurpose $purpose, ?BackdoorKind $kind = null, iterable $loadout = [], ?int $partyId = null, array $suspend = []): RunResult
     {
-        if ($character->current_run_id !== null) {
-            return RunResult::refused(RunRefusal::AlreadyRunning);
-        }
-
-        if ($character->current_hunt_id !== null) {
-            return RunResult::refused(RunRefusal::Hunted);
-        }
-
-        if ($character->current_fight_id !== null) {
-            return RunResult::refused(RunRefusal::Fighting);
+        if (($blocked = $this->occupied($character)) !== null) {
+            return RunResult::refused($blocked);
         }
 
         $at = $character->gridPosition();
@@ -132,11 +146,7 @@ final readonly class RunStarter
             return RunResult::refused(RunRefusal::LockedDown);
         }
 
-        $deck = $character->equippedDeck;
-
-        // No deck at all is the emptiest possible failure of readiness, and it
-        // is the same refusal: what the player has to do about it is identical.
-        if ($deck === null || ! DeckTotals::forCharacter($character, $deck, $this->resolver)->isReady()) {
+        if (! $this->deckReady($character)) {
             return RunResult::refused(RunRefusal::DeckNotReady);
         }
 

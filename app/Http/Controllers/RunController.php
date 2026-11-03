@@ -136,6 +136,9 @@ class RunController extends Controller
             ->unique('item_id');
         $assess = ($step = Assessor::step($character)) === null ? null : Assessor::tag($this->assessLoadout($character, $scan, $ticked), $step);
 
+        $parties = app(Parties::class);
+        $partyHere = $parties->partyOf($character)?->load('members.character', 'owner');
+
         return view('run.setup', [
             'assess' => $assess,
             // What the system's owner makes of you, on the screen where the
@@ -152,8 +155,10 @@ class RunController extends Controller
             'overview' => ($scan ?? new SystemScan)->facts($character),
             'chain' => $chain,
             // The party forming at this door, if the character owns or is in one; and how many they may call.
-            'party' => app(Parties::class)->partyOf($character)?->load('members.character', 'owner'),
+            'party' => $partyHere,
             'coopSlots' => $character->coopSlots(),
+            // Who of the party could go in if the owner pressed Start now, and what stops the rest: {character id: reason}.
+            'obstacles' => $partyHere === null ? [] : $partyHere->members->mapWithKeys(fn ($m): array => [$m->character_id => $m->dropped_at !== null ? null : ($m->character === null ? null : $parties->obstacle($m->character, $partyHere, $this->runs))])->filter()->all(),
             // What the player has read of each system the trace has to come through, by address. A
             // relay is their own backdoor, but a backdoor says nothing about what is on the machine.
             'hopScans' => SystemScan::query()
