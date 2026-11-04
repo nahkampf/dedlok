@@ -37,7 +37,7 @@ use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
 /**
- * A pair of gateways joins the main grid to a subnet (CYBERSPACE.md, *Subnets*, step 2): passing is an arrival at the other end
+ * A pair of gateways joins the main grid to a subnet (docs/CYBERSPACE.md, *Subnets*, step 2): passing is an arrival at the other end
  * on the other grid, an address on another grid answers to nothing, and a subnet remembers where you jacked out until a flatline.
  */
 final class GatewayTest extends TestCase

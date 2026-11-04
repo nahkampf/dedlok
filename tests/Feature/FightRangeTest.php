@@ -20,7 +20,7 @@ use Tests\Support\QueueDice;
 use Tests\TestCase;
 
 /**
- * Moving the distance and getting away. COMBAT.md, *The fight*. Defence equals pursuit throughout, so
+ * Moving the distance and getting away. docs/COMBAT.md, *The fight*. Defence equals pursuit throughout, so
  * every attempt is a coin flip: a die under 0.5 works, a die over it does not, and for Create distance
  * the luckiest 40% of the successes (under 0.2) win two steps rather than one.
  */

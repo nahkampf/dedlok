@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Schema;
  * you had SWEPT that position with it.
  *
  * They are stored differently as well as separately, and for the same reason
- * the grid is arithmetic rather than rows — see CYBERSPACE.md, *How the grid
+ * the grid is arithmetic rather than rows — see docs/CYBERSPACE.md, *How the grid
  * is stored*. Both shapes have to survive the grid becoming 2048 x 2048.
  */
 return new class extends Migration

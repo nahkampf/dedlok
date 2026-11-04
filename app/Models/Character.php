@@ -106,7 +106,7 @@ class Character extends Model
      * Stored resources, mapped to the derived stat that bounds each one.
      *
      * These are the only mutable saved numbers on the model. Their maxima are
-     * derived and never stored — see MECHANICS.md, "Derived stats vs
+     * derived and never stored — see docs/MECHANICS.md, "Derived stats vs
      * resources".
      *
      * @var array<string, string>
@@ -358,7 +358,7 @@ class Character extends Model
      *
      * Only the EQUIPPED deck and what is fitted into it. A spare deck in the
      * stash is not in play and stays yours to tinker with, which is what
-     * CYBERSPACE.md means by everything else being unaffected.
+     * docs/CYBERSPACE.md means by everything else being unaffected.
      *
      * This guards what the PLAYER does. It must never be asked by the game's
      * own consequences: a Surge or a thermal burnout destroys fitted hardware

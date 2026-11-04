@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Armour, worn per body part. COMBAT.md, *Body parts and armour*.
+ * Armour, worn per body part. docs/COMBAT.md, *Body parts and armour*.
  *
  * ## An armour piece is an item with an `armour` row
  *

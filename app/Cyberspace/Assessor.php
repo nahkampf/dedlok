@@ -17,7 +17,7 @@ use Random\Engine\Mt19937;
 use Random\Randomizer;
 
 /**
- * Rough odds for a run, from what the player has READ and nothing else (ASSESSOR.md).
+ * Rough odds for a run, from what the player has READ and nothing else (docs/ASSESSOR.md).
  *
  * EVERY FIGURE IS NULL WHEN A FACT IT NEEDS IS UNREAD, which the screens show as `[???]`. It takes a `SystemScan`, never the
  * `System` row: what the machine really has is not the player's to know. A fact read as "none here" (an IDS of 0, ICE level 0) is

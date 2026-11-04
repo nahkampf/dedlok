@@ -11,7 +11,7 @@ use App\Support\Text;
 /**
  * The things a scan is trying to find out.
  *
- * CYBERSPACE.md lists what a scan catalogues: the operating system, the grade,
+ * docs/CYBERSPACE.md lists what a scan catalogues: the operating system, the grade,
  * the IDS, the ICE, the tracer, and any cloaked systems. Five of those exist —
  * the rest are phases away — and this is the one place that says which is
  * which.

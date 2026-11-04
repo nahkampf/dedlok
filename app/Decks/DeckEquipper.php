@@ -83,7 +83,7 @@ final class DeckEquipper
              * Everything running on it stops, always, whether or not the player
              * asked for a strip. Software runs on the deck being CARRIED, so a
              * deck that is not carried is not running anything — the rule
-             * CYBERSPACE.md records, and the reason a decryption in progress
+             * docs/CYBERSPACE.md records, and the reason a decryption in progress
              * loses its current cycle when a player puts the machine down.
              *
              * Nothing is destroyed: the programs go back to the stash the same

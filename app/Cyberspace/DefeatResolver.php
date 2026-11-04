@@ -48,7 +48,7 @@ use Illuminate\Support\Facades\DB;
  * Each of these is applied once, straight from the ICE's own row, and none of
  * them reaches back to roll another. A Surge that leaves the deck unready does
  * not also trigger a freeze — that would be a consequence inventing a new
- * cause, which CYBERSPACE.md rules out explicitly.
+ * cause, which docs/CYBERSPACE.md rules out explicitly.
  *
  * ## Bounty is not here
  *

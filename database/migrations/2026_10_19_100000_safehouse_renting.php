@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Safehouses become rentable and usable (FATIGUE.md, *Safehouses*): the actions a type offers, when the next rent falls
+ * Safehouses become rentable and usable (docs/FATIGUE.md, *Safehouses*): the actions a type offers, when the next rent falls
  * due, and a cooldown per action. Storage on eviction is not built: nothing can be stored in a safehouse yet.
  */
 return new class extends Migration

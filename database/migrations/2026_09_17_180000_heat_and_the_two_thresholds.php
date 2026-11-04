@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Schema;
  * ## Two different things were both called heat
  *
  * `runs.heat` was thermal load — the deck cooking, in thermal units, reset with
- * the run — and CYBERSPACE.md uses the same word for what a completed trace
+ * the run — and docs/CYBERSPACE.md uses the same word for what a completed trace
  * puts on a CHARACTER: persistent, theirs, and what the world knows about them.
  * One word for a per-run number and a permanent one is a bug waiting for
  * somebody to read the wrong column at three in the morning, so the run's

@@ -14,7 +14,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
- * THE CLOCK STOPS while a character is jacked in and an encounter is open (ENCOUNTERS_GRID.md), the way it does in a
+ * THE CLOCK STOPS while a character is jacked in and an encounter is open (docs/ENCOUNTERS_GRID.md), the way it does in a
  * fight, so an encounter cannot be waited in and a long one cannot cost somebody their scripts.
  *
  * ONE MECHANISM, three parts:

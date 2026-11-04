@@ -5,7 +5,7 @@
 | Fatigue
 |--------------------------------------------------------------------------
 |
-| FATIGUE.md is the design. Every number here is a placeholder until it has been played.
+| docs/FATIGUE.md is the design. Every number here is a placeholder until it has been played.
 */
 
 return [

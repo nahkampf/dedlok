@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * Keeping things at a safehouse, and what happens to them when the home is lost. FATIGUE.md, *Safehouses*.
+ * Keeping things at a safehouse, and what happens to them when the home is lost. docs/FATIGUE.md, *Safehouses*.
  */
 final class SafehouseStorageTest extends TestCase
 {

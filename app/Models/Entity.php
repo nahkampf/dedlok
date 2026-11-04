@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * An organisation in the world: a corporation, a government branch, a military
  * command or something on the fringe.
  *
- * Distinct from the eight hardware manufacturers in WORLDBUILDING.md, which
+ * Distinct from the eight hardware manufacturers in docs/WORLDBUILDING.md, which
  * brand items rather than run nodes — who BUILT a thing and who RUNS it are
  * different questions and this answers the second.
  *

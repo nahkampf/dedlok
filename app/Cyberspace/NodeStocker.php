@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\DB;
  *
  * EMPTYING A NODE IS THEREFORE TEMPORARY, which is the point. A quiet thief has
  * somewhere to come back to, and the brake on that loop is the raid counter and
- * the detection floor rather than scarcity — see CYBERSPACE.md, *Lockdown*.
+ * the detection floor rather than scarcity — see docs/CYBERSPACE.md, *Lockdown*.
  *
  * EVERYTHING SCALES WITH GRADE, because grade is the promise a scan makes: the
  * machine that can end you is the machine worth breaking into. Type leans it

@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Secure Tunnelling (CYBERSPACE.md, *Subnet fortresses*), and the only writer of `fortress_tunnels`.
+ * Secure Tunnelling (docs/CYBERSPACE.md, *Subnet fortresses*), and the only writer of `fortress_tunnels`.
  *
  * While a hosted program of the `tunnel` kind is RUNNING on a Data Fortress, its owner and everybody admitted to it can open
  * a tunnel straight onto it from anywhere: another grid, or not jacked in at all (it jacks them in there). It is the one

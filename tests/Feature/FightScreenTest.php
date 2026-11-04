@@ -23,7 +23,7 @@ use Tests\Support\QueueDice;
 use Tests\TestCase;
 
 /**
- * The fight screen, and the lock that makes it the only one a fighter can reach. COMBAT.md, step 4.
+ * The fight screen, and the lock that makes it the only one a fighter can reach. docs/COMBAT.md, step 4.
  */
 final class FightScreenTest extends TestCase
 {

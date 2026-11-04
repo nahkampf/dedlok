@@ -8,7 +8,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-/** Denial (CYBERSPACE.md, *Denial*): the flood meter on a run, and the action CHECK widened (MySQL only). */
+/** Denial (docs/CYBERSPACE.md, *Denial*): the flood meter on a run, and the action CHECK widened (MySQL only). */
 return new class extends Migration
 {
     public function up(): void

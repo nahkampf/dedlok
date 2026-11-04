@@ -85,7 +85,7 @@ never a `forceFill(['creds' => …])`.
 
 ### The City
 
-**`CITY.md` is the document.** Maps, travel, exploring, shops, clinics and surgery are built.
+**`docs/CITY.md` is the document.** Maps, travel, exploring, shops, clinics and surgery are built.
 
 - **`characters.district_id` is where the body is, and is always set.** The `Character`
   creating hook fills it from `config('city.start')` (a slug), so the factory, creation and
@@ -135,7 +135,7 @@ never a `forceFill(['creds' => …])`.
   is edited in the location editor; an exchange's is the entity's, over a range of desk grades, on the entity shelf page
   (`entity_buys`, `DeskBuyer`, `exchange.sell`) and obeys the desk's welcome gate. `BuyListEditor` is the only writer of both and
   DIFFS, so saving never hands a buyer a fresh limit.
-- **DECRYPTION** (`App\Decryption\DecryptionQueue`, `CYBERSPACE_RULES.md` under *Node contents*): a reorderable queue of stolen files broken in
+- **DECRYPTION** (`App\Decryption\DecryptionQueue`, `docs/CYBERSPACE_RULES.md` under *Node contents*): a reorderable queue of stolen files broken in
   cycles by one roll each, by **every Decryptor program running on the equipped deck, one file apiece** (`decryption_queue.worker_id`); the Encrypted Data Dump row becomes a Memory
   Dump IN PLACE. `decryption_queue` is written only there; `decryption:settle` runs every minute; `ProgramRunner::putBack()` settles
   before any decryptor stops. A Decryptor can be limited to some encryptions (`programs.decrypts`, slugs; NULL is any, edited as ticks in the item editor): a file waits
@@ -245,7 +245,7 @@ Text and URL are `strings.discord.*`.
 
 ### Data Fortresses
 
-**`CYBERSPACE.md`, *Data Fortresses*, is the document and has the list of what is built.** A player's own node: a `System` of type `fortress`
+**`docs/CYBERSPACE.md`, *Data Fortresses*, is the document and has the list of what is built.** A player's own node: a `System` of type `fortress`
 with `owner_character_id`, founded by spending a Kernel item, run on resources its Leechers borrow.
 
 - **Everything is in `App\Cyberspace\Fortress*` and `Leeches`, one writer each**: `Fortresses` (founding, freezing, alarms), `Leeches`,

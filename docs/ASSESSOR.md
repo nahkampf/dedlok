@@ -77,7 +77,7 @@ A fact the scan reads as "none here" is known, not unknown.
 3. The pure run model and the overall, with a fixed-seed test and a test that it is stable across calls.
 4. The `assess_step` column on `programs` (migration, comment, item editor field).
 5. UI: setup line, then action figures. Strings are the user's (`config/strings.php`).
-6. Docs: CLAUDE.md pointer, `docs/encounters-drugs-cyberspace.md`, `MECHANICS.md` row.
+6. Docs: CLAUDE.md pointer, `docs/encounters-drugs-cyberspace.md`, `docs/MECHANICS.md` row.
 
 ## Overall chance without an icebreaker running
 

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Safehouses: places to wake up, and later to rest in (FATIGUE.md). A type is authored and belongs to ONE district; many
+ * Safehouses: places to wake up, and later to rest in (docs/FATIGUE.md). A type is authored and belongs to ONE district; many
  * characters may hold the same one. Only what the collapse wake-up needs exists yet: no renting, rent, storage or actions.
  * The cardboard box under a bridge is the lowest tier and what everybody falls back to.
  */

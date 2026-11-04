@@ -37,7 +37,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The only thing that writes a fight, and `characters.current_fight_id`. COMBAT.md, step 4.
+ * The only thing that writes a fight, and `characters.current_fight_id`. docs/COMBAT.md, step 4.
  *
  * It is the seam between the pure engine and the game. The engine plays a plain-data snapshot and
  * writes nothing; this builds the snapshot, runs a round of it, and applies what happened to the

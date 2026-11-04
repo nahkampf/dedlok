@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/** How much a dose keeps you awake, which decides whether you can rest (FATIGUE.md, *Resting*). */
+/** How much a dose keeps you awake, which decides whether you can rest (docs/FATIGUE.md, *Resting*). */
 return new class extends Migration
 {
     public function up(): void

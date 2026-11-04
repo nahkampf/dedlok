@@ -32,7 +32,7 @@ use Tests\TestCase;
  *
  * What is asserted here is mostly absence — no machine, no address, no
  * backdoors, no loot, no raid, no lockdown — which is the whole of what a burn
- * leaves behind. CYBERSPACE.md: *dead, then empty, then eventually something
+ * leaves behind. docs/CYBERSPACE.md: *dead, then empty, then eventually something
  * new*.
  */
 final class BurnTest extends TestCase

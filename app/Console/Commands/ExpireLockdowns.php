@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  *
  * A matured scan pass, a training deposit and the waiting screen are all
  * resolved when somebody next looks, and this deliberately is not.
- * CYBERSPACE.md gives the reason in one line: two machines relocating into the
+ * docs/CYBERSPACE.md gives the reason in one line: two machines relocating into the
  * same free position is a race, and a sweep is what serialises it. Lazy
  * settlement would have every request that drew a map racing every other one
  * for the same empty square.

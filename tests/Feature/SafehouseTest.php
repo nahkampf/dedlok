@@ -15,7 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * The safehouse foundation: the types, the editor, the fallback, and the free move. FATIGUE.md, *Safehouses*.
+ * The safehouse foundation: the types, the editor, the fallback, and the free move. docs/FATIGUE.md, *Safehouses*.
  */
 final class SafehouseTest extends TestCase
 {

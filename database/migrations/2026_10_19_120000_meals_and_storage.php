@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * A meal is two numbers wherever it lives (`meal_fullness`, `meal_fatigue`: App\Characters\Meal), and a safehouse can
- * keep a character's things (FATIGUE.md, *Safehouses*). Stored rows are ordinary inventory rows tagged with the
+ * keep a character's things (docs/FATIGUE.md, *Safehouses*). Stored rows are ordinary inventory rows tagged with the
  * safehouse; a lost home gives them 48 hours.
  */
 return new class extends Migration

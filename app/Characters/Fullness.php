@@ -10,7 +10,7 @@ use App\Support\Points;
 /**
  * Fullness: a hidden bar from nothing to a fixed maximum (`fatigue.fullness.max`). Eating fills it, the minute clock
  * drains it, and being full only means nothing more can be eaten. The only writer of `characters.current_fullness`.
- * FATIGUE.md, *Food and fullness*.
+ * docs/FATIGUE.md, *Food and fullness*.
  */
 final class Fullness
 {

@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * How many explore passes a character has spent in each district: the familiarity a safehouse will ask for (FATIGUE.md).
+ * How many explore passes a character has spent in each district: the familiarity a safehouse will ask for (docs/FATIGUE.md).
  * Counted from the day this exists; nothing is back-filled.
  */
 return new class extends Migration

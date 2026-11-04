@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/** The Virus ICE tag (CYBERSPACE.md, *Virus*): one infection at a time, kept on the character. */
+/** The Virus ICE tag (docs/CYBERSPACE.md, *Virus*): one infection at a time, kept on the character. */
 return new class extends Migration
 {
     public function up(): void

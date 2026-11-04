@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Fatigue, the third resource. It runs the other way from hit points and Synaptic Integrity: everybody starts at
- * nothing, actions raise it and a clock lowers it. FATIGUE.md is the design.
+ * nothing, actions raise it and a clock lowers it. docs/FATIGUE.md is the design.
  */
 return new class extends Migration
 {

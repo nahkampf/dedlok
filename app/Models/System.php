@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  *
  * Nothing outside App\Cyberspace\Grid should query this table by position. The
  * world is materialised rows today and a generator with override rows at full
- * size, and Grid is the one place that knows which — see CYBERSPACE.md, *How
+ * size, and Grid is the one place that knows which — see docs/CYBERSPACE.md, *How
  * the grid is stored*.
  */
 #[Fillable(['address', 'grid_id', 'links_to_system_id', 'entry_rules', 'x', 'y', 'type', 'grade', 'name', 'designation', 'owner_id', 'owner_character_id', 'abandoned_at', 'fortress_ice', 'fortress_cloak', 'cloak_grade', 'cloak_type', 'cloak_owner_id', 'cloak_ice_level', 'cloak_ids_detection', 'cloak_tracer_detection', 'cloak_tracer_rate', 'cloak_os_skill_id', 'output_area_id', 'production_at', 'wallet', 'market_tax', 'market_area_id', 'relocated_at', 'relocate_hours', 'relocate_tell_owner', 'relocate_tell_admins', 'relocate_tell_members', 'access', 'kernel_integrity', 'kernel_integrity_max', 'kernel_resistance', 'kernel_demand_percent', 'frozen_until', 'os_skill_id', 'stock_rule', 'ids_detection', 'tracer_detection', 'tracer_rate', 'ice_id', 'ice_bounty'])]
@@ -75,7 +75,7 @@ class System extends Model
      * Does it trace?
      *
      * A tracer notices far less than an intrusion detection does, so a machine
-     * with only this one is quiet rather than safe — see CYBERSPACE.md,
+     * with only this one is quiet rather than safe — see docs/CYBERSPACE.md,
      * *Detection*: everything hostile can notice you.
      */
     public function hasTracer(): bool

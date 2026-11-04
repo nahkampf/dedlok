@@ -70,7 +70,7 @@ class ArchetypePerkModifierTest extends TestCase
 
         sort($matched);
         $this->assertSame([
-            // The eight damage types (COMBAT.md) are body damage too, and `neural` as well: the cross
+            // The eight damage types (docs/COMBAT.md) are body damage too, and `neural` as well: the cross
             // product is per (resource, origin) and does not ask what deals which.
             'damage.hitpoints.blunt',
             'damage.hitpoints.burnout',
@@ -245,7 +245,7 @@ class ArchetypePerkModifierTest extends TestCase
     {
         $stat = app(StatRegistry::class)->get('hitpoints_max');
 
-        // Answers MECHANICS.md open question 2: losing an implant must not kill.
+        // Answers docs/MECHANICS.md open question 2: losing an implant must not kill.
         $this->assertSame(1.0, $stat->min);
         $this->assertSame(1.0, $stat->clamp(-500.0));
     }

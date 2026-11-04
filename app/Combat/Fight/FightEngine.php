@@ -15,7 +15,7 @@ use App\Stats\DamageOrigin;
 use App\Support\Text;
 
 /**
- * The rules of a fight, as pure functions over a snapshot. COMBAT.md.
+ * The rules of a fight, as pure functions over a snapshot. docs/COMBAT.md.
  *
  * **It never writes anything.** A state goes in and a new state comes out; hit points are numbers
  * in the state, resistance is a `Mitigation` passed in, and the dice are one injected closure. No

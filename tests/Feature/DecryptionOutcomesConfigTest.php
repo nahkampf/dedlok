@@ -9,7 +9,7 @@ use App\Models\Item;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/** The odds of what a decrypted file becomes: held to the rules the design (CRAFTING.md) states. */
+/** The odds of what a decrypted file becomes: held to the rules the design (docs/CRAFTING.md) states. */
 final class DecryptionOutcomesConfigTest extends TestCase
 {
     use RefreshDatabase;

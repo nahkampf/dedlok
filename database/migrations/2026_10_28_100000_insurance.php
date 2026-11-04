@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Insurance (INSURANCE.md): what a place sells, what a character holds, and the first place that sells it.
+ * Insurance (docs/INSURANCE.md): what a place sells, what a character holds, and the first place that sells it.
  * PLACEHOLDER PRICES for a term, creds.
  */
 return new class extends Migration

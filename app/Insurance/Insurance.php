@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Policies, and what they pay. INSURANCE.md.
+ * Policies, and what they pay. docs/INSURANCE.md.
  *
  * ## One term is one row
  *

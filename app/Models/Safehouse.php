@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * A kind of home, in one district. Authored content: the slug is permanent. FATIGUE.md, *Safehouses*.
+ * A kind of home, in one district. Authored content: the slug is permanent. docs/FATIGUE.md, *Safehouses*.
  *
  * @property int $id
  * @property string $slug

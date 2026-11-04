@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
- * What a character does in their safehouse. FATIGUE.md, *Safehouses*. The only writer of a rest's activity row and of
+ * What a character does in their safehouse. docs/FATIGUE.md, *Safehouses*. The only writer of a rest's activity row and of
  * `character_safehouse_cooldowns`.
  *
  * ## Rest is a City activity

@@ -132,7 +132,7 @@ final class CityTravelTest extends TestCase
         $this->assertSame('old-town', $this->in(), 'a pass is 15 seconds by pod');
     }
 
-    /** From CITY.md: cancelled in the middle district, you paid for two and get 25 back. */
+    /** From docs/CITY.md: cancelled in the middle district, you paid for two and get 25 back. */
     public function test_cancelling_waits_for_the_pass_and_refunds_the_districts_not_reached(): void
     {
         $this->traveller()->begin($this->character, $this->district('downtown'), TravelMode::Pod);

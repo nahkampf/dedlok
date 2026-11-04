@@ -15,7 +15,7 @@ use App\Models\WalletEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/** A place with a menu is a place to eat. FATIGUE.md, *Food and fullness*. */
+/** A place with a menu is a place to eat. docs/FATIGUE.md, *Food and fullness*. */
 final class KitchenTest extends TestCase
 {
     use RefreshDatabase;

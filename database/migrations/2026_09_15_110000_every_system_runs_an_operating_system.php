@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
  * Every machine runs something, and which something is a skill you either have
  * or do not.
  *
- * The operating system is the first gate an intrusion meets: CYBERSPACE.md
+ * The operating system is the first gate an intrusion meets: docs/CYBERSPACE.md
  * makes it the skill you need at level 1 to attempt a system AT ALL. Four of
  * them exist as skill rows already — AuraOS, Prism-V, IRONCLAD and Lattice, at
  * ranks 2, 4, 8 and 16 — and that ladder is the whole vocabulary.

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Producers become two kinds, Decryptors and Assemblers (CYBERSPACE.md, *Production*). The shared job queue goes, an Assembler is
+ * Producers become two kinds, Decryptors and Assemblers (docs/CYBERSPACE.md, *Production*). The shared job queue goes, an Assembler is
  * assigned one Design on its own row, and each type gets an input and an output storage area in place of the single output area.
  */
 return new class extends Migration

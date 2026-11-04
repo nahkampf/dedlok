@@ -7,7 +7,7 @@ namespace App\Stats;
 /**
  * Which stats are computed from which, and in what order they can be resolved.
  *
- * A derived stat's base is a formula over OTHER stats, and MECHANICS.md is
+ * A derived stat's base is a formula over OTHER stats, and docs/MECHANICS.md is
  * emphatic that those inputs are the RESOLVED values rather than the stored
  * ones: an implant that raises Focus has to raise maximum HP, because maximum
  * HP is half of Focus and Focus is now higher. Reading the column instead is

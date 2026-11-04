@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
- * What happens to somebody who has run out of themselves. FATIGUE.md, *Collapse*.
+ * What happens to somebody who has run out of themselves. docs/FATIGUE.md, *Collapse*.
  *
  * Asked on the way past (`EnsureCharacterIsStanding`) once `Fatigue` has flagged `collapse_pending`, never from inside the
  * writer that tipped it: a travel loop, a run turn or a fight round carries on to its own end first. Then, in one

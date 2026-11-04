@@ -23,7 +23,7 @@ use App\Notifications\Notifier;
  *
  * NOT QUEUED, deliberately. `QUEUE_CONNECTION` is `sync` and this is one
  * insert — putting it on a queue would need a worker to exist before the news
- * arrived at all. When that switch happens (see TODO.md) this is a candidate
+ * arrived at all. When that switch happens (see docs/TODO.md) this is a candidate
  * rather than a requirement.
  */
 class NotifyOfSkillLevel

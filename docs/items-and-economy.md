@@ -4,7 +4,7 @@ _Split out of CLAUDE.md. Heading levels are as they were there._
 
 ### Code Crafting
 
-**`CRAFTING.md` is the document** (the design, the component table, the skills). Components and a Design, over time, into a program.
+**`docs/CRAFTING.md` is the document** (the design, the component table, the skills). Components and a Design, over time, into a program.
 
 - **A component is an item the decryption queue turns a stolen file into** (`cyberspace.decryption.components`: weights by the grade of the system,
   every grade summing to 100, nothing under 5 where it appears), and it **keeps where the file came from** (`App\Cyberspace\FileOrigin` inside the

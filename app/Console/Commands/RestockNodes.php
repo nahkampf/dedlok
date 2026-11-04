@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Fill the world's machines back up.
  *
- * Nightly, which is the cadence CYBERSPACE.md gives the world's slow metabolism
+ * Nightly, which is the cadence docs/CYBERSPACE.md gives the world's slow metabolism
  * — and it follows `market:seed`'s precedent exactly: no stored clock, a missed
  * pass is never made up, a pass run twice is not two hauls because it tops up
  * rather than adds, and `withoutOverlapping()` keeps two of them apart.

@@ -18,7 +18,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The only writer of `inventory_items.safehouse_id` and `storage_expires_at`. FATIGUE.md, *Safehouses*.
+ * The only writer of `inventory_items.safehouse_id` and `storage_expires_at`. docs/FATIGUE.md, *Safehouses*.
  *
  * A stored row is an ordinary inventory row tagged with the safehouse: out of the stash (`scopeLoose`), with no stack
  * key (piles are merged by hand here), and counted against the type's `storage_slots`, one per row. Money and combat

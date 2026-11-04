@@ -20,7 +20,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * The opponent editor. COMBAT.md, step 3.
+ * The opponent editor. docs/COMBAT.md, step 3.
  */
 final class NpcAdminTest extends TestCase
 {
@@ -229,7 +229,7 @@ final class NpcAdminTest extends TestCase
         $this->save($this->valid(['ammo_item_id' => $this->round()->id]))->assertSessionHasErrors('ammo_item_id');
     }
 
-    // ---- spoils and defeat (COMBAT.md, step 6) ----------------------------------------------------
+    // ---- spoils and defeat (docs/COMBAT.md, step 6) ----------------------------------------------------
 
     public function test_an_owner_tags_and_drops_are_saved_and_shown_back(): void
     {

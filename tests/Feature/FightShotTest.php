@@ -21,7 +21,7 @@ use Tests\Support\QueueDice;
 use Tests\TestCase;
 
 /**
- * A shot, then a burst: the pure core of the fight engine. COMBAT.md, *Hit quality* and *Burst*.
+ * A shot, then a burst: the pure core of the fight engine. docs/COMBAT.md, *Hit quality* and *Burst*.
  *
  * With aim equal to defence the chance is one half, so a die of 0 puts the score at 0.8 (Dead-on)
  * and a die of 0.5 at 0.5 (Partial... the middle fifth is Partial's 0.4–0.6). Slot dice: 0.0 is the

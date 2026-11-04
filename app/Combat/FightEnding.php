@@ -21,7 +21,7 @@ use Closure;
 use Illuminate\Support\Facades\Config;
 
 /**
- * What a fight's ending is worth. COMBAT.md, *Winning, losing, leaving*.
+ * What a fight's ending is worth. docs/COMBAT.md, *Winning, losing, leaving*.
  *
  * Called by `Fights` when a round ends the fight, on the LOCKED character, inside the round's transaction,
  * BEFORE the waiting room is asked: damage, consequence, the floor — the order every bad ending follows.

@@ -19,7 +19,7 @@
   `continue_run`.
 - **Outcome kinds built:** `trace` (points, clamped 0 to 99 so it never lands), `wake_ice`, `detected` (the same, and the owner
   minds) and `grid_move` (`ref` = `x,y`; grid doors that are not a run). The first three are refused outside a run encounter.
-- **Prerequisites** are shared with the City (`CITY.md`).
+- **Prerequisites** are shared with the City (`docs/CITY.md`).
 - **An encounter may set its own chance** (`encounters.chance`, percent, blank is the door's default): rolled on its own at each opening
   of its door, still adjusted by the resolved `encounter_chance` stat, tried before the door's roll, and left out of the door's weighted
   draw (so weight does not matter to it). Refused on a place or a spot, which are buttons.
@@ -69,7 +69,7 @@ exactly one.
 ## Prerequisites
 
 **Every encounter, in either realm, may carry prerequisites: conditions that must all hold before it can be drawn,
-and the list may be empty.** Designed 2026-10-11; the shape, the kinds and the rules are `CITY.md` (*Narrative
+and the list may be empty.** Designed 2026-10-11; the shape, the kinds and the rules are `docs/CITY.md` (*Narrative
 encounters*, *Prerequisites*), and a grid encounter uses the same table and the same judge.
 
 - **Judged with the rest of eligibility**, in the pool `Encounters::open()` builds for a door, so a grid encounter
@@ -86,7 +86,7 @@ encounters*, *Prerequisites*), and a grid encounter uses the same table and the 
 ## The clock stops
 
 **Decided 2026-10-10: while a grid encounter is open, the player's own clocks stand still**, as they do in a
-fight (`COMBAT.md`, *The clock stops*). The same mechanism, extended, not a second one.
+fight (`docs/COMBAT.md`, *The clock stops*). The same mechanism, extended, not a second one.
 
 - **Sweeps skip** a character with `current_encounter_id` while jacked in: `characters:regenerate`,
   `drugs:withdraw`, `programs:expire`, `crafting:settle`, `decryption:settle`, `scans:settle`.
@@ -197,7 +197,7 @@ ones. Refused on top of the City's rules (`EncounterRequest`, `EncounterGraph`):
    `RunStarter` and a relocation under an open one.
 4. **The four new outcome kinds** and their editor rules.
 5. **Avatars** and the fight choice. The balance pass waits for authored avatars, as combat's did.
-6. **Docs.** A section in `CYBERSPACE_RULES.md`; `CITY.md` links here; `CLAUDE.md` gets an *Encounters in
+6. **Docs.** A section in `docs/CYBERSPACE_RULES.md`; `docs/CITY.md` links here; `CLAUDE.md` gets an *Encounters in
    cyberspace* entry once something is built.
 
 ## Not decided

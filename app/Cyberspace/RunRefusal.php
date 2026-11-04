@@ -14,7 +14,7 @@ use App\Support\Text;
  * refused — every action against it then fails, indistinguishably from bad luck
  * — because a refusal naming the OS would hand over a scan fact for one click,
  * for free, with no instrument running and no minutes spent. The gate has to
- * cost a run or it is a lookup. See CYBERSPACE.md, *The operating system is a
+ * cost a run or it is a lookup. See docs/CYBERSPACE.md, *The operating system is a
  * gate you cannot see*.
  */
 enum RunRefusal: string

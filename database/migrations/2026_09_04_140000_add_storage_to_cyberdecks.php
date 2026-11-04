@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Storage: the sixth measure, and the socket that carries it.
  *
- * MECHANICS.md has asked for this since software landed. A program costs three
+ * docs/MECHANICS.md has asked for this since software landed. A program costs three
  * different things at three different times — compute and memory only while it
  * RUNS, and storage simply by being owned — and the third had nowhere to be
  * measured against. `programs.storage_size` was a number nothing summed.

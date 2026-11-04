@@ -836,7 +836,7 @@
             </div>
         </details>
 
-        {{-- A DESIGN (CRAFTING.md): plain data with a recipe. Choosing a product is what makes the item one; blank rows are spare. --}}
+        {{-- A DESIGN (docs/CRAFTING.md): plain data with a recipe. Choosing a product is what makes the item one; blank rows are spare. --}}
         @php($design = $item?->design)
         @php($maxLines = (int) config('crafting.max_components', 8))
         @php($lines = old('design_lines', $design ? $design->components->map(fn ($c) => [

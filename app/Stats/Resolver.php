@@ -11,7 +11,7 @@ namespace App\Stats;
  * inputs it returns the same output, which is what makes the game's balance
  * testable without a fixture.
  *
- * Layer order is fixed and documented in MECHANICS.md:
+ * Layer order is fixed and documented in docs/MECHANICS.md:
  *
  *   base
  *     -> + sum(Add)

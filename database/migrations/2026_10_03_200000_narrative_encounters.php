@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Narrative encounters: a graph of nodes and choices, outcomes as rows, and the
- * live instance a character is standing in. CITY.md, *Encounters*.
+ * live instance a character is standing in. docs/CITY.md, *Encounters*.
  *
  * NODES ARE REACHED BY KEY, NOT BY ID. `next_key`, `pass_key`, `fail_key` and
  * `character_encounters.node_key` name a node within its encounter. That is what

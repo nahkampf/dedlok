@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * The only writer of `characters.district_id` after creation, and of a travel's
- * `city_activities` row. See CITY.md.
+ * `city_activities` row. See docs/CITY.md.
  *
  * A travel is one pass in every district on the route EXCEPT the destination,
  * the origin included, and then arrival. `district_id` is the district whose

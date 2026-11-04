@@ -10,7 +10,7 @@ use App\Models\Character;
 |--------------------------------------------------------------------------
 |
 | Every number the modifier system can touch is declared here exactly once.
-| See MECHANICS.md for the rules; the short version:
+| See docs/MECHANICS.md for the rules; the short version:
 |
 |   tags      what a modifier can target as a group. Prefer targeting tags
 |             over listing ids, so a new attribute is picked up automatically.
@@ -48,10 +48,10 @@ return [
         /*
          * Derived. Its BASE is computed by Character::baseStat() rather than by
          * a formula declared here, because the derived-stat dependency graph is
-         * still specified-only (MECHANICS.md, step 4). Declaring it as a stat
+         * still specified-only (docs/MECHANICS.md, step 4). Declaring it as a stat
          * is enough for modifiers to target it today.
          *
-         * The floor of 1 answers MECHANICS.md open question 2 provisionally: a
+         * The floor of 1 answers docs/MECHANICS.md open question 2 provisionally: a
          * debuff must never drive max HP to 0 and kill a character as a side
          * effect of losing an implant. Only damage reaches 0.
          */
@@ -67,7 +67,7 @@ return [
          * ceilings, computed and never stored. The matching current values
          * (hitpoints_current, synaptic_integrity_current) are RESOURCES —
          * stored state, clamped down by these. Neither resource exists yet.
-         * See MECHANICS.md, "Derived stats vs resources".
+         * See docs/MECHANICS.md, "Derived stats vs resources".
          */
         /*
          * A DECK'S MEASURES.
@@ -208,7 +208,7 @@ return [
         | Hit points recovered per HOUR, on its own.
         |
         | ZERO BY DEFAULT and nothing heals hit points on its own without it: clinics and medkits are the way back
-        | (COMBAT.md). An effect row carries it (a dose, an implant, a skill, a piece of armour), as `synaptic_regen`
+        | (docs/COMBAT.md). An effect row carries it (a dose, an implant, a skill, a piece of armour), as `synaptic_regen`
         | is carried.
         |
         | PER HOUR AND NOT PER MINUTE, because the smallest whole rate is the smallest thing anybody can grant, and a
@@ -257,7 +257,7 @@ return [
         ],
 
         /*
-        | CRAFTING (CRAFTING.md). How many things a character can be building at once; one until a skill says otherwise.
+        | CRAFTING (docs/CRAFTING.md). How many things a character can be building at once; one until a skill says otherwise.
         | Whole, at least one.
         */
         'crafting_slots' => [
@@ -283,7 +283,7 @@ return [
         |
         | WHAT AN IDS IS ROLLED AGAINST. A machine's detection value is the
         | difficulty and this is the value, so the margin between them is the
-        | whole of whether a run is a quiet one — see CYBERSPACE.md,
+        | whole of whether a run is a quiet one — see docs/CYBERSPACE.md,
         | *Detection*.
         |
         | ZERO BY DEFAULT, and that is the same call `icebreaker_damage` makes:
@@ -350,7 +350,7 @@ return [
         | spent buying it.
         |
         | EGRESS PROTOCOLS IS THE FIRST THING THAT MOVES IT — +3% of base per
-        | level, five grants on one skill row, which is what CYBERSPACE.md
+        | level, five grants on one skill row, which is what docs/CYBERSPACE.md
         | always said the shape would be: a skill that helps you leave is a
         | modifier on this id and never a line in the simulator. Nothing in
         | `Simulator` knows it exists.
@@ -370,7 +370,7 @@ return [
         |
         | THE CEILING IS TEN AND IT IS ALL SKILL: one hop per level of Routing
         | and one more per level of Advanced Routing, which is the table
-        | CYBERSPACE.md has carried since the chain was specified. Implants and
+        | docs/CYBERSPACE.md has carried since the chain was specified. Implants and
         | gear are expected to lift it later, and they will do so by being
         | modifiers on this id rather than by anything learning what a chain is.
         |
@@ -672,7 +672,7 @@ return [
         ],
 
         /*
-        | What an attack rolls against (COMBAT.md, *Defence*). There is no dodge, by decision: a declared stat with a
+        | What an attack rolls against (docs/COMBAT.md, *Defence*). There is no dodge, by decision: a declared stat with a
         | flat base in `bases`, so skills, implants and drugs reach it as modifiers. `Character::stat('defence')`.
         */
         'defence' => [
@@ -843,7 +843,7 @@ return [
          * accumulated injury would end a character by arithmetic rather than by
          * anything anyone decided. Only damage reaches 0.
          *
-         * See CYBERSPACE.md, "Losing", and MECHANICS.md, "Flatline is a
+         * See docs/CYBERSPACE.md, "Losing", and docs/MECHANICS.md, "Flatline is a
          * permanent stored modifier".
          */
         'synaptic_integrity_max' => [

@@ -59,7 +59,7 @@ Schedule::command('training:deposit --quiet-when-idle')
  * never made up, and withoutOverlapping() because a second copy of a pass that
  * writes thousands of rows is not something to find out about later.
  *
- * CYBERSPACE.md gives housekeeping three more nightly jobs — backdoor
+ * docs/CYBERSPACE.md gives housekeeping three more nightly jobs — backdoor
  * discovery, siphon payouts, heat decay. The first of those is below; the
  * other two are still unbuilt, and lockdown expiry has its own cadence
  * further down because a window measured in hours cannot wait for 04:00.
@@ -235,7 +235,7 @@ Schedule::command('programs:expire')
     ->withoutOverlapping();
 
 /*
- * Builds (CRAFTING.md) advance a minute at a time while the equipped deck is ready; this is that minute, and delivers the finished.
+ * Builds (docs/CRAFTING.md) advance a minute at a time while the equipped deck is ready; this is that minute, and delivers the finished.
  */
 Schedule::command('crafting:settle --quiet-when-idle')
     ->everyMinute()

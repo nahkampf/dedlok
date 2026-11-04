@@ -7,7 +7,7 @@ namespace App\Stats;
 /**
  * The named tests a conditional modifier may reference.
  *
- * MECHANICS.md is specific about this: a condition names a PREDICATE, never an
+ * docs/MECHANICS.md is specific about this: a condition names a PREDICATE, never an
  * inline expression. An expression in a config file is code in a place nothing
  * type-checks, reviews or tests; a name is a thing that either exists or fails
  * loudly at the moment the modifier is built.
@@ -73,7 +73,7 @@ final class Predicates
 
             /*
              * Where the character is. Jacked in is the cyberspace session, not
-             * signing in and not carrying a deck — see CYBERSPACE.md,
+             * signing in and not carrying a deck — see docs/CYBERSPACE.md,
              * "Vocabulary". Nothing sets these yet; the predicate exists so the
              * first modifier that wants one does not have to invent it.
              */

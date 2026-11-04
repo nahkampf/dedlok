@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The only writer of `characters.safehouse_id` and `rent_due_at`. FATIGUE.md, *Safehouses*.
+ * The only writer of `characters.safehouse_id` and `rent_due_at`. docs/FATIGUE.md, *Safehouses*.
  *
  * Rent is paid in ADVANCE for each period, the first when it is taken, and charged lazily (whoever looks settles it)
  * with `safehouses:rent` behind it. Never charged into debt: a period that cannot be paid waits, and is paid the

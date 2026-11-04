@@ -126,7 +126,7 @@ final class Sheet
      *
      * Two keys are deliberately absent until the things behind them exist:
      * `jacked_in` needs a cyberspace session, and `heat` needs the column
-     * CYBERSPACE.md specifies. A predicate whose key is missing answers no, so
+     * docs/CYBERSPACE.md specifies. A predicate whose key is missing answers no, so
      * a modifier conditioned on either is inert rather than wrong.
      */
     public static function contextFor(Character $character): Context
@@ -287,7 +287,7 @@ final class Sheet
 
         // The maximum of fatigue reads attributes WITHOUT the effects fatigue itself causes (Tired, Drained, Exhausted
         // lower focus and meat), or a lower maximum would deepen them and Exhausted would collapse somebody who has
-        // just woken at 95%. Every other source still moves it. FATIGUE.md, *Breakpoints*.
+        // just woken at 95%. Every other source still moves it. docs/FATIGUE.md, *Breakpoints*.
         if ($statId === 'fatigue_max') {
             $clean = self::for(
                 $this->character,

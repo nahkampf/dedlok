@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
  * What a machine is holding, and how many times it has been robbed.
  *
  * A NODE'S INVENTORY IS ITS OWN MODEL, not the character inventory with a
- * different owner column, and CYBERSPACE.md says why: what is in a node is
+ * different owner column, and docs/CYBERSPACE.md says why: what is in a node is
  * raided rather than carried, it is safe from the losses a character takes when
  * ICE beats them, and it restocks on a clock. That is a different set of rules
  * from a stash, so it gets a different table rather than a flag on the same

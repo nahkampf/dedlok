@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * Renting, the rent clock, losing a home, and what you do in one. FATIGUE.md, *Safehouses*.
+ * Renting, the rent clock, losing a home, and what you do in one. docs/FATIGUE.md, *Safehouses*.
  */
 final class SafehouseRentTest extends TestCase
 {

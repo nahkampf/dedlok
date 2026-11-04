@@ -4,7 +4,7 @@ _Split out of CLAUDE.md. Heading levels are as they were there._
 
 ### Narrative encounters
 
-**`CITY.md`, *Encounters*, is the document.** Something that happens to a character in the City:
+**`docs/CITY.md`, *Encounters*, is the document.** Something that happens to a character in the City:
 a graph of nodes and choices with outcomes as rows, authored at `admin/encounters`, nothing seeded.
 
 - **Data, never PHP.** A new kind of effect is an `OutcomeKind` case and a branch in
@@ -45,12 +45,12 @@ a graph of nodes and choices with outcomes as rows, authored at `admin/encounter
   roll, next screen or outcomes of its own, and restricts the NPC's deletion. **`EnsureEncounterIsResolved` stands
   down while a fight is live**, or the two locks redirect to each other for ever.
 - **Three more doors are cyberspace's** (`grid_step`, `system`, `run`), with prerequisites, a clock that stops, and `run_end`;
-  see `ENCOUNTERS_GRID.md` for what is built. **Prerequisites** (`encounter_prerequisites`, `PrerequisiteJudge`, an editor panel) are a
+  see `docs/ENCOUNTERS_GRID.md` for what is built. **Prerequisites** (`encounter_prerequisites`, `PrerequisiteJudge`, an editor panel) are a
   list of conditions an encounter needs HELD before it is drawn (flag, items, scan files, creds, skill, standing, district), each
   negatable, none being no condition; held and never spent. **`EncounterPause`** is the one place the player's clocks stop while a grid
   encounter is open: new clocks read it. The paragraph below is the first of them, kept as it was.
 - **A fourth door is cyberspace's: `EncounterStart::GridStep`** (`starts_on = grid_step`; design and what is not built in
-  `ENCOUNTERS_GRID.md`). **The realm is the door's** (`isGrid()`), never a column. `Navigator::arrive()` rolls it after the hunter, in its
+  `docs/ENCOUNTERS_GRID.md`). **The realm is the door's** (`isGrid()`), never a column. `Navigator::arrive()` rolls it after the hunter, in its
   own write on the LOCKED character, never on the jack-in; `canHappenTo($character, $start)` wants somebody jacked in and not in a run for a
   grid door and the opposite for a City one. Base chance `cyberspace.encounter.grid_step_chance`. `EncounterController` closes onto the
   map for somebody jacked in. A player in one is held by the same lock, so they cannot move or jack out until it is answered.
@@ -155,7 +155,7 @@ why it had nothing to offer a medkit. A consumable changes a STORED number a sin
   spent (the last takes its row) and the effects land together. **A use that would do nothing is REFUSED and the copy
   kept** (`UseRefusal::NothingToDo`, as a service that would do nothing is by `LoyaltyExchange`), so a medkit is never
   wasted at full health. It refuses a stranger's row, a non-consumable, a copy that is not to hand (in a container, fitted),
-  and **a live fight** (`InAFight`: COMBAT.md lists items mid-fight as later).
+  and **a live fight** (`InAFight`: docs/COMBAT.md lists items mid-fight as later).
 - **`drug_<family>_tolerance` is a use effect too** (six cases, one per `Drugs\Family`): it takes that many points off the
   family's stored tolerance through `DrugLedger::lowerTolerance()`, floored at nothing, and a pure consumable at zero tolerance is refused
   as `NothingToDo`. A drug can carry it (applied after the dose's own gain, in the same transaction).
@@ -202,7 +202,7 @@ why it had nothing to offer a medkit. A consumable changes a STORED number a sin
 
 ### Cyberspace, runs, hunters, missions
 
-**The full rules are in `CYBERSPACE_RULES.md` — read the matching section before editing
+**The full rules are in `docs/CYBERSPACE_RULES.md` — read the matching section before editing
 any of this.** It covers the world and grid, scanning, defences, node contents, raids and
 lockdown, backdoors, the map, runs, extraction, egress, burn, attack tags and defeat,
 hunters, the waiting room, recovery and missions. The traps that matter everywhere:

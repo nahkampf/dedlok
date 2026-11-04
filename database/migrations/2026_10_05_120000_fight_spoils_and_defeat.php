@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * What a fight pays and what it costs. COMBAT.md, step 6.
+ * What a fight pays and what it costs. docs/COMBAT.md, step 6.
  *
- * The columns COMBAT.md held back until the code that reads them existed: whose an opponent is (for
+ * The columns docs/COMBAT.md held back until the code that reads them existed: whose an opponent is (for
  * standing), what it carries (loot) and what it does to somebody it beats (tags). The pay band is
  * not a column: it is `config/combat.php`, by grade.
  *

@@ -5,7 +5,7 @@
 @php($first = $entries->first())
 @php($files = $entries->sortBy(fn ($e) => [$e->extractedFile()?->grade ?? 0, $e->id])->values())
 
-{{-- SEVERAL COMPONENTS OF ONE KIND AND ORIGIN AT ONCE (CRAFTING.md). The rows stay separate — each is its own file with its own size,
+{{-- SEVERAL COMPONENTS OF ONE KIND AND ORIGIN AT ONCE (docs/CRAFTING.md). The rows stay separate — each is its own file with its own size,
      value and origin — and only the stash draws them as one slot. This card lists them, and each button opens that file's own card,
      which is where selling, destroying and putting away live. --}}
 <div class="card" style="max-width:min(420px,100%)">

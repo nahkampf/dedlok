@@ -110,9 +110,9 @@ A Headhunter has two attributes: its **strength** (a check against the player's 
 Open: nothing decided on how a Headhunter is sent, what it costs, or how a trapped player sees it. Read `Tracer` in
 `ProgramKind` first.
 
-## Code Crafting (designed 2026-10-08, `CRAFTING.md`)
+## Code Crafting (designed 2026-10-08, `docs/CRAFTING.md`)
 
-Build order, each its own step: **1. decimal QB / qFLOPS** (built, unreleased), **2. lifetime programs and the Script kind** (built, unreleased), **3. components and 4. designs, slots, the pausable clock, skills and screens** (built, unreleased), 5. ICE shredding (already covered by `DefeatTag::Erase`; see `CRAFTING.md`), 6. balance. See *As built* in `CRAFTING.md` for what is left inside them.
+Build order, each its own step: **1. decimal QB / qFLOPS** (built, unreleased), **2. lifetime programs and the Script kind** (built, unreleased), **3. components and 4. designs, slots, the pausable clock, skills and screens** (built, unreleased), 5. ICE shredding (already covered by `DefeatTag::Erase`; see `docs/CRAFTING.md`), 6. balance. See *As built* in `docs/CRAFTING.md` for what is left inside them.
 
 ---
 
@@ -125,7 +125,7 @@ jobs (scan files only). Left, in the author's hands or undecided:
 
 - **Decryptors for Halcyon-3, BLACKGLASS and Ouroboros** (the author is building them; `programs.decrypts` limits one to some encryptions).
 - **Other outcomes than a Memory Dump** — `DecryptionQueue::outcomeFor()` is the one place a table by grade goes; and a use for a Memory Dump beyond selling it.
-- **Heat while decrypting** — see MECHANICS.md, *Thermal load*. Nothing accumulates; a decryption that runs unattended on a deck with positive
+- **Heat while decrypting** — see docs/MECHANICS.md, *Thermal load*. Nothing accumulates; a decryption that runs unattended on a deck with positive
   net thermal load is the case the design says should cook the weakest module, and it needs the tick, the rate and the recalibration decided first.
 - **A file-grade filter on buy lists**, if wanted. The grade fields on an exchange buy list are the DESK's grade (1-5).
 - **Balance**: cycle length, difficulties and the 2% floor are first guesses.
@@ -134,7 +134,7 @@ jobs (scan files only). Left, in the author's hands or undecided:
 
 ## RESUME HERE — physical combat, as of 2026-10-05 (step 6 built, unreleased)
 
-**`COMBAT.md` is both the design and the as-built record; read its *Settled* table and *Step 6, as built* first.**
+**`docs/COMBAT.md` is both the design and the as-built record; read its *Settled* table and *Step 6, as built* first.**
 Steps 1–6 of its build order are built. What is left is the balance pass, which needs authored content and the
 author's judgement. Everything below was decided with the author in conversation and is the reason a later session
 should not re-ask.
@@ -383,7 +383,7 @@ it while it was scenery.
 
 The rename touches `Corp`, `System`, `SystemNamer`, `GridSeeder`, the system
 factory, two tests, `config/cyberspace.php` and `strings`. Old migrations are
-history and are not edited. `TODO.md`'s own heat entry says *faction standing*
+history and are not edited. `docs/TODO.md`'s own heat entry says *faction standing*
 and should say entity.
 
 ### Standing: two tables, one writer, one invariant
@@ -755,7 +755,7 @@ defend before there is a game to defend it against.
   the money sink is.
 - **Later: heat draws more Wardens** (rogue programs) while moving through
   cyberspace, and especially through subnets. Wardens themselves are built
-  (CYBERSPACE.md, *Wardens*); heat does not yet draw extra ones.
+  (docs/CYBERSPACE.md, *Wardens*); heat does not yet draw extra ones.
 
 ---
 
@@ -856,7 +856,7 @@ machine still standing, and one that had noticed any of them would shut, which
 throws out everybody inside, which re-enters the loop already in progress.
 Deleting first makes that unreachable by making the answer honest.
 
-**What was decided rather than specified**, because CYBERSPACE.md left it open
+**What was decided rather than specified**, because docs/CYBERSPACE.md left it open
 and said only "what it costs the runner":
 
 - **Heat, two points**, against the completed trace's one. The same placeholder
@@ -885,7 +885,7 @@ routing hop goes on the route, and four separate things can take one away.
   the rows to a silent cascade. Lockdown, relocation, burn and the other doors
   on a machine the ageing roll moved all go through it.
 - **Each hop hinders by its grade and nothing else**, which is decided rather
-  than missing — see CYBERSPACE.md, *The routing chain*.
+  than missing — see docs/CYBERSPACE.md, *The routing chain*.
 - ~~**What a siphon pays is undecided.**~~ Decided and paying: 30 a night per
   grade of machine — `cyberspace.backdoors.siphon.per_grade` — run by
   `cyberspace:siphons` before the ageing roll. The base is the machine's and the
@@ -1018,7 +1018,7 @@ of them exist, it may want splitting.
 
 ## The physical side of the game
 
-**Designed in `CITY.md`; the City (maps, travel, exploring, shops, clinics, surgery, narrative encounters) and physical combat through `COMBAT.md`'s step 5 are built — see *RESUME HERE* at the top.** What is below is the original brain-dump; the documents are the agreed shape.
+**Designed in `docs/CITY.md`; the City (maps, travel, exploring, shops, clinics, surgery, narrative encounters) and physical combat through `docs/COMBAT.md`'s step 5 are built — see *RESUME HERE* at the top.** What is below is the original brain-dump; the documents are the agreed shape.
 
 Some ideas to develop later: A city map showing locations. Most locations are hidden from the player and must be discovered by exploring. This map shouldn't be a grid like the cyberspace map, but rather just districts that you can travel to and "walk the streets" (an action) to discover new stuff (can also be helped by skills later). Locations can hold certain specific markets (selling certain items), places where you can get treatment (heal HP/max HP, heal neural damage/SI etc), get cyber implants or augmentations etc. There can also be "random events" and quest chains in the city. And, of course, fighting NPCs (and even PVP later once we figure that out). Maybe heists/robberies/missions (similar to runs on a node but more demanding).
 

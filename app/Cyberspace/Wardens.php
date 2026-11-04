@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Wardens (CYBERSPACE.md, *Wardens*), and the only writer of `wardens`.
+ * Wardens (docs/CYBERSPACE.md, *Wardens*), and the only writer of `wardens`.
  *
  * A Warden is a hunter that lives in a subnet: it stands on the grid, takes one random step a minute, and when a runner comes
  * within its reach (1 or 2 steps, by grade) it makes a check against the runner's Stealth. A runner who fails it is attacked at

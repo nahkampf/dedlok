@@ -15,7 +15,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * The numbers a fight reads: aim and weapon damage per weapon class, and defence. COMBAT.md.
+ * The numbers a fight reads: aim and weapon damage per weapon class, and defence. docs/COMBAT.md.
  */
 final class CombatStatsTest extends TestCase
 {

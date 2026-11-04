@@ -41,7 +41,7 @@ use Tests\Support\QueueDice;
 use Tests\TestCase;
 
 /**
- * A fight as a stored thing, played a round at a time against a real character. COMBAT.md, step 4.
+ * A fight as a stored thing, played a round at a time against a real character. docs/COMBAT.md, step 4.
  *
  * The dice are pinned: an NPC aim of 99 makes the enemy's every shot Dead-on at a die of 0.0, and the
  * player (aim near 13 against a defence of 0) is Dead-on at the same. A body die of 0.5 is the right leg.

@@ -7,7 +7,7 @@ use App\Models\Skill;
 use Illuminate\Database\Migrations\Migration;
 
 /**
- * THE CODE CRAFTING SKILLS (CRAFTING.md). Code Crafting gates crafting in general and shortens every build; each kind of program has
+ * THE CODE CRAFTING SKILLS (docs/CRAFTING.md). Code Crafting gates crafting in general and shortens every build; each kind of program has
  * its own gate that also shortens builds of that kind. All on the market, category "Code Crafting". The per-level grants are the usual
  * five modifiers; the gate levels are `config/crafting.php`.
  */

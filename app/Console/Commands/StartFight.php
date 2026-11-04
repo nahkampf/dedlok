@@ -13,7 +13,7 @@ use Illuminate\Console\Command;
 /**
  * Open a fight between a character and an opponent from the editor.
  *
- * The only caller of `Fights::open()` until encounters can start one (COMBAT.md, step 5), the way
+ * The only caller of `Fights::open()` until encounters can start one (docs/COMBAT.md, step 5), the way
  * `flag:set` was the only writer of a flag until quests existed. It opens the fight and nothing more:
  * the character is then locked into it until it is settled, and plays it on the fight screen.
  */

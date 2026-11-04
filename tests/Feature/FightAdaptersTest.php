@@ -27,7 +27,7 @@ use Tests\TestCase;
 
 /**
  * What turns a character or a description into the engine's snapshot, and what answers for
- * resistance. COMBAT.md, *The engine's shape*.
+ * resistance. docs/COMBAT.md, *The engine's shape*.
  */
 final class FightAdaptersTest extends TestCase
 {

@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
  * from something else the character has, so both are computed on every read.
  * This is the other kind: a thing that happened TO somebody and stayed.
  *
- * MECHANICS.md is the contract. The row names a DEFINITION rather than
+ * docs/MECHANICS.md is the contract. The row names a DEFINITION rather than
  * carrying arithmetic, because the arithmetic is mechanics and mechanics live
  * in config — `config/effects.php` for causes with no row of their own, and a
  * `modifiers` JSON column for anything that has one.

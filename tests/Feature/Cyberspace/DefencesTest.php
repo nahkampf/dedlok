@@ -65,7 +65,7 @@ final class DefencesTest extends TestCase
         $this->assertGreaterThan(0, $relay->idsDetection, 'a relay always watches');
         $this->assertGreaterThan(0, $relay->tracerDetection, 'and always traces');
 
-        // The machine CYBERSPACE.md means by "a system with no IDS but with ICE
+        // The machine docs/CYBERSPACE.md means by "a system with no IDS but with ICE
         // is a real and ordinary thing". Its ICE is certain and unbuilt; what
         // is left to chance is the thing that would have noticed you.
         $compute = Defences::roll(SystemType::Compute, 5, $never);

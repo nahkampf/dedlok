@@ -22,7 +22,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Rounds in a weapon. COMBAT.md.
+ * Rounds in a weapon. docs/COMBAT.md.
  *
  * The magazine is a fact about one COPY of a weapon, so it lives on the inventory row. Rounds
  * come off the loose pile and go back to it, and no door that takes a weapon away loses them.

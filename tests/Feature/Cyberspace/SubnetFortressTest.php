@@ -28,7 +28,7 @@ use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
 /**
- * Subnet fortresses (CYBERSPACE.md, *Subnet fortresses*): the certificate that lets one be founded, and Secure Tunnelling.
+ * Subnet fortresses (docs/CYBERSPACE.md, *Subnet fortresses*): the certificate that lets one be founded, and Secure Tunnelling.
  */
 final class SubnetFortressTest extends TestCase
 {

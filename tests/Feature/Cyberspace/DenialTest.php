@@ -25,7 +25,7 @@ use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
 /**
- * Denial runs (CYBERSPACE.md, *Denial*): flood a node with bandwidth until it locks down.
+ * Denial runs (docs/CYBERSPACE.md, *Denial*): flood a node with bandwidth until it locks down.
  */
 final class DenialTest extends TestCase
 {

@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
  *
  * ## One rule, and the triggers are instances of it
  *
- * CYBERSPACE.md's table lists four — the IDS fired, the ICE activated, burn,
+ * docs/CYBERSPACE.md's table lists four — the IDS fired, the ICE activated, burn,
  * the third raid — and says the single rule underneath is *the machine found
  * out*. Two of those collapse into one question here, because **the ICE can
  * only have activated if something noticed**: detection is what wakes it, so

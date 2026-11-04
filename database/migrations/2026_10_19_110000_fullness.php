@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/** Fullness, and what a meal at a safehouse is worth (FATIGUE.md, *Food and fullness*). */
+/** Fullness, and what a meal at a safehouse is worth (docs/FATIGUE.md, *Food and fullness*). */
 return new class extends Migration
 {
     public function up(): void

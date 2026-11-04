@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Combat;
 
 /**
- * Recoil. COMBAT.md, *Burst and automatic fire*.
+ * Recoil. docs/COMBAT.md, *Burst and automatic fire*.
  *
  * A weapon's `rate` is how many shots one Attack fires, and each is its own attack. The first uses
  * the full chance; every later shot in the same action is `burst_falloff` (7%) worse than the one

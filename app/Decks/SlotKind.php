@@ -33,7 +33,7 @@ enum SlotKind: string
      *
      * Not memory. Memory is what a program occupies while it RUNS; storage is
      * what a file costs by existing, and the two are separate measures for the
-     * reason a deck can be full without being busy. See CYBERSPACE.md.
+     * reason a deck can be full without being busy. See docs/CYBERSPACE.md.
      */
     case Storage = 'storage';
 

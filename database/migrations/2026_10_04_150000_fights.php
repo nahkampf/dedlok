@@ -7,7 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * A fight, as a durable row. COMBAT.md, step 4 — the first step that writes to the game.
+ * A fight, as a durable row. docs/COMBAT.md, step 4 — the first step that writes to the game.
  *
  * `runs` and `hunts`' own reason: a fight is interactive, so the middle of one has to survive between
  * requests. `characters.current_fight_id` is what "in a fight" means (a column, like

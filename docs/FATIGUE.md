@@ -123,7 +123,7 @@ Both touch `character_doses`, `DrugTaker`, tolerance and overdose, so they need 
 6. **Safehouse foundation, only what the wake-up needs.** `safehouses` (types: title, description, rent, security, stealth, actions list; all on the row), attachment to districts, `characters.safehouse_id` nullable (NULL means the fallback), a minimal admin editor, and the **cardboard box authored by migration and attached to Knightsbridge Projects**. No renting, rent, storage or actions yet. `Traveller::relocate()` is the free move.
 7. **Collapse.** Waiting room gets a second cause with its own heading and text. On reaching the maximum: jack out, damage (20% of HP or SI by what you were doing, `DamageOrigin::Exhaustion`, through `DamageResolver`), mugging check (20%, skipped when `Safety` says yes, which it never does yet), relocate to the safehouse district, Exhausted applied, down 2 minutes, wake at 95%, `checkFloor()` asked. Tests for each branch, with the dice injected.
 8. **Screens.** The topbar dial (`data-hot-high`, yellow at 75%, ember at 90%), a character-sheet meter with `.meter__mark` ticks at both breakpoints, the strings under `config/strings.php`, the creation screen's maximum.
-9. **Docs.** `CLAUDE.md` section, `MECHANICS.md` status row, `CHANGELOG.md`, `PATCHNOTES.md`.
+9. **Docs.** `CLAUDE.md` section, `docs/MECHANICS.md` status row, `CHANGELOG.md`, `PATCHNOTES.md`.
 
 Step 6 is the one that grows: it pulls a slice of safehouses into phase 1, and everything else about them (renting, rent, the district button, storage, actions, losing one) is its own phase after it.
 

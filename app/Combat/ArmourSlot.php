@@ -7,7 +7,7 @@ namespace App\Combat;
 use App\Support\Text;
 
 /**
- * Where on the body a hit lands and a piece of armour is worn. COMBAT.md.
+ * Where on the body a hit lands and a piece of armour is worn. docs/COMBAT.md.
  *
  * Six places, a fixed vocabulary: one head, one torso, two arms, two legs. NOT
  * `Implants\BodyRegion`, which counts how many implants a region holds at a coarser

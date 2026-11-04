@@ -19,7 +19,7 @@ use Illuminate\Console\Command;
 /**
  * Plays N fights of a real character's loadout against a described opponent and prints how it goes.
  *
- * The balance tool COMBAT.md promised BEFORE the content: the numbers (aim, damage, hit points, the
+ * The balance tool docs/COMBAT.md promised BEFORE the content: the numbers (aim, damage, hit points, the
  * tier spread) are unmeasured, and the design is the ratios — a fight of 4–10 rounds that costs a
  * fifth to most of a character's hit points. It reads the character and writes NOTHING; the opponent
  * comes from options because NPCs are not a table yet. The enemy goes first, as in an encounter.

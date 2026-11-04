@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * What a Data Fortress's running Decryptors and Assemblers make (CYBERSPACE.md, *Production*).
+ * What a Data Fortress's running Decryptors and Assemblers make (docs/CYBERSPACE.md, *Production*).
  *
  * **A Decryptor** takes the oldest Encrypted Data Dump in its type's input area and, one cycle later, turns it into a component in
  * the output area: deterministic, no roll, and the component is picked exactly as a player's decryption picks one

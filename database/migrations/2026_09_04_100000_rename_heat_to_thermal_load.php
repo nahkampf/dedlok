@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Schema;
  * where hot can only mean temperature.
  *
  * Done NOW, before cyberspace is built, because a stat id is permanent the
- * moment a stored modifier references one — and the whole of CYBERSPACE.md is
+ * moment a stored modifier references one — and the whole of docs/CYBERSPACE.md is
  * about to reference these.
  *
  * The two CHECK constraints have to come off before the rename and go back on

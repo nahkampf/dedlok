@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Combat\Fight;
 
-/** What a side can do with its turn. COMBAT.md, *Actions*. */
+/** What a side can do with its turn. docs/COMBAT.md, *Actions*. */
 enum ActionKind: string
 {
     case Attack = 'attack';

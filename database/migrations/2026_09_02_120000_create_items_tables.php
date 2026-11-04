@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * Definitions live in the database, the same deliberate exception the skills
  * tables took and for the same reasons: there will be hundreds, the market has
- * to query them, and an imprint has to point at a skill row. MECHANICS.md's
+ * to query them, and an imprint has to point at a skill row. docs/MECHANICS.md's
  * "item definitions live in config/items.php" is superseded by this decision.
  *
  * Two inventories, not one. `container` says which a definition belongs to,

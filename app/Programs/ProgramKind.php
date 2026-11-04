@@ -14,7 +14,7 @@ use App\Support\Text;
  * amount of bonuses adds up to having one. So this is not decoration and it is
  * not derivable from the modifiers a program happens to carry.
  *
- * These are the kinds CYBERSPACE.md actually names work for. A sixth is a case
+ * These are the kinds docs/CYBERSPACE.md actually names work for. A sixth is a case
  * here, a line in the schema's CHECK, and a string — the same shape
  * App\Decks\Hardware has.
  */

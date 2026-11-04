@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Mood: a stored figure, moved by events, drifting to 0, with bands that grant effects. TODO.md, *Mood*.
+ * Mood: a stored figure, moved by events, drifting to 0, with bands that grant effects. docs/TODO.md, *Mood*.
  */
 final class MoodTest extends TestCase
 {

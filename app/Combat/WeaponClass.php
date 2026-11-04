@@ -7,7 +7,7 @@ namespace App\Combat;
 use App\Support\Text;
 
 /**
- * Which SKILL aims a weapon, and which hand it fills. COMBAT.md.
+ * Which SKILL aims a weapon, and which hand it fills. docs/COMBAT.md.
  *
  * Not what it DOES: that is its damage profile, a separate question (a stun baton is a
  * `blunt` weapon that deals blunt and electrical damage). The class decides two things — the

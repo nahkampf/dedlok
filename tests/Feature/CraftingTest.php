@@ -20,7 +20,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
-/** Code Crafting (CRAFTING.md): components and a design, over time, into a Script. */
+/** Code Crafting (docs/CRAFTING.md): components and a design, over time, into a Script. */
 final class CraftingTest extends TestCase
 {
     use CarriesAWorkingDeck, RefreshDatabase;

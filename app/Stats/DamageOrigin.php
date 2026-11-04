@@ -19,7 +19,7 @@ use App\Support\Text;
  * ONE CASE PER CAUSE, and a cause earns a case by existing in the world rather
  * than by being imaginable. (The eight DAMAGE TYPES below are the one exception:
  * they exist before anything deals them, because physical combat is designed in
- * COMBAT.md and armour, implants and drugs resist them from the day it is worn.) There is no vocabulary here for falling off a
+ * docs/COMBAT.md and armour, implants and drugs resist them from the day it is worn.) There is no vocabulary here for falling off a
  * building, because nothing in this game falls off anything yet. A seventh
  * origin is a case, a string, and nothing else — every stat that needs it is
  * generated from this list by App\Stats\DamageStats.
@@ -40,7 +40,7 @@ enum DamageOrigin: string
 
     /**
      * A module cooked itself mid-run and took the machine down with it.
-     * CYBERSPACE.md, *Burning out a module ends the run*; nothing deals it
+     * docs/CYBERSPACE.md, *Burning out a module ends the run*; nothing deals it
      * yet, because nothing runs a deck over time.
      */
     case Burnout = 'burnout';
@@ -91,7 +91,7 @@ enum DamageOrigin: string
 
     /*
      * THE DAMAGE TYPES — what KIND of hurt a weapon does, which is the axis armour,
-     * plating, a skill or a painkiller is written against. COMBAT.md.
+     * plating, a skill or a painkiller is written against. docs/COMBAT.md.
      *
      * A hit is split across them by the weapon's profile, and each part resolves on
      * its own, so a vest that stops a round and does nothing against a blade falls

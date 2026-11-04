@@ -23,7 +23,7 @@ use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
 /**
- * The Eject attack tag (CYBERSPACE.md, *Subnets*, step 5).
+ * The Eject attack tag (docs/CYBERSPACE.md, *Subnets*, step 5).
  */
 final class EjectTest extends TestCase
 {

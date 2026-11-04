@@ -4,7 +4,7 @@ The physical half of the game: districts, the places in them, and what happens t
 You are in the City or you are jacked in, and a character can be jacked in while their
 body stands in a district.
 
-Read MECHANICS.md first for anything that produces a number. Every duration, chance and
+Read docs/MECHANICS.md first for anything that produces a number. Every duration, chance and
 modifier named here resolves through the one resolver, and none of the arithmetic lives
 in this file.
 
@@ -286,7 +286,7 @@ story needs new PHP, the outcome vocabulary has leaked; fix the vocabulary.
 
 **`damage` can empty a resource**, so a choice that dealt any asks `WaitingRoom::checkFloor()`
 last. A deleted item or entity cascades its outcome away. **A fight is not an outcome**: an outcome cannot
-lead anywhere. It is a kind of CHOICE (`COMBAT.md`, *From an encounter*), with a win, a loss and a nobody-won
+lead anywhere. It is a kind of CHOICE (`docs/COMBAT.md`, *From an encounter*), with a win, a loss and a nobody-won
 screen, and a reward is the win screen's own arrival outcomes.
 
 **A dose is grant-then-take**, in the runner's own transaction. `DrugTaker::take()` takes an
@@ -357,7 +357,7 @@ A settle that opens one adds an `encounter_waiting` message, which the sweep sen
 **An encounter may carry prerequisites: a list of conditions that must ALL hold before it can be drawn, and the
 list may be empty.** An empty list is today's behaviour exactly. This is the same question `required_flag` and
 `once` already answer for one thing each, made general, so that an encounter can wait for a flag set AND ten scan
-files AND a skill level. It applies to every realm and door (`ENCOUNTERS_GRID.md` shares it).
+files AND a skill level. It applies to every realm and door (`docs/ENCOUNTERS_GRID.md` shares it).
 
 - **Eligibility, never a roll.** A prerequisite is judged where the pool is built (`Encounters::open()`): an
   encounter with an unmet one is not in the pool, so it neither spawns nor dilutes the draw. A `place` or `spot`
@@ -408,11 +408,11 @@ A fight outcome; per-district danger; any seeded content.
    stats, the pod fare.
 3. **Shops and clinics.** *(built)*
 4. **Narrative encounters**, spawned by travel and explore and fixed at locations. *(built)*
-5. **Physical combat** — *built through `COMBAT.md`'s step 6 (a fight can start from an encounter; a win pays, a loss mugs). The balance pass is not done.*
+5. **Physical combat** — *built through `docs/COMBAT.md`'s step 6 (a fight can start from an encounter; a win pays, a loss mugs). The balance pass is not done.*
 6. **Hooks.** Authored quests that set flags, hunters on the street, PvP.
 
 ## Not decided
 
 - Whether a district can itself be hidden. Every district is on the map for now.
-- What a bounty collected in the City looks like. Parked 2026-10-06 until PvP is designed: full payout and a per-pair cooldown, and a *safe house* a target can hide in (the mirror of a cyberspace data fortress). See `TODO.md`.
-- Housing, investments and crafting (TODO.md's list).
+- What a bounty collected in the City looks like. Parked 2026-10-06 until PvP is designed: full payout and a per-pair cooldown, and a *safe house* a target can hide in (the mirror of a cyberspace data fortress). See `docs/TODO.md`.
+- Housing, investments and crafting (docs/TODO.md's list).

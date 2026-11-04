@@ -8,7 +8,7 @@ use App\Combat\WeaponClass;
 
 /**
  * The numbers a fight reads, generated from the weapon classes the way `DamageStats` is generated
- * from the damage vocabularies. COMBAT.md, *The numbers are stats*.
+ * from the damage vocabularies. docs/COMBAT.md, *The numbers are stats*.
  *
  *   aim.<class>           a POOL: how well somebody puts a shot where they mean to. Read through a
  *                         Sheet (`Character::stat()`); outside one a pool is zero.

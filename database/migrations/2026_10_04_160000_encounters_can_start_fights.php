@@ -7,7 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * A FIGHT CHOICE: a button that opens a fight and sends the player on by how it ends. COMBAT.md,
+ * A FIGHT CHOICE: a button that opens a fight and sends the player on by how it ends. docs/COMBAT.md,
  * step 5.
  *
  * A choice names an opponent and three destinations — where to go on a win, a loss, and when the fight

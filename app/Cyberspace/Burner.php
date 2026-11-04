@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
  * takes one, so the grid's empty reserve is untouched. A burn is the other
  * thing entirely — the machine is gone, its address goes out of existence with
  * it, and the position it held is simply empty until something new is seeded
- * there. CYBERSPACE.md: *dead, then empty, then eventually something new*.
+ * there. docs/CYBERSPACE.md: *dead, then empty, then eventually something new*.
  *
  * ## Why it is not `Lockdown::shut()` either
  *

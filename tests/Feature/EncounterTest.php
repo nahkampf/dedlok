@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * Narrative encounters, end to end. CITY.md, *Encounters*.
+ * Narrative encounters, end to end. docs/CITY.md, *Encounters*.
  *
  * Both dice are pinned: the spawn die (`Encounters`, integers) and the check die
  * (`CheckRoller`, a float in [0, 1)).

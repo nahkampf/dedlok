@@ -497,7 +497,7 @@ class ItemRequest extends FormRequest
             'produce_strength' => $isProgram ? ['nullable', 'numeric', 'min:0', 'max:1000'] : ['prohibited'],
 
             /*
-             * A DESIGN (CRAFTING.md): plain data with a recipe. The product must be a program of a kind somebody can be taught to build,
+             * A DESIGN (docs/CRAFTING.md): plain data with a recipe. The product must be a program of a kind somebody can be taught to build,
              * and every line names a data item. A line's filters are all optional.
              */
             'design_product' => $hardware !== null || $isProgram || $isImprint || $isGear || $isDrug || $this->filled('implant_region')

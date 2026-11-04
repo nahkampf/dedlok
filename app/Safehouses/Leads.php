@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Finding another player's home, working out who lives there, and getting into it. FATIGUE.md, *Raiding and burning*.
+ * Finding another player's home, working out who lives there, and getting into it. docs/FATIGUE.md, *Raiding and burning*.
  * The only writer of `safehouse_leads` and of a stakeout's or a scouting's activity row.
  *
  * A pass of exploring may SENSE one (`discover()`): a random held home in the district the character has no lead on. The

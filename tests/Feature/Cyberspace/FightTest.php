@@ -816,7 +816,7 @@ final class FightTest extends TestCase
     /**
      * AND A FORCED EGRESS CAN BE HELD, which is the honest consequence of
      * leaving being a roll: a threshold is an instruction to TRY to leave, not
-     * a door that opens. CYBERSPACE.md says as much — retreat can fail and
+     * a door that opens. docs/CYBERSPACE.md says as much — retreat can fail and
      * cost a turn — so the run carries on and the mark fires again next turn.
      */
     public function test_a_forced_egress_can_fail(): void

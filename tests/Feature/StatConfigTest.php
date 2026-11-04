@@ -7,7 +7,7 @@ use App\Stats\StatRegistry;
 use Tests\TestCase;
 
 /**
- * The drift check MECHANICS.md asks for: config/stats.php and the Character
+ * The drift check docs/MECHANICS.md asks for: config/stats.php and the Character
  * model must agree, or a new attribute silently becomes unmodifiable.
  */
 class StatConfigTest extends TestCase

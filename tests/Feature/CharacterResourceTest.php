@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 /**
  * Resources are stored state bounded by a derived maximum. The rule from
- * MECHANICS.md is clamp DOWN, never scale: losing a source of max HP must not
+ * docs/MECHANICS.md is clamp DOWN, never scale: losing a source of max HP must not
  * heal you, and must not leave you above your own ceiling either.
  */
 class CharacterResourceTest extends TestCase

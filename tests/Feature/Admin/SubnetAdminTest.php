@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * The Subnets screen and subnet generation (CYBERSPACE.md, *Subnets*, step 4).
+ * The Subnets screen and subnet generation (docs/CYBERSPACE.md, *Subnets*, step 4).
  */
 final class SubnetAdminTest extends TestCase
 {

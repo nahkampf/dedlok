@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * A collapse waits for a safe moment. Reaching the maximum only flags it; the next request (or the minute sweep)
- * collapses the character, so it never fires from inside a travel loop, a run turn or a fight round. FATIGUE.md.
+ * collapses the character, so it never fires from inside a travel loop, a run turn or a fight round. docs/FATIGUE.md.
  */
 return new class extends Migration
 {

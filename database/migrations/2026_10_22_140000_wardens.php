@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/** Wardens (CYBERSPACE.md, *Wardens*): hunters that live in a subnet, walk it, and attack whoever they notice. */
+/** Wardens (docs/CYBERSPACE.md, *Wardens*): hunters that live in a subnet, walk it, and attack whoever they notice. */
 return new class extends Migration
 {
     public function up(): void
