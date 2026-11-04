@@ -131,7 +131,7 @@ final class StealthTest extends TestCase
          * 9.41176…, not the 9.4 the sheet displays, so the percentage is taken
          * over 15.41176 rather than over 15.4. Rounding the base first and then
          * modifying it would break the commutativity the whole resolver design
-         * rests on; see MECHANICS.md.
+         * rests on; see docs/MECHANICS.md.
          */
         $this->assertSame(17.5, $character->fresh()->stat('stealth')->value, '15.41176 and 13.5% of it');
     }

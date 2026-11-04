@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The components a decrypted file can become (`cyberspace.decryption.components`, CRAFTING.md). Like the Memory Dump they are
+ * The components a decrypted file can become (`cyberspace.decryption.components`, docs/CRAFTING.md). Like the Memory Dump they are
  * created here and never stocked or bought: a row is found, in the `extracted_file` JSON a dump already carries, and keeps
  * where it came from. Unstackable on purpose: each carries its own size, price and origin.
  *

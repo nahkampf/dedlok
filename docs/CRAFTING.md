@@ -1,4 +1,4 @@
-# CRAFTING.md — Code Crafting
+# docs/CRAFTING.md — Code Crafting
 
 Status: **steps 1-4 built 2026-10-08 (unreleased); ICE shredding and the balance pass are not.** Decided with the author in conversation; do not re-ask.
 

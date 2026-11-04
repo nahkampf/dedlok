@@ -11,7 +11,7 @@ use App\Models\System;
 use Illuminate\Support\Facades\Config;
 
 /**
- * Who a main-grid gateway lets through (`systems.entry_rules`, CYBERSPACE.md, *Subnets*).
+ * Who a main-grid gateway lets through (`systems.entry_rules`, docs/CYBERSPACE.md, *Subnets*).
  *
  * A list of rules, ANY ONE of which passes; none listed is an open door. A rule is `{"kind": "flag", "flag": "subnet_mil_access"}`
  * today and `infiltrate` (a completed Infiltrate run against THIS gateway, ended within `cyberspace.infiltrate.window_minutes`: the

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Config;
  * The row says *this character has neural damage*; the definition says what
  * neural damage IS — which stat it moves, in which direction, how instances of
  * it combine, and whether it can be shown to the player. Mechanics in config,
- * instances in the database, exactly as MECHANICS.md splits everything else.
+ * instances in the database, exactly as docs/MECHANICS.md splits everything else.
  *
  * ONLY FOR CAUSES WITH NO ROW OF THEIR OWN. An implant, a program and an
  * archetype perk all carry their modifiers as JSON on the row they already

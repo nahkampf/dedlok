@@ -607,7 +607,7 @@ return [
         ],
     ],
 
-    // The Assessor (ASSESSOR.md). Drafted by Claude: rewrite freely. `unknown` is the author's own mark.
+    // The Assessor (docs/ASSESSOR.md). Drafted by Claude: rewrite freely. `unknown` is the author's own mark.
     'assessor' => [
         'unknown' => '[???]',
         'percent' => ':chance%',
@@ -1371,7 +1371,7 @@ return [
         | with rather than anything a player reads today.
         */
         /*
-        | What a scan asks about a machine. Everything CYBERSPACE.md says a
+        | What a scan asks about a machine. Everything docs/CYBERSPACE.md says a
         | scan catalogues is here, including the four nothing can read yet —
         | see App\Cyberspace\ScanFact for why they are listed rather than
         | hidden.
@@ -2490,7 +2490,7 @@ return [
     | Physical combat
     |--------------------------------------------------------------------------
     |
-    | Armour, worn per body part. COMBAT.md. Every player-visible string is here, or on the
+    | Armour, worn per body part. docs/COMBAT.md. Every player-visible string is here, or on the
     | row it belongs to (an item's name and flavour).
     */
     'combat' => [
@@ -3175,7 +3175,7 @@ return [
             'trace_hop_chance' => 'chance a trace hops',
             'ensnare_reduction' => 'ensnare time',
             'fortress_slots' => 'fortress slots',
-            // The combat numbers (COMBAT.md), named so an implant or a drug that moves one can say what
+            // The combat numbers (docs/COMBAT.md), named so an implant or a drug that moves one can say what
             // it changes on a card, and so the modifier picker offers them. Per weapon class, plus the
             // two tag sets that reach every class at once.
             'defence' => 'Defence',
@@ -3272,7 +3272,7 @@ return [
             'damage' => 'damage taken',
             'damage+hitpoints' => 'physical damage taken',
             'damage+synaptic_integrity' => 'neural damage taken',
-            // The damage TYPES (COMBAT.md), named so a vest's card says what it resists and the
+            // The damage TYPES (docs/COMBAT.md), named so a vest's card says what it resists and the
             // modifier picker can offer "all kinetic" at all: a tag set nobody has named cannot be
             // picked. Per type and resource, and each family as a whole.
             'damage+kinetic' => 'kinetic damage taken',
@@ -3441,7 +3441,7 @@ return [
         'fatigue_hint' => 'Fatigue one meal removes.',
     ],
 
-    // Where you live: renting one, and what it offers. FATIGUE.md, *Safehouses*.
+    // Where you live: renting one, and what it offers. docs/FATIGUE.md, *Safehouses*.
     'safehouse' => [
         'title' => 'Your safehouse',
         'get' => 'Get a safehouse here',

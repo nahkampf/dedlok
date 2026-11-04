@@ -43,10 +43,10 @@ use Illuminate\Support\Facades\DB;
  *
  * READINESS IS THE GATE AND IT IS CHECKED HERE. `DeckTotals::isReady()` is the
  * whole of it — compute, memory, link, power, and draw within supply — and
- * there is no second list. CYBERSPACE.md names one more caller, the start of
+ * there is no second list. docs/CYBERSPACE.md names one more caller, the start of
  * every intrusion run, which does not exist yet.
  *
- * What this deliberately does NOT do is lock the deck. CYBERSPACE.md wants
+ * What this deliberately does NOT do is lock the deck. docs/CYBERSPACE.md wants
  * fitting, stripping, unequipping and destroying refused while a character is
  * jacked in, and those are rules belonging to ModuleFitter, DeckEquipper and
  * the destroy path — three writers enforcing one rule, each in its own place.

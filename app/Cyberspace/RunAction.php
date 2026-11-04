@@ -52,7 +52,7 @@ enum RunAction: string
     /**
      * Destroy the machine.
      *
-     * TOUCHES THE CORE, and CYBERSPACE.md names it first in the list that does
+     * TOUCHES THE CORE, and docs/CYBERSPACE.md names it first in the list that does
      * — "burning, extracting, backdooring, injecting". Available on a
      * `RunPurpose::Burn` run and silently wasted on any other, the same rule
      * the other two purposed actions follow.

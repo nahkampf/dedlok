@@ -321,7 +321,7 @@
         </details>
     @endif
 
-    {{-- CRAFTING (CRAFTING.md): builds in their slots, and the designs held. The clock runs only while this deck is ready. --}}
+    {{-- CRAFTING (docs/CRAFTING.md): builds in their slots, and the designs held. The clock runs only while this deck is ready. --}}
     @if ($crafting !== null)
         @php($craftingOpen = $crafting['crafts']->isNotEmpty() || $crafting['plans'] !== [])
         <details class="panel" style="margin-top:var(--s-5)" {{ $craftingOpen ? 'open' : '' }}>

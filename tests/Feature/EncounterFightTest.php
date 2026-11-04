@@ -36,7 +36,7 @@ use Tests\Support\QueueDice;
 use Tests\TestCase;
 
 /**
- * A fight started by an encounter's button, and where it takes the player when it ends. COMBAT.md, step 5.
+ * A fight started by an encounter's button, and where it takes the player when it ends. docs/COMBAT.md, step 5.
  *
  * A fight choice names an opponent and three destinations — win, lose, and nobody winning — and the
  * encounter row STAYS while the fight is live. Rewards are the arrival outcomes of the win screen.

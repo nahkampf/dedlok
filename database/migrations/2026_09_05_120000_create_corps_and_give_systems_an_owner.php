@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Schema;
  * A system has always had a name; what it has not had is an OWNER, and the two
  * are different things. The name is what the machine calls itself; the owner is
  * who answers for it — and the owner is the half that other systems will one
- * day care about. CYBERSPACE.md already hangs three things off it: a completed
+ * day care about. docs/CYBERSPACE.md already hangs three things off it: a completed
  * trace costs you standing with the owner's faction, a player node is owned by
  * the player, and names are meant to combine by owner as well as by type.
  *
@@ -25,10 +25,10 @@ use Illuminate\Support\Facades\Schema;
  *
  * THEY ARRIVE BY MIGRATION, like the archetype roster and for the same reason.
  * A seeder holding this list would be a second source for content the table
- * owns, and the one that wins on a re-seed. WORLDBUILDING.md is where a human
+ * owns, and the one that wins on a re-seed. docs/WORLDBUILDING.md is where a human
  * edits the roster; a new corp is a new migration until there is an editor.
  *
- * The eight named manufacturers at the top of WORLDBUILDING.md are deliberately
+ * The eight named manufacturers at the top of docs/WORLDBUILDING.md are deliberately
  * NOT here. They exist to brand hardware — a Kurogane deck, a Hosaka deck — and
  * making them node owners as well would conflate who BUILT a thing with who
  * RUNS it. Easy to add later if the world wants it; hard to unpick afterwards.
@@ -36,7 +36,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * The roster, straight out of WORLDBUILDING.md.
+     * The roster, straight out of docs/WORLDBUILDING.md.
      *
      * @return list<array{string, string}>
      */

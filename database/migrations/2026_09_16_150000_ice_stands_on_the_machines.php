@@ -40,7 +40,7 @@ return new class extends Migration
      * Synaptic Integrity a turn against a starting character's 31 — dangerous
      * over a long fight and survivable, which is what the bottom of the grid is
      * for. ICE XII lands 95% of the time for 57, so it takes somebody at 200 SI
-     * down in four turns, which is CYBERSPACE.md's "a grade 9 can flatline
+     * down in four turns, which is docs/CYBERSPACE.md's "a grade 9 can flatline
      * someone at 200 SI" arriving exactly.
      *
      * INTEGRITY IS THE NUMBER TO EXPECT TO MOVE. A fight is meant to run 2-10

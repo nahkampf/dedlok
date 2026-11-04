@@ -18,7 +18,7 @@ use Tests\TestCase;
 final class FlatlineLevelTest extends TestCase
 {
     /**
-     * NOT A FIFTH. CYBERSPACE.md: an event taking 20% of somebody's ceiling
+     * NOT A FIFTH. docs/CYBERSPACE.md: an event taking 20% of somebody's ceiling
      * would end characters rather than mark them, and the design leans on
      * accumulation instead — the fourth flatline is the one that matters.
      *

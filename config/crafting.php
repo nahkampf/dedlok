@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
-| CODE CRAFTING (CRAFTING.md): components and a Design, over time, into a program.
+| CODE CRAFTING (docs/CRAFTING.md): components and a Design, over time, into a program.
 */
 return [
 

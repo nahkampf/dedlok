@@ -39,7 +39,7 @@ use Illuminate\Support\Facades\DB;
  *
  * ## Retiring is relocation, and there is no lockdown yet
  *
- * CYBERSPACE.md has the machine lock down and then relocate when the lockdown
+ * docs/CYBERSPACE.md has the machine lock down and then relocate when the lockdown
  * ends. **The lockdown WINDOW is not built** — it has three other triggers
  * (the IDS fired, the ICE activated, burn) which all want the same state, the
  * same duration and the same map treatment, and inventing a private version of
@@ -93,7 +93,7 @@ final readonly class RaidLedger
      * because the lockdown window had nowhere to live and a counter that did
      * nothing at three would have been a counter that did nothing. Now
      * `App\Cyberspace\Lockdown` asks this and shuts the machine, and the move
-     * happens when the window closes — which is what CYBERSPACE.md described
+     * happens when the window closes — which is what docs/CYBERSPACE.md described
      * all along.
      *
      * That also retired the compromise this class used to carry: a machine was

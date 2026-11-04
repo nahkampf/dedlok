@@ -18,7 +18,7 @@ use Illuminate\Validation\Validator;
  * `skills.modifiers` and `archetype_perks.modifiers` — and until now every one
  * of them was authored by hand: a textarea in the item editor, and a migration
  * for everything else. That is a content pipeline that only a programmer can
- * use, for the half of the game MECHANICS.md insists must be DATA.
+ * use, for the half of the game docs/MECHANICS.md insists must be DATA.
  *
  * So the shape is here once, and the screens hand it a field name. What it
  * knows:

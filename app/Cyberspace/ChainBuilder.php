@@ -17,7 +17,7 @@ use Illuminate\Support\Collection;
  *
  * ## Nobody picks a chain
  *
- * CYBERSPACE.md says the chain is declared per run rather than held standing,
+ * docs/CYBERSPACE.md says the chain is declared per run rather than held standing,
  * and the first reading of that was a picker: a screen where a player chooses
  * which of their backdoors to put on the table. There is nothing to choose.
  * Every routing backdoor a character holds is free to use, costs nothing to

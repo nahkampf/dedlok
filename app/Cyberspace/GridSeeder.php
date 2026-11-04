@@ -298,7 +298,7 @@ final class GridSeeder
          * The trade is memory for round trips, bounded by the size of the
          * grid. That is comfortable while the world is materialised, and the
          * design already says it stops being materialised long before the
-         * memory matters — see CYBERSPACE.md, *How the grid is stored*.
+         * memory matters — see docs/CYBERSPACE.md, *How the grid is stored*.
          */
         $takenPositions = $this->grid->occupiedPositions();
         $takenAddresses = array_fill_keys(System::query()->pluck('address')->all(), true);

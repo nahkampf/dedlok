@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * A POSITION IS NOT RESUMED. Jacking out clears it and every jack-in arrives
  * at the portal, because the design's answer to "how do I get back to the
- * frontier" is a bookmark rather than a saved coordinate — see CYBERSPACE.md,
+ * frontier" is a bookmark rather than a saved coordinate — see docs/CYBERSPACE.md,
  * *Discovery*. That is also why there is no `jacked_in_at` here: nothing reads
  * one yet, and the trace is the feature that will want to know when a session
  * began. It can add the column it needs when it needs it.

@@ -87,7 +87,7 @@ return [
     | Fatigue: Tired, Drained, Exhausted
     |--------------------------------------------------------------------------
     |
-    | What a body does when it is spent (FATIGUE.md). `App\Characters\Fatigue` is the only thing that writes these rows:
+    | What a body does when it is spent (docs/FATIGUE.md). `App\Characters\Fatigue` is the only thing that writes these rows:
     | Tired at 75% of the maximum, Drained at 90% (and it REPLACES Tired, one row at a time), Exhausted from a collapse
     | until fatigue is under 50%. `config/fatigue.php` lists the three keys, and `fatigue_max` is resolved WITHOUT them so
     | a lower attribute cannot lower the ceiling it is judged against.

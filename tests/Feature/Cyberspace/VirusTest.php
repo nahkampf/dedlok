@@ -27,7 +27,7 @@ use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
 /**
- * The Virus attack tag (CYBERSPACE.md, *Virus*).
+ * The Virus attack tag (docs/CYBERSPACE.md, *Virus*).
  */
 final class VirusTest extends TestCase
 {

@@ -8,7 +8,7 @@ use App\Support\Points;
 
 /**
  * What one hit does, before resistance: the damage the weapon (and its round) resolved to, scaled
- * by the tier it landed on, split across damage types by the profile. COMBAT.md, steps 3 and 4.
+ * by the tier it landed on, split across damage types by the profile. docs/COMBAT.md, steps 3 and 4.
  *
  * Each part is `amount × share / 100` to two decimals and a part that comes to nothing is dropped, so
  * the parts can sum to a hundredth more or less than the whole and the sum is what lands. A part goes to

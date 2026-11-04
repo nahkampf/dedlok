@@ -1,4 +1,4 @@
-# MECHANICS.md
+# docs/MECHANICS.md
 
 How numbers work in this game: what a stat is, what can change one, and the
 recipe for adding items, skills and effects without touching the maths.
@@ -42,13 +42,13 @@ down so the implementation has something to be checked against.
 | `scan_duration`, `program_threads` — how long a read takes, and how many copies of one program run at once | **built** as resolved stats; Multithreading raises the second, and `programs.multithreaded` decides whether it may exceed one at all |
 | Derived stats reading RESOLVED inputs rather than columns | **built**; it was the other way round until the graph landed |
 | `current_hitpoints`, `current_synaptic_integrity` as resources | **built**, with clamping. Reaching zero puts a character in the waiting room (`WaitingRoom::checkFloor()`) |
-| Fatigue — third resource, breakpoints (Tired/Drained), collapse | **built** — `App\Characters\Fatigue`, `Collapse`, `fatigue_max` formula (6 Focus + 6 Meat + Social) resolved without the fatigue effects, `fatigue_recovery`, `fatigue_taken`; costs in `config/fatigue.php`. Safehouses exist as data and an admin editor only (`FATIGUE.md`) |
+| Fatigue — third resource, breakpoints (Tired/Drained), collapse | **built** — `App\Characters\Fatigue`, `Collapse`, `fatigue_max` formula (6 Focus + 6 Meat + Social) resolved without the fatigue effects, `fatigue_recovery`, `fatigue_taken`; costs in `config/fatigue.php`. Safehouses exist as data and an admin editor only (`docs/FATIGUE.md`) |
 | Damage as a resolved stat — resistances, vulnerabilities, immunity | **built** — `App\Stats\Damage`, `DamageOrigin`, `DamageStats`, `DamageResolver`; one stat per resource and origin, mitigation is a modifier against a tag set. Worn armour, implants, skills, drugs and injuries can all carry a resistance; the Crim's "Hard knocks" is the shipped perk |
-| Damage types, the family tag, and a hit's PENETRATION | **built** — eight `DamageOrigin` types (kinetic and specialty), and `Damage::$penetration` scaling only a hit's negative percentage modifiers (`DamageResolver::against()`); `COMBAT.md` |
+| Damage types, the family tag, and a hit's PENETRATION | **built** — eight `DamageOrigin` types (kinetic and specialty), and `Damage::$penetration` scaling only a hit's negative percentage modifiers (`DamageResolver::against()`); `docs/COMBAT.md` |
 | Armour per body part | **built** — `WornArmour`, the seventh modifier source, wraps a worn piece's damage modifiers in `hit_location_in`; a hit with no location never meets worn armour |
 | Combat skills and weapon gates — grants on skill rows; `combat.skill_gates` | **built** — pistol, SMG, rifle and shotgun need level 1 in their skill to equip; no dodge, by decision |
 | Combat stats — `aim.<class>`, `weapon_damage.<class>`, `defence`, `pursuit` | **built** — `App\Stats\CombatStats` plus two declared stats; the numbers are unmeasured, set with `fight:simulate` |
-| Hit quality, bursts, riders, magazines — the fight engine | **built** — `App\Combat\Fight\FightEngine`, pure and never writing; `App\Combat\Fights` applies it to the game; `COMBAT.md` |
+| Hit quality, bursts, riders, magazines — the fight engine | **built** — `App\Combat\Fight\FightEngine`, pure and never writing; `App\Combat\Fights` applies it to the game; `docs/COMBAT.md` |
 | What a win pays and a loss costs (the mugging, defeat tags) | **built** — `App\Combat\FightEnding`, `CombatTag`, `combat.pay` / `mugging` / `maim`; the numbers are unmeasured |
 | `skills`, `skill_prerequisites`, `character_skills`, `training_queue` | **built**, with constraints and `skills:validate` |
 | Skill thresholds and SP/minute (`App\Skills\`) | **built**, pure and config-tunable |
@@ -79,15 +79,15 @@ down so the implementation has something to be checked against.
 | The thermal rename — `heat` freed up for the character's wanted level | **done**; columns, stat ids, classes and strings all moved |
 | Thermal load as an accumulating total rather than a level | **not done**; a re-calibration of every module in the catalogue |
 | A floor of 1 on `synaptic_integrity_max` | **done**; `DerivedStatTest` pins both ceilings at 1 |
-| `characters.heat` — what the world knows about you | **built** — traces and burns add it, bounties and hunters read it; see CYBERSPACE.md |
+| `characters.heat` — what the world knows about you | **built** — traces and burns add it, bounties and hunters read it; see docs/CYBERSPACE.md |
 | A sixth deck measure — storage, to hold data and programs | **built** — `SlotKind::Storage`, `deck_modules.storage`, `deck_storage` |
-| Cyberspace — the grid, systems, intrusion | **built** — grid, scanning, runs, ICE, traces, extraction, backdoors, burn, hunters and missions. CYBERSPACE.md and CYBERSPACE_RULES.md carry the detail |
+| Cyberspace — the grid, systems, intrusion | **built** — grid, scanning, runs, ICE, traces, extraction, backdoors, burn, hunters and missions. docs/CYBERSPACE.md and docs/CYBERSPACE_RULES.md carry the detail |
 | Encryption skills — four, ranks 2/4/8/16, with imprints | **built** as rows; placeholder descriptions, nothing reads them |
 | `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
 | Routing, Advanced Routing — how long a chain may be | **built** as skill rows with prerequisites; nothing reads them |
 | Radiator cooling, recalibrated for accumulation | **done** as data — eight rows, 15–480 compressed to 90–520 |
 | Actually destroying a module | **not built**; running a deck is not built either |
-| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, storage, a power budget | **built for storage** — `App\Decks\Storage` holds the data inventory against the resolved `deck_storage`, starting from each deck's own `items.onboard_storage` (fallback `decks.onboard_storage`). The others are read by their own mechanics in CYBERSPACE.md |
+| Anything a deck's numbers DO — qFLOPS, quantabits, bandwidth, storage, a power budget | **built for storage** — `App\Decks\Storage` holds the data inventory against the resolved `deck_storage`, starting from each deck's own `items.onboard_storage` (fallback `decks.onboard_storage`). The others are read by their own mechanics in docs/CYBERSPACE.md |
 | Inventory capacity — an overall limit per inventory | **specified only**; `weight` is stored and unenforced |
 
 Do not describe anything below as working until it appears in the table above.
@@ -248,7 +248,7 @@ they matter more here than anywhere:
 **An origin earns a case by existing**, not by being imaginable — there is no
 vocabulary for falling off a building because nothing in this game falls off
 anything. Three exist: `readiness_loss` (dealt today), `burnout` and `ice`
-(named by CYBERSPACE.md, dealt by nothing yet). The tags are the plain words,
+(named by docs/CYBERSPACE.md, dealt by nothing yet). The tags are the plain words,
 the way `deck` is.
 
 **The caller rolls, this layer mitigates.** A burnout taking "25–75% of current
@@ -393,7 +393,7 @@ across a usable part of the curve, and nothing has been balanced against it.
 | 8 | 73% | 88% |
 | 16 | 62% | 73% |
 
-**The floor applies to every roll.** CYBERSPACE.md asked whether the 0.85% was
+**The floor applies to every roll.** docs/CYBERSPACE.md asked whether the 0.85% was
 a rule about detection or a principle; it is a principle, and it is one clamp
 in one class rather than a decision each mechanic makes for itself. The best
 runner alive still trips a household IDS about once in thirty attempts.
@@ -1151,7 +1151,7 @@ long, and the simulation carries no state in from the last one.
 the background is the deck working too, and it accumulates on the same terms —
 with no run to end and therefore no reset. That makes it binary rather than
 risky: cooling covers a decryption and nothing ever happens, or it does not and
-the deck cooks its weakest module overnight. See CYBERSPACE.md, *Decryption*.
+the deck cooks its weakest module overnight. See docs/CYBERSPACE.md, *Decryption*.
 
 **This changes the calibration of every module in the catalogue.** The authored
 figures read as levels — a module generating 40, a tolerance of 220 — and under
@@ -1408,7 +1408,7 @@ deck does not make its owner better at anything today.
 
 ## What cyberspace asks of this system
 
-CYBERSPACE.md is the design; this is the part of it that lands here, because it
+docs/CYBERSPACE.md is the design; this is the part of it that lands here, because it
 produces or alters numbers. None of it is built.
 
 ### `characters.heat` is a column, not a stat

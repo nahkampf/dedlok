@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * looking at the answer. What has had nowhere to go until now is the other
  * half: a scan that finished an hour after they walked away, a backdoor a
  * nightly roll took off them, a skill that crossed a level while the tab was
- * shut. Three separate entries in TODO.md stood on this table not existing.
+ * shut. Three separate entries in docs/TODO.md stood on this table not existing.
  *
  * IT BELONGS TO THE ACCOUNT, like achievements and for the same reason — the
  * rail it hangs in is the account's chrome, and `characters.user_id` is a

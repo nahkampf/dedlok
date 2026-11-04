@@ -1,3 +1,7 @@
+## 0.87.0 (2026-11-04)
+
+- There was a missing enum update to the mission statuses, so declining a mission resulted in a http 500. Fixed now.
+
 ## 0.86.0 (2026-11-03)
 
 - Being cornered by a bloodhound stops all non-essential background processes to free up resources for your best icebreaker - but the state before turning processes off is now stored, and if possible processes are started back up again automatically once the bloodhound confrontation is over.

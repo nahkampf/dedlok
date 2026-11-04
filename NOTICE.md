@@ -11,7 +11,7 @@ This game is primarily a solo experience, but there are some elements where you 
 This game is still in development, ant until it reaches 1.0 you can expect bugs, weird behaviours or buttons you can't press. Buyers beware! :D
 
 ## How to play
-For in-depth tutorial and help please see HELP.md.
+For in-depth tutorial and help please see docs/HELP.md.
 
 ## Support this game
 This game is available and fully playable for free. I do this for the love of the game. But hosting costs are a real expense every month, and at some point I would love to be able to pay artists to create artwork for the game.

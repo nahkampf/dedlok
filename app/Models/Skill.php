@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * A skill definition.
  *
  * Definitions live in the database rather than config — see the migration for
- * why, and MECHANICS.md for what that costs.
+ * why, and docs/MECHANICS.md for what that costs.
  */
 #[Fillable([
     'slug', 'title', 'description', 'category', 'rank',

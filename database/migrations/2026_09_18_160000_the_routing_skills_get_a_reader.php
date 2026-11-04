@@ -10,7 +10,7 @@ use Illuminate\Database\Migrations\Migration;
  *
  * Both skills have existed since the skill catalogue was written, with books
  * on the shelf and prerequisites in place, and **nothing in the game has ever
- * asked either of them a question**. CYBERSPACE.md's table says what they are
+ * asked either of them a question**. docs/CYBERSPACE.md's table says what they are
  * for — one system in the chain per level each, ten the ceiling — and until
  * `routing_hops` existed there was no id for that sentence to target.
  *

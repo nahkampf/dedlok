@@ -50,7 +50,7 @@ final readonly class MapCell
          * Null is the ordinary state and means *not found out*. A grade is
          * what a scan exists to discover, so the map may show one that was
          * discovered and may never show one that was not — which is the rule
-         * in CYBERSPACE.md, kept by the only thing that could break it having
+         * in docs/CYBERSPACE.md, kept by the only thing that could break it having
          * nowhere to get an unscanned grade from.
          */
         public ?int $grade = null,

@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The first Script and its recipe (CRAFTING.md), placeholders for the author to rename and tune in the item editor:
+ * The first Script and its recipe (docs/CRAFTING.md), placeholders for the author to rename and tune in the item editor:
  * DUMMY_TEMPORARY_PROGRAM, ten minutes, +10% stealth, and the Design Original and Design Copy that build it. Nothing stocks or sells any
  * of them; they are found, made or authored into the world.
  */

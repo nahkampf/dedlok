@@ -30,7 +30,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Weapons, and which of them a character is holding. COMBAT.md.
+ * Weapons, and which of them a character is holding. docs/COMBAT.md.
  *
  * A fighter holds one weapon of each kind — a firearm is usable only at Ranged and a blade only
  * at Close — so the weapon's class says which hand it fills, and the player picks the weapon.

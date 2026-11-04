@@ -10,7 +10,7 @@ use App\Support\Text;
  * How a run finished.
  *
  * Every one of these goes through `RunStarter::end()`, and every bad one goes
- * through `Navigator::jackOut()` after it — the order CYBERSPACE.md fixes for
+ * through `Navigator::jackOut()` after it — the order docs/CYBERSPACE.md fixes for
  * all of them: damage, then the consequence, then the ejection, then the
  * waiting screen.
  */

@@ -7,7 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Rounds in a weapon. COMBAT.md.
+ * Rounds in a weapon. docs/COMBAT.md.
  *
  * The magazine belongs to a COPY of a weapon, not to the catalogue entry, so it lives on the
  * inventory row — `weapons` is a definition and every copy of a pistol would share one magazine.

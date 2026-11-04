@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
- * The eight damage types (COMBAT.md): blunt, slashing, penetrating, fragmentation, and the
+ * The eight damage types (docs/COMBAT.md): blunt, slashing, penetrating, fragmentation, and the
  * specialty four. They are `DamageOrigin` cases, so everything here is the existing damage
  * system learning nothing — which is the point.
  */

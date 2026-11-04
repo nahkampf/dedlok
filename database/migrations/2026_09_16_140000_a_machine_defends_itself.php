@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * What a machine defends itself with, and what a scan can find out about it.
  *
- * Two of the three countermeasures CYBERSPACE.md names: the intrusion detection
+ * Two of the three countermeasures docs/CYBERSPACE.md names: the intrusion detection
  * and the tracer. ICE is the third and arrives on its own, because its numbers
  * are combat numbers and there is no turn loop to calibrate them against yet.
  *

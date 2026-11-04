@@ -14,7 +14,7 @@ namespace App\Stats;
  * modifier is built, rather than the first time somebody happens to be under
  * 30% Synaptic Integrity.
  *
- * MECHANICS.md names the cost this carries, and it is real: a conditional
+ * docs/MECHANICS.md names the cost this carries, and it is real: a conditional
  * modifier cannot be cached the way an unconditional one can, because it
  * depends on state that moves between reads. That is why Resolver splits the
  * bag rather than evaluating everything every time, and why the rule is

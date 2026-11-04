@@ -297,7 +297,7 @@ final class DefeatResolverTest extends TestCase
     }
 
     /**
-     * CRAFTING.md: a design is destructible by ICE, and Erase already is that ICE. A design and a component are data on the deck like
+     * docs/CRAFTING.md: a design is destructible by ICE, and Erase already is that ICE. A design and a component are data on the deck like
      * any other, so a wipe takes them with the running Script, while a build under way (its components are spent) goes on.
      */
     public function test_erase_takes_designs_components_and_a_running_script_but_not_a_build_under_way(): void

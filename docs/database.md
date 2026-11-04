@@ -85,7 +85,7 @@ docker compose exec -u www-data web php -r 'require "vendor/autoload.php"; $a=re
 ### The database account
 
 `dedlok@%` has `USAGE` globally and `ALL PRIVILEGES` on `cyberpunk`.\* only. Open items
-(host mask still `%`, connection unencrypted) are tracked in `TODO.md`.
+(host mask still `%`, connection unencrypted) are tracked in `docs/TODO.md`.
 
 **Never run `migrate:fresh`, `migrate:reset` or `db:wipe` against the remote.** Locally they
 are harmless now — the app's own connection IS the container, and `bin/pull-db` puts the

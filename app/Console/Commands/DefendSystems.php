@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Log;
  * never created again: relocation keeps the row, and only a burn followed by a
  * seeding pass makes a new one. So without this, a world generated before
  * defences existed stays defenceless for ever, and the grid quietly disagrees
- * with every rule in CYBERSPACE.md.
+ * with every rule in docs/CYBERSPACE.md.
  *
  * It is not in the migration because it ROLLS. A migration that carries dice is
  * a migration whose result depends on when it ran and cannot be reasoned about

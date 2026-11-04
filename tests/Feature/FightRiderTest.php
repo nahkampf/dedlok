@@ -20,7 +20,7 @@ use Tests\Support\QueueDice;
 use Tests\TestCase;
 
 /**
- * Riders in a fight. COMBAT.md, *Riders*. Aim equals defence, so a shot is a coin flip: a die of 0.0
+ * Riders in a fight. docs/COMBAT.md, *Riders*. Aim equals defence, so a shot is a coin flip: a die of 0.0
  * is Dead-on, 0.2 a Clean hit and 0.5 only Partial. The rider die is rolled after the tier and the
  * place, and a rider with chance 50 lands under 0.5.
  */

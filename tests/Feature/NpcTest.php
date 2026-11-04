@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 /**
- * An opponent row becoming something a fight can use. COMBAT.md, step 3.
+ * An opponent row becoming something a fight can use. docs/COMBAT.md, step 3.
  */
 final class NpcTest extends TestCase
 {

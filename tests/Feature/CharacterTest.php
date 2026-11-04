@@ -42,7 +42,7 @@ class CharacterTest extends TestCase
             // Whether the bio's ANSI art is drawn with iCE colours, read from the SAUCE record of the file attached to it.
             'bio_ice',
             'archetype',
-            // Where the body is: always set. See CITY.md.
+            // Where the body is: always set. See docs/CITY.md.
             'district_id',
             ...Character::ATTRIBUTES,
             ...array_keys(Character::RESOURCES),

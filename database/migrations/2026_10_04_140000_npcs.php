@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * NPCs: the opponents of a fight. COMBAT.md, *The model still to build*.
+ * NPCs: the opponents of a fight. docs/COMBAT.md, *The model still to build*.
  *
  * An NPC is a row of NUMBERS and three pointers at items — a ranged weapon, a melee weapon and a
  * standing round — so everything a weapon does lives on the weapon and an editor changes it in one
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Schema;
  * ## Only what something reads
  *
  * Nothing here is modelled against an unwritten feature: whose NPC it is (standing), its loot and
- * its defeat tags arrive with the step that pays them out (COMBAT.md, step 6), the encounter that
+ * its defeat tags arrive with the step that pays them out (docs/COMBAT.md, step 6), the encounter that
  * starts a fight with the step that adds that choice. Columns modelled against code that does not
  * exist get modelled wrong.
  *

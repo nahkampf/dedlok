@@ -29,7 +29,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
- * CODE CRAFTING (CRAFTING.md): components and a Design, over time, into a program. THE ONLY WRITER of `crafts`.
+ * CODE CRAFTING (docs/CRAFTING.md): components and a Design, over time, into a program. THE ONLY WRITER of `crafts`.
  *
  * - **Starting locks the build in.** The components are spent and a Design Copy is consumed in the same transaction that creates the
  *   craft, and the time it needs is worked out then, with the skills the character has then. Nothing is refunded: cancelling forfeits.

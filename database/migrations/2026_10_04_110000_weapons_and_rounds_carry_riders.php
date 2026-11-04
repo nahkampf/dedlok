@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Riders: what a hit leaves behind that lasts more than the hit (stun, burning, poison).
- * COMBAT.md. Authored now; NOTHING READS THEM until the fight engine exists.
+ * docs/COMBAT.md. Authored now; NOTHING READS THEM until the fight engine exists.
  */
 return new class extends Migration
 {

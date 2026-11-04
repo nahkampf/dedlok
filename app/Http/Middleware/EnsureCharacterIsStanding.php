@@ -26,7 +26,7 @@ use Symfony\Component\HttpFoundation\Response;
  * A defeat ends the run, ejects, and only then shows this screen — that is the
  * order every bad ending follows, and it means the two states should never
  * overlap. If they somehow do, being unconscious wins: a character on the floor
- * is not in a position to take a turn, and CYBERSPACE.md is explicit that
+ * is not in a position to take a turn, and docs/CYBERSPACE.md is explicit that
  * sitting on the waiting screen while still holding a position in cyberspace is
  * the one state nothing else knows how to read.
  */

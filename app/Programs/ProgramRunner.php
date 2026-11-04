@@ -40,7 +40,7 @@ use Illuminate\Support\Facades\DB;
  *
  * WHICH DECK. The equipped one, always. A program runs on the machine being
  * carried, which is what makes unequipping stop everything — the decision
- * CYBERSPACE.md records, and the reason there is no deck argument here.
+ * docs/CYBERSPACE.md records, and the reason there is no deck argument here.
  *
  * SPLITTING AND MERGING is the fiddly half, and it is fiddly because idle
  * copies stack and running ones do not:

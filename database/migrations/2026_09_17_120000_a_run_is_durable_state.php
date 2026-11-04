@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * A RUN USED TO NEED NO ROW AT ALL. It was atomic — resolved end to end inside
  * one request, with the client replaying a log of something already finished —
- * and this table is the cost of making it interactive. See CYBERSPACE.md, *The
+ * and this table is the cost of making it interactive. See docs/CYBERSPACE.md, *The
  * run plan*: what atomicity bought was that pulling the plug could not save you,
  * and what buys that now is durable state plus a lock.
  *

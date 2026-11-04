@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
- * The resource and its one writer. FATIGUE.md is the design.
+ * The resource and its one writer. docs/FATIGUE.md is the design.
  */
 class FatigueTest extends TestCase
 {

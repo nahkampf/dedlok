@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * The route a run is taking, snapshotted when it begins.
  *
- * DECLARED PER RUN AND NEVER HELD STANDING, which is CYBERSPACE.md's own rule
+ * DECLARED PER RUN AND NEVER HELD STANDING, which is docs/CYBERSPACE.md's own rule
  * — so the chain is a column on `runs` rather than a property of the
  * character. A backdoor installed after a run began is not in that run's
  * route, and one lost during it drops out.

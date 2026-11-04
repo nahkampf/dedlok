@@ -18,7 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Penetration: how much of the target's RESISTANCE a hit ignores. COMBAT.md, *Ammunition*.
+ * Penetration: how much of the target's RESISTANCE a hit ignores. docs/COMBAT.md, *Ammunition*.
  *
  * A resistance counts for `resistance × (1 − penetration / 100)`. Only a negative percentage is a
  * resistance: a vulnerability is not softened and an immunity is left alone.

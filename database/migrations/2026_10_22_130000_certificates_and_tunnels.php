@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Subnet Certificates and Secure Tunnelling (CYBERSPACE.md, *Subnet fortresses*): the item and the grid it is stamped with,
+ * Subnet Certificates and Secure Tunnelling (docs/CYBERSPACE.md, *Subnet fortresses*): the item and the grid it is stamped with,
  * the tunnel program kind, and the cooldown of a character's last tunnel to a fortress.
  */
 return new class extends Migration

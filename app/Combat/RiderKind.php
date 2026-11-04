@@ -8,7 +8,7 @@ use App\Stats\DamageOrigin;
 use App\Support\Text;
 
 /**
- * A rider is something a hit can leave behind that lasts more than the hit. COMBAT.md.
+ * A rider is something a hit can leave behind that lasts more than the hit. docs/COMBAT.md.
  *
  * Fixed vocabulary; a new kind is a case, a string and whatever the fight engine does with it.
  * The kind fixes the DAMAGE TYPE of a damage-over-time rider, so an editor never picks one:

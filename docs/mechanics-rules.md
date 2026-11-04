@@ -4,7 +4,7 @@ _Split out of CLAUDE.md. Heading levels are as they were there._
 
 ## Game mechanics
 
-**`MECHANICS.md` is the reference for anything producing or altering a number.** Read it
+**`docs/MECHANICS.md` is the reference for anything producing or altering a number.** Read it
 before adding an item, skill or effect. Short version:
 
 - Every modifier is data, never PHP — a `config/` entry or a row. If new content needs
@@ -17,7 +17,7 @@ before adding an item, skill or effect. Short version:
 - Derived stats are never stored; resources are stored and clamp down (never scale) when
   their maximum drops.
 
-MECHANICS.md's status table says which parts exist — check it before calling anything
+docs/MECHANICS.md's status table says which parts exist — check it before calling anything
 working.
 
 ### Rolling a check

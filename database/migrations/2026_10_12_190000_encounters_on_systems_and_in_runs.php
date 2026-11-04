@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Two more doors for an encounter in cyberspace (ENCOUNTERS_GRID.md): arriving at a SYSTEM, and between turns of a RUN.
+ * Two more doors for an encounter in cyberspace (docs/ENCOUNTERS_GRID.md): arriving at a SYSTEM, and between turns of a RUN.
  *
  * - `encounters` gains the filters those doors read: the system's type, a grade range, its owner (a plain id: an
  *   encounter's filter is a remembered preference, and an entity that goes must not take the encounter with it),

@@ -5,7 +5,7 @@
 | Mood
 |--------------------------------------------------------------------------
 |
-| TODO.md, *Mood*. A stored figure from -100 to +100, moved by events and drifting back to 0. PLACEHOLDERS until balance.
+| docs/TODO.md, *Mood*. A stored figure from -100 to +100, moved by events and drifting back to 0. PLACEHOLDERS until balance.
 */
 
 return [

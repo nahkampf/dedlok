@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * The five skills authored on 2026-09-28, brought to scale.
  *
- * They filled the stats nothing reached (TODO.md, "Author skills until every
+ * They filled the stats nothing reached (docs/TODO.md, "Author skills until every
  * value has one behind it"), and review found the same trap in most of them:
  * nearly every stat here FLOORS, so a small percentage on a small base rounds
  * away and a flat amount on a small base swamps everything.

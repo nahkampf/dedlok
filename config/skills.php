@@ -7,7 +7,7 @@ declare(strict_types=1);
 | Skills
 |--------------------------------------------------------------------------
 |
-| Skill DEFINITIONS live in the database, not here — see MECHANICS.md. What
+| Skill DEFINITIONS live in the database, not here — see docs/MECHANICS.md. What
 | lives here is the maths: the numbers that decide how long training takes.
 | They are config rather than columns because they are global rules, not
 | per-skill data, and because they are expected to be tuned.

@@ -5,7 +5,7 @@
 | Safehouses
 |--------------------------------------------------------------------------
 |
-| FATIGUE.md, *Safehouses*.
+| docs/FATIGUE.md, *Safehouses*.
 */
 
 return [

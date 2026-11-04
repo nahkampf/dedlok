@@ -2,11 +2,11 @@
 
 Moved out of CLAUDE.md on 2026-10-03 to keep that file readable. The rules are unchanged and
 still binding; read the relevant section before touching cyberspace, runs, hunters, the
-waiting room, recovery or missions. Design intent lives in `CYBERSPACE.md`.
+waiting room, recovery or missions. Design intent lives in `docs/CYBERSPACE.md`.
 
 ### Cyberspace
 
-**`CYBERSPACE.md` is the document.** Phase 3 (the grid) is done. Runs, the fight, the trace
+**`docs/CYBERSPACE.md` is the document.** Phase 3 (the grid) is done. Runs, the fight, the trace
 and extraction are built. See below for what is not.
 
 #### The world
@@ -44,7 +44,7 @@ and extraction are built. See below for what is not.
   Without it, coordinates become tradeable. **A SYSTEM bookmark has no such gate**, because
   an address carries no position.
 - **Every machine has an owner, and `entities` arrives by migration.** The eight hardware
-  manufacturers in WORLDBUILDING.md are deliberately NOT entities — who BUILT a thing and
+  manufacturers in docs/WORLDBUILDING.md are deliberately NOT entities — who BUILT a thing and
   who RUNS it are different questions. `entities.category` is a fixed vocabulary read as
   `App\Entities\EntityCategory` (corporation, government, military, fringe), and
   **`entities.interactable` is the whole difference between scenery and somebody you can
@@ -246,7 +246,7 @@ and extraction are built. See below for what is not.
   encryption skill INJECTED. Settling is lazy and catches up (every elapsed whole cycle rolls until one passes) with
   `decryption:settle` each minute for the inbox message and the next clock; **every way of stopping a decryptor goes through
   `ProgramRunner::putBack()`, which settles first and then closes the cycle**, so a gap is never credited. The file being worked on
-  that is being worked on cannot be removed while jacked in. It keeps working DURING A RUN: nothing about a run stops a background program, and the run's loadout simply starts with what compute and memory the decryptor left. **A SUPPLY JOB takes scan files only** (`MissionLedger::suppliable()`; it took sealed dumps until 2026-10-20, which spent players' dumps unannounced). Not built: heat accumulation (see MECHANICS.md, *Thermal load*).
+  that is being worked on cannot be removed while jacked in. It keeps working DURING A RUN: nothing about a run stops a background program, and the run's loadout simply starts with what compute and memory the decryptor left. **A SUPPLY JOB takes scan files only** (`MissionLedger::suppliable()`; it took sealed dumps until 2026-10-20, which spent players' dumps unannounced). Not built: heat accumulation (see docs/MECHANICS.md, *Thermal load*).
 - **A file is labelled for the machine it came off** (`strings.cyberspace.files.words` per
   type) — flavour, not mechanics.
 - **`systems.stock_rule` is how a machine is TOLD what to hold**, NULL on nearly every row.
@@ -619,7 +619,7 @@ consequences and taking what a machine holds all roll.
 - **`App\Cyberspace\Burner` is the only thing in the game that deletes a
   system.** A burn is not a relocation and not a lockdown: the row goes, the
   address goes out of existence with it, and the position it held is simply
-  empty until a seeding pass puts something new there. CYBERSPACE.md: *dead,
+  empty until a seeding pass puts something new there. docs/CYBERSPACE.md: *dead,
   then empty, then eventually something new.*
 - **It is a core touch**, so it takes the IDS's second look through the shared
   `Simulator::touchTheCore()`, exactly as extraction and an install do. Being

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Egress Protocols — the first thing in the game that helps you leave.
  *
- * CYBERSPACE.md said this shape would work before there was anything to hang
+ * docs/CYBERSPACE.md said this shape would work before there was anything to hang
  * it on: "a skill that helps you leave is a modifier targeting the egress
  * stat, the way Overclocking targets `deck_qflops`." That is all this is. The
  * simulator does not learn that the skill exists, `Simulator` gains no branch,

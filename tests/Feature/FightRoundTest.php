@@ -22,7 +22,7 @@ use Tests\TestCase;
 
 /**
  * A whole round: whose turn, in what order, when it ends, and when the range moves on.
- * COMBAT.md, *The fight*. Aim equals defence throughout, so a shot is a coin flip; a die of 0.0
+ * docs/COMBAT.md, *The fight*. Aim equals defence throughout, so a shot is a coin flip; a die of 0.0
  * is Dead-on for the whole 10 and 0.5 puts it on the right leg.
  */
 final class FightRoundTest extends TestCase

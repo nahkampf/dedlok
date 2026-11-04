@@ -22,7 +22,7 @@ use Tests\Support\QueueDice;
 use Tests\TestCase;
 
 /**
- * Running out of yourself. FATIGUE.md, *Collapse*.
+ * Running out of yourself. docs/FATIGUE.md, *Collapse*.
  */
 final class CollapseTest extends TestCase
 {

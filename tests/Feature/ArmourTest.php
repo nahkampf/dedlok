@@ -25,7 +25,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Armour, worn a body part at a time. COMBAT.md, *Body parts and armour*.
+ * Armour, worn a body part at a time. docs/COMBAT.md, *Body parts and armour*.
  *
  * The test that matters is the one about LOCATION: the same hit against the same plate lands
  * differently on the torso and on the leg, which is the whole of why armour is per slot.

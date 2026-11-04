@@ -7,7 +7,7 @@ declare(strict_types=1);
 | Cyberspace
 |--------------------------------------------------------------------------
 |
-| The shape of the grid and the words its systems are named from. CYBERSPACE.md
+| The shape of the grid and the words its systems are named from. docs/CYBERSPACE.md
 | is the design; this is the handful of numbers it names, in one place, because
 | every one of them is a thing that will be tuned.
 |
@@ -443,7 +443,7 @@ return [
     | Three countermeasures, and EVERY HOSTILE THING CAN NOTICE YOU — not just
     | the intrusion detection. The IDS is far better at it, but a tracer and an
     | ICE each carry a detection value of their own, which is why a machine with
-    | no IDS is quieter rather than safe. See CYBERSPACE.md, *Detection*.
+    | no IDS is quieter rather than safe. See docs/CYBERSPACE.md, *Detection*.
     |
     | WHAT A MACHINE CARRIES IS DECIDED ONCE, AT CREATION, AND STORED. Type sets
     | the floor and grade rolls the rest, and the answer lands in columns on the
@@ -470,7 +470,7 @@ return [
     | helps somebody leave is a row and never a branch in the simulator. See
     | config/stats.php.
     |
-    | DIFFICULTY IS THE GRADE PLUS WHAT IS FIGHTING YOU, which is CYBERSPACE.md
+    | DIFFICULTY IS THE GRADE PLUS WHAT IS FIGHTING YOU, which is docs/CYBERSPACE.md
     | open question 12 resolved: tearing free mid-fight is not the same act as
     | walking out of a quiet machine, and an ICE that never woke is a cheap
     | exit — one more thing an undetected run is worth.
@@ -902,7 +902,7 @@ return [
     | only one that exists today.
     |
     | Ten points a grade below the top, so the table is the design rather than
-    | a curve somebody fitted. CYBERSPACE.md wondered whether a hop should also
+    | a curve somebody fitted. docs/CYBERSPACE.md wondered whether a hop should also
     | read who owns the machine and how well it is dug in: **decided against**.
     | Grade is the differentiator and it is the one already on the row; an
     | owner weight would need a number per entity for 121 of them, and reading
@@ -930,7 +930,7 @@ return [
         | Heat is persistent and belongs to the person — it is what the world
         | knows about them. What it will DO is random encounters, in cyberspace
         | and on the street, that have to be beaten; until then it only drives
-        | the bounty roll. See TODO.md.
+        | the bounty roll. See docs/TODO.md.
         */
         'heat_per_grade' => 2,
     ],
@@ -965,7 +965,7 @@ return [
         | rolled by one. So the thing a scan is for is never "does this have
         | anything" — it is which of the three it happens to be missing.
         |
-        | The compute node is the machine CYBERSPACE.md describes when it says a
+        | The compute node is the machine docs/CYBERSPACE.md describes when it says a
         | system with no IDS but with ICE is real and ordinary: it is the one
         | type whose detection is the thing left to chance.
         */
@@ -1068,7 +1068,7 @@ return [
             | threshold somewhere else.
             |
             | NOTHING READS THIS YET. The trace advances per turn and there is
-            | no turn loop — see CYBERSPACE.md, *The fight*.
+            | no turn loop — see docs/CYBERSPACE.md, *The fight*.
             */
             'rate' => [
                 1 => 4,
@@ -1116,9 +1116,9 @@ return [
     | night, because the bounty message is a warning and this is the thing it
     | warned about.
     |
-    | The rest of what CYBERSPACE.md asks of heat is still unbuilt: faction
+    | The rest of what docs/CYBERSPACE.md asks of heat is still unbuilt: faction
     | standing, and telling a player-owned system's owner who hit them. See
-    | TODO.md.
+    | docs/TODO.md.
     |
     */
     'heat' => [
@@ -1387,12 +1387,12 @@ return [
     |
     | A module breaks from thermal load mid-run, the deck stops being a working
     | machine, and the player is thrown out of cyberspace through the wall. See
-    | CYBERSPACE.md, *Burning out a module ends the run*, for what happens and
+    | docs/CYBERSPACE.md, *Burning out a module ends the run*, for what happens and
     | in what order; these are the numbers it names.
     |
     | NOTHING READS ANY OF THIS YET. The run simulator is phase 5 and this is
     | phase 3 — these are here to be calibrated against each other and against
-    | a survivable run length, which is an open question in CYBERSPACE.md. They
+    | a survivable run length, which is an open question in docs/CYBERSPACE.md. They
     | are a starting point, not a balance pass.
     |
     | Percentages, 0-100, like `occupancy` above.
@@ -1480,7 +1480,7 @@ return [
     |
     | Permanent damage to maximum SI is an unexpiring modifier row and never a
     | subtraction into a column, because maximum SI is derived — see
-    | MECHANICS.md, *Flatline is a permanent stored modifier*. The stat floors
+    | docs/MECHANICS.md, *Flatline is a permanent stored modifier*. The stat floors
     | at 1, so accumulated flatlines converge on a maximum of 1 rather than 0:
     | they permanently cripple and never themselves kill, the same rule that
     | says injury is undone by a clinic and never by arithmetic.
@@ -1505,7 +1505,7 @@ return [
         |
         | Permanent damage to maximum SI is an unexpiring modifier row and never
         | a subtraction into a column, because maximum SI is derived — see
-        | MECHANICS.md. The stat floors at 1, so accumulated flatlines converge
+        | docs/MECHANICS.md. The stat floors at 1, so accumulated flatlines converge
         | on a maximum of 1 rather than 0: they cripple and never themselves
         | kill.
         |
@@ -1668,7 +1668,7 @@ return [
     'designation' => ['min' => 1, 'max' => 999],
 
     /*
-    | Encounters on the grid (ENCOUNTERS_GRID.md): the chance an ARRIVAL by a move opens one, before the resolved
+    | Encounters on the grid (docs/ENCOUNTERS_GRID.md): the chance an ARRIVAL by a move opens one, before the resolved
     | `encounter_chance` stat adjusts it. It is the base of that stat for this door, as `city.encounter.*_chance` is
     | for the City's. Which encounter, among those eligible, is the same weighted draw. First pass, untuned: two
     | in a hundred moves.

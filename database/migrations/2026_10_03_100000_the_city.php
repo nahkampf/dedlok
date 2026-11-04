@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * The physical half of the game: districts, the links between them, the
- * locations in them, and what a character has found. See CITY.md.
+ * locations in them, and what a character has found. See docs/CITY.md.
  */
 return new class extends Migration
 {

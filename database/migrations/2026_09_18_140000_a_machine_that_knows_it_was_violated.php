@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Lockdown: what happens when a system knows it was violated.
  *
- * CYBERSPACE.md's *Lockdown* table lists four triggers and they are all one
+ * docs/CYBERSPACE.md's *Lockdown* table lists four triggers and they are all one
  * rule — the machine found out. It fires AFTER a run, whatever else happened,
  * and when the window closes the machine relocates: new position, new address,
  * books balanced. Until now the third raid relocated a machine on the spot,

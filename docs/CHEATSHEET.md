@@ -1,4 +1,4 @@
-# CHEATSHEET.md
+# docs/CHEATSHEET.md
 
 ## Characters
 

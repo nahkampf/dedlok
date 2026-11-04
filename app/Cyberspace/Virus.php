@@ -14,7 +14,7 @@ use App\Stats\Resolver;
 use App\Support\Points;
 
 /**
- * The Virus attack tag's infection (CYBERSPACE.md, *Virus*), and its only writer.
+ * The Virus attack tag's infection (docs/CYBERSPACE.md, *Virus*), and its only writer.
  *
  * ONE INFECTION AT A TIME, kept on the character so it outlives the run: a new hit refreshes it rather than stacking. It
  * takes `virus_damage` Synaptic Integrity on its first tick and less each tick after, reaching nothing by the end of its

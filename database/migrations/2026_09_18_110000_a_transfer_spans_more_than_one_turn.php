@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * A file costs turns on the way out, and a run has to remember it mid-pull.
  *
- * CYBERSPACE.md prices a file in QB, cut back down by the deck's bandwidth —
+ * docs/CYBERSPACE.md prices a file in QB, cut back down by the deck's bandwidth —
  * "a few turns, scaling with the size of the data." `App\Cyberspace\Extractor`
  * already took every file in the one turn extraction was attempted; this is
  * the column that lets it take longer than one.

@@ -11,10 +11,10 @@ both before writing code.
 Subsystem rules (items, decks, City, combat, inbox, admin, deploying…) live in `docs/` — each
 section below points at its file; read it before editing that subsystem.
 
-Companion docs: `MECHANICS.md` (anything producing a number), `CYBERSPACE.md` (the grid,
-systems, runs), `CYBERSPACE_RULES.md` (the binding rules for all of it), `CITY.md` (districts,
-travel, explore, shops, clinics, encounters), `COMBAT.md` (physical combat — items built, engine designed),
-`FATIGUE.md`, `CRAFTING.md`, `ENCOUNTERS_GRID.md`, `WORLDBUILDING.md`, `TODO.md`.
+Companion docs: `docs/MECHANICS.md` (anything producing a number), `docs/CYBERSPACE.md` (the grid,
+systems, runs), `docs/CYBERSPACE_RULES.md` (the binding rules for all of it), `docs/CITY.md` (districts,
+travel, explore, shops, clinics, encounters), `docs/COMBAT.md` (physical combat — items built, engine designed),
+`docs/FATIGUE.md`, `docs/CRAFTING.md`, `docs/ENCOUNTERS_GRID.md`, `docs/WORLDBUILDING.md`, `docs/TODO.md`.
 
 ## Everything runs in Docker
 
@@ -100,7 +100,7 @@ top bar); Images; Cache busting; Link unfurls; Fonts.
 
 ## Game mechanics → `docs/mechanics-rules.md`
 
-**`MECHANICS.md` is the reference for anything producing or altering a number.** Read it, and `docs/mechanics-rules.md`,
+**`docs/MECHANICS.md` is the reference for anything producing or altering a number.** Read it, and `docs/mechanics-rules.md`,
 before adding an item, skill or effect. In short: every modifier is data, never PHP; one pure resolver does the arithmetic
 in a fixed order; `App\Checks\CheckRoller` is the only die; `Character::modifiers()` is the whole list of sources; hit
 points, SI and ICE are carried to two decimals through `Points::of()`, so never `(int)` one.
@@ -137,7 +137,7 @@ per user. Captcha is `<x-captcha />`.
 
 ## Fatigue, safehouses, physical combat → `docs/fatigue-and-combat.md`
 
-**Read that file before touching:** Fatigue and Safehouses (phase 1 built — `FATIGUE.md`); Physical combat (in progress — `COMBAT.md`).
+**Read that file before touching:** Fatigue and Safehouses (phase 1 built — `docs/FATIGUE.md`); Physical combat (in progress — `docs/COMBAT.md`).
 
 ## Archetypes, inbox → `docs/archetypes-and-inbox.md`
 
@@ -153,7 +153,7 @@ Four events (`ChatLine`, `SkillInjected`, `SkillLevelReached`, `TrainingEntryCom
 `SkillLevelReached` into an inbox message. Wiring is standard Laravel
 (`Event::dispatch()`, auto-discovered from `app/Listeners`). `QUEUE_CONNECTION=sync` runs
 listeners in-process, which is right while the only one does a single insert — switch to
-`database` or `redis` before any listener does slow work. See TODO.md.
+`database` or `redis` before any listener does slow work. See docs/TODO.md.
 
 ## Templates
 

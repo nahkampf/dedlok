@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Combat\Fight;
 
 /**
- * Who acts first, decided once at the start and held for the fight. COMBAT.md, *Who acts first*.
+ * Who acts first, decided once at the start and held for the fight. docs/COMBAT.md, *Who acts first*.
  *
  * In an encounter the enemy always goes first, so that is not decided here: the opening state is
  * built with `first: Side::B`. Player against player is Senses + Perception + Reflex, resolved,

@@ -7,7 +7,7 @@ namespace App\Combat;
 use App\Support\Text;
 
 /**
- * What KIND of round an ammunition item is. COMBAT.md.
+ * What KIND of round an ammunition item is. docs/COMBAT.md.
  *
  * A fixed vocabulary, like `WeaponClass`: it names the round on the card and in the editor, and
  * is what the engine and NPCs will ask about by name. What a round DOES is still its own numbers

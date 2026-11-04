@@ -1,6 +1,6 @@
 # Physical combat
 
-**Status: steps 1–6 are BUILT — items, the engine and its simulator, NPCs, the stored fight and its screen, encounters that start fights, and what a win pays and a loss costs (`FightEnding`, `CombatTag`). What is left is the balance pass, which needs authored content and the author's judgement.** Phase 5 of `CITY.md`.
+**Status: steps 1–6 are BUILT — items, the engine and its simulator, NPCs, the stored fight and its screen, encounters that start fights, and what a win pays and a loss costs (`FightEnding`, `CombatTag`). What is left is the balance pass, which needs authored content and the author's judgement.** Phase 5 of `docs/CITY.md`.
 
 Built (2026-10-03/04): the eight damage types and their families, armour per body part with
 location-aware resistance, weapons, ammunition (with a type), riders (authored only), wielding and
@@ -11,7 +11,7 @@ magazines — items, editors, stash actions and the sheet. **Not built**: the en
 types. Every number is an unmeasured default the author has not seen; the numbers are set with
 `fight:simulate`, not on paper.
 
-Physical combat and cyberspace combat are **separate engines** (`MECHANICS.md`, *Two combat
+Physical combat and cyberspace combat are **separate engines** (`docs/MECHANICS.md`, *Two combat
 engines, deliberately*): they share a character, the resolver and the modifier system and nothing
 else. What they share is the *shape* — a pure function over a plan, a snapshot and an injected die,
 returning a log and an outcome — so the whole thing is tested against pinned dice. **ICE is not
@@ -38,7 +38,7 @@ engine's own.
 - **Defeat tags** (`DefeatResolver`), **loot tables**, **`ItemGranter`**, **`Wallet`**.
 - **Implants, drugs and skills as modifier sources**: anything that should make a fighter better
   is a modifier on the right stat, with no new code.
-- **Encounters** (`CITY.md`) — the door into a fight.
+- **Encounters** (`docs/CITY.md`) — the door into a fight.
 
 ## Settled
 
@@ -577,7 +577,7 @@ to the `DownedCause` effects the waiting screen reads), then calls the waiting r
 
 ## Not decided
 
-- Items mid-fight (a medkit or a drug used inside a fight; `Consumer` refuses it, see TODO.md); street heat; group fights; whether carrying a
+- Items mid-fight (a medkit or a drug used inside a fight; `Consumer` refuses it, see docs/TODO.md); street heat; group fights; whether carrying a
   weapon is legal by district; an aimed shot at a chosen body part.
 - More riders (a neural scramble, bleeding) and resisting a status directly; whether poison
   lingers after a fight as a real-time status.

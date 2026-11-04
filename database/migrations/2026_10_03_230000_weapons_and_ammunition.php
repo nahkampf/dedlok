@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Weapons, ammunition, and which of them a character is holding. COMBAT.md.
+ * Weapons, ammunition, and which of them a character is holding. docs/COMBAT.md.
  *
  * ## Items with rows
  *
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * ## No riders, yet
  *
- * Stun, burning and poison are designed (COMBAT.md) but nothing reads them until the fight
+ * Stun, burning and poison are designed (docs/COMBAT.md) but nothing reads them until the fight
  * engine exists. A JSON column with no editor and no reader would be dead weight, so it
  * arrives with the thing that uses it.
  *

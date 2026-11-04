@@ -347,7 +347,7 @@ final class ReadinessWatchTest extends TestCase
      * the waiting screen.
      *
      * A character must never be sitting on that screen while still holding a
-     * position in cyberspace — CYBERSPACE.md calls that the one ordering that
+     * position in cyberspace — docs/CYBERSPACE.md calls that the one ordering that
      * produces a state nothing else knows how to read — so this asserts the
      * ejection happened as well as the fall.
      */

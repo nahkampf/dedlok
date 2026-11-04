@@ -21,7 +21,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Sensing, working out and breaking into another player's home. FATIGUE.md, *Raiding and burning*.
+ * Sensing, working out and breaking into another player's home. docs/FATIGUE.md, *Raiding and burning*.
  */
 final class SafehouseLeadTest extends TestCase
 {

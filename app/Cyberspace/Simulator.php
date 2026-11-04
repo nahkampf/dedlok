@@ -177,7 +177,7 @@ final readonly class Simulator
                  * heat and in one more swing.
                  *
                  * A THRESHOLD-FORCED EGRESS ROLLS TOO, since that path arrives
-                 * here by reassigning $action above. CYBERSPACE.md says so in
+                 * here by reassigning $action above. docs/CYBERSPACE.md says so in
                  * as many words: a threshold trips and the player egresses,
                  * "which is itself a roll, so retreat can fail and cost a
                  * turn".
@@ -625,7 +625,7 @@ final readonly class Simulator
      *
      * ## The IDS's second chance
      *
-     * Extraction TOUCHES THE CORE — CYBERSPACE.md names it alongside burning,
+     * Extraction TOUCHES THE CORE — docs/CYBERSPACE.md names it alongside burning,
      * backdooring and injecting — so it is the second place the IDS gets a
      * look, independent of whatever happened on approach. Rolled only while
      * `! $run->detected`: once something has noticed, there is nothing further
@@ -648,7 +648,7 @@ final readonly class Simulator
      *
      * ## Creds and items are instant; a file costs turns
      *
-     * CYBERSPACE.md prices data in QB, cut back down by the deck's bandwidth —
+     * docs/CYBERSPACE.md prices data in QB, cut back down by the deck's bandwidth —
      * "a few turns, scaling with the size of the data." Creds and catalogue
      * items come out the moment the core is touched, same as before; a file
      * starts a countdown on `runs.extracting_qb` and `continueTransfer()`
@@ -1023,7 +1023,7 @@ final readonly class Simulator
     /**
      * The grade, plus a term for whatever is currently fighting you.
      *
-     * CYBERSPACE.md open question 12, resolved: tearing free mid-fight is not
+     * docs/CYBERSPACE.md open question 12, resolved: tearing free mid-fight is not
      * the same act as walking out of a quiet machine, so an ICE that never
      * woke is a cheap exit — one more thing an undetected run is worth. The
      * term is on the ICE's LEVEL rather than its attack, because what makes a
@@ -1132,7 +1132,7 @@ final readonly class Simulator
      * The IDS's second chance, on whatever the core was touched FOR.
      *
      * Extraction and a backdoor install are the same act as far as the machine
-     * is concerned — CYBERSPACE.md names burning, backdooring, injecting and
+     * is concerned — docs/CYBERSPACE.md names burning, backdooring, injecting and
      * extracting together — so the roll lives here rather than in either. Only
      * while undetected: once something has noticed there is nothing further to
      * discover, and asking again would be asking whether they are STILL
@@ -1378,7 +1378,7 @@ final readonly class Simulator
      *
      * ## It is a core touch, like the other two
      *
-     * CYBERSPACE.md names burning first in the list of things that give the
+     * docs/CYBERSPACE.md names burning first in the list of things that give the
      * IDS its second look — "any action against the core, not just the
      * destructive ones" — so it takes the same shared roll extraction and an
      * install take. Being seen doing it changes nothing about whether the

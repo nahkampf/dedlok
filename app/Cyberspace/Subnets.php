@@ -10,7 +10,7 @@ use Closure;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The only writer of `grids` rows beyond the main one, and of a subnet's gateway pair (CYBERSPACE.md, *Subnets*).
+ * The only writer of `grids` rows beyond the main one, and of a subnet's gateway pair (docs/CYBERSPACE.md, *Subnets*).
  *
  * Creating a subnet makes the grid, its gateway at the entry square and the partner gateway somewhere free on the main grid,
  * each pointing at the other. The main-grid gateway is grade 9 and carries the ICE the author picked; the subnet side is the way out: undefended, and no run may be started against it. The prefix, size and entry square are

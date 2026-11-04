@@ -7,7 +7,7 @@ namespace App\Combat;
 use App\Support\Text;
 
 /**
- * How well a hit landed. COMBAT.md.
+ * How well a hit landed. docs/COMBAT.md.
  *
  * Five rungs, weakest first, and each is a fraction of the weapon's full damage per hit
  * (`config/combat.php`, `hit_quality`). The weapon's damage is fixed; this is the only thing

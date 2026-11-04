@@ -18,7 +18,7 @@ use Tests\Support\QueueDice;
 use Tests\TestCase;
 
 /**
- * Magazines in a fight. COMBAT.md, *Actions*. Reloading an EMPTY magazine, or switching to a
+ * Magazines in a fight. docs/COMBAT.md, *Actions*. Reloading an EMPTY magazine, or switching to a
  * different round at any time, each costs the whole turn; a part-full magazine of the same round is
  * not topped up. Rounds are counted for the player and never for an NPC.
  */

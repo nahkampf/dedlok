@@ -154,7 +154,7 @@ final class RaidLedgerTest extends TestCase
 
     /**
      * THE THIRD RAID SHUTS IT. The move itself happens when the window closes
-     * — see `LockdownTest` — which is what CYBERSPACE.md described all along
+     * — see `LockdownTest` — which is what docs/CYBERSPACE.md described all along
      * and what this class did immediately while the window had nowhere to live.
      */
     public function test_the_third_raid_shuts_the_machine(): void

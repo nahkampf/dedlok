@@ -2,7 +2,7 @@
 
 _Split out of CLAUDE.md. Heading levels are as they were there._
 
-### Fatigue and Safehouses (phase 1 built — `FATIGUE.md`)
+### Fatigue and Safehouses (phase 1 built — `docs/FATIGUE.md`)
 
 **Fatigue is the third resource, and FULL is bad.** `characters.current_fatigue` (DECIMAL(8,2), starts 0, clamps to `fatigue_max`) is
 deliberately NOT in `Character::RESOURCES`, which means "full is good" to the damage vocabulary, the waiting room and the dials.
@@ -77,7 +77,7 @@ deliberately NOT in `Character::RESOURCES`, which means "full is good" to the da
   do. Shown on the sheet as a band word with the figure in the tooltip; no dial. Placeholders throughout; more events (winnings, losses of
   creds, safehouse quality as a baseline) are not wired.
 
-### Physical combat (in progress — `COMBAT.md`)
+### Physical combat (in progress — `docs/COMBAT.md`)
 
 **Steps 1–6 of the build are done** (damage types, armour, weapons, wielding, the engine, NPCs, the stored fight, encounters that start fights, and what a win pays and a loss costs). Left: the balance pass, which needs authored content.
 
@@ -167,7 +167,7 @@ deliberately NOT in `Character::RESOURCES`, which means "full is good" to the da
   ammunition stacks) and `loaded_rounds`, no CHECK (error 3823) so a NULL pointer IS an empty magazine.
   `App\Combat\WeaponLoader` is the only writer; rounds come off the loose pile and return through
   `ItemGranter`. **Anything that removes a weapon or a round hands the rounds back first** (destroy, both
-  editors). A mid-fight reload or switch costs a turn — the engine's, per COMBAT.md.
+  editors). A mid-fight reload or switch costs a turn — the engine's, per docs/COMBAT.md.
 - **One item per kind of round**: `ammunition` is unique on (calibre, type), in the schema and in
   `ItemRequest`, because ammunition stacks per item and a twin would be a pile that never merges.
 - **A firearm has no damage of its own — its ROUND does.** A weapon with a calibre has `damage` and

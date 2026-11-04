@@ -103,7 +103,7 @@ final readonly class Extractor
     }
 
     /**
-     * Creds and catalogue items only — the half of a haul CYBERSPACE.md never
+     * Creds and catalogue items only — the half of a haul docs/CYBERSPACE.md never
      * prices in turns. Takes them the moment extraction reaches the core,
      * whatever a file sitting alongside them still costs to pull.
      *

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * The grid: somewhere to go, and the machines standing in it.
  *
- * Phase 3 of CYBERSPACE.md's build order — a walkable, empty world. There is no
+ * Phase 3 of docs/CYBERSPACE.md's build order — a walkable, empty world. There is no
  * intrusion here and nothing to steal; what this table carries is the half a
  * player can WALK PAST. Grade, operating system, IDS, ICE, tracer, owner and
  * contents are phase 4, and they arrive as columns on this table rather than as

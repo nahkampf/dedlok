@@ -64,7 +64,7 @@ return [
         // THE FIRST EXCEPTION. Exploring has no floor, so a character far below
         // a Secretive place is hopeless against it rather than 0.85% — and the
         // same absence removes the ceiling, so a strong explorer is certain of
-        // a Trivial one. See CITY.md.
+        // a Trivial one. See docs/CITY.md.
         'exploration' => 0.0,
 
         // Sensing a safehouse while exploring: about one pass in fifty, whoever is looking (a strong explorer a little more).

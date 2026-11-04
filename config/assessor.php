@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
-| The Assessor (ASSESSOR.md): rough odds from what a scan has read.
+| The Assessor (docs/ASSESSOR.md): rough odds from what a scan has read.
 */
 return [
 

@@ -2,7 +2,7 @@
 
 The grid, the systems on it, and what happens when you break into one.
 
-Read MECHANICS.md first for anything that produces a number: every threshold,
+Read docs/MECHANICS.md first for anything that produces a number: every threshold,
 chance and modifier named here resolves through the one resolver, and none of
 the arithmetic lives in this file.
 
@@ -15,7 +15,7 @@ the run and its fight, extraction, backdoors, lockdown and burn all exist and
 can be played. What is still design is named row by row — concurrent runners,
 co-op, the mission layer and everything the physical world would need. This
 document is the agreed shape, written down so the implementation has something
-to be checked against — the same contract MECHANICS.md holds for the stat
+to be checked against — the same contract docs/MECHANICS.md holds for the stat
 system.
 
 | Piece | State |
@@ -98,14 +98,14 @@ system.
 | Marking a machine you have not seen before | **built**; `system_contacts.first_seen_at`, carried through a sweep and restarted when a different address appears at a position |
 | Moving by tap, click and key | **built**; the eight around you are buttons, arrows and the numpad reach the same eight |
 | The storage socket and its measure | **built and enforced** — `App\Decks\Storage`; every door that adds data asks it, and an overfull deck is not ready |
-| The check layer it all resolves through | **built** — the stats, the graph, conditional modifiers, `character_modifiers`, skill effects, and now the die: `App\Checks\CheckRoller`. Nothing calls it, because nothing has a difficulty yet. See MECHANICS.md |
+| The check layer it all resolves through | **built** — the stats, the graph, conditional modifiers, `character_modifiers`, skill effects, and now the die: `App\Checks\CheckRoller`. Nothing calls it, because nothing has a difficulty yet. See docs/MECHANICS.md |
 | Jack in / sign in — the vocabulary split | **done**; auth reads Sign in / Sign out, and `ui.action.jack_*` is reserved for cyberspace |
 | Operating System skills — AuraOS, Prism-V, IRONCLAD, Lattice | **built** as skill rows; nothing reads them |
 | Network Topology, System Profiling, Advanced System Profiling | **built** as skill rows; nothing reads them |
 | Encryption skills — Cinder, Halcyon-3, BLACKGLASS, Ouroboros | **built** as skill rows with imprints; placeholder descriptions, no prerequisites yet |
 | `DeckTotals::isReady()` — the readiness gate | **built**; jacking in is what will call it |
 | The waiting screen | **built**; `App\Characters\WaitingRoom`, one minute through the `recovery_seconds` stat (base 60), released lazily on the next request. **Zero to one, and no further** — getting up is not healing. `ReadinessWatch` is its first caller, and the ejection happens before it |
-| Synaptic Integrity as a resource | **built**, and the readiness dump is the first thing that damages it. Damage resolves like any other number — origin and resource are both tags, so a resistance is a modifier; see MECHANICS.md. Reaching zero has no consequence yet: there is no waiting screen |
+| Synaptic Integrity as a resource | **built**, and the readiness dump is the first thing that damages it. Damage resolves like any other number — origin and resource are both tags, so a resistance is a modifier; see docs/MECHANICS.md. Reaching zero has no consequence yet: there is no waiting screen |
 | AuraOS in the Deck Jockey loadout | **done**; granted at level 1 alongside the deck |
 | The thermal rename | **done**. Accumulation itself is **specified only** — nothing runs a deck yet |
 | Burning a module out mid-run | **specified only**; the thermally weakest module is destroyed, the trace is cancelled, the player is thrown out for 25–75% of current SI and a 12% chance of a flatline — **Flatline I**, the mildest there is, because a burnout is an accident. The numbers are in `config/cyberspace.php` and nothing reads them |
@@ -115,7 +115,7 @@ system.
 | `config/checks.php` — the certainty floor | **built** as a config constant at 0.0085; nothing reads it |
 | Routing, Advanced Routing | **built** as skill rows with imprints and prerequisites; nothing reads them |
 | Radiator power draw, raised alongside cooling | **done** as data — 25–300 W |
-| Everything a deck's numbers do | **specified only** — see MECHANICS.md |
+| Everything a deck's numbers do | **specified only** — see docs/MECHANICS.md |
 
 ---
 
@@ -135,7 +135,7 @@ thing again — which deck you are carrying — and was never either of these.
 character; it is a persistent property of the person, not of a machine. What a
 deck's hardware does thermally is **thermal load**, measured in **thermal units
 (TU)**, and every stat id, column and class carrying the old name has to move —
-see MECHANICS.md, *The thermal rename*. A player reading "your heat is high"
+see docs/MECHANICS.md, *The thermal rename*. A player reading "your heat is high"
 must never have to ask which of the two is meant.
 
 **Grade is how hard a system is.** Not `rarity`, which already means how often
@@ -353,7 +353,7 @@ Three deck measures, three different jobs, and a program touches all three:
 
 That is the loadout puzzle: memory limits what you can bring, compute limits
 what you can have running at once, and storage limits how much you can carry
-out. Storage is a **new socket kind and a new measure** — see MECHANICS.md, *The
+out. Storage is a **new socket kind and a new measure** — see docs/MECHANICS.md, *The
 sixth measure*, for why it cannot simply be more quantabits.
 
 ### Lockdown
@@ -1298,7 +1298,7 @@ When the deck freezes:
   calibrated together, against each other and against a survivable run length.
 
   Permanent damage to maximum SI is an unexpiring modifier row and never a
-  subtraction into a column, because maximum SI is derived — see MECHANICS.md,
+  subtraction into a column, because maximum SI is derived — see docs/MECHANICS.md,
   *Flatline is a permanent stored modifier*. It deepens the character's ONE
   *neural damage* modifier rather than adding a second — see *Losing*. **The
   stat floors at 1, so accumulated flatlines converge on a maximum of 1 rather
@@ -1526,7 +1526,7 @@ character was carrying, never what they had stored.
 SI is derived and must never be stored, so a flatline is an unexpiring modifier
 on `synaptic_integrity_max`, floored at 1 the way maximum HP is. Permanent
 damage to both HP and SI is reversible later, by means not yet designed. See
-MECHANICS.md.
+docs/MECHANICS.md.
 
 **Every flatline deepens ONE injury rather than adding another.** *Neural
 damage* is a single accumulating modifier per character: -5 that takes another
@@ -1534,7 +1534,7 @@ damage* is a single accumulating modifier per character: -5 that takes another
 do not care what caused the damage, only that there is more of it — which is
 what lets a freeze, an ICE flatline and, later, a drug overdose all write into
 the same injury without knowing about each other, and lets a clinic heal one
-number. MECHANICS.md has the shape.
+number. docs/MECHANICS.md has the shape.
 
 ### Trace, and the heat it leaves
 
@@ -1716,7 +1716,7 @@ have been told, in advance, that they would.
   decryption from inside cyberspace; you may not call one off. That asymmetry is
   the one that never traps anybody — a player can always add work and can never
   strand themselves halfway out of a state.
-- **Unequipping a deck mid-decryption warns, and then does it.** MECHANICS.md
+- **Unequipping a deck mid-decryption warns, and then does it.** docs/MECHANICS.md
   anticipated this — *unequipping will one day have to stop long-running
   processes, and jacking out will not*. This is that day: the confirmation says
   what will be lost, and if the player goes ahead the decryption stops and its
@@ -2197,7 +2197,7 @@ All of it. In the order it should be built:
    jacking out, stepping, and jumping to an address, every arrival sweeping.
    Bookmarks are built too, both kinds, along with recalling one, and the map
    screen that draws all of it. Systems have owners, drawn from the corp roster
-   in WORLDBUILDING.md. The deck lock is built as well. **Phase 3 is done.**
+   in docs/WORLDBUILDING.md. The deck lock is built as well. **Phase 3 is done.**
    Losing readiness while jacked in — carried forward, since it was never
    phase 3's — is built too: `ReadinessWatch`, asked both where a deck can be
    broken and by middleware behind it. Nothing can currently cause it, because

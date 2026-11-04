@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
  * ## The only thing that takes a backdoor from somebody who did nothing wrong
  *
  * A backdoor keeps a system open — no lockdown, no relocation, a permanent
- * address in a world where nothing else has one. CYBERSPACE.md is plain that
+ * address in a world where nothing else has one. docs/CYBERSPACE.md is plain that
  * this is powerful enough not to be permanent, and the ageing roll is what
  * makes it temporary: one roll per backdoor per night, odds rising with AGE
  * and with nothing else. Not the machine's grade, not what has been done

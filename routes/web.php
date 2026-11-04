@@ -176,7 +176,7 @@ Route::middleware('auth')->group(function () {
     // cannot be called off from in there. See App\Decryption\DecryptionQueue.
     Route::post('/inventory/{entry}/decrypt', [DecryptionController::class, 'store'])
         ->name('decryption.store');
-    // Crafting (CRAFTING.md): start a build from a design in the stash (components are spent now), or give one up.
+    // Crafting (docs/CRAFTING.md): start a build from a design in the stash (components are spent now), or give one up.
     Route::post('/inventory/{entry}/craft', [CraftingController::class, 'store'])->name('crafting.store');
     Route::delete('/crafting/{craft}', [CraftingController::class, 'destroy'])->name('crafting.destroy');
 
@@ -228,7 +228,7 @@ Route::middleware('auth')->group(function () {
      * Implants: what is installed in a body.
      *
      * One screen, and READ ONLY. Fitting and removing are surgery now, done at a
-     * clinic that offers it (`city.operate`) — see CITY.md.
+     * clinic that offers it (`city.operate`) — see docs/CITY.md.
      */
     Route::get('/implants', [ImplantController::class, 'index'])->name('implants.index');
     Route::get('/equipment', [EquipmentController::class, 'index'])->name('equipment.index');

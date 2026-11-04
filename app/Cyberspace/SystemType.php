@@ -52,7 +52,7 @@ enum SystemType: string
     /**
      * A player's own node: founded on an empty square by running a Data Fortress Kernel, owned by a CHARACTER
      * (`systems.owner_character_id`) rather than an entity, and run on resources its Leechers borrow. Never rolled by the
-     * seeder, never stocked by the restock, and never given an NPC's defences (`CYBERSPACE.md`, *Data Fortresses*).
+     * seeder, never stocked by the restock, and never given an NPC's defences (`docs/CYBERSPACE.md`, *Data Fortresses*).
      */
     case Fortress = 'fortress';
 
@@ -60,7 +60,7 @@ enum SystemType: string
      * One end of a pair that joins two grids (`systems.links_to_system_id`): a door on the main grid into a subnet, and its
      * mirror inside. Placed, never rolled, never relocated, owned by nobody. It is otherwise an ordinary defended system (it
      * has a grade, ICE, a lockdown) that cannot be scanned and takes ONE kind of run, Infiltrate, and never a co-op one: a
-     * multi-user run would cause too much noise (CYBERSPACE.md, *Subnets*).
+     * multi-user run would cause too much noise (docs/CYBERSPACE.md, *Subnets*).
      */
     case Gateway = 'gateway';
 

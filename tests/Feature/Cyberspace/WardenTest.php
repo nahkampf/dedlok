@@ -21,7 +21,7 @@ use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
 /**
- * Wardens (CYBERSPACE.md, *Wardens*): hunters that walk a subnet.
+ * Wardens (docs/CYBERSPACE.md, *Wardens*): hunters that walk a subnet.
  */
 final class WardenTest extends TestCase
 {

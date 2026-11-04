@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.87.0] — 2026-11-04
+
+### Fixed
+- **Turning a job down at an exchange was a 500.** `d5d1e40` made `MissionLedger::decline()` keep the row as `declined`, but production's `chk_missions_state` CHECK only allowed offered, accepted, completed, failed and voided, so every decline was rejected by MySQL. SQLite tests have no such CHECK and passed. The migration `2026_11_10_130000_declined_missions_pass_the_state_check` recreates the constraint with `declined` (MySQL only); its down deletes `declined` rows first.
+
+Run `php artisan migrate`.
+
+
+
 ## [0.86.0] — 2026-11-03
 
 ### Added
@@ -3996,7 +4005,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.86.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.87.0...HEAD
+[0.87.0]: https://github.com/nahkampf/dedlok/compare/v0.86.0...v0.87.0
 [0.86.0]: https://github.com/nahkampf/dedlok/compare/v0.85.0...v0.86.0
 [0.85.0]: https://github.com/nahkampf/dedlok/compare/v0.84.0...v0.85.0
 [0.84.0]: https://github.com/nahkampf/dedlok/compare/v0.83.2...v0.84.0

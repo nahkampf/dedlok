@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
  * `DeckTotals::isReady()` is checked on the way in. This is the other half:
  * the machine has to keep working while somebody is standing inside it, and
  * when it does not, they are jacked out and it costs them a point of Synaptic
- * Integrity. Not a warning and not a grace period — CYBERSPACE.md, *Readiness
+ * Integrity. Not a warning and not a grace period — docs/CYBERSPACE.md, *Readiness
  * is the gate, and it is checked twice*.
  *
  * THE DAMAGE IS SMALL AND IT IS NOT ZERO. The cause is usually not the
@@ -138,7 +138,7 @@ final class ReadinessWatch
              *
              * The screen comes after `jackOut()` because a character must never
              * be sitting on it while still holding a position in cyberspace.
-             * That is the one ordering CYBERSPACE.md says produces a state
+             * That is the one ordering docs/CYBERSPACE.md says produces a state
              * nothing else knows how to read, and it is why this is four lines
              * apart rather than one call.
              *

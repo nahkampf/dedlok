@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Grids as rows (CYBERSPACE.md, *Subnets*, step 1). The main grid is row 1, and every coordinate table gains a `grid_id`
+ * Grids as rows (docs/CYBERSPACE.md, *Subnets*, step 1). The main grid is row 1, and every coordinate table gains a `grid_id`
  * that DEFAULTS to it, so nothing that exists changes: one grid, and every position is on it. A position is now
  * (grid, x, y), and the unique keys say so, which is what lets a second grid hold a system at the same x and y.
  *

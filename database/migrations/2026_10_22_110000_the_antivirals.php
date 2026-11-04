@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * The two Antivirals (CYBERSPACE.md, *Virus*): background Utility programs whose modifiers lower `virus_lifetime`, so a
+ * The two Antivirals (docs/CYBERSPACE.md, *Virus*): background Utility programs whose modifiers lower `virus_lifetime`, so a
  * virus clears sooner for as long as they run. An item whose slug already exists is left exactly as it is, so a copy
  * authored on the live site first is never overwritten.
  */

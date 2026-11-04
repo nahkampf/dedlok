@@ -89,7 +89,7 @@ use Illuminate\Support\Facades\DB;
  * scanner is a tool rather than a talent: an analyser on the equipped deck is
  * what turns standing in front of a machine into finding out what it is, and it
  * spends compute and memory the whole time it is doing so. That is the answer
- * to the question CYBERSPACE.md said to settle before this class was written.
+ * to the question docs/CYBERSPACE.md said to settle before this class was written.
  *
  * WHAT A BETTER ANALYSER BUYS IS DATA, NOT CODE. Versions differ by what they
  * carry on their own row, through the two channels every program already has:

@@ -34,7 +34,7 @@ return [
     | worth nothing, which is the honest answer for a cause nobody has priced.
     |
     | The negatives are the only ones that can happen today: missions and the
-    | store are designed in TODO.md and not built, and their entries wait for
+    | store are designed in docs/TODO.md and not built, and their entries wait for
     | the writers that will use them.
     |
     | Being NOTICED costs least — it is being seen rather than what you did.

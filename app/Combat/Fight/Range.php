@@ -6,7 +6,7 @@ namespace App\Combat\Fight;
 
 /**
  * Which weapon a distance lets you use. The distance itself is a number on `FightState`: any distance above
- * nought is Ranged, and nought is Close. COMBAT.md.
+ * nought is Ranged, and nought is Close. docs/COMBAT.md.
  */
 enum Range: string
 {

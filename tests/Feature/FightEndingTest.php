@@ -33,7 +33,7 @@ use Tests\Support\QueueDice;
 use Tests\TestCase;
 
 /**
- * What a fight's ending is worth. COMBAT.md, step 6.
+ * What a fight's ending is worth. docs/COMBAT.md, step 6.
  *
  * The fight's own die is pinned as in `FightsTest` (an aim of 99 against a defence of 0 is Dead-on at a die
  * of 0.0; a body die of 0.5 is the right leg). The ending has a die of its own, an integer one, pinned here

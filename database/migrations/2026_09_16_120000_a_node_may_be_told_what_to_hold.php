@@ -34,7 +34,7 @@ use Illuminate\Support\Facades\Schema;
  * The rule governs ITEMS only. Creds and files are still rolled, because a
  * mission node that held no money would announce itself as a mission node; the
  * file a quest is actually about will be written straight in as a row when
- * missions exist, rather than being described here. See TODO.md.
+ * missions exist, rather than being described here. See docs/TODO.md.
  */
 return new class extends Migration
 {

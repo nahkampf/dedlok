@@ -10,7 +10,7 @@ use App\Support\Points;
 use App\Support\Text;
 
 /**
- * Mood: -100 to +100. The only writer of `characters.mood`. TODO.md, *Mood*.
+ * Mood: -100 to +100. The only writer of `characters.mood`. docs/TODO.md, *Mood*.
  *
  * Events move it (`event()`, amounts in `config/mood.php`), the minute clock pulls it back to 0 (`drift()`), and its bands
  * grant effect rows the way Tired and Drained do (`sync()`, after every write). The caller owns the transaction.

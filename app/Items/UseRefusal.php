@@ -23,7 +23,7 @@ enum UseRefusal: string
     /** Food, and they cannot eat any more. */
     case TooFull = 'too_full';
 
-    /** A fight is live. What happens in a fight happens through the fight (COMBAT.md: items mid-fight are later). */
+    /** A fight is live. What happens in a fight happens through the fight (docs/COMBAT.md: items mid-fight are later). */
     case InAFight = 'in_a_fight';
 
     public function message(): string

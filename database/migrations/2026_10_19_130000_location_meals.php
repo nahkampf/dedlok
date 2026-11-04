@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/** A location with meals on a menu is a place to eat (App\Characters\Meal, FATIGUE.md, *Food and fullness*). */
+/** A location with meals on a menu is a place to eat (App\Characters\Meal, docs/FATIGUE.md, *Food and fullness*). */
 return new class extends Migration
 {
     public function up(): void
