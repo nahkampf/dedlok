@@ -527,6 +527,7 @@ class RunController extends Controller
         return $this->resolve(
             $character,
             $run,
+            $run->system(),
             $simulator->take($character, $run, RunAction::from($data['action']), fortressId: isset($data['fortress']) ? (int) $data['fortress'] : null),
             $simulator,
         );
@@ -542,6 +543,8 @@ class RunController extends Controller
     private function resolve(
         Character $character,
         Run $run,
+        // Read BEFORE the turn: a burn deletes the system, and the after-run door filters on what it was.
+        ?System $system,
         TurnResult $result,
         Simulator $simulator,
     ): RedirectResponse {
@@ -552,7 +555,6 @@ class RunController extends Controller
         if (! $result->ended()) {
             // Between turns: the run door. Opened on the locked character, in its own write.
             $opened = null;
-            $system = $run->system();
 
             if ($system !== null) {
                 $opened = DB::transaction(fn () => app(Encounters::class)->maybeOpenFor(
@@ -578,7 +580,15 @@ class RunController extends Controller
         // the ending (an auto-egress naming its threshold) would otherwise be read by nobody.
         $notices = array_column(array_filter($result->log, static fn (array $line): bool => ! empty($line['notice'])), 'text');
 
-        return redirect()->route('cyberspace.index')
+        // The after-run door, once the ending has settled. Somebody a bad ending put on the floor is not up to be met (canHappenTo).
+        $opened = $system === null ? null : DB::transaction(fn () => app(Encounters::class)->maybeOpenFor(
+            Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail(),
+            EncounterStart::AfterRun,
+            $system,
+            $run->refresh(),
+        ));
+
+        return redirect()->route($opened === null ? 'cyberspace.index' : 'encounter.show')
             ->with($result->ending->isBad() ? 'error' : 'status', implode(' ', [...$notices, $result->ending->message()]));
     }
 
@@ -611,7 +621,7 @@ class RunController extends Controller
             return redirect()->route($run->refresh()->isLive() ? 'run.show' : 'cyberspace.index');
         }
 
-        return $this->resolve($character, $run, $simulator->take($character, $run, RunAction::Egress), $simulator);
+        return $this->resolve($character, $run, $run->system(), $simulator->take($character, $run, RunAction::Egress), $simulator);
     }
 
     private function liveRun(Character $character): ?Run

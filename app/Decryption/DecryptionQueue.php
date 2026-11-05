@@ -462,6 +462,15 @@ final class DecryptionQueue
      */
     public function outcomeFor(ExtractedFile $file): ?Item
     {
+        // A file an encounter left says what it is: nothing is rolled.
+        if ($file->payloadItemId !== null && ($payload = Item::query()->find($file->payloadItemId)) !== null) {
+            return $payload;
+        }
+
+        if ($file->payloadText) {
+            return Item::query()->where('slug', ExtractedFile::TEXT_SLUG)->first();
+        }
+
         if ($file->missionId !== null) {
             return Item::query()->where('slug', ExtractedFile::DECRYPTED_SLUG)->first();
         }

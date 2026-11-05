@@ -1,3 +1,12 @@
+## 0.88.0 (2026-11-05)
+
+- Achievements you haven't earned are greyed out
+- There is a new type of program: Scanner swarms, and a single program in that category: Wotan. Scanner Swarms are run as background processes, and jump around scanning systems at random. They do this much less efficiently than an active scan, but let's you get scans done without the manual labor. Swarm scans don't count towards systems scanned for the purpose of achievements. 
+  - No copy of Wotan is available, only the designs (BNI and Lockjaw).
+- New cyberspace mission: Procure. Deliver X specific components to an exchange.
+- Encounters can now write very specific files as an outcome. Scripts, programs, components or a new type: text files. These can be read from the stash.
+- Lots of designs modified, to include some of the unused components (like Research Data or Customer Records).
+
 ## 0.87.0 (2026-11-04)
 
 - There was a missing enum update to the mission statuses, so declining a mission resulted in a http 500. Fixed now.

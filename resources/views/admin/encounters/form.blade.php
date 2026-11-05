@@ -10,7 +10,7 @@
 
     // A blank row at each level: one outcome in a choice, one choice on a screen. The "+" buttons
     // add more; the same blanks are the <template>s they clone.
-    $blankOutcome = ['branch' => 'always', 'kind' => '', 'amount' => '', 'ref' => '', 'item_id' => null, 'entity_id' => null, 'text' => '', 'entry_slug' => '', 'entry_text' => ''];
+    $blankOutcome = ['branch' => 'always', 'kind' => '', 'amount' => '', 'ref' => '', 'item_id' => null, 'entity_id' => null, 'text' => '', 'entry_slug' => '', 'entry_text' => '', 'body' => '', 'ice' => false];
     $blankChoice = ['label' => '', 'requires_flag' => '', 'cost' => 0, 'next_key' => '', 'check_stat' => '', 'difficulty' => '', 'pass_key' => '', 'fail_key' => '', 'fight_npc_id' => '', 'win_key' => '', 'lose_key' => '', 'flee_key' => '', 'outcomes' => [$blankOutcome]];
     $blankNode = ['key' => '', 'body' => '', 'entry' => false, 'ends' => false, 'outcomes' => [$blankOutcome], 'choices' => [$blankChoice]];
 
@@ -146,6 +146,7 @@
                         'move' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.grid_step_chance') * 100, 2), '0'), '.'),
                         'system' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.system_chance') * 100, 2), '0'), '.'),
                         'run' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.run_chance') * 100, 2), '0'), '.'),
+                        'after_run' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.after_run_chance') * 100, 2), '0'), '.'),
                     ]) }}</span>
                 </label>
                 <label class="field">
@@ -199,6 +200,15 @@
                         <option value=""></option>
                         @foreach ($purposes as $purpose)
                             <option value="{{ $purpose->value }}" @selected($enum('run_purpose') === $purpose->value)>{{ $purpose->label() }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.run_outcome') }}</span>
+                    <select class="select" name="run_outcome">
+                        <option value=""></option>
+                        @foreach ($outcomes as $outcome)
+                            <option value="{{ $outcome->value }}" @selected($enum('run_outcome') === $outcome->value)>{{ $outcome->label() }}</option>
                         @endforeach
                     </select>
                 </label>
@@ -280,6 +290,27 @@
             <button type="submit" class="btn btn--ghost cut">{{ Text::get('admin.encounters.delete') }}</button>
         </form>
     @endunless
+
+    {{-- The tokens a text file may carry (`App\City\FilePlaceholders`, the same table the delivery fills from). --}}
+    <dialog id="placeholders" class="modal modal--wide">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('admin.encounters.placeholders.title') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
+        </div>
+        <div class="panel__bd stack" style="--gap:var(--s-2)">
+            @foreach (\App\City\FilePlaceholders::tokens() as $token)
+                <div>
+                    <code>{{ '{'.$token.'}' }}</code>
+                    <span class="micro" style="color:var(--ink-3)">
+                        {{ ($doors = \App\City\FilePlaceholders::doors($token)) === []
+                            ? Text::get('admin.encounters.placeholders.every_door')
+                            : implode(', ', array_map(fn (string $d): string => \App\City\EncounterStart::from($d)->label(), $doors)) }}
+                    </span>
+                    <div>{{ Text::get('admin.encounters.placeholders.tokens.'.$token) }}</div>
+                </div>
+            @endforeach
+        </div>
+    </dialog>
 @endsection
 
 @push('scripts')

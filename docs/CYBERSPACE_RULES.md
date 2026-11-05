@@ -832,6 +832,15 @@ overlap.
   action is what decides which way. A **survey** carries files in and spends
   them at the desk; a **demolition** and a **placement** are satisfied by the
   act, in the transaction that performs it; **supply** names no systems at all.
+- **PROCURE is an Extraction-class job that names no address** (`MissionAction::Procure`, never rolled on its own: 20% of Extract
+  rolls, `missions.procure.share`, become one when an owner can be found, else they stay an Extract). It wants components, as rows
+  in `mission_requirements` (component item, quantity, owner entity id, and the owner's name copied): 1 kind (2 with 25%), each 1 copy
+  (2 with 30%), all from one owner who holds a system in the desk grade's band (`missions.procure.bands`: 1-3, 2-4, 3-5, 4-6, 5-9) and
+  is not the giver. The kinds are those whose drop table reaches a grade in the band. It is handed in as the components
+  (`MissionLedger::requirementPicks()`: loose components of that type whose `FileOrigin::ownerId` is the owner, lowest grade first,
+  all or nothing, spent in the transaction); the grade of the file does not matter. The window is a fixed 48 hours and it pays
+  Extraction's creds with triple its standing and loyalty. **`chk_missions_action` is a MySQL CHECK: a new action needs a
+  migration, which SQLite tests cannot show.**
 - **The act reaches the ledger, not the other way round.** `Simulator` calls
   `MissionLedger::recordAgainst()` inside its own transaction, and it is
   deliberately quiet: a runner who burns a machine they happen to owe somebody

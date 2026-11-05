@@ -42,7 +42,7 @@ the City's, not a second one.
 
 ## Doors
 
-**Four doors, one writer: `Encounters::open()`.** Each is a value of `starts_on`, and a `grid` encounter has
+**Five doors, one writer: `Encounters::open()`.** Each is a value of `starts_on`, and a `grid` encounter has
 exactly one.
 
 | Door | Fires from | Filters on the row |
@@ -50,6 +50,7 @@ exactly one.
 | `grid_step` | `Navigator::arrive()`, after the sweep and beside the hunter roll | a grid box (x/y min and max) |
 | `system` | arriving at a system: the sweep, or jacking in to it | system type, grade range, owner |
 | `run` | between turns of a run: on a node, or on the way out | grade range, run purpose |
+| `after_run` | a run the player took has ended, and they are still up on the grid (`RunController::resolve`) | run purpose, system type, grade range, owner, outcome |
 | `spot` | a button, like a City `place`: a coordinate or a named system always offers it | `required_flag`, and `once` or a cooldown |
 
 - **Like `Hunters::spawn()`, opening one is its own write**, OUTSIDE the arrival's transaction: failing to open
@@ -208,3 +209,17 @@ ones. Refused on top of the City's rules (`EncounterRequest`, `EncounterGraph`):
   encounter is between turns and costs none.
 - Whether `spot` cooldowns are per character or global. Per character is assumed.
 - Avatars as hunters: whether a high-heat hunt may draw an avatar rather than an ICE.
+
+## The `after_run` door
+
+Fires once when a run the player took ends, after the ending has settled, rolled like the others
+(`cyberspace.encounter.after_run_chance`, or the encounter's own `chance`). Every filter is nullable and they combine:
+purpose, system type, grade range, owner and outcome (`encounters.run_outcome`: success is `RunEnding::Completed`, failure is any other ending, NULL is both; `RunOutcome`). It is NOT a `run` encounter: no `run_end` (refused), no run outcomes
+(`trace`, `wake_ice`, `detected`) and no `grid_move`, and `character_encounters.run_id` stays NULL.
+
+- **The system is read BEFORE the turn** (`RunController::resolve` is handed it), because a burn deletes it and the run
+  keeps only an address. The filters therefore see what a burned system was.
+- **Only where the runner is still up.** `canHappenTo()` wants them jacked in, standing and not on the floor, so a
+  Defeat or Burnout (which eject to the floor) never opens one; Egress, Completed and Ejected do.
+- **Not built:** a party run that ends on the clock (`PartyTurns`), a lockdown-cancelled run and an encounter's own
+  `kill_run`; none is the runner's own action, and an encounter waits for the player.

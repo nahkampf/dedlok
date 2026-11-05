@@ -53,6 +53,12 @@ enum OutcomeKind: string
      */
     case Message = 'message';
 
+    /**
+     * Leaves a file on the runner's deck: a text (`text` the title, `body` the words, `ice`) or a catalogue item (`item_id`), `amount`
+     * its size in QB for a text, and `ref` the slug of the encryption skill that seals it, blank for none. A text ignores the deck's room.
+     */
+    case File = 'file';
+
     /** The longest an encounter may hold a message back: 48 hours, in seconds. */
     public const MESSAGE_MAX_DELAY = 172800;
 
@@ -84,7 +90,7 @@ enum OutcomeKind: string
     /** Whether `ref` carries the target: a flag slug, an injury key, a resource or a position. */
     public function needsRef(): bool
     {
-        return in_array($this, [self::Flag, self::Injury, self::Damage, self::GridMove, self::Journal, self::JournalDone, self::Message], true);
+        return in_array($this, [self::Flag, self::Injury, self::Damage, self::GridMove, self::Journal, self::JournalDone, self::Message, self::File], true);
     }
 
     /** A flag, a dose and the grid effects with no number have no amount; everything else is a signed number. */

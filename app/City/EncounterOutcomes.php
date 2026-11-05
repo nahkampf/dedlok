@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\City;
 
 use App\Characters\Flags;
+use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Position;
 use App\Cyberspace\Simulator;
@@ -14,11 +15,14 @@ use App\Insurance\Insurance;
 use App\Inventory\ItemGranter;
 use App\Journal\Journal;
 use App\Models\Character;
+use App\Models\CharacterEncounter;
 use App\Models\EncounterOutcome;
 use App\Models\Entity;
+use App\Models\FileText;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Run;
+use App\Models\Skill;
 use App\Notifications\Notifier;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
@@ -27,6 +31,7 @@ use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
 use App\Stats\InjuryLedger;
 use App\Stats\Resolver;
+use App\Support\Qb;
 use App\Support\Text;
 use App\Wallet\Reason;
 use App\Wallet\Wallet;
@@ -75,6 +80,7 @@ final class EncounterOutcomes
             OutcomeKind::Journal => $this->journal($character, $outcome),
             OutcomeKind::JournalDone => $this->journalDone($character, (string) $outcome->ref),
             OutcomeKind::Message => $this->message($character, $outcome),
+            OutcomeKind::File => $this->file($character, $outcome),
         };
     }
 
@@ -185,6 +191,71 @@ final class EncounterOutcomes
         ItemGranter::grant($character, $item, $quantity);
 
         return Text::get('city.encounter.outcomes.item', ['item' => $item->displayName(), 'quantity' => $quantity]);
+    }
+
+    /**
+     * Leave a file on the deck: sealed under an encryption, or not. A catalogue item asks the deck for room like the item
+     * outcome does. A TEXT does not: a quest's words are never lost to a full deck (its size still counts in what is used).
+     */
+    private function file(Character $character, EncounterOutcome $outcome): ?string
+    {
+        $encryption = (string) $outcome->ref;
+        $skill = $encryption === '' ? null : Skill::query()->where('slug', $encryption)->first();
+
+        // An encryption that has since gone leaves nothing rather than something unsealed.
+        if ($encryption !== '' && $skill === null) {
+            return null;
+        }
+
+        $item = $outcome->item;
+
+        if ($outcome->item_id !== null) {
+            if ($item === null) {
+                return Text::get('city.encounter.outcomes.item_gone');
+            }
+
+            $size = Storage::sizeOf($item);
+
+            if (! Storage::fits($character, $size)) {
+                return Text::get('city.encounter.outcomes.item_no_room', ['item' => $item->displayName()]);
+            }
+
+            if ($skill === null) {
+                ItemGranter::grant($character, $item, 1);
+            } else {
+                $this->sealed($character, new ExtractedFile(label: $item->displayName(), sizeQb: $size, encryptionSkillId: $skill->getKey(), valueSealed: 0, valueBroken: 0, payloadItemId: $item->getKey()));
+            }
+
+            return Text::get('city.encounter.outcomes.file', ['title' => $item->displayName()]);
+        }
+
+        $title = (string) $outcome->text;
+        $words = FilePlaceholders::fill((string) $outcome->body, $character, CharacterEncounter::query()->find($character->current_encounter_id)?->door);
+
+        if ($title === '' || trim($words) === '') {
+            return null;
+        }
+
+        $file = new ExtractedFile(label: $title, sizeQb: Qb::of($outcome->amount ?? 0), encryptionSkillId: $skill?->getKey(), valueSealed: 0, valueBroken: 0, payloadText: true);
+        $slug = $skill === null ? ExtractedFile::TEXT_SLUG : ExtractedFile::SEALED_SLUG;
+        $holder = Item::query()->where('slug', $slug)->first();
+
+        if ($holder === null) {
+            return null;
+        }
+
+        $row = $character->inventory()->create(['item_id' => $holder->getKey(), 'parent_id' => null, 'quantity' => 1, 'extracted_file' => $file->toArray()]);
+        FileText::create(['inventory_item_id' => $row->getKey(), 'title' => $title, 'body' => $words, 'ice' => $outcome->ice]);
+
+        return Text::get('city.encounter.outcomes.file', ['title' => $title]);
+    }
+
+    /** A sealed dump carrying what it turns into. */
+    private function sealed(Character $character, ExtractedFile $file): void
+    {
+        $dump = Item::query()->where('slug', ExtractedFile::SEALED_SLUG)->first();
+
+        $dump === null || $character->inventory()->create(['item_id' => $dump->getKey(), 'parent_id' => null, 'quantity' => 1, 'extracted_file' => $file->toArray()]);
     }
 
     private function standing(Character $character, ?Entity $entity, float $amount): ?string

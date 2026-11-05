@@ -36,7 +36,14 @@ final class ProbeResult
          * to look at a deck that is working perfectly.
          */
         public readonly ?VoidCause $cause = null,
+        /** Made by a Swarm: settled like any read, but never announced on the screen. */
+        public readonly bool $swarm = false,
     ) {}
+
+    public function fromSwarm(): self
+    {
+        return new self($this->scan, $this->found, $this->rolls, $this->refusal, $this->voided, $this->cause, true);
+    }
 
     /**
      * @param  list<string>  $found

@@ -79,4 +79,19 @@ final class GridEncounterEditorTest extends TestCase
         $this->save('system', [], ['system_type' => 'silo', 'grade_min' => 2, 'grade_max' => 5])->assertSessionHasNoErrors();
         $this->save('system', [], ['grade_min' => 5, 'grade_max' => 2])->assertSessionHasErrors('grade_max');
     }
+
+    public function test_a_file_outcome_is_a_text_or_an_item_and_only_asks_for_tokens_its_door_can_fill(): void
+    {
+        $file = static fn (array $o): array => ['outcomes' => [['kind' => 'file', 'amount' => '2', 'text' => 'Letter'] + $o]];
+
+        $this->save('after_run', $file(['body' => 'Hi {handle}, {system} {outcome}']))->assertSessionHasNoErrors();
+        $stored = $this->encounter->nodes()->first()->outcomes()->sole();
+        $this->assertSame('Hi {handle}, {system} {outcome}', $stored->body);
+
+        $this->save('system', $file(['body' => 'a {outcome}']))->assertSessionHasErrors('nodes.0.outcomes.0.body');
+        $this->save('after_run', $file([]))->assertSessionHasErrors('nodes.0.outcomes.0.body');
+        $this->save('after_run', $file(['body' => 'x', 'ref' => 'nonsense']))->assertSessionHasErrors('nodes.0.outcomes.0.ref');
+        $this->save('after_run', $file(['body' => str_repeat('x', 65001)]))->assertSessionHasErrors('nodes.0.outcomes.0.body');
+        $this->save('after_run', $file(['body' => 'x', 'ref' => 'cinder', 'ice' => '1']))->assertSessionHasNoErrors();
+    }
 }

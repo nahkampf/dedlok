@@ -3063,6 +3063,10 @@ button.board__node[data-inspect]:focus-visible .board__box { border-color: var(-
 .unlit:hover,
 .unlit:focus-within { opacity: 1; }
 
+/* An achievement not earned yet: its picture in greys, in colour again under the pointer. */
+.card--grey img { filter: grayscale(1); transition: filter var(--t-fast) var(--ease); }
+.card--grey:hover img { filter: none; }
+
 .stack   { display: flex; flex-direction: column; gap: var(--gap, var(--s-3)); }
 .row     { display: flex; align-items: center; gap: var(--gap, var(--s-3)); }
 .row--wrap { flex-wrap: wrap; }

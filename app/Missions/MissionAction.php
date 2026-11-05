@@ -43,6 +43,8 @@ enum MissionAction: string
     case Transport = 'transport';
     case Supply = 'supply';
     case Denial = 'denial';
+    /** Components from one owner's systems, handed in at the desk. Names no address; never rolled on its own (an Extract roll becomes it). */
+    case Procure = 'procure';
 
     /**
      * How many systems this action names, as a range.
@@ -65,13 +67,14 @@ enum MissionAction: string
             self::Transport => [1, 1],
             self::Supply => [0, 0],
             self::Denial => [1, 2],
+            self::Procure => [0, 0],
         };
     }
 
     /** Does a job of this kind designate systems, or ask for a count of something? */
     public function designatesTargets(): bool
     {
-        return $this !== self::Supply;
+        return $this !== self::Supply && $this !== self::Procure;
     }
 
     /**
@@ -83,7 +86,7 @@ enum MissionAction: string
      */
     public function evidenceIsCarried(): bool
     {
-        return $this === self::Scan || $this === self::Supply || $this === self::Extract;
+        return $this === self::Scan || $this === self::Supply || $this === self::Extract || $this === self::Procure;
     }
 
     public function label(): string

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Programs;
 
 use App\Crafting\Crafting;
+use App\Cyberspace\Swarm;
 use App\Cyberspace\Tracker;
 use App\Decks\DeckTotals;
 use App\Decks\Storage;
@@ -86,6 +87,11 @@ final class ProgramRunner
                 DecryptionQueue::make()->settle($character);
             }
 
+            // A Swarm does not wait for the next sweep to read its first system.
+            if ($row->item?->program?->swarms) {
+                Swarm::make()->feed($character);
+            }
+
             return ProcessResult::started($started);
         });
     }
@@ -150,6 +156,11 @@ final class ProgramRunner
         // And one Jumper: its own slot, beside a locator.
         if ($program->kind === ProgramKind::Utility && $program->jumps && $this->utilityRunning($character, 'jumps')) {
             return ProcessRefusal::OneJumper;
+        }
+
+        // A Swarm works the main grid and nothing else: refuse it while its owner is in a subnet, rather than let it start and idle.
+        if ($program->kind === ProgramKind::Utility && $program->swarms && ($character->gridPosition()?->grid ?? 1) !== 1) {
+            return ProcessRefusal::SwarmSubnet;
         }
 
         // And one Assessor.

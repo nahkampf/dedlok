@@ -82,6 +82,9 @@ enum ProcessRefusal: string
     /** One program that puts Jump buttons beside addresses at a time. */
     case OneJumper = 'one_jumper';
 
+    /** A Swarm reads the main grid only, so it will not start while its owner is inside a subnet. */
+    case SwarmSubnet = 'swarm_subnet';
+
     /** One Assessor at a time: the finest of two would make the other pointless. */
     case OneAssessor = 'one_assessor';
 

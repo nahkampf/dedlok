@@ -172,6 +172,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/inventory/{entry}/read', [InventoryController::class, 'read'])
         ->name('inventory.read');
 
+    // A text file an encounter left, as the fragment the reader dialog fetches (ui-kit.js `data-listing`).
+    Route::get('/inventory/{entry}/text', [InventoryController::class, 'text'])->name('inventory.text');
+
     // Decryption: queue a file to be broken, or take one out. Startable while jacked in; the file being worked on
     // cannot be called off from in there. See App\Decryption\DecryptionQueue.
     Route::post('/inventory/{entry}/decrypt', [DecryptionController::class, 'store'])

@@ -659,7 +659,7 @@ class Item extends Model
         $lines[] = Text::get($program->multithreaded ? 'programs.spec.multithreaded' : 'programs.spec.single_instance');
 
         if ($program->kind === ProgramKind::Utility) {
-            foreach (['locates', 'walks', 'jumps', 'tracks'] as $ability) {
+            foreach (['locates', 'walks', 'jumps', 'swarms', 'tracks'] as $ability) {
                 $program->{$ability} && $lines[] = Text::get("programs.spec.{$ability}");
             }
 

@@ -154,6 +154,14 @@ what a bare `items` row cannot.
   granted by skills like any stat; `RunningPrograms` scales every modifier of a running program in that family by `1 + stat/100` (`Modifier::scaledBy()`),
   resolving the stat from `SkillEffects` alone so the source never asks itself. A new family is a stat in `config/stats.php` tagged `family`, nothing else.
   The Kompressor is a Utility in `compressor` carrying `percentage_of_base 15` on `deck_storage`; no item is seeded.
+- **A Swarm (`programs.swarms`, a Utility; Wotan) scans on its own.** While a copy runs it picks a random system on the MAIN grid
+  that its owner has no complete scan of (no live complete `system_scans` row, no held scan file, nothing of theirs already
+  reading it; fortresses never), reads it to completion through `Probe` at `cyberspace.swarm.time_factor` (3) times the pass
+  time, then picks the next (`App\Cyberspace\Swarm`). The factor is config and not a `scan_duration` modifier, because a running
+  program's modifiers reach the whole character. It charges no fatigue, counts for no achievement and sends no inbox message,
+  and its settled results are left out of `Probe::settleAll()`'s return so the map banner stays quiet. It follows
+  `program_threads` like any multithreaded program, refuses to START while its owner is in a subnet
+  (`ProcessRefusal::SwarmSubnet`), and is fed on start and on every settle; a copy with nothing left to read idles until the next one.
 - **`programs.multithreaded` decides whether more than one is a question at all** — a
   property of the software, false by default, exposed in the item editor.
 - **Run-only software is the LOADOUT, chosen on the briefing.** `RunStarter::start()` is

@@ -12,6 +12,7 @@ use App\City\EncounterStart;
 use App\City\OutcomeBranch;
 use App\City\OutcomeKind;
 use App\City\PrerequisiteKind;
+use App\Cyberspace\RunOutcome;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\SystemType;
 use App\Http\Controllers\Controller;
@@ -135,6 +136,7 @@ class EncounterController extends Controller
             // The pinned system's address AS IT IS NOW: the spot follows the machine, so this can change by itself.
             'spotAddress' => $encounter?->spot_system_id === null ? '' : (string) System::query()->whereKey($encounter->spot_system_id)->value('address'),
             'purposes' => RunPurpose::cases(),
+            'outcomes' => RunOutcome::cases(),
             'runEnds' => EncounterRunEnd::cases(),
             'owners' => Entity::query()->orderBy('name')->get(['id', 'name']),
             'storedPrerequisites' => $encounter === null ? [] : EncounterEditor::prerequisiteRows($encounter),

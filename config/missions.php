@@ -65,6 +65,23 @@ return [
     // A heist's proceeds are handed in; this percent of them is paid back on top of the reward.
     'heist_cut' => 10,
 
+    /*
+    | PROCURE: an Extraction job that wants components instead of an address.
+    |
+    | `share` is the per cent of Extract rolls that become one (when an owner can be found; otherwise it stays an
+    | Extract). It asks for 1 kind of component, or 2 with `two_kinds` per cent chance, from one owner whose systems sit
+    | in the desk grade's `bands` (inclusive). Each kind wants 1 copy, or 2 with `two_copies` per cent chance. The component
+    | types on offer are those whose drop table (`cyberspace.decryption.components`) reaches a grade in the band. The
+    | window is fixed rather than rolled. The grade of the file handed in does not matter, only its type and owner.
+    */
+    'procure' => [
+        'share' => 20,
+        'two_kinds' => 25,
+        'two_copies' => 30,
+        'window_hours' => 48,
+        'bands' => [1 => [1, 3], 2 => [2, 4], 3 => [3, 5], 4 => [4, 6], 5 => [5, 9]],
+    ],
+
     // One active mission per ENTITY. Three desks can have you working at once.
     'active_per_entity' => 1,
 
@@ -95,6 +112,8 @@ return [
         'transport' => ['creds' => 1.6, 'standing' => 1.5, 'loyalty' => 3.0],
         'heist' => ['creds' => 1.2, 'standing' => 1.5, 'loyalty' => 1.5],
         'extract' => ['creds' => 1.8, 'standing' => 1.5, 'loyalty' => 3.0],
+        // Procure pays Extraction's creds and triple its standing and loyalty (1.5 x 3, 3.0 x 3).
+        'procure' => ['creds' => 1.8, 'standing' => 4.5, 'loyalty' => 9.0],
         'denial' => ['creds' => 1.7, 'standing' => 1.5, 'loyalty' => 3.0],
         'supply' => ['creds' => 1.2, 'standing' => 0.5, 'loyalty' => 0.5],
     ],

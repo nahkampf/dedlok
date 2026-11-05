@@ -144,6 +144,7 @@
     // the form under the server's field limit.
     select.closest("[data-row]")?.querySelectorAll("input[data-journal]").forEach((i) => { i.disabled = select.value !== "journal"; });
     select.closest("[data-row]")?.querySelectorAll("input[data-message]").forEach((i) => { i.disabled = select.value !== "message"; });
+    select.closest("[data-row]")?.querySelectorAll("[data-file]").forEach((i) => { i.disabled = select.value !== "file"; });
   });
 
   /* --- Range with a word -------------------------------------------------
@@ -266,10 +267,11 @@
       })
       .catch(() => toast("Could not join the run.", { level: "warn" }));
   });
-  /* A listing link (`market:<id>` in chat or a bio): fetch the card fresh into #listing and open it. */
+  /* A listing link (`market:<id>` in chat or a bio): fetch the card fresh into #listing and open it. data-dialog names
+     another dialog with a [data-listing-body] (the text file reader) in its place. */
   on("click", "[data-listing]", (e, btn) => {
     e.preventDefault();
-    const dlg = document.querySelector("#listing");
+    const dlg = document.querySelector(btn.dataset.dialog || "#listing");
     const body = dlg && dlg.querySelector("[data-listing-body]");
     if (!body) return;
     body.textContent = "…";
