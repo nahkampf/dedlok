@@ -6,6 +6,8 @@ namespace App\City;
 
 use App\Characters\Flags;
 use App\Characters\WaitingRoom;
+use App\Cyberspace\RunEnding;
+use App\Cyberspace\RunOutcome;
 use App\Models\Character;
 use App\Models\CharacterEncounter;
 use App\Models\CityActivity;
@@ -100,7 +102,7 @@ final class Encounters
 
         // The encounters that set their own chance, each rolled on its own, first.
         if (($own = $this->rollOwn($character, $start, null, null, $system, $run)) !== null) {
-            return $this->open($character, $own, $run);
+            return $this->open($character, $own, $start === EncounterStart::Run ? $run : null);
         }
 
         $chance = $this->chanceFor($character, $start);
@@ -111,7 +113,8 @@ final class Encounters
 
         $pick = $this->draw($this->eligible($character, $start, null, null, $system, $run)->whereNull('chance')->values());
 
-        return $pick === null ? null : $this->open($character, $pick, $run);
+        // Only a run door interrupts a run; after one has ended there is nothing to continue or kill, the run just filters.
+        return $pick === null ? null : $this->open($character, $pick, $start === EncounterStart::Run ? $run : null);
     }
 
     /**
@@ -275,6 +278,11 @@ final class Encounters
         }
 
         if ($e->owner_entity_id !== null && (int) $system->owner_id !== (int) $e->owner_entity_id) {
+            return false;
+        }
+
+        // How it ended, for the after-run door: a run that has no ending yet (the run door's) never matches a filter on it.
+        if ($e->run_outcome !== null && $e->run_outcome !== ($run?->ending === null ? null : RunOutcome::of(RunEnding::from((string) $run->ending))->value)) {
             return false;
         }
 

@@ -152,4 +152,78 @@ final class GridEncounterDoorsTest extends TestCase
 
         $this->assertNull(app(Encounters::class)->maybeOpenFor($this->character, EncounterStart::Run, $run->system(), $run));
     }
+
+    private function endedRun(RunPurpose $purpose = RunPurpose::Extraction): Run
+    {
+        $run = $this->runUnderway($purpose);
+        app(RunStarter::class)->end($this->character->fresh(), $run, RunEnding::Completed);
+        $this->character = $this->character->fresh();
+
+        return $run->fresh();
+    }
+
+    public function test_the_after_run_door_opens_once_a_run_is_over_and_remembers_no_run(): void
+    {
+        $encounter = $this->encounter(EncounterStart::AfterRun, ['run_purpose' => 'extraction', 'system_type' => 'silo', 'grade_min' => 2, 'grade_max' => 2]);
+        $run = $this->endedRun();
+        $system = $run->system()->forceFill(['type' => SystemType::Silo]);
+
+        $live = app(Encounters::class)->maybeOpenFor($this->character, EncounterStart::AfterRun, $system, $run);
+
+        $this->assertNotNull($live);
+        $this->assertTrue($encounter->is($live->encounter));
+        $this->assertNull($live->run_id, 'there is no run left to continue or kill');
+        $this->assertTrue($this->character->fresh()->isJackedIn());
+    }
+
+    public function test_the_after_run_door_filters_on_purpose_type_grade_and_owner(): void
+    {
+        $run = $this->endedRun(RunPurpose::Extraction);
+        $system = $run->system();
+
+        foreach ([['run_purpose' => 'burn'], ['system_type' => 'relay'], ['grade_min' => 3], ['owner_entity_id' => 999999]] as $filter) {
+            Encounter::query()->delete();
+            $this->encounter(EncounterStart::AfterRun, $filter);
+
+            $this->assertNull(app(Encounters::class)->maybeOpenFor($this->character, EncounterStart::AfterRun, $system, $run), json_encode($filter));
+        }
+    }
+
+    public function test_the_after_run_door_reads_a_system_that_the_run_burned(): void
+    {
+        $this->encounter(EncounterStart::AfterRun, ['grade_min' => 2]);
+        $run = $this->endedRun();
+        $system = $run->system();
+        $system->delete();
+
+        $this->assertNotNull(app(Encounters::class)->maybeOpenFor($this->character, EncounterStart::AfterRun, $system, $run));
+    }
+
+    public function test_a_run_door_encounter_does_not_open_after_a_run_and_the_reverse(): void
+    {
+        $this->encounter(EncounterStart::Run, [], 'continue_run');
+        $run = $this->endedRun();
+
+        $this->assertNull(app(Encounters::class)->maybeOpenFor($this->character, EncounterStart::AfterRun, $run->system(), $run));
+    }
+
+    public function test_the_after_run_door_can_ask_for_success_failure_or_either(): void
+    {
+        $done = $this->endedRun();
+        $system = $done->system();
+
+        foreach ([['success', true], ['failure', false], [null, true]] as [$outcome, $opens]) {
+            Encounter::query()->delete();
+            $this->encounter(EncounterStart::AfterRun, ['run_outcome' => $outcome]);
+
+            $this->assertSame($opens, app(Encounters::class)->maybeOpenFor($this->character->fresh(), EncounterStart::AfterRun, $system, $done) !== null, (string) $outcome);
+            $this->character->forceFill(['current_encounter_id' => null])->save();
+        }
+
+        $done->forceFill(['ending' => RunEnding::Egress->value]);
+        Encounter::query()->delete();
+        $this->encounter(EncounterStart::AfterRun, ['run_outcome' => 'success']);
+
+        $this->assertNull(app(Encounters::class)->maybeOpenFor($this->character->fresh(), EncounterStart::AfterRun, $system, $done), 'an egress with nothing taken is a failure');
+    }
 }

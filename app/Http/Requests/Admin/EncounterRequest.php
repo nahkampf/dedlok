@@ -11,6 +11,7 @@ use App\City\OutcomeBranch;
 use App\City\OutcomeKind;
 use App\City\PrerequisiteKind;
 use App\Cyberspace\Grid;
+use App\Cyberspace\RunOutcome;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\SystemType;
 use App\Models\District;
@@ -73,13 +74,14 @@ class EncounterRequest extends FormRequest
             'weight' => ['required', 'integer', 'between:1,100'],
             // Its own odds in percent, overriding the door's: only for a door that is rolled.
             'chance' => ['nullable', 'numeric', 'gt:0', 'lte:100', 'prohibited_if:starts_on,place,spot'],
-            'district_id' => ['nullable', 'integer', 'exists:districts,id', 'prohibited_if:starts_on,place,grid_step,system,run'],
+            'district_id' => ['nullable', 'integer', 'exists:districts,id', 'prohibited_if:starts_on,place,grid_step,system,run,after_run'],
             // The grid doors' own filters, each only on the door that reads it.
-            'system_type' => ['nullable', Rule::enum(SystemType::class), 'prohibited_unless:starts_on,system'],
-            'grade_min' => ['nullable', 'integer', 'between:1,9', 'prohibited_unless:starts_on,system,run'],
-            'grade_max' => ['nullable', 'integer', 'between:1,9', 'gte:grade_min', 'prohibited_unless:starts_on,system,run'],
-            'owner_entity_id' => ['nullable', 'integer', 'exists:entities,id', 'prohibited_unless:starts_on,system'],
-            'run_purpose' => ['nullable', Rule::enum(RunPurpose::class), 'prohibited_unless:starts_on,run'],
+            'system_type' => ['nullable', Rule::enum(SystemType::class), 'prohibited_unless:starts_on,system,run,after_run'],
+            'grade_min' => ['nullable', 'integer', 'between:1,9', 'prohibited_unless:starts_on,system,run,after_run'],
+            'grade_max' => ['nullable', 'integer', 'between:1,9', 'gte:grade_min', 'prohibited_unless:starts_on,system,run,after_run'],
+            'owner_entity_id' => ['nullable', 'integer', 'exists:entities,id', 'prohibited_unless:starts_on,system,run,after_run'],
+            'run_purpose' => ['nullable', Rule::enum(RunPurpose::class), 'prohibited_unless:starts_on,run,after_run'],
+            'run_outcome' => ['nullable', Rule::enum(RunOutcome::class), 'prohibited_unless:starts_on,after_run'],
             // The spot door: the address of the system it is offered at (stored as that system's id, so it follows
             // the machine when it moves), and how long a character waits before pressing it again.
             'spot_address' => ['nullable', 'string', 'max:16', 'required_if:starts_on,spot', 'prohibited_unless:starts_on,spot'],
@@ -157,7 +159,7 @@ class EncounterRequest extends FormRequest
     {
         $out = [];
 
-        foreach (['system_type', 'grade_min', 'grade_max', 'owner_entity_id', 'run_purpose'] as $field) {
+        foreach (['system_type', 'grade_min', 'grade_max', 'owner_entity_id', 'run_purpose', 'run_outcome'] as $field) {
             $value = $data[$field] ?? null;
             $out[$field] = $value === null || $value === '' ? null : $value;
         }
@@ -340,7 +342,7 @@ class EncounterRequest extends FormRequest
         if ($kind === OutcomeKind::GridMove) {
             $size = (int) Config::get('cyberspace.size', 128);
 
-            if (! ($door?->isGrid() ?? false) || $door === EncounterStart::Run) {
+            if (! ($door?->isGrid() ?? false) || $door === EncounterStart::Run || $door === EncounterStart::AfterRun) {
                 $errors["{$oat}.kind"] = Text::get('admin.encounters.errors.grid_move_door', ['node' => $nodeKey]);
             } elseif (preg_match('/^(\d+),\s*(\d+)$/', $ref, $m) !== 1 || (int) $m[1] >= $size || (int) $m[2] >= $size) {
                 $errors["{$oat}.ref"] = Text::get('admin.encounters.errors.grid_position', ['node' => $nodeKey, 'size' => $size]);

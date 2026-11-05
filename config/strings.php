@@ -354,7 +354,7 @@ return [
             'log_heading' => 'So far',
             'locked' => 'Finish what you are in the middle of.',
             'at_place' => 'Something is going on here',
-            'starts' => ['travel' => 'On the way', 'explore' => 'While exploring', 'place' => 'At a place', 'grid_step' => 'On a move in cyberspace', 'system' => 'Arriving at a system', 'run' => 'In a run, between turns', 'spot' => 'A button at a system'],
+            'starts' => ['travel' => 'On the way', 'explore' => 'While exploring', 'place' => 'At a place', 'grid_step' => 'On a move in cyberspace', 'system' => 'Arriving at a system', 'run' => 'In a run, between turns', 'after_run' => 'After a run', 'spot' => 'A button at a system'],
             'kinds' => [
                 'creds' => 'Creds',
                 'item' => 'Item',
@@ -1237,6 +1237,11 @@ return [
     |
     */
     'cyberspace' => [
+        'run_outcome' => [
+            'success' => 'Success',
+            'failure' => 'Failure',
+        ],
+
         'types' => [
             'portal' => 'Portal',
             'silo' => 'Data silo',
@@ -4760,12 +4765,13 @@ return [
                 'district' => 'Only in district',
                 'location' => 'At place',
                 'chance' => 'Chance, % (overrides the door\'s default)',
-                'chance_hint' => 'Blank: the door\'s default and the weight below. A number: the odds that THIS encounter opens at each opening of its door, rolled on its own (weight is then ignored). Defaults: on the way :travel%, exploring :explore%, a move in cyberspace :move%, arriving at a system :system%, between turns of a run :run%. Not for a place or a spot.',
-                'system_type' => 'System type (arriving at a system)',
-                'grade_min' => 'Grade from (system or run)',
-                'grade_max' => 'Grade to (system or run)',
-                'owner' => 'Owner (arriving at a system)',
-                'run_purpose' => 'Run purpose (in a run)',
+                'chance_hint' => 'Blank: the door\'s default and the weight below. A number: the odds that THIS encounter opens at each opening of its door, rolled on its own (weight is then ignored). Defaults: on the way :travel%, exploring :explore%, a move in cyberspace :move%, arriving at a system :system%, between turns of a run :run%, after a run :after_run%. Not for a place or a spot.',
+                'system_type' => 'System type',
+                'grade_min' => 'Grade from',
+                'grade_max' => 'Grade to',
+                'owner' => 'Owner',
+                'run_purpose' => 'Run purpose',
+                'run_outcome' => 'Run outcome',
                 'spot_address' => 'Pinned to the system at this address (a spot)',
                 'spot_address_hint' => 'Shown as a button in the Interact box while somebody stands on that system. It follows the machine if it relocates and goes dormant if it is burned.',
                 'cooldown_hours' => 'Cooldown, hours per character (a spot)',

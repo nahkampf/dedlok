@@ -27,13 +27,16 @@ enum EncounterStart: string
     /** Between turns of a run. Filters: a grade range, the run's purpose. Every ending says what becomes of the run. */
     case Run = 'run';
 
+    /** A run the player was in has ended and they are still up on the grid. Filters: purpose, system type, a grade range, its owner. */
+    case AfterRun = 'after_run';
+
     /** A button in the grid screen's Interact box, at one authored system. Not rolled: always on offer while it may be. */
     case Spot = 'spot';
 
     /** The realm is the door's: these four are cyberspace and every other is the City. */
     public function isGrid(): bool
     {
-        return in_array($this, [self::GridStep, self::System, self::Run, self::Spot], true);
+        return in_array($this, [self::GridStep, self::System, self::Run, self::AfterRun, self::Spot], true);
     }
 
     public function label(): string

@@ -1680,6 +1680,8 @@ return [
         'system_chance' => 0.05,
         // After a turn of a run, while it is still live.
         'run_chance' => 0.05,
+        // After a run has ended, for whatever reason, while the runner is still up on the grid.
+        'after_run_chance' => 0.05,
     ],
 
 ];

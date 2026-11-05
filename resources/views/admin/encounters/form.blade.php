@@ -146,6 +146,7 @@
                         'move' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.grid_step_chance') * 100, 2), '0'), '.'),
                         'system' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.system_chance') * 100, 2), '0'), '.'),
                         'run' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.run_chance') * 100, 2), '0'), '.'),
+                        'after_run' => rtrim(rtrim(number_format((float) config('cyberspace.encounter.after_run_chance') * 100, 2), '0'), '.'),
                     ]) }}</span>
                 </label>
                 <label class="field">
@@ -199,6 +200,15 @@
                         <option value=""></option>
                         @foreach ($purposes as $purpose)
                             <option value="{{ $purpose->value }}" @selected($enum('run_purpose') === $purpose->value)>{{ $purpose->label() }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.run_outcome') }}</span>
+                    <select class="select" name="run_outcome">
+                        <option value=""></option>
+                        @foreach ($outcomes as $outcome)
+                            <option value="{{ $outcome->value }}" @selected($enum('run_outcome') === $outcome->value)>{{ $outcome->label() }}</option>
                         @endforeach
                     </select>
                 </label>
