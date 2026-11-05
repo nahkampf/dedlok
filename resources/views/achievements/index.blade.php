@@ -38,7 +38,7 @@
             @if ($remaining === [])
                 <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('achievements.complete') }}</p>
             @else
-                <x-achievement-grid :rows="$remaining" />
+                <x-achievement-grid :rows="$remaining" locked />
             @endif
         </div>
     </div>

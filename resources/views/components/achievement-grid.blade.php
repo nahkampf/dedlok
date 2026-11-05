@@ -2,11 +2,11 @@
      been earned and what has not. Identical on purpose — the header above it
      is what says which list this is, and a locked achievement that looked
      different would be a second way of saying the same thing. --}}
-@props(['rows'])
+@props(['rows', 'locked' => false])
 
 <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr))">
     @foreach ($rows as $row)
-        <div class="card">
+        <div class="card{{ $locked ? ' card--grey' : '' }}">
             {{-- Found by convention, like every other picture in the game:
                  public/images/achievements/<id>.jpg, _default.jpg when a
                  particular one has not been drawn yet, and nothing at all
