@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [0.88.0] — 2026-11-05
+
+### Added
+- **File outcome for encounters.** An outcome can leave a text file or a catalogue item, plain or sealed (ICE colour), with snapshotted `{placeholders}` (`FilePlaceholders`). New `file_texts` table, `encounter_outcomes.body/ice`, `character_encounters.door`, the `text-file` item ("Extracted data"), and a reader modal (`InventoryController::text`). Tests: `EncounterFileOutcomeTest`.
+- **Wotan, a scanner swarm.** New `programs.swarms` flag. `Swarm` picks a random main-grid address (no fortress, none with a pass running or a live/held scan) and scans it with `Probe::beginSwarm` at three times the time (`cyberspace.swarm`); reads run to completion, hop on from the previous maturity, count nothing toward Systems Scanned, send no messages, cost no fatigue. Refused in a subnet (`ProcessRefusal::SwarmSubnet`). `Probe::settleAll` loops rounds (capped by `swarm.catch_up`). Tests: `SwarmTest`.
+- **Wotan (Design) and (Design Copy)**: the copy at the Bureau of Network Integrity (standing 3, 150 loyalty), the original at Lockjaw (standing 10, 450 loyalty, desks grade 2+).
+- **Procure missions.** A new `MissionAction`: 20% of Extraction offers want 1–2 kinds of component (1–2 each) taken from one named owner instead of an address; 48 hours; pays 1.8/4.5/9.0 (creds/standing/loyalty multipliers). New `mission_requirements` table, `chk_missions_action` widened. Tests: `ProcureTest`.
+- **Unearned achievements are grey.** `.card--grey img { filter: grayscale(1) }` on the locked list, colour again under the pointer (`<x-achievement-grid locked>`).
+
+### Changed
+- **Nineteen products' recipes** (Design and Copy) gain lines for components no recipe used (Backup, Customer Record, Research Data, Field Test Data, Parameterized and Vectorized Dataset).
+- Migrations `2026_11_10_170000` to `2026_11_10_210000`. The game-content ones skip under the test suite.
+
+Run `php artisan migrate`.
+
+
 ## [0.87.0] — 2026-11-04
 
 ### Fixed
@@ -4005,7 +4021,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.87.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.88.0...HEAD
+[0.88.0]: https://github.com/nahkampf/dedlok/compare/v0.87.0...v0.88.0
 [0.87.0]: https://github.com/nahkampf/dedlok/compare/v0.86.0...v0.87.0
 [0.86.0]: https://github.com/nahkampf/dedlok/compare/v0.85.0...v0.86.0
 [0.85.0]: https://github.com/nahkampf/dedlok/compare/v0.84.0...v0.85.0
