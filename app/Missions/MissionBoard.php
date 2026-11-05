@@ -6,7 +6,9 @@ namespace App\Missions;
 
 use App\Cyberspace\SystemType;
 use App\Models\Character;
+use App\Models\Entity;
 use App\Models\Exchange;
+use App\Models\Item;
 use App\Models\Mission;
 use App\Models\System;
 use Illuminate\Database\Eloquent\Builder;
@@ -153,12 +155,25 @@ final readonly class MissionBoard
     {
         $action = $this->pickAction($allowTransport, (array) ($terms['without'] ?? []), (array) ($terms['only'] ?? []));
         $grade = max(1, min(5, (int) $desk->grade));
+        $wants = [];
+
+        // Some Extract rolls ask for components instead of a file at an address, when there is an owner to ask about.
+        if ($action === MissionAction::Extract && ($this->roll)(1, 100) <= (int) config('missions.procure.share', 20)) {
+            $wants = $this->drawRequirements($grade, $entityId);
+
+            if ($wants !== []) {
+                $action = MissionAction::Procure;
+            }
+        }
+
         $rewards = $this->rewards($action, $grade, $terms);
 
         $quantity = 0;
         $targets = collect();
 
-        if ($action === MissionAction::Supply) {
+        if ($action === MissionAction::Procure) {
+            // Nothing to draw: what it wants is already rolled.
+        } elseif ($action === MissionAction::Supply) {
             [$low, $high] = config("missions.supply.{$grade}", [4, 8]);
             $quantity = ($this->roll)((int) $low, (int) $high);
         } else {
@@ -183,6 +198,10 @@ final readonly class MissionBoard
             'offered_at' => now(),
         ]);
 
+        foreach ($wants as $want) {
+            $mission->requirements()->create($want);
+        }
+
         foreach ($targets as $system) {
             $mission->targets()->create([
                 'system_id' => $system->getKey(),
@@ -198,10 +217,76 @@ final readonly class MissionBoard
     {
         $cases = array_values(array_filter(
             MissionAction::cases(),
-            static fn (MissionAction $a): bool => ($allowTransport || $a !== MissionAction::Transport) && ! in_array($a->value, $without, true) && ($only === [] || in_array($a->value, $only, true)),
+            static fn (MissionAction $a): bool => $a !== MissionAction::Procure && ($allowTransport || $a !== MissionAction::Transport) && ! in_array($a->value, $without, true) && ($only === [] || in_array($a->value, $only, true)),
         ));
 
         return $cases[($this->roll)(0, count($cases) - 1)];
+    }
+
+    /**
+     * What a Procure job asks for: one owner, and one or two kinds of component, a copy or two of each.
+     *
+     * The owner is any entity (but the giver, for the reason targets are drawn from anywhere but them) that holds a
+     * system in the desk grade's band. The kinds are those whose drop table reaches a grade in the band. Empty when there
+     * is no owner or no kind to ask for, and the job stays an Extract.
+     *
+     * @return list<array{component_item_id: int, quantity: int, owner_id: int, owner_name: string}>
+     */
+    private function drawRequirements(int $grade, int $entityId): array
+    {
+        [$low, $high] = (array) config("missions.procure.bands.{$grade}", [1, 3]);
+
+        $owners = System::query()
+            ->whereBetween('grade', [$low, $high])
+            ->whereIn('type', self::targetableTypes())
+            ->where('type', '!=', 'fortress')
+            ->whereNotNull('owner_id')
+            ->where('owner_id', '!=', $entityId)
+            ->distinct()
+            ->orderBy('owner_id')
+            ->pluck('owner_id')
+            ->all();
+
+        $slugs = [];
+
+        foreach ((array) config('cyberspace.decryption.components', []) as $slug => $component) {
+            foreach (range((int) $low, (int) $high) as $g) {
+                if ((int) ($component['weights'][$g] ?? 0) > 0) {
+                    $slugs[] = $slug;
+
+                    break;
+                }
+            }
+        }
+
+        $items = Item::query()->whereIn('slug', $slugs)->orderBy('id')->get()->all();
+
+        if ($owners === [] || $items === []) {
+            return [];
+        }
+
+        $owner = Entity::query()->find($owners[($this->roll)(0, count($owners) - 1)]);
+
+        if ($owner === null) {
+            return [];
+        }
+
+        $kinds = min(count($items), ($this->roll)(1, 100) <= (int) config('missions.procure.two_kinds', 25) ? 2 : 1);
+        $wants = [];
+
+        for ($i = 0; $i < $kinds; $i++) {
+            $pick = ($this->roll)(0, count($items) - 1);
+            [$item] = array_splice($items, $pick, 1);
+
+            $wants[] = [
+                'component_item_id' => $item->getKey(),
+                'quantity' => ($this->roll)(1, 100) <= (int) config('missions.procure.two_copies', 30) ? 2 : 1,
+                'owner_id' => $owner->getKey(),
+                'owner_name' => (string) $owner->name,
+            ];
+        }
+
+        return $wants;
     }
 
     /**

@@ -34,6 +34,8 @@
         <div class="card__meta">
             @if ($action->designatesTargets())
                 {{ Text::get('missions.targets_done', ['done' => $done, 'total' => $total]) }}
+            @elseif ($action === MissionAction::Procure)
+                {{ Text::get('missions.requirements', ['count' => $mission->requirements->sum('quantity')]) }}
             @else
                 {{ Text::get('missions.quantity', ['count' => $mission->quantity_required]) }}
             @endif
@@ -158,6 +160,30 @@
                                 <span class="tag tag--ok">{{ Text::get('missions.file_held') }}</span>
                             @endif
                         </span>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
+        {{-- A PROCURE JOB names no address: what it wants is components, from one owner's systems. A line is ticked when what is
+             in the stash would cover it. --}}
+        @if ($action === MissionAction::Procure)
+            @php($status = $active ? app(\App\Missions\MissionLedger::class)->requirementStatus(auth()->user()->character, $mission) : null)
+            <div class="stack" style="--gap:var(--s-2)">
+                @foreach ($mission->requirements as $i => $line)
+                    @php($enough = $status !== null && count($status[$i]['rows']) >= $line->quantity)
+                    <div class="item-row">
+                        <span class="item-row__name" style="grid-column:1 / 3">
+                            @if ($enough)
+                                <span class="mark--ok" title="{{ Text::get('missions.requirement_held') }}">&#x2713;</span>
+                            @endif
+                            {{ Text::get('missions.requirement', ['count' => $line->quantity, 'component' => (string) $line->component?->displayName(), 'owner' => $line->owner_name]) }}
+                        </span>
+                        @if ($active)
+                            <span class="row row--wrap" style="--gap:var(--s-2);justify-content:flex-end">
+                                <span class="tag {{ $enough ? 'tag--ok' : '' }}">{{ Text::get($enough ? 'missions.requirement_held' : 'missions.requirement_missing') }}</span>
+                            </span>
+                        @endif
                     </div>
                 @endforeach
             </div>

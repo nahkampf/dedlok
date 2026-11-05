@@ -66,6 +66,12 @@ class Mission extends Model
         return $this->belongsTo(Exchange::class);
     }
 
+    /** @return HasMany<MissionRequirement, $this> */
+    public function requirements(): HasMany
+    {
+        return $this->hasMany(MissionRequirement::class);
+    }
+
     /** @return HasMany<MissionTarget, $this> */
     public function targets(): HasMany
     {

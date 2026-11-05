@@ -14,6 +14,7 @@ use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Mission;
+use App\Models\MissionRequirement;
 use App\Models\MissionTarget;
 use App\Models\Run;
 use App\Models\System;
@@ -140,10 +141,13 @@ final readonly class MissionLedger
                 $heat = round($after - $before, 1);
             }
 
-            $hours = random_int(
-                (int) config('missions.window_hours.min', 4),
-                (int) config('missions.window_hours.max', 24),
-            );
+            // A Procure job has a fixed window; every other job rolls one.
+            $hours = $live->action === MissionAction::Procure
+                ? (int) config('missions.procure.window_hours', 48)
+                : random_int(
+                    (int) config('missions.window_hours.min', 4),
+                    (int) config('missions.window_hours.max', 24),
+                );
 
             $live->forceFill([
                 'state' => MissionState::Accepted,
@@ -176,11 +180,13 @@ final readonly class MissionLedger
             'grade' => $target->system?->grade,
         ])->all();
 
-        $what = $mission->action === MissionAction::Transport
+        $what = $mission->action === MissionAction::Procure
+            ? Text::get('notifications.mission_what_procure', ['list' => $this->requirementList($mission)])
+            : ($mission->action === MissionAction::Transport
             ? Text::get('notifications.mission_what_transport', ['xy' => $this->coordinates($mission->targets->first()?->system)])
             : ($mission->action->designatesTargets()
             ? Text::get('notifications.mission_what_systems', ['count' => count($targets), 'addresses' => implode(', ', array_column($targets, 'address'))])
-            : Text::get('notifications.mission_what_supply', ['count' => $mission->quantity_required]));
+            : Text::get('notifications.mission_what_supply', ['count' => $mission->quantity_required])));
 
         (new Notifier)->send($character, Category::Mission, 'mission_accepted', [
             'action' => $mission->action->label(),
@@ -244,6 +250,7 @@ final readonly class MissionLedger
         return match ($mission->action) {
             MissionAction::Supply => $this->suppliable($character) >= $mission->quantity_required,
             MissionAction::Extract => $this->heldJobFile($character, $mission, decrypted: true) !== null,
+            MissionAction::Procure => $this->requirementPicks($character, $mission) !== null,
             MissionAction::Scan => $mission->targets()->whereNull('satisfied_at')->pluck('address')->diff($this->heldAddresses($character))->isEmpty(),
             default => $mission->targetsSatisfied(),
         };
@@ -292,6 +299,17 @@ final readonly class MissionLedger
 
                 if ($spent === false) {
                     return MissionRefusal::NotDone;
+                }
+            } elseif ($live->action === MissionAction::Procure) {
+                // The components, handed over: all of them or none.
+                $picks = $this->requirementPicks($character, $live);
+
+                if ($picks === null) {
+                    return MissionRefusal::NotDone;
+                }
+
+                foreach ($picks as $row) {
+                    $row->delete();
                 }
             } elseif ($live->action === MissionAction::Extract) {
                 // The decrypted job file, handed over.
@@ -627,6 +645,68 @@ final readonly class MissionLedger
                 'mission_id' => $mission->getKey(),
             ]);
         }
+    }
+
+    /**
+     * What a Procure job would take from the stash right now, or null when something is short.
+     *
+     * Loose components of the right type whose file came off a system of the right owner, the LOWEST GRADE first so the job
+     * never takes a better file than it has to (the way a recipe does). The grade does not matter, only type and owner.
+     *
+     * @return list<InventoryItem>|null
+     */
+    public function requirementPicks(Character $character, Mission $mission): ?array
+    {
+        $picks = [];
+
+        foreach ($this->requirementStatus($character, $mission) as ['requirement' => $line, 'rows' => $rows]) {
+            if (count($rows) < $line->quantity) {
+                return null;
+            }
+
+            array_push($picks, ...array_slice($rows, 0, $line->quantity));
+        }
+
+        return $picks === [] ? null : $picks;
+    }
+
+    /**
+     * Each line of a Procure job with the matching components held, lowest grade first. The card ticks a line on it.
+     *
+     * @return list<array{requirement: MissionRequirement, rows: list<InventoryItem>}>
+     */
+    public function requirementStatus(Character $character, Mission $mission): array
+    {
+        $mission->loadMissing('requirements.component');
+        $out = [];
+
+        foreach ($mission->requirements as $line) {
+            $rows = $character->inventory()
+                ->where('item_id', $line->component_item_id)
+                ->loose()
+                ->whereNotNull('extracted_file')
+                ->get()
+                ->filter(static fn (InventoryItem $row): bool => ExtractedFile::fromArray($row->extracted_file)?->origin?->ownerId === $line->owner_id)
+                ->sortBy(static fn (InventoryItem $row): array => [ExtractedFile::fromArray($row->extracted_file)?->grade ?? 0, $row->getKey()])
+                ->values()
+                ->all();
+
+            $out[] = ['requirement' => $line, 'rows' => $rows];
+        }
+
+        return $out;
+    }
+
+    /** "2 x Kernel Log (Cyberdyne), 1 x Cache File (Cyberdyne)": the lines of a Procure job as the card writes each one. */
+    public function requirementList(Mission $mission): string
+    {
+        $mission->loadMissing('requirements.component');
+
+        return $mission->requirements->map(static fn ($line): string => Text::get('missions.requirement', [
+            'count' => $line->quantity,
+            'component' => (string) $line->component?->displayName(),
+            'owner' => $line->owner_name,
+        ]))->implode(', ');
     }
 
     /** Is the extraction job's file in hand and decrypted, so that only the hand-in is left? The mission card ticks its target on it. */
