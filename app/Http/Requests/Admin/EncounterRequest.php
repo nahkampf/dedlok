@@ -7,6 +7,7 @@ namespace App\Http\Requests\Admin;
 use App\City\EncounterGraph;
 use App\City\EncounterRunEnd;
 use App\City\EncounterStart;
+use App\City\FilePlaceholders;
 use App\City\OutcomeBranch;
 use App\City\OutcomeKind;
 use App\City\PrerequisiteKind;
@@ -17,6 +18,7 @@ use App\Cyberspace\SystemType;
 use App\Models\District;
 use App\Models\Encounter;
 use App\Models\Entity;
+use App\Models\FileText;
 use App\Models\Item;
 use App\Models\Npc;
 use App\Models\Skill;
@@ -300,7 +302,7 @@ class EncounterRequest extends FormRequest
         if ($kindWord === '') {
             // A row with nothing in it is the blank the form pads with. A row with something typed in it and no kind
             // picked is NOT blank: skipping it silently is how somebody types a whole journal note and loses it.
-            foreach (['amount', 'ref', 'item_id', 'entity_id', 'text', 'entry_slug', 'entry_text'] as $field) {
+            foreach (['amount', 'ref', 'item_id', 'entity_id', 'text', 'entry_slug', 'entry_text', 'body'] as $field) {
                 if (trim((string) ($o[$field] ?? '')) !== '') {
                     $errors["{$oat}.kind"] = Text::get('admin.encounters.errors.outcome_no_kind', ['node' => $nodeKey]);
 
@@ -382,6 +384,38 @@ class EncounterRequest extends FormRequest
             }
         }
 
+        if ($kind === OutcomeKind::File) {
+            $body = trim((string) ($o['body'] ?? ''));
+            $fileItem = (int) ($o['item_id'] ?? 0);
+
+            // A text or an item, never both and never neither.
+            if (($body === '') === ($fileItem === 0)) {
+                $errors["{$oat}.body"] = Text::get('admin.encounters.errors.file_content', ['node' => $nodeKey]);
+            } elseif ($fileItem !== 0 && ! Item::query()->whereKey($fileItem)->exists()) {
+                $errors["{$oat}.item_id"] = Text::get('admin.encounters.errors.item', ['node' => $nodeKey]);
+            } elseif ($body !== '') {
+                if (trim((string) ($o['text'] ?? '')) === '') {
+                    $errors["{$oat}.text"] = Text::get('admin.encounters.errors.file_title', ['node' => $nodeKey]);
+                }
+
+                if (mb_strlen($body) > FileText::MAX) {
+                    $errors["{$oat}.body"] = Text::get('admin.encounters.errors.file_long', ['node' => $nodeKey, 'max' => FileText::MAX]);
+                }
+
+                if (($bad = FilePlaceholders::unknown($body, $door)) !== []) {
+                    $errors["{$oat}.body"] = Text::get('admin.encounters.errors.file_tokens', ['node' => $nodeKey, 'tokens' => '{'.implode('}, {', $bad).'}']);
+                }
+            }
+
+            if ($ref !== '' && ! array_key_exists($ref, (array) Config::get('cyberspace.decryption.gate', []))) {
+                $errors["{$oat}.ref"] = Text::get('admin.encounters.errors.file_encryption', ['node' => $nodeKey]);
+            }
+
+            if (! is_numeric($o['amount'] ?? null) || (float) $o['amount'] < 0) {
+                $errors["{$oat}.amount"] = Text::get('admin.encounters.errors.amount', ['node' => $nodeKey, 'kind' => $kind->label()]);
+            }
+        }
+
         if ($kind === OutcomeKind::Injury && ! in_array($ref, OutcomeKind::INJURIES, true)) {
             $errors["{$oat}.ref"] = Text::get('admin.encounters.errors.injury', ['node' => $nodeKey, 'ref' => $ref]);
         }
@@ -390,7 +424,7 @@ class EncounterRequest extends FormRequest
             $errors["{$oat}.ref"] = Text::get('admin.encounters.errors.resource', ['node' => $nodeKey]);
         }
 
-        $itemId = $kind->needsItem() ? (int) ($o['item_id'] ?? 0) : null;
+        $itemId = $kind->needsItem() ? (int) ($o['item_id'] ?? 0) : ($kind === OutcomeKind::File && (int) ($o['item_id'] ?? 0) !== 0 ? (int) $o['item_id'] : null);
         $entityId = $kind->needsEntity() ? (int) ($o['entity_id'] ?? 0) : null;
 
         if ($kind === OutcomeKind::Item && ! Item::query()->whereKey($itemId)->exists()) {
@@ -412,9 +446,11 @@ class EncounterRequest extends FormRequest
             'ref' => $kind->needsRef() ? $ref : null,
             'item_id' => $itemId,
             'entity_id' => $entityId,
-            'text' => in_array($kind, [OutcomeKind::Journal, OutcomeKind::Message], true) ? (trim((string) ($o['text'] ?? '')) ?: null) : null,
+            'text' => in_array($kind, [OutcomeKind::Journal, OutcomeKind::Message, OutcomeKind::File], true) ? (trim((string) ($o['text'] ?? '')) ?: null) : null,
             'entry_slug' => $kind === OutcomeKind::Journal ? (trim((string) ($o['entry_slug'] ?? '')) ?: null) : null,
             'entry_text' => in_array($kind, [OutcomeKind::Journal, OutcomeKind::Message], true) ? (trim((string) ($o['entry_text'] ?? '')) ?: null) : null,
+            'body' => $kind === OutcomeKind::File && (int) ($o['item_id'] ?? 0) === 0 ? str_replace(["\r\n", "\r"], "\n", trim((string) ($o['body'] ?? ''), "\n")) : null,
+            'ice' => $kind === OutcomeKind::File && ! empty($o['ice']),
         ];
     }
 

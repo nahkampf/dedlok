@@ -232,21 +232,32 @@ final class Probe
     {
         $now = CarbonImmutable::instance($now ?? CarbonImmutable::now());
 
-        $matured = SystemScan::query()
-            ->where('character_id', $character->getKey())
-            ->whereNotNull('pass_ready_at')
-            ->where('pass_ready_at', '<=', $now)
-            ->get();
-
         $results = [];
 
-        foreach ($matured as $scan) {
-            $result = $this->settle($character, $scan, $now);
+        // A round settles every read that has matured. A Swarm's finished read starts the next one from the moment it
+        // ended, which may itself have matured already, so rounds go on until nothing has (bounded: a day away is hundreds).
+        for ($round = 0; $round < max(1, (int) Config::get('cyberspace.swarm.catch_up', 30)); $round++) {
+            $matured = SystemScan::query()
+                ->where('character_id', $character->getKey())
+                ->whereNotNull('pass_ready_at')
+                ->where('pass_ready_at', '<=', $now)
+                ->get();
 
-            if ($result !== null) {
-                $results[] = $result;
+            if ($matured->isEmpty()) {
+                break;
+            }
+
+            foreach ($matured as $scan) {
+                $result = $this->settle($character, $scan, $now);
+
+                if ($result !== null && ! $result->swarm) {
+                    $results[] = $result;
+                }
             }
         }
+
+        // Copies with nothing to read (just started, abandoned, or whose system burned) get something now.
+        Swarm::make()->feed($character, $now);
 
         return $results;
     }
@@ -323,6 +334,14 @@ final class Probe
             return null;
         }
 
+        $swarm = $this->isSwarm($scan->reading_process_id);
+        $result = $this->settleScan($character, $scan, $now);
+
+        return $swarm ? $result->fromSwarm() : $result;
+    }
+
+    private function settleScan(Character $character, SystemScan $scan, CarbonImmutable $now): ProbeResult
+    {
         $system = System::query()->where('address', $scan->address)->first();
 
         // The machine it was reading has gone — burned, or relocated and
@@ -521,7 +540,8 @@ final class Probe
     ): ProbeResult {
         $scan->passes++;
         $scan->pass_started_at = $now;
-        $scan->pass_ready_at = $now->addSeconds($this->durationFor($character, $system));
+        $seconds = $this->durationFor($character, $system);
+        $scan->pass_ready_at = $now->addSeconds($this->isSwarm($instrument) ? (int) round($seconds * (float) Config::get('cyberspace.swarm.time_factor', 3)) : $seconds);
         // WHICH instrument, not merely that there was one. With two scanners
         // running on two machines, "is a scanner going?" stops being the
         // question — this read is finished by the copy that started it or by
@@ -532,6 +552,22 @@ final class Probe
         DB::transaction(static fn () => $scan->save());
 
         return ProbeResult::begun($scan);
+    }
+
+    /**
+     * Point a Swarm copy at a system, starting its clock at `$at`. The caller has picked the system and locked the copy.
+     * A file it already has for the system is added to; an expired one is replaced.
+     */
+    public function beginSwarm(Character $character, System $system, InventoryItem $instance, CarbonImmutable $at): void
+    {
+        $this->begin($character, $system, $this->fileFor($character, $system), $at, (int) $instance->getKey());
+    }
+
+    /** Is this running copy a swarming program? */
+    private function isSwarm(?int $instrument): bool
+    {
+        return $instrument !== null
+            && InventoryItem::query()->whereKey($instrument)->whereHas('item.program', static fn ($q) => $q->where('swarms', true))->exists();
     }
 
     /**
@@ -680,7 +716,10 @@ final class Probe
          * thousand times costs a thousand systems' worth of passes and
          * minutes, so there is nothing here worth farming.
          */
-        if ($found !== [] && $scan->isComplete()) {
+        $swarm = $this->isSwarm($scan->reading_process_id);
+
+        // A Swarm's reads are automatic: no achievement, no inbox message.
+        if ($found !== [] && $scan->isComplete() && ! $swarm) {
             (new Achievements)->record($character, Metric::SystemsScanned);
 
             // THE READ IS THE FIRST THING THE INBOX WAS BUILT FOR. A pass
@@ -741,6 +780,11 @@ final class Probe
         // The read files itself. No room on the deck is not an error: the press on the dialog remains.
         if ($found !== [] && $scan->isComplete()) {
             app(ScanExporter::class)->export($character, $system->address);
+        }
+
+        // A Swarm copy that has finished with this system moves on, from the moment it finished.
+        if ($swarm && ($instrumentRow = InventoryItem::query()->find($instrument)) !== null && $this->instrumentIsRunning($instrument)) {
+            Swarm::make()->hop($character, $instrumentRow, $maturedAt);
         }
 
         return ProbeResult::scanned($scan, $found, $rolls);

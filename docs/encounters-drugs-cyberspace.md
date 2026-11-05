@@ -54,6 +54,19 @@ a graph of nodes and choices with outcomes as rows, authored at `admin/encounter
   own write on the LOCKED character, never on the jack-in; `canHappenTo($character, $start)` wants somebody jacked in and not in a run for a
   grid door and the opposite for a City one. Base chance `cyberspace.encounter.grid_step_chance`. `EncounterController` closes onto the
   map for somebody jacked in. A player in one is held by the same lock, so they cannot move or jack out until it is answered.
+- **The `file` outcome leaves a file on the deck** (`OutcomeKind::File`, `EncounterOutcomes::file()`): a TEXT (`text` the title, `body` up to
+  `FileText::MAX` = 65000 characters, `ice`, `amount` its size in QB) or a catalogue item (`item_id`, no body), sealed under one encryption
+  (`ref` = a slug of `cyberspace.decryption.gate`) or not. A file is an inventory row with an `extracted_file` blob: unsealed text is the
+  `text-file` item, sealed is the `encrypted-data-dump` carrying a payload (`ExtractedFile::payloadText` / `payloadItemId`) that
+  `DecryptionQueue::outcomeFor()` honours instead of rolling a component. The words live in `file_texts`, one row per inventory row, cascading.
+  **A text ignores the deck's room** (a quest's words are never lost to a full deck) and still counts in what is used; an item asks like the
+  `item` outcome. `once` is the repeat guard. Values are 0, so a file is worth nothing sold.
+- **Placeholders are a snapshot.** `{handle}` and `{date}` anywhere; `{system}`, `{address}`, `{type}`, `{grade}`, `{owner}` on the system, run,
+  after-run and spot doors; `{purpose}` on run and after-run; `{outcome}` after a run (`FilePlaceholders`, the editor's *Placeholders* list is built
+  from it). The door's context is kept on `character_encounters.door` when it opens, because the outcome runs on a click, after a burn deleted
+  the system. A token the door cannot fill is refused at save; an unknown word in braces is left as typed; control characters are stripped.
+- **Reading one:** `inventory.text` returns the words through `App\Support\Ansi` for the `#text-reader` dialog (`data-listing` with a
+  `data-dialog`); only the owner, only a `text-file` row (a sealed one is 404).
 - **The button shows a band word**, the figure in `title`.
 
 ### Drugs

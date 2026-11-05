@@ -1357,6 +1357,19 @@ return [
     ],
 
     /*
+    | A SWARM (Wotan) READS AT THIS MULTIPLE of the time a pass takes by hand, applied after skill and software have
+    | cut it. Here and not a `scan_duration` modifier on the program, because a running program's modifiers reach
+    | the whole character and would slow their own Surveyor too.
+    |
+    | `catch_up` is the most systems one settle walks through per instrument: a day away is hundreds of three-minute
+    | passes, and the five-minute sweep carries on from where this stops.
+    */
+    'swarm' => [
+        'time_factor' => 3,
+        'catch_up' => 30,
+    ],
+
+    /*
     | What a deck that stops running costs the person standing in it.
     |
     | Not a burnout and not a defeat: the machine simply stopped meeting its

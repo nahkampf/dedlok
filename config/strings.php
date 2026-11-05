@@ -216,6 +216,7 @@ return [
             'locates' => 'Locates: finds the nearest system you have met',
             'walks' => 'Walks: takes you to what it found',
             'jumps' => 'Jumps: a Jump button beside addresses',
+            'swarms' => 'Scanner swarm',
             'tracks' => 'Tracks: searches the grid for a system that fits a filter',
         ],
 
@@ -242,6 +243,7 @@ return [
             'one_icebreaker' => 'Only one icebreaker runs at a time.',
             'one_locator' => 'Only one locator runs at a time.',
             'one_jumper' => 'Only one jumper runs at a time.',
+            'swarm_subnet' => 'This program cannot run in a subnet',
             'one_assessor' => 'Only one assessor runs at a time.',
             'not_runnable' => 'This is not run on a deck: it is installed on a system during a run, or on a fortress.',
             'listed' => 'It is up for sale on the market. Withdraw the offer before you use it.',
@@ -364,6 +366,7 @@ return [
                 'injury' => 'Injury',
                 'damage' => 'Damage',
                 'dose' => 'Dose',
+                'file' => 'File',
                 'trace' => 'Trace (run, points)',
                 'wake_ice' => 'Wake the ICE (run)',
                 'detected' => 'Run is detected (run)',
@@ -397,6 +400,7 @@ return [
                 'creds_loss' => 'You lose :amount ¤.',
                 'item' => 'You get :item ×:quantity.',
                 'item_gone' => 'Something you were promised is not here any more.',
+                'file' => 'A file titled :title draws your eye, and you extract it as well.',
                 'item_no_room' => 'You find :item, but your deck has no room for it.',
                 'standing_gain' => 'Your standing with :entity rises.',
                 'standing_loss' => 'Your standing with :entity falls.',
@@ -851,6 +855,7 @@ return [
         'mission_what_systems' => 'Systems (:count): :addresses.',
         'mission_what_transport' => 'Carry the sealed data container to :xy.',
         'mission_what_supply' => 'Bring :count files: complete scan files.',
+        'mission_what_procure' => 'You\'ve been tasked with procuring, by whatever means, the following data: :list',
 
         // Writing to another player.
         'compose' => [
@@ -1126,6 +1131,11 @@ return [
         'targets' => 'Targets',
         'targets_done' => ':done of :total done',
         'quantity' => ':count complete scan files',
+        // A Procure job: the components it wants, one line each, and how many in all.
+        'requirement' => ':count x :component (:owner)',
+        'requirement_held' => 'Component in hand',
+        'requirement_missing' => 'Needs a component',
+        'requirements' => ':count components',
         'target_gone' => 'Not there any more',
         'target_done' => 'Done',
         // The tooltip on Abandon where it stands alone (Tasks & Missions): what giving the job up costs.
@@ -1158,6 +1168,7 @@ return [
             'transport' => 'Data transport',
             'supply' => 'Supply',
             'denial' => 'Denial',
+            'procure' => 'Procure',
         ],
 
         'action_hint' => [
@@ -1170,6 +1181,7 @@ return [
             'transport' => 'We have some sensitive data that we need a third party to carry to its destination, discretely. Be aware that you might be tracked and intercepted.',
             'denial' => 'Flood this node with as much traffic as possible, to make it go down. Note: This is very hard to solo, you likely need a crew to help you out.',
             'supply' => 'Bring us files: complete scan files. We do not care which systems, only that the picture is whole.',
+            'procure' => 'We need some very specific information from a competitor, and we want you to find it for us.',
         ],
 
         'states' => [
@@ -3909,6 +3921,8 @@ return [
         ],
 
         'files' => [
+            'read' => 'Read',
+            'reader' => 'File reader',
             'size' => ':qb QB',
             'encrypted_with' => 'sealed with :skill',
             'unencrypted' => 'unsealed',
@@ -4935,10 +4949,34 @@ return [
                 'journal_line' => 'Journal: line text',
                 'message_title' => 'Title',
                 'message_body' => 'Message',
+                'file_title' => 'File title',
+                'file_body' => 'File content',
+                'file_ice' => 'ICE Color',
+                'placeholders' => 'Placeholders',
                 'hint' => 'Amounts are signed. Item: a quantity. Damage: hitpoints or synaptic_integrity. Pass and fail apply only to a choice that rolls.',
             ],
             'branches' => ['always' => 'Always', 'pass' => 'On pass', 'fail' => 'On fail'],
+            'placeholders' => [
+                'title' => 'Placeholders',
+                'every_door' => 'Any',
+                'tokens' => [
+                    'handle' => 'Handle',
+                    'date' => 'Date',
+                    'system' => 'System',
+                    'address' => 'Address',
+                    'type' => 'Type',
+                    'grade' => 'Grade',
+                    'owner' => 'Owner',
+                    'purpose' => 'Purpose',
+                    'outcome' => 'Outcome',
+                ],
+            ],
             'errors' => [
+                'file_content' => 'A file needs either a text or an item, not both and not neither.',
+                'file_title' => 'A text file needs a title.',
+                'file_long' => 'The text is over limit (:max characters)',
+                'file_tokens' => 'The text uses a placeholder the chosen door can\'t fill. The offending ones are :tokens',
+                'file_encryption' => 'The encryption scheme is not one of the allowed ones.',
                 'run_only' => 'Screen ":node": ":kind" acts on a run, so only an encounter that opens in a run may use it.',
                 'grid_move_door' => 'Screen ":node": moving on the grid needs a grid door that is not a run.',
                 'grid_position' => 'Screen ":node": a position is written x,y and is inside the grid (0 to :size).',
@@ -5267,6 +5305,7 @@ return [
                 'locates' => 'Locates',
                 'walks' => 'Walks',
                 'jumps' => 'Jumps',
+                'swarms' => 'Scanner swarm',
                 'tracks' => 'Tracks',
                 'utility_hint' => 'A Utility (kind Utility) does what is ticked while it runs: Locates finds the nearest system you have met, Walks takes you to what it found (a Pathfinder is both), Jumps puts a Jump button beside addresses. Ignored by every other kind.',
                 'assess_step' => 'Assessor step (%)',

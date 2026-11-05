@@ -346,6 +346,12 @@
                 </form>
             @endif
 
+            @if ($item->slug === \App\Cyberspace\ExtractedFile::TEXT_SLUG && $entry->extractedFile()?->payloadText)
+                <button type="button" class="btn btn--sm btn--primary cut" data-listing="{{ route('inventory.text', $entry) }}" data-dialog="#text-reader">
+                    {{ Text::get('inventory.files.read') }}
+                </button>
+            @endif
+
             {{-- A sealed file is broken by the decryption queue, not here: this only asks. --}}
             @if ($entry->extractedFile() && $item->slug === \App\Cyberspace\ExtractedFile::SEALED_SLUG)
                 @php($queued = $entry->decryptionEntry)

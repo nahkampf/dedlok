@@ -102,7 +102,7 @@ final class Encounters
 
         // The encounters that set their own chance, each rolled on its own, first.
         if (($own = $this->rollOwn($character, $start, null, null, $system, $run)) !== null) {
-            return $this->open($character, $own, $start === EncounterStart::Run ? $run : null);
+            return $this->open($character, $own, $start === EncounterStart::Run ? $run : null, FilePlaceholders::context($system, $run));
         }
 
         $chance = $this->chanceFor($character, $start);
@@ -114,7 +114,7 @@ final class Encounters
         $pick = $this->draw($this->eligible($character, $start, null, null, $system, $run)->whereNull('chance')->values());
 
         // Only a run door interrupts a run; after one has ended there is nothing to continue or kill, the run just filters.
-        return $pick === null ? null : $this->open($character, $pick, $start === EncounterStart::Run ? $run : null);
+        return $pick === null ? null : $this->open($character, $pick, $start === EncounterStart::Run ? $run : null, FilePlaceholders::context($system, $run));
     }
 
     /**
@@ -256,7 +256,7 @@ final class Encounters
                 ['last_opened_at' => CarbonImmutable::now()],
             );
 
-            return $this->open($locked, $encounter);
+            return $this->open($locked, $encounter, null, FilePlaceholders::context($system, null));
         });
     }
 
@@ -318,9 +318,10 @@ final class Encounters
     }
 
     /** Put a character in an encounter, on its entry node. The only door in. */
-    public function open(Character $character, Encounter $encounter, ?Run $run = null): CharacterEncounter
+    /** @param  array<string, mixed>|null  $door  what the door knew (`FilePlaceholders::context()`), kept for a file the encounter leaves */
+    public function open(Character $character, Encounter $encounter, ?Run $run = null, ?array $door = null): CharacterEncounter
     {
-        return DB::transaction(function () use ($character, $encounter, $run): CharacterEncounter {
+        return DB::transaction(function () use ($character, $encounter, $run, $door): CharacterEncounter {
             $entry = $encounter->nodes()->where('entry', true)->firstOrFail();
 
             $live = CharacterEncounter::create([
@@ -328,6 +329,7 @@ final class Encounters
                 'encounter_id' => $encounter->getKey(),
                 // The run it interrupts, so closing knows which one to end or leave.
                 'run_id' => $run?->getKey(),
+                'door' => $door,
                 'node_key' => $entry->node_key,
                 'log' => [],
                 'started_at' => now(),

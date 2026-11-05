@@ -62,6 +62,9 @@ component means adding a demo in the same `<template class="demo-src">` pattern.
 `letter-spacing: -1px` on the 9px font). It is deliberately outside Ash & Ember: a file must look as it did on a DOS screen. Nothing
 else may use these tokens. Spans carry only those fixed class names, never player text. Gallery: `public/ui-kit.html#ansi`.
 
+A text file an encounter left (`inventory.text`) is drawn the same way, in `#text-reader` (layouts/app): `data-listing="URL"` fetches the card
+into `[data-listing-body]` of `#listing`, or of the dialog `data-dialog` names.
+
 ### Responsive rules — all of these shipped broken once
 
 The user tests on an Android phone. Audit every layout at **320px and 360px**. There is

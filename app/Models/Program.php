@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'item_id', 'kind', 'produces', 'leech_resource', 'leech_amount', 'qflops_cost', 'memory_cost', 'storage_size', 'lifetime_seconds', 'traverse_seconds', 'assess_step', 'family',
-    'background_process', 'multithreaded', 'modifiers', 'decrypts', 'locates', 'walks', 'jumps', 'tracks',
+    'background_process', 'multithreaded', 'modifiers', 'decrypts', 'locates', 'walks', 'jumps', 'swarms', 'tracks',
 ])]
 class Program extends Model
 {
@@ -44,6 +44,7 @@ class Program extends Model
             'locates' => 'boolean',
             'walks' => 'boolean',
             'jumps' => 'boolean',
+            'swarms' => 'boolean',
             'tracks' => 'boolean',
             'modifiers' => 'array',
             'decrypts' => 'array',

@@ -601,7 +601,7 @@
 
                     {{-- A Utility's abilities: what it does while it runs. --}}
                     <div class="row row--wrap" style="--gap:var(--s-3);margin-top:var(--s-3)">
-                        @foreach (['locates', 'walks', 'jumps', 'tracks'] as $ability)
+                        @foreach (['locates', 'walks', 'jumps', 'swarms', 'tracks'] as $ability)
                             <label class="check">
                                 <input type="hidden" name="{{ $ability }}" value="0">
                                 <input type="checkbox" name="{{ $ability }}" value="1" @checked(old($ability, $item?->program?->{$ability} ?? false))>

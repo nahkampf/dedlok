@@ -10,6 +10,7 @@ use App\Combat\WeaponLoader;
 use App\Combat\WeaponWielder;
 use App\Combat\WearRefusal;
 use App\Combat\WieldRefusal;
+use App\Cyberspace\ExtractedFile;
 use App\Cyberspace\ReadinessWatch;
 use App\Cyberspace\ScanImporter;
 use App\Cyberspace\ScanImportRefusal;
@@ -88,6 +89,23 @@ class InventoryController extends Controller
      * it was ever for, and a dialog in front of it would be asking somebody to
      * confirm using a thing by using it.
      */
+    /**
+     * The words of a text file, drawn by `Ansi` as a fragment for the reader dialog.
+     *
+     * Yours, and only once it is a text file: a sealed dump carries its words too, and reading them before it is broken
+     * open would make the seal decoration.
+     */
+    public function text(Request $request, InventoryItem $entry): View
+    {
+        abort_unless($entry->character_id === $this->character($request)->id, 404);
+        abort_unless($entry->item?->slug === ExtractedFile::TEXT_SLUG, 404);
+
+        $text = $entry->fileText;
+        abort_if($text === null, 404);
+
+        return view('inventory._text', ['text' => $text]);
+    }
+
     public function read(Request $request, InventoryItem $entry, ScanImporter $importer): RedirectResponse
     {
         $character = $this->character($request);

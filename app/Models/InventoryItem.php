@@ -61,6 +61,12 @@ class InventoryItem extends Model
      * App\Cyberspace\Extractor is the only writer, and
      * App\Cyberspace\ExtractedFile is the shape.
      */
+    /** @return HasOne<FileText, $this> */
+    public function fileText(): HasOne
+    {
+        return $this->hasOne(FileText::class);
+    }
+
     public function extractedFile(): ?ExtractedFile
     {
         return ExtractedFile::fromArray($this->extracted_file);

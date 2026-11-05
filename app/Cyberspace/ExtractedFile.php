@@ -26,6 +26,9 @@ final readonly class ExtractedFile
     /** The item a file becomes once decrypted; its row is the same row, so the value it fetches is the broken one. */
     public const DECRYPTED_SLUG = 'memory-dump';
 
+    /** The item a text file an encounter left is, sealed or broken open. */
+    public const TEXT_SLUG = 'text-file';
+
     /** The item every file is while it is still sealed; anything else carrying a file has been broken open. */
     public const SEALED_SLUG = 'encrypted-data-dump';
 
@@ -41,6 +44,10 @@ final readonly class ExtractedFile
         public ?FileOrigin $origin = null,
         /** The exchange job this file was seeded for; null on an ordinary file. */
         public ?int $missionId = null,
+        /** What a file an encounter left turns into when it is broken open: this item. Null on an ordinary file. */
+        public ?int $payloadItemId = null,
+        /** Or a text file, whose words wait in `file_texts`. */
+        public bool $payloadText = false,
     ) {}
 
     public static function fromContent(SystemContent $content): self
@@ -69,6 +76,8 @@ final readonly class ExtractedFile
             'grade' => $this->grade,
             'origin' => $this->origin?->toArray(),
             'mission_id' => $this->missionId,
+            'payload_item_id' => $this->payloadItemId,
+            'payload_text' => $this->payloadText,
         ];
     }
 
@@ -88,6 +97,8 @@ final readonly class ExtractedFile
             grade: isset($stored['grade']) ? (int) $stored['grade'] : null,
             origin: FileOrigin::fromArray($stored['origin'] ?? null),
             missionId: isset($stored['mission_id']) ? (int) $stored['mission_id'] : null,
+            payloadItemId: isset($stored['payload_item_id']) ? (int) $stored['payload_item_id'] : null,
+            payloadText: (bool) ($stored['payload_text'] ?? false),
         );
     }
 

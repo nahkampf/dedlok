@@ -12,12 +12,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * The encounter a character is in. Written by `App\City\Encounters` (opening) and
  * `App\City\EncounterRunner` (moving and closing) and nothing else.
  */
-#[Fillable(['character_id', 'encounter_id', 'run_id', 'node_key', 'log', 'started_at'])]
+#[Fillable(['character_id', 'encounter_id', 'run_id', 'door', 'node_key', 'log', 'started_at'])]
 class CharacterEncounter extends Model
 {
     protected function casts(): array
     {
-        return ['log' => 'array', 'started_at' => 'immutable_datetime'];
+        return ['log' => 'array', 'door' => 'array', 'started_at' => 'immutable_datetime'];
     }
 
     /** @return BelongsTo<Character, $this> */
