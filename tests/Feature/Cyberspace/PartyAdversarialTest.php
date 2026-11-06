@@ -595,7 +595,7 @@ final class PartyAdversarialTest extends TestCase
         $this->actingAs($owner->fresh()->user)->postJson(route('run.party.loadout'), ['icebreaker' => $breaker->id])->assertOk();
 
         $page = $this->actingAs($mate->fresh()->user)->getJson(route('run.party.status'))->assertOk();
-        $page->assertSee($owner->handle)->assertSee('Wirecutter')->assertSee('Owner');
+        $page->assertSee($owner->handle)->assertSee('Wirecutter')->assertSee('Run master');
     }
 
     /**
