@@ -58,7 +58,15 @@ class RunPartyController extends Controller
             ...($data['loadout'] ?? []), $data['icebreaker'] ?? null, ...($data['programs'] ?? []), ...($data['scripts'] ?? []),
         ]))));
 
-        return $this->back($parties->accept($this->character($request), $ids, array_map('intval', $data['suspend'] ?? [])));
+        $character = $this->character($request);
+        $suspend = array_map('intval', $data['suspend'] ?? []);
+
+        // Say now what the launch would say later: a loadout that will not run is not accepted.
+        if (($why = $parties->loadoutRefusal($character, $ids, $suspend)) !== null) {
+            return redirect()->route('run.setup')->with('error', Text::get('cyberspace.party.refused.loadout_wont_run', ['reason' => $why]));
+        }
+
+        return $this->back($parties->accept($character, $ids, $suspend));
     }
 
     /** Accept by id, from a `run:<id>` link in chat; only for somebody invited. JSON for the page's script, a redirect otherwise. */
