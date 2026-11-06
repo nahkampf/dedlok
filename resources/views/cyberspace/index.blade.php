@@ -776,7 +776,7 @@
             <button type="button" class="btn btn--sm cut" data-overview="{{ route('cyberspace.overview') }}" data-open="#overview-map">{{ Text::get('cyberspace.known.overview') }}</button>
             <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('ui.action.close') }}</button>
         </div>
-        <div class="panel__bd" data-fragment="{{ route('cyberspace.systems') }}">
+        <div class="panel__bd" data-fragment="{{ route('cyberspace.systems') }}" data-fragment-remember="known-systems">
             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('processes.loading') }}</p>
         </div>
     </dialog>

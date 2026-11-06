@@ -1,3 +1,7 @@
+## 0.90.1 (2026-11-06)
+
+- "Known systems" now remember your filter settings
+
 ## 0.90.0 (2026-11-06)
 
 - A conclusion to the NJORD storyline (this is a POC for multi-entity questlines)
