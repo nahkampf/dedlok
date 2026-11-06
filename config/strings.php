@@ -1552,6 +1552,8 @@ return [
             'invited' => 'Invited',
             'joined' => 'Joined',
             'ready' => 'Ready',
+            'si' => 'SI :current / :max',
+            'loadout_none' => 'nothing',
             'dropped' => 'Dropped out',
             'nobody' => 'Nobody invited yet.',
             'handle' => 'Handle',
