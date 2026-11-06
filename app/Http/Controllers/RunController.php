@@ -415,6 +415,7 @@ class RunController extends Controller
             'character' => $character,
             'run' => $run,
             'waiting' => $waiting,
+            'shared' => $shared,
             'roundSeconds' => $shared ? PartyTurns::secondsLeft((int) $run->run_party_id) : null,
             // Install Leecher is offered only with a Leecher in the stash and a fortress to feed.
             'fortresses' => $character->inventory()->loose()->whereHas('item.program', static fn ($q) => $q->where('kind', ProgramKind::Leecher->value))->exists()

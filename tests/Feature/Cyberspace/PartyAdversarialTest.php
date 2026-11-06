@@ -565,7 +565,7 @@ final class PartyAdversarialTest extends TestCase
         }
         $this->actingAs($owner->fresh()->user)->post(route('run.act'), ['action' => 'hold']);
 
-        $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('data-waiting="hold"', false);
+        $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('data-waiting="hold"', false)->assertSee('data-run-watch', false)->assertSee('data-log-index', false)->assertSee('data-party="1"', false);
         $this->actingAs($mates[0]->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('data-waiting=""', false);
     }
 

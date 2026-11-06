@@ -233,7 +233,7 @@
      ONE FORM AND ONE DOOR. Every action costs the same turn, which is the economy the whole run rests
      on — so they are one button each on one form rather than a route apiece. LEAVING IS ALWAYS ON THE
      LIST and never disabled: a run with no exit is a character deleted by a door they could not see. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
+<div class="panel panel--snug" style="margin-top:var(--s-4)" data-run-watch="{{ $run->id }}" data-turn="{{ $run->turn }}" data-party="{{ $shared ? 1 : 0 }}">
     {{-- ON OR PAST A THRESHOLD: the next turn pulls them out whatever they press. The loud thing on the
          panel, because it is the one fact that changes what the buttons below will do. --}}
     @if ($thresholdBreached)
@@ -400,9 +400,9 @@
     <div class="panel panel--snug" style="margin-top:var(--s-4)">
         <div class="panel__hd"><h2>{{ Text::get('cyberspace.run.log_heading') }}</h2></div>
 
-        <div style="padding:var(--s-3) 0">
+        <div style="padding:var(--s-3) 0" data-log-watch="{{ $run->id }}" data-log-count="{{ count($run->log) }}">
             @foreach (array_reverse($run->log) as $line)
-                <p class="micro" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
+                <p class="micro" data-log-index="{{ $loop->count - $loop->iteration }}" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
                     @if (isset($line['turn']))
                         <span class="tag tag--quiet">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
                     @endif

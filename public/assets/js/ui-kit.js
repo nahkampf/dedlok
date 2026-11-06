@@ -1710,6 +1710,35 @@
   passClocks();
   document.addEventListener("DOMContentLoaded", passClocks);
 
+  /* --- What happened since this page was last seen ---------------------------
+     The run screen reloads often (after a turn, and on its own while a party waits), so what is new is worked out
+     against what THIS tab last saw of THIS run, kept in sessionStorage: a round that resolved pulses the actions box
+     (a party's only: a solo turn is the player's own press), and every log row beyond the ones already seen fades in
+     from ember. The first look at a run flashes nothing. */
+  function runWatch() {
+    const box = document.querySelector("[data-run-watch]");
+    const log = document.querySelector("[data-log-watch]");
+    const id = (box || log) && (box || log).dataset.runWatch || (log && log.dataset.logWatch);
+    if (!id) return;
+    const key = "run-seen-" + id;
+    let seen = null;
+    try { seen = JSON.parse(sessionStorage.getItem(key) || "null"); } catch (e) { /* storage may be off */ }
+    const turn = box ? Number(box.dataset.turn) : 0;
+    const logs = log ? Number(log.dataset.logCount) : 0;
+    if (seen) {
+      if (box && box.dataset.party === "1" && turn > seen.turn) {
+        box.classList.add("round-flash");
+        box.addEventListener("animationend", () => box.classList.remove("round-flash"), { once: true });
+      }
+      if (log) log.querySelectorAll("[data-log-index]").forEach((row) => {
+        if (Number(row.dataset.logIndex) >= seen.logs) row.classList.add("log-new");
+      });
+    }
+    try { sessionStorage.setItem(key, JSON.stringify({ turn, logs })); } catch (e) { /* ignore */ }
+  }
+  runWatch();
+  document.addEventListener("DOMContentLoaded", runWatch);
+
   /* --- A turn, once it has been chosen ---------------------------------------
      form[data-turn-form] holds a run's action buttons. While the choice is waiting on the other runners
      (`data-waiting` names the action that was pressed, rendered by the server) every button is disabled and the

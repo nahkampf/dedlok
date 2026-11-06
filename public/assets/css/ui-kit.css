@@ -2042,6 +2042,15 @@ a.tab { text-decoration: none; }
   animation: spin 700ms linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* A run's news arriving. The actions box pulses once, brighter and back, when a round has resolved since the page was last
+   seen; a log row that has just appeared starts on an ember wash and fades to nothing. Only the middle of the pulse is
+   written, so it starts and ends on whatever the box already is. */
+@keyframes round-flash { 35% { background-color: color-mix(in srgb, var(--bg-2) 82%, var(--ink-0)); } }
+.panel.round-flash { animation: round-flash 420ms var(--ease) 1; }
+@keyframes log-new { from { background-color: color-mix(in srgb, var(--ember) 38%, transparent); } to { background-color: transparent; } }
+.log-new { animation: log-new 1600ms var(--ease) 1 both; }
+@media (prefers-reduced-motion: reduce) { .panel.round-flash, .log-new { animation: none; } }
+
 /* A spinner inside a button: the one that was pressed while the turn is waiting on the others. */
 .btn .spinner { display: inline-block; vertical-align: -2px; width: 12px; height: 12px; margin-right: var(--s-2); }
 
