@@ -1,3 +1,8 @@
+## 0.89.2 (2026-11-06)
+
+- New achievement: "Arne Beurling sends his regards", for decrypting 1000 files. Starts counting from now, earlier decrypts not counted.
+- Components from cyberspace encounters had no grade, os, owner etc, fixed now.
+
 ## 0.89.1 (2026-11-06)
 
 - Journal notes now fold into accordions, and we separate between unresolved and "archived".
