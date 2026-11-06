@@ -140,9 +140,9 @@ final class Parties
     }
 
     /** Accepting needs standing at the same door: the party forms where it is going. */
-    public function accept(Character $character, ?array $loadout = null): ?PartyRefusal
+    public function accept(Character $character, ?array $loadout = null, ?array $suspend = null): ?PartyRefusal
     {
-        return DB::transaction(function () use ($character, $loadout): ?PartyRefusal {
+        return DB::transaction(function () use ($character, $loadout, $suspend): ?PartyRefusal {
             $member = RunPartyMember::query()->where('character_id', $character->getKey())->lockForUpdate()->first();
 
             if ($member === null) {
@@ -168,7 +168,7 @@ final class Parties
             $mine = $loadout === null ? ($member->loadout ?? []) : $this->oneIcebreaker(InventoryItem::query()
                 ->where('character_id', $character->getKey())->whereIn('id', $loadout)->with('item.program')->get());
 
-            $member->update(['joined_at' => $member->joined_at ?? now(), 'loadout' => $mine]);
+            $member->update(['joined_at' => $member->joined_at ?? now(), 'loadout' => $mine] + ($suspend === null ? [] : ['suspend' => $suspend]));
 
             return null;
         });
@@ -349,7 +349,7 @@ final class Parties
             if ($runner !== null && $why === null) {
                 $rows = InventoryItem::query()->whereIn('id', $member->loadout ?? [])
                     ->where('character_id', $runner->getKey())->with('item.program')->get()->all();
-                $started = $starter->start($runner, $purpose, $kind, $rows, $party->getKey());
+                $started = $starter->start($runner, $purpose, $kind, $rows, $party->getKey(), $member->suspend ?? []);
                 $why = $started->succeeded() ? null : $started->message();
             }
 

@@ -286,6 +286,25 @@ final class PartyAdversarialTest extends TestCase
         $this->assertNull(RunPartyMember::query()->where('character_id', $m->id)->first(), 'the seat goes with the party');
     }
 
+    public function test_a_members_stop_these_ticks_are_kept_for_the_launch(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $m = $this->runner();
+        $parties->invite($owner, $m->handle);
+
+        $parties->accept($m, [], [77, 78]);
+        $this->assertSame([77, 78], RunPartyMember::query()->where('character_id', $m->id)->first()->suspend);
+
+        $parties->accept($m);
+        $this->assertSame([77, 78], RunPartyMember::query()->where('character_id', $m->id)->first()->suspend, 'a bare re-accept does not clear them');
+
+        // A tick for a row that is not running (any more) is ignored, not a reason to drop the member.
+        $parties->launch($owner->fresh(), RunPurpose::Extraction, null, [], app(RunStarter::class));
+        $this->assertNull(RunPartyMember::query()->where('character_id', $m->id)->first()->dropped_at);
+    }
+
     public function test_the_screen_and_the_launch_agree_on_who_can_go(): void
     {
         $owner = $this->runner();

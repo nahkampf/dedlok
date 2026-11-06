@@ -51,13 +51,14 @@ class RunPartyController extends Controller
             'icebreaker' => ['nullable', 'integer'],
             'programs' => ['nullable', 'array', 'max:20'], 'programs.*' => ['integer', 'distinct'],
             'scripts' => ['nullable', 'array', 'max:20'], 'scripts.*' => ['integer', 'distinct'],
+            'suspend' => ['nullable', 'array', 'max:50'], 'suspend.*' => ['integer', 'distinct'],
         ]);
 
         $ids = array_values(array_unique(array_map('intval', array_filter([
             ...($data['loadout'] ?? []), $data['icebreaker'] ?? null, ...($data['programs'] ?? []), ...($data['scripts'] ?? []),
         ]))));
 
-        return $this->back($parties->accept($this->character($request), $ids));
+        return $this->back($parties->accept($this->character($request), $ids, array_map('intval', $data['suspend'] ?? [])));
     }
 
     /** Accept by id, from a `run:<id>` link in chat; only for somebody invited. JSON for the page's script, a redirect otherwise. */
