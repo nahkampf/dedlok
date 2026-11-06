@@ -2018,6 +2018,7 @@ return [
                 'hunted' => 'You are currently locked in a confrontation with another entity.',
                 'fighting' => 'You are in a fight.',
                 'program_refused' => 'Something on your loadout would not start.',
+                'nobody_ready' => 'Nobody has accepted the run yet.',
                 // Said plainly: a lockdown is a consequence of something
                 // somebody did, not a scan fact being given away. And it is
                 // worth knowing the system will not be there afterwards.

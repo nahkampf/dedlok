@@ -286,6 +286,25 @@ final class Parties
     }
 
     /**
+     * What stops each joined member going in with the party, by character id; a member who could go is absent.
+     *
+     * @return array<int, string>
+     */
+    public function obstacles(RunParty $party, RunStarter $starter): array
+    {
+        return $party->members->mapWithKeys(fn (RunPartyMember $m): array => [
+            $m->character_id => $m->dropped_at !== null ? null : ($m->character === null ? null : $this->obstacle($m->character, $party, $starter)),
+        ])->filter()->all();
+    }
+
+    /** Has anybody accepted, and could they go in right now? The same test the launch makes of each member. */
+    public function someoneIsReady(RunParty $party, RunStarter $starter): bool
+    {
+        return $party->members()->whereNotNull('joined_at')->whereNull('dropped_at')->with('character')->get()
+            ->contains(fn (RunPartyMember $m): bool => $m->character !== null && $this->obstacle($m->character, $party, $starter) === null);
+    }
+
+    /**
      * THE OWNER BEGINS IT, and every joined member goes in at once with the loadout they chose at the door.
      *
      * Each runner gets their OWN run (own approach roll, own trace, own loadout) tied together by `runs.run_party_id`.
@@ -305,6 +324,11 @@ final class Parties
 
         if ($here === null || $here->x !== $party->x || $here->y !== $party->y) {
             return RunResult::refused(RunRefusal::NothingThere);
+        }
+
+        // A party was called, so somebody has to be coming: the owner cannot go in alone beside an empty one (disband it to).
+        if (! $this->someoneIsReady($party, $starter)) {
+            return RunResult::refused(RunRefusal::NobodyReady);
         }
 
         $result = $starter->start($owner, $purpose, $kind, $ownerLoadout, $party->getKey(), $ownerSuspend);

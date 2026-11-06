@@ -1710,6 +1710,37 @@
   passClocks();
   document.addEventListener("DOMContentLoaded", passClocks);
 
+  /* --- The party panel, kept current ---------------------------------------
+     [data-party-poll="url"] asks the server every five seconds who is in, and swaps the HTML of each
+     [data-party-live] for what it answers (the member lines are drawn on the server, so the wording is
+     the server's). The owner's purpose buttons ([data-party-gate]) are live only while somebody could go
+     in, and the "nobody yet" line ([data-party-hint]) shows while not. When the party is gone or has
+     started, or the person's role in it changed, the whole screen is different: reload.
+     Nothing in the panel that is being typed in is touched. */
+  function partyPanels() {
+    document.querySelectorAll("[data-party-poll]").forEach((panel) => {
+      if (panel.dataset.polling) return;
+      panel.dataset.polling = "1";
+      const live = panel.querySelectorAll("[data-party-live]");
+      const tick = async () => {
+        if (!document.hidden) {
+          try {
+            const res = await fetch(panel.dataset.partyPoll, { headers: { Accept: "application/json" }, credentials: "same-origin" });
+            const data = await res.json();
+            if (data.state !== "open" || data.role !== panel.dataset.partyRole) return location.reload();
+            live.forEach((el) => { if (el.innerHTML.trim() !== data.html.trim()) el.innerHTML = data.html; });
+            document.querySelectorAll("[data-party-gate]").forEach((b) => { b.disabled = !data.ready; });
+            document.querySelectorAll("[data-party-hint]").forEach((p) => { p.hidden = data.ready; });
+          } catch (e) { /* a missed beat is fine: the next one asks again */ }
+        }
+        setTimeout(tick, 5000);
+      };
+      setTimeout(tick, 5000);
+    });
+  }
+  partyPanels();
+  document.addEventListener("DOMContentLoaded", partyPanels);
+
   /* --- A countdown that reloads the page when it ends ----------------------
      <span data-countdown="95">1:35</span> — the value is SECONDS REMAINING,
      sent by the server, never an absolute time: a phone's clock can be wrong

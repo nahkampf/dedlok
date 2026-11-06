@@ -158,7 +158,7 @@ class RunController extends Controller
             'party' => $partyHere,
             'coopSlots' => $character->coopSlots(),
             // Who of the party could go in if the owner pressed Start now, and what stops the rest: {character id: reason}.
-            'obstacles' => $partyHere === null ? [] : $partyHere->members->mapWithKeys(fn ($m): array => [$m->character_id => $m->dropped_at !== null ? null : ($m->character === null ? null : $parties->obstacle($m->character, $partyHere, $this->runs))])->filter()->all(),
+            'obstacles' => $partyHere === null ? [] : $parties->obstacles($partyHere, $this->runs),
             // What the player has read of each system the trace has to come through, by address. A
             // relay is their own backdoor, but a backdoor says nothing about what is on the machine.
             'hopScans' => SystemScan::query()

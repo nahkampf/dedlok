@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Party\PartyRefusal;
 use App\Cyberspace\Party\ShareMode;
+use App\Cyberspace\RunStarter;
 use App\Models\Character;
 use App\Models\RunParty;
 use App\Support\Text;
@@ -76,6 +77,35 @@ class RunPartyController extends Controller
         }
 
         return $this->back($refusal);
+    }
+
+    /**
+     * The party panel as it stands now, for the setup page's poll: the member lines (or the member's own), and whether
+     * the owner could start. `gone` and `started` tell the page to reload, since the whole screen is then different.
+     */
+    public function status(Request $request, Parties $parties, RunStarter $starter): JsonResponse
+    {
+        $character = $this->character($request);
+        $party = $parties->partyOf($character)?->load('members.character', 'owner');
+
+        if ($party === null) {
+            return response()->json(['state' => 'gone']);
+        }
+
+        if ($party->started_at !== null) {
+            return response()->json(['state' => 'started']);
+        }
+
+        $obstacles = $parties->obstacles($party, $starter);
+        $isOwner = $party->owner_character_id === $character->id;
+        $mine = $isOwner ? null : $party->members->firstWhere('character_id', $character->id);
+
+        return response()->json([
+            'state' => 'open',
+            'role' => $isOwner ? 'owner' : 'member',
+            'ready' => $parties->someoneIsReady($party, $starter),
+            'html' => view($isOwner ? 'run._party_members' : 'run._party_me', compact('party', 'character', 'obstacles', 'mine'))->render(),
+        ]);
     }
 
     public function leave(Request $request, Parties $parties): RedirectResponse

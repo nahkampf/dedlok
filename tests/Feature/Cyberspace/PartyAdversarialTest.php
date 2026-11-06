@@ -261,6 +261,10 @@ final class PartyAdversarialTest extends TestCase
         $m = $this->runner();
         $parties->invite($owner, $m->handle);
         $parties->accept($m);
+        // Somebody else is coming, or the owner could not start at all.
+        $other = $this->runner();
+        $parties->invite($owner, $other->handle);
+        $parties->accept($other);
         // The member's deck dies between accepting and the launch.
         $m->forceFill(['grid_x' => 3, 'grid_y' => 3])->save();
 
@@ -277,6 +281,7 @@ final class PartyAdversarialTest extends TestCase
         $this->assertSame(1, Notification::query()->where('user_id', $owner->user_id)->where('title', 'Co-op run member dropped')->where('body', 'like', "%{$handle}%")->count(), 'the owner is told who dropped');
 
         app(RunStarter::class)->end($owner, $owner->fresh()->currentRun, RunEnding::Egress);
+        app(RunStarter::class)->end($other, $other->fresh()->currentRun, RunEnding::Egress);
         $this->assertNull(RunPartyMember::query()->where('character_id', $m->id)->first(), 'the seat goes with the party');
     }
 
@@ -472,6 +477,48 @@ final class PartyAdversarialTest extends TestCase
 
         $this->actingAs($mate->user)->get(route('cyberspace.index'))->assertOk()->assertSee('btn--join', false);
         $this->actingAs($owner->user)->get(route('cyberspace.index'))->assertOk()->assertDontSee('btn--join', false);
+    }
+
+    public function test_the_party_panel_poll_follows_who_has_accepted(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+
+        $asOwner = fn () => $this->actingAs($owner->fresh()->user)->getJson(route('run.party.status'))->assertOk();
+
+        $asOwner()->assertJson(['state' => 'open', 'role' => 'owner', 'ready' => false])->assertSee($mate->handle);
+
+        $parties->accept($mate);
+
+        $asOwner()->assertJson(['ready' => true]);
+        $this->actingAs($mate->fresh()->user)->getJson(route('run.party.status'))->assertJson(['state' => 'open', 'role' => 'member']);
+
+        $parties->leave($mate);
+        $asOwner()->assertJson(['ready' => false]);
+
+        $parties->leave($owner);
+        $asOwner()->assertJson(['state' => 'gone']);
+    }
+
+    public function test_the_owner_cannot_start_until_somebody_has_accepted(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+
+        $result = $parties->launch($owner, RunPurpose::Extraction, null, [], app(RunStarter::class));
+
+        $this->assertFalse($result->succeeded());
+        $this->assertNull($owner->fresh()->current_run_id);
+
+        $parties->accept($mate);
+
+        $this->assertTrue($parties->launch($owner->fresh(), RunPurpose::Extraction, null, [], app(RunStarter::class))->succeeded());
     }
 
     /**

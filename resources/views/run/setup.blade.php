@@ -289,6 +289,8 @@
      own cost the same way, and ui-kit.js does the sum. Display only: the run's start asks the runner again. --}}
  {{-- A MEMBER at the door does not choose a purpose: the owner starts the run. They get this same screen to choose
      what goes in with them, and its button is Accept (or Update, once they have). --}}
+@php($holdStart = $party && $party->owner_character_id === $character->id && $party->started_at === null
+    && ! $party->members->contains(fn ($m): bool => $m->joined_at !== null && $m->dropped_at === null && ! isset($obstacles[$m->character_id])))
 @php($asMember = $party && $party->owner_character_id !== $character->id && $party->x == $target->x && $party->y == $target->y && $party->started_at === null)
 @unless ($target->type->isGateway())
     @include('run._party')
@@ -449,6 +451,11 @@
         </p>
     @else
         <div style="padding:var(--s-3) 0;display:grid;gap:var(--s-3)">
+            @if ($holdStart)
+                <p class="micro" style="color:var(--warn);margin:0" data-party-hint>{{ \App\Cyberspace\RunRefusal::NobodyReady->message() }}</p>
+            @elseif ($party && $party->owner_character_id === $character->id && $party->started_at === null)
+                <p class="micro" style="color:var(--warn);margin:0" data-party-hint hidden>{{ \App\Cyberspace\RunRefusal::NobodyReady->message() }}</p>
+            @endif
             @foreach ([
                 ['intent' => 'extraction', 'purpose' => RunPurpose::Extraction, 'kind' => null],
                 ['intent' => 'siphon', 'purpose' => RunPurpose::Backdoor, 'kind' => BackdoorKind::Siphon],
@@ -467,7 +474,8 @@
                     <button type="submit" @class(['btn', 'cut', 'btn--go' => $placing]) style="min-width:min(200px,100%)"
                             name="purpose" value="{{ $option['purpose']->value }}"
                             @if ($option['kind']) formaction="{{ route('run.start', ['backdoor_kind' => $option['kind']->value]) }}" @endif
-                            @unless ($ready) disabled @endunless>
+                            @if ($ready && $party && $party->owner_character_id === $character->id && $party->started_at === null) data-party-gate @endif
+                            @if (! $ready || $holdStart) disabled @endif>
                         {{ Text::get($placing ? 'cyberspace.run.setup.intent_placement' : 'cyberspace.run.setup.intent_'.$option['intent']) }}
                     </button>
                     <span class="micro" style="color:var(--ink-2);flex:1;min-width:min(240px,100%)">
