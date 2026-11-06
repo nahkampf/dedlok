@@ -17,7 +17,7 @@ return [
     'important' => [
         // The grid.
         'backdoor_found', 'tracker_found', 'leech_found', 'damage_report', 'darknet_access',
-        'party_invite', 'party_started', 'party_dropped',
+        'party_invite', 'party_started', 'party_dropped', 'party_run_report',
         'fortress_alarm', 'fortress_core', 'fortress_invite', 'fortress_moved', 'fortress_burned',
         // Jobs that went wrong.
         'mission_failed', 'mission_container_lost', 'mission_voided', 'mission_retargeted', 'mission_retargeted_coords',

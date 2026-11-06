@@ -8,6 +8,7 @@ use App\Models\Character;
 use App\Models\Run;
 use App\Models\RunParty;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Who a party's take is divided among, and how.
@@ -44,6 +45,26 @@ final class PartyShare
         $runners = $ids->map(fn ($id) => $found->get($id))->filter()->values();
 
         return $runners->count() < 2 ? null : new self($party, $runners);
+    }
+
+    /** Write down that `$characterId` was dealt `$quantity` of something, for the run's closing report. */
+    public function record(int $characterId, string $kind, string $label, int $quantity = 1): void
+    {
+        if ($quantity <= 0) {
+            return;
+        }
+
+        DB::transaction(function () use ($characterId, $kind, $label, $quantity): void {
+            $party = RunParty::query()->whereKey($this->party->getKey())->lockForUpdate()->first();
+
+            if ($party === null) {
+                return;
+            }
+
+            $loot = $party->loot ?? [];
+            $loot[] = ['character_id' => $characterId, 'kind' => $kind, 'label' => $label, 'quantity' => $quantity];
+            $party->update(['loot' => $loot]);
+        });
     }
 
     public function credits(): ShareMode

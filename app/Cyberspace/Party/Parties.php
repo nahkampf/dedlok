@@ -386,6 +386,7 @@ final class Parties
         $live = Run::query()->where('run_party_id', $run->run_party_id)->whereNull('ended_at')->exists();
 
         if (! $live) {
+            RunReport::send((int) $run->run_party_id);
             RunParty::query()->whereKey($run->run_party_id)->delete();
         }
     }

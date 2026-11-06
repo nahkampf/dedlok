@@ -134,6 +134,7 @@ final class FortressRaid
             }
 
             $name = $this->handOver($recipient, $content);
+            PartyShare::for($character)?->record($recipient->getKey(), 'file', (string) $name);
             $content->delete();
             $run->forceFill(['pull_content_id' => null, 'extracting_qb' => null]);
             $took = true;

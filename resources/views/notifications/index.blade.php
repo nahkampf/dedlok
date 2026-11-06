@@ -106,6 +106,30 @@
                                 {{-- A message a player wrote: who from, in the sender's own handle. Plain text, printed escaped. --}}
                                 @if (! empty($message->details['from']))
                                     <span class="micro" style="color:var(--ink-3)">{{ Text::get('notifications.compose.from', ['handle' => $message->details['from']]) }}</span>
+                                @elseif (! empty($message->details['report']))
+                                    {{-- A co-op run's closing report: sections of lines, then the run's whole log. All text was composed when it was sent. --}}
+                                    @foreach ($message->details['report']['sections'] as $section)
+                                        <div class="stack" style="--gap:var(--s-1)">
+                                            <span class="micro" style="color:var(--ink-3)">{{ $section['heading'] }}</span>
+                                            <div class="prose micro" style="color:var(--ink-2)">
+                                                <ul>
+                                                    @foreach ($section['lines'] as $line)
+                                                        <li>{{ $line }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                    <div class="stack" style="--gap:var(--s-1)">
+                                        <span class="micro" style="color:var(--ink-3)">{{ Text::get('notifications.report.log') }}</span>
+                                        <div class="prose micro" style="color:var(--ink-2)">
+                                            <ul>
+                                                @foreach ($message->details['report']['log'] as $line)
+                                                    <li>{{ $line }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    </div>
                                 @elseif (! empty($message->details['targets']))
                                     {{-- An accepted job's systems: where to go. The address is the button that copies it. --}}
                                     <div class="prose micro" style="color:var(--ink-2)">

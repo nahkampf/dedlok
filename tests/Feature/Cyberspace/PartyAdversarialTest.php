@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Cyberspace;
 
 use App\Chat\Chats;
+use App\Cyberspace\Extractor;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Party\PartyRefusal;
@@ -519,6 +520,39 @@ final class PartyAdversarialTest extends TestCase
         $parties->accept($mate);
 
         $this->assertTrue($parties->launch($owner->fresh(), RunPurpose::Extraction, null, [], app(RunStarter::class))->succeeded());
+    }
+
+    public function test_every_runner_gets_a_run_concluded_message_with_the_split_and_the_log(): void
+    {
+        [$owner, $mates] = $this->launched(2);
+        $everybody = [$owner, ...$mates];
+
+        // A take, divided evenly, and a round so the shared log has something in it.
+        app(Extractor::class)->payCreds($owner->fresh(), 100);
+        foreach ($everybody as $c) {
+            $this->act($c);
+        }
+
+        foreach ($everybody as $c) {
+            app(RunStarter::class)->end($c->fresh(), $c->fresh()->currentRun, RunEnding::Egress);
+        }
+
+        foreach ($everybody as $c) {
+            $note = Notification::query()->where('user_id', $c->user_id)->where('title', 'Run concluded')->sole();
+            $report = $note->details['report'];
+            $this->assertSame('important', $note->priority->value);
+
+            $flat = collect($report['sections'])->pluck('lines')->flatten()->implode("\n");
+            foreach ($everybody as $other) {
+                $this->assertStringContainsString("[{$other->handle}]", $flat, 'a participant is not named in brackets');
+            }
+            $this->assertStringContainsString('100 ¤', $flat, 'the take is not listed');
+            $this->assertStringContainsString('34 ¤', $flat, 'the owner gets the remainder of an even split of 100');
+            $this->actingAs($c->fresh()->user)->get(route('notifications.index'))->assertOk()
+                ->assertSee('Run concluded')->assertSee('Payout split')->assertSee("[{$owner->handle}]");
+            $this->assertNotEmpty($report['log'], 'the log is missing');
+            $this->assertStringContainsString('[', implode("\n", $report['log']), 'the log does not name who did what');
+        }
     }
 
     /**
