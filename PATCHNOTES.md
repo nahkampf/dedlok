@@ -1,3 +1,8 @@
+## 0.91.0 (2026-11-06)
+
+- "Accept" on a co-op run didn't check the deck totals/suspends, and so you could accept but immediately be dropped because you didn't have CPU to run an icebreaker for instance. Fixed now.
+- Better messages to the parties in co-op run when someone drops
+
 ## 0.90.1 (2026-11-06)
 
 - "Known systems" now remember your filter settings

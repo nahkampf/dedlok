@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+## [0.91.0] — 2026-11-06
+
+### Fixed
+- **A co-op member with a busy deck was dropped at launch for "not enough compute".** Found on production (Noodle and flvx, two launches): the setup screen's "stop these to make room" ticks were thrown away on Accept, so a member running a Jumper, a Grinder and two Surveyors could not fit their loadout and the launch left them out. Accept now keeps the ticks (`run_party_members.suspend`) and the launch applies them when it starts the member's programs (`Parties::launch`).
+
+### Changed
+- **Accept checks the loadout against the deck.** `Parties::loadoutRefusal` runs the real start (`ProgramRunner::suspend` and `start`, so compute, memory, threads, storage and the one-icebreaker rule all count) inside a transaction it rolls back. A loadout that will not run is not accepted, and the refusal is shown with its reason (`cyberspace.party.refused.loadout_wont_run`).
+- **A member left out at launch is told why.** `party_dropped` carries the reason (not at the door, in another run, locked down, deck not ready, or the program's own refusal). The owner's `party_member_dropped` no longer reads "because Not enough compute".
+
+### Migrations
+- `2026_11_10_240000_party_members_keep_what_to_suspend` (adds `run_party_members.suspend`).
+
+Run `php artisan migrate`.
+
+
 ## [0.90.1] — 2026-11-06
 
 ### Changed
@@ -4075,7 +4090,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.90.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.91.0...HEAD
+[0.91.0]: https://github.com/nahkampf/dedlok/compare/v0.90.1...v0.91.0
 [0.90.1]: https://github.com/nahkampf/dedlok/compare/v0.90.0...v0.90.1
 [0.90.0]: https://github.com/nahkampf/dedlok/compare/v0.89.2...v0.90.0
 [0.89.2]: https://github.com/nahkampf/dedlok/compare/v0.89.1...v0.89.2
