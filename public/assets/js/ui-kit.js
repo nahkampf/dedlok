@@ -1723,16 +1723,15 @@
       panel.dataset.polling = "1";
       const live = panel.querySelectorAll("[data-party-live]");
       const tick = async () => {
-        if (!document.hidden) {
-          try {
-            const res = await fetch(panel.dataset.partyPoll, { headers: { Accept: "application/json" }, credentials: "same-origin" });
-            const data = await res.json();
-            if (data.state !== "open" || data.role !== panel.dataset.partyRole) return location.reload();
-            live.forEach((el) => { if (el.innerHTML.trim() !== data.html.trim()) el.innerHTML = data.html; });
-            document.querySelectorAll("[data-party-gate]").forEach((b) => { b.disabled = !data.ready; });
-            document.querySelectorAll("[data-party-hint]").forEach((p) => { p.hidden = data.ready; });
-          } catch (e) { /* a missed beat is fine: the next one asks again */ }
-        }
+        // Not paused while the tab is hidden: a party waits on people who are often in another window.
+        try {
+          const res = await fetch(panel.dataset.partyPoll, { headers: { Accept: "application/json" }, credentials: "same-origin" });
+          const data = await res.json();
+          if (data.state !== "open" || data.role !== panel.dataset.partyRole) return location.reload();
+          live.forEach((el) => { if (el.innerHTML.trim() !== data.html.trim()) el.innerHTML = data.html; });
+          document.querySelectorAll("[data-party-gate]").forEach((b) => { b.disabled = !data.ready; });
+          document.querySelectorAll("[data-party-hint]").forEach((p) => { p.hidden = data.ready; });
+        } catch (e) { /* a missed beat is fine: the next one asks again */ }
         setTimeout(tick, 5000);
       };
       setTimeout(tick, 5000);
