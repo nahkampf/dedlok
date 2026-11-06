@@ -19,6 +19,7 @@ use App\Cyberspace\Grid;
 use App\Cyberspace\Jumper;
 use App\Cyberspace\MapView;
 use App\Cyberspace\Navigator;
+use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Position;
 use App\Cyberspace\Probe;
 use App\Cyberspace\ScanExporter;
@@ -224,6 +225,10 @@ class CyberspaceController extends Controller
             'target' => $target = $character->isJackedIn()
                 ? ($live = System::query()->at($character->gridPosition())->first()) === null ? null : FortressCloak::mask($live, $character)
                 : null,
+            // Invited to a run forming at this very door: the button says Join, and the setup screen is theirs to answer.
+            'invitedHere' => $target !== null && ($party = app(Parties::class)->partyOf($character)) !== null
+                && $party->owner_character_id !== $character->id && $party->started_at === null
+                && (int) $party->x === (int) $target->x && (int) $party->y === (int) $target->y,
             'canRun' => $target !== null && $target->type->isInteractable() && ! $target->isLockedDown(),
             // The Kernels in the stash, a button each, offered only on an empty square (founding is Fortresses' to refuse).
             'kernels' => $character->isJackedIn() && $target === null

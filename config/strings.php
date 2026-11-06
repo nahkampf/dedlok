@@ -1628,6 +1628,7 @@ return [
                 'title' => 'Before you go in',
                 'auto_egress' => 'Your Synaptic Integrity is :si%, below the :at% you set to pull out. The first turn will auto-egress before anything you press happens. Restore your SI, or lower the threshold from the map, before you go in.',
                 'open' => 'Plan a run',
+                'join' => 'Join run',
                 'purpose' => 'End goal of run',
                 'kind' => 'What to leave behind',
                 'chain' => 'Routed through',

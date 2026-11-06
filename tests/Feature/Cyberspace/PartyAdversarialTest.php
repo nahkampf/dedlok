@@ -462,6 +462,18 @@ final class PartyAdversarialTest extends TestCase
         $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('data-countdown', false);
     }
 
+    public function test_an_invited_runner_sees_join_run_where_the_plan_button_was(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+
+        $this->actingAs($mate->user)->get(route('cyberspace.index'))->assertOk()->assertSee('btn--join', false);
+        $this->actingAs($owner->user)->get(route('cyberspace.index'))->assertOk()->assertDontSee('btn--join', false);
+    }
+
     /**
      * RANDOM OPERATIONS against a party of three, and after each the structural invariants: nobody pointing at nothing,
      * nobody live and unpointed, no run of a party that is gone while two or more are still inside, and the clock
