@@ -1041,6 +1041,17 @@
     return el;
   }
 
+  /* A toast the server asked for with its redirect: <div data-toast="words" data-toast-level="warn" hidden>. Shown once. */
+  function serverToasts() {
+    document.querySelectorAll("[data-toast]").forEach((el) => {
+      if (el.dataset.shown) return;
+      el.dataset.shown = "1";
+      toast(el.dataset.toast, { level: el.dataset.toastLevel || "", timeout: 9000 });
+    });
+  }
+  serverToasts();
+  document.addEventListener("DOMContentLoaded", serverToasts);
+
   /* --- Meters -----------------------------------------------------------
      UI.meter(el, 0.42) — or set style="--v:.42" server-side and skip JS.  */
   function meter(el, ratio) {

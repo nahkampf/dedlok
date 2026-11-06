@@ -600,6 +600,29 @@ final class PartyAdversarialTest extends TestCase
         $page->assertSee($owner->handle)->assertSee('Wirecutter')->assertSee('Smokescreen')->assertSee('Run master');
     }
 
+    public function test_a_system_that_locks_down_while_planning_closes_the_run_for_everybody(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+        $parties->accept($mate);
+
+        System::query()->where('address', 'DEADBEEF')->update(['locked_down_until' => now()->addHour()]);
+
+        // The member's panel asks, and is told the party is gone (and the party goes with it).
+        $this->actingAs($mate->fresh()->user)->getJson(route('run.party.status'))->assertJson(['state' => 'gone']);
+        $this->assertSame(0, RunParty::query()->count());
+
+        // The setup screen turns each of them away with a toast, not a page that says it is locked.
+        foreach ([$owner, $mate] as $c) {
+            $this->actingAs($c->fresh()->user)->get(route('run.setup'))
+                ->assertRedirect(route('cyberspace.index'))
+                ->assertSessionHas('toast', 'System locked down while planning, and is no longer available');
+        }
+    }
+
     /**
      * RANDOM OPERATIONS against a party of three, and after each the structural invariants: nobody pointing at nothing,
      * nobody live and unpointed, no run of a party that is gone while two or more are still inside, and the clock

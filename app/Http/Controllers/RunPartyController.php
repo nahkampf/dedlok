@@ -7,10 +7,12 @@ namespace App\Http\Controllers;
 use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Party\PartyRefusal;
 use App\Cyberspace\Party\ShareMode;
+use App\Cyberspace\Position;
 use App\Cyberspace\RunStarter;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\RunParty;
+use App\Models\System;
 use App\Support\Text;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -95,6 +97,14 @@ class RunPartyController extends Controller
 
         if ($party->started_at !== null) {
             return response()->json(['state' => 'started']);
+        }
+
+        // The system shut under the party while it was forming: nothing to go in to. The party is gone for everybody, and
+        // the page that asked reloads into the setup screen, which turns the runner away with the reason.
+        if (System::query()->at(new Position((int) $party->x, (int) $party->y, (int) ($party->grid_id ?? 1)))->first()?->isLockedDown()) {
+            RunParty::query()->whereKey($party->getKey())->delete();
+
+            return response()->json(['state' => 'gone']);
         }
 
         $obstacles = $parties->obstacles($party, $starter);

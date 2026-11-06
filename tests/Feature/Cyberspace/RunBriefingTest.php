@@ -363,16 +363,16 @@ final class RunBriefingTest extends TestCase
             ]));
     }
 
-    /** A shut machine cannot be entered, and the briefing refuses before the run does. */
+    /** A shut machine cannot be entered: the briefing closes before the run is even asked. */
     public function test_a_shut_machine_offers_nothing(): void
     {
         $system = $this->machine();
         Lockdown::fromConfig(static fn (int $min, int $max): int => $max)->shut($system);
 
+        // The planning screen is closed on them, with a toast on the map saying why.
         $this->visit()
-            ->assertOk()
-            ->assertSee(Text::get('cyberspace.run.refused.locked_down'))
-            ->assertDontSee(Text::get('cyberspace.run.setup.intent_extraction'));
+            ->assertRedirect(route('cyberspace.index'))
+            ->assertSessionHas('toast', Text::get('cyberspace.run.refused.locked_while_planning'));
     }
 
     // ---- fixtures ------------------------------------------------------------

@@ -2037,6 +2037,7 @@ return [
                 'fighting' => 'You are in a fight.',
                 'program_refused' => 'Something on your loadout would not start.',
                 'nobody_ready' => 'Nobody has accepted the run yet.',
+                'locked_while_planning' => 'System locked down while planning, and is no longer available',
                 // Said plainly: a lockdown is a consequence of something
                 // somebody did, not a scan fact being given away. And it is
                 // worth knowing the system will not be there afterwards.

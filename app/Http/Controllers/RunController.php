@@ -96,6 +96,14 @@ class RunController extends Controller
             return redirect()->route('cyberspace.index');
         }
 
+        // The system shut while the run was being planned: nothing to plan any more. The party forming here goes (or the
+        // runner's invitation to it), and the map says why with a toast.
+        if ($target->isLockedDown()) {
+            app(Parties::class)->leave($character);
+
+            return redirect()->route('cyberspace.index')->with('toast', Text::get('cyberspace.run.refused.locked_while_planning'));
+        }
+
         $deck = $character->equippedDeck;
         $totals = $deck === null ? null : DeckTotals::forCharacter($character, $deck, $resolver);
 
