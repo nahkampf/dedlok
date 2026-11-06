@@ -1572,6 +1572,7 @@ return [
                 'not_at_the_door' => 'You have to be present at the same node.',
                 'not_the_owner' => 'Only the one who called the run starts it.',
                 'started' => 'That run has already begun.',
+                'terms_locked' => 'The terms are fixed once somebody has been invited.',
             ],
         ],
 
@@ -1701,7 +1702,7 @@ return [
                 'intent_burn' => 'Burn it',
                 'intent_infiltrate' => 'Infiltrate',
                 'intent_denial' => 'Flood it',
-                'intent_denial_hint' => 'Throw your bandwidth at it until it locks down. The system pushes back every turn and its ICE wakes at once. Takes nothing. No co-op.',
+                'intent_denial_hint' => 'Throw your bandwidth at it until it locks down. The system pushes back every turn and its ICE wakes at once. Takes nothing.',
                 'intent_extraction_hint' => 'Ingress, steal some data, egress. Does not trigger a lockdown',
                 'intent_siphon_hint' => 'Install a siphon that redirects some cashflow every night',
                 'intent_routing_hint' => 'Add this system to your routing chain. The more systems you route through, the longer a tracer will take to trace you',

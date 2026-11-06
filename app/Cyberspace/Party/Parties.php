@@ -75,15 +75,23 @@ final class Parties
 
     public function options(Character $owner, ShareMode $credits, ShareMode $extraction): ?PartyRefusal
     {
-        $party = RunParty::query()->where('owner_character_id', $owner->getKey())->first();
+        // The same lock `invite` takes, so an invitation cannot slip in beside a change of terms.
+        return DB::transaction(function () use ($owner, $credits, $extraction): ?PartyRefusal {
+            $party = RunParty::query()->where('owner_character_id', $owner->getKey())->lockForUpdate()->first();
 
-        if ($party === null) {
-            return PartyRefusal::NoParty;
-        }
+            if ($party === null) {
+                return PartyRefusal::NoParty;
+            }
 
-        $party->update(['share_credits' => $credits, 'share_extraction' => $extraction]);
+            // The terms are what an invitation promised: once anyone holds one, they cannot be swapped for worse.
+            if ($party->members()->exists()) {
+                return PartyRefusal::TermsLocked;
+            }
 
-        return null;
+            $party->update(['share_credits' => $credits, 'share_extraction' => $extraction]);
+
+            return null;
+        });
     }
 
     public function invite(Character $owner, string $handle): ?PartyRefusal
@@ -312,6 +320,10 @@ final class Parties
                 (new Notifier)->send($runner, Category::Cyberspace, 'party_started', ['owner' => $owner->handle]);
             }
         }
+
+        // Detection is the party's: everybody goes in seeing the same state, not each their own approach roll until round one.
+        $partyTurns = app(PartyTurns::class);
+        $partyTurns->syncShared($partyTurns::liveRuns($party->getKey()));
 
         // Everybody who went in is told who did not, and why.
         foreach ($left as $handle => $reason) {

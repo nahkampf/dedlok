@@ -8,6 +8,7 @@ use App\Chat\Chats;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Party\PartyRefusal;
+use App\Cyberspace\Party\ShareMode;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
@@ -353,6 +354,45 @@ final class PartyAdversarialTest extends TestCase
     public static function seeds(): array
     {
         return array_map(fn (int $i): array => [(string) $i], range(1, 20));
+    }
+
+    // The terms are what the invitation promised ----------------------------------------------------------------------
+    public function test_the_terms_cannot_be_changed_once_somebody_is_invited(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+
+        $this->assertNull($parties->options($owner, ShareMode::Half, ShareMode::Half), 'an empty party may still set its terms');
+        $this->assertNull($parties->invite($owner, $this->runner()->handle));
+
+        $this->assertSame(PartyRefusal::TermsLocked, $parties->options($owner, ShareMode::Full, ShareMode::Full));
+        $party = RunParty::query()->sole();
+        $this->assertSame(ShareMode::Half, $party->share_credits);
+        $this->assertSame(ShareMode::Half, $party->share_extraction);
+    }
+
+    public function test_everybody_goes_in_sharing_the_partys_detection(): void
+    {
+        [$owner, $mates] = $this->launched(2);
+
+        $detected = Run::query()->pluck('detected')->map(fn ($d): bool => (bool) $d)->unique();
+        $this->assertCount(1, $detected, 'the runs of a party start with different detection');
+    }
+
+    public function test_a_flood_can_be_a_co_op_run(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+        $parties->accept($mate);
+
+        $result = $parties->launch($owner, RunPurpose::Denial, null, [], app(RunStarter::class));
+
+        $this->assertTrue($result->succeeded());
+        $this->assertSame(2, Run::query()->where('purpose', RunPurpose::Denial->value)->count());
     }
 
     /**

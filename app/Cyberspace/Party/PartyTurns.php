@@ -316,7 +316,7 @@ final class PartyTurns
      *
      * @param  Collection<int, Run>  $runs
      */
-    private function syncShared(Collection $runs, ?Run $from = null): void
+    public function syncShared(Collection $runs, ?Run $from = null): void
     {
         $runs = $runs->map(fn (Run $r): Run => $r->fresh() ?? $r)->filter(fn (Run $r): bool => $r->isLive());
 

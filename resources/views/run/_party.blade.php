@@ -18,11 +18,18 @@
                 <div><button type="submit" class="btn btn--sm cut">{{ Text::get('cyberspace.party.open') }}</button></div>
             </form>
         @elseif ($isOwner)
-            <form method="POST" action="{{ route('run.party.options') }}" class="stack" style="--gap:var(--s-2)">
-                @csrf
-                @include('run._party_modes', ['credits' => $party->share_credits, 'extraction' => $party->share_extraction])
-                <div><button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('cyberspace.party.save') }}</button></div>
-            </form>
+            @if ($party->members->isEmpty())
+                <form method="POST" action="{{ route('run.party.options') }}" class="stack" style="--gap:var(--s-2)">
+                    @csrf
+                    @include('run._party_modes', ['credits' => $party->share_credits, 'extraction' => $party->share_extraction])
+                    <div><button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get('cyberspace.party.save') }}</button></div>
+                </form>
+            @else
+                {{-- Somebody has been invited under these terms, so they are fixed: the same line the members read. --}}
+                <p class="micro" style="margin:0;color:var(--ink-3)">
+                    {{ Text::get('cyberspace.party.terms', ['credits' => $party->share_credits->label(), 'extraction' => $party->share_extraction->label()]) }}
+                </p>
+            @endif
 
             {{-- The run's id, to paste in chat: anybody at this system who clicks it joins while there are slots. --}}
             <div class="row row--wrap" style="--gap:var(--s-2);align-items:center">
