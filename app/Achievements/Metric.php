@@ -77,4 +77,7 @@ enum Metric: string
 
     /** The highest grade of system a run has been successfully completed on. HIGH-WATER: a state, reported with `reach()`. */
     case RunGradeCompleted = 'run_grade_completed';
+
+    /** Files decrypted: one per file the decryption queue breaks open. */
+    case FilesDecrypted = 'files_decrypted';
 }

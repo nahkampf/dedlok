@@ -6,6 +6,7 @@ namespace App\City;
 
 use App\Characters\Flags;
 use App\Cyberspace\ExtractedFile;
+use App\Cyberspace\FileOrigin;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Position;
 use App\Cyberspace\Simulator;
@@ -220,10 +221,18 @@ final class EncounterOutcomes
                 return Text::get('city.encounter.outcomes.item_no_room', ['item' => $item->displayName()]);
             }
 
-            if ($skill === null) {
-                ItemGranter::grant($character, $item, 1);
+            // A door that stood on a system stamps the file with it (grade, owner, OS), as a file taken off that system has.
+            $door = CharacterEncounter::query()->find($character->current_encounter_id)?->door;
+            $origin = isset($door['origin']) ? FileOrigin::fromArray($door['origin']) : null;
+            $grade = isset($door['grade']) ? (int) $door['grade'] : null;
+            $worth = (int) $item->base_cost;
+
+            if ($skill !== null) {
+                $this->sealed($character, new ExtractedFile(label: $item->displayName(), sizeQb: $size, encryptionSkillId: $skill->getKey(), valueSealed: $worth, valueBroken: $worth, grade: $grade, origin: $origin, payloadItemId: $item->getKey()));
+            } elseif ($origin !== null) {
+                $character->inventory()->create(['item_id' => $item->getKey(), 'parent_id' => null, 'quantity' => 1, 'extracted_file' => (new ExtractedFile(label: $item->displayName(), sizeQb: $size, encryptionSkillId: null, valueSealed: $worth, valueBroken: $worth, grade: $grade, origin: $origin))->toArray()]);
             } else {
-                $this->sealed($character, new ExtractedFile(label: $item->displayName(), sizeQb: $size, encryptionSkillId: $skill->getKey(), valueSealed: 0, valueBroken: 0, payloadItemId: $item->getKey()));
+                ItemGranter::grant($character, $item, 1);
             }
 
             return Text::get('city.encounter.outcomes.file', ['title' => $item->displayName()]);
