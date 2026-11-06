@@ -1,3 +1,7 @@
+## 0.90.0 (2026-11-06)
+
+- A conclusion to the NJORD storyline (this is a POC for multi-entity questlines)
+
 ## 0.89.2 (2026-11-06)
 
 - New achievement: "Arne Beurling sends his regards", for decrypting 1000 files. Starts counting from now, earlier decrypts not counted.
