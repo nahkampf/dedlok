@@ -62,6 +62,12 @@ final class KnownSystemsTest extends TestCase
         return $this->actingAs($this->character->user)->get(route('cyberspace.systems', $query))->assertOk()->getContent();
     }
 
+    public function test_the_browser_asks_the_script_to_remember_its_filter(): void
+    {
+        $this->actingAs($this->character->user)->get(route('cyberspace.index'))
+            ->assertOk()->assertSee('data-fragment-remember="known-systems"', false);
+    }
+
     public function test_it_lists_what_is_still_there_and_leaves_out_what_moved_or_shut(): void
     {
         $this->known('Joint Signals Command', SystemType::Silo, 'Still Here');

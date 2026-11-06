@@ -578,7 +578,10 @@
     if (!opener) return;
     const box = document.querySelector(opener.dataset.open + " [data-fragment]");
     if (!box) return;
-    fetch(box.dataset.fragment, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
+    // [data-fragment-remember="key"] on the box: it opens with the filter last used (kept in localStorage).
+    let saved = "";
+    if (box.dataset.fragmentRemember) { try { saved = localStorage.getItem("fragment." + box.dataset.fragmentRemember) || ""; } catch { /* no memory then */ } }
+    fetch(box.dataset.fragment + (saved ? "?" + saved : ""), { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
       .then((r) => (r.ok ? r.text() : Promise.reject()))
       .then((html) => { box.innerHTML = html; })
       .catch(() => { box.textContent = "Could not load the list."; });
@@ -592,6 +595,7 @@
     const box = form?.closest("[data-fragment]");
     if (!form || !box) return;
     const params = new URLSearchParams(new FormData(form));
+    if (box.dataset.fragmentRemember) { try { localStorage.setItem("fragment." + box.dataset.fragmentRemember, params.toString()); } catch { /* not remembered */ } }
     fetch(box.dataset.fragment + "?" + params.toString(), { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" })
       .then((r) => (r.ok ? r.text() : Promise.reject()))
       .then((html) => { box.innerHTML = html; })
