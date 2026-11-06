@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.90.0] — 2026-11-06
+
+### Added
+- **NJORD_VM.IMG reaches production.** The after-run encounter was only ever authored on the dev admin and was in no migration. `2026_11_10_230000_njord_vm_encounter` inserts it (nodes, choices, outcomes, prerequisites). Idempotent by slug; the owner is found by entity name (Agroprom) and the items by slug, so ids may differ between databases.
+
+Run `php artisan migrate`.
+
+
 ## [0.89.2] — 2026-11-06
 
 ### Added
@@ -4061,7 +4069,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.89.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.90.0...HEAD
+[0.90.0]: https://github.com/nahkampf/dedlok/compare/v0.89.2...v0.90.0
 [0.89.2]: https://github.com/nahkampf/dedlok/compare/v0.89.1...v0.89.2
 [0.89.1]: https://github.com/nahkampf/dedlok/compare/v0.89.0...v0.89.1
 [0.89.0]: https://github.com/nahkampf/dedlok/compare/v0.88.0...v0.89.0
