@@ -53,6 +53,7 @@ class TasksController extends Controller
                 ->values(),
             // Notes not yet finished, newest first, with their lines.
             'journal' => app(Journal::class)->visible($character),
+            'archived' => app(Journal::class)->archived($character),
             'leads' => app(Leads::class)->all($character),
             // To do: high first, newest first within a priority. Done ones are in the modal, newest ticked first.
             'tasks' => PlayerTask::query()->where('character_id', $character->getKey())->whereNull('completed_at')

@@ -76,7 +76,7 @@ final class JournalTest extends TestCase
         $this->assertSame(0, JournalEntry::query()->count());
     }
 
-    public function test_the_screen_lists_notes_and_lines_newest_first_and_hides_what_is_done(): void
+    public function test_the_screen_lists_notes_and_lines_newest_first_and_archives_what_is_done(): void
     {
         $this->journal->write($this->character, 'first', 'First note', 'a', 'Older line');
         $this->journal->write($this->character, 'first', null, 'b', 'Newer line');
@@ -88,7 +88,10 @@ final class JournalTest extends TestCase
 
         $html = $this->page();
 
-        $this->assertStringNotContainsString('Finished note', $html, 'a completed note is not shown');
+        $this->assertStringContainsString('Archived entries', $html);
+        $this->assertGreaterThan(strpos($html, 'Archived entries'), strpos($html, 'Finished note'), 'a completed note sits under the archive label');
+        $this->assertLessThan(strpos($html, 'Archived entries'), strpos($html, 'First note'), 'a live note sits above it');
+        $this->assertStringContainsString('<details>', $html, 'each heading folds, closed by default');
         $this->assertLessThan(strpos($html, 'First note'), strpos($html, 'Second note'), 'notes newest first');
         $this->assertLessThan(strpos($html, 'Older line'), strpos($html, 'Newer line'), 'lines newest first');
         $this->assertStringContainsString('<s>Older line</s>', $html, 'a completed line is struck through');

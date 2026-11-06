@@ -54,7 +54,7 @@ final class Journal
     }
 
     /**
-     * Mark a note or a line done, by slug. A note that is done is not shown; a line that is done is struck through.
+     * Mark a note or a line done, by slug. A note that is done moves to the archive; a line that is done is struck through.
      *
      * @return int how many rows were changed (0 when the slug names nothing, or it was already done)
      */
@@ -104,6 +104,21 @@ final class Journal
         return JournalNote::query()
             ->where('character_id', $character->getKey())
             ->where('completed', false)
+            ->with('entries')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    /**
+     * The finished notes, newest first, each with its lines: the "Archived entries" under the journal.
+     *
+     * @return Collection<int, JournalNote>
+     */
+    public function archived(Character $character): Collection
+    {
+        return JournalNote::query()
+            ->where('character_id', $character->getKey())
+            ->where('completed', true)
             ->with('entries')
             ->orderByDesc('id')
             ->get();

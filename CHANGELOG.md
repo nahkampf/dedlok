@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.89.1] — 2026-11-06
+
+### Changed
+- **Journal notes fold.** On the Tasks & Missions screen each note's heading is a closed accordion with its lines inside (`tasks/_note.blade.php`). A finished note is no longer hidden: it sits under an "Archived entries" label (`Journal::archived`, string `tasks.journal_archived`).
+- **The encounter screen's "So far" log is below the node panel**, so the current text and its buttons come first.
+
+
 ## [0.89.0] — 2026-11-06
 
 ### Added
@@ -4045,7 +4052,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.89.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.89.1...HEAD
+[0.89.1]: https://github.com/nahkampf/dedlok/compare/v0.89.0...v0.89.1
 [0.89.0]: https://github.com/nahkampf/dedlok/compare/v0.88.0...v0.89.0
 [0.88.0]: https://github.com/nahkampf/dedlok/compare/v0.87.0...v0.88.0
 [0.87.0]: https://github.com/nahkampf/dedlok/compare/v0.86.0...v0.87.0

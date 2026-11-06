@@ -1,3 +1,8 @@
+## 0.89.1 (2026-11-06)
+
+- Journal notes now fold into accordions, and we separate between unresolved and "archived".
+- The "So far" box in encounters moved below the main content
+
 ## 0.89.0 (2026-11-06)
 
 - Lots of work on co-op; better ux, some gates put in place to stop things that can break a coop run etc. It seems to work much better and smoothly now.
