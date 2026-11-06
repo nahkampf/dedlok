@@ -296,7 +296,7 @@
     @include('run._party')
 @endunless
 
-<form id="run-form" method="POST" action="{{ $asMember ? route('run.party.accept') : route('run.start') }}" data-run-budget data-unable-cpu="{{ Text::get('cyberspace.run.setup.scripts_unable_cpu') }}" data-unable-ram="{{ Text::get('cyberspace.run.setup.scripts_unable_ram') }}" data-unable-both="{{ Text::get('cyberspace.run.setup.scripts_unable_both') }}" data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
+<form id="run-form" method="POST" action="{{ $asMember ? route('run.party.accept') : route('run.start') }}" @if ($party && $party->owner_character_id === $character->id && $party->started_at === null) data-owner-loadout="{{ route('run.party.loadout') }}" @endif data-run-budget data-unable-cpu="{{ Text::get('cyberspace.run.setup.scripts_unable_cpu') }}" data-unable-ram="{{ Text::get('cyberspace.run.setup.scripts_unable_ram') }}" data-unable-both="{{ Text::get('cyberspace.run.setup.scripts_unable_both') }}" data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
     @csrf
 
 <div class="panel panel--snug" style="margin-top:var(--s-4)">

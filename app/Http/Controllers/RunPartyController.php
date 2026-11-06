@@ -9,6 +9,7 @@ use App\Cyberspace\Party\PartyRefusal;
 use App\Cyberspace\Party\ShareMode;
 use App\Cyberspace\RunStarter;
 use App\Models\Character;
+use App\Models\InventoryItem;
 use App\Models\RunParty;
 use App\Support\Text;
 use Illuminate\Http\JsonResponse;
@@ -106,6 +107,23 @@ class RunPartyController extends Controller
             'ready' => $parties->someoneIsReady($party, $starter),
             'html' => view($isOwner ? 'run._party_members' : 'run._party_me', compact('party', 'character', 'obstacles', 'mine'))->render(),
         ]);
+    }
+
+    /** The owner's ticks on the setup screen, kept on the party so the others can see what is coming. Advisory only. */
+    public function loadout(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'icebreaker' => ['nullable', 'integer'],
+            'programs' => ['nullable', 'array', 'max:20'], 'programs.*' => ['integer', 'distinct'],
+            'scripts' => ['nullable', 'array', 'max:20'], 'scripts.*' => ['integer', 'distinct'],
+        ]);
+        $character = $this->character($request);
+        $ids = array_values(array_unique(array_filter([$data['icebreaker'] ?? null, ...($data['programs'] ?? []), ...($data['scripts'] ?? [])])));
+        $mine = InventoryItem::query()->where('character_id', $character->id)->whereIn('id', $ids)->pluck('id')->all();
+
+        RunParty::query()->where('owner_character_id', $character->id)->whereNull('started_at')->update(['owner_loadout' => json_encode($mine)]);
+
+        return response()->json(['ok' => true]);
     }
 
     public function leave(Request $request, Parties $parties): RedirectResponse

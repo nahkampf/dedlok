@@ -139,6 +139,11 @@ class RunController extends Controller
         $parties = app(Parties::class);
         $partyHere = $parties->partyOf($character)?->load('members.character', 'owner');
 
+        // What the owner's form shows ticked is what the others are told is coming, until they change it.
+        if ($partyHere !== null && $partyHere->owner_character_id === $character->id && $partyHere->started_at === null) {
+            $partyHere->forceFill(['owner_loadout' => $ticked->pluck('id')->all()])->save();
+        }
+
         return view('run.setup', [
             'assess' => $assess,
             // What the system's owner makes of you, on the screen where the

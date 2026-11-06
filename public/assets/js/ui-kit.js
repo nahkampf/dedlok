@@ -1710,6 +1710,28 @@
   passClocks();
   document.addEventListener("DOMContentLoaded", passClocks);
 
+  /* --- The owner's ticks, told to the party ------------------------------------
+     form[data-owner-loadout="url"]: when the owner changes the icebreaker or the scripts they have ticked, the new set is
+     posted (after a short pause) so the others' panels show what is coming. Advisory: Start posts the real loadout. */
+  function ownerLoadout() {
+    const form = document.querySelector("form[data-owner-loadout]");
+    if (!form || form.dataset.ownerBound) return;
+    form.dataset.ownerBound = "1";
+    let timer = null;
+    form.addEventListener("change", (e) => {
+      if (!e.target.matches("input[name=icebreaker], input[name='programs[]'], input[name='scripts[]']")) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const body = new FormData();
+        body.append("_token", form.querySelector("input[name=_token]").value);
+        form.querySelectorAll("input[name=icebreaker]:checked, input[name='programs[]']:checked, input[name='scripts[]']:checked").forEach((i) => { if (i.value) body.append(i.name, i.value); });
+        fetch(form.dataset.ownerLoadout, { method: "POST", body, headers: { Accept: "application/json" }, credentials: "same-origin" }).catch(() => {});
+      }, 400);
+    });
+  }
+  ownerLoadout();
+  document.addEventListener("DOMContentLoaded", ownerLoadout);
+
   /* --- What happened since this page was last seen ---------------------------
      The run screen reloads often (after a turn, and on its own while a party waits), so what is new is worked out
      against what THIS tab last saw of THIS run, kept in sessionStorage: a round that resolved pulses the actions box

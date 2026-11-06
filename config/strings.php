@@ -1544,7 +1544,7 @@ return [
         ],
         'party' => [
             'heading' => 'Party',
-            'slots' => 'Others you may bring: :slots',
+            'slots' => 'Total capacity: :slots',
             'open' => 'Form a party',
             'save' => 'Save terms',
             'share_credits' => 'Share credits',
@@ -1553,6 +1553,7 @@ return [
             'joined' => 'Joined',
             'ready' => 'Ready',
             'si' => 'SI :current / :max',
+            'owner' => 'Owner',
             'loadout_none' => 'nothing',
             'dropped' => 'Dropped out',
             'nobody' => 'Nobody invited yet.',

@@ -582,6 +582,22 @@ final class PartyAdversarialTest extends TestCase
         $this->actingAs($owner->fresh()->user)->getJson(route('run.party.status'))->assertOk()->assertSee('Wirecutter')->assertSee('SI ');
     }
 
+    public function test_a_member_sees_the_owner_and_everybody_going_with_si_and_loadout(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+        $parties->accept($mate);
+        $breaker = $this->ownedBy($owner, Item::factory()->program(ProgramKind::Icebreaker, qflops: 1, memory: 1, storage: 1)->create(['name' => 'Wirecutter']));
+
+        $this->actingAs($owner->fresh()->user)->postJson(route('run.party.loadout'), ['icebreaker' => $breaker->id])->assertOk();
+
+        $page = $this->actingAs($mate->fresh()->user)->getJson(route('run.party.status'))->assertOk();
+        $page->assertSee($owner->handle)->assertSee('Wirecutter')->assertSee('Owner');
+    }
+
     /**
      * RANDOM OPERATIONS against a party of three, and after each the structural invariants: nobody pointing at nothing,
      * nobody live and unpointed, no run of a party that is gone while two or more are still inside, and the clock

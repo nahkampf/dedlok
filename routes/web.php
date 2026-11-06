@@ -352,6 +352,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/run/setup', [RunController::class, 'setup'])->name('run.setup');
     Route::get('/run/assess', [RunController::class, 'assess'])->name('run.assess');
     Route::get('/run/party/status', [RunPartyController::class, 'status'])->name('run.party.status');
+    Route::post('/run/party/loadout', [RunPartyController::class, 'loadout'])->name('run.party.loadout');
     Route::post('/run/party', [RunPartyController::class, 'open'])->name('run.party.open');
     Route::post('/run/party/options', [RunPartyController::class, 'options'])->name('run.party.options');
     Route::post('/run/party/invite', [RunPartyController::class, 'invite'])->name('run.party.invite');
