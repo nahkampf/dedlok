@@ -36,35 +36,28 @@
         @endif
     </section>
 
-    {{-- THE JOURNAL: notes (headings) the character has not finished, newest first, each with its lines newest first. A line
-         that is done is struck through; a note that is done is not here. Written by encounters (App\Journal\Journal). --}}
+    {{-- THE JOURNAL: notes (headings) as closed accordions, newest first, each with its lines newest first. A line
+         that is done is struck through; a note that is done sits under "Archived entries". Written by encounters (App\Journal\Journal). --}}
     <section class="stack" style="--gap:var(--s-3);margin-top:var(--s-6)">
         <h2>{{ Text::get('tasks.journal') }}</h2>
 
         @if ($journal->isEmpty())
             <p class="muted" style="font-size:var(--fs-sm);margin:0">{{ Text::get('tasks.journal_none') }}</p>
         @else
-            <ul class="stack" style="--gap:var(--s-4);list-style:none;margin:0;padding:0">
+            <div class="accordion">
                 @foreach ($journal as $note)
-                    <li class="stack" style="--gap:var(--s-2)">
-                        <h3 style="margin:0">{{ $note->title }}</h3>
-
-                        @if ($note->entries->isNotEmpty())
-                            <ul class="stack" style="--gap:var(--s-1);margin:0;padding-left:var(--s-5)">
-                                @foreach ($note->entries as $entry)
-                                    <li @class(['muted' => $entry->completed])>
-                                        @if ($entry->completed)
-                                            <s>{{ $entry->body }}</s>
-                                        @else
-                                            {{ $entry->body }}
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @endif
-                    </li>
+                    @include('tasks._note', ['note' => $note])
                 @endforeach
-            </ul>
+            </div>
+        @endif
+
+        @if ($archived->isNotEmpty())
+            <p class="micro" style="color:var(--ink-3);margin:var(--s-3) 0 0">{{ Text::get('tasks.journal_archived') }}</p>
+            <div class="accordion">
+                @foreach ($archived as $note)
+                    @include('tasks._note', ['note' => $note])
+                @endforeach
+            </div>
         @endif
     </section>
 

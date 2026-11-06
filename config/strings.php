@@ -1111,6 +1111,7 @@ return [
         'grade' => 'Grade :grade',
         'journal' => 'Journal',
         'journal_none' => 'Nothing written yet.',
+        'journal_archived' => 'Archived entries',
         'tasks' => 'Tasks',
         'tasks_intro' => 'Set tasks for yourself, and cross them out when you\'re done',
         'task_placeholder' => 'Task description',

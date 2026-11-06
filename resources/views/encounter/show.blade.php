@@ -15,25 +15,6 @@
         <p class="lede" style="margin:0;max-width:70ch">{{ $encounter->intro }}</p>
     @endif
 
-    {{-- What has happened so far, oldest first, the way a transcript reads. --}}
-    @if (! empty($live->log))
-        <div class="panel panel--snug">
-            <div class="panel__hd"><span class="micro">{{ Text::get('city.encounter.log_heading') }}</span></div>
-            <div class="panel__bd stack" style="--gap:var(--s-2)">
-                @foreach ($live->log as $entry)
-                    <div>
-                        @if ($entry['label'] !== '')
-                            <p class="micro" style="margin:0;color:var(--ink-2)">{{ $entry['label'] }}</p>
-                        @endif
-                        @foreach ($entry['lines'] as $line)
-                            <p class="micro" style="margin:0;color:var(--ink-3)">{{ $line }}</p>
-                        @endforeach
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    @endif
-
     <div class="panel">
         <div class="panel__bd stack" style="--gap:var(--s-4)">
             <p style="margin:0;max-width:70ch;white-space:pre-line">{{ $node->body }}</p>
@@ -65,5 +46,24 @@
             @endif
         </div>
     </div>
+
+    {{-- What has happened so far, oldest first, the way a transcript reads. --}}
+    @if (! empty($live->log))
+        <div class="panel panel--snug">
+            <div class="panel__hd"><span class="micro">{{ Text::get('city.encounter.log_heading') }}</span></div>
+            <div class="panel__bd stack" style="--gap:var(--s-2)">
+                @foreach ($live->log as $entry)
+                    <div>
+                        @if ($entry['label'] !== '')
+                            <p class="micro" style="margin:0;color:var(--ink-2)">{{ $entry['label'] }}</p>
+                        @endif
+                        @foreach ($entry['lines'] as $line)
+                            <p class="micro" style="margin:0;color:var(--ink-3)">{{ $line }}</p>
+                        @endforeach
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 </div>
 @endsection
