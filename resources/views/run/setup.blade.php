@@ -287,11 +287,14 @@
 ])
 {{-- data-free-* is what is left of the deck in TENTHS before anything on this page is ticked; each ticked row carries its
      own cost the same way, and ui-kit.js does the sum. Display only: the run's start asks the runner again. --}}
+ {{-- A MEMBER at the door does not choose a purpose: the owner starts the run. They get this same screen to choose
+     what goes in with them, and its button is Accept (or Update, once they have). --}}
+@php($asMember = $party && $party->owner_character_id !== $character->id && $party->x == $target->x && $party->y == $target->y && $party->started_at === null)
 @unless ($target->type->isGateway())
     @include('run._party')
 @endunless
 
-<form id="run-form" method="POST" action="{{ route('run.start') }}" data-run-budget data-unable-cpu="{{ Text::get('cyberspace.run.setup.scripts_unable_cpu') }}" data-unable-ram="{{ Text::get('cyberspace.run.setup.scripts_unable_ram') }}" data-unable-both="{{ Text::get('cyberspace.run.setup.scripts_unable_both') }}" data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
+<form id="run-form" method="POST" action="{{ $asMember ? route('run.party.accept') : route('run.start') }}" data-run-budget data-unable-cpu="{{ Text::get('cyberspace.run.setup.scripts_unable_cpu') }}" data-unable-ram="{{ Text::get('cyberspace.run.setup.scripts_unable_ram') }}" data-unable-both="{{ Text::get('cyberspace.run.setup.scripts_unable_both') }}" data-free-qflops="{{ $free['qflops'] }}" data-free-memory="{{ $free['memory'] }}">
     @csrf
 
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
@@ -426,6 +429,15 @@
     </div>
 </div>
 
+@if ($asMember)
+<div class="panel panel--snug" style="margin-top:var(--s-4);margin-bottom:var(--s-6)">
+    <div class="panel__bd">
+        <button type="submit" class="btn cut" style="min-width:min(200px,100%)" @unless ($ready) disabled @endunless>
+            {{ Text::get($party->members->firstWhere('character_id', $character->id)?->joined_at ? 'cyberspace.party.update' : 'cyberspace.party.accept') }}
+        </button>
+    </div>
+</div>
+@else
 <div class="panel panel--snug" style="margin-top:var(--s-4);margin-bottom:var(--s-6)">
     <div class="panel__hd">
         <h2>{{ Text::get('cyberspace.run.setup.intent') }}</h2>
@@ -469,6 +481,7 @@
         </div>
     @endif
 </div>
+@endif
 
 </form>
 

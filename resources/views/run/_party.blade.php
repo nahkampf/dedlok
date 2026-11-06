@@ -74,19 +74,6 @@
             <p class="micro" style="margin:0;color:var(--ink-3)">
                 {{ Text::get('cyberspace.party.terms', ['credits' => $party->share_credits->label(), 'extraction' => $party->share_extraction->label()]) }}
             </p>
-            <form method="POST" action="{{ route('run.party.accept') }}" class="stack" style="--gap:var(--s-2)">
-                @csrf
-                @php($taken = collect($mine?->loadout ?? []))
-                @foreach ($loadout->flatten() as $row)
-                    <label class="row" style="--gap:var(--s-2);align-items:center">
-                        <input type="checkbox" name="loadout[]" value="{{ $row->id }}" @checked($taken->contains($row->id))>
-                        <span>{{ $row->item->displayName() }}</span>
-                    </label>
-                @endforeach
-                <div class="row row--wrap" style="--gap:var(--s-2)">
-                    <button type="submit" class="btn btn--sm cut">{{ Text::get($mine?->joined_at ? 'cyberspace.party.update' : 'cyberspace.party.accept') }}</button>
-                </div>
-            </form>
             <form method="POST" action="{{ route('run.party.leave') }}">@csrf
                 <button type="submit" class="btn btn--sm btn--ghost cut">{{ Text::get($mine?->joined_at ? 'cyberspace.party.leave' : 'cyberspace.party.decline') }}</button></form>
         @endif

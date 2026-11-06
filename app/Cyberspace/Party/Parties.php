@@ -18,6 +18,8 @@ use App\Models\RunPartyMember;
 use App\Models\System;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Programs\ProgramKind;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -163,13 +165,32 @@ final class Parties
             }
 
             // Run-only software the member actually holds, as row ids. What may START is ProgramRunner's, at launch.
-            $mine = $loadout === null ? ($member->loadout ?? []) : InventoryItem::query()
-                ->where('character_id', $character->getKey())->whereIn('id', $loadout)->pluck('id')->all();
+            $mine = $loadout === null ? ($member->loadout ?? []) : $this->oneIcebreaker(InventoryItem::query()
+                ->where('character_id', $character->getKey())->whereIn('id', $loadout)->with('item.program')->get());
 
             $member->update(['joined_at' => $member->joined_at ?? now(), 'loadout' => $mine]);
 
             return null;
         });
+    }
+
+    /**
+     * Only one icebreaker may go in, as on the owner's own form: the first of any more is kept.
+     *
+     * @param  Collection<int, InventoryItem>  $rows
+     * @return list<int>
+     */
+    private function oneIcebreaker($rows): array
+    {
+        $breaker = false;
+
+        return $rows->filter(function (InventoryItem $row) use (&$breaker): bool {
+            if ($row->item?->program?->kind !== ProgramKind::Icebreaker) {
+                return true;
+            }
+
+            return $breaker ? false : ($breaker = true);
+        })->pluck('id')->map(fn ($id): int => (int) $id)->values()->all();
     }
 
     /**

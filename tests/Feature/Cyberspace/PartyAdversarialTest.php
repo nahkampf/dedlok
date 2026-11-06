@@ -14,11 +14,13 @@ use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Models\Character;
 use App\Models\Ice;
+use App\Models\Item;
 use App\Models\Notification;
 use App\Models\Run;
 use App\Models\RunParty;
 use App\Models\RunPartyMember;
 use App\Models\System;
+use App\Programs\ProgramKind;
 use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -393,6 +395,35 @@ final class PartyAdversarialTest extends TestCase
 
         $this->assertTrue($result->succeeded());
         $this->assertSame(2, Run::query()->where('purpose', RunPurpose::Denial->value)->count());
+    }
+
+    public function test_a_member_at_the_door_gets_the_loadout_screen_and_no_purposes(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+
+        $page = $this->actingAs($mate->user)->get(route('run.setup'))->assertOk();
+
+        $page->assertSee(route('run.party.accept'), false);
+        $page->assertDontSee(route('run.start'), false);
+    }
+
+    public function test_a_member_cannot_bring_two_icebreakers(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+
+        $rows = collect([1, 2])->map(fn () => $this->ownedBy($mate, Item::factory()->program(ProgramKind::Icebreaker, qflops: 1, memory: 1, storage: 1)->create()));
+
+        $this->assertNull($parties->accept($mate, $rows->pluck('id')->all()));
+
+        $this->assertSame([$rows[0]->id], RunPartyMember::query()->where('character_id', $mate->id)->sole()->loadout);
     }
 
     /**

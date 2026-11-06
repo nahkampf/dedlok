@@ -180,7 +180,10 @@ class RunController extends Controller
             // The last loadout that went in, ticked again. Remembered as ITEMS,
             // one row each, because a row id does not survive its stack being
             // split and merged back.
-            'chosen' => $ticked->pluck('id')->all(),
+            // A member who has already accepted sees their own choice ticked.
+            'chosen' => $partyHere?->members->firstWhere('character_id', $character->id)?->joined_at !== null && $partyHere !== null
+                ? ($partyHere->members->firstWhere('character_id', $character->id)->loadout ?? [])
+                : $ticked->pluck('id')->all(),
             'totals' => $totals,
             // Why each run-only program would not start beside what is ALREADY running, by row id (the runner's own
             // question, asked as a run would ask it); absent means it would.
