@@ -288,7 +288,7 @@
         <p class="micro num" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.round_timer') }} <span data-countdown="{{ $roundSeconds }}">{{ $roundSeconds }}</span></p>
     @endif
 
-    <form method="POST" action="{{ route('run.act') }}" style="padding-bottom:var(--s-3)">
+    <form method="POST" action="{{ route('run.act') }}" style="padding-bottom:var(--s-3)" data-turn-form data-waiting="{{ $waiting ? $run->pending_action : '' }}">
         @csrf
         <div class="row row--wrap" style="--gap:var(--s-2)">
             <button type="submit" name="action" value="attack" class="btn cut" @unless ($run->inAFight()) disabled @endunless>

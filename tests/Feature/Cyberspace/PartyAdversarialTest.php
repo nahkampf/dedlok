@@ -556,6 +556,19 @@ final class PartyAdversarialTest extends TestCase
         }
     }
 
+    public function test_the_turn_form_says_which_action_is_waiting_on_the_others(): void
+    {
+        [$owner, $mates] = $this->launched(1);
+
+        foreach ([$owner, $mates[0]] as $c) {
+            $this->actingAs($c->fresh()->user)->get(route('run.show'));
+        }
+        $this->actingAs($owner->fresh()->user)->post(route('run.act'), ['action' => 'hold']);
+
+        $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('data-waiting="hold"', false);
+        $this->actingAs($mates[0]->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('data-waiting=""', false);
+    }
+
     /**
      * RANDOM OPERATIONS against a party of three, and after each the structural invariants: nobody pointing at nothing,
      * nobody live and unpointed, no run of a party that is gone while two or more are still inside, and the clock

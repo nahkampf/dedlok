@@ -1710,6 +1710,38 @@
   passClocks();
   document.addEventListener("DOMContentLoaded", passClocks);
 
+  /* --- A turn, once it has been chosen ---------------------------------------
+     form[data-turn-form] holds a run's action buttons. While the choice is waiting on the other runners
+     (`data-waiting` names the action that was pressed, rendered by the server) every button is disabled and the
+     pressed one carries a spinner. Pressing one shows the same at once, before the page answers: the others
+     are disabled a tick later, since a disabled submitter would not be sent. */
+  function turnForms() {
+    const spin = (btn) => {
+      if (btn.querySelector(".spinner")) return;
+      const s = document.createElement("span");
+      s.className = "spinner";
+      s.setAttribute("aria-hidden", "true");
+      btn.prepend(s);
+    };
+    document.querySelectorAll("form[data-turn-form]").forEach((form) => {
+      if (form.dataset.bound) return;
+      form.dataset.bound = "1";
+      const buttons = () => form.querySelectorAll("button[name=action]");
+      const pending = form.dataset.waiting;
+      if (pending) {
+        buttons().forEach((b) => { b.disabled = true; if (b.value === pending) spin(b); });
+      }
+      form.addEventListener("submit", (e) => {
+        const pressed = e.submitter;
+        if (!pressed || pressed.name !== "action") return;
+        spin(pressed);
+        setTimeout(() => buttons().forEach((b) => { if (b !== pressed) b.disabled = true; }), 0);
+      });
+    });
+  }
+  turnForms();
+  document.addEventListener("DOMContentLoaded", turnForms);
+
   /* --- The party panel, kept current ---------------------------------------
      [data-party-poll="url"] asks the server every five seconds who is in, and swaps the HTML of each
      [data-party-live] for what it answers (the member lines are drawn on the server, so the wording is
