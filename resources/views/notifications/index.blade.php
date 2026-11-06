@@ -112,7 +112,8 @@
                                     @php($report = $message->details['report'])
                                     @php($sentence = preg_split('/(@@ADDRESS@@|@@SYSTEM@@)/', Text::get('notifications.messages.party_run_report', ['address' => '@@ADDRESS@@', 'system' => '@@SYSTEM@@']), -1, PREG_SPLIT_DELIM_CAPTURE))
                                     <p style="margin:0">
-                                        @foreach ($sentence as $piece)
+                                        {{-- A report sent before the address was kept (an older layout) has only its saved sentence. --}}
+                                        @foreach (empty($report['address']) ? [$message->body] : $sentence as $piece)
                                             @if ($piece === '@@ADDRESS@@')
                                                 <x-address :address="$report['address']" />
                                             @elseif ($piece === '@@SYSTEM@@')
@@ -122,7 +123,7 @@
                                             @endif
                                         @endforeach
                                     </p>
-                                    @foreach ($report['sections'] as $section)
+                                    @foreach (($report['sections'] ?? []) as $section)
                                         <div class="stack" style="--gap:var(--s-1)">
                                             <span class="micro" style="color:var(--ink-3)">{{ $section['heading'] }}</span>
                                             <div class="prose micro" style="color:var(--ink-2)">
@@ -138,7 +139,7 @@
                                         <span class="micro" style="color:var(--ink-3)">{{ Text::get('notifications.report.log') }}</span>
                                         <div class="prose micro" style="color:var(--ink-2)">
                                             <ul>
-                                                @foreach ($report['log'] as $line)
+                                                @foreach (($report['log'] ?? []) as $line)
                                                     <li>{{ $line }}</li>
                                                 @endforeach
                                             </ul>

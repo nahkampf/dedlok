@@ -623,6 +623,17 @@ final class PartyAdversarialTest extends TestCase
         }
     }
 
+    public function test_an_older_run_concluded_message_still_opens(): void
+    {
+        $user = $this->runner()->user;
+        Notification::query()->create([
+            'user_id' => $user->id, 'category' => 'cyberspace', 'priority' => 'important', 'title' => 'Run concluded',
+            'body' => 'The co-op run is over.', 'details' => ['report' => ['sections' => [['heading' => 'Outcome', 'lines' => ['x']]], 'log' => ['y']]],
+        ]);
+
+        $this->actingAs($user)->get(route('notifications.index'))->assertOk()->assertSee('The co-op run is over.');
+    }
+
     /**
      * RANDOM OPERATIONS against a party of three, and after each the structural invariants: nobody pointing at nothing,
      * nobody live and unpointed, no run of a party that is gone while two or more are still inside, and the clock
