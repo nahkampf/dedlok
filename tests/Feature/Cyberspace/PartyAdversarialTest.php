@@ -16,6 +16,7 @@ use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Models\Character;
 use App\Models\Ice;
+use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Notification;
 use App\Models\Run;
@@ -273,6 +274,7 @@ final class PartyAdversarialTest extends TestCase
 
         $seat = RunPartyMember::query()->where('character_id', $m->id)->first();
         $this->assertNotNull($seat?->dropped_at, 'the member stays, marked, so they cannot start a run of their own beside the party');
+        $this->assertStringContainsString('present at the same node', Notification::query()->where('user_id', $m->user_id)->where('title', 'Left out of a co-op run')->value('body'), 'the one left out is told why');
         $this->assertNull($m->fresh()->current_run_id);
 
         $parties->leave($m);
@@ -284,6 +286,38 @@ final class PartyAdversarialTest extends TestCase
         app(RunStarter::class)->end($owner, $owner->fresh()->currentRun, RunEnding::Egress);
         app(RunStarter::class)->end($other, $other->fresh()->currentRun, RunEnding::Egress);
         $this->assertNull(RunPartyMember::query()->where('character_id', $m->id)->first(), 'the seat goes with the party');
+    }
+
+    public function test_a_members_stop_these_ticks_are_kept_for_the_launch(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $m = $this->runner();
+        $parties->invite($owner, $m->handle);
+
+        $parties->accept($m, [], [77, 78]);
+        $this->assertSame([77, 78], RunPartyMember::query()->where('character_id', $m->id)->first()->suspend);
+
+        $parties->accept($m);
+        $this->assertSame([77, 78], RunPartyMember::query()->where('character_id', $m->id)->first()->suspend, 'a bare re-accept does not clear them');
+
+        // A tick for a row that is not running (any more) is ignored, not a reason to drop the member.
+        $parties->launch($owner->fresh(), RunPurpose::Extraction, null, [], app(RunStarter::class));
+        $this->assertNull(RunPartyMember::query()->where('character_id', $m->id)->first()->dropped_at);
+    }
+
+    public function test_accept_asks_the_real_start_whether_the_loadout_will_run(): void
+    {
+        $m = $this->runner();
+        $parties = new Parties;
+
+        $this->assertNull($parties->loadoutRefusal($m, []), 'nothing to start always fits');
+
+        // Not run-only software at all: the start refuses it, and Accept says so now rather than the launch later.
+        $plain = InventoryItem::query()->create(['character_id' => $m->id, 'item_id' => Item::factory()->create()->id, 'quantity' => 1]);
+        $this->assertNotNull($parties->loadoutRefusal($m, [$plain->id]));
+        $this->assertSame(0, InventoryItem::query()->where('character_id', $m->id)->whereNotNull('running_on_deck_id')->count(), 'asking changes nothing');
     }
 
     public function test_the_screen_and_the_launch_agree_on_who_can_go(): void

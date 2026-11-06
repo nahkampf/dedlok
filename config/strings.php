@@ -1021,10 +1021,10 @@ return [
             'fortress_invite' => ':owner has given you access to :system (:address).',
             'fortress_moved' => 'The new position is :x,:y, address :address',
             'fortress_burned' => 'Your fortress Kernel was burned. Everything else on it is gone and the Kernel is Frozen for :hours hours: bring in new Leechers that can run it, or lose it.',
-            'party_dropped' => ':owner started the co-op run without you: your deck was not ready or you were not at the door.',
+            'party_dropped' => ':owner started the co-op run without you. :reason',
             'programs_not_resumed' => 'THe run is over, but these programs would not start again: :programs',
             'hunt_programs_not_resumed' => 'You were cornered by a Bloodhound program and some processes could not restart after it was resolved.',
-            'party_member_dropped' => ':handle was dropped from the run because :reason',
+            'party_member_dropped' => ':handle was dropped from the run. :reason',
             // SOMEBODY ELSE'S BAD NIGHT. One sentence for a lockdown, a move and
             // a burn: the holder was not there, and naming the cause would tell
             // them about a stranger's run they could not otherwise know of.
@@ -1591,6 +1591,7 @@ return [
                 'not_at_the_door' => 'You have to be present at the same node.',
                 'not_the_owner' => 'Only the one who called the run starts it.',
                 'started' => 'That run has already begun.',
+                'loadout_wont_run' => 'That loadout will not run on your deck. :reason',
                 'terms_locked' => 'The terms are fixed once somebody has been invited.',
             ],
         ],

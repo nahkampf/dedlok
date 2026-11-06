@@ -18,7 +18,9 @@ use App\Models\RunPartyMember;
 use App\Models\System;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Programs\ProcessRefused;
 use App\Programs\ProgramKind;
+use App\Programs\ProgramRunner;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -140,9 +142,9 @@ final class Parties
     }
 
     /** Accepting needs standing at the same door: the party forms where it is going. */
-    public function accept(Character $character, ?array $loadout = null): ?PartyRefusal
+    public function accept(Character $character, ?array $loadout = null, ?array $suspend = null): ?PartyRefusal
     {
-        return DB::transaction(function () use ($character, $loadout): ?PartyRefusal {
+        return DB::transaction(function () use ($character, $loadout, $suspend): ?PartyRefusal {
             $member = RunPartyMember::query()->where('character_id', $character->getKey())->lockForUpdate()->first();
 
             if ($member === null) {
@@ -168,10 +170,45 @@ final class Parties
             $mine = $loadout === null ? ($member->loadout ?? []) : $this->oneIcebreaker(InventoryItem::query()
                 ->where('character_id', $character->getKey())->whereIn('id', $loadout)->with('item.program')->get());
 
-            $member->update(['joined_at' => $member->joined_at ?? now(), 'loadout' => $mine]);
+            $member->update(['joined_at' => $member->joined_at ?? now(), 'loadout' => $mine] + ($suspend === null ? [] : ['suspend' => $suspend]));
 
             return null;
         });
+    }
+
+    /**
+     * Would this loadout start on this runner's deck, with these things stopped to make room? The reason in the game's own
+     * words when it would not, null when it would. ASKED OF THE REAL START, then rolled back, so Accept can never promise
+     * what the launch will refuse (compute, memory, threads, storage, a second icebreaker...).
+     *
+     * @param  list<int>  $ids  loadout inventory row ids
+     * @param  list<int>  $suspend  running row ids to stop first
+     */
+    public function loadoutRefusal(Character $character, array $ids, array $suspend = []): ?string
+    {
+        $character = $character->fresh();
+        $rows = InventoryItem::query()->whereIn('id', $ids)->where('character_id', $character->getKey())->with('item.program')->get();
+        $runner = app(ProgramRunner::class);
+
+        DB::beginTransaction();
+
+        try {
+            $runner->suspend($character, $suspend);
+
+            foreach ($rows as $row) {
+                $result = $runner->start($character, $row, duringRun: true);
+
+                if (! $result->succeeded()) {
+                    return $result->refusal->message();
+                }
+            }
+
+            return null;
+        } catch (ProcessRefused $refused) {
+            return $refused->refusal->message();
+        } finally {
+            DB::rollBack();
+        }
     }
 
     /**
@@ -349,7 +386,7 @@ final class Parties
             if ($runner !== null && $why === null) {
                 $rows = InventoryItem::query()->whereIn('id', $member->loadout ?? [])
                     ->where('character_id', $runner->getKey())->with('item.program')->get()->all();
-                $started = $starter->start($runner, $purpose, $kind, $rows, $party->getKey());
+                $started = $starter->start($runner, $purpose, $kind, $rows, $party->getKey(), $member->suspend ?? []);
                 $why = $started->succeeded() ? null : $started->message();
             }
 
@@ -358,7 +395,7 @@ final class Parties
 
                 if ($runner !== null) {
                     $left[$runner->handle] = $why;
-                    (new Notifier)->send($runner, Category::Cyberspace, 'party_dropped', ['owner' => $owner->handle]);
+                    (new Notifier)->send($runner, Category::Cyberspace, 'party_dropped', ['owner' => $owner->handle, 'reason' => $why ?? '']);
                 }
             } else {
                 $in[] = $runner;
