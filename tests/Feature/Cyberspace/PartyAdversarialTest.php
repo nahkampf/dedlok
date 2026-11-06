@@ -551,6 +551,8 @@ final class PartyAdversarialTest extends TestCase
             $this->assertStringContainsString('34 ¤', $flat, 'the owner gets the remainder of an even split of 100');
             $this->actingAs($c->fresh()->user)->get(route('notifications.index'))->assertOk()
                 ->assertSee('Run concluded')->assertSee('has concluded')->assertSee('Results')->assertSee("[{$owner->handle}]");
+            $page = $this->actingAs($c->fresh()->user)->get(route('notifications.index'))->getContent();
+            $this->assertSame(1, substr_count($page, 'has concluded'), 'the opening sentence is printed more than once');
             $this->assertNotEmpty($report['log'], 'the log is missing');
             $this->assertStringContainsString('[', implode("\n", $report['log']), 'the log does not name who did what');
         }
