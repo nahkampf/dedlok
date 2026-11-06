@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.90.1] — 2026-11-06
+
+### Changed
+- **The known systems browser remembers its filter.** The owner, type, grade and "full" choices are kept in `localStorage` and sent with the next open of the box. New attribute `data-fragment-remember="key"` on a `[data-fragment]` box (`ui-kit.js`); any filtered fragment can use it. A saved owner that no longer appears gives an empty list until a filter is changed.
+
+
 ## [0.90.0] — 2026-11-06
 
 ### Added
@@ -4069,7 +4075,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.90.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.90.1...HEAD
+[0.90.1]: https://github.com/nahkampf/dedlok/compare/v0.90.0...v0.90.1
 [0.90.0]: https://github.com/nahkampf/dedlok/compare/v0.89.2...v0.90.0
 [0.89.2]: https://github.com/nahkampf/dedlok/compare/v0.89.1...v0.89.2
 [0.89.1]: https://github.com/nahkampf/dedlok/compare/v0.89.0...v0.89.1
