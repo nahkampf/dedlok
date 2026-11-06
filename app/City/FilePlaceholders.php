@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\City;
 
+use App\Cyberspace\FileOrigin;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunOutcome;
 use App\Models\Character;
@@ -55,6 +56,8 @@ final class FilePlaceholders
             'owner' => (string) ($system->owner?->name ?? ''),
             'purpose' => $run?->purpose->label(),
             'outcome' => $run?->ending === null ? null : RunOutcome::of(RunEnding::from((string) $run->ending))->value,
+            // What a component the encounter leaves is stamped with, as if it had been taken off this system.
+            'origin' => FileOrigin::fromSystem($system, null)->toArray(),
         ];
     }
 

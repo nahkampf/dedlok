@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.89.2] — 2026-11-06
+
+### Added
+- **Achievement 22, "Arne Beurling sends his regards"**: 1000 files decrypted. New metric `files_decrypted`, recorded by `DecryptionQueue` for every file the queue breaks open. It counts from deploy; nothing earlier was recorded. `public/images/achievements/22.jpg` is still to be drawn (the default shows meanwhile).
+
+### Fixed
+- **A component an encounter left had no grade, owner or OS.** `FilePlaceholders::context()` now keeps the system's `FileOrigin` on the door, and the `file` outcome stamps a catalogue item with it (grade, origin, the item's base cost as its value), sealed or not, so the stash and recipes read it like a file taken off that system. A door with no system (City) still grants a plain item. Files already handed out stay unstamped. Test: `EncounterFileOutcomeTest`.
+
+
 ## [0.89.1] — 2026-11-06
 
 ### Changed
@@ -4052,7 +4061,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.89.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.89.2...HEAD
+[0.89.2]: https://github.com/nahkampf/dedlok/compare/v0.89.1...v0.89.2
 [0.89.1]: https://github.com/nahkampf/dedlok/compare/v0.89.0...v0.89.1
 [0.89.0]: https://github.com/nahkampf/dedlok/compare/v0.88.0...v0.89.0
 [0.88.0]: https://github.com/nahkampf/dedlok/compare/v0.87.0...v0.88.0

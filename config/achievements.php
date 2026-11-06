@@ -224,6 +224,15 @@ return [
             'secret' => false,
         ],
 
+        // A thousand files broken open.
+        22 => [
+            'name' => 'Arne Beurling sends his regards',
+            'description' => 'Decrypted 1000 files.',
+            'metric' => 'files_decrypted',
+            'threshold' => 1000,
+            'secret' => false,
+        ],
+
     ],
 
 ];

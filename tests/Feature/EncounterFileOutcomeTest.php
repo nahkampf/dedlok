@@ -17,6 +17,7 @@ use App\Models\FileText;
 use App\Models\InventoryItem;
 use App\Models\Item;
 use App\Models\Skill;
+use App\Models\System;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -97,6 +98,22 @@ final class EncounterFileOutcomeTest extends TestCase
 
         $file = new ExtractedFile(label: 'x', sizeQb: 4.0, encryptionSkillId: null, valueSealed: 0, valueBroken: 0, payloadItemId: $item->id);
         $this->assertTrue(app(DecryptionQueue::class)->outcomeFor($file)->is($item));
+    }
+
+    public function test_a_component_left_after_a_run_carries_the_system_it_was_taken_off(): void
+    {
+        $system = System::factory()->create(['grade' => 3]);
+        $item = Item::factory()->create(['container' => 'data', 'size' => 0, 'base_cost' => 50]);
+        $outcome = $this->outcome(['body' => null, 'item_id' => $item->id, 'ref' => null]);
+        $this->open(FilePlaceholders::context($system, null));
+
+        $this->assertNotNull($this->apply($outcome));
+
+        $file = InventoryItem::query()->where('character_id', $this->character->id)->firstOrFail()->extractedFile();
+        $this->assertSame(3, $file->grade);
+        $this->assertSame($system->owner_id, $file->origin->ownerId);
+        $this->assertSame($system->type->value, $file->origin->systemType);
+        $this->assertSame(50, $file->valueBroken);
     }
 
     public function test_a_token_the_door_cannot_fill_is_found_and_a_city_door_fills_the_two_everywhere_ones(): void

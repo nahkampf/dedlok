@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Decryption;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Characters\EncounterPause;
 use App\Checks\CheckRoller;
 use App\Cyberspace\ExtractedFile;
@@ -435,6 +437,7 @@ final class DecryptionQueue
                 for ($i = 1; $i <= $cycles; $i++) {
                     if ($this->roller->roll($value, $difficulty, 'decryption', $multiplier)->passed) {
                         $this->open($character, $row, $file);
+                        (new Achievements)->record($character, Metric::FilesDecrypted);
                         $carry = $entry->cycle_started_at->addSeconds($i * $cycle);
                         $entry->delete();
                         $this->renumber($character);

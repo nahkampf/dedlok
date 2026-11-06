@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Checks\CheckRoller;
 use App\Decryption\DecryptionQueue;
 use App\Decryption\DecryptionRefusal;
@@ -203,6 +205,7 @@ final class DecryptionTest extends TestCase
         $this->assertSame(2, $this->queue()->settle($this->character->fresh()), 'both broke in the same cycle');
         $this->assertSame(1, DecryptionEntry::query()->count());
         $this->assertNotNull($third->fresh()->worker_id, 'a freed decryptor takes the next file in line');
+        $this->assertSame(2, (new Achievements)->progressFor($this->character->fresh(), Metric::FilesDecrypted), 'each file broken is counted');
     }
 
     public function test_stopping_one_of_two_decryptors_frees_only_its_file(): void
