@@ -592,10 +592,12 @@ final class PartyAdversarialTest extends TestCase
         $parties->accept($mate);
         $breaker = $this->ownedBy($owner, Item::factory()->program(ProgramKind::Icebreaker, qflops: 1, memory: 1, storage: 1)->create(['name' => 'Wirecutter']));
 
-        $this->actingAs($owner->fresh()->user)->postJson(route('run.party.loadout'), ['icebreaker' => $breaker->id])->assertOk();
+        $script = $this->ownedBy($owner, Item::factory()->program(ProgramKind::Script, qflops: 1, memory: 1, storage: 1, background: true)->create(['name' => 'Smokescreen']));
+
+        $this->actingAs($owner->fresh()->user)->postJson(route('run.party.loadout'), ['icebreaker' => $breaker->id, 'scripts' => [$script->id]])->assertOk();
 
         $page = $this->actingAs($mate->fresh()->user)->getJson(route('run.party.status'))->assertOk();
-        $page->assertSee($owner->handle)->assertSee('Wirecutter')->assertSee('Run master');
+        $page->assertSee($owner->handle)->assertSee('Wirecutter')->assertSee('Smokescreen')->assertSee('Run master');
     }
 
     /**
