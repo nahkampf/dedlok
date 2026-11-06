@@ -1744,6 +1744,7 @@ return [
             'evasion_snare_cost' => ':points points of chance',
             'evasion_result' => 'Evasion chance for egress',
             'waiting' => 'Waiting for all runners to take action',
+            'round_timer' => 'Default action in',
             // A party's log, told in the third person for everybody (same keys as `log`); a key missing here falls back to
             // the runner's own line with their handle in front. `:tag` is the ICE or the icebreaker named on the line.
             'party_log' => [

@@ -8,6 +8,7 @@ use App\Chat\Chats;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Party\PartyRefusal;
+use App\Cyberspace\Party\PartyTurns;
 use App\Cyberspace\Party\ShareMode;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
@@ -424,6 +425,41 @@ final class PartyAdversarialTest extends TestCase
         $this->assertNull($parties->accept($mate, $rows->pluck('id')->all()));
 
         $this->assertSame([$rows[0]->id], RunPartyMember::query()->where('character_id', $mate->id)->sole()->loadout);
+    }
+
+    public function test_an_idle_party_page_checks_again_by_itself_and_shows_the_clock(): void
+    {
+        [$owner, $mates] = $this->launched(1);
+
+        // Everybody has opened the screen, nobody has chosen: the page must still poll, or the round could never run out.
+        foreach ([$owner, $mates[0]] as $c) {
+            $this->actingAs($c->fresh()->user)->get(route('run.show'));
+        }
+
+        $response = $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk();
+
+        $response->assertHeader('Refresh', '5');
+        $response->assertSee('data-countdown', false);
+
+        $this->travel(PartyTurns::DEADLINE_SECONDS + 1)->seconds();
+        $this->actingAs($owner->fresh()->user)->get(route('run.show'));
+
+        $this->assertSame(1, Run::query()->where('character_id', $owner->id)->value('turn'), 'the default action was not taken');
+    }
+
+    public function test_the_clock_shows_after_a_round_has_resolved_too(): void
+    {
+        [$owner, $mates] = $this->launched(1);
+
+        foreach ([$owner, $mates[0]] as $c) {
+            $this->actingAs($c->fresh()->user)->get(route('run.show'));
+        }
+        $this->act($owner);
+        $this->act($mates[0]);
+
+        $this->assertNotNull(RunParty::query()->sole()->round_started_at, 'the round did not resolve');
+
+        $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('data-countdown', false);
     }
 
     /**
