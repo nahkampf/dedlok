@@ -893,6 +893,19 @@ return [
             'many' => ':count messages deleted.',
         ],
         // Pieces of a line in a message's list (the siphon report's).
+        // The "Run concluded" message's section headings and lines.
+        'report' => [
+            'outcome' => 'Outcome',
+            'successful' => 'Successful',
+            'failed' => 'Failed',
+            'participants' => 'Participants',
+            'results' => 'Results',
+            'split_files' => 'Files split: :mode',
+            'split_credits' => 'Credits split: :mode',
+            'total' => 'Total loot: :loot',
+            'nothing' => 'Nothing',
+            'log' => 'Run log',
+        ],
         'details' => [
             'grade' => 'grade :grade',
         ],
@@ -931,6 +944,7 @@ return [
             'party_invite' => 'Invited to a run',
             'party_started' => 'Co-op run started',
             'party_run_ended' => 'Your co-op run ended',
+            'party_run_report' => 'Run concluded',
             'leech_found' => 'Leecher found',
             'fortress_alarm' => 'Intrusion at your fortress',
             'fortress_core' => 'Your fortress core is touched',
@@ -1000,6 +1014,7 @@ return [
             'party_invite' => ':owner has invited you to a co-op run. Stand at the same system and accept from the map.',
             'party_started' => ':owner has started the co-op run you joined. You are in it.',
             'party_run_ended' => 'Your co-op run is over: :ending',
+            'party_run_report' => 'The co-op run on :address (:system) has concluded.',
             'leech_found' => 'Your Leecher on :system was found and removed. Its share has stopped.',
             'fortress_alarm' => 'Somebody has started an intrusion run against :system.',
             'fortress_core' => 'The intruder is at the core of :system.',
@@ -1529,7 +1544,7 @@ return [
         ],
         'party' => [
             'heading' => 'Party',
-            'slots' => 'Others you may bring: :slots',
+            'slots' => 'Total capacity: :slots',
             'open' => 'Form a party',
             'save' => 'Save terms',
             'share_credits' => 'Share credits',
@@ -1537,6 +1552,9 @@ return [
             'invited' => 'Invited',
             'joined' => 'Joined',
             'ready' => 'Ready',
+            'si' => 'SI :current / :max',
+            'owner' => 'Run master',
+            'loadout_none' => 'nothing',
             'dropped' => 'Dropped out',
             'nobody' => 'Nobody invited yet.',
             'handle' => 'Handle',
@@ -1572,6 +1590,7 @@ return [
                 'not_at_the_door' => 'You have to be present at the same node.',
                 'not_the_owner' => 'Only the one who called the run starts it.',
                 'started' => 'That run has already begun.',
+                'terms_locked' => 'The terms are fixed once somebody has been invited.',
             ],
         ],
 
@@ -1627,6 +1646,7 @@ return [
                 'title' => 'Before you go in',
                 'auto_egress' => 'Your Synaptic Integrity is :si%, below the :at% you set to pull out. The first turn will auto-egress before anything you press happens. Restore your SI, or lower the threshold from the map, before you go in.',
                 'open' => 'Plan a run',
+                'join' => 'Join run',
                 'purpose' => 'End goal of run',
                 'kind' => 'What to leave behind',
                 'chain' => 'Routed through',
@@ -1701,7 +1721,7 @@ return [
                 'intent_burn' => 'Burn it',
                 'intent_infiltrate' => 'Infiltrate',
                 'intent_denial' => 'Flood it',
-                'intent_denial_hint' => 'Throw your bandwidth at it until it locks down. The system pushes back every turn and its ICE wakes at once. Takes nothing. No co-op.',
+                'intent_denial_hint' => 'Throw your bandwidth at it until it locks down. The system pushes back every turn and its ICE wakes at once. Takes nothing.',
                 'intent_extraction_hint' => 'Ingress, steal some data, egress. Does not trigger a lockdown',
                 'intent_siphon_hint' => 'Install a siphon that redirects some cashflow every night',
                 'intent_routing_hint' => 'Add this system to your routing chain. The more systems you route through, the longer a tracer will take to trace you',
@@ -1743,6 +1763,8 @@ return [
             'evasion_snare_cost' => ':points points of chance',
             'evasion_result' => 'Evasion chance for egress',
             'waiting' => 'Waiting for all runners to take action',
+            'round_timer' => 'Default action in',
+            'alone' => 'Only you remain in the run. Be careful!',
             // A party's log, told in the third person for everybody (same keys as `log`); a key missing here falls back to
             // the runner's own line with their handle in front. `:tag` is the ICE or the icebreaker named on the line.
             'party_log' => [
@@ -1793,6 +1815,7 @@ return [
             | scan fact for free.
             */
             'log' => [
+                'dropped_out' => 'dropped out.',
                 // "Your" + a green tag naming the icebreaker + this: the tag sits inside the sentence.
                 'attack_before' => 'Your',
                 'attack' => 'finds an intrusion vector and pushes a disruptive payload through, causing :damage system integrity loss.',
@@ -2015,6 +2038,8 @@ return [
                 'hunted' => 'You are currently locked in a confrontation with another entity.',
                 'fighting' => 'You are in a fight.',
                 'program_refused' => 'Something on your loadout would not start.',
+                'nobody_ready' => 'Nobody has accepted the run yet.',
+                'locked_while_planning' => 'System locked down while planning, and is no longer available',
                 // Said plainly: a lockdown is a consequence of something
                 // somebody did, not a scan fact being given away. And it is
                 // worth knowing the system will not be there afterwards.
@@ -3322,8 +3347,8 @@ return [
             'damage.synaptic_integrity.readiness_loss' => 'readiness loss damage to the mind',
             'damage.hitpoints.burnout' => 'burnout damage to the body',
             'damage.synaptic_integrity.burnout' => 'burnout damage to the mind',
-            'damage.hitpoints.ice' => 'ICE damage',
-            'damage.synaptic_integrity.ice' => 'ICE damage',
+            'damage.hitpoints.ice' => 'ICE damage (HP)',
+            'damage.synaptic_integrity.ice' => 'ICE damage (SI)',
             'damage.hitpoints.run_cancelled' => 'run cancellation damage to the body',
             'damage.synaptic_integrity.run_cancelled' => 'run cancellation damage to the mind',
             'damage.hitpoints.tunnel' => 'tunnelling damage to the body',

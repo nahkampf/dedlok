@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+## [0.89.0] — 2026-11-06
+
+### Added
+- **"Run concluded".** When the last runner of a co-op run is out, everybody who was in gets an important message: the sentence naming the system (address and grade), the outcome (successful when a run completed its job or came away with loot), how each participant ended, the file and credit split modes, the total loot, who got what, and the whole run log with every runner in brackets (`RunReport`). The ledger is the new `run_parties.loot` column, written where creds, files and items are dealt (`PartyShare::record`).
+- **Co-op polish.** An invited runner's "Plan a run" is a teal "Join run" (`.btn--join`); a member sets their loadout on the normal loadout screen (one icebreaker) with Accept instead of a purpose; the owner cannot start until somebody has accepted and could go in (`RunRefusal::NobodyReady`); the party panel refreshes itself every five seconds (`GET /run/party/status`); the run screen shows a "default action" countdown and refreshes on its own; the log names runners in brackets; the Ready tag is green.
+- **A chosen turn waits visibly.** In a party round, once you have pressed an action every button is disabled and the pressed one shows a spinner (`form[data-turn-form]`, `data-waiting`).
+- **The run screen shows what is new.** The actions box pulses once when a party round has resolved since the tab last saw the run, and each new log row starts on an ember wash that fades to nothing (`runWatch` in `ui-kit.js`, remembered per run in sessionStorage).
+- **The owner sees who is coming and with what.** Each accepted member in the party panel shows their current Synaptic Integrity and the loadout they chose (the panel poll keeps it current).
+- **Everybody sees the whole party.** Members now see the owner and every accepted runner, each with Synaptic Integrity and loadout; the owner's ticks are told to the party as they change them (`run_parties.owner_loadout`, `POST /run/party/loadout`, advisory until Start).
+- **A system that locks down while a run is being planned closes the planning screen for everybody**, with a toast on the map (`System locked down while planning...`); the forming party is dissolved (`RunPartyController::status`, `RunController::setup`). New server-asked toast: `session('toast')` rendered as `[data-toast]`.
+- **The runners left inside are told when a partner drops out**: a log line `[Handle] dropped out.` in their log, and "Only you remain in the run. Be careful!" above their buttons once they are the last of a party that was more than one (`RunStarter::tellThePartyTheyDroppedOut`; not sent when the whole party ends together).
+- Migration `2026_11_10_220000_run_parties_keep_a_loot_ledger` (adds `run_parties.loot` and `run_parties.owner_loadout`).
+
+### Changed
+- **The two ICE damage targets are labelled "(HP)" and "(SI)"**, so the HRX Paloma-4 and the Nexura CODA no longer read alike.
+
+### Fixed
+- **A party's terms could be changed after the invitations went out.** `Parties::options()` now takes the party lock `invite` takes and refuses (`PartyRefusal::TermsLocked`) once anybody holds an invitation; the owner's panel then shows the terms as text. Found by driving three headless browsers through a co-op run.
+- **A co-op run began with each runner's own detection.** `Parties::launch` now carries the party's detection and ICE to every run at once (`PartyTurns::syncShared`), not at the end of round one.
+- **The Flood hint said "No co-op"** while the engine and the rules run it as a party (one shared meter). The hint and the `RunPurpose::Denial` docblock now agree with that. Tests: `PartyAdversarialTest`.
+
+Run `php artisan migrate`.
+
+
 ## [0.88.0] — 2026-11-05
 
 ### Added
@@ -4021,7 +4045,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.88.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.89.0...HEAD
+[0.89.0]: https://github.com/nahkampf/dedlok/compare/v0.88.0...v0.89.0
 [0.88.0]: https://github.com/nahkampf/dedlok/compare/v0.87.0...v0.88.0
 [0.87.0]: https://github.com/nahkampf/dedlok/compare/v0.86.0...v0.87.0
 [0.86.0]: https://github.com/nahkampf/dedlok/compare/v0.85.0...v0.86.0

@@ -233,7 +233,7 @@
      ONE FORM AND ONE DOOR. Every action costs the same turn, which is the economy the whole run rests
      on — so they are one button each on one form rather than a route apiece. LEAVING IS ALWAYS ON THE
      LIST and never disabled: a run with no exit is a character deleted by a door they could not see. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
+<div class="panel panel--snug" style="margin-top:var(--s-4)" data-run-watch="{{ $run->id }}" data-turn="{{ $run->turn }}" data-party="{{ $shared ? 1 : 0 }}">
     {{-- ON OR PAST A THRESHOLD: the next turn pulls them out whatever they press. The loud thing on the
          panel, because it is the one fact that changes what the buttons below will do. --}}
     @if ($thresholdBreached)
@@ -284,8 +284,14 @@
     @if ($waiting)
         <p class="micro" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.waiting') }}</p>
     @endif
+    @if ($alone)
+        <p class="micro" style="margin:0 0 var(--s-2);color:var(--warn)">{{ Text::get('cyberspace.run.alone') }}</p>
+    @endif
+    @if ($roundSeconds !== null)
+        <p class="micro num" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.round_timer') }} <span data-countdown="{{ $roundSeconds }}">{{ $roundSeconds }}</span></p>
+    @endif
 
-    <form method="POST" action="{{ route('run.act') }}" style="padding-bottom:var(--s-3)">
+    <form method="POST" action="{{ route('run.act') }}" style="padding-bottom:var(--s-3)" data-turn-form data-waiting="{{ $waiting ? $run->pending_action : '' }}">
         @csrf
         <div class="row row--wrap" style="--gap:var(--s-2)">
             <button type="submit" name="action" value="attack" class="btn cut" @unless ($run->inAFight()) disabled @endunless>
@@ -397,9 +403,9 @@
     <div class="panel panel--snug" style="margin-top:var(--s-4)">
         <div class="panel__hd"><h2>{{ Text::get('cyberspace.run.log_heading') }}</h2></div>
 
-        <div style="padding:var(--s-3) 0">
+        <div style="padding:var(--s-3) 0" data-log-watch="{{ $run->id }}" data-log-count="{{ count($run->log) }}">
             @foreach (array_reverse($run->log) as $line)
-                <p class="micro" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
+                <p class="micro" data-log-index="{{ $loop->count - $loop->iteration }}" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
                     @if (isset($line['turn']))
                         <span class="tag tag--quiet">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
                     @endif
@@ -408,14 +414,14 @@
                          `crit` for the ICE hitting you (also what a line from before the colour was kept
                          says), `ok` for your icebreaker, none for the ICE failing. --}}
                     {{-- A party's log is one account told in the third person: "ICE I lands a code payload on Skavian". --}}
-                    @php($told = isset($line['by'], $line['key']) ? Text::get('cyberspace.run.party_log.'.substr($line['key'], strlen('cyberspace.run.log.')), ($line['replace'] ?? []) + ['player' => $line['by'], 'tag' => $line['tag'] ?? '']) : null)
+                    @php($told = isset($line['by'], $line['key']) ? Text::get('cyberspace.run.party_log.'.substr($line['key'], strlen('cyberspace.run.log.')), ($line['replace'] ?? []) + ['player' => '['.$line['by'].']', 'tag' => $line['tag'] ?? '']) : null)
                     @php($told = $told !== null && ! str_starts_with($told, 'cyberspace.run.party_log.') ? $told : null)
                     <span>
                         @if ($told !== null)
                             {{ $told }}
                         @else
                             @if (! empty($line['by']))
-                                <b>{{ $line['by'] }}</b>
+                                <b>[{{ $line['by'] }}]</b>
                             @endif
                             @if (! empty($line['before']))
                                 {{ $line['before'] }}

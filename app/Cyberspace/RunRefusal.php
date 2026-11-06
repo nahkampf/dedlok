@@ -51,6 +51,9 @@ enum RunRefusal: string
 
     case ProgramRefused = 'program_refused';
 
+    /** The owner has called a party and nobody who accepted is able to go in yet: a party of one is not what was called. */
+    case NobodyReady = 'nobody_ready';
+
     public function message(): string
     {
         return Text::get("cyberspace.run.refused.{$this->value}");

@@ -229,6 +229,7 @@ final readonly class Extractor
                 if ($name !== null) {
                     $files++;
                     $taken[$name] = ($taken[$name] ?? 0) + 1;
+                    $share?->record($to->getKey(), 'file', $name);
                 }
             }
 
@@ -258,6 +259,7 @@ final readonly class Extractor
             // A heist's target keeps the take for the desk; everything else is the raider's.
             if ($systemId === null || ! app(MissionLedger::class)->holdProceeds($who, $systemId, $part)) {
                 Wallet::move($who, $part, Reason::Extraction);
+                $share?->record($who->getKey(), 'creds', '', $part);
             }
 
             // Counted HERE rather than at either call site, because this is the
@@ -324,7 +326,9 @@ final readonly class Extractor
                 $who = $character;
             }
 
-            $granted += $this->stamped($who, $item, $content, ItemGranter::grant($who, $item, $count));
+            $got = $this->stamped($who, $item, $content, ItemGranter::grant($who, $item, $count));
+            $granted += $got;
+            $share->record($who->getKey(), 'item', $item->name, $got);
         }
 
         return $granted;

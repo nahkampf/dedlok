@@ -1041,6 +1041,17 @@
     return el;
   }
 
+  /* A toast the server asked for with its redirect: <div data-toast="words" data-toast-level="warn" hidden>. Shown once. */
+  function serverToasts() {
+    document.querySelectorAll("[data-toast]").forEach((el) => {
+      if (el.dataset.shown) return;
+      el.dataset.shown = "1";
+      toast(el.dataset.toast, { level: el.dataset.toastLevel || "", timeout: 9000 });
+    });
+  }
+  serverToasts();
+  document.addEventListener("DOMContentLoaded", serverToasts);
+
   /* --- Meters -----------------------------------------------------------
      UI.meter(el, 0.42) — or set style="--v:.42" server-side and skip JS.  */
   function meter(el, ratio) {
@@ -1709,6 +1720,119 @@
   }
   passClocks();
   document.addEventListener("DOMContentLoaded", passClocks);
+
+  /* --- The owner's ticks, told to the party ------------------------------------
+     form[data-owner-loadout="url"]: when the owner changes the icebreaker or the scripts they have ticked, the new set is
+     posted (after a short pause) so the others' panels show what is coming. Advisory: Start posts the real loadout. */
+  function ownerLoadout() {
+    const form = document.querySelector("form[data-owner-loadout]");
+    if (!form || form.dataset.ownerBound) return;
+    form.dataset.ownerBound = "1";
+    let timer = null;
+    form.addEventListener("change", (e) => {
+      if (!e.target.matches("input[name=icebreaker], input[name='programs[]'], input[name='scripts[]']")) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const body = new FormData();
+        body.append("_token", form.querySelector("input[name=_token]").value);
+        form.querySelectorAll("input[name=icebreaker]:checked, input[name='programs[]']:checked, input[name='scripts[]']:checked").forEach((i) => { if (i.value) body.append(i.name, i.value); });
+        fetch(form.dataset.ownerLoadout, { method: "POST", body, headers: { Accept: "application/json" }, credentials: "same-origin" }).catch(() => {});
+      }, 400);
+    });
+  }
+  ownerLoadout();
+  document.addEventListener("DOMContentLoaded", ownerLoadout);
+
+  /* --- What happened since this page was last seen ---------------------------
+     The run screen reloads often (after a turn, and on its own while a party waits), so what is new is worked out
+     against what THIS tab last saw of THIS run, kept in sessionStorage: a round that resolved pulses the actions box
+     (a party's only: a solo turn is the player's own press), and every log row beyond the ones already seen fades in
+     from ember. The first look at a run flashes nothing. */
+  function runWatch() {
+    const box = document.querySelector("[data-run-watch]");
+    const log = document.querySelector("[data-log-watch]");
+    const id = (box || log) && (box || log).dataset.runWatch || (log && log.dataset.logWatch);
+    if (!id) return;
+    const key = "run-seen-" + id;
+    let seen = null;
+    try { seen = JSON.parse(sessionStorage.getItem(key) || "null"); } catch (e) { /* storage may be off */ }
+    const turn = box ? Number(box.dataset.turn) : 0;
+    const logs = log ? Number(log.dataset.logCount) : 0;
+    if (seen) {
+      if (box && box.dataset.party === "1" && turn > seen.turn) {
+        box.classList.add("round-flash");
+        box.addEventListener("animationend", () => box.classList.remove("round-flash"), { once: true });
+      }
+      if (log) log.querySelectorAll("[data-log-index]").forEach((row) => {
+        if (Number(row.dataset.logIndex) >= seen.logs) row.classList.add("log-new");
+      });
+    }
+    try { sessionStorage.setItem(key, JSON.stringify({ turn, logs })); } catch (e) { /* ignore */ }
+  }
+  runWatch();
+  document.addEventListener("DOMContentLoaded", runWatch);
+
+  /* --- A turn, once it has been chosen ---------------------------------------
+     form[data-turn-form] holds a run's action buttons. While the choice is waiting on the other runners
+     (`data-waiting` names the action that was pressed, rendered by the server) every button is disabled and the
+     pressed one carries a spinner. Pressing one shows the same at once, before the page answers: the others
+     are disabled a tick later, since a disabled submitter would not be sent. */
+  function turnForms() {
+    const spin = (btn) => {
+      if (btn.querySelector(".spinner")) return;
+      const s = document.createElement("span");
+      s.className = "spinner";
+      s.setAttribute("aria-hidden", "true");
+      btn.prepend(s);
+    };
+    document.querySelectorAll("form[data-turn-form]").forEach((form) => {
+      if (form.dataset.bound) return;
+      form.dataset.bound = "1";
+      const buttons = () => form.querySelectorAll("button[name=action]");
+      const pending = form.dataset.waiting;
+      if (pending) {
+        buttons().forEach((b) => { b.disabled = true; if (b.value === pending) spin(b); });
+      }
+      form.addEventListener("submit", (e) => {
+        const pressed = e.submitter;
+        if (!pressed || pressed.name !== "action") return;
+        spin(pressed);
+        setTimeout(() => buttons().forEach((b) => { if (b !== pressed) b.disabled = true; }), 0);
+      });
+    });
+  }
+  turnForms();
+  document.addEventListener("DOMContentLoaded", turnForms);
+
+  /* --- The party panel, kept current ---------------------------------------
+     [data-party-poll="url"] asks the server every five seconds who is in, and swaps the HTML of each
+     [data-party-live] for what it answers (the member lines are drawn on the server, so the wording is
+     the server's). The owner's purpose buttons ([data-party-gate]) are live only while somebody could go
+     in, and the "nobody yet" line ([data-party-hint]) shows while not. When the party is gone or has
+     started, or the person's role in it changed, the whole screen is different: reload.
+     Nothing in the panel that is being typed in is touched. */
+  function partyPanels() {
+    document.querySelectorAll("[data-party-poll]").forEach((panel) => {
+      if (panel.dataset.polling) return;
+      panel.dataset.polling = "1";
+      const live = panel.querySelectorAll("[data-party-live]");
+      const tick = async () => {
+        // Not paused while the tab is hidden: a party waits on people who are often in another window.
+        try {
+          const res = await fetch(panel.dataset.partyPoll, { headers: { Accept: "application/json" }, credentials: "same-origin" });
+          const data = await res.json();
+          if (data.state !== "open" || data.role !== panel.dataset.partyRole) return location.reload();
+          live.forEach((el) => { if (el.innerHTML.trim() !== data.html.trim()) el.innerHTML = data.html; });
+          document.querySelectorAll("[data-party-gate]").forEach((b) => { b.disabled = !data.ready; });
+          document.querySelectorAll("[data-party-hint]").forEach((p) => { p.hidden = data.ready; });
+        } catch (e) { /* a missed beat is fine: the next one asks again */ }
+        setTimeout(tick, 5000);
+      };
+      setTimeout(tick, 5000);
+    });
+  }
+  partyPanels();
+  document.addEventListener("DOMContentLoaded", partyPanels);
 
   /* --- A countdown that reloads the page when it ends ----------------------
      <span data-countdown="95">1:35</span> — the value is SECONDS REMAINING,

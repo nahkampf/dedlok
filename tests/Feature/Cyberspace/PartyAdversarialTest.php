@@ -5,19 +5,24 @@ declare(strict_types=1);
 namespace Tests\Feature\Cyberspace;
 
 use App\Chat\Chats;
+use App\Cyberspace\Extractor;
 use App\Cyberspace\Navigator;
 use App\Cyberspace\Party\Parties;
 use App\Cyberspace\Party\PartyRefusal;
+use App\Cyberspace\Party\PartyTurns;
+use App\Cyberspace\Party\ShareMode;
 use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Models\Character;
 use App\Models\Ice;
+use App\Models\Item;
 use App\Models\Notification;
 use App\Models\Run;
 use App\Models\RunParty;
 use App\Models\RunPartyMember;
 use App\Models\System;
+use App\Programs\ProgramKind;
 use App\Stats\Resolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -257,6 +262,10 @@ final class PartyAdversarialTest extends TestCase
         $m = $this->runner();
         $parties->invite($owner, $m->handle);
         $parties->accept($m);
+        // Somebody else is coming, or the owner could not start at all.
+        $other = $this->runner();
+        $parties->invite($owner, $other->handle);
+        $parties->accept($other);
         // The member's deck dies between accepting and the launch.
         $m->forceFill(['grid_x' => 3, 'grid_y' => 3])->save();
 
@@ -273,6 +282,7 @@ final class PartyAdversarialTest extends TestCase
         $this->assertSame(1, Notification::query()->where('user_id', $owner->user_id)->where('title', 'Co-op run member dropped')->where('body', 'like', "%{$handle}%")->count(), 'the owner is told who dropped');
 
         app(RunStarter::class)->end($owner, $owner->fresh()->currentRun, RunEnding::Egress);
+        app(RunStarter::class)->end($other, $other->fresh()->currentRun, RunEnding::Egress);
         $this->assertNull(RunPartyMember::query()->where('character_id', $m->id)->first(), 'the seat goes with the party');
     }
 
@@ -353,6 +363,307 @@ final class PartyAdversarialTest extends TestCase
     public static function seeds(): array
     {
         return array_map(fn (int $i): array => [(string) $i], range(1, 20));
+    }
+
+    // The terms are what the invitation promised ----------------------------------------------------------------------
+    public function test_the_terms_cannot_be_changed_once_somebody_is_invited(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+
+        $this->assertNull($parties->options($owner, ShareMode::Half, ShareMode::Half), 'an empty party may still set its terms');
+        $this->assertNull($parties->invite($owner, $this->runner()->handle));
+
+        $this->assertSame(PartyRefusal::TermsLocked, $parties->options($owner, ShareMode::Full, ShareMode::Full));
+        $party = RunParty::query()->sole();
+        $this->assertSame(ShareMode::Half, $party->share_credits);
+        $this->assertSame(ShareMode::Half, $party->share_extraction);
+    }
+
+    public function test_everybody_goes_in_sharing_the_partys_detection(): void
+    {
+        [$owner, $mates] = $this->launched(2);
+
+        $detected = Run::query()->pluck('detected')->map(fn ($d): bool => (bool) $d)->unique();
+        $this->assertCount(1, $detected, 'the runs of a party start with different detection');
+    }
+
+    public function test_a_flood_can_be_a_co_op_run(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+        $parties->accept($mate);
+
+        $result = $parties->launch($owner, RunPurpose::Denial, null, [], app(RunStarter::class));
+
+        $this->assertTrue($result->succeeded());
+        $this->assertSame(2, Run::query()->where('purpose', RunPurpose::Denial->value)->count());
+    }
+
+    public function test_a_member_at_the_door_gets_the_loadout_screen_and_no_purposes(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+
+        $page = $this->actingAs($mate->user)->get(route('run.setup'))->assertOk();
+
+        $page->assertSee(route('run.party.accept'), false);
+        $page->assertDontSee(route('run.start'), false);
+    }
+
+    public function test_a_member_cannot_bring_two_icebreakers(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+
+        $rows = collect([1, 2])->map(fn () => $this->ownedBy($mate, Item::factory()->program(ProgramKind::Icebreaker, qflops: 1, memory: 1, storage: 1)->create()));
+
+        $this->assertNull($parties->accept($mate, $rows->pluck('id')->all()));
+
+        $this->assertSame([$rows[0]->id], RunPartyMember::query()->where('character_id', $mate->id)->sole()->loadout);
+    }
+
+    public function test_an_idle_party_page_checks_again_by_itself_and_shows_the_clock(): void
+    {
+        [$owner, $mates] = $this->launched(1);
+
+        // Everybody has opened the screen, nobody has chosen: the page must still poll, or the round could never run out.
+        foreach ([$owner, $mates[0]] as $c) {
+            $this->actingAs($c->fresh()->user)->get(route('run.show'));
+        }
+
+        $response = $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk();
+
+        $response->assertHeader('Refresh', '5');
+        $response->assertSee('data-countdown', false);
+
+        $this->travel(PartyTurns::DEADLINE_SECONDS + 1)->seconds();
+        $this->actingAs($owner->fresh()->user)->get(route('run.show'));
+
+        $this->assertSame(1, Run::query()->where('character_id', $owner->id)->value('turn'), 'the default action was not taken');
+    }
+
+    public function test_the_clock_shows_after_a_round_has_resolved_too(): void
+    {
+        [$owner, $mates] = $this->launched(1);
+
+        foreach ([$owner, $mates[0]] as $c) {
+            $this->actingAs($c->fresh()->user)->get(route('run.show'));
+        }
+        $this->act($owner);
+        $this->act($mates[0]);
+
+        $this->assertNotNull(RunParty::query()->sole()->round_started_at, 'the round did not resolve');
+
+        $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('data-countdown', false);
+    }
+
+    public function test_an_invited_runner_sees_join_run_where_the_plan_button_was(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+
+        $this->actingAs($mate->user)->get(route('cyberspace.index'))->assertOk()->assertSee('btn--join', false);
+        $this->actingAs($owner->user)->get(route('cyberspace.index'))->assertOk()->assertDontSee('btn--join', false);
+    }
+
+    public function test_the_party_panel_poll_follows_who_has_accepted(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+
+        $asOwner = fn () => $this->actingAs($owner->fresh()->user)->getJson(route('run.party.status'))->assertOk();
+
+        $asOwner()->assertJson(['state' => 'open', 'role' => 'owner', 'ready' => false])->assertSee($mate->handle);
+
+        $parties->accept($mate);
+
+        $asOwner()->assertJson(['ready' => true]);
+        $this->actingAs($mate->fresh()->user)->getJson(route('run.party.status'))->assertJson(['state' => 'open', 'role' => 'member']);
+
+        $parties->leave($mate);
+        $asOwner()->assertJson(['ready' => false]);
+
+        $parties->leave($owner);
+        $asOwner()->assertJson(['state' => 'gone']);
+    }
+
+    public function test_the_owner_cannot_start_until_somebody_has_accepted(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+
+        $result = $parties->launch($owner, RunPurpose::Extraction, null, [], app(RunStarter::class));
+
+        $this->assertFalse($result->succeeded());
+        $this->assertNull($owner->fresh()->current_run_id);
+
+        $parties->accept($mate);
+
+        $this->assertTrue($parties->launch($owner->fresh(), RunPurpose::Extraction, null, [], app(RunStarter::class))->succeeded());
+    }
+
+    public function test_every_runner_gets_a_run_concluded_message_with_the_split_and_the_log(): void
+    {
+        [$owner, $mates] = $this->launched(2);
+        $everybody = [$owner, ...$mates];
+
+        // A take, divided evenly, and a round so the shared log has something in it.
+        app(Extractor::class)->payCreds($owner->fresh(), 100);
+        foreach ($everybody as $c) {
+            $this->act($c);
+        }
+
+        foreach ($everybody as $c) {
+            app(RunStarter::class)->end($c->fresh(), $c->fresh()->currentRun, RunEnding::Egress);
+        }
+
+        foreach ($everybody as $c) {
+            $note = Notification::query()->where('user_id', $c->user_id)->where('title', 'Run concluded')->sole();
+            $report = $note->details['report'];
+            $this->assertSame('important', $note->priority->value);
+            $this->assertStringContainsString('has concluded', $note->body);
+
+            $flat = collect($report['sections'])->pluck('lines')->flatten()->implode("\n");
+            foreach ($everybody as $other) {
+                $this->assertStringContainsString("[{$other->handle}]", $flat, 'a participant is not named in brackets');
+            }
+            $this->assertStringContainsString('100 ¤', $flat, 'the take is not listed');
+            $this->assertStringContainsString('34 ¤', $flat, 'the owner gets the remainder of an even split of 100');
+            $this->actingAs($c->fresh()->user)->get(route('notifications.index'))->assertOk()
+                ->assertSee('Run concluded')->assertSee('has concluded')->assertSee('Results')->assertSee("[{$owner->handle}]");
+            $page = $this->actingAs($c->fresh()->user)->get(route('notifications.index'))->getContent();
+            $this->assertSame(1, substr_count($page, 'has concluded'), 'the opening sentence is printed more than once');
+            $this->assertNotEmpty($report['log'], 'the log is missing');
+            $this->assertStringContainsString('[', implode("\n", $report['log']), 'the log does not name who did what');
+        }
+    }
+
+    public function test_the_turn_form_says_which_action_is_waiting_on_the_others(): void
+    {
+        [$owner, $mates] = $this->launched(1);
+
+        foreach ([$owner, $mates[0]] as $c) {
+            $this->actingAs($c->fresh()->user)->get(route('run.show'));
+        }
+        $this->actingAs($owner->fresh()->user)->post(route('run.act'), ['action' => 'hold']);
+
+        $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('data-waiting="hold"', false)->assertSee('data-run-watch', false)->assertSee('data-log-index', false)->assertSee('data-party="1"', false);
+        $this->actingAs($mates[0]->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('data-waiting=""', false);
+    }
+
+    public function test_the_owner_sees_each_accepted_members_si_and_loadout(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+        $breaker = $this->ownedBy($mate, Item::factory()->program(ProgramKind::Icebreaker, qflops: 1, memory: 1, storage: 1)->create(['name' => 'Wirecutter']));
+        $parties->accept($mate, [$breaker->id]);
+
+        $this->actingAs($owner->fresh()->user)->getJson(route('run.party.status'))->assertOk()->assertSee('Wirecutter')->assertSee('SI ');
+    }
+
+    public function test_a_member_sees_the_owner_and_everybody_going_with_si_and_loadout(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+        $parties->accept($mate);
+        $breaker = $this->ownedBy($owner, Item::factory()->program(ProgramKind::Icebreaker, qflops: 1, memory: 1, storage: 1)->create(['name' => 'Wirecutter']));
+
+        $script = $this->ownedBy($owner, Item::factory()->program(ProgramKind::Script, qflops: 1, memory: 1, storage: 1, background: true)->create(['name' => 'Smokescreen']));
+
+        $this->actingAs($owner->fresh()->user)->postJson(route('run.party.loadout'), ['icebreaker' => $breaker->id, 'scripts' => [$script->id]])->assertOk();
+
+        $page = $this->actingAs($mate->fresh()->user)->getJson(route('run.party.status'))->assertOk();
+        $page->assertSee($owner->handle)->assertSee('Wirecutter')->assertSee('Smokescreen')->assertSee('Run master');
+    }
+
+    public function test_a_system_that_locks_down_while_planning_closes_the_run_for_everybody(): void
+    {
+        $owner = $this->runner();
+        $parties = new Parties;
+        $parties->open($owner);
+        $mate = $this->runner();
+        $parties->invite($owner, $mate->handle);
+        $parties->accept($mate);
+
+        System::query()->where('address', 'DEADBEEF')->update(['locked_down_until' => now()->addHour()]);
+
+        // The member's panel asks, and is told the party is gone (and the party goes with it).
+        $this->actingAs($mate->fresh()->user)->getJson(route('run.party.status'))->assertJson(['state' => 'gone']);
+        $this->assertSame(0, RunParty::query()->count());
+
+        // The setup screen turns each of them away with a toast, not a page that says it is locked.
+        foreach ([$owner, $mate] as $c) {
+            $this->actingAs($c->fresh()->user)->get(route('run.setup'))
+                ->assertRedirect(route('cyberspace.index'))
+                ->assertSessionHas('toast', 'System locked down while planning, and is no longer available');
+        }
+    }
+
+    public function test_an_older_run_concluded_message_still_opens(): void
+    {
+        $user = $this->runner()->user;
+        Notification::query()->create([
+            'user_id' => $user->id, 'category' => 'cyberspace', 'priority' => 'important', 'title' => 'Run concluded',
+            'body' => 'The co-op run is over.', 'details' => ['report' => ['sections' => [['heading' => 'Outcome', 'lines' => ['x']]], 'log' => ['y']]],
+        ]);
+
+        $this->actingAs($user)->get(route('notifications.index'))->assertOk()->assertSee('The co-op run is over.');
+    }
+
+    public function test_the_runners_left_are_told_who_dropped_out_and_that_they_are_alone(): void
+    {
+        [$owner, $mates] = $this->launched(1);
+
+        app(RunStarter::class)->end($mates[0]->fresh(), $mates[0]->fresh()->currentRun, RunEnding::Egress);
+
+        $log = Run::query()->where('character_id', $owner->id)->value('log');
+        $line = collect($log)->firstWhere('key', 'cyberspace.run.log.dropped_out');
+        $this->assertNotNull($line, 'the runner left inside is not told');
+        $this->assertSame($mates[0]->handle, $line['by']);
+
+        $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk()
+            ->assertSee('Only you remain in the run. Be careful!')->assertSee($mates[0]->handle);
+    }
+
+    public function test_a_party_that_ends_together_does_not_announce_dropouts(): void
+    {
+        [$owner, $mates] = $this->launched(1);
+
+        // A backdoor lands: everybody finishes together.
+        foreach ([$owner, $mates[0]] as $c) {
+            Run::query()->where('character_id', $c->id)->update(['backdoored' => true]);
+        }
+        foreach ([$owner, $mates[0]] as $c) {
+            $this->act($c);
+        }
+
+        $this->assertNull(Run::query()->where('character_id', $owner->id)->get()->pluck('log')->flatten(1)->firstWhere('key', 'cyberspace.run.log.dropped_out'));
     }
 
     /**

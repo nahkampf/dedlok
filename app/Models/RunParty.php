@@ -20,6 +20,9 @@ class RunParty extends Model
             'x' => 'integer',
             'y' => 'integer',
             'started_at' => 'datetime',
+            'loot' => 'array',
+            'owner_loadout' => 'array',
+            'round_started_at' => 'datetime',
             'share_credits' => ShareMode::class,
             'share_extraction' => ShareMode::class,
         ];

@@ -53,7 +53,7 @@ enum RunPurpose: string
     /**
      * Overwhelm it. Nothing is taken: each Flood adds the deck's bandwidth to a pressure meter (`runs.pressure`), the node
      * pushes it back every turn, and a full meter locks the node down. Loud by nature, so the first Flood is noticed and the
-     * ICE wakes. Never a party's.
+     * ICE wakes. A party's too: the meter is the node's, one for all of them (`PartyTurns::denialRound`).
      */
     case Denial = 'denial';
 

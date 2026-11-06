@@ -356,6 +356,9 @@
                 <div class="callout callout--ok callout--flash">{{ session('status') }}</div>
             @endif
 
+            @if (session('toast'))
+                <div data-toast="{{ session('toast') }}" data-toast-level="warn" hidden></div>
+            @endif
             @if (session('error'))
                 <div class="callout callout--crit callout--flash">{{ session('error') }}</div>
             @endif

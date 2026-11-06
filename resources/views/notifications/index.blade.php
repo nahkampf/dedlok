@@ -89,6 +89,8 @@
                             <div class="stack" style="--gap:var(--s-2)">
                                 @php($link = $message->details['link'] ?? null)
                                 @php($at = $link === null ? false : mb_strpos($message->body, $link['word']))
+                                {{-- A co-op report with its address draws its own sentence below (address and grade as the screens draw them). --}}
+                                @if (empty($message->details['report']['address']))
                                 <p style="margin:0">
                                     @if ($at !== false)
                                         {{ mb_substr($message->body, 0, $at) }}<a href="{{ route($link['route']) }}">{{ $link['word'] }}</a>{{ mb_substr($message->body, $at + mb_strlen($link['word'])) }}
@@ -96,6 +98,7 @@
                                         {{ $message->body }}
                                     @endif
                                 </p>
+                                @endif
 
                                 {{-- THE LIST UNDER THE SENTENCE. Snapshotted with the body: a
                                      system named here may have moved by now, and the line still
@@ -106,6 +109,46 @@
                                 {{-- A message a player wrote: who from, in the sender's own handle. Plain text, printed escaped. --}}
                                 @if (! empty($message->details['from']))
                                     <span class="micro" style="color:var(--ink-3)">{{ Text::get('notifications.compose.from', ['handle' => $message->details['from']]) }}</span>
+                                @elseif (! empty($message->details['report']))
+                                    {{-- A co-op run's closing report: the sentence with the address and the grade as the screens draw them,
+                                         then sections of lines and the run's whole log. All the wording was composed when it was sent. --}}
+                                    @php($report = $message->details['report'])
+                                    @php($sentence = preg_split('/(@@ADDRESS@@|@@SYSTEM@@)/', Text::get('notifications.messages.party_run_report', ['address' => '@@ADDRESS@@', 'system' => '@@SYSTEM@@']), -1, PREG_SPLIT_DELIM_CAPTURE))
+                                    @if (! empty($report['address']))
+                                    <p style="margin:0">
+                                        @foreach ($sentence as $piece)
+                                            @if ($piece === '@@ADDRESS@@')
+                                                <x-address :address="$report['address']" />
+                                            @elseif ($piece === '@@SYSTEM@@')
+                                                {{ $report['system'] }} @if (! empty($report['grade']))<span class="tag">{{ Text::get('notifications.details.grade', ['grade' => $report['grade']]) }}</span>@endif
+                                            @else
+                                                {{ $piece }}
+                                            @endif
+                                        @endforeach
+                                    </p>
+                                    @endif
+                                    @foreach (($report['sections'] ?? []) as $section)
+                                        <div class="stack" style="--gap:var(--s-1)">
+                                            <span class="micro" style="color:var(--ink-3)">{{ $section['heading'] }}</span>
+                                            <div class="prose micro" style="color:var(--ink-2)">
+                                                <ul>
+                                                    @foreach ($section['lines'] as $line)
+                                                        <li>{{ $line }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                    <div class="stack" style="--gap:var(--s-1)">
+                                        <span class="micro" style="color:var(--ink-3)">{{ Text::get('notifications.report.log') }}</span>
+                                        <div class="prose micro" style="color:var(--ink-2)">
+                                            <ul>
+                                                @foreach (($report['log'] ?? []) as $line)
+                                                    <li>{{ $line }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    </div>
                                 @elseif (! empty($message->details['targets']))
                                     {{-- An accepted job's systems: where to go. The address is the button that copies it. --}}
                                     <div class="prose micro" style="color:var(--ink-2)">

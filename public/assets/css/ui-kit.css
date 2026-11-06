@@ -799,6 +799,16 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
 }
 .btn--go:active { background-color: color-mix(in srgb, var(--ok) 88%, #000); }
 
+/* Join a run that somebody else has called. Teal, so it cannot be mistaken for the go button's "begin" or the warn
+   button's "begin blind": it is an answer to an invitation. Same rationing as go: one filled button per screen. */
+.btn--join {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  color: var(--ink-on-ok);
+  font-weight: 650;
+}
+.btn--join:active { background-color: color-mix(in srgb, var(--cyan) 88%, #000); }
+
 .btn--ghost {
   background: transparent;
   border-color: transparent;
@@ -858,6 +868,7 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
    there to reflect off. */
 .btn--go      { --sheen: rgba(111, 211, 160, 0.6); }
 .btn--warn    { --sheen: rgba(232, 184, 75, 0.6); }
+.btn--join    { --sheen: rgba(95, 198, 206, 0.6); }
 .btn--danger  { --sheen: rgba(255, 236, 228, 0.5); }
 .btn--primary { --sheen: rgba(232, 230, 225, 0.55); }
 .btn--ghost,
@@ -915,6 +926,7 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
 .btn--danger.cut:hover { --cut-line: var(--ember); --cut-fill: var(--ember); }
 .btn--warn.cut { --cut-line: var(--warn); --cut-fill: var(--warn); background: transparent; }
 .btn--go.cut { --cut-line: var(--ok); --cut-fill: var(--ok); background: transparent; }
+.btn--join.cut { --cut-line: var(--cyan); --cut-fill: var(--cyan); background: transparent; }
 
 /* FILLED BUTTONS INVERT ON HOVER.
 
@@ -931,10 +943,11 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
    behind it. */
 .btn--primary:hover,
 .btn--go:hover,
+.btn--join:hover,
 .btn--warn:hover {
   background-color: var(--bg-0);
 }
-.btn--primary, .btn--go, .btn--warn {
+.btn--primary, .btn--go, .btn--warn, .btn--join {
   transition:
     background var(--t-invert) var(--ease),
     border-color var(--t-invert) var(--ease),
@@ -951,10 +964,11 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
 .btn.cut { --btn-fade: var(--t-fast); }
 .btn.cut::before,
 .btn.cut::after { transition: background var(--btn-fade) var(--ease); }
-.btn--primary.cut, .btn--go.cut, .btn--warn.cut { --btn-fade: var(--t-invert); }
+.btn--primary.cut, .btn--go.cut, .btn--warn.cut, .btn--join.cut { --btn-fade: var(--t-invert); }
 .btn--primary:hover { color: var(--ink-0); border-color: var(--ink-0); }
 .btn--go:hover { color: var(--ok); border-color: var(--ok); }
 .btn--warn:hover { color: var(--warn); border-color: var(--warn); }
+.btn--join:hover { color: var(--cyan); border-color: var(--cyan); }
 
 /* The notched versions say the same thing through --cut-fill, since .cut paints
    the face with a pseudo-element and the element's own background is not what
@@ -962,6 +976,7 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
 .btn--primary.cut:hover { --cut-fill: var(--bg-0); --cut-line: var(--ink-0); color: var(--ink-0); }
 .btn--go.cut:hover      { --cut-fill: var(--bg-0); --cut-line: var(--ok);    color: var(--ok); }
 .btn--warn.cut:hover    { --cut-fill: var(--bg-0); --cut-line: var(--warn);  color: var(--warn); }
+.btn--join.cut:hover    { --cut-fill: var(--bg-0); --cut-line: var(--cyan);  color: var(--cyan); }
 
 .btn:disabled,
 .btn[aria-disabled="true"] {
@@ -2027,6 +2042,17 @@ a.tab { text-decoration: none; }
   animation: spin 700ms linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* A run's news arriving. The actions box pulses once, brighter and back, when a round has resolved since the page was last
+   seen; a log row that has just appeared starts on an ember wash and fades to nothing. Only the middle of the pulse is
+   written, so it starts and ends on whatever the box already is. */
+@keyframes round-flash { 35% { background-color: color-mix(in srgb, var(--bg-2) 82%, var(--ink-0)); } }
+.panel.round-flash { animation: round-flash 420ms var(--ease) 1; }
+@keyframes log-new { from { background-color: color-mix(in srgb, var(--ember) 38%, transparent); } to { background-color: transparent; } }
+.log-new { animation: log-new 1600ms var(--ease) 1 both; }
+@media (prefers-reduced-motion: reduce) { .panel.round-flash, .log-new { animation: none; } }
+
+/* A spinner inside a button: the one that was pressed while the turn is waiting on the others. */
+.btn .spinner { display: inline-block; vertical-align: -2px; width: 12px; height: 12px; margin-right: var(--s-2); }
 
 .skeleton {
   background: linear-gradient(90deg, var(--bg-2) 0%, var(--bg-3) 50%, var(--bg-2) 100%);

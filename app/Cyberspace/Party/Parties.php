@@ -18,6 +18,8 @@ use App\Models\RunPartyMember;
 use App\Models\System;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Programs\ProgramKind;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -75,15 +77,23 @@ final class Parties
 
     public function options(Character $owner, ShareMode $credits, ShareMode $extraction): ?PartyRefusal
     {
-        $party = RunParty::query()->where('owner_character_id', $owner->getKey())->first();
+        // The same lock `invite` takes, so an invitation cannot slip in beside a change of terms.
+        return DB::transaction(function () use ($owner, $credits, $extraction): ?PartyRefusal {
+            $party = RunParty::query()->where('owner_character_id', $owner->getKey())->lockForUpdate()->first();
 
-        if ($party === null) {
-            return PartyRefusal::NoParty;
-        }
+            if ($party === null) {
+                return PartyRefusal::NoParty;
+            }
 
-        $party->update(['share_credits' => $credits, 'share_extraction' => $extraction]);
+            // The terms are what an invitation promised: once anyone holds one, they cannot be swapped for worse.
+            if ($party->members()->exists()) {
+                return PartyRefusal::TermsLocked;
+            }
 
-        return null;
+            $party->update(['share_credits' => $credits, 'share_extraction' => $extraction]);
+
+            return null;
+        });
     }
 
     public function invite(Character $owner, string $handle): ?PartyRefusal
@@ -155,13 +165,32 @@ final class Parties
             }
 
             // Run-only software the member actually holds, as row ids. What may START is ProgramRunner's, at launch.
-            $mine = $loadout === null ? ($member->loadout ?? []) : InventoryItem::query()
-                ->where('character_id', $character->getKey())->whereIn('id', $loadout)->pluck('id')->all();
+            $mine = $loadout === null ? ($member->loadout ?? []) : $this->oneIcebreaker(InventoryItem::query()
+                ->where('character_id', $character->getKey())->whereIn('id', $loadout)->with('item.program')->get());
 
             $member->update(['joined_at' => $member->joined_at ?? now(), 'loadout' => $mine]);
 
             return null;
         });
+    }
+
+    /**
+     * Only one icebreaker may go in, as on the owner's own form: the first of any more is kept.
+     *
+     * @param  Collection<int, InventoryItem>  $rows
+     * @return list<int>
+     */
+    private function oneIcebreaker($rows): array
+    {
+        $breaker = false;
+
+        return $rows->filter(function (InventoryItem $row) use (&$breaker): bool {
+            if ($row->item?->program?->kind !== ProgramKind::Icebreaker) {
+                return true;
+            }
+
+            return $breaker ? false : ($breaker = true);
+        })->pluck('id')->map(fn ($id): int => (int) $id)->values()->all();
     }
 
     /**
@@ -257,6 +286,25 @@ final class Parties
     }
 
     /**
+     * What stops each joined member going in with the party, by character id; a member who could go is absent.
+     *
+     * @return array<int, string>
+     */
+    public function obstacles(RunParty $party, RunStarter $starter): array
+    {
+        return $party->members->mapWithKeys(fn (RunPartyMember $m): array => [
+            $m->character_id => $m->dropped_at !== null ? null : ($m->character === null ? null : $this->obstacle($m->character, $party, $starter)),
+        ])->filter()->all();
+    }
+
+    /** Has anybody accepted, and could they go in right now? The same test the launch makes of each member. */
+    public function someoneIsReady(RunParty $party, RunStarter $starter): bool
+    {
+        return $party->members()->whereNotNull('joined_at')->whereNull('dropped_at')->with('character')->get()
+            ->contains(fn (RunPartyMember $m): bool => $m->character !== null && $this->obstacle($m->character, $party, $starter) === null);
+    }
+
+    /**
      * THE OWNER BEGINS IT, and every joined member goes in at once with the loadout they chose at the door.
      *
      * Each runner gets their OWN run (own approach roll, own trace, own loadout) tied together by `runs.run_party_id`.
@@ -276,6 +324,11 @@ final class Parties
 
         if ($here === null || $here->x !== $party->x || $here->y !== $party->y) {
             return RunResult::refused(RunRefusal::NothingThere);
+        }
+
+        // A party was called, so somebody has to be coming: the owner cannot go in alone beside an empty one (disband it to).
+        if (! $this->someoneIsReady($party, $starter)) {
+            return RunResult::refused(RunRefusal::NobodyReady);
         }
 
         $result = $starter->start($owner, $purpose, $kind, $ownerLoadout, $party->getKey(), $ownerSuspend);
@@ -313,6 +366,10 @@ final class Parties
             }
         }
 
+        // Detection is the party's: everybody goes in seeing the same state, not each their own approach roll until round one.
+        $partyTurns = app(PartyTurns::class);
+        $partyTurns->syncShared($partyTurns::liveRuns($party->getKey()));
+
         // Everybody who went in is told who did not, and why.
         foreach ($left as $handle => $reason) {
             foreach ($in as $participant) {
@@ -329,6 +386,7 @@ final class Parties
         $live = Run::query()->where('run_party_id', $run->run_party_id)->whereNull('ended_at')->exists();
 
         if (! $live) {
+            RunReport::send((int) $run->run_party_id);
             RunParty::query()->whereKey($run->run_party_id)->delete();
         }
     }

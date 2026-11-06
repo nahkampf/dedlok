@@ -1,3 +1,9 @@
+## 0.89.0 (2026-11-06)
+
+- Lots of work on co-op; better ux, some gates put in place to stop things that can break a coop run etc. It seems to work much better and smoothly now.
+- Things that affect HP and SI damage from ICE were labelled "ICE damage" which was easy to mistake as ICE SI damage. This has been clarified now.
+- Flood had the help text "No co-op" which is exactly wrong, you almost always need coop to pull it off.
+
 ## 0.88.0 (2026-11-05)
 
 - Achievements you haven't earned are greyed out

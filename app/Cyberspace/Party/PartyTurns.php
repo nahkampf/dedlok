@@ -17,6 +17,7 @@ use App\Models\RunParty;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
 use App\Programs\ProgramKind;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -52,6 +53,26 @@ final class PartyTurns
     public static function shared(Run $run): bool
     {
         return $run->run_party_id !== null && self::liveRuns($run->run_party_id)->count() > 1;
+    }
+
+    /**
+     * Seconds until the round resolves by itself (an absent runner's default action is taken), or null while the clock
+     * has not started: the first round waits for every runner to have opened the screen.
+     */
+    public static function secondsLeft(int $partyId): ?int
+    {
+        $party = RunParty::query()->find($partyId);
+        $runs = self::liveRuns($partyId);
+
+        if ($party === null || $runs->isEmpty()) {
+            return null;
+        }
+
+        // `max()` hands back the raw column (a string on MySQL), not a date.
+        $from = $party->round_started_at
+            ?? ($runs->contains(fn (Run $r): bool => $r->party_seen_at === null) ? null : $runs->max('party_seen_at'));
+
+        return $from === null ? null : max(0, self::DEADLINE_SECONDS - (int) Carbon::parse($from)->diffInSeconds(now()));
     }
 
     /** Record a runner's choice, then resolve the round if it is complete or overdue. */
@@ -147,7 +168,7 @@ final class PartyTurns
                 $character = Character::query()->find($run->character_id);
 
                 if ($character !== null) {
-                    app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Completed);
+                    app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Completed, announce: false);
                     (new Notifier)->send($character, Category::Cyberspace, 'party_run_ended', ['ending' => RunEnding::Completed->message()]);
                 }
             }
@@ -191,7 +212,7 @@ final class PartyTurns
                     $character = Character::query()->find($run->character_id);
 
                     if ($character !== null) {
-                        app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Egress);
+                        app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Egress, announce: false);
                         (new Notifier)->send($character, Category::Cyberspace, 'party_run_ended', ['ending' => RunEnding::Egress->message()]);
                     }
                 }
@@ -214,7 +235,7 @@ final class PartyTurns
                 app(MissionLedger::class)->recordAgainst($character, $system, MissionAction::Denial);
             }
 
-            app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Completed);
+            app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Completed, announce: false);
             (new Notifier)->send($character, Category::Cyberspace, 'party_run_ended', ['ending' => RunEnding::Completed->message()]);
         }
 
@@ -316,7 +337,7 @@ final class PartyTurns
      *
      * @param  Collection<int, Run>  $runs
      */
-    private function syncShared(Collection $runs, ?Run $from = null): void
+    public function syncShared(Collection $runs, ?Run $from = null): void
     {
         $runs = $runs->map(fn (Run $r): Run => $r->fresh() ?? $r)->filter(fn (Run $r): bool => $r->isLive());
 

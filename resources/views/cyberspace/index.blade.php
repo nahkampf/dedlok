@@ -371,8 +371,8 @@
                              one next to it. --}}
                         <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
                             @if ($canRun)
-                                <a class="btn {{ $scan?->isComplete() ? 'btn--go' : 'btn--warn' }} cut" href="{{ route('run.setup') }}">
-                                    {{ Text::get('cyberspace.run.setup.open') }}
+                                <a class="btn {{ $invitedHere ? 'btn--join' : ($scan?->isComplete() ? 'btn--go' : 'btn--warn') }} cut" href="{{ route('run.setup') }}">
+                                    {{ Text::get($invitedHere ? 'cyberspace.run.setup.join' : 'cyberspace.run.setup.open') }}
                                 </a>
                             @else
                                 <p class="micro" style="color:var(--ink-2);margin:0">

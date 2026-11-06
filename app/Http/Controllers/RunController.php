@@ -96,6 +96,14 @@ class RunController extends Controller
             return redirect()->route('cyberspace.index');
         }
 
+        // The system shut while the run was being planned: nothing to plan any more. The party forming here goes (or the
+        // runner's invitation to it), and the map says why with a toast.
+        if ($target->isLockedDown()) {
+            app(Parties::class)->leave($character);
+
+            return redirect()->route('cyberspace.index')->with('toast', Text::get('cyberspace.run.refused.locked_while_planning'));
+        }
+
         $deck = $character->equippedDeck;
         $totals = $deck === null ? null : DeckTotals::forCharacter($character, $deck, $resolver);
 
@@ -139,6 +147,11 @@ class RunController extends Controller
         $parties = app(Parties::class);
         $partyHere = $parties->partyOf($character)?->load('members.character', 'owner');
 
+        // What the owner's form shows ticked is what the others are told is coming, until they change it.
+        if ($partyHere !== null && $partyHere->owner_character_id === $character->id && $partyHere->started_at === null) {
+            $partyHere->forceFill(['owner_loadout' => $ticked->pluck('id')->all()])->save();
+        }
+
         return view('run.setup', [
             'assess' => $assess,
             // What the system's owner makes of you, on the screen where the
@@ -158,7 +171,7 @@ class RunController extends Controller
             'party' => $partyHere,
             'coopSlots' => $character->coopSlots(),
             // Who of the party could go in if the owner pressed Start now, and what stops the rest: {character id: reason}.
-            'obstacles' => $partyHere === null ? [] : $partyHere->members->mapWithKeys(fn ($m): array => [$m->character_id => $m->dropped_at !== null ? null : ($m->character === null ? null : $parties->obstacle($m->character, $partyHere, $this->runs))])->filter()->all(),
+            'obstacles' => $partyHere === null ? [] : $parties->obstacles($partyHere, $this->runs),
             // What the player has read of each system the trace has to come through, by address. A
             // relay is their own backdoor, but a backdoor says nothing about what is on the machine.
             'hopScans' => SystemScan::query()
@@ -180,7 +193,10 @@ class RunController extends Controller
             // The last loadout that went in, ticked again. Remembered as ITEMS,
             // one row each, because a row id does not survive its stack being
             // split and merged back.
-            'chosen' => $ticked->pluck('id')->all(),
+            // A member who has already accepted sees their own choice ticked.
+            'chosen' => $partyHere?->members->firstWhere('character_id', $character->id)?->joined_at !== null && $partyHere !== null
+                ? ($partyHere->members->firstWhere('character_id', $character->id)->loadout ?? [])
+                : $ticked->pluck('id')->all(),
             'totals' => $totals,
             // Why each run-only program would not start beside what is ALREADY running, by row id (the runner's own
             // question, asked as a run would ask it); absent means it would.
@@ -400,8 +416,10 @@ class RunController extends Controller
         // Waiting on the others: the page checks again in a few seconds, since the clock is whoever asks.
         // Anybody's choice counts: the runner who has not chosen yet must see the round move too.
         $waiting = $run->pending_action !== null && PartyTurns::shared($run);
-        $refresh = $run->pull_at !== null
-            || ($run->run_party_id !== null && PartyTurns::shared($run) && PartyTurns::liveRuns((int) $run->run_party_id)->contains(fn (Run $r): bool => $r->pending_action !== null));
+        // A party's page checks again on its own whether or not anybody has chosen: the clock is whoever asks, and a
+        // round nobody touches must still run out.
+        $shared = $run->run_party_id !== null && PartyTurns::shared($run);
+        $refresh = $run->pull_at !== null || $shared;
 
         $system = $run->system();
 
@@ -410,6 +428,10 @@ class RunController extends Controller
             'character' => $character,
             'run' => $run,
             'waiting' => $waiting,
+            'shared' => $shared,
+            // The others have all dropped out: this runner is the last of a party that was more than one.
+            'alone' => $run->run_party_id !== null && ! $shared && Run::query()->where('run_party_id', $run->run_party_id)->count() > 1,
+            'roundSeconds' => $shared ? PartyTurns::secondsLeft((int) $run->run_party_id) : null,
             // Install Leecher is offered only with a Leecher in the stash and a fortress to feed.
             'fortresses' => $character->inventory()->loose()->whereHas('item.program', static fn ($q) => $q->where('kind', ProgramKind::Leecher->value))->exists()
                 ? System::query()->where('owner_character_id', $character->id)->orderBy('id')->get()

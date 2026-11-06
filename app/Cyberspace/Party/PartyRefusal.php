@@ -23,6 +23,8 @@ enum PartyRefusal: string
     case NotAtTheDoor = 'not_at_the_door';
     case NotTheOwner = 'not_the_owner';
     case Started = 'started';
+    /** Somebody has been invited under these terms: they are what the invitation promised, and stay. */
+    case TermsLocked = 'terms_locked';
 
     public function message(): string
     {
