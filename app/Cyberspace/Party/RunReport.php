@@ -8,6 +8,7 @@ use App\Cyberspace\RunEnding;
 use App\Models\Character;
 use App\Models\Run;
 use App\Models\RunParty;
+use App\Models\System;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
 use App\Support\Text;
@@ -40,26 +41,46 @@ final class RunReport
         $order = $runs->pluck('character_id')->sortBy(fn ($id): int => (int) $id === (int) $owner ? 0 : 1)->values();
         $handle = fn (int $id): string => '['.($characters[$id]->handle ?? '?').']';
 
+        $system = System::query()->where('address', $runs->first()->address)->first();
+        $name = $system?->displayName() ?? '';
+        $grade = (int) ($system?->grade ?? 0);
+        $loot = $party->loot ?? [];
+
+        // Done is done: a run that finished its job, or one that came away with something.
+        $done = $runs->contains(fn (Run $r): bool => $r->ending === RunEnding::Completed->value) || $loot !== [];
+
         $details = ['report' => [
+            'address' => (string) $runs->first()->address,
+            'system' => $name,
+            'grade' => $grade,
             'sections' => [
-                ['heading' => Text::get('notifications.report.outcome'), 'lines' => $runs->map(fn (Run $r): string => $handle((int) $r->character_id).' '.self::ending($r))->all()],
-                ['heading' => Text::get('notifications.report.participants'), 'lines' => $order->map(fn ($id): string => $handle((int) $id))->all()],
-                ['heading' => Text::get('notifications.report.split'), 'lines' => [Text::get('cyberspace.party.terms', ['credits' => $party->share_credits->label(), 'extraction' => $party->share_extraction->label()])]],
-                ['heading' => Text::get('notifications.report.looted'), 'lines' => self::looted($party->loot ?? [])],
-                ['heading' => Text::get('notifications.report.dealt'), 'lines' => self::dealt($party->loot ?? [], $order, $handle)],
+                ['heading' => Text::get('notifications.report.outcome'), 'lines' => [Text::get($done ? 'notifications.report.successful' : 'notifications.report.failed')]],
+                ['heading' => Text::get('notifications.report.participants'), 'lines' => $order->map(fn ($id): string => $handle((int) $id).' '.self::ending($runs->firstWhere('character_id', $id)))->all()],
+                ['heading' => Text::get('notifications.report.results'), 'lines' => [
+                    Text::get('notifications.report.split_files', ['mode' => $party->share_extraction->label()]),
+                    Text::get('notifications.report.split_credits', ['mode' => $party->share_credits->label()]),
+                    Text::get('notifications.report.total', ['loot' => implode(', ', self::looted($loot))]),
+                    ...self::dealt($loot, $order, $handle),
+                ]],
             ],
             'log' => self::log($runs),
         ]];
 
+        $replace = ['address' => $details['report']['address'], 'system' => $name.($grade > 0 ? ', '.Text::get('notifications.details.grade', ['grade' => $grade]) : '')];
+
         foreach ($order as $id) {
             if (($who = $characters->get($id)) !== null) {
-                (new Notifier)->send($who, Category::Cyberspace, 'party_run_report', [], $details);
+                (new Notifier)->send($who, Category::Cyberspace, 'party_run_report', $replace, $details);
             }
         }
     }
 
-    private static function ending(Run $run): string
+    private static function ending(?Run $run): string
     {
+        if ($run === null) {
+            return '';
+        }
+
         $ending = $run->ending === null ? null : RunEnding::tryFrom((string) $run->ending);
 
         return $ending?->message() ?? '';
@@ -124,7 +145,7 @@ final class RunReport
                 $parts[] = $quantity > 1 ? "{$label} × {$quantity}" : (string) $label;
             }
 
-            return $handle((int) $id).' '.($parts === [] ? '—' : implode(', ', $parts));
+            return $handle((int) $id).': '.($parts === [] ? '—' : implode(', ', $parts));
         })->all();
     }
 

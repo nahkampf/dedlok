@@ -541,6 +541,7 @@ final class PartyAdversarialTest extends TestCase
             $note = Notification::query()->where('user_id', $c->user_id)->where('title', 'Run concluded')->sole();
             $report = $note->details['report'];
             $this->assertSame('important', $note->priority->value);
+            $this->assertStringContainsString('has concluded', $note->body);
 
             $flat = collect($report['sections'])->pluck('lines')->flatten()->implode("\n");
             foreach ($everybody as $other) {
@@ -549,7 +550,7 @@ final class PartyAdversarialTest extends TestCase
             $this->assertStringContainsString('100 ¤', $flat, 'the take is not listed');
             $this->assertStringContainsString('34 ¤', $flat, 'the owner gets the remainder of an even split of 100');
             $this->actingAs($c->fresh()->user)->get(route('notifications.index'))->assertOk()
-                ->assertSee('Run concluded')->assertSee('Payout split')->assertSee("[{$owner->handle}]");
+                ->assertSee('Run concluded')->assertSee('has concluded')->assertSee('Results')->assertSee("[{$owner->handle}]");
             $this->assertNotEmpty($report['log'], 'the log is missing');
             $this->assertStringContainsString('[', implode("\n", $report['log']), 'the log does not name who did what');
         }

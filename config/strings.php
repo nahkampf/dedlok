@@ -893,13 +893,16 @@ return [
             'many' => ':count messages deleted.',
         ],
         // Pieces of a line in a message's list (the siphon report's).
-        // The "Run concluded" message's section headings.
+        // The "Run concluded" message's section headings and lines.
         'report' => [
             'outcome' => 'Outcome',
+            'successful' => 'Successful',
+            'failed' => 'Failed',
             'participants' => 'Participants',
-            'split' => 'Payout split',
-            'looted' => 'Looted from the system',
-            'dealt' => 'Who got what',
+            'results' => 'Results',
+            'split_files' => 'Files split: :mode',
+            'split_credits' => 'Credits split: :mode',
+            'total' => 'Total loot: :loot',
             'nothing' => 'Nothing',
             'log' => 'Run log',
         ],
@@ -1011,7 +1014,7 @@ return [
             'party_invite' => ':owner has invited you to a co-op run. Stand at the same system and accept from the map.',
             'party_started' => ':owner has started the co-op run you joined. You are in it.',
             'party_run_ended' => 'Your co-op run is over: :ending',
-            'party_run_report' => 'The co-op run is over. How it ended, the split and the log are below.',
+            'party_run_report' => 'The co-op run on :address (:system) has concluded.',
             'leech_found' => 'Your Leecher on :system was found and removed. Its share has stopped.',
             'fortress_alarm' => 'Somebody has started an intrusion run against :system.',
             'fortress_core' => 'The intruder is at the core of :system.',
