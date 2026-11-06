@@ -408,14 +408,14 @@
                          `crit` for the ICE hitting you (also what a line from before the colour was kept
                          says), `ok` for your icebreaker, none for the ICE failing. --}}
                     {{-- A party's log is one account told in the third person: "ICE I lands a code payload on Skavian". --}}
-                    @php($told = isset($line['by'], $line['key']) ? Text::get('cyberspace.run.party_log.'.substr($line['key'], strlen('cyberspace.run.log.')), ($line['replace'] ?? []) + ['player' => $line['by'], 'tag' => $line['tag'] ?? '']) : null)
+                    @php($told = isset($line['by'], $line['key']) ? Text::get('cyberspace.run.party_log.'.substr($line['key'], strlen('cyberspace.run.log.')), ($line['replace'] ?? []) + ['player' => '['.$line['by'].']', 'tag' => $line['tag'] ?? '']) : null)
                     @php($told = $told !== null && ! str_starts_with($told, 'cyberspace.run.party_log.') ? $told : null)
                     <span>
                         @if ($told !== null)
                             {{ $told }}
                         @else
                             @if (! empty($line['by']))
-                                <b>{{ $line['by'] }}</b>
+                                <b>[{{ $line['by'] }}]</b>
                             @endif
                             @if (! empty($line['before']))
                                 {{ $line['before'] }}
