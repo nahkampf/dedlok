@@ -284,6 +284,9 @@
     @if ($waiting)
         <p class="micro" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.waiting') }}</p>
     @endif
+    @if ($alone)
+        <p class="micro" style="margin:0 0 var(--s-2);color:var(--warn)">{{ Text::get('cyberspace.run.alone') }}</p>
+    @endif
     @if ($roundSeconds !== null)
         <p class="micro num" style="margin:0 0 var(--s-2);color:var(--ink-2)">{{ Text::get('cyberspace.run.round_timer') }} <span data-countdown="{{ $roundSeconds }}">{{ $roundSeconds }}</span></p>
     @endif

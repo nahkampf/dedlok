@@ -19,6 +19,7 @@ use App\Programs\ProgramRunner;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
 use App\Stats\Resolver;
+use App\Support\Text;
 use App\Support\Trace;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Config;
@@ -256,12 +257,13 @@ final readonly class RunStarter
      * button and the press that follows it are minutes apart, and a run can end
      * under a player in between.
      */
-    public function end(Character $character, Run $run, RunEnding $ending): RunResult
+    /** @param  bool  $announce  Tell the party's other runners this one dropped out. False when the whole party ends together. */
+    public function end(Character $character, Run $run, RunEnding $ending, bool $announce = true): RunResult
     {
-        return Trace::scope($character, 'run.end', fn () => $this->endTraced($character, $run, $ending), ['ending' => $ending->value, 'run' => Trace::describe($run)]);
+        return Trace::scope($character, 'run.end', fn () => $this->endTraced($character, $run, $ending, $announce), ['ending' => $ending->value, 'run' => Trace::describe($run)]);
     }
 
-    private function endTraced(Character $character, Run $run, RunEnding $ending): RunResult
+    private function endTraced(Character $character, Run $run, RunEnding $ending, bool $announce = true): RunResult
     {
         if (! $run->isLive()) {
             return RunResult::ended($run);
@@ -338,10 +340,31 @@ final readonly class RunStarter
 
         // The last runner out closes the party's books: nobody is still "in a party" for a run that is over.
         if ($run->run_party_id !== null) {
+            if ($announce) {
+                $this->tellThePartyTheyDroppedOut($character, $run);
+            }
+
             Parties::runEnded($run);
         }
 
         return RunResult::ended($run);
+    }
+
+    /** One line in the log of every runner still inside: this one is gone. Nothing if nobody is left to read it. */
+    private function tellThePartyTheyDroppedOut(Character $character, Run $run): void
+    {
+        $line = [
+            'by' => (string) $character->handle,
+            'key' => 'cyberspace.run.log.dropped_out',
+            'text' => Text::get('cyberspace.run.log.dropped_out'),
+            'tone' => 'warn',
+            'turn' => (int) $run->turn,
+            'replace' => [],
+        ];
+
+        foreach (Run::query()->where('run_party_id', $run->run_party_id)->whereKeyNot($run->getKey())->live()->get() as $mate) {
+            $mate->forceFill(['log' => [...($mate->log ?? []), $line]])->save();
+        }
     }
 
     /**

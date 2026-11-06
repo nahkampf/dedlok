@@ -1764,6 +1764,7 @@ return [
             'evasion_result' => 'Evasion chance for egress',
             'waiting' => 'Waiting for all runners to take action',
             'round_timer' => 'Default action in',
+            'alone' => 'Only you remain in the run. Be careful!',
             // A party's log, told in the third person for everybody (same keys as `log`); a key missing here falls back to
             // the runner's own line with their handle in front. `:tag` is the ICE or the icebreaker named on the line.
             'party_log' => [
@@ -1814,6 +1815,7 @@ return [
             | scan fact for free.
             */
             'log' => [
+                'dropped_out' => 'dropped out.',
                 // "Your" + a green tag naming the icebreaker + this: the tag sits inside the sentence.
                 'attack_before' => 'Your',
                 'attack' => 'finds an intrusion vector and pushes a disruptive payload through, causing :damage system integrity loss.',

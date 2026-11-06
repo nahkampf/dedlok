@@ -168,7 +168,7 @@ final class PartyTurns
                 $character = Character::query()->find($run->character_id);
 
                 if ($character !== null) {
-                    app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Completed);
+                    app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Completed, announce: false);
                     (new Notifier)->send($character, Category::Cyberspace, 'party_run_ended', ['ending' => RunEnding::Completed->message()]);
                 }
             }
@@ -212,7 +212,7 @@ final class PartyTurns
                     $character = Character::query()->find($run->character_id);
 
                     if ($character !== null) {
-                        app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Egress);
+                        app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Egress, announce: false);
                         (new Notifier)->send($character, Category::Cyberspace, 'party_run_ended', ['ending' => RunEnding::Egress->message()]);
                     }
                 }
@@ -235,7 +235,7 @@ final class PartyTurns
                 app(MissionLedger::class)->recordAgainst($character, $system, MissionAction::Denial);
             }
 
-            app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Completed);
+            app(RunStarter::class)->end($character, $run->refresh(), RunEnding::Completed, announce: false);
             (new Notifier)->send($character, Category::Cyberspace, 'party_run_ended', ['ending' => RunEnding::Completed->message()]);
         }
 

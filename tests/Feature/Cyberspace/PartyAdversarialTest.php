@@ -636,6 +636,36 @@ final class PartyAdversarialTest extends TestCase
         $this->actingAs($user)->get(route('notifications.index'))->assertOk()->assertSee('The co-op run is over.');
     }
 
+    public function test_the_runners_left_are_told_who_dropped_out_and_that_they_are_alone(): void
+    {
+        [$owner, $mates] = $this->launched(1);
+
+        app(RunStarter::class)->end($mates[0]->fresh(), $mates[0]->fresh()->currentRun, RunEnding::Egress);
+
+        $log = Run::query()->where('character_id', $owner->id)->value('log');
+        $line = collect($log)->firstWhere('key', 'cyberspace.run.log.dropped_out');
+        $this->assertNotNull($line, 'the runner left inside is not told');
+        $this->assertSame($mates[0]->handle, $line['by']);
+
+        $this->actingAs($owner->fresh()->user)->get(route('run.show'))->assertOk()
+            ->assertSee('Only you remain in the run. Be careful!')->assertSee($mates[0]->handle);
+    }
+
+    public function test_a_party_that_ends_together_does_not_announce_dropouts(): void
+    {
+        [$owner, $mates] = $this->launched(1);
+
+        // A backdoor lands: everybody finishes together.
+        foreach ([$owner, $mates[0]] as $c) {
+            Run::query()->where('character_id', $c->id)->update(['backdoored' => true]);
+        }
+        foreach ([$owner, $mates[0]] as $c) {
+            $this->act($c);
+        }
+
+        $this->assertNull(Run::query()->where('character_id', $owner->id)->get()->pluck('log')->flatten(1)->firstWhere('key', 'cyberspace.run.log.dropped_out'));
+    }
+
     /**
      * RANDOM OPERATIONS against a party of three, and after each the structural invariants: nobody pointing at nothing,
      * nobody live and unpointed, no run of a party that is gone while two or more are still inside, and the clock
