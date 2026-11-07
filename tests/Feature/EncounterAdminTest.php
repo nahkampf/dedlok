@@ -107,12 +107,43 @@ final class EncounterAdminTest extends TestCase
             $this->assertFileExists($cyber);
             $this->assertFileDoesNotExist($physical);
 
-            $this->actingAs($this->admin)->followingRedirects()->get(route('admin.encounters.edit', $encounter))->assertSee('name="image"', false);
+            $this->actingAs($this->admin)->followingRedirects()->get(route('admin.encounters.edit', $encounter))
+                ->assertSee('name="image"', false)->assertSee('name="remove_image"', false);
+
+            $this->actingAs($this->admin)->put(route('admin.encounters.update', $encounter), $update + ['image_credit' => 'An Artist', 'image_link' => 'https://example.com/a'])->assertSessionHasNoErrors();
+            $this->assertSame(['An Artist', 'https://example.com/a'], [$encounter->fresh()->image_credit, $encounter->fresh()->image_link]);
+
+            $this->actingAs($this->admin)->put(route('admin.encounters.update', $encounter), $update + ['image_link' => 'javascript:alert(1)'])->assertSessionHasErrors('image_link');
+
+            $this->actingAs($this->admin)->put(route('admin.encounters.update', $encounter), $update + ['image_credit' => 'An Artist', 'image_link' => 'https://example.com/a', 'remove_image' => '1'])->assertSessionHasNoErrors();
+            $this->assertSame([null, null], [$encounter->fresh()->image_credit, $encounter->fresh()->image_link], 'the credit goes with the picture');
+            $this->assertFileDoesNotExist($cyber, 'the box takes the picture away');
         } finally {
             foreach ($paths as $path) {
                 @unlink($path);
             }
         }
+    }
+
+    public function test_a_parent_groups_the_list_and_may_not_make_a_loop(): void
+    {
+        $a = Encounter::create(['slug' => 'a', 'title' => 'Alpha', 'starts_on' => 'travel', 'weight' => 5]);
+        $b = Encounter::create(['slug' => 'b', 'title' => 'Bravo', 'starts_on' => 'travel', 'weight' => 5, 'parent_id' => $a->id]);
+        $c = Encounter::create(['slug' => 'c', 'title' => 'Charlie', 'starts_on' => 'travel', 'weight' => 5, 'parent_id' => $b->id]);
+
+        $this->assertSame([$b->id, $c->id], $a->descendantIds());
+
+        $update = fn (Encounter $e, int $parent): TestResponse => $this->actingAs($this->admin)
+            ->put(route('admin.encounters.update', $e), array_diff_key($this->payload(['title' => $e->title]), ['slug' => 1]) + ['parent_id' => $parent]);
+
+        $update($a, $a->id)->assertSessionHasErrors('parent_id');
+        $update($a, $c->id)->assertSessionHasErrors('parent_id');
+
+        $html = $this->actingAs($this->admin)->get(route('admin.encounters.index'))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/Alpha.*<ul.*Bravo.*<ul.*Charlie/s', $html, 'each is listed under its parent');
+
+        $a->delete();
+        $this->assertNull($b->fresh()->parent_id, 'a deleted parent leaves its children at the top');
     }
 
     public function test_the_screens_render(): void

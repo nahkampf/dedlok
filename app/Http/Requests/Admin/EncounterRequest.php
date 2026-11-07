@@ -71,8 +71,13 @@ class EncounterRequest extends FormRequest
                 ? ['required', 'string', 'regex:/^[a-z0-9_-]{1,40}$/', 'unique:encounters,slug']
                 : ['prohibited'],
             'title' => ['required', 'string', 'max:150'],
+            // Only for the editor's list. Never itself, nor anything beneath it, which would be a loop.
+            'parent_id' => ['nullable', 'integer', 'exists:encounters,id', Rule::notIn($encounter === null ? [] : [$encounter->getKey(), ...$encounter->descendantIds()])],
             'intro' => ['nullable', 'string', 'max:5000'],
             'image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'remove_image' => ['nullable', 'boolean'],
+            'image_credit' => ['nullable', 'string', 'max:255'],
+            'image_link' => ['nullable', 'url:http,https', 'max:255'],
             'starts_on' => ['required', Rule::enum(EncounterStart::class)],
             'weight' => ['required', 'integer', 'between:1,100'],
             // Its own odds in percent, overriding the door's: only for a door that is rolled.
@@ -140,12 +145,14 @@ class EncounterRequest extends FormRequest
 
         return [
             ...$slug,
-            ...array_intersect_key($data, array_flip(['title', 'intro', 'starts_on', 'weight', 'district_id', 'location_id', 'required_flag'])),
+            ...array_intersect_key($data, array_flip(['title', 'parent_id', 'intro', 'starts_on', 'weight', 'district_id', 'location_id', 'required_flag'])),
             ...$this->doorFilters($data),
             'spot_system_id' => $this->spotSystemId(),
             'cooldown_hours' => ($data['cooldown_hours'] ?? '') === '' ? null : (int) $data['cooldown_hours'],
             'chance' => ($data['chance'] ?? '') === '' ? null : round((float) $data['chance'], 2),
             'intro' => ($data['intro'] ?? '') === '' ? null : $data['intro'],
+            'image_credit' => ($data['image_credit'] ?? '') === '' ? null : $data['image_credit'],
+            'image_link' => ($data['image_link'] ?? '') === '' ? null : $data['image_link'],
             'required_flag' => ($data['required_flag'] ?? '') === '' ? null : $data['required_flag'],
             'once' => $this->boolean('once'),
             'retired' => $this->boolean('retired'),

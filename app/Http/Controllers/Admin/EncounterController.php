@@ -87,7 +87,14 @@ class EncounterController extends Controller
     /** Save the uploaded picture, if there is one. False when the file could not be read as an image. */
     private function picture(EncounterRequest $request, Encounter $encounter): bool
     {
+        // A new file replaces the old one; otherwise the box asks for it to go.
         if (! $request->hasFile('image')) {
+            if ($request->boolean('remove_image')) {
+                // The credit and the link belong to that file: they go with it.
+                EncounterImage::remove($encounter);
+                $encounter->update(['image_credit' => null, 'image_link' => null]);
+            }
+
             return true;
         }
 
@@ -135,6 +142,8 @@ class EncounterController extends Controller
     {
         return [
             'encounter' => $encounter,
+            // What may be its parent: everything but itself and what hangs beneath it.
+            'parents' => Encounter::query()->whereNotIn('id', $encounter === null ? [] : [$encounter->getKey(), ...$encounter->descendantIds()])->orderBy('title')->get(['id', 'title']),
             'starts' => EncounterStart::cases(),
             'kinds' => OutcomeKind::cases(),
             'branches' => OutcomeBranch::cases(),

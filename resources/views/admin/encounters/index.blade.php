@@ -16,33 +16,20 @@
             <div class="spacer"></div>
             <a class="btn btn--sm cut" href="{{ route('admin.encounters.create') }}">{{ Text::get('admin.encounters.new') }}</a>
         </div>
-        <div class="table-wrap">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>{{ Text::get('admin.encounters.columns.title') }}</th>
-                        <th>{{ Text::get('admin.encounters.columns.starts') }}</th>
-                        <th>{{ Text::get('admin.encounters.columns.nodes') }}</th>
-                        <th>{{ Text::get('admin.encounters.columns.state') }}</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($encounters as $encounter)
-                        <tr>
-                            <td><a href="{{ route('admin.encounters.edit', $encounter) }}">{{ $encounter->title }}</a></td>
-                            <td class="muted">{{ $encounter->starts_on->label() }}</td>
-                            <td class="num">{{ $encounter->nodes_count }}</td>
-                            <td class="muted">
-                                w{{ $encounter->weight }}
-                                @if ($encounter->once) · {{ Text::get('admin.encounters.once_tag') }} @endif
-                                @if ($encounter->retired) · {{ Text::get('admin.encounters.retired_tag') }} @endif
-                            </td>
-                            <td class="t-right"><a class="btn btn--sm btn--ghost cut" href="{{ route('admin.encounters.edit', $encounter) }}">{{ Text::get('admin.encounters.edit') }}</a></td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        {{-- A table's look from lists: every row is the same grid, so the columns line up through any depth of nesting. --}}
+        @php($cols = 'display:grid;grid-template-columns:minmax(0,2fr) minmax(0,2fr) 4rem minmax(0,1fr) auto;gap:var(--s-4);align-items:center;padding:var(--s-3) var(--s-4)')
+        <div style="overflow-x:auto">
+            <div style="min-width:640px">
+                <div class="micro" style="{{ $cols }};color:var(--ink-3);text-transform:uppercase;border-bottom:1px solid var(--line-1)">
+                    <span>{{ Text::get('admin.encounters.columns.title') }}</span>
+                    <span>{{ Text::get('admin.encounters.columns.starts') }}</span>
+                    <span>{{ Text::get('admin.encounters.columns.nodes') }}</span>
+                    <span>{{ Text::get('admin.encounters.columns.state') }}</span>
+                    <span style="width:3.5rem"></span>
+                </div>
+                @php($byParent = $encounters->groupBy(fn ($e) => $e->parent_id ?? 0))
+                @include('admin.encounters._tree', ['nodes' => $byParent->get(0, collect()), 'byParent' => $byParent, 'depth' => 0, 'cols' => $cols])
+            </div>
         </div>
     </div>
 @endsection

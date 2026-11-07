@@ -120,6 +120,15 @@
                     <input class="input" name="title" maxlength="150" required value="{{ $value('title') }}">
                 </label>
                 <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.parent') }}</span>
+                    <select class="select" name="parent_id">
+                        <option value="">{{ Text::get('admin.encounters.fields.parent_none') }}</option>
+                        @foreach ($parents as $parent)
+                            <option value="{{ $parent->id }}" @selected((string) $value('parent_id') === (string) $parent->id)>{{ $parent->title }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="field">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.starts_on') }}</span>
                     <select class="select" name="starts_on">
                         @foreach ($starts as $start)
@@ -236,6 +245,22 @@
                         @endif
                     @endunless
                 </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.image_credit') }}</span>
+                    <input class="input" name="image_credit" maxlength="255" value="{{ $value('image_credit') }}">
+                    @error('image_credit') <span class="field__error">{{ $message }}</span> @enderror
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.image_link') }}</span>
+                    <input class="input" type="url" name="image_link" maxlength="255" value="{{ $value('image_link') }}">
+                    @error('image_link') <span class="field__error">{{ $message }}</span> @enderror
+                </label>
+                @if (! $creating && \App\City\EncounterImage::exists($encounter))
+                    <label class="check" style="grid-column:1/-1">
+                        <input type="checkbox" name="remove_image" value="1">
+                        <span class="check__box"></span><span>{{ Text::get('admin.encounters.fields.image_remove') }}</span>
+                    </label>
+                @endif
                 <label class="field" style="grid-column:1/-1">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.intro') }}</span>
                     <textarea class="textarea" name="intro" maxlength="5000">{{ $value('intro') }}</textarea>

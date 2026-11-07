@@ -88,6 +88,14 @@ final class EncounterImage
         }
     }
 
+    /** Delete its own picture, so the realm's default shows again. */
+    public static function remove(Encounter $encounter): void
+    {
+        if (self::exists($encounter)) {
+            unlink(self::path($encounter));
+        }
+    }
+
     /** The door moved the encounter to the other realm: its own picture goes with it. */
     public static function moved(Encounter $encounter, EncounterStart $from): void
     {
