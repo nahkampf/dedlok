@@ -11,13 +11,20 @@
 <h1 style="margin-top:var(--s-2)">{{ $encounter->title }}</h1>
 
 <div class="stack" style="--gap:var(--s-5);margin-top:var(--s-4)">
+    {{-- The encounter's own picture, or its realm's default: full width, notched corners, a hairline border (.cut paints it). --}}
+    @if ($picture = \App\City\EncounterImage::url($encounter))
+        <div class="cut" style="padding:1px;line-height:0">
+            <img src="{{ $picture }}" alt="" style="display:block;width:100%;height:auto;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))">
+        </div>
+    @endif
+
     @if ($encounter->intro && empty($live->log))
-        <p class="lede" style="margin:0;max-width:70ch">{{ $encounter->intro }}</p>
+        <p class="lede" style="margin:0;max-width:90ch">{{ $encounter->intro }}</p>
     @endif
 
     <div class="panel">
         <div class="panel__bd stack" style="--gap:var(--s-4)">
-            <p style="margin:0;max-width:70ch;white-space:pre-line">{{ $node->body }}</p>
+            <p style="margin:0;max-width:90ch;white-space:pre-line">{{ $node->body }}</p>
 
             @if ($node->ends)
                 <form method="POST" action="{{ route('encounter.leave') }}">

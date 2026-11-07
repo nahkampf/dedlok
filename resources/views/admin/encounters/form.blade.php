@@ -102,7 +102,7 @@
     <x-auth-errors />
 
     <form method="POST" action="{{ $creating ? route('admin.encounters.store') : route('admin.encounters.update', $encounter) }}"
-          class="stack" style="--gap:var(--s-5);margin-top:var(--s-5)">
+          class="stack" style="--gap:var(--s-5);margin-top:var(--s-5)" enctype="multipart/form-data">
         @csrf
         @unless ($creating) @method('PUT') @endunless
 
@@ -118,6 +118,15 @@
                 <label class="field">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.title') }}</span>
                     <input class="input" name="title" maxlength="150" required value="{{ $value('title') }}">
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.parent') }}</span>
+                    <select class="select" name="parent_id">
+                        <option value="">{{ Text::get('admin.encounters.fields.parent_none') }}</option>
+                        @foreach ($parents as $parent)
+                            <option value="{{ $parent->id }}" @selected((string) $value('parent_id') === (string) $parent->id)>{{ $parent->title }}</option>
+                        @endforeach
+                    </select>
                 </label>
                 <label class="field">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.starts_on') }}</span>
@@ -225,6 +234,33 @@
                     <span class="field__label">{{ Text::get('admin.encounters.fields.required_flag') }}</span>
                     <input class="input" name="required_flag" maxlength="60" value="{{ $value('required_flag') }}">
                 </label>
+                <label class="field" style="grid-column:1/-1">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.image') }}</span>
+                    <input class="input" name="image" type="file" accept="image/jpeg,image/png,image/webp">
+                    <span class="field__hint">{{ Text::get('admin.encounters.fields.image_hint') }}</span>
+                    @error('image') <span class="field__error">{{ $message }}</span> @enderror
+                    @unless ($creating)
+                        @if ($pic = \App\City\EncounterImage::url($encounter))
+                            <img src="{{ $pic }}" alt="" style="max-width:320px;width:100%;height:auto;margin-top:var(--s-2);border:1px solid var(--line-1)">
+                        @endif
+                    @endunless
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.image_credit') }}</span>
+                    <input class="input" name="image_credit" maxlength="255" value="{{ $value('image_credit') }}">
+                    @error('image_credit') <span class="field__error">{{ $message }}</span> @enderror
+                </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.image_link') }}</span>
+                    <input class="input" type="url" name="image_link" maxlength="255" value="{{ $value('image_link') }}">
+                    @error('image_link') <span class="field__error">{{ $message }}</span> @enderror
+                </label>
+                @if (! $creating && \App\City\EncounterImage::exists($encounter))
+                    <label class="check" style="grid-column:1/-1">
+                        <input type="checkbox" name="remove_image" value="1">
+                        <span class="check__box"></span><span>{{ Text::get('admin.encounters.fields.image_remove') }}</span>
+                    </label>
+                @endif
                 <label class="field" style="grid-column:1/-1">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.intro') }}</span>
                     <textarea class="textarea" name="intro" maxlength="5000">{{ $value('intro') }}</textarea>

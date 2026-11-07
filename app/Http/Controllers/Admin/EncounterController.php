@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Admin\ItemOptions;
 use App\Admin\ModifierField;
 use App\City\EncounterEditor;
+use App\City\EncounterImage;
 use App\City\EncounterRunEnd;
 use App\City\EncounterStart;
 use App\City\OutcomeBranch;
@@ -58,7 +59,9 @@ class EncounterController extends Controller
             return $encounter;
         });
 
-        return redirect()->route('admin.encounters.edit', $encounter)->with('status', Text::get('admin.encounters.created'));
+        $redirect = redirect()->route('admin.encounters.edit', $encounter)->with('status', Text::get('admin.encounters.created'));
+
+        return $this->picture($request, $encounter) ? $redirect : $redirect->withErrors(['image' => Text::get('admin.encounters.fields.image_unreadable')]);
     }
 
     public function edit(Encounter $encounter): View
@@ -68,12 +71,40 @@ class EncounterController extends Controller
 
     public function update(EncounterRequest $request, Encounter $encounter): RedirectResponse
     {
+        $from = $encounter->starts_on;
+
         DB::transaction(function () use ($request, $encounter): void {
             $encounter->update($request->columns());
             EncounterEditor::apply($encounter, $request->nodeRows(), $request->prerequisiteRows());
         });
 
-        return back()->with('status', Text::get('admin.encounters.updated'));
+        EncounterImage::moved($encounter, $from);
+        $back = back()->with('status', Text::get('admin.encounters.updated'));
+
+        return $this->picture($request, $encounter) ? $back : $back->withErrors(['image' => Text::get('admin.encounters.fields.image_unreadable')]);
+    }
+
+    /** Save the uploaded picture, if there is one. False when the file could not be read as an image. */
+    private function picture(EncounterRequest $request, Encounter $encounter): bool
+    {
+        // A new file replaces the old one; otherwise the box asks for it to go.
+        if (! $request->hasFile('image')) {
+            if ($request->boolean('remove_image')) {
+                // The credit and the link belong to that file: they go with it.
+                EncounterImage::remove($encounter);
+                $encounter->update(['image_credit' => null, 'image_link' => null]);
+            }
+
+            return true;
+        }
+
+        try {
+            (new EncounterImage)->store($encounter, $request->file('image'));
+        } catch (\RuntimeException) {
+            return false;
+        }
+
+        return true;
     }
 
     public function destroy(Encounter $encounter): RedirectResponse
@@ -111,6 +142,8 @@ class EncounterController extends Controller
     {
         return [
             'encounter' => $encounter,
+            // What may be its parent: everything but itself and what hangs beneath it.
+            'parents' => Encounter::query()->whereNotIn('id', $encounter === null ? [] : [$encounter->getKey(), ...$encounter->descendantIds()])->orderBy('title')->get(['id', 'title']),
             'starts' => EncounterStart::cases(),
             'kinds' => OutcomeKind::cases(),
             'branches' => OutcomeBranch::cases(),
