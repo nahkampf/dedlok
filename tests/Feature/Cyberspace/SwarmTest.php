@@ -103,7 +103,7 @@ final class SwarmTest extends TestCase
         $seconds = $scan->pass_started_at->diffInSeconds($scan->pass_ready_at);
         $by_hand = Probe::fromConfig()->durationFor($this->character->fresh(), System::query()->first());
 
-        $this->assertSame($by_hand * 3, (int) $seconds);
+        $this->assertSame($by_hand * (int) config('cyberspace.swarm.time_factor'), (int) $seconds);
     }
 
     public function test_it_reads_a_system_to_completion_then_moves_on_without_announcing_it(): void
