@@ -1,3 +1,10 @@
+## 0.92.0 (2026-11-07)
+
+- Internal tooling:
+  - Encounters can now have pictures
+  - Admin editor updates (image, copyright, artist link)
+  - Encounters can have parents (tree view in editor)
+
 ## 0.91.0 (2026-11-06)
 
 - "Accept" on a co-op run didn't check the deck totals/suspends, and so you could accept but immediately be dropped because you didn't have CPU to run an icebreaker for instance. Fixed now.

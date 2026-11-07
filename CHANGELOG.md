@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+## [0.92.0] — 2026-11-07
+
+### Added
+- **An encounter can have a picture.** Shown full width between the heading and the intro, with notched corners and a hairline border. It is `public/images/encounters/<realm>/<id>.jpg` (`cyberspace` for the grid doors, `physical` for the City ones), or that realm's `default.jpg`; with neither, the space is left out. The editor takes the upload (jpg, png or webp, up to 8 MB), decodes it, scales it down to at most 1600 px wide and writes a fresh JPEG, so the original bytes are not kept (`App\City\EncounterImage`, the only writer). A "remove" box deletes it. Changing the encounter's door to the other realm moves the file with it.
+- **A credit and a link for the picture** (`encounters.image_credit`, `encounters.image_link`, 255 characters each, the link http or https only). Both are cleared when the picture is removed. Not shown to players yet.
+- **A parent for an encounter** (`encounters.parent_id`, self-referencing, nulled when the parent is deleted). It is for the editor's list only: the list is a tree of nested `ul`/`li` with the table's columns kept. An encounter cannot be its own parent or one beneath itself (`Encounter::descendantIds`).
+
+### Changed
+- **The encounter screen's text spans 90ch** (was 70ch).
+
+### Migrations
+- `2026_11_10_250000_encounters_credit_their_picture`
+- `2026_11_10_260000_encounters_have_a_parent`
+
+The two default pictures are committed under `public/images/encounters/`. Run `php artisan migrate`.
+
+
 ## [0.91.0] — 2026-11-06
 
 ### Fixed
@@ -4090,7 +4107,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.91.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.92.0...HEAD
+[0.92.0]: https://github.com/nahkampf/dedlok/compare/v0.91.0...v0.92.0
 [0.91.0]: https://github.com/nahkampf/dedlok/compare/v0.90.1...v0.91.0
 [0.90.1]: https://github.com/nahkampf/dedlok/compare/v0.90.0...v0.90.1
 [0.90.0]: https://github.com/nahkampf/dedlok/compare/v0.89.2...v0.90.0
