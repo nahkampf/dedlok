@@ -45,4 +45,17 @@ final class FittedModulesTest extends TestCase
         $character->forceFill(['equipped_deck_id' => null])->save();
         $this->assertSame([], (new FittedModules($character->fresh()))->modifiers());
     }
+
+    public function test_the_equipped_decks_own_effects_count(): void
+    {
+        $character = Character::factory()->create(['archetype' => 3]);
+        $deck = $this->equipReadyDeck($character);
+        $before = DeckTotals::forCharacter($character->fresh(), $deck->fresh(), app(Resolver::class))->quantabits;
+
+        $deck->item->update(['modifiers' => [['op' => 'add', 'amount' => 4, 'target' => ['id' => 'deck_quantabits']]]]);
+
+        $after = DeckTotals::forCharacter($character->fresh(), $deck->fresh(), app(Resolver::class))->quantabits;
+
+        $this->assertEqualsWithDelta($before + 4, $after, 0.01);
+    }
 }

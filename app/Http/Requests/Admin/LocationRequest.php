@@ -49,7 +49,7 @@ class LocationRequest extends FormRequest
                 'prohibited_unless:discovery,'.DiscoveryRule::Explorable->value,
             ],
             // What the place does. Blank rows are skipped, not errors.
-            'shop' => ['nullable', 'array', 'max:60'],
+            'shop' => ['nullable', 'array', 'max:100'],
             'shop.*.item_id' => ['nullable', 'integer', 'exists:items,id'],
             'shop.*.price' => ['nullable', 'integer', 'between:0,1000000'],
             'shop.*.max_stock' => ['nullable', 'integer', 'between:0,1000000'],

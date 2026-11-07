@@ -9,7 +9,7 @@ use App\Models\DeckFitting;
 use App\Stats\Modifier;
 
 /**
- * What is fitted in the deck a character has equipped.
+ * The equipped deck, and what is fitted in it.
  *
  * The eighth modifier source, and it reads `items.modifiers` of each fitted module like every other item-borne source.
  * A module's own measure (qflops, quantabits, ...) is still summed by `DeckTotals` from its `deck_modules` column; this
@@ -31,9 +31,14 @@ final readonly class FittedModules implements ModifierSource
 
         $modifiers = [];
 
-        foreach (DeckFitting::query()->where('deck_id', $this->character->equipped_deck_id)->with('module.item')->get() as $fitting) {
-            $item = $fitting->module?->item;
+        // The deck's own effects first: it is an item like any module it carries.
+        $items = [$this->character->equippedDeck?->item];
 
+        foreach (DeckFitting::query()->where('deck_id', $this->character->equipped_deck_id)->with('module.item')->get() as $fitting) {
+            $items[] = $fitting->module?->item;
+        }
+
+        foreach ($items as $item) {
             foreach ($item !== null && is_array($item->modifiers) ? $item->modifiers : [] as $shape) {
                 if (is_array($shape)) {
                     $modifiers[] = Modifier::fromArray($shape + ['source' => $item->displayName()]);
