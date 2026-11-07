@@ -1365,7 +1365,7 @@ return [
     | passes, and the five-minute sweep carries on from where this stops.
     */
     'swarm' => [
-        'time_factor' => 3,
+        'time_factor' => 5,
         'catch_up' => 30,
     ],
 

@@ -156,7 +156,7 @@ what a bare `items` row cannot.
   The Kompressor is a Utility in `compressor` carrying `percentage_of_base 15` on `deck_storage`; no item is seeded.
 - **A Swarm (`programs.swarms`, a Utility; Wotan) scans on its own.** While a copy runs it picks a random system on the MAIN grid
   that its owner has no complete scan of (no live complete `system_scans` row, no held scan file, nothing of theirs already
-  reading it; fortresses never), reads it to completion through `Probe` at `cyberspace.swarm.time_factor` (3) times the pass
+  reading it; fortresses never), reads it to completion through `Probe` at `cyberspace.swarm.time_factor` (5) times the pass
   time, then picks the next (`App\Cyberspace\Swarm`). The factor is config and not a `scan_duration` modifier, because a running
   program's modifiers reach the whole character. It charges no fatigue, counts for no achievement and sends no inbox message,
   and its settled results are left out of `Probe::settleAll()`'s return so the map banner stays quiet. It follows
