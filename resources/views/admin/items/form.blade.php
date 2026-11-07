@@ -2,10 +2,11 @@
 @use('App\Models\Item')
 @use('App\Decks\Hardware')
 @extends('layouts.app')
-@section('title', $item ? Text::get('admin.items.editing', ['item' => $item->slug]) : Text::get('admin.items.new'))
+@section('title', $item?->exists ? Text::get('admin.items.editing', ['item' => $item->slug]) : Text::get('admin.items.new'))
 
 @php
-    $creating = $item === null;
+    // A clone is an unsaved copy: it fills the form, but the form is still a new item.
+    $creating = ! $item?->exists;
     // old() first, so a rejected submission comes back as it was typed.
     $value = fn (string $field, $fallback = null) => old($field, $item?->{$field} ?? $fallback);
     $isBook = old('use_op', $item?->use_op) === Item::USE_INJECT_SKILL;
@@ -986,6 +987,9 @@
                 {{ $creating ? Text::get('admin.actions.create') : Text::get('admin.actions.save') }}
             </button>
             <a class="btn btn--ghost" href="{{ route('admin.items.index') }}">{{ Text::get('admin.actions.cancel') }}</a>
+            @unless ($creating)
+                <a class="btn btn--ghost" href="{{ route('admin.items.create', ['clone' => $item->id]) }}">{{ Text::get('admin.items.clone') }}</a>
+            @endunless
         </div>
     </form>
 

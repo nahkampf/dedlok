@@ -1,3 +1,8 @@
+## 0.93.1 (2026-11-07)
+
+- Internal: Clone items in admin
+- Cyberdecks can now have their own effects
+
 ## 0.93.0 (2026-11-07)
 - Wotan now takes 5x the time to scan, rather than 3x.
 

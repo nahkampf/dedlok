@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.93.1] — 2026-11-07
+
+### Added
+- **"Clone this" in the item editor.** Opens the new-item form (`items/create?clone={id}`) filled from the item, with its deck sockets, module spec and software, drug, consumable, armour, weapon, ammunition and design rows; the slug is left blank. Nothing is saved until Create. Market stock is not copied.
+
+### Fixed
+- **Effects on a cyberdeck item itself now apply** while that deck is equipped (`FittedModules` reads the deck's own `items.modifiers` as well as its fitted modules'). They were stored and ignored before.
+
+### Changed
+- **A location's shop may hold 100 stock rows** (was 60).
+
+
 ## [0.93.0] — 2026-11-07
 
 ### Changed
@@ -4118,7 +4130,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.93.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.93.1...HEAD
+[0.93.1]: https://github.com/nahkampf/dedlok/compare/v0.93.0...v0.93.1
 [0.93.0]: https://github.com/nahkampf/dedlok/compare/v0.92.0...v0.93.0
 [0.92.0]: https://github.com/nahkampf/dedlok/compare/v0.91.0...v0.92.0
 [0.91.0]: https://github.com/nahkampf/dedlok/compare/v0.90.1...v0.91.0

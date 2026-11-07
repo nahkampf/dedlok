@@ -5171,6 +5171,7 @@ return [
             'title' => 'Items',
             'lede' => 'Every item definition. A slug is permanent once it exists — retire an item with :off, never by renaming it.',
             'new' => 'New item',
+            'clone' => 'Clone this',
             'editing' => 'Editing :item',
             'created' => ':item created.',
             'updated' => ':item saved.',

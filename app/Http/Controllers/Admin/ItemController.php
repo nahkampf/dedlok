@@ -161,9 +161,24 @@ class ItemController extends Controller
         };
     }
 
-    public function create(): View
+    /**
+     * `?clone={id}` opens the form as a NEW item filled from an existing one: an unsaved copy with the
+     * original's related rows carried over, and no slug (a slug is unique and permanent, so it is typed).
+     */
+    public function create(Request $request): View
     {
-        return view('admin.items.form', $this->formData(null));
+        $source = Item::query()->find($request->integer('clone'));
+
+        if ($source === null) {
+            return view('admin.items.form', $this->formData(null));
+        }
+
+        $source->load(['deckSlots', 'deckModule', 'program', 'drug', 'consumable', 'armour', 'weapon', 'ammunition', 'design.components']);
+        $copy = $source->replicate();
+        $copy->slug = '';
+        $copy->setRelations($source->getRelations());
+
+        return view('admin.items.form', $this->formData($copy));
     }
 
     public function store(ItemRequest $request): RedirectResponse
@@ -310,7 +325,7 @@ class ItemController extends Controller
             'slotTypes' => SlotType::all(),
             'layout' => $item?->slotLayout() ?? SlotLayout::empty(),
             'module' => $item?->deckModule,
-            'impact' => $item === null ? null : DeletionImpact::forItem($item),
+            'impact' => $item === null || ! $item->exists ? null : DeletionImpact::forItem($item),
         ];
     }
 }
