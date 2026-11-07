@@ -72,6 +72,7 @@ class EncounterRequest extends FormRequest
                 : ['prohibited'],
             'title' => ['required', 'string', 'max:150'],
             'intro' => ['nullable', 'string', 'max:5000'],
+            'image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
             'starts_on' => ['required', Rule::enum(EncounterStart::class)],
             'weight' => ['required', 'integer', 'between:1,100'],
             // Its own odds in percent, overriding the door's: only for a door that is rolled.

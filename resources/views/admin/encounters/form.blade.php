@@ -102,7 +102,7 @@
     <x-auth-errors />
 
     <form method="POST" action="{{ $creating ? route('admin.encounters.store') : route('admin.encounters.update', $encounter) }}"
-          class="stack" style="--gap:var(--s-5);margin-top:var(--s-5)">
+          class="stack" style="--gap:var(--s-5);margin-top:var(--s-5)" enctype="multipart/form-data">
         @csrf
         @unless ($creating) @method('PUT') @endunless
 
@@ -224,6 +224,17 @@
                 <label class="field">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.required_flag') }}</span>
                     <input class="input" name="required_flag" maxlength="60" value="{{ $value('required_flag') }}">
+                </label>
+                <label class="field" style="grid-column:1/-1">
+                    <span class="field__label">{{ Text::get('admin.encounters.fields.image') }}</span>
+                    <input class="input" name="image" type="file" accept="image/jpeg,image/png,image/webp">
+                    <span class="field__hint">{{ Text::get('admin.encounters.fields.image_hint') }}</span>
+                    @error('image') <span class="field__error">{{ $message }}</span> @enderror
+                    @unless ($creating)
+                        @if ($pic = \App\City\EncounterImage::url($encounter))
+                            <img src="{{ $pic }}" alt="" style="max-width:320px;width:100%;height:auto;margin-top:var(--s-2);border:1px solid var(--line-1)">
+                        @endif
+                    @endunless
                 </label>
                 <label class="field" style="grid-column:1/-1">
                     <span class="field__label">{{ Text::get('admin.encounters.fields.intro') }}</span>

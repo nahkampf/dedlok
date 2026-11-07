@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\City\EncounterGraph;
+use App\City\EncounterImage;
 use App\City\Encounters;
 use App\Drugs\Family;
 use App\Models\Character;
@@ -16,6 +17,7 @@ use App\Models\Npc;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -76,6 +78,41 @@ final class EncounterAdminTest extends TestCase
     private function save(array $payload): TestResponse
     {
         return $this->actingAs($this->admin)->post(route('admin.encounters.store'), $payload);
+    }
+
+    public function test_an_uploaded_picture_is_saved_under_the_realm_by_id_and_follows_a_change_of_door(): void
+    {
+        $paths = [];
+
+        try {
+            $this->actingAs($this->admin)->post(route('admin.encounters.store'), $this->payload([
+                'image' => UploadedFile::fake()->image('pic.png', 2400, 1200),
+            ]))->assertRedirect();
+
+            $encounter = Encounter::query()->firstOrFail();
+            $physical = public_path("images/encounters/physical/{$encounter->id}.jpg");
+            $cyber = public_path("images/encounters/cyberspace/{$encounter->id}.jpg");
+            $paths = [$physical, $cyber];
+
+            $this->assertFileExists($physical, 'a City door is the physical realm');
+            $this->assertSame(EncounterImage::WIDTH, getimagesize($physical)[0], 'scaled down to the width cap');
+            $this->assertStringContainsString("physical/{$encounter->id}.jpg", EncounterImage::url($encounter));
+
+            // Moving the door to a grid one takes the picture with it.
+            $update = $this->payload(['starts_on' => 'after_run', 'run_outcome' => 'success', 'run_purpose' => 'extraction',
+            ]);
+            unset($update['slug']);
+            $this->actingAs($this->admin)->put(route('admin.encounters.update', $encounter), $update)->assertSessionHasNoErrors();
+
+            $this->assertFileExists($cyber);
+            $this->assertFileDoesNotExist($physical);
+
+            $this->actingAs($this->admin)->followingRedirects()->get(route('admin.encounters.edit', $encounter))->assertSee('name="image"', false);
+        } finally {
+            foreach ($paths as $path) {
+                @unlink($path);
+            }
+        }
     }
 
     public function test_the_screens_render(): void
