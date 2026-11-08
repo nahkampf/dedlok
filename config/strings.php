@@ -965,7 +965,7 @@ return [
             'workout_gain' => 'Gains!',
             'tracker_found' => 'Tracker: Node found',
             'study_gain' => 'Sharpening the mind',
-            'backdoor_lost' => 'Backdoor lost',
+            'backdoor_lost' => 'Backdoored system purged',
             'file_stale' => 'Scan file gone stale',
             'offer_sold' => 'Sold: :item',
             'session_stopped_rest' => 'Too tired to go on: resting',
@@ -1002,6 +1002,9 @@ return [
             'bounty_word' => 'A price on your head',
         ],
 
+        // The sentence a found backdoor adds when it cost standing with the system's owner.
+        'standing_lost' => 'Since your digital fingerprints were on the backdoor, you lost :amount standing with :entity.',
+
         'messages' => [
             'chat_invite' => ':handle has invited you to the chat room :room.',
             'chat_invite_private' => ':handle has invited you to a private chat.',
@@ -1010,7 +1013,7 @@ return [
             'supporter_welcome' => 'Thank you for supporting Dedlok. You now have a badge by your name, a training queue with no limit, and your name on the Supporters page. You are also welcome in our Discord: open :url, or paste it into Discord under + then Join a Server, and say hello. It is where to report bugs, give feedback, wish for features or just hang out.',
             'njord_jsc_notice' => 'It has come to our attention that you may have been the recipient of a classified message. This message was sent by mistake. We are hereby legally informing you that any breach, discussion or mention of that message or its contents will be treated as a national security issue with severe penalties. By reading this message you are also consenting to a full Non Disclosure Agreement regarding this message or anything pertaining to it. Criminal jurisdiction will be applied if this NDA is breached. Have a nice day.',
             'scan_complete' => 'Your scan of :system (:address) completed. The specifications are saved to a file.',
-            'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.',
+            'backdoor_found' => 'Your backdoor into :system was detected. The system has been purged and relocated.:standing',
             'party_invite' => ':owner has invited you to a co-op run. Stand at the same system and accept from the map.',
             'party_started' => ':owner has started the co-op run you joined. You are in it.',
             'party_run_ended' => 'Your co-op run is over: :ending',
@@ -1040,7 +1043,7 @@ return [
             'workout_gain' => "You've been working out. It shows. You gain +1 to :attribute!",
             'tracker_found' => 'Tracker has found the requested node: :address',
             'study_gain' => "You've been reading and studying. You gain +1 to :attribute!",
-            'backdoor_lost' => 'Your backdoor into :system is gone. The system shut its doors while you were elsewhere.',
+            'backdoor_lost' => 'Your backdoor into :system is gone. The system was purged, relocated or burned.',
             // A FILE DIES WITH NOBODY LOOKING AT IT. Says it is still there,
             // because nothing deletes one - destroying it is the player's call
             // from the card, like every other row they own.
