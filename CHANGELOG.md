@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [0.94.0] — 2026-11-08
+
+### Added
+- **Achievement 23, "Kickin' the habit"**: a drug family's addiction reached the withdrawal line (40) and later fell to nothing, whether by the nightly decay, a shower or `addiction_recovery` (`Metric::AddictionsKicked`, one per family kicked).
+- **Seven more achievement pictures** and the achievements PSD (`resources/psds/achievements.psd`).
+
+### Changed
+- **"Backdoor found" says what it cost.** When the system's owner took standing, the message adds that you lost that much standing with them (`notifications.standing_lost`).
+- **"Backdoor lost" is now "Backdoored system purged"**, and its message reads "The system was purged, relocated or burned."
+
+### Migrations
+- `2026_11_11_100000_drug_books_remember_a_hook` — `character_drug_use.was_hooked` (boolean, default false). Nobody already over the line counts until they take another dose of that family while hooked.
+
+Run `php artisan migrate`.
+
+
 ## [0.93.1] — 2026-11-07
 
 ### Added
@@ -4130,7 +4146,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.93.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.94.0...HEAD
+[0.94.0]: https://github.com/nahkampf/dedlok/compare/v0.93.1...v0.94.0
 [0.93.1]: https://github.com/nahkampf/dedlok/compare/v0.93.0...v0.93.1
 [0.93.0]: https://github.com/nahkampf/dedlok/compare/v0.92.0...v0.93.0
 [0.92.0]: https://github.com/nahkampf/dedlok/compare/v0.91.0...v0.92.0
