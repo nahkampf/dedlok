@@ -233,6 +233,15 @@ return [
             'secret' => false,
         ],
 
+        // Hooked on a family, then clean of it.
+        23 => [
+            'name' => "Kickin' the habit",
+            'description' => 'Got addicted and then got clean again.',
+            'metric' => 'addictions_kicked',
+            'threshold' => 1,
+            'secret' => false,
+        ],
+
     ],
 
 ];
