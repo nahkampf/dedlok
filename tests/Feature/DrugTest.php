@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Characters\WaitingRoom;
 use App\Drugs\DoseRefusal;
 use App\Drugs\DrugLedger;
@@ -221,6 +223,26 @@ final class DrugTest extends TestCase
     }
 
     // ---- withdrawal --------------------------------------------------------
+
+    public function test_getting_clean_after_being_hooked_counts_once_and_never_having_been_hooked_does_not(): void
+    {
+        $kicks = fn (): int => (new Achievements)->progressFor($this->character, Metric::AddictionsKicked);
+
+        // Under the line the whole way down: nothing to kick.
+        DrugUse::query()->create(['character_id' => $this->character->id, 'family' => Family::Opiate->value, 'addiction' => 10, 'tolerance' => 0]);
+        $this->ledger()->lowerAddiction($this->character, Family::Opiate, 10);
+        $this->assertSame(0, $kicks());
+
+        // Hooked, then clean (tolerance keeps the row alive, so the flag must clear rather than vanish with it).
+        DrugUse::query()->create(['character_id' => $this->character->id, 'family' => Family::Opiate->value, 'addiction' => 45, 'was_hooked' => true, 'tolerance' => 5]);
+        $this->ledger()->lowerAddiction($this->character, Family::Opiate, 20);
+        $this->assertSame(0, $kicks(), 'down, but not clean');
+        $this->ledger()->lowerAddiction($this->character, Family::Opiate, 100);
+        $this->assertSame(1, $kicks());
+        $this->assertContains(23, (new Achievements)->unlockedFor($this->character->user));
+        $this->ledger()->lowerAddiction($this->character, Family::Opiate, 100);
+        $this->assertSame(1, $kicks(), 'and not again for the same hook');
+    }
 
     public function test_going_without_past_the_threshold_is_something_you_carry(): void
     {

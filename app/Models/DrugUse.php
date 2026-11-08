@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * means clean — absent and zero are the same answer, which is why nothing
  * creates these in advance.
  */
-#[Fillable(['character_id', 'family', 'addiction', 'tolerance'])]
+#[Fillable(['character_id', 'family', 'addiction', 'was_hooked', 'tolerance'])]
 class DrugUse extends Model
 {
     protected $table = 'character_drug_use';
@@ -26,6 +26,7 @@ class DrugUse extends Model
         return [
             'family' => Family::class,
             'addiction' => 'float',
+            'was_hooked' => 'boolean',
             'tolerance' => 'float',
         ];
     }

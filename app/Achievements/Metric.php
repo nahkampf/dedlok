@@ -80,4 +80,7 @@ enum Metric: string
 
     /** Files decrypted: one per file the decryption queue breaks open. */
     case FilesDecrypted = 'files_decrypted';
+
+    /** Addictions kicked: one per drug family whose addiction fell to nothing after having reached the withdrawal line. */
+    case AddictionsKicked = 'addictions_kicked';
 }

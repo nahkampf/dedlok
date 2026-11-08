@@ -22,6 +22,7 @@ use App\Cyberspace\Sweep;
 use App\Cyberspace\TurnResult;
 use App\Models\Backdoor;
 use App\Models\Character;
+use App\Models\Entity;
 use App\Models\Ice;
 use App\Models\Notification;
 use App\Models\Run;
@@ -524,6 +525,20 @@ final class BackdoorTest extends TestCase
         $this->assertSame($this->character->user_id, $message->user_id);
         $this->assertSame(Category::Cyberspace, $message->category);
         $this->assertStringContainsString($system->displayName(), $message->body);
+    }
+
+    /** Being found costs standing with the system's owner, and the message says how much and with whom. */
+    public function test_being_found_says_what_it_cost_in_standing(): void
+    {
+        $owner = Entity::query()->create(['name' => 'Tracked Co', 'category' => Entity::query()->value('category') ?? 'corporation', 'interactable' => true, 'business' => 'x']);
+        $system = $this->machine();
+        $system->forceFill(['owner_id' => $owner->id])->save();
+        (new Backdoors)->install($this->character, $system, BackdoorKind::Siphon);
+
+        $this->instance(Backdoors::class, $this->ageing(rolling: 1));
+        $this->artisan('cyberspace:age-backdoors')->assertSuccessful();
+
+        $this->assertStringContainsString('you lost 0.05 standing with Tracked Co.', Notification::query()->sole()->body);
     }
 
     /**

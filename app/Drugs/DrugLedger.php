@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Drugs;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Models\Character;
 use App\Models\CharacterModifier;
 use App\Models\Dose;
@@ -89,10 +91,16 @@ final class DrugLedger
         $after = max(0.0, round($before - (float) $amount, 2));
         $other = (float) $books->{$figure === 'addiction' ? 'tolerance' : 'addiction'};
 
+        $kicked = $figure === 'addiction' && $after === 0.0 && $books->was_hooked;
+
         if ($after === 0.0 && $other === 0.0) {
             $books->delete();
         } else {
-            $books->forceFill([$figure => $after])->save();
+            $books->forceFill([$figure => $after, 'was_hooked' => $kicked ? false : $books->was_hooked])->save();
+        }
+
+        if ($kicked) {
+            (new Achievements)->record($character, Metric::AddictionsKicked);
         }
 
         return Points::of($before - $after);
@@ -147,7 +155,14 @@ final class DrugLedger
             // A family that cannot hook anybody never moves the figure, whatever the drug row says.
             'addiction' => $drug->family->addicts() ? round((float) $books->addiction + $drug->addictive, 2) : (float) $books->addiction,
             'tolerance' => round((float) $books->tolerance + $drug->tolerance_gain, 2),
-        ])->save();
+        ]);
+
+        // Over the line once is enough: getting clean afterwards is what the "Kickin' the habit" achievement counts.
+        if ((float) $books->addiction >= (float) Config::get('drugs.withdrawal.threshold', 40.0)) {
+            $books->was_hooked = true;
+        }
+
+        $books->save();
 
         return $books;
     }
@@ -243,13 +258,19 @@ final class DrugLedger
 
             $moved++;
 
+            $kicked = $now[0] === 0.0 && $books->was_hooked;
+
+            if ($kicked && $books->character !== null) {
+                (new Achievements)->record($books->character, Metric::AddictionsKicked);
+            }
+
             if ($now === [0.0, 0.0]) {
                 $books->delete();
 
                 continue;
             }
 
-            $books->forceFill(['addiction' => $now[0], 'tolerance' => $now[1]])->save();
+            $books->forceFill(['addiction' => $now[0], 'tolerance' => $now[1], 'was_hooked' => $kicked ? false : $books->was_hooked])->save();
         }
 
         return $moved;

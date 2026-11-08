@@ -1,3 +1,8 @@
+## 0.94.0 (2026-11-08)
+- New achievement: Kickin' the habit
+- Some achivements now hade nice shiny little images
+- Backdoor lost/found messages slightly changed/updated
+
 ## 0.93.1 (2026-11-07)
 
 - Internal: Clone items in admin

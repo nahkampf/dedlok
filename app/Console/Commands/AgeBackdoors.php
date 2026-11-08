@@ -10,6 +10,7 @@ use App\Notifications\Category;
 use App\Notifications\Notifier;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
+use App\Support\Text;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -82,18 +83,20 @@ class AgeBackdoors extends Command
             // backdoor with no character is a fixture rather than a state the
             // game reaches. Neither is an error: the roll still happened.
             if ($character !== null && $backdoor->system !== null) {
-                (new Notifier)->send($character, Category::Cyberspace, 'backdoor_found', [
-                    'system' => $backdoor->system->displayName(),
-                ]);
-
                 // The owner now knows somebody had been living in it. Cheaper
                 // than a raid and dearer than being seen once: it is evidence
                 // that you were inside and stayed.
-                (new StandingLedger)->record(
-                    $character,
-                    $backdoor->system->owner,
-                    StandingReason::BackdoorFound,
-                );
+                $owner = $backdoor->system->owner;
+                $landed = (new StandingLedger)->record($character, $owner, StandingReason::BackdoorFound);
+
+                // The message says what it cost, when it cost anything.
+                (new Notifier)->send($character, Category::Cyberspace, 'backdoor_found', [
+                    'system' => $backdoor->system->displayName(),
+                    'standing' => $landed === null || $landed >= 0.0 ? '' : ' '.Text::get('notifications.standing_lost', [
+                        'amount' => rtrim(rtrim(number_format(abs($landed), 3), '0'), '.'),
+                        'entity' => $owner->name,
+                    ]),
+                ]);
             }
 
             Log::info('a backdoor was discovered', [
