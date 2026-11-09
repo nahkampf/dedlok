@@ -14,6 +14,10 @@
                         <input class="input num" type="number" min="0" step="1" name="{{ $name }}[{{ $kind->value }}][{{ $key }}]"
                                value="{{ old("{$name}.{$kind->value}.{$key}", $current[$kind->value][$key] ?? '') }}"></label>
                 @endforeach
+                {{-- A kind with no per-turn amount leaves its cell empty, so every row has the same number of cells and the columns line up. --}}
+                @unless ($kind->damaging())
+                    <span aria-hidden="true"></span>
+                @endunless
             </div>
         @endforeach
     </div>
