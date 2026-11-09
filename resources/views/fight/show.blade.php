@@ -44,6 +44,62 @@
                 </div>
             @endif
 
+            {{-- What it carries and what it wears: the weapons it can use, and its resistances (percent off per
+                 damage type, and extra by body part). Read off the fight, which copied them when it opened. --}}
+            @php($foeArms = array_filter(['ranged' => $state->b->ranged, 'close' => $state->b->melee]))
+            @php($foeResist = array_filter((array) $fight->resistances, fn ($v): bool => (int) $v !== 0))
+            @php($foeSlots = collect((array) $fight->slot_resistances)->map(fn ($types) => array_filter((array) $types, fn ($v): bool => (int) $v !== 0))->filter())
+            @if ($foeArms !== [])
+                <div class="row row--wrap micro" style="--gap:var(--s-2)">
+                    <span>{{ Text::get('combat.fight.screen.foe_weapons') }}</span>
+                    @foreach ($foeArms as $range => $arm)
+                        {{-- Hover floats the card, a click or tap opens it as a modal (ui-kit.js, data-inspect). --}}
+                        <span class="tag" data-inspect="#foe-arm-{{ $range }}" tabindex="0" style="cursor:help">{{ Text::get('combat.fight.screen.range.'.$range) }}: {{ $arm->name }}</span>
+                        @php($round = $arm->spec())
+                        <template id="foe-arm-{{ $range }}">
+                            <div class="item-card">
+                                <div class="item-card__hd">
+                                    <span class="stack" style="--gap:5px;min-width:0">
+                                        <span class="item-card__name">{{ $arm->name }}</span>
+                                        <span class="row row--wrap" style="--gap:var(--s-2)"><span class="tag tag--warn">{{ $arm->class->label() }}</span></span>
+                                    </span>
+                                </div>
+                                <div class="item-card__stats">
+                                    <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_rate') }}</span><b>{{ $arm->rate }}</b></div>
+                                    @if ($arm->magazine > 0)
+                                        <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_magazine') }}</span><b>{{ $arm->magazine }}</b></div>
+                                    @endif
+                                    @if ($round !== null)
+                                        <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_round') }}</span><b>{{ $round->name }}</b></div>
+                                        <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_damage') }}</span><b>{{ round($round->damage, 1) }}</b></div>
+                                        <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_types') }}</span><b>{{ collect($round->profile)->map(fn ($share, $type) => \App\Stats\DamageOrigin::from($type)->label().' '.$share.'%')->implode(', ') }}</b></div>
+                                        @if ($round->penetration !== 0)
+                                            <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_penetration') }}</span><b>{{ $round->penetration }}%</b></div>
+                                        @endif
+                                        @foreach ($round->riders as $rider)
+                                            <div class="item-card__stat"><span>{{ RiderKind::from($rider['kind'])->label() }}</span><b>{{ $rider['chance'] }}%</b></div>
+                                        @endforeach
+                                    @endif
+                                </div>
+                            </div>
+                        </template>
+                    @endforeach
+                </div>
+            @endif
+            @if ($foeResist !== [] || $foeSlots->isNotEmpty())
+                <div class="row row--wrap micro" style="--gap:var(--s-2)">
+                    <span>{{ Text::get('combat.fight.screen.foe_armour') }}</span>
+                    @foreach ($foeResist as $type => $percent)
+                        <span class="tag">{{ \App\Stats\DamageOrigin::from($type)->label() }} {{ $percent > 0 ? '+' : '' }}{{ $percent }}%</span>
+                    @endforeach
+                    @foreach ($foeSlots as $slot => $types)
+                        @foreach ($types as $type => $percent)
+                            <span class="tag">{{ \App\Combat\ArmourSlot::from($slot)->label() }} · {{ \App\Stats\DamageOrigin::from($type)->label() }} {{ $percent > 0 ? '+' : '' }}{{ $percent }}%</span>
+                        @endforeach
+                    @endforeach
+                </div>
+            @endif
+
             <div class="row row--wrap" style="--gap:var(--s-2);align-items:center">
                 <span class="tag">{{ Text::get('combat.fight.screen.round', ['round' => $state->round]) }}</span>
                 <span class="tag">{{ Text::get('combat.fight.screen.range.'.$state->range->value) }}</span>
@@ -98,7 +154,7 @@
                 <input type="hidden" name="action" value="attack">
                 <button type="submit" class="btn btn--primary cut" style="justify-self:start">{{ Text::get('combat.fight.screen.attack', ['weapon' => $weapon]) }}</button>
                 <span class="micro" style="color:var(--ink-3)">
-                    {{ Text::get('combat.fight.screen.chance') }}
+                    <button type="button" class="link" data-open="#chance-attack"><button type="button" class="link" data-open="#chance-close_in"><button type="button" class="link" data-open="#chance-create_distance"><button type="button" class="link" data-open="#chance-create_distance">{{ Text::get('combat.fight.screen.chance') }}</button></button></button></button>
                     <span class="num">{{ implode(' · ', array_map(fn (float $c): string => round($c * 100).'%', $attack)) }}</span>
                     @if (count($attack) > 1) — {{ Text::get('combat.fight.screen.shots', ['count' => count($attack)]) }} @endif
                 </span>
@@ -194,5 +250,46 @@
         </div>
     </div>
 @endif
+
+
+{{-- WHY EACH CHANCE IS WHAT IT IS (ChanceExplainer). One dialog per roll; Disengage reads the Create distance one. --}}
+@php($curve = (float) config('checks.spread'))
+@foreach ($explain as $key => $why)
+    <dialog class="modal" id="chance-{{ $key }}">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('combat.fight.chance.title.'.$key) }}</span>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>✕</button>
+        </div>
+        <div class="panel__bd stack" style="--gap:var(--s-3)">
+            @php($odds = $key === 'attack' ? $attack : [$key === 'close_in' ? $closing : $flight])
+            <div class="row row--wrap" style="--gap:var(--s-2)">
+                <span>{{ Text::get('combat.fight.chance.chance') }}</span>
+                <b class="num">{{ implode(' · ', array_map(fn (float $c): string => round($c * 100, 1).'%', $odds)) }}</b>
+            </div>
+
+            <div class="item-card__stats">
+                <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.yours', ['stat' => Text::get('combat.fight.chance.stats.'.$why['yours_label'])]) }}</span><b class="num">{{ round($why['yours'], 1) }}</b></div>
+                <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.base') }}</span><b class="num">{{ round($why['base'], 1) }}</b></div>
+                @foreach ($why['steps'] as $step)
+                    <div class="item-card__stat">
+                        <span>{{ Text::get('combat.fight.chance.op.'.$step['op']) }} @if ($step['sources'] !== []) <span class="micro" style="color:var(--ink-3)">({{ implode(', ', $step['sources']) }})</span> @endif</span>
+                        <b class="num">{{ $step['op'] === 'multiplier' ? '×'.round($step['amount'], 2) : ($step['op'] === 'override' ? '= '.round($step['amount'], 1) : ($step['amount'] >= 0 ? '+' : '').round($step['amount'], 1).($step['op'] === 'percentage_of_base' ? '%' : '')) }}</b>
+                    </div>
+                @endforeach
+                @foreach ($why['extras'] as $extra)
+                    <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.extra.'.$extra['label']) }}</span><b class="num">{{ ($extra['amount'] >= 0 ? '+' : '').round($extra['amount'], 1) }}</b></div>
+                @endforeach
+                <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.theirs', ['stat' => Text::get('combat.fight.chance.stats.'.$why['theirs_label'])]) }}</span><b class="num">{{ round($why['theirs'], 1) }}</b></div>
+                <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.margin') }}</span><b class="num">{{ ($why['margin'] >= 0 ? '+' : '').round($why['margin'], 1) }}</b></div>
+            </div>
+
+            <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.curve', ['spread' => $curve, 'floor' => round((float) config('checks.certainty_floor') * 100, 2)]) }}</p>
+            @if ($key === 'attack' && count($attack) > 1)
+                <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.burst', ['falloff' => round((float) config('combat.burst_falloff') * 100)]) }}</p>
+            @endif
+        </div>
+    </dialog>
+@endforeach
 
 @endsection

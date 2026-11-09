@@ -2567,6 +2567,20 @@ return [
         ],
 
         'fight' => [
+            'chance' => [
+                'title' => ['attack' => 'Chance to hit', 'close_in' => 'Chance to close in', 'create_distance' => 'Chance to create distance'],
+                'chance' => 'Chance',
+                'yours' => 'Your :stat',
+                'theirs' => 'Their :stat',
+                'base' => 'Base',
+                'margin' => 'Margin',
+                'stats' => ['aim' => 'aim', 'defence' => 'defence', 'pursuit' => 'pursuit'],
+                'op' => ['add' => 'Added', 'percentage_of_base' => 'Percent', 'flat' => 'Added after percent', 'multiplier' => 'Multiplied', 'override' => 'Set to'],
+                'extra' => ['accuracy' => 'Weapon accuracy'],
+                'curve' => 'Odds follow one curve: an even margin is 50%, and a margin of :spread is about 73%. No roll is ever below :floor% or above its complement.',
+                'burst' => 'Each shot after the first in a burst is :falloff% worse than the one before.',
+            ],
+
             'screen' => [
                 'title' => 'Fight',
                 'heading' => 'Fight',
@@ -2575,6 +2589,14 @@ return [
                 'range' => ['ranged' => 'Ranged', 'close' => 'Close'],
                 'distance' => 'Distance :distance',
                 'first' => 'They act first.',
+                'foe_weapons' => 'Weapons',
+                'foe_armour' => 'Resistances',
+                'arm_rate' => 'Shots per attack',
+                'arm_magazine' => 'Magazine',
+                'arm_round' => 'Round',
+                'arm_damage' => 'Damage',
+                'arm_types' => 'Damage types',
+                'arm_penetration' => 'Penetration',
                 'you' => 'You',
                 'hit_points' => 'Hit points',
                 'integrity' => 'Synaptic Integrity',

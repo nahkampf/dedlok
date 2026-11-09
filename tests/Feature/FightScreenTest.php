@@ -100,6 +100,26 @@ final class FightScreenTest extends TestCase
             ->assertSeeText('Close in')->assertSeeText('Create distance')->assertDontSeeText('Brace');
     }
 
+    public function test_it_lists_what_the_opponent_carries_and_wears(): void
+    {
+        $this->loadMagazine();
+        $this->fight();
+        Fight::query()->update(['resistances' => ['penetrating' => 30], 'slot_resistances' => ['head' => ['penetrating' => 40]]]);
+
+        $this->as()->get(route('fight.show'))->assertOk()
+            ->assertSeeText('Ranged: Gang pistol')->assertSeeText('Resistances')->assertSeeText('Shots per attack')->assertSeeText('+30%')->assertSeeText('+40%');
+    }
+
+    public function test_chance_opens_an_explanation_of_the_numbers_behind_it(): void
+    {
+        $this->loadMagazine();
+        $this->fight();
+
+        $this->as()->get(route('fight.show'))->assertOk()
+            ->assertSee('data-open="#chance-attack"', false)
+            ->assertSeeText('Chance to hit')->assertSeeText('Your aim')->assertSeeText('Their defence')->assertSeeText('Margin');
+    }
+
     public function test_an_empty_magazine_offers_loading_and_bracing_instead_of_an_attack(): void
     {
         InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $this->fmj->id, 'quantity' => 30]);

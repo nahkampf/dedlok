@@ -267,6 +267,7 @@ final class Fights
 
         return [
             'state' => $state,
+            'explain' => ChanceExplainer::for($fight->character, $state),
             'attack' => $this->engine->quote($state, Side::A),
             'flight' => $this->engine->quoteFlight($state, Side::A),
             'closing' => $this->engine->quoteClosing($state, Side::A),
