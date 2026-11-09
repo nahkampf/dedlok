@@ -141,7 +141,7 @@ final class FightScreenTest extends TestCase
         $this->fight();
 
         $this->as()->get(route('fight.show'))->assertOk()
-            ->assertSee('role="img"', false)->assertSeeText('Meeting point')->assertSeeText('You can get away')->assertSeeText('They can get away')
+            ->assertSee('role="img"', false)->assertSeeText('Face to face')->assertSeeText('You can flee')->assertSeeText('They can flee')
             ->assertSee('You are 1 steps out from the meeting point, they are 1 steps out.', false);
     }
 

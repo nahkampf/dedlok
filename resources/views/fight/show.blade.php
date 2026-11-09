@@ -309,7 +309,6 @@
 
 
 {{-- WHY EACH CHANCE IS WHAT IT IS (ChanceExplainer). One dialog per roll; Disengage reads the Create distance one. --}}
-@php($curve = (float) config('checks.spread'))
 @foreach ($explain as $key => $why)
     <dialog class="modal" id="chance-{{ $key }}">
         <div class="panel__hd">
@@ -339,8 +338,6 @@
                 <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.theirs', ['stat' => Text::get('combat.fight.chance.stats.'.$why['theirs_label'])]) }}</span><b class="num">{{ round($why['theirs'], 1) }}</b></div>
                 <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.margin') }}</span><b class="num">{{ ($why['margin'] >= 0 ? '+' : '').round($why['margin'], 1) }}</b></div>
             </div>
-
-            <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.curve', ['spread' => $curve, 'floor' => round((float) config('checks.certainty_floor') * 100, 2)]) }}</p>
             @if ($why['edge'] ?? false)
                 <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.edge') }}</p>
             @endif
