@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Combat\Fight;
 
 use App\Combat\RiderKind;
+use App\Combat\WeaponClass;
 use App\Support\Points;
 
 /**
@@ -35,7 +36,17 @@ final readonly class Combatant
         public ?int $fleeBeyond = null,
         /** What a level of bleeding costs it each turn; null is `combat.bleed.per_level`. Resolved from the body for a player. */
         public ?float $bleedPerLevel = null,
+        /** Bare hands, whatever is wielded: what a headbutt is thrown with. Null for a snapshot stored before there were any. */
+        public ?Arm $fists = null,
+        /** The value a takedown rolls against the opponent's defence. Zero for one that cannot. */
+        public float $takedown = 0.0,
     ) {}
+
+    /** Bare hands: the stored ones, or the melee arm when that already is. */
+    public function fists(): ?Arm
+    {
+        return $this->fists ?? ($this->melee?->class === WeaponClass::Unarmed ? $this->melee : null);
+    }
 
     /** Hit points lost each of its turns for each level of bleeding. */
     public function bleedPerLevel(): float
@@ -95,6 +106,26 @@ final readonly class Combatant
         return $this->withStatuses([...array_filter($this->statuses, static fn (array $s): bool => $s['kind'] !== $kind->value), $new]);
     }
 
+    /** Bleeding at this level, or nought. */
+    public function bleeding(): int
+    {
+        return (int) ($this->status(RiderKind::Bleeding)['amount'] ?? 0);
+    }
+
+    /**
+     * The same side with `$levels` fewer levels of bleeding (gone at nought), and how many came off.
+     *
+     * @return array{0: self, 1: int}
+     */
+    public function eased(int $levels): array
+    {
+        $eased = min($levels, $this->bleeding());
+        $left = $this->bleeding() - $eased;
+        $rest = array_values(array_filter($this->statuses, static fn (array $s): bool => $s['kind'] !== RiderKind::Bleeding->value));
+
+        return [$this->withStatuses($left > 0 ? [...$rest, ['kind' => RiderKind::Bleeding->value, 'turns' => 0, 'amount' => $left]] : $rest), $eased];
+    }
+
     /** One of its own turns has passed: every status has one fewer, and a spent one is gone. */
     public function aged(): self
     {
@@ -129,7 +160,7 @@ final readonly class Combatant
     {
         return new self(
             $this->name, $hp ?? $this->hp, $this->defence, $this->pursuit, $ranged ?? $this->ranged, $melee ?? $this->melee,
-            $si ?? $this->si, $statuses ?? $this->statuses, $this->hpMax, $this->fleesAt, $this->critChance, $this->fleeBeyond, $this->bleedPerLevel,
+            $si ?? $this->si, $statuses ?? $this->statuses, $this->hpMax, $this->fleesAt, $this->critChance, $this->fleeBeyond, $this->bleedPerLevel, $this->fists, $this->takedown,
         );
     }
 
@@ -139,7 +170,7 @@ final readonly class Combatant
         return [
             'name' => $this->name, 'hp' => $this->hp, 'si' => $this->si, 'defence' => $this->defence, 'pursuit' => $this->pursuit,
             'ranged' => $this->ranged?->toArray(), 'melee' => $this->melee?->toArray(), 'statuses' => $this->statuses,
-            'hp_max' => $this->hpMax, 'flees_at' => $this->fleesAt, 'crit_chance' => $this->critChance, 'flee_beyond' => $this->fleeBeyond, 'bleed_per_level' => $this->bleedPerLevel,
+            'hp_max' => $this->hpMax, 'flees_at' => $this->fleesAt, 'crit_chance' => $this->critChance, 'flee_beyond' => $this->fleeBeyond, 'bleed_per_level' => $this->bleedPerLevel, 'fists' => $this->fists?->toArray(), 'takedown' => $this->takedown,
         ];
     }
 
@@ -154,6 +185,7 @@ final readonly class Combatant
             ($data['hp_max'] ?? null) === null ? null : Points::of($data['hp_max']), ($data['flees_at'] ?? null) === null ? null : (float) $data['flees_at'],
             (float) ($data['crit_chance'] ?? 0), isset($data['flee_beyond']) ? (int) $data['flee_beyond'] : null,
             isset($data['bleed_per_level']) ? (float) $data['bleed_per_level'] : null,
+            ($data['fists'] ?? null) === null ? null : Arm::fromArray($data['fists']), (float) ($data['takedown'] ?? 0),
         );
     }
 }

@@ -14,7 +14,7 @@ use App\Stats\ResolvedStat;
  * number it is rolled against, and the margin between them. Display only: the roll is the engine's, and the numbers
  * read here are the ones `CombatantBuilder` handed it.
  *
- * Keyed `attack`, `close_in`, `create_distance` and `use` (Disengage is rolled the same way as Create distance).
+ * Keyed `attack`, `headbutt`, `takedown`, `close_in`, `create_distance` and `use` (Disengage is rolled the same way as Create distance).
  */
 final class ChanceExplainer
 {
@@ -29,12 +29,25 @@ final class ChanceExplainer
             'use' => self::entry('defence', $character->stat('defence'), [], 'pursuit', $foe->pursuit),
         ];
 
+        $edge = $state->a->status(RiderKind::Edge) !== null;
+        $fists = $state->a->fists();
+
+        if ($fists !== null) {
+            $aim = $character->stat(CombatStats::aimId($fists->class));
+            $out['headbutt'] = self::entry('aim', $aim, abs($fists->aim - $aim->value) < 0.000001 ? [] : [['label' => 'accuracy', 'amount' => $fists->aim - $aim->value]], 'defence', $foe->defence) + ['edge' => $edge];
+        }
+
+        // Muscle and motor as a pool, plus what skills have added to unarmed aim on top of its own pool.
+        $unarmed = $character->stat(CombatStats::aimId(WeaponClass::Unarmed));
+        $bonus = $unarmed->value - $unarmed->base;
+        $out['takedown'] = self::entry('takedown', $character->stat('takedown'), abs($bonus) < 0.000001 ? [] : [['label' => 'unarmed_bonus', 'amount' => $bonus]], 'defence', $foe->defence) + ['edge' => false];
+
         $arm = $state->a->arm($state->range);
 
         if ($arm !== null) {
             $aim = $character->stat(CombatStats::aimId($arm->class));
             $accuracy = $arm->aim - $aim->value;
-            $out['attack'] = self::entry('aim', $aim, abs($accuracy) < 0.000001 ? [] : [['label' => 'accuracy', 'amount' => $accuracy]], 'defence', $foe->defence);
+            $out['attack'] = self::entry('aim', $aim, abs($accuracy) < 0.000001 ? [] : [['label' => 'accuracy', 'amount' => $accuracy]], 'defence', $foe->defence) + ['edge' => $edge];
         }
 
         return $out;

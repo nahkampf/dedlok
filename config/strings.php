@@ -2568,15 +2568,17 @@ return [
 
         'fight' => [
             'chance' => [
-                'title' => ['attack' => 'Chance to hit', 'close_in' => 'Chance to close in', 'create_distance' => 'Chance to create distance', 'use' => 'Chance to get it out'],
+                'title' => ['attack' => 'Chance to hit', 'close_in' => 'Chance to close in', 'create_distance' => 'Chance to create distance', 'use' => 'Chance to get it out', 'headbutt' => 'Chance to land the headbutt', 'takedown' => 'Chance to take them down'],
                 'chance' => 'Chance',
                 'yours' => 'Your :stat',
                 'theirs' => 'Their :stat',
                 'base' => 'Base',
                 'margin' => 'Margin',
-                'stats' => ['aim' => 'aim', 'defence' => 'defence', 'pursuit' => 'pursuit'],
+                'stats' => ['aim' => 'aim', 'defence' => 'defence', 'pursuit' => 'pursuit', 'takedown' => 'takedown'],
+                'edge' => 'You have the upper hand from a takedown, which doubles the chance of this attack.',
+                'takedown_cap' => 'However strong, a takedown never passes :cap%.',
                 'op' => ['add' => 'Added', 'percentage_of_base' => 'Percent', 'flat' => 'Added after percent', 'multiplier' => 'Multiplied', 'override' => 'Set to'],
-                'extra' => ['accuracy' => 'Weapon accuracy'],
+                'extra' => ['accuracy' => 'Weapon accuracy', 'unarmed_bonus' => 'Unarmed bonus (skills and the like)'],
                 'curve' => 'Odds follow one curve: an even margin is 50%, and a margin of :spread is about 73%. No roll is ever below :floor% or above its complement.',
                 'burst' => 'Each shot after the first in a burst is :falloff% worse than the one before.',
             ],
@@ -2587,6 +2589,11 @@ return [
                 'grade' => 'Grade :grade',
                 'round' => 'Round :round',
                 'range' => ['ranged' => 'Ranged', 'close' => 'Close'],
+                'status_level' => ':status :level',
+                'headbutt' => 'Headbutt',
+                'headbutt_hint' => 'A bare-hands blow with :bonus more damage, whatever is in your hand. :recoil% you take the same blow to the head.',
+                'takedown' => 'Takedown',
+                'takedown_hint' => 'Muscle and motor against their defence. A success dazes them for a turn and doubles your next attack; a failure costs your next turn.',
                 'distance' => 'Gap :distance',
                 'bar' => [
                     'aria' => 'You are :you steps out from the meeting point, they are :foe steps out. The gap is :gap.',
@@ -2671,6 +2678,12 @@ return [
                 'dose_overdose' => 'Too much. Your body pays for it.',
                 'afflicted' => ':who is :status for :turns.',
                 'tick' => ':who takes :amount from :status.',
+                'wound' => ':who is bleeding (level :level).',
+                'headbutt_recoil' => ':who takes the same blow to the head: :parts.',
+                'takedown_ok' => ':who takes :target to the ground. :target is dazed, and :who has the upper hand.',
+                'takedown_failed' => ':who stumbles and nearly falls, spending a turn regaining their balance.',
+                'cannot_headbutt' => ':who has no room for that and braces.',
+                'cannot_takedown' => ':who has no room for that and braces.',
                 'skip_stun' => ':who is stunned and loses the turn.',
                 'skip_dazed' => ':who is dazed and loses the turn.',
                 'skip_off_balance' => ':who spends the turn regaining their balance.',
@@ -2893,6 +2906,11 @@ return [
         'use' => 'Use',
         'used' => 'You use :item. :effects',
         'effects' => [
+            'stop_bleeding' => [
+                'label' => 'Stops bleeding',
+                'card' => 'Stops :amount levels of bleeding',
+                'done' => 'The bleeding eases by :amount.',
+            ],
             'heal_hitpoints' => [
                 'label' => 'Restores hit points',
                 'card' => 'Restores :amount hit points',
@@ -3265,6 +3283,8 @@ return [
             // two tag sets that reach every class at once.
             'defence' => 'Defence',
             'pursuit' => 'Pursuit',
+            'takedown' => 'Takedown',
+            'bleed_per_level' => 'Hit points lost per level of bleeding',
             'critical_chance_physical' => 'Critical hit chance in a fight',
             'critical_chance_cyberspace' => 'Critical hit chance in cyberspace',
             'aim' => 'aim with every weapon',
@@ -5338,6 +5358,8 @@ return [
                 // The consumable panel: what using one copy does, once.
                 'use_heal_hitpoints' => 'Restores hit points',
                 'use_heal_hitpoints_hint' => 'Using one copy restores this many hit points at once, never past the maximum as it stands. Leave it blank and the item is not a consumable. A medkit is this; a drug is something that lasts. A drug can carry it too: taking the dose then also restores this at once, and tolerance does not weaken it.',
+                'use_stop_bleeding' => 'Stops bleeding',
+                'use_stop_bleeding_hint' => 'Takes this many levels off bleeding. Only does anything in a fight (so tick Allowed in combat); a big number stops it outright. A drug can carry it too.',
                 'use_fullness' => 'Fills you up (food)',
                 'use_fullness_hint' => 'Eating one copy adds this much fullness, up to the maximum of 50. Refused outright when they are already full. Fullness starts at nothing and drains by the minute. Leave it blank for none.',
                 'use_ease_fatigue' => 'Eases fatigue (food)',

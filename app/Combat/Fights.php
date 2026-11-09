@@ -27,6 +27,7 @@ use App\Items\UseEffect;
 use App\Items\UseRefusal;
 use App\Models\Character;
 use App\Models\CityActivity;
+use App\Models\Consumable;
 use App\Models\Dose;
 use App\Models\Fight;
 use App\Models\InventoryItem;
@@ -75,7 +76,7 @@ final class Fights
     public static function fromConfig(?Closure $die = null): self
     {
         return new self(
-            new FightEngine(CheckRoller::fromConfig()),
+            new FightEngine(CheckRoller::fromConfig(), static fn (int $min, int $max): int => random_int($min, $max)),
             $die ?? static fn (): float => random_int(0, PHP_INT_MAX - 1) / PHP_INT_MAX,
         );
     }
@@ -161,7 +162,7 @@ final class Fights
                 }
 
                 // A consumable that would do nothing is refused before the turn is spent, as the stash refuses it.
-                if ($use->item?->drug === null && app(Consumer::class)->refusalFor($locked, $use->item->consumable) !== null) {
+                if ($use->item?->drug === null && app(Consumer::class)->refusalFor($locked, $use->item->consumable, $fight->snapshot()->a->bleeding()) !== null) {
                     return FightRefusal::NothingToDo;
                 }
             }
@@ -280,6 +281,10 @@ final class Fights
             'flight' => $this->engine->quoteFlight($state, Side::A),
             'closing' => $this->engine->quoteClosing($state, Side::A),
             'use_chance' => $this->engine->quoteUse($state, Side::A),
+            'headbutt_chance' => $this->engine->quoteHeadbutt($state, Side::A),
+            'takedown_chance' => $this->engine->quoteTakedown($state, Side::A),
+            'can_headbutt' => $this->engine->legal($state, Side::A, Action::headbutt()),
+            'can_takedown' => $this->engine->legal($state, Side::A, Action::takedown()),
             'can_close_in' => $this->engine->legal($state, Side::A, Action::closeIn()),
             'can_disengage' => $this->engine->legal($state, Side::A, Action::disengage()),
             'can_attack' => $this->engine->canAttack($state, Side::A),
@@ -291,7 +296,7 @@ final class Fights
                 'drug' => $row->item?->drug !== null,
                 'effects' => $row->item?->drug === null ? (string) $row->item?->consumable?->describe() : '',
                 // A consumable that would do nothing right now is shown and cannot be pressed.
-                'ready' => $row->item?->drug !== null || app(Consumer::class)->refusalFor($fight->character, $row->item->consumable) === null,
+                'ready' => $row->item?->drug !== null || app(Consumer::class)->refusalFor($fight->character, $row->item->consumable, $state->a->bleeding()) === null,
                 'turns' => (int) $row->item?->drug?->duration_turns,
                 'hitpoints' => (int) $row->item?->drug?->turn_hitpoints,
                 'quantity' => (int) $row->quantity,
@@ -387,9 +392,10 @@ final class Fights
         }
 
         $said = [Text::get('combat.fight.log.dose', ['who' => $after->a->name, 'item' => $name])];
+        [$after, $eased] = $this->ease($after, $row->item?->consumable);
 
         foreach ($result->instant as $kind => $amount) {
-            $said[] = UseEffect::from($kind)->done($amount);
+            $said[] = UseEffect::from($kind)->done($kind === UseEffect::StopBleeding->value ? $eased : $amount);
         }
 
         $said[] = Text::get('combat.fight.log.dose_lasts', ['turns' => (int) $drug?->duration_turns]);
@@ -404,19 +410,42 @@ final class Fights
         return $after->a->down() ? $after->ended(Result::ADown) : $after;
     }
 
+    /**
+     * What a used item does about the wound: bleeding lives in the fight, so the fight takes the levels off its own state.
+     *
+     * @return array{0: FightState, 1: int} the state, and how many levels came off
+     */
+    private function ease(FightState $after, ?Consumable $consumable): array
+    {
+        $levels = 0;
+
+        foreach ($consumable?->kinds() ?? [] as [$kind, $amount]) {
+            $levels += $kind === UseEffect::StopBleeding ? $amount : 0;
+        }
+
+        if ($levels === 0) {
+            return [$after, 0];
+        }
+
+        [$side, $eased] = $after->a->eased($levels);
+
+        return [$after->with(Side::A, $side), $eased];
+    }
+
     /** A consumable allowed in a fight, used from the belt: the same copy-spending and effects as the stash, said in the log. */
     private function spendConsumable(Character $character, InventoryItem $row, FightState $after, int $round, string $name): FightState
     {
-        $done = app(Consumer::class)->use($character, $row, inFight: true);
+        $done = app(Consumer::class)->use($character, $row, inFight: true, bleeding: $after->a->bleeding());
 
         if ($done instanceof UseRefusal) {
             return $after->withLog([['round' => $round, 'text' => $done->message(), 'tone' => 'crit']]);
         }
 
         $said = [Text::get('combat.fight.log.dose', ['who' => $after->a->name, 'item' => $name])];
+        [$after, $eased] = $this->ease($after, $row->item?->consumable);
 
         foreach ($done as $kind => $amount) {
-            $said[] = UseEffect::from($kind)->done($amount);
+            $said[] = UseEffect::from($kind)->done($kind === UseEffect::StopBleeding->value ? $eased : $amount);
         }
 
         return $after->with(Side::A, $after->a->with(hp: $character->current_hitpoints, si: $character->current_synaptic_integrity))

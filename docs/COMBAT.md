@@ -374,6 +374,23 @@ penetration, profile and riders.
 A fight should run **4–10 rounds** and cost a fifth to most of a character's HP at grades 1–5;
 those two ratios are what the balance pass tunes.
 
+## Headbutt, takedown and bleeding — BUILT (2026-11-09)
+
+- **Headbutt** (Close only, whatever is in the hand: `Combatant::fists`): a bare-hands attack with `combat.headbutt.damage_bonus` more damage and the
+  chance of an ordinary bare-hands attack. On a blow that LANDS (not a near miss) there is a `combat.headbutt.recoil` percent chance the giver takes the
+  same blow to the head, rolled on the engine's own die (below) and through the giver's own mitigation.
+- **Takedown** (Close only): a check of `Combatant::takedown` against the target's `defence`, capped at `combat.takedown.cap`. The value is the `takedown`
+  pool, (muscle + motor) / 3, plus what modifiers have added to `aim.unarmed` on top of its own pool. **Success**: the target is `Dazed` (loses its next turn)
+  and the taker gets `Edge` (double the chance of their next attack, a 2-turn status so it survives the other side's turn and is gone after the taker's
+  next one). **Failure**: the taker is `OffBalance` and loses their next turn. All three are statuses (`RiderKind`), so the rebuilt player's side keeps them.
+- **Bleeding** (`RiderKind::Bleeding`, engine-only): a hit that is Clean or Dead-on and took hit points may open a wound with chance
+  `combat.bleed.base` plus each damage type's `bonus` weighted by its share of the hit. Each wound is one more LEVEL (to `combat.bleed.max_level`), it never
+  ages, and every turn of its owner costs `bleed_per_level` (a stat, base 0.5) hit points a level, flat and unresisted. **Stopping it**: the consumable effect
+  `stop_bleeding` (also usable on a fight-only drug's consumable half) takes levels off; a modifier on `bleed_per_level` (an implant, a drug, a skill) reduces
+  it gradually. Bleeding is NOT stored on the body: it lives in the fight, so the fight (not `Consumer`) eases it.
+- **The engine's own die** (`FightEngine`'s `$extraDie`, `fn (int $min, int $max): int`) rolls wounds and recoil, apart from the pinned fight dice so adding a
+  roll never reorders the others. Null (a test, the pure engine) means no wounds and no recoil; `Fights` and `Simulation` pass real ones.
+
 ## The engine's shape (step 2) — BUILT
 
 **As built (`App\Combat\Fight`).** Everything the engine needs is a plain-data snapshot, so a fight is stored as

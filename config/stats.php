@@ -707,6 +707,28 @@ return [
             'rounding' => 'tenth',
         ],
 
+        /*
+        | How well somebody takes a person to the ground at Close: (muscle + motor) / 3 against the target's `defence`.
+        | A pool (`pools.takedown`) so skills, implants and drugs can add to it. docs/COMBAT.md, *Headbutt and takedown*.
+        */
+        'takedown' => [
+            'tags' => ['combat'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'tenth',
+        ],
+
+        /*
+        | Hit points each level of bleeding costs its owner every turn. A flat base in `bases`: an implant, a drug or a
+        | skill that clots a wound is a modifier on it, which is how bleeding is reduced GRADUALLY (a consumable stops it).
+        */
+        'bleed_per_level' => [
+            'tags' => ['combat'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'hundredth',
+        ],
+
         'critical_chance_cyberspace' => [
             'tags' => ['cyberspace'],
             'min' => 0,
@@ -992,6 +1014,7 @@ return [
 
         // Two per cent of a player's hits are critical, in either realm.
         'critical_chance_physical' => 2,
+        'bleed_per_level' => 0.5,
         'critical_chance_cyberspace' => 2,
 
         // Nobody routes a run through anything until a skill says otherwise.
@@ -1053,6 +1076,11 @@ return [
         | way past anything. Obfuscation adds to it flat and evasion programs
         | are meant to carry the rest.
         */
+        'takedown' => [
+            'attributes' => ['muscle', 'motor'],
+            'divisor' => 3.0,
+        ],
+
         'stealth' => [
             'attributes' => ['intellect', 'focus', 'memory', 'perception'],
             'divisor' => 8.5,

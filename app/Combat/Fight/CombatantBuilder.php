@@ -51,6 +51,10 @@ final class CombatantBuilder
             si: Points::of($character->current_synaptic_integrity),
             hpMax: Points::of($character->stat('hitpoints_max')->value),
             critChance: $character->stat('critical_chance_physical')->value,
+            bleedPerLevel: $character->stat('bleed_per_level')->value,
+            fists: self::bareHands($aim(WeaponClass::Unarmed, 0), $damage(WeaponClass::Unarmed, (float) config('combat.unarmed.damage'))),
+            // The pool, plus what skills and the like have added to unarmed aim on top of ITS pool.
+            takedown: $character->stat('takedown')->value + ($character->stat(CombatStats::aimId(WeaponClass::Unarmed))->value - $character->stat(CombatStats::aimId(WeaponClass::Unarmed))->base),
         );
     }
 
@@ -77,6 +81,7 @@ final class CombatantBuilder
             hpMax: Points::of($spec['hp'] ?? 40),
             fleesAt: isset($spec['flees_at']) ? (float) $spec['flees_at'] : null,
             fleeBeyond: isset($spec['flee_beyond']) ? (int) $spec['flee_beyond'] : null,
+            fists: self::bareHands($aim, (float) config('combat.unarmed.damage')),
         );
     }
 

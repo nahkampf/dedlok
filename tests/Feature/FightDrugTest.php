@@ -11,6 +11,7 @@ use App\Combat\Fight\Result;
 use App\Combat\Fight\Side;
 use App\Combat\FightRefusal;
 use App\Combat\Fights;
+use App\Combat\RiderKind;
 use App\Combat\WeaponClass;
 use App\Drugs\DoseRefusal;
 use App\Drugs\DrugTaker;
@@ -418,5 +419,71 @@ final class FightDrugTest extends TestCase
 
         $this->assertSame(FightRefusal::NothingToDo, $this->with([])->act($this->character->fresh(), Action::use($row->id)));
         $this->assertSame(2, $row->fresh()->quantity);
+    }
+
+    // ---- bleeding in a real fight ------------------------------------------------------------
+
+    /** Put the player's side at this level of bleeding in the stored fight. */
+    private function bleedingAt(int $level): void
+    {
+        $row = Fight::query()->sole();
+        $state = $row->state;
+        $state['a']['statuses'] = [['kind' => 'bleeding', 'turns' => 0, 'amount' => $level]];
+        $row->update(['state' => $state]);
+    }
+
+    private function dressing(int $levels = 2): InventoryItem
+    {
+        $item = Item::factory()->create(['container' => 'physical', 'name' => 'Pressure dressing', 'stackable' => true]);
+        ConsumableEditor::apply($item, [['kind' => 'stop_bleeding', 'amount' => $levels]], true);
+
+        return InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 2, 'belt_slot' => 1]);
+    }
+
+    public function test_a_dressing_stops_bleeding_in_the_fight_and_is_spent(): void
+    {
+        $row = $this->dressing(1);
+        $this->open();
+        $this->bleedingAt(2);
+
+        $fight = $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
+
+        $this->assertSame(1, $fight->snapshot()->a->bleeding(), 'two levels, one taken off');
+        $this->assertSame(1, $row->fresh()->quantity);
+        $this->assertTrue(collect(array_column($fight->snapshot()->log, 'text'))->contains(fn (string $t): bool => str_contains($t, 'The bleeding eases by 1.')));
+    }
+
+    public function test_a_dressing_does_nothing_when_there_is_no_bleeding_so_it_is_refused(): void
+    {
+        $row = $this->dressing();
+        $this->open();
+
+        $this->assertSame(FightRefusal::NothingToDo, $this->with([])->act($this->character->fresh(), Action::use($row->id)));
+        $this->assertSame(2, $row->fresh()->quantity);
+    }
+
+    public function test_the_players_wound_and_edge_survive_the_side_being_rebuilt_each_round(): void
+    {
+        $this->open();
+        $this->bleedingAt(1);
+        $row = Fight::query()->sole();
+        $state = $row->state;
+        $state['a']['statuses'][] = ['kind' => 'edge', 'turns' => 2, 'amount' => 0];
+        $row->update(['state' => $state]);
+        $before = $this->hp();
+
+        $fight = $this->with([0.999])->act($this->character->fresh(), Action::brace());
+
+        $a = $fight->snapshot()->a;
+        $this->assertSame(1, $a->bleeding());
+        $this->assertNotNull($a->status(RiderKind::Edge));
+        $this->assertSame($before - 1, $this->hp(), 'the half point a level costs is lost, and the body keeps whole points');
+    }
+
+    public function test_the_real_fights_engine_has_the_extra_die_that_wounds_need(): void
+    {
+        $engine = (new \ReflectionProperty(Fights::class, 'engine'))->getValue(app(Fights::class));
+
+        $this->assertNotNull((new \ReflectionProperty($engine, 'extraDie'))->getValue($engine), 'without it nobody ever bleeds');
     }
 }

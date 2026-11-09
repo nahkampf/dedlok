@@ -40,7 +40,8 @@
             @if ($state->b->statuses !== [])
                 <div class="row row--wrap" style="--gap:var(--s-1)">
                     @foreach ($state->b->statuses as $status)
-                        <span class="tag">{{ Text::get('combat.fight.screen.status_for', ['status' => RiderKind::from($status['kind'])->label(), 'turns' => $status['turns']]) }}</span>
+                        @php($kind = RiderKind::from($status['kind']))
+                        <span class="tag">{{ $kind === RiderKind::Bleeding ? Text::get('combat.fight.screen.status_level', ['status' => $kind->label(), 'level' => $status['amount']]) : ($kind === RiderKind::Edge ? $kind->label() : Text::get('combat.fight.screen.status_for', ['status' => $kind->label(), 'turns' => $status['turns']])) }}</span>
                     @endforeach
                 </div>
             @endif
@@ -154,7 +155,8 @@
         @if ($state->a->statuses !== [])
             <div class="row row--wrap" style="--gap:var(--s-1);grid-column:1/-1">
                 @foreach ($state->a->statuses as $status)
-                    <span class="tag tag--crit">{{ Text::get('combat.fight.screen.status_for', ['status' => RiderKind::from($status['kind'])->label(), 'turns' => $status['turns']]) }}</span>
+                    @php($kind = RiderKind::from($status['kind']))
+                    <span class="tag tag--crit">{{ $kind === RiderKind::Bleeding ? Text::get('combat.fight.screen.status_level', ['status' => $kind->label(), 'level' => $status['amount']]) : ($kind === RiderKind::Edge ? $kind->label() : Text::get('combat.fight.screen.status_for', ['status' => $kind->label(), 'turns' => $status['turns']])) }}</span>
                 @endforeach
             </div>
         @endif
@@ -245,6 +247,26 @@
             </form>
         @endif
 
+        {{-- At Close only. Headbutt: a bare-hands blow whatever is in the hand, a little harder, and it can hurt you. Takedown: a check
+             (muscle and motor against their defence); a success leaves them dazed and gives you the upper hand, a failure costs your next turn. --}}
+        @if ($can_headbutt)
+            <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
+                @csrf
+                <input type="hidden" name="action" value="headbutt">
+                <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.headbutt') }}</button>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-headbutt">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($headbutt_chance * 100) }}%</span> — {{ Text::get('combat.fight.screen.headbutt_hint', ['bonus' => config('combat.headbutt.damage_bonus'), 'recoil' => config('combat.headbutt.recoil')]) }}</span>
+            </form>
+        @endif
+
+        @if ($can_takedown)
+            <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
+                @csrf
+                <input type="hidden" name="action" value="takedown">
+                <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.takedown') }}</button>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-takedown">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($takedown_chance * 100) }}%</span> — {{ Text::get('combat.fight.screen.takedown_hint') }}</span>
+            </form>
+        @endif
+
         @if ($can_disengage)
             <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
                 @csrf
@@ -296,7 +318,7 @@
             <button type="button" class="btn btn--sm btn--ghost" data-close>✕</button>
         </div>
         <div class="panel__bd stack" style="--gap:var(--s-3)">
-            @php($odds = $key === 'attack' ? $attack : [match ($key) { 'close_in' => $closing, 'use' => $use_chance, default => $flight }])
+            @php($odds = $key === 'attack' ? $attack : [match ($key) { 'close_in' => $closing, 'use' => $use_chance, 'headbutt' => $headbutt_chance, 'takedown' => $takedown_chance, default => $flight }])
             <div class="row row--wrap" style="--gap:var(--s-2)">
                 <span>{{ Text::get('combat.fight.chance.chance') }}</span>
                 <b class="num">{{ implode(' · ', array_map(fn (float $c): string => round($c * 100, 1).'%', $odds)) }}</b>
@@ -319,6 +341,12 @@
             </div>
 
             <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.curve', ['spread' => $curve, 'floor' => round((float) config('checks.certainty_floor') * 100, 2)]) }}</p>
+            @if ($why['edge'] ?? false)
+                <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.edge') }}</p>
+            @endif
+            @if ($key === 'takedown')
+                <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.takedown_cap', ['cap' => round((float) config('combat.takedown.cap') * 100)]) }}</p>
+            @endif
             @if ($key === 'attack' && count($attack) > 1)
                 <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.burst', ['falloff' => round((float) config('combat.burst_falloff') * 100)]) }}</p>
             @endif

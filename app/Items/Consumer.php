@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 final class Consumer
 {
     /** Why using this on this body would be refused for what it does (not for who owns it), or null. Asked by `use()` and, before a round is spent, by a fight. */
-    public function refusalFor(Character $body, Consumable $consumable): ?UseRefusal
+    public function refusalFor(Character $body, Consumable $consumable, int $bleeding = 0): ?UseRefusal
     {
         $effects = $consumable->kinds();
 
@@ -36,7 +36,7 @@ final class Consumer
         }
 
         foreach ($effects as [$kind, $amount]) {
-            if ($kind->would($body, $amount) > 0) {
+            if ($kind->would($body, $amount, $bleeding) > 0) {
                 return null;
             }
         }
@@ -50,7 +50,7 @@ final class Consumer
      *
      * @return array<string, int>|UseRefusal what each effect changed, by its kind's value
      */
-    public function use(Character $character, InventoryItem $row, bool $inFight = false): array|UseRefusal
+    public function use(Character $character, InventoryItem $row, bool $inFight = false, int $bleeding = 0): array|UseRefusal
     {
         if ($row->character_id !== $character->id) {
             return UseRefusal::NotOwned;
@@ -68,14 +68,14 @@ final class Consumer
             return UseRefusal::NotFree;
         }
 
-        return DB::transaction(function () use ($character, $row, $consumable, $inFight): array|UseRefusal {
+        return DB::transaction(function () use ($character, $row, $consumable, $inFight, $bleeding): array|UseRefusal {
             $body = Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail();
 
             if ($body->current_fight_id !== null && ! ($inFight && $consumable->usable_in_fight)) {
                 return UseRefusal::InAFight;
             }
 
-            if ($refusal = $this->refusalFor($body, $consumable)) {
+            if ($refusal = $this->refusalFor($body, $consumable, $bleeding)) {
                 return $refusal;
             }
 
