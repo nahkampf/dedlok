@@ -15,18 +15,17 @@
 
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
     <div class="panel__bd row row--wrap" style="--gap:var(--s-5);align-items:flex-start">
-        {{-- Its own picture or the folder's default (public/images/enemies). An opponent deleted mid-fight has no row to
-             find one for, and a missing one renders nothing rather than a broken one. --}}
-        @php($foe = $fight->npc)
-        @if ($foe !== null && ($foePicture = \App\Combat\NpcImage::url($foe)))
+        {{-- The opponent's own picture; else the scene's if an encounter started this; else the stand-in for every opponent
+             (App\Combat\FightPicture). Whoever's picture it is, their credit goes under it. --}}
+        @if ($picture = \App\Combat\FightPicture::for($fight))
             <div class="stack" style="--gap:var(--s-1)">
-                <span class="entity-image entity-image--portrait"><img src="{{ $foePicture }}" alt="{{ $fight->opponent_name }}" width="300" height="400" decoding="async"></span>
-                @if ($foe->image_credit)
+                <span class="entity-image entity-image--portrait"><img src="{{ $picture['url'] }}" alt="{{ $fight->opponent_name }}" width="300" height="400" decoding="async"></span>
+                @if ($picture['credit'])
                     <span class="micro" style="color:var(--ink-3);max-width:300px">
-                        @if ($foe->image_link)
-                            <a href="{{ $foe->image_link }}" target="_blank" rel="noopener noreferrer">{{ $foe->image_credit }}</a>
+                        @if ($picture['link'])
+                            <a href="{{ $picture['link'] }}" target="_blank" rel="noopener noreferrer">{{ $picture['credit'] }}</a>
                         @else
-                            {{ $foe->image_credit }}
+                            {{ $picture['credit'] }}
                         @endif
                     </span>
                 @endif

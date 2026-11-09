@@ -27,13 +27,19 @@ final class NpcImage
     /** Its own picture, else the folder's default, else null (a screen then leaves the space out). */
     public static function url(Npc $npc): ?string
     {
-        foreach (["{$npc->getKey()}.jpg", 'default.jpg'] as $file) {
-            if (is_file(public_path(self::FOLDER."/{$file}"))) {
-                return Asset::url(self::FOLDER."/{$file}");
-            }
-        }
+        return self::ownUrl($npc) ?? self::defaultUrl();
+    }
 
-        return null;
+    /** Only a picture of its own: null when it has none, whatever the folder's default is. */
+    public static function ownUrl(Npc $npc): ?string
+    {
+        return self::exists($npc) ? Asset::url(self::FOLDER."/{$npc->getKey()}.jpg") : null;
+    }
+
+    /** The folder's stand-in for every opponent that has no picture, if one has been added. */
+    public static function defaultUrl(): ?string
+    {
+        return is_file(public_path(self::FOLDER.'/default.jpg')) ? Asset::url(self::FOLDER.'/default.jpg') : null;
     }
 
     public static function exists(Npc $npc): bool

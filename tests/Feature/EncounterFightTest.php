@@ -9,6 +9,7 @@ use App\Characters\WaitingRoom;
 use App\Checks\CheckRoller;
 use App\City\CityClock;
 use App\City\CityRefusal;
+use App\City\EncounterImage;
 use App\City\EncounterRunner;
 use App\City\Encounters;
 use App\City\EncounterStep;
@@ -17,6 +18,7 @@ use App\Combat\Fight\Action;
 use App\Combat\Fight\FightEngine;
 use App\Combat\Fight\Result;
 use App\Combat\FightEnding;
+use App\Combat\FightPicture;
 use App\Combat\Fights;
 use App\Combat\WeaponClass;
 use App\Models\Ammunition;
@@ -447,5 +449,70 @@ final class EncounterFightTest extends TestCase
         $this->enter($encounter);
 
         $this->actingAs($this->character->user)->get(route('encounter.show'))->assertOk()->assertSeeText('Fight');
+    }
+
+    // ---- whose picture the fight shows --------------------------------------------------------
+
+    private function picture(string $path): string
+    {
+        @mkdir(dirname($path), 0775, true);
+        imagejpeg(imagecreatetruecolor(30, 40), $path);
+
+        return $path;
+    }
+
+    public function test_the_opponents_own_picture_wins_over_the_encounters_which_wins_over_the_stand_in(): void
+    {
+        $npc = $this->npc();
+        $encounter = $this->ambush($npc);
+        $encounter->update(['image_credit' => 'Scene Artist']);
+        $npc->update(['image_credit' => 'Foe Artist']);
+        $files = [];
+
+        try {
+            $this->dice([0.5]);
+            $this->enter($encounter);
+            $this->runner()->choose($this->character->fresh(), $this->choiceId($encounter));
+            $fight = Fight::query()->sole();
+
+            // Nothing drawn at all: nothing to show.
+            $this->assertNull(FightPicture::for($fight));
+
+            // The stand-in for every opponent.
+            $files[] = $this->picture(public_path('images/enemies/default.jpg'));
+            $this->assertStringContainsString('enemies/default.jpg', FightPicture::for($fight)['url']);
+
+            // The scene that spawned it, with its credit.
+            $files[] = $this->picture(EncounterImage::path($encounter));
+            $got = FightPicture::for($fight);
+            $this->assertStringContainsString("encounters/physical/{$encounter->id}.jpg", $got['url']);
+            $this->assertSame('Scene Artist', $got['credit']);
+
+            // The opponent's own, with its own credit, beats both.
+            $files[] = $this->picture(public_path("images/enemies/{$npc->id}.jpg"));
+            $got = FightPicture::for($fight);
+            $this->assertStringContainsString("enemies/{$npc->id}.jpg", $got['url']);
+            $this->assertSame('Foe Artist', $got['credit']);
+        } finally {
+            foreach ($files as $file) {
+                @unlink($file);
+            }
+        }
+    }
+
+    public function test_an_encounter_screen_credits_its_own_picture(): void
+    {
+        $encounter = $this->ambush($this->npc());
+        $encounter->update(['image_credit' => 'Scene Artist', 'image_link' => 'https://example.com/scene']);
+        $file = $this->picture(EncounterImage::path($encounter));
+
+        try {
+            $this->enter($encounter);
+
+            $this->actingAs($this->character->user)->get(route('encounter.show'))->assertOk()
+                ->assertSeeText('Scene Artist')->assertSee('href="https://example.com/scene"', false);
+        } finally {
+            @unlink($file);
+        }
     }
 }
