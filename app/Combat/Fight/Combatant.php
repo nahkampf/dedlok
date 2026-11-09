@@ -33,7 +33,15 @@ final readonly class Combatant
         public float $critChance = 0.0,
         /** How far from the meeting point it must be before it can Disengage; null is the fight's default (`combat.distance.flee_beyond`). */
         public ?int $fleeBeyond = null,
+        /** What a level of bleeding costs it each turn; null is `combat.bleed.per_level`. Resolved from the body for a player. */
+        public ?float $bleedPerLevel = null,
     ) {}
+
+    /** Hit points lost each of its turns for each level of bleeding. */
+    public function bleedPerLevel(): float
+    {
+        return $this->bleedPerLevel ?? (float) config('combat.bleed.per_level');
+    }
 
     /** It may Disengage only from MORE than this many steps out from the meeting point. */
     public function escapeBeyond(): int
@@ -78,7 +86,11 @@ final readonly class Combatant
     public function afflicted(RiderKind $kind, int $turns, int $amount): self
     {
         $current = $this->status($kind);
-        $new = ['kind' => $kind->value, 'turns' => max($turns, $current['turns'] ?? 0), 'amount' => max($amount, $current['amount'] ?? 0)];
+        // Bleeding STACKS: each new wound is one more level, up to the cap. Everything else refreshes.
+        $level = $kind === RiderKind::Bleeding
+            ? min((int) config('combat.bleed.max_level'), ($current['amount'] ?? 0) + max(1, $amount))
+            : max($amount, $current['amount'] ?? 0);
+        $new = ['kind' => $kind->value, 'turns' => max($turns, $current['turns'] ?? 0), 'amount' => $level];
 
         return $this->withStatuses([...array_filter($this->statuses, static fn (array $s): bool => $s['kind'] !== $kind->value), $new]);
     }
@@ -86,9 +98,11 @@ final readonly class Combatant
     /** One of its own turns has passed: every status has one fewer, and a spent one is gone. */
     public function aged(): self
     {
+        $persistent = static fn (array $s): bool => RiderKind::from($s['kind'])->persistent();
+
         return $this->withStatuses(array_values(array_filter(
-            array_map(static fn (array $s): array => ['turns' => $s['turns'] - 1] + $s, $this->statuses),
-            static fn (array $s): bool => $s['turns'] > 0,
+            array_map(static fn (array $s): array => $persistent($s) ? $s : ['turns' => $s['turns'] - 1] + $s, $this->statuses),
+            static fn (array $s): bool => $persistent($s) || $s['turns'] > 0,
         )));
     }
 
@@ -115,7 +129,7 @@ final readonly class Combatant
     {
         return new self(
             $this->name, $hp ?? $this->hp, $this->defence, $this->pursuit, $ranged ?? $this->ranged, $melee ?? $this->melee,
-            $si ?? $this->si, $statuses ?? $this->statuses, $this->hpMax, $this->fleesAt, $this->critChance, $this->fleeBeyond,
+            $si ?? $this->si, $statuses ?? $this->statuses, $this->hpMax, $this->fleesAt, $this->critChance, $this->fleeBeyond, $this->bleedPerLevel,
         );
     }
 
@@ -125,7 +139,7 @@ final readonly class Combatant
         return [
             'name' => $this->name, 'hp' => $this->hp, 'si' => $this->si, 'defence' => $this->defence, 'pursuit' => $this->pursuit,
             'ranged' => $this->ranged?->toArray(), 'melee' => $this->melee?->toArray(), 'statuses' => $this->statuses,
-            'hp_max' => $this->hpMax, 'flees_at' => $this->fleesAt, 'crit_chance' => $this->critChance, 'flee_beyond' => $this->fleeBeyond,
+            'hp_max' => $this->hpMax, 'flees_at' => $this->fleesAt, 'crit_chance' => $this->critChance, 'flee_beyond' => $this->fleeBeyond, 'bleed_per_level' => $this->bleedPerLevel,
         ];
     }
 
@@ -139,6 +153,7 @@ final readonly class Combatant
             $data['si'] === null ? null : Points::of($data['si']), array_values((array) ($data['statuses'] ?? [])),
             ($data['hp_max'] ?? null) === null ? null : Points::of($data['hp_max']), ($data['flees_at'] ?? null) === null ? null : (float) $data['flees_at'],
             (float) ($data['crit_chance'] ?? 0), isset($data['flee_beyond']) ? (int) $data['flee_beyond'] : null,
+            isset($data['bleed_per_level']) ? (float) $data['bleed_per_level'] : null,
         );
     }
 }

@@ -412,19 +412,29 @@ final class FightEngine
             $kind = RiderKind::from($status['kind']);
             $origin = $kind->damageType();
 
-            if ($origin === null) {
+            if ($kind->skipsTurn()) {
                 $stunned = true;
+                $lines[] = $this->line($state, Text::get('combat.fight.log.skip_'.$kind->value, ['who' => $victim->name]), $side === Side::A ? 'crit' : 'ok');
 
+                continue;
+            }
+
+            // Bleeding is flat: what is lost is the level times what a level costs, and nothing worn or carried resists it.
+            if ($kind === RiderKind::Bleeding) {
+                $lost = Points::of($status['amount'] * $victim->bleedPerLevel());
+                $victim = $victim->hurt('current_hitpoints', $lost);
+                $lines[] = $this->line($state, Text::get('combat.fight.log.bleed', ['who' => $victim->name, 'amount' => $lost, 'level' => $status['amount']]), $side === Side::A ? 'crit' : 'ok');
+
+                continue;
+            }
+
+            if ($origin === null) {
                 continue;
             }
 
             $taken = $mitigation->resolve($side, Damage::hitpoints($status['amount'], $origin));
             $victim = $victim->hurt('current_hitpoints', $taken);
             $lines[] = $this->line($state, Text::get('combat.fight.log.tick', ['who' => $victim->name, 'amount' => $taken, 'status' => $kind->label()]), $side === Side::A ? 'crit' : 'ok');
-        }
-
-        if ($stunned) {
-            $lines[] = $this->line($state, Text::get('combat.fight.log.stunned', ['who' => $victim->name]), $side === Side::A ? 'crit' : 'ok');
         }
 
         return [$state->with($side, $victim->aged())->withLog($lines), $stunned];
