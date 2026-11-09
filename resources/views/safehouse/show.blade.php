@@ -50,7 +50,9 @@
             <div class="panel">
                 <div class="panel__hd"><span class="micro">{{ Text::get('safehouse.actions_heading') }}</span></div>
                 <div class="panel__bd stack" style="--gap:var(--s-3)">
-                    <img class="banner-img" src="{{ \App\Support\Asset::url('images/locations/safehouse.png') }}" alt="">
+                    {{-- Its own picture, public/images/safehouses/<slug>.jpg or .png, else the shared safehouse.png beside them. --}}
+                    @php($own = collect(['jpg', 'png'])->map(fn ($ext) => "images/safehouses/{$home->slug}.{$ext}")->first(fn ($path) => file_exists(public_path($path))))
+                    <img class="banner-img" src="{{ \App\Support\Asset::url($own ?? 'images/safehouses/safehouse.png') }}" alt="">
                     @forelse ($rows as $row)
                         @php($action = $row['action'])
                         {{-- A table of rows: the button on the left, what it does on the right. Wraps under the button on a phone. --}}

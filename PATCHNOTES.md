@@ -1,3 +1,7 @@
+## 0.94.1 (2026-11-09)
+
+- Locations & safehouses can now have their own pictures (which a few now have)
+
 ## 0.94.0 (2026-11-08)
 - New achievement: Kickin' the habit
 - Some achivements now hade nice shiny little images

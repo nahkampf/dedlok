@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [0.94.1] — 2026-11-09
+
+### Added
+- **A location can have a picture.** `public/images/locations/<slug>.jpg` (or `.png`) is shown as a banner under the place's description; with no file, nothing is shown and there is no default.
+- **A safehouse can have its own picture**, `public/images/safehouses/<slug>.jpg` (or `.png`), falling back to `public/images/safehouses/safehouse.png` (moved from `images/locations/`). Pictures for nine locations and three safehouses are included.
+
+### Migrations
+- `2026_11_11_110000_noodle_gets_the_utility_crafting_imprint` — one Utility Crafting imprint into Noodle's inventory (data only; skipped if the character or the imprint is missing).
+- `2026_11_11_120000_acid_gets_code_crafting_5` — ACiD's Code Crafting raised to level 5 (data only; never lowers; skipped if the character or the skill is missing).
+
+Run `php artisan migrate`.
+
+
 ## [0.94.0] — 2026-11-08
 
 ### Added
@@ -4146,7 +4159,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.94.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.94.1...HEAD
+[0.94.1]: https://github.com/nahkampf/dedlok/compare/v0.94.0...v0.94.1
 [0.94.0]: https://github.com/nahkampf/dedlok/compare/v0.93.1...v0.94.0
 [0.93.1]: https://github.com/nahkampf/dedlok/compare/v0.93.0...v0.93.1
 [0.93.0]: https://github.com/nahkampf/dedlok/compare/v0.92.0...v0.93.0

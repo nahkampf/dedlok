@@ -9,6 +9,15 @@
     @if ($place->description)
         <p class="lede" style="margin-top:var(--s-3);max-width:70ch">{{ $place->description }}</p>
     @endif
+    {{-- Found by convention like a district's, beside them: public/images/locations/<slug>.jpg or .png. No picture, no default: the space is left out. --}}
+    @foreach (['jpg', 'png'] as $ext)
+        @if (! isset($picture) && file_exists(public_path("images/locations/{$place->slug}.{$ext}")))
+            @php($picture = "images/locations/{$place->slug}.{$ext}")
+        @endif
+    @endforeach
+    @isset($picture)
+        <img class="banner-img" style="margin-top:var(--s-3)" src="{{ \App\Support\Asset::url($picture) }}" alt="">
+    @endisset
 
     <div class="stack" style="--gap:var(--s-5);margin-top:var(--s-5)">
         @unless ($here)
