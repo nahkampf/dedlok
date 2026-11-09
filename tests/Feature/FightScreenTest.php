@@ -117,7 +117,8 @@ final class FightScreenTest extends TestCase
 
         $this->as()->get(route('fight.show'))->assertOk()
             ->assertSee('data-open="#chance-attack"', false)
-            ->assertSeeText('Chance to hit')->assertSeeText('Your aim')->assertSeeText('Their defence')->assertSeeText('Margin');
+            ->assertSee('data-open="#chance-close_in"', false)->assertSee('data-open="#chance-create_distance"', false)
+            ->assertDontSee('class="link" data-open="#chance-attack"><button', false)->assertSeeText('Chance to hit')->assertSeeText('Your aim')->assertSeeText('Their defence')->assertSeeText('Margin');
     }
 
     public function test_an_empty_magazine_offers_loading_and_bracing_instead_of_an_attack(): void

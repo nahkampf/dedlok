@@ -154,7 +154,7 @@
                 <input type="hidden" name="action" value="attack">
                 <button type="submit" class="btn btn--primary cut" style="justify-self:start">{{ Text::get('combat.fight.screen.attack', ['weapon' => $weapon]) }}</button>
                 <span class="micro" style="color:var(--ink-3)">
-                    <button type="button" class="link" data-open="#chance-attack"><button type="button" class="link" data-open="#chance-close_in"><button type="button" class="link" data-open="#chance-create_distance"><button type="button" class="link" data-open="#chance-create_distance">{{ Text::get('combat.fight.screen.chance') }}</button></button></button></button>
+                    <button type="button" class="link" data-open="#chance-attack">{{ Text::get('combat.fight.screen.chance') }}</button>
                     <span class="num">{{ implode(' · ', array_map(fn (float $c): string => round($c * 100).'%', $attack)) }}</span>
                     @if (count($attack) > 1) — {{ Text::get('combat.fight.screen.shots', ['count' => count($attack)]) }} @endif
                 </span>
@@ -198,7 +198,7 @@
                 @csrf
                 <input type="hidden" name="action" value="close_in">
                 <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.close_in') }}</button>
-                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($closing * 100) }}%</span> — {{ Text::get('combat.fight.screen.close_in_hint') }}</span>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-close_in">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($closing * 100) }}%</span> — {{ Text::get('combat.fight.screen.close_in_hint') }}</span>
             </form>
         @endif
 
@@ -207,7 +207,7 @@
                 @csrf
                 <input type="hidden" name="action" value="create_distance">
                 <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.create_distance') }}</button>
-                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.create_distance_hint', ['max' => config('combat.distance.max')]) }}</span>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-create_distance">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.create_distance_hint', ['max' => config('combat.distance.max')]) }}</span>
             </form>
         @endif
 
@@ -216,7 +216,7 @@
                 @csrf
                 <input type="hidden" name="action" value="disengage">
                 <button type="submit" class="btn btn--ghost cut" style="justify-self:start">{{ Text::get('combat.fight.screen.disengage') }}</button>
-                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.disengage_hint', ['beyond' => config('combat.distance.flee_beyond')]) }}</span>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-create_distance">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.disengage_hint', ['beyond' => config('combat.distance.flee_beyond')]) }}</span>
             </form>
         @endif
 
