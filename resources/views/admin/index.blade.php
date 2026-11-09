@@ -40,6 +40,7 @@
             <div class="card__bd">{{ Text::get('admin.characters.lede') }}</div>
             <div class="card__ft">
                 <a class="btn btn--sm" href="{{ route('admin.characters.index') }}">{{ Text::get('admin.characters.title') }}</a>
+                <a class="btn btn--sm" href="{{ route('admin.spawn.index') }}">{{ Text::get('admin.spawn.title') }}</a>
             </div>
         </div>
 
