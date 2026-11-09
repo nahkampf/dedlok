@@ -18,6 +18,9 @@ enum EncounterStart: string
     /** A button on a location's page. The door authored quests walk through. */
     case Place = 'place';
 
+    /** Arriving at a place: rolled once per arrival, and it takes the screen. The chance-based sibling of `Place`'s button. */
+    case Arrival = 'arrival';
+
     /** An arrival on the grid by a move (a step, a jump or a bookmark; not the jack-in itself). Cyberspace's own door. */
     case GridStep = 'grid_step';
 

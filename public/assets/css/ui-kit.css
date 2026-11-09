@@ -566,6 +566,9 @@ h5, h6       { font-size: var(--fs-sm); letter-spacing: 0; }
   border: 0;
   padding: 0;
   font: inherit;
+  /* A button resets these to normal, which would drop it out of small caps inside .micro and the like. */
+  letter-spacing: inherit;
+  text-transform: inherit;
   color: inherit;
   cursor: pointer;
   text-decoration: underline;

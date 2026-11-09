@@ -246,7 +246,7 @@ change. Nothing is seeded: encounters are authored at `admin/encounters`.
 story needs new PHP, the outcome vocabulary has leaked; fix the vocabulary.
 
 - **`encounters`** — the definition. `slug` (`[a-z0-9_]`, permanent), `title`, `intro`,
-  `starts_on` (`travel`, `explore` or `place`), `weight`, optional `district_id` (NULL is
+  `starts_on` (`travel`, `explore`, `place` — a button — or `arrival` — rolled once per arrival at a place, needs its own `chance`, optional `location_id`/`district_id`, takes the screen; "arrival" is coming to a place other than the one last viewed this session, so a reload is not one), `weight`, optional `district_id` (NULL is
   anywhere) and `location_id` (for `place`), `required_flag`, `once`, `retired`. Text is ON the
   row. Both foreign keys cascade.
 - **`encounter_nodes`** — a `node_key` unique within the encounter, `body`, `entry` (exactly one)

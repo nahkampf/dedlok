@@ -51,12 +51,16 @@ final class CombatantBuilder
             si: Points::of($character->current_synaptic_integrity),
             hpMax: Points::of($character->stat('hitpoints_max')->value),
             critChance: $character->stat('critical_chance_physical')->value,
+            bleedPerLevel: $character->stat('bleed_per_level')->value,
+            fists: self::bareHands($aim(WeaponClass::Unarmed, 0), $damage(WeaponClass::Unarmed, (float) config('combat.unarmed.damage'))),
+            // The pool, plus what skills and the like have added to unarmed aim on top of ITS pool.
+            takedown: $character->stat('takedown')->value + ($character->stat(CombatStats::aimId(WeaponClass::Unarmed))->value - $character->stat(CombatStats::aimId(WeaponClass::Unarmed))->base),
         );
     }
 
     /**
      * An opponent from a plain description (what `fight:simulate` takes, and what an NPC row will
-     * become). Keys: name, hp, defence, pursuit, flees_at, aim, and `ranged` / `melee` each
+     * become). Keys: name, hp, defence, pursuit, flees_at, flee_beyond, aim, and `ranged` / `melee` each
      * `{class, damage, rate?, profile?, riders?, penetration?}`.
      *
      * @param  array<string, mixed>  $spec
@@ -76,6 +80,10 @@ final class CombatantBuilder
             si: null,
             hpMax: Points::of($spec['hp'] ?? 40),
             fleesAt: isset($spec['flees_at']) ? (float) $spec['flees_at'] : null,
+            fleeBeyond: isset($spec['flee_beyond']) ? (int) $spec['flee_beyond'] : null,
+            fists: self::bareHands($aim, (float) config('combat.unarmed.damage')),
+            // An opponent's skill at it is its aim, unless a spec says otherwise.
+            takedown: (float) ($spec['takedown'] ?? $aim),
         );
     }
 
@@ -114,7 +122,7 @@ final class CombatantBuilder
 
         return self::fromSpec([
             'name' => $npc->name, 'hp' => $npc->hitpoints, 'aim' => $npc->aim, 'defence' => $npc->defence,
-            'pursuit' => $npc->pursuit, 'flees_at' => $npc->flees_at,
+            'pursuit' => $npc->pursuit, 'flees_at' => $npc->flees_at, 'flee_beyond' => $npc->flee_beyond,
             'ranged' => $weapon($npc->rangedWeapon, $npc->ammo),
             'melee' => $weapon($npc->meleeWeapon),
         ]);

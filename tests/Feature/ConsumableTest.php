@@ -191,6 +191,20 @@ final class ConsumableTest extends TestCase
         $this->assertFalse($item->fresh()->isConsumable(), 'blank clears the row');
     }
 
+    public function test_the_editor_stores_allowed_in_combat_and_clears_it_with_the_effects(): void
+    {
+        $this->save(['use_heal_hitpoints' => '25', 'usable_in_fight' => '1'])->assertRedirect();
+        $item = Item::query()->where('slug', 'field_medkit')->sole();
+        $this->assertTrue($item->consumable->usable_in_fight);
+
+        $this->save(['use_heal_hitpoints' => '25'], $item)->assertRedirect();
+        $this->assertFalse($item->fresh()->consumable->usable_in_fight, 'unticked is off');
+
+        // A box ticked on something that is not a consumable means nothing: there is no row to carry it.
+        $this->save(['use_heal_hitpoints' => '', 'usable_in_fight' => '1'], $item)->assertRedirect();
+        $this->assertFalse($item->fresh()->isConsumable());
+    }
+
     public function test_a_consumable_may_also_be_a_drug_and_is_nothing_else(): void
     {
         $this->save(['use_heal_hitpoints' => '25', 'drug_family' => 'stimulant', 'duration_minutes' => 10, 'addictive' => 1, 'tolerance_gain' => 1])

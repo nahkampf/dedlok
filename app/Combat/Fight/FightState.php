@@ -18,6 +18,9 @@ final readonly class FightState
 {
     public Range $range;
 
+    /** How far YOU stand from the meeting point, on your side of it (see the constructor's `$youAt`). */
+    public int $youAt;
+
     /** @param  list<array{round: int, text: string, tone: string}>  $log */
     public function __construct(
         public Combatant $a,
@@ -27,8 +30,35 @@ final readonly class FightState
         public array $log = [],
         public Side $first = Side::B,
         public ?Result $result = null,
+        /** The player's belt item was got out this round (the roll passed). Transient: never stored, read by `Fights` after the round. */
+        public bool $used = false,
+        /** The enemy stands `distance - youAt` on theirs, so `distance` (the gap) is always the two added. Null splits the gap evenly: a fight stored before positions existed. */
+        ?int $youAt = null,
     ) {
         $this->range = Range::at($this->distance);
+        $this->youAt = max(0, min($this->distance, $youAt ?? intdiv($this->distance, 2)));
+    }
+
+    /** How far this side stands from the meeting point (0 is at it, and a gap of 0 is both there). */
+    public function offset(Side $side): int
+    {
+        return $side === Side::A ? $this->youAt : $this->distance - $this->youAt;
+    }
+
+    /** The two sides' positions at once, which fixes the gap. Nobody is placed beyond the fight's reach. */
+    public function withOffsets(int $you, int $foe): self
+    {
+        $reach = self::reach();
+        $you = max(0, min($reach, $you));
+        $foe = max(0, min($reach, $foe));
+
+        return new self($this->a, $this->b, $you + $foe, $this->round, $this->log, $this->first, $this->result, $this->used, $you);
+    }
+
+    /** How far from the meeting point a side can be: half the fight's largest gap. */
+    public static function reach(): int
+    {
+        return intdiv((int) config('combat.distance.max'), 2);
     }
 
     /** A fight as it opens: the sides at the configured starting distance. */
@@ -53,6 +83,11 @@ final readonly class FightState
         return $this->but(log: [...$this->log, ...$lines]);
     }
 
+    public function withUsed(): self
+    {
+        return new self($this->a, $this->b, $this->distance, $this->round, $this->log, $this->first, $this->result, true, $this->youAt);
+    }
+
     public function ended(Result $result): self
     {
         return $this->but(result: $result);
@@ -74,7 +109,7 @@ final readonly class FightState
     {
         return new self(
             $a ?? $this->a, $b ?? $this->b, $distance ?? $this->distance, $round ?? $this->round, $log ?? $this->log,
-            $this->first, $result ?? $this->result,
+            $this->first, $result ?? $this->result, $this->used, $this->youAt,
         );
     }
 
@@ -83,7 +118,7 @@ final readonly class FightState
     {
         return [
             'a' => $this->a->toArray(), 'b' => $this->b->toArray(), 'distance' => $this->distance, 'round' => $this->round,
-            'log' => $this->log, 'first' => $this->first->value, 'result' => $this->result?->value,
+            'log' => $this->log, 'first' => $this->first->value, 'result' => $this->result?->value, 'you_at' => $this->youAt,
         ];
     }
 
@@ -97,6 +132,7 @@ final readonly class FightState
             Combatant::fromArray($data['a']), Combatant::fromArray($data['b']), $distance, (int) $data['round'],
             array_values((array) $data['log']), Side::from((string) $data['first']),
             $data['result'] === null ? null : Result::from((string) $data['result']),
+            youAt: isset($data['you_at']) ? (int) $data['you_at'] : null,
         );
     }
 }

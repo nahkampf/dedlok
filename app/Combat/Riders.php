@@ -37,7 +37,7 @@ final class Riders
     {
         $clean = [];
 
-        foreach (RiderKind::cases() as $kind) {
+        foreach (RiderKind::authorableKinds() as $kind) {
             $row = (array) ($raw[$kind->value] ?? []);
 
             if (! is_numeric($row['chance'] ?? null) || (int) $row['chance'] < 1) {
@@ -70,7 +70,7 @@ final class Riders
                 continue;
             }
 
-            if ($kind === null) {
+            if ($kind === null || ! $kind->authorable()) {
                 return 'unknown_kind';
             }
 

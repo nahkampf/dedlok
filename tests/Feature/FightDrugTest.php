@@ -11,6 +11,7 @@ use App\Combat\Fight\Result;
 use App\Combat\Fight\Side;
 use App\Combat\FightRefusal;
 use App\Combat\Fights;
+use App\Combat\RiderKind;
 use App\Combat\WeaponClass;
 use App\Drugs\DoseRefusal;
 use App\Drugs\DrugTaker;
@@ -70,9 +71,10 @@ final class FightDrugTest extends TestCase
     }
 
     /** The enemy's turn, as a MISS (a roll no chance reaches), so the rounds change nothing but what the doses do. */
-    private function enemyShot(int $times = 1): array
+    private function enemyShot(int $times = 1, bool $use = false): array
     {
-        return array_merge(...array_fill(0, $times, [0.999, 0.5]));
+        // `$use`: the player's turn follows the enemy's with a belt check that PASSES (the enemy closing in takes one die, so the pass is the second).
+        return array_merge(...array_fill(0, $times, $use ? [0.999, 0.0, 0.5] : [0.999, 0.5]));
     }
 
     private function open(?Npc $npc = null): Fight
@@ -116,7 +118,7 @@ final class FightDrugTest extends TestCase
         $this->open();
         $before = $this->hp();
 
-        $fight = $this->with($this->enemyShot())->act($this->character->fresh(), Action::use($row->id));
+        $fight = $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
 
         // The enemy misses; the instant heal lands and the fight goes on.
         $this->assertInstanceOf(Fight::class, $fight);
@@ -135,7 +137,7 @@ final class FightDrugTest extends TestCase
     {
         $row = $this->belted(turns: 3, perTurn: 4);
         $this->open();
-        $this->with($this->enemyShot())->act($this->character->fresh(), Action::use($row->id));
+        $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
         $hp = $this->hp();
 
         $seen = [];
@@ -160,7 +162,7 @@ final class FightDrugTest extends TestCase
     {
         $row = $this->belted(turns: 2, perTurn: 10);
         $this->open();
-        $this->with($this->enemyShot())->act($this->character->fresh(), Action::use($row->id));
+        $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
         Dose::query()->where('character_id', $this->character->id)->update(['potency' => 0.5]);
         $hp = $this->hp();
 
@@ -175,7 +177,7 @@ final class FightDrugTest extends TestCase
         $fight = $this->open();
         $base = $fight->snapshot()->a->defence;
 
-        $this->with($this->enemyShot())->act($this->character->fresh(), Action::use($row->id));
+        $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
         // The next round's snapshot is rebuilt with the dose in effect.
         $during = $this->with($this->enemyShot())->act($this->character->fresh(), Action::brace());
         $this->assertSame($base + 5, $during->snapshot()->a->defence);
@@ -189,7 +191,7 @@ final class FightDrugTest extends TestCase
     {
         $row = $this->belted(turns: 2, perTurn: -3);
         $this->open();
-        $this->with($this->enemyShot())->act($this->character->fresh(), Action::use($row->id));
+        $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
         $hp = $this->hp();
 
         $this->with($this->enemyShot())->act($this->character->fresh(), Action::brace());
@@ -249,10 +251,10 @@ final class FightDrugTest extends TestCase
         $fight = $this->open();
 
         foreach ([1, 2] as $i) {
-            $this->with($this->enemyShot())->act($this->character->fresh(), Action::use($row->id));
+            $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
         }
 
-        $fight = $this->with($this->enemyShot())->act($this->character->fresh(), Action::use($row->id));
+        $fight = $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
 
         $this->assertSame(Result::ADown, $fight->result);
         $this->assertFalse($fight->isLive());
@@ -265,7 +267,7 @@ final class FightDrugTest extends TestCase
     {
         $row = $this->belted();
         $this->open($this->npc(hp: 1));
-        $this->with($this->enemyShot())->act($this->character->fresh(), Action::use($row->id));
+        $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
         $this->assertSame(1, Dose::query()->count());
 
         // The enemy is not killed by a brace; end it another way: it flees nowhere, so remove the fight by force.
@@ -348,5 +350,140 @@ final class FightDrugTest extends TestCase
 
         $this->assertTrue($dose->fresh()->expires_at->isFuture(), 'about thirty minutes are left, not none');
         $this->assertEqualsWithDelta(30, now()->diffInMinutes($dose->fresh()->expires_at), 2);
+    }
+
+    // ---- a consumable allowed in a fight, and the check that gets any belt item out ------------------
+
+    /** A medkit on the belt, allowed in a fight or not. */
+    private function medkit(bool $allowed = true, int $amount = 7): InventoryItem
+    {
+        $item = Item::factory()->create(['container' => 'physical', 'name' => 'Field kit', 'stackable' => true]);
+        ConsumableEditor::apply($item, [['kind' => 'heal_hitpoints', 'amount' => $amount]], $allowed);
+
+        return InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 2, 'belt_slot' => 1]);
+    }
+
+    public function test_an_allowed_consumable_is_used_from_the_belt_when_the_check_passes(): void
+    {
+        $row = $this->medkit();
+        $this->open();
+        $before = $this->hp();
+
+        $fight = $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
+
+        $this->assertSame($before + 7, $this->hp());
+        $this->assertSame(1, $row->fresh()->quantity);
+        $this->assertTrue(collect(array_column($fight->snapshot()->log, 'text'))->contains(fn (string $t): bool => str_contains($t, 'uses Field kit') && str_contains($t, 'You recover 7 hit points.')));
+    }
+
+    public function test_a_fumbled_check_spends_the_turn_and_keeps_the_item(): void
+    {
+        $row = $this->medkit();
+        $this->open();
+        $before = $this->hp();
+
+        // The enemy closes in (one die); then a roll above any chance.
+        $fight = $this->with([0.999, 0.999])->act($this->character->fresh(), Action::use($row->id));
+
+        $this->assertSame($before, $this->hp());
+        $this->assertSame(2, $row->fresh()->quantity);
+        $this->assertSame(2, $fight->snapshot()->round, 'the turn was spent');
+        $this->assertTrue(collect(array_column($fight->snapshot()->log, 'text'))->contains(fn (string $t): bool => str_contains($t, 'fumbles at the belt')));
+    }
+
+    public function test_a_fumble_keeps_a_fight_only_drug_too(): void
+    {
+        $row = $this->belted();
+        $this->open();
+
+        $this->with([0.999, 0.999])->act($this->character->fresh(), Action::use($row->id));
+
+        $this->assertSame(3, $row->fresh()->quantity);
+        $this->assertSame(0, Dose::query()->where('character_id', $this->character->id)->count());
+    }
+
+    public function test_a_consumable_that_is_not_allowed_in_combat_is_refused_even_when_asked_for_directly(): void
+    {
+        $row = $this->medkit(allowed: false);
+        $this->open();
+
+        $this->assertSame(FightRefusal::CannotUse, $this->with([])->act($this->character->fresh(), Action::use($row->id)));
+        $this->assertSame(2, $row->fresh()->quantity);
+    }
+
+    public function test_an_allowed_consumable_that_would_do_nothing_is_refused_before_the_turn_is_spent(): void
+    {
+        $row = $this->medkit();
+        $this->open();
+        $this->character->forceFill(['current_hitpoints' => $this->character->maximumFor('current_hitpoints')])->save();
+
+        $this->assertSame(FightRefusal::NothingToDo, $this->with([])->act($this->character->fresh(), Action::use($row->id)));
+        $this->assertSame(2, $row->fresh()->quantity);
+    }
+
+    // ---- bleeding in a real fight ------------------------------------------------------------
+
+    /** Put the player's side at this level of bleeding in the stored fight. */
+    private function bleedingAt(int $level): void
+    {
+        $row = Fight::query()->sole();
+        $state = $row->state;
+        $state['a']['statuses'] = [['kind' => 'bleeding', 'turns' => 0, 'amount' => $level]];
+        $row->update(['state' => $state]);
+    }
+
+    private function dressing(int $levels = 2): InventoryItem
+    {
+        $item = Item::factory()->create(['container' => 'physical', 'name' => 'Pressure dressing', 'stackable' => true]);
+        ConsumableEditor::apply($item, [['kind' => 'stop_bleeding', 'amount' => $levels]], true);
+
+        return InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 2, 'belt_slot' => 1]);
+    }
+
+    public function test_a_dressing_stops_bleeding_in_the_fight_and_is_spent(): void
+    {
+        $row = $this->dressing(1);
+        $this->open();
+        $this->bleedingAt(2);
+
+        $fight = $this->with($this->enemyShot(use: true))->act($this->character->fresh(), Action::use($row->id));
+
+        $this->assertSame(1, $fight->snapshot()->a->bleeding(), 'two levels, one taken off');
+        $this->assertSame(1, $row->fresh()->quantity);
+        $this->assertTrue(collect(array_column($fight->snapshot()->log, 'text'))->contains(fn (string $t): bool => str_contains($t, 'The bleeding eases by 1.')));
+    }
+
+    public function test_a_dressing_does_nothing_when_there_is_no_bleeding_so_it_is_refused(): void
+    {
+        $row = $this->dressing();
+        $this->open();
+
+        $this->assertSame(FightRefusal::NothingToDo, $this->with([])->act($this->character->fresh(), Action::use($row->id)));
+        $this->assertSame(2, $row->fresh()->quantity);
+    }
+
+    public function test_the_players_wound_and_edge_survive_the_side_being_rebuilt_each_round(): void
+    {
+        $this->open();
+        $this->bleedingAt(1);
+        $row = Fight::query()->sole();
+        $state = $row->state;
+        $state['a']['statuses'][] = ['kind' => 'edge', 'turns' => 2, 'amount' => 0];
+        $row->update(['state' => $state]);
+        $before = $this->hp();
+
+        $fight = $this->with([0.999])->act($this->character->fresh(), Action::brace());
+
+        $a = $fight->snapshot()->a;
+        $this->assertSame(1, $a->bleeding());
+        $this->assertNotNull($a->status(RiderKind::Edge));
+        $this->assertSame($before - 1, $this->hp(), 'the half point a level costs is lost, and the body keeps whole points');
+    }
+
+    public function test_the_real_fights_engine_has_the_extra_die_that_wounds_need(): void
+    {
+        $engine = (new \ReflectionProperty(Fights::class, 'engine'))->getValue(app(Fights::class));
+
+        $this->assertNotNull((new \ReflectionProperty($engine, 'extraDie'))->getValue($engine), 'without it nobody ever bleeds');
     }
 }

@@ -35,7 +35,8 @@
                         <div class="region__slots stack" style="--gap:var(--s-2)">
                             @foreach ($region['rows'] as $row)
                                 <div class="row row--wrap" style="--gap:var(--s-2);align-items:center">
-                                    <span class="tag tag--info">{{ $row->item?->displayName() }}</span>
+                                    {{-- The same card the stash opens, as a modal (the template is below, once per piece). --}}
+                                    <button type="button" class="tag tag--info" data-inspect-open="#equipped-detail-{{ $row->id }}" aria-haspopup="dialog" style="cursor:pointer">{{ $row->item?->displayName() }}</button>
                                     @if ($row->quantity > 1)
                                         <span class="micro num" style="color:var(--ink-3)">×{{ $row->quantity }}</span>
                                     @endif
@@ -101,5 +102,15 @@
 
             </div>
         </div>
+
+        {{-- The detail of each piece in a place, written once: a jacket covers two places and is one row. ui-kit.js
+             opens the template as a modal. The destroy and enlarge dialogs it links to come with it. --}}
+        @foreach (collect($regions)->pluck('rows')->flatten(1)->unique(fn ($row) => $row->id) as $row)
+            <template id="equipped-detail-{{ $row->id }}">
+                <x-item-detail :entry="$row" />
+            </template>
+            <x-item-destroy :entry="$row" />
+            <x-item-image :entry="$row" />
+        @endforeach
     </div>
 @endsection

@@ -120,6 +120,8 @@ return [
     'encounter' => [
         'travel_chance' => 0.11,
         'explore_chance' => 0.40,
+        // Arriving at a place has no door-wide chance: only an encounter with its own chance can arrive.
+        'arrival_chance' => 0.0,
         'pool' => 100,
         // How rare an encounter's weight reads in the editor, lowest first: the first row whose
         // ceiling the weight does not exceed. The weight is its share of the pool, 1 to 100.

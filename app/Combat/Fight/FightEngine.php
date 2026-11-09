@@ -12,6 +12,7 @@ use App\Combat\HitQuality;
 use App\Combat\RiderKind;
 use App\Stats\Damage;
 use App\Stats\DamageOrigin;
+use App\Support\Points;
 use App\Support\Text;
 
 /**
@@ -27,7 +28,14 @@ use App\Support\Text;
  */
 final class FightEngine
 {
-    public function __construct(private readonly CheckRoller $roller) {}
+    /**
+     * `$extraDie` is the engine's OWN die (`fn (int $min, int $max): int`), kept apart from the pinned fight dice so that adding
+     * a roll never shifts the order of the others. It rolls whether a wound opens and whether a headbutt hurts its giver. Null is
+     * a pure engine with neither: no wounds, no recoil (a test pins this die when it wants them).
+     *
+     * @param  ?\Closure(int, int): int  $extraDie
+     */
+    public function __construct(private readonly CheckRoller $roller, private readonly ?\Closure $extraDie = null) {}
 
     /**
      * One whole round: each side's turn in the order the fight was opened with, then the range
@@ -86,6 +94,11 @@ final class FightEngine
             return Action::createDistance();
         }
 
+        // At arm's reach, a side that is good enough at it will try to put the other on the ground, if that pays.
+        if ($this->takedownPays($state, $side)) {
+            return Action::takedown();
+        }
+
         if ($this->canAttack($state, $side)) {
             return Action::attack();
         }
@@ -97,6 +110,44 @@ final class FightEngine
         }
 
         return Action::brace();
+    }
+
+    /**
+     * Whether a takedown is worth a turn to this side, by arithmetic over the next two of its turns (what it deals, less what it takes):
+     * attacking twice, against a takedown that on a success dazes the other (it skips its turn) and doubles the next attack, and
+     * on a failure loses this side's next turn. It must also be a SAFE bet: a chance of at least `combat.takedown.npc_min_chance`.
+     * Only at Close, and only for a side with something to attack with afterwards.
+     */
+    private function takedownPays(FightState $state, Side $side): bool
+    {
+        if (! $this->legal($state, $side, Action::takedown()) || ! $this->canAttack($state, $side)) {
+            return false;
+        }
+
+        $p = $this->quoteTakedown($state, $side);
+
+        if ($p < (float) config('combat.takedown.npc_min_chance')) {
+            return false;
+        }
+
+        $mine = $this->expectedDamage($state, $side);
+        $theirs = $this->expectedDamage($state, $side->other());
+        // An attack with the upper hand: the same shots at double the chance, never certain.
+        $ceiling = 1 - (float) config('checks.certainty_floor');
+        $doubled = array_sum(array_map(static fn (float $c): float => min($ceiling, 2 * $c), $this->quote($state, $side))) * ($state->combatant($side)->arm($state->range)?->spec()?->damage ?? 0.0);
+        $twice = 2 * $mine - 2 * $theirs;
+        $takedown = $p * ($doubled - $theirs) + (1 - $p) * (-2 * $theirs);
+
+        return $takedown > $twice;
+    }
+
+    /** What this side expects to deal in one attack at this range: each shot's chance times its damage. */
+    private function expectedDamage(FightState $state, Side $side): float
+    {
+        $arm = $state->combatant($side)->arm($state->range);
+        $damage = $arm?->spec()?->damage ?? 0.0;
+
+        return $arm === null || ! $arm->canFire() ? 0.0 : array_sum($this->quote($state, $side)) * $damage;
     }
 
     /**
@@ -128,15 +179,19 @@ final class FightEngine
     {
         return match ($action->kind) {
             ActionKind::Attack => $this->canAttack($state, $side),
-            ActionKind::CreateDistance => $state->distance < (int) config('combat.distance.max'),
+            // Backing off moves YOU away from the meeting point, so it needs room on your side of it.
+            ActionKind::CreateDistance => $state->offset($side) < FightState::reach(),
             ActionKind::CloseIn => $state->distance > 0,
-            // Nobody gets away from arm's reach: first back off past the fleeing distance.
-            ActionKind::Disengage => $state->distance > (int) config('combat.distance.flee_beyond'),
+            // Nobody gets away from arm's reach: a side must first be far enough out from the meeting point, by its own measure.
+            ActionKind::Disengage => $state->offset($side) > $state->combatant($side)->escapeBeyond(),
             // The ranged weapon, whatever the range: at Close it is the one you are not firing.
             ActionKind::Load => $action->round !== null && $state->combatant($side)->ranged?->canLoad($action->round) === true,
             ActionKind::Brace => true,
             // Whether the drug can be used is `Fights`' question (it owns the belt); the turn itself always can.
             ActionKind::Use => true,
+            // Only at arm's reach, and a headbutt needs hands to throw (everybody has them).
+            ActionKind::Headbutt => $state->range === Range::Close && $state->combatant($side)->fists() !== null,
+            ActionKind::Takedown => $state->range === Range::Close,
         };
     }
 
@@ -147,6 +202,35 @@ final class FightEngine
     public function quoteFlight(FightState $state, Side $side): float
     {
         return $this->roller->chance($state->combatant($side)->defence, $state->combatant($side->other())->pursuit);
+    }
+
+    /** A multiplier on the chance of a side's attacks: double while it has the upper hand from a takedown. */
+    private function edge(FightState $state, Side $side): float
+    {
+        return $state->combatant($side)->status(RiderKind::Edge) === null ? 1.0 : 2.0;
+    }
+
+    /** The chance a headbutt lands: the same as a bare-hands attack. */
+    public function quoteHeadbutt(FightState $state, Side $side): float
+    {
+        $fists = $state->combatant($side)->fists();
+
+        return $fists === null ? 0.0 : $this->roller->chance($fists->aim, $state->combatant($side->other())->defence, null, $this->edge($state, $side));
+    }
+
+    /** The chance a takedown works: the taker's takedown value against the target's defence, never above the cap. */
+    public function quoteTakedown(FightState $state, Side $side): float
+    {
+        return min((float) config('combat.takedown.cap'), $this->roller->chance($state->combatant($side)->takedown, $state->combatant($side->other())->defence));
+    }
+
+    /**
+     * The chance getting something out of the belt works while somebody is on you: the actor's defence against the
+     * opponent's pursuit, the same figure as Create distance. It takes your focus off the fight, so it is not certain.
+     */
+    public function quoteUse(FightState $state, Side $side): float
+    {
+        return $this->quoteFlight($state, $side);
     }
 
     /** The chance Close in succeeds: the actor's pursuit against the opponent's defence, the pursuer's half. */
@@ -190,7 +274,10 @@ final class FightEngine
         return match (true) {
             ! $worked => $state,
             $getAway => $state->ended($side === Side::A ? Result::AEscaped : Result::BEscaped),
-            default => $state->withDistance($state->distance + $gain),
+            // Backing off: this side steps away from the meeting point; the other stays where it is.
+            default => $side === Side::A
+                ? $state->withOffsets($state->offset(Side::A) + $gain, $state->offset(Side::B))
+                : $state->withOffsets($state->offset(Side::A), $state->offset(Side::B) + $gain),
         };
     }
 
@@ -204,7 +291,20 @@ final class FightEngine
         $worked = $dice() < $this->quoteClosing($state, $side);
         $state = $state->withLog([$this->line($state, Text::get('combat.fight.log.closing'.($worked ? '_ok' : '_failed'), ['who' => $state->combatant($side)->name]))]);
 
-        return $worked ? $state->withDistance($state->distance - 1) : $state;
+        return $worked ? $this->stepIn($state, $side) : $state;
+    }
+
+    /**
+     * One step toward the meeting point. A side already standing at it cannot go further, so the other is pulled in:
+     * the gap shrinks by one either way, and a step in and a step out cancel back to where they were.
+     */
+    private function stepIn(FightState $state, Side $side): FightState
+    {
+        [$mine, $theirs] = [$state->offset($side), $state->offset($side->other())];
+
+        [$mine, $theirs] = $mine > 0 ? [$mine - 1, $theirs] : [$mine, $theirs - 1];
+
+        return $side === Side::A ? $state->withOffsets($mine, $theirs) : $state->withOffsets($theirs, $mine);
     }
 
     /** Whether this side has a weapon it can fire at this range. */
@@ -237,8 +337,13 @@ final class FightEngine
             ActionKind::Attack => $this->attack($state, $side, $dice, $mitigation),
             ActionKind::Brace => $state->withLog([$this->line($state, Text::get('combat.fight.log.brace', ['who' => $name]))]),
             ActionKind::Load => $this->load($state, $side, (string) $action->round),
-            // The turn is spent and nothing else happens in the engine: the dose is `Fights`' to write, and it logs it.
-            ActionKind::Use => $state,
+            // The turn is spent either way. A pass marks the state, and the item is `Fights`' to apply and log; a fumble
+            // is said here and keeps the item.
+            ActionKind::Use => $dice() < $this->quoteUse($state, $side)
+                ? $state->withUsed()
+                : $state->withLog([$this->line($state, Text::get('combat.fight.log.use_fumbled', ['who' => $name]))]),
+            ActionKind::Headbutt => $this->headbutt($state, $side, $dice, $mitigation),
+            ActionKind::Takedown => $this->takedown($state, $side, $dice),
             ActionKind::Disengage => $this->flight($state, $side, $dice, getAway: true),
             ActionKind::CreateDistance => $this->flight($state, $side, $dice, getAway: false),
             ActionKind::CloseIn => $this->closeIn($state, $side, $dice),
@@ -285,7 +390,7 @@ final class FightEngine
         $defence = $state->combatant($attacker->other())->defence;
 
         return array_map(
-            fn (int $shot): float => $this->roller->chance($arm->aim, $defence, null, Burst::multiplier($shot)),
+            fn (int $shot): float => $this->roller->chance($arm->aim, $defence, null, Burst::multiplier($shot) * $this->edge($state, $attacker)),
             range(0, $arm->shots() - 1),
         );
     }
@@ -320,8 +425,9 @@ final class FightEngine
             // One die for a hit that actually lands, and only for a side that has any chance at all
             // (an NPC has none), so the older dice orders are untouched.
             $critical = $self->critChance > 0 && $tier !== HitQuality::NearMiss && $dice() * 100 < $self->critChance;
+            $before = $state->combatant($target)->hp;
             $state = $this->land($state, $attacker, $spec, $tier, $slot, $mitigation, $critical);
-            $state = $this->riders($state, $attacker, $spec, $tier, $dice);
+            $state = $this->riders($state, $attacker, $spec, $tier, $dice, $state->combatant($target)->hp < $before);
         }
 
         $arm = $arm->fired($fired);
@@ -333,13 +439,78 @@ final class FightEngine
     }
 
     /**
+     * A blow with bare hands, thrown whatever is in the hand: the chance and the dice of an ordinary attack, a little more damage,
+     * and on a hit that LANDS a chance (its own die) that the giver takes the same blow to the head.
+     *
+     * @param  callable(): float  $dice
+     */
+    private function headbutt(FightState $state, Side $side, callable $dice, Mitigation $mitigation): FightState
+    {
+        $self = $state->combatant($side);
+        $fists = $self->fists() ?? throw new \LogicException('Nothing to headbutt with.');
+        $base = $fists->spec() ?? throw new \LogicException('Bare hands carry no spec.');
+        $spec = new RoundSpec($base->key, 'Headbutt', $base->damage + (float) config('combat.headbutt.damage_bonus'), $base->profile, $base->penetration, $base->riders, $base->stock);
+        $target = $side->other();
+        $tier = HitQuality::fromRoll($dice(), $this->quoteHeadbutt($state, $side));
+        $slot = ArmourSlot::roll($dice());
+        $critical = $self->critChance > 0 && $tier !== HitQuality::NearMiss && $dice() * 100 < $self->critChance;
+        $before = $state->combatant($target)->hp;
+
+        $state = $this->land($state, $side, $spec, $tier, $slot, $mitigation, $critical);
+        $state = $this->riders($state, $side, $spec, $tier, $dice, $state->combatant($target)->hp < $before);
+
+        // It hurts to hit somebody with your head. Only a blow that landed, and only if the fight is still on.
+        if ($tier !== HitQuality::NearMiss && $this->extraDie !== null && ! $state->combatant($target)->down()
+            && ($this->extraDie)(1, 100) <= (int) config('combat.headbutt.recoil')) {
+            $state = $this->land($state, $target, $spec, $tier, ArmourSlot::Head, $mitigation, false, recoil: true);
+        }
+
+        return $state;
+    }
+
+    /**
+     * Try to put somebody on the ground. One die. A success daze them for a turn and gives the taker the upper hand (double
+     * the chance of their next attack, on a status that lasts through the other side's turn and then the taker's one); a
+     * failure leaves the taker off balance for their next turn.
+     *
+     * @param  callable(): float  $dice
+     */
+    private function takedown(FightState $state, Side $side, callable $dice): FightState
+    {
+        $self = $state->combatant($side);
+        $target = $side->other();
+        $worked = $dice() < $this->quoteTakedown($state, $side);
+
+        if (! $worked) {
+            return $state->with($side, $self->afflicted(RiderKind::OffBalance, 1, 0))
+                ->withLog([$this->line($state, Text::get('combat.fight.log.takedown_failed', ['who' => $self->name]), $side === Side::A ? 'crit' : 'ok')]);
+        }
+
+        return $state->with($target, $state->combatant($target)->afflicted(RiderKind::Dazed, 1, 0))
+            ->with($side, $self->afflicted(RiderKind::Edge, 2, 0))
+            ->withLog([$this->line($state, Text::get('combat.fight.log.takedown_ok', ['who' => $self->name, 'target' => $state->combatant($target)->name]), $side === Side::A ? 'ok' : 'crit')]);
+    }
+
+    /** The chance a landed hit opens a wound: the base, plus each damage type's bonus by its share of the hit. */
+    private function bleedChance(RoundSpec $spec): int
+    {
+        $chance = (float) config('combat.bleed.base');
+
+        foreach ($spec->profile as $type => $share) {
+            $chance += (float) (config('combat.bleed.bonus')[$type] ?? 0) * $share / 100;
+        }
+
+        return (int) round(min(100, $chance));
+    }
+
+    /**
      * What the hit leaves behind. Only a Clean hit or Dead-on rolls for riders at all — a weaker blow
      * sets nobody alight — and each rider is one die, rolled after the tier and the place. A target
      * already down is not rolled for.
      *
      * @param  callable(): float  $dice
      */
-    private function riders(FightState $state, Side $attacker, RoundSpec $spec, HitQuality $tier, callable $dice): FightState
+    private function riders(FightState $state, Side $attacker, RoundSpec $spec, HitQuality $tier, callable $dice, bool $hurt = false): FightState
     {
         if ($tier !== HitQuality::CleanHit && $tier !== HitQuality::DeadOn) {
             return $state;
@@ -363,6 +534,14 @@ final class FightEngine
                 ->withLog([$this->line($state, Text::get('combat.fight.log.afflicted', ['who' => $victim->name, 'status' => $kind->label(), 'turns' => $rider['turns']]), $target === Side::A ? 'crit' : 'ok')]);
         }
 
+        // A wound: only a hit that took hit points, and rolled on the engine's own die so the pinned ones keep their order.
+        $victim = $state->combatant($target);
+
+        if ($hurt && $this->extraDie !== null && ! $victim->down() && ($this->extraDie)(1, 100) <= $this->bleedChance($spec)) {
+            $victim = $victim->afflicted(RiderKind::Bleeding, 0, 1);
+            $state = $state->with($target, $victim)->withLog([$this->line($state, Text::get('combat.fight.log.wound', ['who' => $victim->name, 'level' => $victim->status(RiderKind::Bleeding)['amount']]), $target === Side::A ? 'crit' : 'ok')]);
+        }
+
         return $state;
     }
 
@@ -383,9 +562,23 @@ final class FightEngine
             $kind = RiderKind::from($status['kind']);
             $origin = $kind->damageType();
 
-            if ($origin === null) {
+            if ($kind->skipsTurn()) {
                 $stunned = true;
+                $lines[] = $this->line($state, Text::get('combat.fight.log.skip_'.$kind->value, ['who' => $victim->name]), $side === Side::A ? 'crit' : 'ok');
 
+                continue;
+            }
+
+            // Bleeding is flat: what is lost is the level times what a level costs, and nothing worn or carried resists it.
+            if ($kind === RiderKind::Bleeding) {
+                $lost = Points::of($status['amount'] * $victim->bleedPerLevel());
+                $victim = $victim->hurt('current_hitpoints', $lost);
+                $lines[] = $this->line($state, Text::get('combat.fight.log.bleed', ['who' => $victim->name, 'amount' => $lost, 'level' => $status['amount']]), $side === Side::A ? 'crit' : 'ok');
+
+                continue;
+            }
+
+            if ($origin === null) {
                 continue;
             }
 
@@ -394,15 +587,11 @@ final class FightEngine
             $lines[] = $this->line($state, Text::get('combat.fight.log.tick', ['who' => $victim->name, 'amount' => $taken, 'status' => $kind->label()]), $side === Side::A ? 'crit' : 'ok');
         }
 
-        if ($stunned) {
-            $lines[] = $this->line($state, Text::get('combat.fight.log.stunned', ['who' => $victim->name]), $side === Side::A ? 'crit' : 'ok');
-        }
-
         return [$state->with($side, $victim->aged())->withLog($lines), $stunned];
     }
 
     /** One hit that has found its tier and its place: split, resolved part by part, and applied. */
-    private function land(FightState $state, Side $attacker, RoundSpec $spec, HitQuality $tier, ArmourSlot $slot, Mitigation $mitigation, bool $critical = false): FightState
+    private function land(FightState $state, Side $attacker, RoundSpec $spec, HitQuality $tier, ArmourSlot $slot, Mitigation $mitigation, bool $critical = false, bool $recoil = false): FightState
     {
         $target = $attacker->other();
         $victim = $state->combatant($target);
@@ -426,7 +615,7 @@ final class FightEngine
 
         $line = [
             'round' => $state->round,
-            'text' => Text::get($dealt === [] ? 'combat.fight.log.shot_none' : ($critical ? 'combat.fight.log.shot_critical' : 'combat.fight.log.shot'), [
+            'text' => $recoil ? Text::get('combat.fight.log.headbutt_recoil', ['who' => $victim->name, 'parts' => implode(', ', $dealt) ?: '0']) : Text::get($dealt === [] ? 'combat.fight.log.shot_none' : ($critical ? 'combat.fight.log.shot_critical' : 'combat.fight.log.shot'), [
                 'attacker' => $state->combatant($attacker)->name,
                 'tier' => $tier->label(),
                 'slot' => $slot->label(),

@@ -81,7 +81,7 @@ class EncounterRequest extends FormRequest
             'starts_on' => ['required', Rule::enum(EncounterStart::class)],
             'weight' => ['required', 'integer', 'between:1,100'],
             // Its own odds in percent, overriding the door's: only for a door that is rolled.
-            'chance' => ['nullable', 'numeric', 'gt:0', 'lte:100', 'prohibited_if:starts_on,place,spot'],
+            'chance' => ['nullable', 'numeric', 'gt:0', 'lte:100', 'required_if:starts_on,arrival', 'prohibited_if:starts_on,place,spot'],
             'district_id' => ['nullable', 'integer', 'exists:districts,id', 'prohibited_if:starts_on,place,grid_step,system,run,after_run'],
             // The grid doors' own filters, each only on the door that reads it.
             'system_type' => ['nullable', Rule::enum(SystemType::class), 'prohibited_unless:starts_on,system,run,after_run'],
@@ -94,7 +94,7 @@ class EncounterRequest extends FormRequest
             // the machine when it moves), and how long a character waits before pressing it again.
             'spot_address' => ['nullable', 'string', 'max:16', 'required_if:starts_on,spot', 'prohibited_unless:starts_on,spot'],
             'cooldown_hours' => ['nullable', 'integer', 'between:1,8760', 'prohibited_unless:starts_on,spot'],
-            'location_id' => ['nullable', 'integer', 'exists:locations,id', 'required_if:starts_on,place', 'prohibited_unless:starts_on,place'],
+            'location_id' => ['nullable', 'integer', 'exists:locations,id', 'required_if:starts_on,place', 'prohibited_unless:starts_on,place,arrival'],
             'required_flag' => ['nullable', 'string', 'regex:'.self::FLAG],
             'once' => ['nullable', 'boolean'],
             'retired' => ['nullable', 'boolean'],

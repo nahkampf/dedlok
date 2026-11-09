@@ -26,4 +26,10 @@ enum ActionKind: string
 
     /** A belted fight-only drug (the row id is `round`). The turn is spent here; `Fights` takes the dose. */
     case Use = 'use';
+
+    /** A bare-hands blow at Close, whatever is in the hand: a little harder, and it may hurt the giver. */
+    case Headbutt = 'headbutt';
+
+    /** A check to put somebody on the ground at Close: they lose their next turn and you get the upper hand. */
+    case Takedown = 'takedown';
 }

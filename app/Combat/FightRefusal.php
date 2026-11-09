@@ -30,6 +30,9 @@ enum FightRefusal: string
     /** A drug that is not on the belt, not fight-only, or already used up. */
     case CannotUse = 'cannot_use';
 
+    /** A consumable on the belt that would change nothing right now (a medkit at full health). */
+    case NothingToDo = 'nothing_to_do';
+
     public function message(): string
     {
         return Text::get("combat.fight.refused.{$this->value}");

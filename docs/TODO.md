@@ -184,7 +184,7 @@ button exists; `php artisan fight:start <handle> <npc-slug>` opens one by hand.
 
 ### Parked or open on purpose (do not build without the author)
 
-- **Using an ORDINARY belted drug or a consumable in a fight** — chosen 2026-10-06; the FIGHT-ONLY drug (2026-10-07) is the part built, and
+- **(Consumables: BUILT 2026-11-09, see COMBAT.md — an "Allowed in combat" flag, and a defence-vs-pursuit check for every belt use.) Using an ORDINARY belted drug in a fight** — chosen 2026-10-06; the FIGHT-ONLY drug (2026-10-07) is the part built, and
   it also settled the snapshot question (the player's side is rebuilt every round). Left: letting any belted drug or a medkit be used
   as an action (a medkit can be USED from the stash,
   never inside a fight: `Consumer` refuses with `InAFight`). Drugs would apply through `DrugTaker`, a medkit through `Consumer`. The belt (three slots, drugs only) exists and

@@ -75,6 +75,20 @@ final class EquipmentScreenTest extends TestCase
         $this->assertContains(ArmourSlot::ArmRight, $item->fresh()->armour->covers());
     }
 
+    public function test_a_piece_in_a_place_is_a_tag_that_opens_its_card_once(): void
+    {
+        $item = Item::factory()->create(['container' => 'physical', 'name' => 'Sleeved jacket', 'stackable' => false]);
+        Armour::create(['item_id' => $item->id, 'slots' => ['torso', 'arm_left']]);
+        $row = InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1]);
+        $this->actingAs($this->character->user)->post(route('inventory.wear', $row))->assertRedirect();
+
+        $html = $this->actingAs($this->character->user)->get(route('equipment.index'))->assertOk()->getContent();
+
+        // On two places, so two tags, and one card between them.
+        $this->assertSame(2, substr_count($html, 'data-inspect-open="#equipped-detail-'.$row->id.'"'));
+        $this->assertSame(1, substr_count($html, '<template id="equipped-detail-'.$row->id.'"'));
+    }
+
     public function test_a_drug_goes_on_the_belt_in_the_first_free_slot_and_comes_off_again(): void
     {
         $stim = $this->drug();

@@ -11,6 +11,7 @@ use App\Combat\Fight\Side;
 use App\Combat\FightEnding;
 use App\Combat\Fights;
 use App\Combat\WeaponClass;
+use App\Items\ConsumableEditor;
 use App\Models\Ammunition;
 use App\Models\Character;
 use App\Models\Fight;
@@ -100,6 +101,50 @@ final class FightScreenTest extends TestCase
             ->assertSeeText('Close in')->assertSeeText('Create distance')->assertDontSeeText('Brace');
     }
 
+    public function test_it_lists_what_the_opponent_carries_and_wears(): void
+    {
+        $this->loadMagazine();
+        $this->fight();
+        Fight::query()->update(['resistances' => ['penetrating' => 30], 'slot_resistances' => ['head' => ['penetrating' => 40]]]);
+
+        $this->as()->get(route('fight.show'))->assertOk()
+            ->assertSeeText('Ranged: Gang pistol')->assertSeeText('Resistances')->assertSeeText('Shots per attack')->assertSeeText('+30%')->assertSeeText('+40%');
+    }
+
+    public function test_chance_opens_an_explanation_of_the_numbers_behind_it(): void
+    {
+        $this->loadMagazine();
+        $this->fight();
+
+        $this->as()->get(route('fight.show'))->assertOk()
+            ->assertSee('data-open="#chance-attack"', false)
+            ->assertSee('data-open="#chance-close_in"', false)->assertSee('data-open="#chance-create_distance"', false)
+            ->assertDontSee('class="link" data-open="#chance-attack"><button', false)->assertSeeText('Chance to hit')->assertSeeText('Your aim')->assertSeeText('Their defence')->assertSeeText('Margin');
+    }
+
+    public function test_an_allowed_consumable_on_the_belt_is_a_button_with_its_own_chance(): void
+    {
+        $this->loadMagazine();
+        $this->fight();
+        $item = Item::factory()->physical()->create(['name' => 'Field kit', 'stackable' => true]);
+        ConsumableEditor::apply($item, [['kind' => 'heal_hitpoints', 'amount' => 7]], true);
+        InventoryItem::create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 2, 'belt_slot' => 1]);
+        $this->character->forceFill(['current_hitpoints' => 5])->save();
+
+        $this->as()->get(route('fight.show'))->assertOk()
+            ->assertSeeText('Use Field kit')->assertSee('data-open="#chance-use"', false)->assertSeeText('Chance to get it out');
+    }
+
+    public function test_the_bar_shows_where_each_side_stands_about_the_meeting_point(): void
+    {
+        $this->loadMagazine();
+        $this->fight();
+
+        $this->as()->get(route('fight.show'))->assertOk()
+            ->assertSee('role="img"', false)->assertSeeText('Face to face')->assertSeeText('You can flee')->assertSeeText('They can flee')
+            ->assertSee('You are 1 steps out from the meeting point, they are 1 steps out.', false);
+    }
+
     public function test_an_empty_magazine_offers_loading_and_bracing_instead_of_an_attack(): void
     {
         InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $this->fmj->id, 'quantity' => 30]);
@@ -129,18 +174,18 @@ final class FightScreenTest extends TestCase
         $this->fight([0.0, 0.5, 0.0, 0.5, 0.0, 0.5,  0.0, 0.5, 0.1]);
 
         $this->as()->get(route('fight.show'))->assertOk()
-            ->assertSeeText('Distance 2')->assertSeeText('Close in')->assertSeeText('Create distance')->assertDontSeeText('Disengage');
+            ->assertSeeText('Gap 2')->assertSeeText('Close in')->assertSeeText('Create distance')->assertDontSeeText('Disengage');
 
         $this->as()->post(route('fight.act'), ['action' => 'attack'])->assertRedirect(route('fight.show'));
 
         $this->as()->get(route('fight.show'))->assertOk()
-            ->assertSeeText('Round 2')->assertSeeText('Distance 2')->assertSeeText('Chance 50%');
+            ->assertSeeText('Round 2')->assertSeeText('Gap 2')->assertSeeText('Chance 50%');
 
         // The enemy shoots, then the player backs off: a lucky roll wins two steps and running is possible.
         $this->as()->post(route('fight.act'), ['action' => 'create_distance'])->assertRedirect(route('fight.show'));
 
         $this->as()->get(route('fight.show'))->assertOk()
-            ->assertSeeText('Round 3')->assertSeeText('Distance 4')->assertSeeText('Ranged')->assertSeeText('Disengage');
+            ->assertSeeText('Round 3')->assertSeeText('Gap 4')->assertSeeText('Ranged')->assertSeeText('Disengage');
     }
 
     // ---- a round ------------------------------------------------------------------------
@@ -176,7 +221,7 @@ final class FightScreenTest extends TestCase
         $this->loadMagazine();
         $this->fight([0.0, 0.5,  0.0]);
         $row = Fight::query()->sole();
-        $row->update(['state' => [...$row->state, 'distance' => 3]]);
+        $row->update(['state' => [...$row->state, 'distance' => 3, 'you_at' => 3]]);
 
         $this->as()->post(route('fight.act'), ['action' => 'disengage'])
             ->assertRedirect(route('city.index'))->assertSessionHas('status', 'You get away from Thug.');
@@ -270,5 +315,24 @@ final class FightScreenTest extends TestCase
         $this->fight([]);
 
         $this->as()->get(route('admin.items.index'))->assertRedirect(route('fight.show'));
+    }
+
+    public function test_the_opponents_picture_and_its_credit_are_shown(): void
+    {
+        $this->loadMagazine();
+        $this->fight();
+        $npc = Npc::query()->sole();
+        $npc->update(['image_credit' => 'An Artist', 'image_link' => 'https://example.com/a']);
+        $file = public_path("images/enemies/{$npc->id}.jpg");
+
+        try {
+            @mkdir(dirname($file), 0775, true);
+            imagejpeg(imagecreatetruecolor(30, 40), $file);
+
+            $this->as()->get(route('fight.show'))->assertOk()
+                ->assertSee("enemies/{$npc->id}.jpg", false)->assertSeeText('An Artist')->assertSee('href="https://example.com/a"', false);
+        } finally {
+            @unlink($file);
+        }
     }
 }

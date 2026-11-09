@@ -25,18 +25,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property float $aim
  * @property float $defence
  * @property float $pursuit
+ * @property string|null $image_credit
+ * @property string|null $image_link
  * @property float|null $flees_at
+ * @property int|null $flee_beyond
  * @property int|null $entity_id
  * @property list<string>|null $tags
  * @property array<string, int>|null $resistances
  * @property array<string, array<string, int>>|null $slot_resistances
  */
-#[Fillable(['slug', 'name', 'flavor', 'grade', 'hitpoints', 'aim', 'defence', 'pursuit', 'entity_id', 'tags', 'flees_at', 'ranged_weapon_id', 'melee_weapon_id', 'ammo_item_id', 'resistances', 'slot_resistances'])]
+#[Fillable(['slug', 'name', 'flavor', 'image_credit', 'image_link', 'grade', 'hitpoints', 'aim', 'defence', 'pursuit', 'entity_id', 'tags', 'flees_at', 'flee_beyond', 'ranged_weapon_id', 'melee_weapon_id', 'ammo_item_id', 'resistances', 'slot_resistances'])]
 class Npc extends Model
 {
-    /** The picture kind: `public/images/npcs/<id>.jpg`, 3:4, like any other person. */
-    public const IMAGE_KIND = 'npcs';
-
     protected function casts(): array
     {
         return [
@@ -46,6 +46,7 @@ class Npc extends Model
             'defence' => 'float',
             'pursuit' => 'float',
             'flees_at' => 'float',
+            'flee_beyond' => 'integer',
             'resistances' => 'array',
             'slot_resistances' => 'array',
             'tags' => 'array',

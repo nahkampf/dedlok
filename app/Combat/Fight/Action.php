@@ -40,6 +40,16 @@ final readonly class Action
         return new self(ActionKind::Use, (string) $rowId);
     }
 
+    public static function headbutt(): self
+    {
+        return new self(ActionKind::Headbutt);
+    }
+
+    public static function takedown(): self
+    {
+        return new self(ActionKind::Takedown);
+    }
+
     public static function brace(): self
     {
         return new self(ActionKind::Brace);

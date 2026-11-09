@@ -670,6 +670,24 @@ final class EncounterTest extends TestCase
         $this->assertSame(CityRefusal::NotHere, app(Encounters::class)->openAtPlace($this->character->fresh(), $place, $e->id));
     }
 
+    public function test_arriving_at_a_place_can_open_an_encounter_by_chance_once_per_arrival(): void
+    {
+        $place = Location::create([
+            'district_id' => $this->district('dockside')->id, 'slug' => 'back_room', 'name' => 'Back Room',
+            'map_x' => 50, 'map_y' => 50, 'discovery' => 'open',
+        ]);
+        $this->simple('ambush', ['starts_on' => 'arrival', 'location_id' => $place->id, 'chance' => 100, 'title' => 'An ambush']);
+
+        $this->actingAs($this->character->user)->get(route('city.place', 'back_room'))->assertRedirect(route('encounter.show'));
+        $this->assertNotNull($this->character->fresh()->current_encounter_id);
+
+        // Resolved, and the page reloaded: still the same place, so not an arrival.
+        $this->character->forceFill(['current_encounter_id' => null])->save();
+        DB::table('character_encounters')->delete();
+        $this->actingAs($this->character->user)->get(route('city.place', 'back_room'))->assertOk();
+        $this->assertNull($this->character->fresh()->current_encounter_id);
+    }
+
     // ---- the lock and the screen ------------------------------------------------
 
     public function test_an_open_encounter_owns_the_screen(): void

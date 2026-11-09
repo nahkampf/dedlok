@@ -1163,6 +1163,12 @@ class ItemRequest extends FormRequest
         return $effects;
     }
 
+    /** Whether a consumable may be used from the belt in a fight. Only a consumable can be: an item with no effects is not one. */
+    public function consumableUsableInFight(): bool
+    {
+        return $this->boolean('usable_in_fight') && $this->consumableEffects() !== [];
+    }
+
     /** The program a design makes, or null when this is not a design. */
     public function designProductId(): ?int
     {

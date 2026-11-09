@@ -89,6 +89,38 @@ return [
     ],
 
     /*
+    |--------------------------------------------------------------------------
+    | Bleeding
+    |--------------------------------------------------------------------------
+    |
+    | A hit that lands cleanly may open a wound. The chance is `base` plus, for each damage type in the hit's profile, that
+    | type's `bonus` weighted by its share of the profile: a blade or a bullet bleeds more than a fist. A wound adds ONE LEVEL
+    | (up to `max_level`), and bleeding lasts the whole fight: each of its owner's turns costs `per_level` hit points a level,
+    | flat and unresisted. Rolled on its own die, so the fight's pinned dice are untouched. Unmeasured.
+    */
+    'bleed' => [
+        'base' => 20,
+        'bonus' => ['slashing' => 20, 'penetrating' => 15],
+        'per_level' => 0.5,
+        'max_level' => 10,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Headbutt and takedown
+    |--------------------------------------------------------------------------
+    |
+    | Only at Close. A HEADBUTT is a bare-hands attack with `damage_bonus` more damage, whatever is in the hand, and on a blow
+    | that lands it costs the attacker the same hit with `recoil` percent chance. A TAKEDOWN rolls the attacker's
+    | (muscle + motor) / 3, plus what their unarmed aim has gained from skills and the like, against the target's `defence`; its
+    | chance never passes `cap`. A success leaves the target dazed for a turn and gives the attacker double aim chance for their
+    | next one; a failure costs the attacker the next turn. Unmeasured.
+    */
+    'headbutt' => ['damage_bonus' => 1, 'recoil' => 50],
+    // `npc_min_chance`: the least chance at which an opponent will gamble a turn on one, even if the sums say it pays.
+    'takedown' => ['cap' => 0.6, 'npc_min_chance' => 0.5],
+
+    /*
     | Recoil. Every shot of a burst or automatic action after the first is this much worse than the
     | one before it, compounding: the chance of shot k (the first is 0) is multiplied by
     | (1 - burst_falloff)^k. See `App\Combat\Burst`.

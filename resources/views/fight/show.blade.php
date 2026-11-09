@@ -1,3 +1,4 @@
+@use('App\Combat\Fight\Side')
 @use('App\Combat\RiderKind')
 @use('App\Support\Text')
 
@@ -14,10 +15,21 @@
 
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
     <div class="panel__bd row row--wrap" style="--gap:var(--s-5);align-items:flex-start">
-        {{-- Found by convention (public/images/npcs/<id>.jpg). An opponent deleted mid-fight has no
-             picture to show, and a missing one renders nothing rather than a broken one. --}}
-        @if ($fight->npc_id !== null)
-            <x-entity-image kind="npcs" :id="$fight->npc_id" :alt="$fight->opponent_name" portrait />
+        {{-- The opponent's own picture; else the scene's if an encounter started this; else the stand-in for every opponent
+             (App\Combat\FightPicture). Whoever's picture it is, their credit goes under it. --}}
+        @if ($picture = \App\Combat\FightPicture::for($fight))
+            <div class="stack" style="--gap:var(--s-1)">
+                <span class="entity-image entity-image--portrait"><img src="{{ $picture['url'] }}" alt="{{ $fight->opponent_name }}" width="300" height="400" decoding="async"></span>
+                @if ($picture['credit'])
+                    <span class="micro" style="color:var(--ink-3);max-width:300px">
+                        @if ($picture['link'])
+                            <a href="{{ $picture['link'] }}" target="_blank" rel="noopener noreferrer">{{ $picture['credit'] }}</a>
+                        @else
+                            {{ $picture['credit'] }}
+                        @endif
+                    </span>
+                @endif
+            </div>
         @endif
 
         <div class="stack" style="--gap:var(--s-3);flex:1 1 min(260px,100%);min-width:0">
@@ -39,10 +51,90 @@
             @if ($state->b->statuses !== [])
                 <div class="row row--wrap" style="--gap:var(--s-1)">
                     @foreach ($state->b->statuses as $status)
-                        <span class="tag">{{ Text::get('combat.fight.screen.status_for', ['status' => RiderKind::from($status['kind'])->label(), 'turns' => $status['turns']]) }}</span>
+                        @php($kind = RiderKind::from($status['kind']))
+                        <span class="tag">{{ $kind === RiderKind::Bleeding ? Text::get('combat.fight.screen.status_level', ['status' => $kind->label(), 'level' => $status['amount']]) : ($kind === RiderKind::Edge ? $kind->label() : Text::get('combat.fight.screen.status_for', ['status' => $kind->label(), 'turns' => $status['turns']])) }}</span>
                     @endforeach
                 </div>
             @endif
+
+            {{-- What it carries and what it wears: the weapons it can use, and its resistances (percent off per
+                 damage type, and extra by body part). Read off the fight, which copied them when it opened. --}}
+            @php($foeArms = array_filter(['ranged' => $state->b->ranged, 'close' => $state->b->melee]))
+            @php($foeResist = array_filter((array) $fight->resistances, fn ($v): bool => (int) $v !== 0))
+            @php($foeSlots = collect((array) $fight->slot_resistances)->map(fn ($types) => array_filter((array) $types, fn ($v): bool => (int) $v !== 0))->filter())
+            @if ($foeArms !== [])
+                <div class="row row--wrap micro" style="--gap:var(--s-2)">
+                    <span>{{ Text::get('combat.fight.screen.foe_weapons') }}</span>
+                    @foreach ($foeArms as $range => $arm)
+                        {{-- Hover floats the card, a click or tap opens it as a modal (ui-kit.js, data-inspect). --}}
+                        <span class="tag" data-inspect="#foe-arm-{{ $range }}" tabindex="0" style="cursor:help">{{ Text::get('combat.fight.screen.range.'.$range) }}: {{ $arm->name }}</span>
+                        @php($round = $arm->spec())
+                        <template id="foe-arm-{{ $range }}">
+                            <div class="item-card">
+                                <div class="item-card__hd">
+                                    <span class="stack" style="--gap:5px;min-width:0">
+                                        <span class="item-card__name">{{ $arm->name }}</span>
+                                        <span class="row row--wrap" style="--gap:var(--s-2)"><span class="tag tag--warn">{{ $arm->class->label() }}</span></span>
+                                    </span>
+                                </div>
+                                <div class="item-card__stats">
+                                    <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_rate') }}</span><b>{{ $arm->rate }}</b></div>
+                                    @if ($arm->magazine > 0)
+                                        <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_magazine') }}</span><b>{{ $arm->magazine }}</b></div>
+                                    @endif
+                                    @if ($round !== null)
+                                        <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_round') }}</span><b>{{ $round->name }}</b></div>
+                                        <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_damage') }}</span><b>{{ round($round->damage, 1) }}</b></div>
+                                        <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_types') }}</span><b>{{ collect($round->profile)->map(fn ($share, $type) => \App\Stats\DamageOrigin::from($type)->label().' '.$share.'%')->implode(', ') }}</b></div>
+                                        @if ($round->penetration !== 0)
+                                            <div class="item-card__stat"><span>{{ Text::get('combat.fight.screen.arm_penetration') }}</span><b>{{ $round->penetration }}%</b></div>
+                                        @endif
+                                        @foreach ($round->riders as $rider)
+                                            <div class="item-card__stat"><span>{{ RiderKind::from($rider['kind'])->label() }}</span><b>{{ $rider['chance'] }}%</b></div>
+                                        @endforeach
+                                    @endif
+                                </div>
+                            </div>
+                        </template>
+                    @endforeach
+                </div>
+            @endif
+            @if ($foeResist !== [] || $foeSlots->isNotEmpty())
+                <div class="row row--wrap micro" style="--gap:var(--s-2)">
+                    <span>{{ Text::get('combat.fight.screen.foe_armour') }}</span>
+                    @foreach ($foeResist as $type => $percent)
+                        <span class="tag">{{ \App\Stats\DamageOrigin::from($type)->label() }} {{ $percent > 0 ? '+' : '' }}{{ $percent }}%</span>
+                    @endforeach
+                    @foreach ($foeSlots as $slot => $types)
+                        @foreach ($types as $type => $percent)
+                            <span class="tag">{{ \App\Combat\ArmourSlot::from($slot)->label() }} · {{ \App\Stats\DamageOrigin::from($type)->label() }} {{ $percent > 0 ? '+' : '' }}{{ $percent }}%</span>
+                        @endforeach
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- WHERE EVERYBODY STANDS. 0 is the meeting point: you stand out from it on the left, they on the right, and the gap
+                 is the two added. Ranged weapons work whenever the gap is above 0. Each side can get away once it is far
+                 enough out, by its own measure: the ticks at either end are where. Cells are the steps, one per position. --}}
+            @php($reach = \App\Combat\Fight\FightState::reach())
+            @php($x = fn (float $p): float => round(($p + $reach + 0.5) / ($reach * 2 + 1) * 100, 2))
+            @php([$you, $foe] = [-$state->offset(Side::A), $state->offset(Side::B)])
+            <div class="stack" style="--gap:var(--s-1)">
+                <div class="meter meter--lg" style="--fill:var(--ink-3)" role="img"
+                     aria-label="{{ Text::get('combat.fight.screen.bar.aria', ['you' => -$you, 'foe' => $foe, 'gap' => $state->distance]) }}">
+                    <div class="meter__fill" style="position:absolute;top:0;left:{{ $x($you) }}%;width:{{ $x($foe) - $x($you) }}%;transform:none;transition:none"></div>
+                    <span class="meter__mark" style="--x:{{ $x(0) / 100 }};--mark:var(--ink-2)"></span>
+                    <span class="meter__mark" style="--x:{{ $x(-($state->a->escapeBeyond() + 0.5)) / 100 }};--mark:var(--ink-2)"></span>
+                    <span class="meter__mark" style="--x:{{ $x($state->b->escapeBeyond() + 0.5) / 100 }};--mark:var(--ink-2)"></span>
+                    <span class="meter__mark" style="--x:{{ $x($you) / 100 }};--mark:var(--ok);width:6px;margin-left:-3px"></span>
+                    <span class="meter__mark" style="--x:{{ $x($foe) / 100 }};--mark:var(--crit);width:6px;margin-left:-3px"></span>
+                </div>
+                <div class="row micro" style="--gap:var(--s-2);justify-content:space-between;color:var(--ink-3)">
+                    <span>{{ Text::get('combat.fight.screen.bar.you_escape') }}</span>
+                    <span>{{ Text::get('combat.fight.screen.bar.meeting') }}</span>
+                    <span>{{ Text::get('combat.fight.screen.bar.they_escape') }}</span>
+                </div>
+            </div>
 
             <div class="row row--wrap" style="--gap:var(--s-2);align-items:center">
                 <span class="tag">{{ Text::get('combat.fight.screen.round', ['round' => $state->round]) }}</span>
@@ -74,7 +166,8 @@
         @if ($state->a->statuses !== [])
             <div class="row row--wrap" style="--gap:var(--s-1);grid-column:1/-1">
                 @foreach ($state->a->statuses as $status)
-                    <span class="tag tag--crit">{{ Text::get('combat.fight.screen.status_for', ['status' => RiderKind::from($status['kind'])->label(), 'turns' => $status['turns']]) }}</span>
+                    @php($kind = RiderKind::from($status['kind']))
+                    <span class="tag tag--crit">{{ $kind === RiderKind::Bleeding ? Text::get('combat.fight.screen.status_level', ['status' => $kind->label(), 'level' => $status['amount']]) : ($kind === RiderKind::Edge ? $kind->label() : Text::get('combat.fight.screen.status_for', ['status' => $kind->label(), 'turns' => $status['turns']])) }}</span>
                 @endforeach
             </div>
         @endif
@@ -98,7 +191,7 @@
                 <input type="hidden" name="action" value="attack">
                 <button type="submit" class="btn btn--primary cut" style="justify-self:start">{{ Text::get('combat.fight.screen.attack', ['weapon' => $weapon]) }}</button>
                 <span class="micro" style="color:var(--ink-3)">
-                    {{ Text::get('combat.fight.screen.chance') }}
+                    <button type="button" class="link" data-open="#chance-attack">{{ Text::get('combat.fight.screen.chance') }}</button>
                     <span class="num">{{ implode(' · ', array_map(fn (float $c): string => round($c * 100).'%', $attack)) }}</span>
                     @if (count($attack) > 1) — {{ Text::get('combat.fight.screen.shots', ['count' => count($attack)]) }} @endif
                 </span>
@@ -107,14 +200,24 @@
             <span class="tag">{{ Text::get('combat.fight.screen.nothing_to_attack') }}</span>
         @endif
 
-        {{-- Fight-only drugs on the belt. Using one IS the turn: the opponent acts, and it works from the next round. --}}
+        {{-- What is on the belt and allowed in a fight: fight-only drugs, and consumables their author allowed. Using one IS
+             the turn, and is a check (defence against their pursuit): a fumble spends the turn and keeps the item. A drug
+             works from the next round; a consumable does its work at once. --}}
         @foreach ($uses as $use)
             <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
                 @csrf
                 <input type="hidden" name="action" value="use">
                 <input type="hidden" name="round" value="{{ $use['id'] }}">
-                <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.use', ['item' => $use['name']]) }}</button>
-                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.use_hint', ['turns' => $use['turns'], 'quantity' => $use['quantity']]) }}</span>
+                <button type="submit" class="btn cut" style="justify-self:start" @disabled(! $use['ready'])>{{ Text::get('combat.fight.screen.use', ['item' => $use['name']]) }}</button>
+                <span class="micro" style="color:var(--ink-3)">
+                    <button type="button" class="link" data-open="#chance-use">{{ Text::get('combat.fight.screen.chance') }}</button>
+                    <span class="num">{{ round($use_chance * 100) }}%</span> —
+                    @if ($use['drug'])
+                        {{ Text::get('combat.fight.screen.use_hint', ['turns' => $use['turns'], 'quantity' => $use['quantity']]) }}
+                    @else
+                        {{ Text::get('combat.fight.screen.use_consumable_hint', ['effects' => $use['effects'], 'quantity' => $use['quantity']]) }}
+                    @endif
+                </span>
             </form>
         @endforeach
 
@@ -142,7 +245,7 @@
                 @csrf
                 <input type="hidden" name="action" value="close_in">
                 <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.close_in') }}</button>
-                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($closing * 100) }}%</span> — {{ Text::get('combat.fight.screen.close_in_hint') }}</span>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-close_in">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($closing * 100) }}%</span> — {{ Text::get('combat.fight.screen.close_in_hint') }}</span>
             </form>
         @endif
 
@@ -151,7 +254,27 @@
                 @csrf
                 <input type="hidden" name="action" value="create_distance">
                 <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.create_distance') }}</button>
-                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.create_distance_hint', ['max' => config('combat.distance.max')]) }}</span>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-create_distance">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.create_distance_hint', ['max' => \App\Combat\Fight\FightState::reach()]) }}</span>
+            </form>
+        @endif
+
+        {{-- At Close only. Headbutt: a bare-hands blow whatever is in the hand, a little harder, and it can hurt you. Takedown: a check
+             (muscle and motor against their defence); a success leaves them dazed and gives you the upper hand, a failure costs your next turn. --}}
+        @if ($can_headbutt)
+            <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
+                @csrf
+                <input type="hidden" name="action" value="headbutt">
+                <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.headbutt') }}</button>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-headbutt">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($headbutt_chance * 100) }}%</span> — {{ Text::get('combat.fight.screen.headbutt_hint', ['bonus' => config('combat.headbutt.damage_bonus'), 'recoil' => config('combat.headbutt.recoil')]) }}</span>
+            </form>
+        @endif
+
+        @if ($can_takedown)
+            <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
+                @csrf
+                <input type="hidden" name="action" value="takedown">
+                <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.takedown') }}</button>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-takedown">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($takedown_chance * 100) }}%</span> — {{ Text::get('combat.fight.screen.takedown_hint') }}</span>
             </form>
         @endif
 
@@ -160,7 +283,7 @@
                 @csrf
                 <input type="hidden" name="action" value="disengage">
                 <button type="submit" class="btn btn--ghost cut" style="justify-self:start">{{ Text::get('combat.fight.screen.disengage') }}</button>
-                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.chance') }} <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.disengage_hint', ['beyond' => config('combat.distance.flee_beyond')]) }}</span>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-create_distance">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.disengage_hint', ['beyond' => $state->a->escapeBeyond()]) }}</span>
             </form>
         @endif
 
@@ -194,5 +317,49 @@
         </div>
     </div>
 @endif
+
+
+{{-- WHY EACH CHANCE IS WHAT IT IS (ChanceExplainer). One dialog per roll; Disengage reads the Create distance one. --}}
+@foreach ($explain as $key => $why)
+    <dialog class="modal" id="chance-{{ $key }}">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('combat.fight.chance.title.'.$key) }}</span>
+            <div class="spacer"></div>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>✕</button>
+        </div>
+        <div class="panel__bd stack" style="--gap:var(--s-3)">
+            @php($odds = $key === 'attack' ? $attack : [match ($key) { 'close_in' => $closing, 'use' => $use_chance, 'headbutt' => $headbutt_chance, 'takedown' => $takedown_chance, default => $flight }])
+            <div class="row row--wrap" style="--gap:var(--s-2)">
+                <span>{{ Text::get('combat.fight.chance.chance') }}</span>
+                <b class="num">{{ implode(' · ', array_map(fn (float $c): string => round($c * 100, 1).'%', $odds)) }}</b>
+            </div>
+
+            <div class="item-card__stats">
+                <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.yours', ['stat' => Text::get('combat.fight.chance.stats.'.$why['yours_label'])]) }}</span><b class="num">{{ round($why['yours'], 1) }}</b></div>
+                <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.base') }}</span><b class="num">{{ round($why['base'], 1) }}</b></div>
+                @foreach ($why['steps'] as $step)
+                    <div class="item-card__stat">
+                        <span>{{ Text::get('combat.fight.chance.op.'.$step['op']) }} @if ($step['sources'] !== []) <span class="micro" style="color:var(--ink-3)">({{ implode(', ', $step['sources']) }})</span> @endif</span>
+                        <b class="num">{{ $step['op'] === 'multiplier' ? '×'.round($step['amount'], 2) : ($step['op'] === 'override' ? '= '.round($step['amount'], 1) : ($step['amount'] >= 0 ? '+' : '').round($step['amount'], 1).($step['op'] === 'percentage_of_base' ? '%' : '')) }}</b>
+                    </div>
+                @endforeach
+                @foreach ($why['extras'] as $extra)
+                    <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.extra.'.$extra['label']) }}</span><b class="num">{{ ($extra['amount'] >= 0 ? '+' : '').round($extra['amount'], 1) }}</b></div>
+                @endforeach
+                <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.theirs', ['stat' => Text::get('combat.fight.chance.stats.'.$why['theirs_label'])]) }}</span><b class="num">{{ round($why['theirs'], 1) }}</b></div>
+                <div class="item-card__stat"><span>{{ Text::get('combat.fight.chance.margin') }}</span><b class="num">{{ ($why['margin'] >= 0 ? '+' : '').round($why['margin'], 1) }}</b></div>
+            </div>
+            @if ($why['edge'] ?? false)
+                <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.edge') }}</p>
+            @endif
+            @if ($key === 'takedown')
+                <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.takedown_cap', ['cap' => round((float) config('combat.takedown.cap') * 100)]) }}</p>
+            @endif
+            @if ($key === 'attack' && count($attack) > 1)
+                <p class="micro" style="color:var(--ink-3);margin:0">{{ Text::get('combat.fight.chance.burst', ['falloff' => round((float) config('combat.burst_falloff') * 100)]) }}</p>
+            @endif
+        </div>
+    </dialog>
+@endforeach
 
 @endsection

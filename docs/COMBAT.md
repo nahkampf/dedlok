@@ -73,7 +73,7 @@ engine's own.
 5. **Heat from violence.** Default: none (heat is a cyberspace quantity).
 6. **Using items mid-fight** (stims, healing; `DrugTaker`). *Partly built (2026-10-07):* a **fight-only drug** (a setting on a drug
    row) is used from the belt as the round's whole action, works from the next round for `duration_turns` rounds, and can restore
-   or cost hit points each round. Ordinary drugs and consumables (medkits) in a fight: still later.
+   or cost hit points each round. **Consumables (2026-11-09): BUILT.** A consumable with `consumables.usable_in_fight` ("Allowed in combat" in the item editor) goes on the belt and is used from the fight screen as the round's whole action; it does its effects at once. **Getting ANY belt item out is a check**, rolled in the engine (`FightEngine::quoteUse()`, the actor's `defence` against the opponent's `pursuit`, the same figure as Create distance): a pass applies the item, a fumble spends the turn and keeps the item. A stunned turn never gets it out. A consumable that would do nothing (a medkit at full health) is refused before the turn is spent. Ordinary drugs are still taken outside a fight.
 7. **The numbers**: the tier `spread`, opponent HP and damage by grade, fight length — set with
    `fight:simulate`.
 8. **Skill balance**, deferred until real NPCs exist: the grants are authored, the numbers are not measured.
@@ -302,6 +302,13 @@ The class-to-skill mapping is parked with skills.
 
 ## The fight
 
+**TWO POSITIONS ABOUT A MEETING POINT (2026-11-09).** Distance is still the one number that decides the range, but it is now the SUM of two positions:
+`FightState::youAt` (how many steps out you stand from the meeting point, on your side) and the enemy's `distance - youAt` on theirs. A fight opens
+at 1 and 1. **Backing off** moves only the mover outward (up to `FightState::reach()`, half of `combat.distance.max`); **closing in** moves the mover
+toward the meeting point, and a side already standing at it pulls the OTHER in instead, so a step in and a step out cancel (0/2 stays 0/2, never 1/3).
+**Disengage is by each side's own measure**: it may go only from MORE than `Combatant::escapeBeyond()` steps out (`combat.distance.flee_beyond`, 2, or
+`npcs.flee_beyond` for an opponent). The fight screen draws it as a bar, you on the left and they on the right, with ticks where each can escape.
+
 **Distance is a number, and it implies two ranges.** A fight opens at distance **2**
 (`combat.distance.start`) and **nothing moves it but somebody's action**, between 0 and `combat.distance.max` (6).
 Any distance above 0 is **Ranged**; 0 is **Close**.
@@ -366,6 +373,27 @@ penetration, profile and riders.
 
 A fight should run **4–10 rounds** and cost a fifth to most of a character's HP at grades 1–5;
 those two ratios are what the balance pass tunes.
+
+## Headbutt, takedown and bleeding — BUILT (2026-11-09)
+
+- **Headbutt** (Close only, whatever is in the hand: `Combatant::fists`): a bare-hands attack with `combat.headbutt.damage_bonus` more damage and the
+  chance of an ordinary bare-hands attack. On a blow that LANDS (not a near miss) there is a `combat.headbutt.recoil` percent chance the giver takes the
+  same blow to the head, rolled on the engine's own die (below) and through the giver's own mitigation.
+- **Takedown** (Close only): a check of `Combatant::takedown` against the target's `defence`, capped at `combat.takedown.cap`. The value is the `takedown`
+  pool, (muscle + motor) / 3, plus what modifiers have added to `aim.unarmed` on top of its own pool. **Success**: the target is `Dazed` (loses its next turn)
+  and the taker gets `Edge` (double the chance of their next attack, a 2-turn status so it survives the other side's turn and is gone after the taker's
+  next one). **Failure**: the taker is `OffBalance` and loses their next turn. All three are statuses (`RiderKind`), so the rebuilt player's side keeps them.
+- **Bleeding** (`RiderKind::Bleeding`, engine-only): a hit that is Clean or Dead-on and took hit points may open a wound with chance
+  `combat.bleed.base` plus each damage type's `bonus` weighted by its share of the hit. Each wound is one more LEVEL (to `combat.bleed.max_level`), it never
+  ages, and every turn of its owner costs `bleed_per_level` (a stat, base 0.5) hit points a level, flat and unresisted. **Stopping it**: the consumable effect
+  `stop_bleeding` (also usable on a fight-only drug's consumable half) takes levels off; a modifier on `bleed_per_level` (an implant, a drug, a skill) reduces
+  it gradually. Bleeding is NOT stored on the body: it lives in the fight, so the fight (not `Consumer`) eases it.
+- **Opponents take people down too** (`FightEngine::takedownPays()`, asked by `choose()` at Close): when the sums over its next two turns favour a takedown
+  (a success dazes the other and doubles its next attack, a failure loses its next turn, against attacking twice) AND the chance is at least
+  `combat.takedown.npc_min_chance` (0.5). An opponent's takedown value is its `aim` unless a spec names one; no new NPC field yet. Bleeding is capped at
+  `combat.bleed.max_level` (10).
+- **The engine's own die** (`FightEngine`'s `$extraDie`, `fn (int $min, int $max): int`) rolls wounds and recoil, apart from the pinned fight dice so adding a
+  roll never reorders the others. Null (a test, the pure engine) means no wounds and no recoil; `Fights` and `Simulation` pass real ones.
 
 ## The engine's shape (step 2) — BUILT
 
@@ -518,7 +546,7 @@ to the `DownedCause` effects the waiting screen reads), then calls the waiting r
   `pursuit`, `flees_at`, `ranged_weapon_id`, `melee_weapon_id` and `ammo_item_id` (the standing round) — all
   three pointers at ITEMS, so a weapon's numbers live on the weapon — and `resistances` / `slot_resistances`
   (JSON: percent off by type, and extra by body part). Pictures by convention, 3:4 like a person
-  (`public/images/npcs/<id>.jpg`). Step 6 added `entity_id` (whose it is, for standing), `tags` (what it
+  (uploaded in the editor, with a credit and a link, to `public/images/enemies/<id>.jpg`; `default.jpg` there stands in for the rest). The fight screen shows (`App\Combat\FightPicture`): the opponent's OWN picture, else the OWN picture of the encounter that started the fight, else `enemies/default.jpg`, with the credit of whichever it is. Step 6 added `entity_id` (whose it is, for standing), `tags` (what it
   does to somebody it beats; NULL is the default `[mugged]`, a list replaces it) and the `npc_loot` table. **No CHECK reaches the three item pointers** (MySQL error 3823): which kind of weapon
   goes in which hand, and that a round fits the weapon, are `NpcRequest`'s. **Deleting a weapon item leaves
   its opponents unarmed** (`nullOnDelete`), and the item's delete dialog says how many.

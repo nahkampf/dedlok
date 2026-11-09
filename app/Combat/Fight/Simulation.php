@@ -20,7 +20,8 @@ final class Simulation
 
     public static function make(): self
     {
-        return new self(new FightEngine(CheckRoller::fromConfig()));
+        // The engine's own die follows the same seed, so a simulation stays repeatable.
+        return new self(new FightEngine(CheckRoller::fromConfig(), static fn (int $min, int $max): int => mt_rand($min, $max)));
     }
 
     /**

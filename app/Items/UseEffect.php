@@ -24,6 +24,13 @@ enum UseEffect: string
     /** Restores current hit points, never past the maximum as it stands (an injury lowers that maximum). */
     case HealHitpoints = 'heal_hitpoints';
 
+    /**
+     * Takes levels off bleeding, in a fight. Bleeding lives in the fight and not on the body, so `would()` reads the level it is
+     * handed and `apply()` changes nothing here: the fight eases its own wound (`Fights`). Outside a fight there is none, so it
+     * would do nothing and is refused. A large amount stops it outright.
+     */
+    case StopBleeding = 'stop_bleeding';
+
     /** Fills fullness, never past the maximum. Food. */
     case Fullness = 'fullness';
 
@@ -77,9 +84,10 @@ enum UseEffect: string
     }
 
     /** How much `apply()` would change right now. Reads, never writes. */
-    public function would(Character $character, int|float $amount): int|float
+    public function would(Character $character, int|float $amount, int $bleeding = 0): int|float
     {
         return match ($this) {
+            self::StopBleeding => min($amount, $bleeding),
             self::HealHitpoints => Points::of(min($amount, max(0, $character->maximumFor('current_hitpoints') - $character->current_hitpoints))),
             self::Fullness => (new Meal(fullness: $amount))->would($character)['fullness'],
             self::EaseFatigue => (new Meal(fatigue: $amount))->would($character)['fatigue'],
@@ -91,6 +99,7 @@ enum UseEffect: string
     public function apply(Character $character, int|float $amount): int|float
     {
         return match ($this) {
+            self::StopBleeding => 0,
             self::HealHitpoints => $character->recover('current_hitpoints', $amount),
             self::Fullness => (new Meal(fullness: $amount))->apply($character)['fullness'],
             self::EaseFatigue => (new Meal(fatigue: $amount))->apply($character)['fatigue'],
