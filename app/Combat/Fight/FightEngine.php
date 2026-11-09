@@ -149,6 +149,15 @@ final class FightEngine
         return $this->roller->chance($state->combatant($side)->defence, $state->combatant($side->other())->pursuit);
     }
 
+    /**
+     * The chance getting something out of the belt works while somebody is on you: the actor's defence against the
+     * opponent's pursuit, the same figure as Create distance. It takes your focus off the fight, so it is not certain.
+     */
+    public function quoteUse(FightState $state, Side $side): float
+    {
+        return $this->quoteFlight($state, $side);
+    }
+
     /** The chance Close in succeeds: the actor's pursuit against the opponent's defence, the pursuer's half. */
     public function quoteClosing(FightState $state, Side $side): float
     {
@@ -237,8 +246,11 @@ final class FightEngine
             ActionKind::Attack => $this->attack($state, $side, $dice, $mitigation),
             ActionKind::Brace => $state->withLog([$this->line($state, Text::get('combat.fight.log.brace', ['who' => $name]))]),
             ActionKind::Load => $this->load($state, $side, (string) $action->round),
-            // The turn is spent and nothing else happens in the engine: the dose is `Fights`' to write, and it logs it.
-            ActionKind::Use => $state,
+            // The turn is spent either way. A pass marks the state, and the item is `Fights`' to apply and log; a fumble
+            // is said here and keeps the item.
+            ActionKind::Use => $dice() < $this->quoteUse($state, $side)
+                ? $state->withUsed()
+                : $state->withLog([$this->line($state, Text::get('combat.fight.log.use_fumbled', ['who' => $name]))]),
             ActionKind::Disengage => $this->flight($state, $side, $dice, getAway: true),
             ActionKind::CreateDistance => $this->flight($state, $side, $dice, getAway: false),
             ActionKind::CloseIn => $this->closeIn($state, $side, $dice),

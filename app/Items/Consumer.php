@@ -6,6 +6,7 @@ namespace App\Items;
 
 use App\Characters\Meal;
 use App\Models\Character;
+use App\Models\Consumable;
 use App\Models\InventoryItem;
 use Illuminate\Support\Facades\DB;
 
@@ -22,10 +23,34 @@ use Illuminate\Support\Facades\DB;
  */
 final class Consumer
 {
+    /** Why using this on this body would be refused for what it does (not for who owns it), or null. Asked by `use()` and, before a round is spent, by a fight. */
+    public function refusalFor(Character $body, Consumable $consumable): ?UseRefusal
+    {
+        $effects = $consumable->kinds();
+
+        // Food cannot be forced down: a full stomach refuses it, whatever else it would do.
+        foreach ($effects as [$kind, $amount]) {
+            if ($kind === UseEffect::Fullness && (new Meal(fullness: $amount))->refusedFor($body)) {
+                return UseRefusal::TooFull;
+            }
+        }
+
+        foreach ($effects as [$kind, $amount]) {
+            if ($kind->would($body, $amount) > 0) {
+                return null;
+            }
+        }
+
+        return UseRefusal::NothingToDo;
+    }
+
     /**
+     * `$inFight` is `Fights`' to pass and nobody else's: a consumable the author allowed in a fight is used from the belt
+     * as that round's action, and the fight (not this class) has rolled the check that got it out.
+     *
      * @return array<string, int>|UseRefusal what each effect changed, by its kind's value
      */
-    public function use(Character $character, InventoryItem $row): array|UseRefusal
+    public function use(Character $character, InventoryItem $row, bool $inFight = false): array|UseRefusal
     {
         if ($row->character_id !== $character->id) {
             return UseRefusal::NotOwned;
@@ -43,31 +68,18 @@ final class Consumer
             return UseRefusal::NotFree;
         }
 
-        return DB::transaction(function () use ($character, $row, $consumable): array|UseRefusal {
+        return DB::transaction(function () use ($character, $row, $consumable, $inFight): array|UseRefusal {
             $body = Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($body->current_fight_id !== null) {
+            if ($body->current_fight_id !== null && ! ($inFight && $consumable->usable_in_fight)) {
                 return UseRefusal::InAFight;
             }
 
+            if ($refusal = $this->refusalFor($body, $consumable)) {
+                return $refusal;
+            }
+
             $effects = $consumable->kinds();
-
-            // Food cannot be forced down: a full stomach refuses it, whatever else it would do.
-            foreach ($effects as [$kind, $amount]) {
-                if ($kind === UseEffect::Fullness && (new Meal(fullness: $amount))->refusedFor($body)) {
-                    return UseRefusal::TooFull;
-                }
-            }
-
-            $anything = false;
-
-            foreach ($effects as [$kind, $amount]) {
-                $anything = $anything || $kind->would($body, $amount) > 0;
-            }
-
-            if (! $anything) {
-                return UseRefusal::NothingToDo;
-            }
 
             // Spend one copy: the pile shrinks, and the last one takes its row with it.
             $copy = InventoryItem::query()->whereKey($row->getKey())->lockForUpdate()->first();

@@ -12,12 +12,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * The consumable half of an item: what using one copy does, once. Written only by `App\Items\ConsumableEditor`.
  */
-#[Fillable(['item_id', 'effects'])]
+#[Fillable(['item_id', 'effects', 'usable_in_fight'])]
 class Consumable extends Model
 {
     protected function casts(): array
     {
-        return ['effects' => 'array'];
+        return ['effects' => 'array', 'usable_in_fight' => 'boolean'];
     }
 
     /**

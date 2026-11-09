@@ -14,7 +14,7 @@ use App\Stats\ResolvedStat;
  * number it is rolled against, and the margin between them. Display only: the roll is the engine's, and the numbers
  * read here are the ones `CombatantBuilder` handed it.
  *
- * Keyed `attack`, `close_in` and `create_distance` (Disengage is rolled the same way as Create distance).
+ * Keyed `attack`, `close_in`, `create_distance` and `use` (Disengage is rolled the same way as Create distance).
  */
 final class ChanceExplainer
 {
@@ -25,6 +25,8 @@ final class ChanceExplainer
         $out = [
             'close_in' => self::entry('pursuit', $character->stat('pursuit'), [], 'defence', $foe->defence),
             'create_distance' => self::entry('defence', $character->stat('defence'), [], 'pursuit', $foe->pursuit),
+            // Getting something off the belt with the opponent on you: the same two numbers as backing off.
+            'use' => self::entry('defence', $character->stat('defence'), [], 'pursuit', $foe->pursuit),
         ];
 
         $arm = $state->a->arm($state->range);

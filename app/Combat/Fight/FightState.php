@@ -27,6 +27,8 @@ final readonly class FightState
         public array $log = [],
         public Side $first = Side::B,
         public ?Result $result = null,
+        /** The player's belt item was got out this round (the roll passed). Transient: never stored, read by `Fights` after the round. */
+        public bool $used = false,
     ) {
         $this->range = Range::at($this->distance);
     }
@@ -53,6 +55,11 @@ final readonly class FightState
         return $this->but(log: [...$this->log, ...$lines]);
     }
 
+    public function withUsed(): self
+    {
+        return new self($this->a, $this->b, $this->distance, $this->round, $this->log, $this->first, $this->result, true);
+    }
+
     public function ended(Result $result): self
     {
         return $this->but(result: $result);
@@ -74,7 +81,7 @@ final readonly class FightState
     {
         return new self(
             $a ?? $this->a, $b ?? $this->b, $distance ?? $this->distance, $round ?? $this->round, $log ?? $this->log,
-            $this->first, $result ?? $this->result,
+            $this->first, $result ?? $this->result, $this->used,
         );
     }
 

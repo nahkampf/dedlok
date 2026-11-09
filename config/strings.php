@@ -2568,7 +2568,7 @@ return [
 
         'fight' => [
             'chance' => [
-                'title' => ['attack' => 'Chance to hit', 'close_in' => 'Chance to close in', 'create_distance' => 'Chance to create distance'],
+                'title' => ['attack' => 'Chance to hit', 'close_in' => 'Chance to close in', 'create_distance' => 'Chance to create distance', 'use' => 'Chance to get it out'],
                 'chance' => 'Chance',
                 'yours' => 'Your :stat',
                 'theirs' => 'Their :stat',
@@ -2610,6 +2610,7 @@ return [
                 'load_hint' => ':stock in your stash. Loading takes the whole turn.',
                 'use' => 'Use :item',
                 'use_hint' => 'From your belt (:quantity). Takes the whole turn, and works from the next round for :turns rounds.',
+                'use_consumable_hint' => 'From your belt (:quantity). Takes the whole turn: :effects.',
                 'in_effect' => 'In effect:',
                 'dose_left' => ':item, :turns left',
                 'create_distance' => 'Create distance',
@@ -2648,6 +2649,7 @@ return [
                 'busy' => 'You are in the middle of something else.',
                 'no_fight' => 'There is no fight to act in.',
                 'cannot_use' => 'You cannot use that now.',
+                'nothing_to_do' => 'It would do nothing for you right now.',
             ],
             'log' => [
                 'shot' => ':attacker: :tier to the :slot for :parts.',
@@ -2657,6 +2659,7 @@ return [
                 'brace' => ':who braces.',
                 'dose' => ':who uses :item.',
                 'dose_lasts' => 'It lasts :turns rounds.',
+                'use_fumbled' => ':who fumbles at the belt and loses the turn.',
                 'dose_heals' => ':item restores :amount hit points.',
                 'dose_costs' => ':item costs :amount hit points.',
                 'dose_overdose' => 'Too much. Your body pays for it.',
@@ -5340,6 +5343,8 @@ return [
                 'duration_minutes' => 'Duration (minutes)',
                 'duration_minutes_hint' => 'How long one dose is in effect. Not used by a fight-only drug.',
                 'fight_only' => 'Only usable in a fight',
+                'usable_in_fight' => 'Allowed in combat',
+                'usable_in_fight_hint' => 'Goes on the belt and is used from the fight screen as that round\'s action. Getting it out is a check, so it can fumble; the effects above then happen at once.',
                 'fight_only_hint' => 'Goes on the belt and is used from the fight screen as that round\'s action. It lasts a number of rounds instead of minutes, and still counts toward tolerance, addiction and overdose.',
                 'duration_turns' => 'Duration (rounds)',
                 'duration_turns_hint' => 'Rounds of a fight one dose lasts. Fight-only drugs only.',

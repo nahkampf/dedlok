@@ -11,6 +11,7 @@ use App\Combat\Fight\Side;
 use App\Combat\FightEnding;
 use App\Combat\Fights;
 use App\Combat\WeaponClass;
+use App\Items\ConsumableEditor;
 use App\Models\Ammunition;
 use App\Models\Character;
 use App\Models\Fight;
@@ -119,6 +120,19 @@ final class FightScreenTest extends TestCase
             ->assertSee('data-open="#chance-attack"', false)
             ->assertSee('data-open="#chance-close_in"', false)->assertSee('data-open="#chance-create_distance"', false)
             ->assertDontSee('class="link" data-open="#chance-attack"><button', false)->assertSeeText('Chance to hit')->assertSeeText('Your aim')->assertSeeText('Their defence')->assertSeeText('Margin');
+    }
+
+    public function test_an_allowed_consumable_on_the_belt_is_a_button_with_its_own_chance(): void
+    {
+        $this->loadMagazine();
+        $this->fight();
+        $item = Item::factory()->physical()->create(['name' => 'Field kit', 'stackable' => true]);
+        ConsumableEditor::apply($item, [['kind' => 'heal_hitpoints', 'amount' => 7]], true);
+        InventoryItem::create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 2, 'belt_slot' => 1]);
+        $this->character->forceFill(['current_hitpoints' => 5])->save();
+
+        $this->as()->get(route('fight.show'))->assertOk()
+            ->assertSeeText('Use Field kit')->assertSee('data-open="#chance-use"', false)->assertSeeText('Chance to get it out');
     }
 
     public function test_an_empty_magazine_offers_loading_and_bracing_instead_of_an_attack(): void

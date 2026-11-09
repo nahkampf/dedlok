@@ -163,14 +163,24 @@
             <span class="tag">{{ Text::get('combat.fight.screen.nothing_to_attack') }}</span>
         @endif
 
-        {{-- Fight-only drugs on the belt. Using one IS the turn: the opponent acts, and it works from the next round. --}}
+        {{-- What is on the belt and allowed in a fight: fight-only drugs, and consumables their author allowed. Using one IS
+             the turn, and is a check (defence against their pursuit): a fumble spends the turn and keeps the item. A drug
+             works from the next round; a consumable does its work at once. --}}
         @foreach ($uses as $use)
             <form method="POST" action="{{ route('fight.act') }}" class="stack" style="--gap:var(--s-1)">
                 @csrf
                 <input type="hidden" name="action" value="use">
                 <input type="hidden" name="round" value="{{ $use['id'] }}">
-                <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.use', ['item' => $use['name']]) }}</button>
-                <span class="micro" style="color:var(--ink-3)">{{ Text::get('combat.fight.screen.use_hint', ['turns' => $use['turns'], 'quantity' => $use['quantity']]) }}</span>
+                <button type="submit" class="btn cut" style="justify-self:start" @disabled(! $use['ready'])>{{ Text::get('combat.fight.screen.use', ['item' => $use['name']]) }}</button>
+                <span class="micro" style="color:var(--ink-3)">
+                    <button type="button" class="link" data-open="#chance-use">{{ Text::get('combat.fight.screen.chance') }}</button>
+                    <span class="num">{{ round($use_chance * 100) }}%</span> —
+                    @if ($use['drug'])
+                        {{ Text::get('combat.fight.screen.use_hint', ['turns' => $use['turns'], 'quantity' => $use['quantity']]) }}
+                    @else
+                        {{ Text::get('combat.fight.screen.use_consumable_hint', ['effects' => $use['effects'], 'quantity' => $use['quantity']]) }}
+                    @endif
+                </span>
             </form>
         @endforeach
 
@@ -262,7 +272,7 @@
             <button type="button" class="btn btn--sm btn--ghost" data-close>✕</button>
         </div>
         <div class="panel__bd stack" style="--gap:var(--s-3)">
-            @php($odds = $key === 'attack' ? $attack : [$key === 'close_in' ? $closing : $flight])
+            @php($odds = $key === 'attack' ? $attack : [match ($key) { 'close_in' => $closing, 'use' => $use_chance, default => $flight }])
             <div class="row row--wrap" style="--gap:var(--s-2)">
                 <span>{{ Text::get('combat.fight.chance.chance') }}</span>
                 <b class="num">{{ implode(' · ', array_map(fn (float $c): string => round($c * 100, 1).'%', $odds)) }}</b>

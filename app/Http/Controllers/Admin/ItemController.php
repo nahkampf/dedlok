@@ -192,7 +192,7 @@ class ItemController extends Controller
 
             DrugEditor::apply($item, $request->drugFamily(), $request->drugColumns());
 
-            ConsumableEditor::apply($item, $request->consumableEffects());
+            ConsumableEditor::apply($item, $request->consumableEffects(), $request->consumableUsableInFight());
 
             ArmourEditor::apply($item, $request->armourSlots());
             WeaponEditor::apply($item, $request->weaponColumns());
@@ -239,7 +239,7 @@ class ItemController extends Controller
 
             // Always, for the same reason: an item that has stopped being a consumable has to lose its row, or it
             // stays usable by anyone who already owns a copy.
-            ConsumableEditor::apply($item, $request->consumableEffects());
+            ConsumableEditor::apply($item, $request->consumableEffects(), $request->consumableUsableInFight());
 
             // Always: an item that has stopped being armour has to lose its row, and come off
             // everybody wearing it.

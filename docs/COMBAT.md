@@ -73,7 +73,7 @@ engine's own.
 5. **Heat from violence.** Default: none (heat is a cyberspace quantity).
 6. **Using items mid-fight** (stims, healing; `DrugTaker`). *Partly built (2026-10-07):* a **fight-only drug** (a setting on a drug
    row) is used from the belt as the round's whole action, works from the next round for `duration_turns` rounds, and can restore
-   or cost hit points each round. Ordinary drugs and consumables (medkits) in a fight: still later.
+   or cost hit points each round. **Consumables (2026-11-09): BUILT.** A consumable with `consumables.usable_in_fight` ("Allowed in combat" in the item editor) goes on the belt and is used from the fight screen as the round's whole action; it does its effects at once. **Getting ANY belt item out is a check**, rolled in the engine (`FightEngine::quoteUse()`, the actor's `defence` against the opponent's `pursuit`, the same figure as Create distance): a pass applies the item, a fumble spends the turn and keeps the item. A stunned turn never gets it out. A consumable that would do nothing (a medkit at full health) is refused before the turn is spent. Ordinary drugs are still taken outside a fight.
 7. **The numbers**: the tier `spread`, opponent HP and damage by grade, fight length — set with
    `fight:simulate`.
 8. **Skill balance**, deferred until real NPCs exist: the grants are authored, the numbers are not measured.

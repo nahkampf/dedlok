@@ -20,7 +20,7 @@ final class ConsumableEditor
     /**
      * @param  list<array{kind: string, amount: int}>  $effects  empty means this is not a consumable
      */
-    public static function apply(Item $item, array $effects): void
+    public static function apply(Item $item, array $effects, bool $usableInFight = false): void
     {
         if ($effects === []) {
             $item->consumable()->delete();
@@ -29,7 +29,7 @@ final class ConsumableEditor
             return;
         }
 
-        Consumable::updateOrCreate(['item_id' => $item->getKey()], ['effects' => array_values($effects)]);
+        Consumable::updateOrCreate(['item_id' => $item->getKey()], ['effects' => array_values($effects), 'usable_in_fight' => $usableInFight]);
         $item->unsetRelation('consumable');
     }
 }

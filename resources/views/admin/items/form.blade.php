@@ -300,6 +300,13 @@
                         @error($field) <span class="field__error">{{ $message }}</span> @enderror
                     </div>
                 @endforeach
+                {{-- Usable from the belt in a fight, as a round's action and by a skill check. Only means anything with an effect above. --}}
+                <label class="check" style="margin-top:var(--s-3)">
+                    <input type="checkbox" name="usable_in_fight" value="1" @checked(old('usable_in_fight', $item?->consumable?->usable_in_fight ?? false))>
+                    <span class="check__box"></span>
+                    <span>{{ Text::get('admin.items.fields.usable_in_fight') }}</span>
+                </label>
+                <span class="field__hint">{{ Text::get('admin.items.fields.usable_in_fight_hint') }}</span>
             </div>
         </details>
 

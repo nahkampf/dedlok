@@ -22,7 +22,9 @@ use App\Combat\Fight\NpcMitigation;
 use App\Combat\Fight\Result;
 use App\Combat\Fight\Side;
 use App\Drugs\DrugTaker;
+use App\Items\Consumer;
 use App\Items\UseEffect;
+use App\Items\UseRefusal;
 use App\Models\Character;
 use App\Models\CityActivity;
 use App\Models\Dose;
@@ -157,6 +159,11 @@ final class Fights
                 if ($use === null) {
                     return FightRefusal::CannotUse;
                 }
+
+                // A consumable that would do nothing is refused before the turn is spent, as the stash refuses it.
+                if ($use->item?->drug === null && app(Consumer::class)->refusalFor($locked, $use->item->consumable) !== null) {
+                    return FightRefusal::NothingToDo;
+                }
             }
 
             // The player's side is rebuilt below, so a weapon that is not the one this fight began with would be
@@ -197,7 +204,8 @@ final class Fights
             if ($after->result === null) {
                 $this->ageDoses($locked);
 
-                if ($use !== null) {
+                // Only a pass of the engine's check (and not a stunned turn or a fumble) gets the item out.
+                if ($use !== null && $after->used) {
                     $after = $this->takeDose($locked, $use, $after);
                 }
             }
@@ -271,14 +279,19 @@ final class Fights
             'attack' => $this->engine->quote($state, Side::A),
             'flight' => $this->engine->quoteFlight($state, Side::A),
             'closing' => $this->engine->quoteClosing($state, Side::A),
+            'use_chance' => $this->engine->quoteUse($state, Side::A),
             'can_close_in' => $this->engine->legal($state, Side::A, Action::closeIn()),
             'can_disengage' => $this->engine->legal($state, Side::A, Action::disengage()),
             'can_attack' => $this->engine->canAttack($state, Side::A),
             'can_create_distance' => $this->engine->legal($state, Side::A, Action::createDistance()),
             'loads' => $loads,
-            'uses' => $this->belted((int) $fight->character_id)->map(static fn (InventoryItem $row): array => [
+            'uses' => $this->belted((int) $fight->character_id)->map(fn (InventoryItem $row): array => [
                 'id' => (int) $row->getKey(),
                 'name' => (string) $row->item?->displayName(),
+                'drug' => $row->item?->drug !== null,
+                'effects' => $row->item?->drug === null ? (string) $row->item?->consumable?->describe() : '',
+                // A consumable that would do nothing right now is shown and cannot be pressed.
+                'ready' => $row->item?->drug !== null || app(Consumer::class)->refusalFor($fight->character, $row->item->consumable) === null,
                 'turns' => (int) $row->item?->drug?->duration_turns,
                 'hitpoints' => (int) $row->item?->drug?->turn_hitpoints,
                 'quantity' => (int) $row->quantity,
@@ -300,8 +313,13 @@ final class Fights
             ->where('character_id', $characterId)
             ->whereNotNull('belt_slot')
             ->where('quantity', '>=', 1)
-            ->whereHas('item.drug', static fn ($query) => $query->where('fight_only', true))
-            ->with('item.drug')
+            // A fight-only drug, or a consumable (that is not a drug) its author allowed in a fight.
+            ->where(static fn ($rows) => $rows
+                ->whereHas('item.drug', static fn ($query) => $query->where('fight_only', true))
+                ->orWhere(static fn ($plain) => $plain
+                    ->whereDoesntHave('item.drug')
+                    ->whereHas('item.consumable', static fn ($query) => $query->where('usable_in_fight', true))))
+            ->with('item.drug', 'item.consumable')
             ->orderBy('belt_slot')
             ->get();
     }
@@ -357,6 +375,11 @@ final class Fights
         $round = max(1, $after->round - 1);
         $name = (string) $row->item?->displayName();
         $drug = $row->item?->drug;
+
+        if ($drug === null) {
+            return $this->spendConsumable($character, $row, $after, $round, $name);
+        }
+
         $result = app(DrugTaker::class)->take($character, $row, inFight: true);
 
         if (! $result->succeeded()) {
@@ -379,6 +402,25 @@ final class Fights
         $after = $after->with(Side::A, $after->a->with(hp: $character->current_hitpoints, si: $character->current_synaptic_integrity))->withLog($lines);
 
         return $after->a->down() ? $after->ended(Result::ADown) : $after;
+    }
+
+    /** A consumable allowed in a fight, used from the belt: the same copy-spending and effects as the stash, said in the log. */
+    private function spendConsumable(Character $character, InventoryItem $row, FightState $after, int $round, string $name): FightState
+    {
+        $done = app(Consumer::class)->use($character, $row, inFight: true);
+
+        if ($done instanceof UseRefusal) {
+            return $after->withLog([['round' => $round, 'text' => $done->message(), 'tone' => 'crit']]);
+        }
+
+        $said = [Text::get('combat.fight.log.dose', ['who' => $after->a->name, 'item' => $name])];
+
+        foreach ($done as $kind => $amount) {
+            $said[] = UseEffect::from($kind)->done($amount);
+        }
+
+        return $after->with(Side::A, $after->a->with(hp: $character->current_hitpoints, si: $character->current_synaptic_integrity))
+            ->withLog([['round' => $round, 'text' => implode(' ', $said), 'tone' => 'ok']]);
     }
 
     /**
