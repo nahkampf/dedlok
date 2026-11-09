@@ -1,3 +1,7 @@
+## 0.94.3 (2026-11-09)
+
+- Admin spawn tool
+
 ## 0.94.2 (2026-11-09)
 - Lots of optimizations (cache, optimizing queries etc) so quite a few pages should load faster now
 - Stale scan files get deleted nightly

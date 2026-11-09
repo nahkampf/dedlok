@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.94.3] — 2026-11-09
+
+### Added
+- **Admin: spawn items** (`/admin/spawn`). Pick a character with an autocompleting handle field, tick items in accordions by category (with search and a quantity each), and they are put in the character's stash through `ItemGranter`, so stacking behaves as everywhere else. Linked from the Characters card on the admin dashboard.
+
+No migrations.
+
+
 ## [0.94.2] — 2026-11-09
 
 ### Changed
@@ -4171,7 +4179,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.94.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.94.3...HEAD
+[0.94.3]: https://github.com/nahkampf/dedlok/compare/v0.94.2...v0.94.3
 [0.94.2]: https://github.com/nahkampf/dedlok/compare/v0.94.1...v0.94.2
 [0.94.1]: https://github.com/nahkampf/dedlok/compare/v0.94.0...v0.94.1
 [0.94.0]: https://github.com/nahkampf/dedlok/compare/v0.93.1...v0.94.0
