@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\LocationController as AdminLocationController;
 use App\Http\Controllers\Admin\NpcController as AdminNpcController;
 use App\Http\Controllers\Admin\SafehouseController as AdminSafehouseController;
 use App\Http\Controllers\Admin\SkillController as AdminSkillController;
+use App\Http\Controllers\Admin\SpawnController as AdminSpawnController;
 use App\Http\Controllers\Admin\SubnetController as AdminSubnetController;
 use App\Http\Controllers\Admin\SudoController;
 use App\Http\Controllers\Admin\SupporterController as AdminSupporterController;
@@ -596,6 +597,11 @@ Route::middleware(['auth', 'can:admin'])
         Route::get('characters', [AdminCharacterController::class, 'index'])->name('characters.index');
         Route::post('characters/{character}/creds', [AdminCharacterController::class, 'creds'])->name('characters.creds');
         Route::post('characters/{character}/refill/{resource}', [AdminCharacterController::class, 'refill'])->name('characters.refill');
+
+        // Items into a character's stash.
+        Route::get('spawn', [AdminSpawnController::class, 'index'])->name('spawn.index');
+        Route::get('spawn/handles', [AdminSpawnController::class, 'handles'])->name('spawn.handles');
+        Route::post('spawn', [AdminSpawnController::class, 'store'])->name('spawn.store');
 
         // Who is a supporter, and the button that makes somebody one.
         Route::get('supporters', [AdminSupporterController::class, 'index'])->name('supporters.index');

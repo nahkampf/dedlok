@@ -4530,6 +4530,16 @@ return [
             'refilled_si' => ':who is at full Synaptic Integrity.',
         ],
 
+        'spawn' => [
+            'title' => 'Spawn items',
+            'lede' => 'Put items into a character\'s stash.',
+            'character' => 'Character',
+            'give' => 'Give',
+            'quantity' => 'Quantity',
+            'unknown' => 'No such character.',
+            'done' => ':count item(s) put in :who\'s stash.',
+        ],
+
         'supporters' => [
             'title' => 'Supporters',
             'lede' => 'Who supports the game. A supporter gets a badge by their character\'s name, an unlimited training queue, a place on the Supporters page, and a message about the Discord.',
