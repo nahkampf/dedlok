@@ -1,3 +1,7 @@
+## 0.94.2 (2026-11-09)
+- Lots of optimizations (cache, optimizing queries etc) so quite a few pages should load faster now
+- Stale scan files get deleted nightly
+
 ## 0.94.1 (2026-11-09)
 
 - Locations & safehouses can now have their own pictures (which a few now have)

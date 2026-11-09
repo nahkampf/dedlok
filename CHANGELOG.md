@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.94.2] — 2026-11-09
+
+### Changed
+- **Pages load with far fewer queries.** `Character::modifiers()` is remembered for the length of one web request (`App\Stats\ModifierMemo`, switched on by the `MemoiseModifiers` middleware, never in console commands). Any write other than to sessions, cache, achievements, notifications and party invitations empties it, as does a transaction ending; a list for a past moment, one with keys left out, or a what-if is never remembered. On the dev copy of production: the city map 367 → 74 queries, the character sheet 696 → 71, inventory 395 → 79, safehouse 408 → 68, skills 343 → 49.
+- **The city map quotes every district with one modifier list** (`Traveller::quote` takes it) instead of rebuilding it twenty times.
+- **The market** no longer queries per card: the alpha-tester badge is asked once per account (`User::isTester`), and player offers load weapon, ammunition and drug rows up front. 868 → 104 queries.
+- **A deck's fitted modules load in one query per table** (`DeckTotals::of`), which the readiness check on every page paid for per module; fortress tunnel owners load up front.
+- **`scans:stale` now deletes a scan file after announcing it** (and deletes, without a second message, any stale file it announced before). Nothing can use a stale file.
+
+No migrations.
+
+
 ## [0.94.1] — 2026-11-09
 
 ### Added
@@ -4159,7 +4171,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.94.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.94.2...HEAD
+[0.94.2]: https://github.com/nahkampf/dedlok/compare/v0.94.1...v0.94.2
 [0.94.1]: https://github.com/nahkampf/dedlok/compare/v0.94.0...v0.94.1
 [0.94.0]: https://github.com/nahkampf/dedlok/compare/v0.93.1...v0.94.0
 [0.93.1]: https://github.com/nahkampf/dedlok/compare/v0.93.0...v0.93.1
