@@ -65,6 +65,22 @@ final class CityPlaceTest extends TestCase
         Discovery::unlock($this->character, $this->clinic);
     }
 
+    public function test_a_place_shows_its_picture_when_it_has_one_and_leaves_the_space_out_when_it_does_not(): void
+    {
+        $file = public_path('images/locations/corner-shop.jpg');
+        $this->actingAs($this->character->user)->get(route('city.place', 'corner-shop'))
+            ->assertOk()->assertDontSee('images/locations/', false);
+
+        file_put_contents($file, 'x');
+
+        try {
+            $this->actingAs($this->character->user)->get(route('city.place', 'corner-shop'))
+                ->assertOk()->assertSee('images/locations/corner-shop.jpg', false);
+        } finally {
+            unlink($file);
+        }
+    }
+
     private function stock(Item $item, ?int $price = null): void
     {
         ShopItem::create(['location_id' => $this->shop->id, 'item_id' => $item->id, 'price' => $price]);
