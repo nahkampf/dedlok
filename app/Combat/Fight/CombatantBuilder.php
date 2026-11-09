@@ -82,6 +82,8 @@ final class CombatantBuilder
             fleesAt: isset($spec['flees_at']) ? (float) $spec['flees_at'] : null,
             fleeBeyond: isset($spec['flee_beyond']) ? (int) $spec['flee_beyond'] : null,
             fists: self::bareHands($aim, (float) config('combat.unarmed.damage')),
+            // An opponent's skill at it is its aim, unless a spec says otherwise.
+            takedown: (float) ($spec['takedown'] ?? $aim),
         );
     }
 

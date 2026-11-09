@@ -94,6 +94,11 @@ final class FightEngine
             return Action::createDistance();
         }
 
+        // At arm's reach, a side that is good enough at it will try to put the other on the ground, if that pays.
+        if ($this->takedownPays($state, $side)) {
+            return Action::takedown();
+        }
+
         if ($this->canAttack($state, $side)) {
             return Action::attack();
         }
@@ -105,6 +110,44 @@ final class FightEngine
         }
 
         return Action::brace();
+    }
+
+    /**
+     * Whether a takedown is worth a turn to this side, by arithmetic over the next two of its turns (what it deals, less what it takes):
+     * attacking twice, against a takedown that on a success dazes the other (it skips its turn) and doubles the next attack, and
+     * on a failure loses this side's next turn. It must also be a SAFE bet: a chance of at least `combat.takedown.npc_min_chance`.
+     * Only at Close, and only for a side with something to attack with afterwards.
+     */
+    private function takedownPays(FightState $state, Side $side): bool
+    {
+        if (! $this->legal($state, $side, Action::takedown()) || ! $this->canAttack($state, $side)) {
+            return false;
+        }
+
+        $p = $this->quoteTakedown($state, $side);
+
+        if ($p < (float) config('combat.takedown.npc_min_chance')) {
+            return false;
+        }
+
+        $mine = $this->expectedDamage($state, $side);
+        $theirs = $this->expectedDamage($state, $side->other());
+        // An attack with the upper hand: the same shots at double the chance, never certain.
+        $ceiling = 1 - (float) config('checks.certainty_floor');
+        $doubled = array_sum(array_map(static fn (float $c): float => min($ceiling, 2 * $c), $this->quote($state, $side))) * ($state->combatant($side)->arm($state->range)?->spec()?->damage ?? 0.0);
+        $twice = 2 * $mine - 2 * $theirs;
+        $takedown = $p * ($doubled - $theirs) + (1 - $p) * (-2 * $theirs);
+
+        return $takedown > $twice;
+    }
+
+    /** What this side expects to deal in one attack at this range: each shot's chance times its damage. */
+    private function expectedDamage(FightState $state, Side $side): float
+    {
+        $arm = $state->combatant($side)->arm($state->range);
+        $damage = $arm?->spec()?->damage ?? 0.0;
+
+        return $arm === null || ! $arm->canFire() ? 0.0 : array_sum($this->quote($state, $side)) * $damage;
     }
 
     /**

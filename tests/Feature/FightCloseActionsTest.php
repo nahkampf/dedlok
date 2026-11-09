@@ -210,4 +210,28 @@ final class FightCloseActionsTest extends TestCase
         [$eased, $by] = $side->eased(2);
         $this->assertSame([(int) config('combat.bleed.max_level') - 2, 2], [$eased->bleeding(), $by]);
     }
+
+    // ---- an opponent's takedown ----------------------------------------------------------------
+
+    private function foeWithTakedown(float $takedown, float $playerFist): FightState
+    {
+        $state = $this->close();
+        $a = new Combatant('You', 40, 10.0, 10.0, null, $this->fists($playerFist), 30, fists: $this->fists($playerFist));
+        $b = new Combatant('Gang member', 40, 10.0, 10.0, null, $this->fists(3.0), fists: $this->fists(3.0), takedown: $takedown);
+
+        return new FightState($a, $b, distance: 0);
+    }
+
+    public function test_an_opponent_takes_somebody_down_when_the_sums_say_it_pays_and_it_is_a_safe_bet(): void
+    {
+        // Hit hard by this player, and good at it: spending a turn to stop them hitting back is the better trade.
+        $hardHitter = $this->foeWithTakedown(20.0, 8.0);
+        $this->assertSame('takedown', $this->engine()->choose($hardHitter, Side::B)->kind->value);
+
+        // Not worth a turn against somebody who barely hurts it.
+        $this->assertSame('attack', $this->engine()->choose($this->foeWithTakedown(20.0, 1.0), Side::B)->kind->value);
+
+        // Not a safe bet when it is poor at it, however hard the player hits.
+        $this->assertSame('attack', $this->engine()->choose($this->foeWithTakedown(2.0, 8.0), Side::B)->kind->value);
+    }
 }

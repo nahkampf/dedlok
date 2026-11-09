@@ -102,7 +102,7 @@ return [
         'base' => 20,
         'bonus' => ['slashing' => 20, 'penetrating' => 15],
         'per_level' => 0.5,
-        'max_level' => 5,
+        'max_level' => 10,
     ],
 
     /*
@@ -117,7 +117,8 @@ return [
     | next one; a failure costs the attacker the next turn. Unmeasured.
     */
     'headbutt' => ['damage_bonus' => 1, 'recoil' => 50],
-    'takedown' => ['cap' => 0.6],
+    // `npc_min_chance`: the least chance at which an opponent will gamble a turn on one, even if the sums say it pays.
+    'takedown' => ['cap' => 0.6, 'npc_min_chance' => 0.5],
 
     /*
     | Recoil. Every shot of a burst or automatic action after the first is this much worse than the

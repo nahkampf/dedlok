@@ -388,6 +388,10 @@ those two ratios are what the balance pass tunes.
   ages, and every turn of its owner costs `bleed_per_level` (a stat, base 0.5) hit points a level, flat and unresisted. **Stopping it**: the consumable effect
   `stop_bleeding` (also usable on a fight-only drug's consumable half) takes levels off; a modifier on `bleed_per_level` (an implant, a drug, a skill) reduces
   it gradually. Bleeding is NOT stored on the body: it lives in the fight, so the fight (not `Consumer`) eases it.
+- **Opponents take people down too** (`FightEngine::takedownPays()`, asked by `choose()` at Close): when the sums over its next two turns favour a takedown
+  (a success dazes the other and doubles its next attack, a failure loses its next turn, against attacking twice) AND the chance is at least
+  `combat.takedown.npc_min_chance` (0.5). An opponent's takedown value is its `aim` unless a spec names one; no new NPC field yet. Bleeding is capped at
+  `combat.bleed.max_level` (10).
 - **The engine's own die** (`FightEngine`'s `$extraDie`, `fn (int $min, int $max): int`) rolls wounds and recoil, apart from the pinned fight dice so adding a
   roll never reorders the others. Null (a test, the pure engine) means no wounds and no recoil; `Fights` and `Simulation` pass real ones.
 
