@@ -1,3 +1,13 @@
+## 0.95.0 (2026-11-10)
+
+- Combat got some more work:
+  - Clean/Dead-on hits can cause Bleeding, which stacks. Certain items can stop bleeding
+  - Some consumables now allowed in combat (from belt)
+  - Fights overhauled: distance/gap now determines actions, there are new actions like Headbutt and Takedown, the fight screen got a lot UI/UX updates
+  - Chances displayed
+- Encounters have a new trigger: arrive at a city location.
+- Opponents can now also have images
+
 ## 0.94.3 (2026-11-09)
 
 - Admin spawn tool

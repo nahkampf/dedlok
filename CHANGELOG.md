@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+## [0.95.0] — 2026-11-10
+
+### Added
+- **Encounters that happen when you arrive at a place.** A new door, `arrival`, beside `place` (a button). Rolled once per arrival: an encounter with its own chance (required) may be pinned to one location, a district, or neither, and takes the screen when it lands. An arrival is opening a place's page when it is not the place last viewed this session.
+- **Headbutt and Takedown**, at Close only. Headbutt is a bare-hands blow whatever is in the hand (`+combat.headbutt.damage_bonus` damage; a landed blow may hurt its giver, `combat.headbutt.recoil`%). Takedown is a check of a new `takedown` pool stat, (muscle + motor) / 3 plus the unarmed-aim bonus, against `defence`, capped at `combat.takedown.cap`: a success leaves the target `Dazed` (loses a turn) and gives the taker `Edge` (double the chance of their next attack); a failure leaves the taker `OffBalance`. Opponents take people down when the arithmetic over their next two turns favours it and the chance is at least `combat.takedown.npc_min_chance`.
+- **Bleeding.** A Clean or Dead-on hit that took hit points may open a wound (`combat.bleed.base` plus a bonus for slashing and penetrating); each wound is a level (to `combat.bleed.max_level`, 10), it lasts the whole fight, and each of its owner's turns costs `bleed_per_level` (new stat, base 0.5) a level. New consumable effect `stop_bleeding`. Wounds and recoil roll on the engine's own die (`FightEngine`'s `$extraDie`), so the pinned fight dice keep their order.
+- **Consumables allowed in combat.** `consumables.usable_in_fight` ("Allowed in combat" in the item editor): used from the belt as a round's action. **Getting anything off the belt is now a check** (`FightEngine::quoteUse()`, your `defence` against their `pursuit`): a pass applies it, a fumble spends the turn and keeps the item. This applies to fight-only drugs too.
+- **The fight screen** draws a bar of two positions about a meeting point, with each side's escape distance marked; shows the opponent's weapons (an info card each) and resistances; and every "Chance" opens a modal listing the numbers behind it (`ChanceExplainer`).
+- **Two positions and an escape distance per side.** `FightState::youAt` splits the gap about a meeting point; backing off and closing in move one side (a step in and a step out cancel); Disengage is by each side's own measure (`combat.distance.flee_beyond`, or `npcs.flee_beyond`). Fights stored before this split their gap evenly.
+- **Opponent pictures.** Upload, credit and artist link in the NPC editor, stored at `public/images/enemies/<id>.jpg` (`default.jpg` stands in). The fight shows the opponent's own picture, else the starting encounter's own, else the default. Encounter screens now show their picture's credit and link. Upload decoding is shared (`PictureUpload`).
+- **Equipment**: the tag for a piece in a place opens its item card as a modal.
+
+### Changed
+- `.link` keeps its small caps and letter-spacing inside `.micro` text.
+- The weapon editor's rider rows keep one set of columns. Only stun, burning and poisoned are authorable; bleeding, dazed, off-balance and edge are the engine's.
+- Reworded fight screen, chance modal and log text.
+
+### Fixed
+- The GSM Vecteur II's flavour text was double-encoded ("SystÃ¨mes"); a migration corrects it.
+- `SubnetFortressTest` no longer fails when the factory's random attributes cap SI below the number it sets.
+
+### Migrations
+- `2026_11_12_100000_encounters_on_arriving_at_a_place` — widens the `starts_on` CHECK to allow `arrival` (MySQL only).
+- `2026_11_12_110000_fix_the_vecteur_ii_flavour_encoding` — one word in one item's flavour text (data only; skipped if absent or already right).
+- `2026_11_12_120000_consumables_usable_in_a_fight` — `consumables.usable_in_fight`, false for everything that exists.
+- `2026_11_12_130000_npcs_have_their_own_escape_distance` — `npcs.flee_beyond`, NULL (the default) for every opponent.
+- `2026_11_13_100000_npcs_credit_their_picture` — `npcs.image_credit` and `npcs.image_link`.
+
+
 ## [0.94.3] — 2026-11-09
 
 ### Added
@@ -4179,7 +4208,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.94.3...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.95.0...HEAD
+[0.95.0]: https://github.com/nahkampf/dedlok/compare/v0.94.3...v0.95.0
 [0.94.3]: https://github.com/nahkampf/dedlok/compare/v0.94.2...v0.94.3
 [0.94.2]: https://github.com/nahkampf/dedlok/compare/v0.94.1...v0.94.2
 [0.94.1]: https://github.com/nahkampf/dedlok/compare/v0.94.0...v0.94.1
