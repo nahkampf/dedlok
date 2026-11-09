@@ -78,7 +78,7 @@ class MarketController extends Controller
             'offers' => MarketOffer::query()
                 ->onOffer()
                 ->visibleTo($character)
-                ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'row.item.deckModule', 'seller.user'])
+                ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'row.item.deckModule', 'row.item.weapon', 'row.item.ammunition', 'row.item.drug', 'seller.user'])
                 ->get(),
         ]);
     }
@@ -93,7 +93,7 @@ class MarketController extends Controller
         $found = MarketOffer::query()
             ->onOffer()
             ->visibleTo($character)
-            ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'row.item.deckModule', 'seller.user'])
+            ->with(['row.item.useSkill.prerequisites.requiredSkill', 'row.item.program', 'row.item.deckModule', 'row.item.weapon', 'row.item.ammunition', 'row.item.drug', 'seller.user'])
             ->find($offer);
 
         return view('market._listing', [

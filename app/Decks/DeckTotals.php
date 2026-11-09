@@ -118,6 +118,11 @@ final class DeckTotals
      */
     public static function of(Collection $fittings, ?Item $deck = null): self
     {
+        // One query per table rather than three per fitted module: this is read by the readiness net on every page.
+        if ($fittings instanceof \Illuminate\Database\Eloquent\Collection) {
+            $fittings->loadMissing('module.item.deckModule');
+        }
+
         $sums = [
             'qflops' => 0.0, 'quantabits' => 0.0, 'bandwidth' => 0,
             'watts' => 0, 'power_draw' => 0, 'thermal_load' => 0, 'cooling' => 0,

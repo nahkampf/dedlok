@@ -10,6 +10,7 @@ use App\Models\CityActivity;
 use App\Models\District;
 use App\Notifications\Category;
 use App\Notifications\Notifier;
+use App\Stats\Modifier;
 use App\Stats\Resolver;
 use App\Support\Text;
 use App\Wallet\Reason;
@@ -47,9 +48,13 @@ final class Traveller
      * `begin()` calls this, so the screen's quote and what is charged cannot
      * disagree.
      *
+     * `$modifiers` is for a screen quoting every district at once: the character's modifier list is the dear part (a
+     * dozen queries) and does not change between quotes, so it is resolved once and handed in.
+     *
+     * @param  list<Modifier>|null  $modifiers
      * @return array{route: list<int>, walk: int, pod: int, fare: int}|CityRefusal seconds in total
      */
-    public function quote(Character $character, District $to): array|CityRefusal
+    public function quote(Character $character, District $to, ?array $modifiers = null): array|CityRefusal
     {
         if ($character->isJackedIn()) {
             return CityRefusal::JackedIn;
@@ -76,11 +81,12 @@ final class Traveller
 
         $walk = 0;
         $pod = 0;
+        $modifiers ??= $character->modifiers();
 
         foreach (array_slice($route, 0, -1) as $districtId) {
-            $seconds = $this->passSeconds($character, $districtId, TravelMode::Walk);
+            $seconds = $this->passSeconds($character, $districtId, TravelMode::Walk, $modifiers, $weights[$districtId] ?? 1.0);
             $walk += $seconds;
-            $pod += $this->passSeconds($character, $districtId, TravelMode::Pod);
+            $pod += $this->passSeconds($character, $districtId, TravelMode::Pod, $modifiers, $weights[$districtId] ?? 1.0);
         }
 
         return [
@@ -260,12 +266,12 @@ final class Traveller
     }
 
     /** Seconds one pass in this district takes: the base times its weight, resolved, then halved for a pod. */
-    private function passSeconds(Character $character, int $districtId, TravelMode $mode): int
+    private function passSeconds(Character $character, int $districtId, TravelMode $mode, ?array $modifiers = null, ?float $weight = null): int
     {
-        $weight = (float) (District::query()->whereKey($districtId)->value('travel_weight') ?? 1.0);
+        $weight ??= (float) (District::query()->whereKey($districtId)->value('travel_weight') ?? 1.0);
         $base = (float) Config::get('city.travel.seconds', 30) * $weight;
 
-        $seconds = $this->resolver->resolve('travel_duration', $base, $character->modifiers())->toInt();
+        $seconds = $this->resolver->resolve('travel_duration', $base, $modifiers ?? $character->modifiers())->toInt();
 
         if ($mode === TravelMode::Pod) {
             $seconds = max(1, (int) ceil($seconds * (float) Config::get('city.travel.pod_time', 0.5)));

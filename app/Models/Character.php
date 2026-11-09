@@ -10,6 +10,7 @@ use App\Programs\Lifetime;
 use App\Skills\TrainingRate;
 use App\Stats\Context;
 use App\Stats\Modifier;
+use App\Stats\ModifierMemo;
 use App\Stats\ResolvedStat;
 use App\Stats\Resolver;
 use App\Stats\Sheet;
@@ -685,6 +686,15 @@ class Character extends Model
      */
     public function modifiers(?\DateTimeInterface $asAt = null, array $without = []): array
     {
+        // Remembered for the length of a web request (see ModifierMemo); never for a past moment, an exclusion, or a what-if.
+        $memoKey = $asAt === null && $without === [] && $this->exists && $this->assumedRunning === null && $this->assumedStopped === null && ModifierMemo::active()
+            ? "{$this->getKey()}:{$this->archetype}:{$this->equipped_deck_id}"
+            : null;
+
+        if ($memoKey !== null && ($hit = ModifierMemo::get($memoKey)) !== null) {
+            return $hit;
+        }
+
         $sources = [
             // Permanent by construction, so a past moment cannot change it.
             new ArchetypePerks($this->archetype),
@@ -714,6 +724,10 @@ class Character extends Model
             foreach ($source->modifiers() as $modifier) {
                 $modifiers[] = $modifier;
             }
+        }
+
+        if ($memoKey !== null) {
+            ModifierMemo::put($memoKey, $modifiers);
         }
 
         return $modifiers;
