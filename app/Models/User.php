@@ -15,6 +15,9 @@ use Illuminate\Notifications\Notifiable;
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
+    /** Whether this account holds a spent alpha key, once asked (`isTester()`). */
+    private ?bool $tester = null;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -63,7 +66,8 @@ class User extends Authenticatable
     /** Registered with an alpha key. The spent key is the fact (`beta_keys.user_id`), so there is no column to keep in step. */
     public function isTester(): bool
     {
-        return BetaKey::query()->where('user_id', $this->getKey())->exists();
+        // Asked once per badge drawn, and a page draws dozens: remembered for the life of this instance.
+        return $this->tester ??= BetaKey::query()->where('user_id', $this->getKey())->exists();
     }
 
     public function isAdmin(): bool

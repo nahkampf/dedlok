@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureEncounterIsResolved;
 use App\Http\Middleware\EnsureFightIsResolved;
 use App\Http\Middleware\EnsureHuntIsResolved;
 use App\Http\Middleware\EnsureRunIsFinished;
+use App\Http\Middleware\MemoiseModifiers;
 use App\Http\Middleware\RequireCharacter;
 use App\Http\Middleware\TouchLastActive;
 use App\Support\Text;
@@ -31,7 +32,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Ko-fi posts here with no session; it is judged by its verification token instead.
         $middleware->validateCsrfTokens(except: ['kofi_webhook']);
 
-        $middleware->web(append: [
+        $middleware->web(prepend: [
+            // Remembers Character::modifiers() for this request only; see App\Stats\ModifierMemo.
+            MemoiseModifiers::class,
+        ], append: [
             // Runs after the session is available, so $request->user() is set.
             RequireCharacter::class,
             // Notes when an account was last active, for the front page's count. Not in the character locks' way.

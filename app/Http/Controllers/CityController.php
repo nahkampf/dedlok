@@ -19,6 +19,7 @@ use App\Safehouses\Renter;
 use App\Support\Text;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -67,13 +68,26 @@ class CityController extends Controller
                 ->get()
                 ->groupBy('district_id'),
             'quotes' => $state['activity'] === null
-                ? $districts->reject(fn (District $d): bool => $d->getKey() === $character->district_id)
-                    ->mapWithKeys(fn (District $d): array => [$d->getKey() => $traveller->quote($character, $d)])
-                    ->all()
+                ? $this->quotes($traveller, $character, $districts)
                 : [],
             'exploreSeconds' => $state['activity'] === null ? $explorer->duration($character) : null,
             ...$state,
         ]);
+    }
+
+    /**
+     * What a trip to each other district would be. The modifier list is resolved once for all of them.
+     *
+     * @param  Collection<int, District>  $districts
+     * @return array<int, mixed>
+     */
+    private function quotes(Traveller $traveller, Character $character, $districts): array
+    {
+        $modifiers = $character->modifiers();
+
+        return $districts->reject(fn (District $d): bool => $d->getKey() === $character->district_id)
+            ->mapWithKeys(fn (District $d): array => [$d->getKey() => $traveller->quote($character, $d, $modifiers)])
+            ->all();
     }
 
     public function district(Request $request, District $district, CityClock $clock, Traveller $traveller, Explorer $explorer, Renter $renter): View|RedirectResponse

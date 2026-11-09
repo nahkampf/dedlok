@@ -16,10 +16,8 @@ use Tests\TestCase;
 /**
  * Telling somebody their intel died while they were asleep.
  *
- * THE THING THIS FILE IS FOR IS "SAID ONCE". A stale file is never deleted —
- * destroying it is the player's call — so it sits in the stash indefinitely,
- * and an hourly sweep with no memory would say the same sentence every hour
- * for ever.
+ * THE THING THIS FILE IS FOR IS "SAID ONCE": the file is announced, then deleted, and a stale
+ * file this sweep never announced is deleted without a second message.
  */
 final class StaleFileTest extends TestCase
 {
@@ -52,9 +50,8 @@ final class StaleFileTest extends TestCase
             $message->body,
         );
 
-        // Still theirs. Nothing here deletes anything: a worthless row is
-        // destroyed from the card, with the confirmation every other one has.
-        $this->assertNotNull($row->fresh());
+        // And then it is gone: nothing can use a stale one.
+        $this->assertNull($row->fresh());
     }
 
     public function test_it_is_said_once_and_not_every_hour(): void
@@ -66,6 +63,17 @@ final class StaleFileTest extends TestCase
         $this->artisan('scans:stale')->assertSuccessful();
 
         $this->assertSame(1, Notification::query()->count());
+    }
+
+    public function test_an_already_announced_stale_file_is_deleted_quietly(): void
+    {
+        $row = $this->file(expires: now()->subHour());
+        $row->forceFill(['scan_file' => [...$row->scan_file, 'stale_announced' => true]])->save();
+
+        $this->artisan('scans:stale')->assertSuccessful();
+
+        $this->assertNull($row->fresh());
+        $this->assertSame(0, Notification::query()->count());
     }
 
     public function test_a_file_that_is_still_good_is_left_alone(): void
@@ -86,6 +94,7 @@ final class StaleFileTest extends TestCase
         $this->artisan('scans:stale --dry-run')->assertSuccessful();
 
         $this->assertSame(0, Notification::query()->count());
+        $this->assertNotNull($row->fresh());
         $this->assertFalse((bool) ($row->fresh()->scan_file['stale_announced'] ?? false));
 
         $this->artisan('scans:stale')->assertSuccessful();

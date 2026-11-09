@@ -297,8 +297,8 @@ Schedule::command('missions:retarget')
  * alternative is finding out by opening a card there was no reason to open.
  *
  * Hourly rather than every five minutes, because the clock being announced is
- * two days long: news forty minutes late is the same news. Nothing is deleted
- * — destroying a worthless file is the player's call, from the card.
+ * two days long: news forty minutes late is the same news. Once announced the
+ * file is deleted: nothing can use a stale one.
  */
 Schedule::command('scans:stale --quiet-when-idle')
     ->hourly()

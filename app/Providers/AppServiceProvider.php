@@ -16,10 +16,16 @@ use App\Cyberspace\Wardens;
 use App\Models\User;
 use App\Stats\CombatStats;
 use App\Stats\DamageStats;
+use App\Stats\ModifierMemo;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
 use App\Stats\StatGraph;
 use App\Stats\StatRegistry;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Database\Events\TransactionCommitted;
+use Illuminate\Database\Events\TransactionRolledBack;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -167,5 +173,22 @@ class AppServiceProvider extends ServiceProvider
          * @can('admin').
          */
         Gate::define('admin', fn (User $user): bool => $user->isAdmin());
+
+        // Keeps ModifierMemo true: any write, by model or query builder, and any transaction ending, empties it.
+        DB::listen(static function (QueryExecuted $query): void {
+            if (! ModifierMemo::active()) {
+                return;
+            }
+
+            $sql = ltrim(strtolower($query->sql));
+
+            // Writes to these cannot change a modifier, and a page makes some of them on the way past.
+            if (str_starts_with($sql, 'select') || preg_match('/^(insert(?: ignore)? into|update|delete from) `(sessions|cache|achievement_progress|user_achievements|notifications|run_party_members)`/', $sql)) {
+                return;
+            }
+
+            ModifierMemo::flush();
+        });
+        Event::listen([TransactionCommitted::class, TransactionRolledBack::class], static fn () => ModifierMemo::flush());
     }
 }

@@ -62,7 +62,7 @@ final readonly class FortressTunnel
             ->whereHas('item.program', fn ($q) => $q->where('kind', ProgramKind::Tunnel->value))
             ->pluck('fortress_system_id')->unique();
 
-        return System::query()->whereIn('id', $ids)->get()
+        return System::query()->with('owner')->whereIn('id', $ids)->get()
             ->filter(fn (System $s): bool => $this->usable($character, $s))->sortBy('id')->values();
     }
 
