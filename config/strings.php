@@ -356,7 +356,7 @@ return [
             'log_heading' => 'So far',
             'locked' => 'Finish what you are in the middle of.',
             'at_place' => 'Something is going on here',
-            'starts' => ['travel' => 'On the way', 'explore' => 'While exploring', 'place' => 'At a place', 'grid_step' => 'On a move in cyberspace', 'system' => 'Arriving at a system', 'run' => 'In a run, between turns', 'after_run' => 'After a run', 'spot' => 'A button at a system'],
+            'starts' => ['travel' => 'On the way', 'explore' => 'While exploring', 'place' => 'At a place (a button)', 'arrival' => 'Arriving at a place (by chance)', 'grid_step' => 'On a move in cyberspace', 'system' => 'Arriving at a system', 'run' => 'In a run, between turns', 'after_run' => 'After a run', 'spot' => 'A button at a system'],
             'kinds' => [
                 'creds' => 'Creds',
                 'item' => 'Item',
@@ -4827,7 +4827,7 @@ return [
                 'district' => 'Only in district',
                 'location' => 'At place',
                 'chance' => 'Chance, % (overrides the door\'s default)',
-                'chance_hint' => 'Blank: the door\'s default and the weight below. A number: the odds that THIS encounter opens at each opening of its door, rolled on its own (weight is then ignored). Defaults: on the way :travel%, exploring :explore%, a move in cyberspace :move%, arriving at a system :system%, between turns of a run :run%, after a run :after_run%. Not for a place or a spot.',
+                'chance_hint' => 'Blank: the door\'s default and the weight below. A number: the odds that THIS encounter opens at each opening of its door, rolled on its own (weight is then ignored). Defaults: on the way :travel%, exploring :explore%, a move in cyberspace :move%, arriving at a system :system%, between turns of a run :run%, after a run :after_run%. Required for arriving at a place; not for a place button or a spot.',
                 'system_type' => 'System type',
                 'grade_min' => 'Grade from',
                 'grade_max' => 'Grade to',

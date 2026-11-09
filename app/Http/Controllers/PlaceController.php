@@ -57,6 +57,16 @@ class PlaceController extends Controller
 
         $place = $this->place($character, $slug);
 
+        // Arriving is coming to a place that is not the one last looked at, so a reload is not an arrival. A chance
+        // encounter there takes the screen.
+        if (session('last_place') !== $place->getKey()) {
+            session(['last_place' => $place->getKey()]);
+
+            if ($encounters->maybeOpenOnArrival($character, $place) !== null) {
+                return redirect()->route('encounter.show');
+            }
+        }
+
         $wares = $shop->wares($place);
 
         return view('city.place', [

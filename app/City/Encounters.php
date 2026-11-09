@@ -192,6 +192,10 @@ final class Encounters
 
         if ($start === EncounterStart::Place) {
             $query->where('location_id', $locationId);
+        } elseif ($start === EncounterStart::Arrival) {
+            // Pinned to one place, or to none and so to any place in its district (or any district).
+            $query->where(static fn ($q) => $q->whereNull('location_id')->orWhere('location_id', $locationId))
+                ->where(static fn ($q) => $q->whereNull('district_id')->orWhere('district_id', $districtId));
         } else {
             $query->whereNull('location_id')
                 ->where(static fn ($q) => $q->whereNull('district_id')->orWhere('district_id', $districtId));
@@ -345,6 +349,27 @@ final class Encounters
             }
 
             return $live;
+        });
+    }
+
+    /**
+     * Somebody has just arrived at a place: each Arrival encounter rolls its own chance, and the first that lands opens.
+     *
+     * The caller says when an arrival is one (the place page remembers where the player last was). Only encounters with
+     * their own chance can arrive; there is no door-wide pool, so the door's base chance is zero.
+     */
+    public function maybeOpenOnArrival(Character $character, Location $place): ?CharacterEncounter
+    {
+        return DB::transaction(function () use ($character, $place): ?CharacterEncounter {
+            $locked = Character::query()->whereKey($character->getKey())->lockForUpdate()->firstOrFail();
+
+            if (Presence::refusal($locked, $place) !== null || ! $this->canHappenTo($locked, EncounterStart::Arrival)) {
+                return null;
+            }
+
+            $own = $this->rollOwn($locked, EncounterStart::Arrival, $place->district_id, $place->getKey());
+
+            return $own === null ? null : $this->open($locked, $own);
         });
     }
 
