@@ -127,6 +127,8 @@ final class SubnetFortressTest extends TestCase
         $this->equipReadyDeck($c);
         $c->forceFill(['grid_id' => 1, 'grid_x' => 3, 'grid_y' => 3, 'current_synaptic_integrity' => 20])->save();
         $tunnel = FortressTunnel::make();
+        // The factory's attributes are random, so the cap on SI is too: measure the toll from what the character really holds.
+        $before = (int) $c->fresh()->current_synaptic_integrity;
 
         $this->assertTrue($tunnel->usable($c->fresh(), $fortress));
         $result = $tunnel->tunnel($c->fresh(), $fortress);
@@ -134,7 +136,7 @@ final class SubnetFortressTest extends TestCase
         $this->assertTrue($result->succeeded());
         $c->refresh();
         $this->assertSame([2, 6, 6], [(int) $c->grid_id, $c->grid_x, $c->grid_y]);
-        $this->assertSame(18, (int) $c->current_synaptic_integrity);
+        $this->assertSame($before - 2, (int) $c->current_synaptic_integrity);
 
         $again = $tunnel->tunnel($c->fresh(), $fortress);
         $this->assertSame(TravelRefusal::TunnelCooling, $again->refusal);
