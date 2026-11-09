@@ -135,6 +135,16 @@ final class FightScreenTest extends TestCase
             ->assertSeeText('Use Field kit')->assertSee('data-open="#chance-use"', false)->assertSeeText('Chance to get it out');
     }
 
+    public function test_the_bar_shows_where_each_side_stands_about_the_meeting_point(): void
+    {
+        $this->loadMagazine();
+        $this->fight();
+
+        $this->as()->get(route('fight.show'))->assertOk()
+            ->assertSee('role="img"', false)->assertSeeText('Meeting point')->assertSeeText('You can get away')->assertSeeText('They can get away')
+            ->assertSee('You are 1 steps out from the meeting point, they are 1 steps out.', false);
+    }
+
     public function test_an_empty_magazine_offers_loading_and_bracing_instead_of_an_attack(): void
     {
         InventoryItem::query()->create(['character_id' => $this->character->id, 'item_id' => $this->fmj->id, 'quantity' => 30]);
@@ -164,18 +174,18 @@ final class FightScreenTest extends TestCase
         $this->fight([0.0, 0.5, 0.0, 0.5, 0.0, 0.5,  0.0, 0.5, 0.1]);
 
         $this->as()->get(route('fight.show'))->assertOk()
-            ->assertSeeText('Distance 2')->assertSeeText('Close in')->assertSeeText('Create distance')->assertDontSeeText('Disengage');
+            ->assertSeeText('Gap 2')->assertSeeText('Close in')->assertSeeText('Create distance')->assertDontSeeText('Disengage');
 
         $this->as()->post(route('fight.act'), ['action' => 'attack'])->assertRedirect(route('fight.show'));
 
         $this->as()->get(route('fight.show'))->assertOk()
-            ->assertSeeText('Round 2')->assertSeeText('Distance 2')->assertSeeText('Chance 50%');
+            ->assertSeeText('Round 2')->assertSeeText('Gap 2')->assertSeeText('Chance 50%');
 
         // The enemy shoots, then the player backs off: a lucky roll wins two steps and running is possible.
         $this->as()->post(route('fight.act'), ['action' => 'create_distance'])->assertRedirect(route('fight.show'));
 
         $this->as()->get(route('fight.show'))->assertOk()
-            ->assertSeeText('Round 3')->assertSeeText('Distance 4')->assertSeeText('Ranged')->assertSeeText('Disengage');
+            ->assertSeeText('Round 3')->assertSeeText('Gap 4')->assertSeeText('Ranged')->assertSeeText('Disengage');
     }
 
     // ---- a round ------------------------------------------------------------------------
@@ -211,7 +221,7 @@ final class FightScreenTest extends TestCase
         $this->loadMagazine();
         $this->fight([0.0, 0.5,  0.0]);
         $row = Fight::query()->sole();
-        $row->update(['state' => [...$row->state, 'distance' => 3]]);
+        $row->update(['state' => [...$row->state, 'distance' => 3, 'you_at' => 3]]);
 
         $this->as()->post(route('fight.act'), ['action' => 'disengage'])
             ->assertRedirect(route('city.index'))->assertSessionHas('status', 'You get away from Thug.');

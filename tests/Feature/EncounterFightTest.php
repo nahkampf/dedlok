@@ -264,7 +264,7 @@ final class EncounterFightTest extends TestCase
 
         if ($distance !== 2) {
             $row = Fight::query()->sole();
-            $row->update(['state' => [...$row->state, 'distance' => $distance]]);
+            $row->update(['state' => [...$row->state, 'distance' => $distance, 'you_at' => $distance]]);
         }
 
         $fight = app(Fights::class)->act($this->character->fresh(), $action);

@@ -128,10 +128,11 @@ final class FightEngine
     {
         return match ($action->kind) {
             ActionKind::Attack => $this->canAttack($state, $side),
-            ActionKind::CreateDistance => $state->distance < (int) config('combat.distance.max'),
+            // Backing off moves YOU away from the meeting point, so it needs room on your side of it.
+            ActionKind::CreateDistance => $state->offset($side) < FightState::reach(),
             ActionKind::CloseIn => $state->distance > 0,
-            // Nobody gets away from arm's reach: first back off past the fleeing distance.
-            ActionKind::Disengage => $state->distance > (int) config('combat.distance.flee_beyond'),
+            // Nobody gets away from arm's reach: a side must first be far enough out from the meeting point, by its own measure.
+            ActionKind::Disengage => $state->offset($side) > $state->combatant($side)->escapeBeyond(),
             // The ranged weapon, whatever the range: at Close it is the one you are not firing.
             ActionKind::Load => $action->round !== null && $state->combatant($side)->ranged?->canLoad($action->round) === true,
             ActionKind::Brace => true,
@@ -199,7 +200,10 @@ final class FightEngine
         return match (true) {
             ! $worked => $state,
             $getAway => $state->ended($side === Side::A ? Result::AEscaped : Result::BEscaped),
-            default => $state->withDistance($state->distance + $gain),
+            // Backing off: this side steps away from the meeting point; the other stays where it is.
+            default => $side === Side::A
+                ? $state->withOffsets($state->offset(Side::A) + $gain, $state->offset(Side::B))
+                : $state->withOffsets($state->offset(Side::A), $state->offset(Side::B) + $gain),
         };
     }
 
@@ -213,7 +217,20 @@ final class FightEngine
         $worked = $dice() < $this->quoteClosing($state, $side);
         $state = $state->withLog([$this->line($state, Text::get('combat.fight.log.closing'.($worked ? '_ok' : '_failed'), ['who' => $state->combatant($side)->name]))]);
 
-        return $worked ? $state->withDistance($state->distance - 1) : $state;
+        return $worked ? $this->stepIn($state, $side) : $state;
+    }
+
+    /**
+     * One step toward the meeting point. A side already standing at it cannot go further, so the other is pulled in:
+     * the gap shrinks by one either way, and a step in and a step out cancel back to where they were.
+     */
+    private function stepIn(FightState $state, Side $side): FightState
+    {
+        [$mine, $theirs] = [$state->offset($side), $state->offset($side->other())];
+
+        [$mine, $theirs] = $mine > 0 ? [$mine - 1, $theirs] : [$mine, $theirs - 1];
+
+        return $side === Side::A ? $state->withOffsets($mine, $theirs) : $state->withOffsets($theirs, $mine);
     }
 
     /** Whether this side has a weapon it can fire at this range. */

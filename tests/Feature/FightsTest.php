@@ -279,7 +279,7 @@ final class FightsTest extends TestCase
         $this->load(12);
         $hp = (int) $this->character->fresh()->current_hitpoints;
         $fight = $this->open($this->npc());
-        $fight->update(['state' => [...$fight->state, 'distance' => 3]]);                                   // nobody runs from within two
+        $fight->update(['state' => [...$fight->state, 'distance' => 3, 'you_at' => 3]]);                                   // nobody runs from within two
 
         $result = $this->fights([0.0, 0.5,  0.0])->act($this->character->fresh(), Action::disengage());   // the enemy shoots, then the player gets away
 

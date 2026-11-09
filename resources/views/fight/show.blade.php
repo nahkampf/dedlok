@@ -1,3 +1,4 @@
+@use('App\Combat\Fight\Side')
 @use('App\Combat\RiderKind')
 @use('App\Support\Text')
 
@@ -99,6 +100,29 @@
                     @endforeach
                 </div>
             @endif
+
+            {{-- WHERE EVERYBODY STANDS. 0 is the meeting point: you stand out from it on the left, they on the right, and the gap
+                 is the two added. Ranged weapons work whenever the gap is above 0. Each side can get away once it is far
+                 enough out, by its own measure: the ticks at either end are where. Cells are the steps, one per position. --}}
+            @php($reach = \App\Combat\Fight\FightState::reach())
+            @php($x = fn (float $p): float => round(($p + $reach + 0.5) / ($reach * 2 + 1) * 100, 2))
+            @php([$you, $foe] = [-$state->offset(Side::A), $state->offset(Side::B)])
+            <div class="stack" style="--gap:var(--s-1)">
+                <div class="meter meter--lg" style="--fill:var(--ink-3)" role="img"
+                     aria-label="{{ Text::get('combat.fight.screen.bar.aria', ['you' => -$you, 'foe' => $foe, 'gap' => $state->distance]) }}">
+                    <div class="meter__fill" style="position:absolute;top:0;left:{{ $x($you) }}%;width:{{ $x($foe) - $x($you) }}%;transform:none;transition:none"></div>
+                    <span class="meter__mark" style="--x:{{ $x(0) / 100 }};--mark:var(--ink-2)"></span>
+                    <span class="meter__mark" style="--x:{{ $x(-($state->a->escapeBeyond() + 0.5)) / 100 }};--mark:var(--ink-2)"></span>
+                    <span class="meter__mark" style="--x:{{ $x($state->b->escapeBeyond() + 0.5) / 100 }};--mark:var(--ink-2)"></span>
+                    <span class="meter__mark" style="--x:{{ $x($you) / 100 }};--mark:var(--ok);width:6px;margin-left:-3px"></span>
+                    <span class="meter__mark" style="--x:{{ $x($foe) / 100 }};--mark:var(--crit);width:6px;margin-left:-3px"></span>
+                </div>
+                <div class="row micro" style="--gap:var(--s-2);justify-content:space-between;color:var(--ink-3)">
+                    <span>{{ Text::get('combat.fight.screen.bar.you_escape') }}</span>
+                    <span>{{ Text::get('combat.fight.screen.bar.meeting') }}</span>
+                    <span>{{ Text::get('combat.fight.screen.bar.they_escape') }}</span>
+                </div>
+            </div>
 
             <div class="row row--wrap" style="--gap:var(--s-2);align-items:center">
                 <span class="tag">{{ Text::get('combat.fight.screen.round', ['round' => $state->round]) }}</span>
@@ -217,7 +241,7 @@
                 @csrf
                 <input type="hidden" name="action" value="create_distance">
                 <button type="submit" class="btn cut" style="justify-self:start">{{ Text::get('combat.fight.screen.create_distance') }}</button>
-                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-create_distance">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.create_distance_hint', ['max' => config('combat.distance.max')]) }}</span>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-create_distance">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.create_distance_hint', ['max' => \App\Combat\Fight\FightState::reach()]) }}</span>
             </form>
         @endif
 
@@ -226,7 +250,7 @@
                 @csrf
                 <input type="hidden" name="action" value="disengage">
                 <button type="submit" class="btn btn--ghost cut" style="justify-self:start">{{ Text::get('combat.fight.screen.disengage') }}</button>
-                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-create_distance">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.disengage_hint', ['beyond' => config('combat.distance.flee_beyond')]) }}</span>
+                <span class="micro" style="color:var(--ink-3)"><button type="button" class="link" data-open="#chance-create_distance">{{ Text::get('combat.fight.screen.chance') }}</button> <span class="num">{{ round($flight * 100) }}%</span> — {{ Text::get('combat.fight.screen.disengage_hint', ['beyond' => $state->a->escapeBeyond()]) }}</span>
             </form>
         @endif
 

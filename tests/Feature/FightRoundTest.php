@@ -204,7 +204,7 @@ final class FightRoundTest extends TestCase
 
     private function wounded(float $fleesAt, int $hp, int $distance = 3): FightState
     {
-        $state = (new FightState(new Combatant('You', 40, 10.0, ranged: $this->gun(), si: 30), new Combatant('Gang member', 40, 10.0), distance: $distance, first: Side::B));
+        $state = (new FightState(new Combatant('You', 40, 10.0, ranged: $this->gun(), si: 30), new Combatant('Gang member', 40, 10.0), distance: $distance, first: Side::B, youAt: 0));   // the enemy stands the whole gap out from the meeting point
 
         return $state->with(Side::B, new Combatant('Gang member', $hp, 10.0, 10.0, $this->gun(), null, null, [], 40, $fleesAt));
     }

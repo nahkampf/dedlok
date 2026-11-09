@@ -7,6 +7,7 @@ namespace App\Http\Requests\Admin;
 use App\Combat\ArmourSlot;
 use App\Combat\CombatTag;
 use App\Combat\DamageProfile;
+use App\Combat\Fight\FightState;
 use App\Models\Item;
 use App\Models\Npc;
 use App\Models\Weapon;
@@ -48,6 +49,8 @@ class NpcRequest extends FormRequest
             'pursuit' => ['required', 'numeric', 'between:0,99.9'],
             // A share of its hit points. Blank never flees.
             'flees_at' => ['nullable', 'numeric', 'between:0,1'],
+            // How far from the meeting point it must be to Disengage: blank is the fight's default. Never past the fight's reach.
+            'flee_beyond' => ['nullable', 'integer', 'min:0', 'max:'.(max(0, FightState::reach() - 1))],
             'ranged_weapon_id' => ['nullable', 'integer', 'exists:items,id'],
             'melee_weapon_id' => ['nullable', 'integer', 'exists:items,id'],
             'ammo_item_id' => ['nullable', 'integer', 'exists:items,id'],
@@ -116,7 +119,7 @@ class NpcRequest extends FormRequest
             unset($data['slug']);
         }
 
-        foreach (['flees_at', 'ranged_weapon_id', 'melee_weapon_id', 'ammo_item_id', 'flavor', 'entity_id'] as $nullable) {
+        foreach (['flees_at', 'flee_beyond', 'ranged_weapon_id', 'melee_weapon_id', 'ammo_item_id', 'flavor', 'entity_id'] as $nullable) {
             if (($data[$nullable] ?? '') === '') {
                 $data[$nullable] = null;
             }

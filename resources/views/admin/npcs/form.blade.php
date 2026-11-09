@@ -93,6 +93,11 @@
                     <input class="input num" type="number" name="flees_at" min="0" max="1" step="0.01" value="{{ $value('flees_at') }}">
                     <span class="field__hint">{{ Text::get('admin.npcs.flees_at_hint') }}</span>
                 </label>
+                <label class="field">
+                    <span class="field__label">{{ Text::get('admin.npcs.flee_beyond') }}</span>
+                    <input class="input num" type="number" name="flee_beyond" min="0" max="{{ max(0, \App\Combat\Fight\FightState::reach() - 1) }}" step="1" value="{{ $value('flee_beyond') }}">
+                    <span class="field__hint">{{ Text::get('admin.npcs.flee_beyond_hint', ['default' => config('combat.distance.flee_beyond'), 'reach' => \App\Combat\Fight\FightState::reach()]) }}</span>
+                </label>
             </div>
         </div>
 

@@ -302,6 +302,13 @@ The class-to-skill mapping is parked with skills.
 
 ## The fight
 
+**TWO POSITIONS ABOUT A MEETING POINT (2026-11-09).** Distance is still the one number that decides the range, but it is now the SUM of two positions:
+`FightState::youAt` (how many steps out you stand from the meeting point, on your side) and the enemy's `distance - youAt` on theirs. A fight opens
+at 1 and 1. **Backing off** moves only the mover outward (up to `FightState::reach()`, half of `combat.distance.max`); **closing in** moves the mover
+toward the meeting point, and a side already standing at it pulls the OTHER in instead, so a step in and a step out cancel (0/2 stays 0/2, never 1/3).
+**Disengage is by each side's own measure**: it may go only from MORE than `Combatant::escapeBeyond()` steps out (`combat.distance.flee_beyond`, 2, or
+`npcs.flee_beyond` for an opponent). The fight screen draws it as a bar, you on the left and they on the right, with ticks where each can escape.
+
 **Distance is a number, and it implies two ranges.** A fight opens at distance **2**
 (`combat.distance.start`) and **nothing moves it but somebody's action**, between 0 and `combat.distance.max` (6).
 Any distance above 0 is **Ranged**; 0 is **Close**.

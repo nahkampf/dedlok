@@ -31,7 +31,15 @@ final readonly class Combatant
         public ?float $fleesAt = null,
         /** Percent of its hits that are critical. Zero for an NPC: only a player's side rolls it. */
         public float $critChance = 0.0,
+        /** How far from the meeting point it must be before it can Disengage; null is the fight's default (`combat.distance.flee_beyond`). */
+        public ?int $fleeBeyond = null,
     ) {}
+
+    /** It may Disengage only from MORE than this many steps out from the meeting point. */
+    public function escapeBeyond(): int
+    {
+        return $this->fleeBeyond ?? (int) config('combat.distance.flee_beyond');
+    }
 
     /** The weapon this side can use at this range, if it has one. */
     public function arm(Range $range): ?Arm
@@ -107,7 +115,7 @@ final readonly class Combatant
     {
         return new self(
             $this->name, $hp ?? $this->hp, $this->defence, $this->pursuit, $ranged ?? $this->ranged, $melee ?? $this->melee,
-            $si ?? $this->si, $statuses ?? $this->statuses, $this->hpMax, $this->fleesAt, $this->critChance,
+            $si ?? $this->si, $statuses ?? $this->statuses, $this->hpMax, $this->fleesAt, $this->critChance, $this->fleeBeyond,
         );
     }
 
@@ -117,7 +125,7 @@ final readonly class Combatant
         return [
             'name' => $this->name, 'hp' => $this->hp, 'si' => $this->si, 'defence' => $this->defence, 'pursuit' => $this->pursuit,
             'ranged' => $this->ranged?->toArray(), 'melee' => $this->melee?->toArray(), 'statuses' => $this->statuses,
-            'hp_max' => $this->hpMax, 'flees_at' => $this->fleesAt, 'crit_chance' => $this->critChance,
+            'hp_max' => $this->hpMax, 'flees_at' => $this->fleesAt, 'crit_chance' => $this->critChance, 'flee_beyond' => $this->fleeBeyond,
         ];
     }
 
@@ -130,7 +138,7 @@ final readonly class Combatant
             $data['melee'] === null ? null : Arm::fromArray($data['melee']),
             $data['si'] === null ? null : Points::of($data['si']), array_values((array) ($data['statuses'] ?? [])),
             ($data['hp_max'] ?? null) === null ? null : Points::of($data['hp_max']), ($data['flees_at'] ?? null) === null ? null : (float) $data['flees_at'],
-            (float) ($data['crit_chance'] ?? 0),
+            (float) ($data['crit_chance'] ?? 0), isset($data['flee_beyond']) ? (int) $data['flee_beyond'] : null,
         );
     }
 }

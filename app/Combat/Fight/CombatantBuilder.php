@@ -56,7 +56,7 @@ final class CombatantBuilder
 
     /**
      * An opponent from a plain description (what `fight:simulate` takes, and what an NPC row will
-     * become). Keys: name, hp, defence, pursuit, flees_at, aim, and `ranged` / `melee` each
+     * become). Keys: name, hp, defence, pursuit, flees_at, flee_beyond, aim, and `ranged` / `melee` each
      * `{class, damage, rate?, profile?, riders?, penetration?}`.
      *
      * @param  array<string, mixed>  $spec
@@ -76,6 +76,7 @@ final class CombatantBuilder
             si: null,
             hpMax: Points::of($spec['hp'] ?? 40),
             fleesAt: isset($spec['flees_at']) ? (float) $spec['flees_at'] : null,
+            fleeBeyond: isset($spec['flee_beyond']) ? (int) $spec['flee_beyond'] : null,
         );
     }
 
@@ -114,7 +115,7 @@ final class CombatantBuilder
 
         return self::fromSpec([
             'name' => $npc->name, 'hp' => $npc->hitpoints, 'aim' => $npc->aim, 'defence' => $npc->defence,
-            'pursuit' => $npc->pursuit, 'flees_at' => $npc->flees_at,
+            'pursuit' => $npc->pursuit, 'flees_at' => $npc->flees_at, 'flee_beyond' => $npc->flee_beyond,
             'ranged' => $weapon($npc->rangedWeapon, $npc->ammo),
             'melee' => $weapon($npc->meleeWeapon),
         ]);

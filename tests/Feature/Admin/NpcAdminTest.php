@@ -304,4 +304,16 @@ final class NpcAdminTest extends TestCase
         $this->assertSame(0, NpcLoot::query()->count(), 'the row goes with the item');
         $this->assertSame(1, Npc::query()->count(), 'the opponent stays');
     }
+
+    public function test_an_opponents_escape_distance_is_stored_blank_is_the_default_and_the_reach_is_the_limit(): void
+    {
+        $this->save($this->valid(['flee_beyond' => '1']))->assertRedirect();
+        $this->assertSame(1, Npc::query()->where('slug', 'gang_member')->value('flee_beyond'));
+
+        $this->save($this->valid(['slug' => 'other', 'flee_beyond' => '']))->assertRedirect();
+        $this->assertNull(Npc::query()->where('slug', 'other')->value('flee_beyond'));
+
+        // The fight is three steps either side, so nobody can be asked to escape from beyond the edge.
+        $this->save($this->valid(['slug' => 'too_far', 'flee_beyond' => '3']))->assertSessionHasErrors('flee_beyond');
+    }
 }

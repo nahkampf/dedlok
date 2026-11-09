@@ -46,7 +46,13 @@ final class FightRangeTest extends TestCase
         );
     }
 
-    /** The same two, the enemy first, `$distance` apart. */
+    /** The same two with each placed on its own side of the meeting point: `$you` steps out on yours, `$foe` on theirs. */
+    private function placed(int $you, int $foe): FightState
+    {
+        return new FightState($this->close()->a, $this->close()->b, distance: $you + $foe, youAt: $you);
+    }
+
+    /** The same two, the enemy first, `$distance` apart (split evenly about the meeting point). */
     private function at(int $distance): FightState
     {
         return new FightState($this->close()->a, $this->close()->b, distance: $distance);
@@ -78,7 +84,7 @@ final class FightRangeTest extends TestCase
     {
         $dice = new QueueDice([0.2]);                     // the enemy braces (no die), then A gets away
 
-        $after = $this->round($this->at(3), ['a' => Action::disengage(), 'b' => Action::brace()], $dice);
+        $after = $this->round($this->placed(3, 0), ['a' => Action::disengage(), 'b' => Action::brace()], $dice);
 
         $dice->assertSpent();
         $this->assertSame(Result::AEscaped, $after->result);
@@ -88,7 +94,7 @@ final class FightRangeTest extends TestCase
     public function test_nobody_gets_away_from_within_the_fleeing_distance(): void
     {
         foreach ([0, 1, 2] as $distance) {
-            $after = $this->round($this->at($distance), ['a' => Action::disengage(), 'b' => Action::brace()], new QueueDice([]));
+            $after = $this->round($this->placed($distance, 0), ['a' => Action::disengage(), 'b' => Action::brace()], new QueueDice([]));
 
             $this->assertNull($after->result, "at $distance");
             $this->assertSame('You is too close to get away and braces.', $after->log[1]['text']);
@@ -99,7 +105,7 @@ final class FightRangeTest extends TestCase
     {
         $dice = new QueueDice([0.9,  0.0, 0.5]);          // A fails to get away; B (second now) shoots
 
-        $state = new FightState($this->close()->a, $this->close()->b, distance: 3, first: Side::A);
+        $state = new FightState($this->close()->a, $this->close()->b, distance: 3, first: Side::A, youAt: 3);
         $after = $this->round($state, ['a' => Action::disengage(), 'b' => Action::attack()], $dice);
 
         $dice->assertSpent();
@@ -112,7 +118,7 @@ final class FightRangeTest extends TestCase
     {
         $dice = new QueueDice([0.2]);                     // only A's attempt is rolled; B never gets a turn
 
-        $state = new FightState($this->close()->a, $this->close()->b, distance: 3, first: Side::A);
+        $state = new FightState($this->close()->a, $this->close()->b, distance: 3, first: Side::A, youAt: 3);
         $after = $this->round($state, ['a' => Action::disengage(), 'b' => Action::attack()], $dice);
 
         $dice->assertSpent();
@@ -162,12 +168,12 @@ final class FightRangeTest extends TestCase
         $this->assertSame(4, $state->distance);
         $this->assertTrue($this->engine()->legal($state, Side::A, Action::disengage()), 'beyond two, running is possible');
 
-        $state = $this->round($state, ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.1]));
-        $this->assertSame(6, $state->distance);
-        $this->assertFalse($this->engine()->legal($state, Side::A, Action::createDistance()), 'no further than six');
+        // Three steps out from the meeting point is as far as one side can go: only the gap the other side adds goes further.
+        $this->assertSame(3, $state->offset(Side::A));
+        $this->assertFalse($this->engine()->legal($state, Side::A, Action::createDistance()), 'no further out than the edge');
 
         $capped = $this->round($this->at(5), ['a' => Action::createDistance(), 'b' => Action::brace()], new QueueDice([0.1]));
-        $this->assertSame(6, $capped->distance, 'a gain of two from five stops at six');
+        $this->assertSame(6, $capped->distance, 'a gain of two from two steps out stops at the edge, three each side');
     }
 
     public function test_closing_in_wins_one_step_on_a_success(): void
@@ -206,5 +212,40 @@ final class FightRangeTest extends TestCase
 
         $this->assertSame(0, FightState::fromArray($data + ['range' => 'close'])->distance);
         $this->assertSame(2, FightState::fromArray($data + ['range' => 'ranged'])->distance);
+    }
+
+    // ---- two positions about a meeting point ---------------------------------------------------
+
+    public function test_a_step_in_and_a_step_out_cancel_instead_of_drifting(): void
+    {
+        $state = $this->placed(0, 2);
+
+        // You close one step: standing at the meeting point already, the enemy is pulled in. Then they back off one.
+        $state = $this->round($state, ['a' => Action::closeIn(), 'b' => Action::brace()], new QueueDice([0.3]));
+        $this->assertSame([0, 1], [$state->offset(Side::A), $state->offset(Side::B)]);
+
+        $state = $this->round($state, ['a' => Action::brace(), 'b' => Action::createDistance()], new QueueDice([0.3]));
+        $this->assertSame([0, 2], [$state->offset(Side::A), $state->offset(Side::B)], 'back at 0 and 2, not 1 and 3');
+    }
+
+    public function test_each_side_escapes_by_its_own_distance(): void
+    {
+        $edgy = new Combatant('Gang member', 40, 10.0, 10.0, $this->gun(), $this->knife(), fleeBeyond: 1);
+        $state = new FightState($this->close()->a, $edgy, distance: 2, youAt: 0);   // you at the meeting point, it two steps out
+
+        $this->assertTrue($this->engine()->legal($state, Side::B, Action::disengage()), 'it may go from more than one step out');
+        $this->assertFalse($this->engine()->legal($state, Side::A, Action::disengage()), 'you are at the meeting point');
+        $this->assertFalse($this->engine()->legal($this->placed(0, 2), Side::B, Action::disengage()), 'the default is more than two');
+    }
+
+    public function test_the_positions_survive_being_stored(): void
+    {
+        $edgy = new Combatant('Gang member', 40, 10.0, 10.0, $this->gun(), $this->knife(), fleeBeyond: 1);
+        $state = new FightState($this->close()->a, $edgy, distance: 3, youAt: 2);
+
+        $rebuilt = FightState::fromArray(json_decode((string) json_encode($state->toArray()), true));
+
+        $this->assertSame([2, 1], [$rebuilt->offset(Side::A), $rebuilt->offset(Side::B)]);
+        $this->assertSame(1, $rebuilt->b->escapeBeyond());
     }
 }
