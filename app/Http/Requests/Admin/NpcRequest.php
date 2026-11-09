@@ -48,6 +48,10 @@ class NpcRequest extends FormRequest
             'defence' => ['required', 'numeric', 'between:0,99.9'],
             'pursuit' => ['required', 'numeric', 'between:0,99.9'],
             // A share of its hit points. Blank never flees.
+            'image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'remove_image' => ['nullable', 'boolean'],
+            'image_credit' => ['nullable', 'string', 'max:255'],
+            'image_link' => ['nullable', 'url:http,https', 'max:255'],
             'flees_at' => ['nullable', 'numeric', 'between:0,1'],
             // How far from the meeting point it must be to Disengage: blank is the fight's default. Never past the fight's reach.
             'flee_beyond' => ['nullable', 'integer', 'min:0', 'max:'.(max(0, FightState::reach() - 1))],
@@ -112,14 +116,14 @@ class NpcRequest extends FormRequest
     /** The row's columns, resistances cleaned to what was meant. @return array<string, mixed> */
     public function columns(): array
     {
-        $data = $this->safe()->except(['resistances', 'slot_resistances', 'tags', 'loot']);
+        $data = $this->safe()->except(['resistances', 'slot_resistances', 'tags', 'loot', 'image', 'remove_image']);
 
         // A slug is permanent. `prohibited` lets an empty value through, so on update it is dropped here.
         if ($this->npc() !== null) {
             unset($data['slug']);
         }
 
-        foreach (['flees_at', 'flee_beyond', 'ranged_weapon_id', 'melee_weapon_id', 'ammo_item_id', 'flavor', 'entity_id'] as $nullable) {
+        foreach (['image_credit', 'image_link', 'flees_at', 'flee_beyond', 'ranged_weapon_id', 'melee_weapon_id', 'ammo_item_id', 'flavor', 'entity_id'] as $nullable) {
             if (($data[$nullable] ?? '') === '') {
                 $data[$nullable] = null;
             }

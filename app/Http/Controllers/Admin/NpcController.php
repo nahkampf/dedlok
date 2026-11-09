@@ -8,6 +8,7 @@ use App\Combat\ArmourSlot;
 use App\Combat\CombatTag;
 use App\Combat\DamageProfile;
 use App\Combat\NpcEditor;
+use App\Combat\NpcImage;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\NpcRequest;
 use App\Models\Encounter;
@@ -43,8 +44,9 @@ class NpcController extends Controller
     public function store(NpcRequest $request): RedirectResponse
     {
         $npc = (new NpcEditor)->save(null, $request->columns(), $request->loot());
+        $redirect = redirect()->route('admin.npcs.edit', $npc)->with('status', Text::get('admin.npcs.created'));
 
-        return redirect()->route('admin.npcs.edit', $npc)->with('status', Text::get('admin.npcs.created'));
+        return $this->picture($request, $npc) ? $redirect : $redirect->withErrors(['image' => Text::get('admin.npcs.image_unreadable')]);
     }
 
     public function edit(Npc $npc): View
@@ -55,8 +57,32 @@ class NpcController extends Controller
     public function update(NpcRequest $request, Npc $npc): RedirectResponse
     {
         (new NpcEditor)->save($npc, $request->columns(), $request->loot());
+        $back = back()->with('status', Text::get('admin.npcs.updated'));
 
-        return back()->with('status', Text::get('admin.npcs.updated'));
+        return $this->picture($request, $npc) ? $back : $back->withErrors(['image' => Text::get('admin.npcs.image_unreadable')]);
+    }
+
+    /** Save the uploaded picture, if there is one. False when the file could not be read as an image. */
+    private function picture(NpcRequest $request, Npc $npc): bool
+    {
+        // A new file replaces the old one; otherwise the box asks for it to go.
+        if (! $request->hasFile('image')) {
+            if ($request->boolean('remove_image')) {
+                // The credit and the link belong to that file: they go with it.
+                NpcImage::remove($npc);
+                $npc->update(['image_credit' => null, 'image_link' => null]);
+            }
+
+            return true;
+        }
+
+        try {
+            (new NpcImage)->store($npc, $request->file('image'));
+        } catch (\RuntimeException) {
+            return false;
+        }
+
+        return true;
     }
 
     public function destroy(Npc $npc): RedirectResponse
@@ -69,6 +95,7 @@ class NpcController extends Controller
             return back()->with('error', Text::get('admin.npcs.in_use', ['encounters' => $using->implode(', ')]));
         }
 
+        NpcImage::remove($npc);
         $npc->delete();
 
         return redirect()->route('admin.npcs.index')->with('status', Text::get('admin.npcs.deleted'));

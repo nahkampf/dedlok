@@ -546,7 +546,7 @@ to the `DownedCause` effects the waiting screen reads), then calls the waiting r
   `pursuit`, `flees_at`, `ranged_weapon_id`, `melee_weapon_id` and `ammo_item_id` (the standing round) — all
   three pointers at ITEMS, so a weapon's numbers live on the weapon — and `resistances` / `slot_resistances`
   (JSON: percent off by type, and extra by body part). Pictures by convention, 3:4 like a person
-  (`public/images/npcs/<id>.jpg`). Step 6 added `entity_id` (whose it is, for standing), `tags` (what it
+  (uploaded in the editor, with a credit and a link, to `public/images/enemies/<id>.jpg`; `default.jpg` there stands in for the rest). Step 6 added `entity_id` (whose it is, for standing), `tags` (what it
   does to somebody it beats; NULL is the default `[mugged]`, a list replaces it) and the `npc_loot` table. **No CHECK reaches the three item pointers** (MySQL error 3823): which kind of weapon
   goes in which hand, and that a round fits the weapon, are `NpcRequest`'s. **Deleting a weapon item leaves
   its opponents unarmed** (`nullOnDelete`), and the item's delete dialog says how many.

@@ -316,4 +316,23 @@ final class FightScreenTest extends TestCase
 
         $this->as()->get(route('admin.items.index'))->assertRedirect(route('fight.show'));
     }
+
+    public function test_the_opponents_picture_and_its_credit_are_shown(): void
+    {
+        $this->loadMagazine();
+        $this->fight();
+        $npc = Npc::query()->sole();
+        $npc->update(['image_credit' => 'An Artist', 'image_link' => 'https://example.com/a']);
+        $file = public_path("images/enemies/{$npc->id}.jpg");
+
+        try {
+            @mkdir(dirname($file), 0775, true);
+            imagejpeg(imagecreatetruecolor(30, 40), $file);
+
+            $this->as()->get(route('fight.show'))->assertOk()
+                ->assertSee("enemies/{$npc->id}.jpg", false)->assertSeeText('An Artist')->assertSee('href="https://example.com/a"', false);
+        } finally {
+            @unlink($file);
+        }
+    }
 }

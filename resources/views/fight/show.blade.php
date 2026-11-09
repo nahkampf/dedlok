@@ -15,10 +15,22 @@
 
 <div class="panel panel--snug" style="margin-top:var(--s-4)">
     <div class="panel__bd row row--wrap" style="--gap:var(--s-5);align-items:flex-start">
-        {{-- Found by convention (public/images/npcs/<id>.jpg). An opponent deleted mid-fight has no
-             picture to show, and a missing one renders nothing rather than a broken one. --}}
-        @if ($fight->npc_id !== null)
-            <x-entity-image kind="npcs" :id="$fight->npc_id" :alt="$fight->opponent_name" portrait />
+        {{-- Its own picture or the folder's default (public/images/enemies). An opponent deleted mid-fight has no row to
+             find one for, and a missing one renders nothing rather than a broken one. --}}
+        @php($foe = $fight->npc)
+        @if ($foe !== null && ($foePicture = \App\Combat\NpcImage::url($foe)))
+            <div class="stack" style="--gap:var(--s-1)">
+                <span class="entity-image entity-image--portrait"><img src="{{ $foePicture }}" alt="{{ $fight->opponent_name }}" width="300" height="400" decoding="async"></span>
+                @if ($foe->image_credit)
+                    <span class="micro" style="color:var(--ink-3);max-width:300px">
+                        @if ($foe->image_link)
+                            <a href="{{ $foe->image_link }}" target="_blank" rel="noopener noreferrer">{{ $foe->image_credit }}</a>
+                        @else
+                            {{ $foe->image_credit }}
+                        @endif
+                    </span>
+                @endif
+            </div>
         @endif
 
         <div class="stack" style="--gap:var(--s-3);flex:1 1 min(260px,100%);min-width:0">

@@ -6,6 +6,7 @@ namespace App\City;
 
 use App\Models\Encounter;
 use App\Support\Asset;
+use App\Support\PictureUpload;
 use Illuminate\Http\UploadedFile;
 use RuntimeException;
 
@@ -20,10 +21,7 @@ use RuntimeException;
  */
 final class EncounterImage
 {
-    public const WIDTH = 1600;
-
-    /** Decoded size is width x height x 4 bytes against a 128M limit, so cap the pixels rather than the file. */
-    public const MAX_PIXELS = 16_000_000;
+    public const WIDTH = PictureUpload::WIDTH;
 
     public static function realm(EncounterStart $start): string
     {
@@ -57,35 +55,7 @@ final class EncounterImage
     /** @throws RuntimeException when the file is not an image this can read */
     public function store(Encounter $encounter, UploadedFile $file): void
     {
-        $info = @getimagesize($file->getRealPath());
-
-        if ($info === false || $info[0] * $info[1] > self::MAX_PIXELS) {
-            throw new RuntimeException('Unreadable or too large.');
-        }
-
-        $source = @imagecreatefromstring((string) file_get_contents($file->getRealPath()));
-
-        if ($source === false) {
-            throw new RuntimeException('Unreadable.');
-        }
-
-        [$w, $h] = [imagesx($source), imagesy($source)];
-        $width = min($w, self::WIDTH);
-        $height = max(1, (int) round($h * $width / $w));
-
-        $out = imagecreatetruecolor($width, $height);
-        imagefill($out, 0, 0, (int) imagecolorallocate($out, 0x10, 0x10, 0x10));
-        imagecopyresampled($out, $source, 0, 0, 0, 0, $width, $height, $w, $h);
-
-        $path = self::path($encounter);
-
-        if (! is_dir(dirname($path))) {
-            mkdir(dirname($path), 0775, true);
-        }
-
-        if (! imagejpeg($out, $path, 88)) {
-            throw new RuntimeException('Could not write the picture.');
-        }
+        PictureUpload::write($file, self::path($encounter));
     }
 
     /** Delete its own picture, so the realm's default shows again. */

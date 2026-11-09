@@ -4688,7 +4688,12 @@ return [
             'resistances_hint' => 'Percent off per damage type. Negative is a vulnerability; 100 is an immunity that no round pierces. Blank is none.',
             'slot_resistances' => 'By body part',
             'slot_resistances_hint' => 'Extra percent off when the hit lands on that part, added to the figure above: a helmet is head 40 against penetrating.',
-            'picture_hint' => 'Its picture, if you add one: :path (3:4).',
+            'image' => 'Picture',
+            'image_hint' => 'Optional',
+            'image_credit' => 'Who to credit?',
+            'image_link' => 'Link to the artist',
+            'image_remove' => 'Remove (shows default)',
+            'image_unreadable' => 'Image was unreadable',
             'sections' => [
                 'who' => 'Who',
                 'numbers' => 'Numbers',

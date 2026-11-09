@@ -26,7 +26,7 @@
     <x-auth-errors />
 
     <form method="POST" action="{{ $creating ? route('admin.npcs.store') : route('admin.npcs.update', $npc) }}"
-          class="stack" style="--gap:var(--s-5);margin-top:var(--s-5)">
+          class="stack" style="--gap:var(--s-5);margin-top:var(--s-5)" enctype="multipart/form-data">
         @csrf
         @unless ($creating) @method('PUT') @endunless
 
@@ -34,11 +34,10 @@
             <div class="panel__hd"><span class="micro">{{ Text::get('admin.npcs.sections.who') }}</span></div>
             <div class="panel__bd row row--wrap" style="--gap:var(--s-5);align-items:flex-start">
                 @unless ($creating)
-                    {{-- Found by convention, like every picture: public/images/npcs/<id>.jpg, 3:4. --}}
-                    <div class="stack" style="--gap:var(--s-2)">
-                        <x-entity-image kind="npcs" :id="$npc->id" :alt="$npc->name" portrait />
-                        <span class="micro" style="color:var(--ink-3);max-width:min(300px,100%)">{{ Text::get('admin.npcs.picture_hint', ['path' => 'public/images/npcs/'.$npc->id.'.jpg']) }}</span>
-                    </div>
+                    {{-- Its own picture, or the folder's default (public/images/enemies/<id>.jpg, default.jpg). Uploaded below. --}}
+                    @if ($pic = \App\Combat\NpcImage::url($npc))
+                        <span class="entity-image entity-image--portrait"><img src="{{ $pic }}" alt="{{ $npc->name }}" width="300" height="400"></span>
+                    @endif
                 @endunless
                 <div class="grid" style="flex:1 1 min(320px,100%);min-width:0;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))">
                     @if ($creating)
@@ -61,6 +60,28 @@
                         <span class="field__label">{{ Text::get('admin.npcs.flavor') }}</span>
                         <textarea class="input" name="flavor" rows="3" maxlength="2000">{{ $value('flavor') }}</textarea>
                     </label>
+                    <label class="field" style="grid-column:1/-1">
+                        <span class="field__label">{{ Text::get('admin.npcs.image') }}</span>
+                        <input class="input" name="image" type="file" accept="image/jpeg,image/png,image/webp">
+                        <span class="field__hint">{{ Text::get('admin.npcs.image_hint') }}</span>
+                        @error('image') <span class="field__error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="field">
+                        <span class="field__label">{{ Text::get('admin.npcs.image_credit') }}</span>
+                        <input class="input" name="image_credit" maxlength="255" value="{{ $value('image_credit') }}">
+                        @error('image_credit') <span class="field__error">{{ $message }}</span> @enderror
+                    </label>
+                    <label class="field">
+                        <span class="field__label">{{ Text::get('admin.npcs.image_link') }}</span>
+                        <input class="input" type="url" name="image_link" maxlength="255" value="{{ $value('image_link') }}">
+                        @error('image_link') <span class="field__error">{{ $message }}</span> @enderror
+                    </label>
+                    @if (! $creating && \App\Combat\NpcImage::exists($npc))
+                        <label class="check" style="grid-column:1/-1">
+                            <input type="checkbox" name="remove_image" value="1">
+                            <span class="check__box"></span><span>{{ Text::get('admin.npcs.image_remove') }}</span>
+                        </label>
+                    @endif
                 </div>
             </div>
         </div>

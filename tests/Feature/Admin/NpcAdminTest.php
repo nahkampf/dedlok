@@ -6,6 +6,7 @@ namespace Tests\Feature\Admin;
 
 use App\Admin\DeletionImpact;
 use App\Combat\AmmoType;
+use App\Combat\NpcImage;
 use App\Combat\WeaponClass;
 use App\Models\Ammunition;
 use App\Models\Entity;
@@ -14,7 +15,9 @@ use App\Models\Npc;
 use App\Models\NpcLoot;
 use App\Models\User;
 use App\Models\Weapon;
+use App\Support\PictureUpload;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -99,7 +102,7 @@ final class NpcAdminTest extends TestCase
         $this->assertMatchesRegularExpression('/name="resistances\[penetrating\]"[^>]*value="30"/', $html);
         $this->assertMatchesRegularExpression('/name="slot_resistances\[head\]\[penetrating\]"[^>]*value="40"/', $html);
         $this->assertMatchesRegularExpression('/<option value="'.$gun->id.'"[^>]*selected/', $html);
-        $this->assertStringContainsString('public/images/npcs/'.$npc->id.'.jpg', $html, 'the picture convention is said where it matters');
+        $this->assertStringContainsString('name="image"', $html, 'the picture is uploaded here');
     }
 
     public function test_the_weapon_pickers_offer_each_hand_only_its_own_kind(): void
@@ -315,5 +318,47 @@ final class NpcAdminTest extends TestCase
 
         // The fight is three steps either side, so nobody can be asked to escape from beyond the edge.
         $this->save($this->valid(['slug' => 'too_far', 'flee_beyond' => '3']))->assertSessionHasErrors('flee_beyond');
+    }
+
+    public function test_a_picture_is_uploaded_credited_replaced_and_removed_with_its_credit(): void
+    {
+        $paths = [];
+
+        try {
+            $this->save($this->valid([
+                'image' => UploadedFile::fake()->image('thug.png', 2400, 1200),
+                'image_credit' => 'An Artist',
+                'image_link' => 'https://example.com/artist',
+            ]))->assertRedirect();
+
+            $npc = Npc::query()->where('slug', 'gang_member')->firstOrFail();
+            $paths[] = $file = public_path("images/enemies/{$npc->id}.jpg");
+
+            $this->assertFileExists($file);
+            $this->assertSame(PictureUpload::WIDTH, getimagesize($file)[0], 'scaled down to the width cap');
+            $this->assertSame(['An Artist', 'https://example.com/artist'], [$npc->image_credit, $npc->image_link]);
+            $this->assertStringContainsString("enemies/{$npc->id}.jpg", NpcImage::url($npc));
+
+            // A file that is not a picture is refused and leaves the old one.
+            $this->actingAs($this->admin())->put(route('admin.npcs.update', $npc), $this->valid(['slug' => null, 'image' => UploadedFile::fake()->create('x.png', 5, 'image/png')]))
+                ->assertSessionHasErrors('image');
+
+            // Removing it takes the credit and the link with it.
+            $payload = $this->valid(['remove_image' => '1']);
+            unset($payload['slug']);
+            $this->actingAs($this->admin())->put(route('admin.npcs.update', $npc), $payload)->assertSessionHasNoErrors();
+
+            $this->assertFileDoesNotExist($file);
+            $this->assertSame([null, null], [$npc->fresh()->image_credit, $npc->fresh()->image_link]);
+        } finally {
+            foreach ($paths as $path) {
+                @unlink($path);
+            }
+        }
+    }
+
+    public function test_a_credit_link_must_be_a_web_address(): void
+    {
+        $this->save($this->valid(['image_link' => 'javascript:alert(1)']))->assertSessionHasErrors('image_link');
     }
 }
