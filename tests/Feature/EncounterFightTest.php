@@ -469,6 +469,11 @@ final class EncounterFightTest extends TestCase
         $npc->update(['image_credit' => 'Foe Artist']);
         $files = [];
 
+        // The real stand-in may exist; set it aside so the test sees none, and put it back after.
+        $standIn = public_path('images/enemies/default.jpg');
+        $aside = $standIn.'.test-aside';
+        $kept = is_file($standIn) && rename($standIn, $aside);
+
         try {
             $this->dice([0.5]);
             $this->enter($encounter);
@@ -496,6 +501,10 @@ final class EncounterFightTest extends TestCase
         } finally {
             foreach ($files as $file) {
                 @unlink($file);
+            }
+
+            if ($kept) {
+                rename($aside, $standIn);
             }
         }
     }

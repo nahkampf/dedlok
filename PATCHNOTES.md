@@ -1,3 +1,7 @@
+## 0.96.0 (2026-11-10)
+
+- /implants returned 500 if you had an implant
+
 ## 0.95.0 (2026-11-10)
 
 - Combat got some more work:

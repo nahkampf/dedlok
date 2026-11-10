@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.96.0] — 2026-11-10
+
+### Added
+- **The Norinco PM9 and the Kalashtec GSh-57**, two 9mm pistols (item plus weapons row), off the market.
+
+### Fixed
+- `/implants` returned a 500 for any character with an implant installed: `ImplantFitter::body()` grouped by the region enum where its closure promised a string. It now groups by the region's value. A test loads the screen with an implant installed.
+
+### Migrations
+- `2026_11_14_100000_the_norinco_pm9_and_the_kalashtec_gsh57` — inserts the two pistols and their weapons rows; a slug that already exists is skipped. No schema changes.
+
+
 ## [0.95.0] — 2026-11-10
 
 ### Added
@@ -4208,7 +4220,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.95.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.96.0...HEAD
+[0.96.0]: https://github.com/nahkampf/dedlok/compare/v0.95.0...v0.96.0
 [0.95.0]: https://github.com/nahkampf/dedlok/compare/v0.94.3...v0.95.0
 [0.94.3]: https://github.com/nahkampf/dedlok/compare/v0.94.2...v0.94.3
 [0.94.2]: https://github.com/nahkampf/dedlok/compare/v0.94.1...v0.94.2
