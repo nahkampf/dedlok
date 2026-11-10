@@ -124,7 +124,7 @@ final class ImplantFitter
             ->whereNotNull('installed_at')
             ->with('item')
             ->get()
-            ->groupBy(static fn (InventoryItem $row): string => $row->item?->implant_region ?? '');
+            ->groupBy(static fn (InventoryItem $row): string => $row->item?->implant_region?->value ?? '');
 
         $body = [];
 

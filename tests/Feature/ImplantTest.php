@@ -277,6 +277,16 @@ final class ImplantTest extends TestCase
         $response->assertSee('bodymap__figure', false);
     }
 
+    public function test_the_screen_renders_with_an_implant_installed(): void
+    {
+        $implant = $this->implant(BodyRegion::Head);
+        $this->fitter()->install($this->character, $implant);
+
+        $this->actingAs($this->user)->get(route('implants.index'))
+            ->assertOk()
+            ->assertSee($implant->item->displayName());
+    }
+
     /** Surgery moved to the clinics: the screen shows a body and no longer writes one. */
     public function test_the_screen_is_read_only_and_points_at_the_clinics(): void
     {
