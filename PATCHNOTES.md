@@ -1,3 +1,8 @@
+## 0.96.1 (2026-11-11)
+
+- Now running Sentry on production to catch weird bugs
+- Scans could fail after 255 passes (buffer overflow)
+
 ## 0.96.0 (2026-11-10)
 
 - /implants returned 500 if you had an implant

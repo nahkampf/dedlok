@@ -18,10 +18,12 @@
         {{-- The opponent's own picture; else the scene's if an encounter started this; else the stand-in for every opponent
              (App\Combat\FightPicture). Whoever's picture it is, their credit goes under it. --}}
         @if ($picture = \App\Combat\FightPicture::for($fight))
-            <div class="stack" style="--gap:var(--s-1)">
-                <span class="entity-image entity-image--portrait"><img src="{{ $picture['url'] }}" alt="{{ $fight->opponent_name }}" width="300" height="400" decoding="async"></span>
+            <div class="stack" style="--gap:var(--s-1);flex:1 1 100%">
+                <div class="cut" style="padding:1px;line-height:0">
+                    <img src="{{ $picture['url'] }}" alt="{{ $fight->opponent_name }}" decoding="async" style="display:block;width:100%;height:auto;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))">
+                </div>
                 @if ($picture['credit'])
-                    <span class="micro" style="color:var(--ink-3);max-width:300px">
+                    <span class="micro" style="color:var(--ink-3)">
                         @if ($picture['link'])
                             <a href="{{ $picture['link'] }}" target="_blank" rel="noopener noreferrer">{{ $picture['credit'] }}</a>
                         @else
