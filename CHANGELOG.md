@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.96.1] — 2026-11-11
+
+### Added
+- **Sentry** (`sentry/sentry-laravel`): unhandled exceptions and request traces are reported to the `cyberpunk` project in the `dedlok` org. Configured by `SENTRY_LARAVEL_DSN`, `SENTRY_ENVIRONMENT` and `SENTRY_TRACES_SAMPLE_RATE` in `.env`; with no DSN the SDK stays off. `send_default_pii` is off. `php artisan sentry:test` sends a test event.
+
+### Fixed
+- A probe's `passes` counter stops at 255 rather than overflowing its unsigned TINYINT column.
+
+
 ## [0.96.0] — 2026-11-10
 
 ### Added
@@ -4220,7 +4229,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.96.0...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.96.1...HEAD
+[0.96.1]: https://github.com/nahkampf/dedlok/compare/v0.96.0...v0.96.1
 [0.96.0]: https://github.com/nahkampf/dedlok/compare/v0.95.0...v0.96.0
 [0.95.0]: https://github.com/nahkampf/dedlok/compare/v0.94.3...v0.95.0
 [0.94.3]: https://github.com/nahkampf/dedlok/compare/v0.94.2...v0.94.3
