@@ -538,7 +538,8 @@ final class Probe
         CarbonImmutable $now,
         ?int $instrument = null,
     ): ProbeResult {
-        $scan->passes++;
+        // `passes` is an unsigned TINYINT and only a display counter: stop counting at 255 rather than overflow the column.
+        $scan->passes = min(255, (int) $scan->passes + 1);
         $scan->pass_started_at = $now;
         $seconds = $this->durationFor($character, $system);
         $scan->pass_ready_at = $now->addSeconds($this->isSwarm($instrument) ? (int) round($seconds * (float) Config::get('cyberspace.swarm.time_factor', 3)) : $seconds);
