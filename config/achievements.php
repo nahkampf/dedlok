@@ -242,6 +242,22 @@ return [
             'secret' => false,
         ],
 
+        // Fifteen points of attribute earned at the gym, and fifteen at the books.
+        24 => [
+            'name' => 'Roy Natty',
+            'description' => 'Increase a physical attribute by 15 points through working out.',
+            'metric' => 'workout_gains',
+            'threshold' => 15,
+            'secret' => false,
+        ],
+        25 => [
+            'name' => 'Mentat',
+            'description' => 'Increase a mental attribute by 15 points through studying.',
+            'metric' => 'study_gains',
+            'threshold' => 15,
+            'secret' => false,
+        ],
+
     ],
 
 ];
