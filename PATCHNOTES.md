@@ -1,3 +1,7 @@
+## 0.96.2 (2026-11-11)
+
+- Updated a few symfony components because of security advisories
+
 ## 0.96.1 (2026-11-11)
 
 - Now running Sentry on production to catch weird bugs

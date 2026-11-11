@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.96.2] — 2026-11-11
+
+### Security
+- The Symfony components (`http-foundation`, `http-kernel`, `routing`, `mime`, `serializer` and their neighbours) are updated to 8.1.10/8.1.11, clearing the ten advisories `composer audit` reported. `composer audit` is now clean.
+
+### Changed
+- The test suite no longer reports to Sentry: `SENTRY_LARAVEL_DSN` and `SENTRY_DSN` are empty in `phpunit.xml.dist`.
+
+
 ## [0.96.1] — 2026-11-11
 
 ### Added
@@ -4229,7 +4238,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.96.1...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.96.2...HEAD
+[0.96.2]: https://github.com/nahkampf/dedlok/compare/v0.96.1...v0.96.2
 [0.96.1]: https://github.com/nahkampf/dedlok/compare/v0.96.0...v0.96.1
 [0.96.0]: https://github.com/nahkampf/dedlok/compare/v0.95.0...v0.96.0
 [0.95.0]: https://github.com/nahkampf/dedlok/compare/v0.94.3...v0.95.0
