@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.96.3] — 2026-11-11
+
+### Changed
+- Sentry's `release` now defaults to `config/version.php`'s `app`, so events are tagged with the running version without anyone maintaining `SENTRY_RELEASE`. The env var still overrides it; remove it from the server `.env`.
+
+
 ## [0.96.2] — 2026-11-11
 
 ### Security
@@ -4238,7 +4244,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.96.2...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.96.3...HEAD
+[0.96.3]: https://github.com/nahkampf/dedlok/compare/v0.96.2...v0.96.3
 [0.96.2]: https://github.com/nahkampf/dedlok/compare/v0.96.1...v0.96.2
 [0.96.1]: https://github.com/nahkampf/dedlok/compare/v0.96.0...v0.96.1
 [0.96.0]: https://github.com/nahkampf/dedlok/compare/v0.95.0...v0.96.0
