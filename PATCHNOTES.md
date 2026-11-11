@@ -1,3 +1,7 @@
+## 0.96.3 (2026-11-11)
+
+- Tie Sentry releases to app versions
+
 ## 0.96.2 (2026-11-11)
 
 - Updated a few symfony components because of security advisories
