@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Characters\Bounties;
 use App\Checks\CheckRoller;
 use App\City\Encounters;
 use App\Combat\FightEnding;
@@ -103,6 +104,8 @@ class AppServiceProvider extends ServiceProvider
          */
         $this->app->bind(Wardens::class, static fn (): Wardens => Wardens::fromConfig());
         $this->app->bind(Lockdown::class, static fn (): Lockdown => Lockdown::fromConfig());
+        // Its constructor takes the odds as plain numbers, which the container cannot invent: the nightly `characters:bounties` failed on that.
+        $this->app->bind(Bounties::class, static fn (): Bounties => Bounties::fromConfig());
 
         // Not for a die this time — it has none — but because it needs a
         // Resolver and the container cannot reflect its way to `new Backdoors`.

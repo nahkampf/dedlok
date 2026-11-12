@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Characters\Fatigue;
 use App\City\ActivityKind;
 use App\Models\Character;
@@ -99,6 +101,32 @@ final class SafehouseSessionTest extends TestCase
         $this->assertSame(0.0, (float) $fresh->study_progress);
         $this->assertSame(61, $fresh->intellect + $fresh->memory + $fresh->focus);
         $this->assertSame('Sharpening the mind', Notification::query()->latest('id')->firstOrFail()->title);
+    }
+
+    /** Fifteen gains from the gym or the books unlock Roy Natty or Mentat; the two are counted apart. */
+    public function test_gains_count_towards_roy_natty_and_mentat(): void
+    {
+        $achievements = new Achievements;
+        $gain = function (Action $action): void {
+            $this->character->forceFill([$action->value.'_progress' => 99.9])->save();
+            $this->home->startSession($this->character, $action);
+            $this->home->settleSession($this->character, now()->addMinute());
+            CityActivity::query()->delete();
+            $this->character->forceFill(['current_fatigue' => 0])->save();
+        };
+
+        foreach (range(1, 14) as $ignored) {
+            $gain(Action::Workout);
+        }
+
+        $this->assertSame(14, $achievements->progressFor($this->character, Metric::WorkoutGains));
+        $this->assertSame(0, $achievements->progressFor($this->character, Metric::StudyGains));
+        $this->assertNotContains(24, $achievements->unlockedFor($this->character->user));
+
+        $gain(Action::Workout);
+
+        $this->assertContains(24, $achievements->unlockedFor($this->character->user));
+        $this->assertNotContains(25, $achievements->unlockedFor($this->character->user));
     }
 
     public function test_the_minute_clock_credits_a_session_nobody_is_looking_at(): void

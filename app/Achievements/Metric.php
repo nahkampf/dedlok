@@ -83,4 +83,10 @@ enum Metric: string
 
     /** Addictions kicked: one per drug family whose addiction fell to nothing after having reached the withdrawal line. */
     case AddictionsKicked = 'addictions_kicked';
+
+    /** Physical attribute points gained by working out: one per full meter, whichever of the three it raised. */
+    case WorkoutGains = 'workout_gains';
+
+    /** Mental attribute points gained by studying: one per full meter, whichever of the three it raised. */
+    case StudyGains = 'study_gains';
 }

@@ -451,6 +451,11 @@ class InventoryItem extends Model
     /** Is this the weapon its owner is holding, in either hand? Like the equipped deck, it still lists. */
     public function isWielded(): bool
     {
+        // Likewise a list that loaded `character`: the hands are two columns on the owner.
+        if ($this->relationLoaded('character') && $this->character !== null) {
+            return in_array($this->getKey(), [$this->character->equipped_ranged_id, $this->character->equipped_melee_id], false);
+        }
+
         return Character::query()
             ->where(fn ($q) => $q->where('equipped_ranged_id', $this->getKey())->orWhere('equipped_melee_id', $this->getKey()))
             ->exists();
@@ -496,7 +501,8 @@ class InventoryItem extends Model
     /** Is this armour being worn? Like an equipped deck, worn armour still lists with everything else. */
     public function isWorn(): bool
     {
-        return $this->wornSlots()->exists();
+        // A list that loaded `wornSlots` has the answer already; asking again is a query per row.
+        return $this->relationLoaded('wornSlots') ? $this->wornSlots->isNotEmpty() : $this->wornSlots()->exists();
     }
 
     /**

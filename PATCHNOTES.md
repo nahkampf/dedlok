@@ -1,3 +1,10 @@
+## 0.96.4 (2026-11-12)
+
+- Two new achievements
+- Live chat push had a bug that broke the push routine (only pull worked)
+- Nighly bounty calculations and maintenance failed
+- Several redudant or N+1-type query sinkholes in exchanges and shops fixed and optimized
+
 ## 0.96.3 (2026-11-11)
 
 - Tie Sentry releases to app versions

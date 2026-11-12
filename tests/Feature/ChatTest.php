@@ -198,6 +198,20 @@ final class ChatTest extends TestCase
         $this->chats()->say($a, $this->chats()->general(), '/leave');
     }
 
+    /** The line handed to the broadcast is the one just written: its view prints its time, which the database sets. */
+    public function test_the_line_that_is_broadcast_knows_when_it_was_said(): void
+    {
+        Event::fake([ChatLine::class]);
+        $a = Character::factory()->create();
+        $this->chats()->say($a, $this->chats()->general(), 'hello all');
+
+        Event::assertDispatched(ChatLine::class, function (ChatLine $event): bool {
+            $this->assertStringContainsString('UTC', $event->broadcastWith()['html']);
+
+            return true;
+        });
+    }
+
     public function test_a_line_is_pushed_to_the_right_channels_and_listening_is_private(): void
     {
         Event::fake([ChatLine::class]);

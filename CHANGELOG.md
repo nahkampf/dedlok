@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.96.4] — 2026-11-12
+
+### Added
+- **Achievements Roy Natty and Mentat**: fifteen attribute points gained by working out (physical) or by studying (mental). Counted per account in two new metrics, `workout_gains` and `study_gains`, one per gain that actually raised an attribute; gains made before this release are not counted.
+
+### Fixed
+- **The live chat push failed on every line.** `ChatMessage` keeps no timestamps and the database sets `created_at`, so the line handed to the broadcast had no time and its view threw. The message was saved (the failure is caught) but only the polling fallback delivered it. `Chats::write` now reads the line back.
+- **The nightly `characters:bounties` failed every run.** The container could not build `Bounties` (its constructor takes the odds as plain numbers); only the tests, which inject an instance, worked. It is now bound through `Bounties::fromConfig()`. Bounties start being rolled again.
+
+### Changed
+- N+1 queries found by Sentry: the exchange desk's and the city shops' shelves load each item's weapon, ammunition and drug rows with the item, and the safehouse stash reads worn armour and wielded weapons once for the whole list (`InventoryItem::isWorn()` and `isWielded()` use the loaded relation when there is one).
+- Sentry's `release` defaults to `config/version.php`; the test suite no longer reports to Sentry.
+
+
 ## [0.96.3] — 2026-11-11
 
 ### Changed
@@ -4244,7 +4258,8 @@ First tagged version. Everything before this was just pushed straight onto `main
   `accepts` to `items`, `parent_id` and `stack_key` to `inventory_items`, and
   drops the old composite unique key.
 
-[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.96.3...HEAD
+[Unreleased]: https://github.com/nahkampf/dedlok/compare/v0.96.4...HEAD
+[0.96.4]: https://github.com/nahkampf/dedlok/compare/v0.96.3...v0.96.4
 [0.96.3]: https://github.com/nahkampf/dedlok/compare/v0.96.2...v0.96.3
 [0.96.2]: https://github.com/nahkampf/dedlok/compare/v0.96.1...v0.96.2
 [0.96.1]: https://github.com/nahkampf/dedlok/compare/v0.96.0...v0.96.1

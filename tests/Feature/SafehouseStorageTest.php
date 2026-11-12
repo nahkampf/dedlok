@@ -58,6 +58,21 @@ final class SafehouseStorageTest extends TestCase
         return app(SafehouseStorage::class);
     }
 
+    /** The page asks whether each loose row is worn or wielded; it must not do so with a query apiece. */
+    public function test_the_safehouse_page_does_not_ask_the_database_about_each_stash_row(): void
+    {
+        foreach (range(1, 6) as $ignored) {
+            $this->row();
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->actingAs($this->character->user)->get('/safehouse')->assertOk();
+        $queries = array_column(DB::getQueryLog(), 'query');
+
+        $this->assertSame(0, count(array_filter($queries, fn (string $q): bool => str_contains($q, 'worn_armour') && str_contains($q, '"inventory_item_id" = ?'))), 'worn armour is read for the whole list at once, not once per row');
+    }
+
     public function test_storing_takes_it_out_of_the_stash_and_back_returns_it(): void
     {
         $row = $this->row();

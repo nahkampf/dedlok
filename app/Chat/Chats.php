@@ -409,6 +409,8 @@ final class Chats
         }
 
         $line = ChatMessage::query()->create(['chat_id' => $chat->getKey(), 'character_id' => $from->getKey(), 'message' => $text, 'is_event' => $event]);
+        // created_at is the database's default and the model keeps no timestamps, so the new row does not know its own time until it is read back.
+        $line->refresh();
         $this->markRead($from, $chat);
 
         // A socket that is down must never cost somebody their message: the page falls back to polling.

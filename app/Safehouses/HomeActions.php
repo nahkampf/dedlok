@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Safehouses;
 
+use App\Achievements\Achievements;
+use App\Achievements\Metric;
 use App\Characters\Fatigue;
 use App\Characters\Mood;
 use App\City\ActivityKind;
@@ -339,6 +341,7 @@ final class HomeActions
                 'attribute' => Text::get("character.names.{$gained}"),
             ]);
             $this->mood->add($locked, (float) config("safehouse.sessions.{$action->value}.gain_mood", 0));
+            (new Achievements)->record($locked, $action === Action::Workout ? Metric::WorkoutGains : Metric::StudyGains);
         }
     }
 
