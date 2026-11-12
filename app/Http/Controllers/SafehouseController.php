@@ -57,7 +57,7 @@ class SafehouseController extends Controller
             'rows' => $rows,
             'storedRows' => $storage->rows($character, $home)->whereNull('storage_expires_at')->with('item')->get(),
             'slotsUsed' => $storage->used($character, $home),
-            'stash' => InventoryItem::query()->loose()->where('character_id', $character->getKey())->with('item')->get()
+            'stash' => InventoryItem::query()->loose()->where('character_id', $character->getKey())->with(['item', 'wornSlots', 'character'])->get()
                 ->reject(fn (InventoryItem $r): bool => $r->isOnPerson() || $character->equipped_deck_id === $r->getKey()),
             'waiting' => $storage->waiting($character),
             'places' => Safehouse::query()->with('district')->get()->keyBy('id'),
