@@ -192,6 +192,13 @@ final class BountyTest extends TestCase
 
     // ---- the command -------------------------------------------------------
 
+    /** Every other test hands the command a ready-made instance; the scheduler gets whatever the container can build. */
+    public function test_the_container_can_build_the_bounties_the_scheduler_needs(): void
+    {
+        $this->assertInstanceOf(Bounties::class, $this->app->make(Bounties::class));
+        $this->artisan('characters:bounties --dry-run')->assertSuccessful();
+    }
+
     public function test_the_command_rolls_and_reports(): void
     {
         $this->character(100);
