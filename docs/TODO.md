@@ -14,12 +14,6 @@ systems (Lattice level 1 averages 23.5 rolls, about a whole trace at a tracer ra
 Levers if it proves too cheap, none built: a penalty that grows with each failed attempt, a failed attempt adding trace or waking ICE faster, or a
 ceiling that applies to the run rather than the roll. Retune the numbers after real runs against each OS.
 
-## Lockjaw's subnet gateway to DEADBEEF (noted 2026-10-27)
-
-The Lockjaw subnet gateway should hold the reserved address `DEADBEEF`. Needs a migration that moves the gateway to it and updates every
-reference to its current address (scans, bookmarks, contacts, missions, the darknet entry rules and `links_to_system_id`, seeded text and
-tests). Check first what else holds addresses by value and that `DEADBEEF` is free (the tests use it as a throwaway address).
-
 ## Regeneration rates on the character screen (noted 2026-10-27)
 
 List the character's HP and SI regeneration rate underneath the HP and SI progress bars on the character screen. Open: where the rates come

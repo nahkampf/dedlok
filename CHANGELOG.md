@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Changed
+- **The Darknet gateway moves to `DEADBEEF`.** A migration gives the main-grid end of the Darknet the reserved address and carries scans, contacts, bookmarks, mission targets, runs, run parties and the `darknet_access` messages already sent along with it.
+
 ## [0.96.4] — 2026-11-12
 
 ### Added

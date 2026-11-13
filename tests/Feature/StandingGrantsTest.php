@@ -31,7 +31,7 @@ final class StandingGrantsTest extends TestCase
         $this->lockjaw->forceFill(['name' => 'Renamed', 'category' => 'corporation', 'interactable' => true, 'business' => 'Arms', 'description' => 'Test.'])->save();
 
         DB::table('grids')->insert(['id' => 3, 'slug' => 'darknet', 'name' => 'The Darknet', 'prefix' => 'dark', 'size' => 8, 'entry_x' => 4, 'entry_y' => 4, 'created_at' => now(), 'updated_at' => now()]);
-        $main = System::factory()->at(2, 2)->create(['type' => SystemType::Gateway, 'address' => '6F59D096']);
+        $main = System::factory()->at(2, 2)->create(['type' => SystemType::Gateway, 'address' => 'DEADBEEF']);
         $inside = System::factory()->at(4, 4)->create(['type' => SystemType::Gateway, 'address' => 'dark:5E63', 'grid_id' => 3]);
         $main->update(['links_to_system_id' => $inside->id]);
         $inside->update(['links_to_system_id' => $main->id]);
@@ -53,6 +53,6 @@ final class StandingGrantsTest extends TestCase
         $messages = Notification::query()->where('user_id', $character->user_id)->get();
         $this->assertCount(1, $messages);
         $this->assertSame('Darknet acesss', $messages[0]->title);
-        $this->assertStringContainsString('Di spot deh deh: 6F59D096.', $messages[0]->body);
+        $this->assertStringContainsString('Di spot deh deh: DEADBEEF.', $messages[0]->body);
     }
 }
