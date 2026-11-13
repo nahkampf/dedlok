@@ -1,0 +1,249 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Cyberspace\Tree;
+
+use App\Cyberspace\SystemType;
+use App\Models\System;
+use Random\Engine\Mt19937;
+use Random\Randomizer;
+
+/**
+ * A system's run tree: nodes and the edges between them, from the entry to the core (docs/RUN_TREE.md).
+ *
+ * GENERATED, NEVER STORED. The seed is the system's ADDRESS, which is random, unique and replaced when the system
+ * relocates, so the tree stays put through raids and lockdowns and is new after a move, with no column to keep in step.
+ * The same address, grade and type always give the same tree.
+ *
+ * Edges are stored pointing away from the entry (the way they are drawn) but walked both ways.
+ */
+final readonly class RunTree
+{
+    /** Crossovers between neighbouring paths, by grade: the whole part always, the fraction as a chance of one more. */
+    private const CROSSOVERS = [1 => 0, 2 => 0, 3 => .5, 4 => .5, 5 => 1.4, 6 => 1.4, 7 => 2, 8 => 2, 9 => 2.5];
+
+    /**
+     * @param  list<array{kind: NodeKind, path: ?string}>  $nodes  Indexed by node id.
+     * @param  list<array{0: int, 1: int}>  $edges
+     */
+    public function __construct(
+        public array $nodes,
+        public array $edges,
+        public int $entry,
+        public int $core,
+    ) {}
+
+    /** Whether runs on this system walk a tree (the flag is on, and it is an entity's silo, compute or relay on the main grid). */
+    public static function appliesTo(System $system): bool
+    {
+        return (bool) config('features.intrusion_runs_v2')
+            && (int) $system->getAttribute('grid_id') === 1
+            && $system->owner_character_id === null
+            && in_array($system->type, [SystemType::Silo, SystemType::Compute, SystemType::Relay], true);
+    }
+
+    public static function of(System $system): self
+    {
+        return self::generate($system->address, (int) $system->grade, $system->type);
+    }
+
+    public static function generate(string $address, int $grade, SystemType $type): self
+    {
+        $r = new Randomizer(new Mt19937(crc32($address)));
+        $chance = static fn (float $p): bool => $r->nextFloat() < $p;
+        $g = max(1, min(9, $grade));
+
+        // Depth: 2 at grade 1 up to 9 at grade 9. The quiet and rich paths are two shorter than that in nodes between
+        // the entry and the core; the fast path is two shorter again.
+        $depth = 2 + (int) round(($g - 1) * 7 / 8);
+        $deep = max(1, $depth - 2);
+
+        $paths = match (true) {
+            $g <= 2 => ['main'],
+            $g <= 4 => ['fast', match ($type) {
+                SystemType::Silo => 'rich',
+                SystemType::Relay => 'quiet',
+                default => $chance(.5) ? 'quiet' : 'rich',
+            }],
+            $g >= 7 || $chance(.5) => ['fast', 'quiet', 'rich'],
+            default => ['fast', $chance(.5) ? 'quiet' : 'rich'],
+        };
+        $join = in_array('quiet', $paths, true) && in_array('rich', $paths, true);
+
+        $nodes = [];
+        $edges = [];
+        $add = static function (NodeKind $kind, ?string $path = null) use (&$nodes): int {
+            $nodes[] = ['kind' => $kind, 'path' => $path];
+
+            return count($nodes) - 1;
+        };
+
+        $entry = $add(NodeKind::Entry);
+        $start = $entry;
+
+        if (count($paths) > 1) {
+            $start = $add(NodeKind::Switch);
+            $edges[] = [$entry, $start];
+        }
+
+        $core = $add(NodeKind::Core);
+
+        // Quiet and rich meet at one conduit before the core (a security hub in phase 2), which counts as their last node.
+        $meet = $join ? $add(NodeKind::Conduit) : null;
+
+        if ($meet !== null) {
+            $edges[] = [$meet, $core];
+        }
+
+        // Each path's nodes as kinds first, so the rules can place before the filler fills.
+        $lanes = [];
+
+        foreach ($paths as $path) {
+            $length = match ($path) {
+                'main' => $depth - 2,
+                'fast' => max(1, $deep - 2),
+                default => $deep - ($meet !== null ? 1 : 0),
+            };
+            $seq = array_fill(0, max(0, $length), null);
+
+            if ($path === 'main' && $seq !== []) {
+                $seq[0] = $type === SystemType::Silo || $chance(.5) ? NodeKind::Vault : NodeKind::Conduit;
+            }
+
+            if ($path === 'fast') {
+                $seq[0] = NodeKind::Firewall;
+
+                if ($g >= 7 && $length >= 3) {
+                    $seq[$length - 1] = NodeKind::Firewall;
+                }
+            }
+
+            if ($path === 'rich' && $seq !== []) {
+                $seq[0] = NodeKind::Vault;
+
+                if ($length >= 4) {
+                    $seq[$length - 1] = NodeKind::Vault;
+                }
+            }
+
+            // One firewall on every other path from grade 3, wherever there is room.
+            $spots = array_keys(array_filter($seq, static fn (?NodeKind $k): bool => $k === null));
+
+            if (in_array($path, ['quiet', 'rich'], true) && $spots !== []) {
+                $seq[$spots[$r->getInt(0, count($spots) - 1)]] = NodeKind::Firewall;
+            }
+
+            $lanes[$path] = $seq;
+        }
+
+        // A silo keeps one more vault, on a free spot of any path (a grade 1-2 silo already has its one).
+        if ($type === SystemType::Silo && $g >= 3) {
+            $spots = [];
+
+            foreach ($lanes as $path => $seq) {
+                foreach ($seq as $i => $kind) {
+                    if ($kind === null) {
+                        $spots[] = [$path, $i];
+                    }
+                }
+            }
+
+            if ($spots !== []) {
+                [$path, $i] = $spots[$r->getInt(0, count($spots) - 1)];
+                $lanes[$path][$i] = NodeKind::Vault;
+            }
+        }
+
+        $own = [];
+
+        foreach ($lanes as $path => $seq) {
+            $ids = array_map(static fn (?NodeKind $kind): int => $add($kind ?? NodeKind::Conduit, $path), $seq);
+            $end = $meet !== null && in_array($path, ['quiet', 'rich'], true) ? $meet : $core;
+            $chain = [$start, ...$ids, $end];
+
+            for ($i = 0; $i < count($chain) - 1; $i++) {
+                $edges[] = [$chain[$i], $chain[$i + 1]];
+            }
+
+            $own[] = ['ids' => $ids, 'filler' => array_map(static fn (?NodeKind $kind): bool => $kind === null, $seq)];
+        }
+
+        // Crossovers: a filler conduit becomes a switch with a second edge into the neighbouring path's next node, so
+        // paths meet mid-tree. At most one per gap between columns, so two never draw over each other.
+        $target = self::CROSSOVERS[$g];
+        $crosses = (int) floor($target) + ($chance(fmod($target, 1.0)) ? 1 : 0);
+        $gaps = [];
+
+        for ($guard = 0; $crosses > 0 && $guard < 40 && count($own) > 1; $guard++) {
+            $a = $r->getInt(0, count($own) - 1);
+            $b = $a + ($chance(.5) ? 1 : -1);
+
+            if (! isset($own[$b])) {
+                continue;
+            }
+
+            $column = $r->getInt(0, max(0, count($own[$a]['ids']) - 1));
+            $src = $own[$a]['ids'][$column] ?? null;
+            $dst = $own[$b]['ids'][$column + 1] ?? null;
+
+            if ($src === null || $dst === null || isset($gaps[$column]) || ! $own[$a]['filler'][$column]
+                || $nodes[$src]['kind'] !== NodeKind::Conduit || $nodes[$dst]['kind'] === NodeKind::Switch) {
+                continue;
+            }
+
+            $nodes[$src]['kind'] = NodeKind::Switch;
+            $edges[] = [$src, $dst];
+            $gaps[$column] = true;
+            $crosses--;
+        }
+
+        return new self($nodes, $edges, $entry, $core);
+    }
+
+    /** @return list<int> The nodes one edge away, either direction. */
+    public function neighbours(int $node): array
+    {
+        $out = [];
+
+        foreach ($this->edges as [$a, $b]) {
+            if ($a === $node) {
+                $out[] = $b;
+            } elseif ($b === $node) {
+                $out[] = $a;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Fewest moves between two nodes, or null when nothing connects them. */
+    public function distance(int $from, int $to): ?int
+    {
+        $seen = [$from => 0];
+        $queue = [$from];
+
+        while ($queue !== []) {
+            $node = array_shift($queue);
+
+            if ($node === $to) {
+                return $seen[$node];
+            }
+
+            foreach ($this->neighbours($node) as $next) {
+                if (! isset($seen[$next])) {
+                    $seen[$next] = $seen[$node] + 1;
+                    $queue[] = $next;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** @return list<int> */
+    public function nodesOf(NodeKind $kind): array
+    {
+        return array_keys(array_filter($this->nodes, static fn (array $n): bool => $n['kind'] === $kind));
+    }
+}

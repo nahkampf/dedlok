@@ -20,4 +20,10 @@ return [
     | Turning it off does not delete keys or forget who used which: the table is simply not asked.
     */
     'alpha_testing' => (bool) env('FEATURE_ALPHA_TESTING', false),
+
+    /*
+    | INTRUSION RUNS V2. While it is on, a run on an entity's silo, compute or relay on the main grid walks a tree of
+    | nodes from an entry to the core (docs/RUN_TREE.md). Off, every run is today's single room.
+    */
+    'intrusion_runs_v2' => (bool) env('FEATURE_INTRUSION_RUNS_V2', false),
 ];

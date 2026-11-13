@@ -46,3 +46,19 @@ not asked. **It does not touch accounts that already exist, sign-in, password re
 **To remove the feature for good:** delete that table's rows of the list above, drop `beta_keys` in a migration, and take
 the `BetaKeys` branch out of `CreateNewUser`.
 
+
+#### `intrusion_runs_v2` (`FEATURE_INTRUSION_RUNS_V2`)
+
+**While it is ON, a run on an entity's silo, compute or relay on the main grid walks a tree of nodes** from an entry to
+the core (`docs/RUN_TREE.md`, the decisions; the *Deeper Into the Grid* proposal, R0). OFF, every run is today's single
+room. Being built in steps; nothing a player sees reads it yet.
+
+**Everything the flag touches:**
+
+| Where | What it does with the flag |
+| --- | --- |
+| `config/features.php`, `.env.sample` | defines it and its env var |
+| `App\Cyberspace\Tree\RunTree::appliesTo()` | the one read of the flag: whether a system's runs walk a tree |
+| `tests/Feature/Cyberspace/RunTreeAppliesTest.php` | both states of the flag |
+
+**To remove the feature for good:** delete `app/Cyberspace/Tree` and that table's rows.

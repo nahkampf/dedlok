@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- **Run trees, step 1 (behind `intrusion_runs_v2`, off).** `App\Cyberspace\Tree\RunTree` generates a system's tree of nodes from its address, grade and type: entry, switches, conduits, firewalls, data vaults and the core, along fast, quiet and rich paths that cross over. Nothing reads it yet. Decisions in `docs/RUN_TREE.md`.
+
 ### Changed
 - **The Darknet gateway moves to `DEADBEEF`.** A migration gives the main-grid end of the Darknet the reserved address and carries scans, contacts, bookmarks, mission targets, runs, run parties and the `darknet_access` messages already sent along with it.
 
