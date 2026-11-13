@@ -909,6 +909,26 @@ return [
     | age would pull against the ageing roll, which makes an old backdoor more
     | likely to vanish rather than better.
     */
+    /*
+    | RUN TREES (docs/RUN_TREE.md), behind features.intrusion_runs_v2.
+    |
+    | NOISE fills a bar as deep as the system's ids_detection; full is the alert. A move or action that fails its stealth
+    | roll against the IDS adds an amount rolled to one decimal in its tier's range, the same at every grade. A Hold drains.
+    | IDLE: minutes without a turn before an inactive tree runner is jacked out, with no damage.
+    */
+    'tree' => [
+        'noise' => [
+            'move' => [3.0, 6.0],
+            'act' => [6.0, 10.0],
+            'loud' => [20.0, 30.0],
+            'drain' => [2.0, 5.0],
+        ],
+        'idle_minutes' => [
+            'solo' => 10,
+            'alone' => 5,
+        ],
+    ],
+
     'trace' => [
         'advance' => [
             1 => 95,

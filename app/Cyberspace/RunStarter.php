@@ -7,6 +7,7 @@ namespace App\Cyberspace;
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\Cyberspace\Party\Parties;
+use App\Cyberspace\Tree\RunTree;
 use App\Decks\DeckTotals;
 use App\Missions\MissionAction;
 use App\Missions\MissionLedger;
@@ -173,7 +174,11 @@ final readonly class RunStarter
                     }
                 }
 
+                // A tree run (docs/RUN_TREE.md) starts on the entry, knowing it, with an empty noise bar. Decided here, once.
+                $tree = RunTree::appliesTo($system) ? RunTree::of($system) : null;
+
                 $run = Run::query()->create([
+                    ...($tree === null ? [] : ['node' => $tree->entry, 'known' => [$tree->entry], 'noise' => 0]),
                     'character_id' => $character->getKey(),
                     'run_party_id' => $partyId,
                     'address' => $system->address,
@@ -326,7 +331,7 @@ final readonly class RunStarter
             }
 
             // AGITATE: the ICE was woken (the run was noticed), the runner got out, and the machine shut for it.
-            if ($shut && $run->detected && in_array($ending, [RunEnding::Egress, RunEnding::Completed], true)) {
+            if ($shut && $run->noticed() && in_array($ending, [RunEnding::Egress, RunEnding::Completed], true)) {
                 $woken = System::query()->where('address', $run->address)->first();
 
                 if ($woken !== null && $woken->ice_id !== null) {

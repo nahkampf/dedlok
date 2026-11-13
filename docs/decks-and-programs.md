@@ -237,3 +237,14 @@ what a bare `items` row cannot.
 - **Two costs.** Waiting, it costs its row's compute and memory. Running passes it holds `programs.tracker.active_*` (2 and 2) instead, which `ProgramRunner::spentOn()` reads; **a release the deck cannot hold is refused** (`ProgramRunner::hasRoomFor()`) and nothing starts. The deck is checked at release only.
 - **Settling is lazy and swept** (`tracker:settle`, every minute): whole passes since `pass_started_at`, at most `max_catchup`. Stopping the program by any route deletes its search (`ProgramRunner::putBack()`).
 - The item arrives by migration `2026_10_24_100000_the_tracker`.
+
+### The Nmapper
+
+**An Nmapper is a Utility with `programs.nmap_reach`** (NULL is not one): the edges of a run tree one Nmap reveals around
+the runner (`docs/RUN_TREE.md`). `Simulator::nmapReach()` takes the best running copy; with none, Nmap is refused before
+it costs a turn (`RunRefusal::NoNmapper`) and the button is disabled. Set in the item editor (Utility only, 1–3).
+
+- **A quieter Nmapper is data**: a negative `percentage_of_base` on the `nmap_noise` stat, whose base is the act-tier amount
+  rolled for that Nmap's failed stealth roll.
+- **`nmap`** (1 / 1 / 1, reach 1, 300 creds) arrives by migration `2026_11_15_110000_nmap_the_first_nmapper`: in every existing Deck Jockey's stash (the loadout
+  is added in the archetype editor at release), at Chrome Palace, and on four entities' shelves for 2 loyalty.

@@ -54,6 +54,15 @@ enum RunRefusal: string
     /** The owner has called a party and nobody who accepted is able to go in yet: a party of one is not what was called. */
     case NobodyReady = 'nobody_ready';
 
+    /** A tree run: that action belongs to another node (the core, or the entry for a Flood). Your position is on screen. */
+    case NotHere = 'not_here';
+
+    /** A tree run: a Move to a node that is not one edge from where you stand. */
+    case NotANeighbour = 'not_a_neighbour';
+
+    /** A tree run: Nmap with no Nmapper running. */
+    case NoNmapper = 'no_nmapper';
+
     public function message(): string
     {
         return Text::get("cyberspace.run.refused.{$this->value}");

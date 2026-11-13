@@ -3058,6 +3058,26 @@ button.board__node[data-inspect]:focus-visible .board__box { border-color: var(-
    only thing you can do to one and a pointer is not the only way to do it. */
 .board[data-board-edit] .board__node { cursor: grab; touch-action: none; }
 .board[data-board-edit] .board__node:focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; }
+
+/* A RUN TREE (x-run-tree, docs/RUN_TREE.md): drawn left to right and as wide as
+   the columns the runner can see, so a deep tree scrolls sideways inside
+   .board-wrap rather than crowding its names together. --tree-cols and
+   --tree-lanes come from App\Cyberspace\Tree\TreeView. */
+.board--tree {
+  max-width: none;
+  aspect-ratio: auto;
+  width: max(100%, calc(var(--tree-cols, 2) * 136px));
+  height: calc(var(--tree-lanes, 1) * var(--s-8) + var(--s-8));
+}
+/* Known only to be there: the kind is a question mark until it is stood on or
+   Nmapped. */
+.board__node--fog .board__box { border-style: dashed; }
+.board__node--fog .board__name { color: var(--ink-3); }
+/* One edge away: a button that moves there. A brighter hairline at rest, since
+   a phone has no hover to find it with. */
+button.board__node[name="node"] .board__box { border-color: var(--ink-3); }
+button.board__node[name="node"]:hover .board__box,
+button.board__node[name="node"]:focus-visible .board__box { border-color: var(--ink-1); background: var(--bg-3); }
 .board__node[data-dragging] { cursor: grabbing; z-index: 2; }
 
 /* ── UTILITIES ─────────────────────────────────────────────────────────── */

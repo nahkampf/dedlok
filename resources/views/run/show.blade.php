@@ -65,6 +65,42 @@
     </div>
 </div>
 
+{{-- A TREE RUN (docs/RUN_TREE.md): where you stand in the system, what you have found of it, and the noise bar. The bar
+     is a meter against the IDS when the runner's scan read it, and only a count of points when it did not: how loud
+     they have been, not how close the alarm is. --}}
+@if ($tree)
+    <div class="panel panel--snug" style="margin-top:var(--s-4)">
+        <div class="panel__hd">
+            <h2>{{ Text::get('cyberspace.tree.heading') }}</h2>
+            <div class="spacer"></div>
+            @if ($run->alerted)
+                <span class="tag tag--crit">{{ Text::get('cyberspace.tree.alerted') }}</span>
+            @endif
+        </div>
+
+        <div style="padding:var(--s-3) 0 var(--s-2)">
+            <span class="micro" style="display:block;color:var(--ink-2);margin-bottom:var(--s-2)">
+                {{ Text::get('cyberspace.tree.noise') }}:
+                @if ($tree->ids === null)
+                    <span class="num" style="color:var(--ink-0)">{{ $tree->noise }}</span>
+                @elseif ($tree->ids <= 0)
+                    {{ Text::get('cyberspace.tree.no_ids') }}
+                @else
+                    <span class="num" style="color:var(--ink-0)">{{ $tree->noise }} / {{ $tree->ids }}</span>
+                @endif
+            </span>
+            @if ($tree->ids !== null && $tree->ids > 0)
+                <div class="meter meter--lg" style="--v:{{ round(min(1, $tree->noise / $tree->ids), 3) }};--fill:var(--warn)">
+                    <div class="meter__fill"></div>
+                </div>
+            @endif
+        </div>
+
+        <x-run-tree :view="$tree" :label="Text::get('cyberspace.tree.heading')"
+                    :waiting="$waiting ? ($run->pending_action === 'move' ? (string) $run->pending_node : '-') : ''" />
+    </div>
+@endif
+
 {{-- THE TRACE, AND THE ONE QUESTION IT ANSWERS: is it time to leave.
 
      Drawn as the chain it actually is — the machine at one end, you at the
@@ -294,6 +330,14 @@
     <form method="POST" action="{{ route('run.act') }}" style="padding-bottom:var(--s-3)" data-turn-form data-waiting="{{ $waiting ? $run->pending_action : '' }}">
         @csrf
         <div class="row row--wrap" style="--gap:var(--s-2)">
+            {{-- A TREE RUN: the core's actions are offered on the core, a Flood on the entry, and Nmap anywhere. --}}
+            @php($atCore = ! $tree || $tree->atCore)
+            @if ($tree)
+                <button type="submit" name="action" value="nmap" class="btn cut" @unless ($tree->canNmap) disabled @endunless>
+                    {{ Text::get('cyberspace.run.action.nmap') }}
+                </button>
+            @endif
+            @if ($atCore)
             <button type="submit" name="action" value="attack" class="btn cut" @unless ($run->inAFight()) disabled @endunless>
                 {{ Text::get('cyberspace.run.action.attack') }}
             </button>
@@ -326,7 +370,8 @@
             {{-- THE ONLY BUTTON THAT ENDS THE RUN BY WORKING, so it is the only one that wears the accent:
                  ember means destructive, and there is nothing in the game this word fits better. It cannot
                  be pressed twice — the system is gone and the run is over the moment it lands. --}}
-            @if ($run->purpose === RunPurpose::Denial)
+            @endif
+            @if ($run->purpose === RunPurpose::Denial && (! $tree || $tree->atEntry))
                 <div style="min-width:min(160px,100%)">
                     <span class="micro">{{ Text::get('cyberspace.run.pressure') }}</span>
                     <div class="meter" style="--v:{{ min(1, max(0, $run->pressure / \App\Cyberspace\Simulator::denialTarget($run))) }}"
@@ -341,12 +386,12 @@
                     {{ Text::get('cyberspace.run.action.infiltrate') }}
                 </button>
             @endif
-            @if ($run->purpose === RunPurpose::Burn)
+            @if ($run->purpose === RunPurpose::Burn && $atCore)
                 <button type="submit" name="action" value="burn" class="btn btn--danger cut" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get('cyberspace.run.action.burn') }}
                 </button>
             @endif
-            @if ($fortresses->isNotEmpty())
+            @if ($fortresses->isNotEmpty() && $atCore)
                 @if ($fortresses->count() > 1)
                     <select class="input" name="fortress" aria-label="{{ Text::get('cyberspace.run.action.leech') }}">
                         @foreach ($fortresses as $fortress)

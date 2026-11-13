@@ -100,9 +100,9 @@ return [
         'register' => 'New identity',
         // The beta key, while `features.alpha_testing` is on.
         'beta' => [
-            'code' => 'Beta key',
+            'code' => 'Alpha key',
             'hint' => 'Registration is by invitation while the game is in testing. Enter the key you were given.',
-            'invalid' => 'That beta key is not valid.',
+            'invalid' => 'That alpha key is not valid.',
             'credit_name' => 'What do we call you (for credits, on the thank you page)',
         ],
         'handle' => 'Handle',
@@ -212,6 +212,8 @@ return [
             'one_locator' => 'Only one program that locates or walks may run at a time',
             'one_jumper' => 'Only one program that jumps may run at a time',
             'one_assessor' => 'Only one assessor may run at a time',
+            // A suggestion, for the user to edit. :reach is how many edges out it reveals.
+            'nmaps' => 'Nmap reveals nodes up to :reach links away.',
             'assesses' => 'Estimates your odds, rounded to :step%',
             'locates' => 'Locates: finds the nearest system you have met',
             'walks' => 'Walks: takes you to what it found',
@@ -1268,6 +1270,22 @@ return [
     |
     */
     'cyberspace' => [
+        // Run trees (docs/RUN_TREE.md). Suggestions, for the user to edit.
+        'tree' => [
+            'heading' => 'System map',
+            'alerted' => 'Alert',
+            'noise' => 'Noise',
+            'no_ids' => 'No IDS',
+            'allies' => 'crew',
+            'node' => [
+                'entry' => 'Entrypoint',
+                'switch' => 'Switch',
+                'conduit' => 'Conduit',
+                'firewall' => 'Firewall',
+                'vault' => 'Data vault',
+                'core' => 'Core',
+            ],
+        ],
         'run_outcome' => [
             'success' => 'Success',
             'failure' => 'Failure',
@@ -1806,6 +1824,9 @@ return [
                 'flood' => 'Flood',
                 'hold' => 'Hold',
                 'egress' => 'Egress',
+                // Run trees (docs/RUN_TREE.md). Suggestions, for the user to edit.
+                'move' => 'Move',
+                'nmap' => 'Network Map',
             ],
 
             /*
@@ -1827,6 +1848,17 @@ return [
                 'attack_critical' => 'finds a critical intrusion vector and drives a devastating payload through, causing :damage system integrity loss.',
                 'attack_fails' => 'You find no viable attack vectors.',
                 'hold' => 'You wait, and the system waits with you.',
+                // Run trees (docs/RUN_TREE.md). Suggestions, for the user to edit.
+                'tree' => [
+                    'move' => 'You slip down the link to the next node.',
+                    // :count is how many nodes it revealed that the runner (or their party) did not know.
+                    'nmap' => 'Your mapper sweeps the links around you. New nodes mapped: :count.',
+                    // :amount is the noise a failed stealth roll added, one decimal.
+                    'noise' => 'Something in the IDS stirs. Noise +:amount.',
+                    'alert' => 'The IDS reaches a threshold. The system is on alert.',
+                    'ice_wakes' => 'The ICE on the core turns its attention to you.',
+                    'traced' => 'A tracer catches your signal and starts walking it back.',
+                ],
                 'egress' => 'You egress.',
                 // HELD, and one line for both reasons — the machine out-rolled
                 // them, or something in it has hold of them. Which it was is
@@ -2040,6 +2072,10 @@ return [
                 'wrong_purpose' => 'A gateway can only be infiltrated, and nothing else can.',
                 'deck_not_ready' => 'Your deck does not meet its own requirements. Fix it before you go in.',
                 'already_running' => 'You are already in a run.',
+                // Run trees. Suggestions, for the user to edit.
+                'not_here' => 'You cannot do that from this node.',
+                'not_a_neighbour' => 'That node is not linked to where you stand.',
+                'no_nmapper' => 'You need an Nmapper running to map the links around you.',
                 'hunted' => 'You are currently locked in a confrontation with another entity.',
                 'fighting' => 'You are in a fight.',
                 'program_refused' => 'Something on your loadout would not start.',
@@ -3276,6 +3312,8 @@ return [
             'standing_gain' => 'standing gained',
             'trace_hop_chance' => 'chance a trace hops',
             'ensnare_reduction' => 'ensnare time',
+            // A suggestion, for the user to edit.
+            'nmap_noise' => 'Nmap noise',
             'fortress_slots' => 'fortress slots',
             // The combat numbers (docs/COMBAT.md), named so an implant or a drug that moves one can say what
             // it changes on a card, and so the modifier picker offers them. Per weapon class, plus the
@@ -5427,6 +5465,9 @@ return [
                 'utility_hint' => 'A Utility (kind Utility) does what is ticked while it runs: Locates finds the nearest system you have met, Walks takes you to what it found (a Pathfinder is both), Jumps puts a Jump button beside addresses. Ignored by every other kind.',
                 'assess_step' => 'Assessor step (%)',
                 'assess_step_hint' => 'Utilities only: makes this an Assessor, which shows rough odds on the run screens, rounded to this many percent (5 is the finest). Blank is not an Assessor.',
+                // Suggestions, for the user to edit.
+                'nmap_reach' => 'Nmap reach',
+                'nmap_reach_hint' => 'How many links out one Nmap reveals in a run tree. Blank is not an Nmapper.',
                 'family' => 'Family',
                 'family_none' => 'None',
                 'family_hint' => 'Utilities only. For targeting specific subtypes of utilities with effects/modifiers',

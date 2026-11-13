@@ -513,6 +513,17 @@ return [
         | `percentage_of_base` with a negative amount. Floored at 0 — Ensnare
         | can be blunted to nothing, never turned into a bonus.
         */
+        /*
+        | THE NOISE AN NMAP MAKES when its stealth roll fails (docs/RUN_TREE.md). The base is the act-tier amount rolled for
+        | that Nmap; a quieter Nmapper carries a negative percentage_of_base on it. Floors at nothing.
+        */
+        'nmap_noise' => [
+            'tags' => ['cyberspace'],
+            'min' => 0,
+            'max' => null,
+            'rounding' => 'none',
+        ],
+
         'ensnare_reduction' => [
             'tags' => ['cyberspace', 'ensnare'],
             'min' => 0,

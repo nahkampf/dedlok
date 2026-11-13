@@ -129,7 +129,8 @@ proposal disagree, this file wins. Decided with the user, 2026-11-13.
   **less noise added when the Nmap's stealth roll fails**: a modifier on a new Nmap-noise stat in `programs.modifiers`
   (the default nmap adds the full act-tier 6–10). Deck cost as for any program.
 - **The default one is called `nmap`.** A background program, 1 / 1 / 1 compute, memory and storage.
-- **Given to Deck Jockeys** on creation, and by migration into the stash of every existing Deck Jockey.
+- **Given to Deck Jockeys**: by migration into the stash of every existing Deck Jockey; for new ones, the user adds it to
+  the Deck Jockey loadout in the archetype editor when the feature ships (a loadout is authored content, not a migration's).
 - **Sold at Chrome Palace for 300 creds**, and on the shelves of Lockjaw, Anansi Data Weaving, Ninth Circle Security and
   Joint Signals Command for 2 loyalty at standing 0.
 
@@ -167,3 +168,15 @@ Decided 2026-11-13, replacing the per-action detection chances.
 - **One bar for the whole party.** Every runner's failed rolls add to it, and each runner's Hold drains it.
 - **The alert is the whole party's**: the ICE wakes, and every runner's trace starts if it hadn't.
 - **Traces stay per runner**: a failed tracer roll at arrival starts only that runner's trace.
+
+## Step 2 rules
+
+- **Denial floods from the entry**: no walking. Each Flood is a loud noise event (20–30 on a failed stealth roll).
+- **A failed egress roll at the entry makes move-tier noise** (3–6).
+- **Core actions (Extract, Install, Burn, Leech, Attack) away from the core are refused**, with no turn spent.
+- **The ICE's stealth roll is made on core-touching actions only**: Extract (starting or continuing a pull), Install,
+  Burn, Leech. Nmap and Hold on the core don't wake it.
+- **A tree run is marked on the run row** (`runs.node`, set when it starts), so turning the flag does not change a run
+  already under way.
+- **`detected` means the runner's trace is running** (per runner); **`alerted`** is the alert: the ICE wakes, standing
+  is lost, the system locks down after the run. Shared by the party; it also sets `detected` on everyone.

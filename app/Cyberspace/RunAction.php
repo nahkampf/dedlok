@@ -88,6 +88,12 @@ enum RunAction: string
     /** Leave. Always possible, never certain. */
     case Egress = 'egress';
 
+    /** A tree run: step along an edge to a neighbouring node (docs/RUN_TREE.md). Carries the node it goes to. */
+    case Move = 'move';
+
+    /** A tree run: reveal the nodes around you, as far as the running Nmapper reaches. */
+    case Nmap = 'nmap';
+
     public function label(): string
     {
         return Text::get("cyberspace.run.action.{$this->value}");

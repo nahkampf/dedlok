@@ -18,6 +18,7 @@ use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
+use App\Cyberspace\Tree\TreeView;
 use App\Cyberspace\TurnResult;
 use App\Decks\DeckTotals;
 use App\Decks\ThermalExposure;
@@ -437,6 +438,8 @@ class RunController extends Controller
                 ? System::query()->where('owner_character_id', $character->id)->orderBy('id')->get()
                 : collect(),
             'system' => $system,
+            // A tree run's map and noise bar (docs/RUN_TREE.md); null on any other run.
+            'tree' => TreeView::for($run, $character, $simulator, SystemScan::query()->where('character_id', $character->id)->where('address', $run->address)->live()->first()),
             // Worked out here rather than in the template: it is the number the
             // egress decision is made on, and a player should not have to do
             // the division while something is hitting them.
@@ -519,11 +522,21 @@ class RunController extends Controller
             'action' => ['required', Rule::in(RunAction::values())],
             // Which of your fortresses a Leecher feeds; blank is the first you own.
             'fortress' => ['nullable', 'integer'],
+            // Where a Move goes, on a tree run.
+            'node' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        // A party round: the choice is stored, and the round resolves when all have chosen or the clock runs out.
+        $action = RunAction::from($data['action']);
+        $node = isset($data['node']) ? (int) $data['node'] : null;
+
+        // A party round: the choice is stored, and the round resolves when all have chosen or the clock runs out. What a
+        // tree run cannot do is refused now, while the runner can still choose again.
         if (PartyTurns::shared($run)) {
-            app(PartyTurns::class)->submit($run, RunAction::from($data['action']));
+            if (($refusal = $simulator->refusal($character, $run, $action, $node)) !== null) {
+                return back()->with('error', $refusal->message());
+            }
+
+            app(PartyTurns::class)->submit($run, $action, $node);
 
             $run->refresh();
 
@@ -550,7 +563,7 @@ class RunController extends Controller
             $character,
             $run,
             $run->system(),
-            $simulator->take($character, $run, RunAction::from($data['action']), fortressId: isset($data['fortress']) ? (int) $data['fortress'] : null),
+            $simulator->take($character, $run, $action, fortressId: isset($data['fortress']) ? (int) $data['fortress'] : null, node: $node),
             $simulator,
         );
     }

@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log'])]
+#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'pending_node', 'noise', 'alerted', 'acted_at'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -58,6 +58,12 @@ class Run extends Model
             'turn_at' => 'immutable_datetime',
             'ended_at' => 'immutable_datetime',
             'log' => 'array',
+            'node' => 'integer',
+            'known' => 'array',
+            'pending_node' => 'integer',
+            'noise' => 'float',
+            'alerted' => 'boolean',
+            'acted_at' => 'immutable_datetime',
         ];
     }
 
@@ -80,6 +86,36 @@ class Run extends Model
     public function ice(): BelongsTo
     {
         return $this->belongsTo(Ice::class);
+    }
+
+    /** Does this run walk the system's tree (docs/RUN_TREE.md)? Decided once, when it started. */
+    public function isTreeRun(): bool
+    {
+        return $this->node !== null;
+    }
+
+    /**
+     * Was this run noticed in the sense that costs the owner's goodwill and shuts the system afterwards? On a tree run that
+     * is the ALERT; a running trace alone is not. On any other run it is being detected, as it always was.
+     */
+    public function noticed(): bool
+    {
+        return $this->isTreeRun() ? (bool) $this->alerted : (bool) $this->detected;
+    }
+
+    /**
+     * The tree nodes whose kind this runner knows: their own reveals, and on a party run everybody's (a party shares what
+     * it finds, and a round's reveals land together because the round resolves together).
+     *
+     * @return list<int>
+     */
+    public function knownNodes(): array
+    {
+        $lists = $this->run_party_id === null
+            ? [$this->known ?? []]
+            : self::query()->where('run_party_id', $this->run_party_id)->get(['known'])->map(fn (self $r): array => $r->known ?? [])->all();
+
+        return array_values(array_unique(array_map('intval', array_merge(...$lists))));
     }
 
     /** Is something still swinging at them? */

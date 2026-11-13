@@ -638,6 +638,15 @@
                         @error('assess_step') <span class="field__error">{{ $message }}</span> @enderror
                     </div>
 
+                    {{-- An Nmapper's reach, in edges of a run tree (docs/RUN_TREE.md). Blank is not an Nmapper. --}}
+                    <div class="field" style="margin-top:var(--s-3)" @error('nmap_reach') data-invalid @enderror>
+                        <label class="field__label" for="nmap_reach">{{ Text::get('admin.items.fields.nmap_reach') }}</label>
+                        <input class="input num" id="nmap_reach" name="nmap_reach" type="number" min="1" max="3" step="1"
+                               value="{{ old('nmap_reach', $item?->program?->nmap_reach) }}">
+                        <span class="field__hint">{{ Text::get('admin.items.fields.nmap_reach_hint') }}</span>
+                        @error('nmap_reach') <span class="field__error">{{ $message }}</span> @enderror
+                    </div>
+
                     {{-- A Utility's family: the group a skill can sharpen together. Blank is none. --}}
                     <div class="field" style="margin-top:var(--s-3)" @error('family') data-invalid @enderror>
                         <label class="field__label" for="family">{{ Text::get('admin.items.fields.family') }}</label>

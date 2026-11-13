@@ -51,7 +51,7 @@ the `BetaKeys` branch out of `CreateNewUser`.
 
 **While it is ON, a run on an entity's silo, compute or relay on the main grid walks a tree of nodes** from an entry to
 the core (`docs/RUN_TREE.md`, the decisions; the *Deeper Into the Grid* proposal, R0). OFF, every run is today's single
-room. Being built in steps; nothing a player sees reads it yet.
+room. Being built in steps on `feature/run-tree`; see the decisions file for what each step covers.
 
 **Everything the flag touches:**
 
@@ -59,6 +59,10 @@ room. Being built in steps; nothing a player sees reads it yet.
 | --- | --- |
 | `config/features.php`, `.env.sample` | defines it and its env var |
 | `App\Cyberspace\Tree\RunTree::appliesTo()` | the one read of the flag: whether a system's runs walk a tree |
-| `tests/Feature/Cyberspace/RunTreeAppliesTest.php` | both states of the flag |
+| `App\Cyberspace\RunStarter` | a run on such a system starts on the entry (`runs.node`), and from then on the RUN says it is a tree run (`Run::isTreeRun()`), not the flag, so turning it does not change a run under way |
+| `App\Cyberspace\Simulator`, `Party\PartyTurns`, `Lockdown`, `RunController`, `run/show` | branch on `Run::isTreeRun()`: Move and Nmap, the noise bar and the alert (`runs.noise`, `runs.alerted`), `Run::noticed()` for lockdown |
+| `App\Cyberspace\Tree\TreeView`, `x-run-tree`, `.board--tree` | the tree and the noise bar on the run screen |
+| `2026_11_15_100000_runs_walk_a_tree`, `2026_11_15_110000_nmap_the_first_nmapper` | the run columns, and `programs.nmap_reach` with the `nmap` item, its shelves and the Deck Jockey grant. **Migrations run whatever the flag says**: the branch is merged only when the feature is ready |
+| `tests/Feature/Cyberspace/RunTreeAppliesTest.php`, `TreeRunTest.php` | both states of the flag, and the tree run itself |
 
 **To remove the feature for good:** delete `app/Cyberspace/Tree` and that table's rows.

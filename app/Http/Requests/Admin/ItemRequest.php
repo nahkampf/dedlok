@@ -187,6 +187,8 @@ class ItemRequest extends FormRequest
             'traverse_seconds' => $this->numberOrNull('traverse_seconds'),
             // An Assessor's rounding step: blank is not an Assessor.
             'assess_step' => $this->numberOrNull('assess_step'),
+            // An Nmapper's reach in edges (docs/RUN_TREE.md): blank is not an Nmapper.
+            'nmap_reach' => $this->numberOrNull('nmap_reach'),
             // A group a skill can sharpen (a Compressor): blank is none.
             'family' => $this->filled('family') ? $this->input('family') : null,
             // A Decryptor's cycle, an Assembler's reduction and a Booster's boost: stored together as `programs.produces`.
@@ -486,6 +488,9 @@ class ItemRequest extends FormRequest
             // Whole steps of five up to fifty; only a Utility assesses.
             'assess_step' => $this->programKind() === ProgramKind::Utility
                 ? ['nullable', 'integer', 'min:5', 'max:50', 'multiple_of:5']
+                : ['prohibited'],
+            'nmap_reach' => $this->programKind() === ProgramKind::Utility
+                ? ['nullable', 'integer', 'min:1', 'max:3']
                 : ['prohibited'],
             'family' => $this->programKind() === ProgramKind::Utility
                 ? ['nullable', Rule::in(Program::families())]
@@ -986,7 +991,7 @@ class ItemRequest extends FormRequest
         // is a program — the row is what says so — so none of these stay.
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
-            $data['storage_size'], $data['lifetime_seconds'], $data['traverse_seconds'], $data['assess_step'], $data['family'], $data['background_process'], $data['multithreaded'],
+            $data['storage_size'], $data['lifetime_seconds'], $data['traverse_seconds'], $data['assess_step'], $data['nmap_reach'], $data['family'], $data['background_process'], $data['multithreaded'],
             $data['locates'], $data['walks'], $data['jumps'], $data['swarms'], $data['tracks'],
             $data['design_product'], $data['design_seconds'], $data['design_single_use'], $data['design_skill_id'], $data['design_skill_level'], $data['design_lines'],
             $data['program_modifiers'], $data['program_decrypts'],
@@ -1288,6 +1293,7 @@ class ItemRequest extends FormRequest
             'lifetime_seconds' => isset($data['lifetime_seconds']) ? (int) $data['lifetime_seconds'] : null,
             'traverse_seconds' => isset($data['traverse_seconds']) ? (int) $data['traverse_seconds'] : null,
             'assess_step' => isset($data['assess_step']) ? (int) $data['assess_step'] : null,
+            'nmap_reach' => isset($data['nmap_reach']) ? (int) $data['nmap_reach'] : null,
             'family' => $data['family'] ?? null,
             'produces' => ($produces = array_filter([
                 'cycle_minutes' => isset($data['produce_cycle_minutes']) ? (float) $data['produce_cycle_minutes'] : null,

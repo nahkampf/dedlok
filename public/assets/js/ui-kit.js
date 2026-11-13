@@ -1780,7 +1780,8 @@
      form[data-turn-form] holds a run's action buttons. While the choice is waiting on the other runners
      (`data-waiting` names the action that was pressed, rendered by the server) every button is disabled and the
      pressed one carries a spinner. Pressing one shows the same at once, before the page answers: the others
-     are disabled a tick later, since a disabled submitter would not be sent. */
+     are disabled a tick later, since a disabled submitter would not be sent. `data-turn-field` names the field the
+     buttons carry when it is not `action` (a run tree's nodes are `node`). */
   function turnForms() {
     const spin = (btn) => {
       if (btn.querySelector(".spinner")) return;
@@ -1792,14 +1793,15 @@
     document.querySelectorAll("form[data-turn-form]").forEach((form) => {
       if (form.dataset.bound) return;
       form.dataset.bound = "1";
-      const buttons = () => form.querySelectorAll("button[name=action]");
+      const field = form.dataset.turnField || "action";
+      const buttons = () => form.querySelectorAll(`button[name=${field}]`);
       const pending = form.dataset.waiting;
       if (pending) {
         buttons().forEach((b) => { b.disabled = true; if (b.value === pending) spin(b); });
       }
       form.addEventListener("submit", (e) => {
         const pressed = e.submitter;
-        if (!pressed || pressed.name !== "action") return;
+        if (!pressed || pressed.name !== field) return;
         spin(pressed);
         setTimeout(() => buttons().forEach((b) => { if (b !== pressed) b.disabled = true; }), 0);
       });

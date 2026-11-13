@@ -9,6 +9,7 @@ use App\Cyberspace\RunEnding;
 use App\Cyberspace\RunPurpose;
 use App\Cyberspace\RunStarter;
 use App\Cyberspace\Simulator;
+use App\Cyberspace\Tree\RunTree;
 use App\Missions\MissionAction;
 use App\Missions\MissionLedger;
 use App\Models\Character;
@@ -76,9 +77,9 @@ final class PartyTurns
     }
 
     /** Record a runner's choice, then resolve the round if it is complete or overdue. */
-    public function submit(Run $run, RunAction $action): void
+    public function submit(Run $run, RunAction $action, ?int $node = null): void
     {
-        $run->forceFill(['pending_action' => $action->value])->save();
+        $run->forceFill(['pending_action' => $action->value, 'pending_node' => $node, 'acted_at' => now()])->save();
 
         $this->settle((int) $run->run_party_id);
     }
@@ -152,9 +153,10 @@ final class PartyTurns
                 ? RunAction::from($run->pending_action)
                 : $this->defaultFor($character, $run);
 
-            $run->forceFill(['pending_action' => null])->save();
+            $node = $run->pending_node;
+            $run->forceFill(['pending_action' => null, 'pending_node' => null])->save();
 
-            $result = $this->simulator->take($character, $run, $action, iceStrikes: false);
+            $result = $this->simulator->take($character, $run, $action, iceStrikes: false, node: $node);
 
             $this->afterTurn($character, $run, $result->ended() ? $result->ending : null);
             $this->syncShared(self::liveRuns($party->getKey()), $run);
@@ -304,6 +306,24 @@ final class PartyTurns
     /** What an absent runner does: their own purpose, carried on, and out once it is done. */
     private function defaultFor(Character $character, Run $run): RunAction
     {
+        // A tree run: today's rule where it fits, which is on the core (a Flood on the entry); anywhere else, a Hold.
+        if ($run->isTreeRun()) {
+            $system = $run->system();
+            $tree = $system === null ? null : RunTree::of($system);
+
+            if ($tree === null) {
+                return RunAction::Hold;
+            }
+
+            if ($run->purpose === RunPurpose::Denial) {
+                return (int) $run->node === $tree->entry ? RunAction::Flood : RunAction::Hold;
+            }
+
+            if ((int) $run->node !== $tree->core) {
+                return RunAction::Hold;
+            }
+        }
+
         if ($run->purpose === RunPurpose::Denial) {
             return RunAction::Flood;
         }
@@ -320,8 +340,9 @@ final class PartyTurns
             return RunAction::Extract;
         }
 
+        // Never an automatic egress on a tree run: that needs the entry.
         if ($run->extracted || $run->backdoored) {
-            return RunAction::Egress;
+            return $run->isTreeRun() ? RunAction::Hold : RunAction::Egress;
         }
 
         return match ($run->purpose) {
@@ -346,6 +367,8 @@ final class PartyTurns
         }
 
         $detected = $runs->contains(fn (Run $r): bool => (bool) $r->detected);
+        // On a tree run detection is each runner's own trace; the ALERT is the party's, and it brings every trace.
+        $alerted = $runs->contains(fn (Run $r): bool => (bool) $r->alerted);
         $ice = $runs->filter(fn (Run $r): bool => $r->ice_id !== null)->sortBy('ice_integrity')->first();
         // A Denial meter is the node's, one for the party: the run that just acted carries it, else the highest.
         $pressure = $from !== null && $from->purpose === RunPurpose::Denial ? (float) $from->fresh()?->pressure : (float) $runs->max('pressure');
@@ -355,7 +378,8 @@ final class PartyTurns
 
         foreach ($runs as $run) {
             $run->forceFill([
-                'detected' => $detected,
+                'detected' => $run->isTreeRun() ? ($alerted || (bool) $run->detected) : $detected,
+                'alerted' => $alerted,
                 'pressure' => $pressure,
                 'ice_id' => $cleared ? null : $ice?->ice_id,
                 'ice_integrity' => $cleared ? null : $ice?->ice_integrity,

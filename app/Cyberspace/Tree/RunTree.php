@@ -241,6 +241,84 @@ final readonly class RunTree
         return null;
     }
 
+    /** @return list<int> Every node within `$steps` edges of `$node`, not counting it. */
+    public function within(int $node, int $steps): array
+    {
+        $seen = [$node => 0];
+        $queue = [$node];
+
+        while ($queue !== []) {
+            $at = array_shift($queue);
+
+            if ($seen[$at] >= $steps) {
+                continue;
+            }
+
+            foreach ($this->neighbours($at) as $next) {
+                if (! isset($seen[$next])) {
+                    $seen[$next] = $seen[$at] + 1;
+                    $queue[] = $next;
+                }
+            }
+        }
+
+        unset($seen[$node]);
+
+        return array_keys($seen);
+    }
+
+    /**
+     * Where each node is drawn, left to right: its column is the longest way to it from the entry along the edges (so a
+     * crossover never points backwards), its lane the path it belongs to. Nodes on no path (the entry, a switch where
+     * paths split, the conduit where quiet and rich meet, the core) sit between the lanes they join.
+     *
+     * @return array<int, array{col: int, lane: float}>
+     */
+    public function layout(): array
+    {
+        $order = ['main' => 0, 'fast' => 0, 'quiet' => 1, 'rich' => 2];
+        $paths = array_values(array_unique(array_filter(array_column($this->nodes, 'path'))));
+        usort($paths, static fn (string $a, string $b): int => $order[$a] <=> $order[$b]);
+        $lanes = array_flip($paths);
+        $middle = max(0, count($paths) - 1) / 2;
+
+        $col = [$this->entry => 0];
+        $changed = true;
+
+        // Longest path in a graph with no cycles: relax until nothing moves (it settles in at most a node's count).
+        while ($changed) {
+            $changed = false;
+
+            foreach ($this->edges as [$a, $b]) {
+                if (isset($col[$a]) && ($col[$b] ?? -1) < $col[$a] + 1) {
+                    $col[$b] = $col[$a] + 1;
+                    $changed = true;
+                }
+            }
+        }
+
+        $out = [];
+
+        foreach ($this->nodes as $id => $node) {
+            $lane = $node['path'] !== null ? (float) $lanes[$node['path']] : $middle;
+
+            // The conduit where quiet and rich meet sits between them.
+            if ($node['path'] === null && $node['kind'] === NodeKind::Conduit && isset($lanes['quiet'], $lanes['rich'])) {
+                $lane = ($lanes['quiet'] + $lanes['rich']) / 2;
+            }
+
+            $out[$id] = ['col' => $col[$id] ?? 0, 'lane' => $lane];
+        }
+
+        return $out;
+    }
+
+    /** How many lanes the drawing needs. */
+    public function lanes(): int
+    {
+        return max(1, count(array_unique(array_filter(array_column($this->nodes, 'path')))));
+    }
+
     /** @return list<int> */
     public function nodesOf(NodeKind $kind): array
     {
