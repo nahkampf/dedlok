@@ -1368,6 +1368,13 @@ cap-widget {
   margin: var(--s-5) 0 var(--s-4);
 }
 .rule::after { content: ""; flex: 1; height: var(--hair); background: var(--line-1); }
+/* The label in the middle, a line either side: a run log's turn. */
+.rule--center::before { content: ""; flex: 1; height: var(--hair); background: var(--line-1); }
+.rule--center {
+  margin: var(--s-3) 0 var(--s-2);
+  font-family: var(--font-label); font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--ink-2);
+}
 
 .divider { height: var(--hair); background: var(--line-1); margin: var(--s-4) 0; }
 

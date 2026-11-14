@@ -612,11 +612,14 @@
         <div class="panel__hd"><h2>{{ Text::get('cyberspace.run.log_heading') }}</h2></div>
 
         <div style="padding:var(--s-3) 0" data-log-watch="{{ $run->id }}" data-log-count="{{ count($run->log) }}">
+            @php($shownTurn = null)
             @foreach (array_reverse($run->log) as $line)
+                {{-- Each turn opens with a rule naming it (newest first, so it heads its own lines). --}}
+                @if (isset($line['turn']) && $line['turn'] !== $shownTurn)
+                    @php($shownTurn = $line['turn'])
+                    <div class="rule rule--center">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</div>
+                @endif
                 <p class="micro" data-log-index="{{ $loop->count - $loop->iteration }}" style="margin:0 0 var(--s-2);display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:baseline;@if ($line['tone'] === 'crit') color:var(--crit) @elseif ($line['tone'] === 'ok') color:var(--ok) @else color:var(--ink-2) @endif">
-                    @if (isset($line['turn']))
-                        <span class="tag tag--quiet">{{ Text::get('cyberspace.run.turn', ['turn' => $line['turn']]) }}</span>
-                    @endif
                     {{-- A line may carry a tag naming who did it ("ICE VII lands a code payload…"), and
                          words before it ("Your [icebreaker] finds…"). The tag's colour is stored with it:
                          `crit` for the ICE hitting you (also what a line from before the colour was kept

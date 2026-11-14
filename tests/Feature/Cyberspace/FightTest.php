@@ -780,7 +780,8 @@ final class FightTest extends TestCase
             ->assertSeeText('You find no viable attack vectors.')
             ->assertSeeText('lands a code payload for')
             ->assertSeeText(' SI.')
-            ->assertSee('<span class="tag tag--quiet">Turn 1</span>', false)
+            // Each turn is a rule heading its lines, not a tag on every line.
+            ->assertSee('<div class="rule rule--center">Turn 1</div>', false)
             ->assertSee('<span class="tag tag--crit">ICE I</span>', false)
             ->assertDontSeeText('It gets through')
             ->assertDontSeeText('Something detects you');
