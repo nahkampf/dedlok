@@ -1427,10 +1427,6 @@ cap-widget {
 /* A tag that opens more (a scan's Nodes): a button wearing the tag, with the kit's hover step. */
 button.tag { cursor: pointer; }
 button.tag:hover, button.tag:focus-visible { border-color: var(--crit); }
-/* A tag whose text may be longer than the room it has (a system's name, a scan's reading): it wraps and grows
-   rather than running out of its box. */
-.tag--wrap, .card__stat > .tag { white-space: normal; max-width: 100%; min-width: 0; height: auto; min-height: 20px; padding-block: 3px; line-height: 1.35; }
-.card__stat > .tag { text-align: right; justify-content: flex-end; }
 .card__stat > b {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -1492,6 +1488,10 @@ button.tag:hover, button.tag:focus-visible { border-color: var(--crit); }
 .tag--warn  { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); background: var(--warn-a); }
 .tag--crit  { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 40%, transparent); background: var(--crit-a); }
 .tag--info  { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: var(--info-a); }
+/* A tag whose text may be longer than the room it has (a system's name, a scan's reading): it wraps and grows
+   rather than running out of its box. After .tag, which it overrides at the same weight. */
+.tag--wrap, .card__stat > .tag { white-space: normal; max-width: 100%; min-width: 0; height: auto; min-height: 20px; padding-block: 3px; line-height: 1.35; }
+.card__stat > .tag { text-align: right; justify-content: flex-end; }
 .strike { text-decoration: line-through; color: var(--ink-3); }
 .tag--quiet { background: transparent; border-color: var(--line-0); color: var(--ink-3); }
 .tag--solid { background: var(--ink-0); border-color: var(--ink-0); color: var(--ink-on-bone); }
@@ -3094,6 +3094,10 @@ button.board__node[name="node"]:focus-visible .board__box { border-color: var(--
 .board__node--threat .board__name { color: var(--crit); }
 .board--alert .board__node--threat .board__box { animation: threat-alarm-box 1.4s ease-in-out infinite alternate; }
 .board--alert .board__node--threat .board__name { animation: threat-alarm-ink 1.4s ease-in-out infinite alternate; }
+/* The ember marks after a name (ICE, barrier, sentry): ember, and while the alert pulses they follow the name's ink,
+   or they would vanish into the ember fill. */
+.board__count--crit { color: var(--crit); }
+.board--alert .board__node--threat .board__count--crit { color: inherit; }
 @keyframes threat-alarm-box { from { background: var(--bg-0); } to { background: var(--crit); } }
 @keyframes threat-alarm-ink { from { color: var(--crit); } to { color: var(--bg-0); } }
 

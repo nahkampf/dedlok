@@ -1227,6 +1227,48 @@ public/assets/
       </template>
     </div>
     <div class="demo">
+      <div class="demo__hd"><h3 class="h3">Run tree</h3><p>A system's run tree (<code class="inl">x-run-tree</code>, docs/RUN_TREE.md): the map of places' board, <code class="inl">.board--tree</code>, drawn left to right and as wide as the columns the runner can see, so a deep tree scrolls sideways (and opens scrolled to <code class="inl">--here</code>). <strong>A named node's border says what it is</strong> through <code class="inl">data-kind</code>: the ways in and out (<code class="inl">entry</code>, <code class="inl">port</code>) brass, a <code class="inl">vault</code> violet, the gates (<code class="inl">firewall</code>, <code class="inl">hub</code>) dashed ember. <code class="inl">.board__node--threat</code> is ICE or an unsubverted hub: ember, and once the alert has gone off (<code class="inl">.board--alert</code>) it pulses, ember on black to black on ember. A vault keeps its violet with a sentry on it. <code class="inl">--sprung</code> is a trap that went off, its dashed ember blinking; <code class="inl">--cutting</code> a node a Cordon is cutting, blinking faster, with <code class="inl">.board__label--cut</code> (&#9986; and the turns left) under it. <code class="inl">--fog</code> is a node known only to be there. The marks after a name: &#9632; the core's ICE, &#9688; barrier ICE, &#9650; a sentry, &#9671; crew, all <code class="inl">.board__count</code>. ui-kit.js dissolves in a node the page had not shown (<code class="inl">--reveal</code>) and runs a &#9670; along the wire after a move (<code class="inl">.board__trail</code>, <code class="inl">--arrive</code>). Ember here is earned: every one of these is live.</p></div>
+      <template class="demo-src">
+        <div class="board-wrap">
+          <div class="frame scanlines brackets board board--tree board--alert" role="group" aria-label="System map" style="--tree-cols:8;--tree-lanes:3">
+            <span class="frame__label">System map</span>
+            <svg class="board__wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+              <line class="board__wire" x1="8.33" y1="50" x2="25" y2="50"></line>
+              <line class="board__wire" x1="25" y1="50" x2="41.67" y2="16.67"></line>
+              <line class="board__wire" x1="25" y1="50" x2="41.67" y2="50"></line>
+              <line class="board__wire" x1="25" y1="50" x2="41.67" y2="83.33"></line>
+              <line class="board__wire" x1="41.67" y1="16.67" x2="58.33" y2="16.67"></line>
+              <line class="board__wire" x1="41.67" y1="50" x2="58.33" y2="50"></line>
+              <line class="board__wire" x1="58.33" y1="50" x2="75" y2="50"></line>
+              <line class="board__wire" x1="41.67" y1="83.33" x2="58.33" y2="83.33"></line>
+              <line class="board__wire" x1="75" y1="50" x2="91.67" y2="50"></line>
+              <line class="board__wire board__wire--reveal" x1="58.33" y1="16.67" x2="91.67" y2="50"></line>
+            </svg>
+            <div class="board__node" data-kind="entry" style="left:8.33%;top:50%"><span class="board__box"><span class="board__name">Entrypoint</span></span></div>
+            <div class="board__node board__node--here" style="left:25%;top:50%"><span class="board__box"><span class="board__name"><span class="here-mark" aria-hidden="true">&#9670;</span> Switch <span class="board__count">&#9671;</span></span></span></div>
+            <div class="board__node board__node--threat" data-kind="firewall" style="left:41.67%;top:16.67%"><span class="board__box"><span class="board__name">Firewall <span class="board__count board__count--crit">&#9688;</span></span></span></div>
+            <div class="board__node board__node--cutting" data-kind="switch" style="left:41.67%;top:50%"><span class="board__box"><span class="board__name">Switch</span></span><span class="board__label board__label--cut">&#9986; 2</span></div>
+            <div class="board__node" data-kind="vault" style="left:41.67%;top:83.33%"><span class="board__box"><span class="board__name">Data vault <span class="board__count board__count--crit">&#9650;</span></span></span></div>
+            <div class="board__node board__node--fog board__node--reveal" style="left:58.33%;top:16.67%"><span class="board__box"><span class="board__name">?</span></span></div>
+            <div class="board__node board__node--threat" data-kind="hub" style="left:58.33%;top:50%"><span class="board__box"><span class="board__name">Security hub</span></span></div>
+            <div class="board__node board__node--sprung" data-kind="trap" style="left:58.33%;top:83.33%"><span class="board__box"><span class="board__name">Trap: Alarm</span></span></div>
+            <div class="board__node" data-kind="port" style="left:75%;top:50%"><span class="board__box"><span class="board__name">Maintenance port</span></span></div>
+            <div class="board__node board__node--threat" data-kind="core" style="left:91.67%;top:50%"><span class="board__box"><span class="board__name">Core <span class="board__count board__count--crit">&#9632;</span></span></span></div>
+          </div>
+        </div>
+        <p class="micro here-legend"><span class="here-mark" aria-hidden="true">&#9670;</span> You are here · &#9671; crew · <span style="color:var(--crit)">&#9632;</span> ICE · <span style="color:var(--crit)">&#9688;</span> barrier · <span style="color:var(--crit)">&#9650;</span> sentry</p>
+      </template>
+    </div>
+    <div class="demo">
+      <div class="demo__hd"><h3 class="h3">A tag that wraps</h3><p><code class="inl">.tag</code> is one line by design. <code class="inl">.tag--wrap</code> is for text that may be longer than the room it has (a system's name in a panel header): it wraps and grows rather than running out of its box. A tag in a <code class="inl">.card__stat</code> does this by itself, right-aligned. A tag that opens more is a <code class="inl">button.tag</code>, with the ember hairline on hover.</p></div>
+      <template class="demo-src">
+        <div class="panel panel--snug" style="max-width:260px">
+          <div class="panel__hd"><h2>Interact</h2><div class="spacer"></div><span class="tag tag--wrap">Compute node - Renhou Bio-Pharmaceuticals 654</span></div>
+          <div class="card__stats"><div class="card__stat"><span>Nodes</span><button type="button" class="tag tag--ember">19 nodes</button></div></div>
+        </div>
+      </template>
+    </div>
+    <div class="demo">
       <div class="demo__hd"><h3 class="h3">Item card &amp; rows</h3></div>
       <template class="demo-src">
         <div class="row row--wrap" style="--gap:var(--s-5);align-items:flex-start">

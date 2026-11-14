@@ -32,6 +32,7 @@
 - **Run trees: a runner on a node a Cordon cuts is thrown clear (same flag)**, onto the neighbour nearest an exit, instead of being stranded on a node with no edges (`Simulator::throwClear()`).
 - **Run trees: the map scrolls to the runner (same flag).** A map wider than its box opens scrolled so the node they stand on is in the middle.
 - **Run trees: barrier ICE (same flag).** From grade 5 on the fast path's first firewall (`RunTree::$barrier`), the ICE a level below the system's own: awake from the start, it never moves, holds the way on until broken (`RunRefusal::BarrierHolds`) and strikes a runner on its node. An ember ◘ on the map and in the legend; the core's own ICE gets an ember ■.
+- **UI kit: the run tree and the wrapping tag in the gallery** (`public/ui-kit.html`). `.tag--wrap` now sits after `.tag`, which had been overriding it at the same weight; the map's ember marks (`.board__count--crit`) follow the name's ink while the alert pulses, instead of vanishing into the ember fill.
 
 ### Changed
 - **The Darknet gateway moves to `DEADBEEF`.** A migration gives the main-grid end of the Darknet the reserved address and carries scans, contacts, bookmarks, mission targets, runs, run parties and the `darknet_access` messages already sent along with it.
