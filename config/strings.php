@@ -1854,7 +1854,7 @@ return [
                 'ice_broken' => 'The ICE is broken. It freezes and vanishes, stuck in a crash loop.',
             ],
             'action' => [
-                'attack' => 'Continue run',
+                'attack' => 'Attack',
                 'extract' => 'Extract',
                 // Same button, same RunAction — only the label changes while
                 // runs.extracting_qb is set, so a player is never asked to

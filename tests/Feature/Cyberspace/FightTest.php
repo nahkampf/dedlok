@@ -667,7 +667,7 @@ final class FightTest extends TestCase
         $this->runScreen()
             ->assertSeeText('Actions')
             ->assertSeeText('Evasion chance for egress:')
-            ->assertSeeText('Continue run')
+            ->assertSeeText(Text::get('cyberspace.run.action.attack'))
             ->assertSeeText('The ICE has been activated and is guarding the core. You must break the ICE before continuing, or attempt an egress.')
             ->assertDontSeeText('Leaving is always possible')
             ->assertDontSeeText('Chance of getting out');
