@@ -487,7 +487,19 @@
             @elseif ($party && $party->owner_character_id === $character->id && $party->started_at === null)
                 <p class="micro" style="color:var(--warn);margin:0" data-party-hint hidden>{{ \App\Cyberspace\RunRefusal::NobodyReady->message() }}</p>
             @endif
-            @foreach ([
+            {{-- A TREE RUN chooses nothing at the door: one Start, and every action is offered inside (docs/RUN_TREE.md). --}}
+            @if ($treeRun)
+                <div class="row row--wrap" style="--gap:var(--s-3);align-items:center">
+                    <button type="submit" class="btn btn--go cut" style="min-width:min(200px,100%)"
+                            name="purpose" value="{{ RunPurpose::Extraction->value }}"
+                            @if ($ready && $party && $party->owner_character_id === $character->id && $party->started_at === null) data-party-gate @endif
+                            @if (! $ready || $holdStart) disabled @endif>
+                        {{ Text::get('cyberspace.run.setup.start') }}
+                    </button>
+                    <span class="micro" style="color:var(--ink-2);flex:1;min-width:min(240px,100%)">{{ Text::get('cyberspace.run.setup.start_hint') }}</span>
+                </div>
+            @endif
+            @foreach ($treeRun ? [] : [
                 ['intent' => 'extraction', 'purpose' => RunPurpose::Extraction, 'kind' => null],
                 ['intent' => 'siphon', 'purpose' => RunPurpose::Backdoor, 'kind' => BackdoorKind::Siphon],
                 ['intent' => 'routing', 'purpose' => RunPurpose::Backdoor, 'kind' => BackdoorKind::Routing],

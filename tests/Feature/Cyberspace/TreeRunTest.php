@@ -989,6 +989,30 @@ final class TreeRunTest extends TestCase
             ->assertSeeText(Text::get('cyberspace.run.mission', ['action' => MissionAction::Extract->label(), 'entity' => $entity->name]));
     }
 
+    public function test_a_tree_run_has_one_start_and_chooses_what_it_is_for_inside(): void
+    {
+        $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))->assertOk()
+            ->assertSeeText(Text::get('cyberspace.run.setup.start'))->assertDontSeeText(Text::get('cyberspace.run.setup.intent_burn'));
+
+        $run = $this->begin();
+        $this->assertSame(RunPurpose::Extraction, $run->purpose);
+
+        // On the core, the run screen offers every core action, and an Install says which backdoor.
+        $run->forceFill(['node' => $this->tree->core])->save();
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()
+            ->assertSee('value="extract"', false)->assertSee('value="burn"', false)->assertSee('backdoor_kind=routing', false);
+        $this->actingAs($this->character->fresh()->user)->post(route('run.act', ['backdoor_kind' => 'routing']), ['action' => 'install']);
+        $this->assertSame(RunPurpose::Backdoor, $run->fresh()->purpose);
+        $this->assertSame(BackdoorKind::Routing, $run->fresh()->backdoor_kind);
+
+        // Flooding at the entry makes it a Denial run, the node's patience counting from this Flood.
+        $run->fresh()->forceFill(['node' => $this->tree->entry, 'backdoored' => false])->save();
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Flood);
+        $run = $run->fresh();
+        $this->assertSame(RunPurpose::Denial, $run->purpose);
+        $this->assertSame(1, $run->floodedTurns());
+    }
+
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void
     {
         // A grade 3 compute tree with a rich path, and so a port.

@@ -241,6 +241,8 @@ class RunController extends Controller
             // A backdoor holder on a tree run's system chooses where to start (docs/RUN_TREE.md): the maintenance port (the
             // core without one) unless they say.
             'chooseStart' => $chooseStart = $held !== null && RunTree::appliesTo($target),
+            // A tree run is not given a purpose at the door: one Start, and every action inside (docs/RUN_TREE.md).
+            'treeRun' => RunTree::appliesTo($target),
             'startAtPort' => $chooseStart && RunTree::of($target)->backdoorStart() !== RunTree::of($target)->core,
             'startAtEntry' => (bool) RunPartyMember::query()->where('character_id', $character->id)->whereNull('dropped_at')->value('start_at_entry'),
         ]);
@@ -545,10 +547,17 @@ class RunController extends Controller
             'fortress' => ['nullable', 'integer'],
             // Where a Move goes, on a tree run.
             'node' => ['nullable', 'integer', 'min:0'],
+            // Which backdoor an Install leaves, on a tree run (chosen at the button, not at the door).
+            'backdoor_kind' => ['nullable', Rule::in(BackdoorKind::values())],
         ]);
 
         $action = RunAction::from($data['action']);
         $node = isset($data['node']) ? (int) $data['node'] : null;
+
+        // A TREE RUN chose nothing at the door: an Install says which backdoor, and the run becomes a backdoor run.
+        if ($run->isTreeRun() && $action === RunAction::Install && ! $run->backdoored && isset($data['backdoor_kind'])) {
+            $run->forceFill(['purpose' => RunPurpose::Backdoor, 'backdoor_kind' => $data['backdoor_kind']])->save();
+        }
 
         // A party round: the choice is stored, and the round resolves when all have chosen or the clock runs out. What a
         // tree run cannot do is refused now, while the runner can still choose again.

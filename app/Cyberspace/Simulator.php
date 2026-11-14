@@ -292,6 +292,9 @@ final readonly class Simulator
                  * that answers nothing.
                  */
                 if ($burned) {
+                    // A tree run chose nothing at the door: burning is what it was for.
+                    $run->purpose = RunPurpose::Burn;
+
                     $run->save();
                     $this->appendLog($run, $log);
                     $this->runs->end($character, $run, RunEnding::Completed);
@@ -425,7 +428,7 @@ final readonly class Simulator
             }
 
             // The node shakes a solo flooder off after enough turns (a party's round does it, in PartyTurns).
-            if ($ending === null && $run->purpose === RunPurpose::Denial && ! PartyTurns::shared($run) && $run->turn >= (int) Config::get('cyberspace.denial.turns', 12)) {
+            if ($ending === null && $run->purpose === RunPurpose::Denial && ! PartyTurns::shared($run) && $run->floodedTurns() >= (int) Config::get('cyberspace.denial.turns', 12)) {
                 $log[] = $this->line('cyberspace.run.log.flood_shaken_off', tone: 'warn');
                 $run->save();
                 $this->appendLog($run, $log);
@@ -1930,7 +1933,7 @@ final readonly class Simulator
             return [...$log, $this->iceGuardsTheCore()];
         }
 
-        if ($system === null || ! $this->opensTheCore($character, $run, $system) || $run->purpose !== RunPurpose::Extraction) {
+        if ($system === null || ! $this->opensTheCore($character, $run, $system) || ($run->purpose !== RunPurpose::Extraction && ! $run->isTreeRun())) {
             $log[] = $this->line('cyberspace.run.log.extract_fails');
 
             return $log;
@@ -2687,7 +2690,7 @@ final readonly class Simulator
             return [[...$log, $this->iceGuardsTheCore()], false];
         }
 
-        if ($system === null || ! $this->opensTheCore($character, $run, $system) || $run->purpose !== RunPurpose::Burn) {
+        if ($system === null || ! $this->opensTheCore($character, $run, $system) || ($run->purpose !== RunPurpose::Burn && ! $run->isTreeRun())) {
             $log[] = $this->line('cyberspace.run.log.burn_fails');
 
             return [$log, false];
@@ -3334,6 +3337,11 @@ final readonly class Simulator
      */
     private function flood(Character $character, Run $run): array
     {
+        // A tree run chose nothing at the door: its first Flood makes it a Denial run, the node's patience counting from now.
+        if ($run->purpose !== RunPurpose::Denial && $run->isTreeRun()) {
+            $run->forceFill(['purpose' => RunPurpose::Denial, 'flood_turn' => $run->turn - 1]);
+        }
+
         if ($run->purpose !== RunPurpose::Denial) {
             return [[$this->line('cyberspace.run.log.hold')], false];
         }

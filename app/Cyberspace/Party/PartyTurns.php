@@ -210,7 +210,7 @@ final class PartyTurns
             $live->each(fn (Run $r) => $r->forceFill(['pressure' => $pressure])->save());
 
             // Out of time: the node shakes the whole party off.
-            if ((int) $live->max('turn') >= (int) config('cyberspace.denial.turns', 12)) {
+            if ((int) $live->max(fn (Run $r): int => $r->floodedTurns()) >= (int) config('cyberspace.denial.turns', 12)) {
                 foreach ($live as $run) {
                     $character = Character::query()->find($run->character_id);
 

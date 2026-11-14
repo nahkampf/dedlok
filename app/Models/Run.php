@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'tunnel', 'traps', 'snared_until', 'log_wiped', 'alert_cost', 'sentries', 'controller', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
+#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'flood_turn', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'tunnel', 'traps', 'snared_until', 'log_wiped', 'alert_cost', 'sentries', 'controller', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -70,6 +70,7 @@ class Run extends Model
             'log_wiped' => 'boolean',
             'alert_cost' => 'float',
             'sentries' => 'array',
+            'flood_turn' => 'integer',
             'controller' => 'array',
             'pending_node' => 'integer',
             'pull_node' => 'integer',
@@ -195,6 +196,12 @@ class Run extends Model
             : self::query()->live()->where('run_party_id', $this->run_party_id)->whereNotNull('tunnel')->get(['node']);
 
         return $runs->pluck('node')->map(static fn ($n): int => (int) $n)->unique()->values()->all();
+    }
+
+    /** Turns the node has been flooded for: since the first Flood on a tree run, since the start otherwise. */
+    public function floodedTurns(): int
+    {
+        return (int) $this->turn - (int) ($this->flood_turn ?? 0);
     }
 
     /** A Loopback holds on an internal relay, theirs or (on a party run) a live ally's: the trace stalls. */

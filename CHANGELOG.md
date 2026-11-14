@@ -25,6 +25,7 @@
 - **Run trees: the scanner window shows Layout, Nodes and Traps (same flag).** Its rows were drawn from an empty scan, which has no tree; every fact is drawn now and the poll shows the ones the scan has. The Nodes reading names only what a tree has (firewalls always), and a long reading wraps inside its tag.
 - **Run trees: the maintenance port is always nearer the core than the entry (same flag)**, off the rich path's node nearest the core or the core itself. The run screen names the runner's open missions against the system. The map's kind and threat borders outrank a move target's hairline, and a wrapped stat tag grows to fit.
 - **Run trees: the noise bar is green to 70%, brass to 90%, then ember (same flag).**
+- **Run trees: no purpose at the door (same flag).** The briefing has one Start for a tree run, and every action is offered inside: Extract, Install (per backdoor kind, `backdoor_kind` on the press) and Burn on the core, Flood at any exit. The run takes the purpose of what it does; a Denial's patience counts from the first Flood (`runs.flood_turn`).
 
 ### Changed
 - **The Darknet gateway moves to `DEADBEEF`.** A migration gives the main-grid end of the Darknet the reserved address and carries scans, contacts, bookmarks, mission targets, runs, run parties and the `darknet_access` messages already sent along with it.

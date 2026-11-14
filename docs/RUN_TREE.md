@@ -405,6 +405,15 @@ Asked for 2026-11-14: more life, animation and colour in runs.
 - **Every open mission of the runner's against the system** is named above the map: the job and the client, with the
   job's own hint (`cyberspace.run.mission`).
 
+### No purpose at the door
+
+Decided 2026-11-14. **A tree run is not given a purpose on the briefing**: one Start (the run begins as Extraction),
+and every action is offered inside: on the core Extract, Install (a button per backdoor kind) and Burn; Flood at any
+exit. **The run takes the purpose of what it does**, so every ending, mission credit and Denial rule keyed on the
+purpose works unchanged: an Install makes it a Backdoor run of that kind (`backdoor_kind` comes with the press), a
+Burn that lands a Burn run, the first Flood a Denial run (`runs.flood_turn`: the node's patience counts from it).
+Extract works on any tree run. Old single-room runs keep their purposes.
+
 ## To come back to
 
 Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next step; all of it blocks the merge.

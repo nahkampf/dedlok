@@ -1781,6 +1781,9 @@ return [
                 | additionally decides a permanent property of the machine.
                 */
                 'intent' => 'Mission goal',
+                // A tree run: one Start, every action inside. Suggestions, for the user to edit.
+                'start' => 'Start the run',
+                'start_hint' => 'Go in with nothing decided. Extract, plant a backdoor, burn it or flood it from inside: whatever the system lets you.',
                 'intent_extraction' => 'Extract data',
                 'intent_siphon' => 'Install a siphon',
                 // The same button while an accepted Placement job names this system.

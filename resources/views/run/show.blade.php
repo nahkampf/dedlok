@@ -465,14 +465,23 @@
             {{-- ONLY ON AN EXTRACTION RUN. Purpose decides what a core touch IS, and each of the three has
                  its own button: offering one on the wrong purpose would promise something the turn would
                  silently waste. --}}
-            @if ($run->purpose === RunPurpose::Extraction)
+            @if ($run->purpose === RunPurpose::Extraction || $tree)
                 <button type="submit" name="action" value="extract" class="btn cut @if ($coreOpen) btn--go @endif" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get($run->extracting_qb !== null ? 'cyberspace.run.action.extract_continue' : 'cyberspace.run.action.extract') }}
                 </button>
             @endif
             {{-- THE SAME RULE ON THE OTHER PURPOSE. The kind was chosen at the door and is permanent, so
                  the button says which one it is about to leave rather than asking again mid-fight. --}}
-            @if ($run->purpose === RunPurpose::Backdoor)
+            {{-- A TREE RUN chose nothing at the door: a button for each backdoor, the kind going with the press. --}}
+            @if ($tree)
+                @foreach (\App\Cyberspace\BackdoorKind::cases() as $doorKind)
+                    <button type="submit" name="action" value="install" class="btn cut"
+                            formaction="{{ route('run.act', ['backdoor_kind' => $doorKind->value]) }}"
+                            @if ($run->backdoored || $run->inAFight()) disabled @endif>
+                        {{ Text::get($run->backdoored && $run->backdoor_kind === $doorKind ? 'cyberspace.run.action.install_done' : 'cyberspace.run.action.install', ['kind' => $doorKind->label()]) }}
+                    </button>
+                @endforeach
+            @elseif ($run->purpose === RunPurpose::Backdoor)
                 <button type="submit" name="action" value="install" class="btn cut @if ($coreOpen && ! $run->backdoored) btn--go @endif"
                         @if ($run->backdoored || $run->inAFight()) disabled @endif>
                     {{-- The planning screen calls it "Place backdoor" while a Placement job names the system; so does the run. --}}
@@ -492,7 +501,7 @@
                  ember means destructive, and there is nothing in the game this word fits better. It cannot
                  be pressed twice — the system is gone and the run is over the moment it lands. --}}
             @endif
-            @if ($run->purpose === RunPurpose::Denial && (! $tree || $tree->atExit))
+            @if (($run->purpose === RunPurpose::Denial && ! $tree) || ($tree && $tree->atExit))
                 <div style="min-width:min(160px,100%)">
                     <span class="micro">{{ Text::get('cyberspace.run.pressure') }}</span>
                     <div class="meter" style="--v:{{ min(1, max(0, $run->pressure / \App\Cyberspace\Simulator::denialTarget($run))) }}"
@@ -507,7 +516,7 @@
                     {{ Text::get('cyberspace.run.action.infiltrate') }}
                 </button>
             @endif
-            @if ($run->purpose === RunPurpose::Burn && $atCore)
+            @if (($run->purpose === RunPurpose::Burn || $tree) && $atCore)
                 <button type="submit" name="action" value="burn" class="btn btn--danger cut" @if ($run->inAFight()) disabled @endif>
                     {{ Text::get('cyberspace.run.action.burn') }}
                 </button>
