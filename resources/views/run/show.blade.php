@@ -155,7 +155,7 @@
             </p>
         @endif
 
-        <x-run-tree :view="$tree" :label="Text::get('cyberspace.tree.heading')"
+        <x-run-tree :view="$tree" :label="Text::get('cyberspace.tree.heading')" :run="$run->id" :alert="(bool) $run->alerted"
                     :waiting="$waiting ? ($run->pending_action === 'move' ? (string) $run->pending_node : '-') : ''" />
     </div>
 @endif

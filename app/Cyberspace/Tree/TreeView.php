@@ -25,7 +25,7 @@ use App\Support\Text;
 final readonly class TreeView
 {
     /**
-     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, cutting: ?int, move: bool, known: bool}>  $nodes
+     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, cutting: ?int, move: bool, known: bool, threat?: bool}>  $nodes
      * @param  list<array{0: int, 1: int}>  $links
      */
     public function __construct(
@@ -118,6 +118,17 @@ final readonly class TreeView
         $moves = $tree->neighbours($here);
         // Sentries are seen where the runner can see: a node they know.
         $guards = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0)->countBy('node')->all();
+        // THREATS, drawn in ember where the runner knows them: a security hub nobody has subverted, a running ICE
+        // controller, the core while its ICE stands, and any node with a sentry on it.
+        $coreIce = $system->ice_id !== null && ! ($run->ice_id === null && (float) $run->ice_damage > 0);
+        $subverted = $simulator->hubSubverted($run);
+        $controllerUp = is_array($run->controller) && ! $run->controller['down'];
+        $threat = static fn (int $n): bool => match ($tree->nodes[$n]['kind']) {
+            NodeKind::Hub => ! $subverted,
+            NodeKind::Controller => $controllerUp,
+            NodeKind::Core => $coreIce,
+            default => false,
+        } || ($guards[$n] ?? 0) > 0;
         // A Cordon cutting a node shows its countdown wherever the runner can see the node: that is the warning.
         $cutting = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0 && ($s['countdown'] ?? null) !== null)
             ->mapWithKeys(static fn (array $s): array => [(int) $s['node'] => (int) $s['countdown']])->all();
@@ -139,6 +150,7 @@ final readonly class TreeView
             'cutting' => $cutting[$n] ?? null,
             'move' => in_array($n, $moves, true),
             'known' => in_array($n, $known, true) || ($traps[$n] ?? null) === 'found',
+            'threat' => in_array($n, $known, true) && $threat($n),
         ], $seen);
 
         // An edge is drawn when the runner knows one of its ends: that is what standing on a node or an Nmap shows.

@@ -3080,6 +3080,39 @@ button.board__node[name="node"]:hover .board__box,
 button.board__node[name="node"]:focus-visible .board__box { border-color: var(--ink-1); background: var(--bg-3); }
 .board__node[data-dragging] { cursor: grabbing; z-index: 2; }
 
+/* THREATS on a run tree: ICE (the core while its ICE stands, a node with a sentry, a running ICE controller) and a
+   security hub nobody has subverted. Ember, because they are live. Once the alert has gone off they pulse, the fill
+   and the ink trading places: ember on black, then black on ember. */
+.board__node--threat .board__box { border-color: var(--crit); }
+.board__node--threat .board__name { color: var(--crit); }
+.board--alert .board__node--threat .board__box { animation: threat-alarm-box 1.4s ease-in-out infinite alternate; }
+.board--alert .board__node--threat .board__name { animation: threat-alarm-ink 1.4s ease-in-out infinite alternate; }
+@keyframes threat-alarm-box { from { background: var(--bg-0); } to { background: var(--crit); } }
+@keyframes threat-alarm-ink { from { color: var(--crit); } to { color: var(--bg-0); } }
+
+/* A NODE JUST REVEALED dissolves in: stepped, so it resolves the way a signal does rather than fading like a slide.
+   Its wires follow. Set by ui-kit.js against what the page last showed of this run. */
+.board__node--reveal { animation: node-dissolve 900ms steps(9) both; }
+.board__wire--reveal { animation: wire-dissolve 900ms steps(9) both; }
+@keyframes node-dissolve {
+  from { opacity: 0; filter: blur(3px) contrast(3); }
+  60% { opacity: .7; filter: blur(1px) contrast(1.6); }
+}
+@keyframes wire-dissolve { from { opacity: 0; } }
+
+/* A MOVE: a mark runs along the wire from where the runner stood to where they stand, and the box they arrive at
+   takes the hit. The mark is placed and moved by ui-kit.js; --trail-x/y are percentages of the board. */
+.board__trail {
+  position: absolute; z-index: 2; left: var(--trail-x); top: var(--trail-y);
+  transform: translate(-50%, -50%);
+  color: var(--ember); font-size: var(--fs-sm); pointer-events: none;
+  transition: left 520ms cubic-bezier(.5, 0, .2, 1), top 520ms cubic-bezier(.5, 0, .2, 1), opacity 200ms 520ms;
+}
+.board__node--arrive .board__box { animation: node-arrive 600ms ease-out; }
+@keyframes node-arrive {
+  from { background: var(--crit-a); border-color: var(--ember); }
+}
+
 /* ── UTILITIES ─────────────────────────────────────────────────────────── */
 
 /* The corner tick. This is the third place the device appears — .card--select

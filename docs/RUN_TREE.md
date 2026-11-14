@@ -380,6 +380,17 @@ the Cordon tag**, each designed and built on its own, traps first.
   less the tunnel's strength (the strongest on the node), plus a reaching ICE.
 - **A Cordon cannot cut a node an Egress Tunnel holds**, and a cut under way stops when one goes up on it.
 
+### The map, alive
+
+Asked for 2026-11-14: more life, animation and colour in runs.
+
+- **Threats in ember**: the core while its ICE stands, any node with a sentry, a running ICE controller, a security hub
+  nobody has subverted (`TreeView` `threat`, `.board__node--threat`).
+- **After the alert they pulse**, ember on black to black on ember (`.board--alert`).
+- **A move** sends a ◆ along the wire from the old node to the new, which flashes as it arrives; **a revealed node**
+  (and its wires) dissolves in. The page compares against what it last showed of the run (session storage, per tab); a
+  first look, failed storage or reduced motion animates nothing.
+
 ## To come back to
 
 Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next step; all of it blocks the merge.

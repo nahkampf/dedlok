@@ -1817,6 +1817,53 @@
   turnForms();
   document.addEventListener("DOMContentLoaded", turnForms);
 
+  /* --- A run tree, alive ------------------------------------------------------
+     .board[data-tree-run] remembers, per run and for this tab only, which nodes it showed and where the runner stood.
+     On the next page a node it had not shown dissolves in (with its wires), and a changed position sends a mark along
+     the wire from the old node to the new. Storage that fails, a first look, or reduced motion: nothing animates. */
+  function treeLife() {
+    const still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelectorAll(".board[data-tree-run]").forEach((board) => {
+      if (board.dataset.alive) return;
+      board.dataset.alive = "1";
+      const key = "tree:" + board.dataset.treeRun;
+      const nodes = [...board.querySelectorAll(".board__node[data-node]")];
+      const now = { here: board.dataset.treeHere, nodes: nodes.map((n) => n.dataset.node) };
+      let before = null;
+      try { before = JSON.parse(sessionStorage.getItem(key) || "null"); } catch (e) { before = null; }
+      try { sessionStorage.setItem(key, JSON.stringify(now)); } catch (e) { /* the page works without it */ }
+      if (!before || still) return;
+
+      const fresh = new Set(now.nodes.filter((n) => !before.nodes.includes(n)));
+      nodes.forEach((n) => { if (fresh.has(n.dataset.node)) n.classList.add("board__node--reveal"); });
+      board.querySelectorAll(".board__wire").forEach((w) => {
+        if (fresh.has(w.dataset.from) || fresh.has(w.dataset.to)) w.classList.add("board__wire--reveal");
+      });
+
+      const from = board.querySelector(`.board__node[data-node="${before.here}"]`);
+      const to = board.querySelector(`.board__node[data-node="${now.here}"]`);
+      if (!from || !to || before.here === now.here) return;
+      const mark = document.createElement("span");
+      mark.className = "board__trail";
+      mark.setAttribute("aria-hidden", "true");
+      mark.textContent = "\u25C6";
+      mark.style.setProperty("--trail-x", from.style.left);
+      mark.style.setProperty("--trail-y", from.style.top);
+      board.appendChild(mark);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        mark.style.setProperty("--trail-x", to.style.left);
+        mark.style.setProperty("--trail-y", to.style.top);
+        mark.style.opacity = "0";
+      }));
+      // The flash replaces the you-are-here breathing while it runs, so it is taken off again afterwards.
+      setTimeout(() => { to.classList.add("board__node--arrive"); }, 480);
+      setTimeout(() => { to.classList.remove("board__node--arrive"); }, 1150);
+      setTimeout(() => mark.remove(), 900);
+    });
+  }
+  treeLife();
+  document.addEventListener("DOMContentLoaded", treeLife);
+
   /* --- The party panel, kept current ---------------------------------------
      [data-party-poll="url"] asks the server every five seconds who is in, and swaps the HTML of each
      [data-party-live] for what it answers (the member lines are drawn on the server, so the wording is

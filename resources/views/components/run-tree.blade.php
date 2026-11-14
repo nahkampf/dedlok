@@ -7,6 +7,10 @@
     'waiting' => '',
     // Drawn from a scan outside a run (the tree modal): no form, nothing to move to, no you-are-here.
     'static' => false,
+    // The run this tree belongs to: the page remembers what it last showed of it, to animate a move and a reveal.
+    'run' => null,
+    // The alert has gone off: the threats on the map pulse.
+    'alert' => false,
 ])
 
 {{-- A RUN TREE, left to right (docs/RUN_TREE.md): the board's own classes, as the city map uses them, on a board as wide
@@ -22,14 +26,15 @@
     <input type="hidden" name="action" value="move">
 @endif
     <div class="board-wrap">
-        <div class="frame scanlines brackets board board--tree" role="group" aria-label="{{ $label }}"
+        <div @class(['frame scanlines brackets board board--tree', 'board--alert' => $alert]) role="group" aria-label="{{ $label }}"
+             @if ($run !== null) data-tree-run="{{ $run }}" data-tree-here="{{ collect($view->nodes)->firstWhere('here', true)['key'] ?? '' }}" @endif
              style="--tree-cols:{{ $view->cols }};--tree-lanes:{{ $view->lanes }}">
             <span class="frame__label">{{ $label }}</span>
 
             <svg class="board__wires" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                 @foreach ($view->links as [$from, $to])
                     @if (isset($at[$from], $at[$to]))
-                        <line class="board__wire" x1="{{ $at[$from]['x'] }}" y1="{{ $at[$from]['y'] }}" x2="{{ $at[$to]['x'] }}" y2="{{ $at[$to]['y'] }}"></line>
+                        <line class="board__wire" data-from="{{ $from }}" data-to="{{ $to }}" x1="{{ $at[$from]['x'] }}" y1="{{ $at[$from]['y'] }}" x2="{{ $at[$to]['x'] }}" y2="{{ $at[$to]['y'] }}"></line>
                     @endif
                 @endforeach
             </svg>
@@ -37,7 +42,8 @@
             @foreach ($view->nodes as $node)
                 @php($tag = $node['move'] ? 'button' : 'div')
                 <{{ $tag }}
-                    @class(['board__node', 'board__node--here' => $node['here'], 'board__node--fog' => ! $node['known']])
+                    @class(['board__node', 'board__node--here' => $node['here'], 'board__node--fog' => ! $node['known'], 'board__node--threat' => $node['threat'] ?? false])
+                    data-node="{{ $node['key'] }}"
                     @if ($node['move']) type="submit" name="node" value="{{ $node['key'] }}" aria-label="{{ Text::get('cyberspace.run.action.move') }}: {{ $node['label'] }}" @endif
                     @if ($node['here']) aria-current="location" @endif
                     style="left:{{ $node['x'] }}%;top:{{ $node['y'] }}%">

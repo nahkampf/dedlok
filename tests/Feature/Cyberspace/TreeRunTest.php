@@ -937,6 +937,23 @@ final class TreeRunTest extends TestCase
         $this->assertSame(0, InventoryItem::query()->where('item_id', $item->id)->count(), 'spent with the run');
     }
 
+    public function test_threats_are_marked_on_the_map_and_pulse_once_the_alert_has_gone_off(): void
+    {
+        [$run, $hub] = $this->hub();
+        $run->forceFill(['known' => [...$run->knownNodes(), $hub]])->save();
+        $threat = fn (): bool => collect(TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->nodes)->firstWhere('key', $hub)['threat'];
+
+        $this->assertTrue($threat(), 'a security hub nobody has subverted');
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()
+            ->assertSee('board__node--threat', false)->assertSee('data-tree-run="'.$run->id.'"', false)->assertDontSee('board--alert', false);
+
+        $run->forceFill(['alerted' => true])->save();
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()->assertSee('board--alert', false);
+
+        $run->fresh()->forceFill(['opened' => [$hub]])->save();
+        $this->assertFalse($threat(), 'subverted, it is no longer a threat');
+    }
+
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void
     {
         // A grade 3 compute tree with a rich path, and so a port.
