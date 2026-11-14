@@ -822,6 +822,10 @@ final class TreeRunTest extends TestCase
             modifiers: [['op' => 'add', 'amount' => 100, 'target' => ['id' => 'icebreaker_damage']]])->create());
         $this->assertTrue(app(ProgramRunner::class)->start($this->character->fresh(), $breaker, true)->succeeded());
         $run = $this->sentry($tree->entry, $tree->entry);
+        $here = TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->sentriesHere[0];
+        $this->assertGreaterThan(0, $here['max']);
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()
+            ->assertSee($here['integrity'].' / '.$here['max'])->assertDontSee(Text::get('cyberspace.run.ice_none'));
 
         $this->assertNull($this->simulator(0.0, 1)->take($this->character->fresh(), $run, RunAction::Attack)->refusal);
         $sentry = $run->fresh()->sentries[0];

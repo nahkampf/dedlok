@@ -61,7 +61,7 @@ final readonly class TreeView
         public ?float $disarmChance = null,
         // Standing on a log server with an alert to wipe: the chance the OS roll lands. Null otherwise.
         public ?float $wipeChance = null,
-        /** @var list<array{name: string, integrity: float, awake: bool}> The unbroken sentries on the runner's node. */
+        /** @var list<array{name: string, integrity: float, max: float, grade: string, awake: bool, barrier: bool}> The unbroken sentries on the runner's node. */
         public array $sentriesHere = [],
         // Standing on the ICE controller while it runs: the chance a Shut down's OS roll lands. Null otherwise.
         public ?float $shutdownChance = null,
@@ -149,7 +149,8 @@ final readonly class TreeView
 
             return $simulator->osChanceFor($character, $osSkill);
         };
-        $iceNames = Ice::query()->whereKey(array_column($simulator->sentriesOf($run), 'ice'))->pluck('name', 'id');
+        $ices = Ice::query()->whereKey(array_column($simulator->sentriesOf($run), 'ice'))->get(['id', 'name', 'integrity'])->keyBy('id');
+        $iceNames = $ices->map(static fn (Ice $i): string => (string) $i->name);
         // Never empty: where they stand is always drawn, even on a node the tree has lost.
         $seen = $seen === [] ? [$here] : $seen;
         $maxCol = max(array_map(static fn (int $n): int => $layout[$n]['col'], $seen));
@@ -247,6 +248,9 @@ final readonly class TreeView
                     ? ' ('.implode(', ', [Text::get($s['fast'] ? 'cyberspace.tree.sentry_fast' : 'cyberspace.tree.sentry_slow'), ...(($s['cordon'] ?? false) ? [Text::get('cyberspace.tree.sentry_cordon')] : [])]).')'
                     : ''),
                 'integrity' => (float) $s['integrity'],
+                // Its catalogue integrity: what a full bar is.
+                'max' => (float) ($ices[$s['ice']]->integrity ?? $s['integrity']),
+                'grade' => (string) ($iceNames[$s['ice']] ?? ''),
                 'awake' => (bool) $s['awake'],
                 'barrier' => (bool) ($s['barrier'] ?? false),
             ], $simulator->sentriesHere($run))),

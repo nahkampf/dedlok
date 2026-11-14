@@ -434,7 +434,7 @@
                 {{ Text::get('cyberspace.run.egress_chance', ['chance' => $egress->percent()]) }}
             </button>
         </div>
-        @if ($run->inAFight())
+        @if ($run->inAFight() && (! $tree || $tree->atCore))
             <p class="micro" style="color:var(--warn);margin:var(--s-2) 0 0">
                 {{ Text::get('cyberspace.run.core_guarded') }}
             </p>
@@ -483,7 +483,25 @@
     </div>
 
     <div style="padding:var(--s-3) 0">
-        @if ($run->inAFight())
+        {{-- ON A RUN TREE, the ICE on the runner's node: its sentries (and barrier), each with its own bar; the core's
+             ICE only on the core, where it can reach them. --}}
+        @php($sentries = $tree ? $tree->sentriesHere : [])
+        @foreach ($sentries as $sentry)
+            <div class="card__stats" style="padding:0;border:0;@if (! $loop->first) margin-top:var(--s-3) @endif">
+                <div class="card__stat">
+                    <span>{{ ucfirst(Text::get(($sentry['barrier'] ?? false) ? 'cyberspace.tree.barrier' : 'cyberspace.tree.sentry')) }}</span>
+                    <span class="tag {{ $sentry['awake'] ? 'tag--crit' : '' }}">{{ $sentry['grade'] }}</span>
+                </div>
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.ice_integrity') }}</span>
+                    <b class="num">{{ $sentry['integrity'] }} / {{ $sentry['max'] }}</b>
+                </div>
+            </div>
+            <div class="meter meter--lg" style="--v:{{ round($sentry['integrity'] / max(1, $sentry['max']), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
+                <div class="meter__fill"></div>
+            </div>
+        @endforeach
+        @if ($run->inAFight() && (! $tree || $tree->atCore))
             @php($ice = $run->ice)
             <div class="card__stats" style="padding:0;border:0">
                 <div class="card__stat">
@@ -502,7 +520,7 @@
             <div class="meter meter--lg" style="--v:{{ round($run->ice_integrity / max(1, $ice->integrity), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
                 <div class="meter__fill"></div>
             </div>
-        @else
+        @elseif ($sentries === [])
             <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.ice_none') }}</p>
         @endif
     </div>
