@@ -232,6 +232,10 @@ states' job.
 
 ### Maintenance port
 
+- **Nearer the core than the entry, always** (decided 2026-11-14, so a backdoor that brings you in there is worth
+  having): it hangs off the rich path's conduit, switch or vault nearest the core, placed after traps and the log
+  server; when even that is no nearer than the entry, off the core itself (every grade 3 tree, about half at 4–6,
+  never from 7). Supersedes the placement below.
 - **A dead end off the rich path, one per tree from grade 3** wherever a rich path exists (`NodeKind::Port`). It hangs
   off a conduit (which becomes a switch) or a crossover switch, otherwise off the rich path's vault; never off a
   firewall. Placed last in the generator, so the trees it joins keep every other node. The safe path, when it arrives
@@ -395,6 +399,11 @@ Asked for 2026-11-14: more life, animation and colour in runs.
 - **A move** sends a ◆ along the wire from the old node to the new, which flashes as it arrives; **a revealed node**
   (and its wires) dissolves in. The page compares against what it last showed of the run (session storage, per tab); a
   first look, failed storage or reduced motion animates nothing.
+
+### The run screen names the mission
+
+- **Every open mission of the runner's against the system** is named above the map: the job and the client, with the
+  job's own hint (`cyberspace.run.mission`).
 
 ## To come back to
 

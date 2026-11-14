@@ -1424,7 +1424,7 @@ cap-widget {
   color: var(--ink-2);
 }
 /* A long reading (a scan's Nodes, say) wraps inside its tag rather than running out of the row. */
-.card__stat > .tag { white-space: normal; text-align: right; min-width: 0; }
+.card__stat > .tag { white-space: normal; text-align: right; justify-content: flex-end; min-width: 0; height: auto; min-height: 20px; padding-block: 3px; line-height: 1.35; }
 .card__stat > b {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -3085,23 +3085,25 @@ button.board__node[name="node"]:focus-visible .board__box { border-color: var(--
 /* THREATS on a run tree: ICE (the core while its ICE stands, a node with a sentry, a running ICE controller) and a
    security hub nobody has subverted. Ember, because they are live. Once the alert has gone off they pulse, the fill
    and the ink trading places: ember on black, then black on ember. */
-.board__node--threat .board__box { border-color: var(--crit); }
 .board__node--threat .board__name { color: var(--crit); }
 .board--alert .board__node--threat .board__box { animation: threat-alarm-box 1.4s ease-in-out infinite alternate; }
 .board--alert .board__node--threat .board__name { animation: threat-alarm-ink 1.4s ease-in-out infinite alternate; }
 @keyframes threat-alarm-box { from { background: var(--bg-0); } to { background: var(--crit); } }
 @keyframes threat-alarm-ink { from { color: var(--crit); } to { color: var(--bg-0); } }
 
-/* WHAT A NAMED NODE IS, in its border: the ways in and out in brass, the vaults in violet, the gates (a firewall,
+/* Each prefixed .board--tree so it outranks a move target's brighter hairline (button.board__node[name="node"]).
+   WHAT A NAMED NODE IS, in its border: the ways in and out in brass, the vaults in violet, the gates (a firewall,
    a security hub) in dashed ember. A threat's solid ember (above) and the alert's pulse still win where both apply,
    and a sprung trap blinks its dashed ember. */
-.board__node[data-kind="entry"] .board__box,
-.board__node[data-kind="port"] .board__box { border-color: var(--brass); }
-.board__node[data-kind="vault"] .board__box { border-color: var(--violet); }
-.board__node[data-kind="firewall"] .board__box,
-.board__node[data-kind="hub"] .board__box { border-color: var(--crit); border-style: dashed; }
-.board__node--sprung .board__box { border-color: var(--crit); border-style: dashed; animation: sprung-blink 1s steps(1) infinite; }
+.board--tree .board__node[data-kind="entry"] .board__box,
+.board--tree .board__node[data-kind="port"] .board__box { border-color: var(--brass); }
+.board--tree .board__node[data-kind="vault"] .board__box { border-color: var(--violet); }
+.board--tree .board__node[data-kind="firewall"] .board__box,
+.board--tree .board__node[data-kind="hub"] .board__box { border-color: var(--crit); border-style: dashed; }
+.board--tree .board__node--sprung .board__box { border-color: var(--crit); border-style: dashed; animation: sprung-blink 1s steps(1) infinite; }
 @keyframes sprung-blink { 50% { border-color: transparent; } }
+/* A threat's ember wins over its kind's colour (a vault with a sentry on it is a threat first). */
+.board--tree .board__node.board__node--threat .board__box { border-color: var(--crit); }
 
 /* A NODE JUST REVEALED dissolves in: stepped, so it resolves the way a signal does rather than fading like a slide.
    Its wires follow. Set by ui-kit.js against what the page last showed of this run. */

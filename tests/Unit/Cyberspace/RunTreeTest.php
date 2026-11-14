@@ -106,9 +106,10 @@ final class RunTreeTest extends TestCase
         foreach ($ports as $port) {
             $this->assertTrue($tree->isExit($port), $why);
             $this->assertCount(1, $tree->neighbours($port), $why);
+            // Off the rich path's node nearest the core, or the core itself; always nearer the core than the entry is.
             $from = $tree->nodes[$tree->neighbours($port)[0]];
-            $this->assertSame('rich', $from['path'], $why);
-            $this->assertContains($from['kind'], [NodeKind::Switch, NodeKind::Vault], $why);
+            $this->assertTrue($from['kind'] === NodeKind::Core || ($from['path'] === 'rich' && in_array($from['kind'], [NodeKind::Switch, NodeKind::Vault], true)), $why);
+            $this->assertLessThan($tree->distance($tree->entry, $tree->core), $tree->distance($port, $tree->core), $why);
         }
 
         // Internal relays only on the quiet path from grade 3: one, two at most on a relay system.

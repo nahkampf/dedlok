@@ -21,13 +21,17 @@ use App\Cyberspace\Tree\NodeKind;
 use App\Cyberspace\Tree\RunTree;
 use App\Cyberspace\Tree\TrapEffect;
 use App\Cyberspace\Tree\TreeView;
+use App\Missions\MissionAction;
+use App\Missions\MissionState;
 use App\Models\Character;
 use App\Models\CharacterSkill;
 use App\Models\Entity;
 use App\Models\EntityBook;
+use App\Models\Exchange;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
+use App\Models\Mission;
 use App\Models\Notification;
 use App\Models\Run;
 use App\Models\RunParty;
@@ -965,6 +969,24 @@ final class TreeRunTest extends TestCase
         $this->assertTrue($nodes->firstWhere('key', $trap)['sprung']);
         $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()
             ->assertSee('board__node--sprung', false)->assertSee('data-kind="entry"', false);
+    }
+
+    public function test_the_run_screen_names_an_open_mission_against_the_system(): void
+    {
+        $system = System::query()->where('address', 'DEADBEEF')->sole();
+        $entity = Entity::query()->interactable()->firstOrFail();
+        $desk = Exchange::query()->create(['system_id' => System::factory()->at(2, 2)->ownedBy($entity)->create(['type' => 'exchange', 'grade' => 1])->id, 'grade' => 1, 'agent' => 'Mr Nakata', 'min_standing' => 0]);
+        $job = Mission::query()->create([
+            'character_id' => $this->character->id, 'entity_id' => $entity->id, 'exchange_id' => $desk->id,
+            'action' => MissionAction::Extract, 'state' => MissionState::Accepted, 'quantity_required' => 0,
+            'creds_reward' => 100, 'standing_reward' => 0.02, 'loyalty_reward' => 1, 'penalty' => 0.02, 'offered_at' => now(),
+            'accepted_at' => now(), 'expires_at' => now()->addHours(5),
+        ]);
+        $job->targets()->create(['system_id' => $system->id, 'address' => $system->address]);
+        $this->begin();
+
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()
+            ->assertSeeText(Text::get('cyberspace.run.mission', ['action' => MissionAction::Extract->label(), 'entity' => $entity->name]));
     }
 
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void

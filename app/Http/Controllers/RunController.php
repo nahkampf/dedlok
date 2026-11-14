@@ -27,6 +27,7 @@ use App\Missions\MissionAction;
 use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\InventoryItem;
+use App\Models\Mission;
 use App\Models\Run;
 use App\Models\RunPartyMember;
 use App\Models\System;
@@ -440,6 +441,11 @@ class RunController extends Controller
         $system = $run->system();
 
         $response = response()->view('run.show', [
+            // The runner's open missions against this system: named on the run screen, so they know what they came for.
+            'missions' => $system === null ? collect() : Mission::query()->accepted()->with('entity')
+                ->where('character_id', $character->id)
+                ->whereHas('targets', fn ($q) => $q->whereNull('satisfied_at')->where('system_id', $system->getKey())->where('address', $system->address))
+                ->get(),
             'assess' => $this->assessment($character, $run),
             'character' => $character,
             'run' => $run,

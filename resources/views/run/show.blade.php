@@ -65,6 +65,14 @@
     </div>
 </div>
 
+{{-- WHAT THEY CAME FOR: every open mission of theirs against this system, by job and client. --}}
+@foreach ($missions as $mission)
+    <div class="callout" style="margin-top:var(--s-4)">
+        <p style="margin:0">{{ Text::get('cyberspace.run.mission', ['action' => $mission->action->label(), 'entity' => $mission->entity?->name ?? '']) }}</p>
+        <p class="micro" style="margin:var(--s-1) 0 0;color:var(--ink-2)">{{ $mission->action->description() }}</p>
+    </div>
+@endforeach
+
 {{-- A TREE RUN (docs/RUN_TREE.md): where you stand in the system, what you have found of it, and the noise bar. The bar
      is a meter against the IDS when the runner's scan read it, and only a count of points when it did not: how loud
      they have been, not how close the alarm is. --}}

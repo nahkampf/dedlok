@@ -209,27 +209,6 @@ final readonly class RunTree
             $crosses--;
         }
 
-        // A maintenance port from grade 3, a dead end off the rich path: off a conduit (which becomes a switch) or a
-        // crossover switch where there is one, otherwise off a vault. Never off a firewall. Drawn last, so adding it left
-        // every tree before it as it was.
-        $rich = array_search('rich', $paths, true);
-
-        if ($g >= 3 && $rich !== false) {
-            $ids = $own[$rich]['ids'];
-            $splits = array_values(array_filter($ids, static fn (int $id): bool => in_array($nodes[$id]['kind'], [NodeKind::Conduit, NodeKind::Switch], true)));
-            $from = $splits !== [] ? $splits : array_values(array_filter($ids, static fn (int $id): bool => $nodes[$id]['kind'] === NodeKind::Vault));
-
-            if ($from !== []) {
-                $at = $from[$r->getInt(0, count($from) - 1)];
-
-                if ($nodes[$at]['kind'] === NodeKind::Conduit) {
-                    $nodes[$at]['kind'] = NodeKind::Switch;
-                }
-
-                $edges[] = [$at, $add(NodeKind::Port)];
-            }
-        }
-
         // Internal relays from grade 3 on the quiet path: one of its conduits, and a second on a relay system where there
         // is room. Drawn after the port, so the trees before them kept every other node.
         $quiet = array_search('quiet', $paths, true);
@@ -309,6 +288,29 @@ final readonly class RunTree
 
                 $edges[] = [$at, $add(NodeKind::Log)];
             }
+        }
+
+        // A maintenance port from grade 3, a dead end off the rich path, off its conduit, switch or vault NEAREST THE
+        // CORE (a conduit becomes a switch), so a backdoor that brings you in there saves you the walk. If even that
+        // is no nearer the core than the entry, it hangs off the core itself. Placed after the traps and the log
+        // server, so the path it measures is the finished one.
+        $rich = array_search('rich', $paths, true);
+
+        if ($g >= 3 && $rich !== false) {
+            $shape = new self($nodes, $edges, $entry, $core);
+            $from = array_values(array_filter($own[$rich]['ids'], static fn (int $id): bool => in_array($nodes[$id]['kind'], [NodeKind::Conduit, NodeKind::Switch, NodeKind::Vault], true)));
+            usort($from, static fn (int $a, int $b): int => $shape->distance($a, $core) <=> $shape->distance($b, $core));
+            $at = $from[0] ?? $core;
+
+            if ((int) $shape->distance($at, $core) + 1 >= (int) $shape->distance($entry, $core)) {
+                $at = $core;
+            }
+
+            if ($nodes[$at]['kind'] === NodeKind::Conduit) {
+                $nodes[$at]['kind'] = NodeKind::Switch;
+            }
+
+            $edges[] = [$at, $add(NodeKind::Port)];
         }
 
         // Honeypots from grade 5: a vault other than the tree's first is sometimes a trap with bait (a quarter of the time,

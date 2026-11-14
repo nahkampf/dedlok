@@ -1826,6 +1826,8 @@ return [
             'evasion_grade' => 'Grade :grade',
             'evasion_port' => 'Grade :grade, maintenance port',
             'evasion_tunnel' => 'Grade :grade, Egress Tunnel :strength',
+            // The runner's open mission against this system, on the run screen.
+            'mission' => 'Mission for :entity: :action',
             'evasion_ice' => 'ICE activated, level :level',
             'evasion_ice_none' => 'Nothing activated',
             'evasion_difficulty' => 'Difficulty',
