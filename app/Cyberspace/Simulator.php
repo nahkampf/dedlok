@@ -304,7 +304,7 @@ final readonly class Simulator
             } elseif ($action === RunAction::Move) {
                 // LEAVING A SENTRY that hunts them costs its parting hit too.
                 foreach ($this->sentriesHere($run, awake: true) as $i => $sentry) {
-                    if (($sentry['target'] ?? null) === $run->getKey() && ($ice = Ice::query()->find($sentry['ice'])) !== null) {
+                    if (! ($sentry['barrier'] ?? false) && ($sentry['target'] ?? null) === $run->getKey() && ($ice = Ice::query()->find($sentry['ice'])) !== null) {
                         [$line, $parting, $extra] = $this->iceStrikes($character, $run, $ice);
                         $log = [...$log, $line, ...($extra === null ? [] : [$extra])];
 
@@ -469,6 +469,8 @@ final readonly class Simulator
                 $run->snared_until !== null && $run->turn < $run->snared_until => RunRefusal::Ensnared,
                 // On through a firewall only once it is breached; back the way you came is never blocked.
                 in_array([(int) $run->node, $node], $tree->edges, true) && $this->firewallClosed($run) => RunRefusal::FirewallClosed,
+                // Barrier ICE holds the way on from its node until it is broken; back the way you came is open.
+                in_array([(int) $run->node, $node], $tree->edges, true) && $this->barrierHolds($run) => RunRefusal::BarrierHolds,
                 default => null,
             },
             RunAction::Breach => $this->firewallClosed($run) ? null : RunRefusal::NotHere,
@@ -715,10 +717,26 @@ final readonly class Simulator
             return [];
         }
 
-        return array_map(static fn (array $s): array => [
+        $posted = array_map(static fn (array $s): array => [
             'post' => $s['post'], 'node' => $s['post'], 'ice' => $ice->getKey(), 'integrity' => (float) $ice->integrity,
             'awake' => false, 'fast' => $s['fast'], 'target' => null, 'cordon' => (bool) ($s['cordon'] ?? false), 'countdown' => null,
         ], $tree->sentries);
+
+        // BARRIER ICE: the same ICE, holding its node. Awake from the start (a wall, not a watcher), and it never moves.
+        if ($tree->barrier !== null) {
+            $posted[] = [
+                'post' => $tree->barrier, 'node' => $tree->barrier, 'ice' => $ice->getKey(), 'integrity' => (float) $ice->integrity,
+                'awake' => true, 'fast' => false, 'target' => null, 'cordon' => false, 'countdown' => null, 'barrier' => true,
+            ];
+        }
+
+        return $posted;
+    }
+
+    /** Unbroken barrier ICE stands on the runner's node: the way on from it is shut. */
+    public function barrierHolds(Run $run): bool
+    {
+        return collect($this->sentriesHere($run))->contains(static fn (array $s): bool => (bool) ($s['barrier'] ?? false));
     }
 
     /** @return array<int, array<string, mixed>> The unbroken sentries on the runner's node, keyed by their index. */
@@ -802,6 +820,25 @@ final readonly class Simulator
 
         foreach ($all as $i => $sentry) {
             if (! $sentry['awake'] || (float) $sentry['integrity'] <= 0) {
+                continue;
+            }
+
+            // BARRIER ICE never moves: it strikes a runner on its node (the least stealthy, then at random).
+            if ($sentry['barrier'] ?? false) {
+                $here = $live->filter(fn (Run $r): bool => $r->isLive() && (int) $r->node === (int) $sentry['node']);
+
+                if ($here->isNotEmpty() && ($ice = Ice::query()->find($sentry['ice'])) !== null) {
+                    $stealth = $here->mapWithKeys(fn (Run $r): array => [$r->getKey() => (float) Character::query()->find($r->character_id)?->stat('stealth')->value]);
+                    $target = $here->filter(fn (Run $r): bool => $stealth[$r->getKey()] === $stealth->min())->random();
+                    $character = Character::query()->find($target->character_id);
+
+                    if ($character !== null) {
+                        [$line, $dealt, $extra] = $this->iceStrikes($character, $target, $ice);
+                        $key = $target->getKey();
+                        $out[$key] = [[...($out[$key][0] ?? []), ...array_values(array_filter([$line, $extra]))], $out[$key][1] ?? $dealt];
+                    }
+                }
+
                 continue;
             }
 

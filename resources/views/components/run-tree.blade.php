@@ -48,7 +48,7 @@
                     @if ($node['here']) aria-current="location" @endif
                     style="left:{{ $node['x'] }}%;top:{{ $node['y'] }}%">
                     <span class="board__box">
-                        <span class="board__name">@if ($node['here'])<span class="here-mark" aria-hidden="true">&#9670;</span> @endif{{ $node['label'] }}@if ($node['allies'] > 0) <span class="board__count" title="{{ Text::get('cyberspace.tree.allies') }}">&#9671;{{ $node['allies'] > 1 ? $node['allies'] : '' }}</span>@endif @if ($node['ice'] ?? false) <span class="board__count" style="color:var(--crit)" title="{{ Text::get('cyberspace.tree.ice') }}">&#9632;</span>@endif @if (($node['sentries'] ?? 0) > 0) <span class="board__count" style="color:var(--crit)" title="{{ Text::get('cyberspace.tree.sentry') }}">&#9650;{{ $node['sentries'] > 1 ? $node['sentries'] : '' }}</span>@endif</span>
+                        <span class="board__name">@if ($node['here'])<span class="here-mark" aria-hidden="true">&#9670;</span> @endif{{ $node['label'] }}@if ($node['allies'] > 0) <span class="board__count" title="{{ Text::get('cyberspace.tree.allies') }}">&#9671;{{ $node['allies'] > 1 ? $node['allies'] : '' }}</span>@endif @if ($node['barrier'] ?? false) <span class="board__count" style="color:var(--crit)" title="{{ Text::get('cyberspace.tree.barrier') }}">&#9688;</span>@endif @if ($node['ice'] ?? false) <span class="board__count" style="color:var(--crit)" title="{{ Text::get('cyberspace.tree.ice') }}">&#9632;</span>@endif @if (($node['sentries'] ?? 0) > 0) <span class="board__count" style="color:var(--crit)" title="{{ Text::get('cyberspace.tree.sentry') }}">&#9650;{{ $node['sentries'] > 1 ? $node['sentries'] : '' }}</span>@endif</span>
                     </span>
                     {{-- A CORDON CUTTING this node: scissors and the turns left, under the box where nothing else is. --}}
                     @if (($node['cutting'] ?? null) !== null)
@@ -61,6 +61,6 @@
 @if ($static)
 </div>
 @else
-    <p class="micro here-legend"><span class="here-mark" aria-hidden="true">&#9670;</span> {{ Text::get('city.you_are_here') }} · &#9671; {{ Text::get('cyberspace.tree.allies') }} · <span style="color:var(--crit)" aria-hidden="true">&#9632;</span> {{ Text::get('cyberspace.tree.ice') }} · <span style="color:var(--crit)" aria-hidden="true">&#9650;</span> {{ Text::get('cyberspace.tree.sentry') }}</p>
+    <p class="micro here-legend"><span class="here-mark" aria-hidden="true">&#9670;</span> {{ Text::get('city.you_are_here') }} · &#9671; {{ Text::get('cyberspace.tree.allies') }} · <span style="color:var(--crit)" aria-hidden="true">&#9632;</span> {{ Text::get('cyberspace.tree.ice') }} · <span style="color:var(--crit)" aria-hidden="true">&#9688;</span> {{ Text::get('cyberspace.tree.barrier') }} · <span style="color:var(--crit)" aria-hidden="true">&#9650;</span> {{ Text::get('cyberspace.tree.sentry') }}</p>
 </form>
 @endif

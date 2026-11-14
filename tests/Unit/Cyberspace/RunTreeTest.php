@@ -159,6 +159,15 @@ final class RunTreeTest extends TestCase
 
         $this->assertTrue($grade >= 5 || ! in_array(true, array_column($tree->sentries, 'cordon'), true), $why);
 
+        // Barrier ICE from grade 5, on the fast path's first firewall.
+        if ($grade >= 5 && in_array('fast', $paths, true)) {
+            $this->assertNotNull($tree->barrier, $why);
+            $this->assertSame(NodeKind::Firewall, $tree->nodes[$tree->barrier]['kind'], $why);
+            $this->assertSame('fast', $tree->nodes[$tree->barrier]['path'], $why);
+        } else {
+            $this->assertNull($tree->barrier, $why);
+        }
+
         // Honeypots from grade 5, never a Node Disconnect, never the tree's first vault.
         $vaults = $tree->nodesOf(NodeKind::Vault);
 

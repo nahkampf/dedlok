@@ -69,6 +69,9 @@ enum RunRefusal: string
     /** A tree run: the deck will not run the Loopback (memory, compute, or no deck). */
     case LoopbackRefused = 'loopback_refused';
 
+    /** A tree run: a Move on past barrier ICE that is not broken. */
+    case BarrierHolds = 'barrier_holds';
+
     /** A tree run: an Ensnare trap holds the runner, so a Move is refused. */
     case Ensnared = 'ensnared';
 

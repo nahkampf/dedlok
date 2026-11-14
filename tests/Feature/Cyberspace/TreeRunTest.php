@@ -747,10 +747,12 @@ final class TreeRunTest extends TestCase
         System::query()->where('address', 'DEADBEEF')->update(['ice_id' => Ice::query()->where('level', 3)->value('id')]);
         $run = $this->begin();
 
-        $this->assertCount(2, $run->sentries, 'two at grade 7');
-        $this->assertSame(array_column($tree->sentries, 'post'), array_column($run->sentries, 'node'));
-        $this->assertSame([false, false], array_column($run->sentries, 'awake'));
-        $this->assertSame(Ice::query()->where('level', 2)->value('id'), $run->sentries[0]['ice']);
+        // The barrier rides in the same list (awake, never moving); the sentries proper are the rest.
+        $sentries = array_values(array_filter($run->sentries, static fn (array $s): bool => ! ($s['barrier'] ?? false)));
+        $this->assertCount(2, $sentries, 'two at grade 7');
+        $this->assertSame(array_column($tree->sentries, 'post'), array_column($sentries, 'node'));
+        $this->assertSame([false, false], array_column($sentries, 'awake'));
+        $this->assertSame(Ice::query()->where('level', 2)->value('id'), $sentries[0]['ice']);
     }
 
     public function test_an_awake_sentry_hunts_the_runner_and_strikes_on_reaching_them(): void
@@ -1034,6 +1036,35 @@ final class TreeRunTest extends TestCase
         $this->assertSame([$switch], $run->cutNodes());
         $this->assertSame($tree->entry, $run->node, 'the entry is the neighbour nearest an exit');
         $this->assertContains(Text::get('cyberspace.run.log.tree.cordon_thrown', ['node' => Text::get('cyberspace.tree.node.entry')]), array_column($run->log, 'text'));
+    }
+
+    public function test_barrier_ice_holds_the_fast_path_s_firewall_strikes_and_blocks_until_broken(): void
+    {
+        $tree = $this->grade7();
+        $wall = $tree->barrier;
+        $this->assertNotNull($wall);
+        $this->assertSame(NodeKind::Firewall, $tree->nodes[$wall]['kind']);
+        $this->assertSame('fast', $tree->nodes[$wall]['path']);
+
+        $run = $this->begin();
+        $barrier = collect($run->sentries)->firstWhere('barrier', true);
+        $this->assertTrue($barrier['awake'], 'a wall, awake from the start');
+        $this->assertSame(Ice::query()->where('level', 1)->value('id'), $barrier['ice'], 'a level below the system\'s own (level 1 at least)');
+
+        // On its node with the firewall open: the barrier still holds the way on, and strikes.
+        $run->forceFill(['node' => $wall, 'opened' => [$wall], 'sentries' => [$barrier]])->save();
+        $on = collect($tree->edges)->first(fn (array $e): bool => $e[0] === $wall)[1];
+        $back = collect($tree->edges)->first(fn (array $e): bool => $e[1] === $wall)[0];
+        $this->assertSame(RunRefusal::BarrierHolds, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $on)->refusal);
+        $si = (float) $this->character->fresh()->current_synaptic_integrity;
+        $this->simulator(0.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $this->assertLessThan($si, (float) $this->character->fresh()->current_synaptic_integrity, 'it strikes whoever is on its node');
+        $this->assertNull($this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $back)->refusal, 'back is open');
+        $this->assertSame($wall, $run->fresh()->sentries[0]['node'], 'and it never follows');
+
+        // Broken, the way on opens.
+        $run->fresh()->forceFill(['node' => $wall, 'sentries' => [['integrity' => 0.0] + $barrier]])->save();
+        $this->assertNull($this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $on)->refusal);
     }
 
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void

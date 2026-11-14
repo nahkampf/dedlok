@@ -34,6 +34,8 @@ final readonly class RunTree
         public int $entry,
         public int $core,
         public array $sentries = [],
+        // Barrier ICE holds this node (the fast path's first firewall, from grade 5); null for none.
+        public ?int $barrier = null,
     ) {}
 
     /** Whether runs on this system walk a tree (the flag is on, and it is an entity's silo, compute or relay on the main grid). */
@@ -56,7 +58,7 @@ final readonly class RunTree
 
         $nodes = array_map(static fn (array $n): array => $n['kind'] === NodeKind::Hub ? ['kind' => NodeKind::Conduit, 'path' => $n['path']] : $n, $tree->nodes);
 
-        return new self($nodes, $tree->edges, $tree->entry, $tree->core, $tree->sentries);
+        return new self($nodes, $tree->edges, $tree->entry, $tree->core, $tree->sentries, $tree->barrier);
     }
 
     public static function generate(string $address, int $grade, SystemType $type): self
@@ -352,7 +354,13 @@ final readonly class RunTree
             $sentries[$i]['cordon'] = $g >= 5 && $chance(1 / 3);
         }
 
-        return new self($nodes, $edges, $entry, $core, $sentries);
+        // Barrier ICE from grade 5 on the fast path's first firewall: no die, so nothing before it changed.
+        $fast = array_search('fast', $paths, true);
+        $barrier = $g >= 5 && $fast !== false
+            ? (array_values(array_filter($own[$fast]['ids'], static fn (int $id): bool => $nodes[$id]['kind'] === NodeKind::Firewall))[0] ?? null)
+            : null;
+
+        return new self($nodes, $edges, $entry, $core, $sentries, $barrier);
     }
 
     /** A honeypot: a vault that is a trap with bait. */
@@ -368,7 +376,7 @@ final readonly class RunTree
             return $this;
         }
 
-        return new self($this->nodes, array_values(array_filter($this->edges, static fn (array $e): bool => ! in_array($e[0], $cut, true) && ! in_array($e[1], $cut, true))), $this->entry, $this->core, $this->sentries);
+        return new self($this->nodes, array_values(array_filter($this->edges, static fn (array $e): bool => ! in_array($e[0], $cut, true) && ! in_array($e[1], $cut, true))), $this->entry, $this->core, $this->sentries, $this->barrier);
     }
 
     /** Where a backdoor brings its holder in: the maintenance port, or the core on a tree without one. */

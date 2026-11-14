@@ -25,7 +25,7 @@ use App\Support\Text;
 final readonly class TreeView
 {
     /**
-     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, cutting: ?int, move: bool, known: bool, threat?: bool, kind?: ?string, sprung?: bool, ice?: bool}>  $nodes
+     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, cutting: ?int, move: bool, known: bool, threat?: bool, kind?: ?string, sprung?: bool, ice?: bool, barrier?: bool}>  $nodes
      * @param  list<array{0: int, 1: int}>  $links
      */
     public function __construct(
@@ -145,7 +145,10 @@ final readonly class TreeView
             ->whereKeyNot($run->getKey())->pluck('node')->countBy()->all();
         $moves = $tree->neighbours($here);
         // Sentries are seen where the runner can see: a node they know.
-        $guards = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0)->countBy('node')->all();
+        /** @var \Illuminate\Support\Collection<int, array<string, mixed>> $standing */
+        $standing = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0);
+        $guards = $standing->reject(static fn (array $s): bool => (bool) ($s['barrier'] ?? false))->countBy('node')->all();
+        $barriers = $standing->filter(static fn (array $s): bool => (bool) ($s['barrier'] ?? false))->countBy('node')->all();
         // THREATS, drawn in ember where the runner knows them: a security hub nobody has subverted, a running ICE
         // controller, the core while its ICE stands, and any node with a sentry on it.
         $coreIce = $system->ice_id !== null && ! ($run->ice_id === null && (float) $run->ice_damage > 0);
@@ -156,14 +159,14 @@ final readonly class TreeView
             NodeKind::Controller => $controllerUp,
             NodeKind::Core => $coreIce,
             default => false,
-        } || ($guards[$n] ?? 0) > 0;
+        } || ($guards[$n] ?? 0) > 0 || ($barriers[$n] ?? 0) > 0;
         $shown = static fn (int $n): bool => in_array($traps[$n] ?? null, ['found', 'sprung'], true);
         // A Cordon cutting a node shows its countdown wherever the runner can see the node: that is the warning.
         $cutting = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0 && ($s['countdown'] ?? null) !== null)
             ->mapWithKeys(static fn (array $s): array => [(int) $s['node'] => (int) $s['countdown']])->all();
 
-        // A firewall nobody has breached lets them back the way they came, and no further.
-        if ($simulator->firewallClosed($run)) {
+        // A firewall nobody has breached, or barrier ICE standing, lets them back the way they came, and no further.
+        if ($simulator->firewallClosed($run) || $simulator->barrierHolds($run)) {
             $moves = array_values(array_filter($moves, static fn (int $n): bool => ! in_array([$here, $n], $tree->edges, true)));
         }
 
@@ -177,6 +180,7 @@ final readonly class TreeView
             'here' => $n === $here,
             'allies' => (int) ($allies[$n] ?? 0),
             'sentries' => in_array($n, $known, true) ? (int) ($guards[$n] ?? 0) : 0,
+            'barrier' => in_array($n, $known, true) && ($barriers[$n] ?? 0) > 0,
             'cutting' => $cutting[$n] ?? null,
             'move' => in_array($n, $moves, true),
             'known' => in_array($n, $known, true) || $shown($n),
@@ -230,6 +234,7 @@ final readonly class TreeView
                     : ''),
                 'integrity' => (float) $s['integrity'],
                 'awake' => (bool) $s['awake'],
+                'barrier' => (bool) ($s['barrier'] ?? false),
             ], $simulator->sentriesHere($run))),
             $simulator->controllerOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
             $simulator->refusal($character, $run, RunAction::Tunnel, null) === null,

@@ -346,6 +346,20 @@ the Cordon tag**, each designed and built on its own, traps first.
   it is loud.
 - **On the map**: a ▲ on nodes the runner knows, and a line naming the sentry on their own node.
 
+### Barrier ICE
+
+Decided 2026-11-14.
+
+- **From grade 5, on the fast path's first firewall** (`RunTree::$barrier`): the fast path is short but held twice.
+- **The ICE a level below the system's own** (as the sentries), kept in `runs.sentries` with `barrier: true`: awake
+  from the start, it never moves.
+- **It holds the way on**: a runner may step onto its node but not move on past it until it is broken
+  (`RunRefusal::BarrierHolds`); back the way they came is open, and it never follows. Broken, it stays broken for the
+  party. With the firewall there too, both must be dealt with.
+- **It strikes a runner on its node** each sentry turn (the least stealthy, then at random); leaving costs no parting
+  hit. Attack hits it as it hits a sentry.
+- **On the map** an ember ◘ on its node and in the legend.
+
 ### ICE controller
 
 - **From grade 6, a dead end off the core** (`NodeKind::Controller`), drawn past it. Nothing below grade 6: posting

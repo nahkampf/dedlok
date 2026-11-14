@@ -129,7 +129,7 @@
         @endif
         @foreach ($tree->sentriesHere as $sentry)
             <p class="micro" style="color:var(--{{ $sentry['awake'] ? 'crit' : 'ink-2' }});margin:0 0 var(--s-2)">
-                {{ Text::get($sentry['awake'] ? 'cyberspace.tree.sentry_awake' : 'cyberspace.tree.sentry_asleep', ['name' => $sentry['name'], 'integrity' => rtrim(rtrim(number_format($sentry['integrity'], 2), '0'), '.')]) }}
+                {{ Text::get(($sentry['barrier'] ?? false) ? 'cyberspace.tree.barrier_here' : ($sentry['awake'] ? 'cyberspace.tree.sentry_awake' : 'cyberspace.tree.sentry_asleep'), ['name' => $sentry['name'], 'integrity' => rtrim(rtrim(number_format($sentry['integrity'], 2), '0'), '.')]) }}
             </p>
         @endforeach
         @if ($tree->tunnelling)
