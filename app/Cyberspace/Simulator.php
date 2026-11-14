@@ -388,8 +388,8 @@ final readonly class Simulator
 
     /**
      * What a turn may not be spent on, refused before it costs anything. Only tree runs have anything here: a Move must
-     * go one edge, Nmap needs an Nmapper running, and the core's actions (the entry's, for a Flood) need you standing
-     * there. Your position is on the screen, so saying so gives nothing away.
+     * go one edge, Nmap needs an Nmapper running, and the core's actions (an exit's, for a Flood or an Egress) need you
+     * standing there. Your position is on the screen, so saying so gives nothing away.
      */
     public function refusal(Character $character, Run $run, RunAction $action, ?int $node): ?RunRefusal
     {
@@ -415,7 +415,8 @@ final readonly class Simulator
             // A data vault takes an Extract too.
             RunAction::Extract => (int) $run->node !== $tree->core && $tree->nodes[(int) $run->node]['kind'] !== NodeKind::Vault ? RunRefusal::NotHere : null,
             RunAction::Install, RunAction::Burn, RunAction::Leech, RunAction::Attack => (int) $run->node !== $tree->core ? RunRefusal::NotHere : null,
-            RunAction::Flood, RunAction::Egress => (int) $run->node !== $tree->entry ? RunRefusal::NotHere : null,
+            // The entry or a maintenance port.
+            RunAction::Flood, RunAction::Egress => ! $tree->isExit((int) $run->node) ? RunRefusal::NotHere : null,
             default => null,
         };
     }
@@ -1457,7 +1458,8 @@ final readonly class Simulator
 
         $grade = System::query()->where('address', $run->address)->value('grade');
         $grade = $grade === null ? null : (int) $grade;
-        $gradeDifficulty = (int) ($table[$grade] ?? ($table[1] ?? 0));
+        $port = $this->atPort($run);
+        $gradeDifficulty = (int) ($table[$grade === null ? 1 : max(1, $grade - ($port ? 1 : 0))] ?? ($table[1] ?? 0));
 
         $ice = $run->ice_id === null || ! $run->iceReachesHere() ? null : Ice::query()->find($run->ice_id);
         $snare = $ice?->attackLevel(AttackTag::Ensnare);
@@ -1477,6 +1479,7 @@ final readonly class Simulator
             snareLevel: $snare,
             multiplier: $multiplier,
             chance: $this->checks->chance($resolved->value, (float) $difficulty, 'egress', $multiplier),
+            port: $port,
         );
     }
 
@@ -1500,7 +1503,16 @@ final readonly class Simulator
         // Only an ICE that can reach the runner holds them (on a tree run, one on the core while they are at the entry cannot).
         $level = $run->ice_id === null || ! $run->iceReachesHere() ? 0 : (int) (Ice::query()->whereKey($run->ice_id)->value('level') ?? 0);
 
-        return $this->egressDifficultyFor((int) $grade, $level);
+        // A maintenance port asks what the grade below would.
+        return $this->egressDifficultyFor(max(1, (int) $grade - ($this->atPort($run) ? 1 : 0)), $level);
+    }
+
+    /** Standing on a maintenance port of a tree run. */
+    private function atPort(Run $run): bool
+    {
+        $tree = $run->isTreeRun() ? $this->treeOf($run) : null;
+
+        return $tree !== null && ($tree->nodes[(int) $run->node]['kind'] ?? null) === NodeKind::Port;
     }
 
     /** What leaving a system of this grade asks, with an awake ICE of this level (0 for none). Public for the Assessor. */

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Cyberspace\Tree;
 
 /**
- * What a node in a run tree is (docs/RUN_TREE.md). Step 1's six; relays, security hubs, maintenance ports, traps and the
- * rest arrive with later phases.
+ * What a node in a run tree is (docs/RUN_TREE.md). Step 1's six and phase 2's maintenance port; relays, security hubs, traps
+ * and the rest arrive with later steps.
  */
 enum NodeKind: string
 {
-    /** Where a run arrives, and the one exit until maintenance ports exist. */
+    /** Where a run arrives, and an exit. */
     case Entry = 'entry';
 
     /** Where paths split. Never where they merge. */
@@ -24,6 +24,9 @@ enum NodeKind: string
 
     /** Extra loot off the path: about a third of a core's roll, no lock. */
     case Vault = 'vault';
+
+    /** A maintenance port: a second exit, a dead end off the rich path. Egress here rolls against the grade below's difficulty. */
+    case Port = 'port';
 
     /** What the run is for. A firewall too, and where the system's ICE stands. */
     case Core = 'core';

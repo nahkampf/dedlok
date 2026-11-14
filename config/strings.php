@@ -1294,6 +1294,7 @@ return [
                 'conduit' => 'Conduit',
                 'firewall' => 'Firewall',
                 'vault' => 'Data vault',
+                'port' => 'Maintenance port',
                 'core' => 'Core',
             ],
         ],
@@ -1790,6 +1791,7 @@ return [
             'evasion_unmodified' => 'Nothing you carry moves it.',
             'evasion_against' => 'Opposition',
             'evasion_grade' => 'Grade :grade',
+            'evasion_port' => 'Grade :grade, maintenance port',
             'evasion_ice' => 'ICE activated, level :level',
             'evasion_ice_none' => 'Nothing activated',
             'evasion_difficulty' => 'Difficulty',
@@ -2173,9 +2175,10 @@ return [
             'layout' => ':paths, :moves to the core',
             'paths' => ['one' => '1 path', 'many' => ':count paths'],
             'moves' => ['one' => '1 move', 'many' => ':count moves'],
-            'nodes' => ':firewalls, :vaults',
+            'nodes' => ':firewalls, :vaults, :ports',
             'firewalls' => ['zero' => 'no firewalls', 'one' => '1 firewall', 'many' => ':count firewalls'],
             'vaults' => ['zero' => 'no data vaults', 'one' => '1 data vault', 'many' => ':count data vaults'],
+            'ports' => ['zero' => 'no maintenance ports', 'one' => '1 maintenance port', 'many' => ':count maintenance ports'],
 
             /*
             | The guard and the reprisal, read together. A machine whose owner

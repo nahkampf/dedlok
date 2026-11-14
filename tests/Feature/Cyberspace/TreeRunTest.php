@@ -407,6 +407,30 @@ final class TreeRunTest extends TestCase
         $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Egress)->refusal);
     }
 
+    public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void
+    {
+        // A grade 3 compute tree with a rich path, and so a port.
+        for ($i = 0; RunTree::generate($address = sprintf('%08X', crc32("port-{$i}")), 3, SystemType::Compute)->nodesOf(NodeKind::Port) === []; $i++);
+        System::query()->where('address', 'DEADBEEF')->update(['address' => $address]);
+        $tree = RunTree::of(System::query()->where('address', $address)->sole());
+        $port = $tree->nodesOf(NodeKind::Port)[0];
+
+        $run = $this->begin();
+        $atEntry = app(Simulator::class)->egressReport($this->character->fresh(), $run);
+        $run->forceFill(['node' => $port])->save();
+        $atPort = app(Simulator::class)->egressReport($this->character->fresh(), $run->fresh());
+
+        $this->assertFalse($atEntry->port);
+        $this->assertSame(7, $atEntry->gradeDifficulty);
+        $this->assertTrue($atPort->port);
+        $this->assertSame(5, $atPort->gradeDifficulty, "grade 2's");
+        $this->assertNull($this->simulator(0.0)->refusal($this->character->fresh(), $run->fresh(), RunAction::Flood, null));
+
+        $result = $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Egress);
+        $this->assertNull($result->refusal);
+        $this->assertSame(RunEnding::Egress, $result->ending);
+    }
+
     public function test_the_ice_on_the_core_strikes_nobody_elsewhere_and_holds_nobody_at_the_entry(): void
     {
         $run = $this->begin();

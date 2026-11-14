@@ -223,3 +223,27 @@ Decided 2026-11-13, replacing the per-action detection chances.
 - **A vault's haul does not finish the run**: no `extracted`, no raid, no standing lost, no mission credit. Only the core.
 - **One pull at a time, belonging to its node** (`runs.pull_node`): Extract at another node drops the paused pull, its
   files staying where they were, and starts there.
+
+## Phase 2
+
+Decided 2026-11-14. **Phase 2 is the maintenance port, the security hub, the internal relay (with its Loopback script)
+and backdoors at any node**, each designed and built on its own, in that order. The noise bar already does the alarm
+states' job.
+
+### Maintenance port
+
+- **A dead end off the rich path, one per tree from grade 3** wherever a rich path exists (`NodeKind::Port`). It hangs
+  off a conduit (which becomes a switch) or a crossover switch, otherwise off the rich path's vault; never off a
+  firewall. Placed last in the generator, so the trees it joins keep every other node. The safe path, when it arrives
+  with the relay, gets one too.
+- **An exit**: Egress and Flood work there as at the entry (`RunTree::isExit`).
+- **Egress there asks the grade below's difficulty** (a grade 5 port rolls against grade 4's 9), plus a reaching ICE as
+  usual. The working on the run screen names the port.
+- **The scan's Nodes reading counts ports** alongside firewalls and vaults.
+- **Drawn in a lane of its own** below the rich path.
+
+### Backdoors (to change, with backdoors at any node)
+
+- **A backdoor on the system takes you to the maintenance port, not the core** (noted 2026-11-14). Today it still
+  starts at the core; this changes when backdoors at any node are built, and what a tree with no port does is decided
+  then.

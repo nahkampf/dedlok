@@ -31,7 +31,8 @@ final readonly class TreeView
         public array $links,
         public int $cols,
         public int $lanes,
-        public bool $atEntry,
+        // On the entry or a maintenance port: where egress (and a Flood) is possible.
+        public bool $atExit,
         public bool $atCore,
         public bool $canNmap,
         public float $noise,
@@ -97,7 +98,7 @@ final readonly class TreeView
             $links,
             $maxCol + 1,
             $lanes,
-            $here === $tree->entry,
+            $tree->isExit($here),
             $here === $tree->core,
             $simulator->refusal($character, $run, RunAction::Nmap, null) === null,
             $simulator->noiseLevel($run),

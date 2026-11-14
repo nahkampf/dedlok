@@ -198,7 +198,34 @@ final readonly class RunTree
             $crosses--;
         }
 
+        // A maintenance port from grade 3, a dead end off the rich path: off a conduit (which becomes a switch) or a
+        // crossover switch where there is one, otherwise off a vault. Never off a firewall. Drawn last, so adding it left
+        // every tree before it as it was.
+        $rich = array_search('rich', $paths, true);
+
+        if ($g >= 3 && $rich !== false) {
+            $ids = $own[$rich]['ids'];
+            $splits = array_values(array_filter($ids, static fn (int $id): bool => in_array($nodes[$id]['kind'], [NodeKind::Conduit, NodeKind::Switch], true)));
+            $from = $splits !== [] ? $splits : array_values(array_filter($ids, static fn (int $id): bool => $nodes[$id]['kind'] === NodeKind::Vault));
+
+            if ($from !== []) {
+                $at = $from[$r->getInt(0, count($from) - 1)];
+
+                if ($nodes[$at]['kind'] === NodeKind::Conduit) {
+                    $nodes[$at]['kind'] = NodeKind::Switch;
+                }
+
+                $edges[] = [$at, $add(NodeKind::Port)];
+            }
+        }
+
         return new self($nodes, $edges, $entry, $core);
+    }
+
+    /** Where egress is possible: the entry or a maintenance port. */
+    public function isExit(int $node): bool
+    {
+        return $node === $this->entry || ($this->nodes[$node]['kind'] ?? null) === NodeKind::Port;
     }
 
     /** @return list<int> The nodes one edge away, either direction. */
@@ -270,7 +297,8 @@ final readonly class RunTree
     /**
      * Where each node is drawn, left to right: its column is the longest way to it from the entry along the edges (so a
      * crossover never points backwards), its lane the path it belongs to. Nodes on no path (the entry, a switch where
-     * paths split, the conduit where quiet and rich meet, the core) sit between the lanes they join.
+     * paths split, the conduit where quiet and rich meet, the core) sit between the lanes they join; a maintenance port
+     * in a lane of its own below the rich path it hangs off.
      *
      * @return array<int, array{col: int, lane: float}>
      */
@@ -302,6 +330,10 @@ final readonly class RunTree
         foreach ($this->nodes as $id => $node) {
             $lane = $node['path'] !== null ? (float) $lanes[$node['path']] : $middle;
 
+            if ($node['kind'] === NodeKind::Port) {
+                $lane = (float) count($paths);
+            }
+
             // The conduit where quiet and rich meet sits between them.
             if ($node['path'] === null && $node['kind'] === NodeKind::Conduit && isset($lanes['quiet'], $lanes['rich'])) {
                 $lane = ($lanes['quiet'] + $lanes['rich']) / 2;
@@ -316,7 +348,7 @@ final readonly class RunTree
     /** How many lanes the drawing needs. */
     public function lanes(): int
     {
-        return max(1, count(array_unique(array_filter(array_column($this->nodes, 'path')))));
+        return max(1, count(array_unique(array_filter(array_column($this->nodes, 'path'))))) + ($this->nodesOf(NodeKind::Port) !== [] ? 1 : 0);
     }
 
     /** @return list<int> */

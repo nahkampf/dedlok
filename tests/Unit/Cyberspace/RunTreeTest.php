@@ -96,6 +96,20 @@ final class RunTreeTest extends TestCase
             $this->assertNotEmpty($tree->nodesOf(NodeKind::Vault), $why);
         }
 
+        // A maintenance port from grade 3 wherever there is a rich path: one, a dead end, hanging off a rich node that
+        // is not a firewall; and it never shortens the way to the core.
+        $ports = $tree->nodesOf(NodeKind::Port);
+        $rich = in_array('rich', $paths, true);
+        $this->assertCount($grade >= 3 && $rich ? 1 : 0, $ports, $why);
+
+        foreach ($ports as $port) {
+            $this->assertTrue($tree->isExit($port), $why);
+            $this->assertCount(1, $tree->neighbours($port), $why);
+            $from = $tree->nodes[$tree->neighbours($port)[0]];
+            $this->assertSame('rich', $from['path'], $why);
+            $this->assertContains($from['kind'], [NodeKind::Switch, NodeKind::Vault], $why);
+        }
+
         // The quiet path is the long one: about 5 moves at grade 5 and 7 at grade 9 when nothing cuts across.
         $this->assertLessThanOrEqual(2 + (int) round(($grade - 1) * 7 / 8) - 1, $tree->distance($tree->entry, $tree->core), $why);
     }

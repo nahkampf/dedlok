@@ -239,7 +239,7 @@
         </div>
         <div class="card__stats">
             <div class="card__stat">
-                <span>{{ $egress->grade === null ? Text::get('cyberspace.run.evasion_ice_none') : Text::get('cyberspace.run.evasion_grade', ['grade' => $egress->grade]) }}</span>
+                <span>{{ $egress->grade === null ? Text::get('cyberspace.run.evasion_ice_none') : Text::get($egress->port ? 'cyberspace.run.evasion_port' : 'cyberspace.run.evasion_grade', ['grade' => $egress->grade]) }}</span>
                 <b class="num">{{ $egress->gradeDifficulty }}</b>
             </div>
             <div class="card__stat">
@@ -393,7 +393,7 @@
                  ember means destructive, and there is nothing in the game this word fits better. It cannot
                  be pressed twice — the system is gone and the run is over the moment it lands. --}}
             @endif
-            @if ($run->purpose === RunPurpose::Denial && (! $tree || $tree->atEntry))
+            @if ($run->purpose === RunPurpose::Denial && (! $tree || $tree->atExit))
                 <div style="min-width:min(160px,100%)">
                     <span class="micro">{{ Text::get('cyberspace.run.pressure') }}</span>
                     <div class="meter" style="--v:{{ min(1, max(0, $run->pressure / \App\Cyberspace\Simulator::denialTarget($run))) }}"
@@ -442,7 +442,7 @@
             @endif
             {{-- A TREE RUN LEAVES BY THE ENTRY: elsewhere the button is there but cannot be pressed. --}}
             <button type="submit" name="action" value="egress" class="btn btn--warn cut"
-                    data-inspect="#egress-working" data-inspect-hover @if ($tree && ! $tree->atEntry) disabled @endif>
+                    data-inspect="#egress-working" data-inspect-hover @if ($tree && ! $tree->atExit) disabled @endif>
                 {{ Text::get('cyberspace.run.egress_chance', ['chance' => $egress->percent()]) }}
             </button>
         </div>
