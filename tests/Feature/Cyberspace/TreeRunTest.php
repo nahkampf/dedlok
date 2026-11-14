@@ -813,6 +813,58 @@ final class TreeRunTest extends TestCase
         $this->assertSame($tree->entry, $run->fresh()->sentries[0]['node'], 'a broken sentry goes nowhere');
     }
 
+    public function test_the_ice_controller_posts_a_sentry_every_third_turn_after_the_alert_until_shut_down(): void
+    {
+        $tree = $this->grade7();
+        $controller = $tree->nodesOf(NodeKind::Controller)[0];
+        $run = $this->begin();
+        $this->assertSame(['ticks' => 0, 'spawned' => 0, 'down' => false], $run->controller);
+        $run->forceFill(['sentries' => [], 'alerted' => true])->save();
+
+        foreach (range(1, 3) as $turn) {
+            $this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        }
+
+        $run = $run->fresh();
+        $this->assertCount(1, $run->sentries);
+        $this->assertSame($controller, $run->sentries[0]['post']);
+        $this->assertTrue($run->sentries[0]['awake']);
+
+        $os = Skill::factory()->create(['slug' => 'lattice', 'title' => 'Lattice', 'category' => 'Operating Systems', 'rank' => 4]);
+        System::query()->where('address', 'DEADBEEF')->update(['os_skill_id' => $os->id]);
+        $run->forceFill(['node' => $controller, 'sentries' => []])->save();
+        $this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Shutdown);
+        $this->assertTrue($run->fresh()->controller['down']);
+
+        foreach (range(1, 3) as $turn) {
+            $this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        }
+
+        $this->assertSame([], $run->fresh()->sentries, 'shut down, it posts nothing more');
+    }
+
+    public function test_a_cordon_walks_onto_the_way_out_and_cuts_a_node_after_its_countdown(): void
+    {
+        $tree = $this->grade7();
+        $run = $this->sentry($tree->core, $tree->core);
+        // Mapped, so the whole tree is drawn and the countdown can be seen wherever it is.
+        $run->forceFill(['node' => $tree->core, 'mapped' => true, 'sentries' => [['cordon' => true, 'countdown' => null] + $run->sentries[0]]])->save();
+
+        for ($turn = 0; $turn < 12 && $run->fresh()->cutNodes() === []; $turn++) {
+            $this->simulator(0.0, 1)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+
+            if (($run->fresh()->sentries[0]['countdown'] ?? null) !== null) {
+                $node = (int) $run->fresh()->sentries[0]['node'];
+                $this->assertNotNull(collect(TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->nodes)->firstWhere('key', $node)['cutting'], 'the countdown shows on the map');
+            }
+        }
+
+        $cut = $run->fresh()->cutNodes();
+        $this->assertCount(1, $cut);
+        $this->assertContains($tree->nodes[$cut[0]]['kind'], [NodeKind::Relay, NodeKind::Switch, NodeKind::Port]);
+        $this->assertSame($tree->core, $run->fresh()->node, 'the runner never moved');
+    }
+
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void
     {
         // A grade 3 compute tree with a rich path, and so a port.

@@ -200,6 +200,10 @@ final readonly class RunStarter
                         // The tree's sentries, as the party already has them (one set for everybody), or fresh at their posts.
                         'sentries' => ($partyId === null ? null : Run::query()->live()->where('run_party_id', $partyId)->whereNotNull('sentries')->first()?->sentries)
                             ?? Simulator::postedSentries($system, $tree),
+                        // An ICE controller waits for the alert (the party's, if it has one).
+                        'controller' => $tree->nodesOf(NodeKind::Controller) === [] ? null
+                            : (($partyId === null ? null : Run::query()->live()->where('run_party_id', $partyId)->whereNotNull('controller')->first()?->controller)
+                                ?? ['ticks' => 0, 'spawned' => 0, 'down' => false]),
                         'noise' => 0,
                     ]),
                     'character_id' => $character->getKey(),

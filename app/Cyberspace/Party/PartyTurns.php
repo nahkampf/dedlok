@@ -276,7 +276,12 @@ final class PartyTurns
             return;
         }
 
-        foreach ($this->simulator->sentriesAct($live, $live->first()) as $runId => [$lines, $ending]) {
+        $actor = $live->first();
+        $results = $this->simulator->sentriesAct($live, $actor);
+        // The actor carries the party's sentries, controller and any node a Cordon cut; the others were written alongside.
+        $actor->save();
+
+        foreach ($results as $runId => [$lines, $ending]) {
             $run = $live->first(fn (Run $r): bool => $r->getKey() === $runId);
             $character = $run === null ? null : Character::query()->find($run->character_id);
 

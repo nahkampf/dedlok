@@ -42,7 +42,7 @@
                     @if ($node['here']) aria-current="location" @endif
                     style="left:{{ $node['x'] }}%;top:{{ $node['y'] }}%">
                     <span class="board__box">
-                        <span class="board__name">@if ($node['here'])<span class="here-mark" aria-hidden="true">&#9670;</span> @endif{{ $node['label'] }}@if ($node['allies'] > 0) <span class="board__count" title="{{ Text::get('cyberspace.tree.allies') }}">&#9671;{{ $node['allies'] > 1 ? $node['allies'] : '' }}</span>@endif @if (($node['sentries'] ?? 0) > 0) <span class="board__count" style="color:var(--crit)" title="{{ Text::get('cyberspace.tree.sentry') }}">&#9650;{{ $node['sentries'] > 1 ? $node['sentries'] : '' }}</span>@endif</span>
+                        <span class="board__name">@if ($node['here'])<span class="here-mark" aria-hidden="true">&#9670;</span> @endif{{ $node['label'] }}@if ($node['allies'] > 0) <span class="board__count" title="{{ Text::get('cyberspace.tree.allies') }}">&#9671;{{ $node['allies'] > 1 ? $node['allies'] : '' }}</span>@endif @if (($node['sentries'] ?? 0) > 0) <span class="board__count" style="color:var(--crit)" title="{{ Text::get('cyberspace.tree.sentry') }}">&#9650;{{ $node['sentries'] > 1 ? $node['sentries'] : '' }}</span>@endif @if (($node['cutting'] ?? null) !== null) <span class="board__count" style="color:var(--crit)" title="{{ Text::get('cyberspace.tree.cutting', ['turns' => $node['cutting']]) }}">&#10006;{{ $node['cutting'] }}</span>@endif</span>
                     </span>
                 </{{ $tag }}>
             @endforeach

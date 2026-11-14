@@ -43,6 +43,9 @@ enum NodeKind: string
     /** A log server, a dead end off the quiet or rich path from grade 5: wiped, an alert that already went off costs nothing after the run. */
     case Log = 'log';
 
+    /** An ICE controller, a dead end off the core from grade 6: after the alert it posts a sentry every 3 turns, up to 3, until shut down. */
+    case Controller = 'controller';
+
     /** What the run is for. A firewall too, and where the system's ICE stands. */
     case Core = 'core';
 }

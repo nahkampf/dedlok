@@ -337,6 +337,9 @@ final readonly class Simulator
 
                 // Stepping onto a sleeping sentry's node: their stealth against its detection.
                 $log = [...$log, ...$this->sentriesLook($character, $run)];
+            } elseif ($action === RunAction::Shutdown) {
+                [$downLog, $breachTier] = $this->shutDown($character, $run);
+                $log = [...$log, ...$downLog];
             } elseif ($action === RunAction::Wipe) {
                 [$wipeLog, $breachTier] = $this->wipe($character, $run);
                 $log = [...$log, ...$wipeLog];
@@ -446,7 +449,7 @@ final readonly class Simulator
     public function refusal(Character $character, Run $run, RunAction $action, ?int $node): ?RunRefusal
     {
         if (! $run->isTreeRun()) {
-            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Loopback, RunAction::Disarm, RunAction::Wipe, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
+            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Loopback, RunAction::Disarm, RunAction::Wipe, RunAction::Shutdown, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
         }
 
         $tree = $this->treeOf($run);
@@ -466,6 +469,7 @@ final readonly class Simulator
             RunAction::Breach => $this->firewallClosed($run) ? null : RunRefusal::NotHere,
             RunAction::Subvert => $this->hubOpen($run) ? null : RunRefusal::NotHere,
             RunAction::Wipe => $this->logOpen($run) ? null : RunRefusal::NotHere,
+            RunAction::Shutdown => $this->controllerOpen($run) ? null : RunRefusal::NotHere,
             // A found trap one edge away, on a system with an OS to speak.
             RunAction::Disarm => $node === null || ! in_array($node, $tree->neighbours((int) $run->node), true)
                 || $this->liveTrap($run, $node) === null || ($run->trapStates()[$node] ?? null) !== 'found'
@@ -695,7 +699,7 @@ final readonly class Simulator
 
         return array_map(static fn (array $s): array => [
             'post' => $s['post'], 'node' => $s['post'], 'ice' => $ice->getKey(), 'integrity' => (float) $ice->integrity,
-            'awake' => false, 'fast' => $s['fast'], 'target' => null,
+            'awake' => false, 'fast' => $s['fast'], 'target' => null, 'cordon' => (bool) ($s['cordon'] ?? false), 'countdown' => null,
         ], $tree->sentries);
     }
 
@@ -747,17 +751,50 @@ final readonly class Simulator
      */
     public function sentriesAct(Collection $live, Run $actor): array
     {
-        $all = $this->sentriesOf($actor);
         $tree = $this->treeOf($actor);
 
-        if ($all === [] || $tree === null) {
+        if ($tree === null) {
             return [];
         }
 
         $out = [];
+        $everybody = function (array $line) use ($live, &$out): void {
+            foreach ($live as $r) {
+                $out[$r->getKey()] = [[...($out[$r->getKey()][0] ?? []), $line], $out[$r->getKey()][1] ?? null];
+            }
+        };
+
+        // THE ICE CONTROLLER beside the core: after the alert, one sentry every third sentry turn, three at most.
+        $controller = $actor->controller;
+        $at = $tree->nodesOf(NodeKind::Controller)[0] ?? null;
+
+        if ($at !== null && $actor->alerted && is_array($controller) && ! $controller['down'] && $controller['spawned'] < 3) {
+            $controller['ticks']++;
+
+            if ($controller['ticks'] % 3 === 0 && $actor->system() !== null && ($spawn = self::postedSentries($actor->system(), new RunTree($tree->nodes, $tree->edges, $tree->entry, $tree->core, [['post' => $at, 'fast' => false]]))) !== []) {
+                $actor->sentries = [...$this->sentriesOf($actor), ['awake' => true] + $spawn[0]];
+                $controller['spawned']++;
+                $everybody($this->line('cyberspace.run.log.tree.controller_spawns', tone: 'crit'));
+            }
+
+            $this->writeController($actor, $controller);
+        }
+
+        $all = $this->sentriesOf($actor);
 
         foreach ($all as $i => $sentry) {
             if (! $sentry['awake'] || (float) $sentry['integrity'] <= 0) {
+                continue;
+            }
+
+            // A CORDON cuts the way out instead of hunting, while it has a node worth cutting.
+            if (($sentry['cordon'] ?? false) && ($cut = $this->cordonTurn($tree, $live, $sentry, $actor)) !== null) {
+                [$all[$i], $line] = $cut;
+
+                if ($line !== null) {
+                    $everybody($line);
+                }
+
                 continue;
             }
 
@@ -804,6 +841,118 @@ final readonly class Simulator
         $this->writeSentries($actor, $all);
 
         return $out;
+    }
+
+    /**
+     * One turn of a Cordon sentry: cutting where it stands counts down and, at zero, tears the node out for the party;
+     * otherwise it picks the node to cut and walks there. The node: on the shortest way from the runner nearest it to
+     * that runner's nearest exit, an internal relay, switch or maintenance port, the one whose loss lengthens the way out
+     * most (or closes it). Null when there is no such node: it hunts like any sentry instead.
+     *
+     * @param  Collection<int, Run>  $live
+     * @return array{0: array<string, mixed>, 1: ?array{text: string, tone: string}}|null The sentry after its turn, and a line for everybody.
+     */
+    private function cordonTurn(RunTree $tree, Collection $live, array $sentry, Run $actor): ?array
+    {
+        $node = (int) $sentry['node'];
+
+        if ($sentry['countdown'] !== null) {
+            $sentry['countdown']--;
+
+            if ($sentry['countdown'] > 0) {
+                return [$sentry, null];
+            }
+
+            $actor->markTrap($node, 'cut');
+            $sentry['countdown'] = null;
+            // It steps off the node it tore out, back the way it came.
+            $sentry['node'] = $tree->neighbours($node)[0] ?? $node;
+
+            return [$sentry, $this->line('cyberspace.run.log.tree.cordon_cuts', tone: 'crit')];
+        }
+
+        $runs = $live->filter(fn (Run $r): bool => $r->isLive() && $tree->distance($node, (int) $r->node) !== null);
+        $runner = $runs->sortBy(fn (Run $r): int => (int) $tree->distance($node, (int) $r->node))->first();
+
+        if ($runner === null) {
+            return null;
+        }
+
+        $exits = array_values(array_filter([$tree->entry, ...$tree->nodesOf(NodeKind::Port)], static fn (int $e): bool => $tree->distance((int) $runner->node, $e) !== null));
+        $escape = static fn (RunTree $t): int => min(array_map(static fn (int $e): int => $t->distance((int) $runner->node, $e) ?? PHP_INT_MAX, $exits ?: [$tree->entry]));
+
+        if ($exits === []) {
+            return null;
+        }
+
+        usort($exits, static fn (int $a, int $b): int => $tree->distance((int) $runner->node, $a) <=> $tree->distance((int) $runner->node, $b));
+        $route = $tree->path((int) $runner->node, $exits[0]);
+        $cuttable = array_values(array_filter($route, static fn (int $n): bool => $n !== (int) $runner->node
+            && in_array($tree->nodes[$n]['kind'], [NodeKind::Relay, NodeKind::Switch, NodeKind::Port], true)));
+
+        if ($cuttable === []) {
+            return null;
+        }
+
+        usort($cuttable, static fn (int $a, int $b): int => $escape($tree->cut([$b])) <=> $escape($tree->cut([$a])));
+        $goal = $cuttable[0];
+
+        for ($step = 0; $step < ($sentry['fast'] ? 2 : 1) && (int) $sentry['node'] !== $goal; $step++) {
+            $way = $tree->path((int) $sentry['node'], $goal);
+
+            if (count($way) < 2) {
+                break;
+            }
+
+            $sentry['node'] = $way[1];
+        }
+
+        if ((int) $sentry['node'] === $goal) {
+            $sentry['countdown'] = 2;
+
+            return [$sentry, $this->line('cyberspace.run.log.tree.cordon_starts', tone: 'crit')];
+        }
+
+        return [$sentry, null];
+    }
+
+    /** One controller for a party, written on every live run of it. */
+    private function writeController(Run $run, ?array $controller): void
+    {
+        $run->controller = $controller;
+
+        if ($run->run_party_id !== null) {
+            Run::query()->live()->where('run_party_id', $run->run_party_id)->whereKeyNot($run->getKey())
+                ->update(['controller' => $controller === null ? null : json_encode($controller)]);
+        }
+    }
+
+    /** Standing on the ICE controller while it still runs, on a system with an OS to speak. */
+    public function controllerOpen(Run $run): bool
+    {
+        $tree = $this->treeOf($run);
+
+        return $tree !== null && $tree->nodes[(int) $run->node]['kind'] === NodeKind::Controller
+            && is_array($run->controller) && ! $run->controller['down'] && $run->system()?->os_skill_id !== null;
+    }
+
+    /**
+     * SHUT DOWN the ICE controller: the OS roll. Landed, it posts nothing more for the party's run (an act's noise);
+     * failed, loud.
+     *
+     * @return array{0: list<array{text: string, tone: string}>, 1: string}
+     */
+    private function shutDown(Character $character, Run $run): array
+    {
+        $system = $run->system();
+
+        if (! $this->checks->roll($this->osValue($character, $system), $this->osDifficulty($character, $system?->operatingSystem()->first()), 'os')->passed) {
+            return [[$this->line('cyberspace.run.log.tree.shutdown_fails', tone: 'warn')], 'loud'];
+        }
+
+        $this->writeController($run, ['down' => true] + (array) $run->controller);
+
+        return [[$this->line('cyberspace.run.log.tree.shut_down', tone: 'ok')], 'act'];
     }
 
     /** Standing on a honeypot nobody in the party has sprung. */
@@ -1116,7 +1265,7 @@ final readonly class Simulator
         $tier = match ($action) {
             // Stepping onto a security hub nobody has subverted is loud.
             RunAction::Move => $this->onLiveHub($run) ? 'loud' : 'move',
-            RunAction::Breach, RunAction::Subvert, RunAction::Disarm, RunAction::Wipe => $breachTier,
+            RunAction::Breach, RunAction::Subvert, RunAction::Disarm, RunAction::Wipe, RunAction::Shutdown => $breachTier,
             RunAction::Egress => 'move',
             RunAction::Nmap, RunAction::Loopback => 'act',
             RunAction::Flood => 'loud',

@@ -339,6 +339,27 @@ the Cordon tag**, each designed and built on its own, traps first.
   it is loud.
 - **On the map**: a ▲ on nodes the runner knows, and a line naming the sentry on their own node.
 
+### ICE controller
+
+- **From grade 6, a dead end off the core** (`NodeKind::Controller`), drawn past it. Nothing below grade 6: posting
+  sentries is all it does.
+- **After the alert it posts a sentry every third sentry turn** (a solo runner's turn, a party's round), three at most
+  (`runs.controller`: ticks, spawned, down; one for the party): awake, Slow, the same ICE as the posted ones, hunting
+  from the controller.
+- **Shut down** (`RunAction::Shutdown`, a button on it): the OS roll; landed it posts nothing more for the party's run
+  (act noise), failed it is loud. Works before the alert too.
+
+### Cordon
+
+- **From grade 5, a sentry carries the Cordon tag one time in three** (`RunTree::$sentries[i]['cordon']`). Awake, it
+  cuts the way out instead of hunting: it takes the runner nearest it, their nearest exit (the entry or a maintenance
+  port), and on the shortest way there the internal relay, switch or maintenance port whose loss lengthens the way out
+  most, or closes it. It walks there (at its speed), then counts down two of its turns, shown on the map (✖ and the
+  turns left) and in a warning line; at zero the node and its edges are gone for the party's run, as a Node Disconnect.
+  With no such node it hunts like any sentry. It never strikes.
+- **Two Cordons can cut at once.** A cut costs no standing.
+- **Only breaking it with Attack stops a cut, for now**; the Egress Tunnel script comes later.
+
 ## To come back to
 
 Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next step; all of it blocks the merge.
@@ -358,4 +379,5 @@ Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next s
 - **Trap rates at grade 4**: about 28% of compute and relay trees (one path that may carry a trap); planned about half.
 - **Honeypots can't be told from vaults** until Deep Nmap exists.
 - **Sentry speed as a scan fact** (the proposal reads it with the ICE) is not built; neither is a party test of the round's sentry turn.
+- **The Egress Tunnel** (a script that keeps a node from being cut, and counts as an exit for allies) is not built.
 - **A review of the whole branch** before the flag is turned on.

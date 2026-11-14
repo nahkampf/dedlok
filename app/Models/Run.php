@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'traps', 'snared_until', 'log_wiped', 'alert_cost', 'sentries', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
+#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'traps', 'snared_until', 'log_wiped', 'alert_cost', 'sentries', 'controller', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -69,6 +69,7 @@ class Run extends Model
             'log_wiped' => 'boolean',
             'alert_cost' => 'float',
             'sentries' => 'array',
+            'controller' => 'array',
             'pending_node' => 'integer',
             'pull_node' => 'integer',
             'noise' => 'float',

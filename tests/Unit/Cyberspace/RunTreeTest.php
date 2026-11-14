@@ -149,6 +149,15 @@ final class RunTreeTest extends TestCase
             $this->assertTrue($grade >= 7 || ! $sentry['fast'], $why);
         }
 
+        // An ICE controller from grade 6 only, a dead end off the core; the Cordon only from grade 5.
+        $this->assertCount($grade >= 6 ? 1 : 0, $tree->nodesOf(NodeKind::Controller), $why);
+
+        foreach ($tree->nodesOf(NodeKind::Controller) as $controller) {
+            $this->assertSame([$tree->core], $tree->neighbours($controller), $why);
+        }
+
+        $this->assertTrue($grade >= 5 || ! in_array(true, array_column($tree->sentries, 'cordon'), true), $why);
+
         // Honeypots from grade 5, never a Node Disconnect, never the tree's first vault.
         $vaults = $tree->nodesOf(NodeKind::Vault);
 

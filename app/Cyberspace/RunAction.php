@@ -109,6 +109,9 @@ enum RunAction: string
     /** A tree run: wipe the log server you stand on, with the OS roll. An alert that already went off then leaves nothing behind. */
     case Wipe = 'wipe';
 
+    /** A tree run: shut down the ICE controller you stand on, with the OS roll. It posts no more sentries. */
+    case Shutdown = 'shutdown';
+
     /** A tree run: Crash Jackout. Out from anywhere, for certain, at a price in Synaptic Integrity. */
     case Jackout = 'jackout';
 

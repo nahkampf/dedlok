@@ -116,6 +116,14 @@
                 {{ Text::get($sentry['awake'] ? 'cyberspace.tree.sentry_awake' : 'cyberspace.tree.sentry_asleep', ['name' => $sentry['name'], 'integrity' => rtrim(rtrim(number_format($sentry['integrity'], 2), '0'), '.')]) }}
             </p>
         @endforeach
+        @if ($tree->shutdownChance !== null)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.shutdown_chance', ['chance' => (int) round($tree->shutdownChance * 100)]) }}
+            </p>
+        @endif
+        @if (collect($tree->nodes)->contains(fn (array $n): bool => ($n['cutting'] ?? null) !== null))
+            <p class="micro" style="color:var(--crit);margin:0 0 var(--s-2)">{{ Text::get('cyberspace.tree.cordon_warning') }}</p>
+        @endif
         @if ($tree->wipeChance !== null)
             <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
                 {{ Text::get('cyberspace.tree.wipe_chance', ['chance' => (int) round($tree->wipeChance * 100)]) }}
@@ -406,6 +414,12 @@
             @if ($tree && ! $tree->atCore && collect($tree->sentriesHere)->contains('awake', true))
                 <button type="submit" name="action" value="attack" class="btn cut">
                     {{ Text::get('cyberspace.run.action.attack') }}
+                </button>
+            @endif
+            {{-- THE ICE CONTROLLER while it runs: Shut down is its OS roll. --}}
+            @if ($tree && $tree->shutdownChance !== null)
+                <button type="submit" name="action" value="shutdown" class="btn cut btn--go">
+                    {{ Text::get('cyberspace.run.action.shutdown') }}
                 </button>
             @endif
             {{-- A LOG SERVER holding an alert: Wipe is its OS roll. --}}

@@ -25,7 +25,7 @@ use App\Support\Text;
 final readonly class TreeView
 {
     /**
-     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, move: bool, known: bool}>  $nodes
+     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, cutting: ?int, move: bool, known: bool}>  $nodes
      * @param  list<array{0: int, 1: int}>  $links
      */
     public function __construct(
@@ -62,6 +62,8 @@ final readonly class TreeView
         public ?float $wipeChance = null,
         /** @var list<array{name: string, integrity: float, awake: bool}> The unbroken sentries on the runner's node. */
         public array $sentriesHere = [],
+        // Standing on the ICE controller while it runs: the chance a Shut down's OS roll lands. Null otherwise.
+        public ?float $shutdownChance = null,
     ) {}
 
     /** What a node is called on the map: a trap reads as a conduit until it is found, and as one again once spent. */
@@ -108,6 +110,9 @@ final readonly class TreeView
         $moves = $tree->neighbours($here);
         // Sentries are seen where the runner can see: a node they know.
         $guards = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0)->countBy('node')->all();
+        // A Cordon cutting a node shows its countdown wherever the runner can see the node: that is the warning.
+        $cutting = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0 && ($s['countdown'] ?? null) !== null)
+            ->mapWithKeys(static fn (array $s): array => [(int) $s['node'] => (int) $s['countdown']])->all();
 
         // A firewall nobody has breached lets them back the way they came, and no further.
         if ($simulator->firewallClosed($run)) {
@@ -123,6 +128,7 @@ final readonly class TreeView
             'here' => $n === $here,
             'allies' => (int) ($allies[$n] ?? 0),
             'sentries' => in_array($n, $known, true) ? (int) ($guards[$n] ?? 0) : 0,
+            'cutting' => $cutting[$n] ?? null,
             'move' => in_array($n, $moves, true),
             'known' => in_array($n, $known, true) || ($traps[$n] ?? null) === 'found',
         ], $seen);
@@ -168,6 +174,7 @@ final readonly class TreeView
                 'integrity' => (float) $s['integrity'],
                 'awake' => (bool) $s['awake'],
             ], $simulator->sentriesHere($run))),
+            $simulator->controllerOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
         );
     }
 
@@ -195,6 +202,7 @@ final readonly class TreeView
             'here' => false,
             'allies' => 0,
             'sentries' => 0,
+            'cutting' => null,
             'move' => false,
             'known' => $read >= 2,
         ], array_keys($tree->nodes));

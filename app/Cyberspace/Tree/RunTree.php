@@ -26,7 +26,7 @@ final readonly class RunTree
     /**
      * @param  list<array{kind: NodeKind, path: ?string, trap?: TrapEffect}>  $nodes  Indexed by node id; a trap carries its effect.
      * @param  list<array{0: int, 1: int}>  $edges
-     * @param  list<array{post: int, fast: bool}>  $sentries  Where each sentry is posted, and whether it is Fast.
+     * @param  list<array{post: int, fast: bool, cordon?: bool}>  $sentries  Where each sentry is posted, whether it is Fast, and whether it carries the Cordon tag.
      */
     public function __construct(
         public array $nodes,
@@ -340,6 +340,16 @@ final readonly class RunTree
             $sentries[] = ['post' => $post, 'fast' => $g >= 7 && $chance(1 / 3)];
         }
 
+        // An ICE controller from grade 6: a dead end off the core.
+        if ($g >= 6) {
+            $edges[] = [$core, $add(NodeKind::Controller)];
+        }
+
+        // The Cordon tag from grade 5, one sentry in three: it cuts the way out instead of hunting.
+        foreach ($sentries as $i => $sentry) {
+            $sentries[$i]['cordon'] = $g >= 5 && $chance(1 / 3);
+        }
+
         return new self($nodes, $edges, $entry, $core, $sentries);
     }
 
@@ -385,6 +395,34 @@ final readonly class RunTree
         }
 
         return $out;
+    }
+
+    /** @return list<int> One shortest way from a node to another, both ends included; empty when nothing connects them. */
+    public function path(int $from, int $to): array
+    {
+        $parent = [$from => null];
+        $queue = [$from];
+
+        while ($queue !== [] && ! array_key_exists($to, $parent)) {
+            $node = array_shift($queue);
+
+            foreach ($this->neighbours($node) as $next) {
+                if (! array_key_exists($next, $parent)) {
+                    $parent[$next] = $node;
+                    $queue[] = $next;
+                }
+            }
+        }
+
+        if (! array_key_exists($to, $parent)) {
+            return [];
+        }
+
+        for ($path = [], $at = $to; $at !== null; $at = $parent[$at]) {
+            array_unshift($path, $at);
+        }
+
+        return $path;
     }
 
     /** Fewest moves between two nodes, or null when nothing connects them. */
