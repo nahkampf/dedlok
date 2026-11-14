@@ -30,6 +30,7 @@
 - **Run trees: a Cordon's cut is plain to see (same flag).** The log names the kind of node it is cutting and has cut, and on the map the node blinks dashed ember with ✂ and the turns left under it.
 - **The run screen in two columns when there is room**: the overview, mission, map and actions on the left, the trace, the ICE and the log in a narrower column on the right (the kit's `.map-split`, from about 1000px of content); one column below that.
 - **Run trees: a runner on a node a Cordon cuts is thrown clear (same flag)**, onto the neighbour nearest an exit, instead of being stranded on a node with no edges (`Simulator::throwClear()`).
+- **Run trees: the map scrolls to the runner (same flag).** A map wider than its box opens scrolled so the node they stand on is in the middle.
 
 ### Changed
 - **The Darknet gateway moves to `DEADBEEF`.** A migration gives the main-grid end of the Darknet the reserved address and carries scans, contacts, bookmarks, mission targets, runs, run parties and the `darknet_access` messages already sent along with it.

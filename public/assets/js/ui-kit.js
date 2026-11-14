@@ -1838,6 +1838,15 @@
     document.querySelectorAll(".board[data-tree-run]").forEach((board) => {
       if (board.dataset.alive) return;
       board.dataset.alive = "1";
+      // The map scrolls sideways on a narrow screen: put where they stand in the middle of what shows.
+      const wrap = board.closest(".board-wrap");
+      const here = board.querySelector(".board__node--here");
+      if (wrap && here && wrap.scrollWidth > wrap.clientWidth) {
+        const box = here.getBoundingClientRect();
+        const view = wrap.getBoundingClientRect();
+        wrap.scrollLeft += box.left + box.width / 2 - (view.left + view.width / 2);
+      }
+
       const key = "tree:" + board.dataset.treeRun;
       const nodes = [...board.querySelectorAll(".board__node[data-node]")];
       const now = { here: board.dataset.treeHere, nodes: nodes.map((n) => n.dataset.node) };
