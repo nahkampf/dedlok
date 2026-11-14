@@ -432,6 +432,13 @@ purpose works unchanged: an Install makes it a Backdoor run of that kind (`backd
 Burn that lands a Burn run, the first Flood a Denial run (`runs.flood_turn`: the node's patience counts from it).
 Extract works on any tree run. Old single-room runs keep their purposes.
 
+## Nmap reveals ring by ring (decided 2026-11-14)
+
+- **Each Nmap reveals the nearest ring** (all nodes at one distance) within the Nmapper's reach that still holds
+  anything unrevealed: one edge out first, then two, and so on (`Simulator::nmapRing`). To a deep Nmapper an unfound
+  trap or honeypot and an unread sentry count as unrevealed too.
+- **Nothing left in reach greys the button out**, and a press is refused (`RunRefusal::NothingToMap`).
+
 ## Decided at the end of phase 3 (2026-11-14)
 
 - **The nmap migration stays**: it grants nmap to every Deck Jockey and stocks the shelves at deploy.

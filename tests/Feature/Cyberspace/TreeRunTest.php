@@ -311,12 +311,20 @@ final class TreeRunTest extends TestCase
         $this->runNmapper(2);
         $run = $this->begin();
 
+        // The nearest ring first: one edge out.
         $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Nmap);
         $run = $run->fresh();
-
-        $this->assertEqualsCanonicalizing([$this->tree->entry, ...$this->tree->within($this->tree->entry, 2)], $run->knownNodes());
+        $this->assertEqualsCanonicalizing([$this->tree->entry, ...$this->tree->within($this->tree->entry, 1)], $run->knownNodes());
         $this->assertSame($this->tree->entry, $run->node, 'an Nmap does not move you');
         $this->assertSame(1, $run->turn);
+
+        // Then the next, as far as the Nmapper reaches.
+        $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Nmap);
+        $this->assertEqualsCanonicalizing([$this->tree->entry, ...$this->tree->within($this->tree->entry, 2)], $run->fresh()->knownNodes());
+
+        // Nothing left in reach: refused, and greyed out on the screen.
+        $this->assertSame(RunRefusal::NothingToMap, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Nmap)->refusal);
+        $this->assertFalse(TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->canNmap);
     }
 
     public function test_the_default_nmap_exists_and_reaches_one_edge(): void
@@ -887,7 +895,7 @@ final class TreeRunTest extends TestCase
         $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Nmap);
         $run = $run->fresh();
 
-        $this->assertSame([], array_values(array_diff($tree->within($from, 2), $run->knownNodes())), 'one edge further than the Nmapper reaches');
+        $this->assertSame([], array_values(array_diff($tree->within($from, 1), $run->knownNodes())), 'the nearest ring first');
         $this->assertSame('found', $run->trapStates()[$trap]);
         $this->assertTrue($run->sentries[0]['read']);
 

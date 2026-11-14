@@ -467,6 +467,39 @@
     </dialog>
 @endif
 
+{{-- WHAT IS FIGHTING, drawn from the RUN and not from the system: integrity is being ground down, and
+     the catalogue says what an ICE is rather than what this fight has left of it. --}}
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.ice') }}</h2>
+    </div>
+
+    <div style="padding:var(--s-3) 0">
+        @if ($run->inAFight())
+            @php($ice = $run->ice)
+            <div class="card__stats" style="padding:0;border:0">
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.ice_grade') }}</span>
+                    <span class="tag tag--crit">{{ \App\Cyberspace\FortressCloak::iceNameFor($run) }}</span>
+                </div>
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.ice_integrity') }}</span>
+                    <b class="num">{{ $run->ice_integrity }} / {{ $ice->integrity }}</b>
+                </div>
+            </div>
+
+            {{-- The kit's own meter, driven by --v the way every other one is. It is the ICE's health and
+                 not the player's, so it empties as things go WELL — `--fill` says which way to read it.
+                 A <div>, like every other fill: an inline <span> has no height and draws nothing. --}}
+            <div class="meter meter--lg" style="--v:{{ round($run->ice_integrity / max(1, $ice->integrity), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
+                <div class="meter__fill"></div>
+            </div>
+        @else
+            <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.ice_none') }}</p>
+        @endif
+    </div>
+</div>
+
 </div>
 <aside class="map-side">
 {{-- THE ONLY SCREEN A PLAYER IN A RUN CAN REACH.
@@ -567,39 +600,6 @@
             <p class="micro" style="color:var(--ink-2);padding:var(--s-3) 0;margin:0">
                 {{ Text::get('cyberspace.run.trace_none') }}
             </p>
-        @endif
-    </div>
-</div>
-
-{{-- WHAT IS FIGHTING, drawn from the RUN and not from the system: integrity is being ground down, and
-     the catalogue says what an ICE is rather than what this fight has left of it. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
-    <div class="panel__hd">
-        <h2>{{ Text::get('cyberspace.run.ice') }}</h2>
-    </div>
-
-    <div style="padding:var(--s-3) 0">
-        @if ($run->inAFight())
-            @php($ice = $run->ice)
-            <div class="card__stats" style="padding:0;border:0">
-                <div class="card__stat">
-                    <span>{{ Text::get('cyberspace.run.ice_grade') }}</span>
-                    <span class="tag tag--crit">{{ \App\Cyberspace\FortressCloak::iceNameFor($run) }}</span>
-                </div>
-                <div class="card__stat">
-                    <span>{{ Text::get('cyberspace.run.ice_integrity') }}</span>
-                    <b class="num">{{ $run->ice_integrity }} / {{ $ice->integrity }}</b>
-                </div>
-            </div>
-
-            {{-- The kit's own meter, driven by --v the way every other one is. It is the ICE's health and
-                 not the player's, so it empties as things go WELL — `--fill` says which way to read it.
-                 A <div>, like every other fill: an inline <span> has no height and draws nothing. --}}
-            <div class="meter meter--lg" style="--v:{{ round($run->ice_integrity / max(1, $ice->integrity), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
-                <div class="meter__fill"></div>
-            </div>
-        @else
-            <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.ice_none') }}</p>
         @endif
     </div>
 </div>

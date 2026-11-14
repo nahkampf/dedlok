@@ -78,6 +78,9 @@ enum RunRefusal: string
     /** A tree run: an Ensnare trap holds the runner, so a Move is refused. */
     case Ensnared = 'ensnared';
 
+    /** A tree run: Nmap with nothing left in the Nmapper's reach to reveal. */
+    case NothingToMap = 'nothing_to_map';
+
     /** A tree run: Nmap with no Nmapper running. */
     case NoNmapper = 'no_nmapper';
 

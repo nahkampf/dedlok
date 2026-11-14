@@ -488,7 +488,12 @@ final readonly class Simulator
                 app(ProgramRunner::class)->refusalFor($character, $row, true) !== null => RunRefusal::LoopbackRefused,
                 default => null,
             },
-            RunAction::Nmap => $this->nmapReach($character) < 1 ? RunRefusal::NoNmapper : null,
+            RunAction::Nmap => match (true) {
+                $this->nmapReach($character) < 1 => RunRefusal::NoNmapper,
+                // Nothing left in reach to reveal: the button greys out, and a press is refused rather than wasted.
+                $this->nmapRing($character, $run) === [] => RunRefusal::NothingToMap,
+                default => null,
+            },
             // A data vault takes an Extract too.
             RunAction::Extract => (int) $run->node !== $tree->core && $tree->nodes[(int) $run->node]['kind'] !== NodeKind::Vault ? RunRefusal::NotHere : null,
             // Attack also wherever an awake sentry stands.
@@ -1399,12 +1404,46 @@ final readonly class Simulator
     }
 
     /** @return array{text: string, tone: string} */
+    /**
+     * What one Nmap reveals: the NEAREST ring of nodes, within the Nmapper's reach (a deep one, one edge further), that
+     * still holds anything unrevealed, all of that ring at once. One edge out first, then two, and so on: a press never
+     * skips a nearer node for a farther one. Unrevealed is a node whose kind is not known; to a deep Nmapper also a
+     * trap or honeypot not yet found, and a sentry not yet read. Empty when nothing in reach is left.
+     *
+     * @return list<int>
+     */
+    public function nmapRing(Character $character, Run $run): array
+    {
+        $tree = $this->treeOf($run);
+        $reach = $this->nmapReach($character) + ($this->nmapDeep($character) ? 1 : 0);
+
+        if ($tree === null || $reach < 1) {
+            return [];
+        }
+
+        $deep = $this->nmapDeep($character);
+        $known = $run->knownNodes();
+        $states = $run->trapStates();
+        $unread = array_map(static fn (array $s): int => (int) $s['node'], array_filter($this->sentriesOf($run), static fn (array $s): bool => ! ($s['read'] ?? false) && (float) $s['integrity'] > 0));
+        $hidden = static fn (int $n): bool => ! in_array($n, $known, true)
+            || ($deep && (($tree->nodes[$n]['kind'] === NodeKind::Trap || $tree->isHoneypot($n)) && ! isset($states[$n]) || in_array($n, $unread, true)));
+
+        for ($ring = 1; $ring <= $reach; $ring++) {
+            $at = array_values(array_filter($tree->within((int) $run->node, $ring), fn (int $n): bool => $tree->distance((int) $run->node, $n) === $ring));
+
+            if (array_filter($at, $hidden) !== []) {
+                return $at;
+            }
+        }
+
+        return [];
+    }
+
     private function nmap(Character $character, Run $run): array
     {
         $tree = $this->treeOf($run);
         $deep = $this->nmapDeep($character);
-        // A deep Nmapper reaches one edge further.
-        $found = $tree === null ? [] : $tree->within((int) $run->node, $this->nmapReach($character) + ($deep ? 1 : 0));
+        $found = $this->nmapRing($character, $run);
         $new = array_values(array_diff($found, $run->knownNodes()));
         $this->reveal($run, $found);
 

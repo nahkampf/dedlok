@@ -2175,6 +2175,7 @@ return [
                 'not_here' => 'You cannot do that from this node.',
                 'not_a_neighbour' => 'That node is not linked to where you stand.',
                 'no_nmapper' => 'You need an Nmapper running to map the links around you.',
+                'nothing_to_map' => 'There is nothing left within your mapper\'s reach to map.',
                 'no_loopback' => 'You carry no Loopback script.',
                 'ensnared' => 'The trap still holds you.',
                 'barrier_holds' => 'Barrier ICE holds the way on. Break it before you go further.',
