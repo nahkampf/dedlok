@@ -66,6 +66,9 @@ enum RunRefusal: string
     /** A tree run: an Egress Tunnel with no Egress Tunnel script to hand, or without the skill to start one. */
     case NoTunnel = 'no_tunnel';
 
+    /** A tree run: the deck will not run the Egress Tunnel (memory, compute, or no deck). */
+    case TunnelRefused = 'tunnel_refused';
+
     /** A tree run: the deck will not run the Loopback (memory, compute, or no deck). */
     case LoopbackRefused = 'loopback_refused';
 

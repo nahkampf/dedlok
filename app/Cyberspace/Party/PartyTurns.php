@@ -162,10 +162,11 @@ final class PartyTurns
             $this->syncShared(self::liveRuns($party->getKey()), $run);
         }
 
-        // A backdoor that has landed is the job done: nothing is left to do inside, so everybody finishes together.
+        // A backdoor that has landed is the job done: nothing is left to do inside, so everybody finishes together. Not on
+        // a tree run, where leaving takes an exit (docs/RUN_TREE.md): each runner still walks out, Completed when they do.
         $live = self::liveRuns($party->getKey());
 
-        if ($live->contains(fn (Run $r): bool => (bool) $r->backdoored)) {
+        if ($live->contains(fn (Run $r): bool => (bool) $r->backdoored && ! $r->isTreeRun())) {
             foreach ($live as $run) {
                 $character = Character::query()->find($run->character_id);
 

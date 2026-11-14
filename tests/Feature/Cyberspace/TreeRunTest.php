@@ -1067,6 +1067,35 @@ final class TreeRunTest extends TestCase
         $this->assertNull($this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $on)->refusal);
     }
 
+    public function test_a_refused_install_leaves_the_run_s_purpose_alone(): void
+    {
+        $run = $this->begin();
+
+        // On the entry, not the core: the Install is refused, and the run is still an extraction.
+        $this->actingAs($this->character->fresh()->user)->post(route('run.act', ['backdoor_kind' => 'siphon']), ['action' => 'install']);
+
+        $this->assertSame(RunPurpose::Extraction, $run->fresh()->purpose);
+        $this->assertNull($run->fresh()->backdoor_kind);
+    }
+
+    public function test_the_scan_s_tree_names_traps_but_never_a_honeypot(): void
+    {
+        for ($i = 0; ; $i++) {
+            $tree = RunTree::generate($address = sprintf('%08X', crc32("honey-{$i}")), 7, SystemType::Silo);
+            $pots = array_values(array_filter($tree->nodesOf(NodeKind::Vault), static fn (int $n): bool => $tree->isHoneypot($n)));
+
+            if ($pots !== [] && $tree->nodesOf(NodeKind::Trap) !== []) {
+                break;
+            }
+        }
+
+        System::query()->where('address', 'DEADBEEF')->update(['address' => $address, 'grade' => 7, 'type' => SystemType::Silo->value]);
+        $nodes = collect(TreeView::ofScan(System::query()->where('address', $address)->sole(), 3)->nodes);
+
+        $this->assertSame(Text::get('cyberspace.tree.node.vault'), $nodes->firstWhere('key', $pots[0])['label']);
+        $this->assertStringStartsWith(Text::get('cyberspace.tree.trap_label', ['effect' => '']), $nodes->firstWhere('key', $tree->nodesOf(NodeKind::Trap)[0])['label']);
+    }
+
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void
     {
         // A grade 3 compute tree with a rich path, and so a port.

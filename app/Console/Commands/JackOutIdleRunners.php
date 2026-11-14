@@ -29,7 +29,8 @@ class JackOutIdleRunners extends Command
         $now = CarbonImmutable::now();
         $out = 0;
 
-        Run::query()->live()->whereNotNull('node')->each(function (Run $run) use ($simulator, $now, &$out): void {
+        // By id, not by offset: ending runs drops them from the query, and an offset would skip the ones that slide up.
+        Run::query()->live()->whereNotNull('node')->eachById(function (Run $run) use ($simulator, $now, &$out): void {
             $last = $run->acted_at ?? $run->started_at ?? $now;
             $limit = (int) Config::get('cyberspace.tree.idle_minutes.solo', 10);
 

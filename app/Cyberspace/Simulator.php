@@ -499,7 +499,7 @@ final readonly class Simulator
             RunAction::Tunnel => match (true) {
                 (int) $run->node === $tree->core || $run->tunnel !== null => RunRefusal::NotHere,
                 ($row = $this->tunnelToHand($character)) === null || $this->skillLevel($character, 'egress_tunneling') < 1 => RunRefusal::NoTunnel,
-                app(ProgramRunner::class)->refusalFor($character, $row, true) !== null => RunRefusal::LoopbackRefused,
+                app(ProgramRunner::class)->refusalFor($character, $row, true) !== null => RunRefusal::TunnelRefused,
                 default => null,
             },
             default => null,
@@ -1262,7 +1262,7 @@ final readonly class Simulator
         $result = $row === null ? null : app(ProgramRunner::class)->start($character, $row, true);
 
         if ($result === null || ! $result->succeeded()) {
-            return $this->line('cyberspace.run.refused.loopback_refused', tone: 'warn');
+            return $this->line('cyberspace.run.refused.tunnel_refused', tone: 'warn');
         }
 
         $run->tunnel = (int) $result->process?->getKey();
@@ -2378,7 +2378,10 @@ final readonly class Simulator
         $tunnel = $run->isTreeRun() ? $this->tunnelStrengthHere($run) : 0;
         $below = $this->atPort($run) || $tunnel > 0;
 
-        return max(0.0, $this->egressDifficultyFor(max(1, (int) $grade - ($below ? 1 : 0)), $level) - $tunnel);
+        // The strength comes off the grade's term only (never below zero), as the working on the screen shows it.
+        $base = $this->egressDifficultyFor(max(1, (int) $grade - ($below ? 1 : 0)));
+
+        return max(0.0, $base - $tunnel) + $level * (float) Config::get('cyberspace.egress.ice_term', 1);
     }
 
     /** Standing on a maintenance port of a tree run. */

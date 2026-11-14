@@ -140,6 +140,16 @@ final readonly class TreeView
         $mapped = $run->mapped();
         $seen = array_values(array_diff($mapped ? array_keys($tree->nodes) : array_unique($seen), $cut));
         $layout = $whole->layout();
+        // The chance the OS roll lands, for every action that rolls it: asked once, when one is shown.
+        $osSkill = false;
+        $osChance = static function () use (&$osSkill, $simulator, $character, $system): float {
+            $osSkill = $osSkill === false ? $system->operatingSystem()->first() : $osSkill;
+
+            return $simulator->osChanceFor($character, $osSkill);
+        };
+        $iceNames = Ice::query()->whereKey(array_column($simulator->sentriesOf($run), 'ice'))->pluck('name', 'id');
+        // Never empty: where they stand is always drawn, even on a node the tree has lost.
+        $seen = $seen === [] ? [$here] : $seen;
         $maxCol = max(array_map(static fn (int $n): int => $layout[$n]['col'], $seen));
         $lanes = $tree->lanes();
         $allies = $run->run_party_id === null ? [] : Run::query()->live()->where('run_party_id', $run->run_party_id)
@@ -209,10 +219,10 @@ final readonly class TreeView
             $simulator->noiseLevel($run),
             $ids,
             $simulator->firewallClosed($run)
-                ? $simulator->osChanceFor($character, $system->operatingSystem()->first())
+                ? $osChance()
                 : null,
             $tree->nodes[$here]['kind'] === NodeKind::Vault,
-            $simulator->hubOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
+            $simulator->hubOpen($run) ? $osChance() : null,
             $simulator->hubSubverted($run),
             $tree->nodes[$here]['kind'] === NodeKind::Relay && $run->loopback === null,
             $tree->nodes[$here]['kind'] !== NodeKind::Relay ? null : (static function () use ($simulator, $character, $run): ?float {
@@ -227,18 +237,18 @@ final readonly class TreeView
                 static fn (int $n): array => [$n, self::label($tree, $n, true)],
                 array_filter([...$tree->neighbours($here), ...($tree->isHoneypot($here) ? [$here] : [])], static fn (int $n): bool => ($traps[$n] ?? null) === 'found' && $simulator->liveTrap($run, $n) !== null),
             )),
-            $disarm !== [] && $system->os_skill_id !== null ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
-            $simulator->logOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
+            $disarm !== [] && $system->os_skill_id !== null ? $osChance() : null,
+            $simulator->logOpen($run) ? $osChance() : null,
             array_values(array_map(static fn (array $s): array => [
                 // Read by a deep Nmap: whether it is Fast, and whether it carries the Cordon.
-                'name' => (string) Ice::query()->whereKey($s['ice'])->value('name').(($s['read'] ?? false)
+                'name' => (string) ($iceNames[$s['ice']] ?? '').(($s['read'] ?? false)
                     ? ' ('.implode(', ', [Text::get($s['fast'] ? 'cyberspace.tree.sentry_fast' : 'cyberspace.tree.sentry_slow'), ...(($s['cordon'] ?? false) ? [Text::get('cyberspace.tree.sentry_cordon')] : [])]).')'
                     : ''),
                 'integrity' => (float) $s['integrity'],
                 'awake' => (bool) $s['awake'],
                 'barrier' => (bool) ($s['barrier'] ?? false),
             ], $simulator->sentriesHere($run))),
-            $simulator->controllerOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
+            $simulator->controllerOpen($run) ? $osChance() : null,
             $simulator->refusal($character, $run, RunAction::Tunnel, null) === null,
             $run->tunnel !== null,
         );
@@ -262,8 +272,9 @@ final readonly class TreeView
 
         $nodes = array_map(static fn (int $n): array => [
             'key' => $n,
-            'label' => $read >= 2 ? self::label($tree, $n, $read >= 3) : '?',
-            'kind' => $read >= 2 ? self::kindShown($tree, $n, $read >= 3) : null,
+            // The Traps read names traps; a honeypot stays a vault to every scan (only Deep Nmap tells).
+            'label' => $read >= 2 ? self::label($tree, $n, $read >= 3 && $tree->nodes[$n]['kind'] === NodeKind::Trap) : '?',
+            'kind' => $read >= 2 ? self::kindShown($tree, $n, $read >= 3 && $tree->nodes[$n]['kind'] === NodeKind::Trap) : null,
             'x' => round(($layout[$n]['col'] + .5) / ($maxCol + 1) * 100, 2),
             'y' => round(($layout[$n]['lane'] + .5) / $lanes * 100, 2),
             'here' => false,

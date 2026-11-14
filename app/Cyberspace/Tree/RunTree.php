@@ -50,6 +50,22 @@ final readonly class RunTree
     /** A system with no IDS has no security hub: the node is a conduit there. */
     public static function of(System $system): self
     {
+        // Trees already generated in this process: the same inputs always give the same tree. (A static variable: a
+        // readonly class cannot hold a static property.)
+        /** @var array<string, self> $made */
+        static $made = [];
+        $key = $system->address.'|'.(int) $system->grade.'|'.$system->type->value.'|'.((float) $system->ids_detection > 0 ? 1 : 0);
+
+        // ponytail: a per-process memo, simply emptied past 500 trees (a few KB each); an LRU if that ever shows up.
+        if (count($made) > 500) {
+            $made = [];
+        }
+
+        return $made[$key] ??= self::fresh($system);
+    }
+
+    private static function fresh(System $system): self
+    {
         $tree = self::generate($system->address, (int) $system->grade, $system->type);
 
         if ((float) $system->ids_detection > 0) {

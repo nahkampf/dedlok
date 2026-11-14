@@ -555,7 +555,9 @@ class RunController extends Controller
         $node = isset($data['node']) ? (int) $data['node'] : null;
 
         // A TREE RUN chose nothing at the door: an Install says which backdoor, and the run becomes a backdoor run.
-        if ($run->isTreeRun() && $action === RunAction::Install && ! $run->backdoored && isset($data['backdoor_kind'])) {
+        // Only once the turn would be taken: a refused Install (off the core, say) leaves the run as it was.
+        if ($run->isTreeRun() && $action === RunAction::Install && ! $run->backdoored && isset($data['backdoor_kind'])
+            && $simulator->refusal($character, $run, $action, $node) === null) {
             $run->forceFill(['purpose' => RunPurpose::Backdoor, 'backdoor_kind' => $data['backdoor_kind']])->save();
         }
 

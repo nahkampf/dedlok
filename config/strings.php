@@ -2180,6 +2180,7 @@ return [
                 'barrier_holds' => 'Barrier ICE holds the way on. Break it before you go further.',
                 'no_tunnel' => 'You need an Egress Tunnel script and the skill to open one.',
                 'loopback_refused' => 'Your deck cannot run the Loopback right now.',
+                'tunnel_refused' => 'Your deck cannot run the Egress Tunnel right now.',
                 'firewall_closed' => 'The firewall still holds. Breach it before you go on.',
                 'hunted' => 'You are currently locked in a confrontation with another entity.',
                 'fighting' => 'You are in a fight.',
