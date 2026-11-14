@@ -186,6 +186,7 @@ final class PartyTurns
             return;
         }
 
+        $this->trace($party);
         $this->strike($party);
         $this->sentries($party);
 
@@ -266,6 +267,40 @@ final class PartyTurns
 
         $ending = $this->simulator->strikeIce($character, $target->refresh());
         $this->afterTurn($character, $target, $ending);
+    }
+
+    /**
+     * A tree run's ONE trace (docs/RUN_TREE.md): the party comes in over one network, so it has one meter, started by
+     * anybody being picked up and advanced once a round. The hop rolls are the network's runner's (their routing
+     * skills), else the first runner's; what it says, every runner hears.
+     */
+    private function trace(RunParty $party): void
+    {
+        $live = self::liveRuns($party->getKey())->filter(fn (Run $r): bool => $r->isTreeRun())->values();
+
+        if ($live->isEmpty()) {
+            return;
+        }
+
+        $lead = $live->first();
+        $lead->forceFill([
+            'detected' => $live->contains(fn (Run $r): bool => (bool) $r->detected),
+            'trace' => (int) $live->max('trace'),
+            'trace_hop' => (int) $live->max('trace_hop'),
+        ]);
+        $network = Character::query()->find($party->chain_character_id) ?? Character::query()->find($lead->character_id);
+        $lines = $network === null ? [] : $this->simulator->advanceTrace($network, $lead);
+        $lead->save();
+
+        foreach ($live as $run) {
+            if (! $run->is($lead)) {
+                $run->forceFill(['detected' => $lead->detected, 'trace' => $lead->trace, 'trace_hop' => $lead->trace_hop])->save();
+            }
+
+            if ($lines !== []) {
+                $this->simulator->appendLog($run->refresh(), $lines);
+            }
+        }
     }
 
     /** The sentries' one turn of the round (docs/RUN_TREE.md): each hunts, moves and strikes, and every runner it hit hears of it. */
@@ -397,7 +432,7 @@ final class PartyTurns
         }
 
         $detected = $runs->contains(fn (Run $r): bool => (bool) $r->detected);
-        // On a tree run detection is each runner's own trace; the ALERT is the party's, and it brings every trace.
+        // On a tree run the trace is the party's too (one network, one meter: PartyTurns::trace), and so is the alert.
         $alerted = $runs->contains(fn (Run $r): bool => (bool) $r->alerted);
         $ice = $runs->filter(fn (Run $r): bool => $r->ice_id !== null)->sortBy('ice_integrity')->first();
         // A Denial meter is the node's, one for the party: the run that just acted carries it, else the highest.
@@ -408,12 +443,14 @@ final class PartyTurns
 
         foreach ($runs as $run) {
             $run->forceFill([
-                'detected' => $run->isTreeRun() ? ($alerted || (bool) $run->detected) : $detected,
+                'detected' => $detected || ($run->isTreeRun() && $alerted),
                 'alerted' => $alerted,
                 'pressure' => $pressure,
                 'ice_id' => $cleared ? null : $ice?->ice_id,
                 'ice_integrity' => $cleared ? null : $ice?->ice_integrity,
                 'ice_attack' => $cleared ? null : $ice?->ice_attack,
+                // A trace trap moves the one meter, wherever it went off.
+                ...($run->isTreeRun() ? ['trace' => (int) $runs->max('trace'), 'trace_hop' => (int) $runs->max('trace_hop')] : []),
             ])->save();
         }
     }

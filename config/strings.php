@@ -1641,6 +1641,11 @@ return [
             'copy_link' => 'Copy this run\'s id. Pasted in a private chat it invites the people there; in General it invites nobody.',
             'link' => 'Run: :address',
             'terms' => 'Credits: :credits. Extraction: :extraction.',
+            'network' => 'Trace network',
+            'network_none' => 'No network',
+            'network_option' => ':handle (:grades)',
+            'network_set' => 'Set network',
+            'network_is' => 'Trace network: :network. The whole crew comes in over it and shares one trace.',
             'share' => [
                 'even' => 'Even split',
                 'half' => '50% cut (the owner takes half)',

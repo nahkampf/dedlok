@@ -36,6 +36,14 @@ class RunPartyController extends Controller
         return $this->back($parties->options($this->character($request), $credits, $extraction));
     }
 
+    /** The owner picks whose trace network a tree run's party comes in over: a runner's id, or empty for none. */
+    public function network(Request $request, Parties $parties): RedirectResponse
+    {
+        $data = $request->validate(['network' => ['nullable', 'integer']]);
+
+        return $this->back($parties->network($this->character($request), isset($data['network']) ? (int) $data['network'] : null));
+    }
+
     public function invite(Request $request, Parties $parties): RedirectResponse
     {
         $data = $request->validate(['handle' => ['required', 'string', 'max:40']]);

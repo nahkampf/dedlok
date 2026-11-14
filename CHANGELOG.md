@@ -43,6 +43,7 @@
 - **Loopback Routing and Egress Tunneling are set** (Networking, off the market, 5,000): Loopback Routing rank 8, Intellect/Focus; Egress Tunneling rank 16, Intellect/Memory, and each of its levels now adds 1 to a tunnel's strength. Their imprints follow the ranks (tier 2, ultra rare, 8 and 16 QB).
 - **The run screen's ICE panel shows the ICE on the runner's node** on a run tree: each sentry (and barrier) with its own integrity bar, and the core's ICE only on the core, as is the warning that it guards the core.
 - **A trap the runner knows of has a dashed ember border** on the run map, as firewalls and security hubs do.
+- **A crew on a run tree comes in over one trace network and shares one trace (behind `intrusion_runs_v2`).** The owner picks whose routing chain at the door (theirs by default, a joined member's, or none; `run_parties.chain_character_id`, `POST /run/party/network`), every run snapshots it, and the one meter is started by anybody, moved by a trace trap and advanced once a round with the network runner's routing skills (`PartyTurns::trace`). Landing, it traces everybody and burns the network's backdoors. The setup screen's route shows the picked network.
 
 ### Changed
 - **The Darknet gateway moves to `DEADBEEF`.** A migration gives the main-grid end of the Darknet the reserved address and carries scans, contacts, bookmarks, mission targets, runs, run parties and the `darknet_access` messages already sent along with it.

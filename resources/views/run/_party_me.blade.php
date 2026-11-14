@@ -21,3 +21,4 @@
         @endif
     @endforeach
 </ul>
+@include('run._party_network')

@@ -447,7 +447,8 @@ consequences and taking what a machine holds all roll.
   behind it** (`runs.trace_hop`). Rolling every hop every turn would make a long chain
   impassable rather than slow.
 - **The hop's GRADE sets the trace's chance** — 95% at grade 1 down to 20% at grade 9 —
-  as the base of `trace_hop_chance`, resolved with the runner's modifiers. It is the
+  as the base of `trace_hop_chance`, resolved with the runner's modifiers (a crew on a run tree: the modifiers of the
+  runner whose network it came in over, `docs/RUN_TREE.md`). It is the
   TRACE's number, so a skill that makes a chain hold better is a negative modifier.
 - **A hop only delays by FAILING**, so **grade 1 is 95 rather than 100**: at 100 a junk hop
   could never delay anything. Ten junk hops is a 40% chance of one held turn.

@@ -9,6 +9,7 @@ use App\Checks\CheckRoller;
 use App\Cyberspace\BackdoorKind;
 use App\Cyberspace\Backdoors;
 use App\Cyberspace\Party\Parties;
+use App\Cyberspace\Party\PartyRefusal;
 use App\Cyberspace\Party\PartyTurns;
 use App\Cyberspace\RunAction;
 use App\Cyberspace\RunEnding;
@@ -1375,6 +1376,83 @@ final class TreeRunTest extends TestCase
     }
 
     /** @return array{0: Run, 1: Run} The owner's run and the mate's, launched together. */
+    /** A grade-$grade routing backdoor for $runner, and the skill to route through it. */
+    private function routeFor(Character $runner, int $n, int $grade): System
+    {
+        $skill = Skill::query()->firstWhere('slug', 'a_routing_skill') ?? Skill::factory()->rank(4)->governedBy('intellect', 'memory')->create([
+            'slug' => 'a_routing_skill',
+            'modifiers' => array_map(static fn (int $at): array => ['op' => 'add', 'level' => $at, 'amount' => 1, 'target' => ['id' => 'routing_hops']], range(1, 5)),
+        ]);
+        CharacterSkill::query()->firstOrCreate(['character_id' => $runner->id, 'skill_id' => $skill->id], ['attained_level' => 3, 'skill_points' => 0]);
+        $system = System::factory()->at(40 + $n, 1)->grade($grade)->create(['address' => 'RELAY00'.$n]);
+        (new Backdoors)->install($runner->fresh(), $system, BackdoorKind::Routing);
+
+        return $system;
+    }
+
+    public function test_the_owner_picks_whose_network_the_whole_crew_comes_in_over(): void
+    {
+        $this->checks(0.0);
+        $mate = $this->runner();
+        $stranger = $this->runner();
+        $this->routeFor($this->character, 1, 3);
+        $relay = $this->routeFor($mate, 2, 7);
+        $parties = new Parties;
+        $parties->open($this->character);
+        $this->assertSame($this->character->id, RunParty::query()->sole()->chain_character_id, "the owner's own, to begin with");
+        $this->assertNull($parties->invite($this->character, $mate->handle));
+        $this->assertNull($parties->accept($mate));
+
+        $this->assertSame([$this->character->id, $mate->id], array_map(static fn (array $n): int => $n['character']->id, $parties->networks(RunParty::query()->sole())));
+        $this->assertSame(PartyRefusal::NoSuchRunner, $parties->network($this->character, $stranger->id), 'only a runner in the party');
+        $this->assertSame(PartyRefusal::NoParty, $parties->network($mate, $mate->id), 'only the owner picks');
+        $this->assertNull($parties->network($this->character, $mate->id));
+        $this->actingAs($this->character->fresh()->user)->get(route('run.setup'))->assertOk()->assertSee(Text::get('cyberspace.party.network'));
+
+        $this->assertTrue($parties->launch($this->character, RunPurpose::Extraction, null, [], app(RunStarter::class))->succeeded());
+        $runs = Run::query()->where('run_party_id', RunParty::query()->sole()->id)->get();
+        $this->assertCount(2, $runs);
+        $runs->each(fn (Run $r) => $this->assertSame([$relay->id], array_values((array) $r->chain), "every runner comes in over the mate's network"));
+    }
+
+    public function test_the_picked_network_falls_back_to_the_owner_s_when_its_runner_leaves_and_none_is_no_route(): void
+    {
+        $mate = $this->runner();
+        $parties = new Parties;
+        $parties->open($this->character);
+        $this->assertNull($parties->invite($this->character, $mate->handle));
+        $this->assertNull($parties->accept($mate));
+        $this->assertNull($parties->network($this->character, $mate->id));
+
+        $parties->leave($mate);
+        $this->assertSame($this->character->id, RunParty::query()->sole()->chain_character_id);
+
+        $this->assertNull($parties->network($this->character, null));
+        $this->assertNull(RunParty::query()->sole()->chain_character_id, 'no network');
+    }
+
+    public function test_a_party_s_one_trace_moves_once_a_round_not_once_a_runner(): void
+    {
+        System::query()->where('address', 'DEADBEEF')->update(['tracer_rate' => 10]);
+        [$a, $b] = $this->partyRuns();
+        $a->forceFill(['detected' => true, 'trace' => 0])->save();
+
+        $this->app->instance(Simulator::class, Simulator::fromConfig(static fn (int $min, int $max): int => $min, app(Resolver::class)));
+        $turns = app(PartyTurns::class);
+        $turns->submit($a->fresh(), RunAction::Hold);
+        $turns->submit($b->fresh(), RunAction::Hold);
+
+        $this->assertSame(10, (int) $a->fresh()->trace, 'one step for the round');
+        $this->assertSame(10, (int) $b->fresh()->trace, 'and the same meter for everybody');
+
+        $a->fresh()->forceFill(['trace' => 95])->save();
+        $b->fresh()->forceFill(['trace' => 95])->save();
+        $turns->submit($a->fresh(), RunAction::Hold);
+        $turns->submit($b->fresh(), RunAction::Hold);
+        $this->assertSame(100, (int) $b->fresh()->trace, 'it reaches everybody at once');
+        $this->assertStringContainsString(Text::get('cyberspace.run.log.traced'), json_encode($b->fresh()->log));
+    }
+
     private function partyRuns(): array
     {
         $this->checks(0.0);
@@ -1433,7 +1511,7 @@ final class TreeRunTest extends TestCase
         $this->assertSame($a->fresh()->sentries, $b->fresh()->sentries, 'one set of sentries for the party');
     }
 
-    public function test_a_party_shares_one_bar_and_the_alert_but_not_the_trace(): void
+    public function test_a_party_shares_one_bar_the_alert_and_the_trace(): void
     {
         $this->checks(0.0);
         $owner = $this->character;
@@ -1464,7 +1542,7 @@ final class TreeRunTest extends TestCase
         $this->assertContains($next, $b->knownNodes(), 'the round resolved: the reveal is shared');
         $this->assertSame((float) $a->noise, (float) $b->noise, 'one bar');
         $this->assertTrue($a->detected);
-        $this->assertFalse($b->detected, 'the trace is each runner\'s own');
+        $this->assertTrue($b->detected, 'one trace for the crew: anybody picked up starts it');
 
         $a->forceFill(['noise' => 39.0])->save();
         $b->forceFill(['noise' => 39.0])->save();

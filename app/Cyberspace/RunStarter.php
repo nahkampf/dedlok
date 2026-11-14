@@ -15,6 +15,7 @@ use App\Missions\MissionLedger;
 use App\Models\Character;
 use App\Models\InventoryItem;
 use App\Models\Run;
+use App\Models\RunParty;
 use App\Models\System;
 use App\Models\SystemScan;
 use App\Programs\ProcessRefused;
@@ -224,8 +225,12 @@ final readonly class RunStarter
                      * best first". The setup screen shows the same list this
                      * writes, so what a player was shown is what they got.
                      */
-                    'chain' => ChainBuilder::fromConfig($this->resolver)
-                        ->for($character, $system)
+                    // A party on a tree run comes in over ONE network, the runner's the owner picked (none, if none).
+                    'chain' => ($tree !== null && $partyId !== null
+                        ? (($picked = Character::query()->find(RunParty::query()->whereKey($partyId)->value('chain_character_id'))) === null
+                            ? collect()
+                            : ChainBuilder::fromConfig($this->resolver)->for($picked, $system))
+                        : ChainBuilder::fromConfig($this->resolver)->for($character, $system))
                         ->map(static fn (System $hop): int => (int) $hop->getKey())
                         ->all(),
                     // Only a backdoor run carries one, so an extraction cannot end

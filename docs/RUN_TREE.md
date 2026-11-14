@@ -179,8 +179,14 @@ Decided 2026-11-13, replacing the per-action detection chances.
 ### In a party
 
 - **One bar for the whole party.** Every runner's failed rolls add to it, and each runner's Hold drains it.
-- **The alert is the whole party's**: the ICE wakes, and every runner's trace starts if it hadn't.
-- **Traces stay per runner**: a failed tracer roll at arrival starts only that runner's trace.
+- **The alert is the whole party's**: the ICE wakes, and the trace starts if it hadn't.
+- **One trace network, one trace** (decided 2026-11-15, replacing a trace per runner). At the door the owner picks whose
+  routing chain the whole crew comes in over: their own (the default), a joined member's, or none
+  (`run_parties.chain_character_id`, `Parties::network()`; a picked member who leaves hands it back to the owner).
+  Every run snapshots that chain. The crew shares one meter: anybody picked up starts it, a trace trap moves it, and it
+  advances once a round (`PartyTurns::trace`), the hops rolled with the network's runner's routing skills. When it
+  lands everybody is traced (each takes the heat and the standing), and the network's backdoors burn, whoever it was
+  that got caught. A solo run, and a crew run on a system that walks no tree, keep a chain and a trace per runner.
 
 ## Step 2 rules
 

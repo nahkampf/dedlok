@@ -393,7 +393,10 @@ final readonly class Simulator
                 $log = [...$log, ...$this->holdLoopback($character, $run)];
             }
 
-            $log = [...$log, ...$this->advanceTrace($character, $run)];
+            // A party's tree run has ONE trace, advanced once a round over the picked network (PartyTurns::trace).
+            if (! ($run->isTreeRun() && ! $iceStrikes)) {
+                $log = [...$log, ...$this->advanceTrace($character, $run)];
+            }
 
             // The node pushes back at the end of every solo Denial turn. A party's pushes back once a ROUND (PartyTurns).
             if ($run->purpose === RunPurpose::Denial && $run->pressure > 0 && ! PartyTurns::shared($run)) {
@@ -1681,7 +1684,7 @@ final readonly class Simulator
      *
      * @return list<array{text: string, tone: string}>
      */
-    private function advanceTrace(Character $character, Run $run): array
+    public function advanceTrace(Character $character, Run $run): array
     {
         if (! $run->detected || $run->trace >= 100) {
             return [];

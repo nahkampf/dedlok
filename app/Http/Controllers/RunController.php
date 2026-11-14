@@ -151,6 +151,15 @@ class RunController extends Controller
         $parties = app(Parties::class);
         $partyHere = $parties->partyOf($character)?->load('members.character', 'owner');
 
+        // A party on a tree run comes in over the network the owner picked (none, if none): the route shown is that one.
+        $chainCap = $chains->hopsAllowed($character);
+
+        if ($partyHere !== null && RunTree::appliesTo($target)) {
+            $picked = Character::query()->find($partyHere->chain_character_id);
+            $chain = $picked === null ? collect() : $chains->for($picked, $target);
+            $chainCap = $picked === null ? $chainCap : $chains->hopsAllowed($picked);
+        }
+
         // What the owner's form shows ticked is what the others are told is coming, until they change it.
         if ($partyHere !== null && $partyHere->owner_character_id === $character->id && $partyHere->started_at === null) {
             $partyHere->forceFill(['owner_loadout' => $ticked->pluck('id')->all()])->save();
@@ -191,7 +200,7 @@ class RunController extends Controller
                 ->keyBy('address'),
             // What the running programs are spending, against what the deck resolves.
             'spent' => $deck === null ? ['qflops' => 0.0, 'memory' => 0.0] : app(ProgramRunner::class)->spentOn($character, (int) $deck->id),
-            'chainCap' => $chains->hopsAllowed($character),
+            'chainCap' => $chainCap,
             // What is running, with what each thing IS — an icebreaker and a
             // decryptor are both "a program" until the moment one of them is
             // the only thing standing between you and an ICE.
