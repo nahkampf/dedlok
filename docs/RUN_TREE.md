@@ -294,7 +294,8 @@ the Cordon tag**, each designed and built on its own, traps first.
   trace starts, or moves on a turn's worth of the tracer's rate (two from grade 7); **Ensnare**, no moving on for a turn
   (two from grade 7; other actions are fine); **Node Disconnect**, the trap node is torn out before the runner arrives:
   they stay where they were, the move costs the turn, and the node and its edges are gone for the party's run.
-- **Spent once tripped**: a conduit for the party (`runs.traps`, {node: found|spent|cut}, read across the party).
+- **Done with once tripped**: `sprung` (it went off, and the map shows it) or `spent` (disarmed, a conduit), for the
+  party (`runs.traps`, {node: found|sprung|spent|cut}, read across the party).
 - **Disarm** (`RunAction::Disarm`, a button per found trap one edge away): the OS roll. Landed, it is spent (an act's
   noise); failed, it goes off on the runner where they stand (a Node Disconnect still only takes its own node), and
   that is loud.
@@ -388,6 +389,9 @@ Asked for 2026-11-14: more life, animation and colour in runs.
 - **Threats in ember**: the core while its ICE stands, any node with a sentry, a running ICE controller, a security hub
   nobody has subverted (`TreeView` `threat`, `.board__node--threat`).
 - **After the alert they pulse**, ember on black to black on ember (`.board--alert`).
+- **Borders by kind** (named nodes, `data-kind`): entry and maintenance ports in brass, vaults in violet, firewalls
+  and security hubs in dashed ember. **A sprung trap** blinks a dashed ember border: it is marked `sprung` when it goes
+  off, apart from `spent` (disarmed), and shows as the trap it was.
 - **A move** sends a ◆ along the wire from the old node to the new, which flashes as it arrives; **a revealed node**
   (and its wires) dissolves in. The page compares against what it last showed of the run (session storage, per tab); a
   first look, failed storage or reduced motion animates nothing.

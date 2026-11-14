@@ -3092,6 +3092,17 @@ button.board__node[name="node"]:focus-visible .board__box { border-color: var(--
 @keyframes threat-alarm-box { from { background: var(--bg-0); } to { background: var(--crit); } }
 @keyframes threat-alarm-ink { from { color: var(--crit); } to { color: var(--bg-0); } }
 
+/* WHAT A NAMED NODE IS, in its border: the ways in and out in brass, the vaults in violet, the gates (a firewall,
+   a security hub) in dashed ember. A threat's solid ember (above) and the alert's pulse still win where both apply,
+   and a sprung trap blinks its dashed ember. */
+.board__node[data-kind="entry"] .board__box,
+.board__node[data-kind="port"] .board__box { border-color: var(--brass); }
+.board__node[data-kind="vault"] .board__box { border-color: var(--violet); }
+.board__node[data-kind="firewall"] .board__box,
+.board__node[data-kind="hub"] .board__box { border-color: var(--crit); border-style: dashed; }
+.board__node--sprung .board__box { border-color: var(--crit); border-style: dashed; animation: sprung-blink 1s steps(1) infinite; }
+@keyframes sprung-blink { 50% { border-color: transparent; } }
+
 /* A NODE JUST REVEALED dissolves in: stepped, so it resolves the way a signal does rather than fading like a slide.
    Its wires follow. Set by ui-kit.js against what the page last showed of this run. */
 .board__node--reveal { animation: node-dissolve 900ms steps(9) both; }

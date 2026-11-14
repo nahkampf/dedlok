@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('runs', function (Blueprint $table): void {
-            $table->json('traps')->nullable()->after('loopback')->comment('Trap nodes of the tree this runner found or dealt with, as {node: found|spent|cut}: found is named on the map, spent (tripped or disarmed) is a conduit, cut (Node Disconnect) is gone with its edges. Read across the party. NULL is none.');
+            $table->json('traps')->nullable()->after('loopback')->comment('Trap nodes of the tree this runner found or dealt with, as {node: found|sprung|spent|cut}: found is named on the map, sprung (it went off) and spent (disarmed) are done with, cut (Node Disconnect) is gone with its edges. Read across the party. NULL is none.');
             $table->unsignedInteger('snared_until')->nullable()->after('traps')->comment('An Ensnare trap holds this runner: moves are refused while runs.turn is below this. NULL is not snared.');
         });
 

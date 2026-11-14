@@ -997,7 +997,7 @@ final readonly class Simulator
         $state = $run->trapStates()[$node] ?? null;
         $kind = $tree?->nodes[$node]['kind'] ?? null;
 
-        return $tree !== null && ($kind === NodeKind::Trap || $tree->isHoneypot($node)) && $state !== 'spent' && $state !== 'cut'
+        return $tree !== null && ($kind === NodeKind::Trap || $tree->isHoneypot($node)) && ! in_array($state, ['spent', 'sprung', 'cut'], true)
             ? $tree->nodes[$node]['trap'] ?? null
             : null;
     }
@@ -1021,7 +1021,7 @@ final readonly class Simulator
             return [[$this->line('cyberspace.run.log.tree.trap.disconnect', tone: 'crit')], true];
         }
 
-        $run->markTrap($node, 'spent');
+        $run->markTrap($node, 'sprung');
         $log = [];
 
         if ($effect === TrapEffect::Alarm) {

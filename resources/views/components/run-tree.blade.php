@@ -42,8 +42,8 @@
             @foreach ($view->nodes as $node)
                 @php($tag = $node['move'] ? 'button' : 'div')
                 <{{ $tag }}
-                    @class(['board__node', 'board__node--here' => $node['here'], 'board__node--fog' => ! $node['known'], 'board__node--threat' => $node['threat'] ?? false])
-                    data-node="{{ $node['key'] }}"
+                    @class(['board__node', 'board__node--here' => $node['here'], 'board__node--fog' => ! $node['known'], 'board__node--threat' => $node['threat'] ?? false, 'board__node--sprung' => $node['sprung'] ?? false])
+                    data-node="{{ $node['key'] }}" @if (($node['kind'] ?? null) !== null) data-kind="{{ $node['kind'] }}" @endif
                     @if ($node['move']) type="submit" name="node" value="{{ $node['key'] }}" aria-label="{{ Text::get('cyberspace.run.action.move') }}: {{ $node['label'] }}" @endif
                     @if ($node['here']) aria-current="location" @endif
                     style="left:{{ $node['x'] }}%;top:{{ $node['y'] }}%">

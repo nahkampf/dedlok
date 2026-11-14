@@ -148,7 +148,7 @@ class Run extends Model
     }
 
     /**
-     * What this runner's party knows of the tree's traps, as {node: found|spent|cut}: the union of every run of the party,
+     * What this runner's party knows of the tree's traps, as {node: found|sprung|spent|cut}: the union of every run of the party,
      * the furthest state winning (cut, then spent, then found).
      *
      * @return array<int, string>
@@ -158,7 +158,8 @@ class Run extends Model
         $maps = $this->run_party_id === null
             ? [$this->traps ?? []]
             : self::query()->where('run_party_id', $this->run_party_id)->get(['traps'])->map(fn (self $r): array => $r->traps ?? [])->all();
-        $rank = ['found' => 1, 'spent' => 2, 'cut' => 3];
+        // Sprung (it went off) and spent (disarmed) are both done with; the map tells them apart.
+        $rank = ['found' => 1, 'spent' => 2, 'sprung' => 2, 'cut' => 3];
         $out = [];
 
         foreach ($maps as $map) {

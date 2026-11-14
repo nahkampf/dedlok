@@ -579,7 +579,7 @@ final class TreeRunTest extends TestCase
         $this->assertSame(Text::get('cyberspace.tree.trap_label', ['effect' => TrapEffect::Alarm->label()]), $label($run->fresh()));
     }
 
-    public function test_an_alarm_trap_is_loud_without_a_roll_and_then_spent(): void
+    public function test_an_alarm_trap_is_loud_without_a_roll_and_then_sprung(): void
     {
         [$run, $trap] = $this->trap(TrapEffect::Alarm);
 
@@ -588,7 +588,7 @@ final class TreeRunTest extends TestCase
 
         $this->assertSame($trap, $run->node);
         $this->assertSame(20.0, (float) $run->noise, 'the loud tier, with every stealth roll passing');
-        $this->assertSame('spent', $run->trapStates()[$trap]);
+        $this->assertSame('sprung', $run->trapStates()[$trap]);
         $this->assertNull(app(Simulator::class)->liveTrap($run, $trap));
     }
 
@@ -637,7 +637,7 @@ final class TreeRunTest extends TestCase
         $this->assertCount(1, TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->disarm);
         $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Disarm, node: $trap);
         $run = $run->fresh();
-        $this->assertSame('spent', $run->trapStates()[$trap]);
+        $this->assertSame('sprung', $run->trapStates()[$trap], 'it went off');
         $this->assertSame(40.0, (float) $run->noise, 'the alarm and the loud failure');
 
         [$run, $trap] = [$run, $trap];
@@ -682,7 +682,7 @@ final class TreeRunTest extends TestCase
         $this->simulator(0.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
         $run = $run->fresh();
         $this->assertSame(20.0, (float) $run->noise, 'the alarm, every stealth roll passing');
-        $this->assertSame('spent', $run->trapStates()[$pots[0]]);
+        $this->assertSame('sprung', $run->trapStates()[$pots[0]]);
         $this->assertNull($run->extracting_qb, 'there was nothing to pull');
     }
 
@@ -952,6 +952,19 @@ final class TreeRunTest extends TestCase
 
         $run->fresh()->forceFill(['opened' => [$hub]])->save();
         $this->assertFalse($threat(), 'subverted, it is no longer a threat');
+    }
+
+    public function test_the_map_colours_named_nodes_by_kind_and_marks_a_sprung_trap(): void
+    {
+        [$run, $trap] = $this->trap(TrapEffect::Alarm);
+        $this->simulator(0.0, 0)->take($this->character->fresh(), $run, RunAction::Move, node: $trap);
+        $nodes = collect(TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->nodes);
+
+        $this->assertSame('entry', $nodes->firstWhere('key', RunTree::of(System::query()->where('address', $run->address)->sole())->entry)['kind']);
+        $this->assertSame('trap', $nodes->firstWhere('key', $trap)['kind']);
+        $this->assertTrue($nodes->firstWhere('key', $trap)['sprung']);
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()
+            ->assertSee('board__node--sprung', false)->assertSee('data-kind="entry"', false);
     }
 
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void

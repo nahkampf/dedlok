@@ -25,7 +25,7 @@ use App\Support\Text;
 final readonly class TreeView
 {
     /**
-     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, cutting: ?int, move: bool, known: bool, threat?: bool}>  $nodes
+     * @param  list<array{key: int, label: string, x: float, y: float, here: bool, allies: int, sentries: int, cutting: ?int, move: bool, known: bool, threat?: bool, kind?: ?string, sprung?: bool}>  $nodes
      * @param  list<array{0: int, 1: int}>  $links
      */
     public function __construct(
@@ -86,6 +86,14 @@ final readonly class TreeView
         return Text::get('cyberspace.tree.node.'.($kind === NodeKind::Trap ? NodeKind::Conduit : $kind)->value);
     }
 
+    /** The kind the map colours a named node by: what its label says (a hidden trap is a conduit, a honeypot a vault). */
+    private static function kindShown(RunTree $tree, int $node, bool $found): string
+    {
+        $kind = $tree->nodes[$node]['kind'];
+
+        return ($kind === NodeKind::Trap && ! $found ? NodeKind::Conduit : $kind)->value;
+    }
+
     public static function for(Run $run, Character $character, Simulator $simulator, ?SystemScan $scan): ?self
     {
         $system = $run->system();
@@ -129,6 +137,7 @@ final readonly class TreeView
             NodeKind::Core => $coreIce,
             default => false,
         } || ($guards[$n] ?? 0) > 0;
+        $shown = static fn (int $n): bool => in_array($traps[$n] ?? null, ['found', 'sprung'], true);
         // A Cordon cutting a node shows its countdown wherever the runner can see the node: that is the warning.
         $cutting = collect($simulator->sentriesOf($run))->filter(static fn (array $s): bool => (float) $s['integrity'] > 0 && ($s['countdown'] ?? null) !== null)
             ->mapWithKeys(static fn (array $s): array => [(int) $s['node'] => (int) $s['countdown']])->all();
@@ -140,7 +149,8 @@ final readonly class TreeView
 
         $nodes = array_map(static fn (int $n): array => [
             'key' => $n,
-            'label' => in_array($n, $known, true) || ($traps[$n] ?? null) === 'found' ? self::label($tree, $n, ($traps[$n] ?? null) === 'found') : '?',
+            // A trap shows itself once found, and once it has gone off.
+            'label' => in_array($n, $known, true) || $shown($n) ? self::label($tree, $n, $shown($n)) : '?',
             // Centred in its own column, so the first and last boxes sit half a column in from the edges.
             'x' => round(($layout[$n]['col'] + .5) / ($maxCol + 1) * 100, 2),
             'y' => round(($layout[$n]['lane'] + .5) / $lanes * 100, 2),
@@ -149,8 +159,10 @@ final readonly class TreeView
             'sentries' => in_array($n, $known, true) ? (int) ($guards[$n] ?? 0) : 0,
             'cutting' => $cutting[$n] ?? null,
             'move' => in_array($n, $moves, true),
-            'known' => in_array($n, $known, true) || ($traps[$n] ?? null) === 'found',
+            'known' => in_array($n, $known, true) || $shown($n),
             'threat' => in_array($n, $known, true) && $threat($n),
+            'kind' => in_array($n, $known, true) || $shown($n) ? self::kindShown($tree, $n, $shown($n)) : null,
+            'sprung' => ($traps[$n] ?? null) === 'sprung',
         ], $seen);
 
         // An edge is drawn when the runner knows one of its ends: that is what standing on a node or an Nmap shows.
@@ -222,6 +234,7 @@ final readonly class TreeView
         $nodes = array_map(static fn (int $n): array => [
             'key' => $n,
             'label' => $read >= 2 ? self::label($tree, $n, $read >= 3) : '?',
+            'kind' => $read >= 2 ? self::kindShown($tree, $n, $read >= 3) : null,
             'x' => round(($layout[$n]['col'] + .5) / ($maxCol + 1) * 100, 2),
             'y' => round(($layout[$n]['lane'] + .5) / $lanes * 100, 2),
             'here' => false,
