@@ -296,10 +296,11 @@ final class PartyTurns
             if (! $run->is($lead)) {
                 $run->forceFill(['detected' => $lead->detected, 'trace' => $lead->trace, 'trace_hop' => $lead->trace_hop])->save();
             }
+        }
 
-            if ($lines !== []) {
-                $this->simulator->appendLog($run->refresh(), $lines);
-            }
+        // The party's log is one account (Simulator::appendLog writes every runner's): once.
+        if ($lines !== []) {
+            $this->simulator->appendLog($lead->refresh(), $lines);
         }
     }
 

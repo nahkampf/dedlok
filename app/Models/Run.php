@@ -314,7 +314,10 @@ class Run extends Model
         $live = System::query()
             ->whereIn('id', $chain)
             ->whereIn('id', Backdoor::query()
-                ->where('character_id', $this->character_id)
+                // A crew on a run tree came in over the network of the runner the owner picked: theirs are the backdoors.
+                ->where('character_id', ($this->isTreeRun() && $this->run_party_id !== null
+                    ? RunParty::query()->whereKey($this->run_party_id)->value('chain_character_id')
+                    : null) ?? $this->character_id)
                 ->where('kind', BackdoorKind::Routing->value)
                 ->select('system_id'))
             ->pluck('grade', 'id');

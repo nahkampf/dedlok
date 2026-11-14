@@ -434,6 +434,15 @@ final class Parties
             return RunResult::refused(RunRefusal::NobodyReady);
         }
 
+        // A picked network whose runner cannot go in is not one the crew can come in over: it is the owner's again.
+        $picked = $party->chain_character_id === null || (int) $party->chain_character_id === (int) $owner->getKey() ? null
+            : $party->members()->whereNotNull('joined_at')->where('character_id', $party->chain_character_id)->first()?->character;
+
+        if ($party->chain_character_id !== null && (int) $party->chain_character_id !== (int) $owner->getKey()
+            && ($picked === null || $this->obstacle($picked, $party, $starter) !== null)) {
+            $party->update(['chain_character_id' => $owner->getKey()]);
+        }
+
         $result = $starter->start($owner, $purpose, $kind, $ownerLoadout, $party->getKey(), $ownerSuspend, $ownerAtEntry);
 
         if (! $result->succeeded()) {

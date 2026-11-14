@@ -1415,6 +1415,57 @@ final class TreeRunTest extends TestCase
         $runs->each(fn (Run $r) => $this->assertSame([$relay->id], array_values((array) $r->chain), "every runner comes in over the mate's network"));
     }
 
+    public function test_the_picked_network_holds_the_crew_s_one_trace_with_its_runner_s_backdoors(): void
+    {
+        System::query()->where('address', 'DEADBEEF')->update(['tracer_rate' => 10]);
+        $this->checks(0.0);
+        $mate = $this->runner();
+        $relay = $this->routeFor($mate, 2, 9);
+        $parties = new Parties;
+        $parties->open($this->character);
+        $this->assertNull($parties->invite($this->character, $mate->handle));
+        $this->assertNull($parties->accept($mate));
+        $this->assertNull($parties->network($this->character, $mate->id));
+        $this->assertTrue($parties->launch($this->character, RunPurpose::Extraction, null, [], app(RunStarter::class))->succeeded());
+        $runs = Run::query()->where('run_party_id', RunParty::query()->sole()->id)->orderBy('id')->get();
+        [$a, $b] = [$runs->firstWhere('character_id', $this->character->id), $runs->firstWhere('character_id', $mate->id)];
+        $a->forceFill(['detected' => true, 'trace' => 0])->save();
+
+        $this->assertSame([9], $a->fresh()->routingGrades(), "the owner's run reads the mate's hop: theirs is the network");
+        $this->assertFalse($a->fresh()->traceChain()[1]['gone']);
+
+        // The highest roll: the grade 9 hop holds the trace.
+        $this->app->instance(Simulator::class, Simulator::fromConfig(static fn (int $min, int $max): int => $max, app(Resolver::class)));
+        $turns = app(PartyTurns::class);
+        $turns->submit($a->fresh(), RunAction::Hold);
+        $turns->submit($b->fresh(), RunAction::Hold);
+
+        $this->assertSame(0, (int) $a->fresh()->trace, 'held at the hop');
+        $this->assertSame(0, (int) $b->fresh()->trace);
+        $this->assertSame([$relay->id], array_values((array) $b->fresh()->chain));
+    }
+
+    public function test_a_picked_runner_who_cannot_go_in_hands_the_network_back_to_the_owner(): void
+    {
+        $this->checks(0.0);
+        $mate = $this->runner();
+        $away = $this->runner();
+        $this->routeFor($away, 2, 9);
+        $parties = new Parties;
+        $parties->open($this->character);
+        foreach ([$mate, $away] as $runner) {
+            $this->assertNull($parties->invite($this->character, $runner->handle));
+            $this->assertNull($parties->accept($runner));
+        }
+        $this->assertNull($parties->network($this->character, $away->id));
+        $away->forceFill(['grid_x' => (int) $away->grid_x + 5])->save();
+
+        $this->assertTrue($parties->launch($this->character, RunPurpose::Extraction, null, [], app(RunStarter::class))->succeeded());
+        $this->assertSame($this->character->id, RunParty::query()->sole()->chain_character_id);
+        Run::query()->where('run_party_id', RunParty::query()->sole()->id)->get()
+            ->each(fn (Run $r) => $this->assertSame([], array_values((array) $r->chain), 'not the network of a runner who is not in'));
+    }
+
     public function test_the_picked_network_falls_back_to_the_owner_s_when_its_runner_leaves_and_none_is_no_route(): void
     {
         $mate = $this->runner();
@@ -1450,7 +1501,7 @@ final class TreeRunTest extends TestCase
         $turns->submit($a->fresh(), RunAction::Hold);
         $turns->submit($b->fresh(), RunAction::Hold);
         $this->assertSame(100, (int) $b->fresh()->trace, 'it reaches everybody at once');
-        $this->assertStringContainsString(Text::get('cyberspace.run.log.traced'), json_encode($b->fresh()->log));
+        $this->assertSame(1, collect($b->fresh()->log)->where('text', Text::get('cyberspace.run.log.traced'))->count(), 'told once, in the one log');
     }
 
     private function partyRuns(): array
