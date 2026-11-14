@@ -5,6 +5,14 @@ what will break if it is left alone.
 
 ---
 
+## Ramdisk: a Utility that turns RAM into storage (noted 2026-11-14)
+
+A new Utility program, **Ramdisk**: while it runs it takes an amount of the deck's RAM (memory) and gives it back as storage.
+Undecided: how much it converts (a fixed amount, or a per cent of free memory), at what rate, whether variants differ in
+that, and what happens to whatever is stored on it when it stops (programs no longer fitting the deck's storage). Note
+that a Kompressor already raises `deck_storage` as a modifier, so the stat to move exists; the memory cost could be the
+program's own `memory_cost`, which needs nothing new.
+
 ## The operating-system roll repeats for free (noted 2026-10-30, for the balance pass)
 
 The OS table tops out at 80% (AuraOS level 5, down to 50% for Lattice; `cyberspace.os.values` and `.difficulty`, one difficulty per OS skill), but
