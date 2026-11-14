@@ -22,6 +22,8 @@ use App\Cyberspace\Tree\RunTree;
 use App\Cyberspace\Tree\TrapEffect;
 use App\Cyberspace\Tree\TreeView;
 use App\Models\Character;
+use App\Models\Entity;
+use App\Models\EntityBook;
 use App\Models\Ice;
 use App\Models\InventoryItem;
 use App\Models\Item;
@@ -681,6 +683,36 @@ final class TreeRunTest extends TestCase
         $this->assertSame(20.0, (float) $run->noise, 'the alarm, every stealth roll passing');
         $this->assertSame('spent', $run->trapStates()[$pots[0]]);
         $this->assertNull($run->extracting_qb, 'there was nothing to pull');
+    }
+
+    public function test_wiping_the_logs_after_the_alert_gives_the_standing_back_and_spares_the_lockdown(): void
+    {
+        $entity = Entity::query()->interactable()->firstOrFail();
+        $os = Skill::factory()->create(['slug' => 'lattice', 'title' => 'Lattice', 'category' => 'Operating Systems', 'rank' => 4]);
+        System::query()->where('address', 'DEADBEEF')->update(['grade' => 7, 'os_skill_id' => $os->id, 'owner_id' => $entity->id]);
+        $tree = RunTree::of(System::query()->where('address', 'DEADBEEF')->sole());
+        $log = $tree->nodesOf(NodeKind::Log)[0];
+        $from = $tree->neighbours($log)[0];
+        $book = fn (): float => (float) EntityBook::query()->where('character_id', $this->character->id)->where('entity_id', $entity->id)->value('standing');
+
+        $run = $this->begin();
+        $run->forceFill(['node' => $log])->save();
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Wipe)->refusal, 'nothing to wipe before the alert');
+
+        // The alert, on the step back off the log server.
+        $run->fresh()->forceFill(['noise' => 39.9, 'opened' => $tree->nodesOf(NodeKind::Firewall)])->save();
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $from);
+        $this->assertTrue($run->fresh()->alerted);
+        $this->assertLessThan(0.0, $book());
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $log);
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Wipe);
+        $run = $run->fresh();
+
+        $this->assertTrue($run->log_wiped);
+        $this->assertSame(0.0, $book(), 'what the alert cost came back');
+        $this->assertFalse($run->noticed(), 'so the system does not lock down after the run');
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Wipe)->refusal, 'once');
     }
 
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void

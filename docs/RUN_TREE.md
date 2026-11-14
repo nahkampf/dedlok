@@ -306,6 +306,18 @@ the Cordon tag**, each designed and built on its own, traps first.
 - **It holds nothing** (the restock skips it) and **goes off on the first Extract** with one of Alarm, Trace jump or
   Ensnare (never a Node Disconnect: the runner stands on it). Spent afterwards: an empty vault for the party.
 
+### Log servers
+
+- **From grade 5, one per tree**: a dead end off a conduit (which becomes a switch) or a switch of the quiet or rich
+  path (`NodeKind::Log`), drawn in a lane of its own below the paths. Measured: nearly every tree, silos about 60% at
+  grades 5–6.
+- **Wipe** (`RunAction::Wipe`, a button on it): the OS roll; landed an act's noise, failed loud.
+- **It covers only what came before**: offered only once the alert has gone off. Landed, that alert leaves nothing
+  behind: the standing it cost whoever set it off comes back (`runs.alert_cost`, refunded as
+  `StandingReason::LogsWiped`) and there is no lockdown after the run (`Run::noticed()` reads `runs.log_wiped` across
+  the party). The ICE stays awake and traces keep running. The alert stays for the run, so nothing later can cost
+  standing again.
+
 ## To come back to
 
 Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next step; all of it blocks the merge.

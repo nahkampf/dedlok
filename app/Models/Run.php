@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'traps', 'snared_until', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
+#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'traps', 'snared_until', 'log_wiped', 'alert_cost', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -66,6 +66,8 @@ class Run extends Model
             'loopback' => 'integer',
             'traps' => 'array',
             'snared_until' => 'integer',
+            'log_wiped' => 'boolean',
+            'alert_cost' => 'float',
             'pending_node' => 'integer',
             'pull_node' => 'integer',
             'noise' => 'float',
@@ -107,7 +109,16 @@ class Run extends Model
      */
     public function noticed(): bool
     {
-        return $this->isTreeRun() ? (bool) $this->alerted : (bool) $this->detected;
+        // On a tree run, an alert whose logs the party wiped leaves nothing behind.
+        return $this->isTreeRun() ? (bool) $this->alerted && ! $this->logWiped() : (bool) $this->detected;
+    }
+
+    /** Somebody in the party wiped a log server after the alert went off. */
+    public function logWiped(): bool
+    {
+        return $this->run_party_id === null
+            ? (bool) $this->log_wiped
+            : self::query()->where('run_party_id', $this->run_party_id)->where('log_wiped', true)->exists();
     }
 
     /**

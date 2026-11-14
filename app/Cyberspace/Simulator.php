@@ -318,6 +318,9 @@ final readonly class Simulator
                 } else {
                     $log = [...$log, ...$this->move($run, (int) $node)];
                 }
+            } elseif ($action === RunAction::Wipe) {
+                [$wipeLog, $breachTier] = $this->wipe($character, $run);
+                $log = [...$log, ...$wipeLog];
             } elseif ($action === RunAction::Disarm) {
                 [$disarmLog, $breachTier] = $this->disarm($character, $run, (int) $node);
                 $log = [...$log, ...$disarmLog];
@@ -418,7 +421,7 @@ final readonly class Simulator
     public function refusal(Character $character, Run $run, RunAction $action, ?int $node): ?RunRefusal
     {
         if (! $run->isTreeRun()) {
-            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Loopback, RunAction::Disarm, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
+            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Loopback, RunAction::Disarm, RunAction::Wipe, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
         }
 
         $tree = $this->treeOf($run);
@@ -437,6 +440,7 @@ final readonly class Simulator
             },
             RunAction::Breach => $this->firewallClosed($run) ? null : RunRefusal::NotHere,
             RunAction::Subvert => $this->hubOpen($run) ? null : RunRefusal::NotHere,
+            RunAction::Wipe => $this->logOpen($run) ? null : RunRefusal::NotHere,
             // A found trap one edge away, on a system with an OS to speak.
             RunAction::Disarm => $node === null || ! in_array($node, $tree->neighbours((int) $run->node), true)
                 || $this->liveTrap($run, $node) === null || ($run->trapStates()[$node] ?? null) !== 'found'
@@ -577,6 +581,55 @@ final readonly class Simulator
         $system = $run->system();
 
         return $system === null ? null : RunTree::of($system)->cut($run->cutNodes());
+    }
+
+    /**
+     * Standing on a log server with something on it to wipe: the alert has gone off, nobody in the party wiped it since,
+     * and the system speaks an OS. Before the alert there is nothing to erase (a wipe covers only what came before).
+     */
+    public function logOpen(Run $run): bool
+    {
+        $tree = $this->treeOf($run);
+
+        return $tree !== null
+            && $tree->nodes[(int) $run->node]['kind'] === NodeKind::Log
+            && $run->alerted && ! $run->logWiped()
+            && $run->system()?->os_skill_id !== null;
+    }
+
+    /**
+     * WIPE the log server: the OS roll. Landed, the alert that went off leaves nothing behind (no lockdown after the run,
+     * and the standing it cost whoever set it off comes back), an act's noise; failed, it is loud.
+     *
+     * @return array{0: list<array{text: string, tone: string}>, 1: string}
+     */
+    private function wipe(Character $character, Run $run): array
+    {
+        $system = $run->system();
+
+        if (! $this->checks->roll($this->osValue($character, $system), $this->osDifficulty($character, $system?->operatingSystem()->first()), 'os')->passed) {
+            return [[$this->line('cyberspace.run.log.tree.wipe_fails', tone: 'warn')], 'loud'];
+        }
+
+        $run->log_wiped = true;
+        $charged = $run->run_party_id === null
+            ? collect([$run])
+            : Run::query()->where('run_party_id', $run->run_party_id)->whereNotNull('alert_cost')->get()->map(fn (Run $r): Run => $r->is($run) ? $run : $r);
+
+        foreach ($charged as $r) {
+            $owner = $r->is($run) ? $character : Character::query()->find($r->character_id);
+
+            if ($r->alert_cost !== null && $owner !== null) {
+                (new StandingLedger)->record($owner, $system?->owner, StandingReason::LogsWiped, -(float) $r->alert_cost);
+                $r->alert_cost = null;
+
+                if (! $r->is($run)) {
+                    $r->save();
+                }
+            }
+        }
+
+        return [[$this->line('cyberspace.run.log.tree.wiped', tone: 'ok')], 'act'];
     }
 
     /** Standing on a honeypot nobody in the party has sprung. */
@@ -889,7 +942,7 @@ final readonly class Simulator
         $tier = match ($action) {
             // Stepping onto a security hub nobody has subverted is loud.
             RunAction::Move => $this->onLiveHub($run) ? 'loud' : 'move',
-            RunAction::Breach, RunAction::Subvert, RunAction::Disarm => $breachTier,
+            RunAction::Breach, RunAction::Subvert, RunAction::Disarm, RunAction::Wipe => $breachTier,
             RunAction::Egress => 'move',
             RunAction::Nmap, RunAction::Loopback => 'act',
             RunAction::Flood => 'loud',
@@ -995,7 +1048,8 @@ final readonly class Simulator
                 ->update(['alerted' => true, 'detected' => true, ...$wake]);
         }
 
-        $this->charge($character, $system, StandingReason::Noticed);
+        // Kept on the run as it landed, so a log wipe can give it back.
+        $run->alert_cost = (new StandingLedger)->record($character, $system->owner, StandingReason::Noticed);
 
         return [$this->line('cyberspace.run.log.tree.alert', tone: 'crit')];
     }

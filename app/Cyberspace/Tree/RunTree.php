@@ -286,6 +286,29 @@ final readonly class RunTree
             }
         }
 
+        // A log server from grade 5: a dead end off a conduit (which becomes a switch) or a switch of the quiet or rich path.
+        if ($g >= 5) {
+            $from = [];
+
+            foreach (array_keys(array_intersect($paths, ['quiet', 'rich'])) as $lane) {
+                foreach ($own[$lane]['ids'] as $id) {
+                    if (in_array($nodes[$id]['kind'], [NodeKind::Conduit, NodeKind::Switch], true)) {
+                        $from[] = $id;
+                    }
+                }
+            }
+
+            if ($from !== []) {
+                $at = $from[$r->getInt(0, count($from) - 1)];
+
+                if ($nodes[$at]['kind'] === NodeKind::Conduit) {
+                    $nodes[$at]['kind'] = NodeKind::Switch;
+                }
+
+                $edges[] = [$at, $add(NodeKind::Log)];
+            }
+        }
+
         // Honeypots from grade 5: a vault other than the tree's first is sometimes a trap with bait (a quarter of the time,
         // two in five on a silo). It stays a vault in every reading (only Deep Nmap tells), holds nothing, and goes off on
         // the first Extract. Never a Node Disconnect: the runner is standing on it.
@@ -430,8 +453,13 @@ final readonly class RunTree
         foreach ($this->nodes as $id => $node) {
             $lane = $node['path'] !== null ? (float) $lanes[$node['path']] : $middle;
 
+            // Dead ends drawn in lanes of their own below the paths: the port, then the log server.
             if ($node['kind'] === NodeKind::Port) {
                 $lane = (float) count($paths);
+            }
+
+            if ($node['kind'] === NodeKind::Log) {
+                $lane = (float) count($paths) + ($this->nodesOf(NodeKind::Port) !== [] ? 1 : 0);
             }
 
             // The hub where quiet and rich meet (a conduit with no IDS) sits between them.
@@ -448,7 +476,7 @@ final readonly class RunTree
     /** How many lanes the drawing needs. */
     public function lanes(): int
     {
-        return max(1, count(array_unique(array_filter(array_column($this->nodes, 'path'))))) + ($this->nodesOf(NodeKind::Port) !== [] ? 1 : 0);
+        return max(1, count(array_unique(array_filter(array_column($this->nodes, 'path'))))) + ($this->nodesOf(NodeKind::Port) !== [] ? 1 : 0) + ($this->nodesOf(NodeKind::Log) !== [] ? 1 : 0);
     }
 
     /** @return list<int> */

@@ -57,6 +57,8 @@ final readonly class TreeView
         public array $disarm = [],
         // The chance a Disarm's OS roll lands; null with nothing to disarm.
         public ?float $disarmChance = null,
+        // Standing on a log server with an alert to wipe: the chance the OS roll lands. Null otherwise.
+        public ?float $wipeChance = null,
     ) {}
 
     /** What a node is called on the map: a trap reads as a conduit until it is found, and as one again once spent. */
@@ -154,6 +156,7 @@ final readonly class TreeView
                 array_filter($tree->neighbours($here), static fn (int $n): bool => ($traps[$n] ?? null) === 'found' && $simulator->liveTrap($run, $n) !== null),
             )),
             $disarm !== [] && $system->os_skill_id !== null ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
+            $simulator->logOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
         );
     }
 

@@ -125,6 +125,16 @@ final class RunTreeTest extends TestCase
             $this->assertArrayHasKey('trap', $tree->nodes[$trap], $why);
         }
 
+        // At most one log server, from grade 5: a dead end off a switch of the quiet or rich path.
+        $this->assertLessThanOrEqual($grade >= 5 ? 1 : 0, count($tree->nodesOf(NodeKind::Log)), $why);
+
+        foreach ($tree->nodesOf(NodeKind::Log) as $log) {
+            $this->assertCount(1, $tree->neighbours($log), $why);
+            $from = $tree->nodes[$tree->neighbours($log)[0]];
+            $this->assertSame(NodeKind::Switch, $from['kind'], $why);
+            $this->assertContains($from['path'], ['quiet', 'rich'], $why);
+        }
+
         // Honeypots from grade 5, never a Node Disconnect, never the tree's first vault.
         $vaults = $tree->nodesOf(NodeKind::Vault);
 

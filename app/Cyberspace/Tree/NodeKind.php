@@ -40,6 +40,9 @@ enum NodeKind: string
     /** A trap (its effect on the node, `trap`): it reads as a conduit until found, and goes off when stepped on. */
     case Trap = 'trap';
 
+    /** A log server, a dead end off the quiet or rich path from grade 5: wiped, an alert that already went off costs nothing after the run. */
+    case Log = 'log';
+
     /** What the run is for. A firewall too, and where the system's ICE stands. */
     case Core = 'core';
 }

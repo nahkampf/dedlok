@@ -24,6 +24,9 @@ enum StandingReason: string
     /** Something on their system noticed you. */
     case Noticed = 'noticed';
 
+    /** You wiped the log server that recorded an alert you set off: what it cost is given back. The amount is the run's own. */
+    case LogsWiped = 'logs_wiped';
+
     /** You took something off one of their systems. */
     case Raided = 'raided';
 

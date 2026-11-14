@@ -106,6 +106,9 @@ enum RunAction: string
     /** A tree run: disarm a found trap one edge away (`node`), with the OS roll. Failed, it goes off. */
     case Disarm = 'disarm';
 
+    /** A tree run: wipe the log server you stand on, with the OS roll. An alert that already went off then leaves nothing behind. */
+    case Wipe = 'wipe';
+
     /** A tree run: Crash Jackout. Out from anywhere, for certain, at a price in Synaptic Integrity. */
     case Jackout = 'jackout';
 

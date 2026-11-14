@@ -111,6 +111,11 @@
                 {{ Text::get($tree->looping ? 'cyberspace.tree.loopback_holding' : 'cyberspace.tree.loopback_chance', ['chance' => (int) round($tree->loopbackChance * 100)]) }}
             </p>
         @endif
+        @if ($tree->wipeChance !== null)
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.wipe_chance', ['chance' => (int) round($tree->wipeChance * 100)]) }}
+            </p>
+        @endif
         {{-- FOUND TRAPS next door: a Disarm each (the OS roll), its own form since it names a node. --}}
         @if ($tree->disarm !== [])
             <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
@@ -390,6 +395,12 @@
             @if ($tree && $tree->atRelay)
                 <button type="submit" name="action" value="loopback" class="btn cut btn--go" @if ($tree->loopbackChance === null) disabled @endif>
                     {{ Text::get('cyberspace.run.action.loopback') }}
+                </button>
+            @endif
+            {{-- A LOG SERVER holding an alert: Wipe is its OS roll. --}}
+            @if ($tree && $tree->wipeChance !== null)
+                <button type="submit" name="action" value="wipe" class="btn cut btn--go">
+                    {{ Text::get('cyberspace.run.action.wipe') }}
                 </button>
             @endif
             {{-- A SECURITY HUB nobody has subverted: Subvert is its OS roll. --}}

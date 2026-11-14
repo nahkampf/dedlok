@@ -1285,6 +1285,7 @@ return [
             'subverted' => 'The security hub is subverted. No alert can go off.',
             'loopback_chance' => 'Loopback: :chance% to hold each turn.',
             'disarm_chance' => 'Traps: :chance% to disarm.',
+            'wipe_chance' => 'Log server: :chance% to wipe the alert from the record.',
             'trap_label' => 'Trap: :effect',
             'trap' => [
                 'alarm' => 'Alarm',
@@ -1312,6 +1313,7 @@ return [
                 'hub' => 'Security hub',
                 'relay' => 'Internal relay',
                 'trap' => 'Trap',
+                'log' => 'Log server',
                 'core' => 'Core',
             ],
         ],
@@ -1861,6 +1863,7 @@ return [
                 'subvert' => 'Subvert',
                 'loopback' => 'Loopback',
                 'disarm' => 'Disarm :trap',
+                'wipe' => 'Wipe logs',
                 'jackout' => 'Crash Jackout',
                 'jackout_confirm' => 'Pull the plug',
                 'jackout_cancel' => 'Stay in',
@@ -1902,6 +1905,8 @@ return [
                     'loopback' => 'You wire a Loopback into the relay. The trace starts chasing its own tail.',
                     'loopback_fails' => 'The Loopback collapses. The trace finds its way again.',
                     'loopback_stalls' => 'The trace runs in circles through the Loopback.',
+                    'wiped' => 'You scrub the alert out of the logs. As far as the record goes, nobody was ever here.',
+                    'wipe_fails' => 'The log server fights back and makes a lot of noise doing it.',
                     'trap' => [
                         'alarm' => 'A trap goes off and the IDS hears every bit of it.',
                         'trace' => 'A trap throws your signal straight at the tracer.',
@@ -3586,6 +3591,7 @@ return [
         // entity's minutes.
         'reasons' => [
             'noticed' => 'Seen on their system',
+            'logs_wiped' => 'Wiped from their logs',
             'raided' => 'Took from their system',
             'backdoor_found' => 'Your door was found',
             'traced' => 'Traced by their system',
