@@ -98,7 +98,9 @@
                 @endif
             </span>
             @if ($tree->ids !== null && $tree->ids > 0)
-                <div class="meter meter--lg" style="--v:{{ round(min(1, $tree->noise / $tree->ids), 3) }};--fill:var(--warn)">
+                {{-- Green to 70%, brass to 90%, then ember: how close the alarm is, at a glance. --}}
+                @php($share = min(1, $tree->noise / $tree->ids))
+                <div class="meter meter--lg" style="--v:{{ round($share, 3) }};--fill:var(--{{ $share < .7 ? 'ok' : ($share < .9 ? 'warn' : 'crit') }})">
                     <div class="meter__fill"></div>
                 </div>
             @endif
