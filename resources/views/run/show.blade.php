@@ -6,6 +6,12 @@
 
 @section('content')
 
+{{-- TWO COLUMNS WHEN THERE IS ROOM (the kit's .map-split): the run itself on the left (overview, mission, map,
+     actions) and what is watching it on the right, narrower (the trace, the ICE, the log). One column below that. --}}
+<div class="map-split" style="margin-top:0">
+<div class="map-split__body">
+<div style="min-width:0">
+
 {{-- THE ONLY SCREEN A PLAYER IN A RUN CAN REACH.
 
      EnsureRunIsFinished sends every other request here, which is what replaces
@@ -169,81 +175,6 @@
                     :waiting="$waiting ? ($run->pending_action === 'move' ? (string) $run->pending_node : '-') : ''" />
     </div>
 @endif
-
-{{-- THE TRACE, AND THE ONE QUESTION IT ANSWERS: is it time to leave.
-
-     Drawn as the chain it actually is — the machine at one end, you at the
-     other, and every backdoored relay routed through in between. Routing is not
-     built, so today that chain is two nodes; the widget draws a chain rather
-     than a pair precisely so it will not have to change when hops arrive. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
-    <div class="panel__hd">
-        <h2>{{ Text::get('cyberspace.run.trace') }}</h2>
-        <div class="spacer"></div>
-        @if ($run->trace >= 100)
-            <span class="tag tag--crit">{{ Text::get('cyberspace.run.trace_done') }}</span>
-        @elseif ($turnsLeft !== null)
-            <span class="micro num">{{ Text::plural('cyberspace.run.trace_turns', $turnsLeft, ['count' => $turnsLeft]) }}</span>
-        @endif
-    </div>
-
-    <div style="padding:0 var(--s-2)">
-        @if ($run->traceRate() > 0 || $run->trace > 0)
-            @php($chain = $run->traceChain())
-
-            <div class="trace" style="--v:{{ round($run->trace / 100, 3) }}">
-                @foreach ($chain as $node)
-                    <span class="trace__node trace__node--{{ $node['kind'] }} @if ($node['passed']) trace__node--passed @endif"
-                          @if ($node['label']) title="{{ $node['label'] }}" @endif>
-                        {{ $node['kind'] === 'you' ? '◉' : ($node['gone'] ? '◌' : '◇') }}
-                    </span>
-                @endforeach
-            </div>
-
-            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-3)">
-                <span class="num">{{ $run->trace }}%</span>
-                @if ($run->traceRate() > 0) · +{{ $run->traceRate() }}% a turn @endif
-            </p>
-        @else
-            <p class="micro" style="color:var(--ink-2);padding:var(--s-3) 0;margin:0">
-                {{ Text::get('cyberspace.run.trace_none') }}
-            </p>
-        @endif
-    </div>
-</div>
-
-{{-- WHAT IS FIGHTING, drawn from the RUN and not from the system: integrity is being ground down, and
-     the catalogue says what an ICE is rather than what this fight has left of it. --}}
-<div class="panel panel--snug" style="margin-top:var(--s-4)">
-    <div class="panel__hd">
-        <h2>{{ Text::get('cyberspace.run.ice') }}</h2>
-    </div>
-
-    <div style="padding:var(--s-3) 0">
-        @if ($run->inAFight())
-            @php($ice = $run->ice)
-            <div class="card__stats" style="padding:0;border:0">
-                <div class="card__stat">
-                    <span>{{ Text::get('cyberspace.run.ice_grade') }}</span>
-                    <span class="tag tag--crit">{{ \App\Cyberspace\FortressCloak::iceNameFor($run) }}</span>
-                </div>
-                <div class="card__stat">
-                    <span>{{ Text::get('cyberspace.run.ice_integrity') }}</span>
-                    <b class="num">{{ $run->ice_integrity }} / {{ $ice->integrity }}</b>
-                </div>
-            </div>
-
-            {{-- The kit's own meter, driven by --v the way every other one is. It is the ICE's health and
-                 not the player's, so it empties as things go WELL — `--fill` says which way to read it.
-                 A <div>, like every other fill: an inline <span> has no height and draws nothing. --}}
-            <div class="meter meter--lg" style="--v:{{ round($run->ice_integrity / max(1, $ice->integrity), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
-                <div class="meter__fill"></div>
-            </div>
-        @else
-            <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.ice_none') }}</p>
-        @endif
-    </div>
-</div>
 
 {{-- WRITTEN ONCE, SHOWN TWO WAYS. The kit clones this into the floating
      inspector on hover and into a modal on click. --}}
@@ -595,6 +526,83 @@
     </dialog>
 @endif
 
+</div>
+<aside class="map-side">
+{{-- THE TRACE, AND THE ONE QUESTION IT ANSWERS: is it time to leave.
+
+     Drawn as the chain it actually is — the machine at one end, you at the
+     other, and every backdoored relay routed through in between. Routing is not
+     built, so today that chain is two nodes; the widget draws a chain rather
+     than a pair precisely so it will not have to change when hops arrive. --}}
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.trace') }}</h2>
+        <div class="spacer"></div>
+        @if ($run->trace >= 100)
+            <span class="tag tag--crit">{{ Text::get('cyberspace.run.trace_done') }}</span>
+        @elseif ($turnsLeft !== null)
+            <span class="micro num">{{ Text::plural('cyberspace.run.trace_turns', $turnsLeft, ['count' => $turnsLeft]) }}</span>
+        @endif
+    </div>
+
+    <div style="padding:0 var(--s-2)">
+        @if ($run->traceRate() > 0 || $run->trace > 0)
+            @php($chain = $run->traceChain())
+
+            <div class="trace" style="--v:{{ round($run->trace / 100, 3) }}">
+                @foreach ($chain as $node)
+                    <span class="trace__node trace__node--{{ $node['kind'] }} @if ($node['passed']) trace__node--passed @endif"
+                          @if ($node['label']) title="{{ $node['label'] }}" @endif>
+                        {{ $node['kind'] === 'you' ? '◉' : ($node['gone'] ? '◌' : '◇') }}
+                    </span>
+                @endforeach
+            </div>
+
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-3)">
+                <span class="num">{{ $run->trace }}%</span>
+                @if ($run->traceRate() > 0) · +{{ $run->traceRate() }}% a turn @endif
+            </p>
+        @else
+            <p class="micro" style="color:var(--ink-2);padding:var(--s-3) 0;margin:0">
+                {{ Text::get('cyberspace.run.trace_none') }}
+            </p>
+        @endif
+    </div>
+</div>
+
+{{-- WHAT IS FIGHTING, drawn from the RUN and not from the system: integrity is being ground down, and
+     the catalogue says what an ICE is rather than what this fight has left of it. --}}
+<div class="panel panel--snug" style="margin-top:var(--s-4)">
+    <div class="panel__hd">
+        <h2>{{ Text::get('cyberspace.run.ice') }}</h2>
+    </div>
+
+    <div style="padding:var(--s-3) 0">
+        @if ($run->inAFight())
+            @php($ice = $run->ice)
+            <div class="card__stats" style="padding:0;border:0">
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.ice_grade') }}</span>
+                    <span class="tag tag--crit">{{ \App\Cyberspace\FortressCloak::iceNameFor($run) }}</span>
+                </div>
+                <div class="card__stat">
+                    <span>{{ Text::get('cyberspace.run.ice_integrity') }}</span>
+                    <b class="num">{{ $run->ice_integrity }} / {{ $ice->integrity }}</b>
+                </div>
+            </div>
+
+            {{-- The kit's own meter, driven by --v the way every other one is. It is the ICE's health and
+                 not the player's, so it empties as things go WELL — `--fill` says which way to read it.
+                 A <div>, like every other fill: an inline <span> has no height and draws nothing. --}}
+            <div class="meter meter--lg" style="--v:{{ round($run->ice_integrity / max(1, $ice->integrity), 3) }};--fill:var(--crit);margin-top:var(--s-2)">
+                <div class="meter__fill"></div>
+            </div>
+        @else
+            <p class="micro" style="color:var(--ink-2);margin:0">{{ Text::get('cyberspace.run.ice_none') }}</p>
+        @endif
+    </div>
+</div>
+
 {{-- THE ACCOUNT. A run is something a player watches happen, and the page is
      read from the top after every turn, so the log is NEWEST FIRST: the answer
      to the turn just taken is where the eye already is, and nobody scrolls
@@ -638,5 +646,9 @@
         </div>
     </div>
 @endif
+
+</aside>
+</div>
+</div>
 
 @endsection
