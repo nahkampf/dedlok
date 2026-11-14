@@ -341,7 +341,7 @@
                 <div class="panel__hd">
                     <h2>{{ Text::get('cyberspace.run.setup.heading') }}</h2>
                     <div class="spacer"></div>
-                    <span class="tag">{{ $target->displayName() }}</span>
+                    <span class="tag tag--wrap">{{ $target->displayName() }}</span>
                 </div>
 
                 <div style="padding:var(--s-3) 0">

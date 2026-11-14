@@ -1427,7 +1427,10 @@ cap-widget {
 /* A tag that opens more (a scan's Nodes): a button wearing the tag, with the kit's hover step. */
 button.tag { cursor: pointer; }
 button.tag:hover, button.tag:focus-visible { border-color: var(--crit); }
-.card__stat > .tag { white-space: normal; text-align: right; justify-content: flex-end; min-width: 0; height: auto; min-height: 20px; padding-block: 3px; line-height: 1.35; }
+/* A tag whose text may be longer than the room it has (a system's name, a scan's reading): it wraps and grows
+   rather than running out of its box. */
+.tag--wrap, .card__stat > .tag { white-space: normal; max-width: 100%; min-width: 0; height: auto; min-height: 20px; padding-block: 3px; line-height: 1.35; }
+.card__stat > .tag { text-align: right; justify-content: flex-end; }
 .card__stat > b {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;

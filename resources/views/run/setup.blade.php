@@ -48,7 +48,7 @@
     <div class="panel__hd">
         <h2>{{ Text::get('cyberspace.run.setup.known') }}</h2>
         <div class="spacer"></div>
-        <span class="tag">{{ $target->displayName() }}</span>
+        <span class="tag tag--wrap">{{ $target->displayName() }}</span>
         <span class="micro"><x-address :address="$target->address" /></span>
 
         {{-- Who answers for it, and what they already make of you. The briefing is where a run is
