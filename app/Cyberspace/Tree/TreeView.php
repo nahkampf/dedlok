@@ -75,6 +75,11 @@ final readonly class TreeView
             return Text::get('cyberspace.tree.trap_label', ['effect' => $tree->nodes[$node]['trap']->label()]);
         }
 
+        // A honeypot is a vault to everybody but a deep Nmap.
+        if ($tree->isHoneypot($node) && $found) {
+            return Text::get('cyberspace.tree.honeypot_label', ['effect' => $tree->nodes[$node]['trap']->label()]);
+        }
+
         return Text::get('cyberspace.tree.node.'.($kind === NodeKind::Trap ? NodeKind::Conduit : $kind)->value);
     }
 
@@ -165,12 +170,15 @@ final readonly class TreeView
             $run->loopback !== null,
             $disarm = array_values(array_map(
                 static fn (int $n): array => [$n, self::label($tree, $n, true)],
-                array_filter($tree->neighbours($here), static fn (int $n): bool => ($traps[$n] ?? null) === 'found' && $simulator->liveTrap($run, $n) !== null),
+                array_filter([...$tree->neighbours($here), ...($tree->isHoneypot($here) ? [$here] : [])], static fn (int $n): bool => ($traps[$n] ?? null) === 'found' && $simulator->liveTrap($run, $n) !== null),
             )),
             $disarm !== [] && $system->os_skill_id !== null ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
             $simulator->logOpen($run) ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
             array_values(array_map(static fn (array $s): array => [
-                'name' => (string) Ice::query()->whereKey($s['ice'])->value('name'),
+                // Read by a deep Nmap: whether it is Fast, and whether it carries the Cordon.
+                'name' => (string) Ice::query()->whereKey($s['ice'])->value('name').(($s['read'] ?? false)
+                    ? ' ('.implode(', ', [Text::get($s['fast'] ? 'cyberspace.tree.sentry_fast' : 'cyberspace.tree.sentry_slow'), ...(($s['cordon'] ?? false) ? [Text::get('cyberspace.tree.sentry_cordon')] : [])]).')'
+                    : ''),
                 'integrity' => (float) $s['integrity'],
                 'awake' => (bool) $s['awake'],
             ], $simulator->sentriesHere($run))),

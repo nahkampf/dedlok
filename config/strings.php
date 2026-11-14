@@ -215,6 +215,7 @@ return [
             // A suggestion, for the user to edit. :reach is how many edges out it reveals.
             'nmaps' => 'Nmap reveals nodes up to :reach links away.',
             'loopback' => 'Loopback, strength :strength: stalls the trace from an internal relay.',
+            'nmap_deep' => 'Deep Nmap: one link further, and it finds traps and honeypots and reads sentries.',
             'assesses' => 'Estimates your odds, rounded to :step%',
             'locates' => 'Locates: finds the nearest system you have met',
             'walks' => 'Walks: takes you to what it found',
@@ -1293,6 +1294,10 @@ return [
             'sentry_awake' => ':name is awake on this node and hunting (integrity :integrity).',
             'sentry_asleep' => ':name sleeps at its post here (integrity :integrity).',
             'trap_label' => 'Trap: :effect',
+            'honeypot_label' => 'Honeypot: :effect',
+            'sentry_fast' => 'Fast',
+            'sentry_slow' => 'Slow',
+            'sentry_cordon' => 'Cordon',
             'trap' => [
                 'alarm' => 'Alarm',
                 'trace' => 'Trace jump',
@@ -5566,6 +5571,8 @@ return [
                 // Suggestions, for the user to edit.
                 'nmap_reach' => 'Nmap reach',
                 'nmap_reach_hint' => 'How many links out one Nmap reveals in a run tree. Blank is not an Nmapper.',
+                'nmap_deep' => 'Deep Nmapper',
+                'nmap_deep_hint' => 'Ticked on an Nmapper: its Nmap reaches one link further, finds traps and honeypots in reach, and names whether the sentries it sees are Fast or carry the Cordon.',
                 'loopback_strength' => 'Loopback strength',
                 'loopback_strength_hint' => 'A Script only. Added to the Loopback skill level in the hold roll each turn on an internal relay, against the egress difficulty of the grade (3 at grade 1 to 19 at grade 9). Blank is not a Loopback.',
                 'family' => 'Family',

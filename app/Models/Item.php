@@ -667,6 +667,7 @@ class Item extends Model
             $program->jumps && $lines[] = Text::get('programs.spec.one_jumper');
             $program->assess_step !== null && $lines[] = Text::get('programs.spec.assesses', ['step' => $program->assess_step]).' '.Text::get('programs.spec.one_assessor');
             $program->nmap_reach !== null && $lines[] = Text::get('programs.spec.nmaps', ['reach' => $program->nmap_reach]);
+            $program->nmap_deep && $lines[] = Text::get('programs.spec.nmap_deep');
             $program->loopback_strength !== null && $lines[] = Text::get('programs.spec.loopback', ['strength' => $program->loopback_strength]);
         }
 

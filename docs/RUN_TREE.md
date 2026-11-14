@@ -360,6 +360,15 @@ the Cordon tag**, each designed and built on its own, traps first.
 - **Two Cordons can cut at once.** A cut costs no standing.
 - **Only breaking it with Attack stops a cut, for now**; the Egress Tunnel script comes later.
 
+### Deep Nmap
+
+- **A flag on an Nmapper** (`programs.nmap_deep`, a checkbox in the item admin): running one makes every Nmap deep.
+- **Deep**: one edge further than the Nmapper's reach; the traps and honeypots in reach are found (named, with their
+  effect: "Honeypot" for a honeypot); the sentries in reach are read (`runs.sentries[i]['read']`), so the line naming a
+  sentry says whether it is Fast or Slow and whether it carries the Cordon. Same noise as an Nmap.
+- **A found honeypot** is disarmed like a trap (OS roll), from the next node or standing on it; once spent it is an
+  empty vault. Extracting from a found, live one still sets it off.
+
 ## To come back to
 
 Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next step; all of it blocks the merge.
@@ -377,7 +386,7 @@ Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next s
 - **The nmap item in the Deck Jockey loadout**: added in the archetype editor at release.
 - **ACiD's local nmap stack** reads 2 (granted onto an existing row); reset it to 1 if wanted.
 - **Trap rates at grade 4**: about 28% of compute and relay trees (one path that may carry a trap); planned about half.
-- **Honeypots can't be told from vaults** until Deep Nmap exists.
+- **Deep Nmappers**: none exist yet; create them in the item admin (an Nmapper with Deep ticked).
 - **Sentry speed as a scan fact** (the proposal reads it with the ICE) is not built; neither is a party test of the round's sentry turn.
 - **The Egress Tunnel** (a script that keeps a node from being cut, and counts as an exit for allies) is not built.
 - **A review of the whole branch** before the flag is turned on.

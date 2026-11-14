@@ -647,6 +647,16 @@
                         @error('nmap_reach') <span class="field__error">{{ $message }}</span> @enderror
                     </div>
 
+                    {{-- A deep Nmapper (the Analyst's Deep Nmap). Only means anything on an Nmapper. --}}
+                    <label class="check" style="margin-top:var(--s-3)">
+                        <input type="hidden" name="nmap_deep" value="0">
+                        <input type="checkbox" name="nmap_deep" value="1"
+                               @checked(old('nmap_deep', $item?->program?->nmap_deep ?? false))>
+                        <span class="check__box"></span>
+                        <span>{{ Text::get('admin.items.fields.nmap_deep') }}</span>
+                    </label>
+                    <span class="field__hint">{{ Text::get('admin.items.fields.nmap_deep_hint') }}</span>
+
                     {{-- A Loopback's strength in its hold roll on an internal relay (docs/RUN_TREE.md). A Script only; blank is not one. --}}
                     <div class="field" style="margin-top:var(--s-3)" @error('loopback_strength') data-invalid @enderror>
                         <label class="field__label" for="loopback_strength">{{ Text::get('admin.items.fields.loopback_strength') }}</label>

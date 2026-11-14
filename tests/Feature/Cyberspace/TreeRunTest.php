@@ -293,10 +293,10 @@ final class TreeRunTest extends TestCase
     }
 
     /** @param  list<array<string, mixed>>  $modifiers */
-    private function runNmapper(int $reach = 1, array $modifiers = []): void
+    private function runNmapper(int $reach = 1, array $modifiers = [], bool $deep = false): void
     {
         $item = Item::factory()->program(ProgramKind::Utility, qflops: 0.1, memory: 0.1, storage: 0.1, background: true, modifiers: $modifiers)->create();
-        $item->program->forceFill(['nmap_reach' => $reach])->save();
+        $item->program->forceFill(['nmap_reach' => $reach, 'nmap_deep' => $deep])->save();
         $row = InventoryItem::create(['character_id' => $this->character->id, 'item_id' => $item->id, 'quantity' => 1]);
         $this->assertTrue(app(ProgramRunner::class)->start($this->character->fresh(), $row)->succeeded());
     }
@@ -863,6 +863,51 @@ final class TreeRunTest extends TestCase
         $this->assertCount(1, $cut);
         $this->assertContains($tree->nodes[$cut[0]]['kind'], [NodeKind::Relay, NodeKind::Switch, NodeKind::Port]);
         $this->assertSame($tree->core, $run->fresh()->node, 'the runner never moved');
+    }
+
+    public function test_a_deep_nmap_reaches_further_finds_traps_and_reads_sentries(): void
+    {
+        [$run, $trap, $from] = $this->trap(TrapEffect::Alarm);
+        $tree = RunTree::of(System::query()->where('address', $run->address)->sole());
+        $run->forceFill(['sentries' => [['post' => $trap, 'node' => $trap, 'ice' => Ice::query()->where('level', 1)->value('id'),
+            'integrity' => 30.0, 'awake' => false, 'fast' => true, 'target' => null, 'cordon' => true, 'countdown' => null]]])->save();
+        $this->runNmapper(1, deep: true);
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Nmap);
+        $run = $run->fresh();
+
+        $this->assertSame([], array_values(array_diff($tree->within($from, 2), $run->knownNodes())), 'one edge further than the Nmapper reaches');
+        $this->assertSame('found', $run->trapStates()[$trap]);
+        $this->assertTrue($run->sentries[0]['read']);
+
+        $run->forceFill(['node' => $trap])->save();
+        $this->assertStringContainsString(Text::get('cyberspace.tree.sentry_cordon'), TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->sentriesHere[0]['name']);
+    }
+
+    public function test_a_honeypot_found_by_a_deep_nmap_is_named_and_disarmed_where_it_stands(): void
+    {
+        for ($i = 0; ; $i++) {
+            $tree = RunTree::generate($address = sprintf('%08X', crc32("honey-{$i}")), 7, SystemType::Silo);
+            $pots = array_values(array_filter($tree->nodesOf(NodeKind::Vault), static fn (int $n): bool => $tree->isHoneypot($n)));
+
+            if ($pots !== []) {
+                break;
+            }
+        }
+
+        $os = Skill::factory()->create(['slug' => 'lattice', 'title' => 'Lattice', 'category' => 'Operating Systems', 'rank' => 4]);
+        System::query()->where('address', 'DEADBEEF')->update(['address' => $address, 'grade' => 7, 'type' => SystemType::Silo->value, 'os_skill_id' => $os->id]);
+        $run = $this->begin();
+        $run->forceFill(['node' => $pots[0], 'sentries' => []])->save();
+        $this->runNmapper(1, deep: true);
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Nmap);
+        $view = TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null);
+        $this->assertStringStartsWith(Text::get('cyberspace.tree.honeypot_label', ['effect' => '']), collect($view->nodes)->firstWhere('key', $pots[0])['label']);
+        $this->assertContains($pots[0], array_column($view->disarm, 0));
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Disarm, node: $pots[0]);
+        $this->assertSame('spent', $run->fresh()->trapStates()[$pots[0]]);
     }
 
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void

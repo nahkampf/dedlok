@@ -471,7 +471,8 @@ final readonly class Simulator
             RunAction::Wipe => $this->logOpen($run) ? null : RunRefusal::NotHere,
             RunAction::Shutdown => $this->controllerOpen($run) ? null : RunRefusal::NotHere,
             // A found trap one edge away, on a system with an OS to speak.
-            RunAction::Disarm => $node === null || ! in_array($node, $tree->neighbours((int) $run->node), true)
+            // A found honeypot can be disarmed standing on it too.
+            RunAction::Disarm => $node === null || ! (in_array($node, $tree->neighbours((int) $run->node), true) || ($node === (int) $run->node && $tree->isHoneypot($node)))
                 || $this->liveTrap($run, $node) === null || ($run->trapStates()[$node] ?? null) !== 'found'
                 || $run->system()?->os_skill_id === null ? RunRefusal::NotHere : null,
             RunAction::Loopback => match (true) {
@@ -602,6 +603,12 @@ final readonly class Simulator
     }
 
     /** How many edges out the best running Nmapper reveals; 0 with none running. */
+    /** A deep Nmapper is running. */
+    public function nmapDeep(Character $character): bool
+    {
+        return $character->runningProcesses()->contains(fn ($process): bool => (bool) $process->item?->program?->nmap_deep);
+    }
+
     public function nmapReach(Character $character): int
     {
         return (int) $character->runningProcesses()->max(fn ($process): int => (int) ($process->item?->program?->nmap_reach ?? 0));
@@ -960,7 +967,7 @@ final readonly class Simulator
     {
         $tree = $run->isTreeRun() ? $this->treeOf($run) : null;
 
-        return $tree !== null && $tree->isHoneypot((int) $run->node) && ($run->trapStates()[(int) $run->node] ?? null) === null;
+        return $tree !== null && $tree->isHoneypot((int) $run->node) && in_array($run->trapStates()[(int) $run->node] ?? null, [null, 'found'], true);
     }
 
     /**
@@ -1236,9 +1243,32 @@ final readonly class Simulator
     private function nmap(Character $character, Run $run): array
     {
         $tree = $this->treeOf($run);
-        $found = $tree === null ? [] : $tree->within((int) $run->node, $this->nmapReach($character));
+        $deep = $this->nmapDeep($character);
+        // A deep Nmapper reaches one edge further.
+        $found = $tree === null ? [] : $tree->within((int) $run->node, $this->nmapReach($character) + ($deep ? 1 : 0));
         $new = array_values(array_diff($found, $run->knownNodes()));
         $this->reveal($run, $found);
+
+        // DEEP NMAP: the traps and honeypots in reach are found, and the sentries in reach are read (Fast, Cordon).
+        if ($deep && $tree !== null) {
+            $states = $run->trapStates();
+
+            foreach ([(int) $run->node, ...$found] as $n) {
+                if (($tree->nodes[$n]['kind'] === NodeKind::Trap || $tree->isHoneypot($n)) && ! isset($states[$n])) {
+                    $run->markTrap($n, 'found');
+                }
+            }
+
+            $sentries = $this->sentriesOf($run);
+
+            foreach ($sentries as $i => $sentry) {
+                if (in_array((int) $sentry['node'], [(int) $run->node, ...$found], true)) {
+                    $sentries[$i]['read'] = true;
+                }
+            }
+
+            $this->writeSentries($run, $sentries);
+        }
 
         return $this->line('cyberspace.run.log.tree.nmap', ['count' => count($new)]);
     }

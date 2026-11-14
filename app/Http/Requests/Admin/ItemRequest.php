@@ -222,6 +222,7 @@ class ItemRequest extends FormRequest
             'storage_size' => $this->panelNumber('storage_size', $isProgramForm),
             'background_process' => $this->boolean('background_process'),
             'multithreaded' => $this->boolean('multithreaded'),
+            'nmap_deep' => $this->boolean('nmap_deep'),
             // A Utility's abilities (see ProgramKind::Utility).
             'locates' => $this->boolean('locates'),
             'walks' => $this->boolean('walks'),
@@ -476,6 +477,7 @@ class ItemRequest extends FormRequest
              * something this is false on.
              */
             'multithreaded' => ['boolean'],
+            'nmap_deep' => ['boolean'],
             'locates' => ['boolean'],
             'walks' => ['boolean'],
             'jumps' => ['boolean'],
@@ -996,7 +998,7 @@ class ItemRequest extends FormRequest
         // is a program — the row is what says so — so none of these stay.
         unset(
             $data['program_kind'], $data['qflops_cost'], $data['memory_cost'],
-            $data['storage_size'], $data['lifetime_seconds'], $data['traverse_seconds'], $data['assess_step'], $data['nmap_reach'], $data['loopback_strength'], $data['family'], $data['background_process'], $data['multithreaded'],
+            $data['storage_size'], $data['lifetime_seconds'], $data['traverse_seconds'], $data['assess_step'], $data['nmap_reach'], $data['loopback_strength'], $data['family'], $data['background_process'], $data['multithreaded'], $data['nmap_deep'],
             $data['locates'], $data['walks'], $data['jumps'], $data['swarms'], $data['tracks'],
             $data['design_product'], $data['design_seconds'], $data['design_single_use'], $data['design_skill_id'], $data['design_skill_level'], $data['design_lines'],
             $data['program_modifiers'], $data['program_decrypts'],
@@ -1309,6 +1311,7 @@ class ItemRequest extends FormRequest
                 'strength' => isset($data['produce_strength']) ? (float) $data['produce_strength'] : null,
             ], fn ($v): bool => $v !== null)) === [] ? null : $produces,
             'multithreaded' => (bool) ($data['multithreaded'] ?? false),
+            'nmap_deep' => (bool) ($data['nmap_deep'] ?? false),
             'locates' => (bool) ($data['locates'] ?? false),
             'walks' => (bool) ($data['walks'] ?? false),
             'jumps' => (bool) ($data['jumps'] ?? false),
