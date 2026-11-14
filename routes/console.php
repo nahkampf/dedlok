@@ -226,6 +226,11 @@ Schedule::command('tracker:settle --quiet-when-idle')
     ->everyMinute()
     ->withoutOverlapping();
 
+// A tree runner who stopped taking turns is jacked out, with no damage: 10 minutes solo, 5 left alone by a party.
+Schedule::command('cyberspace:idle-runs --quiet-when-idle')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 Schedule::command('insurance:remind --quiet-when-idle')
     ->hourly()
     ->withoutOverlapping();

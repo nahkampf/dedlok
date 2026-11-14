@@ -923,6 +923,12 @@ return [
             'loud' => [20.0, 30.0],
             'drain' => [2.0, 5.0],
         ],
+        // CRASH JACKOUT: per cent of maximum Synaptic Integrity, straight off it (nothing modifies it); and if that empties
+        // them, neural damage of this per cent of the maximum too.
+        'jackout' => [
+            'damage' => [25, 50],
+            'neural' => [5, 10],
+        ],
         'idle_minutes' => [
             'solo' => 10,
             'alone' => 5,

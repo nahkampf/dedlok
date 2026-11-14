@@ -335,7 +335,7 @@ final readonly class RunStarter
             }
 
             // AGITATE: the ICE was woken (the run was noticed), the runner got out, and the machine shut for it.
-            if ($shut && $run->noticed() && in_array($ending, [RunEnding::Egress, RunEnding::Completed], true)) {
+            if ($shut && $run->noticed() && in_array($ending, [RunEnding::Egress, RunEnding::Completed, RunEnding::Jackout], true)) {
                 $woken = System::query()->where('address', $run->address)->first();
 
                 if ($woken !== null && $woken->ice_id !== null) {

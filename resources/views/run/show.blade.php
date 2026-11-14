@@ -421,6 +421,13 @@
                  roll uses, so the number a player decides against is the number the game believes. --}}
             {{-- The working behind that number floats from here (hover, or keyboard focus) — it is the
                  button the number is on. Not on click: that is the egress itself. --}}
+            {{-- CRASH JACKOUT, on a tree run only: out from anywhere, for certain, at a price in Synaptic Integrity. It asks
+                 twice, in the kit's own modal: this button only opens it, and the modal's button is the turn. --}}
+            @if ($tree)
+                <button type="button" class="btn btn--danger cut" data-open="#jackout-confirm" aria-haspopup="dialog">
+                    {{ Text::get('cyberspace.run.action.jackout') }}
+                </button>
+            @endif
             {{-- A TREE RUN LEAVES BY THE ENTRY: elsewhere the button is there but cannot be pressed. --}}
             <button type="submit" name="action" value="egress" class="btn btn--warn cut"
                     data-inspect="#egress-working" data-inspect-hover @if ($tree && ! $tree->atEntry) disabled @endif>
@@ -450,6 +457,23 @@
         @endif
     </form>
 </div>
+
+@if ($tree)
+    <dialog id="jackout-confirm" class="modal">
+        <div class="panel__hd">
+            <span class="micro">{{ Text::get('cyberspace.run.action.jackout') }}</span>
+            <button type="button" class="btn btn--sm btn--ghost" data-close>{{ Text::get('cyberspace.run.action.jackout_cancel') }}</button>
+        </div>
+        <div class="panel__bd">
+            <p style="margin:0 0 var(--s-4)">{{ Text::get('cyberspace.tree.jackout_warning') }}</p>
+            <form method="POST" action="{{ route('run.act') }}" class="row row--wrap" style="--gap:var(--s-2)">
+                @csrf
+                <button type="submit" name="action" value="jackout" class="btn btn--danger cut">{{ Text::get('cyberspace.run.action.jackout_confirm') }}</button>
+                <button type="button" class="btn btn--ghost cut" data-close>{{ Text::get('cyberspace.run.action.jackout_cancel') }}</button>
+            </form>
+        </div>
+    </dialog>
+@endif
 
 {{-- THE ACCOUNT. A run is something a player watches happen, and the page is
      read from the top after every turn, so the log is NEWEST FIRST: the answer

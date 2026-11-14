@@ -23,12 +23,15 @@ use App\Models\Leech;
 use App\Models\Run;
 use App\Models\Skill;
 use App\Models\System;
+use App\Notifications\Category;
+use App\Notifications\Notifier;
 use App\Programs\ProgramKind;
 use App\Standing\StandingLedger;
 use App\Standing\StandingReason;
 use App\Stats\Damage;
 use App\Stats\DamageOrigin;
 use App\Stats\DamageResolver;
+use App\Stats\InjuryLedger;
 use App\Stats\Resolver;
 use App\Stats\SkillStats;
 use App\Support\Points;
@@ -185,6 +188,10 @@ final readonly class Simulator
             }
 
             // --- the player acts ---------------------------------------------
+
+            if ($action === RunAction::Jackout) {
+                return $this->crashJackout($character, $run, $log);
+            }
 
             if ($action === RunAction::Egress) {
                 /*
@@ -386,7 +393,7 @@ final readonly class Simulator
     public function refusal(Character $character, Run $run, RunAction $action, ?int $node): ?RunRefusal
     {
         if (! $run->isTreeRun()) {
-            return $action === RunAction::Move || $action === RunAction::Nmap ? RunRefusal::NotHere : null;
+            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
         }
 
         $tree = $this->treeOf($run);
@@ -402,6 +409,73 @@ final readonly class Simulator
             RunAction::Flood, RunAction::Egress => (int) $run->node !== $tree->entry ? RunRefusal::NotHere : null,
             default => null,
         };
+    }
+
+    /**
+     * CRASH JACKOUT (docs/RUN_TREE.md): out of the system from wherever they stand, for certain, at 25-50% of maximum
+     * Synaptic Integrity taken straight off it. Not a check (no floor), and no resistance or ICE modifier touches it. They
+     * stand on the grid afterwards, like after an egress, keeping anything taken (Completed then). Emptied by it, they
+     * are jacked out and put on the waiting screen as usual, with neural damage of 5-10% of the maximum on top.
+     *
+     * @param  list<array{text: string, tone: string}>  $log
+     */
+    private function crashJackout(Character $character, Run $run, array $log): TurnResult
+    {
+        $max = (float) $character->maximumFor('current_synaptic_integrity');
+        [$low, $high] = (array) Config::get('cyberspace.tree.jackout.damage', [25, 50]);
+        $damage = Points::of($max * ($this->roll)((int) $low, (int) $high) / 100);
+
+        $character->forceFill(['current_synaptic_integrity' => max(0, Points::of((float) $character->current_synaptic_integrity - $damage))])->save();
+        $log[] = $this->line('cyberspace.run.log.tree.jackout', ['damage' => $damage], 'crit');
+
+        $down = (float) $character->current_synaptic_integrity <= 0;
+
+        if ($down) {
+            [$low, $high] = (array) Config::get('cyberspace.tree.jackout.neural', [5, 10]);
+            $neural = (int) round($max * ($this->roll)((int) $low, (int) $high) / 100);
+            app(InjuryLedger::class)->inflict($character, InjuryLedger::NEURAL, (float) $neural);
+            $log[] = $this->line('cyberspace.run.log.tree.jackout_neural', ['damage' => $neural], 'crit');
+        }
+
+        $ending = $run->extracted || $run->backdoored ? RunEnding::Completed : RunEnding::Jackout;
+
+        $run->save();
+        $this->appendLog($run, $log);
+        $this->runs->end($character, $run, $ending);
+
+        // Emptied: off the grid BEFORE the waiting screen, the order every way of going down keeps.
+        if ($down) {
+            Navigator::fromConfig($this->resolver)->jackOut($character);
+            $this->waitingRoom->checkFloor($character, new DownedCause(
+                reason: RunEnding::Jackout->value,
+                address: $run->address,
+                damage: $damage,
+                resource: 'current_synaptic_integrity',
+            ));
+        }
+
+        return TurnResult::resolved($run, $log, $ending);
+    }
+
+    /**
+     * Jack out a tree runner who has stopped taking turns (`cyberspace:idle-runs`): no damage, the run ends where they
+     * stand (Completed if they had taken what they came for), and they are told. Locked, so a turn and the sweep cannot
+     * both end it.
+     */
+    public function jackOutIdle(Character $character, Run $run): bool
+    {
+        return DB::transaction(function () use ($character, $run): bool {
+            if (! Run::query()->whereKey($run->getKey())->whereNull('ended_at')->lockForUpdate()->exists()) {
+                return false;
+            }
+
+            $this->appendLog($run, [$this->line('cyberspace.run.log.tree.idle_jackout', tone: 'warn')]);
+            $ending = $run->extracted || $run->backdoored ? RunEnding::Completed : RunEnding::Jackout;
+            $this->runs->end($character, $run, $ending);
+            (new Notifier)->send($character, Category::Cyberspace, 'run_idle_jackout', ['address' => $run->address]);
+
+            return true;
+        });
     }
 
     /** How many edges out the best running Nmapper reveals; 0 with none running. */

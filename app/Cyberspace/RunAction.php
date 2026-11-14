@@ -94,6 +94,9 @@ enum RunAction: string
     /** A tree run: reveal the nodes around you, as far as the running Nmapper reaches. */
     case Nmap = 'nmap';
 
+    /** A tree run: Crash Jackout. Out from anywhere, for certain, at a price in Synaptic Integrity. */
+    case Jackout = 'jackout';
+
     public function label(): string
     {
         return Text::get("cyberspace.run.action.{$this->value}");

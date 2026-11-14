@@ -49,6 +49,13 @@ enum RunEnding: string
      */
     case Ejected = 'ejected';
 
+    /**
+     * A tree run's Crash Jackout (docs/RUN_TREE.md): out for certain, at the price of Synaptic Integrity nothing modifies,
+     * or an inactive runner jacked out with no cost. They stand on the grid, like after an egress. Not bad: emptied by
+     * it, the floor is asked where it happened.
+     */
+    case Jackout = 'jackout';
+
     public function message(): string
     {
         return Text::get("cyberspace.run.ended.{$this->value}");

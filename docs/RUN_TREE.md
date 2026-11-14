@@ -191,3 +191,12 @@ Decided 2026-11-13, replacing the per-action detection chances.
 - **Built (step 3)**: a firewall guards the edges leading on from it, never the way back; a system that speaks no OS has
   nothing for its firewalls to ask. The run screen shows the chance to pass a closed firewall you stand on, and the
   Egress button is disabled away from the entry.
+
+## Step 4
+
+- **Built**: Crash Jackout behind the kit's modal (the button opens it, the modal's button is the turn), and the idle
+  sweep `cyberspace:idle-runs` every minute. A lone party runner's five minutes run from their last turn or the moment
+  the last ally's run ended, whichever is later.
+- **In a party a Crash Jackout is chosen like any action** and happens when the round resolves, as Egress does.
+- **A Crash Jackout's neural damage claims nothing from injury insurance** (unlike a Flatline's): it is the price of
+  pulling the plug.

@@ -954,6 +954,7 @@ return [
             'fortress_moved' => 'Data Fortress :system relocated',
             'fortress_burned' => 'Your fortress Kernel is burned',
             'party_dropped' => 'Left out of a co-op run',
+            'run_idle_jackout' => 'Jacked out of an idle run',
             'programs_not_resumed' => 'Processes not restarted',
             'hunt_programs_not_resumed' => 'Processes not restarted',
             'party_member_dropped' => 'Co-op run member dropped',
@@ -1027,6 +1028,7 @@ return [
             'fortress_moved' => 'The new position is :x,:y, address :address',
             'fortress_burned' => 'Your fortress Kernel was burned. Everything else on it is gone and the Kernel is Frozen for :hours hours: bring in new Leechers that can run it, or lose it.',
             'party_dropped' => ':owner started the co-op run without you. :reason',
+            'run_idle_jackout' => 'You stopped answering inside :address, so your deck pulled you out cleanly. Nothing was lost but the run.',
             'programs_not_resumed' => 'THe run is over, but these programs would not start again: :programs',
             'hunt_programs_not_resumed' => 'You were cornered by a Bloodhound program and some processes could not restart after it was resolved.',
             'party_member_dropped' => ':handle was dropped from the run. :reason',
@@ -1278,10 +1280,11 @@ return [
             'no_ids' => 'No IDS',
             'allies' => 'crew',
             'firewall_chance' => 'Firewall: :chance% to get through.',
-            'threshold_warn' => 'You are past one of your thresholds. Get to the entry to leave.',
-            'start_heading' => 'Way in',
+            'threshold_warn' => 'You are past one of your thresholds, and you should egress immediately.',
+            'start_heading' => 'Entrypoint',
             'start_core' => 'Through your backdoor, at the core',
             'start_entry' => 'At the entry, like anybody else',
+            'jackout_warning' => 'Are you sure you want to pull the plug? This can cause serious neural damage!',
             'node' => [
                 'entry' => 'Entrypoint',
                 'switch' => 'Switch',
@@ -1832,6 +1835,9 @@ return [
                 // Run trees (docs/RUN_TREE.md). Suggestions, for the user to edit.
                 'move' => 'Move',
                 'nmap' => 'Network Map',
+                'jackout' => 'Crash Jackout',
+                'jackout_confirm' => 'Pull the plug',
+                'jackout_cancel' => 'Stay in',
             ],
 
             /*
@@ -1865,6 +1871,10 @@ return [
                     'traced' => 'A tracer catches your signal and starts walking it back.',
                     'firewall_opens' => 'The firewall accepts you and lets you through.',
                     'firewall_holds' => 'The firewall turns you away.',
+                    // :damage is the Synaptic Integrity it cost.
+                    'jackout' => 'You rip the jack out. The system is gone, and so is :damage of your synaptic integrity.',
+                    'jackout_neural' => 'Your mind does not come back whole: :damage of neural damage.',
+                    'idle_jackout' => 'You stopped answering, and your deck pulled you out cleanly.',
                 ],
                 'egress' => 'You egress.',
                 // HELD, and one line for both reasons — the machine out-rolled
@@ -2096,6 +2106,7 @@ return [
 
             'ended' => [
                 'egress' => 'You egressed the run.',
+                'jackout' => 'You pulled the plug and are back on the grid.',
                 'defeat' => 'You were defeated.',
                 'burnout' => 'Your deck cooked a module and unsafely dropped you out of cyberspace.',
                 'ejected' => 'The ICE threw you out of the subnet. You are back at the gateway, hurt.',

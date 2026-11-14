@@ -421,6 +421,81 @@ final class TreeRunTest extends TestCase
             ->assertSee('name="start_at" value="core"', false)->assertSee('name="start_at" value="entry"', false);
     }
 
+    public function test_crash_jackout_takes_a_quarter_to_a_half_of_max_si_and_leaves_them_on_the_grid(): void
+    {
+        $run = $this->begin();
+        $run->forceFill(['node' => $this->tree->core])->save();
+        $character = $this->character->fresh();
+        $max = (float) $character->maximumFor('current_synaptic_integrity');
+        $character->forceFill(['current_synaptic_integrity' => $max])->save();
+
+        $result = $this->simulator(0.0, 0)->take($character->fresh(), $run->fresh(), RunAction::Jackout);
+        $character = $character->fresh();
+
+        $this->assertSame(\App\Cyberspace\RunEnding::Jackout, $result->ending);
+        $this->assertEqualsWithDelta($max * .75, (float) $character->current_synaptic_integrity, .01, 'the low end: 25%');
+        $this->assertNull($character->current_run_id);
+        $this->assertTrue($character->isJackedIn(), 'on the grid, like after an egress');
+    }
+
+    public function test_crash_jackout_after_extracting_is_completed(): void
+    {
+        $run = $this->begin();
+        $run->forceFill(['extracted' => true])->save();
+
+        $this->assertSame(\App\Cyberspace\RunEnding::Completed, $this->simulator(0.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Jackout)->ending);
+    }
+
+    public function test_a_crash_jackout_that_empties_them_is_the_waiting_screen_and_neural_damage(): void
+    {
+        $run = $this->begin();
+        $character = $this->character->fresh();
+        $max = (float) $character->maximumFor('current_synaptic_integrity');
+        $character->forceFill(['current_synaptic_integrity' => 1])->save();
+
+        $this->simulator(0.0, 1)->take($character->fresh(), $run->fresh(), RunAction::Jackout);
+        $character = $character->fresh();
+
+        $this->assertFalse($character->isJackedIn(), 'off the grid before the waiting screen');
+        $this->assertTrue(app(\App\Characters\WaitingRoom::class)->isDown($character));
+        $this->assertLessThan($max, (float) $character->maximumFor('current_synaptic_integrity'), 'neural damage lowered the maximum');
+    }
+
+    public function test_only_a_tree_run_can_crash_jackout(): void
+    {
+        Config::set('features.intrusion_runs_v2', false);
+        $run = $this->begin();
+
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Jackout)->refusal);
+    }
+
+    public function test_the_run_screen_offers_crash_jackout_behind_a_confirmation(): void
+    {
+        $this->begin();
+
+        $this->actingAs($this->character->fresh()->user)->get(route('run.show'))->assertOk()
+            ->assertSee('data-open="#jackout-confirm"', false)
+            ->assertSee('<dialog id="jackout-confirm"', false)
+            ->assertSee('name="action" value="jackout"', false);
+    }
+
+    public function test_an_inactive_solo_runner_is_jacked_out_after_ten_minutes_with_no_damage(): void
+    {
+        $run = $this->begin();
+        $si = (float) $this->character->fresh()->current_synaptic_integrity;
+
+        $run->forceFill(['acted_at' => now()->subMinutes(9)])->save();
+        $this->artisan('cyberspace:idle-runs')->assertSuccessful();
+        $this->assertTrue($run->fresh()->isLive(), 'nine minutes is not ten');
+
+        $run->forceFill(['acted_at' => now()->subMinutes(11)])->save();
+        $this->artisan('cyberspace:idle-runs')->assertSuccessful();
+
+        $this->assertSame('jackout', $run->fresh()->ending);
+        $this->assertSame($si, (float) $this->character->fresh()->current_synaptic_integrity);
+        $this->assertSame(1, \App\Models\Notification::query()->where('user_id', $this->character->user_id)->count());
+    }
+
     public function test_a_party_shares_one_bar_and_the_alert_but_not_the_trace(): void
     {
         $this->checks(0.0);
@@ -462,5 +537,15 @@ final class TreeRunTest extends TestCase
 
         $this->assertTrue($a->alerted && $b->alerted, 'the alert is the party\'s');
         $this->assertTrue($b->detected, 'and it starts every trace');
+
+        // Left alone: five minutes from the moment the other left, not from the last turn.
+        app(\App\Cyberspace\RunStarter::class)->end(\App\Models\Character::query()->find($a->character_id), $a->fresh(), \App\Cyberspace\RunEnding::Egress);
+        $b->forceFill(['acted_at' => now()->subHour()])->save();
+        $this->artisan('cyberspace:idle-runs')->assertSuccessful();
+        $this->assertTrue($b->fresh()->isLive(), 'just left alone');
+
+        $this->travel(6)->minutes();
+        $this->artisan('cyberspace:idle-runs')->assertSuccessful();
+        $this->assertSame('jackout', $b->fresh()->ending);
     }
 }
