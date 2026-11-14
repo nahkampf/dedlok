@@ -141,8 +141,11 @@ final class NodeStocker
                         continue;
                     }
 
-                    foreach (RunTree::of($system)->nodesOf(NodeKind::Vault) as $vault) {
-                        if (in_array($vault, $stocked[$system->getKey()] ?? [], true)) {
+                    $tree = RunTree::of($system);
+
+                    foreach ($tree->nodesOf(NodeKind::Vault) as $vault) {
+                        // A honeypot's bait is the look of a vault: it holds nothing.
+                        if ($tree->isHoneypot($vault) || in_array($vault, $stocked[$system->getKey()] ?? [], true)) {
                             continue;
                         }
 

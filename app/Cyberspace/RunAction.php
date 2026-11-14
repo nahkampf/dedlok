@@ -103,6 +103,9 @@ enum RunAction: string
     /** A tree run: start a Loopback from the stash on the internal relay you stand on. It holds while you stay. */
     case Loopback = 'loopback';
 
+    /** A tree run: disarm a found trap one edge away (`node`), with the OS roll. Failed, it goes off. */
+    case Disarm = 'disarm';
+
     /** A tree run: Crash Jackout. Out from anywhere, for certain, at a price in Synaptic Integrity. */
     case Jackout = 'jackout';
 

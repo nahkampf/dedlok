@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Config;
 use Tests\Concerns\CarriesAWorkingDeck;
 use Tests\TestCase;
 
-/** Run trees, step 6 (docs/RUN_TREE.md): the scan facts Layout and Nodes, read in order after the Grade. */
+/** Run trees, step 6 (docs/RUN_TREE.md): the scan facts Layout, Nodes and Traps, read in order after the Grade. */
 final class ScanTreeTest extends TestCase
 {
     use CarriesAWorkingDeck;
@@ -86,9 +86,14 @@ final class ScanTreeTest extends TestCase
 
         $scan = $this->pass();
         $this->assertSame(2, $scan->tree);
+        $this->assertSame(['traps'], $scan->unknowns(), 'the Traps wait for the Nodes');
+
+        $scan = $this->pass();
+        $this->assertSame(3, $scan->tree);
         $this->assertTrue($scan->isComplete());
         $this->assertMatchesRegularExpression('/paths?, \d+ moves? to the core/', (string) ScanFact::Layout->readFrom($scan));
         $this->assertMatchesRegularExpression('/firewall.*vault/', (string) ScanFact::Nodes->readFrom($scan));
+        $this->assertMatchesRegularExpression('/traps?/', (string) ScanFact::Traps->readFrom($scan));
     }
 
     public function test_with_the_flag_off_there_is_no_tree_to_read_or_list(): void
@@ -143,6 +148,7 @@ final class ScanTreeTest extends TestCase
 
     public function test_a_scan_file_whose_system_has_moved_on_says_so(): void
     {
+        $this->pass();
         $this->pass();
         $this->pass();
         $this->pass();

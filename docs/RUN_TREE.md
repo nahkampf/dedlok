@@ -275,6 +275,37 @@ states' job.
 - **The briefing's choice is the port (or core) or the entry**, the port by default; the arrival rolls are skipped
   either way. (Replaces "starts at the core" above.)
 
+## Phase 3
+
+Decided 2026-11-14. **Phase 3 is traps (with honeypots), log servers, sentries (Slow and Fast) with ICE controllers, and
+the Cordon tag**, each designed and built on its own, traps first.
+
+### Traps
+
+- **From grade 4, on the quiet and the rich path** (never the fast one): each may carry one, about a third of the time
+  at grades 4–6 and a little over half from 7; a silo keeps one more. A free conduit becomes the trap; with none, a new
+  node is put into the path (one move longer). Measured: about 28–45% of trees at grades 4–6, 73–83% from 7, every silo.
+  `NodeKind::Trap`, its effect in `nodes[n]['trap']` (`TrapEffect`), one per trap from the seed.
+- **It reads as a conduit until found**, to Nmap and to the scan's Nodes. **A fourth scan fact, Traps**, read after the
+  Nodes (`system_scans.tree` 3), names every trap and its effect; a run started with it knows them all. Stepping on one
+  finds it the hard way. (Deep Nmap, later, will find them too.)
+- **Effects**: **Alarm**, loud noise (20–30) with no stealth roll (nothing on a system with no IDS); **Trace jump**, the
+  trace starts, or moves on a turn's worth of the tracer's rate (two from grade 7); **Ensnare**, no moving on for a turn
+  (two from grade 7; other actions are fine); **Node Disconnect**, the trap node is torn out before the runner arrives:
+  they stay where they were, the move costs the turn, and the node and its edges are gone for the party's run.
+- **Spent once tripped**: a conduit for the party (`runs.traps`, {node: found|spent|cut}, read across the party).
+- **Disarm** (`RunAction::Disarm`, a button per found trap one edge away): the OS roll. Landed, it is spent (an act's
+  noise); failed, it goes off on the runner where they stand (a Node Disconnect still only takes its own node), and
+  that is loud.
+
+### Honeypots
+
+- **From grade 5, a vault other than the tree's first is sometimes a honeypot** (a quarter of the time, two in five on
+  a silo): a trap with bait (`nodes[n]['trap']` on a vault, `RunTree::isHoneypot`).
+- **It reads and plays as a vault** everywhere, and only Deep Nmap (not built yet) tells it apart: no scan fact names it.
+- **It holds nothing** (the restock skips it) and **goes off on the first Extract** with one of Alarm, Trace jump or
+  Ensnare (never a Node Disconnect: the runner stands on it). Spent afterwards: an empty vault for the party.
+
 ## To come back to
 
 Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next step; all of it blocks the merge.
@@ -291,4 +322,6 @@ Kept up to date as the branch grows (2026-11-14). Nothing here blocks the next s
 - **The nmap migration grants items at deploy** (to every Deck Jockey, and shop shelves): decide before merging.
 - **The nmap item in the Deck Jockey loadout**: added in the archetype editor at release.
 - **ACiD's local nmap stack** reads 2 (granted onto an existing row); reset it to 1 if wanted.
+- **Trap rates at grade 4**: about 28% of compute and relay trees (one path that may carry a trap); planned about half.
+- **Honeypots can't be told from vaults** until Deep Nmap exists.
 - **A review of the whole branch** before the flag is turned on.

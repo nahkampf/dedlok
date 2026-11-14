@@ -53,7 +53,23 @@ final readonly class TreeView
         public ?float $loopbackChance = null,
         // Their own Loopback holds on the relay they stand on.
         public bool $looping = false,
+        /** @var list<array{0: int, 1: string}> Found traps one edge away, each a Disarm: [node, label]. */
+        public array $disarm = [],
+        // The chance a Disarm's OS roll lands; null with nothing to disarm.
+        public ?float $disarmChance = null,
     ) {}
+
+    /** What a node is called on the map: a trap reads as a conduit until it is found, and as one again once spent. */
+    private static function label(RunTree $tree, int $node, bool $found): string
+    {
+        $kind = $tree->nodes[$node]['kind'];
+
+        if ($kind === NodeKind::Trap && $found) {
+            return Text::get('cyberspace.tree.trap_label', ['effect' => $tree->nodes[$node]['trap']->label()]);
+        }
+
+        return Text::get('cyberspace.tree.node.'.($kind === NodeKind::Trap ? NodeKind::Conduit : $kind)->value);
+    }
 
     public static function for(Run $run, Character $character, Simulator $simulator, ?SystemScan $scan): ?self
     {
@@ -63,9 +79,13 @@ final readonly class TreeView
             return null;
         }
 
-        $tree = RunTree::of($system);
+        // Drawn where the whole tree puts them, walked as the party left it (a Node Disconnect takes a node and its edges).
+        $whole = RunTree::of($system);
+        $cut = $run->cutNodes();
+        $tree = $whole->cut($cut);
+        $traps = $run->trapStates();
         $here = (int) $run->node;
-        $known = $run->knownNodes();
+        $known = array_values(array_diff($run->knownNodes(), $cut));
         $seen = $known;
 
         foreach ($known as $node) {
@@ -74,8 +94,8 @@ final readonly class TreeView
 
         // A scan that read the Layout showed the whole shape before the run began.
         $mapped = $run->mapped();
-        $seen = $mapped ? array_keys($tree->nodes) : array_values(array_unique($seen));
-        $layout = $tree->layout();
+        $seen = array_values(array_diff($mapped ? array_keys($tree->nodes) : array_unique($seen), $cut));
+        $layout = $whole->layout();
         $maxCol = max(array_map(static fn (int $n): int => $layout[$n]['col'], $seen));
         $lanes = $tree->lanes();
         $allies = $run->run_party_id === null ? [] : Run::query()->live()->where('run_party_id', $run->run_party_id)
@@ -89,14 +109,14 @@ final readonly class TreeView
 
         $nodes = array_map(static fn (int $n): array => [
             'key' => $n,
-            'label' => in_array($n, $known, true) ? Text::get('cyberspace.tree.node.'.$tree->nodes[$n]['kind']->value) : '?',
+            'label' => in_array($n, $known, true) || ($traps[$n] ?? null) === 'found' ? self::label($tree, $n, ($traps[$n] ?? null) === 'found') : '?',
             // Centred in its own column, so the first and last boxes sit half a column in from the edges.
             'x' => round(($layout[$n]['col'] + .5) / ($maxCol + 1) * 100, 2),
             'y' => round(($layout[$n]['lane'] + .5) / $lanes * 100, 2),
             'here' => $n === $here,
             'allies' => (int) ($allies[$n] ?? 0),
             'move' => in_array($n, $moves, true),
-            'known' => in_array($n, $known, true),
+            'known' => in_array($n, $known, true) || ($traps[$n] ?? null) === 'found',
         ], $seen);
 
         // An edge is drawn when the runner knows one of its ends: that is what standing on a node or an Nmap shows.
@@ -129,12 +149,18 @@ final readonly class TreeView
                 return $strength === null ? null : $simulator->loopbackChance($character, $run, (int) $strength);
             })(),
             $run->loopback !== null,
+            $disarm = array_values(array_map(
+                static fn (int $n): array => [$n, self::label($tree, $n, true)],
+                array_filter($tree->neighbours($here), static fn (int $n): bool => ($traps[$n] ?? null) === 'found' && $simulator->liveTrap($run, $n) !== null),
+            )),
+            $disarm !== [] && $system->os_skill_id !== null ? $simulator->osChanceFor($character, $system->operatingSystem()->first()) : null,
         );
     }
 
     /**
      * What a scan read of a system's tree, drawn outside a run: the whole shape once it read the Layout (`$read` 1),
-     * every node named once it read the Nodes (2). Null when there is nothing to draw: no tree here, or not read.
+     * every node named once it read the Nodes (2), and the traps once it read the Traps (3; until then they read as
+     * conduits). Null when there is nothing to draw: no tree here, or not read.
      */
     public static function ofScan(?System $system, ?int $read): ?self
     {
@@ -149,7 +175,7 @@ final readonly class TreeView
 
         $nodes = array_map(static fn (int $n): array => [
             'key' => $n,
-            'label' => $read >= 2 ? Text::get('cyberspace.tree.node.'.$tree->nodes[$n]['kind']->value) : '?',
+            'label' => $read >= 2 ? self::label($tree, $n, $read >= 3) : '?',
             'x' => round(($layout[$n]['col'] + .5) / ($maxCol + 1) * 100, 2),
             'y' => round(($layout[$n]['lane'] + .5) / $lanes * 100, 2),
             'here' => false,

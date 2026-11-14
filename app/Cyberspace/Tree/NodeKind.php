@@ -6,7 +6,7 @@ namespace App\Cyberspace\Tree;
 
 /**
  * What a node in a run tree is (docs/RUN_TREE.md). Step 1's six and phase 2's maintenance port, security hub and internal
- * relay; traps and the rest arrive with later steps.
+ * relay; phase 3's trap.
  */
 enum NodeKind: string
 {
@@ -36,6 +36,9 @@ enum NodeKind: string
 
     /** An internal relay, on the quiet path: a Loopback held on it stalls the party's traces. */
     case Relay = 'relay';
+
+    /** A trap (its effect on the node, `trap`): it reads as a conduit until found, and goes off when stepped on. */
+    case Trap = 'trap';
 
     /** What the run is for. A firewall too, and where the system's ICE stands. */
     case Core = 'core';

@@ -24,7 +24,7 @@ final readonly class RunTree
     private const CROSSOVERS = [1 => 0, 2 => 0, 3 => .5, 4 => .5, 5 => 1.4, 6 => 1.4, 7 => 2, 8 => 2, 9 => 2.5];
 
     /**
-     * @param  list<array{kind: NodeKind, path: ?string}>  $nodes  Indexed by node id.
+     * @param  list<array{kind: NodeKind, path: ?string, trap?: TrapEffect}>  $nodes  Indexed by node id; a trap carries its effect.
      * @param  list<array{0: int, 1: int}>  $edges
      */
     public function __construct(
@@ -244,7 +244,76 @@ final readonly class RunTree
             }
         }
 
+        // Traps from grade 4: the quiet and the rich path may each carry one (about a third of the time at grades
+        // 4-6, a little over half from 7), and a silo keeps one more where there is room. Never on the fast path. Drawn
+        // last, so the trees before them kept every other node.
+        if ($g >= 4) {
+            // A free conduit becomes the trap; with none, a new node is put between two of the path's own, one move longer.
+            $trap = static function (array $ids) use (&$nodes, &$edges, $r): void {
+                $free = array_values(array_filter($ids, static fn (int $id): bool => $nodes[$id]['kind'] === NodeKind::Conduit));
+                $effect = TrapEffect::cases()[$r->getInt(0, count(TrapEffect::cases()) - 1)];
+
+                if ($free !== []) {
+                    $at = $free[$r->getInt(0, count($free) - 1)];
+                    $nodes[$at] = ['kind' => NodeKind::Trap, 'path' => $nodes[$at]['path'], 'trap' => $effect];
+
+                    return;
+                }
+
+                $links = array_keys(array_filter($edges, static fn (array $e): bool => in_array($e[0], $ids, true) && in_array($e[1], $ids, true)
+                    && $nodes[$e[0]]['path'] === $nodes[$e[1]]['path']));
+
+                if ($links === []) {
+                    return;
+                }
+
+                $i = $links[$r->getInt(0, count($links) - 1)];
+                [$from, $to] = $edges[$i];
+                $nodes[] = ['kind' => NodeKind::Trap, 'path' => $nodes[$from]['path'], 'trap' => $effect];
+                $edges[$i] = [$from, count($nodes) - 1];
+                $edges[] = [count($nodes) - 1, $to];
+            };
+            $lanes = array_keys(array_intersect($paths, ['quiet', 'rich']));
+
+            foreach ($lanes as $lane) {
+                if ($chance($g >= 7 ? .55 : .3)) {
+                    $trap($own[$lane]['ids']);
+                }
+            }
+
+            if ($type === SystemType::Silo && $lanes !== []) {
+                $trap(array_merge(...array_map(static fn (int $lane): array => $own[$lane]['ids'], $lanes)));
+            }
+        }
+
+        // Honeypots from grade 5: a vault other than the tree's first is sometimes a trap with bait (a quarter of the time,
+        // two in five on a silo). It stays a vault in every reading (only Deep Nmap tells), holds nothing, and goes off on
+        // the first Extract. Never a Node Disconnect: the runner is standing on it.
+        if ($g >= 5) {
+            foreach (array_slice(array_keys(array_filter($nodes, static fn (array $n): bool => $n['kind'] === NodeKind::Vault)), 1) as $vault) {
+                if ($chance($type === SystemType::Silo ? .4 : .25)) {
+                    $nodes[$vault]['trap'] = [TrapEffect::Alarm, TrapEffect::Trace, TrapEffect::Ensnare][$r->getInt(0, 2)];
+                }
+            }
+        }
+
         return new self($nodes, $edges, $entry, $core);
+    }
+
+    /** A honeypot: a vault that is a trap with bait. */
+    public function isHoneypot(int $node): bool
+    {
+        return ($this->nodes[$node]['kind'] ?? null) === NodeKind::Vault && isset($this->nodes[$node]['trap']);
+    }
+
+    /** The same tree with these nodes torn out (Node Disconnect): they keep their ids and lose every edge. @param  list<int>  $cut */
+    public function cut(array $cut): self
+    {
+        if ($cut === []) {
+            return $this;
+        }
+
+        return new self($this->nodes, array_values(array_filter($this->edges, static fn (array $e): bool => ! in_array($e[0], $cut, true) && ! in_array($e[1], $cut, true))), $this->entry, $this->core);
     }
 
     /** Where a backdoor brings its holder in: the maintenance port, or the core on a tree without one. */

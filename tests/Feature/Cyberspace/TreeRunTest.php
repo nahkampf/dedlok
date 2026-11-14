@@ -19,6 +19,7 @@ use App\Cyberspace\Simulator;
 use App\Cyberspace\SystemType;
 use App\Cyberspace\Tree\NodeKind;
 use App\Cyberspace\Tree\RunTree;
+use App\Cyberspace\Tree\TrapEffect;
 use App\Cyberspace\Tree\TreeView;
 use App\Models\Character;
 use App\Models\Ice;
@@ -533,6 +534,153 @@ final class TreeRunTest extends TestCase
         [$run] = $this->relay();
         InventoryItem::query()->where('character_id', $this->character->id)->whereHas('item.program', static fn ($q) => $q->whereNotNull('loopback_strength'))->delete();
         $this->assertSame(RunRefusal::NoLoopback, $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Loopback)->refusal);
+    }
+
+    /**
+     * A grade 7 compute tree with a trap of this effect, an OS, and the runner one edge from it (every firewall open).
+     *
+     * @return array{0: Run, 1: int, 2: int} The run, the trap, and where the runner stands.
+     */
+    private function trap(TrapEffect $effect): array
+    {
+        for ($i = 0; ; $i++) {
+            $tree = RunTree::generate($address = sprintf('%08X', crc32("trap-{$i}")), 7, SystemType::Compute);
+            $found = array_values(array_filter($tree->nodesOf(NodeKind::Trap), static fn (int $n): bool => $tree->nodes[$n]['trap'] === $effect));
+
+            if ($found !== []) {
+                break;
+            }
+        }
+
+        $os = Skill::factory()->create(['slug' => 'lattice', 'title' => 'Lattice', 'category' => 'Operating Systems', 'rank' => 4]);
+        System::query()->where('address', 'DEADBEEF')->update(['address' => $address, 'grade' => 7, 'os_skill_id' => $os->id]);
+        $tree = RunTree::of(System::query()->where('address', $address)->sole());
+        $trap = $found[0];
+        $from = $tree->neighbours($trap)[0];
+
+        $run = $this->begin();
+        $run->forceFill(['node' => $from, 'opened' => $tree->nodesOf(NodeKind::Firewall), 'detected' => true, 'trace' => 0])->save();
+
+        return [$run->fresh(), $trap, $from];
+    }
+
+    public function test_a_trap_reads_as_a_conduit_until_found(): void
+    {
+        [$run, $trap] = $this->trap(TrapEffect::Alarm);
+        $run->forceFill(['known' => [...$run->knownNodes(), $trap]])->save();
+        $label = static fn (Run $r): string => collect(TreeView::for($r, $r->character, app(Simulator::class), null)->nodes)->firstWhere('key', $trap)['label'];
+
+        $this->assertSame(Text::get('cyberspace.tree.node.conduit'), $label($run->fresh()));
+
+        $run->fresh()->forceFill(['traps' => [$trap => 'found']])->save();
+        $this->assertSame(Text::get('cyberspace.tree.trap_label', ['effect' => TrapEffect::Alarm->label()]), $label($run->fresh()));
+    }
+
+    public function test_an_alarm_trap_is_loud_without_a_roll_and_then_spent(): void
+    {
+        [$run, $trap] = $this->trap(TrapEffect::Alarm);
+
+        $this->simulator(0.0, 0)->take($this->character->fresh(), $run, RunAction::Move, node: $trap);
+        $run = $run->fresh();
+
+        $this->assertSame($trap, $run->node);
+        $this->assertSame(20.0, (float) $run->noise, 'the loud tier, with every stealth roll passing');
+        $this->assertSame('spent', $run->trapStates()[$trap]);
+        $this->assertNull(app(Simulator::class)->liveTrap($run, $trap));
+    }
+
+    public function test_a_trace_trap_jumps_the_trace_two_turns_from_grade_7(): void
+    {
+        [$run, $trap] = $this->trap(TrapEffect::Trace);
+        $rate = (int) System::query()->where('address', $run->address)->value('tracer_rate');
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Move, node: $trap);
+
+        // Two turns of the jump, then the turn's own advance.
+        $this->assertSame(min(100, 3 * $rate), (int) $run->fresh()->trace);
+    }
+
+    public function test_an_ensnare_trap_holds_the_runner_for_two_turns_from_grade_7(): void
+    {
+        [$run, $trap, $from] = $this->trap(TrapEffect::Ensnare);
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Move, node: $trap);
+        $this->assertSame(RunRefusal::Ensnared, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $from)->refusal);
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $this->assertSame(RunRefusal::Ensnared, $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $from)->refusal);
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Hold);
+        $this->assertNull($this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Move, node: $from)->refusal);
+    }
+
+    public function test_a_node_disconnect_tears_the_node_out_and_the_runner_stays(): void
+    {
+        [$run, $trap, $from] = $this->trap(TrapEffect::Disconnect);
+
+        $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Move, node: $trap);
+        $run = $run->fresh();
+
+        $this->assertSame($from, $run->node);
+        $this->assertSame([$trap], $run->cutNodes());
+        $this->assertSame(RunRefusal::NotANeighbour, $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Move, node: $trap)->refusal);
+        $this->assertNotContains($trap, array_column(TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->nodes, 'key'));
+    }
+
+    public function test_a_found_trap_disarms_from_next_door_and_a_failed_disarm_sets_it_off(): void
+    {
+        [$run, $trap] = $this->trap(TrapEffect::Alarm);
+        $this->assertSame(RunRefusal::NotHere, $this->simulator(0.0)->take($this->character->fresh(), $run, RunAction::Disarm, node: $trap)->refusal, 'not found yet');
+
+        $run->forceFill(['traps' => [$trap => 'found']])->save();
+        $this->assertCount(1, TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null)->disarm);
+        $this->simulator(1.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Disarm, node: $trap);
+        $run = $run->fresh();
+        $this->assertSame('spent', $run->trapStates()[$trap]);
+        $this->assertSame(40.0, (float) $run->noise, 'the alarm and the loud failure');
+
+        [$run, $trap] = [$run, $trap];
+        $run->forceFill(['traps' => [$trap => 'found'], 'noise' => 0])->save();
+        $this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Disarm, node: $trap);
+        $this->assertSame('spent', $run->fresh()->trapStates()[$trap]);
+        $this->assertSame(0.0, (float) $run->fresh()->noise);
+    }
+
+    public function test_a_scan_that_read_the_traps_starts_the_run_knowing_them(): void
+    {
+        [$run] = $this->trap(TrapEffect::Alarm);
+        $address = $run->address;
+        app(RunStarter::class)->end($this->character->fresh(), $run, RunEnding::Egress);
+        $this->scanned($this->character, 3);
+        SystemScan::query()->where('character_id', $this->character->id)->update(['address' => $address]);
+
+        $run = $this->begin();
+        $tree = RunTree::of(System::query()->where('address', $address)->sole());
+        $this->assertSame(array_fill_keys($tree->nodesOf(NodeKind::Trap), 'found'), $run->trapStates());
+    }
+
+    public function test_a_honeypot_reads_as_a_vault_holds_nothing_and_goes_off_on_the_first_extract(): void
+    {
+        for ($i = 0; ; $i++) {
+            $tree = RunTree::generate($address = sprintf('%08X', crc32("honey-{$i}")), 7, SystemType::Silo);
+            $pots = array_values(array_filter($tree->nodesOf(NodeKind::Vault), static fn (int $n): bool => ($tree->nodes[$n]['trap'] ?? null) === TrapEffect::Alarm));
+
+            if ($pots !== []) {
+                break;
+            }
+        }
+
+        System::query()->where('address', 'DEADBEEF')->update(['address' => $address, 'grade' => 7, 'type' => SystemType::Silo->value]);
+        $run = $this->begin();
+        $run->forceFill(['node' => $pots[0], 'known' => [...$run->knownNodes(), $pots[0]]])->save();
+
+        $view = TreeView::for($run->fresh(), $this->character->fresh(), app(Simulator::class), null);
+        $this->assertSame(Text::get('cyberspace.tree.node.vault'), collect($view->nodes)->firstWhere('key', $pots[0])['label']);
+        $this->assertTrue($view->atVault);
+
+        $this->simulator(0.0, 0)->take($this->character->fresh(), $run->fresh(), RunAction::Extract);
+        $run = $run->fresh();
+        $this->assertSame(20.0, (float) $run->noise, 'the alarm, every stealth roll passing');
+        $this->assertSame('spent', $run->trapStates()[$pots[0]]);
+        $this->assertNull($run->extracting_qb, 'there was nothing to pull');
     }
 
     public function test_a_maintenance_port_is_an_exit_asking_the_grade_below_s_difficulty(): void

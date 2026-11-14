@@ -13,6 +13,7 @@ use App\Checks\CheckRoller;
 use App\Cyberspace\Party\PartyTurns;
 use App\Cyberspace\Tree\NodeKind;
 use App\Cyberspace\Tree\RunTree;
+use App\Cyberspace\Tree\TrapEffect;
 use App\Decks\DeckTotals;
 use App\Missions\MissionAction;
 use App\Missions\MissionLedger;
@@ -240,6 +241,10 @@ final readonly class Simulator
                 $log[] = $this->line('cyberspace.run.log.egress_held', tone: 'warn');
             } elseif ($action === RunAction::Attack) {
                 $log[] = $this->attack($character, $run);
+            } elseif ($action === RunAction::Extract && $this->liveHoneypot($run)) {
+                // A HONEYPOT goes off on the first pull, and there was never anything in it.
+                [$tripped] = $this->trip($character, $run, (int) $run->node);
+                $log = [...$log, $this->line('cyberspace.run.log.tree.trap.honeypot', tone: 'warn'), ...$tripped];
             } elseif ($action === RunAction::Extract) {
                 $log = [...$log, ...$this->extract($character, $run)];
             } elseif ($action === RunAction::Leech) {
@@ -306,7 +311,16 @@ final readonly class Simulator
                     }
                 }
 
-                $log = [...$log, ...$this->move($run, (int) $node)];
+                // A TRAP nobody has dealt with goes off as they step on it; a Node Disconnect leaves them where they were.
+                if ($this->liveTrap($run, (int) $node) !== null && ! $this->treeOf($run)?->isHoneypot((int) $node)) {
+                    [$tripped, $stays] = $this->trip($character, $run, (int) $node);
+                    $log = [...$log, ...($stays ? [] : $this->move($run, (int) $node)), ...$tripped];
+                } else {
+                    $log = [...$log, ...$this->move($run, (int) $node)];
+                }
+            } elseif ($action === RunAction::Disarm) {
+                [$disarmLog, $breachTier] = $this->disarm($character, $run, (int) $node);
+                $log = [...$log, ...$disarmLog];
             } elseif ($action === RunAction::Nmap) {
                 $log[] = $this->nmap($character, $run);
             } elseif ($action === RunAction::Breach) {
@@ -404,7 +418,7 @@ final readonly class Simulator
     public function refusal(Character $character, Run $run, RunAction $action, ?int $node): ?RunRefusal
     {
         if (! $run->isTreeRun()) {
-            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Loopback, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
+            return in_array($action, [RunAction::Move, RunAction::Nmap, RunAction::Breach, RunAction::Subvert, RunAction::Loopback, RunAction::Disarm, RunAction::Jackout], true) ? RunRefusal::NotHere : null;
         }
 
         $tree = $this->treeOf($run);
@@ -416,12 +430,17 @@ final readonly class Simulator
         return match ($action) {
             RunAction::Move => match (true) {
                 $node === null || ! in_array($node, $tree->neighbours((int) $run->node), true) => RunRefusal::NotANeighbour,
+                $run->snared_until !== null && $run->turn < $run->snared_until => RunRefusal::Ensnared,
                 // On through a firewall only once it is breached; back the way you came is never blocked.
                 in_array([(int) $run->node, $node], $tree->edges, true) && $this->firewallClosed($run) => RunRefusal::FirewallClosed,
                 default => null,
             },
             RunAction::Breach => $this->firewallClosed($run) ? null : RunRefusal::NotHere,
             RunAction::Subvert => $this->hubOpen($run) ? null : RunRefusal::NotHere,
+            // A found trap one edge away, on a system with an OS to speak.
+            RunAction::Disarm => $node === null || ! in_array($node, $tree->neighbours((int) $run->node), true)
+                || $this->liveTrap($run, $node) === null || ($run->trapStates()[$node] ?? null) !== 'found'
+                || $run->system()?->os_skill_id === null ? RunRefusal::NotHere : null,
             RunAction::Loopback => match (true) {
                 $tree->nodes[(int) $run->node]['kind'] !== NodeKind::Relay || $run->loopback !== null => RunRefusal::NotHere,
                 ($row = $this->loopbackToHand($character)) === null => RunRefusal::NoLoopback,
@@ -557,7 +576,106 @@ final readonly class Simulator
     {
         $system = $run->system();
 
-        return $system === null ? null : RunTree::of($system);
+        return $system === null ? null : RunTree::of($system)->cut($run->cutNodes());
+    }
+
+    /** Standing on a honeypot nobody in the party has sprung. */
+    private function liveHoneypot(Run $run): bool
+    {
+        $tree = $run->isTreeRun() ? $this->treeOf($run) : null;
+
+        return $tree !== null && $tree->isHoneypot((int) $run->node) && ($run->trapStates()[(int) $run->node] ?? null) === null;
+    }
+
+    /**
+     * The trap's effect when this node is a trap (or a honeypot) nobody in the party has tripped, disarmed or lost; null
+     * otherwise.
+     */
+    public function liveTrap(Run $run, int $node): ?TrapEffect
+    {
+        $tree = $this->treeOf($run);
+        $state = $run->trapStates()[$node] ?? null;
+        $kind = $tree?->nodes[$node]['kind'] ?? null;
+
+        return $tree !== null && ($kind === NodeKind::Trap || $tree->isHoneypot($node)) && $state !== 'spent' && $state !== 'cut'
+            ? $tree->nodes[$node]['trap'] ?? null
+            : null;
+    }
+
+    /**
+     * A TRAP GOES OFF. Alarm: loud noise with no stealth roll. Trace: the trace starts, or moves on a turn's worth (two
+     * from grade 7). Ensnare: no moving on for a turn (two from grade 7). Node Disconnect: the node is torn out first,
+     * for the party, and the runner stays where they were. It is spent (or gone) for the party afterwards.
+     *
+     * @return array{0: list<array{text: string, tone: string}>, 1: bool} The lines, and whether the runner stays put.
+     */
+    private function trip(Character $character, Run $run, int $node): array
+    {
+        $effect = $this->liveTrap($run, $node);
+        $system = $run->system();
+        $turns = (int) $system?->grade >= 7 ? 2 : 1;
+
+        if ($effect === TrapEffect::Disconnect) {
+            $run->markTrap($node, 'cut');
+
+            return [[$this->line('cyberspace.run.log.tree.trap.disconnect', tone: 'crit')], true];
+        }
+
+        $run->markTrap($node, 'spent');
+        $log = [];
+
+        if ($effect === TrapEffect::Alarm) {
+            $log[] = $this->line('cyberspace.run.log.tree.trap.alarm', tone: 'warn');
+            $ids = (float) $system?->ids_detection;
+
+            if ($system !== null && $ids > 0 && ! $run->alerted) {
+                $level = round($this->noiseLevel($run) + $this->noiseAmount('loud'), 1);
+                $this->writeNoise($run, $level);
+
+                if ($level >= $ids) {
+                    $log = [...$log, ...$this->alertTheSystem($character, $run, $system)];
+                }
+            }
+        } elseif ($effect === TrapEffect::Trace) {
+            $log[] = $this->line('cyberspace.run.log.tree.trap.trace', tone: 'warn');
+            $rate = (int) $system?->tracer_rate;
+
+            if (! $run->detected) {
+                $run->detected = true;
+            } elseif ($rate > 0 && $run->trace < 100) {
+                $run->trace = min(100, (int) $run->trace + $rate * $turns);
+
+                if ($run->trace >= 100) {
+                    $log = [...$log, ...$this->traceLands($run)];
+                }
+            }
+        } elseif ($effect === TrapEffect::Ensnare) {
+            $run->snared_until = $run->turn + $turns;
+            $log[] = $this->line('cyberspace.run.log.tree.trap.ensnare', tone: 'warn');
+        }
+
+        return [$log, false];
+    }
+
+    /**
+     * DISARM a found trap one edge away: the OS roll. Landed, it is spent for the party (a conduit), an act's noise;
+     * failed, it goes off on the runner where they stand, and that is loud.
+     *
+     * @return array{0: list<array{text: string, tone: string}>, 1: string}
+     */
+    private function disarm(Character $character, Run $run, int $node): array
+    {
+        $system = $run->system();
+
+        if ($this->checks->roll($this->osValue($character, $system), $this->osDifficulty($character, $system?->operatingSystem()->first()), 'os')->passed) {
+            $run->markTrap($node, 'spent');
+
+            return [[$this->line('cyberspace.run.log.tree.trap.disarmed', tone: 'ok')], 'act'];
+        }
+
+        [$tripped] = $this->trip($character, $run, $node);
+
+        return [[$this->line('cyberspace.run.log.tree.trap.disarm_fails', tone: 'warn'), ...$tripped], 'loud'];
     }
 
     /**
@@ -771,7 +889,7 @@ final readonly class Simulator
         $tier = match ($action) {
             // Stepping onto a security hub nobody has subverted is loud.
             RunAction::Move => $this->onLiveHub($run) ? 'loud' : 'move',
-            RunAction::Breach, RunAction::Subvert => $breachTier,
+            RunAction::Breach, RunAction::Subvert, RunAction::Disarm => $breachTier,
             RunAction::Egress => 'move',
             RunAction::Nmap, RunAction::Loopback => 'act',
             RunAction::Flood => 'loud',

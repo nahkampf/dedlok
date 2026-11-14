@@ -703,6 +703,7 @@ final class Probe
                 // The tree comes from the address, so the file records only how far into it the read has got.
                 'layout' => $scan->tree = 1,
                 'nodes' => $scan->tree = 2,
+                'traps' => $scan->tree = 3,
                 'cloaked' => throw new \LogicException(
                     'ScanFact::Cloaked became discoverable with no read behind it.'
                 ),

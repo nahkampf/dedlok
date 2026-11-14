@@ -41,6 +41,8 @@ enum ScanFact: string
     // The run tree (docs/RUN_TREE.md): its shape, then what every node is. Only on a scan of a system that walks one.
     case Layout = 'layout';
     case Nodes = 'nodes';
+    // Phase 3: where the traps are, and what each does. Read after the Nodes.
+    case Traps = 'traps';
 
     /**
      * Can a scan find this out today?
@@ -52,7 +54,7 @@ enum ScanFact: string
     public function isDiscoverable(): bool
     {
         return match ($this) {
-            self::Grade, self::OperatingSystem, self::Ids, self::Tracer, self::Ice, self::Layout, self::Nodes => true,
+            self::Grade, self::OperatingSystem, self::Ids, self::Tracer, self::Ice, self::Layout, self::Nodes, self::Traps => true,
             self::Cloaked => false,
         };
     }
@@ -67,7 +69,7 @@ enum ScanFact: string
     public function appliesTo(SystemScan $scan): bool
     {
         return match ($this) {
-            self::Layout, self::Nodes => (bool) config('features.intrusion_runs_v2') && $scan->tree !== null,
+            self::Layout, self::Nodes, self::Traps => (bool) config('features.intrusion_runs_v2') && $scan->tree !== null,
             default => true,
         };
     }
@@ -81,6 +83,7 @@ enum ScanFact: string
         return match ($this) {
             self::Layout => self::Grade->isKnownOn($scan),
             self::Nodes => self::Layout->isKnownOn($scan),
+            self::Traps => self::Nodes->isKnownOn($scan),
             default => true,
         };
     }
@@ -112,6 +115,7 @@ enum ScanFact: string
             self::Cloaked => $scan->cloak_broken === true,
             self::Layout => $scan->tree >= 1,
             self::Nodes => $scan->tree >= 2,
+            self::Traps => $scan->tree >= 3,
         };
     }
 
@@ -148,7 +152,7 @@ enum ScanFact: string
                 ? self::iceWithBounty($scan)
                 : Text::get('cyberspace.reading.none'),
             self::Cloaked => Text::get('cyberspace.reading.cloak_seen'),
-            self::Layout, self::Nodes => self::treeReading($this, $scan),
+            self::Layout, self::Nodes, self::Traps => self::treeReading($this, $scan),
         };
     }
 
@@ -170,6 +174,14 @@ enum ScanFact: string
             return Text::get('cyberspace.reading.layout', [
                 'paths' => Text::plural('cyberspace.reading.paths', count(array_unique(array_filter(array_column($tree->nodes, 'path'))))),
                 'moves' => Text::plural('cyberspace.reading.moves', (int) $tree->distance($tree->entry, $tree->core)),
+            ]);
+        }
+
+        if ($fact === self::Traps) {
+            $traps = $tree->nodesOf(NodeKind::Trap);
+
+            return Text::plural('cyberspace.reading.traps', count($traps), [
+                'effects' => implode(', ', array_map(static fn (int $n): string => $tree->nodes[$n]['trap']->label(), $traps)),
             ]);
         }
 

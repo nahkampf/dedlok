@@ -7,6 +7,7 @@ namespace App\Cyberspace;
 use App\Achievements\Achievements;
 use App\Achievements\Metric;
 use App\Cyberspace\Party\Parties;
+use App\Cyberspace\Tree\NodeKind;
 use App\Cyberspace\Tree\RunTree;
 use App\Decks\DeckTotals;
 use App\Missions\MissionAction;
@@ -194,6 +195,8 @@ final readonly class RunStarter
                         'node' => $start,
                         'known' => $read >= 2 ? array_keys($tree->nodes) : [$start],
                         'mapped' => $read >= 1,
+                        // A scan that read the Traps knows every one of them.
+                        'traps' => $read >= 3 ? array_fill_keys($tree->nodesOf(NodeKind::Trap), 'found') : null,
                         'noise' => 0,
                     ]),
                     'character_id' => $character->getKey(),

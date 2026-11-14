@@ -7,6 +7,7 @@ namespace Tests\Unit\Cyberspace;
 use App\Cyberspace\SystemType;
 use App\Cyberspace\Tree\NodeKind;
 use App\Cyberspace\Tree\RunTree;
+use App\Cyberspace\Tree\TrapEffect;
 use PHPUnit\Framework\TestCase;
 
 final class RunTreeTest extends TestCase
@@ -116,6 +117,24 @@ final class RunTreeTest extends TestCase
         }
 
         $this->assertLessThanOrEqual($grade < 3 ? 0 : ($type === SystemType::Relay ? 2 : 1), count($tree->nodesOf(NodeKind::Relay)), $why);
+
+        // Traps from grade 4, never on the fast path, each with its effect.
+        foreach ($tree->nodesOf(NodeKind::Trap) as $trap) {
+            $this->assertGreaterThanOrEqual(4, $grade, $why);
+            $this->assertContains($tree->nodes[$trap]['path'], ['quiet', 'rich'], $why);
+            $this->assertArrayHasKey('trap', $tree->nodes[$trap], $why);
+        }
+
+        // Honeypots from grade 5, never a Node Disconnect, never the tree's first vault.
+        $vaults = $tree->nodesOf(NodeKind::Vault);
+
+        foreach ($vaults as $i => $vault) {
+            if ($tree->isHoneypot($vault)) {
+                $this->assertGreaterThanOrEqual(5, $grade, $why);
+                $this->assertGreaterThan(0, $i, $why);
+                $this->assertNotSame(TrapEffect::Disconnect, $tree->nodes[$vault]['trap'], $why);
+            }
+        }
 
         // The quiet path is the long one: about 5 moves at grade 5 and 7 at grade 9 when nothing cuts across.
         $this->assertLessThanOrEqual(2 + (int) round(($grade - 1) * 7 / 8) - 1, $tree->distance($tree->entry, $tree->core), $why);

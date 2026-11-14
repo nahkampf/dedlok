@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Written by App\Cyberspace\RunStarter and nothing else.
  */
-#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
+#[Fillable(['character_id', 'run_party_id', 'turn_at', 'ice_attack', 'pull_at', 'pull_content_id', 'pending_action', 'ice_damage', 'address', 'grid_id', 'x', 'y', 'purpose', 'infiltrated', 'pressure', 'extracted', 'backdoored', 'backdoor_kind', 'turn', 'os_locked', 'detected', 'ice_id', 'ice_integrity', 'extracting_qb', 'trace', 'trace_hop', 'chain', 'thermal_load', 'started_at', 'party_seen_at', 'ended_at', 'ending', 'log', 'node', 'known', 'mapped', 'opened', 'loopback', 'traps', 'snared_until', 'pending_node', 'pull_node', 'noise', 'alerted', 'acted_at'])]
 class Run extends Model
 {
     protected function casts(): array
@@ -64,6 +64,8 @@ class Run extends Model
             'mapped' => 'boolean',
             'opened' => 'array',
             'loopback' => 'integer',
+            'traps' => 'array',
+            'snared_until' => 'integer',
             'pending_node' => 'integer',
             'pull_node' => 'integer',
             'noise' => 'float',
@@ -129,6 +131,45 @@ class Run extends Model
         return $this->run_party_id === null
             ? (bool) $this->mapped
             : self::query()->where('run_party_id', $this->run_party_id)->where('mapped', true)->exists();
+    }
+
+    /**
+     * What this runner's party knows of the tree's traps, as {node: found|spent|cut}: the union of every run of the party,
+     * the furthest state winning (cut, then spent, then found).
+     *
+     * @return array<int, string>
+     */
+    public function trapStates(): array
+    {
+        $maps = $this->run_party_id === null
+            ? [$this->traps ?? []]
+            : self::query()->where('run_party_id', $this->run_party_id)->get(['traps'])->map(fn (self $r): array => $r->traps ?? [])->all();
+        $rank = ['found' => 1, 'spent' => 2, 'cut' => 3];
+        $out = [];
+
+        foreach ($maps as $map) {
+            foreach ($map as $node => $state) {
+                if (! isset($out[(int) $node]) || $rank[$state] > $rank[$out[(int) $node]]) {
+                    $out[(int) $node] = $state;
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    /** @return list<int> The nodes a Node Disconnect tore out of the tree for this party. */
+    public function cutNodes(): array
+    {
+        return array_keys(array_filter($this->trapStates(), static fn (string $s): bool => $s === 'cut'));
+    }
+
+    /** Mark a trap node on this runner's own map; the party reads them together. */
+    public function markTrap(int $node, string $state): void
+    {
+        $traps = $this->traps ?? [];
+        $traps[$node] = $state;
+        $this->traps = $traps;
     }
 
     /** A Loopback holds on an internal relay, theirs or (on a party run) a live ally's: the trace stalls. */

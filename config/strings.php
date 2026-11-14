@@ -1284,6 +1284,14 @@ return [
             'hub_chance' => 'Security hub: :chance% to subvert.',
             'subverted' => 'The security hub is subverted. No alert can go off.',
             'loopback_chance' => 'Loopback: :chance% to hold each turn.',
+            'disarm_chance' => 'Traps: :chance% to disarm.',
+            'trap_label' => 'Trap: :effect',
+            'trap' => [
+                'alarm' => 'Alarm',
+                'trace' => 'Trace jump',
+                'ensnare' => 'Ensnare',
+                'disconnect' => 'Node Disconnect',
+            ],
             'loopback_holding' => 'Your Loopback holds the trace: :chance% each turn to keep it.',
             'threshold_warn' => 'You are past one of your thresholds, and you should egress immediately.',
             'start_heading' => 'Entrypoint',
@@ -1303,6 +1311,7 @@ return [
                 'port' => 'Maintenance port',
                 'hub' => 'Security hub',
                 'relay' => 'Internal relay',
+                'trap' => 'Trap',
                 'core' => 'Core',
             ],
         ],
@@ -1851,6 +1860,7 @@ return [
                 'breach' => 'Breach',
                 'subvert' => 'Subvert',
                 'loopback' => 'Loopback',
+                'disarm' => 'Disarm :trap',
                 'jackout' => 'Crash Jackout',
                 'jackout_confirm' => 'Pull the plug',
                 'jackout_cancel' => 'Stay in',
@@ -1892,6 +1902,15 @@ return [
                     'loopback' => 'You wire a Loopback into the relay. The trace starts chasing its own tail.',
                     'loopback_fails' => 'The Loopback collapses. The trace finds its way again.',
                     'loopback_stalls' => 'The trace runs in circles through the Loopback.',
+                    'trap' => [
+                        'alarm' => 'A trap goes off and the IDS hears every bit of it.',
+                        'trace' => 'A trap throws your signal straight at the tracer.',
+                        'ensnare' => 'A trap closes around you. You are not going anywhere for now.',
+                        'disconnect' => 'The node ahead tears itself out of the system. The way through it is gone.',
+                        'honeypot' => 'The vault was bait. There is nothing in it, and something knows you reached for it.',
+                        'disarmed' => 'You take the trap apart.',
+                        'disarm_fails' => 'The trap notices you first.',
+                    ],
                     // :damage is the Synaptic Integrity it cost.
                     'jackout' => 'You rip the jack out. The system is gone, and so is :damage of your synaptic integrity.',
                     'jackout_neural' => 'Your mind does not come back whole: :damage of neural damage.',
@@ -2116,6 +2135,7 @@ return [
                 'not_a_neighbour' => 'That node is not linked to where you stand.',
                 'no_nmapper' => 'You need an Nmapper running to map the links around you.',
                 'no_loopback' => 'You carry no Loopback script.',
+                'ensnared' => 'The trap still holds you.',
                 'loopback_refused' => 'Your deck cannot run the Loopback right now.',
                 'firewall_closed' => 'The firewall still holds. Breach it before you go on.',
                 'hunted' => 'You are currently locked in a confrontation with another entity.',
@@ -2156,6 +2176,7 @@ return [
             'cloaked' => 'Cloaked systems',
             'layout' => 'Layout',
             'nodes' => 'Nodes',
+            'traps' => 'Traps',
         ],
 
         /*
@@ -2197,6 +2218,7 @@ return [
             'vaults' => ['zero' => 'no data vaults', 'one' => '1 data vault', 'many' => ':count data vaults'],
             'ports' => ['zero' => 'no maintenance ports', 'one' => '1 maintenance port', 'many' => ':count maintenance ports'],
             'hubs' => ['zero' => 'no security hubs', 'one' => '1 security hub', 'many' => ':count security hubs'],
+            'traps' => ['zero' => 'no traps', 'one' => '1 trap: :effects', 'many' => ':count traps: :effects'],
 
             /*
             | The guard and the reprisal, read together. A machine whose owner

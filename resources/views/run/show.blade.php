@@ -111,6 +111,23 @@
                 {{ Text::get($tree->looping ? 'cyberspace.tree.loopback_holding' : 'cyberspace.tree.loopback_chance', ['chance' => (int) round($tree->loopbackChance * 100)]) }}
             </p>
         @endif
+        {{-- FOUND TRAPS next door: a Disarm each (the OS roll), its own form since it names a node. --}}
+        @if ($tree->disarm !== [])
+            <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
+                {{ Text::get('cyberspace.tree.disarm_chance', ['chance' => (int) round(($tree->disarmChance ?? 0) * 100)]) }}
+            </p>
+            <div class="row row--wrap" style="--gap:var(--s-2);margin:0 0 var(--s-2)">
+                @foreach ($tree->disarm as [$trapNode, $trapLabel])
+                    <form method="POST" action="{{ route('run.act') }}" data-turn-form data-turn-field="node" data-waiting="">
+                        @csrf
+                        <input type="hidden" name="action" value="disarm">
+                        <button type="submit" name="node" value="{{ $trapNode }}" class="btn cut">
+                            {{ Text::get('cyberspace.run.action.disarm', ['trap' => $trapLabel]) }}
+                        </button>
+                    </form>
+                @endforeach
+            </div>
+        @endif
         @if ($tree->subverted && ! $run->alerted)
             <p class="micro" style="color:var(--ink-2);margin:0 0 var(--s-2)">
                 {{ Text::get('cyberspace.tree.subverted') }}
