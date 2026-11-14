@@ -1275,14 +1275,15 @@ final readonly class Simulator
         return $this->line('cyberspace.run.log.tree.tunnel', tone: 'ok');
     }
 
-    /** The strongest Egress Tunnel holding on the runner's node (any of the party's), or 0. */
+    /** The strongest Egress Tunnel holding on the runner's node (any of the party's): its script's strength plus its runner's Egress Tunneling level, or 0. */
     private function tunnelStrengthHere(Run $run): int
     {
         $rows = $run->run_party_id === null
             ? array_filter([$run->tunnel])
             : Run::query()->live()->where('run_party_id', $run->run_party_id)->where('node', $run->node)->whereNotNull('tunnel')->pluck('tunnel')->all();
 
-        return (int) InventoryItem::query()->whereKey($rows)->with('item.program')->get()->max(fn (InventoryItem $r): int => (int) $r->item?->program?->tunnel_strength);
+        return (int) InventoryItem::query()->whereKey($rows)->with(['item.program', 'character'])->get()
+            ->max(fn (InventoryItem $r): int => (int) $r->item?->program?->tunnel_strength + ($r->character === null ? 0 : $this->skillLevel($r->character, 'egress_tunneling')));
     }
 
     /** The strongest Loopback script in the stash, not running: the copy a Loopback would start. */

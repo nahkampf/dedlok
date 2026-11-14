@@ -951,8 +951,8 @@ final class TreeRunTest extends TestCase
         $this->assertNotNull($run->tunnel);
         $this->assertSame([$node], $run->tunnelNodes());
         $report = app(Simulator::class)->egressReport($this->character->fresh(), $run);
-        $this->assertSame(4, $report->tunnel);
-        $this->assertSame(13 - 4, $report->gradeDifficulty, "grade 6's 13, less the strength");
+        $this->assertSame(4 + 1, $report->tunnel, 'the strength plus the Egress Tunneling level');
+        $this->assertSame(13 - 5, $report->gradeDifficulty, "grade 6's 13, less the strength and the level");
 
         $this->assertNull($this->simulator(0.0)->take($this->character->fresh(), $run->fresh(), RunAction::Egress)->refusal);
         $this->assertSame(0, InventoryItem::query()->where('item_id', $item->id)->count(), 'spent with the run');

@@ -270,7 +270,7 @@ states' job.
   (`runs.loopback`, the running row). An act's noise.
 - **While it holds, the whole party's traces stall** (`Run::loopbackHolds`).
 - **Each turn after the one it started on it rolls to keep holding**: strength plus the `loopback_routing` skill level
-  (added by migration, placeholder text, off the market) against the egress table's figure for the grade (3–19). Held,
+  (Networking, rank 8, Intellect/Focus, 5,000, off the market) against the egress table's figure for the grade (3–19). Held,
   the IDS gets a move's look (3–6 on a failed stealth roll). Missed, the copy is spent and the trace moves that turn.
 - **Moving off the relay, or the run ending, spends it.** A Script's lifetime running out ends it too.
 
@@ -396,12 +396,12 @@ Decided 2026-11-14.
 ### Egress Tunnel
 
 - **A Script** (`programs.tunnel_strength`, set in the item admin) started from the stash by an action on any node but
-  the core (`RunAction::Tunnel`; the `egress_tunneling` skill at level 1 is needed, added by migration with placeholder
-  text, off the market). It holds its memory on the deck. No hold roll: it lasts while its runner stays on the node, and
+  the core (`RunAction::Tunnel`; the `egress_tunneling` skill at level 1 is needed: Networking, rank 16,
+  Intellect/Memory, 5,000, off the market). It holds its memory on the deck. No hold roll: it lasts while its runner stays on the node, and
   is spent when they move off, at the run's end, or when the script's lifetime runs out.
 - **While it holds, the node is an exit for everybody in the party, its runner too** (`Run::tunnelNodes`,
   `Simulator::atExit`): Egress and Flood work there. Egress asks the grade below's difficulty, as at a maintenance port,
-  less the tunnel's strength (the strongest on the node), plus a reaching ICE.
+  less the tunnel's strength plus its runner's Egress Tunneling level (the strongest on the node), plus a reaching ICE.
 - **A Cordon cannot cut a node an Egress Tunnel holds**, and a cut under way stops when one goes up on it.
 
 ### The map, alive
@@ -456,5 +456,4 @@ Kept up to date as the branch grows. All of it blocks the merge.
   `cyberspace.reading`, `cyberspace.run.setup.start` and `programs.spec` keys).
 - **Loopback and Egress Tunnel items**: none exist yet (Scripts with a strength, 1–20); the user creates and prices them.
   The Loopback's hold roll is flat (spread 8): strength 10 with no skill holds about 47% at grade 5.
-- **The Loopback Routing and Egress Tunneling skills** (and their imprints): placeholder text, off the market.
 - **The nmap item in the Deck Jockey loadout**: added in the archetype editor at release.

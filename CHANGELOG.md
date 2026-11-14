@@ -40,6 +40,7 @@
 - **A crew run waiting on the others dims the whole screen.** A centred "Waiting for crew..." with the round timer under it (`.wait-overlay` in the UI kit, `cyberspace.run.waiting`).
 - **"You are here" is a pulsing green diamond**, on the run tree and the City map (`.here-mark`), no longer ember.
 - **The run map's Alert tag pulses** while the alert is on (`.tag--pulse`).
+- **Loopback Routing and Egress Tunneling are set** (Networking, off the market, 5,000): Loopback Routing rank 8, Intellect/Focus; Egress Tunneling rank 16, Intellect/Memory, and each of its levels now adds 1 to a tunnel's strength. Their imprints follow the ranks (tier 2, ultra rare, 8 and 16 QB).
 
 ### Changed
 - **The Darknet gateway moves to `DEADBEEF`.** A migration gives the main-grid end of the Darknet the reserved address and carries scans, contacts, bookmarks, mission targets, runs, run parties and the `darknet_access` messages already sent along with it.
